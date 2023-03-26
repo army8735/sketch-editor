@@ -41,7 +41,7 @@ export type DrawData = {
 };
 
 export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext, cx: number, cy: number,
-                                 programs: any, list: Array<DrawData>, vertCount: number) {
+                                 program: any, list: Array<DrawData>, vertCount: number) {
   if (!list.length || !vertCount) {
     return;
   }
@@ -50,11 +50,11 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
   const vtOpacity = new Float32Array(vertCount * 6);
   for (let i = 0, len = list.length; i < len; i++) {
     const { node, opacity, matrix, cache } = list[i];
-    const { texture, ratioX, ratioY } = cache;
+    const { texture } = cache;
     bindTexture(gl, texture, 0);
     const { x, y, width, height } = node;
-    let x1 = x * ratioX, y1 = y * ratioY;
-    const t = calRectPoint(x1, y1, x1 + width * ratioX, y1 + height * ratioY, matrix);
+    let x1 = x, y1 = y;
+    const t = calRectPoint(x1, y1, x1 + width, y1 + height, matrix);
     const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
     const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
     const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -96,25 +96,25 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
   const pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(programs.program, 'a_position');
+  const a_position = gl.getAttribLocation(program, 'a_position');
   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position);
   // 纹理buffer
   const texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(programs.program, 'a_texCoords');
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // opacity buffer
   const opacityBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
-  const a_opacity = gl.getAttribLocation(programs.program, 'a_opacity');
+  const a_opacity = gl.getAttribLocation(program, 'a_opacity');
   gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_opacity);
   // 纹理单元
-  let u_texture = gl.getUniformLocation(programs.program, 'u_texture');
+  let u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, 0);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLES, 0, vertCount * 6);
@@ -127,7 +127,7 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
 
 }
 
-function convertCoords2Gl(x: number, y: number, cx: number, cy: number) {
+export function convertCoords2Gl(x: number, y: number, cx: number, cy: number) {
   if(x === cx) {
     x = 0;
   }

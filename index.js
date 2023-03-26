@@ -88,8 +88,8 @@
         StyleKey[StyleKey["FONT_WEIGHT"] = 9] = "FONT_WEIGHT";
         StyleKey[StyleKey["FONT_STYLE"] = 10] = "FONT_STYLE";
         StyleKey[StyleKey["VISIBLE"] = 11] = "VISIBLE";
-        StyleKey[StyleKey["BACKGROUND_COLOR"] = 12] = "BACKGROUND_COLOR";
-        StyleKey[StyleKey["OVERFLOW"] = 13] = "OVERFLOW";
+        StyleKey[StyleKey["OVERFLOW"] = 12] = "OVERFLOW";
+        StyleKey[StyleKey["COLOR"] = 13] = "COLOR";
         StyleKey[StyleKey["OPACITY"] = 14] = "OPACITY";
         StyleKey[StyleKey["TRANSLATE_X"] = 15] = "TRANSLATE_X";
         StyleKey[StyleKey["TRANSLATE_Y"] = 16] = "TRANSLATE_Y";
@@ -548,9 +548,9 @@
             }
             res[StyleKey.FONT_STYLE] = { v, u: StyleUnit.NUMBER };
         }
-        const backgroundColor = style.backgroundColor;
-        if (!isNil(backgroundColor)) {
-            res[StyleKey.BACKGROUND_COLOR] = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+        const color = style.color;
+        if (!isNil(color)) {
+            res[StyleKey.COLOR] = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
         }
         const overflow = style.overflow;
         if (!isNil(overflow)) {
@@ -678,7 +678,7 @@
             return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
                 && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
         }
-        if (k === StyleKey.BACKGROUND_COLOR) {
+        if (k === StyleKey.COLOR) {
             return a[k].v[0] === b[k].v[0]
                 && a[k].v[1] === b[k].v[1]
                 && a[k].v[2] === b[k].v[2]
@@ -1078,14 +1078,6 @@
             return 0;
         }
         calContent() {
-            const { computedStyle } = this;
-            if (!computedStyle[StyleKey.VISIBLE]) {
-                return this.hasContent = false;
-            }
-            const backgroundColor = computedStyle[StyleKey.BACKGROUND_COLOR];
-            if (backgroundColor && backgroundColor[3] > 0) {
-                return this.hasContent = true;
-            }
             return this.hasContent = false;
         }
         renderCanvas(ctx, dx = 0, dy = 0) {
@@ -1745,7 +1737,7 @@
         gl.activeTexture(gl['TEXTURE' + n]);
         gl.bindTexture(gl.TEXTURE_2D, texture);
     }
-    function drawTextureCache(gl, cx, cy, programs, list, vertCount) {
+    function drawTextureCache(gl, cx, cy, program, list, vertCount) {
         if (!list.length || !vertCount) {
             return;
         }
@@ -1754,11 +1746,11 @@
         const vtOpacity = new Float32Array(vertCount * 6);
         for (let i = 0, len = list.length; i < len; i++) {
             const { node, opacity, matrix, cache } = list[i];
-            const { texture, ratioX, ratioY } = cache;
+            const { texture } = cache;
             bindTexture(gl, texture, 0);
             const { x, y, width, height } = node;
-            let x1 = x * ratioX, y1 = y * ratioY;
-            const t = calRectPoint(x1, y1, x1 + width * ratioX, y1 + height * ratioY, matrix);
+            let x1 = x, y1 = y;
+            const t = calRectPoint(x1, y1, x1 + width, y1 + height, matrix);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
             const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -1800,25 +1792,25 @@
         const pointBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-        const a_position = gl.getAttribLocation(programs.program, 'a_position');
+        const a_position = gl.getAttribLocation(program, 'a_position');
         gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_position);
         // 纹理buffer
         const texBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-        let a_texCoords = gl.getAttribLocation(programs.program, 'a_texCoords');
+        let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
         gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_texCoords);
         // opacity buffer
         const opacityBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
-        const a_opacity = gl.getAttribLocation(programs.program, 'a_opacity');
+        const a_opacity = gl.getAttribLocation(program, 'a_opacity');
         gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_opacity);
         // 纹理单元
-        let u_texture = gl.getUniformLocation(programs.program, 'u_texture');
+        let u_texture = gl.getUniformLocation(program, 'u_texture');
         gl.uniform1i(u_texture, 0);
         // 渲染并销毁
         gl.drawArrays(gl.TRIANGLES, 0, vertCount * 6);
@@ -1847,17 +1839,15 @@
 
     const HASH$1 = {};
     class TextureCache {
-        constructor(texture, ratioX, ratioY) {
-            this.ratioX = ratioX;
-            this.ratioY = ratioY;
+        constructor(texture) {
             this.texture = texture;
         }
         static getInstance(gl, node) {
             const { offscreen } = node.canvasCache;
             const texture = createTexture(gl, 0, offscreen.canvas);
-            return new TextureCache(texture, 1, 1);
+            return new TextureCache(texture);
         }
-        static getImgInstance(gl, node, ratioX = 1, ratioY = 1) {
+        static getImgInstance(gl, node) {
             if (!node.loader.onlyImg) {
                 throw new Error('Need an onlyImg');
             }
@@ -1865,7 +1855,7 @@
             if (HASH$1.hasOwnProperty(url)) {
                 const o = HASH$1[url];
                 o.count++;
-                return new TextureCache(HASH$1[url].value, ratioX, ratioY);
+                return new TextureCache(HASH$1[url].value);
             }
             const { offscreen } = node.canvasCache;
             const texture = createTexture(gl, 0, offscreen.canvas);
@@ -1873,7 +1863,7 @@
                 value: texture,
                 count: 1,
             };
-            return new TextureCache(texture, ratioX, ratioY);
+            return new TextureCache(texture);
         }
     }
 
@@ -2012,6 +2002,59 @@
     class ArtBoard extends Container {
         constructor(name, props, children) {
             super(name, props, children);
+            this.backgroundColor = props.backgroundColor;
+        }
+        calContent() {
+            let res = super.calContent();
+            const { backgroundColor, computedStyle } = this;
+            if (!res) {
+                const { [StyleKey.VISIBLE]: visible, } = computedStyle;
+                if (visible && backgroundColor && backgroundColor[3] > 0) {
+                    res = true;
+                }
+            }
+            return res;
+        }
+        renderWebgl(gl, cx, cy, dx = 0, dy = 0) {
+            const programs = this.root.programs;
+            const colorProgram = programs.colorProgram;
+            gl.useProgram(colorProgram);
+            // 矩形固定2个三角形
+            const vtPoint = new Float32Array(12);
+            const { x, y, width, height, matrixWorld, backgroundColor } = this;
+            const t = calRectPoint(x, y, x + width, y + height, matrixWorld);
+            const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
+            const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
+            const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
+            const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy);
+            vtPoint[0] = t1.x;
+            vtPoint[1] = t1.y;
+            vtPoint[2] = t4.x;
+            vtPoint[3] = t4.y;
+            vtPoint[4] = t2.x;
+            vtPoint[5] = t2.y;
+            vtPoint[6] = t4.x;
+            vtPoint[7] = t4.y;
+            vtPoint[8] = t2.x;
+            vtPoint[9] = t2.y;
+            vtPoint[10] = t3.x;
+            vtPoint[11] = t3.y;
+            // 顶点buffer
+            const pointBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+            const a_position = gl.getAttribLocation(colorProgram, 'a_position');
+            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_position);
+            // color
+            let u_color = gl.getUniformLocation(colorProgram, 'u_color');
+            gl.uniform4f(u_color, backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
+            // 渲染并销毁
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.deleteBuffer(pointBuffer);
+            gl.disableVertexAttribArray(a_position);
+            // 恢复program
+            gl.useProgram(programs.program);
         }
     }
 
@@ -2183,12 +2226,16 @@
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && opacity > 0) {
-                drawTextureCache(gl, cx, cy, programs, [{
+                drawTextureCache(gl, cx, cy, programs.program, [{
                         node,
                         opacity,
                         matrix,
                         cache: textureCache,
                     }], 1);
+            }
+            // 画板有个矩形背景色和boxShadow特殊渲染一下
+            else if (node instanceof ArtBoard) {
+                node.renderWebgl(gl, cx, cy, 0, 0);
             }
         }
     }
@@ -2455,15 +2502,9 @@ void main() {
     const colorVert = `#version 100
 
 attribute vec2 a_position;
-attribute vec4 a_color;
-varying vec4 v_color;
-attribute float a_opacity;
-varying float v_opacity;
 
 void main() {
   gl_Position = vec4(a_position, 0, 1);
-  v_color = a_color;
-  v_opacity = a_opacity;
 }`;
     const colorFrag = `#version 100
 
@@ -2471,16 +2512,10 @@ void main() {
 precision mediump float;
 #endif
 
-varying vec4 v_color;
-varying float v_opacity;
+uniform vec4 u_color;
 
 void main() {
-  float opacity = v_opacity;
-  if(opacity <= 0.0) {
-    discard;
-  }
-  opacity = clamp(opacity, 0.0, 1.0);
-  gl_FragColor = v_color * opacity;
+  gl_FragColor = u_color;
 }`;
 
     const CONTEXT_ATTRIBUTES = {
@@ -18113,22 +18148,22 @@ void main() {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
                 const backgroundColor = layer.hasBackgroundColor ? [
-                    Math.floor(layer.backgroundColor.r * 255),
-                    Math.floor(layer.backgroundColor.g * 255),
-                    Math.floor(layer.backgroundColor.b * 255),
+                    layer.backgroundColor.r,
+                    layer.backgroundColor.g,
+                    layer.backgroundColor.b,
                     layer.backgroundColor.a,
-                ] : [255, 255, 255, 1];
+                ] : [1, 1, 1, 1];
                 return {
                     type: classValue.ArtBoard,
                     name: layer.name,
                     props: {
+                        backgroundColor,
                         style: getDefaultStyle({
                             width: layer.frame.width,
                             height: layer.frame.height,
                             translateX: layer.frame.x,
                             translateY: layer.frame.y,
                             visible: layer.isVisible,
-                            backgroundColor,
                             overflow: 'hidden',
                         }),
                     },

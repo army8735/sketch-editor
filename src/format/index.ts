@@ -20,6 +20,7 @@ export type JPage = JContainer & {
 
 export type JArtBoard = JContainer & {
   type: classValue.ArtBoard,
+  props: ArtBoardProps,
 };
 
 export type JGroup = JContainer & {
@@ -52,8 +53,8 @@ export type JStyle = {
   fontSize: number,
   fontWeight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold' |  'bolder' | 'lighter',
   fontStyle: 'normal' | 'italic' | 'oblique',
-  backgroundColor: string | Array<number>,
   overflow: 'visible' | 'hidden',
+  color: string | Array<number>,
   opacity: number,
   translateX: number,
   translateY: number,
@@ -100,6 +101,10 @@ export type BitmapProps = Props & {
   src: string | undefined,
   onLoad?: Function,
   onError?: Function,
+};
+
+export type ArtBoardProps = Props & {
+  backgroundColor: Array<number>,
 };
 
 export enum classValue {

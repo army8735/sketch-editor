@@ -36,15 +36,9 @@ void main() {
 export const colorVert = `#version 100
 
 attribute vec2 a_position;
-attribute vec4 a_color;
-varying vec4 v_color;
-attribute float a_opacity;
-varying float v_opacity;
 
 void main() {
   gl_Position = vec4(a_position, 0, 1);
-  v_color = a_color;
-  v_opacity = a_opacity;
 }`;
 
 export const colorFrag = `#version 100
@@ -53,14 +47,8 @@ export const colorFrag = `#version 100
 precision mediump float;
 #endif
 
-varying vec4 v_color;
-varying float v_opacity;
+uniform vec4 u_color;
 
 void main() {
-  float opacity = v_opacity;
-  if(opacity <= 0.0) {
-    discard;
-  }
-  opacity = clamp(opacity, 0.0, 1.0);
-  gl_FragColor = v_color * opacity;
+  gl_FragColor = u_color;
 }`;

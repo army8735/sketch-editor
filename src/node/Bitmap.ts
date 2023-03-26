@@ -117,7 +117,7 @@ class Bitmap extends Node {
     });
   }
 
-  calContent(): boolean {
+  override calContent(): boolean {
     let res = super.calContent();
     const { computedStyle, loader } = this;
     if (res) {

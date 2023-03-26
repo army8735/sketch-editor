@@ -6,6 +6,7 @@ import ImgCanvasCache from './ImgCanvasCache';
 import { StyleKey } from '../style';
 import { drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
+import ArtBoard from '../node/ArtBoard';
 
 export type Struct = {
   node: Node;
@@ -74,12 +75,16 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     // 一般只有一个纹理
     const textureCache = node.textureCache;
     if (textureCache && opacity > 0) {
-      drawTextureCache(gl, cx, cy, programs, [{
+      drawTextureCache(gl, cx, cy, programs.program, [{
         node,
         opacity,
         matrix,
         cache: textureCache,
       }], 1);
+    }
+    // 画板有个矩形背景色和boxShadow特殊渲染一下
+    else if (node instanceof ArtBoard) {
+      node.renderWebgl(gl, cx, cy, 0, 0);
     }
   }
 }

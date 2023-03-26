@@ -48,6 +48,9 @@
       width: 300px;
       background: #EEE8EA;
     }
+    canvas {
+      background: #F3F3F3;
+    }
   </style>
 </head>
 <body>
@@ -78,11 +81,10 @@
         const canvas = document.createElement('canvas');
         function resize() {
           const { clientWidth, clientHeight } = main;
-          const dpi = window.devicePixelRatio || 1;
           canvas.style.width = clientWidth + 'px';
           canvas.style.height = clientHeight + 'px';
-          canvas.width = clientWidth * dpi;
-          canvas.height = clientHeight * dpi;
+          canvas.width = clientWidth;
+          canvas.height = clientHeight;
         }
         resize();
         window.onresize = resize;

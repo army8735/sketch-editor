@@ -355,14 +355,6 @@ class Node {
   }
 
   calContent(): boolean {
-    const { computedStyle } = this;
-    if (!computedStyle[StyleKey.VISIBLE]) {
-      return this.hasContent = false;
-    }
-    const backgroundColor = computedStyle[StyleKey.BACKGROUND_COLOR];
-    if (backgroundColor && backgroundColor[3] > 0) {
-      return this.hasContent = true;
-    }
     return this.hasContent = false;
   }
 

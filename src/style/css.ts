@@ -148,9 +148,9 @@ export function normalizeStyle(style: JStyle): any {
     }
     res[StyleKey.FONT_STYLE] = { v, u: StyleUnit.NUMBER };
   }
-  const backgroundColor = style.backgroundColor;
-  if (!isNil(backgroundColor)) {
-    res[StyleKey.BACKGROUND_COLOR] = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+  const color = style.color;
+  if (!isNil(color)) {
+    res[StyleKey.COLOR] = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
   }
   const overflow = style.overflow;
   if (!isNil(overflow)) {
@@ -279,7 +279,7 @@ export function equalStyle(k: StyleKey, a: StyleArray, b: StyleArray) {
     return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
       && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
   }
-  if (k === StyleKey.BACKGROUND_COLOR) {
+  if (k === StyleKey.COLOR) {
     return a[k].v[0] === b[k].v[0]
       && a[k].v[1] === b[k].v[1]
       && a[k].v[2] === b[k].v[2]
