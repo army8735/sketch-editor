@@ -34,6 +34,7 @@
             rotateZ: 0,
             transformOrigin: ['center', 'center'],
             mixBlendMode: 'normal',
+            pointerEvents: true,
         }, v);
     }
     var classValue;
@@ -98,6 +99,7 @@
         StyleKey[StyleKey["ROTATE_Z"] = 19] = "ROTATE_Z";
         StyleKey[StyleKey["TRANSFORM_ORIGIN"] = 20] = "TRANSFORM_ORIGIN";
         StyleKey[StyleKey["MIX_BLEND_MODE"] = 21] = "MIX_BLEND_MODE";
+        StyleKey[StyleKey["POINTER_EVENTS"] = 22] = "POINTER_EVENTS";
         // FILTER = 14,
         // FILL = 15,
         // STROKE = 16,
@@ -671,6 +673,10 @@
             }
             res[StyleKey.MIX_BLEND_MODE] = { v, u: StyleUnit.NUMBER };
         }
+        const pointerEvents = style.pointerEvents;
+        if (!isNil(pointerEvents)) {
+            res[StyleKey.POINTER_EVENTS] = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+        }
         return res;
     }
     function equalStyle(k, a, b) {
@@ -754,8 +760,72 @@
         return target;
     }
 
+    // 向量叉乘积
+    function crossProduct(x1, y1, x2, y2) {
+        return x1 * y2 - x2 * y1;
+    }
+
     function d2r(n) {
         return n * Math.PI / 180;
+    }
+    /**
+     * 判断点是否在多边形内
+     * @param x 点坐标
+     * @param y
+     * @param vertexes 多边形顶点坐标
+     * @returns {boolean}
+     */
+    function pointInConvexPolygon(x, y, vertexes) {
+        // 先取最大最小值得一个外围矩形，在外边可快速判断false
+        let { x: xmax, y: ymax } = vertexes[0];
+        let { x: xmin, y: ymin } = vertexes[0];
+        let len = vertexes.length;
+        for (let i = 1; i < len; i++) {
+            let { x, y } = vertexes[i];
+            xmax = Math.max(xmax, x);
+            ymax = Math.max(ymax, y);
+            xmin = Math.min(xmin, x);
+            ymin = Math.min(ymin, y);
+        }
+        if (x < xmin || y < ymin || x > xmax || y > ymax) {
+            return false;
+        }
+        let first;
+        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
+        for (let i = 0, len = vertexes.length; i < len; i++) {
+            let { x: x1, y: y1 } = vertexes[i];
+            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
+            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+            if (n !== 0) {
+                n = n > 0 ? 1 : 0;
+                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+                if (first === undefined) {
+                    first = n;
+                }
+                else if (first ^ n) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    // 判断点是否在一个矩形，比如事件发生是否在节点上
+    function pointInRect(x, y, x1, y1, x2, y2, matrix) {
+        if (matrix && !isE(matrix)) {
+            let t1 = calPoint({ x: x1, y: y1 }, matrix);
+            let xa = t1.x, ya = t1.y;
+            let t2 = calPoint({ x: x2, y: y2 }, matrix);
+            let xb = t2.x, yb = t2.y;
+            return pointInConvexPolygon(x, y, [
+                { x: xa, y: ya },
+                { x: xb, y: ya },
+                { x: xb, y: yb },
+                { x: xa, y: yb },
+            ]);
+        }
+        else {
+            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
+        }
     }
 
     function calRotateZ(t, v) {
@@ -962,6 +1032,7 @@
             computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
             computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
             computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
+            computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;
             this.calMatrix(RefreshLevel.REFLOW);
         }
         calMatrix(lv) {
@@ -1167,6 +1238,32 @@
         }
         getStyle(key) {
         }
+        getBoundingClientRect() {
+            const { outerBbox, matrixWorld } = this;
+            const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld);
+            return {
+                left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
+                top: Math.min(y1, Math.min(y2, Math.min(y3, y4))),
+                right: Math.max(x1, Math.max(x2, Math.max(x3, x4))),
+                bottom: Math.max(y1, Math.max(y2, Math.max(y3, y4))),
+                points: [{
+                        x: x1,
+                        y: y1,
+                    }, {
+                        x: x2,
+                        y: y2,
+                    }, {
+                        x: x3,
+                        y: y3,
+                    }, {
+                        x: x4,
+                        y: y4,
+                    }],
+            };
+        }
+        getTargetByPointAndLv(x, y, lv = 0) {
+            return null;
+        }
         get bbox() {
             if (!this._bbox) {
                 this._bbox = new Float64Array(4);
@@ -1178,11 +1275,11 @@
             return this._bbox;
         }
         get outerBbox() {
-            if (!this._filterBbox) {
+            if (!this._outerBbox) {
                 let bbox = this._bbox || this.bbox;
-                this._filterBbox = bbox.slice(0);
+                this._outerBbox = bbox.slice(0);
             }
-            return this._filterBbox;
+            return this._outerBbox;
         }
     }
 
@@ -1699,6 +1796,44 @@
                 p.struct.total -= total;
                 p = p.parent;
             }
+        }
+        getTargetByPointAndLv(x, y, lv) {
+            const children = this.children;
+            for (let i = children.length - 1; i >= 0; i--) {
+                const child = children[i];
+                const { struct, computedStyle, outerBbox, matrixWorld } = child;
+                // 在内部且pointerEvents为true才返回
+                if (pointInRect(x, y, outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld)) {
+                    // 不指定lv则找最深处的child
+                    if (lv === undefined) {
+                        if (child instanceof Container) {
+                            const res = child.getTargetByPointAndLv(x, y, lv);
+                            if (res) {
+                                return res;
+                            }
+                        }
+                        if (computedStyle[StyleKey.POINTER_EVENTS]) {
+                            return child;
+                        }
+                    }
+                    // 指定判断lv是否相等
+                    else {
+                        if (struct.lv === lv) {
+                            if (computedStyle[StyleKey.POINTER_EVENTS]) {
+                                return child;
+                            }
+                        }
+                        // 父级且是container继续深入寻找
+                        else if (struct.lv < lv && child instanceof Container) {
+                            const res = child.getTargetByPointAndLv(x, y, lv);
+                            if (res) {
+                                return res;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
         }
     }
 
@@ -2518,7 +2653,7 @@ void main() {
   gl_FragColor = u_color;
 }`;
 
-    const CONTEXT_ATTRIBUTES = {
+    var ca = {
         alpha: true,
         antialias: true,
         premultipliedAlpha: true,
@@ -2526,6 +2661,7 @@ void main() {
         depth: true,
         stencil: true,
     };
+
     let uuid = 0;
     class Root extends Container {
         constructor(canvas, props) {
@@ -2536,8 +2672,8 @@ void main() {
             this.uuid = uuid++;
             this.canvas = canvas;
             // gl的初始化和配置
-            this.ctx = canvas.getContext('webgl2', CONTEXT_ATTRIBUTES)
-                || canvas.getContext('webgl', CONTEXT_ATTRIBUTES);
+            this.ctx = canvas.getContext('webgl2', ca)
+                || canvas.getContext('webgl', ca);
             const gl = this.ctx;
             if (!gl) {
                 alert('Webgl unsupported!');
@@ -2562,6 +2698,7 @@ void main() {
                 style: getDefaultStyle({
                     width: this.width,
                     height: this.height,
+                    pointerEvents: false,
                 }),
             }, []);
             this.appendChild(this.pageContainer);
@@ -2570,6 +2707,7 @@ void main() {
                 style: getDefaultStyle({
                     width: this.width,
                     height: this.height,
+                    pointerEvents: false,
                 }),
             }, []);
             this.appendChild(this.overlayContainer);
@@ -18131,9 +18269,10 @@ void main() {
                     style: getDefaultStyle({
                         left: page.frame.x,
                         top: page.frame.y,
-                        width: page.frame.width,
-                        height: page.frame.height,
+                        width: page.frame.width + 1000,
+                        height: page.frame.height + 1000,
                         visible: false,
+                        pointerEvents: false,
                     }),
                 },
                 children,
@@ -18444,8 +18583,11 @@ void main() {
             });
             root.setJPages(json.pages);
             root.setPageIndex(0);
+            return root;
         },
         openAndConvertSketchBuffer,
+        Page,
+        ArtBoard,
     };
 
     return index;

@@ -271,6 +271,10 @@ export function normalizeStyle(style: JStyle): any {
     }
     res[StyleKey.MIX_BLEND_MODE] = { v, u: StyleUnit.NUMBER };
   }
+  const pointerEvents = style.pointerEvents;
+  if (!isNil(pointerEvents)) {
+    res[StyleKey.POINTER_EVENTS] = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+  }
   return res;
 }
 

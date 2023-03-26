@@ -4,6 +4,8 @@ import { RefreshLevel } from '../refresh/level';
 import inject from '../util/inject';
 import { Struct } from '../refresh/struct';
 import { LayoutData } from './layout';
+import { pointInRect } from '../math/geom';
+import { StyleKey } from '../style';
 
 class Container extends Node {
   children: Array<Node>;
@@ -160,6 +162,45 @@ class Container extends Node {
       p.struct.total -= total;
       p = p.parent;
     }
+  }
+
+  getTargetByPointAndLv(x: number, y: number, lv?: number): Node | null {
+    const children = this.children;
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
+      const { struct, computedStyle, outerBbox, matrixWorld } = child;
+      // 在内部且pointerEvents为true才返回
+      if (pointInRect(x, y, outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld)) {
+        // 不指定lv则找最深处的child
+        if (lv === undefined) {
+          if (child instanceof Container) {
+            const res = child.getTargetByPointAndLv(x, y, lv);
+            if (res) {
+              return res;
+            }
+          }
+          if (computedStyle[StyleKey.POINTER_EVENTS]) {
+            return child;
+          }
+        }
+        // 指定判断lv是否相等
+        else {
+          if (struct.lv === lv) {
+            if (computedStyle[StyleKey.POINTER_EVENTS]) {
+              return child;
+            }
+          }
+          // 父级且是container继续深入寻找
+          else if (struct.lv < lv && child instanceof Container) {
+            const res = child.getTargetByPointAndLv(x, y, lv);
+            if (res) {
+              return res;
+            }
+          }
+        }
+      }
+    }
+    return null;
   }
 }
 

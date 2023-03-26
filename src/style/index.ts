@@ -21,6 +21,7 @@ export enum StyleKey {
   ROTATE_Z = 19,
   TRANSFORM_ORIGIN = 20,
   MIX_BLEND_MODE = 21,
+  POINTER_EVENTS = 22,
   // FILTER = 14,
   // FILL = 15,
   // STROKE = 16,
@@ -146,6 +147,7 @@ export type StyleArray = [
   StyleNumValue,
   [StyleNumStrValue, StyleNumStrValue],
   StyleStrValue,
+  StyleBoolValue,
 ];
 
 export enum MIX_BLEND_MODE {

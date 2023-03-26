@@ -10,15 +10,7 @@ import { StyleKey } from '../style';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag } from '../gl/glsl';
-
-const CONTEXT_ATTRIBUTES = {
-  alpha: true,
-  antialias: true,
-  premultipliedAlpha: true,
-  preserveDrawingBuffer: false,
-  depth: true,
-  stencil: true,
-};
+import ca from '../gl/ca';
 
 let uuid = 0;
 
@@ -43,8 +35,8 @@ class Root extends Container implements FrameCallback {
     this.uuid = uuid++;
     this.canvas = canvas;
     // gl的初始化和配置
-    this.ctx = (canvas.getContext('webgl2', CONTEXT_ATTRIBUTES) as WebGL2RenderingContext)
-      || (canvas.getContext('webgl', CONTEXT_ATTRIBUTES) as WebGLRenderingContext);
+    this.ctx = (canvas.getContext('webgl2', ca) as WebGL2RenderingContext)
+      || (canvas.getContext('webgl', ca) as WebGLRenderingContext);
     const gl = this.ctx as (WebGL2RenderingContext | WebGLRenderingContext);
     if (!gl) {
       alert('Webgl unsupported!');
@@ -72,6 +64,7 @@ class Root extends Container implements FrameCallback {
       style: getDefaultStyle({
         width: this.width,
         height: this.height,
+        pointerEvents: false,
       }),
     }, []);
     this.appendChild(this.pageContainer);
@@ -80,6 +73,7 @@ class Root extends Container implements FrameCallback {
       style: getDefaultStyle({
         width: this.width,
         height: this.height,
+        pointerEvents: false,
       }),
     }, []);
     this.appendChild(this.overlayContainer);
@@ -300,6 +294,7 @@ class Root extends Container implements FrameCallback {
       this.isAsyncDraw = false;
     }
   }
+
 }
 
 export default Root;

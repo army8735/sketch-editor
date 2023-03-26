@@ -1,6 +1,8 @@
 import { JFile, getDefaultStyle } from './format';
 import { isNumber } from './util/type';
 import Root from './node/Root';
+import Page from './node/Page';
+import ArtBoard from './node/ArtBoard';
 import { openAndConvertSketchBuffer } from './format/sketch';
 
 function apply(json: any, imgs: Array<string>): any {
@@ -36,6 +38,9 @@ export default {
     });
     root.setJPages(json.pages);
     root.setPageIndex(0);
+    return root;
   },
   openAndConvertSketchBuffer,
+  Page,
+  ArtBoard,
 };

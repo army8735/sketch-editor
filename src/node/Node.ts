@@ -4,7 +4,15 @@ import { JStyle, Props } from '../format/';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
 import { StyleArray, StyleKey, StyleNumStrValue, StyleUnit } from '../style';
-import { assignMatrix, identity, isE, multiplyRotateZ, multiplyScaleX, multiplyScaleY } from '../math/matrix';
+import {
+  assignMatrix,
+  calRectPoint,
+  identity,
+  isE,
+  multiplyRotateZ,
+  multiplyScaleX,
+  multiplyScaleY
+} from '../math/matrix';
 import { equalStyle, normalizeStyle } from '../style/css';
 import { extend } from '../util';
 import { LayoutData } from './layout';
@@ -36,7 +44,7 @@ class Node {
   matrixWorld: Float64Array;
   layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
   private _bbox: Float64Array | undefined;
-  private _filterBbox: Float64Array | undefined;
+  private _outerBbox: Float64Array | undefined;
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
@@ -236,6 +244,7 @@ class Node {
     computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
     computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
     computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
+    computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;
     this.calMatrix(RefreshLevel.REFLOW);
   }
 
@@ -453,6 +462,35 @@ class Node {
   getStyle<T extends keyof JStyle>(key: T): any {
   }
 
+  getBoundingClientRect() {
+    const { outerBbox, matrixWorld } = this;
+    const { x1, y1, x2, y2, x3, y3, x4, y4 }
+      = calRectPoint(outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld);
+    return {
+      left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
+      top: Math.min(y1, Math.min(y2, Math.min(y3, y4))),
+      right: Math.max(x1, Math.max(x2, Math.max(x3, x4))),
+      bottom: Math.max(y1, Math.max(y2, Math.max(y3, y4))),
+      points: [{
+        x: x1,
+        y: y1,
+      }, {
+        x: x2,
+        y: y2,
+      }, {
+        x: x3,
+        y: y3,
+      }, {
+        x: x4,
+        y: y4,
+      }],
+    };
+  }
+
+  getTargetByPointAndLv(x: number, y: number, lv = 0): Node | null {
+    return null;
+  }
+
   get bbox(): Float64Array {
     if (!this._bbox) {
       this._bbox = new Float64Array(4);
@@ -465,11 +503,11 @@ class Node {
   }
 
   get outerBbox() {
-    if (!this._filterBbox) {
+    if (!this._outerBbox) {
       let bbox = this._bbox || this.bbox;
-      this._filterBbox = bbox.slice(0);
+      this._outerBbox = bbox.slice(0);
     }
-    return this._filterBbox;
+    return this._outerBbox;
   }
 
 }

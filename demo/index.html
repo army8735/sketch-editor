@@ -43,13 +43,159 @@
     }
     .main {
       flex: 1;
+      position: relative;
     }
     .side {
       width: 300px;
       background: #EEE8EA;
     }
-    canvas {
+    .canvas-c {
+      width: 100%;
+      height: 100%;
       background: #F3F3F3;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .overlap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .hover {
+      position: absolute;
+      border: 1px solid #F43;
+      visibility: hidden;
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+      transform: translate(-1px, -1px);
+    }
+    .selection {
+      position: absolute;
+      visibility: hidden;
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    }
+    .t {
+      position: absolute;
+      left: 0;
+      top: -4px;
+      width: 100%;
+      height: 8px;
+      transform: scaleY(0.5);
+      cursor: ns-resize;
+    }
+    .t b{
+      position: absolute;
+      left: 0;
+      top: 2px;
+      width: 100%;
+      height: 100%;
+      border-top: 1px solid #34F;
+    }
+    .r {
+      position: absolute;
+      right: -4px;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      transform: scaleX(0.5);
+      cursor: ew-resize;
+    }
+    .r b {
+      position: absolute;
+      right: 2px;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      border-right: 1px solid #34F;
+    }
+    .b {
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 100%;
+      height: 8px;
+      transform: scaleY(0.5);
+      cursor: ns-resize;
+    }
+    .b b {
+      position: absolute;
+      left: 0;
+      bottom: 2px;
+      width: 100%;
+      height: 100%;
+      border-bottom: 1px solid #34F;
+    }
+    .l {
+      position: absolute;
+      left: -4px;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      transform: scaleX(0.5);
+      cursor: ew-resize;
+    }
+    .l b {
+      position: absolute;
+      left: 2px;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      border-left: 1px solid #34F;
+    }
+    .tl {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 14px;
+      height: 14px;
+      border:1px solid #999;
+      background: #FFF;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      transform: translate(-8px, -8px) scale(0.5);
+      cursor: nwse-resize;
+    }
+    .tr {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 14px;
+      height: 14px;
+      border:1px solid #999;
+      background: #FFF;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      transform: translate(8px, -8px) scale(0.5);
+      cursor: nesw-resize;
+    }
+    .br {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      border:1px solid #999;
+      background: #FFF;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      transform: translate(8px, 8px) scale(0.5);
+      cursor: nwse-resize;
+    }
+    .bl {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 14px;
+      height: 14px;
+      border:1px solid #999;
+      background: #FFF;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      transform: translate(-8px, 8px) scale(0.5);
+      cursor: nesw-resize;
+    }
+    .show {
+      visibility: visible;
     }
   </style>
 </head>
@@ -63,7 +209,22 @@
       <div class="page" id="page"></div>
       <div class="tree" id="tree"></div>
     </div>
-    <div class="main" id="main"></div>
+    <div class="main" id="main">
+      <div class="canvas-c" id="canvasC"></div>
+      <div class="overlap" id="overlap">
+        <div class="hover" id="hover"></div>
+        <div class="selection" id="selection">
+          <div class="l" id="l"><b/></div>
+          <div class="t" id="t"><b/></div>
+          <div class="r" id="r"><b/></div>
+          <div class="b" id="b"><b/></div>
+          <div class="tl" id="tl"></div>
+          <div class="tr" id="tr"></div>
+          <div class="br" id="br"></div>
+          <div class="bl" id="bl"></div>
+        </div>
+      </div>
+    </div>
     <div class="side" id="side"></div>
   </div>
 </div>
@@ -71,6 +232,18 @@
 <script>
   const input = document.querySelector('#file');
   const main = document.querySelector('#main');
+  const canvasC = document.querySelector('#canvasC');
+  const overlap = document.querySelector('#overlap');
+  const hover = document.querySelector('#hover');
+  const selection = document.querySelector('#selection');
+
+  let root;
+  let originX, originY;
+  let isDown, isMove;
+  let startX, startY, lastX, lastY;
+  let hoverNode, selectionNode;
+  let metaKey, shiftKey, ctrlKey, altKey;
+
   input.onchange = function(e) {
     const file = input.files[0];
     const reader = new FileReader();
@@ -80,19 +253,109 @@
       editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
         const canvas = document.createElement('canvas');
         function resize() {
-          const { clientWidth, clientHeight } = main;
-          canvas.style.width = clientWidth + 'px';
-          canvas.style.height = clientHeight + 'px';
+          const { clientWidth, clientHeight } = canvasC;
           canvas.width = clientWidth;
           canvas.height = clientHeight;
+          const o = canvasC.getBoundingClientRect();
+          originX = o.left;
+          originY = o.top;
         }
         resize();
         window.onresize = resize;
-        main.appendChild(canvas);
-        editor.parse(json, canvas);
+        canvasC.appendChild(canvas);
+        root = editor.parse(json, canvas);
       });
     }
   }
+
+  window.onscroll = function() {
+    const o = canvasC.getBoundingClientRect();
+    originX = o.left;
+    originY = o.top;
+  };
+
+  overlap.addEventListener('mousedown', function(e) {
+    if (e.button === 0) {
+      isDown = true;
+      startX = e.pageX;
+      startY = e.pageY;
+      if(root) {
+        selectionNode = root.getTargetByPointAndLv(lastX, lastY, 4);
+        console.log(selectionNode);
+        if(selectionNode) {
+          const rect = selectionNode.getBoundingClientRect();
+          selection.style.left = rect.left + 'px';
+          selection.style.top = rect.top + 'px';
+          selection.style.width = rect.right - rect.left + 'px';
+          selection.style.height = rect.bottom - rect.top + 'px';
+          selection.classList.add('show');
+          if(hoverNode) {
+            hoverNode = null;
+            hover.classList.remove('show');
+          }
+        }
+      }
+    }
+    else {
+      if (selectionNode) {
+        selectionNode = null;
+        selection.classList.remove('show');
+      }
+    }
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (root) {
+      lastX = e.pageX - originX;
+      lastY = e.pageY - originY;
+      if (selectionNode) {
+        //
+      }
+      else if (lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
+        const res = root.getTargetByPointAndLv(lastX, lastY, 4);
+        if (res) {
+          if(hoverNode !== res) {
+            hoverNode = res;
+            const rect = hoverNode.getBoundingClientRect();
+            hover.style.left = rect.left + 'px';
+            hover.style.top = rect.top + 'px';
+            hover.style.width = rect.right - rect.left + 'px';
+            hover.style.height = rect.bottom - rect.top + 'px';
+            hover.classList.add('show');
+          }
+        }
+        else if (hoverNode) {
+          hoverNode = null;
+          hover.classList.remove('show');
+        }
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', function() {
+    if(root) {
+      if (selectionNode) {
+      }
+    }
+  });
+
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    metaKey = e.metaKey;
+    altKey = e.altKey;
+    ctrlKey = e.ctrlKey;
+    shiftKey = e.shiftKey;
+  });
+
+  document.addEventListener('keyup', function(e) {
+    metaKey = e.metaKey;
+    altKey = e.altKey;
+    ctrlKey = e.ctrlKey;
+    shiftKey = e.shiftKey;
+  });
 </script>
 </body>
 </html>
