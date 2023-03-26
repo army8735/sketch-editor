@@ -6,7 +6,6 @@ import Container from '../node/Container';
 import { LayoutData } from './layout';
 import { StyleKey } from '../style';
 import { RefreshLevel } from '../refresh/level';
-import TextureCache from '../refresh/TextureCache';
 
 type Loader = {
   error: boolean,
@@ -139,18 +138,6 @@ class Bitmap extends Node {
 
   renderCanvas(ctx: CanvasRenderingContext2D, dx = 0, dy = 0) {
     super.renderCanvas(ctx, dx, dy);
-  }
-
-  genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    const { outerBbox, loader } = this;
-    if (loader.onlyImg) {
-      const w = outerBbox[2] - outerBbox[0];
-      const h = outerBbox[3] - outerBbox[1];
-      this.textureCache = TextureCache.getImgInstance(gl, this, w / loader.width, h / loader.height);
-    }
-    else {
-      this.textureCache = TextureCache.getInstance(gl, this);
-    }
   }
 }
 

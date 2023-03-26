@@ -1,5 +1,5 @@
 import Node from './Node';
-import { ArtBoardProps } from '../format';
+import { ArtBoardProps, Props } from '../format';
 import Container from './Container';
 import { StyleKey } from '../style';
 import { calRectPoint } from '../math/matrix';
@@ -8,7 +8,7 @@ import { convertCoords2Gl } from '../gl/webgl';
 class ArtBoard extends Container {
   backgroundColor: Array<number>;
   constructor(name: string, props: ArtBoardProps, children: Array<Node>) {
-    super(name, props, children);
+    super(name, props as Props, children);
     this.backgroundColor = props.backgroundColor;
   }
 

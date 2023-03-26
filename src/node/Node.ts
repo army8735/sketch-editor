@@ -374,6 +374,7 @@ class Node {
   }
 
   genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+    this.textureCache = TextureCache.getInstance(gl, this);
   }
 
   remove(cb?: Function) {

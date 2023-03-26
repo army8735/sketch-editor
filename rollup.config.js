@@ -5,7 +5,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 
 export default [{
-  input: 'src/index.js',
+  input: 'src/index.ts',
   output: [
     {
       name: 'editor',
@@ -15,12 +15,13 @@ export default [{
     },
   ],
   plugins: [
+    nodeResolve({ preferBuiltins: false }),
     commonjs(),
     typescript(),
     json(),
   ],
 }, {
-  input: 'src/index.js',
+  input: 'src/index.ts',
   output: {
     name: 'editor',
     file: 'index.min.js',
