@@ -1,6 +1,7 @@
 import { JFile, getDefaultStyle } from './format';
 import { isNumber } from './util/type';
 import Root from './node/Root';
+import { openAndConvertSketchBuffer } from './format/sketch';
 
 function apply(json: any, imgs: Array<string>): any {
   if (!json) {
@@ -22,16 +23,19 @@ function apply(json: any, imgs: Array<string>): any {
   return json;
 }
 
-export function parse(json: JFile, canvas: HTMLCanvasElement) {
-  // json中的imgs下标替换
-  json.pages = apply(json.pages, json.imgs);
-  const { width, height } = canvas;
-  const root = new Root(canvas, {
-    style: getDefaultStyle({
-      width,
-      height,
-    }),
-  });
-  root.setJPages(json.pages);
-  root.setPageIndex(0);
-}
+export default {
+  parse(json: JFile, canvas: HTMLCanvasElement) {
+    // json中的imgs下标替换
+    json.pages = apply(json.pages, json.imgs);
+    const { width, height } = canvas;
+    const root = new Root(canvas, {
+      style: getDefaultStyle({
+        width,
+        height,
+      }),
+    });
+    root.setJPages(json.pages);
+    root.setPageIndex(0);
+  },
+  openAndConvertSketchBuffer,
+};

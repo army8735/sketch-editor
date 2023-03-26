@@ -32,15 +32,20 @@
       flex: 1;
       display: flex;
     }
-    .tree {
-      width: 200px;
+    .list {
+      width: 250px;
       background: #EEE8EA;
+    }
+    .page {
+      border-bottom: 1px solid #CCC;
+      height: 150px;
+      overflow-y: scroll;
     }
     .main {
       flex: 1;
     }
     .side {
-      width: 250px;
+      width: 300px;
       background: #EEE8EA;
     }
   </style>
@@ -48,15 +53,44 @@
 <body>
 <div class="wrap">
   <div class="menu">
-    <input type="file" id="file"/>
+    <input type="file" id="file" accept=".sketch" />
   </div>
   <div class="container">
-    <div class="tree"></div>
-    <div class="main"></div>
-    <div class="side"></div>
+    <div class="list">
+      <div class="page" id="page"></div>
+      <div class="tree" id="tree"></div>
+    </div>
+    <div class="main" id="main"></div>
+    <div class="side" id="side"></div>
   </div>
 </div>
 <script src="../index.js"></script>
-<script></script>
+<script>
+  const input = document.querySelector('#file');
+  const main = document.querySelector('#main');
+  input.onchange = function(e) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = function() {
+      input.value = null;
+      editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
+        const canvas = document.createElement('canvas');
+        function resize() {
+          const { clientWidth, clientHeight } = main;
+          const dpi = window.devicePixelRatio || 1;
+          canvas.style.width = clientWidth + 'px';
+          canvas.style.height = clientHeight + 'px';
+          canvas.width = clientWidth * dpi;
+          canvas.height = clientHeight * dpi;
+        }
+        resize();
+        window.onresize = resize;
+        main.appendChild(canvas);
+        editor.parse(json, canvas);
+      });
+    }
+  }
+</script>
 </body>
 </html>

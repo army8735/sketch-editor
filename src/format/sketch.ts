@@ -89,7 +89,6 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
 }
 
 async function convertPage(page: any, opt: Opt): Promise<JPage> {
-  console.log(1, page);
   const children = await Promise.all(
     page.layers.map((layer: any) => {
       return convertItem(layer, opt, page.frame.width, page.frame.height);

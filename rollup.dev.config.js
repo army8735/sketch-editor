@@ -1,6 +1,7 @@
-import glslify from 'rollup-plugin-glslify';
 import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
+import commonjs from '@rollup/plugin-commonjs';
+import nodeResolve from '@rollup/plugin-node-resolve';
 
 export default [{
   input: 'src/index.ts',
@@ -11,7 +12,8 @@ export default [{
     sourcemap: true,
   },
   plugins: [
-    glslify(),
+    nodeResolve({ preferBuiltins: false }),
+    commonjs(),
     typescript(),
     json(),
   ],
