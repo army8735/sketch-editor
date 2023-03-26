@@ -1,0 +1,47 @@
+{
+  "name": "editor",
+  "version": "0.0.1",
+  "maintainers": [
+    {
+      "name": "army8735",
+      "email": "army8735@qq.com"
+    }
+  ],
+  "scripts": {
+    "build": "rollup -c rollup.config.js",
+    "dev": "rollup -c rollup.dev.config.js --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/army8735/editor.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.18.9",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/preset-env": "^7.18.9",
+    "@rollup/plugin-babel": "^5.3.1",
+    "@rollup/plugin-json": "^4.0.3",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@sketch-hq/sketch-file-format-ts": "^6.4.0",
+    "jszip": "^3.10.1",
+    "rollup": "^2.77.0",
+    "rollup-plugin-glslify": "^1.3.1",
+    "rollup-plugin-sourcemaps": "^0.5.0",
+    "rollup-plugin-string": "^3.0.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.2",
+    "webstorm-disable-index": "^1.2.0"
+  },
+  "main": "./index.js",
+  "browser": "./index.js",
+  "module": "./index.es.js",
+  "engines": {
+    "node": ">=10.0.0"
+  },
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "author": "army8735 <army8735@qq.com>"
+}

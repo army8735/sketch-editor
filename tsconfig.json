@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+      "allowJs": true,
+      "allowSyntheticDefaultImports": true,
+      "baseUrl": ".",
+      "esModuleInterop": true,
+      "module": "esnext",
+      "moduleResolution": "node",
+      "noUnusedLocals": true,
+      "skipLibCheck": true,
+      "sourceMap": true,
+      "strict": true,
+      "target": "es2015",
+      "experimentalDecorators": true,
+      "resolveJsonModule": true
+  },
+  "exclude": [
+      "node_modules",
+      "dist"
+  ],
+  "include": [
+      "src/**/*"
+  ]
+}

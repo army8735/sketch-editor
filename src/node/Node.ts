@@ -1,0 +1,485 @@
+import Root from '../node/Root';
+import Container from '../node/Container';
+import { JStyle, Props } from '../format/';
+import { Struct } from '../refresh/struct';
+import { RefreshLevel } from '../refresh/level';
+import { StyleArray, StyleKey, StyleNumStrValue, StyleUnit } from '../style';
+import { assignMatrix, identity, isE, multiplyRotateZ, multiplyScaleX, multiplyScaleY } from '../math/matrix';
+import { equalStyle, normalizeStyle } from '../style/css';
+import { extend } from '../util';
+import { LayoutData } from './layout';
+import { d2r } from '../math/geom';
+import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import CanvasCache from '../refresh/CanvasCache';
+import TextureCache from '../refresh/TextureCache';
+
+class Node {
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  props: Props;
+  style: StyleArray;
+  computedStyle: Array<any>;
+  cacheStyle: Array<any>;
+  root: Root | undefined;
+  prev: Node | undefined;
+  next: Node | undefined;
+  parent: Container | undefined;
+  isDestroyed: boolean;
+  struct: Struct;
+  refreshLevel: RefreshLevel;
+  opacity: number;
+  transform: Float64Array;
+  matrix: Float64Array;
+  matrixWorld: Float64Array;
+  layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
+  private _bbox: Float64Array | undefined;
+  private _filterBbox: Float64Array | undefined;
+  hasContent: boolean;
+  canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割
+  textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
+
+  constructor(name: string, props: Props) {
+    this.name = name;
+    this.props = props;
+    this.style = extend([], normalizeStyle(props.style || {}));
+    this.computedStyle = []; // 输出展示的值
+    this.cacheStyle = []; // 缓存js直接使用的对象结果
+    this.x = 0;
+    this.y = 0;
+    this.width = 0;
+    this.height = 0;
+    this.isDestroyed = true;
+    this.struct = {
+      node: this,
+      num: 0,
+      total: 0,
+      lv: 0,
+    }
+    this.refreshLevel = RefreshLevel.REFLOW;
+    this.opacity = 1;
+    this.transform = identity();
+    this.matrix = identity();
+    this.matrixWorld = identity();
+    this.hasContent = false;
+  }
+
+  didMount() {
+    this.isDestroyed = false;
+    this.root = this.parent!.root;
+  }
+
+  layout(container: Container, data: LayoutData) {
+    if (this.isDestroyed) {
+      return;
+    }
+    // 布局时计算所有样式，更新时根据不同级别调用
+    this.calReflowStyle();
+    this.calRepaintStyle();
+    // 布局数据在更新时会用到
+    this.layoutData = {
+      x: data.x,
+      y: data.y,
+      w: data.w,
+      h: data.h,
+    };
+    const { style, computedStyle } = this;
+    const {
+      [StyleKey.LEFT]: left,
+      [StyleKey.TOP]: top,
+      [StyleKey.RIGHT]: right,
+      [StyleKey.BOTTOM]: bottom,
+      [StyleKey.WIDTH]: width,
+      [StyleKey.HEIGHT]: height,
+    } = style;
+    let fixedLeft = false;
+    let fixedTop = false;
+    let fixedRight = false;
+    let fixedBottom = false;
+    if (left.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.LEFT] = 'auto';
+    }
+    else {
+      fixedLeft = true;
+      computedStyle[StyleKey.LEFT] = this.calSize(left, data.w);
+    }
+    if (right.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.RIGHT] = 'auto';
+    }
+    else {
+      fixedRight = true;
+      computedStyle[StyleKey.RIGHT] = this.calSize(right, data.w);
+    }
+    if (top.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.TOP] = 'auto';
+    }
+    else {
+      fixedTop = true;
+      computedStyle[StyleKey.TOP] = this.calSize(top, data.h);
+    }
+    if (bottom.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.BOTTOM] = 'auto';
+    }
+    else {
+      fixedBottom = true;
+      computedStyle[StyleKey.BOTTOM] = this.calSize(bottom, data.h);
+    }
+    if (width.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.WIDTH] = 'auto';
+    }
+    else {
+      computedStyle[StyleKey.WIDTH] = this.calSize(width, data.w);
+    }
+    if (height.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.HEIGHT] = 'auto';
+    }
+    else {
+      computedStyle[StyleKey.HEIGHT] = this.calSize(height, data.h);
+    }
+    // 左右决定x+width
+    if (fixedLeft && fixedRight) {
+      this.x = data.x + computedStyle[StyleKey.LEFT];
+      this.width = data.w - computedStyle[StyleKey.LEFT] - computedStyle[StyleKey.RIGHT];
+    }
+    else if (fixedLeft) {
+      this.x = data.x + computedStyle[StyleKey.LEFT];
+      if (width.u !== StyleUnit.AUTO) {
+        this.width = computedStyle[StyleKey.WIDTH];
+      }
+      else {
+        this.width = 0;
+      }
+    }
+    else if (fixedRight) {
+      if (width.u !== StyleUnit.AUTO) {
+        this.width = computedStyle[StyleKey.WIDTH];
+      }
+      else {
+        this.width = 0;
+      }
+      this.x = data.x + data.w - this.width - computedStyle[StyleKey.RIGHT];
+    }
+    else {
+      this.x = data.x;
+      if (width.u !== StyleUnit.AUTO) {
+        this.width = computedStyle[StyleKey.WIDTH];
+      }
+      else {
+        this.width = 0;
+      }
+    }
+    // 上下决定y+height
+    if (fixedTop && fixedBottom) {
+      this.y = data.y + computedStyle[StyleKey.TOP];
+      this.height = data.h - computedStyle[StyleKey.TOP] - computedStyle[StyleKey.BOTTOM];
+    }
+    else if (fixedTop) {
+      this.y = data.y + computedStyle[StyleKey.TOP];
+      if (height.u !== StyleUnit.AUTO) {
+        this.height = computedStyle[StyleKey.HEIGHT];
+      }
+      else {
+        this.height = 0;
+      }
+    }
+    else if (fixedBottom) {
+      if (height.u !== StyleUnit.AUTO) {
+        this.height = computedStyle[StyleKey.HEIGHT];
+      }
+      else {
+        this.height = 0;
+      }
+      this.y = data.y + data.h - this.height - computedStyle[StyleKey.BOTTOM];
+    }
+    else {
+      this.y = data.y;
+      if (height.u !== StyleUnit.AUTO) {
+        this.height = computedStyle[StyleKey.HEIGHT];
+      }
+      else {
+        this.height = 0;
+      }
+    }
+  }
+
+  // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
+  calReflowStyle() {
+    const { style, computedStyle, parent } = this;
+    computedStyle[StyleKey.FONT_FAMILY] = (style[StyleKey.FONT_FAMILY].v as string).split(',');
+    computedStyle[StyleKey.FONT_SIZE] = style[StyleKey.FONT_STYLE].v;
+    computedStyle[StyleKey.FONT_WEIGHT] = style[StyleKey.FONT_WEIGHT].v;
+    computedStyle[StyleKey.FONT_STYLE] = style[StyleKey.FONT_STYLE].v;
+    const lineHeight = style[StyleKey.LINE_HEIGHT];
+    if (lineHeight.u === StyleUnit.AUTO) {
+    }
+    else {
+      computedStyle[StyleKey.LINE_HEIGHT] = lineHeight.v;
+    }
+    this.width = this.height = 0;
+    const width = style[StyleKey.WIDTH];
+    const height = style[StyleKey.HEIGHT];
+    if (parent) {
+      if (width.u !== StyleUnit.AUTO) {
+        this.width = computedStyle[StyleKey.WIDTH] = this.calSize(width, parent.width);
+      }
+      if (height.u !== StyleUnit.AUTO) {
+        this.height = computedStyle[StyleKey.HEIGHT] = this.calSize(height, parent.height);
+      }
+    }
+  }
+
+  calRepaintStyle() {
+    const { style, computedStyle } = this;
+    computedStyle[StyleKey.VISIBLE] = style[StyleKey.VISIBLE].v;
+    computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
+    computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
+    computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
+    this.calMatrix(RefreshLevel.REFLOW);
+  }
+
+  calMatrix(lv: RefreshLevel) {
+    const { style, computedStyle, matrix, transform } = this;
+    let optimize = true;
+    if (lv >= RefreshLevel.REFLOW
+      || lv & RefreshLevel.TRANSFORM
+      || (lv & RefreshLevel.SCALE_X) && !computedStyle[StyleKey.SCALE_X]
+      || (lv & RefreshLevel.SCALE_Y) && !computedStyle[StyleKey.SCALE_Y]) {
+      optimize = false;
+    }
+    // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
+    if (optimize) {
+      if (lv & RefreshLevel.TRANSLATE_X) {
+        const v = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
+        const diff = v - computedStyle[StyleKey.TRANSLATE_X];
+        computedStyle[StyleKey.TRANSLATE_X] = v;
+        transform[12] += diff;
+        matrix[12] += diff;
+      }
+      if (lv & RefreshLevel.TRANSLATE_Y) {
+        const v = this.calSize(style[StyleKey.TRANSLATE_Y], this.height);
+        const diff = v - computedStyle[StyleKey.TRANSLATE_Y];
+        computedStyle[StyleKey.TRANSLATE_Y] = v;
+        transform[13] += diff;
+        matrix[13] += diff;
+      }
+      if (lv & RefreshLevel.ROTATE_Z) {
+        const v = style[StyleKey.ROTATE_Z].v as number;
+        computedStyle[StyleKey.ROTATE_Z] = v;
+        const r = d2r(v);
+        const sin = Math.sin(r), cos = Math.cos(r);
+        const x = computedStyle[StyleKey.SCALE_X], y = computedStyle[StyleKey.SCALE_Y];
+        const cx = matrix[0] = cos * x;
+        const sx = matrix[1] = sin * x;
+        const sy = matrix[4] = -sin * y;
+        const cy = matrix[5] = cos * y;
+        const t = computedStyle[StyleKey.TRANSFORM_ORIGIN], ox = t[0] + this.x, oy = t[1] + this.y;
+        matrix[12] = transform[12] + ox - cx * ox - oy * sy;
+        matrix[13] = transform[13] + oy - sx * ox - oy * cy;
+      }
+      if (lv & RefreshLevel.SCALE) {
+        if (lv & RefreshLevel.SCALE_X) {
+          const v = style[StyleKey.SCALE_X].v as number;
+          let x = v / computedStyle[StyleKey.SCALE_X];
+          computedStyle[StyleKey.SCALE_X] = v;
+          transform[0] *= x;
+          transform[1] *= x;
+          transform[2] *= x;
+          matrix[0] *= x;
+          matrix[1] *= x;
+          matrix[2] *= x;
+        }
+        if (lv & RefreshLevel.SCALE_Y) {
+          const v = style[StyleKey.SCALE_Y].v as number;
+          let y = v / computedStyle[StyleKey.SCALE_Y];
+          computedStyle[StyleKey.SCALE_Y] = v;
+          transform[4] *= y;
+          transform[5] *= y;
+          transform[6] *= y;
+          matrix[4] *= y;
+          matrix[5] *= y;
+          matrix[6] *= y;
+        }
+        const t = computedStyle[StyleKey.TRANSFORM_ORIGIN], ox = t[0] + this.x, oy = t[1] + this.y;
+        matrix[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
+        matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
+        matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
+      }
+    }
+    // 普通布局或者第一次计算
+    else {
+      transform[12] = computedStyle[StyleKey.TRANSLATE_X] = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
+      transform[13] = computedStyle[StyleKey.TRANSLATE_Y] = this.calSize(style[StyleKey.TRANSLATE_Y], this.width);
+      const rotateZ = computedStyle[StyleKey.ROTATE_Z] = style[StyleKey.ROTATE_Z].v as number;
+      if (isE(transform)) {
+        calRotateZ(transform, rotateZ);
+      }
+      else {
+        multiplyRotateZ(transform, d2r(rotateZ));
+      }
+      const scaleX = computedStyle[StyleKey.SCALE_X] = style[StyleKey.SCALE_X].v as number;
+      if (scaleX !== 1) {
+        if (isE(transform)) {
+          transform[0] = scaleX;
+        }
+        else {
+          multiplyScaleX(transform, scaleX);
+        }
+      }
+      const scaleY = computedStyle[StyleKey.SCALE_Y] = style[StyleKey.SCALE_Y].v as number;
+      if (scaleY !== 1) {
+        if (isE(transform)) {
+          transform[5] = scaleY;
+        }
+        else {
+          multiplyScaleY(transform, scaleY);
+        }
+      }
+      const tfo = computedStyle[StyleKey.TRANSFORM_ORIGIN] = style[StyleKey.TRANSFORM_ORIGIN].map((item, i) => {
+        return this.calSize(item, i ? this.height : this.width);
+      });
+      const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
+      assignMatrix(matrix, t);
+    }
+  }
+
+  calSize(v: StyleNumStrValue, p: number): number {
+    if (v.u === StyleUnit.PX) {
+      return v.v as number;
+    }
+    if (v.u === StyleUnit.PERCENT) {
+      return (v.v as number) * p * 0.01;
+    }
+    return 0;
+  }
+
+  calContent(): boolean {
+    const { computedStyle } = this;
+    if (!computedStyle[StyleKey.VISIBLE]) {
+      return this.hasContent = false;
+    }
+    const backgroundColor = computedStyle[StyleKey.BACKGROUND_COLOR];
+    if (backgroundColor && backgroundColor[3] > 0) {
+      return this.hasContent = true;
+    }
+    return this.hasContent = false;
+  }
+
+  renderCanvas(ctx: CanvasRenderingContext2D, dx = 0, dy = 0) {
+    if (this.canvasCache) {
+      this.canvasCache.release();
+    }
+  }
+
+  genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+  }
+
+  remove(cb?: Function) {
+    const { root, parent } = this;
+    if (!root) {
+      return;
+    }
+    if (root as Node === this) {
+      return;
+    }
+    if (parent) {
+      let i = parent.children.indexOf(this);
+      if (i === -1) {
+        throw new Error('Invalid index of remove()');
+      }
+      parent.children.splice(i, 1);
+      const { prev, next } = this;
+      if (prev) {
+        prev.next = next;
+      }
+      if (next) {
+        next.prev = prev;
+      }
+    }
+    // 未添加到dom时
+    if (this.isDestroyed) {
+      cb && cb();
+      return;
+    }
+    parent!.deleteStruct(this);
+  }
+
+  destroy() {
+    if (this.isDestroyed) {
+      return;
+    }
+    this.isDestroyed = true;
+    this.prev = this.next = this.parent = this.root = undefined;
+  }
+
+  structure(lv: number): Array<Struct> {
+    const temp = this.struct;
+    temp.lv = lv;
+    return [temp];
+  }
+
+  updateStyle(style: any, cb?: Function) {
+    const visible = this.computedStyle[StyleKey.VISIBLE];
+    let hasVisible = false;
+    const keys: Array<StyleKey> = [];
+    const style2 = normalizeStyle(style);
+    for (let k in style2) {
+      if (style2.hasOwnProperty(k)) {
+        const k2 = parseInt(k);
+        const v = style2[k2];
+        if (!equalStyle(k2, style2, this.style)) {
+          this.style[k2] = v;
+          keys.push(k2);
+          if (k2 === StyleKey.VISIBLE) {
+            hasVisible = true;
+          }
+        }
+      }
+    }
+    // 不可见或销毁无需刷新
+    if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
+      cb && cb(true);
+      return;
+    }
+    // 父级不可见无需刷新
+    let parent = this.parent;
+    while (parent) {
+      if (!parent.computedStyle[StyleKey.VISIBLE]) {
+        cb && cb(true);
+        return;
+      }
+      parent = parent.parent;
+    }
+    this.root!.addUpdate(this, keys, undefined, false, false, false, cb);
+  }
+
+  getComputedStyle() {
+    return this.computedStyle;
+  }
+
+  getStyle<T extends keyof JStyle>(key: T): any {
+  }
+
+  get bbox(): Float64Array {
+    if (!this._bbox) {
+      this._bbox = new Float64Array(4);
+      this._bbox[0] = this.x;
+      this._bbox[1] = this.y;
+      this._bbox[2] = this.x + this.width;
+      this._bbox[3] = this.y + this.height;
+    }
+    return this._bbox;
+  }
+
+  get outerBbox() {
+    if (!this._filterBbox) {
+      let bbox = this._bbox || this.bbox;
+      this._filterBbox = bbox.slice(0);
+    }
+    return this._filterBbox;
+  }
+
+}
+
+export default Node;
