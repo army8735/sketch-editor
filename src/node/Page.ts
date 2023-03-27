@@ -1,4 +1,3 @@
-import Group from './Group';
 import Node from './Node';
 import Bitmap from './Bitmap';
 import Text from './Text';
@@ -27,7 +26,7 @@ function parse(json: JNode): Node | undefined {
         children.push(res);
       }
     }
-    return new Group(json.name, json.props, children);
+    return new Container(json.name, json.props, children, true);
   }
   else if (json.type === classValue.Bitmap) {
     return new Bitmap(json.name, json.props as BitmapProps);

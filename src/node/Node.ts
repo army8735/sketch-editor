@@ -3,7 +3,7 @@ import Container from '../node/Container';
 import { JStyle, Props } from '../format/';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
-import { StyleArray, StyleKey, StyleNumStrValue, StyleUnit } from '../style';
+import { StyleArray, StyleKey, StyleKeyHash, StyleNumStrValue, StyleUnit } from '../style';
 import {
   assignMatrix,
   calRectPoint,
@@ -242,6 +242,7 @@ class Node {
     const { style, computedStyle } = this;
     computedStyle[StyleKey.VISIBLE] = style[StyleKey.VISIBLE].v;
     computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
+    computedStyle[StyleKey.COLOR] = style[StyleKey.COLOR].v;
     computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
     computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
     computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;
@@ -457,10 +458,17 @@ class Node {
   }
 
   getComputedStyle() {
-    return this.computedStyle;
+    const computedStyle = this.computedStyle;
+    const res: any = {};
+    for (let k in StyleKeyHash) {
+      res[k] = computedStyle[StyleKeyHash[k]];
+    }
+    return res;
   }
 
   getStyle<T extends keyof JStyle>(key: T): any {
+    const computedStyle = this.computedStyle;
+    return computedStyle[StyleKeyHash[key]];
   }
 
   getBoundingClientRect() {
@@ -486,10 +494,6 @@ class Node {
         y: y4,
       }],
     };
-  }
-
-  getTargetByPointAndLv(x: number, y: number, lv = 0): Node | null {
-    return null;
   }
 
   get bbox(): Float64Array {

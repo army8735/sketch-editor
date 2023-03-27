@@ -1,6 +1,5 @@
 import Root from './Root';
 import Node from './Node';
-import Group from './Group';
 
 export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: boolean) {
   let parent = node.parent!;
@@ -11,8 +10,8 @@ export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: 
     node.destroy();
   }
   // 最上层的group检查影响
-  if (parent instanceof Group) {
-    while (parent && parent !== root && (parent instanceof Group)) {
+  if (parent.isGroup) {
+    while (parent && parent !== root && parent.isGroup) {
       parent = parent.parent!;
     }
   }

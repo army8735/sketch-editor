@@ -82,7 +82,7 @@ export function getDefaultStyle(v?: any): JStyle {
     fontSize: 16,
     fontWeight: 400,
     fontStyle: 'normal',
-    backgroundColor: [0, 0, 0, 0],
+    color: [0, 0, 0, 0],
     opacity: 1,
     translateX: 0,
     translateY: 0,

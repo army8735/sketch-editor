@@ -281,8 +281,11 @@
       startY = e.pageY;
       if(root) {
         selectionNode = root.getTargetByPointAndLv(lastX, lastY, 4);
-        console.log(selectionNode);
         if(selectionNode) {
+          const {
+            translateX,
+            translateY,
+          } = selectionNode.getComputedStyle();
           const rect = selectionNode.getBoundingClientRect();
           selection.style.left = rect.left + 'px';
           selection.style.top = rect.top + 'px';
@@ -309,10 +312,28 @@
       lastX = e.pageX - originX;
       lastY = e.pageY - originY;
       if (selectionNode) {
-        //
+        // metaKey按下可以选择最深叶子节点，但排除Group
+        if (metaKey && lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
+          const res = root.getTargetByPointAndLv(lastX, lastY, !metaKey, undefined);
+          if (res && res !== selectionNode) {
+            if(hoverNode !== res) {
+              hoverNode = res;
+              const rect = hoverNode.getBoundingClientRect();
+              hover.style.left = rect.left + 'px';
+              hover.style.top = rect.top + 'px';
+              hover.style.width = rect.right - rect.left + 'px';
+              hover.style.height = rect.bottom - rect.top + 'px';
+              hover.classList.add('show');
+            }
+          }
+          else if (hoverNode) {
+            hoverNode = null;
+            hover.classList.remove('show');
+          }
+        }
       }
       else if (lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-        const res = root.getTargetByPointAndLv(lastX, lastY, 4);
+        const res = root.getTargetByPointAndLv(lastX, lastY, !metaKey, metaKey ? undefined : 4);
         if (res) {
           if(hoverNode !== res) {
             hoverNode = res;
@@ -343,14 +364,14 @@
     e.preventDefault();
   });
 
-  document.addEventListener('keydown', function(e) {
+  window.addEventListener('keydown', function(e) {
     metaKey = e.metaKey;
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
   });
 
-  document.addEventListener('keyup', function(e) {
+  window.addEventListener('keyup', function(e) {
     metaKey = e.metaKey;
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;

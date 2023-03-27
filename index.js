@@ -25,7 +25,7 @@
             fontSize: 16,
             fontWeight: 400,
             fontStyle: 'normal',
-            backgroundColor: [0, 0, 0, 0],
+            color: [0, 0, 0, 0],
             opacity: 1,
             translateX: 0,
             translateY: 0,
@@ -111,6 +111,16 @@
         // STROKE_MITERLIMIT = 22,
         // FILL_RULE = 23,
     })(StyleKey || (StyleKey = {}));
+    const STYLE2LOWER_MAP = {};
+    function styleKey2Lower(s) {
+        let res = STYLE2LOWER_MAP[s];
+        if (!res) {
+            res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
+                return $1.toUpperCase();
+            });
+        }
+        return res;
+    }
     const STYLE2UPPER_MAP = {};
     function styleKey2Upper(s) {
         let res = STYLE2UPPER_MAP[s];
@@ -120,6 +130,12 @@
             }).toUpperCase();
         }
         return res;
+    }
+    const StyleKeyHash = {};
+    for (let i in StyleKey) {
+        if (!/^\d+$/.test(i)) {
+            StyleKeyHash[styleKey2Lower(i)] = StyleKey[i];
+        }
     }
     var StyleUnit;
     (function (StyleUnit) {
@@ -1187,6 +1203,7 @@
             const { style, computedStyle } = this;
             computedStyle[StyleKey.VISIBLE] = style[StyleKey.VISIBLE].v;
             computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
+            computedStyle[StyleKey.COLOR] = style[StyleKey.COLOR].v;
             computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
             computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
             computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;
@@ -1392,9 +1409,16 @@
             this.root.addUpdate(this, keys, undefined, false, false, false, cb);
         }
         getComputedStyle() {
-            return this.computedStyle;
+            const computedStyle = this.computedStyle;
+            const res = {};
+            for (let k in StyleKeyHash) {
+                res[k] = computedStyle[StyleKeyHash[k]];
+            }
+            return res;
         }
         getStyle(key) {
+            const computedStyle = this.computedStyle;
+            return computedStyle[StyleKeyHash[key]];
         }
         getBoundingClientRect() {
             const { outerBbox, matrixWorld } = this;
@@ -1418,9 +1442,6 @@
                         y: y4,
                     }],
             };
-        }
-        getTargetByPointAndLv(x, y, lv = 0) {
-            return null;
         }
         get bbox() {
             if (!this._bbox) {
@@ -1810,10 +1831,132 @@
         },
     };
 
+    class Bitmap extends Node {
+        constructor(name, props) {
+            super(name, props);
+            const src = this.src = props.src;
+            this.loader = {
+                error: false,
+                loading: false,
+                src,
+                width: 0,
+                height: 0,
+                onlyImg: true,
+            };
+            if (!src) {
+                this.loader.error = true;
+            }
+            else {
+                const cache = inject.IMG[src];
+                if (!cache) {
+                    inject.measureImg(src, (res) => {
+                        // 可能会变更，所以加载完后对比下是不是当前最新的
+                        if (src === this.loader.src) {
+                            if (res.success) {
+                                if (isFunction(props.onLoad)) {
+                                    props.onLoad();
+                                }
+                            }
+                            else {
+                                if (isFunction(props.onError)) {
+                                    props.onError();
+                                }
+                            }
+                        }
+                    });
+                }
+                else if (cache.state === inject.LOADED) {
+                    if (cache.success) {
+                        this.loader.source = cache.source;
+                        this.loader.width = cache.source.width;
+                        this.loader.height = cache.source.height;
+                    }
+                    else {
+                        this.loader.error = true;
+                    }
+                }
+            }
+        }
+        layout(container, data) {
+            super.layout(container, data);
+            const src = this.loader.src;
+            if (src) {
+                const cache = inject.IMG[src];
+                if (!cache || cache.state === inject.LOADING) {
+                    if (!this.loader.loading) {
+                        this.loadAndRefresh();
+                    }
+                }
+                else if (cache && cache.state === inject.LOADED) {
+                    this.loader.loading = false;
+                    if (cache.success) {
+                        this.loader.source = cache.source;
+                        this.loader.width = cache.width;
+                        this.loader.height = cache.height;
+                    }
+                    else {
+                        this.loader.error = true;
+                    }
+                }
+            }
+        }
+        loadAndRefresh() {
+            // 加载前先清空之前可能遗留的老数据
+            const loader = this.loader;
+            loader.source = undefined;
+            loader.error = false;
+            loader.loading = true;
+            inject.measureImg(loader.src, (data) => {
+                // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+                if (data.url === loader.src) {
+                    loader.loading = false;
+                    if (data.success) {
+                        loader.source = data.source;
+                        loader.width = data.width;
+                        loader.height = data.height;
+                        if (!this.isDestroyed) {
+                            this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, false, undefined);
+                        }
+                    }
+                    else {
+                        loader.error = true;
+                    }
+                }
+            });
+        }
+        calContent() {
+            let res = super.calContent();
+            const { computedStyle, loader } = this;
+            if (res) {
+                loader.onlyImg = false;
+            }
+            else {
+                loader.onlyImg = true;
+                const { [StyleKey.VISIBLE]: visible, } = computedStyle;
+                if (visible) {
+                    if (loader.source) {
+                        res = true;
+                    }
+                }
+            }
+            return this.hasContent = res;
+        }
+        renderCanvas(ctx, dx = 0, dy = 0) {
+            super.renderCanvas(ctx, dx, dy);
+        }
+    }
+
+    class Text extends Node {
+        constructor(name, props) {
+            super(name, props);
+        }
+    }
+
     class Container extends Node {
-        constructor(name, props, children) {
+        constructor(name, props, children, isGroup = false) {
             super(name, props);
             this.children = children;
+            this.isGroup = isGroup;
         }
         didMount() {
             super.didMount();
@@ -1955,7 +2098,8 @@
                 p = p.parent;
             }
         }
-        getTargetByPointAndLv(x, y, lv) {
+        // 获取指定位置节点，不包含Page/ArtBoard
+        getTargetByPointAndLv(x, y, includeGroup, lv) {
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
                 const child = children[i];
@@ -1965,25 +2109,27 @@
                     // 不指定lv则找最深处的child
                     if (lv === undefined) {
                         if (child instanceof Container) {
-                            const res = child.getTargetByPointAndLv(x, y, lv);
+                            const res = child.getTargetByPointAndLv(x, y, includeGroup, lv);
                             if (res) {
                                 return res;
                             }
                         }
-                        if (computedStyle[StyleKey.POINTER_EVENTS]) {
+                        if (computedStyle[StyleKey.POINTER_EVENTS] && struct.lv > 3
+                            && (includeGroup || !(child instanceof Container && child.isGroup))) {
                             return child;
                         }
                     }
                     // 指定判断lv是否相等
                     else {
                         if (struct.lv === lv) {
-                            if (computedStyle[StyleKey.POINTER_EVENTS]) {
+                            if (computedStyle[StyleKey.POINTER_EVENTS] && struct.lv > 3
+                                && (includeGroup || !(child instanceof Container && child.isGroup))) {
                                 return child;
                             }
                         }
                         // 父级且是container继续深入寻找
                         else if (struct.lv < lv && child instanceof Container) {
-                            const res = child.getTargetByPointAndLv(x, y, lv);
+                            const res = child.getTargetByPointAndLv(x, y, includeGroup, lv);
                             if (res) {
                                 return res;
                             }
@@ -1992,135 +2138,6 @@
                 }
             }
             return null;
-        }
-    }
-
-    // import { LayoutData, mergeBbox, resetBbox, assignBbox } from '../node/layout';
-    class Group extends Container {
-        constructor(name, props, children) {
-            super(name, props, children);
-            this.children = children;
-        }
-    }
-
-    class Bitmap extends Node {
-        constructor(name, props) {
-            super(name, props);
-            const src = this.src = props.src;
-            this.loader = {
-                error: false,
-                loading: false,
-                src,
-                width: 0,
-                height: 0,
-                onlyImg: true,
-            };
-            if (!src) {
-                this.loader.error = true;
-            }
-            else {
-                const cache = inject.IMG[src];
-                if (!cache) {
-                    inject.measureImg(src, (res) => {
-                        // 可能会变更，所以加载完后对比下是不是当前最新的
-                        if (src === this.loader.src) {
-                            if (res.success) {
-                                if (isFunction(props.onLoad)) {
-                                    props.onLoad();
-                                }
-                            }
-                            else {
-                                if (isFunction(props.onError)) {
-                                    props.onError();
-                                }
-                            }
-                        }
-                    });
-                }
-                else if (cache.state === inject.LOADED) {
-                    if (cache.success) {
-                        this.loader.source = cache.source;
-                        this.loader.width = cache.source.width;
-                        this.loader.height = cache.source.height;
-                    }
-                    else {
-                        this.loader.error = true;
-                    }
-                }
-            }
-        }
-        layout(container, data) {
-            super.layout(container, data);
-            const src = this.loader.src;
-            if (src) {
-                const cache = inject.IMG[src];
-                if (!cache || cache.state === inject.LOADING) {
-                    if (!this.loader.loading) {
-                        this.loadAndRefresh();
-                    }
-                }
-                else if (cache && cache.state === inject.LOADED) {
-                    this.loader.loading = false;
-                    if (cache.success) {
-                        this.loader.source = cache.source;
-                        this.loader.width = cache.width;
-                        this.loader.height = cache.height;
-                    }
-                    else {
-                        this.loader.error = true;
-                    }
-                }
-            }
-        }
-        loadAndRefresh() {
-            // 加载前先清空之前可能遗留的老数据
-            const loader = this.loader;
-            loader.source = undefined;
-            loader.error = false;
-            loader.loading = true;
-            inject.measureImg(loader.src, (data) => {
-                // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-                if (data.url === loader.src) {
-                    loader.loading = false;
-                    if (data.success) {
-                        loader.source = data.source;
-                        loader.width = data.width;
-                        loader.height = data.height;
-                        if (!this.isDestroyed) {
-                            this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, false, undefined);
-                        }
-                    }
-                    else {
-                        loader.error = true;
-                    }
-                }
-            });
-        }
-        calContent() {
-            let res = super.calContent();
-            const { computedStyle, loader } = this;
-            if (res) {
-                loader.onlyImg = false;
-            }
-            else {
-                loader.onlyImg = true;
-                const { [StyleKey.VISIBLE]: visible, } = computedStyle;
-                if (visible) {
-                    if (loader.source) {
-                        res = true;
-                    }
-                }
-            }
-            return this.hasContent = res;
-        }
-        renderCanvas(ctx, dx = 0, dy = 0) {
-            super.renderCanvas(ctx, dx, dy);
-        }
-    }
-
-    class Text extends Node {
-        constructor(name, props) {
-            super(name, props);
         }
     }
 
@@ -2214,7 +2231,7 @@
                     children.push(res);
                 }
             }
-            return new Group(json.name, json.props, children);
+            return new Container(json.name, json.props, children, true);
         }
         else if (json.type === classValue.Bitmap) {
             return new Bitmap(json.name, json.props);
@@ -2503,8 +2520,8 @@
             node.destroy();
         }
         // 最上层的group检查影响
-        if (parent instanceof Group) {
-            while (parent && parent !== root && (parent instanceof Group)) {
+        if (parent.isGroup) {
+            while (parent && parent !== root && parent.isGroup) {
                 parent = parent.parent;
             }
         }
@@ -18578,6 +18595,7 @@ void main() {
         openAndConvertSketchBuffer,
         Page,
         ArtBoard,
+        Container,
     };
 
     return index;

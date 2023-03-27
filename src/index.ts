@@ -3,6 +3,7 @@ import { isNumber } from './util/type';
 import Root from './node/Root';
 import Page from './node/Page';
 import ArtBoard from './node/ArtBoard';
+import Container from './node/Container';
 import { openAndConvertSketchBuffer } from './format/sketch';
 
 function apply(json: any, imgs: Array<string>): any {
@@ -43,4 +44,5 @@ export default {
   openAndConvertSketchBuffer,
   Page,
   ArtBoard,
+  Container,
 };

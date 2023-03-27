@@ -56,6 +56,14 @@ export function styleKey2Upper(s: string) {
   return res;
 }
 
+export const StyleKeyHash: any = {};
+
+for (let i in StyleKey) {
+  if (!/^\d+$/.test(i)) {
+    StyleKeyHash[styleKey2Lower(i)] = StyleKey[i];
+  }
+}
+
 export enum StyleUnit {
   AUTO = 0,
   PX = 1,
