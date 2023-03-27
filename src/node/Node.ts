@@ -22,7 +22,6 @@ import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
 
 class Node {
-  name: string;
   x: number;
   y: number;
   width: number;
@@ -49,8 +48,7 @@ class Node {
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
 
-  constructor(name: string, props: Props) {
-    this.name = name;
+  constructor(props: Props) {
     this.props = props;
     this.style = extend([], normalizeStyle(props.style || {}));
     this.computedStyle = []; // 输出展示的值

@@ -33,6 +33,7 @@ export default {
     json.pages = apply(json.pages, json.imgs);
     const { width, height } = canvas;
     const root = new Root(canvas, {
+      name: 'Root',
       style: getDefaultStyle({
         width,
         height,

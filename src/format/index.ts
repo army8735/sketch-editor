@@ -6,7 +6,6 @@ export type JFile = {
 
 export type JNode = {
   type: string,
-  name: string,
   props: Props,
 };
 
@@ -98,6 +97,7 @@ export function getDefaultStyle(v?: any): JStyle {
 }
 
 export type Props = {
+  name: string,
   style: JStyle,
 };
 

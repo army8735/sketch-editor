@@ -96,8 +96,8 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
   );
   return {
     type: classValue.Page,
-    name: page.name,
     props: {
+      name: page.name,
       style: getDefaultStyle({
         left: page.frame.x,
         top: page.frame.y,
@@ -128,8 +128,8 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     ] : [255, 255, 255, 1];
     return {
       type: classValue.ArtBoard,
-      name: layer.name,
       props: {
+        name: layer.name,
         hasBackgroundColor,
         style: getDefaultStyle({
           width: layer.frame.width,
@@ -282,8 +282,8 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     );
     return {
       type: classValue.Group,
-      name: layer.name,
       props: {
+        name: layer.name,
         style: getDefaultStyle({
           left,
           top,
@@ -304,8 +304,8 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     const index = await readImageFile(layer.image._ref, opt);
     return {
       type: classValue.Bitmap,
-      name: layer.name,
       props: {
+        name: layer.name,
         style: getDefaultStyle({
           left,
           top,
@@ -325,8 +325,8 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
   if (layer._class === SketchFormat.ClassValue.Text) {
     return {
       type: classValue.Text,
-      name: layer.name,
       props: {
+        name: layer.name,
         style: getDefaultStyle({
           left,
           top,
@@ -346,8 +346,8 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
   if (layer._class === SketchFormat.ClassValue.Rectangle) {
     return {
       type: classValue.Rect,
-      name: layer.name,
       props: {
+        name: layer.name,
         style: getDefaultStyle({}),
       },
     } as JRect;

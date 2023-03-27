@@ -21,8 +21,8 @@ class Bitmap extends Node {
   src: string | undefined;
   loader: Loader;
 
-  constructor(name: string, props: BitmapProps) {
-    super(name, props);
+  constructor(props: BitmapProps) {
+    super(props);
     const src = this.src = props.src;
     this.loader = {
       error: false,

@@ -12,8 +12,8 @@ class Container extends Node {
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
 
-  constructor(name: string, props: Props, children: Array<Node>) {
-    super(name, props);
+  constructor(props: Props, children: Array<Node>) {
+    super(props);
     this.children = children;
   }
 

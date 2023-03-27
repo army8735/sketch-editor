@@ -17,7 +17,7 @@ function parse(json: JNode): Node | undefined {
         children.push(res);
       }
     }
-    return new ArtBoard(json.name, json.props as ArtBoardProps, children);
+    return new ArtBoard(json.props as ArtBoardProps, children);
   }
   else if (json.type === classValue.Group) {
     const children = [];
@@ -27,23 +27,23 @@ function parse(json: JNode): Node | undefined {
         children.push(res);
       }
     }
-    return new Group(json.name, json.props, children);
+    return new Group(json.props, children);
   }
   else if (json.type === classValue.Bitmap) {
-    return new Bitmap(json.name, json.props as BitmapProps);
+    return new Bitmap(json.props as BitmapProps);
   }
   else if (json.type === classValue.Text) {
-    return new Text(json.name, json.props);
+    return new Text(json.props);
   }
   else if (json.type === classValue.Rect) {
-    return new Rect(json.name, json.props);
+    return new Rect(json.props);
   }
 }
 
 class Page extends Container {
   json?: JPage;
-  constructor(name: string, props: Props, children: Array<Node>) {
-    super(name, props, children);
+  constructor(props: Props, children: Array<Node>) {
+    super(props, children);
   }
 
   initIfNot() {

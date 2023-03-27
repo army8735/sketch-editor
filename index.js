@@ -1039,8 +1039,7 @@
     }
 
     class Node {
-        constructor(name, props) {
-            this.name = name;
+        constructor(props) {
             this.props = props;
             this.style = extend([], normalizeStyle(props.style || {}));
             this.computedStyle = []; // 输出展示的值
@@ -1850,8 +1849,8 @@
     };
 
     class Bitmap extends Node {
-        constructor(name, props) {
-            super(name, props);
+        constructor(props) {
+            super(props);
             const src = this.src = props.src;
             this.loader = {
                 error: false,
@@ -1965,14 +1964,14 @@
     }
 
     class Text extends Node {
-        constructor(name, props) {
-            super(name, props);
+        constructor(props) {
+            super(props);
         }
     }
 
     class Container extends Node {
-        constructor(name, props, children) {
-            super(name, props);
+        constructor(props, children) {
+            super(props);
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
             this.isArtBoard = false;
             this.children = children;
@@ -2165,8 +2164,8 @@
     const BOX_SHADOW = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAMNJREFUOE/t1dtKA1EMheGv1kNVFA/4/g9YPKBorVYri2bL3HTai33ZQFiTwPyTHbIzExubDLQ9V2qnrBGPrfNy8yniR4PcGK2BfvFT/g88xinOShPvYyt8YVm6SnWpKLALXOESJ5Ufg6ayb7zjDR+BBphjprJr3JXOBn3dBs2RP/GKp9JlAwZwi3vcIHE+NGbpW4AveMRz4gY8L9BDaeJ9gIsCzksXB6BDD3fO4dax6T7YXa9e9+WQ29J1fXVfsF1/AX8dHXBBVpwuPwAAAABJRU5ErkJggg==';
     let BOX_SHADOW_TEXTURE;
     class ArtBoard extends Container {
-        constructor(name, props, children) {
-            super(name, props, children);
+        constructor(props, children) {
+            super(props, children);
             this.hasBackgroundColor = props.hasBackgroundColor;
             this.isArtBoard = true;
         }
@@ -2471,21 +2470,21 @@
     }
 
     class Group extends Container {
-        constructor(name, props, children) {
-            super(name, props, children);
+        constructor(props, children) {
+            super(props, children);
             this.isGroup = true;
         }
     }
 
     class Geom extends Node {
-        constructor(name, props) {
-            super(name, props);
+        constructor(props) {
+            super(props);
         }
     }
 
     class Rect extends Geom {
-        constructor(name, props) {
-            super(name, props);
+        constructor(props) {
+            super(props);
         }
     }
 
@@ -2498,7 +2497,7 @@
                     children.push(res);
                 }
             }
-            return new ArtBoard(json.name, json.props, children);
+            return new ArtBoard(json.props, children);
         }
         else if (json.type === classValue.Group) {
             const children = [];
@@ -2508,21 +2507,21 @@
                     children.push(res);
                 }
             }
-            return new Group(json.name, json.props, children);
+            return new Group(json.props, children);
         }
         else if (json.type === classValue.Bitmap) {
-            return new Bitmap(json.name, json.props);
+            return new Bitmap(json.props);
         }
         else if (json.type === classValue.Text) {
-            return new Text(json.name, json.props);
+            return new Text(json.props);
         }
         else if (json.type === classValue.Rect) {
-            return new Rect(json.name, json.props);
+            return new Rect(json.props);
         }
     }
     class Page extends Container {
-        constructor(name, props, children) {
-            super(name, props, children);
+        constructor(props, children) {
+            super(props, children);
         }
         initIfNot() {
             if (this.json) {
@@ -2973,7 +2972,7 @@ void main() {
     let uuid = 0;
     class Root extends Container {
         constructor(canvas, props) {
-            super('Root', props, []);
+            super(props, []);
             this.programs = {};
             this.ani = []; // 动画任务，空占位
             this.aniChange = false;
@@ -3002,7 +3001,8 @@ void main() {
             this.reLayout();
             this.draw();
             // 存所有Page
-            this.pageContainer = new Container('pageContainer', {
+            this.pageContainer = new Container({
+                name: 'pageContainer',
                 style: getDefaultStyle({
                     width: this.width,
                     height: this.height,
@@ -3011,7 +3011,8 @@ void main() {
             }, []);
             this.appendChild(this.pageContainer);
             // 存上层的展示工具标尺等
-            this.overlayContainer = new Container('overlayContainer', {
+            this.overlayContainer = new Container({
+                name: 'overlayContainer',
                 style: getDefaultStyle({
                     width: this.width,
                     height: this.height,
@@ -3032,7 +3033,7 @@ void main() {
         }
         setJPages(jPages) {
             jPages.forEach(item => {
-                const page = new Page(item.name, item.props, []);
+                const page = new Page(item.props, []);
                 page.json = item;
                 this.pageContainer.appendChild(page);
             });
@@ -18580,8 +18581,8 @@ void main() {
             }));
             return {
                 type: classValue.Page,
-                name: page.name,
                 props: {
+                    name: page.name,
                     style: getDefaultStyle({
                         left: page.frame.x,
                         top: page.frame.y,
@@ -18611,8 +18612,8 @@ void main() {
                 ] : [255, 255, 255, 1];
                 return {
                     type: classValue.ArtBoard,
-                    name: layer.name,
                     props: {
+                        name: layer.name,
                         hasBackgroundColor,
                         style: getDefaultStyle({
                             width: layer.frame.width,
@@ -18754,8 +18755,8 @@ void main() {
                 }));
                 return {
                     type: classValue.Group,
-                    name: layer.name,
                     props: {
+                        name: layer.name,
                         style: getDefaultStyle({
                             left,
                             top,
@@ -18776,8 +18777,8 @@ void main() {
                 const index = yield readImageFile(layer.image._ref, opt);
                 return {
                     type: classValue.Bitmap,
-                    name: layer.name,
                     props: {
+                        name: layer.name,
                         style: getDefaultStyle({
                             left,
                             top,
@@ -18797,8 +18798,8 @@ void main() {
             if (layer._class === FileFormat.ClassValue.Text) {
                 return {
                     type: classValue.Text,
-                    name: layer.name,
                     props: {
+                        name: layer.name,
                         style: getDefaultStyle({
                             left,
                             top,
@@ -18818,8 +18819,8 @@ void main() {
             if (layer._class === FileFormat.ClassValue.Rectangle) {
                 return {
                     type: classValue.Rect,
-                    name: layer.name,
                     props: {
+                        name: layer.name,
                         style: getDefaultStyle({}),
                     },
                 };
@@ -18894,6 +18895,7 @@ void main() {
             json.pages = apply(json.pages, json.imgs);
             const { width, height } = canvas;
             const root = new Root(canvas, {
+                name: 'Root',
                 style: getDefaultStyle({
                     width,
                     height,

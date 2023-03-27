@@ -13,8 +13,8 @@ let BOX_SHADOW_TEXTURE: WebGLTexture;
 
 class ArtBoard extends Container {
   hasBackgroundColor: boolean;
-  constructor(name: string, props: ArtBoardProps, children: Array<Node>) {
-    super(name, props as Props, children);
+  constructor(props: ArtBoardProps, children: Array<Node>) {
+    super(props as Props, children);
     this.hasBackgroundColor = props.hasBackgroundColor;
     this.isArtBoard = true;
   }

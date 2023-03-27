@@ -31,7 +31,7 @@ class Root extends Container implements FrameCallback {
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
 
   constructor(canvas: HTMLCanvasElement, props: Props) {
-    super('Root', props, []);
+    super(props, []);
     this.uuid = uuid++;
     this.canvas = canvas;
     // gl的初始化和配置
@@ -60,7 +60,8 @@ class Root extends Container implements FrameCallback {
     this.reLayout();
     this.draw();
     // 存所有Page
-    this.pageContainer = new Container('pageContainer', {
+    this.pageContainer = new Container({
+      name: 'pageContainer',
       style: getDefaultStyle({
         width: this.width,
         height: this.height,
@@ -69,7 +70,8 @@ class Root extends Container implements FrameCallback {
     }, []);
     this.appendChild(this.pageContainer);
     // 存上层的展示工具标尺等
-    this.overlayContainer = new Container('overlayContainer', {
+    this.overlayContainer = new Container({
+      name: 'overlayContainer',
       style: getDefaultStyle({
         width: this.width,
         height: this.height,
@@ -93,7 +95,7 @@ class Root extends Container implements FrameCallback {
 
   setJPages(jPages: Array<JPage>) {
     jPages.forEach(item => {
-      const page = new Page(item.name, item.props, []);
+      const page = new Page(item.props, []);
       page.json = item;
       this.pageContainer!.appendChild(page);
     });
