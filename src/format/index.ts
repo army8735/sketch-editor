@@ -54,6 +54,7 @@ export type JStyle = {
   fontWeight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold' |  'bolder' | 'lighter',
   fontStyle: 'normal' | 'italic' | 'oblique',
   overflow: 'visible' | 'hidden',
+  backgroundColor: string | Array<number>,
   color: string | Array<number>,
   opacity: number,
   translateX: number,
@@ -76,12 +77,13 @@ export function getDefaultStyle(v?: any): JStyle {
     width: 'auto',
     height: 'auto',
     lineHeight: 'normal',
-    visible: true,
-    overflow: 'visible',
     fontFamily: 'arial',
     fontSize: 16,
     fontWeight: 400,
     fontStyle: 'normal',
+    visible: true,
+    overflow: 'visible',
+    backgroundColor: [0, 0, 0, 0],
     color: [0, 0, 0, 0],
     opacity: 1,
     translateX: 0,
@@ -106,7 +108,7 @@ export type BitmapProps = Props & {
 };
 
 export type ArtBoardProps = Props & {
-  backgroundColor: Array<number>,
+  hasBackgroundColor: boolean,
 };
 
 export enum classValue {

@@ -9,7 +9,7 @@ import Container from './Container';
 import { StyleKey } from '../style';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
-import { mainVert, mainFrag, colorVert, colorFrag } from '../gl/glsl';
+import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
 import ca from '../gl/ca';
 
 let uuid = 0;
@@ -82,6 +82,7 @@ class Root extends Container implements FrameCallback {
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
     const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
     this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
+    this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     gl.useProgram(program);
   }
 

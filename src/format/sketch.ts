@@ -119,17 +119,18 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
       })
     );
-    const backgroundColor = layer.hasBackgroundColor ? [
-      layer.backgroundColor.r,
-      layer.backgroundColor.g,
-      layer.backgroundColor.b,
+    const hasBackgroundColor = layer.hasBackgroundColor;
+    const backgroundColor = hasBackgroundColor ? [
+      Math.floor(layer.backgroundColor.r * 255),
+      Math.floor(layer.backgroundColor.g * 255),
+      Math.floor(layer.backgroundColor.b * 255),
       layer.backgroundColor.a,
-    ] : [1, 1, 1, 1];
+    ] : [255, 255, 255, 1];
     return {
       type: classValue.ArtBoard,
       name: layer.name,
       props: {
-        backgroundColor,
+        hasBackgroundColor,
         style: getDefaultStyle({
           width: layer.frame.width,
           height: layer.frame.height,
@@ -137,6 +138,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           translateY: layer.frame.y,
           visible: layer.isVisible,
           overflow: 'hidden',
+          backgroundColor,
         }),
       },
       children,

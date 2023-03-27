@@ -364,19 +364,29 @@
     e.preventDefault();
   });
 
-  window.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', function(e) {
     metaKey = e.metaKey;
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
   });
 
-  window.addEventListener('keyup', function(e) {
+  document.addEventListener('keyup', function(e) {
     metaKey = e.metaKey;
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
   });
+
+  const img = new Image();
+  img.src = 'box-shadow.png';
+  img.onload = function() {
+    const os = document.createElement('canvas');
+    os.width = os.height = 20;
+    const ctx = os.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    console.log(os.toDataURL());
+  }
 </script>
 </body>
 </html>

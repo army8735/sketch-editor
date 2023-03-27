@@ -52,3 +52,29 @@ uniform vec4 u_color;
 void main() {
   gl_FragColor = u_color;
 }`;
+
+export const simpleVert = `#version 100
+
+attribute vec2 a_position;
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+  gl_Position = vec4(a_position, 0, 1);
+  v_texCoords = a_texCoords;
+}`;
+
+export const simpleFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture;
+
+void main() {
+  vec4 color = texture2D(u_texture, v_texCoords);
+  gl_FragColor = color;
+}`;

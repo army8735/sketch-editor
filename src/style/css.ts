@@ -152,6 +152,10 @@ export function normalizeStyle(style: JStyle): any {
   if (!isNil(color)) {
     res[StyleKey.COLOR] = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
   }
+  const backgroundColor = style.backgroundColor;
+  if (!isNil(backgroundColor)) {
+    res[StyleKey.BACKGROUND_COLOR] = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+  }
   const overflow = style.overflow;
   if (!isNil(overflow)) {
     res[StyleKey.OVERFLOW] = { v: overflow, u: StyleUnit.STRING };
@@ -357,4 +361,16 @@ export function color2rgbaStr(color: string | Array<number>): string {
     }
   }
   return (color as string) || 'rgba(0,0,0,0)';
+}
+
+export function color2gl(color: string | Array<number>): Array<number> {
+  if (!Array.isArray(color)) {
+    color = color2rgbaInt(color);
+  }
+  return [
+    color[0] / 255,
+    color[1] / 255,
+    color[2] / 255,
+    color.length === 3 ? 1 : color[3],
+  ];
 }
