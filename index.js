@@ -1953,10 +1953,11 @@
     }
 
     class Container extends Node {
-        constructor(name, props, children, isGroup = false) {
+        constructor(name, props, children) {
             super(name, props);
+            this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
+            this.isArtBoard = false;
             this.children = children;
-            this.isGroup = isGroup;
         }
         didMount() {
             super.didMount();
@@ -2099,7 +2100,7 @@
             }
         }
         // 获取指定位置节点，不包含Page/ArtBoard
-        getTargetByPointAndLv(x, y, includeGroup, lv) {
+        getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv) {
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
                 const child = children[i];
@@ -2109,27 +2110,29 @@
                     // 不指定lv则找最深处的child
                     if (lv === undefined) {
                         if (child instanceof Container) {
-                            const res = child.getTargetByPointAndLv(x, y, includeGroup, lv);
+                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
                             if (res) {
                                 return res;
                             }
                         }
-                        if (computedStyle[StyleKey.POINTER_EVENTS] && struct.lv > 3
-                            && (includeGroup || !(child instanceof Container && child.isGroup))) {
+                        if (computedStyle[StyleKey.POINTER_EVENTS]
+                            && (includeGroup || !(child instanceof Container && child.isGroup))
+                            && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
                             return child;
                         }
                     }
                     // 指定判断lv是否相等
                     else {
                         if (struct.lv === lv) {
-                            if (computedStyle[StyleKey.POINTER_EVENTS] && struct.lv > 3
-                                && (includeGroup || !(child instanceof Container && child.isGroup))) {
+                            if (computedStyle[StyleKey.POINTER_EVENTS]
+                                && (includeGroup || !(child instanceof Container && child.isGroup))
+                                && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
                                 return child;
                             }
                         }
                         // 父级且是container继续深入寻找
                         else if (struct.lv < lv && child instanceof Container) {
-                            const res = child.getTargetByPointAndLv(x, y, includeGroup, lv);
+                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
                             if (res) {
                                 return res;
                             }
@@ -2145,6 +2148,7 @@
         constructor(name, props, children) {
             super(name, props, children);
             this.backgroundColor = props.backgroundColor;
+            this.isArtBoard = true;
         }
         calContent() {
             let res = super.calContent();
@@ -2200,6 +2204,13 @@
         }
     }
 
+    class Group extends Container {
+        constructor(name, props, children) {
+            super(name, props, children);
+            this.isGroup = true;
+        }
+    }
+
     class Geom extends Node {
         constructor(name, props) {
             super(name, props);
@@ -2231,7 +2242,7 @@
                     children.push(res);
                 }
             }
-            return new Container(json.name, json.props, children, true);
+            return new Group(json.name, json.props, children);
         }
         else if (json.type === classValue.Bitmap) {
             return new Bitmap(json.name, json.props);
@@ -2911,6 +2922,13 @@ void main() {
                 frame.offFrame(this);
                 this.isAsyncDraw = false;
             }
+        }
+        getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv) {
+            const page = this.lastPage;
+            if (page) {
+                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
+            }
+            return null;
         }
     }
 
@@ -18276,8 +18294,8 @@ void main() {
                     style: getDefaultStyle({
                         left: page.frame.x,
                         top: page.frame.y,
-                        width: page.frame.width + 1000,
-                        height: page.frame.height + 1000,
+                        width: page.frame.width,
+                        height: page.frame.height,
                         visible: false,
                         pointerEvents: false,
                     }),
@@ -18595,6 +18613,7 @@ void main() {
         openAndConvertSketchBuffer,
         Page,
         ArtBoard,
+        Group,
         Container,
     };
 

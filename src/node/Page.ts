@@ -3,6 +3,7 @@ import Bitmap from './Bitmap';
 import Text from './Text';
 import ArtBoard from './ArtBoard';
 import Container from './Container';
+import Group from './Group';
 import Rect from './geom/Rect';
 import { ArtBoardProps, BitmapProps, JContainer, Props } from '../format/';
 import { classValue, JNode, JPage } from '../format';
@@ -26,7 +27,7 @@ function parse(json: JNode): Node | undefined {
         children.push(res);
       }
     }
-    return new Container(json.name, json.props, children, true);
+    return new Group(json.name, json.props, children);
   }
   else if (json.type === classValue.Bitmap) {
     return new Bitmap(json.name, json.props as BitmapProps);

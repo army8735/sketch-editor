@@ -9,12 +9,12 @@ import { StyleKey } from '../style';
 
 class Container extends Node {
   children: Array<Node>;
-  isGroup: boolean; // Group对象和Container基本一致，多了自适应尺寸和选择区别
+  isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
+  isArtBoard = false;
 
-  constructor(name: string, props: Props, children: Array<Node>, isGroup = false) {
+  constructor(name: string, props: Props, children: Array<Node>) {
     super(name, props);
     this.children = children;
-    this.isGroup = isGroup;
   }
 
   didMount() {
@@ -167,7 +167,7 @@ class Container extends Node {
   }
 
   // 获取指定位置节点，不包含Page/ArtBoard
-  getTargetByPointAndLv(x: number, y: number, includeGroup: boolean,  lv?: number): Node | null {
+  getNodeByPointAndLv(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean,  lv?: number): Node | null {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
@@ -177,27 +177,29 @@ class Container extends Node {
         // 不指定lv则找最深处的child
         if (lv === undefined) {
           if (child instanceof Container) {
-            const res = child.getTargetByPointAndLv(x, y, includeGroup, lv);
+            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
             if (res) {
               return res;
             }
           }
-          if (computedStyle[StyleKey.POINTER_EVENTS] && struct.lv > 3
-            && (includeGroup || !(child instanceof Container && child.isGroup))) {
+          if (computedStyle[StyleKey.POINTER_EVENTS]
+            && (includeGroup || !(child instanceof Container && child.isGroup))
+            && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
             return child;
           }
         }
         // 指定判断lv是否相等
         else {
           if (struct.lv === lv) {
-            if (computedStyle[StyleKey.POINTER_EVENTS] && struct.lv > 3
-              && (includeGroup || !(child instanceof Container && child.isGroup))) {
+            if (computedStyle[StyleKey.POINTER_EVENTS]
+              && (includeGroup || !(child instanceof Container && child.isGroup))
+              && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
               return child;
             }
           }
           // 父级且是container继续深入寻找
           else if (struct.lv < lv && child instanceof Container) {
-            const res = child.getTargetByPointAndLv(x, y, includeGroup, lv);
+            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
             if (res) {
               return res;
             }

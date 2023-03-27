@@ -280,7 +280,7 @@
       startX = e.pageX;
       startY = e.pageY;
       if(root) {
-        selectionNode = root.getTargetByPointAndLv(lastX, lastY, 4);
+        selectionNode = root.getNodeFromCurPage(lastX, lastY, !metaKey, false, 1);
         if(selectionNode) {
           const {
             translateX,
@@ -314,7 +314,7 @@
       if (selectionNode) {
         // metaKey按下可以选择最深叶子节点，但排除Group
         if (metaKey && lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-          const res = root.getTargetByPointAndLv(lastX, lastY, !metaKey, undefined);
+          const res = root.getNodeFromCurPage(lastX, lastY, !metaKey, false, undefined);
           if (res && res !== selectionNode) {
             if(hoverNode !== res) {
               hoverNode = res;
@@ -333,7 +333,7 @@
         }
       }
       else if (lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-        const res = root.getTargetByPointAndLv(lastX, lastY, !metaKey, metaKey ? undefined : 4);
+        const res = root.getNodeFromCurPage(lastX, lastY, !metaKey, false, metaKey ? undefined : 1);
         if (res) {
           if(hoverNode !== res) {
             hoverNode = res;

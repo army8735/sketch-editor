@@ -3,6 +3,7 @@ import { isNumber } from './util/type';
 import Root from './node/Root';
 import Page from './node/Page';
 import ArtBoard from './node/ArtBoard';
+import Group from './node/Group';
 import Container from './node/Container';
 import { openAndConvertSketchBuffer } from './format/sketch';
 
@@ -44,5 +45,6 @@ export default {
   openAndConvertSketchBuffer,
   Page,
   ArtBoard,
+  Group,
   Container,
 };

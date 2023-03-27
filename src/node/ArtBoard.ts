@@ -10,6 +10,7 @@ class ArtBoard extends Container {
   constructor(name: string, props: ArtBoardProps, children: Array<Node>) {
     super(name, props as Props, children);
     this.backgroundColor = props.backgroundColor;
+    this.isArtBoard = true;
   }
 
   override calContent(): boolean {

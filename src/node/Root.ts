@@ -295,6 +295,13 @@ class Root extends Container implements FrameCallback {
     }
   }
 
+  getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number): Node | null {
+    const page = this.lastPage;
+    if (page) {
+      return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
+    }
+    return null;
+  }
 }
 
 export default Root;

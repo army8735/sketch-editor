@@ -101,8 +101,8 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
       style: getDefaultStyle({
         left: page.frame.x,
         top: page.frame.y,
-        width: page.frame.width + 1000,
-        height: page.frame.height + 1000,
+        width: page.frame.width,
+        height: page.frame.height,
         visible: false,
         pointerEvents: false,
       }),
