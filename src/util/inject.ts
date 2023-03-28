@@ -129,7 +129,7 @@ const inject = {
     }
   },
   defaultFontFamily: 'arial',
-  getFontCanvas(contextAttributes: CanvasRenderingContext2DSettings) {
+  getFontCanvas(contextAttributes?: CanvasRenderingContext2DSettings) {
     return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', contextAttributes);
   },
   checkSupportFontFamily(ff: string) {

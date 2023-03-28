@@ -1,5 +1,6 @@
 import Node from './Node';
 import Page from './Page';
+import Overlay from './overlay/Overlay';
 import { getDefaultStyle, JPage, Props } from '../format';
 import { renderWebgl, Struct } from '../refresh/struct';
 import { frame, FrameCallback } from '../animation/frame';
@@ -11,17 +12,23 @@ import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
 import ca from '../gl/ca';
+import ArtBoard from './ArtBoard';
 
 let uuid = 0;
+
+type RootProps = Props & {
+  dpi: number,
+};
 
 class Root extends Container implements FrameCallback {
   uuid: number;
   canvas: HTMLCanvasElement;
   ctx: WebGL2RenderingContext | WebGLRenderingContext | null;
+  dpi: number;
   programs: any = {};
   lastPage: Page | undefined; // 上一个显示的Page对象
   pageContainer: Container | undefined; // 存Page显示对象列表的容器
-  overlayContainer: Container | undefined; // 不跟随Page缩放的选框标尺等容器
+  overlay: Overlay | undefined; // 不跟随Page缩放的选框标尺等容器
   structs: Array<Struct>; // 队列代替递归Tree的数据结构
   isAsyncDraw: boolean; // 异步下帧刷新标识，多次刷新任务去重
   ani = []; // 动画任务，空占位
@@ -30,7 +37,7 @@ class Root extends Container implements FrameCallback {
   taskClone: Array<Function | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
 
-  constructor(canvas: HTMLCanvasElement, props: Props) {
+  constructor(canvas: HTMLCanvasElement, props: RootProps) {
     super(props, []);
     this.uuid = uuid++;
     this.canvas = canvas;
@@ -48,6 +55,7 @@ class Root extends Container implements FrameCallback {
     );
     this.initShaders(gl);
     // 初始化的数据
+    this.dpi = props.dpi;
     this.root = this;
     this.isDestroyed = false;
     this.structs = this.structure(0);
@@ -61,24 +69,22 @@ class Root extends Container implements FrameCallback {
     this.draw();
     // 存所有Page
     this.pageContainer = new Container({
-      name: 'pageContainer',
       style: getDefaultStyle({
-        width: this.width,
-        height: this.height,
+        width: '100%',
+        height: '100%',
         pointerEvents: false,
       }),
     }, []);
     this.appendChild(this.pageContainer);
     // 存上层的展示工具标尺等
-    this.overlayContainer = new Container({
-      name: 'overlayContainer',
+    this.overlay = new Overlay({
       style: getDefaultStyle({
-        width: this.width,
-        height: this.height,
+        width: '100%',
+        height: '100%',
         pointerEvents: false,
       }),
     }, []);
-    this.appendChild(this.overlayContainer);
+    this.appendChild(this.overlay);
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
@@ -120,6 +126,7 @@ class Root extends Container implements FrameCallback {
       visible: true,
     });
     this.lastPage = newPage;
+    this.overlay!.setArtBoard(newPage.children as Array<ArtBoard>);
   }
 
   /**

@@ -83,7 +83,7 @@ export function getDefaultStyle(v?: any): JStyle {
     visible: true,
     overflow: 'visible',
     backgroundColor: [0, 0, 0, 0],
-    color: [0, 0, 0, 0],
+    color: [0, 0, 0, 1],
     opacity: 1,
     translateX: 0,
     translateY: 0,
@@ -97,7 +97,7 @@ export function getDefaultStyle(v?: any): JStyle {
 }
 
 export type Props = {
-  name: string,
+  name?: string,
   style: JStyle,
 };
 

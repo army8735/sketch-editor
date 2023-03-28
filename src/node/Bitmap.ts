@@ -6,6 +6,7 @@ import Container from '../node/Container';
 import { LayoutData } from './layout';
 import { StyleKey } from '../style';
 import { RefreshLevel } from '../refresh/level';
+import ImgCanvasCache from '../refresh/ImgCanvasCache';
 
 type Loader = {
   error: boolean,
@@ -136,8 +137,16 @@ class Bitmap extends Node {
     return this.hasContent = res;
   }
 
-  renderCanvas(ctx: CanvasRenderingContext2D, dx = 0, dy = 0) {
-    super.renderCanvas(ctx, dx, dy);
+  override renderCanvas() {
+    super.renderCanvas();
+    const { loader } = this;
+    if (loader.onlyImg) {
+      const canvasCache = this.canvasCache = ImgCanvasCache.getInstance(loader.width, loader.height, -this.x, -this.y, this.src!);
+      // 第一张图像才绘制，图片解码到canvas上
+      if (canvasCache.count === 1) {
+        canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
+      }
+    }
   }
 }
 

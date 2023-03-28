@@ -9,11 +9,12 @@ import {
   calRectPoint,
   identity,
   isE,
+  multiply,
   multiplyRotateZ,
   multiplyScaleX,
   multiplyScaleY
 } from '../math/matrix';
-import { equalStyle, normalizeStyle } from '../style/css';
+import { calNormalLineHeight, equalStyle, normalizeStyle } from '../style/css';
 import { extend } from '../util';
 import { LayoutData } from './layout';
 import { d2r } from '../math/geom';
@@ -40,7 +41,7 @@ class Node {
   opacity: number;
   transform: Float64Array;
   matrix: Float64Array;
-  matrixWorld: Float64Array;
+  _matrixWorld: Float64Array;
   layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
   private _bbox: Float64Array | undefined;
   private _outerBbox: Float64Array | undefined;
@@ -64,11 +65,11 @@ class Node {
       total: 0,
       lv: 0,
     }
-    this.refreshLevel = RefreshLevel.REFLOW;
+    this.refreshLevel = RefreshLevel.REFLOW_TRANSFORM;
     this.opacity = 1;
     this.transform = identity();
     this.matrix = identity();
-    this.matrixWorld = identity();
+    this._matrixWorld = identity();
     this.hasContent = false;
   }
 
@@ -213,12 +214,13 @@ class Node {
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
   calReflowStyle() {
     const { style, computedStyle, parent } = this;
-    computedStyle[StyleKey.FONT_FAMILY] = (style[StyleKey.FONT_FAMILY].v as string).split(',');
-    computedStyle[StyleKey.FONT_SIZE] = style[StyleKey.FONT_STYLE].v;
+    computedStyle[StyleKey.FONT_FAMILY] = style[StyleKey.FONT_FAMILY].v;
+    computedStyle[StyleKey.FONT_SIZE] = style[StyleKey.FONT_SIZE].v;
     computedStyle[StyleKey.FONT_WEIGHT] = style[StyleKey.FONT_WEIGHT].v;
     computedStyle[StyleKey.FONT_STYLE] = style[StyleKey.FONT_STYLE].v;
     const lineHeight = style[StyleKey.LINE_HEIGHT];
     if (lineHeight.u === StyleUnit.AUTO) {
+      computedStyle[StyleKey.LINE_HEIGHT] = calNormalLineHeight(computedStyle);
     }
     else {
       computedStyle[StyleKey.LINE_HEIGHT] = lineHeight.v;
@@ -367,7 +369,7 @@ class Node {
     return this.hasContent = false;
   }
 
-  renderCanvas(ctx: CanvasRenderingContext2D, dx = 0, dy = 0) {
+  renderCanvas() {
     if (this.canvasCache) {
       this.canvasCache.release();
     }
@@ -495,6 +497,24 @@ class Node {
     };
   }
 
+  get matrixWorld(): Float64Array {
+    const rl = this.refreshLevel;
+    if (rl & RefreshLevel.TRANSFORM_ALL) {
+      this.refreshLevel ^= RefreshLevel.TRANSFORM_ALL;
+      let parent = this.parent;
+      // 非Root节点继续
+      if (parent) {
+        const pm = parent.matrixWorld;
+        assignMatrix(this._matrixWorld, multiply(pm, this.matrix));
+      }
+      // Root的世界矩阵就是自身矩阵
+      else {
+        assignMatrix(this._matrixWorld, this.matrix);
+      }
+    }
+    return this._matrixWorld;
+  }
+
   get bbox(): Float64Array {
     if (!this._bbox) {
       this._bbox = new Float64Array(4);
@@ -506,7 +526,7 @@ class Node {
     return this._bbox;
   }
 
-  get outerBbox() {
+  get outerBbox(): Float64Array {
     if (!this._outerBbox) {
       let bbox = this._bbox || this.bbox;
       this._outerBbox = bbox.slice(0);

@@ -1,6 +1,5 @@
 import Node from './Node';
 import Bitmap from './Bitmap';
-import Text from './Text';
 import ArtBoard from './ArtBoard';
 import Container from './Container';
 import Group from './Group';
@@ -33,7 +32,6 @@ function parse(json: JNode): Node | undefined {
     return new Bitmap(json.props as BitmapProps);
   }
   else if (json.type === classValue.Text) {
-    return new Text(json.props);
   }
   else if (json.type === classValue.Rect) {
     return new Rect(json.props);

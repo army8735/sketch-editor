@@ -1,8 +1,6 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { RefreshLevel } from './level';
-import Bitmap from '../node/Bitmap';
-import ImgCanvasCache from './ImgCanvasCache';
 import { StyleKey } from '../style';
 import { drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
@@ -33,18 +31,20 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
           const hasContent = node.calContent();
           // 有内容先以canvas模式绘制到离屏画布上
           if (hasContent) {
-            if (node instanceof Bitmap) {
-              const loader = node.loader;
-              // 肯定有source，因为hasContent预防过，这里判断特殊的纯位图，要共享源节省内存
-              if (loader.onlyImg) {
-                const canvasCache = node.canvasCache = ImgCanvasCache.getInstance(loader.width, loader.height, -node.x, -node.y, node.src!);
-                // 第一张图像才绘制，图片解码到canvas上
-                if (canvasCache.count === 1) {
-                  canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
-                }
-                node.genTexture(gl);
-              }
-            }
+            node.renderCanvas();
+            node.genTexture(gl);
+            // if (node instanceof Bitmap) {
+            //   const loader = node.loader;
+            //   // 肯定有source，因为hasContent预防过，这里判断特殊的纯位图，要共享源节省内存
+            //   if (loader.onlyImg) {
+            //     const canvasCache = node.canvasCache = ImgCanvasCache.getInstance(loader.width, loader.height, -node.x, -node.y, node.src!);
+            //     // 第一张图像才绘制，图片解码到canvas上
+            //     if (canvasCache.count === 1) {
+            //       canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
+            //     }
+            //     node.genTexture(gl);
+            //   }
+            // }
           }
         }
       }

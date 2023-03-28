@@ -254,8 +254,9 @@
         const canvas = document.createElement('canvas');
         function resize() {
           const { clientWidth, clientHeight } = canvasC;
-          canvas.width = clientWidth;
-          canvas.height = clientHeight;
+          const dpi = window.devicePixelRatio;
+          canvas.width = clientWidth * dpi;
+          canvas.height = clientHeight * dpi;
           const o = canvasC.getBoundingClientRect();
           originX = o.left;
           originY = o.top;
@@ -263,7 +264,7 @@
         resize();
         window.onresize = resize;
         canvasC.appendChild(canvas);
-        root = editor.parse(json, canvas);
+        root = editor.parse(json, canvas, dpi);
       });
     }
   }
@@ -377,16 +378,6 @@
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
   });
-
-  const img = new Image();
-  img.src = 'box-shadow.png';
-  img.onload = function() {
-    const os = document.createElement('canvas');
-    os.width = os.height = 20;
-    const ctx = os.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    console.log(os.toDataURL());
-  }
 </script>
 </body>
 </html>

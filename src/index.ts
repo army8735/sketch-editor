@@ -28,12 +28,12 @@ function apply(json: any, imgs: Array<string>): any {
 }
 
 export default {
-  parse(json: JFile, canvas: HTMLCanvasElement) {
+  parse(json: JFile, canvas: HTMLCanvasElement, dpi = 1) {
     // json中的imgs下标替换
     json.pages = apply(json.pages, json.imgs);
     const { width, height } = canvas;
     const root = new Root(canvas, {
-      name: 'Root',
+      dpi,
       style: getDefaultStyle({
         width,
         height,

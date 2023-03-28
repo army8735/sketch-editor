@@ -12,7 +12,7 @@ class Container extends Node {
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
 
-  constructor(props: Props, children: Array<Node>) {
+  constructor(props: Props, children: Array<Node> = []) {
     super(props);
     this.children = children;
   }
@@ -72,7 +72,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW_TRANSFORM, true, false, false, undefined);
   }
 
   prependChild(node: Node, cb?: Function) {
@@ -93,7 +93,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW_TRANSFORM, true, false, false, undefined);
   }
 
   removeChild(node: Node, cb?: Function) {
@@ -102,6 +102,14 @@ class Container extends Node {
     }
     else {
       inject.error('Invalid parameter of removeChild()');
+    }
+  }
+
+  clearChildren() {
+    const children = this.children;
+    while (children.length) {
+      const child = children.pop()!;
+      child.remove();
     }
   }
 
@@ -182,7 +190,7 @@ class Container extends Node {
               return res;
             }
           }
-          if (computedStyle[StyleKey.POINTER_EVENTS]
+          if (computedStyle[StyleKey.POINTER_EVENTS] && computedStyle[StyleKey.VISIBLE]
             && (includeGroup || !(child instanceof Container && child.isGroup))
             && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
             return child;
@@ -191,7 +199,7 @@ class Container extends Node {
         // 指定判断lv是否相等
         else {
           if (struct.lv === lv) {
-            if (computedStyle[StyleKey.POINTER_EVENTS]
+            if (computedStyle[StyleKey.POINTER_EVENTS] && computedStyle[StyleKey.VISIBLE]
               && (includeGroup || !(child instanceof Container && child.isGroup))
               && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
               return child;

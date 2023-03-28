@@ -11,6 +11,8 @@ import {
   StyleValue,
 } from './';
 import { isNil } from '../util/type';
+import inject from '../util/inject';
+import font from './font';
 
 const TRANSFORM_HASH: any = {
   translateX: StyleKey.TRANSLATE_X,
@@ -373,4 +375,45 @@ export function color2gl(color: string | Array<number>): Array<number> {
     color[2] / 255,
     color.length === 3 ? 1 : color[3],
   ];
+}
+
+export function setFontStyle(style: Array<any>) {
+  let fontSize = style[StyleKey.FONT_SIZE] || 0;
+  let fontFamily = style[StyleKey.FONT_FAMILY] || inject.defaultFontFamily || 'arial';
+  if(/\s/.test(fontFamily)) {
+    fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
+  }
+  return (style[StyleKey.FONT_STYLE] || 'normal') + ' ' + (style[StyleKey.FONT_WEIGHT] || '400') + ' '
+    + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
+}
+
+function calFontFamily(fontFamily: string) {
+  let ff = fontFamily.split(/\s*,\s*/);
+  for(let i = 0, len = ff.length; i < len; i++) {
+    let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+    if(font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+      return item;
+    }
+  }
+  return inject.defaultFontFamily;
+}
+
+export function calNormalLineHeight(style: Array<any>, ff?: string) {
+  if(!ff) {
+    ff = calFontFamily(style[StyleKey.FONT_FAMILY]);
+  }
+  return style[StyleKey.FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+}
+
+/**
+ * https://zhuanlan.zhihu.com/p/25808995
+ * 根据字形信息计算baseline的正确值，差值上下均分
+ * @param style computedStyle
+ * @returns {number}
+ */
+export function getBaseline(style: Array<any>) {
+  let fontSize = style[StyleKey.FONT_SIZE];
+  let ff = calFontFamily(style[StyleKey.FONT_FAMILY]);
+  let normal = calNormalLineHeight(style, ff);
+  return (style[StyleKey.LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }

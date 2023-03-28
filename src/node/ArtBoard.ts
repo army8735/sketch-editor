@@ -26,14 +26,18 @@ class ArtBoard extends Container {
   renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
               cx: number, cy: number, dx: number = 0, dy: number = 0) {
     const programs = this.root!.programs;
-    const { x, y, width, height, matrixWorld, computedStyle } = this;
+    let { x, y, width, height, matrixWorld, computedStyle } = this;
+    x += dx;
+    y += dy;
     // boxShadow用静态纹理渲染
     const bs = inject.IMG[BOX_SHADOW];
     if (bs) {
       const simpleProgram = programs.simpleProgram;
       gl.useProgram(simpleProgram);
       if (!BOX_SHADOW_TEXTURE) {
-        BOX_SHADOW_TEXTURE = createTexture(gl, 0, bs.source);
+        const os = inject.getOffscreenCanvas(20, 20);
+        os.ctx.drawImage(bs.source, 0, 0);
+        BOX_SHADOW_TEXTURE = createTexture(gl, 0, os.canvas);
       }
       const vtPoint = new Float32Array(96);
       const vtTex = new Float32Array(96);
