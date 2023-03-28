@@ -76,208 +76,6 @@
         return v === undefined || v === null;
     }
 
-    var StyleKey;
-    (function (StyleKey) {
-        StyleKey[StyleKey["TOP"] = 0] = "TOP";
-        StyleKey[StyleKey["RIGHT"] = 1] = "RIGHT";
-        StyleKey[StyleKey["BOTTOM"] = 2] = "BOTTOM";
-        StyleKey[StyleKey["LEFT"] = 3] = "LEFT";
-        StyleKey[StyleKey["WIDTH"] = 4] = "WIDTH";
-        StyleKey[StyleKey["HEIGHT"] = 5] = "HEIGHT";
-        StyleKey[StyleKey["LINE_HEIGHT"] = 6] = "LINE_HEIGHT";
-        StyleKey[StyleKey["FONT_FAMILY"] = 7] = "FONT_FAMILY";
-        StyleKey[StyleKey["FONT_SIZE"] = 8] = "FONT_SIZE";
-        StyleKey[StyleKey["FONT_WEIGHT"] = 9] = "FONT_WEIGHT";
-        StyleKey[StyleKey["FONT_STYLE"] = 10] = "FONT_STYLE";
-        StyleKey[StyleKey["VISIBLE"] = 11] = "VISIBLE";
-        StyleKey[StyleKey["OVERFLOW"] = 12] = "OVERFLOW";
-        StyleKey[StyleKey["BACKGROUND_COLOR"] = 13] = "BACKGROUND_COLOR";
-        StyleKey[StyleKey["COLOR"] = 14] = "COLOR";
-        StyleKey[StyleKey["OPACITY"] = 15] = "OPACITY";
-        StyleKey[StyleKey["TRANSLATE_X"] = 16] = "TRANSLATE_X";
-        StyleKey[StyleKey["TRANSLATE_Y"] = 17] = "TRANSLATE_Y";
-        StyleKey[StyleKey["SCALE_X"] = 18] = "SCALE_X";
-        StyleKey[StyleKey["SCALE_Y"] = 19] = "SCALE_Y";
-        StyleKey[StyleKey["ROTATE_Z"] = 20] = "ROTATE_Z";
-        StyleKey[StyleKey["TRANSFORM_ORIGIN"] = 21] = "TRANSFORM_ORIGIN";
-        StyleKey[StyleKey["MIX_BLEND_MODE"] = 22] = "MIX_BLEND_MODE";
-        StyleKey[StyleKey["POINTER_EVENTS"] = 23] = "POINTER_EVENTS";
-        // FILTER = 14,
-        // FILL = 15,
-        // STROKE = 16,
-        // STROKE_WIDTH = 17,
-        // STROKE_DASHARRAY = 18,
-        // STROKE_DASHARRAY_STR = 19,
-        // STROKE_LINECAP = 20,
-        // STROKE_LINEJOIN = 21,
-        // STROKE_MITERLIMIT = 22,
-        // FILL_RULE = 23,
-    })(StyleKey || (StyleKey = {}));
-    const STYLE2LOWER_MAP = {};
-    function styleKey2Lower(s) {
-        let res = STYLE2LOWER_MAP[s];
-        if (!res) {
-            res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
-                return $1.toUpperCase();
-            });
-        }
-        return res;
-    }
-    const STYLE2UPPER_MAP = {};
-    function styleKey2Upper(s) {
-        let res = STYLE2UPPER_MAP[s];
-        if (!res) {
-            res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
-                return $1 + '_' + $2;
-            }).toUpperCase();
-        }
-        return res;
-    }
-    const StyleKeyHash = {};
-    for (let i in StyleKey) {
-        if (!/^\d+$/.test(i)) {
-            StyleKeyHash[styleKey2Lower(i)] = StyleKey[i];
-        }
-    }
-    var StyleUnit;
-    (function (StyleUnit) {
-        StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
-        StyleUnit[StyleUnit["PX"] = 1] = "PX";
-        StyleUnit[StyleUnit["PERCENT"] = 2] = "PERCENT";
-        StyleUnit[StyleUnit["NUMBER"] = 3] = "NUMBER";
-        StyleUnit[StyleUnit["DEG"] = 4] = "DEG";
-        StyleUnit[StyleUnit["RGBA"] = 5] = "RGBA";
-        StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
-        StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
-        StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
-    })(StyleUnit || (StyleUnit = {}));
-    function calUnit(v) {
-        if (v === 'auto') {
-            return {
-                v: 0,
-                u: StyleUnit.AUTO,
-            };
-        }
-        let n = parseFloat(v) || 0;
-        if (/%$/.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.PERCENT,
-            };
-        }
-        else if (/px$/i.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.PX,
-            };
-        }
-        else if (/deg$/i.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.DEG,
-            };
-        }
-        return {
-            v: n,
-            u: StyleUnit.NUMBER,
-        };
-    }
-    var MIX_BLEND_MODE;
-    (function (MIX_BLEND_MODE) {
-        MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["MULTIPLY"] = 1] = "MULTIPLY";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SCREEN"] = 2] = "SCREEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["OVERLAY"] = 3] = "OVERLAY";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["DARKEN"] = 4] = "DARKEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["LIGHTEN"] = 5] = "LIGHTEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_DODGE"] = 6] = "COLOR_DODGE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_BURN"] = 7] = "COLOR_BURN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["HARD_LIGHT"] = 8] = "HARD_LIGHT";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SOFT_LIGHT"] = 9] = "SOFT_LIGHT";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["DIFFERENCE"] = 10] = "DIFFERENCE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["EXCLUSION"] = 11] = "EXCLUSION";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["HUE"] = 12] = "HUE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SATURATION"] = 13] = "SATURATION";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR"] = 14] = "COLOR";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["LUMINOSITY"] = 15] = "LUMINOSITY";
-    })(MIX_BLEND_MODE || (MIX_BLEND_MODE = {}));
-    var OVERFLOW;
-    (function (OVERFLOW) {
-        OVERFLOW[OVERFLOW["VISIBLE"] = 0] = "VISIBLE";
-        OVERFLOW[OVERFLOW["HIDDEN"] = 1] = "HIDDEN";
-    })(OVERFLOW || (OVERFLOW = {}));
-    var FONT_STYLE;
-    (function (FONT_STYLE) {
-        FONT_STYLE[FONT_STYLE["NORMAL"] = 0] = "NORMAL";
-        FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
-        FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
-    })(FONT_STYLE || (FONT_STYLE = {}));
-    var MASK_TYPE;
-    (function (MASK_TYPE) {
-        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
-        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
-        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
-    })(MASK_TYPE || (MASK_TYPE = {}));
-
-    var RefreshLevel;
-    (function (RefreshLevel) {
-        RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
-        RefreshLevel[RefreshLevel["CACHE"] = 1] = "CACHE";
-        RefreshLevel[RefreshLevel["TRANSLATE_X"] = 2] = "TRANSLATE_X";
-        RefreshLevel[RefreshLevel["TRANSLATE_Y"] = 4] = "TRANSLATE_Y";
-        RefreshLevel[RefreshLevel["TRANSLATE"] = 6] = "TRANSLATE";
-        RefreshLevel[RefreshLevel["ROTATE_Z"] = 8] = "ROTATE_Z";
-        RefreshLevel[RefreshLevel["SCALE_X"] = 16] = "SCALE_X";
-        RefreshLevel[RefreshLevel["SCALE_Y"] = 32] = "SCALE_Y";
-        RefreshLevel[RefreshLevel["SCALE"] = 48] = "SCALE";
-        RefreshLevel[RefreshLevel["TRANSFORM"] = 64] = "TRANSFORM";
-        RefreshLevel[RefreshLevel["TRANSFORM_ALL"] = 126] = "TRANSFORM_ALL";
-        RefreshLevel[RefreshLevel["OPACITY"] = 128] = "OPACITY";
-        RefreshLevel[RefreshLevel["FILTER"] = 256] = "FILTER";
-        RefreshLevel[RefreshLevel["MIX_BLEND_MODE"] = 512] = "MIX_BLEND_MODE";
-        RefreshLevel[RefreshLevel["MASK"] = 1024] = "MASK";
-        RefreshLevel[RefreshLevel["REPAINT"] = 2048] = "REPAINT";
-        RefreshLevel[RefreshLevel["REFLOW"] = 4096] = "REFLOW";
-        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 4222] = "REFLOW_TRANSFORM";
-        RefreshLevel[RefreshLevel["REBUILD"] = 8192] = "REBUILD";
-    })(RefreshLevel || (RefreshLevel = {}));
-    function isReflow(lv) {
-        return lv >= RefreshLevel.REFLOW;
-    }
-    function isRepaint(lv) {
-        return lv < RefreshLevel.REFLOW;
-    }
-    function getLevel(k) {
-        if (k === StyleKey.TRANSLATE_X) {
-            return RefreshLevel.TRANSLATE_X;
-        }
-        if (k === StyleKey.TRANSLATE_Y) {
-            return RefreshLevel.TRANSLATE_Y;
-        }
-        if (k === StyleKey.ROTATE_Z) {
-            return RefreshLevel.ROTATE_Z;
-        }
-        if (k === StyleKey.SCALE_X) {
-            return RefreshLevel.SCALE_X;
-        }
-        if (k === StyleKey.SCALE_Y) {
-            return RefreshLevel.SCALE_Y;
-        }
-        if (k === StyleKey.TRANSFORM_ORIGIN) {
-            return RefreshLevel.TRANSFORM;
-        }
-        if (k === StyleKey.OPACITY) {
-            return RefreshLevel.OPACITY;
-        }
-        if (k === StyleKey.MIX_BLEND_MODE) {
-            return RefreshLevel.MIX_BLEND_MODE;
-        }
-        if (isRepaint(k)) {
-            return RefreshLevel.REPAINT;
-        }
-        return RefreshLevel.REFLOW;
-    }
-
     function identity() {
         return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     }
@@ -434,6 +232,333 @@
         }
         return { x1, y1, x2, y2, x3, y3, x4, y4 };
     }
+
+    // 向量叉乘积
+    function crossProduct(x1, y1, x2, y2) {
+        return x1 * y2 - x2 * y1;
+    }
+
+    function d2r(n) {
+        return n * Math.PI / 180;
+    }
+    /**
+     * 判断点是否在多边形内
+     * @param x 点坐标
+     * @param y
+     * @param vertexes 多边形顶点坐标
+     * @returns {boolean}
+     */
+    function pointInConvexPolygon(x, y, vertexes) {
+        // 先取最大最小值得一个外围矩形，在外边可快速判断false
+        let { x: xmax, y: ymax } = vertexes[0];
+        let { x: xmin, y: ymin } = vertexes[0];
+        let len = vertexes.length;
+        for (let i = 1; i < len; i++) {
+            let { x, y } = vertexes[i];
+            xmax = Math.max(xmax, x);
+            ymax = Math.max(ymax, y);
+            xmin = Math.min(xmin, x);
+            ymin = Math.min(ymin, y);
+        }
+        if (x < xmin || y < ymin || x > xmax || y > ymax) {
+            return false;
+        }
+        let first;
+        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
+        for (let i = 0, len = vertexes.length; i < len; i++) {
+            let { x: x1, y: y1 } = vertexes[i];
+            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
+            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+            if (n !== 0) {
+                n = n > 0 ? 1 : 0;
+                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+                if (first === undefined) {
+                    first = n;
+                }
+                else if (first ^ n) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    // 判断点是否在一个矩形，比如事件发生是否在节点上
+    function pointInRect(x, y, x1, y1, x2, y2, matrix) {
+        if (matrix && !isE(matrix)) {
+            let t1 = calPoint({ x: x1, y: y1 }, matrix);
+            let xa = t1.x, ya = t1.y;
+            let t2 = calPoint({ x: x2, y: y2 }, matrix);
+            let xb = t2.x, yb = t2.y;
+            return pointInConvexPolygon(x, y, [
+                { x: xa, y: ya },
+                { x: xb, y: ya },
+                { x: xb, y: yb },
+                { x: xa, y: yb },
+            ]);
+        }
+        else {
+            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
+        }
+    }
+
+    function extend(target, source, keys) {
+        if (source === null || typeof source !== 'object') {
+            return target;
+        }
+        if (!keys) {
+            keys = Object.keys(source);
+        }
+        let i = 0;
+        const len = keys.length;
+        while (i < len) {
+            const k = keys[i];
+            target[k] = source[k];
+            i++;
+        }
+        return target;
+    }
+
+    class Event {
+        constructor() {
+            this.__eHash = {};
+        }
+        on(id, handle) {
+            if (!isFunction(handle)) {
+                return;
+            }
+            let self = this;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.on(id[i], handle);
+                }
+            }
+            else {
+                if (!self.__eHash.hasOwnProperty(id)) {
+                    self.__eHash[id] = [];
+                }
+                // 遍历防止此handle被侦听过了
+                for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
+                    if (item[i] === handle) {
+                        return self;
+                    }
+                }
+                self.__eHash[id].push(handle);
+            }
+            return self;
+        }
+        once(id, handle) {
+            if (!isFunction(handle)) {
+                return;
+            }
+            let self = this;
+            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
+            function cb() {
+                handle.apply(self, arguments);
+                self.off(id, cb);
+            }
+            cb.__eventCb = handle;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.once(id[i], handle);
+                }
+            }
+            else if (handle) {
+                self.on(id, cb);
+            }
+            return this;
+        }
+        off(id, handle) {
+            let self = this;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.off(id[i], handle);
+                }
+            }
+            else if (self.__eHash.hasOwnProperty(id)) {
+                if (handle) {
+                    for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
+                        // 需考虑once包裹的引用对比
+                        if (item[i] === handle || item[i].__eventCb === handle) {
+                            item.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+                // 未定义为全部清除
+                else {
+                    delete self.__eHash[id];
+                }
+            }
+            return this;
+        }
+        emit(id, ...data) {
+            let self = this;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.emit(id[i], data);
+                }
+            }
+            else {
+                if (self.__eHash.hasOwnProperty(id)) {
+                    let list = self.__eHash[id];
+                    if (list.length) {
+                        list = list.slice();
+                        for (let i = 0, len = list.length; i < len; i++) {
+                            let cb = list[i];
+                            if (isFunction(cb)) {
+                                cb.apply(self, data);
+                            }
+                        }
+                    }
+                }
+            }
+            return this;
+        }
+    }
+    Event.REFRESH = 'refresh';
+
+    var StyleKey;
+    (function (StyleKey) {
+        StyleKey[StyleKey["TOP"] = 0] = "TOP";
+        StyleKey[StyleKey["RIGHT"] = 1] = "RIGHT";
+        StyleKey[StyleKey["BOTTOM"] = 2] = "BOTTOM";
+        StyleKey[StyleKey["LEFT"] = 3] = "LEFT";
+        StyleKey[StyleKey["WIDTH"] = 4] = "WIDTH";
+        StyleKey[StyleKey["HEIGHT"] = 5] = "HEIGHT";
+        StyleKey[StyleKey["LINE_HEIGHT"] = 6] = "LINE_HEIGHT";
+        StyleKey[StyleKey["FONT_FAMILY"] = 7] = "FONT_FAMILY";
+        StyleKey[StyleKey["FONT_SIZE"] = 8] = "FONT_SIZE";
+        StyleKey[StyleKey["FONT_WEIGHT"] = 9] = "FONT_WEIGHT";
+        StyleKey[StyleKey["FONT_STYLE"] = 10] = "FONT_STYLE";
+        StyleKey[StyleKey["VISIBLE"] = 11] = "VISIBLE";
+        StyleKey[StyleKey["OVERFLOW"] = 12] = "OVERFLOW";
+        StyleKey[StyleKey["BACKGROUND_COLOR"] = 13] = "BACKGROUND_COLOR";
+        StyleKey[StyleKey["COLOR"] = 14] = "COLOR";
+        StyleKey[StyleKey["OPACITY"] = 15] = "OPACITY";
+        StyleKey[StyleKey["TRANSLATE_X"] = 16] = "TRANSLATE_X";
+        StyleKey[StyleKey["TRANSLATE_Y"] = 17] = "TRANSLATE_Y";
+        StyleKey[StyleKey["SCALE_X"] = 18] = "SCALE_X";
+        StyleKey[StyleKey["SCALE_Y"] = 19] = "SCALE_Y";
+        StyleKey[StyleKey["ROTATE_Z"] = 20] = "ROTATE_Z";
+        StyleKey[StyleKey["TRANSFORM_ORIGIN"] = 21] = "TRANSFORM_ORIGIN";
+        StyleKey[StyleKey["MIX_BLEND_MODE"] = 22] = "MIX_BLEND_MODE";
+        StyleKey[StyleKey["POINTER_EVENTS"] = 23] = "POINTER_EVENTS";
+        // FILTER = 14,
+        // FILL = 15,
+        // STROKE = 16,
+        // STROKE_WIDTH = 17,
+        // STROKE_DASHARRAY = 18,
+        // STROKE_DASHARRAY_STR = 19,
+        // STROKE_LINECAP = 20,
+        // STROKE_LINEJOIN = 21,
+        // STROKE_MITERLIMIT = 22,
+        // FILL_RULE = 23,
+    })(StyleKey || (StyleKey = {}));
+    const STYLE2LOWER_MAP = {};
+    function styleKey2Lower(s) {
+        let res = STYLE2LOWER_MAP[s];
+        if (!res) {
+            res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
+                return $1.toUpperCase();
+            });
+        }
+        return res;
+    }
+    const STYLE2UPPER_MAP = {};
+    function styleKey2Upper(s) {
+        let res = STYLE2UPPER_MAP[s];
+        if (!res) {
+            res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+                return $1 + '_' + $2;
+            }).toUpperCase();
+        }
+        return res;
+    }
+    const StyleKeyHash = {};
+    for (let i in StyleKey) {
+        if (!/^\d+$/.test(i)) {
+            StyleKeyHash[styleKey2Lower(i)] = StyleKey[i];
+        }
+    }
+    var StyleUnit;
+    (function (StyleUnit) {
+        StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
+        StyleUnit[StyleUnit["PX"] = 1] = "PX";
+        StyleUnit[StyleUnit["PERCENT"] = 2] = "PERCENT";
+        StyleUnit[StyleUnit["NUMBER"] = 3] = "NUMBER";
+        StyleUnit[StyleUnit["DEG"] = 4] = "DEG";
+        StyleUnit[StyleUnit["RGBA"] = 5] = "RGBA";
+        StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
+        StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
+        StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
+    })(StyleUnit || (StyleUnit = {}));
+    function calUnit(v) {
+        if (v === 'auto') {
+            return {
+                v: 0,
+                u: StyleUnit.AUTO,
+            };
+        }
+        let n = parseFloat(v) || 0;
+        if (/%$/.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.PERCENT,
+            };
+        }
+        else if (/px$/i.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.PX,
+            };
+        }
+        else if (/deg$/i.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.DEG,
+            };
+        }
+        return {
+            v: n,
+            u: StyleUnit.NUMBER,
+        };
+    }
+    var MIX_BLEND_MODE;
+    (function (MIX_BLEND_MODE) {
+        MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["MULTIPLY"] = 1] = "MULTIPLY";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SCREEN"] = 2] = "SCREEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["OVERLAY"] = 3] = "OVERLAY";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["DARKEN"] = 4] = "DARKEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["LIGHTEN"] = 5] = "LIGHTEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_DODGE"] = 6] = "COLOR_DODGE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_BURN"] = 7] = "COLOR_BURN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["HARD_LIGHT"] = 8] = "HARD_LIGHT";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SOFT_LIGHT"] = 9] = "SOFT_LIGHT";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["DIFFERENCE"] = 10] = "DIFFERENCE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["EXCLUSION"] = 11] = "EXCLUSION";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["HUE"] = 12] = "HUE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SATURATION"] = 13] = "SATURATION";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR"] = 14] = "COLOR";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["LUMINOSITY"] = 15] = "LUMINOSITY";
+    })(MIX_BLEND_MODE || (MIX_BLEND_MODE = {}));
+    var OVERFLOW;
+    (function (OVERFLOW) {
+        OVERFLOW[OVERFLOW["VISIBLE"] = 0] = "VISIBLE";
+        OVERFLOW[OVERFLOW["HIDDEN"] = 1] = "HIDDEN";
+    })(OVERFLOW || (OVERFLOW = {}));
+    var FONT_STYLE;
+    (function (FONT_STYLE) {
+        FONT_STYLE[FONT_STYLE["NORMAL"] = 0] = "NORMAL";
+        FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
+        FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
+    })(FONT_STYLE || (FONT_STYLE = {}));
+    var MASK_TYPE;
+    (function (MASK_TYPE) {
+        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
+        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
+        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
+    })(MASK_TYPE || (MASK_TYPE = {}));
 
     const SPF = 1000 / 60;
     const CANVAS = {};
@@ -1034,10 +1159,7 @@
             if (o.length === 1) {
                 o[1] = o[0];
             }
-            const arr = [
-                { v: 50, u: StyleUnit.PERCENT },
-                { v: 50, u: StyleUnit.PERCENT },
-            ];
+            const arr = [];
             for (let i = 0; i < 2; i++) {
                 let item = o[i];
                 if (/^[-+]?[\d.]/.test(item)) {
@@ -1249,91 +1371,6 @@
         return (style[StyleKey.LINE_HEIGHT] - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
     }
 
-    function extend(target, source, keys) {
-        if (source === null || typeof source !== 'object') {
-            return target;
-        }
-        if (!keys) {
-            keys = Object.keys(source);
-        }
-        let i = 0;
-        const len = keys.length;
-        while (i < len) {
-            const k = keys[i];
-            target[k] = source[k];
-            i++;
-        }
-        return target;
-    }
-
-    // 向量叉乘积
-    function crossProduct(x1, y1, x2, y2) {
-        return x1 * y2 - x2 * y1;
-    }
-
-    function d2r(n) {
-        return n * Math.PI / 180;
-    }
-    /**
-     * 判断点是否在多边形内
-     * @param x 点坐标
-     * @param y
-     * @param vertexes 多边形顶点坐标
-     * @returns {boolean}
-     */
-    function pointInConvexPolygon(x, y, vertexes) {
-        // 先取最大最小值得一个外围矩形，在外边可快速判断false
-        let { x: xmax, y: ymax } = vertexes[0];
-        let { x: xmin, y: ymin } = vertexes[0];
-        let len = vertexes.length;
-        for (let i = 1; i < len; i++) {
-            let { x, y } = vertexes[i];
-            xmax = Math.max(xmax, x);
-            ymax = Math.max(ymax, y);
-            xmin = Math.min(xmin, x);
-            ymin = Math.min(ymin, y);
-        }
-        if (x < xmin || y < ymin || x > xmax || y > ymax) {
-            return false;
-        }
-        let first;
-        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
-        for (let i = 0, len = vertexes.length; i < len; i++) {
-            let { x: x1, y: y1 } = vertexes[i];
-            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
-            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
-            if (n !== 0) {
-                n = n > 0 ? 1 : 0;
-                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
-                if (first === undefined) {
-                    first = n;
-                }
-                else if (first ^ n) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    // 判断点是否在一个矩形，比如事件发生是否在节点上
-    function pointInRect(x, y, x1, y1, x2, y2, matrix) {
-        if (matrix && !isE(matrix)) {
-            let t1 = calPoint({ x: x1, y: y1 }, matrix);
-            let xa = t1.x, ya = t1.y;
-            let t2 = calPoint({ x: x2, y: y2 }, matrix);
-            let xb = t2.x, yb = t2.y;
-            return pointInConvexPolygon(x, y, [
-                { x: xa, y: ya },
-                { x: xb, y: ya },
-                { x: xb, y: yb },
-                { x: xa, y: yb },
-            ]);
-        }
-        else {
-            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
-        }
-    }
-
     function calRotateZ(t, v) {
         v = d2r(v);
         let sin = Math.sin(v);
@@ -1352,6 +1389,65 @@
         res = tfoMultiply(ox, oy, res);
         res = multiplyTfo(res, -ox, -oy);
         return res;
+    }
+
+    var RefreshLevel;
+    (function (RefreshLevel) {
+        RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
+        RefreshLevel[RefreshLevel["CACHE"] = 1] = "CACHE";
+        RefreshLevel[RefreshLevel["TRANSLATE_X"] = 2] = "TRANSLATE_X";
+        RefreshLevel[RefreshLevel["TRANSLATE_Y"] = 4] = "TRANSLATE_Y";
+        RefreshLevel[RefreshLevel["TRANSLATE"] = 6] = "TRANSLATE";
+        RefreshLevel[RefreshLevel["ROTATE_Z"] = 8] = "ROTATE_Z";
+        RefreshLevel[RefreshLevel["SCALE_X"] = 16] = "SCALE_X";
+        RefreshLevel[RefreshLevel["SCALE_Y"] = 32] = "SCALE_Y";
+        RefreshLevel[RefreshLevel["SCALE"] = 48] = "SCALE";
+        RefreshLevel[RefreshLevel["TRANSFORM"] = 64] = "TRANSFORM";
+        RefreshLevel[RefreshLevel["TRANSFORM_ALL"] = 126] = "TRANSFORM_ALL";
+        RefreshLevel[RefreshLevel["OPACITY"] = 128] = "OPACITY";
+        RefreshLevel[RefreshLevel["FILTER"] = 256] = "FILTER";
+        RefreshLevel[RefreshLevel["MIX_BLEND_MODE"] = 512] = "MIX_BLEND_MODE";
+        RefreshLevel[RefreshLevel["MASK"] = 1024] = "MASK";
+        RefreshLevel[RefreshLevel["REPAINT"] = 2048] = "REPAINT";
+        RefreshLevel[RefreshLevel["REFLOW"] = 4096] = "REFLOW";
+        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 4222] = "REFLOW_TRANSFORM";
+        RefreshLevel[RefreshLevel["REBUILD"] = 8192] = "REBUILD";
+    })(RefreshLevel || (RefreshLevel = {}));
+    function isReflow(lv) {
+        return lv >= RefreshLevel.REFLOW;
+    }
+    function isRepaint(lv) {
+        return lv < RefreshLevel.REFLOW;
+    }
+    function getLevel(k) {
+        if (k === StyleKey.TRANSLATE_X) {
+            return RefreshLevel.TRANSLATE_X;
+        }
+        if (k === StyleKey.TRANSLATE_Y) {
+            return RefreshLevel.TRANSLATE_Y;
+        }
+        if (k === StyleKey.ROTATE_Z) {
+            return RefreshLevel.ROTATE_Z;
+        }
+        if (k === StyleKey.SCALE_X) {
+            return RefreshLevel.SCALE_X;
+        }
+        if (k === StyleKey.SCALE_Y) {
+            return RefreshLevel.SCALE_Y;
+        }
+        if (k === StyleKey.TRANSFORM_ORIGIN) {
+            return RefreshLevel.TRANSFORM;
+        }
+        if (k === StyleKey.OPACITY) {
+            return RefreshLevel.OPACITY;
+        }
+        if (k === StyleKey.MIX_BLEND_MODE) {
+            return RefreshLevel.MIX_BLEND_MODE;
+        }
+        if (isRepaint(k)) {
+            return RefreshLevel.REPAINT;
+        }
+        return RefreshLevel.REFLOW;
     }
 
     function createTexture(gl, n, tex, width, height) {
@@ -1511,8 +1607,9 @@
         }
     }
 
-    class Node {
+    class Node extends Event {
         constructor(props) {
+            super();
             this.props = props;
             this.style = extend([], normalizeStyle(props.style || {}));
             this.computedStyle = []; // 输出展示的值
@@ -1935,6 +2032,7 @@
                     }],
             };
         }
+        // 可能在布局后异步渲染前被访问，此时没有这个数据，需根据状态判断是否需要从根节点开始计算世界矩阵
         get matrixWorld() {
             const rl = this.refreshLevel;
             if (rl & RefreshLevel.TRANSFORM_ALL) {
@@ -2370,22 +2468,22 @@
                 }
                 const vtPoint = new Float32Array(96);
                 const vtTex = new Float32Array(96);
-                const tl = calRectPoint(x - 6, y - 6, x, y, matrixWorld);
+                const tl = calRectPoint(x - 3, y - 3, x, y, matrixWorld);
                 const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
                 const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
                 const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
                 const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy);
-                const tr = calRectPoint(x + width, y - 6, x + width + 6, y, matrixWorld);
+                const tr = calRectPoint(x + width, y - 3, x + width + 3, y, matrixWorld);
                 const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy);
                 const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy);
                 const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy);
                 const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy);
-                const br = calRectPoint(x + width, y + height, x + width + 6, y + height + 6, matrixWorld);
+                const br = calRectPoint(x + width, y + height, x + width + 3, y + height + 3, matrixWorld);
                 const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy);
                 const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy);
                 const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy);
                 const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy);
-                const bl = calRectPoint(x - 6, y + height, x, y + height + 6, matrixWorld);
+                const bl = calRectPoint(x - 3, y + height, x, y + height + 3, matrixWorld);
                 const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy);
                 const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy);
                 const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy);
@@ -3217,6 +3315,9 @@ void main() {
                     width: '100%',
                     height: '100%',
                     pointerEvents: false,
+                    scaleX: this.dpi,
+                    scaleY: this.dpi,
+                    transformOrigin: [0, 0],
                 }),
             }, []);
             this.appendChild(this.pageContainer);
@@ -3373,6 +3474,7 @@ void main() {
             }
             this.clear();
             renderWebgl(this.ctx, this, this.rl);
+            this.emit(Event.REFRESH, this.rl);
             this.rl = RefreshLevel.NONE;
         }
         reLayout() {

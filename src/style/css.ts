@@ -195,10 +195,7 @@ export function normalizeStyle(style: JStyle): any {
     if (o.length === 1) {
       o[1] = o[0];
     }
-    const arr: Array<StyleNumValue> = [
-      { v: 50, u: StyleUnit.PERCENT },
-      { v: 50, u: StyleUnit.PERCENT },
-    ];
+    const arr: Array<StyleNumValue> = [];
     for (let i = 0; i < 2; i++) {
       let item = o[i];
       if (/^[-+]?[\d.]/.test(item as string)) {

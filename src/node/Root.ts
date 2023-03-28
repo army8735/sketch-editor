@@ -1,9 +1,11 @@
 import Node from './Node';
 import Page from './Page';
+import ArtBoard from './ArtBoard';
 import Overlay from './overlay/Overlay';
 import { getDefaultStyle, JPage, Props } from '../format';
 import { renderWebgl, Struct } from '../refresh/struct';
 import { frame, FrameCallback } from '../animation/frame';
+import Event from '../util/Event';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { checkReflow } from './reflow';
 import Container from './Container';
@@ -12,7 +14,6 @@ import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
 import ca from '../gl/ca';
-import ArtBoard from './ArtBoard';
 
 let uuid = 0;
 
@@ -73,6 +74,9 @@ class Root extends Container implements FrameCallback {
         width: '100%',
         height: '100%',
         pointerEvents: false,
+        scaleX: this.dpi,
+        scaleY: this.dpi,
+        transformOrigin: [0, 0],
       }),
     }, []);
     this.appendChild(this.pageContainer);
@@ -241,6 +245,7 @@ class Root extends Container implements FrameCallback {
     }
     this.clear();
     renderWebgl(this.ctx!, this, this.rl);
+    this.emit(Event.REFRESH, this.rl)
     this.rl = RefreshLevel.NONE;
   }
 

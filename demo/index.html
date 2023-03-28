@@ -237,12 +237,18 @@
   const hover = document.querySelector('#hover');
   const selection = document.querySelector('#selection');
 
+  matchMedia(
+    `(resolution: ${window.devicePixelRatio}dppx)`
+  ).addEventListener("change", function() {
+  });
+
   let root;
   let originX, originY;
   let isDown, isMove;
   let startX, startY, lastX, lastY;
   let hoverNode, selectionNode;
   let metaKey, shiftKey, ctrlKey, altKey;
+  let dpi = window.devicePixelRatio;
 
   input.onchange = function(e) {
     const file = input.files[0];
@@ -254,7 +260,6 @@
         const canvas = document.createElement('canvas');
         function resize() {
           const { clientWidth, clientHeight } = canvasC;
-          const dpi = window.devicePixelRatio;
           canvas.width = clientWidth * dpi;
           canvas.height = clientHeight * dpi;
           const o = canvasC.getBoundingClientRect();
@@ -315,15 +320,15 @@
       if (selectionNode) {
         // metaKey按下可以选择最深叶子节点，但排除Group
         if (metaKey && lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-          const res = root.getNodeFromCurPage(lastX, lastY, !metaKey, false, undefined);
+          const res = root.getNodeFromCurPage(lastX * dpi, lastY * dpi, !metaKey, false, undefined);
           if (res && res !== selectionNode) {
             if(hoverNode !== res) {
               hoverNode = res;
               const rect = hoverNode.getBoundingClientRect();
-              hover.style.left = rect.left + 'px';
-              hover.style.top = rect.top + 'px';
-              hover.style.width = rect.right - rect.left + 'px';
-              hover.style.height = rect.bottom - rect.top + 'px';
+              hover.style.left = rect.left / dpi + 'px';
+              hover.style.top = rect.top / dpi + 'px';
+              hover.style.width = (rect.right - rect.left) / dpi + 'px';
+              hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
               hover.classList.add('show');
             }
           }
@@ -334,15 +339,15 @@
         }
       }
       else if (lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-        const res = root.getNodeFromCurPage(lastX, lastY, !metaKey, false, metaKey ? undefined : 1);
+        const res = root.getNodeFromCurPage(lastX * dpi, lastY * dpi, !metaKey, false, metaKey ? undefined : 1);
         if (res) {
           if(hoverNode !== res) {
             hoverNode = res;
             const rect = hoverNode.getBoundingClientRect();
-            hover.style.left = rect.left + 'px';
-            hover.style.top = rect.top + 'px';
-            hover.style.width = rect.right - rect.left + 'px';
-            hover.style.height = rect.bottom - rect.top + 'px';
+            hover.style.left = rect.left / dpi + 'px';
+            hover.style.top = rect.top / dpi + 'px';
+            hover.style.width = (rect.right - rect.left) / dpi + 'px';
+            hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
             hover.classList.add('show');
           }
         }

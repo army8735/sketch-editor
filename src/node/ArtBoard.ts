@@ -42,25 +42,25 @@ class ArtBoard extends Container {
       const vtPoint = new Float32Array(96);
       const vtTex = new Float32Array(96);
 
-      const tl = calRectPoint(x - 6, y - 6, x, y, matrixWorld);
+      const tl = calRectPoint(x - 3, y - 3, x, y, matrixWorld);
       const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
       const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
       const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
       const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy);
 
-      const tr = calRectPoint(x + width, y - 6, x + width + 6, y, matrixWorld);
+      const tr = calRectPoint(x + width, y - 3, x + width + 3, y, matrixWorld);
       const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy);
       const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy);
       const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy);
       const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy);
 
-      const br = calRectPoint(x + width, y + height, x + width + 6, y + height + 6, matrixWorld);
+      const br = calRectPoint(x + width, y + height, x + width + 3, y + height + 3, matrixWorld);
       const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy);
       const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy);
       const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy);
       const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy);
 
-      const bl = calRectPoint(x - 6, y + height, x, y + height + 6, matrixWorld);
+      const bl = calRectPoint(x - 3, y + height, x, y + height + 3, matrixWorld);
       const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy);
       const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy);
       const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy);

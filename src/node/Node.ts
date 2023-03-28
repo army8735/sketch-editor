@@ -1,9 +1,6 @@
 import Root from '../node/Root';
 import Container from '../node/Container';
 import { JStyle, Props } from '../format/';
-import { Struct } from '../refresh/struct';
-import { RefreshLevel } from '../refresh/level';
-import { StyleArray, StyleKey, StyleKeyHash, StyleNumStrValue, StyleUnit } from '../style';
 import {
   assignMatrix,
   calRectPoint,
@@ -14,15 +11,19 @@ import {
   multiplyScaleX,
   multiplyScaleY
 } from '../math/matrix';
-import { calNormalLineHeight, equalStyle, normalizeStyle } from '../style/css';
-import { extend } from '../util';
-import { LayoutData } from './layout';
 import { d2r } from '../math/geom';
+import { extend } from '../util';
+import Event from '../util/Event';
+import { LayoutData } from './layout';
+import { calNormalLineHeight, equalStyle, normalizeStyle } from '../style/css';
+import { StyleArray, StyleKey, StyleKeyHash, StyleNumStrValue, StyleUnit } from '../style';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import { Struct } from '../refresh/struct';
+import { RefreshLevel } from '../refresh/level';
 import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
 
-class Node {
+class Node extends Event {
   x: number;
   y: number;
   width: number;
@@ -50,6 +51,7 @@ class Node {
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
 
   constructor(props: Props) {
+    super();
     this.props = props;
     this.style = extend([], normalizeStyle(props.style || {}));
     this.computedStyle = []; // 输出展示的值
@@ -497,6 +499,7 @@ class Node {
     };
   }
 
+  // 可能在布局后异步渲染前被访问，此时没有这个数据，需根据状态判断是否需要从根节点开始计算世界矩阵
   get matrixWorld(): Float64Array {
     const rl = this.refreshLevel;
     if (rl & RefreshLevel.TRANSFORM_ALL) {
