@@ -2010,8 +2010,8 @@
             return computedStyle[StyleKeyHash[key]];
         }
         getBoundingClientRect() {
-            const { outerBbox, matrixWorld } = this;
-            const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld);
+            const { bbox, matrixWorld } = this;
+            const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
             return {
                 left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
                 top: Math.min(y1, Math.min(y2, Math.min(y3, y4))),
@@ -2050,22 +2050,22 @@
             }
             return this._matrixWorld;
         }
+        get rect() {
+            if (!this._rect) {
+                this._rect = new Float64Array(4);
+                this._rect[0] = this.x;
+                this._rect[1] = this.y;
+                this._rect[2] = this.x + this.width;
+                this._rect[3] = this.y + this.height;
+            }
+            return this._rect;
+        }
         get bbox() {
             if (!this._bbox) {
-                this._bbox = new Float64Array(4);
-                this._bbox[0] = this.x;
-                this._bbox[1] = this.y;
-                this._bbox[2] = this.x + this.width;
-                this._bbox[3] = this.y + this.height;
+                let bbox = this._rect || this.rect;
+                this._bbox = bbox.slice(0);
             }
             return this._bbox;
-        }
-        get outerBbox() {
-            if (!this._outerBbox) {
-                let bbox = this._bbox || this.bbox;
-                this._outerBbox = bbox.slice(0);
-            }
-            return this._outerBbox;
         }
     }
 
@@ -2400,9 +2400,9 @@
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
                 const child = children[i];
-                const { struct, computedStyle, outerBbox, matrixWorld } = child;
+                const { struct, computedStyle, bbox, matrixWorld } = child;
                 // 在内部且pointerEvents为true才返回
-                if (pointInRect(x, y, outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld)) {
+                if (pointInRect(x, y, bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld)) {
                     // 不指定lv则找最深处的child
                     if (lv === undefined) {
                         if (child instanceof Container) {

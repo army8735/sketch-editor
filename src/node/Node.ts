@@ -44,8 +44,8 @@ class Node extends Event {
   matrix: Float64Array;
   _matrixWorld: Float64Array;
   layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
+  private _rect: Float64Array | undefined;
   private _bbox: Float64Array | undefined;
-  private _outerBbox: Float64Array | undefined;
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
@@ -475,9 +475,9 @@ class Node extends Event {
   }
 
   getBoundingClientRect() {
-    const { outerBbox, matrixWorld } = this;
+    const { bbox, matrixWorld } = this;
     const { x1, y1, x2, y2, x3, y3, x4, y4 }
-      = calRectPoint(outerBbox[0], outerBbox[1], outerBbox[2], outerBbox[3], matrixWorld);
+      = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
     return {
       left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
       top: Math.min(y1, Math.min(y2, Math.min(y3, y4))),
@@ -518,23 +518,23 @@ class Node extends Event {
     return this._matrixWorld;
   }
 
-  get bbox(): Float64Array {
-    if (!this._bbox) {
-      this._bbox = new Float64Array(4);
-      this._bbox[0] = this.x;
-      this._bbox[1] = this.y;
-      this._bbox[2] = this.x + this.width;
-      this._bbox[3] = this.y + this.height;
+  get rect(): Float64Array {
+    if (!this._rect) {
+      this._rect = new Float64Array(4);
+      this._rect[0] = this.x;
+      this._rect[1] = this.y;
+      this._rect[2] = this.x + this.width;
+      this._rect[3] = this.y + this.height;
     }
-    return this._bbox;
+    return this._rect;
   }
 
-  get outerBbox(): Float64Array {
-    if (!this._outerBbox) {
-      let bbox = this._bbox || this.bbox;
-      this._outerBbox = bbox.slice(0);
+  get bbox(): Float64Array {
+    if (!this._bbox) {
+      let bbox = this._rect || this.rect;
+      this._bbox = bbox.slice(0);
     }
-    return this._outerBbox;
+    return this._bbox;
   }
 
 }
