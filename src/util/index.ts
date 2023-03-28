@@ -1,4 +1,6 @@
-import { isNil, isDate, isPlainObject } from './type';
+import type, { isNil, isDate, isPlainObject } from './type';
+import Event from './Event';
+import inject from './inject';
 
 export function extend(target: any, source: any, keys?: Array<string>) {
   if(source === null || typeof source !== 'object') {
@@ -33,3 +35,9 @@ export function clone(obj: any) {
   });
   return n;
 }
+
+export default {
+  type,
+  Event,
+  inject,
+};

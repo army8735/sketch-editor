@@ -1,3 +1,5 @@
+import font from './font';
+
 export enum StyleKey {
   TOP = 0,
   RIGHT = 1,
@@ -195,3 +197,9 @@ export enum MASK_TYPE {
   MASK = 1,
   CLIP = 2,
 }
+
+export default {
+  font,
+  StyleKey,
+  StyleUnit,
+};

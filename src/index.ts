@@ -1,11 +1,11 @@
 import { JFile, getDefaultStyle } from './format';
-import { isNumber } from './util/type';
-import Root from './node/Root';
-import Page from './node/Page';
-import ArtBoard from './node/ArtBoard';
-import Group from './node/Group';
-import Container from './node/Container';
 import { openAndConvertSketchBuffer } from './format/sketch';
+import refresh from './refresh';
+import style from './style';
+import math from './math';
+import util from './util';
+import animation from './animation';
+import node from './node';
 
 function apply(json: any, imgs: Array<string>): any {
   if (!json) {
@@ -17,7 +17,7 @@ function apply(json: any, imgs: Array<string>): any {
   const { type, props = {}, children = [] } = json;
   if (type === 'Bitmap') {
     const src = props.src;
-    if (isNumber(src)) {
+    if (util.type.isNumber(src)) {
       props.src = imgs[src];
     }
   }
@@ -32,7 +32,7 @@ export default {
     // json中的imgs下标替换
     json.pages = apply(json.pages, json.imgs);
     const { width, height } = canvas;
-    const root = new Root(canvas, {
+    const root = new node.Root(canvas, {
       dpi,
       style: getDefaultStyle({
         width,
@@ -44,8 +44,10 @@ export default {
     return root;
   },
   openAndConvertSketchBuffer,
-  Page,
-  ArtBoard,
-  Group,
-  Container,
+  node,
+  refresh,
+  style,
+  math,
+  util,
+  animation,
 };

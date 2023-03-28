@@ -155,3 +155,5 @@ export class Frame {
 }
 
 export const frame = new Frame();
+
+export default frame;

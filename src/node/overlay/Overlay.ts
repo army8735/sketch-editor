@@ -28,10 +28,10 @@ class Overlay extends Container {
       const rect = ab.getBoundingClientRect();
       const text = new Text({
         style: getDefaultStyle({
-          fontSize: 20,
+          fontSize: 24,
           color: '#777',
           translateX: rect.left,
-          translateY: rect.top - 28,
+          translateY: rect.top - 32,
         }),
       }, ab.props.name || '画板');
       this.artBoard.appendChild(text);

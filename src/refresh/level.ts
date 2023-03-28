@@ -60,3 +60,7 @@ export function getLevel(k: StyleKey): RefreshLevel {
   }
   return RefreshLevel.REFLOW;
 }
+
+export default {
+  RefreshLevel,
+};

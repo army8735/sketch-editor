@@ -207,7 +207,7 @@
   <div class="container">
     <div class="list">
       <div class="page" id="page"></div>
-      <div class="tree" id="tree"></div>
+      <ol class="tree" id="tree"></ol>
     </div>
     <div class="main" id="main">
       <div class="canvas-c" id="canvasC"></div>
@@ -231,6 +231,7 @@
 <script src="../index.js"></script>
 <script>
   const input = document.querySelector('#file');
+  const tree = document.querySelector('#tree');
   const main = document.querySelector('#main');
   const canvasC = document.querySelector('#canvasC');
   const overlap = document.querySelector('#overlap');
@@ -270,6 +271,26 @@
         window.onresize = resize;
         canvasC.appendChild(canvas);
         root = editor.parse(json, canvas, dpi);
+        root.on('refresh', function(lv) {
+          if (lv & editor.refresh.level.RefreshLevel.REBUILD) {
+            let s = ''; console.log(root.getCurPageStructs());
+            const structs = root.getCurPageStructs();
+            // const structs = root.structs, len = structs.length;
+            // for (let i = 0, len = root.structs.length; i++) {}
+            structs.forEach(item => {
+              if (item.isArtBoard) {
+                s += `<li class="ab">${item.node.props.name}</li>`;
+              }
+              else if (item.isGroup) {
+                s += `<li class="group">${item.node.props.name}</li>`;
+              }
+              else {
+                s += `<li class="node">${item.node.props.name}</li>`;
+              }
+            });
+            tree.innerHTML = s;
+          }
+        });
       });
     }
   }

@@ -69,3 +69,10 @@ export function pointInRect(x: number, y: number, x1: number, y1: number, x2: nu
     return x >= x1 && y >= y1 && x <= x2 && y <= y2;
   }
 }
+
+export default {
+  d2r,
+  r2d,
+  pointInConvexPolygon,
+  pointInRect,
+};

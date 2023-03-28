@@ -325,6 +325,16 @@ class Root extends Container implements FrameCallback {
     }
     return null;
   }
+
+  getCurPageStructs() {
+    const page = this.lastPage;
+    if (page) {
+      const structs = this.structs;
+      const struct = page.struct;
+      const i = structs.indexOf(struct);
+      return structs.slice(i + 1, i + struct.total + 1);
+    }
+  }
 }
 
 export default Root;
