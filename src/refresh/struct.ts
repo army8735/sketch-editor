@@ -40,14 +40,16 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     }
   }
   const programs = root.programs;
-  // 先渲染artBoard的背景和阴影
+  // 先渲染artBoard的背景
   const page = root.lastPage;
   if (page) {
     const children = page.children, len = children.length;
     // 背景色分开来
     for (let i = 0; i < len; i++) {
-      const artBoard = children[i] as ArtBoard;
-      artBoard.renderBgc(gl, cx, cy);
+      const artBoard = children[i];
+      if (artBoard instanceof ArtBoard) {
+        artBoard.renderBgc(gl, cx, cy);
+      }
     }
   }
   const program = programs.program;
@@ -89,11 +91,21 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     const children = page.children, len = children.length;
     // boxShadow用统一纹理
     if (ArtBoard.BOX_SHADOW_TEXTURE) {
-      const bsPoint = new Float32Array(len * 96);
-      const bsTex = new Float32Array(len * 96);
+      let count = 0;
       for (let i = 0; i < len; i++) {
-        const artBoard = children[i] as ArtBoard;
-        artBoard.collectBsData(i, bsPoint, bsTex, cx, cy);
+        const artBoard = children[i];
+        if (artBoard instanceof ArtBoard) {
+          count++;
+        }
+      }
+      const bsPoint = new Float32Array(count * 96);
+      const bsTex = new Float32Array(count * 96);
+      let count2 = 0;
+      for (let i = 0; i < len; i++) {
+        const artBoard = children[i];
+        if (artBoard instanceof ArtBoard) {
+          artBoard.collectBsData(count2++, bsPoint, bsTex, cx, cy);
+        }
       }
       const simpleProgram = programs.simpleProgram;
       gl.useProgram(simpleProgram);
@@ -116,7 +128,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       gl.uniform1i(u_texture, 0);
       bindTexture(gl, ArtBoard.BOX_SHADOW_TEXTURE, 0);
       // 渲染并销毁
-      gl.drawArrays(gl.TRIANGLES, 0, len * 48);
+      gl.drawArrays(gl.TRIANGLES, 0, count * 48);
       gl.deleteBuffer(pointBuffer);
       gl.deleteBuffer(texBuffer);
       gl.disableVertexAttribArray(a_position);

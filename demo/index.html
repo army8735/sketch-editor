@@ -273,10 +273,8 @@
         root = editor.parse(json, canvas, dpi);
         root.on('refresh', function(lv) {
           if (lv & editor.refresh.level.RefreshLevel.REBUILD) {
-            let s = ''; console.log(root.getCurPageStructs());
+            let s = '';
             const structs = root.getCurPageStructs();
-            // const structs = root.structs, len = structs.length;
-            // for (let i = 0, len = root.structs.length; i++) {}
             structs.forEach(item => {
               if (item.isArtBoard) {
                 s += `<li class="ab">${item.node.props.name}</li>`;
@@ -292,6 +290,54 @@
           }
         });
       });
+    }
+  }
+
+  function onMove(x, y) {
+    if (root) {
+      lastX = x;
+      lastY = y;
+      const nx = x - originX;
+      const ny = y - originY;
+      if (selectionNode) {
+        // metaKey按下可以选择最深叶子节点，但排除Group
+        if (metaKey && nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width) {
+          const res = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, undefined);
+          if (res && res !== selectionNode) {
+            if(hoverNode !== res) {
+              hoverNode = res;
+              const rect = hoverNode.getBoundingClientRect();
+              hover.style.left = rect.left / dpi + 'px';
+              hover.style.top = rect.top / dpi + 'px';
+              hover.style.width = (rect.right - rect.left) / dpi + 'px';
+              hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
+              hover.classList.add('show');
+            }
+          }
+          else if (hoverNode) {
+            hoverNode = null;
+            hover.classList.remove('show');
+          }
+        }
+      }
+      else if (nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width) {
+        const res = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
+        if (res) {
+          if(hoverNode !== res) {
+            hoverNode = res;
+            const rect = hoverNode.getBoundingClientRect();
+            hover.style.left = rect.left / dpi + 'px';
+            hover.style.top = rect.top / dpi + 'px';
+            hover.style.width = (rect.right - rect.left) / dpi + 'px';
+            hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
+            hover.classList.add('show');
+          }
+        }
+        else if (hoverNode) {
+          hoverNode = null;
+          hover.classList.remove('show');
+        }
+      }
     }
   }
 
@@ -335,49 +381,7 @@
   });
 
   document.addEventListener('mousemove', function(e) {
-    if (root) {
-      lastX = e.pageX - originX;
-      lastY = e.pageY - originY;
-      if (selectionNode) {
-        // metaKey按下可以选择最深叶子节点，但排除Group
-        if (metaKey && lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-          const res = root.getNodeFromCurPage(lastX * dpi, lastY * dpi, !metaKey, false, undefined);
-          if (res && res !== selectionNode) {
-            if(hoverNode !== res) {
-              hoverNode = res;
-              const rect = hoverNode.getBoundingClientRect();
-              hover.style.left = rect.left / dpi + 'px';
-              hover.style.top = rect.top / dpi + 'px';
-              hover.style.width = (rect.right - rect.left) / dpi + 'px';
-              hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
-              hover.classList.add('show');
-            }
-          }
-          else if (hoverNode) {
-            hoverNode = null;
-            hover.classList.remove('show');
-          }
-        }
-      }
-      else if (lastX >= 0 && lastY >= 0 && lastX <= root.width && lastY <= root.width) {
-        const res = root.getNodeFromCurPage(lastX * dpi, lastY * dpi, !metaKey, false, metaKey ? undefined : 1);
-        if (res) {
-          if(hoverNode !== res) {
-            hoverNode = res;
-            const rect = hoverNode.getBoundingClientRect();
-            hover.style.left = rect.left / dpi + 'px';
-            hover.style.top = rect.top / dpi + 'px';
-            hover.style.width = (rect.right - rect.left) / dpi + 'px';
-            hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
-            hover.classList.add('show');
-          }
-        }
-        else if (hoverNode) {
-          hoverNode = null;
-          hover.classList.remove('show');
-        }
-      }
-    }
+    onMove(e.pageX, e.pageY);
   });
 
   document.addEventListener('mouseup', function() {
@@ -391,18 +395,26 @@
     e.preventDefault();
   });
 
-  document.addEventListener('keydown', function(e) {
+  document.addEventListener('keyup', function(e) {
+    const m = metaKey;
     metaKey = e.metaKey;
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
+    if (m !== e.metaKey) {
+      onMove(lastX, lastY);
+    }
   });
 
-  document.addEventListener('keyup', function(e) {
+  document.addEventListener('keydown', function(e) {
+    const m = metaKey;
     metaKey = e.metaKey;
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
+    if (m !== e.metaKey) {
+      onMove(lastX, lastY);
+    }
   });
 </script>
 </body>
