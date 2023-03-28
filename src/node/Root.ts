@@ -26,6 +26,7 @@ class Root extends Container implements FrameCallback {
   canvas: HTMLCanvasElement;
   ctx: WebGL2RenderingContext | WebGLRenderingContext | null;
   dpi: number;
+  isWebgl2: boolean;
   programs: any = {};
   lastPage: Page | undefined; // 上一个显示的Page对象
   pageContainer: Container | undefined; // 存Page显示对象列表的容器
@@ -43,9 +44,16 @@ class Root extends Container implements FrameCallback {
     this.uuid = uuid++;
     this.canvas = canvas;
     // gl的初始化和配置
-    this.ctx = (canvas.getContext('webgl2', ca) as WebGL2RenderingContext)
-      || (canvas.getContext('webgl', ca) as WebGLRenderingContext);
-    const gl = this.ctx as (WebGL2RenderingContext | WebGLRenderingContext);
+    let gl: WebGL2RenderingContext | WebGLRenderingContext
+      = canvas.getContext('webgl2', ca) as WebGL2RenderingContext;
+    if (gl) {
+      this.ctx = gl;
+      this.isWebgl2 = true;
+    }
+    else {
+      this.ctx = gl = canvas.getContext('webgl', ca) as WebGLRenderingContext;
+      this.isWebgl2 = false;
+    }
     if (!gl) {
       alert('Webgl unsupported!');
       throw new Error('Webgl unsupported!');

@@ -2,9 +2,10 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import { RefreshLevel } from './level';
 import { StyleKey } from '../style';
-import { drawTextureCache } from '../gl/webgl';
+import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
+import inject from '../util/inject';
 
 export type Struct = {
   node: Node;
@@ -33,25 +34,25 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
           if (hasContent) {
             node.renderCanvas();
             node.genTexture(gl);
-            // if (node instanceof Bitmap) {
-            //   const loader = node.loader;
-            //   // 肯定有source，因为hasContent预防过，这里判断特殊的纯位图，要共享源节省内存
-            //   if (loader.onlyImg) {
-            //     const canvasCache = node.canvasCache = ImgCanvasCache.getInstance(loader.width, loader.height, -node.x, -node.y, node.src!);
-            //     // 第一张图像才绘制，图片解码到canvas上
-            //     if (canvasCache.count === 1) {
-            //       canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
-            //     }
-            //     node.genTexture(gl);
-            //   }
-            // }
           }
         }
       }
     }
   }
-  // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   const programs = root.programs;
+  // 先渲染artBoard的背景和阴影
+  const page = root.lastPage;
+  if (page) {
+    const children = page.children, len = children.length;
+    // 背景色分开来
+    for (let i = 0; i < len; i++) {
+      const artBoard = children[i] as ArtBoard;
+      artBoard.renderBgc(gl, cx, cy);
+    }
+  }
+  const program = programs.program;
+  gl.useProgram(programs.program);
+  // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for(let i = 0, len = structs.length; i < len; i++) {
     const { node, total } = structs[i];
     const computedStyle = node.computedStyle;
@@ -75,16 +76,65 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     // 一般只有一个纹理
     const textureCache = node.textureCache;
     if (textureCache && opacity > 0) {
-      drawTextureCache(gl, cx, cy, programs.program, [{
+      drawTextureCache(gl, cx, cy, program, [{
         node,
         opacity,
         matrix,
         cache: textureCache,
       }], 1);
     }
-    // 画板有个矩形背景色和boxShadow特殊渲染一下
-    else if (node instanceof ArtBoard) {
-      node.renderWebgl(gl, cx, cy, 0, 0);
+  }
+  // 再覆盖渲染artBoard的阴影
+  if (page) {
+    const children = page.children, len = children.length;
+    // boxShadow用统一纹理
+    if (ArtBoard.BOX_SHADOW_TEXTURE) {
+      const bsPoint = new Float32Array(len * 96);
+      const bsTex = new Float32Array(len * 96);
+      for (let i = 0; i < len; i++) {
+        const artBoard = children[i] as ArtBoard;
+        artBoard.collectBsData(i, bsPoint, bsTex, cx, cy);
+      }
+      const simpleProgram = programs.simpleProgram;
+      gl.useProgram(simpleProgram);
+      // 顶点buffer
+      const pointBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, bsPoint, gl.STATIC_DRAW);
+      const a_position = gl.getAttribLocation(simpleProgram, 'a_position');
+      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position);
+      // 纹理buffer
+      const texBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, bsTex, gl.STATIC_DRAW);
+      let a_texCoords = gl.getAttribLocation(simpleProgram, 'a_texCoords');
+      gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_texCoords);
+      // 纹理单元
+      let u_texture = gl.getUniformLocation(simpleProgram, 'u_texture');
+      gl.uniform1i(u_texture, 0);
+      bindTexture(gl, ArtBoard.BOX_SHADOW_TEXTURE, 0);
+      // 渲染并销毁
+      gl.drawArrays(gl.TRIANGLES, 0, len * 48);
+      gl.deleteBuffer(pointBuffer);
+      gl.deleteBuffer(texBuffer);
+      gl.disableVertexAttribArray(a_position);
+      gl.disableVertexAttribArray(a_texCoords);
+    }
+    else {
+      const img = inject.IMG[ArtBoard.BOX_SHADOW];
+      // 一般不可能有缓存，太特殊的base64了
+      if (img) {
+        ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img);
+        root.addUpdate(root, [], RefreshLevel.CACHE, false, false, false, undefined)
+      }
+      else {
+        inject.measureImg(ArtBoard.BOX_SHADOW, (res: any) => {
+          ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, res.source);
+          root.addUpdate(root, [], RefreshLevel.CACHE, false, false, false, undefined)
+        });
+      }
     }
   }
 }
