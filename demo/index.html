@@ -11,15 +11,17 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: arial,sans-serif;
+      font-family: arial, sans-serif;
       background: #FFF;
     }
+
     .wrap {
       display: flex;
       flex-direction: column;
       width: 100%;
       height: 100%;
     }
+
     .menu {
       display: flex;
       align-items: center;
@@ -28,37 +30,82 @@
       height: 50px;
       background: #413B3D;
     }
+
     .container {
       flex: 1;
       display: flex;
     }
+
     .list {
       width: 250px;
       background: #EEE8EA;
     }
+
     .page {
       border-bottom: 1px solid #CCC;
       height: 150px;
       overflow-y: scroll;
     }
+
+    .tree {
+      margin: 0;
+      padding: 5px 10px;
+      box-sizing: border-box;
+      min-height: 100%;
+      list-style: none;
+      overflow-y: scroll;
+      font-size: 14px;
+    }
+
+    .tree li {
+      display: flex;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .tree .type {
+      font-family: Menlo, "Courier New";
+      font-size: 12px;
+      color: #999;
+      cursor: default;
+    }
+
+    .tree .name {
+      flex: 1;
+    }
+
+    .tree .visible {
+      font-size: 12px;
+      color: #999;
+      cursor: default;
+    }
+
+    .tree li:hover .visible {
+      color: #F99;
+    }
+
     .main {
       flex: 1;
       position: relative;
     }
+
     .side {
       width: 300px;
       background: #EEE8EA;
     }
+
     .canvas-c {
       width: 100%;
       height: 100%;
       background: #F3F3F3;
     }
+
     canvas {
       display: block;
       width: 100%;
       height: 100%;
     }
+
     .overlap {
       position: absolute;
       left: 0;
@@ -66,6 +113,7 @@
       width: 100%;
       height: 100%;
     }
+
     .hover {
       position: absolute;
       border: 1px solid #F43;
@@ -73,11 +121,13 @@
       box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
       transform: translate(-1px, -1px);
     }
+
     .selection {
       position: absolute;
       visibility: hidden;
       box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
     }
+
     .t {
       position: absolute;
       left: 0;
@@ -87,7 +137,8 @@
       transform: scaleY(0.5);
       cursor: ns-resize;
     }
-    .t b{
+
+    .t b {
       position: absolute;
       left: 0;
       top: 2px;
@@ -95,6 +146,7 @@
       height: 100%;
       border-top: 1px solid #34F;
     }
+
     .r {
       position: absolute;
       right: -4px;
@@ -104,6 +156,7 @@
       transform: scaleX(0.5);
       cursor: ew-resize;
     }
+
     .r b {
       position: absolute;
       right: 2px;
@@ -112,6 +165,7 @@
       height: 100%;
       border-right: 1px solid #34F;
     }
+
     .b {
       position: absolute;
       left: 0;
@@ -121,6 +175,7 @@
       transform: scaleY(0.5);
       cursor: ns-resize;
     }
+
     .b b {
       position: absolute;
       left: 0;
@@ -129,6 +184,7 @@
       height: 100%;
       border-bottom: 1px solid #34F;
     }
+
     .l {
       position: absolute;
       left: -4px;
@@ -138,6 +194,7 @@
       transform: scaleX(0.5);
       cursor: ew-resize;
     }
+
     .l b {
       position: absolute;
       left: 2px;
@@ -146,54 +203,59 @@
       height: 100%;
       border-left: 1px solid #34F;
     }
+
     .tl {
       position: absolute;
       left: 0;
       top: 0;
       width: 14px;
       height: 14px;
-      border:1px solid #999;
+      border: 1px solid #999;
       background: #FFF;
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
       transform: translate(-8px, -8px) scale(0.5);
       cursor: nwse-resize;
     }
+
     .tr {
       position: absolute;
       right: 0;
       top: 0;
       width: 14px;
       height: 14px;
-      border:1px solid #999;
+      border: 1px solid #999;
       background: #FFF;
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
       transform: translate(8px, -8px) scale(0.5);
       cursor: nesw-resize;
     }
+
     .br {
       position: absolute;
       bottom: 0;
       right: 0;
       width: 14px;
       height: 14px;
-      border:1px solid #999;
+      border: 1px solid #999;
       background: #FFF;
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
       transform: translate(8px, 8px) scale(0.5);
       cursor: nwse-resize;
     }
+
     .bl {
       position: absolute;
       left: 0;
       bottom: 0;
       width: 14px;
       height: 14px;
-      border:1px solid #999;
+      border: 1px solid #999;
       background: #FFF;
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
       transform: translate(-8px, 8px) scale(0.5);
       cursor: nesw-resize;
     }
+
     .show {
       visibility: visible;
     }
@@ -202,7 +264,7 @@
 <body>
 <div class="wrap">
   <div class="menu">
-    <input type="file" id="file" accept=".sketch" />
+    <input type="file" id="file" accept=".sketch"/>
   </div>
   <div class="container">
     <div class="list">
@@ -259,6 +321,7 @@
       input.value = null;
       editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
         const canvas = document.createElement('canvas');
+
         function resize() {
           const { clientWidth, clientHeight } = canvasC;
           canvas.width = clientWidth * dpi;
@@ -267,24 +330,35 @@
           originX = o.left;
           originY = o.top;
         }
+
         resize();
         window.onresize = resize;
         canvasC.appendChild(canvas);
         root = editor.parse(json, canvas, dpi);
         root.on('refresh', function(lv) {
-          if (lv & editor.refresh.level.RefreshLevel.REBUILD) {
+          if(lv & editor.refresh.level.RefreshLevel.REBUILD) {
             let s = '';
             const structs = root.getCurPageStructs();
             structs.forEach(item => {
-              if (item.isArtBoard) {
-                s += `<li class="ab">${item.node.props.name}</li>`;
+              const { node, lv } = item;
+              let type = 'n', className = '';
+              if(node.isArtBoard) {
+                type = 'a';
+                className = 'ab';
               }
-              else if (item.isGroup) {
-                s += `<li class="group">${item.node.props.name}</li>`;
+              else if(node.isGroup) {
+                type = 'g';
+                className = 'group';
               }
-              else {
-                s += `<li class="node">${item.node.props.name}</li>`;
+              else if(node instanceof editor.node.Bitmap) {
+                type = 'i';
+                className = 'img';
               }
+              const visible = node.computedStyle[editor.style.StyleKey.VISIBLE] ? '可见' : '隐藏';
+              s += `<li class="${className}" style="margin-left:${(lv - 3) * 18}px">
+<span class="type">[${type}]</span>
+<span class="name">${node.props.name}</span>
+<span class="visible">${visible}</span></li>`;
             });
             tree.innerHTML = s;
           }
@@ -293,49 +367,40 @@
     }
   }
 
+  function showHover(node) {
+    if(hoverNode !== node) {
+      hoverNode = node;
+      const rect = hoverNode.getBoundingClientRect();
+      hover.style.left = rect.left / dpi + 'px';
+      hover.style.top = rect.top / dpi + 'px';
+      hover.style.width = (rect.right - rect.left) / dpi + 'px';
+      hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
+      hover.classList.add('show');
+    }
+  }
+
+  function hideHover() {
+    if(hoverNode) {
+      hoverNode = null;
+      hover.classList.remove('show');
+    }
+  }
+
   function onMove(x, y) {
-    if (root) {
+    if(root) {
       lastX = x;
       lastY = y;
       const nx = x - originX;
       const ny = y - originY;
-      if (selectionNode) {
+      const inRoot = nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width;
+      if(inRoot) {
         // metaKey按下可以选择最深叶子节点，但排除Group
-        if (metaKey && nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width) {
-          const res = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, undefined);
-          if (res && res !== selectionNode) {
-            if(hoverNode !== res) {
-              hoverNode = res;
-              const rect = hoverNode.getBoundingClientRect();
-              hover.style.left = rect.left / dpi + 'px';
-              hover.style.top = rect.top / dpi + 'px';
-              hover.style.width = (rect.right - rect.left) / dpi + 'px';
-              hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
-              hover.classList.add('show');
-            }
-          }
-          else if (hoverNode) {
-            hoverNode = null;
-            hover.classList.remove('show');
-          }
+        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
+        if(node && node !== selectionNode) {
+          showHover(node);
         }
-      }
-      else if (nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width) {
-        const res = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
-        if (res) {
-          if(hoverNode !== res) {
-            hoverNode = res;
-            const rect = hoverNode.getBoundingClientRect();
-            hover.style.left = rect.left / dpi + 'px';
-            hover.style.top = rect.top / dpi + 'px';
-            hover.style.width = (rect.right - rect.left) / dpi + 'px';
-            hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
-            hover.classList.add('show');
-          }
-        }
-        else if (hoverNode) {
-          hoverNode = null;
-          hover.classList.remove('show');
+        else {
+          hideHover();
         }
       }
     }
@@ -348,32 +413,37 @@
   };
 
   overlap.addEventListener('mousedown', function(e) {
-    if (e.button === 0) {
+    if(e.button === 0) {
       isDown = true;
       startX = e.pageX;
       startY = e.pageY;
       if(root) {
-        selectionNode = root.getNodeFromCurPage(lastX, lastY, !metaKey, false, 1);
+        const nx = startX - originX;
+        const ny = startY - originY;
+        selectionNode = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, 1);
         if(selectionNode) {
           const {
             translateX,
             translateY,
           } = selectionNode.getComputedStyle();
           const rect = selectionNode.getBoundingClientRect();
-          selection.style.left = rect.left + 'px';
-          selection.style.top = rect.top + 'px';
-          selection.style.width = rect.right - rect.left + 'px';
-          selection.style.height = rect.bottom - rect.top + 'px';
+          selection.style.left = rect.left / dpi + 'px';
+          selection.style.top = rect.top / dpi + 'px';
+          selection.style.width = (rect.right - rect.left) / dpi + 'px';
+          selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
           selection.classList.add('show');
           if(hoverNode) {
             hoverNode = null;
             hover.classList.remove('show');
           }
         }
+        else {
+          selection.classList.remove('show');
+        }
       }
     }
     else {
-      if (selectionNode) {
+      if(selectionNode) {
         selectionNode = null;
         selection.classList.remove('show');
       }
@@ -386,13 +456,19 @@
 
   document.addEventListener('mouseup', function() {
     if(root) {
-      if (selectionNode) {
+      if(selectionNode) {
       }
     }
   });
 
   document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
+    if(root) {
+      if(selectionNode) {
+        selectionNode = null;
+        selection.classList.remove('show');
+      }
+    }
   });
 
   document.addEventListener('keyup', function(e) {
@@ -401,7 +477,7 @@
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
-    if (m !== e.metaKey) {
+    if(m !== e.metaKey) {
       onMove(lastX, lastY);
     }
   });
@@ -412,7 +488,7 @@
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
-    if (m !== e.metaKey) {
+    if(m !== e.metaKey) {
       onMove(lastX, lastY);
     }
   });
