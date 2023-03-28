@@ -16470,14 +16470,16 @@
         return {
             canvas: o,
             ctx,
-            enabled: true,
             available: true,
             release() {
+                if (!this.available) {
+                    return;
+                }
+                this.available = false;
                 ctx.globalAlpha = 1;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.clearRect(0, 0, width, height);
                 o.width = o.height = 0;
-                this.available = false;
                 o = null;
             },
         };
@@ -17495,25 +17497,40 @@
     const HASH$1 = {};
     class TextureCache {
         constructor(texture) {
+            this.available = true;
             this.texture = texture;
         }
-        static getInstance(gl, node) {
-            const { offscreen } = node.canvasCache;
-            const texture = createTexture(gl, 0, offscreen.canvas);
+        release(gl) {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            gl.deleteTexture(this.texture);
+        }
+        releaseImg(gl, url) {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            const o = HASH$1[url];
+            o.count--;
+            if (!o.count) {
+                // 此时无引用计数可清空且释放texture
+                delete HASH$1[url];
+                gl.deleteTexture(this.texture);
+            }
+        }
+        static getInstance(gl, canvas) {
+            const texture = createTexture(gl, 0, canvas);
             return new TextureCache(texture);
         }
-        static getImgInstance(gl, node) {
-            if (!node.loader.onlyImg) {
-                throw new Error('Need an onlyImg');
-            }
-            const url = node.src;
+        static getImgInstance(gl, canvas, url) {
             if (HASH$1.hasOwnProperty(url)) {
                 const o = HASH$1[url];
                 o.count++;
                 return new TextureCache(HASH$1[url].value);
             }
-            const { offscreen } = node.canvasCache;
-            const texture = createTexture(gl, 0, offscreen.canvas);
+            const texture = createTexture(gl, 0, canvas);
             HASH$1[url] = {
                 value: texture,
                 count: 1,
@@ -17830,12 +17847,18 @@
             return this.hasContent = false;
         }
         renderCanvas() {
-            if (this.canvasCache) {
-                this.canvasCache.release();
-            }
+            // const canvasCache = this.canvasCache;
+            // if (canvasCache && canvasCache.available) {
+            //   canvasCache.release();
+            // }
         }
         genTexture(gl) {
-            this.textureCache = TextureCache.getInstance(gl, this);
+            this.textureCache = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas);
+        }
+        releaseCache(gl) {
+            var _a, _b;
+            (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.release();
+            (_b = this.textureCache) === null || _b === void 0 ? void 0 : _b.release(gl);
         }
         remove(cb) {
             const { root, parent } = this;
@@ -18455,8 +18478,10 @@
     ArtBoard.BOX_SHADOW = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDkuMC1jMDAwIDc5LjE3MWMyN2ZhYiwgMjAyMi8wOC8xNi0yMjozNTo0MSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6Q0YxOEMzRkFDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6Q0YxOEMzRjlDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCRDFFMUYwM0M0QTExMUVEOTIxOUREMjgyNjUzODRENSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCRDFFMUYwNEM0QTExMUVEOTIxOUREMjgyNjUzODRENSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PrnWkg0AAACjSURBVHja7JXhCsIwDISTLsr2/i8rbjZueMGjbJhJ/+nBQSj0o224VOUllbe4zsi5VgIUWE9AHa6wGMEMHuCMHvAC1xY4rr4CqInTbbD76luc0uiKA2AT4BnggnoOjlEj4qrb2iUJFNqn/Ibc4XD5AKx7DSzSWX/gLwDtIOwR+Mxg8D2gN0GXE9GLfR5Ab4IuXwyHADrHrMv46j5gtfcX8BRgAOX7OzJVtOaeAAAAAElFTkSuQmCC';
     ArtBoard.BOX_SHADOW_TEXTURE = null;
 
+    const HASH = {};
     class CanvasCache {
         constructor(w, h, dx, dy) {
+            this.available = false;
             this.offscreen = inject.getOffscreenCanvas(w, h);
             this.w = w;
             this.h = h;
@@ -18464,38 +18489,39 @@
             this.dy = dy;
         }
         release() {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
             this.offscreen.release();
+        }
+        releaseImg(url) {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            const o = HASH[url];
+            o.count--;
+            if (!o.count) {
+                // 此时无引用计数可清空且释放离屏canvas
+                delete HASH[url];
+                this.offscreen.release();
+            }
+        }
+        getCount(url) {
+            var _a;
+            return (_a = HASH[url]) === null || _a === void 0 ? void 0 : _a.count;
         }
         static getInstance(w, h, dx, dy) {
             return new CanvasCache(w, h, dx, dy);
         }
-    }
-
-    const HASH = {};
-    // @ts-ignore
-    class ImgCanvasCache extends CanvasCache {
-        constructor(w, h, dx, dy, url) {
-            super(w, h, dx, dy);
-            this.url = url;
-        }
-        release() {
-            const o = HASH[this.url];
-            o.count--;
-            if (!o.count) {
-                super.release();
-                delete HASH[this.url];
-            }
-        }
-        get count() {
-            return HASH[this.url].count;
-        }
-        static getInstance(w, h, dx, dy, url) {
+        static getImgInstance(w, h, dx, dy, url) {
             if (HASH.hasOwnProperty(url)) {
                 const o = HASH[url];
                 o.count++;
                 return o.value;
             }
-            const o = new ImgCanvasCache(w, h, dx, dy, url);
+            const o = new CanvasCache(w, h, dx, dy);
             HASH[url] = {
                 value: o,
                 count: 1,
@@ -18618,11 +18644,32 @@
             super.renderCanvas();
             const { loader } = this;
             if (loader.onlyImg) {
-                const canvasCache = this.canvasCache = ImgCanvasCache.getInstance(loader.width, loader.height, -this.x, -this.y, this.src);
+                const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, -this.x, -this.y, this.src);
                 // 第一张图像才绘制，图片解码到canvas上
-                if (canvasCache.count === 1) {
+                if (canvasCache.getCount(this.src) === 1) {
                     canvasCache.offscreen.ctx.drawImage(loader.source, 0, 0);
                 }
+                canvasCache.available = true;
+            }
+        }
+        genTexture(gl) {
+            const { loader } = this;
+            if (loader.onlyImg) {
+                this.textureCache = TextureCache.getImgInstance(gl, this.canvasCache.offscreen.canvas, this.src);
+            }
+            else {
+                return super.genTexture(gl);
+            }
+        }
+        releaseCache(gl) {
+            var _a, _b;
+            const { loader } = this;
+            if (loader.onlyImg) {
+                (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this.src);
+                (_b = this.textureCache) === null || _b === void 0 ? void 0 : _b.releaseImg(gl, this.src);
+            }
+            else {
+                super.releaseCache(gl);
             }
         }
     }
@@ -19211,7 +19258,6 @@ void main() {
             }
         }
         calUpdate(node, lv, addDom, removeDom) {
-            var _a;
             // 防御一下
             if (addDom || removeDom) {
                 lv |= RefreshLevel.REFLOW;
@@ -19235,7 +19281,10 @@ void main() {
             else {
                 const isRp = lv >= RefreshLevel.REPAINT;
                 if (isRp) {
-                    (_a = node.canvasCache) === null || _a === void 0 ? void 0 : _a.release(); // 可能之前没有内容
+                    // console.warn(node.canvasCache?.available);
+                    // node.canvasCache?.release(); // 可能之前没有内容
+                    // node.textureCache?.release();
+                    node.releaseCache(this.ctx);
                     node.calRepaintStyle();
                 }
                 else {

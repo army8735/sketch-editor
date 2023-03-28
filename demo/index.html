@@ -312,6 +312,7 @@
   let hoverNode, selectionNode;
   let metaKey, shiftKey, ctrlKey, altKey;
   let dpi = window.devicePixelRatio;
+  let structs = [];
 
   input.onchange = function(e) {
     const file = input.files[0];
@@ -338,8 +339,8 @@
         root.on('refresh', function(lv) {
           if(lv & editor.refresh.level.RefreshLevel.REBUILD) {
             let s = '';
-            const structs = root.getCurPageStructs();
-            structs.forEach(item => {
+            structs = root.getCurPageStructs();
+            structs.forEach((item, i) => {
               const { node, lv } = item;
               let type = 'n', className = '';
               if(node.isArtBoard) {
@@ -354,11 +355,14 @@
                 type = 'i';
                 className = 'img';
               }
-              const visible = node.computedStyle[editor.style.StyleKey.VISIBLE] ? '可见' : '隐藏';
-              s += `<li class="${className}" style="margin-left:${(lv - 3) * 18}px">
+              const visible = node.computedStyle[editor.style.StyleKey.VISIBLE];
+              s += `<li class="${className}" style="margin-left:${(lv - 3) * 18}px" index="${i}">
 <span class="type">[${type}]</span>
-<span class="name">${node.props.name}</span>
-<span class="visible">${visible}</span></li>`;
+<span class="name">${node.props.name}</span>`;
+              if (!node.isArtBoard) {
+                s += `<span class="visible" visible="${visible}">${visible ? '可见' : '隐藏'}</span>`;
+              }
+              s += '</li>';
             });
             tree.innerHTML = s;
           }
@@ -366,6 +370,20 @@
       });
     }
   }
+
+  tree.addEventListener('click', e => {
+    const target = e.target;
+    if (target.classList.contains('visible')) {
+      const visible = target.getAttribute('visible') === 'true';
+      const index = parseInt(target.parentElement.getAttribute('index'));
+      const node = structs[index].node;
+      node.updateStyle({
+        visible: !visible,
+      });
+      target.setAttribute('visible', (!visible).toString());
+      target.innerHTML = visible ? '隐藏' : '可见';
+    }
+  });
 
   function showHover(node) {
     if(hoverNode !== node) {

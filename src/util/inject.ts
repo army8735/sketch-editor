@@ -9,7 +9,6 @@ const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && Offscr
 export type OffScreen = {
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
-  enabled: boolean,
   available: boolean,
   release: Function,
 };
@@ -46,14 +45,16 @@ function offscreenCanvas(width: number, height: number, key?: string,
   return {
     canvas: o,
     ctx,
-    enabled: true,
     available: true,
     release() {
+      if(!this.available) {
+        return;
+      }
+      this.available = false;
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
-      this.available = false;
       if(debug.flag && o) {
         document.body.removeChild(o);
       }

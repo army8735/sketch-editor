@@ -6,7 +6,8 @@ import Container from '../node/Container';
 import { LayoutData } from './layout';
 import { StyleKey } from '../style';
 import { RefreshLevel } from '../refresh/level';
-import ImgCanvasCache from '../refresh/ImgCanvasCache';
+import CanvasCache from '../refresh/CanvasCache';
+import TextureCache from '../refresh/TextureCache';
 
 type Loader = {
   error: boolean,
@@ -141,11 +142,33 @@ class Bitmap extends Node {
     super.renderCanvas();
     const { loader } = this;
     if (loader.onlyImg) {
-      const canvasCache = this.canvasCache = ImgCanvasCache.getInstance(loader.width, loader.height, -this.x, -this.y, this.src!);
+      const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, -this.x, -this.y, this.src!);
       // 第一张图像才绘制，图片解码到canvas上
-      if (canvasCache.count === 1) {
+      if (canvasCache.getCount(this.src!) === 1) {
         canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
       }
+      canvasCache.available = true;
+    }
+  }
+
+  override genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+    const { loader } = this;
+    if (loader.onlyImg) {
+      this.textureCache = TextureCache.getImgInstance(gl, this.canvasCache!.offscreen.canvas, this.src!);
+    }
+    else {
+      return super.genTexture(gl);
+    }
+  }
+
+  override releaseCache(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+    const { loader } = this;
+    if (loader.onlyImg) {
+      this.canvasCache?.releaseImg(this.src!);
+      this.textureCache?.releaseImg(gl, this.src!);
+    }
+    else {
+      super.releaseCache(gl);
     }
   }
 }

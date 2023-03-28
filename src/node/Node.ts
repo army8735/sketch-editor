@@ -372,13 +372,19 @@ class Node extends Event {
   }
 
   renderCanvas() {
-    if (this.canvasCache) {
-      this.canvasCache.release();
-    }
+    // const canvasCache = this.canvasCache;
+    // if (canvasCache && canvasCache.available) {
+    //   canvasCache.release();
+    // }
   }
 
   genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this.textureCache = TextureCache.getInstance(gl, this);
+    this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
+  }
+
+  releaseCache(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+    this.canvasCache?.release();
+    this.textureCache?.release(gl);
   }
 
   remove(cb?: Function) {

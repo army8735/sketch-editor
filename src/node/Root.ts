@@ -197,7 +197,10 @@ class Root extends Container implements FrameCallback {
     else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
-        node.canvasCache?.release(); // 可能之前没有内容
+        // console.warn(node.canvasCache?.available);
+        // node.canvasCache?.release(); // 可能之前没有内容
+        // node.textureCache?.release();
+        node.releaseCache(this.ctx!);
         node.calRepaintStyle();
       }
       else {
