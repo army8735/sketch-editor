@@ -19464,6 +19464,8 @@ void main() {
         Text,
     };
 
+    var version = "0.0.1";
+
     function apply(json, imgs) {
         if (!json) {
             return;
@@ -19506,6 +19508,7 @@ void main() {
         math,
         util,
         animation,
+        version,
     };
 
     return index;
