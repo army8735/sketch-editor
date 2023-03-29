@@ -18630,7 +18630,7 @@
     class Bitmap extends Node {
         constructor(props) {
             super(props);
-            const src = this.src = props.src;
+            const src = this._src = props.src;
             this.loader = {
                 error: false,
                 loading: false,
@@ -18643,6 +18643,25 @@
                 this.loader.error = true;
             }
             else {
+                const isBase64 = /^data:image\/(\w+);base64,/.test(src);
+                if (isBase64) {
+                    fetch('https://karas.alipay.com/api/uploadbase64', {
+                        method: 'post',
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            data: src,
+                            quality: 1,
+                        }),
+                    }).then(res => res.json()).then(res => {
+                        if (res.success) {
+                            // 不触发更新
+                            this._src = res.url;
+                        }
+                    });
+                }
                 const cache = inject.IMG[src];
                 if (!cache) {
                     inject.measureImg(src, (res) => {
@@ -18743,7 +18762,7 @@
             if (loader.onlyImg) {
                 const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, -this.x, -this.y, this.src);
                 // 第一张图像才绘制，图片解码到canvas上
-                if (canvasCache.getCount(this.src) === 1) {
+                if (canvasCache.getCount(this._src) === 1) {
                     canvasCache.offscreen.ctx.drawImage(loader.source, 0, 0);
                 }
                 canvasCache.available = true;
@@ -18762,13 +18781,17 @@
             var _a, _b;
             const { loader } = this;
             if (loader.onlyImg) {
-                (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this.src);
-                (_b = this.textureCache) === null || _b === void 0 ? void 0 : _b.releaseImg(gl, this.src);
+                (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this._src);
+                (_b = this.textureCache) === null || _b === void 0 ? void 0 : _b.releaseImg(gl, this._src);
             }
             else {
                 super.releaseCache(gl);
             }
         }
+        get src() {
+            return this._src;
+        }
+        set src(v) { }
     }
 
     class Group extends Container {

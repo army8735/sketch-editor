@@ -324,15 +324,16 @@
   let hoverNode, selectNode;
   let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
   let dpi = window.devicePixelRatio;
-  let curPage;
+  let curPage, pageTx = 0, pageTy = 0, pageSx = 1, pageSy = 1;
   let structs = [];
 
   input.onchange = function(e) {
     const file = input.files[0];
+    input.value = null;
+    input.blur();
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
     reader.onload = function() {
-      input.value = null;
       editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
         const canvas = document.createElement('canvas');
 
@@ -459,6 +460,11 @@
       // 空格按下移动画布
       if (spaceKey) {
         curPage = root.getCurPage();
+        const o = curPage.getComputedStyle();
+        pageTx = o.translateX;
+        pageTy = o.translateY;
+        pageSx = o.scaleX;
+        pageSy = o.scaleY; console.log(dpi, pageTx, pageTy, pageSx, pageSy);
         overlap.classList.add('down');
       }
       // 普通是选择

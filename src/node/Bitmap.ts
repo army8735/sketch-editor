@@ -20,12 +20,12 @@ type Loader = {
 };
 
 class Bitmap extends Node {
-  src: string | undefined;
+  _src: string | undefined;
   loader: Loader;
 
   constructor(props: BitmapProps) {
     super(props);
-    const src = this.src = props.src;
+    const src = this._src = props.src;
     this.loader = {
       error: false,
       loading: false,
@@ -38,6 +38,25 @@ class Bitmap extends Node {
       this.loader.error = true;
     }
     else {
+      const isBase64 = /^data:image\/(\w+);base64,/.test(src);
+      if (isBase64) {
+        fetch('https://karas.alipay.com/api/uploadbase64', {
+          method: 'post',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            data: src,
+            quality: 1,
+          }),
+        }).then(res => res.json()).then(res => {
+          if (res.success) {
+            // 不触发更新
+            this._src = res.url;
+          }
+        });
+      }
       const cache = inject.IMG[src];
       if (!cache) {
         inject.measureImg(src, (res: any) => {
@@ -144,7 +163,7 @@ class Bitmap extends Node {
     if (loader.onlyImg) {
       const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, -this.x, -this.y, this.src!);
       // 第一张图像才绘制，图片解码到canvas上
-      if (canvasCache.getCount(this.src!) === 1) {
+      if (canvasCache.getCount(this._src!) === 1) {
         canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
       }
       canvasCache.available = true;
@@ -164,13 +183,19 @@ class Bitmap extends Node {
   override releaseCache(gl: WebGL2RenderingContext | WebGLRenderingContext) {
     const { loader } = this;
     if (loader.onlyImg) {
-      this.canvasCache?.releaseImg(this.src!);
-      this.textureCache?.releaseImg(gl, this.src!);
+      this.canvasCache?.releaseImg(this._src!);
+      this.textureCache?.releaseImg(gl, this._src!);
     }
     else {
       super.releaseCache(gl);
     }
   }
+
+  get src() {
+    return this._src;
+  }
+
+  set src(v) {}
 }
 
 export default Bitmap;
