@@ -78,6 +78,7 @@ class Node extends Event {
     this.hasContent = false;
   }
 
+  // 添加到dom后标记非销毁状态，和root引用
   didMount() {
     this.isDestroyed = false;
     this.root = this.parent!.root;

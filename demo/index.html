@@ -119,6 +119,13 @@
       height: 100%;
     }
 
+    .overlap.space {
+      cursor: grab;
+    }
+    .overlap.space.down {
+      cursor: grabbing;
+    }
+
     .hover {
       position: absolute;
       border: 1px solid #F43;
@@ -315,7 +322,7 @@
   let isDown, isMove;
   let startX, startY, lastX, lastY;
   let hoverNode, selectNode;
-  let metaKey, shiftKey, ctrlKey, altKey;
+  let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
   let dpi = window.devicePixelRatio;
   let structs = [];
 
@@ -335,7 +342,7 @@
           const o = canvasC.getBoundingClientRect();
           originX = o.left;
           originY = o.top;
-          if(root) {
+          if (root) {
             root.updateStyle({
               width: clientWidth * dpi,
               height: clientHeight * dpi,
@@ -348,21 +355,21 @@
         canvasC.appendChild(canvas);
         root = editor.parse(json, canvas, dpi);
         root.on('refresh', function(lv) {
-          if(lv & editor.refresh.level.RefreshLevel.REBUILD) {
+          if (lv & editor.refresh.level.RefreshLevel.REBUILD) {
             let s = '';
             structs = root.getCurPageStructs();
             structs.forEach((item, i) => {
               const { node, lv } = item;
               let type = 'n', className = '';
-              if(node.isArtBoard) {
+              if (node.isArtBoard) {
                 type = 'a';
                 className = 'ab';
               }
-              else if(node.isGroup) {
+              else if (node.isGroup) {
                 type = 'g';
                 className = 'group';
               }
-              else if(node instanceof editor.node.Bitmap) {
+              else if (node instanceof editor.node.Bitmap) {
                 type = 'i';
                 className = 'img';
               }
@@ -397,7 +404,7 @@
   });
 
   function showHover(node) {
-    if(hoverNode !== node) {
+    if (hoverNode !== node) {
       hoverNode = node;
       const rect = hoverNode.getBoundingClientRect();
       hover.style.left = rect.left / dpi + 'px';
@@ -409,28 +416,26 @@
   }
 
   function hideHover() {
-    if(hoverNode) {
+    if (hoverNode) {
       hoverNode = null;
       hover.classList.remove('show');
     }
   }
 
   function onMove(x, y) {
-    if(root) {
-      lastX = x;
-      lastY = y;
-      const nx = x - originX;
-      const ny = y - originY;
-      const inRoot = nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width;
-      if(inRoot) {
-        // metaKey按下可以选择最深叶子节点，但排除Group
-        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
-        if(node && node !== selectNode) {
-          showHover(node);
-        }
-        else {
-          hideHover();
-        }
+    lastX = x;
+    lastY = y;
+    const nx = x - originX;
+    const ny = y - originY;
+    const inRoot = nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width;
+    if (inRoot) {
+      // metaKey按下可以选择最深叶子节点，但排除Group
+      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
+      if (node && node !== selectNode) {
+        showHover(node);
+      }
+      else {
+        hideHover();
       }
     }
   }
@@ -442,17 +447,26 @@
   };
 
   overlap.addEventListener('mousedown', function(e) {
-    if(e.button === 0) {
+    if (!root) {
+      return;
+    }
+    // 左键
+    if (e.button === 0) {
       isDown = true;
       startX = e.pageX;
       startY = e.pageY;
-      if(root) {
+      // 空格按下移动画布
+      if (spaceKey) {
+        overlap.classList.add('down');
+      }
+      // 普通是选择
+      else {
         const nx = startX - originX;
         const ny = startY - originY;
         const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
         if (selectNode !== node) {
           selectNode = node;
-          if(node) {
+          if (node) {
             const {
               translateX,
               translateY,
@@ -463,7 +477,7 @@
             selection.style.width = (rect.right - rect.left) / dpi + 'px';
             selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
             selection.classList.add('show');
-            if(hoverNode) {
+            if (hoverNode) {
               hoverNode = null;
               hover.classList.remove('show');
             }
@@ -474,39 +488,31 @@
         }
       }
     }
-    else {
-    }
   });
 
   document.addEventListener('mousemove', function(e) {
+    if (!root) {
+      return;
+    }
     onMove(e.pageX, e.pageY);
   });
 
   document.addEventListener('mouseup', function() {
-    if(root) {
-      if(selectNode) {
-      }
+    if (!root) {
+      return;
+    }
+    if (spaceKey) {
+      overlap.classList.remove('down');
     }
   });
 
   document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
-    if(root) {
-      if(selectNode) {
+    if (root) {
+      if (selectNode) {
         selectNode = null;
         selection.classList.remove('show');
       }
-    }
-  });
-
-  document.addEventListener('keyup', function(e) {
-    const m = metaKey;
-    metaKey = e.metaKey;
-    altKey = e.altKey;
-    ctrlKey = e.ctrlKey;
-    shiftKey = e.shiftKey;
-    if(m !== e.metaKey) {
-      onMove(lastX, lastY);
     }
   });
 
@@ -516,8 +522,27 @@
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
-    if(m !== e.metaKey) {
+    if (m !== e.metaKey) {
       onMove(lastX, lastY);
+    }
+    if (e.keyCode === 32) {
+      spaceKey = true;
+      overlap.classList.add('space');
+    }
+  });
+
+  document.addEventListener('keyup', function(e) {
+    const m = metaKey;
+    metaKey = e.metaKey;
+    altKey = e.altKey;
+    ctrlKey = e.ctrlKey;
+    shiftKey = e.shiftKey;
+    if (m !== e.metaKey) {
+      onMove(lastX, lastY);
+    }
+    if (e.keyCode === 32) {
+      spaceKey = false;
+      overlap.classList.remove('space');
     }
   });
 </script>

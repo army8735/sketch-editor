@@ -42,6 +42,7 @@ class Page extends Container {
   json?: JPage;
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
+    this.isPage = true;
   }
 
   initIfNot() {

@@ -11,12 +11,14 @@ class Container extends Node {
   children: Array<Node>;
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
+  isPage = false;
 
   constructor(props: Props, children: Array<Node> = []) {
     super(props);
     this.children = children;
   }
 
+  // 添加到dom后设置父子兄弟关系
   didMount() {
     super.didMount();
     const { children } = this;

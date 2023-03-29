@@ -17595,6 +17595,7 @@
             this._matrixWorld = identity();
             this.hasContent = false;
         }
+        // 添加到dom后标记非销毁状态，和root引用
         didMount() {
             this.isDestroyed = false;
             this.root = this.parent.root;
@@ -18046,8 +18047,10 @@
             super(props);
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
             this.isArtBoard = false;
+            this.isPage = false;
             this.children = children;
         }
+        // 添加到dom后设置父子兄弟关系
         didMount() {
             super.didMount();
             const { children } = this;
@@ -18759,6 +18762,7 @@
     class Page extends Container {
         constructor(props, children) {
             super(props, children);
+            this.isPage = true;
         }
         initIfNot() {
             if (this.json) {
