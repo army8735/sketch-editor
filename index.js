@@ -15921,7 +15921,14 @@
     function isRepaint(lv) {
         return lv < RefreshLevel.REFLOW;
     }
+    function isRepaintKey(k) {
+        return k === StyleKey.VISIBLE || k === StyleKey.COLOR || k === StyleKey.BACKGROUND_COLOR
+            || k === StyleKey.MIX_BLEND_MODE;
+    }
     function getLevel(k) {
+        if (k === StyleKey.POINTER_EVENTS) {
+            return RefreshLevel.NONE;
+        }
         if (k === StyleKey.TRANSLATE_X) {
             return RefreshLevel.TRANSLATE_X;
         }
@@ -15946,13 +15953,16 @@
         if (k === StyleKey.MIX_BLEND_MODE) {
             return RefreshLevel.MIX_BLEND_MODE;
         }
-        if (isRepaint(k)) {
+        if (isRepaintKey(k)) {
             return RefreshLevel.REPAINT;
         }
         return RefreshLevel.REFLOW;
     }
     var level = {
         RefreshLevel,
+        isRepaint,
+        isReflow,
+        isRepaintKey,
     };
 
     var refresh = {
@@ -15986,10 +15996,10 @@
             return identity();
         }
         if (isE(a)) {
-            return b;
+            return new Float64Array(b);
         }
         if (isE(b)) {
-            return a;
+            return new Float64Array(a);
         }
         let c = identity();
         for (let i = 0; i < 4; i++) {
@@ -16003,6 +16013,25 @@
             c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
         }
         return c;
+    }
+    function toE(m) {
+        m[0] = 1;
+        m[1] = 0;
+        m[2] = 0;
+        m[3] = 0;
+        m[4] = 0;
+        m[5] = 1;
+        m[6] = 0;
+        m[7] = 0;
+        m[8] = 0;
+        m[9] = 0;
+        m[10] = 1;
+        m[11] = 0;
+        m[12] = 0;
+        m[13] = 0;
+        m[14] = 0;
+        m[15] = 1;
+        return m;
     }
     /**
      * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
@@ -16207,6 +16236,7 @@
     var matrix = {
         identity,
         isE,
+        toE,
         assignMatrix,
         inverse,
         calPoint,
@@ -17557,10 +17587,11 @@
                 total: 0,
                 lv: 0,
             };
-            this.refreshLevel = RefreshLevel.REFLOW_TRANSFORM;
+            this.refreshLevel = RefreshLevel.REFLOW;
             this.opacity = 1;
             this.transform = identity();
             this.matrix = identity();
+            this.resetMxWorld = true;
             this._matrixWorld = identity();
             this.hasContent = false;
         }
@@ -17572,6 +17603,8 @@
             if (this.isDestroyed) {
                 return;
             }
+            this.refreshLevel = RefreshLevel.REFLOW;
+            this.resetMxWorld = true;
             // 布局时计算所有样式，更新时根据不同级别调用
             this.calReflowStyle();
             this.calRepaintStyle();
@@ -17800,6 +17833,7 @@
             }
             // 普通布局或者第一次计算
             else {
+                toE(transform);
                 transform[12] = computedStyle[StyleKey.TRANSLATE_X] = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
                 transform[13] = computedStyle[StyleKey.TRANSLATE_Y] = this.calSize(style[StyleKey.TRANSLATE_Y], this.width);
                 const rotateZ = computedStyle[StyleKey.ROTATE_Z] = style[StyleKey.ROTATE_Z].v;
@@ -17833,6 +17867,7 @@
                 const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
                 assignMatrix(matrix, t);
             }
+            return matrix;
         }
         calSize(v, p) {
             if (v.u === StyleUnit.PX) {
@@ -17972,9 +18007,8 @@
         }
         // 可能在布局后异步渲染前被访问，此时没有这个数据，需根据状态判断是否需要从根节点开始计算世界矩阵
         get matrixWorld() {
-            const rl = this.refreshLevel;
-            if (rl & RefreshLevel.TRANSFORM_ALL) {
-                this.refreshLevel ^= RefreshLevel.TRANSFORM_ALL;
+            if (this.resetMxWorld) {
+                this.resetMxWorld = false;
                 let parent = this.parent;
                 // 非Root节点继续
                 if (parent) {
@@ -18067,7 +18101,7 @@
             }
             node.didMount();
             this.insertStruct(node, len);
-            root.addUpdate(node, [], RefreshLevel.REFLOW_TRANSFORM, true, false, false, undefined);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
         }
         prependChild(node, cb) {
             const { root, children } = this;
@@ -18087,7 +18121,7 @@
             }
             node.didMount();
             this.insertStruct(node, 0);
-            root.addUpdate(node, [], RefreshLevel.REFLOW_TRANSFORM, true, false, false, undefined);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
         }
         removeChild(node, cb) {
             if (node.parent === this) {
@@ -18839,7 +18873,7 @@
             }
         }
         const programs = root.programs;
-        // 先渲染artBoard的背景
+        // 先渲染artBoard的背景色
         const page = root.lastPage;
         if (page) {
             const children = page.children, len = children.length;
@@ -18863,17 +18897,26 @@
             }
             // 继承父的opacity和matrix
             let opacity = computedStyle[StyleKey.OPACITY];
-            let matrix = node.matrix;
+            let matrix;
+            if (node.resetMxWorld) {
+                matrix = node.matrix;
+            }
+            else {
+                matrix = node._matrixWorld;
+            }
             const parent = node.parent;
             if (parent) {
-                const op = parent.opacity, mw = parent.matrixWorld;
+                const op = parent.opacity, mw = parent._matrixWorld;
                 if (op !== 1) {
                     opacity *= op;
                 }
-                matrix = multiply(mw, matrix);
+                if (node.resetMxWorld) {
+                    node.resetMxWorld = false;
+                    matrix = multiply(mw, matrix);
+                    assignMatrix(node._matrixWorld, matrix);
+                }
             }
             node.opacity = opacity;
-            assignMatrix(node.matrixWorld, matrix);
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && opacity > 0) {
@@ -19199,8 +19242,10 @@ void main() {
             gl.useProgram(program);
         }
         checkRoot() {
+            var _a;
             this.width = this.computedStyle[StyleKey.WIDTH] = this.style[StyleKey.WIDTH].v;
             this.height = this.computedStyle[StyleKey.HEIGHT] = this.style[StyleKey.HEIGHT].v;
+            (_a = this.ctx) === null || _a === void 0 ? void 0 : _a.viewport(0, 0, this.width, this.height);
         }
         setJPages(jPages) {
             jPages.forEach(item => {

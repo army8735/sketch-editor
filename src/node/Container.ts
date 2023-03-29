@@ -72,7 +72,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW_TRANSFORM, true, false, false, undefined);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
   }
 
   prependChild(node: Node, cb?: Function) {
@@ -93,7 +93,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW_TRANSFORM, true, false, false, undefined);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
   }
 
   removeChild(node: Node, cb?: Function) {

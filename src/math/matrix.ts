@@ -19,10 +19,10 @@ export function multiply(a: Float64Array, b: Float64Array): Float64Array {
     return identity();
   }
   if(isE(a)) {
-    return b;
+    return new Float64Array(b);
   }
   if(isE(b)) {
-    return a;
+    return new Float64Array(a);
   }
   let c = identity();
   for(let i = 0; i < 4; i++) {
@@ -300,6 +300,7 @@ export function calRectPoint(xa: number, ya: number, xb: number, yb: number, mat
 export default {
   identity,
   isE,
+  toE,
   assignMatrix,
   inverse,
   calPoint,

@@ -30,7 +30,15 @@ export function isRepaint(lv: number): boolean {
   return lv < RefreshLevel.REFLOW;
 }
 
+export function isRepaintKey(k: StyleKey): boolean {
+  return k === StyleKey.VISIBLE || k === StyleKey.COLOR || k === StyleKey.BACKGROUND_COLOR
+    || k === StyleKey.MIX_BLEND_MODE;
+}
+
 export function getLevel(k: StyleKey): RefreshLevel {
+  if (k === StyleKey.POINTER_EVENTS) {
+    return RefreshLevel.NONE;
+  }
   if (k === StyleKey.TRANSLATE_X) {
     return RefreshLevel.TRANSLATE_X;
   }
@@ -55,7 +63,7 @@ export function getLevel(k: StyleKey): RefreshLevel {
   if (k === StyleKey.MIX_BLEND_MODE) {
     return RefreshLevel.MIX_BLEND_MODE;
   }
-  if (isRepaint(k)) {
+  if (isRepaintKey(k)) {
     return RefreshLevel.REPAINT;
   }
   return RefreshLevel.REFLOW;
@@ -63,4 +71,7 @@ export function getLevel(k: StyleKey): RefreshLevel {
 
 export default {
   RefreshLevel,
+  isRepaint,
+  isReflow,
+  isRepaintKey,
 };

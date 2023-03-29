@@ -40,7 +40,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     }
   }
   const programs = root.programs;
-  // 先渲染artBoard的背景
+  // 先渲染artBoard的背景色
   const page = root.lastPage;
   if (page) {
     const children = page.children, len = children.length;
@@ -64,17 +64,26 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     }
     // 继承父的opacity和matrix
     let opacity = computedStyle[StyleKey.OPACITY];
-    let matrix = node.matrix;
+    let matrix;
+    if (node.resetMxWorld) {
+      matrix = node.matrix;
+    }
+    else {
+      matrix = node._matrixWorld;
+    }
     const parent = node.parent;
     if (parent) {
-      const op = parent.opacity, mw = parent.matrixWorld;
+      const op = parent.opacity, mw = parent._matrixWorld;
       if (op !== 1) {
         opacity *= op;
       }
-      matrix = multiply(mw, matrix);
+      if (node.resetMxWorld) {
+        node.resetMxWorld = false;
+        matrix = multiply(mw, matrix);
+        assignMatrix(node._matrixWorld, matrix);
+      }
     }
     node.opacity = opacity;
-    assignMatrix(node.matrixWorld, matrix);
     // 一般只有一个纹理
     const textureCache = node.textureCache;
     if (textureCache && opacity > 0) {

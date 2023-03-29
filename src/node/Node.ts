@@ -6,10 +6,11 @@ import {
   calRectPoint,
   identity,
   isE,
+  toE,
   multiply,
   multiplyRotateZ,
   multiplyScaleX,
-  multiplyScaleY
+  multiplyScaleY,
 } from '../math/matrix';
 import { d2r } from '../math/geom';
 import { extend } from '../util';
@@ -42,6 +43,7 @@ class Node extends Event {
   opacity: number;
   transform: Float64Array;
   matrix: Float64Array;
+  resetMxWorld: boolean;
   _matrixWorld: Float64Array;
   layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
   private _rect: Float64Array | undefined;
@@ -67,10 +69,11 @@ class Node extends Event {
       total: 0,
       lv: 0,
     }
-    this.refreshLevel = RefreshLevel.REFLOW_TRANSFORM;
+    this.refreshLevel = RefreshLevel.REFLOW;
     this.opacity = 1;
     this.transform = identity();
     this.matrix = identity();
+    this.resetMxWorld = true;
     this._matrixWorld = identity();
     this.hasContent = false;
   }
@@ -84,6 +87,8 @@ class Node extends Event {
     if (this.isDestroyed) {
       return;
     }
+    this.refreshLevel = RefreshLevel.REFLOW;
+    this.resetMxWorld = true;
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
     this.calRepaintStyle();
@@ -252,7 +257,7 @@ class Node extends Event {
     this.calMatrix(RefreshLevel.REFLOW);
   }
 
-  calMatrix(lv: RefreshLevel) {
+  calMatrix(lv: RefreshLevel): Float64Array {
     const { style, computedStyle, matrix, transform } = this;
     let optimize = true;
     if (lv >= RefreshLevel.REFLOW
@@ -322,6 +327,7 @@ class Node extends Event {
     }
     // 普通布局或者第一次计算
     else {
+      toE(transform);
       transform[12] = computedStyle[StyleKey.TRANSLATE_X] = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
       transform[13] = computedStyle[StyleKey.TRANSLATE_Y] = this.calSize(style[StyleKey.TRANSLATE_Y], this.width);
       const rotateZ = computedStyle[StyleKey.ROTATE_Z] = style[StyleKey.ROTATE_Z].v as number;
@@ -355,6 +361,7 @@ class Node extends Event {
       const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
       assignMatrix(matrix, t);
     }
+    return matrix;
   }
 
   calSize(v: StyleNumStrValue, p: number): number {
@@ -507,9 +514,8 @@ class Node extends Event {
 
   // 可能在布局后异步渲染前被访问，此时没有这个数据，需根据状态判断是否需要从根节点开始计算世界矩阵
   get matrixWorld(): Float64Array {
-    const rl = this.refreshLevel;
-    if (rl & RefreshLevel.TRANSFORM_ALL) {
-      this.refreshLevel ^= RefreshLevel.TRANSFORM_ALL;
+    if (this.resetMxWorld) {
+      this.resetMxWorld = false;
       let parent = this.parent;
       // 非Root节点继续
       if (parent) {

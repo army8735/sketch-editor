@@ -109,6 +109,7 @@ class Root extends Container implements FrameCallback {
   private checkRoot() {
     this.width = this.computedStyle[StyleKey.WIDTH] = this.style[StyleKey.WIDTH].v as number;
     this.height = this.computedStyle[StyleKey.HEIGHT] = this.style[StyleKey.HEIGHT].v as number;
+    this.ctx?.viewport(0, 0, this.width, this.height);
   }
 
   setJPages(jPages: Array<JPage>) {
