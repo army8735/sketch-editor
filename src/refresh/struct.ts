@@ -86,7 +86,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       }], 1);
     }
   }
-  // 再覆盖渲染artBoard的阴影
+  // 再覆盖渲染artBoard的阴影和标题
   if (page) {
     const children = page.children, len = children.length;
     // boxShadow用统一纹理
@@ -147,6 +147,11 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
           root.addUpdate(root, [], RefreshLevel.CACHE, false, false, false, undefined)
         });
       }
+    }
+    // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，overlay更新实际上是下一帧了
+    const overlay = root.overlay;
+    if (overlay) {
+      overlay.update();
     }
   }
 }

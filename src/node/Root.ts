@@ -75,7 +75,6 @@ class Root extends Container implements FrameCallback {
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
-    this.draw();
     // 存所有Page
     this.pageContainer = new Container({
       style: getDefaultStyle({

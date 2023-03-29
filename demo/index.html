@@ -324,7 +324,7 @@
   let hoverNode, selectNode;
   let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
   let dpi = window.devicePixelRatio;
-  let curPage, pageTx = 0, pageTy = 0, pageSx = 1, pageSy = 1;
+  let curPage, pageTx, pageTy;
   let structs = [];
 
   input.onchange = function(e) {
@@ -431,13 +431,25 @@
     const ny = y - originY;
     const inRoot = nx >= 0 && ny >= 0 && nx <= root.width && ny <= root.width;
     if (inRoot) {
-      // metaKey按下可以选择最深叶子节点，但排除Group
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
-      if (node && node !== selectNode) {
-        showHover(node);
+      if (spaceKey) {
+        if (!curPage || !isDown) {
+          return;
+        }
+        const dx = lastX - startX, dy = lastY - startY;
+        curPage.updateStyle({
+          translateX: pageTx + dx,
+          translateY: pageTy + dy,
+        });
       }
       else {
-        hideHover();
+        // metaKey按下可以选择最深叶子节点，但排除Group
+        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1);
+        if(node && node !== selectNode) {
+          showHover(node);
+        }
+        else {
+          hideHover();
+        }
       }
     }
   }
@@ -460,11 +472,12 @@
       // 空格按下移动画布
       if (spaceKey) {
         curPage = root.getCurPage();
+        if (!curPage) {
+          return;
+        }
         const o = curPage.getComputedStyle();
         pageTx = o.translateX;
         pageTy = o.translateY;
-        pageSx = o.scaleX;
-        pageSy = o.scaleY; console.log(dpi, pageTx, pageTy, pageSx, pageSy);
         overlap.classList.add('down');
       }
       // 普通是选择
@@ -505,12 +518,15 @@
     onMove(e.pageX, e.pageY);
   });
 
-  document.addEventListener('mouseup', function() {
+  document.addEventListener('mouseup', function(e) {
     if (!root) {
       return;
     }
-    if (spaceKey) {
-      overlap.classList.remove('down');
+    if (e.button === 0) {
+      isDown = false;
+      if(spaceKey) {
+        overlap.classList.remove('down');
+      }
     }
   });
 

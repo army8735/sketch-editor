@@ -18920,17 +18920,27 @@
             this.abList.splice(0);
             for (let i = 0, len = list.length; i < len; i++) {
                 const ab = list[i];
-                const rect = ab.getBoundingClientRect();
                 const text = new Text({
                     style: getDefaultStyle({
                         fontSize: 24,
                         color: '#777',
-                        translateX: rect.left,
-                        translateY: rect.top - 32,
+                        visible: false,
                     }),
                 }, ab.props.name || '画板');
                 this.artBoard.appendChild(text);
                 this.abList.push({ ab, text });
+            }
+        }
+        update() {
+            const abList = this.abList;
+            for (let i = 0, len = abList.length; i < len; i++) {
+                const { ab, text } = abList[i];
+                const rect = ab.getBoundingClientRect();
+                text.updateStyle({
+                    visible: true,
+                    translateX: rect.left,
+                    translateY: rect.top - 32,
+                });
             }
         }
     }
@@ -19006,7 +19016,7 @@
                     }], 1);
             }
         }
-        // 再覆盖渲染artBoard的阴影
+        // 再覆盖渲染artBoard的阴影和标题
         if (page) {
             const children = page.children, len = children.length;
             // boxShadow用统一纹理
@@ -19067,6 +19077,11 @@
                         root.addUpdate(root, [], RefreshLevel.CACHE, false, false, false, undefined);
                     });
                 }
+            }
+            // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，overlay更新实际上是下一帧了
+            const overlay = root.overlay;
+            if (overlay) {
+                overlay.update();
             }
         }
     }
@@ -19290,7 +19305,7 @@ void main() {
             // 刷新动画侦听，目前就一个Root
             frame.addRoot(this);
             this.reLayout();
-            this.draw();
+            // this.draw();
             // 存所有Page
             this.pageContainer = new Container({
                 style: getDefaultStyle({

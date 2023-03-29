@@ -25,17 +25,28 @@ class Overlay extends Container {
     this.abList.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
       const ab = list[i];
-      const rect = ab.getBoundingClientRect();
       const text = new Text({
         style: getDefaultStyle({
           fontSize: 24,
           color: '#777',
-          translateX: rect.left,
-          translateY: rect.top - 32,
+          visible: false,
         }),
       }, ab.props.name || '画板');
       this.artBoard.appendChild(text);
       this.abList.push({ ab, text });
+    }
+  }
+
+  update() {
+    const abList = this.abList;
+    for (let i = 0, len = abList.length; i < len; i++) {
+      const { ab, text } = abList[i];
+      const rect = ab.getBoundingClientRect();
+      text.updateStyle({
+        visible: true,
+        translateX: rect.left,
+        translateY: rect.top - 32,
+      });
     }
   }
 }
