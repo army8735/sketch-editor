@@ -15,9 +15,6 @@ export function isE(m: Float64Array | undefined) {
 
 // 矩阵a*b，固定两个matrix都是长度16
 export function multiply(a: Float64Array, b: Float64Array): Float64Array {
-  if(!a && !b) {
-    return identity();
-  }
   if(isE(a)) {
     return new Float64Array(b);
   }
@@ -26,16 +23,54 @@ export function multiply(a: Float64Array, b: Float64Array): Float64Array {
   }
   let c = identity();
   for(let i = 0; i < 4; i++) {
-    let a0 = a[i] || 0;
-    let a1 = a[i + 4] || 0;
-    let a2 = a[i + 8] || 0;
-    let a3 = a[i + 12] || 0;
+    let a0 = a[i];
+    let a1 = a[i + 4];
+    let a2 = a[i + 8];
+    let a3 = a[i + 12];
     c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
     c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
     c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
     c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
   }
   return c;
+}
+
+// 同引用更改b数据
+export function multiply2(a: Float64Array, b: Float64Array): Float64Array {
+  if(isE(a)) {
+    return b;
+  }
+  if(isE(b)) {
+    assignMatrix(b, a);
+    return b;
+  }
+  const b0 = b[0];
+  const b1 = b[1];
+  const b2 = b[2];
+  const b3 = b[3];
+  const b4 = b[4];
+  const b5 = b[5];
+  const b6 = b[6];
+  const b7 = b[7];
+  const b8 = b[8];
+  const b9 = b[9];
+  const b10 = b[10];
+  const b11 = b[11];
+  const b12 = b[12];
+  const b13 = b[13];
+  const b14 = b[14];
+  const b15 = b[15];
+  for(let i = 0; i < 4; i++) {
+    let a0 = a[i];
+    let a1 = a[i + 4];
+    let a2 = a[i + 8];
+    let a3 = a[i + 12];
+    b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
+    b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
+    b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
+    b[i + 12] = a0 * b12 + a1 * b13 + a2 * b14 + a3 * b15;
+  }
+  return b;
 }
 
 export function toE(m: Float64Array) {
@@ -307,4 +342,6 @@ export default {
   calRectPoint,
   tfoMultiply,
   multiplyTfo,
+  multiply,
+  multiply2,
 };

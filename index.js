@@ -15992,9 +15992,6 @@
     }
     // 矩阵a*b，固定两个matrix都是长度16
     function multiply(a, b) {
-        if (!a && !b) {
-            return identity();
-        }
         if (isE(a)) {
             return new Float64Array(b);
         }
@@ -16003,16 +16000,53 @@
         }
         let c = identity();
         for (let i = 0; i < 4; i++) {
-            let a0 = a[i] || 0;
-            let a1 = a[i + 4] || 0;
-            let a2 = a[i + 8] || 0;
-            let a3 = a[i + 12] || 0;
+            let a0 = a[i];
+            let a1 = a[i + 4];
+            let a2 = a[i + 8];
+            let a3 = a[i + 12];
             c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
             c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
             c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
             c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
         }
         return c;
+    }
+    // 同引用更改b数据
+    function multiply2(a, b) {
+        if (isE(a)) {
+            return b;
+        }
+        if (isE(b)) {
+            assignMatrix(b, a);
+            return b;
+        }
+        const b0 = b[0];
+        const b1 = b[1];
+        const b2 = b[2];
+        const b3 = b[3];
+        const b4 = b[4];
+        const b5 = b[5];
+        const b6 = b[6];
+        const b7 = b[7];
+        const b8 = b[8];
+        const b9 = b[9];
+        const b10 = b[10];
+        const b11 = b[11];
+        const b12 = b[12];
+        const b13 = b[13];
+        const b14 = b[14];
+        const b15 = b[15];
+        for (let i = 0; i < 4; i++) {
+            let a0 = a[i];
+            let a1 = a[i + 4];
+            let a2 = a[i + 8];
+            let a3 = a[i + 12];
+            b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
+            b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
+            b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
+            b[i + 12] = a0 * b12 + a1 * b13 + a2 * b14 + a3 * b15;
+        }
+        return b;
     }
     function toE(m) {
         m[0] = 1;
@@ -16243,6 +16277,8 @@
         calRectPoint,
         tfoMultiply,
         multiplyTfo,
+        multiply,
+        multiply2,
     };
 
     function d2r(n) {
@@ -17588,10 +17624,9 @@
                 lv: 0,
             };
             this.refreshLevel = RefreshLevel.REFLOW;
-            this.opacity = 1;
+            this._opacity = 1;
             this.transform = identity();
             this.matrix = identity();
-            this.resetMxWorld = true;
             this._matrixWorld = identity();
             this.hasContent = false;
         }
@@ -17605,7 +17640,6 @@
                 return;
             }
             this.refreshLevel = RefreshLevel.REFLOW;
-            this.resetMxWorld = true;
             // 布局时计算所有样式，更新时根据不同级别调用
             this.calReflowStyle();
             this.calRepaintStyle();
@@ -18006,22 +18040,48 @@
                     }],
             };
         }
-        // 可能在布局后异步渲染前被访问，此时没有这个数据，需根据状态判断是否需要从根节点开始计算世界矩阵
+        get opacity() {
+            let parent = this.parent;
+            // 非Root节点继续向上乘
+            if (parent) {
+                const po = parent.opacity;
+                this._opacity = this.computedStyle[StyleKey.OPACITY] * po;
+            }
+            // Root的世界透明度就是自己
+            else {
+                this._opacity = this.computedStyle[StyleKey.OPACITY];
+            }
+            return this._opacity;
+        }
+        // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
         get matrixWorld() {
-            if (this.resetMxWorld) {
-                this.resetMxWorld = false;
+            const root = this.root;
+            if (!root) {
+                return this.matrix;
+            }
+            const m = this._matrixWorld;
+            // root总刷新没有包含变更，可以直接取缓存，否则才重新计算
+            if (root.rl & RefreshLevel.REFLOW_TRANSFORM) {
                 let parent = this.parent;
-                // 非Root节点继续
-                if (parent) {
-                    const pm = parent.matrixWorld;
-                    assignMatrix(this._matrixWorld, multiply(pm, this.matrix));
+                let cache = true;
+                // 检测树到根路径有无变更，没有也可以直接取缓存
+                while (parent) {
+                    if (parent.refreshLevel & RefreshLevel.REFLOW_TRANSFORM) {
+                        cache = false;
+                        break;
+                    }
+                    parent = parent.parent;
                 }
-                // Root的世界矩阵就是自身矩阵
-                else {
-                    assignMatrix(this._matrixWorld, this.matrix);
+                if (!cache) {
+                    assignMatrix(m, this.matrix);
+                    parent = this.parent;
+                    while (parent) {
+                        multiply2(parent.matrix, m);
+                        parent = parent.parent;
+                    }
                 }
             }
-            return this._matrixWorld;
+            return m;
         }
         get rect() {
             if (!this._rect) {
@@ -18899,28 +18959,19 @@
                 i += total;
                 continue;
             }
-            // 继承父的opacity和matrix
+            // 继承父的opacity和matrix TODO 优化路径缓存
             let opacity = computedStyle[StyleKey.OPACITY];
-            let matrix;
-            if (node.resetMxWorld) {
-                matrix = node.matrix;
-            }
-            else {
-                matrix = node._matrixWorld;
-            }
+            let matrix = node.matrix;
             const parent = node.parent;
             if (parent) {
                 const op = parent.opacity, mw = parent._matrixWorld;
                 if (op !== 1) {
                     opacity *= op;
                 }
-                if (node.resetMxWorld) {
-                    node.resetMxWorld = false;
-                    matrix = multiply(mw, matrix);
-                    assignMatrix(node._matrixWorld, matrix);
-                }
+                matrix = multiply(mw, matrix);
             }
-            node.opacity = opacity;
+            node._opacity = opacity;
+            assignMatrix(node._matrixWorld, matrix);
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && opacity > 0) {
@@ -19351,11 +19402,9 @@ void main() {
             }
             // 记录节点的刷新等级，以及本帧最大刷新等级
             node.refreshLevel |= lv;
+            this.rl |= lv;
             if (addDom || removeDom) {
                 this.rl |= RefreshLevel.REBUILD;
-            }
-            else {
-                this.rl |= lv;
             }
             return true;
         }
@@ -19438,6 +19487,9 @@ void main() {
                 frame.offFrame(this);
                 this.isAsyncDraw = false;
             }
+        }
+        getCurPage() {
+            return this.lastPage;
         }
         getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv) {
             const page = this.lastPage;

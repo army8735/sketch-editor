@@ -6,11 +6,11 @@ import {
   calRectPoint,
   identity,
   isE,
-  toE,
-  multiply,
+  multiply2,
   multiplyRotateZ,
   multiplyScaleX,
   multiplyScaleY,
+  toE,
 } from '../math/matrix';
 import { d2r } from '../math/geom';
 import { extend } from '../util';
@@ -40,10 +40,9 @@ class Node extends Event {
   isDestroyed: boolean;
   struct: Struct;
   refreshLevel: RefreshLevel;
-  opacity: number;
+  _opacity: number;
   transform: Float64Array;
   matrix: Float64Array;
-  resetMxWorld: boolean;
   _matrixWorld: Float64Array;
   layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
   private _rect: Float64Array | undefined;
@@ -70,10 +69,9 @@ class Node extends Event {
       lv: 0,
     }
     this.refreshLevel = RefreshLevel.REFLOW;
-    this.opacity = 1;
+    this._opacity = 1;
     this.transform = identity();
     this.matrix = identity();
-    this.resetMxWorld = true;
     this._matrixWorld = identity();
     this.hasContent = false;
   }
@@ -89,7 +87,6 @@ class Node extends Event {
       return;
     }
     this.refreshLevel = RefreshLevel.REFLOW;
-    this.resetMxWorld = true;
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
     this.calRepaintStyle();
@@ -513,22 +510,49 @@ class Node extends Event {
     };
   }
 
-  // 可能在布局后异步渲染前被访问，此时没有这个数据，需根据状态判断是否需要从根节点开始计算世界矩阵
+  get opacity() {
+    let parent = this.parent;
+    // 非Root节点继续向上乘
+    if (parent) {
+      const po = parent.opacity;
+      this._opacity = this.computedStyle[StyleKey.OPACITY] * po;
+    }
+    // Root的世界透明度就是自己
+    else {
+      this._opacity = this.computedStyle[StyleKey.OPACITY]
+    }
+    return this._opacity;
+  }
+
+  // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
   get matrixWorld(): Float64Array {
-    if (this.resetMxWorld) {
-      this.resetMxWorld = false;
+    const root = this.root;
+    if (!root) {
+      return this.matrix;
+    }
+    const m = this._matrixWorld;
+    // root总刷新没有包含变更，可以直接取缓存，否则才重新计算
+    if (root.rl & RefreshLevel.REFLOW_TRANSFORM) {
       let parent = this.parent;
-      // 非Root节点继续
-      if (parent) {
-        const pm = parent.matrixWorld;
-        assignMatrix(this._matrixWorld, multiply(pm, this.matrix));
+      let cache = true;
+      // 检测树到根路径有无变更，没有也可以直接取缓存
+      while (parent) {
+        if (parent.refreshLevel & RefreshLevel.REFLOW_TRANSFORM) {
+          cache = false;
+          break;
+        }
+        parent = parent.parent;
       }
-      // Root的世界矩阵就是自身矩阵
-      else {
-        assignMatrix(this._matrixWorld, this.matrix);
+      if (!cache) {
+        assignMatrix(m, this.matrix);
+        parent = this.parent;
+        while (parent) {
+          multiply2(parent.matrix, m);
+          parent = parent.parent;
+        }
       }
     }
-    return this._matrixWorld;
+    return m;
   }
 
   get rect(): Float64Array {

@@ -62,28 +62,19 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       i += total;
       continue;
     }
-    // 继承父的opacity和matrix
+    // 继承父的opacity和matrix TODO 优化路径缓存
     let opacity = computedStyle[StyleKey.OPACITY];
-    let matrix;
-    if (node.resetMxWorld) {
-      matrix = node.matrix;
-    }
-    else {
-      matrix = node._matrixWorld;
-    }
+    let matrix = node.matrix;
     const parent = node.parent;
     if (parent) {
       const op = parent.opacity, mw = parent._matrixWorld;
       if (op !== 1) {
         opacity *= op;
       }
-      if (node.resetMxWorld) {
-        node.resetMxWorld = false;
-        matrix = multiply(mw, matrix);
-        assignMatrix(node._matrixWorld, matrix);
-      }
+      matrix = multiply(mw, matrix);
     }
-    node.opacity = opacity;
+    node._opacity = opacity;
+    assignMatrix(node._matrixWorld, matrix);
     // 一般只有一个纹理
     const textureCache = node.textureCache;
     if (textureCache && opacity > 0) {

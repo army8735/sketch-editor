@@ -324,6 +324,7 @@
   let hoverNode, selectNode;
   let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
   let dpi = window.devicePixelRatio;
+  let curPage;
   let structs = [];
 
   input.onchange = function(e) {
@@ -457,6 +458,7 @@
       startY = e.pageY;
       // 空格按下移动画布
       if (spaceKey) {
+        curPage = root.getCurPage();
         overlap.classList.add('down');
       }
       // 普通是选择
@@ -508,11 +510,12 @@
 
   document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
-    if (root) {
-      if (selectNode) {
-        selectNode = null;
-        selection.classList.remove('show');
-      }
+    if (!root) {
+      return;
+    }
+    if (selectNode) {
+      selectNode = null;
+      selection.classList.remove('show');
     }
   });
 
@@ -522,6 +525,9 @@
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
+    if (!root) {
+      return;
+    }
     if (m !== e.metaKey) {
       onMove(lastX, lastY);
     }
@@ -537,6 +543,9 @@
     altKey = e.altKey;
     ctrlKey = e.ctrlKey;
     shiftKey = e.shiftKey;
+    if (!root) {
+      return;
+    }
     if (m !== e.metaKey) {
       onMove(lastX, lastY);
     }

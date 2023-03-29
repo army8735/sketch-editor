@@ -219,11 +219,9 @@ class Root extends Container implements FrameCallback {
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;
+    this.rl |= lv;
     if (addDom || removeDom) {
       this.rl |= RefreshLevel.REBUILD;
-    }
-    else {
-      this.rl |= lv;
     }
     return true;
   }
@@ -320,6 +318,10 @@ class Root extends Container implements FrameCallback {
       frame.offFrame(this);
       this.isAsyncDraw = false;
     }
+  }
+
+  getCurPage() {
+    return this.lastPage;
   }
 
   getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number): Node | null {
