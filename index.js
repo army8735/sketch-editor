@@ -15413,6 +15413,7 @@
                         width: page.frame.width,
                         height: page.frame.height,
                         visible: false,
+                        transformOrigin: [0, 0],
                         pointerEvents: false,
                     }),
                 },

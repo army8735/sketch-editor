@@ -589,82 +589,166 @@
     if (!curPage) {
       return;
     }
-    // console.log(e.deltaY, e.deltaMode);
-    let sc = 1;
-    if (e.deltaY < 0) {
-      if(e.deltaY < -200) {
-        sc = 0.125;
-      }
-      else if(e.deltaY < -100) {
-        sc = 0.25;
-      }
-      else if(e.deltaY < -50) {
-        sc = 0.5;
-      }
-      else if(e.deltaY < -20) {
-        sc = 0.75;
-      }
-      else {
-        sc = 0.875;
-      }
-    }
-    else if (e.deltaY > 0) {
-      if(e.deltaY > 200) {
-        sc = 2;
-      }
-      else if(e.deltaY > 100) {
-        sc = 1.75;
-      }
-      else if(e.deltaY > 50) {
-        sc = 1.5;
-      }
-      else if(e.deltaY > 20) {
-        sc = 1.25;
-      }
-      else {
-        sc = 1.125;
-      }
-    }
-    if (hoverNode) {
+    if(hoverNode) {
       hoverNode = null;
       hover.classList.remove('show');
     }
-    const x = lastX - originX;
-    const y = lastY - originY;
-    const pt = {
-      x: x * dpi,
-      y: y * dpi,
-    };
-    const { translateX, translateY, scaleX } = curPage.getComputedStyle();
-    const inverse = editor.math.matrix.inverse(curPage.matrixWorld);
-    const pt1 = editor.math.matrix.calPoint(pt, inverse);
-    let scale = scaleX * sc;
-    if (scale > 10) {
-      scale = 10;
+    // 按下时缩放
+    if (metaKey) {
+      let sc = 1;
+      if(e.deltaY < 0) {
+        if(e.deltaY < -200) {
+          sc = 0.125;
+        }
+        else if(e.deltaY < -100) {
+          sc = 0.25;
+        }
+        else if(e.deltaY < -50) {
+          sc = 0.5;
+        }
+        else if(e.deltaY < -20) {
+          sc = 0.75;
+        }
+        else {
+          sc = 0.875;
+        }
+      }
+      else if(e.deltaY > 0) {
+        if(e.deltaY > 200) {
+          sc = 2;
+        }
+        else if(e.deltaY > 100) {
+          sc = 1.75;
+        }
+        else if(e.deltaY > 50) {
+          sc = 1.5;
+        }
+        else if(e.deltaY > 20) {
+          sc = 1.25;
+        }
+        else {
+          sc = 1.125;
+        }
+      }
+      const x = lastX - originX;
+      const y = lastY - originY;
+      const pt = {
+        x: x * dpi,
+        y: y * dpi,
+      };
+      const { translateX, translateY, scaleX } = curPage.getComputedStyle();
+      const inverse = editor.math.matrix.inverse(curPage.matrixWorld);
+      // 求出鼠标屏幕坐标在画布内相对page的坐标
+      const pt1 = editor.math.matrix.calPoint(pt, inverse);
+      let scale = scaleX * sc;
+      if(scale > 10) {
+        scale = 10;
+      }
+      else if(scale < 0.1) {
+        scale = 0.1;
+      }
+      const newMatrix = editor.style.transform.calMatrix({
+        translateX,
+        translateY,
+        scaleX: scale,
+        scaleY: scale,
+      });
+      // 新缩放尺寸，位置不动，相对page坐标在新matrix下的坐标
+      const pt2 = editor.math.matrix.calPoint(pt1, newMatrix);
+      // 差值是需要调整的距离
+      const dx = pt2.x - pt.x / dpi, dy = pt2.y - pt.y / dpi;
+      curPage.updateStyle({
+        translateX: translateX - dx,
+        translateY: translateY - dy,
+        scaleX: scale,
+        scaleY: scale,
+      });
     }
-    else if (scale < 0.1) {
-      scale = 0.1;
+    // shift+滚轮是移动
+    else {
+      if (shiftKey) {
+        let sc = 0;
+        if(e.deltaX< 0) {
+          if(e.deltaX < -200) {
+            sc = 50;
+          }
+          else if(e.deltaX < -100) {
+            sc = 40;
+          }
+          else if(e.deltaX < -50) {
+            sc = 30;
+          }
+          else if(e.deltaX < -20) {
+            sc = 20;
+          }
+          else {
+            sc = 10;
+          }
+        }
+        else if(e.deltaX > 0) {
+          if(e.deltaX > 200) {
+            sc = -50;
+          }
+          else if(e.deltaX > 100) {
+            sc = -40;
+          }
+          else if(e.deltaX > 50) {
+            sc = -30;
+          }
+          else if(e.deltaX > 20) {
+            sc = -20;
+          }
+          else {
+            sc = -10;
+          }
+        }
+        const { translateX } = curPage.getComputedStyle();
+        curPage.updateStyle({
+          translateX: translateX + sc,
+        });
+      }
+      else {
+        let sc = 0;
+        if(e.deltaY < 0) {
+          if(e.deltaY < -200) {
+            sc = 50;
+          }
+          else if(e.deltaY < -100) {
+            sc = 40;
+          }
+          else if(e.deltaY < -50) {
+            sc = 30;
+          }
+          else if(e.deltaY < -20) {
+            sc = 20;
+          }
+          else {
+            sc = 10;
+          }
+        }
+        else if(e.deltaY > 0) {
+          if(e.deltaY > 200) {
+            sc = -50;
+          }
+          else if(e.deltaY > 100) {
+            sc = -40;
+          }
+          else if(e.deltaY > 50) {
+            sc = -30;
+          }
+          else if(e.deltaY > 20) {
+            sc = -20;
+          }
+          else {
+            sc = -10;
+          }
+        }
+        const { translateY } = curPage.getComputedStyle();
+        curPage.updateStyle({
+          translateY: translateY + sc,
+        });
+      }
     }
-    const newMatrix = editor.style.transform.calMatrix({
-      translateX,
-      translateY,
-      scaleX: scale,
-      scaleY: scale,
-    });
-    console.log(scale);
-    // console.log(translateX, translateY, scale, newMatrix.toString())
-    const pt2 = editor.math.matrix.calPoint(pt1, newMatrix);
-    const dx = pt2.x - pt1.x, dy = pt2.y - pt1.y;
-    // console.log(x, y, dpi, pt, pt1, pt2, dx, dy);
-    // curPage.updateStyle({
-    //   // translateX: dx,
-    //   // translateY: dy,
-    //   translateX: pt2.x,
-    //   translateY: pt2.y,
-    //   scaleX: scale,
-    //   scaleY: scale,
-    // });
-    // console.log(x, y, scale, pt);
   });
 </script>
 </body>
