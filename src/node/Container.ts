@@ -193,40 +193,12 @@ class Container extends Node {
               return res;
             }
           }
-          // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
-          if (computedStyle[StyleKey.POINTER_EVENTS]
-            && (includeGroup || !(child instanceof Container && child.isGroup))
-            && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
-            // 有选择节点时，还得排除向上父路径的group
-            if (child instanceof Container && child.isGroup && select) {
-              let parent = select.parent;
-              while (parent) {
-                if (child === parent) {
-                  return;
-                }
-                parent = parent.parent;
-              }
-            }
-            return child;
-          }
+          return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select);
         }
         // 指定判断lv是否相等
         else {
           if (struct.lv === lv) {
-            if (computedStyle[StyleKey.POINTER_EVENTS]
-              && (includeGroup || !(child instanceof Container && child.isGroup))
-              && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
-              if (child instanceof Container && child.isGroup && select) {
-                let parent = select.parent;
-                while (parent) {
-                  if (child === parent) {
-                    return;
-                  }
-                  parent = parent.parent;
-                }
-              }
-              return child;
-            }
+            return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select);
           }
           // 父级且是container继续深入寻找
           else if (struct.lv < lv && child instanceof Container) {
@@ -237,6 +209,25 @@ class Container extends Node {
           }
         }
       }
+    }
+  }
+
+  // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项，传入select选择节点时，还要防止父级中的group
+  private getNodeCheck(child: Node, computedStyle: Array<any>, includeGroup: boolean, includeArtBoard: boolean,
+                       select?: Node): Node | undefined {
+    if (computedStyle[StyleKey.POINTER_EVENTS]
+      && (includeGroup || !(child instanceof Container && child.isGroup))
+      && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+      if (child instanceof Container && child.isGroup && select) {
+        let parent = select.parent;
+        while (parent) {
+          if (child === parent) {
+            return;
+          }
+          parent = parent.parent;
+        }
+      }
+      return child;
     }
   }
 }
