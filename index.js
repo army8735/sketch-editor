@@ -17362,6 +17362,8 @@
         }
     }
     Event.REFRESH = 'refresh';
+    Event.DID_ADD_DOM = 'addDom';
+    Event.WILL_REMOVE_DOM = 'removeDom';
 
     function extend(target, source, keys) {
         if (source === null || typeof source !== 'object') {
@@ -18303,7 +18305,7 @@
             }
         }
         // 获取指定位置节点，不包含Page/ArtBoard
-        getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select) {
+        getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv) {
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
                 const child = children[i];
@@ -18313,21 +18315,21 @@
                     // 不指定lv则找最深处的child
                     if (lv === undefined) {
                         if (child instanceof Container) {
-                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
+                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
                             if (res) {
                                 return res;
                             }
                         }
-                        return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select);
+                        return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
                     }
-                    // 指定判断lv是否相等
+                    // 指定lv判断lv是否相等，超过不再递归下去
                     else {
                         if (struct.lv === lv) {
-                            return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select);
+                            return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
                         }
                         // 父级且是container继续深入寻找
                         else if (struct.lv < lv && child instanceof Container) {
-                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
+                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
                             if (res) {
                                 return res;
                             }
@@ -18336,20 +18338,11 @@
                 }
             }
         }
-        // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项，传入select选择节点时，还要防止父级中的group
-        getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select) {
+        // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
+        getNodeCheck(child, computedStyle, includeGroup, includeArtBoard) {
             if (computedStyle[StyleKey.POINTER_EVENTS]
                 && (includeGroup || !(child instanceof Container && child.isGroup))
                 && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
-                if (child instanceof Container && child.isGroup && select) {
-                    let parent = select.parent;
-                    while (parent) {
-                        if (child === parent) {
-                            return;
-                        }
-                        parent = parent.parent;
-                    }
-                }
                 return child;
             }
         }
@@ -19434,16 +19427,23 @@ void main() {
                     lv |= getLevel(k);
                 }
             }
+            if (removeDom) {
+                this.emit(Event.WILL_REMOVE_DOM, node);
+            }
             const res = this.calUpdate(node, lv, addDom, removeDom);
-            // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
+            // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb，现在没动画
             if (sync) {
                 return;
             }
+            // 非动画走这
             if (res) {
                 this.asyncDraw(cb);
             }
             else {
                 cb && cb(true);
+            }
+            if (addDom) {
+                this.emit(Event.DID_ADD_DOM, node);
             }
         }
         calUpdate(node, lv, addDom, removeDom) {
@@ -19580,10 +19580,10 @@ void main() {
         getCurPage() {
             return this.lastPage;
         }
-        getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv, select) {
+        getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv) {
             const page = this.lastPage;
             if (page) {
-                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3), select);
+                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
             }
         }
         getCurPageStructs() {

@@ -163,8 +163,7 @@ function onMove(x, y) {
       });
     }
     else {
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false,
-        (metaKey || selectNode) ? undefined : 1, selectNode);
+      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
       if(node && node !== selectNode) {
         showHover(node);
       }
@@ -194,8 +193,7 @@ function onMove(x, y) {
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false,
-        (metaKey || selectNode) ? undefined : 1, selectNode);
+      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1, selectNode);
       if(node && node !== selectNode) {
         showHover(node);
       }
@@ -233,7 +231,7 @@ main.addEventListener('mousedown', function(e) {
       const nx = startX - originX;
       const ny = startY - originY;
       const target = e.target;
-      // 注意要判断是否点在选择框上的控制点，进入拖拽
+      // 注意要判断是否点在选择框上的控制点，进入拖拽拉伸模式，只有几个控制点pointerEvents可以被点击
       if (target.tagName === 'SPAN') {
         isControl = true;
         const classList = target.classList;
@@ -246,9 +244,9 @@ main.addEventListener('mousedown', function(e) {
         else if (classList.contains('b')) {}
         else if (classList.contains('l')) {}
       }
+      // 普通模式选择节点
       else {
-        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false,
-          (metaKey || selectNode) ? undefined : 1, selectNode);
+        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
         if(node) {
           showSelect(node);
           hideHover();
@@ -273,6 +271,9 @@ document.addEventListener('mouseup', function(e) {
     return;
   }
   if (e.button === 0) {
+    if (selectNode) {
+      // console.log(11, selectNode)
+    }
     isDown = false;
     isControl = false;
     if(spaceKey) {

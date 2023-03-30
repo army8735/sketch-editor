@@ -178,7 +178,7 @@ class Container extends Node {
 
   // 获取指定位置节点，不包含Page/ArtBoard
   getNodeByPointAndLv(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean,
-                      lv?: number, select?: Node): Node | undefined {
+                      lv?: number): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
@@ -188,21 +188,21 @@ class Container extends Node {
         // 不指定lv则找最深处的child
         if (lv === undefined) {
           if (child instanceof Container) {
-            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
+            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
             if (res) {
               return res;
             }
           }
-          return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select);
+          return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
         }
-        // 指定判断lv是否相等
+        // 指定lv判断lv是否相等，超过不再递归下去
         else {
           if (struct.lv === lv) {
-            return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard, select);
+            return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
           }
           // 父级且是container继续深入寻找
           else if (struct.lv < lv && child instanceof Container) {
-            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
+            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
             if (res) {
               return res;
             }
@@ -212,21 +212,11 @@ class Container extends Node {
     }
   }
 
-  // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项，传入select选择节点时，还要防止父级中的group
-  private getNodeCheck(child: Node, computedStyle: Array<any>, includeGroup: boolean, includeArtBoard: boolean,
-                       select?: Node): Node | undefined {
+  // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
+  private getNodeCheck(child: Node, computedStyle: Array<any>, includeGroup: boolean, includeArtBoard: boolean): Node | undefined {
     if (computedStyle[StyleKey.POINTER_EVENTS]
       && (includeGroup || !(child instanceof Container && child.isGroup))
       && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
-      if (child instanceof Container && child.isGroup && select) {
-        let parent = select.parent;
-        while (parent) {
-          if (child === parent) {
-            return;
-          }
-          parent = parent.parent;
-        }
-      }
       return child;
     }
   }

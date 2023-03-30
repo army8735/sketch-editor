@@ -157,19 +157,26 @@ class Root extends Container implements FrameCallback {
         lv |= getLevel(k);
       }
     }
+    if (removeDom) {
+      this.emit(Event.WILL_REMOVE_DOM, node);
+    }
     const res = this.calUpdate(node, lv, addDom, removeDom);
-    // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
+    // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb，现在没动画
     if (sync) {
       if (res) {
         //
       }
       return;
     }
+    // 非动画走这
     if (res) {
       this.asyncDraw(cb);
     }
     else {
       cb && cb(true);
+    }
+    if (addDom) {
+      this.emit(Event.DID_ADD_DOM, node);
     }
   }
 
@@ -323,10 +330,10 @@ class Root extends Container implements FrameCallback {
     return this.lastPage;
   }
 
-  getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number, select?: Node): Node | undefined {
+  getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number): Node | undefined {
     const page = this.lastPage;
     if (page) {
-      return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3), select);
+      return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
     }
   }
 
