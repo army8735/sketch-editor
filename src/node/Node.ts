@@ -5,20 +5,15 @@ import {
   assignMatrix,
   calRectPoint,
   identity,
-  isE,
   multiply2,
-  multiplyRotateZ,
-  multiplyScaleX,
-  multiplyScaleY,
-  toE,
 } from '../math/matrix';
 import { d2r } from '../math/geom';
 import { extend } from '../util';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
-import { calNormalLineHeight, equalStyle, normalizeStyle } from '../style/css';
-import { StyleArray, StyleKey, StyleKeyHash, StyleNumStrValue, StyleUnit } from '../style';
-import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import { calNormalLineHeight, equalStyle, normalize, calSize } from '../style/css';
+import { StyleArray, StyleKey, StyleKeyHash, StyleUnit } from '../style/define';
+import { calStyleMatrix } from '../style/transform';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
 import CanvasCache from '../refresh/CanvasCache';
@@ -54,7 +49,7 @@ class Node extends Event {
   constructor(props: Props) {
     super();
     this.props = props;
-    this.style = extend([], normalizeStyle(props.style || {}));
+    this.style = extend([], normalize(props.style || {}));
     this.computedStyle = []; // 输出展示的值
     this.cacheStyle = []; // 缓存js直接使用的对象结果
     this.x = 0;
@@ -115,40 +110,40 @@ class Node extends Event {
     }
     else {
       fixedLeft = true;
-      computedStyle[StyleKey.LEFT] = this.calSize(left, data.w);
+      computedStyle[StyleKey.LEFT] = calSize(left, data.w);
     }
     if (right.u === StyleUnit.AUTO) {
       computedStyle[StyleKey.RIGHT] = 'auto';
     }
     else {
       fixedRight = true;
-      computedStyle[StyleKey.RIGHT] = this.calSize(right, data.w);
+      computedStyle[StyleKey.RIGHT] = calSize(right, data.w);
     }
     if (top.u === StyleUnit.AUTO) {
       computedStyle[StyleKey.TOP] = 'auto';
     }
     else {
       fixedTop = true;
-      computedStyle[StyleKey.TOP] = this.calSize(top, data.h);
+      computedStyle[StyleKey.TOP] = calSize(top, data.h);
     }
     if (bottom.u === StyleUnit.AUTO) {
       computedStyle[StyleKey.BOTTOM] = 'auto';
     }
     else {
       fixedBottom = true;
-      computedStyle[StyleKey.BOTTOM] = this.calSize(bottom, data.h);
+      computedStyle[StyleKey.BOTTOM] = calSize(bottom, data.h);
     }
     if (width.u === StyleUnit.AUTO) {
       computedStyle[StyleKey.WIDTH] = 'auto';
     }
     else {
-      computedStyle[StyleKey.WIDTH] = this.calSize(width, data.w);
+      computedStyle[StyleKey.WIDTH] = calSize(width, data.w);
     }
     if (height.u === StyleUnit.AUTO) {
       computedStyle[StyleKey.HEIGHT] = 'auto';
     }
     else {
-      computedStyle[StyleKey.HEIGHT] = this.calSize(height, data.h);
+      computedStyle[StyleKey.HEIGHT] = calSize(height, data.h);
     }
     // 左右决定x+width
     if (fixedLeft && fixedRight) {
@@ -235,10 +230,10 @@ class Node extends Event {
     const height = style[StyleKey.HEIGHT];
     if (parent) {
       if (width.u !== StyleUnit.AUTO) {
-        this.width = computedStyle[StyleKey.WIDTH] = this.calSize(width, parent.width);
+        this.width = computedStyle[StyleKey.WIDTH] = calSize(width, parent.width);
       }
       if (height.u !== StyleUnit.AUTO) {
-        this.height = computedStyle[StyleKey.HEIGHT] = this.calSize(height, parent.height);
+        this.height = computedStyle[StyleKey.HEIGHT] = calSize(height, parent.height);
       }
     }
   }
@@ -267,14 +262,14 @@ class Node extends Event {
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
     if (optimize) {
       if (lv & RefreshLevel.TRANSLATE_X) {
-        const v = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
+        const v = calSize(style[StyleKey.TRANSLATE_X], this.width);
         const diff = v - computedStyle[StyleKey.TRANSLATE_X];
         computedStyle[StyleKey.TRANSLATE_X] = v;
         transform[12] += diff;
         matrix[12] += diff;
       }
       if (lv & RefreshLevel.TRANSLATE_Y) {
-        const v = this.calSize(style[StyleKey.TRANSLATE_Y], this.height);
+        const v = calSize(style[StyleKey.TRANSLATE_Y], this.height);
         const diff = v - computedStyle[StyleKey.TRANSLATE_Y];
         computedStyle[StyleKey.TRANSLATE_Y] = v;
         transform[13] += diff;
@@ -325,51 +320,10 @@ class Node extends Event {
     }
     // 普通布局或者第一次计算
     else {
-      toE(transform);
-      transform[12] = computedStyle[StyleKey.TRANSLATE_X] = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
-      transform[13] = computedStyle[StyleKey.TRANSLATE_Y] = this.calSize(style[StyleKey.TRANSLATE_Y], this.width);
-      const rotateZ = computedStyle[StyleKey.ROTATE_Z] = style[StyleKey.ROTATE_Z].v as number;
-      if (isE(transform)) {
-        calRotateZ(transform, rotateZ);
-      }
-      else {
-        multiplyRotateZ(transform, d2r(rotateZ));
-      }
-      const scaleX = computedStyle[StyleKey.SCALE_X] = style[StyleKey.SCALE_X].v as number;
-      if (scaleX !== 1) {
-        if (isE(transform)) {
-          transform[0] = scaleX;
-        }
-        else {
-          multiplyScaleX(transform, scaleX);
-        }
-      }
-      const scaleY = computedStyle[StyleKey.SCALE_Y] = style[StyleKey.SCALE_Y].v as number;
-      if (scaleY !== 1) {
-        if (isE(transform)) {
-          transform[5] = scaleY;
-        }
-        else {
-          multiplyScaleY(transform, scaleY);
-        }
-      }
-      const tfo = computedStyle[StyleKey.TRANSFORM_ORIGIN] = style[StyleKey.TRANSFORM_ORIGIN].map((item, i) => {
-        return this.calSize(item, i ? this.height : this.width);
-      });
-      const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
+      const t = calStyleMatrix(style, this.x, this.y, this.width, this.height, computedStyle);
       assignMatrix(matrix, t);
     }
     return matrix;
-  }
-
-  calSize(v: StyleNumStrValue, p: number): number {
-    if (v.u === StyleUnit.PX) {
-      return v.v as number;
-    }
-    if (v.u === StyleUnit.PERCENT) {
-      return (v.v as number) * p * 0.01;
-    }
-    return 0;
   }
 
   calContent(): boolean {
@@ -440,7 +394,7 @@ class Node extends Event {
     const visible = this.computedStyle[StyleKey.VISIBLE];
     let hasVisible = false;
     const keys: Array<StyleKey> = [];
-    const style2 = normalizeStyle(style);
+    const style2 = normalize(style);
     for (let k in style2) {
       if (style2.hasOwnProperty(k)) {
         const k2 = parseInt(k);

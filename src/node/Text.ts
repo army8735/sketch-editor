@@ -2,7 +2,7 @@ import Node from './Node';
 import Container from './Container';
 import { Props } from '../format';
 import { LayoutData } from './layout';
-import { StyleKey, StyleUnit } from '../style';
+import { StyleKey, StyleUnit } from '../style/define';
 import inject from '../util/inject';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import CanvasCache from '../refresh/CanvasCache';

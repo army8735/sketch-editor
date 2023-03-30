@@ -5,11 +5,11 @@ import {
   MIX_BLEND_MODE,
   StyleArray,
   StyleKey,
-  styleKey2Upper,
+  styleKey2Upper, StyleNumStrValue,
   StyleNumValue,
   StyleUnit,
   StyleValue,
-} from './';
+} from './define';
 import { isNil } from '../util/type';
 import inject from '../util/inject';
 import font from './font';
@@ -39,7 +39,7 @@ function compatibleTransform(k: StyleKey, v: StyleValue) {
   }
 }
 
-export function normalizeStyle(style: JStyle): any {
+export function normalize(style: JStyle): StyleArray {
   const res: any = {};
   [
     'left',
@@ -384,7 +384,7 @@ export function setFontStyle(style: Array<any>) {
     + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
 }
 
-function calFontFamily(fontFamily: string) {
+export function calFontFamily(fontFamily: string) {
   let ff = fontFamily.split(/\s*,\s*/);
   for(let i = 0, len = ff.length; i < len; i++) {
     let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
@@ -414,3 +414,25 @@ export function getBaseline(style: Array<any>) {
   let normal = calNormalLineHeight(style, ff);
   return (style[StyleKey.LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
+
+export function calSize(v: StyleNumStrValue, p: number): number {
+  if (v.u === StyleUnit.PX) {
+    return v.v as number;
+  }
+  if (v.u === StyleUnit.PERCENT) {
+    return (v.v as number) * p * 0.01;
+  }
+  return 0;
+}
+
+export default {
+  normalize,
+  equalStyle,
+  color2rgbaInt,
+  color2rgbaStr,
+  color2gl,
+  calFontFamily,
+  calNormalLineHeight,
+  getBaseline,
+  calSize,
+};

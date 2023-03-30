@@ -1,7 +1,7 @@
 import Node from './Node';
 import { ArtBoardProps, Props } from '../format';
 import Container from './Container';
-import { StyleKey } from '../style';
+import { StyleKey } from '../style/define';
 import { calRectPoint } from '../math/matrix';
 import { convertCoords2Gl } from '../gl/webgl';
 import { color2gl } from '../style/css';

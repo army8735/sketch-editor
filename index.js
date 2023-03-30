@@ -15694,57 +15694,6 @@
         });
     }
 
-    const o = {
-        info: {
-            arial: {
-                lhr: 1.14990234375,
-                // car: 1.1171875, // content-area ratio，(1854+434)/2048
-                blr: 0.9052734375,
-                // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-                lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
-            },
-            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
-            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
-            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
-            helvetica: {
-                lhr: 1.14990234375,
-                blr: 0.919921875, // (1577 + Round((1577 + 471) * 0.15)) / 2048
-            },
-            verdana: {
-                lhr: 1.21533203125,
-                blr: 1.00537109375, // 2059/2048
-            },
-            tahoma: {
-                lhr: 1.20703125,
-                blr: 1.00048828125, // 2049/2048
-            },
-            georgia: {
-                lhr: 1.13623046875,
-                blr: 0.9169921875, // 1878/2048
-            },
-            'courier new': {
-                lhr: 1.1328125,
-                blr: 0.83251953125, // 1705/2048
-            },
-            'pingfang sc': {
-                lhr: 1.4,
-                blr: 1.06, // 1060/1000
-            },
-            simsun: {
-                lhr: 1.4,
-                blr: 1.06,
-            },
-        },
-        hasRegister(fontFamily) {
-            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
-        },
-        hasLoaded(fontFamily) {
-            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
-        },
-    };
-    o.info['宋体'] = o.info.simsun;
-    o.info['pingfang'] = o.info['pingfang sc'];
-
     var StyleKey;
     (function (StyleKey) {
         StyleKey[StyleKey["TOP"] = 0] = "TOP";
@@ -15887,10 +15836,10 @@
         MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
         MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
     })(MASK_TYPE || (MASK_TYPE = {}));
-    var style = {
-        font: o,
+    var define = {
         StyleKey,
         StyleUnit,
+        calUnit,
     };
 
     var RefreshLevel;
@@ -15968,6 +15917,57 @@
     var refresh = {
         level,
     };
+
+    const o = {
+        info: {
+            arial: {
+                lhr: 1.14990234375,
+                // car: 1.1171875, // content-area ratio，(1854+434)/2048
+                blr: 0.9052734375,
+                // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
+                lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
+            },
+            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
+            helvetica: {
+                lhr: 1.14990234375,
+                blr: 0.919921875, // (1577 + Round((1577 + 471) * 0.15)) / 2048
+            },
+            verdana: {
+                lhr: 1.21533203125,
+                blr: 1.00537109375, // 2059/2048
+            },
+            tahoma: {
+                lhr: 1.20703125,
+                blr: 1.00048828125, // 2049/2048
+            },
+            georgia: {
+                lhr: 1.13623046875,
+                blr: 0.9169921875, // 1878/2048
+            },
+            'courier new': {
+                lhr: 1.1328125,
+                blr: 0.83251953125, // 1705/2048
+            },
+            'pingfang sc': {
+                lhr: 1.4,
+                blr: 1.06, // 1060/1000
+            },
+            simsun: {
+                lhr: 1.4,
+                blr: 1.06,
+            },
+        },
+        hasRegister(fontFamily) {
+            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
+        },
+        hasLoaded(fontFamily) {
+            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
+        },
+    };
+    o.info['宋体'] = o.info.simsun;
+    o.info['pingfang'] = o.info['pingfang sc'];
 
     // 向量叉乘积
     function crossProduct(x1, y1, x2, y2) {
@@ -16353,12 +16353,6 @@
         pointInRect,
     };
 
-    var math = {
-        geom,
-        matrix,
-        vector,
-    };
-
     // @ts-ignore
     const toString = {}.toString;
     function isType(type) {
@@ -16410,105 +16404,6 @@
         isFunction,
         isPlainObject,
     };
-
-    class Event {
-        constructor() {
-            this.__eHash = {};
-        }
-        on(id, handle) {
-            if (!isFunction(handle)) {
-                return;
-            }
-            let self = this;
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    self.on(id[i], handle);
-                }
-            }
-            else {
-                if (!self.__eHash.hasOwnProperty(id)) {
-                    self.__eHash[id] = [];
-                }
-                // 遍历防止此handle被侦听过了
-                for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
-                    if (item[i] === handle) {
-                        return self;
-                    }
-                }
-                self.__eHash[id].push(handle);
-            }
-            return self;
-        }
-        once(id, handle) {
-            if (!isFunction(handle)) {
-                return;
-            }
-            let self = this;
-            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-            function cb() {
-                handle.apply(self, arguments);
-                self.off(id, cb);
-            }
-            cb.__eventCb = handle;
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    self.once(id[i], handle);
-                }
-            }
-            else if (handle) {
-                self.on(id, cb);
-            }
-            return this;
-        }
-        off(id, handle) {
-            let self = this;
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    self.off(id[i], handle);
-                }
-            }
-            else if (self.__eHash.hasOwnProperty(id)) {
-                if (handle) {
-                    for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
-                        // 需考虑once包裹的引用对比
-                        if (item[i] === handle || item[i].__eventCb === handle) {
-                            item.splice(i, 1);
-                            break;
-                        }
-                    }
-                }
-                // 未定义为全部清除
-                else {
-                    delete self.__eHash[id];
-                }
-            }
-            return this;
-        }
-        emit(id, ...data) {
-            let self = this;
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    self.emit(id[i], data);
-                }
-            }
-            else {
-                if (self.__eHash.hasOwnProperty(id)) {
-                    let list = self.__eHash[id];
-                    if (list.length) {
-                        list = list.slice();
-                        for (let i = 0, len = list.length; i < len; i++) {
-                            let cb = list[i];
-                            if (isFunction(cb)) {
-                                cb.apply(self, data);
-                            }
-                        }
-                    }
-                }
-            }
-            return this;
-        }
-    }
-    Event.REFRESH = 'refresh';
 
     const SPF = 1000 / 60;
     const CANVAS = {};
@@ -16868,160 +16763,6 @@
         },
     };
 
-    function extend(target, source, keys) {
-        if (source === null || typeof source !== 'object') {
-            return target;
-        }
-        if (!keys) {
-            keys = Object.keys(source);
-        }
-        let i = 0;
-        const len = keys.length;
-        while (i < len) {
-            const k = keys[i];
-            target[k] = source[k];
-            i++;
-        }
-        return target;
-    }
-    var util = {
-        type,
-        Event,
-        inject,
-    };
-
-    let isPause;
-    function traversalBefore(list, length, diff) {
-        for (let i = 0; i < length; i++) {
-            let item = list[i];
-            item.before && item.before(diff);
-        }
-    }
-    function traversalAfter(list, length, diff) {
-        for (let i = 0; i < length; i++) {
-            let item = list[i];
-            item.after(diff);
-        }
-    }
-    class Frame {
-        constructor() {
-            this.rootTask = [];
-            this.roots = [];
-            this.task = [];
-            this.now = inject.now();
-            this.id = 0;
-        }
-        init() {
-            let self = this;
-            let { task } = self;
-            inject.cancelAnimationFrame(self.id);
-            let last = self.now = inject.now();
-            function cb() {
-                // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
-                inject.cancelAnimationFrame(self.id);
-                self.id = inject.requestAnimationFrame(function () {
-                    let now = self.now = inject.now();
-                    if (isPause || !task.length) {
-                        return;
-                    }
-                    let diff = now - last;
-                    diff = Math.max(diff, 0);
-                    // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
-                    last = now;
-                    // 优先动画计算
-                    let clone = task.slice(0);
-                    let len1 = clone.length;
-                    // 普通的before/after，动画计算在before，所有回调在after
-                    traversalBefore(clone, len1, diff);
-                    // 刷新成功后调用after，确保图像生成
-                    traversalAfter(clone, len1, diff);
-                    // 还有则继续，没有则停止节省性能
-                    if (task.length) {
-                        cb();
-                    }
-                });
-            }
-            cb();
-        }
-        onFrame(handle) {
-            if (!handle) {
-                return;
-            }
-            let { task } = this;
-            if (!task.length) {
-                this.init();
-            }
-            if (isFunction(handle)) {
-                handle = {
-                    after: handle,
-                    ref: handle,
-                };
-            }
-            task.push(handle);
-        }
-        offFrame(handle) {
-            if (!handle) {
-                return;
-            }
-            let { task } = this;
-            for (let i = 0, len = task.length; i < len; i++) {
-                let item = task[i];
-                // 需考虑nextFrame包裹的引用对比
-                if (item === handle || item.ref === handle) {
-                    task.splice(i, 1);
-                    break;
-                }
-            }
-            if (!task.length) {
-                inject.cancelAnimationFrame(this.id);
-                this.now = 0;
-            }
-        }
-        nextFrame(handle) {
-            if (!handle) {
-                return;
-            }
-            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-            let cb = isFunction(handle) ? {
-                after: (diff) => {
-                    handle(diff);
-                    this.offFrame(cb);
-                },
-            } : {
-                before: handle.before,
-                after: (diff) => {
-                    handle.after && handle.after(diff);
-                    this.offFrame(cb);
-                },
-            };
-            cb.ref = handle;
-            this.onFrame(cb);
-        }
-        pause() {
-            isPause = true;
-        }
-        resume() {
-            if (isPause) {
-                this.init();
-                isPause = false;
-            }
-        }
-        addRoot(root) {
-            this.roots.push(root);
-        }
-        removeRoot(root) {
-            let i = this.roots.indexOf(root);
-            if (i > -1) {
-                this.roots.splice(i, 1);
-            }
-        }
-    }
-    const frame = new Frame();
-
-    var animation = {
-        frame,
-    };
-
     const TRANSFORM_HASH = {
         translateX: StyleKey.TRANSLATE_X,
         translateY: StyleKey.TRANSLATE_Y,
@@ -17045,7 +16786,7 @@
             }
         }
     }
-    function normalizeStyle(style) {
+    function normalize(style) {
         const res = {};
         [
             'left',
@@ -17412,6 +17153,26 @@
         let normal = calNormalLineHeight(style, ff);
         return (style[StyleKey.LINE_HEIGHT] - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
     }
+    function calSize(v, p) {
+        if (v.u === StyleUnit.PX) {
+            return v.v;
+        }
+        if (v.u === StyleUnit.PERCENT) {
+            return v.v * p * 0.01;
+        }
+        return 0;
+    }
+    var css = {
+        normalize,
+        equalStyle,
+        color2rgbaInt,
+        color2rgbaStr,
+        color2gl,
+        calFontFamily,
+        calNormalLineHeight,
+        getBaseline,
+        calSize,
+    };
 
     function calRotateZ(t, v) {
         v = d2r(v);
@@ -17432,6 +17193,328 @@
         res = multiplyTfo(res, -ox, -oy);
         return res;
     }
+    function calStyleMatrix(style, x = 0, y = 0, width = 0, height = 0, computedStyle) {
+        const transform = identity();
+        transform[12] = style[StyleKey.TRANSLATE_X] ? calSize(style[StyleKey.TRANSLATE_X], width) : 0;
+        transform[13] = style[StyleKey.TRANSLATE_Y] ? calSize(style[StyleKey.TRANSLATE_Y], height) : 0;
+        const rotateZ = style[StyleKey.ROTATE_Z] ? style[StyleKey.ROTATE_Z].v : 0;
+        const scaleX = style[StyleKey.SCALE_X] ? style[StyleKey.SCALE_X].v : 1;
+        const scaleY = style[StyleKey.SCALE_Y] ? style[StyleKey.SCALE_Y].v : 1;
+        if (computedStyle) {
+            computedStyle[StyleKey.TRANSLATE_X] = transform[12];
+            computedStyle[StyleKey.TRANSLATE_Y] = transform[13];
+            computedStyle[StyleKey.ROTATE_Z] = rotateZ;
+            computedStyle[StyleKey.SCALE_X] = scaleX;
+            computedStyle[StyleKey.SCALE_Y] = scaleY;
+        }
+        if (isE(transform)) {
+            calRotateZ(transform, rotateZ);
+        }
+        else if (rotateZ) {
+            multiplyRotateZ(transform, d2r(rotateZ));
+        }
+        if (scaleX !== 1) {
+            if (isE(transform)) {
+                transform[0] = scaleX;
+            }
+            else {
+                multiplyScaleX(transform, scaleX);
+            }
+        }
+        if (scaleY !== 1) {
+            if (isE(transform)) {
+                transform[5] = scaleY;
+            }
+            else {
+                multiplyScaleY(transform, scaleY);
+            }
+        }
+        if (style[StyleKey.TRANSFORM_ORIGIN]) {
+            const tfo = style[StyleKey.TRANSFORM_ORIGIN].map((item, i) => {
+                return calSize(item, i ? height : width);
+            });
+            if (computedStyle) {
+                computedStyle[StyleKey.TRANSFORM_ORIGIN] = tfo;
+            }
+            return calMatrixByOrigin(transform, tfo[0] + x, tfo[1] + y);
+        }
+        return transform;
+    }
+    function calMatrix(style, x = 0, y = 0, width = 0, height = 0, computedStyle) {
+        return calStyleMatrix(normalize(style), x, y, width, height, computedStyle);
+    }
+    var transform = {
+        calRotateZ,
+        calMatrix,
+        calStyleMatrix,
+        calMatrixByOrigin,
+    };
+
+    var style = {
+        font: o,
+        transform,
+        define,
+        css,
+    };
+
+    var math = {
+        geom,
+        matrix,
+        vector,
+    };
+
+    class Event {
+        constructor() {
+            this.__eHash = {};
+        }
+        on(id, handle) {
+            if (!isFunction(handle)) {
+                return;
+            }
+            let self = this;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.on(id[i], handle);
+                }
+            }
+            else {
+                if (!self.__eHash.hasOwnProperty(id)) {
+                    self.__eHash[id] = [];
+                }
+                // 遍历防止此handle被侦听过了
+                for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
+                    if (item[i] === handle) {
+                        return self;
+                    }
+                }
+                self.__eHash[id].push(handle);
+            }
+            return self;
+        }
+        once(id, handle) {
+            if (!isFunction(handle)) {
+                return;
+            }
+            let self = this;
+            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
+            function cb() {
+                handle.apply(self, arguments);
+                self.off(id, cb);
+            }
+            cb.__eventCb = handle;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.once(id[i], handle);
+                }
+            }
+            else if (handle) {
+                self.on(id, cb);
+            }
+            return this;
+        }
+        off(id, handle) {
+            let self = this;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.off(id[i], handle);
+                }
+            }
+            else if (self.__eHash.hasOwnProperty(id)) {
+                if (handle) {
+                    for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
+                        // 需考虑once包裹的引用对比
+                        if (item[i] === handle || item[i].__eventCb === handle) {
+                            item.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+                // 未定义为全部清除
+                else {
+                    delete self.__eHash[id];
+                }
+            }
+            return this;
+        }
+        emit(id, ...data) {
+            let self = this;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    self.emit(id[i], data);
+                }
+            }
+            else {
+                if (self.__eHash.hasOwnProperty(id)) {
+                    let list = self.__eHash[id];
+                    if (list.length) {
+                        list = list.slice();
+                        for (let i = 0, len = list.length; i < len; i++) {
+                            let cb = list[i];
+                            if (isFunction(cb)) {
+                                cb.apply(self, data);
+                            }
+                        }
+                    }
+                }
+            }
+            return this;
+        }
+    }
+    Event.REFRESH = 'refresh';
+
+    function extend(target, source, keys) {
+        if (source === null || typeof source !== 'object') {
+            return target;
+        }
+        if (!keys) {
+            keys = Object.keys(source);
+        }
+        let i = 0;
+        const len = keys.length;
+        while (i < len) {
+            const k = keys[i];
+            target[k] = source[k];
+            i++;
+        }
+        return target;
+    }
+    var util = {
+        type,
+        Event,
+        inject,
+    };
+
+    let isPause;
+    function traversalBefore(list, length, diff) {
+        for (let i = 0; i < length; i++) {
+            let item = list[i];
+            item.before && item.before(diff);
+        }
+    }
+    function traversalAfter(list, length, diff) {
+        for (let i = 0; i < length; i++) {
+            let item = list[i];
+            item.after(diff);
+        }
+    }
+    class Frame {
+        constructor() {
+            this.rootTask = [];
+            this.roots = [];
+            this.task = [];
+            this.now = inject.now();
+            this.id = 0;
+        }
+        init() {
+            let self = this;
+            let { task } = self;
+            inject.cancelAnimationFrame(self.id);
+            let last = self.now = inject.now();
+            function cb() {
+                // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
+                inject.cancelAnimationFrame(self.id);
+                self.id = inject.requestAnimationFrame(function () {
+                    let now = self.now = inject.now();
+                    if (isPause || !task.length) {
+                        return;
+                    }
+                    let diff = now - last;
+                    diff = Math.max(diff, 0);
+                    // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
+                    last = now;
+                    // 优先动画计算
+                    let clone = task.slice(0);
+                    let len1 = clone.length;
+                    // 普通的before/after，动画计算在before，所有回调在after
+                    traversalBefore(clone, len1, diff);
+                    // 刷新成功后调用after，确保图像生成
+                    traversalAfter(clone, len1, diff);
+                    // 还有则继续，没有则停止节省性能
+                    if (task.length) {
+                        cb();
+                    }
+                });
+            }
+            cb();
+        }
+        onFrame(handle) {
+            if (!handle) {
+                return;
+            }
+            let { task } = this;
+            if (!task.length) {
+                this.init();
+            }
+            if (isFunction(handle)) {
+                handle = {
+                    after: handle,
+                    ref: handle,
+                };
+            }
+            task.push(handle);
+        }
+        offFrame(handle) {
+            if (!handle) {
+                return;
+            }
+            let { task } = this;
+            for (let i = 0, len = task.length; i < len; i++) {
+                let item = task[i];
+                // 需考虑nextFrame包裹的引用对比
+                if (item === handle || item.ref === handle) {
+                    task.splice(i, 1);
+                    break;
+                }
+            }
+            if (!task.length) {
+                inject.cancelAnimationFrame(this.id);
+                this.now = 0;
+            }
+        }
+        nextFrame(handle) {
+            if (!handle) {
+                return;
+            }
+            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
+            let cb = isFunction(handle) ? {
+                after: (diff) => {
+                    handle(diff);
+                    this.offFrame(cb);
+                },
+            } : {
+                before: handle.before,
+                after: (diff) => {
+                    handle.after && handle.after(diff);
+                    this.offFrame(cb);
+                },
+            };
+            cb.ref = handle;
+            this.onFrame(cb);
+        }
+        pause() {
+            isPause = true;
+        }
+        resume() {
+            if (isPause) {
+                this.init();
+                isPause = false;
+            }
+        }
+        addRoot(root) {
+            this.roots.push(root);
+        }
+        removeRoot(root) {
+            let i = this.roots.indexOf(root);
+            if (i > -1) {
+                this.roots.splice(i, 1);
+            }
+        }
+    }
+    const frame = new Frame();
+
+    var animation = {
+        frame,
+    };
 
     function createTexture(gl, n, tex, width, height) {
         let texture = gl.createTexture();
@@ -17609,7 +17692,7 @@
         constructor(props) {
             super();
             this.props = props;
-            this.style = extend([], normalizeStyle(props.style || {}));
+            this.style = extend([], normalize(props.style || {}));
             this.computedStyle = []; // 输出展示的值
             this.cacheStyle = []; // 缓存js直接使用的对象结果
             this.x = 0;
@@ -17661,40 +17744,40 @@
             }
             else {
                 fixedLeft = true;
-                computedStyle[StyleKey.LEFT] = this.calSize(left, data.w);
+                computedStyle[StyleKey.LEFT] = calSize(left, data.w);
             }
             if (right.u === StyleUnit.AUTO) {
                 computedStyle[StyleKey.RIGHT] = 'auto';
             }
             else {
                 fixedRight = true;
-                computedStyle[StyleKey.RIGHT] = this.calSize(right, data.w);
+                computedStyle[StyleKey.RIGHT] = calSize(right, data.w);
             }
             if (top.u === StyleUnit.AUTO) {
                 computedStyle[StyleKey.TOP] = 'auto';
             }
             else {
                 fixedTop = true;
-                computedStyle[StyleKey.TOP] = this.calSize(top, data.h);
+                computedStyle[StyleKey.TOP] = calSize(top, data.h);
             }
             if (bottom.u === StyleUnit.AUTO) {
                 computedStyle[StyleKey.BOTTOM] = 'auto';
             }
             else {
                 fixedBottom = true;
-                computedStyle[StyleKey.BOTTOM] = this.calSize(bottom, data.h);
+                computedStyle[StyleKey.BOTTOM] = calSize(bottom, data.h);
             }
             if (width.u === StyleUnit.AUTO) {
                 computedStyle[StyleKey.WIDTH] = 'auto';
             }
             else {
-                computedStyle[StyleKey.WIDTH] = this.calSize(width, data.w);
+                computedStyle[StyleKey.WIDTH] = calSize(width, data.w);
             }
             if (height.u === StyleUnit.AUTO) {
                 computedStyle[StyleKey.HEIGHT] = 'auto';
             }
             else {
-                computedStyle[StyleKey.HEIGHT] = this.calSize(height, data.h);
+                computedStyle[StyleKey.HEIGHT] = calSize(height, data.h);
             }
             // 左右决定x+width
             if (fixedLeft && fixedRight) {
@@ -17780,10 +17863,10 @@
             const height = style[StyleKey.HEIGHT];
             if (parent) {
                 if (width.u !== StyleUnit.AUTO) {
-                    this.width = computedStyle[StyleKey.WIDTH] = this.calSize(width, parent.width);
+                    this.width = computedStyle[StyleKey.WIDTH] = calSize(width, parent.width);
                 }
                 if (height.u !== StyleUnit.AUTO) {
-                    this.height = computedStyle[StyleKey.HEIGHT] = this.calSize(height, parent.height);
+                    this.height = computedStyle[StyleKey.HEIGHT] = calSize(height, parent.height);
                 }
             }
         }
@@ -17810,14 +17893,14 @@
             // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
             if (optimize) {
                 if (lv & RefreshLevel.TRANSLATE_X) {
-                    const v = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
+                    const v = calSize(style[StyleKey.TRANSLATE_X], this.width);
                     const diff = v - computedStyle[StyleKey.TRANSLATE_X];
                     computedStyle[StyleKey.TRANSLATE_X] = v;
                     transform[12] += diff;
                     matrix[12] += diff;
                 }
                 if (lv & RefreshLevel.TRANSLATE_Y) {
-                    const v = this.calSize(style[StyleKey.TRANSLATE_Y], this.height);
+                    const v = calSize(style[StyleKey.TRANSLATE_Y], this.height);
                     const diff = v - computedStyle[StyleKey.TRANSLATE_Y];
                     computedStyle[StyleKey.TRANSLATE_Y] = v;
                     transform[13] += diff;
@@ -17868,50 +17951,10 @@
             }
             // 普通布局或者第一次计算
             else {
-                toE(transform);
-                transform[12] = computedStyle[StyleKey.TRANSLATE_X] = this.calSize(style[StyleKey.TRANSLATE_X], this.width);
-                transform[13] = computedStyle[StyleKey.TRANSLATE_Y] = this.calSize(style[StyleKey.TRANSLATE_Y], this.width);
-                const rotateZ = computedStyle[StyleKey.ROTATE_Z] = style[StyleKey.ROTATE_Z].v;
-                if (isE(transform)) {
-                    calRotateZ(transform, rotateZ);
-                }
-                else {
-                    multiplyRotateZ(transform, d2r(rotateZ));
-                }
-                const scaleX = computedStyle[StyleKey.SCALE_X] = style[StyleKey.SCALE_X].v;
-                if (scaleX !== 1) {
-                    if (isE(transform)) {
-                        transform[0] = scaleX;
-                    }
-                    else {
-                        multiplyScaleX(transform, scaleX);
-                    }
-                }
-                const scaleY = computedStyle[StyleKey.SCALE_Y] = style[StyleKey.SCALE_Y].v;
-                if (scaleY !== 1) {
-                    if (isE(transform)) {
-                        transform[5] = scaleY;
-                    }
-                    else {
-                        multiplyScaleY(transform, scaleY);
-                    }
-                }
-                const tfo = computedStyle[StyleKey.TRANSFORM_ORIGIN] = style[StyleKey.TRANSFORM_ORIGIN].map((item, i) => {
-                    return this.calSize(item, i ? this.height : this.width);
-                });
-                const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
+                const t = calStyleMatrix(style, this.x, this.y, this.width, this.height, computedStyle);
                 assignMatrix(matrix, t);
             }
             return matrix;
-        }
-        calSize(v, p) {
-            if (v.u === StyleUnit.PX) {
-                return v.v;
-            }
-            if (v.u === StyleUnit.PERCENT) {
-                return v.v * p * 0.01;
-            }
-            return 0;
         }
         calContent() {
             return this.hasContent = false;
@@ -17975,7 +18018,7 @@
             const visible = this.computedStyle[StyleKey.VISIBLE];
             let hasVisible = false;
             const keys = [];
-            const style2 = normalizeStyle(style);
+            const style2 = normalize(style);
             for (let k in style2) {
                 if (style2.hasOwnProperty(k)) {
                     const k2 = parseInt(k);
@@ -19305,7 +19348,6 @@ void main() {
             // 刷新动画侦听，目前就一个Root
             frame.addRoot(this);
             this.reLayout();
-            // this.draw();
             // 存所有Page
             this.pageContainer = new Container({
                 style: getDefaultStyle({

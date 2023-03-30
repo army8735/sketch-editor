@@ -1,4 +1,4 @@
-import { StyleKey } from '../style';
+import { StyleKey } from '../style/define';
 
 export enum RefreshLevel {
   NONE =             0b00000000000000,

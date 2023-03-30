@@ -375,7 +375,7 @@
                 type = 'i';
                 className = 'img';
               }
-              const visible = node.computedStyle[editor.style.StyleKey.VISIBLE];
+              const visible = node.computedStyle[editor.style.define.StyleKey.VISIBLE];
               s += `<li class="${className}" style="margin-left:${(lv - 3) * 16}px" index="${i}">
 <span class="type">${type}.</span>
 <span class="name">${node.props.name}</span>`;
@@ -556,6 +556,10 @@
     if (e.keyCode === 32) {
       spaceKey = true;
       overlap.classList.add('space');
+      if (hoverNode) {
+        hoverNode = null;
+        hover.classList.remove('show');
+      }
     }
   });
 
@@ -575,6 +579,92 @@
       spaceKey = false;
       overlap.classList.remove('space');
     }
+  });
+
+  document.addEventListener('wheel', function(e) {
+    if (!root) {
+      return;
+    }
+    curPage = root.getCurPage();
+    if (!curPage) {
+      return;
+    }
+    // console.log(e.deltaY, e.deltaMode);
+    let sc = 1;
+    if (e.deltaY < 0) {
+      if(e.deltaY < -200) {
+        sc = 0.125;
+      }
+      else if(e.deltaY < -100) {
+        sc = 0.25;
+      }
+      else if(e.deltaY < -50) {
+        sc = 0.5;
+      }
+      else if(e.deltaY < -20) {
+        sc = 0.75;
+      }
+      else {
+        sc = 0.875;
+      }
+    }
+    else if (e.deltaY > 0) {
+      if(e.deltaY > 200) {
+        sc = 2;
+      }
+      else if(e.deltaY > 100) {
+        sc = 1.75;
+      }
+      else if(e.deltaY > 50) {
+        sc = 1.5;
+      }
+      else if(e.deltaY > 20) {
+        sc = 1.25;
+      }
+      else {
+        sc = 1.125;
+      }
+    }
+    if (hoverNode) {
+      hoverNode = null;
+      hover.classList.remove('show');
+    }
+    const x = lastX - originX;
+    const y = lastY - originY;
+    const pt = {
+      x: x * dpi,
+      y: y * dpi,
+    };
+    const { translateX, translateY, scaleX } = curPage.getComputedStyle();
+    const inverse = editor.math.matrix.inverse(curPage.matrixWorld);
+    const pt1 = editor.math.matrix.calPoint(pt, inverse);
+    let scale = scaleX * sc;
+    if (scale > 10) {
+      scale = 10;
+    }
+    else if (scale < 0.1) {
+      scale = 0.1;
+    }
+    const newMatrix = editor.style.transform.calMatrix({
+      translateX,
+      translateY,
+      scaleX: scale,
+      scaleY: scale,
+    });
+    console.log(scale);
+    // console.log(translateX, translateY, scale, newMatrix.toString())
+    const pt2 = editor.math.matrix.calPoint(pt1, newMatrix);
+    const dx = pt2.x - pt1.x, dy = pt2.y - pt1.y;
+    // console.log(x, y, dpi, pt, pt1, pt2, dx, dy);
+    // curPage.updateStyle({
+    //   // translateX: dx,
+    //   // translateY: dy,
+    //   translateX: pt2.x,
+    //   translateY: pt2.y,
+    //   scaleX: scale,
+    //   scaleY: scale,
+    // });
+    // console.log(x, y, scale, pt);
   });
 </script>
 </body>

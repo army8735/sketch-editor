@@ -9,7 +9,7 @@ import Event from '../util/Event';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { checkReflow } from './reflow';
 import Container from './Container';
-import { StyleKey } from '../style';
+import { StyleKey } from '../style/define';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';

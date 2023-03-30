@@ -5,7 +5,7 @@ import inject from '../util/inject';
 import { Struct } from '../refresh/struct';
 import { LayoutData } from './layout';
 import { pointInRect } from '../math/geom';
-import { StyleKey } from '../style';
+import { StyleKey } from '../style/define';
 
 class Container extends Node {
   children: Array<Node>;

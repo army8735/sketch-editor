@@ -1,7 +1,7 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { RefreshLevel } from './level';
-import { StyleKey } from '../style';
+import { StyleKey } from '../style/define';
 import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';

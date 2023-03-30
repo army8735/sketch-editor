@@ -4,7 +4,7 @@ import inject from '../util/inject';
 import { isFunction } from '../util/type';
 import Container from '../node/Container';
 import { LayoutData } from './layout';
-import { StyleKey } from '../style';
+import { StyleKey } from '../style/define';
 import { RefreshLevel } from '../refresh/level';
 import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
