@@ -323,12 +323,11 @@ class Root extends Container implements FrameCallback {
     return this.lastPage;
   }
 
-  getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number): Node | null {
+  getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number, select?: Node): Node | undefined {
     const page = this.lastPage;
     if (page) {
-      return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
+      return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3), select);
     }
-    return null;
   }
 
   getCurPageStructs() {

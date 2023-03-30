@@ -177,7 +177,8 @@ class Container extends Node {
   }
 
   // 获取指定位置节点，不包含Page/ArtBoard
-  getNodeByPointAndLv(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean,  lv?: number): Node | null {
+  getNodeByPointAndLv(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean,
+                      lv?: number, select?: Node): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
@@ -187,29 +188,49 @@ class Container extends Node {
         // 不指定lv则找最深处的child
         if (lv === undefined) {
           if (child instanceof Container) {
-            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
+            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
             if (res) {
               return res;
             }
           }
-          if (computedStyle[StyleKey.POINTER_EVENTS] && computedStyle[StyleKey.VISIBLE]
+          // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
+          if (computedStyle[StyleKey.POINTER_EVENTS]
             && (includeGroup || !(child instanceof Container && child.isGroup))
             && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+            // 有选择节点时，还得排除向上父路径的group
+            if (child instanceof Container && child.isGroup && select) {
+              let parent = select.parent;
+              while (parent) {
+                if (child === parent) {
+                  return;
+                }
+                parent = parent.parent;
+              }
+            }
             return child;
           }
         }
         // 指定判断lv是否相等
         else {
           if (struct.lv === lv) {
-            if (computedStyle[StyleKey.POINTER_EVENTS] && computedStyle[StyleKey.VISIBLE]
+            if (computedStyle[StyleKey.POINTER_EVENTS]
               && (includeGroup || !(child instanceof Container && child.isGroup))
               && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+              if (child instanceof Container && child.isGroup && select) {
+                let parent = select.parent;
+                while (parent) {
+                  if (child === parent) {
+                    return;
+                  }
+                  parent = parent.parent;
+                }
+              }
               return child;
             }
           }
           // 父级且是container继续深入寻找
           else if (struct.lv < lv && child instanceof Container) {
-            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
+            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
             if (res) {
               return res;
             }
@@ -217,7 +238,6 @@ class Container extends Node {
         }
       }
     }
-    return null;
   }
 }
 

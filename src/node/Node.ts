@@ -11,7 +11,7 @@ import { d2r } from '../math/geom';
 import { extend } from '../util';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
-import { calNormalLineHeight, equalStyle, normalize, calSize } from '../style/css';
+import { calNormalLineHeight, equalStyle, normalize, calSize, color2rgbaStr } from '../style/css';
 import { StyleArray, StyleKey, StyleKeyHash, StyleUnit } from '../style/define';
 import { calStyleMatrix } from '../style/transform';
 import { Struct } from '../refresh/struct';
@@ -243,7 +243,7 @@ class Node extends Event {
     computedStyle[StyleKey.VISIBLE] = style[StyleKey.VISIBLE].v;
     computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
     computedStyle[StyleKey.COLOR] = style[StyleKey.COLOR].v;
-    computedStyle[StyleKey.BACKGROUND_COLOR] = style[StyleKey.BACKGROUND_COLOR].v;
+    computedStyle[StyleKey.BACKGROUND_COLOR] = color2rgbaStr(style[StyleKey.BACKGROUND_COLOR].v);
     computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
     computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
     computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;

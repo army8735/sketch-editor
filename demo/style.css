@@ -1,0 +1,270 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: arial, sans-serif;
+  background: #FFF;
+}
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0 20px;
+  height: 50px;
+  min-height: 50px;
+  background: #413B3D;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+}
+
+.list {
+  width: 250px;
+  background: #EEE8EA;
+}
+
+.page {
+  border-bottom: 1px solid #CCC;
+  height: 150px;
+  overflow-y: scroll;
+}
+
+.tree {
+  margin: 0;
+  padding: 5px 10px;
+  box-sizing: border-box;
+  min-height: 100%;
+  list-style: none;
+  overflow-y: scroll;
+  font-size: 14px;
+}
+
+.tree li {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.tree .type {
+  width: 16px;
+  font-family: Menlo, "Courier New";
+  font-size: 12px;
+  color: #999;
+  cursor: default;
+  user-select: none;
+}
+
+.tree .name {
+  flex: 1;
+}
+
+.tree .visible {
+  font-size: 12px;
+  color: #999;
+  cursor: default;
+  user-select: none;
+}
+
+.tree li:hover .visible {
+  color: #F99;
+}
+
+.main {
+  flex: 1;
+  position: relative;
+}
+
+.side {
+  width: 300px;
+  background: #FFF;
+  border-left: 1px solid #DDD;
+}
+
+.canvas-c {
+  width: 100%;
+  height: 100%;
+  background: #F3F3F3;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.overlap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.overlap.space {
+  cursor: grab;
+}
+.overlap.space.down {
+  cursor: grabbing;
+}
+
+.hover {
+  position: absolute;
+  border: 1px solid #F43;
+  visibility: hidden;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  transform: translate(-1px, -1px);
+}
+
+.selection {
+  position: absolute;
+  visibility: hidden;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+.t {
+  position: absolute;
+  left: 0;
+  top: -4px;
+  width: 100%;
+  height: 8px;
+  transform: scaleY(0.5);
+  cursor: ns-resize;
+}
+
+.t b {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 100%;
+  height: 100%;
+  border-top: 1px solid #34F;
+  pointer-events: none;
+}
+
+.r {
+  position: absolute;
+  right: -4px;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  transform: scaleX(0.5);
+  cursor: ew-resize;
+}
+
+.r b {
+  position: absolute;
+  right: 2px;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-right: 1px solid #34F;
+  pointer-events: none;
+}
+
+.b {
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 8px;
+  transform: scaleY(0.5);
+  cursor: ns-resize;
+}
+
+.b b {
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  width: 100%;
+  height: 100%;
+  border-bottom: 1px solid #34F;
+  pointer-events: none;
+}
+
+.l {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  transform: scaleX(0.5);
+  cursor: ew-resize;
+}
+
+.l b {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-left: 1px solid #34F;
+  pointer-events: none;
+}
+
+.tl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: translate(-8px, -8px) scale(0.5);
+  cursor: nwse-resize;
+}
+
+.tr {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: translate(8px, -8px) scale(0.5);
+  cursor: nesw-resize;
+}
+
+.br {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: translate(8px, 8px) scale(0.5);
+  cursor: nwse-resize;
+}
+
+.bl {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: translate(-8px, 8px) scale(0.5);
+  cursor: nesw-resize;
+}
+
+.show {
+  visibility: visible;
+}

@@ -17876,7 +17876,7 @@
             computedStyle[StyleKey.VISIBLE] = style[StyleKey.VISIBLE].v;
             computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
             computedStyle[StyleKey.COLOR] = style[StyleKey.COLOR].v;
-            computedStyle[StyleKey.BACKGROUND_COLOR] = style[StyleKey.BACKGROUND_COLOR].v;
+            computedStyle[StyleKey.BACKGROUND_COLOR] = color2rgbaStr(style[StyleKey.BACKGROUND_COLOR].v);
             computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
             computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
             computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;
@@ -18303,7 +18303,7 @@
             }
         }
         // 获取指定位置节点，不包含Page/ArtBoard
-        getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv) {
+        getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select) {
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
                 const child = children[i];
@@ -18313,29 +18313,49 @@
                     // 不指定lv则找最深处的child
                     if (lv === undefined) {
                         if (child instanceof Container) {
-                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
+                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
                             if (res) {
                                 return res;
                             }
                         }
-                        if (computedStyle[StyleKey.POINTER_EVENTS] && computedStyle[StyleKey.VISIBLE]
+                        // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
+                        if (computedStyle[StyleKey.POINTER_EVENTS]
                             && (includeGroup || !(child instanceof Container && child.isGroup))
                             && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+                            // 有选择节点时，还得排除向上父路径的group
+                            if (child instanceof Container && child.isGroup && select) {
+                                let parent = select.parent;
+                                while (parent) {
+                                    if (child === parent) {
+                                        return;
+                                    }
+                                    parent = parent.parent;
+                                }
+                            }
                             return child;
                         }
                     }
                     // 指定判断lv是否相等
                     else {
                         if (struct.lv === lv) {
-                            if (computedStyle[StyleKey.POINTER_EVENTS] && computedStyle[StyleKey.VISIBLE]
+                            if (computedStyle[StyleKey.POINTER_EVENTS]
                                 && (includeGroup || !(child instanceof Container && child.isGroup))
                                 && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+                                if (child instanceof Container && child.isGroup && select) {
+                                    let parent = select.parent;
+                                    while (parent) {
+                                        if (child === parent) {
+                                            return;
+                                        }
+                                        parent = parent.parent;
+                                    }
+                                }
                                 return child;
                             }
                         }
                         // 父级且是container继续深入寻找
                         else if (struct.lv < lv && child instanceof Container) {
-                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
+                            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv, select);
                             if (res) {
                                 return res;
                             }
@@ -18343,7 +18363,6 @@
                     }
                 }
             }
-            return null;
         }
     }
 
@@ -19572,12 +19591,11 @@ void main() {
         getCurPage() {
             return this.lastPage;
         }
-        getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv) {
+        getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv, select) {
             const page = this.lastPage;
             if (page) {
-                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
+                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3), select);
             }
-            return null;
         }
         getCurPageStructs() {
             const page = this.lastPage;
