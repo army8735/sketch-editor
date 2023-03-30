@@ -122,6 +122,28 @@ function hideHover() {
   }
 }
 
+function showSelect(node) {
+  if (selectNode !== node) {
+    selectNode = node;
+    style = selectNode.style;
+    computedStyle = selectNode.getComputedStyle();
+    const rect = selectNode.getBoundingClientRect();
+    selection.style.left = rect.left / dpi + 'px';
+    selection.style.top = rect.top / dpi + 'px';
+    selection.style.width = (rect.right - rect.left) / dpi + 'px';
+    selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
+    selection.style.transform = 'none';
+    selection.classList.add('show');
+  }
+}
+
+function hideSelect() {
+  if (selectNode) {
+    selectNode = null;
+    selection.classList.remove('show');
+  }
+}
+
 function onMove(x, y) {
   lastX = x;
   lastY = y;
@@ -131,17 +153,18 @@ function onMove(x, y) {
   if (!inRoot) {
     return;
   }
+  const dx = lastX - startX, dy = lastY - startY;
   // 空格按下拖拽画布
   if (spaceKey) {
     if (isDown) {
-      const dx = lastX - startX, dy = lastY - startY;
       curPage.updateStyle({
         translateX: pageTx + dx,
         translateY: pageTy + dy,
       });
     }
     else {
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1, selectNode);
+      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false,
+        (metaKey || selectNode) ? undefined : 1, selectNode);
       if(node && node !== selectNode) {
         showHover(node);
       }
@@ -163,10 +186,16 @@ function onMove(x, y) {
       if (!selectNode) {
         return;
       }
+      selectNode.updateStyle({
+        translateX: computedStyle.translateX + dx,
+        translateY: computedStyle.translateY + dy,
+      });
+      selection.style.transform = `translate(${dx}px, ${dy}px)`;
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1, selectNode);
+      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false,
+        (metaKey || selectNode) ? undefined : 1, selectNode);
       if(node && node !== selectNode) {
         showHover(node);
       }
@@ -183,7 +212,7 @@ window.onscroll = function() {
   originY = o.top;
 };
 
-overlap.addEventListener('mousedown', function(e) {
+main.addEventListener('mousedown', function(e) {
   if (!root) {
     return;
   }
@@ -203,37 +232,29 @@ overlap.addEventListener('mousedown', function(e) {
     else {
       const nx = startX - originX;
       const ny = startY - originY;
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, metaKey ? undefined : 1, selectNode);
-      if(selectNode !== node) {
-        selectNode = node;
+      const target = e.target;
+      // 注意要判断是否点在选择框上的控制点，进入拖拽
+      if (target.tagName === 'SPAN') {
+        isControl = true;
+        const classList = target.classList;
+        if (classList.contains('tl')) {}
+        else if (classList.contains('tr')) {}
+        else if (classList.contains('br')) {}
+        else if (classList.contains('bl')) {}
+        else if (classList.contains('t')) {}
+        else if (classList.contains('r')) {}
+        else if (classList.contains('b')) {}
+        else if (classList.contains('l')) {}
+      }
+      else {
+        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false,
+          (metaKey || selectNode) ? undefined : 1, selectNode);
         if(node) {
-          style = selectNode.style;
-          computedStyle = selectNode.getComputedStyle();
-          console.log(computedStyle, style);
-          const rect = selectNode.getBoundingClientRect();
-          selection.style.left = rect.left / dpi + 'px';
-          selection.style.top = rect.top / dpi + 'px';
-          selection.style.width = (rect.right - rect.left) / dpi + 'px';
-          selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
-          selection.classList.add('show');
+          showSelect(node);
           hideHover();
-          const target = e.target;
-          // 注意要判断是否点在选择框上的控制点，进入拖拽
-          if (target.tagName === 'SPAN') {
-            isControl = true;
-            const classList = target.classList;
-            if (classList.contains('tl')) {}
-            else if (classList.contains('tr')) {}
-            else if (classList.contains('br')) {}
-            else if (classList.contains('bl')) {}
-            else if (classList.contains('t')) {}
-            else if (classList.contains('r')) {}
-            else if (classList.contains('b')) {}
-            else if (classList.contains('l')) {}
-          }
         }
         else {
-          selection.classList.remove('show');
+          hideSelect();
         }
       }
     }
@@ -265,10 +286,7 @@ document.addEventListener('contextmenu', function(e) {
   if (!root) {
     return;
   }
-  if (selectNode) {
-    selectNode = null;
-    selection.classList.remove('show');
-  }
+  hideSelect();
 });
 
 document.addEventListener('keydown', function(e) {
