@@ -23,7 +23,7 @@ export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: 
   // 向上检查group的影响，group一定是自适应尺寸需要调整的
   while (parent && parent !== root) {
     if (parent instanceof Group) {
-      parent.checkSize();
+      parent.checkFitPS();
       break; // TODO 是否递归
     }
     parent = parent.parent;

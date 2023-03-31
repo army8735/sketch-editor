@@ -150,10 +150,18 @@ function hideHover() {
 }
 
 function getActiveNodeWhenSelected(node) {
+  // 最高优先级，meta按下返回叶子元素
+  if (metaKey) {
+    return node;
+  }
   if (node && selectNode) {
     // 有选择时，hover/select的只能是平级或者上级
     while (node.struct.lv > selectNode.struct.lv) {
       node = node.parent;
+    }
+    // 可能点相同的或者是组的子级元素
+    if (node === selectNode) {
+      return node;
     }
     // 检查二者是否有共同group祖先，没有只能展示最上层group，有则看是否group，不展示group
     let p1 = node;
@@ -213,6 +221,10 @@ function onMove(x, y) {
       curPage.updateStyle({
         translateX: pageTx + dx,
         translateY: pageTy + dy,
+      }, () => {
+        if (selectNode) {
+          showSelect(selectNode);
+        }
       });
     }
     else {

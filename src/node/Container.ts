@@ -181,9 +181,9 @@ class Container extends Node {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
-      const { struct, computedStyle, bbox, matrixWorld } = child;
+      const { struct, computedStyle, rect, matrixWorld } = child;
       // 在内部且pointerEvents为true才返回
-      if (pointInRect(x, y, bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld)) {
+      if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld)) {
         // 不指定lv则找最深处的child
         if (lv === undefined) {
           if (child instanceof Container) {

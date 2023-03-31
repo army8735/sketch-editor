@@ -265,6 +265,8 @@ class Node extends Event {
         this.height = 0;
       }
     }
+    this._rect = undefined;
+    this._bbox = undefined;
   }
 
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值

@@ -350,6 +350,9 @@ class Root extends Container implements FrameCallback {
   }
 
   checkNodePosChange(node: Node) {
+    if (node.isDestroyed) {
+      return;
+    }
     const {
       [StyleKey.TOP]: top,
       [StyleKey.RIGHT]: right,
@@ -361,10 +364,7 @@ class Root extends Container implements FrameCallback {
       [StyleKey.TRANSLATE_Y]: translateY,
     } = node.style;
     // 一定有parent，不会改root下的固定容器子节点
-    const parent = node.parent;
-    if (!parent) {
-      return;
-    }
+    const parent = node.parent!;
     // console.log(top, right, bottom, left, width, height, translateX, translateY);
     const newStyle: any = {};
     // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
