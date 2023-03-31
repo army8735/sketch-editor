@@ -1,5 +1,4 @@
 import Node from './Node';
-import Container from './Container';
 import { Props } from '../format';
 import { LayoutData } from './layout';
 import { StyleKey, StyleUnit } from '../style/define';
@@ -14,8 +13,8 @@ class Text extends Node {
     this.content = content;
   }
 
-  override layout(container: Container, data: LayoutData) {
-    super.layout(container, data);
+  override layout(data: LayoutData) {
+    super.layout(data);
     if (this.isDestroyed) {
       return;
     }

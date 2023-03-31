@@ -1,18 +1,24 @@
 import Root from './Root';
 import Node from './Node';
+import Group from './Group';
 
 export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: boolean) {
-  let parent = node.parent!;
+  let parent = node.parent;
   if (addDom) {
-    node.layout(parent, parent.layoutData!);
+    node.layout(parent!.layoutData!);
   }
   else if(removeDom) {
     node.destroy();
   }
-  // 最上层的group检查影响
-  if (parent.isGroup) {
-    while (parent && parent !== root && parent.isGroup) {
-      parent = parent.parent!;
+  else {
+    node.layout(node.layoutData!);
+  }
+  // 向上检查group的影响，group一定是自适应尺寸需要调整的
+  while (parent && parent !== root) {
+    if (parent instanceof Group) {
+      parent.checkSize();
+      break; // TODO 是否递归
     }
+    parent = parent.parent;
   }
 }

@@ -2,7 +2,6 @@ import Node from './Node';
 import { BitmapProps } from '../format';
 import inject from '../util/inject';
 import { isFunction } from '../util/type';
-import Container from '../node/Container';
 import { LayoutData } from './layout';
 import { StyleKey } from '../style/define';
 import { RefreshLevel } from '../refresh/level';
@@ -88,8 +87,8 @@ class Bitmap extends Node {
     }
   }
 
-  layout(container: Container, data: LayoutData) {
-    super.layout(container, data);
+  layout(data: LayoutData) {
+    super.layout(data);
     const src = this.loader.src;
     if (src) {
       const cache = inject.IMG[src];

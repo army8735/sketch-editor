@@ -9,7 +9,7 @@ import Event from '../util/Event';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { checkReflow } from './reflow';
 import Container from './Container';
-import { StyleKey } from '../style/define';
+import { StyleKey, StyleUnit } from '../style/define';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
@@ -267,7 +267,7 @@ class Root extends Container implements FrameCallback {
 
   reLayout() {
     this.checkRoot(); // 根节点必须保持和canvas同尺寸
-    this.layout(this, {
+    this.layout({
       x: 0,
       y: 0,
       w: this.width,
@@ -345,6 +345,47 @@ class Root extends Container implements FrameCallback {
       const i = structs.indexOf(struct);
       return structs.slice(i + 1, i + struct.total + 1);
     }
+  }
+
+  checkNodePosChange(node: Node) {
+    const {
+      [StyleKey.TOP]: top,
+      [StyleKey.RIGHT]: right,
+      [StyleKey.BOTTOM]: bottom,
+      [StyleKey.LEFT]: left,
+      [StyleKey.WIDTH]: width,
+      [StyleKey.HEIGHT]: height,
+      [StyleKey.TRANSLATE_X]: translateX,
+      [StyleKey.TRANSLATE_Y]: translateY,
+    } = node.style;
+    // 一定有parent，不会改root下的固定容器子节点
+    const parent = node.parent;
+    if (!parent) {
+      return;
+    }
+    // console.log(top, right, bottom, left, width, height, translateX, translateY);
+    const newStyle: any = {};
+    // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
+    if (width.u === StyleUnit.AUTO) {
+      if (translateX.v !== 0) {
+        newStyle.translateX = 0;
+        newStyle.left = (left.v as number) + (translateX.v as number) * 100 / parent.width + '%';
+        newStyle.right = (right.v as number) - (translateX.v as number) * 100 / parent.width + '%';
+      }
+    }
+    // 固定宽度
+    else {}
+    // 高度和宽度一样
+    if (height.u === StyleUnit.AUTO) {
+      if (translateY.v !== 0) {
+        newStyle.translateY = 0;
+        newStyle.top = (top.v as number) + (translateY.v as number) * 100 / parent.height + '%';
+        newStyle.bottom = (bottom.v as number) - (translateY.v as number) * 100 / parent.height + '%';
+      }
+    }
+    else {}
+    console.warn(newStyle);
+    node.updateStyle(newStyle);
   }
 }
 

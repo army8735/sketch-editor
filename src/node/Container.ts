@@ -39,15 +39,15 @@ class Container extends Node {
     }
   }
 
-  layout(container: Container, data: LayoutData) {
+  override layout(data: LayoutData) {
     if (this.isDestroyed) {
       return;
     }
-    super.layout(container, data);
+    super.layout(data);
     const { children } = this;
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
-      child.layout(this, {
+      child.layout({
         x: this.x,
         y: this.y,
         w: this.width,

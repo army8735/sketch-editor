@@ -35,13 +35,13 @@ class Node extends Event {
   isDestroyed: boolean;
   struct: Struct;
   refreshLevel: RefreshLevel;
-  _opacity: number;
-  transform: Float64Array;
-  matrix: Float64Array;
-  _matrixWorld: Float64Array;
+  _opacity: number; // 世界透明度
+  transform: Float64Array; // 不包含transformOrigin
+  matrix: Float64Array; // 包含transformOrigin
+  _matrixWorld: Float64Array; // 世界transform
   layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
-  private _rect: Float64Array | undefined;
-  private _bbox: Float64Array | undefined;
+  _rect: Float64Array | undefined; // x/y/w/h组成的内容框
+  _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
@@ -77,7 +77,64 @@ class Node extends Event {
     this.root = this.parent!.root;
   }
 
-  layout(container: Container, data: LayoutData) {
+  // calTRBLWHStyle(data: LayoutData) {
+  //   const { style, computedStyle } = this;
+  //   const {
+  //     [StyleKey.LEFT]: left,
+  //     [StyleKey.TOP]: top,
+  //     [StyleKey.RIGHT]: right,
+  //     [StyleKey.BOTTOM]: bottom,
+  //     [StyleKey.WIDTH]: width,
+  //     [StyleKey.HEIGHT]: height,
+  //   } = style;
+  //   let fixedLeft = false;
+  //   let fixedTop = false;
+  //   let fixedRight = false;
+  //   let fixedBottom = false;
+  //   if (left.u === StyleUnit.AUTO) {
+  //     computedStyle[StyleKey.LEFT] = 'auto';
+  //   }
+  //   else {
+  //     fixedLeft = true;
+  //     computedStyle[StyleKey.LEFT] = calSize(left, data.w);
+  //   }
+  //   if (right.u === StyleUnit.AUTO) {
+  //     computedStyle[StyleKey.RIGHT] = 'auto';
+  //   }
+  //   else {
+  //     fixedRight = true;
+  //     computedStyle[StyleKey.RIGHT] = calSize(right, data.w);
+  //   }
+  //   if (top.u === StyleUnit.AUTO) {
+  //     computedStyle[StyleKey.TOP] = 'auto';
+  //   }
+  //   else {
+  //     fixedTop = true;
+  //     computedStyle[StyleKey.TOP] = calSize(top, data.h);
+  //   }
+  //   if (bottom.u === StyleUnit.AUTO) {
+  //     computedStyle[StyleKey.BOTTOM] = 'auto';
+  //   }
+  //   else {
+  //     fixedBottom = true;
+  //     computedStyle[StyleKey.BOTTOM] = calSize(bottom, data.h);
+  //   }
+  //   if (width.u === StyleUnit.AUTO) {
+  //     computedStyle[StyleKey.WIDTH] = 'auto';
+  //   }
+  //   else {
+  //     computedStyle[StyleKey.WIDTH] = calSize(width, data.w);
+  //   }
+  //   if (height.u === StyleUnit.AUTO) {
+  //     computedStyle[StyleKey.HEIGHT] = 'auto';
+  //   }
+  //   else {
+  //     computedStyle[StyleKey.HEIGHT] = calSize(height, data.h);
+  //   }
+  //   return { fixedLeft, fixedRight, fixedTop, fixedBottom };
+  // }
+
+  layout(data: LayoutData) {
     if (this.isDestroyed) {
       return;
     }
@@ -351,9 +408,6 @@ class Node extends Event {
     if (!root) {
       return;
     }
-    if (root as Node === this) {
-      return;
-    }
     if (parent) {
       let i = parent.children.indexOf(this);
       if (i === -1) {
@@ -370,10 +424,10 @@ class Node extends Event {
     }
     // 未添加到dom时
     if (this.isDestroyed) {
-      cb && cb();
+      cb && cb(true);
       return;
     }
-    parent!.deleteStruct(this);
+    parent?.deleteStruct(this);
   }
 
   destroy() {

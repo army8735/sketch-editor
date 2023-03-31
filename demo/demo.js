@@ -123,18 +123,16 @@ function hideHover() {
 }
 
 function showSelect(node) {
-  if (selectNode !== node) {
-    selectNode = node;
-    style = selectNode.style;
-    computedStyle = selectNode.getComputedStyle();
-    const rect = selectNode.getBoundingClientRect();
-    selection.style.left = rect.left / dpi + 'px';
-    selection.style.top = rect.top / dpi + 'px';
-    selection.style.width = (rect.right - rect.left) / dpi + 'px';
-    selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
-    selection.style.transform = 'none';
-    selection.classList.add('show');
-  }
+  selectNode = node;
+  style = selectNode.style;
+  computedStyle = selectNode.getComputedStyle();
+  const rect = selectNode.getBoundingClientRect();
+  selection.style.left = rect.left / dpi + 'px';
+  selection.style.top = rect.top / dpi + 'px';
+  selection.style.width = (rect.right - rect.left) / dpi + 'px';
+  selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
+  selection.style.transform = 'none';
+  selection.classList.add('show');
 }
 
 function hideSelect() {
@@ -271,8 +269,13 @@ document.addEventListener('mouseup', function(e) {
     return;
   }
   if (e.button === 0) {
+    const dx = lastX - startX, dy = lastY - startY;
     if (selectNode) {
-      // console.log(11, selectNode)
+      console.log(11, selectNode);
+      // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
+      if (dx || dy) {
+        root.checkNodePosChange(selectNode);
+      }
     }
     isDown = false;
     isControl = false;
