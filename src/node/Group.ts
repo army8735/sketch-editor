@@ -23,6 +23,7 @@ class Group extends Container {
       const child = children[i];
       const { x, y, width, height, matrix } = child;
       const r = new Float64Array(4);
+      // 坐标是相对于父元素的
       r[0] = x - this.x;
       r[1] = y - this.y;
       r[2] = r[0] + width;

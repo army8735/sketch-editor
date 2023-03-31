@@ -136,6 +136,8 @@ class Root extends Container implements FrameCallback {
     newPage.initIfNot();
     newPage.updateStyle({
       visible: true,
+    }, () => {
+      this.emit(Event.PAGE_CHANGED);
     });
     this.lastPage = newPage;
     this.overlay!.setArtBoard(newPage.children as Array<ArtBoard>);
@@ -330,7 +332,7 @@ class Root extends Container implements FrameCallback {
     return this.lastPage;
   }
 
-  getNodeFromCurPage(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean, lv?: number): Node | undefined {
+  getNodeFromCurPage(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {
     const page = this.lastPage;
     if (page) {
       return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));

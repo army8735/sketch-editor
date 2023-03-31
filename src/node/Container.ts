@@ -177,8 +177,7 @@ class Container extends Node {
   }
 
   // 获取指定位置节点，不包含Page/ArtBoard
-  getNodeByPointAndLv(x: number, y: number, includeGroup: boolean, includeArtBoard: boolean,
-                      lv?: number): Node | undefined {
+  getNodeByPointAndLv(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];

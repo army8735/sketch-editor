@@ -17364,6 +17364,7 @@
     Event.REFRESH = 'refresh';
     Event.DID_ADD_DOM = 'didAddDom';
     Event.WILL_REMOVE_DOM = 'willRemoveDom';
+    Event.PAGE_CHANGED = 'pageChanged';
 
     var util = {
         type,
@@ -18342,7 +18343,7 @@
             }
         }
         // 获取指定位置节点，不包含Page/ArtBoard
-        getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv) {
+        getNodeByPointAndLv(x, y, includeGroup = false, includeArtBoard = false, lv) {
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
                 const child = children[i];
@@ -18893,6 +18894,7 @@
                 const child = children[i];
                 const { x, y, width, height, matrix } = child;
                 const r = new Float64Array(4);
+                // 坐标是相对于父元素的
                 r[0] = x - this.x;
                 r[1] = y - this.y;
                 r[2] = r[0] + width;
@@ -19549,6 +19551,8 @@ void main() {
             newPage.initIfNot();
             newPage.updateStyle({
                 visible: true,
+            }, () => {
+                this.emit(Event.PAGE_CHANGED);
             });
             this.lastPage = newPage;
             this.overlay.setArtBoard(newPage.children);
@@ -19721,7 +19725,7 @@ void main() {
         getCurPage() {
             return this.lastPage;
         }
-        getNodeFromCurPage(x, y, includeGroup, includeArtBoard, lv) {
+        getNodeFromCurPage(x, y, includeGroup = false, includeArtBoard = false, lv) {
             const page = this.lastPage;
             if (page) {
                 return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));

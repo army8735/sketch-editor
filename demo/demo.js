@@ -53,27 +53,25 @@ input.onchange = function(e) {
       root = editor.parse(json, canvas, dpi);
       curPage = root.getCurPage();
 
-      root.once('refresh', function(lv) {
-        if (lv & editor.refresh.level.RefreshLevel.REBUILD) {
-          let s = '';
-          structs = root.getCurPageStructs();
-          structs.forEach((item, i) => {
-            const { node, lv } = item;
-            let { type, className } = getNodeType(node);
-            const visible = node.computedStyle[editor.style.define.StyleKey.VISIBLE];
-            s += `<li class="${className}" style="margin-left:${(lv - 3) * 16}px" index="${i}">
+      root.on(editor.util.Event.PAGE_CHANGED, function(lv) {
+        let s = '';
+        structs = root.getCurPageStructs();
+        structs.forEach((item, i) => {
+          const { node, lv } = item;
+          let { type, className } = getNodeType(node);
+          const visible = node.computedStyle[editor.style.define.StyleKey.VISIBLE];
+          s += `<li class="${className}" style="margin-left:${(lv - 3) * 16}px" index="${i}">
 <span class="type">${type}.</span>
 <span class="name">${node.props.name}</span>`;
-            if (!(node instanceof editor.node.ArtBoard)) {
-              s += `<span class="visible" visible="${visible}">${visible ? '可见' : '隐藏'}</span>`;
-            }
-            s += '</li>';
-          });
-          tree.innerHTML = s;
-        }
+          if (!(node instanceof editor.node.ArtBoard)) {
+            s += `<span class="visible" visible="${visible}">${visible ? '可见' : '隐藏'}</span>`;
+          }
+          s += '</li>';
+        });
+        tree.innerHTML = s;
       });
 
-      root.on('didAddDom', function(node) {
+      root.on(editor.util.Event.DID_ADD_DOM, function(node) {
         let { type, className } = getNodeType(node);
         const struct = node.struct;
         structs = root.getCurPageStructs();
@@ -132,7 +130,8 @@ tree.addEventListener('click', e => {
 });
 
 function showHover(node) {
-  if (hoverNode !== node) {
+  // 有选择节点或相等时不展示
+  if (hoverNode !== node && (!selectNode || selectNode !== node)) {
     hoverNode = node;
     const rect = hoverNode.getBoundingClientRect();
     hover.style.left = rect.left / dpi + 'px';
@@ -148,6 +147,34 @@ function hideHover() {
     hoverNode = null;
     hover.classList.remove('show');
   }
+}
+
+function getActiveNodeWhenSelected(node) {
+  if (node && selectNode) {
+    // 有选择时，hover/select的只能是平级或者上级
+    while (node.struct.lv > selectNode.struct.lv) {
+      node = node.parent;
+    }
+    // 检查二者是否有共同group祖先，没有只能展示最上层group，有则看是否group，不展示group
+    let p1 = node;
+    while (p1.parent instanceof editor.node.Group) {
+      p1 = p1.parent;
+    }
+    let p2 = selectNode;
+    while (p2.parent instanceof editor.node.Group) {
+      p2 = p2.parent;
+    }
+    if (p1 !== p2) {
+      return node;
+    }
+    else if (!(node instanceof editor.node.Group)) {
+      return node;
+    }
+    else {
+      return;
+    }
+  }
+  return node;
 }
 
 function showSelect(node) {
@@ -189,8 +216,9 @@ function onMove(x, y) {
       });
     }
     else {
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
-      if(node && node !== selectNode) {
+      let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
+      node = getActiveNodeWhenSelected(node);
+      if(node) {
         showHover(node);
       }
       else {
@@ -219,8 +247,9 @@ function onMove(x, y) {
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
-      const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1, selectNode);
-      if(node && node !== selectNode) {
+      let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
+      node = getActiveNodeWhenSelected(node);
+      if(node) {
         showHover(node);
       }
       else {
@@ -272,7 +301,8 @@ main.addEventListener('mousedown', function(e) {
       }
       // 普通模式选择节点
       else {
-        const node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
+        let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
+        node = getActiveNodeWhenSelected(node);
         if(node) {
           showSelect(node);
           hideHover();
