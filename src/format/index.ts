@@ -98,7 +98,7 @@ export function getDefaultStyle(v?: any): JStyle {
 
 export type Props = {
   name?: string,
-  style: JStyle,
+  style?: object,
 };
 
 export type BitmapProps = Props & {

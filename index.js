@@ -10,44 +10,6 @@
     var require$$0__default$1 = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
     var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
 
-    function getDefaultStyle(v) {
-        return Object.assign({
-            left: 0,
-            top: 0,
-            right: 'auto',
-            bottom: 'auto',
-            width: 'auto',
-            height: 'auto',
-            lineHeight: 'normal',
-            fontFamily: 'arial',
-            fontSize: 16,
-            fontWeight: 400,
-            fontStyle: 'normal',
-            visible: true,
-            overflow: 'visible',
-            backgroundColor: [0, 0, 0, 0],
-            color: [0, 0, 0, 1],
-            opacity: 1,
-            translateX: 0,
-            translateY: 0,
-            scaleX: 1,
-            scaleY: 1,
-            rotateZ: 0,
-            transformOrigin: ['center', 'center'],
-            mixBlendMode: 'normal',
-            pointerEvents: true,
-        }, v);
-    }
-    var classValue;
-    (function (classValue) {
-        classValue["Page"] = "Page";
-        classValue["ArtBoard"] = "ArtBoard";
-        classValue["Group"] = "Group";
-        classValue["Bitmap"] = "Bitmap";
-        classValue["Text"] = "Text";
-        classValue["Rect"] = "Rect";
-    })(classValue || (classValue = {}));
-
     /******************************************************************************
     Copyright (c) Microsoft Corporation.
 
@@ -15333,6 +15295,44 @@
         get ClassValue () { return ClassValue; }
     });
 
+    function getDefaultStyle(v) {
+        return Object.assign({
+            left: 0,
+            top: 0,
+            right: 'auto',
+            bottom: 'auto',
+            width: 'auto',
+            height: 'auto',
+            lineHeight: 'normal',
+            fontFamily: 'arial',
+            fontSize: 16,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            visible: true,
+            overflow: 'visible',
+            backgroundColor: [0, 0, 0, 0],
+            color: [0, 0, 0, 1],
+            opacity: 1,
+            translateX: 0,
+            translateY: 0,
+            scaleX: 1,
+            scaleY: 1,
+            rotateZ: 0,
+            transformOrigin: ['center', 'center'],
+            mixBlendMode: 'normal',
+            pointerEvents: true,
+        }, v);
+    }
+    var classValue;
+    (function (classValue) {
+        classValue["Page"] = "Page";
+        classValue["ArtBoard"] = "ArtBoard";
+        classValue["Group"] = "Group";
+        classValue["Bitmap"] = "Bitmap";
+        classValue["Text"] = "Text";
+        classValue["Rect"] = "Rect";
+    })(classValue || (classValue = {}));
+
     var ResizingConstraint;
     (function (ResizingConstraint) {
         ResizingConstraint[ResizingConstraint["UNSET"] = 63] = "UNSET";
@@ -15407,7 +15407,7 @@
                 type: classValue.Page,
                 props: {
                     name: page.name,
-                    style: getDefaultStyle({
+                    style: {
                         left: page.frame.x,
                         top: page.frame.y,
                         width: page.frame.width,
@@ -15415,7 +15415,7 @@
                         visible: false,
                         transformOrigin: [0, 0],
                         pointerEvents: false,
-                    }),
+                    },
                 },
                 children,
             };
@@ -15440,7 +15440,7 @@
                     props: {
                         name: layer.name,
                         hasBackgroundColor,
-                        style: getDefaultStyle({
+                        style: {
                             width: layer.frame.width,
                             height: layer.frame.height,
                             translateX: layer.frame.x,
@@ -15448,7 +15448,7 @@
                             visible: layer.isVisible,
                             overflow: 'hidden',
                             backgroundColor,
-                        }),
+                        },
                     },
                     children,
                 };
@@ -15582,7 +15582,7 @@
                     type: classValue.Group,
                     props: {
                         name: layer.name,
-                        style: getDefaultStyle({
+                        style: {
                             left,
                             top,
                             right,
@@ -15593,7 +15593,7 @@
                             opacity: layer.style.contextSettings.opacity,
                             translateX,
                             translateY,
-                        }),
+                        },
                     },
                     children,
                 };
@@ -15604,7 +15604,7 @@
                     type: classValue.Bitmap,
                     props: {
                         name: layer.name,
-                        style: getDefaultStyle({
+                        style: {
                             left,
                             top,
                             right,
@@ -15615,7 +15615,7 @@
                             opacity: layer.style.contextSettings.opacity,
                             translateX,
                             translateY,
-                        }),
+                        },
                         src: index,
                     },
                 };
@@ -15625,7 +15625,7 @@
                     type: classValue.Text,
                     props: {
                         name: layer.name,
-                        style: getDefaultStyle({
+                        style: {
                             left,
                             top,
                             right,
@@ -15637,7 +15637,7 @@
                             translateX,
                             translateY,
                             overflow: 'hidden',
-                        }),
+                        },
                     },
                 };
             }
@@ -15646,7 +15646,7 @@
                     type: classValue.Rect,
                     props: {
                         name: layer.name,
-                        style: getDefaultStyle({}),
+                        style: {},
                     },
                 };
             }
@@ -17362,25 +17362,9 @@
         }
     }
     Event.REFRESH = 'refresh';
-    Event.DID_ADD_DOM = 'addDom';
-    Event.WILL_REMOVE_DOM = 'removeDom';
+    Event.DID_ADD_DOM = 'didAddDom';
+    Event.WILL_REMOVE_DOM = 'willRemoveDom';
 
-    function extend(target, source, keys) {
-        if (source === null || typeof source !== 'object') {
-            return target;
-        }
-        if (!keys) {
-            keys = Object.keys(source);
-        }
-        let i = 0;
-        const len = keys.length;
-        while (i < len) {
-            const k = keys[i];
-            target[k] = source[k];
-            i++;
-        }
-        return target;
-    }
     var util = {
         type,
         Event,
@@ -17695,7 +17679,7 @@
         constructor(props) {
             super();
             this.props = props;
-            this.style = extend([], normalize(props.style || {}));
+            this.style = normalize(getDefaultStyle(props.style));
             this.computedStyle = []; // 输出展示的值
             this.cacheStyle = []; // 缓存js直接使用的对象结果
             this.x = 0;
@@ -19096,11 +19080,11 @@
         constructor(props, children) {
             super(props, children);
             this.artBoard = new Container({
-                style: getDefaultStyle({
+                style: {
                     width: '100%',
                     height: '100%',
                     pointerEvents: false,
-                }),
+                },
             }, []);
             this.appendChild(this.artBoard);
             this.abList = [];
@@ -19111,11 +19095,11 @@
             for (let i = 0, len = list.length; i < len; i++) {
                 const ab = list[i];
                 const text = new Text({
-                    style: getDefaultStyle({
+                    style: {
                         fontSize: 24,
                         color: '#777',
                         visible: false,
-                    }),
+                    },
                 }, ab.props.name || '画板');
                 this.artBoard.appendChild(text);
                 this.abList.push({ ab, text });
@@ -19279,7 +19263,14 @@
     function checkReflow(root, node, addDom, removeDom) {
         let parent = node.parent;
         if (addDom) {
-            node.layout(parent.layoutData);
+            if (parent) {
+                node.layout({
+                    x: parent.x,
+                    y: parent.y,
+                    w: parent.width,
+                    h: parent.height,
+                });
+            }
         }
         else if (removeDom) {
             node.destroy();
@@ -19502,23 +19493,23 @@ void main() {
             this.reLayout();
             // 存所有Page
             this.pageContainer = new Container({
-                style: getDefaultStyle({
+                style: {
                     width: '100%',
                     height: '100%',
                     pointerEvents: false,
                     scaleX: this.dpi,
                     scaleY: this.dpi,
                     transformOrigin: [0, 0],
-                }),
+                },
             }, []);
             this.appendChild(this.pageContainer);
             // 存上层的展示工具标尺等
             this.overlay = new Overlay({
-                style: getDefaultStyle({
+                style: {
                     width: '100%',
                     height: '100%',
                     pointerEvents: false,
-                }),
+                },
             }, []);
             this.appendChild(this.overlay);
         }
@@ -19814,10 +19805,10 @@ void main() {
             const { width, height } = canvas;
             const root = new node.Root(canvas, {
                 dpi,
-                style: getDefaultStyle({
+                style: {
                     width,
                     height,
-                }),
+                },
             });
             root.setJPages(json.pages);
             root.setPageIndex(0);

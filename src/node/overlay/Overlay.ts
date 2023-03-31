@@ -2,7 +2,7 @@ import Container from '../Container';
 import Node from '../Node';
 import ArtBoard from '../ArtBoard';
 import Text from '../Text';
-import { getDefaultStyle, Props } from '../../format';
+import { Props } from '../../format';
 
 class Overlay extends Container {
   artBoard: Container;
@@ -10,11 +10,11 @@ class Overlay extends Container {
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.artBoard = new Container({
-      style: getDefaultStyle({
+      style: {
         width: '100%',
         height: '100%',
         pointerEvents: false,
-      }),
+      },
     }, []);
     this.appendChild(this.artBoard);
     this.abList = [];
@@ -26,11 +26,11 @@ class Overlay extends Container {
     for (let i = 0, len = list.length; i < len; i++) {
       const ab = list[i];
       const text = new Text({
-        style: getDefaultStyle({
+        style: {
           fontSize: 24,
           color: '#777',
           visible: false,
-        }),
+        },
       }, ab.props.name || '画板');
       this.artBoard.appendChild(text);
       this.abList.push({ ab, text });

@@ -5,7 +5,14 @@ import Group from './Group';
 export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: boolean) {
   let parent = node.parent;
   if (addDom) {
-    node.layout(parent!.layoutData!);
+    if (parent) {
+      node.layout({
+        x: parent.x,
+        y: parent.y,
+        w: parent.width,
+        h: parent.height,
+      });
+    }
   }
   else if(removeDom) {
     node.destroy();

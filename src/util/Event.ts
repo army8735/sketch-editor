@@ -105,8 +105,8 @@ class Event {
   }
 
   static REFRESH = 'refresh';
-  static DID_ADD_DOM = 'addDom';
-  static WILL_REMOVE_DOM = 'removeDom';
+  static DID_ADD_DOM = 'didAddDom';
+  static WILL_REMOVE_DOM = 'willRemoveDom';
 
 }
 

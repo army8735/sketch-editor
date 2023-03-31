@@ -2,7 +2,7 @@ import Node from './Node';
 import Page from './Page';
 import ArtBoard from './ArtBoard';
 import Overlay from './overlay/Overlay';
-import { getDefaultStyle, JPage, Props } from '../format';
+import { JPage, Props } from '../format';
 import { renderWebgl, Struct } from '../refresh/struct';
 import { frame, FrameCallback } from '../animation/frame';
 import Event from '../util/Event';
@@ -77,23 +77,23 @@ class Root extends Container implements FrameCallback {
     this.reLayout();
     // 存所有Page
     this.pageContainer = new Container({
-      style: getDefaultStyle({
+      style: {
         width: '100%',
         height: '100%',
         pointerEvents: false,
         scaleX: this.dpi,
         scaleY: this.dpi,
         transformOrigin: [0, 0],
-      }),
+      },
     }, []);
     this.appendChild(this.pageContainer);
     // 存上层的展示工具标尺等
     this.overlay = new Overlay({
-      style: getDefaultStyle({
+      style: {
         width: '100%',
         height: '100%',
         pointerEvents: false,
-      }),
+      },
     }, []);
     this.appendChild(this.overlay);
   }

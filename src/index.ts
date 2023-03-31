@@ -1,4 +1,4 @@
-import { JFile, getDefaultStyle } from './format';
+import { JFile } from './format';
 import { openAndConvertSketchBuffer } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -35,10 +35,10 @@ export default {
     const { width, height } = canvas;
     const root = new node.Root(canvas, {
       dpi,
-      style: getDefaultStyle({
+      style: {
         width,
         height,
-      }),
+      },
     });
     root.setJPages(json.pages);
     root.setPageIndex(0);

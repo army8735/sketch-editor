@@ -53,30 +53,18 @@ input.onchange = function(e) {
       root = editor.parse(json, canvas, dpi);
       curPage = root.getCurPage();
 
-      root.on('refresh', function(lv) {
+      root.once('refresh', function(lv) {
         if (lv & editor.refresh.level.RefreshLevel.REBUILD) {
           let s = '';
           structs = root.getCurPageStructs();
           structs.forEach((item, i) => {
             const { node, lv } = item;
-            let type = 'n', className = '';
-            if (node.isArtBoard) {
-              type = 'a';
-              className = 'ab';
-            }
-            else if (node.isGroup) {
-              type = 'g';
-              className = 'group';
-            }
-            else if (node instanceof editor.node.Bitmap) {
-              type = 'i';
-              className = 'img';
-            }
+            let { type, className } = getNodeType(node);
             const visible = node.computedStyle[editor.style.define.StyleKey.VISIBLE];
             s += `<li class="${className}" style="margin-left:${(lv - 3) * 16}px" index="${i}">
 <span class="type">${type}.</span>
 <span class="name">${node.props.name}</span>`;
-            if (!node.isArtBoard) {
+            if (!(node instanceof editor.node.ArtBoard)) {
               s += `<span class="visible" visible="${visible}">${visible ? '可见' : '隐藏'}</span>`;
             }
             s += '</li>';
@@ -84,8 +72,48 @@ input.onchange = function(e) {
           tree.innerHTML = s;
         }
       });
+
+      root.on('didAddDom', function(node) {
+        let { type, className } = getNodeType(node);
+        const struct = node.struct;
+        structs = root.getCurPageStructs();
+        const index = structs.indexOf(struct);
+        if (index === structs.length - 1) {
+          const li = document.createElement('li');
+          li.className = className;
+          li.setAttribute('index', index);
+          li.style.marginLeft = (struct.lv - 3) * 16 + 'px';
+          let s = `<span class="type">${type}.</span>
+<span class="name">${node.props.name}</span>`;
+          if (!(node instanceof editor.node.ArtBoard)) {
+            s += `<span class="visible" visible="true">可见</span>`;
+          }
+          li.innerHTML = s;
+          tree.appendChild(li);
+        }
+      });
     });
   }
+}
+
+function getNodeType(node) {
+  let type = 'n', className = '';
+  if (node instanceof editor.node.ArtBoard) {
+    type = 'a';
+    className = 'ab';
+  }
+  else if (node instanceof editor.node.Group) {
+    type = 'g';
+    className = 'group';
+  }
+  else if (node instanceof editor.node.Bitmap) {
+    type = 'i';
+    className = 'img';
+  }
+  else {
+    //
+  }
+  return { type, className };
 }
 
 tree.addEventListener('click', e => {
@@ -271,7 +299,6 @@ document.addEventListener('mouseup', function(e) {
   if (e.button === 0) {
     const dx = lastX - startX, dy = lastY - startY;
     if (selectNode) {
-      console.log(11, selectNode);
       // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
       if (dx || dy) {
         root.checkNodePosChange(selectNode);

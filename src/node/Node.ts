@@ -1,6 +1,6 @@
 import Root from '../node/Root';
 import Container from '../node/Container';
-import { JStyle, Props } from '../format/';
+import { JStyle, Props, getDefaultStyle } from '../format/';
 import {
   assignMatrix,
   calRectPoint,
@@ -8,7 +8,6 @@ import {
   multiply2,
 } from '../math/matrix';
 import { d2r } from '../math/geom';
-import { extend } from '../util';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
 import { calNormalLineHeight, equalStyle, normalize, calSize, color2rgbaStr } from '../style/css';
@@ -49,7 +48,7 @@ class Node extends Event {
   constructor(props: Props) {
     super();
     this.props = props;
-    this.style = extend([], normalize(props.style || {}));
+    this.style = normalize(getDefaultStyle(props.style));
     this.computedStyle = []; // 输出展示的值
     this.cacheStyle = []; // 缓存js直接使用的对象结果
     this.x = 0;

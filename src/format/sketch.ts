@@ -9,7 +9,6 @@ import {
   JBitmap,
   JText,
   classValue,
-  getDefaultStyle,
   JRect
 } from './';
 
@@ -98,7 +97,7 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
     type: classValue.Page,
     props: {
       name: page.name,
-      style: getDefaultStyle({
+      style: {
         left: page.frame.x,
         top: page.frame.y,
         width: page.frame.width,
@@ -106,7 +105,7 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
         visible: false,
         transformOrigin: [0, 0],
         pointerEvents: false,
-      }),
+      },
     },
     children,
   } as JPage;
@@ -132,7 +131,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       props: {
         name: layer.name,
         hasBackgroundColor,
-        style: getDefaultStyle({
+        style: {
           width: layer.frame.width,
           height: layer.frame.height,
           translateX: layer.frame.x,
@@ -140,7 +139,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           visible: layer.isVisible,
           overflow: 'hidden',
           backgroundColor,
-        }),
+        },
       },
       children,
     } as JArtBoard;
@@ -285,7 +284,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Group,
       props: {
         name: layer.name,
-        style: getDefaultStyle({
+        style: {
           left,
           top,
           right,
@@ -296,7 +295,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           opacity: layer.style.contextSettings.opacity,
           translateX,
           translateY,
-        }),
+        },
       },
       children,
     } as JGroup;
@@ -307,7 +306,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Bitmap,
       props: {
         name: layer.name,
-        style: getDefaultStyle({
+        style: {
           left,
           top,
           right,
@@ -318,7 +317,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           opacity: layer.style.contextSettings.opacity,
           translateX,
           translateY,
-        }),
+        },
         src: index,
       },
     } as JBitmap;
@@ -328,7 +327,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Text,
       props: {
         name: layer.name,
-        style: getDefaultStyle({
+        style: {
           left,
           top,
           right,
@@ -340,7 +339,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           translateX,
           translateY,
           overflow: 'hidden',
-        }),
+        },
       },
     } as JText;
   }
@@ -349,7 +348,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Rect,
       props: {
         name: layer.name,
-        style: getDefaultStyle({}),
+        style: {},
       },
     } as JRect;
   }
