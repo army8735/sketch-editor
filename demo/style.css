@@ -61,8 +61,10 @@ html, body {
 
 .tree div {
   display: flex;
+  padding: 0 4px;
   height: 24px;
   align-items: center;
+  border-radius: 5px;
 }
 
 .tree .type {
@@ -87,6 +89,14 @@ html, body {
 
 .tree .visible:hover {
   color: #F99;
+}
+
+.tree .hover>div {
+  box-shadow: 0 0 2px #000;
+}
+
+.tree .select>div {
+  background: #FFC;
 }
 
 .main {
@@ -127,7 +137,7 @@ canvas {
   cursor: grabbing;
 }
 
-.hover {
+.overlap .hover {
   position: absolute;
   border: 1px solid #F43;
   visibility: hidden;
@@ -135,17 +145,17 @@ canvas {
   transform: translate(-1px, -1px);
 }
 
-.selection {
+.overlap .selection {
   position: absolute;
   visibility: hidden;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
-.selection span, .selection b {
+.overlap .selection span, .selection b {
   pointer-events: auto;
 }
 
-.t {
+.overlap .t {
   position: absolute;
   left: 0;
   top: -4px;
@@ -155,7 +165,7 @@ canvas {
   cursor: ns-resize;
 }
 
-.t b {
+.overlap .t b {
   position: absolute;
   left: 0;
   top: 2px;
@@ -165,7 +175,7 @@ canvas {
   pointer-events: none;
 }
 
-.r {
+.overlap .r {
   position: absolute;
   right: -4px;
   top: 0;
@@ -175,7 +185,7 @@ canvas {
   cursor: ew-resize;
 }
 
-.r b {
+.overlap .r b {
   position: absolute;
   right: 2px;
   top: 0;
@@ -185,7 +195,7 @@ canvas {
   pointer-events: none;
 }
 
-.b {
+.overlap .b {
   position: absolute;
   left: 0;
   bottom: -4px;
@@ -195,7 +205,7 @@ canvas {
   cursor: ns-resize;
 }
 
-.b b {
+.overlap .b b {
   position: absolute;
   left: 0;
   bottom: 2px;
@@ -205,7 +215,7 @@ canvas {
   pointer-events: none;
 }
 
-.l {
+.overlap .l {
   position: absolute;
   left: -4px;
   top: 0;
@@ -215,7 +225,7 @@ canvas {
   cursor: ew-resize;
 }
 
-.l b {
+.overlap .l b {
   position: absolute;
   left: 2px;
   top: 0;
@@ -225,7 +235,7 @@ canvas {
   pointer-events: none;
 }
 
-.tl {
+.overlap .tl {
   position: absolute;
   left: 0;
   top: 0;
@@ -238,7 +248,7 @@ canvas {
   cursor: nwse-resize;
 }
 
-.tr {
+.overlap .tr {
   position: absolute;
   right: 0;
   top: 0;
@@ -251,7 +261,7 @@ canvas {
   cursor: nesw-resize;
 }
 
-.br {
+.overlap .br {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -264,7 +274,7 @@ canvas {
   cursor: nwse-resize;
 }
 
-.bl {
+.overlap .bl {
   position: absolute;
   left: 0;
   bottom: 0;
@@ -278,5 +288,5 @@ canvas {
 }
 
 .show {
-  visibility: visible;
+  visibility: visible !important;
 }

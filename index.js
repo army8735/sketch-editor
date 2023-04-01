@@ -17682,7 +17682,6 @@
             this.style = normalize(getDefaultStyle(props.style));
             // @ts-ignore
             this.computedStyle = {}; // 输出展示的值
-            this.cacheStyle = []; // 缓存js直接使用的对象结果
             this.x = 0;
             this.y = 0;
             this.width = 0;
@@ -17705,6 +17704,10 @@
         didMount() {
             this.isDestroyed = false;
             this.root = this.parent.root;
+            const uuid = this.props.uuid;
+            if (uuid) {
+                this.root.refs[uuid] = this;
+            }
         }
         layout(data) {
             if (this.isDestroyed) {
@@ -18748,10 +18751,7 @@
                             quality: 1,
                         }),
                     }).then(res => res.json()).then(res => {
-                        if (res.success) {
-                            // 不触发更新
-                            this._src = res.url;
-                        }
+                        if (res.success) ;
                     });
                 }
                 const cache = inject.IMG[src];
@@ -18883,7 +18883,35 @@
         get src() {
             return this._src;
         }
-        set src(v) { }
+        set src(v) {
+            this.src = v;
+            const loader = this.loader;
+            if (v === loader.src || this.isDestroyed || !v && loader.error) {
+                if (v && v !== loader.src) {
+                    loader.src = v;
+                    inject.measureImg(v, (res) => {
+                        if (loader.src === v) {
+                            const props = this.props;
+                            if (res.success) {
+                                if (isFunction(props.onLoad)) {
+                                    // @ts-ignore
+                                    props.onLoad();
+                                }
+                            }
+                            else {
+                                if (isFunction(props.onError)) {
+                                    // @ts-ignore
+                                    props.onError();
+                                }
+                            }
+                        }
+                    });
+                }
+                return;
+            }
+            loader.src = v;
+            this.loadAndRefresh();
+        }
     }
 
     class Group extends Container {
@@ -19299,7 +19327,7 @@
         while (parent && parent !== root) {
             if (parent instanceof Group) {
                 parent.checkFitPS();
-                break; // TODO 是否递归
+                // break; // TODO 是否递归
             }
             parent = parent.parent;
         }
@@ -19475,7 +19503,6 @@ void main() {
     class Root extends Container {
         constructor(canvas, props) {
             super(props, []);
-            this.programs = {};
             this.ani = []; // 动画任务，空占位
             this.aniChange = false;
             this.uuid = uuid++;
@@ -19495,10 +19522,12 @@ void main() {
                 throw new Error('Webgl unsupported!');
             }
             config.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+            this.programs = {};
             this.initShaders(gl);
             // 初始化的数据
             this.dpi = props.dpi;
             this.root = this;
+            this.refs = {};
             this.isDestroyed = false;
             this.structs = this.structure(0);
             this.isAsyncDraw = false;
@@ -19531,6 +19560,7 @@ void main() {
             this.appendChild(this.overlay);
         }
         initShaders(gl) {
+            console.log(this.programs);
             const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
             this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
             this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);

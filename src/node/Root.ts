@@ -28,7 +28,8 @@ class Root extends Container implements FrameCallback {
   ctx: WebGL2RenderingContext | WebGLRenderingContext | null;
   dpi: number;
   isWebgl2: boolean;
-  programs: any = {};
+  programs: any;
+  refs: any;
   lastPage: Page | undefined; // 上一个显示的Page对象
   pageContainer: Container | undefined; // 存Page显示对象列表的容器
   overlay: Overlay | undefined; // 不跟随Page缩放的选框标尺等容器
@@ -63,10 +64,12 @@ class Root extends Container implements FrameCallback {
       gl.getParameter(gl.MAX_TEXTURE_SIZE),
       gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
     );
+    this.programs = {};
     this.initShaders(gl);
     // 初始化的数据
     this.dpi = props.dpi;
     this.root = this;
+    this.refs = {};
     this.isDestroyed = false;
     this.structs = this.structure(0);
     this.isAsyncDraw = false;
@@ -100,6 +103,7 @@ class Root extends Container implements FrameCallback {
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+    console.log(this.programs);
     const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
     this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);

@@ -28,7 +28,6 @@ class Node extends Event {
   props: Props;
   style: Style;
   computedStyle: ComputedStyle;
-  cacheStyle: Array<any>;
   root: Root | undefined;
   prev: Node | undefined;
   next: Node | undefined;
@@ -54,7 +53,6 @@ class Node extends Event {
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
-    this.cacheStyle = []; // 缓存js直接使用的对象结果
     this.x = 0;
     this.y = 0;
     this.width = 0;
@@ -77,7 +75,11 @@ class Node extends Event {
   // 添加到dom后标记非销毁状态，和root引用
   didMount() {
     this.isDestroyed = false;
-    this.root = this.parent!.root;
+    this.root = this.parent!.root!;
+    const uuid = this.props.uuid;
+    if (uuid) {
+      this.root.refs[uuid] = this;
+    }
   }
 
   layout(data: LayoutData) {

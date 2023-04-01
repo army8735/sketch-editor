@@ -51,7 +51,7 @@ class Bitmap extends Node {
         }).then(res => res.json()).then(res => {
           if (res.success) {
             // 不触发更新
-            this._src = res.url;
+            // this.src = res.url;
           }
         });
       }
@@ -116,7 +116,7 @@ class Bitmap extends Node {
     loader.source = undefined;
     loader.error = false;
     loader.loading = true;
-    inject.measureImg(loader.src!, (data: any) => {
+    inject.measureImg(loader.src, (data: any) => {
       // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
       if (data.url === loader.src) {
         loader.loading = false;
@@ -193,7 +193,35 @@ class Bitmap extends Node {
     return this._src;
   }
 
-  set src(v) {}
+  set src(v) {
+    this.src = v;
+    const loader = this.loader;
+    if (v === loader.src || this.isDestroyed || !v && loader.error) {
+      if (v && v !== loader.src) {
+        loader.src = v;
+        inject.measureImg(v, (res: any) => {
+          if (loader.src === v) {
+            const props = this.props as BitmapProps;
+            if (res.success) {
+              if (isFunction(props.onLoad)) {
+                // @ts-ignore
+                props.onLoad();
+              }
+            }
+            else {
+              if (isFunction(props.onError)) {
+                // @ts-ignore
+                props.onError();
+              }
+            }
+          }
+        });
+      }
+      return;
+    }
+    loader.src = v;
+    this.loadAndRefresh();
+  }
 }
 
 export default Bitmap;

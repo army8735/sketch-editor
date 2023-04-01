@@ -99,6 +99,7 @@ export function getDefaultStyle(v?: any): JStyle {
 export type Props = {
   name?: string,
   uuid?: string,
+  ref?: string,
   style?: object,
 };
 

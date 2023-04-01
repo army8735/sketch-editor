@@ -287,7 +287,7 @@ const inject = {
     // @ts-ignore
     MAX_LOAD_NUM = parseInt(v) || 0;
   },
-  measureImg(url: string | Array<string>, cb?: Function) {
+  measureImg(url: string | undefined | Array<string>, cb?: Function) {
     if(Array.isArray(url)) {
       if(!url.length) {
         return cb && cb();
