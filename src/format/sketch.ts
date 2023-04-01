@@ -97,6 +97,7 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
     type: classValue.Page,
     props: {
       name: page.name,
+      uuid: page.do_objectID,
       style: {
         left: page.frame.x,
         top: page.frame.y,
@@ -130,6 +131,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.ArtBoard,
       props: {
         name: layer.name,
+        uuid: layer.do_objectID,
         hasBackgroundColor,
         style: {
           width: layer.frame.width,
@@ -284,6 +286,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Group,
       props: {
         name: layer.name,
+        uuid: layer.do_objectID,
         style: {
           left,
           top,
@@ -306,6 +309,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Bitmap,
       props: {
         name: layer.name,
+        uuid: layer.do_objectID,
         style: {
           left,
           top,
@@ -327,6 +331,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       type: classValue.Text,
       props: {
         name: layer.name,
+        uuid: layer.do_objectID,
         style: {
           left,
           top,
@@ -347,6 +352,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     return {
       type: classValue.Rect,
       props: {
+        uuid: layer.do_objectID,
         name: layer.name,
         style: {},
       },

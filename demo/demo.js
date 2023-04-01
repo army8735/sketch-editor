@@ -51,67 +51,83 @@ input.onchange = function(e) {
       window.onresize = resize;
       canvasC.appendChild(canvas);
       root = editor.parse(json, canvas, dpi);
-      curPage = root.getCurPage();
 
-      root.on(editor.util.Event.PAGE_CHANGED, function(lv) {
-        let s = '';
-        structs = root.getCurPageStructs();
-        structs.forEach((item, i) => {
-          const { node, lv } = item;
-          let { type, className } = getNodeType(node);
-          const visible = node.computedStyle[editor.style.define.StyleKey.VISIBLE];
-          s += `<li class="${className}" style="margin-left:${(lv - 3) * 16}px" index="${i}">
-<span class="type">${type}.</span>
-<span class="name">${node.props.name}</span>`;
-          if (!(node instanceof editor.node.ArtBoard)) {
-            s += `<span class="visible" visible="${visible}">${visible ? '可见' : '隐藏'}</span>`;
-          }
-          s += '</li>';
-        });
-        tree.innerHTML = s;
+      let hash = {};
+      root.on(editor.util.Event.PAGE_CHANGED, function(newPage) {
+        curPage = newPage;
+        tree.innerHTML = '';
+        const ol = document.createElement('ol');
+        hash = {};
+        const children = curPage.children;
+        for(let i = children.length - 1; i >= 0; i--) {
+          ol.appendChild(genNodeTree(children[i], hash));
+        }
+        tree.appendChild(ol);
       });
 
-      root.on(editor.util.Event.DID_ADD_DOM, function(node) {
-        let { type, className } = getNodeType(node);
-        const struct = node.struct;
-        structs = root.getCurPageStructs();
-        const index = structs.indexOf(struct);
-        if (index === structs.length - 1) {
-          const li = document.createElement('li');
-          li.className = className;
-          li.setAttribute('index', index);
-          li.style.marginLeft = (struct.lv - 3) * 16 + 'px';
-          let s = `<span class="type">${type}.</span>
-<span class="name">${node.props.name}</span>`;
-          if (!(node instanceof editor.node.ArtBoard)) {
-            s += `<span class="visible" visible="true">可见</span>`;
-          }
-          li.innerHTML = s;
-          tree.appendChild(li);
+      root.on(editor.util.Event.DID_ADD_DOM, function(node, isInPage) {
+        // 防止overlay层的内容
+        if (!isInPage) {
+          return;
+        }
+        const li = genNodeTree(node, hash);
+        const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
+        const i = children.indexOf(node); console.log(children, i);
+        const ol = hash[uuid].querySelector('ol');
+        if (i === children.length - 1) {
+          ol.appendChild(li);
+        }
+        else if (i === 0) {
+          ol.prependChild(li);
+        }
+        else {
+          ol.insertBefore(node, hash[node.prev.props.uuid]);
         }
       });
     });
   }
 }
 
+function genNodeTree(node, hash) {
+  const type = getNodeType(node);
+  const li = document.createElement('li');
+  hash[node.props.uuid] = li;
+  let s = `<div>
+<span class="type">${type.charAt(0)}.</span>
+<span class="name">${node.props.name}</span>`
+  if (!(node instanceof editor.node.ArtBoard)) {
+    s += `<span class="visible" visible="true">可见</span>`;
+  }
+  s += '</div>';
+  li.innerHTML = s;
+  if (node instanceof editor.node.Container) {
+    const children = node.children;
+    if (children.length > 0) {
+      const ol = document.createElement('ol');
+      for(let i = children.length - 1; i >= 0; i--) {
+        ol.appendChild(genNodeTree(children[i], hash));
+      }
+      li.appendChild(ol);
+    }
+  }
+  return li;
+}
+
 function getNodeType(node) {
-  let type = 'n', className = '';
+  let type = '';
   if (node instanceof editor.node.ArtBoard) {
-    type = 'a';
-    className = 'ab';
+    type = 'artBoard';
   }
   else if (node instanceof editor.node.Group) {
-    type = 'g';
-    className = 'group';
+    type = 'group';
   }
   else if (node instanceof editor.node.Bitmap) {
-    type = 'i';
-    className = 'img';
+    type = 'bitmap';
   }
   else {
     //
   }
-  return { type, className };
+  return type;
 }
 
 tree.addEventListener('click', e => {
@@ -277,8 +293,8 @@ window.onscroll = function() {
   originY = o.top;
 };
 
-main.addEventListener('mousedown', function(e) {
-  if (!root) {
+overlap.addEventListener('mousedown', function(e) {
+  if (!curPage) {
     return;
   }
   // 左键
@@ -328,14 +344,14 @@ main.addEventListener('mousedown', function(e) {
 });
 
 document.addEventListener('mousemove', function(e) {
-  if (!root) {
+  if (!curPage) {
     return;
   }
   onMove(e.pageX, e.pageY);
 });
 
 document.addEventListener('mouseup', function(e) {
-  if (!root) {
+  if (!curPage) {
     return;
   }
   if (e.button === 0) {
@@ -356,7 +372,7 @@ document.addEventListener('mouseup', function(e) {
 
 document.addEventListener('contextmenu', function(e) {
   e.preventDefault();
-  if (!root) {
+  if (!curPage) {
     return;
   }
   hideSelect();
@@ -368,7 +384,7 @@ document.addEventListener('keydown', function(e) {
   altKey = e.altKey;
   ctrlKey = e.ctrlKey;
   shiftKey = e.shiftKey;
-  if (!root) {
+  if (!curPage) {
     return;
   }
   if (m !== e.metaKey) {
@@ -386,7 +402,7 @@ document.addEventListener('keyup', function(e) {
   altKey = e.altKey;
   ctrlKey = e.ctrlKey;
   shiftKey = e.shiftKey;
-  if (!root) {
+  if (!curPage) {
     return;
   }
   if (m !== e.metaKey) {
@@ -399,7 +415,7 @@ document.addEventListener('keyup', function(e) {
 });
 
 document.addEventListener('wheel', function(e) {
-  if (!root) {
+  if (!curPage) {
     return;
   }
   hideHover();

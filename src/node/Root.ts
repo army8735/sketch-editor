@@ -1,5 +1,6 @@
 import Node from './Node';
 import Page from './Page';
+import Group from './Group';
 import ArtBoard from './ArtBoard';
 import Overlay from './overlay/Overlay';
 import { JPage, Props } from '../format';
@@ -137,7 +138,7 @@ class Root extends Container implements FrameCallback {
     newPage.updateStyle({
       visible: true,
     }, () => {
-      this.emit(Event.PAGE_CHANGED);
+      this.emit(Event.PAGE_CHANGED, newPage);
     });
     this.lastPage = newPage;
     this.overlay!.setArtBoard(newPage.children as Array<ArtBoard>);
@@ -178,7 +179,16 @@ class Root extends Container implements FrameCallback {
       cb && cb(true);
     }
     if (addDom) {
-      this.emit(Event.DID_ADD_DOM, node);
+      let isInPage = false;
+      let parent = node.parent!;
+      while (parent && parent !== this) {
+        if (parent instanceof Group || parent instanceof ArtBoard || parent instanceof Page) {
+          isInPage = true;
+          break;
+        }
+        parent = parent.parent!;
+      }
+      this.emit(Event.DID_ADD_DOM, node, isInPage);
     }
   }
 
@@ -339,16 +349,6 @@ class Root extends Container implements FrameCallback {
     }
   }
 
-  getCurPageStructs() {
-    const page = this.lastPage;
-    if (page) {
-      const structs = this.structs;
-      const struct = page.struct;
-      const i = structs.indexOf(struct);
-      return structs.slice(i + 1, i + struct.total + 1);
-    }
-  }
-
   checkNodePosChange(node: Node) {
     if (node.isDestroyed) {
       return;
@@ -365,7 +365,6 @@ class Root extends Container implements FrameCallback {
     } = node.style;
     // 一定有parent，不会改root下的固定容器子节点
     const parent = node.parent!;
-    // console.log(top, right, bottom, left, width, height, translateX, translateY);
     const newStyle: any = {};
     // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
     if (width.u === StyleUnit.AUTO) {

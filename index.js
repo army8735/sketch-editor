@@ -15407,6 +15407,7 @@
                 type: classValue.Page,
                 props: {
                     name: page.name,
+                    uuid: page.do_objectID,
                     style: {
                         left: page.frame.x,
                         top: page.frame.y,
@@ -15439,6 +15440,7 @@
                     type: classValue.ArtBoard,
                     props: {
                         name: layer.name,
+                        uuid: layer.do_objectID,
                         hasBackgroundColor,
                         style: {
                             width: layer.frame.width,
@@ -15582,6 +15584,7 @@
                     type: classValue.Group,
                     props: {
                         name: layer.name,
+                        uuid: layer.do_objectID,
                         style: {
                             left,
                             top,
@@ -15604,6 +15607,7 @@
                     type: classValue.Bitmap,
                     props: {
                         name: layer.name,
+                        uuid: layer.do_objectID,
                         style: {
                             left,
                             top,
@@ -15625,6 +15629,7 @@
                     type: classValue.Text,
                     props: {
                         name: layer.name,
+                        uuid: layer.do_objectID,
                         style: {
                             left,
                             top,
@@ -15645,6 +15650,7 @@
                 return {
                     type: classValue.Rect,
                     props: {
+                        uuid: layer.do_objectID,
                         name: layer.name,
                         style: {},
                     },
@@ -17504,6 +17510,71 @@
         frame,
     };
 
+    // Unique ID creation requires a high quality random # generator. In the browser we therefore
+    // require the crypto API and do not support built-in fallback to lower quality random number
+    // generators (like Math.random()).
+    let getRandomValues;
+    const rnds8 = new Uint8Array(16);
+    function rng() {
+      // lazy load so that environments that need to polyfill have a chance to do so
+      if (!getRandomValues) {
+        // getRandomValues needs to be invoked in a context where "this" is a Crypto implementation.
+        getRandomValues = typeof crypto !== 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
+
+        if (!getRandomValues) {
+          throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
+        }
+      }
+
+      return getRandomValues(rnds8);
+    }
+
+    /**
+     * Convert array of 16 byte values to UUID string format of the form:
+     * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+     */
+
+    const byteToHex = [];
+
+    for (let i = 0; i < 256; ++i) {
+      byteToHex.push((i + 0x100).toString(16).slice(1));
+    }
+
+    function unsafeStringify(arr, offset = 0) {
+      // Note: Be careful editing this code!  It's been tuned for performance
+      // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
+      return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+    }
+
+    const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+    var native = {
+      randomUUID
+    };
+
+    function v4(options, buf, offset) {
+      if (native.randomUUID && !buf && !options) {
+        return native.randomUUID();
+      }
+
+      options = options || {};
+      const rnds = options.random || (options.rng || rng)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+
+      rnds[6] = rnds[6] & 0x0f | 0x40;
+      rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
+
+      if (buf) {
+        offset = offset || 0;
+
+        for (let i = 0; i < 16; ++i) {
+          buf[offset + i] = rnds[i];
+        }
+
+        return buf;
+      }
+
+      return unsafeStringify(rnds);
+    }
+
     function createTexture(gl, n, tex, width, height) {
         let texture = gl.createTexture();
         bindTexture(gl, texture, n);
@@ -17680,6 +17751,7 @@
         constructor(props) {
             super();
             this.props = props;
+            this.props.uuid = this.props.uuid || v4();
             this.style = normalize(getDefaultStyle(props.style));
             this.computedStyle = []; // 输出展示的值
             this.cacheStyle = []; // 缓存js直接使用的对象结果
@@ -18140,7 +18212,7 @@
             this.isPage = false;
             this.children = children;
         }
-        // 添加到dom后设置父子兄弟关系
+        // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前没JSX这种一口气创建一颗子树
         didMount() {
             super.didMount();
             const { children } = this;
@@ -18194,7 +18266,7 @@
             }
             node.didMount();
             this.insertStruct(node, len);
-            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
         }
         prependChild(node, cb) {
             const { root, children } = this;
@@ -18214,7 +18286,49 @@
             }
             node.didMount();
             this.insertStruct(node, 0);
-            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+        }
+        appendSelf(node, cb) {
+            const { root, parent } = this;
+            if (!parent) {
+                throw new Error('Can not appendSelf without parent');
+            }
+            node.parent = parent;
+            node.prev = this;
+            node.next = this.next;
+            this.next = node;
+            node.root = root;
+            const children = parent.children;
+            const i = children.indexOf(this);
+            children.splice(i + 1, 0, node);
+            if (parent.isDestroyed) {
+                cb && cb(true);
+                return;
+            }
+            node.didMount();
+            parent.insertStruct(node, i + 1);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+        }
+        prependSelf(node, cb) {
+            const { root, parent } = this;
+            if (!parent) {
+                throw new Error('Can not prependBefore without parent');
+            }
+            node.parent = parent;
+            node.prev = this.prev;
+            node.next = this;
+            this.prev = node;
+            node.root = root;
+            const children = parent.children;
+            const i = children.indexOf(this);
+            children.splice(i, 0, node);
+            if (parent.isDestroyed) {
+                cb && cb(true);
+                return;
+            }
+            node.didMount();
+            parent.insertStruct(node, i);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
         }
         removeChild(node, cb) {
             if (node.parent === this) {
@@ -18329,6 +18443,15 @@
                 && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
                 return child;
             }
+        }
+        getStructs() {
+            if (!this.root) {
+                return;
+            }
+            const structs = this.root.structs;
+            const struct = this.struct;
+            const i = structs.indexOf(struct);
+            return structs.slice(i, i + struct.total + 1);
         }
     }
 
@@ -19504,7 +19627,7 @@ void main() {
             newPage.updateStyle({
                 visible: true,
             }, () => {
-                this.emit(Event.PAGE_CHANGED);
+                this.emit(Event.PAGE_CHANGED, newPage);
             });
             this.lastPage = newPage;
             this.overlay.setArtBoard(newPage.children);
@@ -19540,7 +19663,16 @@ void main() {
                 cb && cb(true);
             }
             if (addDom) {
-                this.emit(Event.DID_ADD_DOM, node);
+                let isInPage = false;
+                let parent = node.parent;
+                while (parent && parent !== this) {
+                    if (parent instanceof Group || parent instanceof ArtBoard || parent instanceof Page) {
+                        isInPage = true;
+                        break;
+                    }
+                    parent = parent.parent;
+                }
+                this.emit(Event.DID_ADD_DOM, node, isInPage);
             }
         }
         calUpdate(node, lv, addDom, removeDom) {
@@ -19683,15 +19815,6 @@ void main() {
                 return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
             }
         }
-        getCurPageStructs() {
-            const page = this.lastPage;
-            if (page) {
-                const structs = this.structs;
-                const struct = page.struct;
-                const i = structs.indexOf(struct);
-                return structs.slice(i + 1, i + struct.total + 1);
-            }
-        }
         checkNodePosChange(node) {
             if (node.isDestroyed) {
                 return;
@@ -19699,7 +19822,6 @@ void main() {
             const { [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.LEFT]: left, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, [StyleKey.TRANSLATE_X]: translateX, [StyleKey.TRANSLATE_Y]: translateY, } = node.style;
             // 一定有parent，不会改root下的固定容器子节点
             const parent = node.parent;
-            // console.log(top, right, bottom, left, width, height, translateX, translateY);
             const newStyle = {};
             // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
             if (width.u === StyleUnit.AUTO) {

@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import Root from '../node/Root';
 import Container from '../node/Container';
 import { JStyle, Props, getDefaultStyle } from '../format/';
@@ -48,6 +49,7 @@ class Node extends Event {
   constructor(props: Props) {
     super();
     this.props = props;
+    this.props.uuid = this.props.uuid || uuid.v4();
     this.style = normalize(getDefaultStyle(props.style));
     this.computedStyle = []; // 输出展示的值
     this.cacheStyle = []; // 缓存js直接使用的对象结果

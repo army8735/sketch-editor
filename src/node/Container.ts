@@ -18,7 +18,7 @@ class Container extends Node {
     this.children = children;
   }
 
-  // 添加到dom后设置父子兄弟关系
+  // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前没JSX这种一口气创建一颗子树
   didMount() {
     super.didMount();
     const { children } = this;
@@ -74,7 +74,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
   }
 
   prependChild(node: Node, cb?: Function) {
@@ -95,7 +95,51 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, undefined);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+  }
+
+  appendSelf(node: Node, cb?: Function) {
+    const { root, parent } = this;
+    if (!parent) {
+      throw new Error('Can not appendSelf without parent');
+    }
+    node.parent = parent;
+    node.prev = this;
+    node.next = this.next;
+    this.next = node;
+    node.root = root;
+    const children = parent.children;
+    const i = children.indexOf(this);
+    children.splice(i + 1, 0, node);
+    if (parent.isDestroyed) {
+      cb && cb(true);
+      return;
+    }
+    node.didMount();
+    parent.insertStruct(node, i + 1);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+  }
+
+  prependSelf(node: Node, cb?: Function) {
+    const { root, parent } = this;
+    if (!parent) {
+      throw new Error('Can not prependBefore without parent');
+    }
+    node.parent = parent;
+    node.prev = this.prev;
+    node.next = this;
+    this.prev = node;
+    node.root = root;
+    const children = parent.children;
+    const i = children.indexOf(this);
+    children.splice(i, 0, node);
+    if (parent.isDestroyed) {
+      cb && cb(true);
+      return;
+    }
+    node.didMount();
+    parent.insertStruct(node, i);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
   }
 
   removeChild(node: Node, cb?: Function) {
@@ -218,6 +262,16 @@ class Container extends Node {
       && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
       return child;
     }
+  }
+
+  getStructs() {
+    if (!this.root) {
+      return;
+    }
+    const structs = this.root.structs;
+    const struct = this.struct;
+    const i = structs.indexOf(struct);
+    return structs.slice(i, i + struct.total + 1);
   }
 }
 
