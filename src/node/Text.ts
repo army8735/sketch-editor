@@ -1,7 +1,7 @@
 import Node from './Node';
 import { Props } from '../format';
 import { LayoutData } from './layout';
-import { StyleKey, StyleUnit } from '../style/define';
+import { StyleUnit } from '../style/define';
 import inject from '../util/inject';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import CanvasCache from '../refresh/CanvasCache';
@@ -19,23 +19,23 @@ class Text extends Node {
       return;
     }
     const { style, computedStyle, content } = this;
-    const autoW = style[StyleKey.WIDTH].u === StyleUnit.AUTO;
-    const autoH = style[StyleKey.HEIGHT].u === StyleUnit.AUTO;
+    const autoW = style.width.u === StyleUnit.AUTO;
+    const autoH = style.height.u === StyleUnit.AUTO;
     const ctx = inject.getFontCanvas().ctx;
     ctx.font = setFontStyle(computedStyle);
     if (autoW && autoH) {
-      this.width = computedStyle[StyleKey.WIDTH] = ctx.measureText(content).width;
-      this.height = computedStyle[StyleKey.HEIGHT] = computedStyle[StyleKey.LINE_HEIGHT];
+      this.width = computedStyle.width = ctx.measureText(content).width;
+      this.height = computedStyle.height = computedStyle.lineHeight;
     }
     else if (autoW) {
-      this.width = computedStyle[StyleKey.WIDTH] = ctx.measureText(content).width;
+      this.width = computedStyle.width = ctx.measureText(content).width;
     }
     else if (autoH) {}
   }
 
   override calContent(): boolean {
     const { computedStyle, content } = this;
-    if (!computedStyle[StyleKey.VISIBLE]) {
+    if (!computedStyle.visible) {
       return this.hasContent = false;
     }
     return this.hasContent = !!content;
@@ -47,7 +47,7 @@ class Text extends Node {
     const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height, -this.x, -this.y);
     const ctx = canvasCache.offscreen.ctx;
     ctx.font = setFontStyle(computedStyle);
-    ctx.fillStyle = color2rgbaStr(computedStyle[StyleKey.COLOR]);
+    ctx.fillStyle = color2rgbaStr(computedStyle.color);
     ctx.fillText(this.content, 0, getBaseline(computedStyle));
   }
 }

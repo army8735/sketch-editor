@@ -3,7 +3,6 @@ import { BitmapProps } from '../format';
 import inject from '../util/inject';
 import { isFunction } from '../util/type';
 import { LayoutData } from './layout';
-import { StyleKey } from '../style/define';
 import { RefreshLevel } from '../refresh/level';
 import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
@@ -145,7 +144,7 @@ class Bitmap extends Node {
     else {
       loader.onlyImg = true;
       const {
-        [StyleKey.VISIBLE]: visible,
+        visible,
       } = computedStyle;
       if (visible) {
         if (loader.source) {

@@ -10,7 +10,7 @@ import Event from '../util/Event';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { checkReflow } from './reflow';
 import Container from './Container';
-import { StyleKey, StyleUnit } from '../style/define';
+import { StyleUnit } from '../style/define';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
@@ -107,8 +107,8 @@ class Root extends Container implements FrameCallback {
   }
 
   private checkRoot() {
-    this.width = this.computedStyle[StyleKey.WIDTH] = this.style[StyleKey.WIDTH].v as number;
-    this.height = this.computedStyle[StyleKey.HEIGHT] = this.style[StyleKey.HEIGHT].v as number;
+    this.width = this.computedStyle.width = this.style.width.v as number;
+    this.height = this.computedStyle.height = this.style.height.v as number;
     this.ctx?.viewport(0, 0, this.width, this.height);
   }
 
@@ -148,7 +148,7 @@ class Root extends Container implements FrameCallback {
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
    */
-  addUpdate(node: Node, keys: Array<StyleKey>, focus: RefreshLevel = RefreshLevel.NONE,
+  addUpdate(node: Node, keys: Array<string>, focus: RefreshLevel = RefreshLevel.NONE,
             addDom: boolean = false, removeDom: boolean = false, sync: boolean = false, cb?: Function) {
     if (this.isDestroyed) {
       return;
@@ -197,7 +197,7 @@ class Root extends Container implements FrameCallback {
     if (addDom || removeDom) {
       lv |= RefreshLevel.REFLOW;
     }
-    if (lv === RefreshLevel.NONE || !this.computedStyle[StyleKey.VISIBLE]) {
+    if (lv === RefreshLevel.NONE || !this.computedStyle.visible) {
       return false;
     }
     const isRf = isReflow(lv);
@@ -228,10 +228,10 @@ class Root extends Container implements FrameCallback {
           node.calMatrix(lv);
         }
         if (lv & RefreshLevel.OPACITY) {
-          computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
+          computedStyle.opacity = style.opacity.v;
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
-          computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
+          computedStyle.mixBlendMode = style.mixBlendMode.v;
         }
       }
     }
@@ -354,14 +354,14 @@ class Root extends Container implements FrameCallback {
       return;
     }
     const {
-      [StyleKey.TOP]: top,
-      [StyleKey.RIGHT]: right,
-      [StyleKey.BOTTOM]: bottom,
-      [StyleKey.LEFT]: left,
-      [StyleKey.WIDTH]: width,
-      [StyleKey.HEIGHT]: height,
-      [StyleKey.TRANSLATE_X]: translateX,
-      [StyleKey.TRANSLATE_Y]: translateY,
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      translateX,
+      translateY,
     } = node.style;
     // 一定有parent，不会改root下的固定容器子节点
     const parent = node.parent!;

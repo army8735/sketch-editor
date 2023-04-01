@@ -15701,154 +15701,6 @@
         });
     }
 
-    var StyleKey;
-    (function (StyleKey) {
-        StyleKey[StyleKey["TOP"] = 0] = "TOP";
-        StyleKey[StyleKey["RIGHT"] = 1] = "RIGHT";
-        StyleKey[StyleKey["BOTTOM"] = 2] = "BOTTOM";
-        StyleKey[StyleKey["LEFT"] = 3] = "LEFT";
-        StyleKey[StyleKey["WIDTH"] = 4] = "WIDTH";
-        StyleKey[StyleKey["HEIGHT"] = 5] = "HEIGHT";
-        StyleKey[StyleKey["LINE_HEIGHT"] = 6] = "LINE_HEIGHT";
-        StyleKey[StyleKey["FONT_FAMILY"] = 7] = "FONT_FAMILY";
-        StyleKey[StyleKey["FONT_SIZE"] = 8] = "FONT_SIZE";
-        StyleKey[StyleKey["FONT_WEIGHT"] = 9] = "FONT_WEIGHT";
-        StyleKey[StyleKey["FONT_STYLE"] = 10] = "FONT_STYLE";
-        StyleKey[StyleKey["VISIBLE"] = 11] = "VISIBLE";
-        StyleKey[StyleKey["OVERFLOW"] = 12] = "OVERFLOW";
-        StyleKey[StyleKey["BACKGROUND_COLOR"] = 13] = "BACKGROUND_COLOR";
-        StyleKey[StyleKey["COLOR"] = 14] = "COLOR";
-        StyleKey[StyleKey["OPACITY"] = 15] = "OPACITY";
-        StyleKey[StyleKey["TRANSLATE_X"] = 16] = "TRANSLATE_X";
-        StyleKey[StyleKey["TRANSLATE_Y"] = 17] = "TRANSLATE_Y";
-        StyleKey[StyleKey["SCALE_X"] = 18] = "SCALE_X";
-        StyleKey[StyleKey["SCALE_Y"] = 19] = "SCALE_Y";
-        StyleKey[StyleKey["ROTATE_Z"] = 20] = "ROTATE_Z";
-        StyleKey[StyleKey["TRANSFORM_ORIGIN"] = 21] = "TRANSFORM_ORIGIN";
-        StyleKey[StyleKey["MIX_BLEND_MODE"] = 22] = "MIX_BLEND_MODE";
-        StyleKey[StyleKey["POINTER_EVENTS"] = 23] = "POINTER_EVENTS";
-        // FILTER = 14,
-        // FILL = 15,
-        // STROKE = 16,
-        // STROKE_WIDTH = 17,
-        // STROKE_DASHARRAY = 18,
-        // STROKE_DASHARRAY_STR = 19,
-        // STROKE_LINECAP = 20,
-        // STROKE_LINEJOIN = 21,
-        // STROKE_MITERLIMIT = 22,
-        // FILL_RULE = 23,
-    })(StyleKey || (StyleKey = {}));
-    const STYLE2LOWER_MAP = {};
-    function styleKey2Lower(s) {
-        let res = STYLE2LOWER_MAP[s];
-        if (!res) {
-            res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
-                return $1.toUpperCase();
-            });
-        }
-        return res;
-    }
-    const STYLE2UPPER_MAP = {};
-    function styleKey2Upper(s) {
-        let res = STYLE2UPPER_MAP[s];
-        if (!res) {
-            res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
-                return $1 + '_' + $2;
-            }).toUpperCase();
-        }
-        return res;
-    }
-    const StyleKeyHash = {};
-    for (let i in StyleKey) {
-        if (!/^\d+$/.test(i)) {
-            StyleKeyHash[styleKey2Lower(i)] = StyleKey[i];
-        }
-    }
-    var StyleUnit;
-    (function (StyleUnit) {
-        StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
-        StyleUnit[StyleUnit["PX"] = 1] = "PX";
-        StyleUnit[StyleUnit["PERCENT"] = 2] = "PERCENT";
-        StyleUnit[StyleUnit["NUMBER"] = 3] = "NUMBER";
-        StyleUnit[StyleUnit["DEG"] = 4] = "DEG";
-        StyleUnit[StyleUnit["RGBA"] = 5] = "RGBA";
-        StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
-        StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
-        StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
-    })(StyleUnit || (StyleUnit = {}));
-    function calUnit(v) {
-        if (v === 'auto') {
-            return {
-                v: 0,
-                u: StyleUnit.AUTO,
-            };
-        }
-        let n = parseFloat(v) || 0;
-        if (/%$/.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.PERCENT,
-            };
-        }
-        else if (/px$/i.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.PX,
-            };
-        }
-        else if (/deg$/i.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.DEG,
-            };
-        }
-        return {
-            v: n,
-            u: StyleUnit.NUMBER,
-        };
-    }
-    var MIX_BLEND_MODE;
-    (function (MIX_BLEND_MODE) {
-        MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["MULTIPLY"] = 1] = "MULTIPLY";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SCREEN"] = 2] = "SCREEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["OVERLAY"] = 3] = "OVERLAY";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["DARKEN"] = 4] = "DARKEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["LIGHTEN"] = 5] = "LIGHTEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_DODGE"] = 6] = "COLOR_DODGE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_BURN"] = 7] = "COLOR_BURN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["HARD_LIGHT"] = 8] = "HARD_LIGHT";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SOFT_LIGHT"] = 9] = "SOFT_LIGHT";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["DIFFERENCE"] = 10] = "DIFFERENCE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["EXCLUSION"] = 11] = "EXCLUSION";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["HUE"] = 12] = "HUE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SATURATION"] = 13] = "SATURATION";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR"] = 14] = "COLOR";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["LUMINOSITY"] = 15] = "LUMINOSITY";
-    })(MIX_BLEND_MODE || (MIX_BLEND_MODE = {}));
-    var OVERFLOW;
-    (function (OVERFLOW) {
-        OVERFLOW[OVERFLOW["VISIBLE"] = 0] = "VISIBLE";
-        OVERFLOW[OVERFLOW["HIDDEN"] = 1] = "HIDDEN";
-    })(OVERFLOW || (OVERFLOW = {}));
-    var FONT_STYLE;
-    (function (FONT_STYLE) {
-        FONT_STYLE[FONT_STYLE["NORMAL"] = 0] = "NORMAL";
-        FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
-        FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
-    })(FONT_STYLE || (FONT_STYLE = {}));
-    var MASK_TYPE;
-    (function (MASK_TYPE) {
-        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
-        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
-        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
-    })(MASK_TYPE || (MASK_TYPE = {}));
-    var define = {
-        StyleKey,
-        StyleUnit,
-        calUnit,
-    };
-
     var RefreshLevel;
     (function (RefreshLevel) {
         RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
@@ -15878,35 +15730,35 @@
         return lv < RefreshLevel.REFLOW;
     }
     function isRepaintKey(k) {
-        return k === StyleKey.VISIBLE || k === StyleKey.COLOR || k === StyleKey.BACKGROUND_COLOR
-            || k === StyleKey.MIX_BLEND_MODE;
+        return k === 'visible' || k === 'color' || k === 'backgroundColor'
+            || k === 'mixBlendMode';
     }
     function getLevel(k) {
-        if (k === StyleKey.POINTER_EVENTS) {
+        if (k === 'pointerEvents') {
             return RefreshLevel.NONE;
         }
-        if (k === StyleKey.TRANSLATE_X) {
+        if (k === 'translateX') {
             return RefreshLevel.TRANSLATE_X;
         }
-        if (k === StyleKey.TRANSLATE_Y) {
+        if (k === 'translateY') {
             return RefreshLevel.TRANSLATE_Y;
         }
-        if (k === StyleKey.ROTATE_Z) {
+        if (k === 'rotateZ') {
             return RefreshLevel.ROTATE_Z;
         }
-        if (k === StyleKey.SCALE_X) {
+        if (k === 'scaleX') {
             return RefreshLevel.SCALE_X;
         }
-        if (k === StyleKey.SCALE_Y) {
+        if (k === 'scaleY') {
             return RefreshLevel.SCALE_Y;
         }
-        if (k === StyleKey.TRANSFORM_ORIGIN) {
+        if (k === 'transformOrigin') {
             return RefreshLevel.TRANSFORM;
         }
-        if (k === StyleKey.OPACITY) {
+        if (k === 'opacity') {
             return RefreshLevel.OPACITY;
         }
-        if (k === StyleKey.MIX_BLEND_MODE) {
+        if (k === 'mixBlendMode') {
             return RefreshLevel.MIX_BLEND_MODE;
         }
         if (isRepaintKey(k)) {
@@ -16360,6 +16212,90 @@
         pointInRect,
     };
 
+    var StyleUnit;
+    (function (StyleUnit) {
+        StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
+        StyleUnit[StyleUnit["PX"] = 1] = "PX";
+        StyleUnit[StyleUnit["PERCENT"] = 2] = "PERCENT";
+        StyleUnit[StyleUnit["NUMBER"] = 3] = "NUMBER";
+        StyleUnit[StyleUnit["DEG"] = 4] = "DEG";
+        StyleUnit[StyleUnit["RGBA"] = 5] = "RGBA";
+        StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
+        StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
+        StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
+    })(StyleUnit || (StyleUnit = {}));
+    function calUnit(v) {
+        if (v === 'auto') {
+            return {
+                v: 0,
+                u: StyleUnit.AUTO,
+            };
+        }
+        let n = parseFloat(v) || 0;
+        if (/%$/.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.PERCENT,
+            };
+        }
+        else if (/px$/i.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.PX,
+            };
+        }
+        else if (/deg$/i.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.DEG,
+            };
+        }
+        return {
+            v: n,
+            u: StyleUnit.NUMBER,
+        };
+    }
+    var MIX_BLEND_MODE;
+    (function (MIX_BLEND_MODE) {
+        MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["MULTIPLY"] = 1] = "MULTIPLY";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SCREEN"] = 2] = "SCREEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["OVERLAY"] = 3] = "OVERLAY";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["DARKEN"] = 4] = "DARKEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["LIGHTEN"] = 5] = "LIGHTEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_DODGE"] = 6] = "COLOR_DODGE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_BURN"] = 7] = "COLOR_BURN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["HARD_LIGHT"] = 8] = "HARD_LIGHT";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SOFT_LIGHT"] = 9] = "SOFT_LIGHT";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["DIFFERENCE"] = 10] = "DIFFERENCE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["EXCLUSION"] = 11] = "EXCLUSION";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["HUE"] = 12] = "HUE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SATURATION"] = 13] = "SATURATION";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR"] = 14] = "COLOR";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["LUMINOSITY"] = 15] = "LUMINOSITY";
+    })(MIX_BLEND_MODE || (MIX_BLEND_MODE = {}));
+    var OVERFLOW;
+    (function (OVERFLOW) {
+        OVERFLOW[OVERFLOW["VISIBLE"] = 0] = "VISIBLE";
+        OVERFLOW[OVERFLOW["HIDDEN"] = 1] = "HIDDEN";
+    })(OVERFLOW || (OVERFLOW = {}));
+    var FONT_STYLE;
+    (function (FONT_STYLE) {
+        FONT_STYLE[FONT_STYLE["NORMAL"] = 0] = "NORMAL";
+        FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
+        FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
+    })(FONT_STYLE || (FONT_STYLE = {}));
+    var MASK_TYPE;
+    (function (MASK_TYPE) {
+        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
+        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
+        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
+    })(MASK_TYPE || (MASK_TYPE = {}));
+    var define = {
+        StyleUnit,
+        calUnit,
+    };
+
     // @ts-ignore
     const toString = {}.toString;
     function isType(type) {
@@ -16770,19 +16706,11 @@
         },
     };
 
-    const TRANSFORM_HASH = {
-        translateX: StyleKey.TRANSLATE_X,
-        translateY: StyleKey.TRANSLATE_Y,
-        scaleX: StyleKey.SCALE_X,
-        scaleY: StyleKey.SCALE_Y,
-        rotateZ: StyleKey.ROTATE_Z,
-        rotate: StyleKey.ROTATE_Z,
-    };
     function compatibleTransform(k, v) {
-        if (k === StyleKey.SCALE_X || k === StyleKey.SCALE_Y) {
+        if (k === 'scaleX' || k === 'scaleY') {
             v.u = StyleUnit.NUMBER;
         }
-        else if (k === StyleKey.TRANSLATE_X || k === StyleKey.TRANSLATE_Y) {
+        else if (k === 'translateX' || k === 'translateY') {
             if (v.u === StyleUnit.NUMBER) {
                 v.u = StyleUnit.PX;
             }
@@ -16818,13 +16746,12 @@
                     n.v = 0;
                 }
             }
-            const k2 = StyleKey[styleKey2Upper(k)];
-            res[k2] = n;
+            res[k] = n;
         });
         const lineHeight = style.lineHeight;
         if (!isNil(lineHeight)) {
             if (lineHeight === 'normal') {
-                res[StyleKey.LINE_HEIGHT] = {
+                res.lineHeight = {
                     v: 0,
                     u: StyleUnit.AUTO,
                 };
@@ -16840,19 +16767,19 @@
                 else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
                     n.u = StyleUnit.PX;
                 }
-                res[StyleKey.LINE_HEIGHT] = n;
+                res.lineHeight = n;
             }
         }
         const visible = style.visible;
         if (!isNil(visible)) {
-            res[StyleKey.VISIBLE] = {
+            res.visible = {
                 v: visible,
                 u: StyleUnit.BOOLEAN,
             };
         }
         const fontFamily = style.fontFamily;
         if (!isNil(fontFamily)) {
-            res[StyleKey.FONT_FAMILY] = {
+            res.fontFamily = {
                 v: fontFamily.toString().trim().toLowerCase()
                     .replace(/['"]/g, '')
                     .replace(/\s*,\s*/g, ','),
@@ -16870,24 +16797,24 @@
             if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
                 n.u = StyleUnit.PX;
             }
-            res[StyleKey.FONT_SIZE] = n;
+            res.fontSize = n;
         }
         const fontWeight = style.fontWeight;
         if (!isNil(fontWeight)) {
             if (/normal/i.test(fontWeight)) {
-                res[StyleKey.FONT_WEIGHT] = { v: 400, u: StyleUnit.NUMBER };
+                res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
             }
             else if (/bold/i.test(fontWeight)) {
-                res[StyleKey.FONT_WEIGHT] = { v: 700, u: StyleUnit.NUMBER };
+                res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
             }
             else if (/bolder/i.test(fontWeight)) {
-                res[StyleKey.FONT_WEIGHT] = { v: 900, u: StyleUnit.NUMBER };
+                res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
             }
             else if (/lighter/i.test(fontWeight)) {
-                res[StyleKey.FONT_WEIGHT] = { v: 300, u: StyleUnit.NUMBER };
+                res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
             }
             else {
-                res[StyleKey.FONT_WEIGHT] = {
+                res.fontWeight = {
                     v: Math.min(900, Math.max(100, parseInt(fontWeight) || 400)),
                     u: StyleUnit.NUMBER,
                 };
@@ -16902,23 +16829,23 @@
             else if (/oblique/i.test(fontStyle)) {
                 v = FONT_STYLE.OBLIQUE;
             }
-            res[StyleKey.FONT_STYLE] = { v, u: StyleUnit.NUMBER };
+            res.fontStyle = { v, u: StyleUnit.NUMBER };
         }
         const color = style.color;
         if (!isNil(color)) {
-            res[StyleKey.COLOR] = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
+            res.color = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
         }
         const backgroundColor = style.backgroundColor;
         if (!isNil(backgroundColor)) {
-            res[StyleKey.BACKGROUND_COLOR] = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+            res.backgroundColor = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
         }
         const overflow = style.overflow;
         if (!isNil(overflow)) {
-            res[StyleKey.OVERFLOW] = { v: overflow, u: StyleUnit.STRING };
+            res.overflow = { v: overflow, u: StyleUnit.STRING };
         }
         const opacity = style.opacity;
         if (!isNil(opacity)) {
-            res[StyleKey.OPACITY] = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
+            res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
         }
         [
             'translateX',
@@ -16931,11 +16858,10 @@
             if (isNil(v)) {
                 return;
             }
-            const k2 = TRANSFORM_HASH[k];
             const n = calUnit(v);
             // 没有单位或默认值处理单位
-            compatibleTransform(k2, n);
-            res[k2] = n;
+            compatibleTransform(k, n);
+            res[k] = n;
         });
         const transformOrigin = style.transformOrigin;
         if (!isNil(transformOrigin)) {
@@ -16976,7 +16902,7 @@
                     }
                 }
             }
-            res[StyleKey.TRANSFORM_ORIGIN] = arr;
+            res.transformOrigin = arr;
         }
         const mixBlendMode = style.mixBlendMode;
         if (!isNil(mixBlendMode)) {
@@ -17026,25 +16952,26 @@
             else if (/luminosity/i.test(fontStyle)) {
                 v = MIX_BLEND_MODE.LUMINOSITY;
             }
-            res[StyleKey.MIX_BLEND_MODE] = { v, u: StyleUnit.NUMBER };
+            res.mixBlendMode = { v, u: StyleUnit.NUMBER };
         }
         const pointerEvents = style.pointerEvents;
         if (!isNil(pointerEvents)) {
-            res[StyleKey.POINTER_EVENTS] = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+            res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
         }
         return res;
     }
     function equalStyle(k, a, b) {
-        if (k === StyleKey.TRANSFORM_ORIGIN) {
+        if (k === 'transformOrigin') {
             return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
                 && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
         }
-        if (k === StyleKey.COLOR) {
+        if (k === 'color' || k === 'backgroundColor') {
             return a[k].v[0] === b[k].v[0]
                 && a[k].v[1] === b[k].v[1]
                 && a[k].v[2] === b[k].v[2]
                 && a[k].v[3] === b[k].v[3];
         }
+        // @ts-ignore
         return a[k].v === b[k].v && a[k].u === b[k].u;
     }
     function color2rgbaInt(color) {
@@ -17124,12 +17051,12 @@
         ];
     }
     function setFontStyle(style) {
-        let fontSize = style[StyleKey.FONT_SIZE] || 0;
-        let fontFamily = style[StyleKey.FONT_FAMILY] || inject.defaultFontFamily || 'arial';
+        let fontSize = style.fontSize || 0;
+        let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
         if (/\s/.test(fontFamily)) {
             fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
         }
-        return (style[StyleKey.FONT_STYLE] || 'normal') + ' ' + (style[StyleKey.FONT_WEIGHT] || '400') + ' '
+        return (style.fontStyle || 'normal') + ' ' + (style.fontWeight || '400') + ' '
             + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
     }
     function calFontFamily(fontFamily) {
@@ -17144,9 +17071,9 @@
     }
     function calNormalLineHeight(style, ff) {
         if (!ff) {
-            ff = calFontFamily(style[StyleKey.FONT_FAMILY]);
+            ff = calFontFamily(style.fontFamily);
         }
-        return style[StyleKey.FONT_SIZE] * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr;
+        return style.fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr;
     }
     /**
      * https://zhuanlan.zhihu.com/p/25808995
@@ -17155,10 +17082,10 @@
      * @returns {number}
      */
     function getBaseline(style) {
-        let fontSize = style[StyleKey.FONT_SIZE];
-        let ff = calFontFamily(style[StyleKey.FONT_FAMILY]);
+        let fontSize = style.fontSize;
+        let ff = calFontFamily(style.fontFamily);
         let normal = calNormalLineHeight(style, ff);
-        return (style[StyleKey.LINE_HEIGHT] - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
+        return (style.lineHeight - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
     }
     function calSize(v, p) {
         if (v.u === StyleUnit.PX) {
@@ -17202,17 +17129,17 @@
     }
     function calStyleMatrix(style, x = 0, y = 0, width = 0, height = 0, computedStyle) {
         const transform = identity();
-        transform[12] = style[StyleKey.TRANSLATE_X] ? calSize(style[StyleKey.TRANSLATE_X], width) : 0;
-        transform[13] = style[StyleKey.TRANSLATE_Y] ? calSize(style[StyleKey.TRANSLATE_Y], height) : 0;
-        const rotateZ = style[StyleKey.ROTATE_Z] ? style[StyleKey.ROTATE_Z].v : 0;
-        const scaleX = style[StyleKey.SCALE_X] ? style[StyleKey.SCALE_X].v : 1;
-        const scaleY = style[StyleKey.SCALE_Y] ? style[StyleKey.SCALE_Y].v : 1;
+        transform[12] = style.translateX ? calSize(style.translateX, width) : 0;
+        transform[13] = style.translateY ? calSize(style.translateY, height) : 0;
+        const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
+        const scaleX = style.scaleX ? style.scaleX.v : 1;
+        const scaleY = style.scaleY ? style.scaleY.v : 1;
         if (computedStyle) {
-            computedStyle[StyleKey.TRANSLATE_X] = transform[12];
-            computedStyle[StyleKey.TRANSLATE_Y] = transform[13];
-            computedStyle[StyleKey.ROTATE_Z] = rotateZ;
-            computedStyle[StyleKey.SCALE_X] = scaleX;
-            computedStyle[StyleKey.SCALE_Y] = scaleY;
+            computedStyle.translateX = transform[12];
+            computedStyle.translateY = transform[13];
+            computedStyle.rotateZ = rotateZ;
+            computedStyle.scaleX = scaleX;
+            computedStyle.scaleY = scaleY;
         }
         if (isE(transform)) {
             calRotateZ(transform, rotateZ);
@@ -17236,12 +17163,12 @@
                 multiplyScaleY(transform, scaleY);
             }
         }
-        if (style[StyleKey.TRANSFORM_ORIGIN]) {
-            const tfo = style[StyleKey.TRANSFORM_ORIGIN].map((item, i) => {
+        if (style.transformOrigin) {
+            const tfo = style.transformOrigin.map((item, i) => {
                 return calSize(item, i ? height : width);
             });
             if (computedStyle) {
-                computedStyle[StyleKey.TRANSFORM_ORIGIN] = tfo;
+                computedStyle.transformOrigin = tfo;
             }
             return calMatrixByOrigin(transform, tfo[0] + x, tfo[1] + y);
         }
@@ -17753,7 +17680,8 @@
             this.props = props;
             this.props.uuid = this.props.uuid || v4();
             this.style = normalize(getDefaultStyle(props.style));
-            this.computedStyle = []; // 输出展示的值
+            // @ts-ignore
+            this.computedStyle = {}; // 输出展示的值
             this.cacheStyle = []; // 缓存js直接使用的对象结果
             this.x = 0;
             this.y = 0;
@@ -17794,60 +17722,60 @@
                 h: data.h,
             };
             const { style, computedStyle } = this;
-            const { [StyleKey.LEFT]: left, [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, } = style;
+            const { left, top, right, bottom, width, height, } = style;
             let fixedLeft = false;
             let fixedTop = false;
             let fixedRight = false;
             let fixedBottom = false;
             if (left.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.LEFT] = 'auto';
+                computedStyle.left = 0;
             }
             else {
                 fixedLeft = true;
-                computedStyle[StyleKey.LEFT] = calSize(left, data.w);
+                computedStyle.left = calSize(left, data.w);
             }
             if (right.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.RIGHT] = 'auto';
+                computedStyle.right = 0;
             }
             else {
                 fixedRight = true;
-                computedStyle[StyleKey.RIGHT] = calSize(right, data.w);
+                computedStyle.right = calSize(right, data.w);
             }
             if (top.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.TOP] = 'auto';
+                computedStyle.top = 0;
             }
             else {
                 fixedTop = true;
-                computedStyle[StyleKey.TOP] = calSize(top, data.h);
+                computedStyle.top = calSize(top, data.h);
             }
             if (bottom.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.BOTTOM] = 'auto';
+                computedStyle.bottom = 0;
             }
             else {
                 fixedBottom = true;
-                computedStyle[StyleKey.BOTTOM] = calSize(bottom, data.h);
+                computedStyle.bottom = calSize(bottom, data.h);
             }
             if (width.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.WIDTH] = 'auto';
+                computedStyle.width = 0;
             }
             else {
-                computedStyle[StyleKey.WIDTH] = calSize(width, data.w);
+                computedStyle.width = calSize(width, data.w);
             }
             if (height.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.HEIGHT] = 'auto';
+                computedStyle.height = 0;
             }
             else {
-                computedStyle[StyleKey.HEIGHT] = calSize(height, data.h);
+                computedStyle.height = calSize(height, data.h);
             }
             // 左右决定x+width
             if (fixedLeft && fixedRight) {
-                this.x = data.x + computedStyle[StyleKey.LEFT];
-                this.width = data.w - computedStyle[StyleKey.LEFT] - computedStyle[StyleKey.RIGHT];
+                this.x = data.x + computedStyle.left;
+                this.width = data.w - computedStyle.left - computedStyle.right;
             }
             else if (fixedLeft) {
-                this.x = data.x + computedStyle[StyleKey.LEFT];
+                this.x = data.x + computedStyle.left;
                 if (width.u !== StyleUnit.AUTO) {
-                    this.width = computedStyle[StyleKey.WIDTH];
+                    this.width = computedStyle.width;
                 }
                 else {
                     this.width = 0;
@@ -17855,17 +17783,17 @@
             }
             else if (fixedRight) {
                 if (width.u !== StyleUnit.AUTO) {
-                    this.width = computedStyle[StyleKey.WIDTH];
+                    this.width = computedStyle.width;
                 }
                 else {
                     this.width = 0;
                 }
-                this.x = data.x + data.w - this.width - computedStyle[StyleKey.RIGHT];
+                this.x = data.x + data.w - this.width - computedStyle.right;
             }
             else {
                 this.x = data.x;
                 if (width.u !== StyleUnit.AUTO) {
-                    this.width = computedStyle[StyleKey.WIDTH];
+                    this.width = computedStyle.width;
                 }
                 else {
                     this.width = 0;
@@ -17873,13 +17801,13 @@
             }
             // 上下决定y+height
             if (fixedTop && fixedBottom) {
-                this.y = data.y + computedStyle[StyleKey.TOP];
-                this.height = data.h - computedStyle[StyleKey.TOP] - computedStyle[StyleKey.BOTTOM];
+                this.y = data.y + computedStyle.top;
+                this.height = data.h - computedStyle.top - computedStyle.bottom;
             }
             else if (fixedTop) {
-                this.y = data.y + computedStyle[StyleKey.TOP];
+                this.y = data.y + computedStyle.top;
                 if (height.u !== StyleUnit.AUTO) {
-                    this.height = computedStyle[StyleKey.HEIGHT];
+                    this.height = computedStyle.height;
                 }
                 else {
                     this.height = 0;
@@ -17887,17 +17815,17 @@
             }
             else if (fixedBottom) {
                 if (height.u !== StyleUnit.AUTO) {
-                    this.height = computedStyle[StyleKey.HEIGHT];
+                    this.height = computedStyle.height;
                 }
                 else {
                     this.height = 0;
                 }
-                this.y = data.y + data.h - this.height - computedStyle[StyleKey.BOTTOM];
+                this.y = data.y + data.h - this.height - computedStyle.bottom;
             }
             else {
                 this.y = data.y;
                 if (height.u !== StyleUnit.AUTO) {
-                    this.height = computedStyle[StyleKey.HEIGHT];
+                    this.height = computedStyle.height;
                 }
                 else {
                     this.height = 0;
@@ -17909,38 +17837,38 @@
         // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
         calReflowStyle() {
             const { style, computedStyle, parent } = this;
-            computedStyle[StyleKey.FONT_FAMILY] = style[StyleKey.FONT_FAMILY].v;
-            computedStyle[StyleKey.FONT_SIZE] = style[StyleKey.FONT_SIZE].v;
-            computedStyle[StyleKey.FONT_WEIGHT] = style[StyleKey.FONT_WEIGHT].v;
-            computedStyle[StyleKey.FONT_STYLE] = style[StyleKey.FONT_STYLE].v;
-            const lineHeight = style[StyleKey.LINE_HEIGHT];
+            computedStyle.fontFamily = style.fontFamily.v;
+            computedStyle.fontSize = style.fontSize.v;
+            computedStyle.fontWeight = style.fontWeight.v;
+            computedStyle.fontStyle = style.fontStyle.v;
+            const lineHeight = style.lineHeight;
             if (lineHeight.u === StyleUnit.AUTO) {
-                computedStyle[StyleKey.LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+                computedStyle.lineHeight = calNormalLineHeight(computedStyle);
             }
             else {
-                computedStyle[StyleKey.LINE_HEIGHT] = lineHeight.v;
+                computedStyle.lineHeight = lineHeight.v;
             }
             this.width = this.height = 0;
-            const width = style[StyleKey.WIDTH];
-            const height = style[StyleKey.HEIGHT];
+            const width = style.width;
+            const height = style.height;
             if (parent) {
                 if (width.u !== StyleUnit.AUTO) {
-                    this.width = computedStyle[StyleKey.WIDTH] = calSize(width, parent.width);
+                    this.width = computedStyle.width = calSize(width, parent.width);
                 }
                 if (height.u !== StyleUnit.AUTO) {
-                    this.height = computedStyle[StyleKey.HEIGHT] = calSize(height, parent.height);
+                    this.height = computedStyle.height = calSize(height, parent.height);
                 }
             }
         }
         calRepaintStyle() {
             const { style, computedStyle } = this;
-            computedStyle[StyleKey.VISIBLE] = style[StyleKey.VISIBLE].v;
-            computedStyle[StyleKey.OVERFLOW] = style[StyleKey.OVERFLOW].v;
-            computedStyle[StyleKey.COLOR] = style[StyleKey.COLOR].v;
-            computedStyle[StyleKey.BACKGROUND_COLOR] = color2rgbaStr(style[StyleKey.BACKGROUND_COLOR].v);
-            computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
-            computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
-            computedStyle[StyleKey.POINTER_EVENTS] = style[StyleKey.POINTER_EVENTS].v;
+            computedStyle.visible = style.visible.v;
+            computedStyle.overflow = style.overflow.v;
+            computedStyle.color = style.color.v;
+            computedStyle.backgroundColor = style.backgroundColor.v;
+            computedStyle.opacity = style.opacity.v;
+            computedStyle.mixBlendMode = style.mixBlendMode.v;
+            computedStyle.pointerEvents = style.pointerEvents.v;
             this.calMatrix(RefreshLevel.REFLOW);
         }
         calMatrix(lv) {
@@ -17948,45 +17876,45 @@
             let optimize = true;
             if (lv >= RefreshLevel.REFLOW
                 || lv & RefreshLevel.TRANSFORM
-                || (lv & RefreshLevel.SCALE_X) && !computedStyle[StyleKey.SCALE_X]
-                || (lv & RefreshLevel.SCALE_Y) && !computedStyle[StyleKey.SCALE_Y]) {
+                || (lv & RefreshLevel.SCALE_X) && !computedStyle.scaleX
+                || (lv & RefreshLevel.SCALE_Y) && !computedStyle.scaleY) {
                 optimize = false;
             }
             // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
             if (optimize) {
                 if (lv & RefreshLevel.TRANSLATE_X) {
-                    const v = calSize(style[StyleKey.TRANSLATE_X], this.width);
-                    const diff = v - computedStyle[StyleKey.TRANSLATE_X];
-                    computedStyle[StyleKey.TRANSLATE_X] = v;
+                    const v = calSize(style.translateX, this.width);
+                    const diff = v - computedStyle.translateX;
+                    computedStyle.translateX = v;
                     transform[12] += diff;
                     matrix[12] += diff;
                 }
                 if (lv & RefreshLevel.TRANSLATE_Y) {
-                    const v = calSize(style[StyleKey.TRANSLATE_Y], this.height);
-                    const diff = v - computedStyle[StyleKey.TRANSLATE_Y];
-                    computedStyle[StyleKey.TRANSLATE_Y] = v;
+                    const v = calSize(style.translateY, this.height);
+                    const diff = v - computedStyle.translateY;
+                    computedStyle.translateY = v;
                     transform[13] += diff;
                     matrix[13] += diff;
                 }
                 if (lv & RefreshLevel.ROTATE_Z) {
-                    const v = style[StyleKey.ROTATE_Z].v;
-                    computedStyle[StyleKey.ROTATE_Z] = v;
+                    const v = style.rotateZ.v;
+                    computedStyle.rotateZ = v;
                     const r = d2r(v);
                     const sin = Math.sin(r), cos = Math.cos(r);
-                    const x = computedStyle[StyleKey.SCALE_X], y = computedStyle[StyleKey.SCALE_Y];
+                    const x = computedStyle.scaleX, y = computedStyle.scaleY;
                     const cx = matrix[0] = cos * x;
                     const sx = matrix[1] = sin * x;
                     const sy = matrix[4] = -sin * y;
                     const cy = matrix[5] = cos * y;
-                    const t = computedStyle[StyleKey.TRANSFORM_ORIGIN], ox = t[0] + this.x, oy = t[1] + this.y;
+                    const t = computedStyle.transformOrigin, ox = t[0] + this.x, oy = t[1] + this.y;
                     matrix[12] = transform[12] + ox - cx * ox - oy * sy;
                     matrix[13] = transform[13] + oy - sx * ox - oy * cy;
                 }
                 if (lv & RefreshLevel.SCALE) {
                     if (lv & RefreshLevel.SCALE_X) {
-                        const v = style[StyleKey.SCALE_X].v;
-                        let x = v / computedStyle[StyleKey.SCALE_X];
-                        computedStyle[StyleKey.SCALE_X] = v;
+                        const v = style.scaleX.v;
+                        let x = v / computedStyle.scaleX;
+                        computedStyle.scaleX = v;
                         transform[0] *= x;
                         transform[1] *= x;
                         transform[2] *= x;
@@ -17995,9 +17923,9 @@
                         matrix[2] *= x;
                     }
                     if (lv & RefreshLevel.SCALE_Y) {
-                        const v = style[StyleKey.SCALE_Y].v;
-                        let y = v / computedStyle[StyleKey.SCALE_Y];
-                        computedStyle[StyleKey.SCALE_Y] = v;
+                        const v = style.scaleY.v;
+                        let y = v / computedStyle.scaleY;
+                        computedStyle.scaleY = v;
                         transform[4] *= y;
                         transform[5] *= y;
                         transform[6] *= y;
@@ -18005,7 +17933,7 @@
                         matrix[5] *= y;
                         matrix[6] *= y;
                     }
-                    const t = computedStyle[StyleKey.TRANSFORM_ORIGIN], ox = t[0] + this.x, oy = t[1] + this.y;
+                    const t = computedStyle.transformOrigin, ox = t[0] + this.x, oy = t[1] + this.y;
                     matrix[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
                     matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
                     matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
@@ -18074,18 +18002,19 @@
             return [temp];
         }
         updateStyle(style, cb) {
-            const visible = this.computedStyle[StyleKey.VISIBLE];
+            const visible = this.computedStyle.visible;
             let hasVisible = false;
             const keys = [];
             const style2 = normalize(style);
             for (let k in style2) {
                 if (style2.hasOwnProperty(k)) {
-                    const k2 = parseInt(k);
-                    const v = style2[k2];
-                    if (!equalStyle(k2, style2, this.style)) {
-                        this.style[k2] = v;
-                        keys.push(k2);
-                        if (k2 === StyleKey.VISIBLE) {
+                    // @ts-ignore
+                    const v = style2[k];
+                    if (!equalStyle(k, style2, this.style)) {
+                        // @ts-ignore
+                        this.style[k] = v;
+                        keys.push(k);
+                        if (k === 'visible') {
                             hasVisible = true;
                         }
                     }
@@ -18099,7 +18028,7 @@
             // 父级不可见无需刷新
             let parent = this.parent;
             while (parent) {
-                if (!parent.computedStyle[StyleKey.VISIBLE]) {
+                if (!parent.computedStyle.visible) {
                     cb && cb(true);
                     return;
                 }
@@ -18110,14 +18039,25 @@
         getComputedStyle() {
             const computedStyle = this.computedStyle;
             const res = {};
-            for (let k in StyleKeyHash) {
-                res[k] = computedStyle[StyleKeyHash[k]];
+            for (let k in computedStyle) {
+                if (k === 'color' || k === 'backgroundColor') {
+                    res[k] = color2rgbaStr(computedStyle[k]);
+                }
+                else {
+                    // @ts-ignore
+                    res[k] = computedStyle[k];
+                }
             }
             return res;
         }
-        getStyle(key) {
+        getStyle(k) {
             const computedStyle = this.computedStyle;
-            return computedStyle[StyleKeyHash[key]];
+            if (k === 'color' || k === 'backgroundColor') {
+                // @ts-ignore
+                return color2rgbaStr(computedStyle[k]);
+            }
+            // @ts-ignore
+            return computedStyle[k];
         }
         getBoundingClientRect() {
             const { bbox, matrixWorld } = this;
@@ -18147,11 +18087,11 @@
             // 非Root节点继续向上乘
             if (parent) {
                 const po = parent.opacity;
-                this._opacity = this.computedStyle[StyleKey.OPACITY] * po;
+                this._opacity = this.computedStyle.opacity * po;
             }
             // Root的世界透明度就是自己
             else {
-                this._opacity = this.computedStyle[StyleKey.OPACITY];
+                this._opacity = this.computedStyle.opacity;
             }
             return this._opacity;
         }
@@ -18438,7 +18378,7 @@
         }
         // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
         getNodeCheck(child, computedStyle, includeGroup, includeArtBoard) {
-            if (computedStyle[StyleKey.POINTER_EVENTS]
+            if (computedStyle.pointerEvents
                 && (includeGroup || !(child instanceof Container && child.isGroup))
                 && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
                 return child;
@@ -18716,7 +18656,7 @@
             gl.enableVertexAttribArray(a_position);
             // color
             let u_color = gl.getUniformLocation(colorProgram, 'u_color');
-            const color = color2gl(computedStyle[StyleKey.BACKGROUND_COLOR]);
+            const color = color2gl(computedStyle.backgroundColor);
             gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
             // 渲染并销毁
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -18899,7 +18839,7 @@
             }
             else {
                 loader.onlyImg = true;
-                const { [StyleKey.VISIBLE]: visible, } = computedStyle;
+                const { visible, } = computedStyle;
                 if (visible) {
                     if (loader.source) {
                         res = true;
@@ -18987,32 +18927,32 @@
             if (rect.minX !== 0 || rect.minY !== 0 || rect.maxX !== gw || rect.maxY !== gh) {
                 const { width: pw, height: ph } = parent;
                 // 先改自己的尺寸
-                const { [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.LEFT]: left, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, } = style;
+                const { top, right, bottom, left, width, height, } = style;
                 // 宽度自动，则左右必然有值
                 if (width.u === StyleUnit.AUTO) {
                     if (rect.minX !== 0) {
                         left.v = left.v + rect.minX * 100 / pw;
-                        computedStyle[StyleKey.LEFT] = calSize(left, pw);
+                        computedStyle.left = calSize(left, pw);
                     }
                     if (rect.maxX !== gw) {
                         right.v = right.v - (rect.maxX - gw) * 100 / pw;
-                        computedStyle[StyleKey.RIGHT] = calSize(right, pw);
+                        computedStyle.right = calSize(right, pw);
                     }
-                    this.x = parent.x + computedStyle[StyleKey.LEFT];
-                    this.width = parent.width - computedStyle[StyleKey.LEFT] - computedStyle[StyleKey.RIGHT];
+                    this.x = parent.x + computedStyle.left;
+                    this.width = parent.width - computedStyle.left - computedStyle.right;
                 }
                 // 高度自动，则上下必然有值
                 if (height.u === StyleUnit.AUTO) {
                     if (rect.minY !== 0) {
                         top.v = top.v + rect.minY * 100 / ph;
-                        computedStyle[StyleKey.TOP] = calSize(top, ph);
+                        computedStyle.top = calSize(top, ph);
                     }
                     if (rect.maxY !== gh) {
                         bottom.v = bottom.v - (rect.maxY - gh) * 100 / ph;
-                        computedStyle[StyleKey.BOTTOM] = calSize(bottom, ph);
+                        computedStyle.bottom = calSize(bottom, ph);
                     }
-                    this.y = parent.y + computedStyle[StyleKey.TOP];
-                    this.height = parent.height - computedStyle[StyleKey.TOP] - computedStyle[StyleKey.BOTTOM];
+                    this.y = parent.y + computedStyle.top;
+                    this.height = parent.height - computedStyle.top - computedStyle.bottom;
                 }
                 this._rect = undefined;
                 this._bbox = undefined;
@@ -19022,24 +18962,24 @@
                 for (let i = 0, len = children.length; i < len; i++) {
                     const child = children[i];
                     const { style, computedStyle } = child;
-                    const { [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.LEFT]: left, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, } = style;
+                    const { top, right, bottom, left, width, height, } = style;
                     // 宽度自动，则左右必然有值
                     if (width.u === StyleUnit.AUTO) {
                         // 注意判断条件，组的水平只要有x/width变更，child的水平都得全变
                         if (rect.minX !== 0 || rect.maxX !== gw) {
                             left.v = (child.x - gx2) * 100 / gw2;
-                            computedStyle[StyleKey.LEFT] = calSize(left, gw2);
+                            computedStyle.left = calSize(left, gw2);
                             right.v = (gw2 - child.x + gx2 - child.width) * 100 / gw2;
-                            computedStyle[StyleKey.RIGHT] = calSize(right, gw2);
+                            computedStyle.right = calSize(right, gw2);
                         }
                     }
                     // 高度自动，则上下必然有值
                     if (height.u === StyleUnit.AUTO) {
                         if (rect.minY !== 0 || rect.maxY !== gh) {
                             top.v = (child.y - gy2) * 100 / gh2;
-                            computedStyle[StyleKey.TOP] = calSize(top, gh2);
+                            computedStyle.top = calSize(top, gh2);
                             bottom.v = (gh2 - child.y + gy2 - child.height) * 100 / gh2;
-                            computedStyle[StyleKey.BOTTOM] = calSize(bottom, gh2);
+                            computedStyle.bottom = calSize(bottom, gh2);
                         }
                     }
                     child._rect = undefined;
@@ -19119,22 +19059,22 @@
                 return;
             }
             const { style, computedStyle, content } = this;
-            const autoW = style[StyleKey.WIDTH].u === StyleUnit.AUTO;
-            const autoH = style[StyleKey.HEIGHT].u === StyleUnit.AUTO;
+            const autoW = style.width.u === StyleUnit.AUTO;
+            const autoH = style.height.u === StyleUnit.AUTO;
             const ctx = inject.getFontCanvas().ctx;
             ctx.font = setFontStyle(computedStyle);
             if (autoW && autoH) {
-                this.width = computedStyle[StyleKey.WIDTH] = ctx.measureText(content).width;
-                this.height = computedStyle[StyleKey.HEIGHT] = computedStyle[StyleKey.LINE_HEIGHT];
+                this.width = computedStyle.width = ctx.measureText(content).width;
+                this.height = computedStyle.height = computedStyle.lineHeight;
             }
             else if (autoW) {
-                this.width = computedStyle[StyleKey.WIDTH] = ctx.measureText(content).width;
+                this.width = computedStyle.width = ctx.measureText(content).width;
             }
             else ;
         }
         calContent() {
             const { computedStyle, content } = this;
-            if (!computedStyle[StyleKey.VISIBLE]) {
+            if (!computedStyle.visible) {
                 return this.hasContent = false;
             }
             return this.hasContent = !!content;
@@ -19145,7 +19085,7 @@
             const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height, -this.x, -this.y);
             const ctx = canvasCache.offscreen.ctx;
             ctx.font = setFontStyle(computedStyle);
-            ctx.fillStyle = color2rgbaStr(computedStyle[StyleKey.COLOR]);
+            ctx.fillStyle = color2rgbaStr(computedStyle.color);
             ctx.fillText(this.content, 0, getBaseline(computedStyle));
         }
     }
@@ -19236,12 +19176,12 @@
         for (let i = 0, len = structs.length; i < len; i++) {
             const { node, total } = structs[i];
             const computedStyle = node.computedStyle;
-            if (!computedStyle[StyleKey.VISIBLE]) {
+            if (!computedStyle.visible) {
                 i += total;
                 continue;
             }
             // 继承父的opacity和matrix TODO 优化路径缓存
-            let opacity = computedStyle[StyleKey.OPACITY];
+            let opacity = computedStyle.opacity;
             let matrix = node.matrix;
             const parent = node.parent;
             if (parent) {
@@ -19598,8 +19538,8 @@ void main() {
         }
         checkRoot() {
             var _a;
-            this.width = this.computedStyle[StyleKey.WIDTH] = this.style[StyleKey.WIDTH].v;
-            this.height = this.computedStyle[StyleKey.HEIGHT] = this.style[StyleKey.HEIGHT].v;
+            this.width = this.computedStyle.width = this.style.width.v;
+            this.height = this.computedStyle.height = this.style.height.v;
             (_a = this.ctx) === null || _a === void 0 ? void 0 : _a.viewport(0, 0, this.width, this.height);
         }
         setJPages(jPages) {
@@ -19680,7 +19620,7 @@ void main() {
             if (addDom || removeDom) {
                 lv |= RefreshLevel.REFLOW;
             }
-            if (lv === RefreshLevel.NONE || !this.computedStyle[StyleKey.VISIBLE]) {
+            if (lv === RefreshLevel.NONE || !this.computedStyle.visible) {
                 return false;
             }
             const isRf = isReflow(lv);
@@ -19711,10 +19651,10 @@ void main() {
                         node.calMatrix(lv);
                     }
                     if (lv & RefreshLevel.OPACITY) {
-                        computedStyle[StyleKey.OPACITY] = style[StyleKey.OPACITY].v;
+                        computedStyle.opacity = style.opacity.v;
                     }
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
-                        computedStyle[StyleKey.MIX_BLEND_MODE] = style[StyleKey.MIX_BLEND_MODE].v;
+                        computedStyle.mixBlendMode = style.mixBlendMode.v;
                     }
                 }
             }
@@ -19819,7 +19759,7 @@ void main() {
             if (node.isDestroyed) {
                 return;
             }
-            const { [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.LEFT]: left, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, [StyleKey.TRANSLATE_X]: translateX, [StyleKey.TRANSLATE_Y]: translateY, } = node.style;
+            const { top, right, bottom, left, width, height, translateX, translateY, } = node.style;
             // 一定有parent，不会改root下的固定容器子节点
             const parent = node.parent;
             const newStyle = {};

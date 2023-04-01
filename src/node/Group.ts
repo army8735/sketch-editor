@@ -2,7 +2,7 @@ import Node from './Node';
 import Container from './Container';
 import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
-import { StyleKey, StyleUnit } from '../style/define';
+import { StyleUnit } from '../style/define';
 import { calSize } from '../style/css';
 
 class Group extends Container {
@@ -54,39 +54,39 @@ class Group extends Container {
       const { width: pw, height: ph } = parent;
       // 先改自己的尺寸
       const {
-        [StyleKey.TOP]: top,
-        [StyleKey.RIGHT]: right,
-        [StyleKey.BOTTOM]: bottom,
-        [StyleKey.LEFT]: left,
-        [StyleKey.WIDTH]: width,
-        [StyleKey.HEIGHT]: height,
+        top,
+        right,
+        bottom,
+        left,
+        width,
+        height,
       } = style;
       // 宽度自动，则左右必然有值
       if (width.u === StyleUnit.AUTO) {
         if (rect.minX !== 0) {
           left.v = (left.v as number) + rect.minX * 100 / pw;
-          computedStyle[StyleKey.LEFT] = calSize(left, pw);
+          computedStyle.left = calSize(left, pw);
         }
         if (rect.maxX !== gw) {
           right.v = (right.v as number) - (rect.maxX - gw) * 100 / pw;
-          computedStyle[StyleKey.RIGHT] = calSize(right, pw);
+          computedStyle.right = calSize(right, pw);
         }
-        this.x = parent.x + computedStyle[StyleKey.LEFT];
-        this.width = parent.width - computedStyle[StyleKey.LEFT] - computedStyle[StyleKey.RIGHT];
+        this.x = parent.x + computedStyle.left;
+        this.width = parent.width - computedStyle.left - computedStyle.right;
       }
       else {}
       // 高度自动，则上下必然有值
       if (height.u === StyleUnit.AUTO) {
         if (rect.minY !== 0) {
           top.v = (top.v as number) + rect.minY * 100 / ph;
-          computedStyle[StyleKey.TOP] = calSize(top, ph);
+          computedStyle.top = calSize(top, ph);
         }
         if (rect.maxY !== gh) {
           bottom.v = (bottom.v as number) - (rect.maxY - gh) * 100 / ph;
-          computedStyle[StyleKey.BOTTOM] = calSize(bottom, ph);
+          computedStyle.bottom = calSize(bottom, ph);
         }
-        this.y = parent.y + computedStyle[StyleKey.TOP];
-        this.height = parent.height - computedStyle[StyleKey.TOP] - computedStyle[StyleKey.BOTTOM];
+        this.y = parent.y + computedStyle.top;
+        this.height = parent.height - computedStyle.top - computedStyle.bottom;
       }
       else {}
       this._rect = undefined;
@@ -98,21 +98,21 @@ class Group extends Container {
         const child = children[i];
         const { style, computedStyle } = child;
         const {
-          [StyleKey.TOP]: top,
-          [StyleKey.RIGHT]: right,
-          [StyleKey.BOTTOM]: bottom,
-          [StyleKey.LEFT]: left,
-          [StyleKey.WIDTH]: width,
-          [StyleKey.HEIGHT]: height,
+          top,
+          right,
+          bottom,
+          left,
+          width,
+          height,
         } = style;
         // 宽度自动，则左右必然有值
         if (width.u === StyleUnit.AUTO) {
           // 注意判断条件，组的水平只要有x/width变更，child的水平都得全变
           if (rect.minX !== 0 || rect.maxX !== gw) {
             left.v = (child.x - gx2) * 100 / gw2;
-            computedStyle[StyleKey.LEFT] = calSize(left, gw2);
+            computedStyle.left = calSize(left, gw2);
             right.v = (gw2 - child.x + gx2 - child.width) * 100 / gw2;
-            computedStyle[StyleKey.RIGHT] = calSize(right, gw2);
+            computedStyle.right = calSize(right, gw2);
           }
         }
         else {}
@@ -120,9 +120,9 @@ class Group extends Container {
         if (height.u === StyleUnit.AUTO) {
           if (rect.minY !== 0 || rect.maxY !== gh) {
             top.v = (child.y - gy2) * 100 / gh2;
-            computedStyle[StyleKey.TOP] = calSize(top, gh2);
+            computedStyle.top = calSize(top, gh2);
             bottom.v = (gh2 - child.y + gy2 - child.height) * 100 / gh2;
-            computedStyle[StyleKey.BOTTOM] = calSize(bottom, gh2);
+            computedStyle.bottom = calSize(bottom, gh2);
           }
         }
         else {}

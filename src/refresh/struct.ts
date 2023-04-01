@@ -1,7 +1,6 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { RefreshLevel } from './level';
-import { StyleKey } from '../style/define';
 import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
@@ -58,12 +57,12 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
   for(let i = 0, len = structs.length; i < len; i++) {
     const { node, total } = structs[i];
     const computedStyle = node.computedStyle;
-    if (!computedStyle[StyleKey.VISIBLE]) {
+    if (!computedStyle.visible) {
       i += total;
       continue;
     }
     // 继承父的opacity和matrix TODO 优化路径缓存
-    let opacity = computedStyle[StyleKey.OPACITY];
+    let opacity = computedStyle.opacity;
     let matrix = node.matrix;
     const parent = node.parent;
     if (parent) {

@@ -1,7 +1,6 @@
 import Node from './Node';
 import { ArtBoardProps, Props } from '../format';
 import Container from './Container';
-import { StyleKey } from '../style/define';
 import { calRectPoint } from '../math/matrix';
 import { convertCoords2Gl } from '../gl/webgl';
 import { color2gl } from '../style/css';
@@ -291,7 +290,7 @@ class ArtBoard extends Container {
     gl.enableVertexAttribArray(a_position);
     // color
     let u_color = gl.getUniformLocation(colorProgram, 'u_color');
-    const color = color2gl(computedStyle[StyleKey.BACKGROUND_COLOR]);
+    const color = color2gl(computedStyle.backgroundColor);
     gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
     // 渲染并销毁
     gl.drawArrays(gl.TRIANGLES, 0, 6);

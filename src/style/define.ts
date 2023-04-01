@@ -1,70 +1,3 @@
-export enum StyleKey {
-  TOP = 0,
-  RIGHT = 1,
-  BOTTOM = 2,
-  LEFT = 3,
-  WIDTH = 4,
-  HEIGHT = 5,
-  LINE_HEIGHT = 6,
-  FONT_FAMILY = 7,
-  FONT_SIZE = 8,
-  FONT_WEIGHT = 9,
-  FONT_STYLE = 10,
-  VISIBLE = 11,
-  OVERFLOW = 12,
-  BACKGROUND_COLOR = 13,
-  COLOR = 14,
-  OPACITY = 15,
-  TRANSLATE_X = 16,
-  TRANSLATE_Y = 17,
-  SCALE_X = 18,
-  SCALE_Y = 19,
-  ROTATE_Z = 20,
-  TRANSFORM_ORIGIN = 21,
-  MIX_BLEND_MODE = 22,
-  POINTER_EVENTS = 23,
-  // FILTER = 14,
-  // FILL = 15,
-  // STROKE = 16,
-  // STROKE_WIDTH = 17,
-  // STROKE_DASHARRAY = 18,
-  // STROKE_DASHARRAY_STR = 19,
-  // STROKE_LINECAP = 20,
-  // STROKE_LINEJOIN = 21,
-  // STROKE_MITERLIMIT = 22,
-  // FILL_RULE = 23,
-}
-
-const STYLE2LOWER_MAP: any = {};
-export function styleKey2Lower(s: string) {
-  let res = STYLE2LOWER_MAP[s];
-  if(!res) {
-    res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
-      return $1.toUpperCase();
-    });
-  }
-  return res;
-}
-
-const STYLE2UPPER_MAP: any = {};
-export function styleKey2Upper(s: string) {
-  let res = STYLE2UPPER_MAP[s];
-  if(!res) {
-    res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
-      return $1 + '_' + $2;
-    }).toUpperCase();
-  }
-  return res;
-}
-
-export const StyleKeyHash: any = {};
-
-for (let i in StyleKey) {
-  if (!/^\d+$/.test(i)) {
-    StyleKeyHash[styleKey2Lower(i)] = StyleKey[i];
-  }
-}
-
 export enum StyleUnit {
   AUTO = 0,
   PX = 1,
@@ -133,32 +66,71 @@ export type StyleColorValue = StyleValue & {
   v: Array<number>,
 };
 
-export type StyleArray = [
-  StyleNumStrValue,
-  StyleNumStrValue,
-  StyleNumStrValue,
-  StyleNumStrValue,
-  StyleNumStrValue,
-  StyleNumStrValue,
-  StyleNumValue,
-  StyleStrValue,
-  StyleNumValue,
-  StyleNumValue,
-  StyleStrValue,
-  StyleBoolValue,
-  StyleStrValue,
-  StyleColorValue,
-  StyleColorValue,
-  StyleNumValue,
-  StyleNumStrValue,
-  StyleNumStrValue,
-  StyleNumValue,
-  StyleNumValue,
-  StyleNumValue,
-  [StyleNumStrValue, StyleNumStrValue],
-  StyleStrValue,
-  StyleBoolValue,
-];
+export type StyleFontStyleValue = StyleValue & {
+  v: FONT_STYLE,
+};
+
+export type StyleOverflowValue = StyleValue & {
+  v: OVERFLOW,
+};
+
+export type StyleMbmValue = StyleValue & {
+  v: MIX_BLEND_MODE,
+};
+
+export type Style = {
+  top: StyleNumStrValue,
+  right: StyleNumStrValue,
+  bottom: StyleNumStrValue,
+  left: StyleNumStrValue,
+  width: StyleNumStrValue,
+  height: StyleNumStrValue,
+  lineHeight: StyleNumStrValue,
+  fontFamily: StyleStrValue,
+  fontSize: StyleNumValue,
+  fontWeight: StyleNumValue,
+  fontStyle: StyleFontStyleValue,
+  visible: StyleBoolValue,
+  overflow: StyleOverflowValue,
+  backgroundColor: StyleColorValue,
+  color: StyleColorValue,
+  opacity: StyleNumValue,
+  translateX: StyleNumStrValue,
+  translateY: StyleNumStrValue,
+  scaleX: StyleNumValue,
+  scaleY: StyleNumValue,
+  rotateZ: StyleNumValue,
+  transformOrigin: [StyleNumStrValue, StyleNumStrValue],
+  mixBlendMode: StyleMbmValue,
+  pointerEvents: StyleBoolValue,
+};
+
+export type ComputedStyle = {
+  top: number,
+  right: number,
+  bottom: number,
+  left: number,
+  width: number,
+  height: number,
+  lineHeight: number,
+  fontFamily: string,
+  fontSize: number,
+  fontWeight: number,
+  fontStyle: FONT_STYLE,
+  visible: boolean,
+  overflow: OVERFLOW,
+  backgroundColor: Array<number>,
+  color: Array<number>,
+  opacity: number,
+  translateX: number,
+  translateY: number,
+  scaleX: number,
+  scaleY: number,
+  rotateZ: number,
+  transformOrigin: [number, number],
+  mixBlendMode: MIX_BLEND_MODE,
+  pointerEvents: boolean,
+};
 
 export enum MIX_BLEND_MODE {
   NORMAL = 0,
@@ -197,7 +169,6 @@ export enum MASK_TYPE {
 }
 
 export default {
-  StyleKey,
   StyleUnit,
   calUnit,
 };

@@ -5,7 +5,7 @@ import inject from '../util/inject';
 import { Struct } from '../refresh/struct';
 import { LayoutData } from './layout';
 import { pointInRect } from '../math/geom';
-import { StyleKey } from '../style/define';
+import { ComputedStyle } from '../style/define';
 
 class Container extends Node {
   children: Array<Node>;
@@ -256,8 +256,8 @@ class Container extends Node {
   }
 
   // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
-  private getNodeCheck(child: Node, computedStyle: Array<any>, includeGroup: boolean, includeArtBoard: boolean): Node | undefined {
-    if (computedStyle[StyleKey.POINTER_EVENTS]
+  private getNodeCheck(child: Node, computedStyle: ComputedStyle, includeGroup: boolean, includeArtBoard: boolean): Node | undefined {
+    if (computedStyle.pointerEvents
       && (includeGroup || !(child instanceof Container && child.isGroup))
       && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
       return child;

@@ -3,31 +3,22 @@ import {
   calUnit,
   FONT_STYLE,
   MIX_BLEND_MODE,
-  StyleArray,
-  StyleKey,
-  styleKey2Upper, StyleNumStrValue,
+  StyleNumStrValue,
   StyleNumValue,
   StyleUnit,
   StyleValue,
+  Style,
+  ComputedStyle,
 } from './define';
 import { isNil } from '../util/type';
 import inject from '../util/inject';
 import font from './font';
 
-const TRANSFORM_HASH: any = {
-  translateX: StyleKey.TRANSLATE_X,
-  translateY: StyleKey.TRANSLATE_Y,
-  scaleX: StyleKey.SCALE_X,
-  scaleY: StyleKey.SCALE_Y,
-  rotateZ: StyleKey.ROTATE_Z,
-  rotate: StyleKey.ROTATE_Z,
-};
-
-function compatibleTransform(k: StyleKey, v: StyleValue) {
-  if (k === StyleKey.SCALE_X || k === StyleKey.SCALE_Y) {
+function compatibleTransform(k: string, v: StyleValue) {
+  if (k === 'scaleX' || k === 'scaleY') {
     v.u = StyleUnit.NUMBER;
   }
-  else if (k === StyleKey.TRANSLATE_X || k === StyleKey.TRANSLATE_Y) {
+  else if (k === 'translateX' || k === 'translateY') {
     if (v.u === StyleUnit.NUMBER) {
       v.u = StyleUnit.PX;
     }
@@ -39,7 +30,7 @@ function compatibleTransform(k: StyleKey, v: StyleValue) {
   }
 }
 
-export function normalize(style: JStyle): StyleArray {
+export function normalize(style: JStyle): Style {
   const res: any = {};
   [
     'left',
@@ -64,13 +55,12 @@ export function normalize(style: JStyle): StyleArray {
         n.v = 0;
       }
     }
-    const k2 = StyleKey[styleKey2Upper(k)];
-    res[k2] = n;
+    res[k] = n;
   });
   const lineHeight = style.lineHeight;
   if (!isNil(lineHeight)) {
     if (lineHeight === 'normal') {
-      res[StyleKey.LINE_HEIGHT] = {
+      res.lineHeight = {
         v: 0,
         u: StyleUnit.AUTO,
       };
@@ -86,19 +76,19 @@ export function normalize(style: JStyle): StyleArray {
       else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
         n.u = StyleUnit.PX;
       }
-      res[StyleKey.LINE_HEIGHT] = n;
+      res.lineHeight = n;
     }
   }
   const visible = style.visible;
   if (!isNil(visible)) {
-    res[StyleKey.VISIBLE] = {
+    res.visible = {
       v: visible,
       u: StyleUnit.BOOLEAN,
     };
   }
   const fontFamily = style.fontFamily;
   if (!isNil(fontFamily)) {
-    res[StyleKey.FONT_FAMILY] = {
+    res.fontFamily = {
       v: fontFamily.toString().trim().toLowerCase()
         .replace(/['"]/g, '')
         .replace(/\s*,\s*/g, ','),
@@ -116,24 +106,24 @@ export function normalize(style: JStyle): StyleArray {
     if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
       n.u = StyleUnit.PX;
     }
-    res[StyleKey.FONT_SIZE] = n;
+    res.fontSize = n;
   }
   const fontWeight = style.fontWeight;
   if (!isNil(fontWeight)) {
     if (/normal/i.test(fontWeight as string)) {
-      res[StyleKey.FONT_WEIGHT] = { v: 400, u: StyleUnit.NUMBER };
+      res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
     }
     else if (/bold/i.test(fontWeight as string)) {
-      res[StyleKey.FONT_WEIGHT] = { v: 700, u: StyleUnit.NUMBER };
+      res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
     }
     else if (/bolder/i.test(fontWeight as string)) {
-      res[StyleKey.FONT_WEIGHT] = { v: 900, u: StyleUnit.NUMBER };
+      res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
     }
     else if (/lighter/i.test(fontWeight as string)) {
-      res[StyleKey.FONT_WEIGHT] = { v: 300, u: StyleUnit.NUMBER };
+      res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
     }
     else {
-      res[StyleKey.FONT_WEIGHT] = {
+      res.fontWeight = {
         v: Math.min(900, Math.max(100, parseInt(fontWeight as string) || 400)),
         u: StyleUnit.NUMBER,
       };
@@ -148,23 +138,23 @@ export function normalize(style: JStyle): StyleArray {
     else if (/oblique/i.test(fontStyle)) {
       v = FONT_STYLE.OBLIQUE;
     }
-    res[StyleKey.FONT_STYLE] = { v, u: StyleUnit.NUMBER };
+    res.fontStyle = { v, u: StyleUnit.NUMBER };
   }
   const color = style.color;
   if (!isNil(color)) {
-    res[StyleKey.COLOR] = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
+    res.color = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
   }
   const backgroundColor = style.backgroundColor;
   if (!isNil(backgroundColor)) {
-    res[StyleKey.BACKGROUND_COLOR] = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+    res.backgroundColor = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
   }
   const overflow = style.overflow;
   if (!isNil(overflow)) {
-    res[StyleKey.OVERFLOW] = { v: overflow, u: StyleUnit.STRING };
+    res.overflow = { v: overflow, u: StyleUnit.STRING };
   }
   const opacity = style.opacity;
   if (!isNil(opacity)) {
-    res[StyleKey.OPACITY] = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
+    res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
   }
   [
     'translateX',
@@ -177,11 +167,10 @@ export function normalize(style: JStyle): StyleArray {
     if (isNil(v)) {
       return;
     }
-    const k2 = TRANSFORM_HASH[k];
     const n = calUnit(v as string | number);
     // 没有单位或默认值处理单位
-    compatibleTransform(k2, n);
-    res[k2] = n;
+    compatibleTransform(k, n);
+    res[k] = n;
   });
   const transformOrigin = style.transformOrigin;
   if (!isNil(transformOrigin)) {
@@ -222,7 +211,7 @@ export function normalize(style: JStyle): StyleArray {
         }
       }
     }
-    res[StyleKey.TRANSFORM_ORIGIN] = arr;
+    res.transformOrigin = arr;
   }
   const mixBlendMode = style.mixBlendMode;
   if (!isNil(mixBlendMode)) {
@@ -272,26 +261,27 @@ export function normalize(style: JStyle): StyleArray {
     else if (/luminosity/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.LUMINOSITY;
     }
-    res[StyleKey.MIX_BLEND_MODE] = { v, u: StyleUnit.NUMBER };
+    res.mixBlendMode = { v, u: StyleUnit.NUMBER };
   }
   const pointerEvents = style.pointerEvents;
   if (!isNil(pointerEvents)) {
-    res[StyleKey.POINTER_EVENTS] = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+    res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
   }
   return res;
 }
 
-export function equalStyle(k: StyleKey, a: StyleArray, b: StyleArray) {
-  if (k === StyleKey.TRANSFORM_ORIGIN) {
+export function equalStyle(k: string, a: Style, b: Style) {
+  if (k === 'transformOrigin') {
     return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
       && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
   }
-  if (k === StyleKey.COLOR) {
+  if (k === 'color' || k === 'backgroundColor') {
     return a[k].v[0] === b[k].v[0]
       && a[k].v[1] === b[k].v[1]
       && a[k].v[2] === b[k].v[2]
       && a[k].v[3] === b[k].v[3];
   }
+  // @ts-ignore
   return a[k].v === b[k].v && a[k].u === b[k].u;
 }
 
@@ -374,13 +364,13 @@ export function color2gl(color: string | Array<number>): Array<number> {
   ];
 }
 
-export function setFontStyle(style: Array<any>) {
-  let fontSize = style[StyleKey.FONT_SIZE] || 0;
-  let fontFamily = style[StyleKey.FONT_FAMILY] || inject.defaultFontFamily || 'arial';
+export function setFontStyle(style: ComputedStyle) {
+  let fontSize = style.fontSize || 0;
+  let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
   if(/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
-  return (style[StyleKey.FONT_STYLE] || 'normal') + ' ' + (style[StyleKey.FONT_WEIGHT] || '400') + ' '
+  return (style.fontStyle || 'normal') + ' ' + (style.fontWeight || '400') + ' '
     + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
 }
 
@@ -395,11 +385,11 @@ export function calFontFamily(fontFamily: string) {
   return inject.defaultFontFamily;
 }
 
-export function calNormalLineHeight(style: Array<any>, ff?: string) {
+export function calNormalLineHeight(style: ComputedStyle, ff?: string) {
   if(!ff) {
-    ff = calFontFamily(style[StyleKey.FONT_FAMILY]);
+    ff = calFontFamily(style.fontFamily);
   }
-  return style[StyleKey.FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+  return style.fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
 }
 
 /**
@@ -408,11 +398,11 @@ export function calNormalLineHeight(style: Array<any>, ff?: string) {
  * @param style computedStyle
  * @returns {number}
  */
-export function getBaseline(style: Array<any>) {
-  let fontSize = style[StyleKey.FONT_SIZE];
-  let ff = calFontFamily(style[StyleKey.FONT_FAMILY]);
+export function getBaseline(style: ComputedStyle) {
+  let fontSize = style.fontSize;
+  let ff = calFontFamily(style.fontFamily);
   let normal = calNormalLineHeight(style, ff);
-  return (style[StyleKey.LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
+  return (style.lineHeight - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
 export function calSize(v: StyleNumStrValue, p: number): number {

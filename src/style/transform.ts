@@ -8,7 +8,7 @@ import {
   multiplyTfo,
   tfoMultiply
 } from '../math/matrix';
-import { StyleArray, StyleKey } from './define';
+import { ComputedStyle, Style } from './define';
 import { calSize, normalize } from './css';
 
 export function calRotateZ(t: Float64Array, v: number) {
@@ -32,19 +32,19 @@ export function calMatrixByOrigin(m: Float64Array, ox: number, oy: number) {
   return res;
 }
 
-export function calStyleMatrix(style: StyleArray, x = 0, y = 0, width = 0, height = 0, computedStyle?: Array<any>) {
+export function calStyleMatrix(style: Style, x = 0, y = 0, width = 0, height = 0, computedStyle?: ComputedStyle) {
   const transform = identity();
-  transform[12] = style[StyleKey.TRANSLATE_X] ? calSize(style[StyleKey.TRANSLATE_X], width) : 0;
-  transform[13] = style[StyleKey.TRANSLATE_Y] ? calSize(style[StyleKey.TRANSLATE_Y], height) : 0;
-  const rotateZ = style[StyleKey.ROTATE_Z] ? (style[StyleKey.ROTATE_Z].v as number) : 0;
-  const scaleX = style[StyleKey.SCALE_X] ? (style[StyleKey.SCALE_X].v as number) : 1;
-  const scaleY = style[StyleKey.SCALE_Y] ? (style[StyleKey.SCALE_Y].v as number) : 1;
+  transform[12] = style.translateX ? calSize(style.translateX, width) : 0;
+  transform[13] = style.translateY ? calSize(style.translateY, height) : 0;
+  const rotateZ = style.rotateZ ? (style.rotateZ.v as number) : 0;
+  const scaleX = style.scaleX ? (style.scaleX.v as number) : 1;
+  const scaleY = style.scaleY ? (style.scaleY.v as number) : 1;
   if (computedStyle) {
-    computedStyle[StyleKey.TRANSLATE_X] = transform[12];
-    computedStyle[StyleKey.TRANSLATE_Y] = transform[13];
-    computedStyle[StyleKey.ROTATE_Z] = rotateZ;
-    computedStyle[StyleKey.SCALE_X] = scaleX;
-    computedStyle[StyleKey.SCALE_Y] = scaleY;
+    computedStyle.translateX = transform[12];
+    computedStyle.translateY = transform[13];
+    computedStyle.rotateZ = rotateZ;
+    computedStyle.scaleX = scaleX;
+    computedStyle.scaleY = scaleY;
   }
   if (isE(transform)) {
     calRotateZ(transform, rotateZ);
@@ -68,19 +68,19 @@ export function calStyleMatrix(style: StyleArray, x = 0, y = 0, width = 0, heigh
       multiplyScaleY(transform, scaleY);
     }
   }
-  if (style[StyleKey.TRANSFORM_ORIGIN]) {
-    const tfo = style[StyleKey.TRANSFORM_ORIGIN].map((item, i) => {
+  if (style.transformOrigin) {
+    const tfo = style.transformOrigin.map((item, i) => {
       return calSize(item, i ? height : width);
     });
     if (computedStyle) {
-      computedStyle[StyleKey.TRANSFORM_ORIGIN] = tfo;
+      computedStyle.transformOrigin = tfo as [number, number];
     }
     return calMatrixByOrigin(transform, tfo[0] + x, tfo[1] + y);
   }
   return transform;
 }
 
-export function calMatrix(style: any, x = 0, y = 0, width = 0, height = 0, computedStyle?: Array<any>) {
+export function calMatrix(style: any, x = 0, y = 0, width = 0, height = 0, computedStyle?: ComputedStyle) {
   return calStyleMatrix(normalize(style), x, y, width, height, computedStyle);
 }
 

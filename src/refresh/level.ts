@@ -1,5 +1,3 @@
-import { StyleKey } from '../style/define';
-
 export enum RefreshLevel {
   NONE =             0b00000000000000,
   CACHE =            0b00000000000001,
@@ -30,37 +28,37 @@ export function isRepaint(lv: number): boolean {
   return lv < RefreshLevel.REFLOW;
 }
 
-export function isRepaintKey(k: StyleKey): boolean {
-  return k === StyleKey.VISIBLE || k === StyleKey.COLOR || k === StyleKey.BACKGROUND_COLOR
-    || k === StyleKey.MIX_BLEND_MODE;
+export function isRepaintKey(k: string): boolean {
+  return k === 'visible' || k === 'color' || k === 'backgroundColor'
+    || k === 'mixBlendMode';
 }
 
-export function getLevel(k: StyleKey): RefreshLevel {
-  if (k === StyleKey.POINTER_EVENTS) {
+export function getLevel(k: string): RefreshLevel {
+  if (k === 'pointerEvents') {
     return RefreshLevel.NONE;
   }
-  if (k === StyleKey.TRANSLATE_X) {
+  if (k === 'translateX') {
     return RefreshLevel.TRANSLATE_X;
   }
-  if (k === StyleKey.TRANSLATE_Y) {
+  if (k === 'translateY') {
     return RefreshLevel.TRANSLATE_Y;
   }
-  if (k === StyleKey.ROTATE_Z) {
+  if (k === 'rotateZ') {
     return RefreshLevel.ROTATE_Z;
   }
-  if (k === StyleKey.SCALE_X) {
+  if (k === 'scaleX') {
     return RefreshLevel.SCALE_X;
   }
-  if (k === StyleKey.SCALE_Y) {
+  if (k === 'scaleY') {
     return RefreshLevel.SCALE_Y;
   }
-  if (k === StyleKey.TRANSFORM_ORIGIN) {
+  if (k === 'transformOrigin') {
     return RefreshLevel.TRANSFORM;
   }
-  if (k === StyleKey.OPACITY) {
+  if (k === 'opacity') {
     return RefreshLevel.OPACITY;
   }
-  if (k === StyleKey.MIX_BLEND_MODE) {
+  if (k === 'mixBlendMode') {
     return RefreshLevel.MIX_BLEND_MODE;
   }
   if (isRepaintKey(k)) {
