@@ -369,10 +369,11 @@ class Root extends Container implements FrameCallback {
     const newStyle: any = {};
     // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
     if (width.u === StyleUnit.AUTO) {
-      if (translateX.v !== 0) {
+      const x = translateX.v;
+      if (x !== 0) {
         newStyle.translateX = 0;
-        newStyle.left = (left.v as number) + (translateX.v as number) * 100 / parent.width + '%';
-        newStyle.right = (right.v as number) - (translateX.v as number) * 100 / parent.width + '%';
+        newStyle.left = (left.v as number) + (x as number) * 100 / parent.width + '%';
+        newStyle.right = (right.v as number) - (x as number) * 100 / parent.width + '%';
       }
     }
     // 固定宽度
@@ -386,8 +387,7 @@ class Root extends Container implements FrameCallback {
       }
     }
     else {}
-    console.warn(newStyle);
-    node.updateStyle(newStyle);
+    node.updateStyle(newStyle); // TODO 只是改数据不重新计算布局，是否有必要保留left/right而不是仅考虑translate
   }
 }
 

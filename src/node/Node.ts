@@ -76,63 +76,6 @@ class Node extends Event {
     this.root = this.parent!.root;
   }
 
-  // calTRBLWHStyle(data: LayoutData) {
-  //   const { style, computedStyle } = this;
-  //   const {
-  //     [StyleKey.LEFT]: left,
-  //     [StyleKey.TOP]: top,
-  //     [StyleKey.RIGHT]: right,
-  //     [StyleKey.BOTTOM]: bottom,
-  //     [StyleKey.WIDTH]: width,
-  //     [StyleKey.HEIGHT]: height,
-  //   } = style;
-  //   let fixedLeft = false;
-  //   let fixedTop = false;
-  //   let fixedRight = false;
-  //   let fixedBottom = false;
-  //   if (left.u === StyleUnit.AUTO) {
-  //     computedStyle[StyleKey.LEFT] = 'auto';
-  //   }
-  //   else {
-  //     fixedLeft = true;
-  //     computedStyle[StyleKey.LEFT] = calSize(left, data.w);
-  //   }
-  //   if (right.u === StyleUnit.AUTO) {
-  //     computedStyle[StyleKey.RIGHT] = 'auto';
-  //   }
-  //   else {
-  //     fixedRight = true;
-  //     computedStyle[StyleKey.RIGHT] = calSize(right, data.w);
-  //   }
-  //   if (top.u === StyleUnit.AUTO) {
-  //     computedStyle[StyleKey.TOP] = 'auto';
-  //   }
-  //   else {
-  //     fixedTop = true;
-  //     computedStyle[StyleKey.TOP] = calSize(top, data.h);
-  //   }
-  //   if (bottom.u === StyleUnit.AUTO) {
-  //     computedStyle[StyleKey.BOTTOM] = 'auto';
-  //   }
-  //   else {
-  //     fixedBottom = true;
-  //     computedStyle[StyleKey.BOTTOM] = calSize(bottom, data.h);
-  //   }
-  //   if (width.u === StyleUnit.AUTO) {
-  //     computedStyle[StyleKey.WIDTH] = 'auto';
-  //   }
-  //   else {
-  //     computedStyle[StyleKey.WIDTH] = calSize(width, data.w);
-  //   }
-  //   if (height.u === StyleUnit.AUTO) {
-  //     computedStyle[StyleKey.HEIGHT] = 'auto';
-  //   }
-  //   else {
-  //     computedStyle[StyleKey.HEIGHT] = calSize(height, data.h);
-  //   }
-  //   return { fixedLeft, fixedRight, fixedTop, fixedBottom };
-  // }
-
   layout(data: LayoutData) {
     if (this.isDestroyed) {
       return;

@@ -17706,62 +17706,6 @@
             this.isDestroyed = false;
             this.root = this.parent.root;
         }
-        // calTRBLWHStyle(data: LayoutData) {
-        //   const { style, computedStyle } = this;
-        //   const {
-        //     [StyleKey.LEFT]: left,
-        //     [StyleKey.TOP]: top,
-        //     [StyleKey.RIGHT]: right,
-        //     [StyleKey.BOTTOM]: bottom,
-        //     [StyleKey.WIDTH]: width,
-        //     [StyleKey.HEIGHT]: height,
-        //   } = style;
-        //   let fixedLeft = false;
-        //   let fixedTop = false;
-        //   let fixedRight = false;
-        //   let fixedBottom = false;
-        //   if (left.u === StyleUnit.AUTO) {
-        //     computedStyle[StyleKey.LEFT] = 'auto';
-        //   }
-        //   else {
-        //     fixedLeft = true;
-        //     computedStyle[StyleKey.LEFT] = calSize(left, data.w);
-        //   }
-        //   if (right.u === StyleUnit.AUTO) {
-        //     computedStyle[StyleKey.RIGHT] = 'auto';
-        //   }
-        //   else {
-        //     fixedRight = true;
-        //     computedStyle[StyleKey.RIGHT] = calSize(right, data.w);
-        //   }
-        //   if (top.u === StyleUnit.AUTO) {
-        //     computedStyle[StyleKey.TOP] = 'auto';
-        //   }
-        //   else {
-        //     fixedTop = true;
-        //     computedStyle[StyleKey.TOP] = calSize(top, data.h);
-        //   }
-        //   if (bottom.u === StyleUnit.AUTO) {
-        //     computedStyle[StyleKey.BOTTOM] = 'auto';
-        //   }
-        //   else {
-        //     fixedBottom = true;
-        //     computedStyle[StyleKey.BOTTOM] = calSize(bottom, data.h);
-        //   }
-        //   if (width.u === StyleUnit.AUTO) {
-        //     computedStyle[StyleKey.WIDTH] = 'auto';
-        //   }
-        //   else {
-        //     computedStyle[StyleKey.WIDTH] = calSize(width, data.w);
-        //   }
-        //   if (height.u === StyleUnit.AUTO) {
-        //     computedStyle[StyleKey.HEIGHT] = 'auto';
-        //   }
-        //   else {
-        //     computedStyle[StyleKey.HEIGHT] = calSize(height, data.h);
-        //   }
-        //   return { fixedLeft, fixedRight, fixedTop, fixedBottom };
-        // }
         layout(data) {
             if (this.isDestroyed) {
                 return;
@@ -18890,19 +18834,19 @@
             if (!parent) {
                 return;
             }
+            const { x: gx, y: gy, width: gw, height: gh } = this;
             let rect = {};
             // 先循环一遍收集孩子数据，得到当前所有孩子所占位置尺寸的信息集合，坐标是相对于父元素（本组）修正前的
             for (let i = 0, len = children.length; i < len; i++) {
                 const child = children[i];
                 const { x, y, width, height, matrix } = child;
                 const r = new Float64Array(4);
-                r[0] = x - this.x;
-                r[1] = y - this.y;
+                r[0] = x - gx;
+                r[1] = y - gy;
                 r[2] = r[0] + width;
                 r[3] = r[1] + height;
                 const c = calRectPoint(r[0], r[1], r[2], r[3], matrix);
                 const { x1, y1, x2, y2, x3, y3, x4, y4, } = c;
-                console.log(i, x1, y1, x2, y2, x3, y3);
                 if (i) {
                     rect.minX = Math.min(rect.minX, x1, x2, x3, x4);
                     rect.minY = Math.min(rect.minY, y1, y2, y3, y4);
@@ -18916,11 +18860,9 @@
                     rect.maxY = Math.max(y1, y2, y3, y4);
                 }
             }
-            let { x, y, width: w, height: h } = this;
-            console.log(rect, w, h);
-            const { width: pw, height: ph } = parent;
             // 检查真正有变化，位置相对于自己原本位置为原点
-            if (rect.minX !== 0 || rect.minY !== 0 || rect.maxX !== w || rect.maxY !== h) {
+            if (rect.minX !== 0 || rect.minY !== 0 || rect.maxX !== gw || rect.maxY !== gh) {
+                const { width: pw, height: ph } = parent;
                 // 先改自己的尺寸
                 const { [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.LEFT]: left, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, } = style;
                 // 宽度自动，则左右必然有值
@@ -18929,12 +18871,12 @@
                         left.v = left.v + rect.minX * 100 / pw;
                         computedStyle[StyleKey.LEFT] = calSize(left, pw);
                     }
-                    if (rect.maxX !== w) {
-                        right.v = right.v - (rect.maxX - w) * 100 / pw;
+                    if (rect.maxX !== gw) {
+                        right.v = right.v - (rect.maxX - gw) * 100 / pw;
                         computedStyle[StyleKey.RIGHT] = calSize(right, pw);
                     }
-                    this.x = x = parent.x + computedStyle[StyleKey.LEFT];
-                    this.width = w = parent.width - computedStyle[StyleKey.LEFT] - computedStyle[StyleKey.RIGHT];
+                    this.x = parent.x + computedStyle[StyleKey.LEFT];
+                    this.width = parent.width - computedStyle[StyleKey.LEFT] - computedStyle[StyleKey.RIGHT];
                 }
                 // 高度自动，则上下必然有值
                 if (height.u === StyleUnit.AUTO) {
@@ -18942,15 +18884,17 @@
                         top.v = top.v + rect.minY * 100 / ph;
                         computedStyle[StyleKey.TOP] = calSize(top, ph);
                     }
-                    if (rect.maxY !== h) {
-                        bottom.v = bottom.v - (rect.maxY - h) * 100 / ph;
+                    if (rect.maxY !== gh) {
+                        bottom.v = bottom.v - (rect.maxY - gh) * 100 / ph;
                         computedStyle[StyleKey.BOTTOM] = calSize(bottom, ph);
                     }
-                    this.y = y = parent.y + computedStyle[StyleKey.TOP];
-                    this.height = h = parent.height - computedStyle[StyleKey.TOP] - computedStyle[StyleKey.BOTTOM];
+                    this.y = parent.y + computedStyle[StyleKey.TOP];
+                    this.height = parent.height - computedStyle[StyleKey.TOP] - computedStyle[StyleKey.BOTTOM];
                 }
                 this._rect = undefined;
                 this._bbox = undefined;
+                // 后面计算要用新的值
+                const { x: gx2, y: gy2, width: gw2, height: gh2 } = this;
                 // 再改孩子的，无需递归向下
                 for (let i = 0, len = children.length; i < len; i++) {
                     const child = children[i];
@@ -18958,24 +18902,21 @@
                     const { [StyleKey.TOP]: top, [StyleKey.RIGHT]: right, [StyleKey.BOTTOM]: bottom, [StyleKey.LEFT]: left, [StyleKey.WIDTH]: width, [StyleKey.HEIGHT]: height, } = style;
                     // 宽度自动，则左右必然有值
                     if (width.u === StyleUnit.AUTO) {
-                        if (rect.minX !== 0) {
-                            left.v = (child.x - x) * 100 / w;
-                            computedStyle[StyleKey.LEFT] = calSize(left, w);
-                        }
-                        if (rect.maxX !== w) {
-                            right.v = (w - child.x + x - child.width) * 100 / w;
-                            computedStyle[StyleKey.RIGHT] = calSize(right, w);
+                        // 注意判断条件，组的水平只要有x/width变更，child的水平都得全变
+                        if (rect.minX !== 0 || rect.maxX !== gw) {
+                            left.v = (child.x - gx2) * 100 / gw2;
+                            computedStyle[StyleKey.LEFT] = calSize(left, gw2);
+                            right.v = (gw2 - child.x + gx2 - child.width) * 100 / gw2;
+                            computedStyle[StyleKey.RIGHT] = calSize(right, gw2);
                         }
                     }
                     // 高度自动，则上下必然有值
                     if (height.u === StyleUnit.AUTO) {
-                        if (rect.minY !== 0) {
-                            top.v = (child.y - y) * 100 / h;
-                            computedStyle[StyleKey.TOP] = calSize(top, h);
-                        }
-                        if (rect.maxY !== h) {
-                            bottom.v = (h - child.y + y - child.height) * 100 / h;
-                            computedStyle[StyleKey.BOTTOM] = calSize(bottom, h);
+                        if (rect.minY !== 0 || rect.maxY !== gh) {
+                            top.v = (child.y - gy2) * 100 / gh2;
+                            computedStyle[StyleKey.TOP] = calSize(top, gh2);
+                            bottom.v = (gh2 - child.y + gy2 - child.height) * 100 / gh2;
+                            computedStyle[StyleKey.BOTTOM] = calSize(bottom, gh2);
                         }
                     }
                     child._rect = undefined;
@@ -19273,20 +19214,23 @@
     function checkReflow(root, node, addDom, removeDom) {
         let parent = node.parent;
         if (addDom) {
-            if (parent) {
-                node.layout({
-                    x: parent.x,
-                    y: parent.y,
-                    w: parent.width,
-                    h: parent.height,
-                });
-            }
+            node.layout({
+                x: parent.x,
+                y: parent.y,
+                w: parent.width,
+                h: parent.height,
+            });
         }
         else if (removeDom) {
             node.destroy();
         }
         else {
-            node.layout(node.layoutData);
+            node.layout({
+                x: parent.x,
+                y: parent.y,
+                w: parent.width,
+                h: parent.height,
+            });
         }
         // 向上检查group的影响，group一定是自适应尺寸需要调整的
         while (parent && parent !== root) {
@@ -19759,10 +19703,11 @@ void main() {
             const newStyle = {};
             // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
             if (width.u === StyleUnit.AUTO) {
-                if (translateX.v !== 0) {
+                const x = translateX.v;
+                if (x !== 0) {
                     newStyle.translateX = 0;
-                    newStyle.left = left.v + translateX.v * 100 / parent.width + '%';
-                    newStyle.right = right.v - translateX.v * 100 / parent.width + '%';
+                    newStyle.left = left.v + x * 100 / parent.width + '%';
+                    newStyle.right = right.v - x * 100 / parent.width + '%';
                 }
             }
             // 高度和宽度一样
@@ -19773,8 +19718,7 @@ void main() {
                     newStyle.bottom = bottom.v - translateY.v * 100 / parent.height + '%';
                 }
             }
-            console.warn(newStyle);
-            node.updateStyle(newStyle);
+            node.updateStyle(newStyle); // TODO 只是改数据不重新计算布局，是否有必要保留left/right而不是仅考虑translate
         }
     }
 
