@@ -56,13 +56,17 @@ export function pointInRect(x: number, y: number, x1: number, y1: number, x2: nu
   if(matrix && !isE(matrix)) {
     let t1 = calPoint({ x: x1, y: y1 }, matrix);
     let xa = t1.x, ya = t1.y;
-    let t2 = calPoint({ x: x2, y: y2 }, matrix);
+    let t2 = calPoint({ x: x2, y: y1 }, matrix);
     let xb = t2.x, yb = t2.y;
+    let t3 = calPoint({ x: x2, y: y2 }, matrix);
+    let xc = t3.x, yc = t3.y;
+    let t4 = calPoint({ x: x1, y: y2 }, matrix);
+    let xd = t4.x, yd = t4.y;
     return pointInConvexPolygon(x, y, [
       { x: xa, y: ya },
-      { x: xb, y: ya },
       { x: xb, y: yb },
-      { x: xa, y: yb },
+      { x: xc, y: yc },
+      { x: xd, y: yd },
     ]);
   }
   else {
