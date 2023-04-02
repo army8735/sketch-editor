@@ -17723,7 +17723,6 @@
             this.refreshLevel = RefreshLevel.REFLOW;
             // 布局时计算所有样式，更新时根据不同级别调用
             this.calReflowStyle();
-            this.calRepaintStyle();
             // 布局数据在更新时会用到
             this.layoutData = {
                 x: data.x,
@@ -17841,6 +17840,8 @@
                     this.height = 0;
                 }
             }
+            // repaint和matrix计算需要x/y/width/height
+            this.calRepaintStyle();
             this._rect = undefined;
             this._bbox = undefined;
         }
