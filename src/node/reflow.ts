@@ -27,7 +27,6 @@ export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: 
   while (parent && parent !== root) {
     if (parent instanceof Group) {
       parent.checkFitPS();
-      // break; // TODO 是否递归
     }
     parent = parent.parent!;
   }

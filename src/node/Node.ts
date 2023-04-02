@@ -398,12 +398,12 @@ class Node extends Event {
     const visible = this.computedStyle.visible;
     let hasVisible = false;
     const keys: Array<string> = [];
-    const style2 = normalize(style);
-    for (let k in style2) {
-      if (style2.hasOwnProperty(k)) {
+    const formatStyle = normalize(style);
+    for (let k in formatStyle) {
+      if (formatStyle.hasOwnProperty(k)) {
         // @ts-ignore
-        const v = style2[k];
-        if (!equalStyle(k, style2, this.style)) {
+        const v = formatStyle[k];
+        if (!equalStyle(k, formatStyle, this.style)) {
           // @ts-ignore
           this.style[k] = v;
           keys.push(k);
@@ -413,7 +413,7 @@ class Node extends Event {
         }
       }
     }
-    // 不可见或销毁无需刷新
+    // 不可见或销毁无需刷新 // TODO 不可见要看布局约束
     if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
       cb && cb(true);
       return;

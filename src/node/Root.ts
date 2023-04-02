@@ -11,6 +11,7 @@ import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { checkReflow } from './reflow';
 import Container from './Container';
 import { StyleUnit } from '../style/define';
+import { calSize, equalStyle, normalize } from '../style/css';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
@@ -357,6 +358,7 @@ class Root extends Container implements FrameCallback {
     if (node.isDestroyed) {
       return;
     }
+    const style = node.style;
     const {
       top,
       right,
@@ -366,9 +368,9 @@ class Root extends Container implements FrameCallback {
       height,
       translateX,
       translateY,
-    } = node.style;
+    } = style;
     // 一定有parent，不会改root下的固定容器子节点
-    const parent = node.parent!;
+    let parent = node.parent!;
     const newStyle: any = {};
     // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
     if (width.u === StyleUnit.AUTO) {
@@ -390,7 +392,46 @@ class Root extends Container implements FrameCallback {
       }
     }
     else {}
-    node.updateStyle(newStyle); // TODO 只是改数据不重新计算布局，是否有必要保留left/right而不是仅考虑translate
+    // 只会有TRBL，translate几个值
+    const formatStyle = normalize(newStyle);
+    const keys: Array<string> = [];
+    const computedStyle = node.computedStyle;
+    for (let k in formatStyle) {
+      if (formatStyle.hasOwnProperty(k)) {
+        // @ts-ignore
+        const v = formatStyle[k];
+        if (!equalStyle(k, formatStyle, style)) {
+          // @ts-ignore
+          style[k] = v;
+          if (k === 'translateX' || k === 'translateY') {
+            computedStyle[k] = 0;
+          }
+          else {
+            if (v.u === StyleUnit.AUTO) {
+              // @ts-ignore
+              computedStyle[k] = 0;
+            }
+            else {
+              if (k === 'left' || k === 'right') {
+                computedStyle[k] = calSize(v, parent.width);
+              }
+              else if (k === 'top' || k === 'bottom') {
+                computedStyle[k] = calSize(v, parent.height);
+              }
+            }
+          }
+          keys.push(k);
+        }
+      }
+    }
+    if (keys.length) {
+      while (parent && parent !== this) {
+        if (parent instanceof Group) {
+          parent.checkFitPS();
+        }
+        parent = parent.parent!;
+      }
+    }
   }
 }
 

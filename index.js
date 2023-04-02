@@ -18008,12 +18008,12 @@
             const visible = this.computedStyle.visible;
             let hasVisible = false;
             const keys = [];
-            const style2 = normalize(style);
-            for (let k in style2) {
-                if (style2.hasOwnProperty(k)) {
+            const formatStyle = normalize(style);
+            for (let k in formatStyle) {
+                if (formatStyle.hasOwnProperty(k)) {
                     // @ts-ignore
-                    const v = style2[k];
-                    if (!equalStyle(k, style2, this.style)) {
+                    const v = formatStyle[k];
+                    if (!equalStyle(k, formatStyle, this.style)) {
                         // @ts-ignore
                         this.style[k] = v;
                         keys.push(k);
@@ -18023,7 +18023,7 @@
                     }
                 }
             }
-            // 不可见或销毁无需刷新
+            // 不可见或销毁无需刷新 // TODO 不可见要看布局约束
             if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
                 cb && cb(true);
                 return;
@@ -19327,7 +19327,6 @@
         while (parent && parent !== root) {
             if (parent instanceof Group) {
                 parent.checkFitPS();
-                // break; // TODO 是否递归
             }
             parent = parent.parent;
         }
@@ -19789,9 +19788,10 @@ void main() {
             if (node.isDestroyed) {
                 return;
             }
-            const { top, right, bottom, left, width, height, translateX, translateY, } = node.style;
+            const style = node.style;
+            const { top, right, bottom, left, width, height, translateX, translateY, } = style;
             // 一定有parent，不会改root下的固定容器子节点
-            const parent = node.parent;
+            let parent = node.parent;
             const newStyle = {};
             // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
             if (width.u === StyleUnit.AUTO) {
@@ -19810,7 +19810,46 @@ void main() {
                     newStyle.bottom = bottom.v - translateY.v * 100 / parent.height + '%';
                 }
             }
-            node.updateStyle(newStyle); // TODO 只是改数据不重新计算布局，是否有必要保留left/right而不是仅考虑translate
+            // 只会有TRBL，translate几个值
+            const formatStyle = normalize(newStyle);
+            const keys = [];
+            const computedStyle = node.computedStyle;
+            for (let k in formatStyle) {
+                if (formatStyle.hasOwnProperty(k)) {
+                    // @ts-ignore
+                    const v = formatStyle[k];
+                    if (!equalStyle(k, formatStyle, style)) {
+                        // @ts-ignore
+                        style[k] = v;
+                        if (k === 'translateX' || k === 'translateY') {
+                            computedStyle[k] = 0;
+                        }
+                        else {
+                            if (v.u === StyleUnit.AUTO) {
+                                // @ts-ignore
+                                computedStyle[k] = 0;
+                            }
+                            else {
+                                if (k === 'left' || k === 'right') {
+                                    computedStyle[k] = calSize(v, parent.width);
+                                }
+                                else if (k === 'top' || k === 'bottom') {
+                                    computedStyle[k] = calSize(v, parent.height);
+                                }
+                            }
+                        }
+                        keys.push(k);
+                    }
+                }
+            }
+            if (keys.length) {
+                while (parent && parent !== this) {
+                    if (parent instanceof Group) {
+                        parent.checkFitPS();
+                    }
+                    parent = parent.parent;
+                }
+            }
         }
     }
 
