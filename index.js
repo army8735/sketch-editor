@@ -17147,20 +17147,13 @@
         res = multiplyTfo(res, -ox, -oy);
         return res;
     }
-    function calStyleMatrix(style, x = 0, y = 0, width = 0, height = 0, computedStyle) {
+    function calMatrix(style, width = 0, height = 0) {
         const transform = identity();
         transform[12] = style.translateX ? calSize(style.translateX, width) : 0;
         transform[13] = style.translateY ? calSize(style.translateY, height) : 0;
         const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
         const scaleX = style.scaleX ? style.scaleX.v : 1;
         const scaleY = style.scaleY ? style.scaleY.v : 1;
-        if (computedStyle) {
-            computedStyle.translateX = transform[12];
-            computedStyle.translateY = transform[13];
-            computedStyle.rotateZ = rotateZ;
-            computedStyle.scaleX = scaleX;
-            computedStyle.scaleY = scaleY;
-        }
         if (isE(transform)) {
             calRotateZ(transform, rotateZ);
         }
@@ -17183,24 +17176,11 @@
                 multiplyScaleY(transform, scaleY);
             }
         }
-        if (style.transformOrigin) {
-            const tfo = style.transformOrigin.map((item, i) => {
-                return calSize(item, i ? height : width);
-            });
-            if (computedStyle) {
-                computedStyle.transformOrigin = tfo;
-            }
-            return calMatrixByOrigin(transform, tfo[0] + x, tfo[1] + y);
-        }
         return transform;
-    }
-    function calMatrix(style, x = 0, y = 0, width = 0, height = 0, computedStyle) {
-        return calStyleMatrix(normalize(style), x, y, width, height, computedStyle);
     }
     var transform = {
         calRotateZ,
         calMatrix,
-        calStyleMatrix,
         calMatrixByOrigin,
     };
 
@@ -17964,7 +17944,42 @@
             }
             // 普通布局或者第一次计算
             else {
-                const t = calStyleMatrix(style, this.x, this.y, this.width, this.height, computedStyle);
+                toE(transform);
+                transform[12] = computedStyle.translateX = calSize(style.translateX, this.width);
+                transform[13] = computedStyle.translateY = calSize(style.translateY, this.height);
+                const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
+                const scaleX = style.scaleX ? style.scaleX.v : 1;
+                const scaleY = style.scaleY ? style.scaleY.v : 1;
+                computedStyle.rotateZ = rotateZ;
+                computedStyle.scaleX = scaleX;
+                computedStyle.scaleY = scaleY;
+                if (isE(transform)) {
+                    calRotateZ(transform, rotateZ);
+                }
+                else if (rotateZ) {
+                    multiplyRotateZ(transform, d2r(rotateZ));
+                }
+                if (scaleX !== 1) {
+                    if (isE(transform)) {
+                        transform[0] = scaleX;
+                    }
+                    else {
+                        multiplyScaleX(transform, scaleX);
+                    }
+                }
+                if (scaleY !== 1) {
+                    if (isE(transform)) {
+                        transform[5] = scaleY;
+                    }
+                    else {
+                        multiplyScaleY(transform, scaleY);
+                    }
+                }
+                const tfo = style.transformOrigin.map((item, i) => {
+                    return calSize(item, i ? this.height : this.width);
+                });
+                computedStyle.transformOrigin = tfo;
+                const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
                 assignMatrix(matrix, t);
             }
             return matrix;

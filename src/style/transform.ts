@@ -6,10 +6,10 @@ import {
   multiplyScaleX,
   multiplyScaleY,
   multiplyTfo,
-  tfoMultiply
+  tfoMultiply,
 } from '../math/matrix';
-import { ComputedStyle, Style } from './define';
-import { calSize, normalize } from './css';
+import { Style } from './define';
+import { calSize } from './css';
 
 export function calRotateZ(t: Float64Array, v: number) {
   v = d2r(v);
@@ -32,20 +32,13 @@ export function calMatrixByOrigin(m: Float64Array, ox: number, oy: number) {
   return res;
 }
 
-export function calStyleMatrix(style: Style, x = 0, y = 0, width = 0, height = 0, computedStyle?: ComputedStyle) {
+export function calMatrix(style: Style, width = 0, height = 0) {
   const transform = identity();
   transform[12] = style.translateX ? calSize(style.translateX, width) : 0;
   transform[13] = style.translateY ? calSize(style.translateY, height) : 0;
   const rotateZ = style.rotateZ ? (style.rotateZ.v as number) : 0;
   const scaleX = style.scaleX ? (style.scaleX.v as number) : 1;
   const scaleY = style.scaleY ? (style.scaleY.v as number) : 1;
-  if (computedStyle) {
-    computedStyle.translateX = transform[12];
-    computedStyle.translateY = transform[13];
-    computedStyle.rotateZ = rotateZ;
-    computedStyle.scaleX = scaleX;
-    computedStyle.scaleY = scaleY;
-  }
   if (isE(transform)) {
     calRotateZ(transform, rotateZ);
   }
@@ -68,25 +61,11 @@ export function calStyleMatrix(style: Style, x = 0, y = 0, width = 0, height = 0
       multiplyScaleY(transform, scaleY);
     }
   }
-  if (style.transformOrigin) {
-    const tfo = style.transformOrigin.map((item, i) => {
-      return calSize(item, i ? height : width);
-    });
-    if (computedStyle) {
-      computedStyle.transformOrigin = tfo as [number, number];
-    }
-    return calMatrixByOrigin(transform, tfo[0] + x, tfo[1] + y);
-  }
   return transform;
-}
-
-export function calMatrix(style: any, x = 0, y = 0, width = 0, height = 0, computedStyle?: ComputedStyle) {
-  return calStyleMatrix(normalize(style), x, y, width, height, computedStyle);
 }
 
 export default {
   calRotateZ,
   calMatrix,
-  calStyleMatrix,
   calMatrixByOrigin,
 };

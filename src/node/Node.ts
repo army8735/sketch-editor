@@ -2,13 +2,23 @@ import * as uuid from 'uuid';
 import Root from '../node/Root';
 import Container from '../node/Container';
 import { getDefaultStyle, JStyle, Props } from '../format/';
-import { assignMatrix, calRectPoint, identity, multiply2, } from '../math/matrix';
+import {
+  assignMatrix,
+  calRectPoint,
+  identity,
+  isE,
+  multiply2,
+  multiplyRotateZ,
+  multiplyScaleX,
+  multiplyScaleY,
+  toE,
+} from '../math/matrix';
 import { d2r } from '../math/geom';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
 import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, normalize } from '../style/css';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
-import { calStyleMatrix } from '../style/transform';
+import { calMatrixByOrigin, calRotateZ } from '../style/transform';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
 import CanvasCache from '../refresh/CanvasCache';
@@ -321,7 +331,42 @@ class Node extends Event {
     }
     // 普通布局或者第一次计算
     else {
-      const t = calStyleMatrix(style, this.x, this.y, this.width, this.height, computedStyle);
+      toE(transform);
+      transform[12] = computedStyle.translateX = calSize(style.translateX, this.width);
+      transform[13] = computedStyle.translateY = calSize(style.translateY, this.height);
+      const rotateZ = style.rotateZ ? (style.rotateZ.v as number) : 0;
+      const scaleX = style.scaleX ? (style.scaleX.v as number) : 1;
+      const scaleY = style.scaleY ? (style.scaleY.v as number) : 1;
+      computedStyle.rotateZ = rotateZ;
+      computedStyle.scaleX = scaleX;
+      computedStyle.scaleY = scaleY;
+      if (isE(transform)) {
+        calRotateZ(transform, rotateZ);
+      }
+      else if (rotateZ) {
+        multiplyRotateZ(transform, d2r(rotateZ));
+      }
+      if (scaleX !== 1) {
+        if (isE(transform)) {
+          transform[0] = scaleX;
+        }
+        else {
+          multiplyScaleX(transform, scaleX);
+        }
+      }
+      if (scaleY !== 1) {
+        if (isE(transform)) {
+          transform[5] = scaleY;
+        }
+        else {
+          multiplyScaleY(transform, scaleY);
+        }
+      }
+      const tfo = style.transformOrigin.map((item, i) => {
+        return calSize(item, i ? this.height : this.width);
+      });
+      computedStyle.transformOrigin = tfo as [number, number];
+      const t = calMatrixByOrigin(transform, tfo[0] + this.x, tfo[1] + this.y);
       assignMatrix(matrix, t);
     }
     return matrix;

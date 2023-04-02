@@ -220,17 +220,23 @@ function showHover(node) {
   // 有选择节点或相等时不展示
   if (hoverNode !== node && (!selectNode || selectNode !== node)) {
     hoverNode = node;
+    updateHover();
+    // 左侧列表
+    hoverTree && hoverTree.classList.remove('hover');
+    const li = abHash[node.props.uuid];
+    hoverTree = li;
+    hoverTree.classList.add('hover');
+  }
+}
+
+function updateHover() {
+  if (hoverNode) {
     const rect = hoverNode.getBoundingClientRect();
     $hover.style.left = rect.left / dpi + 'px';
     $hover.style.top = rect.top / dpi + 'px';
     $hover.style.width = (rect.right - rect.left) / dpi + 'px';
     $hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
     $hover.classList.add('show');
-    // 左侧列表
-    hoverTree && hoverTree.classList.remove('hover');
-    const li = abHash[node.props.uuid];
-    hoverTree = li;
-    hoverTree.classList.add('hover');
   }
 }
 
@@ -330,6 +336,7 @@ function onMove(x, y) {
         if (selectNode) {
           showSelect(selectNode);
         }
+        updateHover();
       });
     }
     else {
@@ -551,10 +558,13 @@ document.addEventListener('wheel', function(e) {
       x: x * dpi,
       y: y * dpi,
     };
+    // pt.x = 348; pt.y = 213;
     const { translateX, translateY, scaleX } = curPage.getComputedStyle();
+    console.log(translateX, translateY, scaleX);
     const inverse = editor.math.matrix.inverse(curPage.matrixWorld);
     // 求出鼠标屏幕坐标在画布内相对page的坐标
     const pt1 = editor.math.matrix.calPoint(pt, inverse);
+    console.log(pt1);
     let scale = scaleX * sc;
     if(scale > 10) {
       scale = 10;
@@ -562,12 +572,13 @@ document.addEventListener('wheel', function(e) {
     else if(scale < 0.1) {
       scale = 0.1;
     }
-    const newMatrix = editor.style.transform.calMatrix({
+    const style = editor.style.css.normalize({
       translateX,
       translateY,
       scaleX: scale,
       scaleY: scale,
     });
+    const newMatrix = editor.style.transform.calMatrix(style);
     // 新缩放尺寸，位置不动，相对page坐标在新matrix下的坐标
     const pt2 = editor.math.matrix.calPoint(pt1, newMatrix);
     // 差值是需要调整的距离
