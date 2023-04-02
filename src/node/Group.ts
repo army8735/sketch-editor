@@ -4,6 +4,7 @@ import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
 import { StyleUnit } from '../style/define';
 import { calSize } from '../style/css';
+import { calMatrixByOrigin } from '../style/transform';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
@@ -22,12 +23,14 @@ class Group extends Container {
     // 先循环一遍收集孩子数据，得到当前所有孩子所占位置尺寸的信息集合，坐标是相对于父元素（本组）修正前的
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
-      const { x, y, width, height, matrix } = child;
+      const { x, y, width, height, transform } = child;
       const r = new Float64Array(4);
       r[0] = x - gx;
       r[1] = y - gy;
       r[2] = r[0] + width;
       r[3] = r[1] + height;
+      // matrix需要按父级原点计算
+      const matrix = calMatrixByOrigin(transform, r[0] + width * 0.5, r[1] + height * 0.5);
       const c = calRectPoint(r[0], r[1], r[2], r[3], matrix);
       list.push(c);
       const {
