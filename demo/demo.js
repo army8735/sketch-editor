@@ -221,6 +221,7 @@ function showHover(node) {
   if (hoverNode !== node && (!selectNode || selectNode !== node)) {
     hoverNode = node;
     updateHover();
+    $hover.classList.add('show');
     // 左侧列表
     hoverTree && hoverTree.classList.remove('hover');
     const li = abHash[node.props.uuid];
@@ -236,7 +237,6 @@ function updateHover() {
     $hover.style.top = rect.top / dpi + 'px';
     $hover.style.width = (rect.right - rect.left) / dpi + 'px';
     $hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
-    $hover.classList.add('show');
   }
 }
 
@@ -294,12 +294,7 @@ function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
   computedStyle = selectNode.getComputedStyle();
-  const rect = selectNode.getBoundingClientRect();
-  $selection.style.left = rect.left / dpi + 'px';
-  $selection.style.top = rect.top / dpi + 'px';
-  $selection.style.width = (rect.right - rect.left) / dpi + 'px';
-  $selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
-  $selection.style.transform = 'none';
+  updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
   const li = abHash[node.props.uuid];
@@ -313,6 +308,17 @@ function hideSelect() {
     $selection.classList.remove('show');
     selectTree.classList.remove('select');
     selectTree = null;
+  }
+}
+
+function updateSelect() {
+  if (selectNode) {
+    const rect = selectNode.getBoundingClientRect();
+    $selection.style.left = rect.left / dpi + 'px';
+    $selection.style.top = rect.top / dpi + 'px';
+    $selection.style.width = (rect.right - rect.left) / dpi + 'px';
+    $selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
+    $selection.style.transform = 'none';
   }
 }
 
@@ -366,8 +372,9 @@ function onMove(x, y) {
       selectNode.updateStyle({
         translateX: computedStyle.translateX + dx,
         translateY: computedStyle.translateY + dy,
+      }, function() {
+        updateSelect();
       });
-      $selection.style.transform = `translate(${dx}px, ${dy}px)`;
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
