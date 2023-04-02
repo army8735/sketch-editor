@@ -229,7 +229,7 @@ function getActiveNodeWhenSelected(node) {
     if (node === selectNode) {
       return node;
     }
-    // 检查二者是否有共同group祖先，没有只能展示最上层group，有则看是否group，不展示selectNode祖先的group
+    // 检查二者是否有共同group祖先，没有只能展示最上层group，有则看是否为group
     let p1 = node;
     while (p1.parent instanceof editor.node.Group) {
       p1 = p1.parent;
@@ -239,7 +239,7 @@ function getActiveNodeWhenSelected(node) {
       p2 = p2.parent;
     }
     if (p1 !== p2) {
-      return node;
+      return p1;
     }
     else if ((node instanceof editor.node.Group)) {
       let p = selectNode.parent;
