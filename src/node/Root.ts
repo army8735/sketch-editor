@@ -14,7 +14,7 @@ import { StyleUnit } from '../style/define';
 import { calSize, equalStyle, normalize } from '../style/css';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
-import { mainVert, mainFrag, colorVert, colorFrag, simpleVert, simpleFrag } from '../gl/glsl';
+import { colorFrag, colorVert, mainFrag, mainVert, simpleFrag, simpleVert } from '../gl/glsl';
 import ca from '../gl/ca';
 
 let uuid = 0;
@@ -225,9 +225,6 @@ class Root extends Container implements FrameCallback {
     else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
-        // console.warn(node.canvasCache?.available);
-        // node.canvasCache?.release(); // 可能之前没有内容
-        // node.textureCache?.release();
         node.releaseCache(this.ctx!);
         node.calRepaintStyle();
       }
@@ -281,9 +278,10 @@ class Root extends Container implements FrameCallback {
       return;
     }
     this.clear();
-    renderWebgl(this.ctx!, this, this.rl);
-    this.emit(Event.REFRESH, this.rl)
+    const rl = this.rl;
     this.rl = RefreshLevel.NONE;
+    renderWebgl(this.ctx!, this, rl);
+    this.emit(Event.REFRESH, rl);
   }
 
   reLayout() {

@@ -19699,9 +19699,6 @@ void main() {
             else {
                 const isRp = lv >= RefreshLevel.REPAINT;
                 if (isRp) {
-                    // console.warn(node.canvasCache?.available);
-                    // node.canvasCache?.release(); // 可能之前没有内容
-                    // node.textureCache?.release();
                     node.releaseCache(this.ctx);
                     node.calRepaintStyle();
                 }
@@ -19752,9 +19749,10 @@ void main() {
                 return;
             }
             this.clear();
-            renderWebgl(this.ctx, this, this.rl);
-            this.emit(Event.REFRESH, this.rl);
+            const rl = this.rl;
             this.rl = RefreshLevel.NONE;
+            renderWebgl(this.ctx, this, rl);
+            this.emit(Event.REFRESH, rl);
         }
         reLayout() {
             this.checkRoot(); // 根节点必须保持和canvas同尺寸
