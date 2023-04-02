@@ -1,24 +1,18 @@
 import * as uuid from 'uuid';
 import Root from '../node/Root';
 import Container from '../node/Container';
-import { JStyle, Props, getDefaultStyle } from '../format/';
-import {
-  assignMatrix,
-  calRectPoint,
-  identity,
-  multiply2,
-} from '../math/matrix';
+import { getDefaultStyle, JStyle, Props } from '../format/';
+import { assignMatrix, calRectPoint, identity, multiply2, } from '../math/matrix';
 import { d2r } from '../math/geom';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
-import { calNormalLineHeight, equalStyle, normalize, calSize, color2rgbaStr } from '../style/css';
-import { ComputedStyle, StyleUnit } from '../style/define';
+import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, normalize } from '../style/css';
+import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import { calStyleMatrix } from '../style/transform';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
 import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
-import { Style } from '../style/define';
 
 class Node extends Event {
   x: number;
@@ -355,9 +349,6 @@ class Node extends Event {
 
   remove(cb?: Function) {
     const { root, parent } = this;
-    if (!root) {
-      return;
-    }
     if (parent) {
       let i = parent.children.indexOf(this);
       if (i === -1) {
@@ -378,6 +369,7 @@ class Node extends Event {
       return;
     }
     parent?.deleteStruct(this);
+    root!.addUpdate(this, [], RefreshLevel.REFLOW, false, true, false, cb);
   }
 
   destroy() {

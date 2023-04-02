@@ -36,9 +36,25 @@ html, body {
 }
 
 .page {
+  padding: 0 8px;
   border-bottom: 1px solid #CCC;
   height: 150px;
   overflow-y: scroll;
+  list-style: none;
+}
+
+.page li {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  height: 24px;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.page li.current {
+  background: #FA8;
 }
 
 .tree {
@@ -96,7 +112,7 @@ html, body {
 }
 
 .tree .select>div {
-  background: #FFC;
+  background: #FA8;
 }
 
 .main {
@@ -128,6 +144,7 @@ canvas {
   top: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .overlap.space {

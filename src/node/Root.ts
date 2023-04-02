@@ -104,7 +104,6 @@ class Root extends Container implements FrameCallback {
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    console.log(this.programs);
     const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
     this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
@@ -137,16 +136,21 @@ class Root extends Container implements FrameCallback {
         visible: false,
       });
     }
-    // 延迟初始化，第一次需要显示才从json初始化Page对象
     let newPage = this.pageContainer!.children[index] as Page;
+    // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
     newPage.updateStyle({
       visible: true,
     }, () => {
+      // 触发事件告知外部如刷新图层列表
       this.emit(Event.PAGE_CHANGED, newPage);
     });
     this.lastPage = newPage;
     this.overlay!.setArtBoard(newPage.children as Array<ArtBoard>);
+  }
+
+  getPages() {
+    return this.pageContainer!.children as Array<Page>;
   }
 
   /**

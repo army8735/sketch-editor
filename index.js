@@ -15389,6 +15389,7 @@
                     fonts,
                     fontHash,
                     zipFile,
+                    user: json.user,
                 });
             }));
             return {
@@ -15403,6 +15404,21 @@
             const children = yield Promise.all(page.layers.map((layer) => {
                 return convertItem(layer, opt, page.frame.width, page.frame.height);
             }));
+            let x = 0, y = 0, zoom = 1;
+            const ua = opt.user[page.do_objectID];
+            if (ua) {
+                const { scrollOrigin, zoomValue } = ua;
+                if (scrollOrigin) {
+                    const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
+                    if (match) {
+                        x = parseFloat(match[1]) || 0;
+                        y = parseFloat(match[2]) || 0;
+                    }
+                }
+                if (zoomValue) {
+                    zoom = zoomValue;
+                }
+            }
             return {
                 type: classValue.Page,
                 props: {
@@ -15414,6 +15430,10 @@
                         width: page.frame.width,
                         height: page.frame.height,
                         visible: false,
+                        translateX: x,
+                        translateY: y,
+                        scaleX: zoom,
+                        scaleY: zoom,
                         transformOrigin: [0, 0],
                         pointerEvents: false,
                     },
@@ -17968,9 +17988,6 @@
         }
         remove(cb) {
             const { root, parent } = this;
-            if (!root) {
-                return;
-            }
             if (parent) {
                 let i = parent.children.indexOf(this);
                 if (i === -1) {
@@ -17991,6 +18008,7 @@
                 return;
             }
             parent === null || parent === void 0 ? void 0 : parent.deleteStruct(this);
+            root.addUpdate(this, [], RefreshLevel.REFLOW, false, true, false, cb);
         }
         destroy() {
             if (this.isDestroyed) {
@@ -18281,11 +18299,21 @@
                 inject.error('Invalid parameter of removeChild()');
             }
         }
-        clearChildren() {
-            const children = this.children;
-            while (children.length) {
-                const child = children.pop();
-                child.remove();
+        clearChildren(cb) {
+            const { root, children } = this;
+            if (children.length) {
+                if (this.isDestroyed) {
+                    children.splice(0);
+                    cb && cb(true);
+                    return;
+                }
+                // 特殊优化，不去一个个调用remove，整体删除后
+                while (children.length) {
+                    const child = children.pop();
+                    this.deleteStruct(child);
+                    child.destroy();
+                }
+                root.addUpdate(this, [], RefreshLevel.REFLOW, false, false, false, cb);
             }
         }
         destroy() {
@@ -19559,7 +19587,6 @@ void main() {
             this.appendChild(this.overlay);
         }
         initShaders(gl) {
-            console.log(this.programs);
             const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
             this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
             this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
@@ -19590,16 +19617,20 @@ void main() {
                     visible: false,
                 });
             }
-            // 延迟初始化，第一次需要显示才从json初始化Page对象
             let newPage = this.pageContainer.children[index];
+            // 延迟初始化，第一次需要显示时才从json初始化Page对象
             newPage.initIfNot();
             newPage.updateStyle({
                 visible: true,
             }, () => {
+                // 触发事件告知外部如刷新图层列表
                 this.emit(Event.PAGE_CHANGED, newPage);
             });
             this.lastPage = newPage;
             this.overlay.setArtBoard(newPage.children);
+        }
+        getPages() {
+            return this.pageContainer.children;
         }
         /**
          * 添加更新，分析repaint/reflow和上下影响，异步刷新

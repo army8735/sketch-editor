@@ -151,11 +151,21 @@ class Container extends Node {
     }
   }
 
-  clearChildren() {
-    const children = this.children;
-    while (children.length) {
-      const child = children.pop()!;
-      child.remove();
+  clearChildren(cb?: Function) {
+    const { root, children } = this;
+    if (children.length) {
+      if (this.isDestroyed) {
+        children.splice(0);
+        cb && cb(true);
+        return;
+      }
+      // 特殊优化，不去一个个调用remove，整体删除后
+      while (children.length) {
+        const child = children.pop()!;
+        this.deleteStruct(child);
+        child.destroy();
+      }
+      root!.addUpdate(this, [], RefreshLevel.REFLOW, false, false, false, cb);
     }
   }
 

@@ -63,6 +63,7 @@ type Opt = {
   fonts: Array<{ fontFamily: string, url: string }>,
   fontHash: any,
   zipFile: JSZip,
+  user: any,
 }
 
 async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
@@ -77,6 +78,7 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
         fonts,
         fontHash,
         zipFile,
+        user: json.user,
       });
     })
   );
@@ -93,6 +95,21 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
       return convertItem(layer, opt, page.frame.width, page.frame.height);
     })
   );
+  let x = 0, y = 0, zoom = 1;
+  const ua = opt.user[page.do_objectID];
+  if (ua) {
+    const { scrollOrigin, zoomValue } = ua;
+    if (scrollOrigin) {
+      const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
+      if (match) {
+        x = parseFloat(match[1]) || 0;
+        y = parseFloat(match[2]) || 0;
+      }
+    }
+    if (zoomValue) {
+      zoom = zoomValue;
+    }
+  }
   return {
     type: classValue.Page,
     props: {
@@ -104,6 +121,10 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
         width: page.frame.width,
         height: page.frame.height,
         visible: false,
+        translateX: x,
+        translateY: y,
+        scaleX: zoom,
+        scaleY: zoom,
         transformOrigin: [0, 0],
         pointerEvents: false,
       },

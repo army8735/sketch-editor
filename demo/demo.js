@@ -1,10 +1,11 @@
-const input = document.querySelector('#file');
-const tree = document.querySelector('#tree');
-const main = document.querySelector('#main');
-const canvasC = document.querySelector('#canvasC');
-const overlap = document.querySelector('#overlap');
-const hover = document.querySelector('#hover');
-const selection = document.querySelector('#selection');
+const $input = document.querySelector('#file');
+const $page = document.querySelector('#page');
+const $tree = document.querySelector('#tree');
+const $main = document.querySelector('#main');
+const $canvasC = document.querySelector('#canvasC');
+const $overlap = document.querySelector('#overlap');
+const $hover = document.querySelector('#hover');
+const $selection = document.querySelector('#selection');
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -21,13 +22,13 @@ let dpi = window.devicePixelRatio;
 let curPage, pageTx, pageTy;
 let style, computedStyle;
 let structs = [];
-let hash = {};
+let abHash = {}, pageHash = {};
 let hoverTree, selectTree;
 
-input.onchange = function(e) {
-  const file = input.files[0];
-  input.value = null;
-  input.blur();
+$input.onchange = function(e) {
+  const file = $input.files[0];
+  $input.value = null;
+  $input.blur();
   const reader = new FileReader();
   reader.readAsArrayBuffer(file);
   reader.onload = function() {
@@ -35,10 +36,10 @@ input.onchange = function(e) {
       const canvas = document.createElement('canvas');
 
       function resize() {
-        const { clientWidth, clientHeight } = canvasC;
+        const { clientWidth, clientHeight } = $canvasC;
         canvas.width = clientWidth * dpi;
         canvas.height = clientHeight * dpi;
-        const o = canvasC.getBoundingClientRect();
+        const o = $canvasC.getBoundingClientRect();
         originX = o.left;
         originY = o.top;
         if (root) {
@@ -51,31 +52,58 @@ input.onchange = function(e) {
 
       resize();
       window.onresize = resize;
-      canvasC.appendChild(canvas);
+      $canvasC.appendChild(canvas);
       root = editor.parse(json, canvas, dpi);
+
+      // page列表
+      const pages = root.getPages();
+      pages.forEach(item => {
+        const uuid = item.props.uuid;
+        const li = document.createElement('li');
+        li.setAttribute('uuid', uuid);
+        li.innerHTML = '🗒 ' + item.props.name;
+        pageHash[uuid] = li;
+        $page.appendChild(li);
+      });
+
+      $page.addEventListener('click', function(e) {
+        const target = e.target;
+        if (target.tagName === 'LI' && !target.classList.contains('current')) {
+          const children = $page.children;
+          const i = Array.from(children).indexOf(target);
+          root.setPageIndex(i);
+          hideHover();
+          hideSelect();
+        }
+      });
 
       // 每次切页面更新数据
       root.on(editor.util.Event.PAGE_CHANGED, function(newPage) {
         curPage = newPage;
-        tree.innerHTML = '';
+        const last = $page.querySelector('.current');
+        if (last) {
+          last.classList.remove('current');
+        }
+        pageHash[curPage.props.uuid].classList.add('current');
+        $tree.innerHTML = '';
         const ol = document.createElement('ol');
-        hash = {};
+        abHash = {};
         const children = curPage.children;
         for(let i = children.length - 1; i >= 0; i--) {
-          ol.appendChild(genNodeTree(children[i], hash));
+          ol.appendChild(genNodeTree(children[i], abHash));
         }
-        tree.appendChild(ol);
+        $tree.appendChild(ol);
       });
 
       root.on(editor.util.Event.DID_ADD_DOM, function(node, isInPage) {
         // 防止overlay层的内容
         if (!isInPage) {
           return;
-        }
-        const li = genNodeTree(node, hash);
+        } return;
+        const li = genNodeTree(node, abHash);
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
         const i = children.indexOf(node); console.log(children, i);
-        const ol = hash[uuid].querySelector('ol');
+        const ol = abHash[uuid].querySelector('ol');
         if (i === children.length - 1) {
           ol.appendChild(li);
         }
@@ -83,19 +111,19 @@ input.onchange = function(e) {
           ol.prependChild(li);
         }
         else {
-          ol.insertBefore(node, hash[node.prev.props.uuid]);
+          ol.insertBefore(node, abHash[node.prev.props.uuid]);
         }
       });
     });
   }
 }
 
-function genNodeTree(node, hash) {
+function genNodeTree(node, abHash) {
   const type = getNodeType(node);
   const li = document.createElement('li');
   li.className = 'layer';
   li.setAttribute('uuid', node.props.uuid);
-  hash[node.props.uuid] = li;
+  abHash[node.props.uuid] = li;
   let s = `<div>
 <span class="type">${type}</span>
 <span class="name">${node.props.name}</span>`
@@ -109,7 +137,7 @@ function genNodeTree(node, hash) {
     if (children.length > 0) {
       const ol = document.createElement('ol');
       for(let i = children.length - 1; i >= 0; i--) {
-        ol.appendChild(genNodeTree(children[i], hash));
+        ol.appendChild(genNodeTree(children[i], abHash));
       }
       li.appendChild(ol);
     }
@@ -134,7 +162,7 @@ function getNodeType(node) {
   return type;
 }
 
-tree.addEventListener('click', e => {
+$tree.addEventListener('click', e => {
   const target = e.target;
   if (target.classList.contains('visible')) {
     const visible = target.classList.contains('t');
@@ -175,7 +203,7 @@ tree.addEventListener('click', e => {
   }
 });
 
-tree.addEventListener('mousemove', e => {
+$tree.addEventListener('mousemove', e => {
   let parent = e.target;
   while (parent) {
     if (parent.classList.contains('layer')) {
@@ -193,14 +221,14 @@ function showHover(node) {
   if (hoverNode !== node && (!selectNode || selectNode !== node)) {
     hoverNode = node;
     const rect = hoverNode.getBoundingClientRect();
-    hover.style.left = rect.left / dpi + 'px';
-    hover.style.top = rect.top / dpi + 'px';
-    hover.style.width = (rect.right - rect.left) / dpi + 'px';
-    hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
-    hover.classList.add('show');
+    $hover.style.left = rect.left / dpi + 'px';
+    $hover.style.top = rect.top / dpi + 'px';
+    $hover.style.width = (rect.right - rect.left) / dpi + 'px';
+    $hover.style.height = (rect.bottom - rect.top) / dpi + 'px';
+    $hover.classList.add('show');
     // 左侧列表
     hoverTree && hoverTree.classList.remove('hover');
-    const li = hash[node.props.uuid];
+    const li = abHash[node.props.uuid];
     hoverTree = li;
     hoverTree.classList.add('hover');
   }
@@ -209,7 +237,7 @@ function showHover(node) {
 function hideHover() {
   if (hoverNode) {
     hoverNode = null;
-    hover.classList.remove('show');
+    $hover.classList.remove('show');
     hoverTree.classList.remove('hover');
     hoverTree = null;
   }
@@ -261,14 +289,14 @@ function showSelect(node) {
   style = selectNode.style;
   computedStyle = selectNode.getComputedStyle();
   const rect = selectNode.getBoundingClientRect();
-  selection.style.left = rect.left / dpi + 'px';
-  selection.style.top = rect.top / dpi + 'px';
-  selection.style.width = (rect.right - rect.left) / dpi + 'px';
-  selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
-  selection.style.transform = 'none';
-  selection.classList.add('show');
+  $selection.style.left = rect.left / dpi + 'px';
+  $selection.style.top = rect.top / dpi + 'px';
+  $selection.style.width = (rect.right - rect.left) / dpi + 'px';
+  $selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
+  $selection.style.transform = 'none';
+  $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
-  const li = hash[node.props.uuid];
+  const li = abHash[node.props.uuid];
   selectTree = li;
   selectTree.classList.add('select');
 }
@@ -276,7 +304,7 @@ function showSelect(node) {
 function hideSelect() {
   if (selectNode) {
     selectNode = null;
-    selection.classList.remove('show');
+    $selection.classList.remove('show');
     selectTree.classList.remove('select');
     selectTree = null;
   }
@@ -332,7 +360,7 @@ function onMove(x, y) {
         translateX: computedStyle.translateX + dx,
         translateY: computedStyle.translateY + dy,
       });
-      selection.style.transform = `translate(${dx}px, ${dy}px)`;
+      $selection.style.transform = `translate(${dx}px, ${dy}px)`;
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
@@ -349,12 +377,12 @@ function onMove(x, y) {
 }
 
 window.onscroll = function() {
-  const o = canvasC.getBoundingClientRect();
+  const o = $canvasC.getBoundingClientRect();
   originX = o.left;
   originY = o.top;
 };
 
-overlap.addEventListener('mousedown', function(e) {
+$overlap.addEventListener('mousedown', function(e) {
   if (!curPage) {
     return;
   }
@@ -368,7 +396,7 @@ overlap.addEventListener('mousedown', function(e) {
       const o = curPage.getComputedStyle();
       pageTx = o.translateX;
       pageTy = o.translateY;
-      overlap.classList.add('down');
+      $overlap.classList.add('down');
     }
     // 普通是选择
     else {
@@ -426,7 +454,7 @@ document.addEventListener('mouseup', function(e) {
     isDown = false;
     isControl = false;
     if(spaceKey) {
-      overlap.classList.remove('down');
+      $overlap.classList.remove('down');
     }
   }
 });
@@ -453,7 +481,7 @@ document.addEventListener('keydown', function(e) {
   }
   if (e.keyCode === 32) {
     spaceKey = true;
-    overlap.classList.add('space');
+    $overlap.classList.add('space');
   }
 });
 
@@ -471,7 +499,7 @@ document.addEventListener('keyup', function(e) {
   }
   if (e.keyCode === 32) {
     spaceKey = false;
-    overlap.classList.remove('space');
+    $overlap.classList.remove('space');
   }
 });
 
