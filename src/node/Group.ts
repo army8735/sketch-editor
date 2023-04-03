@@ -12,11 +12,54 @@ class Group extends Container {
     this.isGroup = true;
   }
 
+  override updateStyle(style: any, cb?: Function) {
+    const { ignore, keys, formatStyle } = this.preUpdateStyleData(style);
+    if (ignore) {
+      cb && cb(true);
+      return;
+    }
+    // 最小尺寸约束
+    const parent = this.parent!;
+    const computedStyle = this.computedStyle;
+    // 组只能调左/右/左右/宽，不能同时左右和宽，因为互斥
+    if (style.hasOwnProperty('left') && style.hasOwnProperty('right')) {}
+    else if (style.hasOwnProperty('left')) {}
+    else if (style.hasOwnProperty('right')) {
+      const right = calSize(formatStyle.right, parent.width);
+      const w = parent.width - computedStyle.left - right;
+      if (w < this.minWidth) {
+        if (formatStyle.right.u === StyleUnit.PX) {}
+        else if (formatStyle.right.u === StyleUnit.PERCENT) {
+          const max = (parent.width - computedStyle.left - this.minWidth) * 100 / parent.width;
+          if ((formatStyle.right.v as number) === max) {
+            let i = keys.indexOf('right');
+            keys.splice(i, 1);
+          }
+          else {
+            formatStyle.right.v = max;
+          }
+        }
+      }
+    }
+    else if (style.hasOwnProperty('width')) {}
+    // 再次检测可能以为尺寸限制造成的style更新无效，即限制后和当前一样
+    if (!keys.length) {
+      cb && cb(true);
+      return;
+    }
+    // 和Node不同，这个检测需再最小尺寸约束之后
+    if (this.preUpdateStyleCheck()) {
+      cb && cb(true);
+      return;
+    }
+    this.root!.addUpdate(this, keys, undefined, false, false, false, cb);
+  }
+
   // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等，还不能触发渲染
   checkFitPS() {
     const { children, style, computedStyle, parent } = this;
     if (!parent) {
-      return;
+      return false;
     }
     const { x: gx, y: gy, width: gw, height: gh } = this;
     let rect: any = {}, list = [];
@@ -95,7 +138,7 @@ class Group extends Container {
       this._rect = undefined;
       this._bbox = undefined;
       // 后面计算要用新的值
-      const { x: gx2, y: gy2, width: gw2, height: gh2 } = this;
+      const { width: gw2, height: gh2 } = this;
       // 再改孩子的，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
@@ -112,27 +155,51 @@ class Group extends Container {
         if (width.u === StyleUnit.AUTO) {
           // 注意判断条件，组的水平只要有x/width变更，child的水平都得全变
           if (rect.minX !== 0 || rect.maxX !== gw) {
-            left.v = (child.x - gx2) * 100 / gw2;
-            computedStyle.left = calSize(left, gw2);
-            right.v = (gw2 - child.x + gx2 - child.width) * 100 / gw2;
-            computedStyle.right = calSize(right, gw2);
+            // 如果向左拖发生了group的x变更，则minX为负数，子节点的left值增加
+            computedStyle.left -= rect.minX;
+            if (left.u === StyleUnit.PX) {
+              left.v = computedStyle.left;
+            }
+            else if (left.u === StyleUnit.PERCENT) {
+              left.v = computedStyle.left * 100 / gw2;
+            }
+            // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
+            computedStyle.right += rect.maxX - gw;
+            if (right.u === StyleUnit.PX) {
+              right.v = computedStyle.right;
+            }
+            else if (right.u === StyleUnit.PERCENT) {
+              right.v = computedStyle.right * 100 / gw2;
+            }
           }
         }
         else {}
         // 高度自动，则上下必然有值
         if (height.u === StyleUnit.AUTO) {
           if (rect.minY !== 0 || rect.maxY !== gh) {
-            top.v = (child.y - gy2) * 100 / gh2;
-            computedStyle.top = calSize(top, gh2);
-            bottom.v = (gh2 - child.y + gy2 - child.height) * 100 / gh2;
-            computedStyle.bottom = calSize(bottom, gh2);
+            computedStyle.top -= rect.minY;
+            if (top.u === StyleUnit.PX) {
+              top.v = computedStyle.top;
+            }
+            else if (top.u === StyleUnit.PERCENT) {
+              top.v = computedStyle.top * 100 / gh2;
+            }
+            computedStyle.bottom += rect.maxY - gh;
+            if (bottom.u === StyleUnit.PX) {
+              bottom.v = computedStyle.bottom;
+            }
+            else if (bottom.u === StyleUnit.PERCENT) {
+              bottom.v = computedStyle.bottom * 100 / gh2;
+            }
           }
         }
         else {}
         child._rect = undefined;
         child._bbox = undefined;
       }
+      return true;
     }
+    return false;
   }
 }
 

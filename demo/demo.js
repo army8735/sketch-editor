@@ -14,7 +14,7 @@ matchMedia(
 
 let root;
 let originX, originY;
-let isDown, isControl;
+let isDown, isControl, controlType;
 let startX, startY, lastX, lastY;
 let hoverNode, selectNode;
 let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
@@ -99,7 +99,7 @@ $input.onchange = function(e) {
         // 防止overlay层的内容
         if (!isInPage) {
           return;
-        } return;
+        }
         const li = genNodeTree(node, abHash);
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
         const i = children.indexOf(node); console.log(children, i);
@@ -293,7 +293,7 @@ function getActiveNodeWhenSelected(node) {
 function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
-  computedStyle = selectNode.getComputedStyle();
+  computedStyle = selectNode.getComputedStyle(); console.log(style, computedStyle)
   updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
@@ -340,7 +340,7 @@ function onMove(x, y) {
         translateY: pageTy + dy,
       }, () => {
         if (selectNode) {
-          showSelect(selectNode);
+          updateSelect();
         }
         updateHover();
       });
@@ -358,10 +358,21 @@ function onMove(x, y) {
   }
   // 非空格看情况是操作选框还是节点还是仅hover
   else {
-    // 拖拽缩放选框
+    // 拖拽缩放选框，一定有selectNode，防止bug加个防御
     if (isControl) {
       if (!selectNode) {
         return;
+      }
+      const dx = lastX - startX, dy = lastY - startY;
+      if (controlType === 'r') {
+        if (style.width.u === editor.style.define.StyleUnit.AUTO) {
+          const right = (computedStyle.right - dx) * 100 / selectNode.parent.width + '%';
+          selectNode.updateStyle({
+            right,
+          }, function() {
+            updateSelect();
+          });
+        }
       }
     }
     // 拖拽节点本身
@@ -425,8 +436,12 @@ $overlap.addEventListener('mousedown', function(e) {
         else if (classList.contains('tr')) {}
         else if (classList.contains('br')) {}
         else if (classList.contains('bl')) {}
-        else if (classList.contains('t')) {}
-        else if (classList.contains('r')) {}
+        else if (classList.contains('t')) {
+          controlType = 't';
+        }
+        else if (classList.contains('r')) {
+          controlType = 'r';
+        }
         else if (classList.contains('b')) {}
         else if (classList.contains('l')) {}
       }
@@ -565,13 +580,10 @@ document.addEventListener('wheel', function(e) {
       x: x * dpi,
       y: y * dpi,
     };
-    // pt.x = 348; pt.y = 213;
     const { translateX, translateY, scaleX } = curPage.getComputedStyle();
-    console.log(translateX, translateY, scaleX);
     const inverse = editor.math.matrix.inverse(curPage.matrixWorld);
     // 求出鼠标屏幕坐标在画布内相对page的坐标
     const pt1 = editor.math.matrix.calPoint(pt, inverse);
-    console.log(pt1);
     let scale = scaleX * sc;
     if(scale > 10) {
       scale = 10;

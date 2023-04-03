@@ -29,6 +29,8 @@ class Node extends Event {
   y: number;
   width: number;
   height: number;
+  minWidth: number; // 最小尺寸限制，当子节点有固定尺寸或者子节点还是组递归有固定时，最小限制不能调整
+  minHeight: number; // 同上，同时要考虑子节点是文字的特殊情况，有类似一行最少文字宽度的情况
   props: Props;
   style: Style;
   computedStyle: ComputedStyle;
@@ -61,6 +63,8 @@ class Node extends Event {
     this.y = 0;
     this.width = 0;
     this.height = 0;
+    this.minWidth = 0;
+    this.minHeight = 0;
     this.isDestroyed = true;
     this.struct = {
       node: this,
@@ -93,7 +97,7 @@ class Node extends Event {
     this.refreshLevel = RefreshLevel.REFLOW;
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
-    // 布局数据在更新时会用到
+    // 布局数据在更新时会用到 TODO sketch的布局似乎简化了用不到
     this.layoutData = {
       x: data.x,
       y: data.y,
@@ -109,49 +113,39 @@ class Node extends Event {
       width,
       height,
     } = style;
+    // 检查是否按相对边固定（px/%）还是尺寸固定，如左右vs宽度
     let fixedLeft = false;
     let fixedTop = false;
     let fixedRight = false;
     let fixedBottom = false;
-    if (left.u === StyleUnit.AUTO) {
-      computedStyle.left = 0;
-    }
-    else {
+    if (left.u !== StyleUnit.AUTO) {
       fixedLeft = true;
       computedStyle.left = calSize(left, data.w);
     }
-    if (right.u === StyleUnit.AUTO) {
-      computedStyle.right = 0;
-    }
-    else {
+    if (right.u !== StyleUnit.AUTO) {
       fixedRight = true;
       computedStyle.right = calSize(right, data.w);
     }
-    if (top.u === StyleUnit.AUTO) {
-      computedStyle.top = 0;
-    }
-    else {
+    if (top.u !== StyleUnit.AUTO) {
       fixedTop = true;
       computedStyle.top = calSize(top, data.h);
     }
-    if (bottom.u === StyleUnit.AUTO) {
-      computedStyle.bottom = 0;
-    }
-    else {
+    if (bottom.u !== StyleUnit.AUTO) {
       fixedBottom = true;
       computedStyle.bottom = calSize(bottom, data.h);
     }
-    if (width.u === StyleUnit.AUTO) {
-      computedStyle.width = 0;
+    // 固定尺寸直接设置，另外还要考虑min值
+    if (width.u !== StyleUnit.AUTO) {
+      computedStyle.width = computedStyle.minWidth = this.minWidth = calSize(width, data.w);
     }
     else {
-      computedStyle.width = calSize(width, data.w);
+      computedStyle.minWidth = this.minWidth = 0;
     }
-    if (height.u === StyleUnit.AUTO) {
-      computedStyle.height = 0;
+    if (height.u !== StyleUnit.AUTO) {
+      computedStyle.height = computedStyle.minHeight = this.minHeight = calSize(height, data.h);
     }
     else {
-      computedStyle.height = calSize(height, data.h);
+      computedStyle.minHeight = this.minHeight = 0;
     }
     // 左右决定x+width
     if (fixedLeft && fixedRight) {
@@ -216,6 +210,29 @@ class Node extends Event {
       else {
         this.height = 0;
       }
+    }
+    // 固定尺寸的情况还要计算距离边auto的实际px
+    if (fixedLeft && fixedRight) {}
+    else if (fixedLeft) {
+      computedStyle.right = data.w - computedStyle.left - this.width;
+    }
+    else if (fixedRight) {
+      computedStyle.left = this.x - data.x;
+    }
+    else {
+      computedStyle.left = this.x - data.x;
+      computedStyle.right = data.w - computedStyle.left - this.width;
+    }
+    if (fixedTop && fixedBottom) {}
+    else if (fixedTop) {
+      computedStyle.bottom = data.h - computedStyle.top - this.width;
+    }
+    else if (fixedBottom) {
+      computedStyle.top = this.y - data.y;
+    }
+    else {
+      computedStyle.top = this.y - data.y;
+      computedStyle.bottom = data.h - computedStyle.top - this.width;
     }
     // repaint和matrix计算需要x/y/width/height
     this.calRepaintStyle();
@@ -432,7 +449,7 @@ class Node extends Event {
     return [temp];
   }
 
-  updateStyle(style: any, cb?: Function) {
+  preUpdateStyleData(style: any) {
     const visible = this.computedStyle.visible;
     let hasVisible = false;
     const keys: Array<string> = [];
@@ -451,19 +468,35 @@ class Node extends Event {
         }
       }
     }
+    let ignore = false;
     // 不可见或销毁无需刷新 // TODO 不可见要看布局约束
     if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
-      cb && cb(true);
-      return;
+      ignore = true;
     }
+    return {
+      ignore,
+      keys,
+      formatStyle,
+    };
+  }
+
+  preUpdateStyleCheck() {
     // 父级不可见无需刷新
     let parent = this.parent;
     while (parent) {
       if (!parent.computedStyle.visible) {
-        cb && cb(true);
-        return;
+        return true;
       }
       parent = parent.parent;
+    }
+    return false;
+  }
+
+  updateStyle(style: any, cb?: Function) {
+    const { ignore, keys } = this.preUpdateStyleData(style);
+    if (ignore || this.preUpdateStyleCheck()) {
+      cb && cb(true);
+      return;
     }
     this.root!.addUpdate(this, keys, undefined, false, false, false, cb);
   }
@@ -472,8 +505,8 @@ class Node extends Event {
     const computedStyle = this.computedStyle;
     const res: any = {};
     for (let k in computedStyle) {
-      if (k === 'color' || k === 'backgroundColor') {
-        res[k] = color2rgbaStr(computedStyle[k]);
+      if (k === 'color' || k === 'backgroundColor' || k === 'transformOrigin') {
+        res[k] = computedStyle[k].slice(0);
       }
       else {
         // @ts-ignore

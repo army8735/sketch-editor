@@ -44,7 +44,8 @@ class Container extends Node {
       return;
     }
     super.layout(data);
-    const { children } = this;
+    const { children, computedStyle } = this;
+    // 递归下去布局
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       child.layout({
@@ -53,6 +54,12 @@ class Container extends Node {
         w: this.width,
         h: this.height,
       });
+    }
+    // 回溯收集minWidth/minHeight
+    for (let i = 0, len = children.length; i < len; i++) {
+      const child = children[i];
+      computedStyle.minWidth = this.minWidth = Math.max(this.minWidth, child.minWidth);
+      computedStyle.minHeight = this.minHeight = Math.max(this.minHeight, child.minHeight);
     }
   }
 

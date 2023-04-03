@@ -112,6 +112,8 @@ export type ComputedStyle = {
   left: number,
   width: number,
   height: number,
+  minWidth: number,
+  minHeight: number,
   lineHeight: number,
   fontFamily: string,
   fontSize: number,

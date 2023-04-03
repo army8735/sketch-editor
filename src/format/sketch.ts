@@ -168,7 +168,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     } as JArtBoard;
   }
   // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
-  const resizingConstraint = layer.resizingConstraint;
+  const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
   let left: number | string = 0,
     top: number | string = 0,
     right: number | string = 'auto',
@@ -178,7 +178,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
   let translateX = layer.frame.x,
     translateY = layer.frame.y;
   // 需根据父容器尺寸计算
-  if (resizingConstraint !== ResizingConstraint.UNSET) {
+  if (resizingConstraint) {
     // left
     if (resizingConstraint & ResizingConstraint.LEFT) {
       left = translateX;
@@ -190,7 +190,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       }
       // left+width
       else if (resizingConstraint & ResizingConstraint.WIDTH) {
-        // 默认啥也不做
+        // 默认right就是auto啥也不做
       }
       // 仅left，right是百分比忽略width
       else {
@@ -319,7 +319,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           opacity: layer.style.contextSettings.opacity,
           translateX,
           translateY,
-          rotateZ: layer.rotation,
+          rotateZ: -layer.rotation,
         },
       },
       children,
@@ -343,7 +343,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           opacity: layer.style.contextSettings.opacity,
           translateX,
           translateY,
-          rotateZ: layer.rotation,
+          rotateZ: -layer.rotation,
         },
         src: index,
       },
@@ -366,7 +366,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           opacity: layer.style.contextSettings.opacity,
           translateX,
           translateY,
-          rotateZ: layer.rotation,
+          rotateZ: -layer.rotation,
           overflow: 'hidden',
         },
       },

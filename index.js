@@ -15476,12 +15476,12 @@
                 };
             }
             // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
-            const resizingConstraint = layer.resizingConstraint;
+            const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
             let left = 0, top = 0, right = 'auto', bottom = 'auto';
             let width = layer.frame.width, height = layer.frame.height;
             let translateX = layer.frame.x, translateY = layer.frame.y;
             // 需根据父容器尺寸计算
-            if (resizingConstraint !== ResizingConstraint.UNSET) {
+            if (resizingConstraint) {
                 // left
                 if (resizingConstraint & ResizingConstraint.LEFT) {
                     left = translateX;
@@ -15616,7 +15616,7 @@
                             opacity: layer.style.contextSettings.opacity,
                             translateX,
                             translateY,
-                            rotateZ: layer.rotation,
+                            rotateZ: -layer.rotation,
                         },
                     },
                     children,
@@ -15640,7 +15640,7 @@
                             opacity: layer.style.contextSettings.opacity,
                             translateX,
                             translateY,
-                            rotateZ: layer.rotation,
+                            rotateZ: -layer.rotation,
                         },
                         src: index,
                     },
@@ -15663,7 +15663,7 @@
                             opacity: layer.style.contextSettings.opacity,
                             translateX,
                             translateY,
-                            rotateZ: layer.rotation,
+                            rotateZ: -layer.rotation,
                             overflow: 'hidden',
                         },
                     },
@@ -17693,6 +17693,8 @@
             this.y = 0;
             this.width = 0;
             this.height = 0;
+            this.minWidth = 0;
+            this.minHeight = 0;
             this.isDestroyed = true;
             this.struct = {
                 node: this,
@@ -17723,7 +17725,7 @@
             this.refreshLevel = RefreshLevel.REFLOW;
             // 布局时计算所有样式，更新时根据不同级别调用
             this.calReflowStyle();
-            // 布局数据在更新时会用到
+            // 布局数据在更新时会用到 TODO sketch的布局似乎简化了用不到
             this.layoutData = {
                 x: data.x,
                 y: data.y,
@@ -17732,49 +17734,39 @@
             };
             const { style, computedStyle } = this;
             const { left, top, right, bottom, width, height, } = style;
+            // 检查是否按相对边固定（px/%）还是尺寸固定，如左右vs宽度
             let fixedLeft = false;
             let fixedTop = false;
             let fixedRight = false;
             let fixedBottom = false;
-            if (left.u === StyleUnit.AUTO) {
-                computedStyle.left = 0;
-            }
-            else {
+            if (left.u !== StyleUnit.AUTO) {
                 fixedLeft = true;
                 computedStyle.left = calSize(left, data.w);
             }
-            if (right.u === StyleUnit.AUTO) {
-                computedStyle.right = 0;
-            }
-            else {
+            if (right.u !== StyleUnit.AUTO) {
                 fixedRight = true;
                 computedStyle.right = calSize(right, data.w);
             }
-            if (top.u === StyleUnit.AUTO) {
-                computedStyle.top = 0;
-            }
-            else {
+            if (top.u !== StyleUnit.AUTO) {
                 fixedTop = true;
                 computedStyle.top = calSize(top, data.h);
             }
-            if (bottom.u === StyleUnit.AUTO) {
-                computedStyle.bottom = 0;
-            }
-            else {
+            if (bottom.u !== StyleUnit.AUTO) {
                 fixedBottom = true;
                 computedStyle.bottom = calSize(bottom, data.h);
             }
-            if (width.u === StyleUnit.AUTO) {
-                computedStyle.width = 0;
+            // 固定尺寸直接设置，另外还要考虑min值
+            if (width.u !== StyleUnit.AUTO) {
+                computedStyle.width = computedStyle.minWidth = this.minWidth = calSize(width, data.w);
             }
             else {
-                computedStyle.width = calSize(width, data.w);
+                computedStyle.minWidth = this.minWidth = 0;
             }
-            if (height.u === StyleUnit.AUTO) {
-                computedStyle.height = 0;
+            if (height.u !== StyleUnit.AUTO) {
+                computedStyle.height = computedStyle.minHeight = this.minHeight = calSize(height, data.h);
             }
             else {
-                computedStyle.height = calSize(height, data.h);
+                computedStyle.minHeight = this.minHeight = 0;
             }
             // 左右决定x+width
             if (fixedLeft && fixedRight) {
@@ -17839,6 +17831,29 @@
                 else {
                     this.height = 0;
                 }
+            }
+            // 固定尺寸的情况还要计算距离边auto的实际px
+            if (fixedLeft && fixedRight) ;
+            else if (fixedLeft) {
+                computedStyle.right = data.w - computedStyle.left - this.width;
+            }
+            else if (fixedRight) {
+                computedStyle.left = this.x - data.x;
+            }
+            else {
+                computedStyle.left = this.x - data.x;
+                computedStyle.right = data.w - computedStyle.left - this.width;
+            }
+            if (fixedTop && fixedBottom) ;
+            else if (fixedTop) {
+                computedStyle.bottom = data.h - computedStyle.top - this.width;
+            }
+            else if (fixedBottom) {
+                computedStyle.top = this.y - data.y;
+            }
+            else {
+                computedStyle.top = this.y - data.y;
+                computedStyle.bottom = data.h - computedStyle.top - this.width;
             }
             // repaint和matrix计算需要x/y/width/height
             this.calRepaintStyle();
@@ -18045,7 +18060,7 @@
             temp.lv = lv;
             return [temp];
         }
-        updateStyle(style, cb) {
+        preUpdateStyleData(style) {
             const visible = this.computedStyle.visible;
             let hasVisible = false;
             const keys = [];
@@ -18064,19 +18079,33 @@
                     }
                 }
             }
+            let ignore = false;
             // 不可见或销毁无需刷新 // TODO 不可见要看布局约束
             if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
-                cb && cb(true);
-                return;
+                ignore = true;
             }
+            return {
+                ignore,
+                keys,
+                formatStyle,
+            };
+        }
+        preUpdateStyleCheck() {
             // 父级不可见无需刷新
             let parent = this.parent;
             while (parent) {
                 if (!parent.computedStyle.visible) {
-                    cb && cb(true);
-                    return;
+                    return true;
                 }
                 parent = parent.parent;
+            }
+            return false;
+        }
+        updateStyle(style, cb) {
+            const { ignore, keys } = this.preUpdateStyleData(style);
+            if (ignore || this.preUpdateStyleCheck()) {
+                cb && cb(true);
+                return;
             }
             this.root.addUpdate(this, keys, undefined, false, false, false, cb);
         }
@@ -18084,8 +18113,8 @@
             const computedStyle = this.computedStyle;
             const res = {};
             for (let k in computedStyle) {
-                if (k === 'color' || k === 'backgroundColor') {
-                    res[k] = color2rgbaStr(computedStyle[k]);
+                if (k === 'color' || k === 'backgroundColor' || k === 'transformOrigin') {
+                    res[k] = computedStyle[k].slice(0);
                 }
                 else {
                     // @ts-ignore
@@ -18221,7 +18250,8 @@
                 return;
             }
             super.layout(data);
-            const { children } = this;
+            const { children, computedStyle } = this;
+            // 递归下去布局
             for (let i = 0, len = children.length; i < len; i++) {
                 const child = children[i];
                 child.layout({
@@ -18230,6 +18260,12 @@
                     w: this.width,
                     h: this.height,
                 });
+            }
+            // 回溯收集minWidth/minHeight
+            for (let i = 0, len = children.length; i < len; i++) {
+                const child = children[i];
+                computedStyle.minWidth = this.minWidth = Math.max(this.minWidth, child.minWidth);
+                computedStyle.minHeight = this.minHeight = Math.max(this.minHeight, child.minHeight);
             }
         }
         appendChild(node, cb) {
@@ -18970,11 +19006,53 @@
             super(props, children);
             this.isGroup = true;
         }
+        updateStyle(style, cb) {
+            const { ignore, keys, formatStyle } = this.preUpdateStyleData(style);
+            if (ignore) {
+                cb && cb(true);
+                return;
+            }
+            // 最小尺寸约束
+            const parent = this.parent;
+            const computedStyle = this.computedStyle;
+            // 组只能调左/右/左右/宽，不能同时左右和宽，因为互斥
+            if (style.hasOwnProperty('left') && style.hasOwnProperty('right')) ;
+            else if (style.hasOwnProperty('left')) ;
+            else if (style.hasOwnProperty('right')) {
+                const right = calSize(formatStyle.right, parent.width);
+                const w = parent.width - computedStyle.left - right;
+                if (w < this.minWidth) {
+                    if (formatStyle.right.u === StyleUnit.PX) ;
+                    else if (formatStyle.right.u === StyleUnit.PERCENT) {
+                        const max = (parent.width - computedStyle.left - this.minWidth) * 100 / parent.width;
+                        if (formatStyle.right.v === max) {
+                            let i = keys.indexOf('right');
+                            keys.splice(i, 1);
+                        }
+                        else {
+                            formatStyle.right.v = max;
+                        }
+                    }
+                }
+            }
+            else if (style.hasOwnProperty('width')) ;
+            // 再次检测可能以为尺寸限制造成的style更新无效，即限制后和当前一样
+            if (!keys.length) {
+                cb && cb(true);
+                return;
+            }
+            // 和Node不同，这个检测需再最小尺寸约束之后
+            if (this.preUpdateStyleCheck()) {
+                cb && cb(true);
+                return;
+            }
+            this.root.addUpdate(this, keys, undefined, false, false, false, cb);
+        }
         // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等，还不能触发渲染
         checkFitPS() {
             const { children, style, computedStyle, parent } = this;
             if (!parent) {
-                return;
+                return false;
             }
             const { x: gx, y: gy, width: gw, height: gh } = this;
             let rect = {};
@@ -19038,7 +19116,7 @@
                 this._rect = undefined;
                 this._bbox = undefined;
                 // 后面计算要用新的值
-                const { x: gx2, y: gy2, width: gw2, height: gh2 } = this;
+                const { width: gw2, height: gh2 } = this;
                 // 再改孩子的，无需递归向下
                 for (let i = 0, len = children.length; i < len; i++) {
                     const child = children[i];
@@ -19048,25 +19126,49 @@
                     if (width.u === StyleUnit.AUTO) {
                         // 注意判断条件，组的水平只要有x/width变更，child的水平都得全变
                         if (rect.minX !== 0 || rect.maxX !== gw) {
-                            left.v = (child.x - gx2) * 100 / gw2;
-                            computedStyle.left = calSize(left, gw2);
-                            right.v = (gw2 - child.x + gx2 - child.width) * 100 / gw2;
-                            computedStyle.right = calSize(right, gw2);
+                            // 如果向左拖发生了group的x变更，则minX为负数，子节点的left值增加
+                            computedStyle.left -= rect.minX;
+                            if (left.u === StyleUnit.PX) {
+                                left.v = computedStyle.left;
+                            }
+                            else if (left.u === StyleUnit.PERCENT) {
+                                left.v = computedStyle.left * 100 / gw2;
+                            }
+                            // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
+                            computedStyle.right += rect.maxX - gw;
+                            if (right.u === StyleUnit.PX) {
+                                right.v = computedStyle.right;
+                            }
+                            else if (right.u === StyleUnit.PERCENT) {
+                                right.v = computedStyle.right * 100 / gw2;
+                            }
                         }
                     }
                     // 高度自动，则上下必然有值
                     if (height.u === StyleUnit.AUTO) {
                         if (rect.minY !== 0 || rect.maxY !== gh) {
-                            top.v = (child.y - gy2) * 100 / gh2;
-                            computedStyle.top = calSize(top, gh2);
-                            bottom.v = (gh2 - child.y + gy2 - child.height) * 100 / gh2;
-                            computedStyle.bottom = calSize(bottom, gh2);
+                            computedStyle.top -= rect.minY;
+                            if (top.u === StyleUnit.PX) {
+                                top.v = computedStyle.top;
+                            }
+                            else if (top.u === StyleUnit.PERCENT) {
+                                top.v = computedStyle.top * 100 / gh2;
+                            }
+                            computedStyle.bottom += rect.maxY - gh;
+                            if (bottom.u === StyleUnit.PX) {
+                                bottom.v = computedStyle.bottom;
+                            }
+                            else if (bottom.u === StyleUnit.PERCENT) {
+                                bottom.v = computedStyle.bottom * 100 / gh2;
+                            }
                         }
                     }
                     child._rect = undefined;
                     child._bbox = undefined;
                 }
+                return true;
             }
+            return false;
         }
     }
 
@@ -19379,7 +19481,9 @@
         // 向上检查group的影响，group一定是自适应尺寸需要调整的
         while (parent && parent !== root) {
             if (parent instanceof Group) {
-                parent.checkFitPS();
+                if (!parent.checkFitPS()) {
+                    break;
+                }
             }
             parent = parent.parent;
         }
@@ -19899,7 +20003,9 @@ void main() {
             if (keys.length) {
                 while (parent && parent !== this) {
                     if (parent instanceof Group) {
-                        parent.checkFitPS();
+                        if (!parent.checkFitPS()) {
+                            break;
+                        }
                     }
                     parent = parent.parent;
                 }
