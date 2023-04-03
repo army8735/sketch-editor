@@ -15522,7 +15522,7 @@
                 else {
                     // 仅固定宽度，以中心点占left的百分比
                     if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = translateX + width * 0.5;
+                        left = (translateX + width * 0.5) * 100 / w + '%';
                         translateX = '-50%';
                     }
                     // 左右皆为百分比
@@ -15573,7 +15573,7 @@
                 else {
                     // 仅固定高度，以中心点占top的百分比
                     if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = translateY + height * 0.5;
+                        top = (translateY + height * 0.5) * 100 / h + '%';
                         translateY = '-50%';
                     }
                     // 上下皆为百分比
@@ -19170,6 +19170,7 @@
             }
             return false;
         }
+        checkSizeChange() { }
     }
 
     class Geom extends Node {

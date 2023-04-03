@@ -201,6 +201,8 @@ class Group extends Container {
     }
     return false;
   }
+
+  checkSizeChange() {}
 }
 
 export default Group;

@@ -293,7 +293,7 @@ function getActiveNodeWhenSelected(node) {
 function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
-  computedStyle = selectNode.getComputedStyle(); console.log(style, computedStyle)
+  computedStyle = selectNode.getComputedStyle();
   updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
@@ -364,7 +364,12 @@ function onMove(x, y) {
         return;
       }
       const dx = lastX - startX, dy = lastY - startY;
-      if (controlType === 'r') {
+      if (controlType === 'tl') {}
+      else if (controlType === 'tr') {}
+      else if (controlType === 'br') {}
+      else if (controlType === 'bl') {}
+      else if (controlType === 't') {}
+      else if (controlType === 'r') {
         if (style.width.u === editor.style.define.StyleUnit.AUTO) {
           const right = (computedStyle.right - dx) * 100 / selectNode.parent.width + '%';
           selectNode.updateStyle({
@@ -374,6 +379,8 @@ function onMove(x, y) {
           });
         }
       }
+      else if (controlType === 'b') {}
+      else if (controlType === 'l') {}
     }
     // 拖拽节点本身
     else if (isDown) {
@@ -431,19 +438,34 @@ $overlap.addEventListener('mousedown', function(e) {
       // 注意要判断是否点在选择框上的控制点，进入拖拽拉伸模式，只有几个控制点pointerEvents可以被点击
       if (target.tagName === 'SPAN') {
         isControl = true;
+        // 再更新下，防止重复拖拽数据不及时
+        computedStyle = selectNode.getComputedStyle();
         const classList = target.classList;
-        if (classList.contains('tl')) {}
-        else if (classList.contains('tr')) {}
-        else if (classList.contains('br')) {}
-        else if (classList.contains('bl')) {}
+        if (classList.contains('tl')) {
+          controlType = 'tl';
+        }
+        else if (classList.contains('tr')) {
+          controlType = 'tr';
+        }
+        else if (classList.contains('br')) {
+          controlType = 'br';
+        }
+        else if (classList.contains('bl')) {
+          controlType = 'bl';
+        }
         else if (classList.contains('t')) {
           controlType = 't';
         }
         else if (classList.contains('r')) {
           controlType = 'r';
         }
-        else if (classList.contains('b')) {}
-        else if (classList.contains('l')) {}
+        else if (classList.contains('b')) {
+          controlType = 'b';
+        }
+        else if (classList.contains('l')) {
+          controlType = 'l';
+        }
+        $overlap.classList.add(controlType);
       }
       // 普通模式选择节点
       else {
@@ -473,11 +495,20 @@ document.addEventListener('mouseup', function(e) {
     return;
   }
   if (e.button === 0) {
-    const dx = lastX - startX, dy = lastY - startY;
-    if (selectNode) {
-      // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
-      if (dx || dy) {
-        root.checkNodePosChange(selectNode);
+    if (isControl) {
+      $overlap.classList.remove(controlType);
+      if (selectNode instanceof editor.node.Group) {
+        selectNode.checkSizeChange();
+        updateSelect();
+      }
+    }
+    else {
+      if(selectNode) {
+        const dx = lastX - startX, dy = lastY - startY;
+        // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
+        if(dx || dy) {
+          root.checkNodePosChange(selectNode);
+        }
       }
     }
     isDown = false;

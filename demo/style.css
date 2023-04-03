@@ -154,6 +154,30 @@ canvas {
 .overlap.space.down {
   cursor: grabbing;
 }
+.overlap.t {
+  cursor: ns-resize;
+}
+.overlap.r {
+  cursor: ew-resize;
+}
+.overlap.b {
+  cursor: ns-resize;
+}
+.overlap.l {
+  cursor: ew-resize;
+}
+.overlap.tl {
+  cursor: nwse-resize;
+}
+.overlap.tr {
+  cursor: nesw-resize;
+}
+.overlap.br {
+  cursor: nwse-resize;
+}
+.overlap.bl {
+  cursor: nesw-resize;
+}
 
 .overlap .hover {
   position: absolute;
