@@ -18,7 +18,7 @@ class Container extends Node {
     this.children = children;
   }
 
-  // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前没JSX这种一口气创建一颗子树
+  // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前暂无JSX这种一口气创建一颗子树
   didMount() {
     super.didMount();
     const { children } = this;

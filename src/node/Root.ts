@@ -429,7 +429,7 @@ class Root extends Container implements FrameCallback {
     if (keys.length) {
       while (parent && parent !== this) {
         if (parent instanceof Group) {
-          if (!parent.checkFitPS()) {
+          if (!parent.checkFitPos()) {
             break;
           }
         }
