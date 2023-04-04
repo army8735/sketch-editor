@@ -18066,8 +18066,6 @@
             return [temp];
         }
         preUpdateStyleData(style) {
-            const visible = this.computedStyle.visible;
-            let hasVisible = false;
             const keys = [];
             const formatStyle = normalize(style);
             for (let k in formatStyle) {
@@ -18078,24 +18076,20 @@
                         // @ts-ignore
                         this.style[k] = v;
                         keys.push(k);
-                        if (k === 'visible') {
-                            hasVisible = true;
-                        }
                     }
                 }
             }
-            let ignore = false;
-            // 不可见或销毁无需刷新 // TODO 不可见要看布局约束
-            if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
-                ignore = true;
-            }
-            return {
-                ignore,
-                keys,
-                formatStyle,
-            };
+            return { keys, formatStyle };
         }
-        preUpdateStyleCheck() {
+        preUpdateStyleCheck(keys) {
+            if (!keys.length) {
+                return true;
+            }
+            // 自己不可见且没改变visible无需刷新
+            let visible = this.computedStyle.visible;
+            if (!visible && keys.indexOf('visible') < 0) {
+                return true;
+            }
             // 父级不可见无需刷新
             let parent = this.parent;
             while (parent) {
@@ -18107,8 +18101,9 @@
             return false;
         }
         updateStyle(style, cb) {
-            const { ignore, keys } = this.preUpdateStyleData(style);
-            if (ignore || this.preUpdateStyleCheck()) {
+            const { keys } = this.preUpdateStyleData(style);
+            // 无变更或不可见
+            if (this.preUpdateStyleCheck(keys)) {
                 cb && cb(true);
                 return;
             }
@@ -18191,7 +18186,7 @@
                 }
             }
             // 只会有TRBL，translate几个值
-            this.updateStyle(newStyle);
+            this.preUpdateStyleData(newStyle);
             // 向上检查group的影响，group一定是自适应尺寸需要调整的
             this.checkPosSizeUp();
         }
@@ -19060,12 +19055,9 @@
             super(props, children);
             this.isGroup = true;
         }
+        // 覆盖实现，有最小尺寸约束，更新要预防
         updateStyle(style, cb) {
-            const { ignore, keys, formatStyle } = this.preUpdateStyleData(style);
-            if (ignore) {
-                cb && cb(true);
-                return;
-            }
+            const { keys, formatStyle } = this.preUpdateStyleData(style);
             // 最小尺寸约束
             const parent = this.parent;
             const computedStyle = this.computedStyle;
@@ -19079,24 +19071,20 @@
                     if (formatStyle.right.u === StyleUnit.PX) ;
                     else if (formatStyle.right.u === StyleUnit.PERCENT) {
                         const max = (parent.width - computedStyle.left - this.minWidth) * 100 / parent.width;
+                        // 限制导致的无效更新去除
                         if (formatStyle.right.v === max) {
                             let i = keys.indexOf('right');
                             keys.splice(i, 1);
                         }
                         else {
-                            formatStyle.right.v = max;
+                            formatStyle.right.v = this.style.right.v = max;
                         }
                     }
                 }
             }
             else if (style.hasOwnProperty('width')) ;
-            // 再次检测可能以为尺寸限制造成的style更新无效，即限制后和当前一样
-            if (!keys.length) {
-                cb && cb(true);
-                return;
-            }
-            // 和Node不同，这个检测需再最小尺寸约束之后
-            if (this.preUpdateStyleCheck()) {
+            // 再次检测可能因为尺寸限制造成的style更新无效，即限制后和当前一样
+            if (this.preUpdateStyleCheck(keys)) {
                 cb && cb(true);
                 return;
             }

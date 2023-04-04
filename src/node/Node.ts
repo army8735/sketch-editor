@@ -450,8 +450,6 @@ class Node extends Event {
   }
 
   preUpdateStyleData(style: any) {
-    const visible = this.computedStyle.visible;
-    let hasVisible = false;
     const keys: Array<string> = [];
     const formatStyle = normalize(style);
     for (let k in formatStyle) {
@@ -462,25 +460,21 @@ class Node extends Event {
           // @ts-ignore
           this.style[k] = v;
           keys.push(k);
-          if (k === 'visible') {
-            hasVisible = true;
-          }
         }
       }
     }
-    let ignore = false;
-    // 不可见或销毁无需刷新 // TODO 不可见要看布局约束
-    if (!keys.length || this.isDestroyed || !visible && !hasVisible) {
-      ignore = true;
-    }
-    return {
-      ignore,
-      keys,
-      formatStyle,
-    };
+    return { keys, formatStyle };
   }
 
-  preUpdateStyleCheck() {
+  preUpdateStyleCheck(keys: Array<string>) {
+    if (!keys.length) {
+      return true;
+    }
+    // 自己不可见且没改变visible无需刷新
+    let visible = this.computedStyle.visible;
+    if (!visible && keys.indexOf('visible') < 0) {
+      return true;
+    }
     // 父级不可见无需刷新
     let parent = this.parent;
     while (parent) {
@@ -493,8 +487,9 @@ class Node extends Event {
   }
 
   updateStyle(style: any, cb?: Function) {
-    const { ignore, keys } = this.preUpdateStyleData(style);
-    if (ignore || this.preUpdateStyleCheck()) {
+    const { keys } = this.preUpdateStyleData(style);
+    // 无变更或不可见
+    if (this.preUpdateStyleCheck(keys)) {
       cb && cb(true);
       return;
     }
@@ -595,7 +590,7 @@ class Node extends Event {
     }
     else {}
     // 只会有TRBL，translate几个值
-    this.updateStyle(newStyle);
+    this.preUpdateStyleData(newStyle);
     // 向上检查group的影响，group一定是自适应尺寸需要调整的
     this.checkPosSizeUp();
   }

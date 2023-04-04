@@ -12,12 +12,9 @@ class Group extends Container {
     this.isGroup = true;
   }
 
+  // 覆盖实现，有最小尺寸约束，更新要预防
   override updateStyle(style: any, cb?: Function) {
-    const { ignore, keys, formatStyle } = this.preUpdateStyleData(style);
-    if (ignore) {
-      cb && cb(true);
-      return;
-    }
+    const { keys, formatStyle } = this.preUpdateStyleData(style);
     // 最小尺寸约束
     const parent = this.parent!;
     const computedStyle = this.computedStyle;
@@ -31,24 +28,20 @@ class Group extends Container {
         if (formatStyle.right.u === StyleUnit.PX) {}
         else if (formatStyle.right.u === StyleUnit.PERCENT) {
           const max = (parent.width - computedStyle.left - this.minWidth) * 100 / parent.width;
+          // 限制导致的无效更新去除
           if ((formatStyle.right.v as number) === max) {
             let i = keys.indexOf('right');
             keys.splice(i, 1);
           }
           else {
-            formatStyle.right.v = max;
+            formatStyle.right.v = this.style.right.v = max;
           }
         }
       }
     }
     else if (style.hasOwnProperty('width')) {}
-    // 再次检测可能以为尺寸限制造成的style更新无效，即限制后和当前一样
-    if (!keys.length) {
-      cb && cb(true);
-      return;
-    }
-    // 和Node不同，这个检测需再最小尺寸约束之后
-    if (this.preUpdateStyleCheck()) {
+    // 再次检测可能因为尺寸限制造成的style更新无效，即限制后和当前一样
+    if (this.preUpdateStyleCheck(keys)) {
       cb && cb(true);
       return;
     }
