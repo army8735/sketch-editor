@@ -209,19 +209,27 @@ class Group extends Container {
     return false;
   }
 
-  // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等，还不能触发渲染
-  checkFitPos() {
+  // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等
+  override checkFitPos() {
+    super.checkFitPos();
     let rect = this.getChildrenRect();
     return this.adjustPosAndSize(rect);
   }
 
   // 组调整尺寸后，需重新计算x/y/width/height，这个过程是先递归看子节点，因为可能有组嵌套
-  checkSizeChange() {
+  // 再向上看，类似posChange可能影响包含自己的组
+  override checkSizeChange() {
+    super.checkSizeChange();
+    this.checkFitSize();
+    this.checkPosSizeUp();
+  }
+
+  private checkFitSize() {
     const { children } = this;
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       if (child instanceof Group) {
-        child.checkSizeChange();
+        child.checkFitSize();
       }
     }
     const rect = this.getChildrenRect();

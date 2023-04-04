@@ -497,10 +497,8 @@ document.addEventListener('mouseup', function(e) {
   if (e.button === 0) {
     if (isControl) {
       $overlap.classList.remove(controlType);
-      if (selectNode instanceof editor.node.Group) {
-        selectNode.checkSizeChange();
-        updateSelect();
-      }
+      selectNode.checkSizeChange();
+      updateSelect();
     }
     else {
       if(selectNode) {

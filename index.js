@@ -18160,6 +18160,10 @@
                     }],
             };
         }
+        checkFitPos() {
+            // 啥也不做，组覆盖实现
+            return false;
+        }
         checkPosChange() {
             if (this.isDestroyed) {
                 return;
@@ -18188,6 +18192,22 @@
             }
             // 只会有TRBL，translate几个值
             this.updateStyle(newStyle);
+            // 向上检查group的影响，group一定是自适应尺寸需要调整的
+            this.checkPosSizeUp();
+        }
+        // 节点位置尺寸发生变更后，会递归向上影响，逐步检查，可能在某层没有影响提前跳出中断
+        checkPosSizeUp() {
+            const root = this.root;
+            let parent = this.parent;
+            while (parent && parent !== root) {
+                if (!parent.checkFitPos()) {
+                    break;
+                }
+                parent = parent.parent;
+            }
+        }
+        checkSizeChange() {
+            // 啥也不做，组覆盖实现
         }
         get opacity() {
             let parent = this.parent;
@@ -19213,18 +19233,25 @@
             }
             return false;
         }
-        // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等，还不能触发渲染
+        // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等
         checkFitPos() {
+            super.checkFitPos();
             let rect = this.getChildrenRect();
             return this.adjustPosAndSize(rect);
         }
         // 组调整尺寸后，需重新计算x/y/width/height，这个过程是先递归看子节点，因为可能有组嵌套
+        // 再向上看，类似posChange可能影响包含自己的组
         checkSizeChange() {
+            super.checkSizeChange();
+            this.checkFitSize();
+            this.checkPosSizeUp();
+        }
+        checkFitSize() {
             const { children } = this;
             for (let i = 0, len = children.length; i < len; i++) {
                 const child = children[i];
                 if (child instanceof Group) {
-                    child.checkSizeChange();
+                    child.checkFitSize();
                 }
             }
             const rect = this.getChildrenRect();
@@ -19537,15 +19564,6 @@
                 w: parent.width,
                 h: parent.height,
             });
-        }
-        // 向上检查group的影响，group一定是自适应尺寸需要调整的
-        while (parent && parent !== root) {
-            if (parent instanceof Group) {
-                if (!parent.checkFitPos()) {
-                    break;
-                }
-            }
-            parent = parent.parent;
         }
     }
 

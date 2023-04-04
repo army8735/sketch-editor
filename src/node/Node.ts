@@ -551,6 +551,11 @@ class Node extends Event {
     };
   }
 
+  checkFitPos() {
+    // 啥也不做，组覆盖实现
+    return false;
+  }
+
   checkPosChange() {
     if (this.isDestroyed) {
       return;
@@ -591,6 +596,24 @@ class Node extends Event {
     else {}
     // 只会有TRBL，translate几个值
     this.updateStyle(newStyle);
+    // 向上检查group的影响，group一定是自适应尺寸需要调整的
+    this.checkPosSizeUp();
+  }
+
+  // 节点位置尺寸发生变更后，会递归向上影响，逐步检查，可能在某层没有影响提前跳出中断
+  checkPosSizeUp() {
+    const root = this.root!;
+    let parent = this.parent;
+    while (parent && parent !== root) {
+      if (!parent.checkFitPos()) {
+        break;
+      }
+      parent = parent.parent;
+    }
+  }
+
+  checkSizeChange() {
+    // 啥也不做，组覆盖实现
   }
 
   get opacity() {

@@ -1,6 +1,5 @@
 import Root from './Root';
 import Node from './Node';
-import Group from './Group';
 
 export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: boolean) {
   let parent = node.parent!;
@@ -22,14 +21,5 @@ export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: 
       w: parent.width,
       h: parent.height,
     });
-  }
-  // 向上检查group的影响，group一定是自适应尺寸需要调整的
-  while (parent && parent !== root) {
-    if (parent instanceof Group) {
-      if (!parent.checkFitPos()) {
-        break;
-      }
-    }
-    parent = parent.parent!;
   }
 }
