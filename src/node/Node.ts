@@ -551,6 +551,48 @@ class Node extends Event {
     };
   }
 
+  checkPosChange() {
+    if (this.isDestroyed) {
+      return;
+    }
+    const style = this.style;
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      translateX,
+      translateY,
+    } = style;
+    // 一定有parent，不会改root下的固定容器子节点
+    let parent = this.parent!;
+    const newStyle: any = {};
+    // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
+    if (width.u === StyleUnit.AUTO) {
+      const x = translateX.v;
+      if (x !== 0) {
+        newStyle.translateX = 0;
+        newStyle.left = (left.v as number) + (x as number) * 100 / parent.width + '%';
+        newStyle.right = (right.v as number) - (x as number) * 100 / parent.width + '%';
+      }
+    }
+    // 固定宽度
+    else {}
+    // 高度和宽度一样
+    if (height.u === StyleUnit.AUTO) {
+      if (translateY.v !== 0) {
+        newStyle.translateY = 0;
+        newStyle.top = (top.v as number) + (translateY.v as number) * 100 / parent.height + '%';
+        newStyle.bottom = (bottom.v as number) - (translateY.v as number) * 100 / parent.height + '%';
+      }
+    }
+    else {}
+    // 只会有TRBL，translate几个值
+    this.updateStyle(newStyle);
+  }
+
   get opacity() {
     let parent = this.parent;
     // 非Root节点继续向上乘

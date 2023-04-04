@@ -15851,11 +15851,16 @@
     o.info['宋体'] = o.info.simsun;
     o.info['pingfang'] = o.info['pingfang sc'];
 
+    // 向量点乘积
+    function dotProduct(x1, y1, x2, y2) {
+        return x1 * x2 + y1 * y2;
+    }
     // 向量叉乘积
     function crossProduct(x1, y1, x2, y2) {
         return x1 * y2 - x2 * y1;
     }
     var vector = {
+        dotProduct,
         crossProduct,
     };
 
@@ -18155,6 +18160,35 @@
                     }],
             };
         }
+        checkPosChange() {
+            if (this.isDestroyed) {
+                return;
+            }
+            const style = this.style;
+            const { top, right, bottom, left, width, height, translateX, translateY, } = style;
+            // 一定有parent，不会改root下的固定容器子节点
+            let parent = this.parent;
+            const newStyle = {};
+            // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
+            if (width.u === StyleUnit.AUTO) {
+                const x = translateX.v;
+                if (x !== 0) {
+                    newStyle.translateX = 0;
+                    newStyle.left = left.v + x * 100 / parent.width + '%';
+                    newStyle.right = right.v - x * 100 / parent.width + '%';
+                }
+            }
+            // 高度和宽度一样
+            if (height.u === StyleUnit.AUTO) {
+                if (translateY.v !== 0) {
+                    newStyle.translateY = 0;
+                    newStyle.top = top.v + translateY.v * 100 / parent.height + '%';
+                    newStyle.bottom = bottom.v - translateY.v * 100 / parent.height + '%';
+                }
+            }
+            // 只会有TRBL，translate几个值
+            this.updateStyle(newStyle);
+        }
         get opacity() {
             let parent = this.parent;
             // 非Root节点继续向上乘
@@ -19966,75 +20000,6 @@ void main() {
             const page = this.lastPage;
             if (page) {
                 return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
-            }
-        }
-        checkNodePosChange(node) {
-            if (node.isDestroyed) {
-                return;
-            }
-            const style = node.style;
-            const { top, right, bottom, left, width, height, translateX, translateY, } = style;
-            // 一定有parent，不会改root下的固定容器子节点
-            let parent = node.parent;
-            const newStyle = {};
-            // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
-            if (width.u === StyleUnit.AUTO) {
-                const x = translateX.v;
-                if (x !== 0) {
-                    newStyle.translateX = 0;
-                    newStyle.left = left.v + x * 100 / parent.width + '%';
-                    newStyle.right = right.v - x * 100 / parent.width + '%';
-                }
-            }
-            // 高度和宽度一样
-            if (height.u === StyleUnit.AUTO) {
-                if (translateY.v !== 0) {
-                    newStyle.translateY = 0;
-                    newStyle.top = top.v + translateY.v * 100 / parent.height + '%';
-                    newStyle.bottom = bottom.v - translateY.v * 100 / parent.height + '%';
-                }
-            }
-            // 只会有TRBL，translate几个值
-            const formatStyle = normalize(newStyle);
-            const keys = [];
-            const computedStyle = node.computedStyle;
-            for (let k in formatStyle) {
-                if (formatStyle.hasOwnProperty(k)) {
-                    // @ts-ignore
-                    const v = formatStyle[k];
-                    if (!equalStyle(k, formatStyle, style)) {
-                        // @ts-ignore
-                        style[k] = v;
-                        if (k === 'translateX' || k === 'translateY') {
-                            computedStyle[k] = 0;
-                        }
-                        else {
-                            if (v.u === StyleUnit.AUTO) {
-                                // @ts-ignore
-                                computedStyle[k] = 0;
-                            }
-                            else {
-                                if (k === 'left' || k === 'right') {
-                                    computedStyle[k] = calSize(v, parent.width);
-                                }
-                                else if (k === 'top' || k === 'bottom') {
-                                    computedStyle[k] = calSize(v, parent.height);
-                                }
-                            }
-                        }
-                        keys.push(k);
-                    }
-                }
-            }
-            if (keys.length) {
-                while (parent && parent !== this) {
-                    if (parent instanceof Group) {
-                        if (!parent.checkFitPos()) {
-                            break;
-                        }
-                    }
-                    parent = parent.parent;
-                }
             }
         }
     }

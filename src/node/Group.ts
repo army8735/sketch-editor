@@ -124,11 +124,11 @@ class Group extends Container {
       // 宽度自动，则左右必然有值
       if (width.u === StyleUnit.AUTO) {
         if (rect.minX !== 0) {
-          left.v = (left.v as number) + rect.minX! * 100 / pw;
+          left.v = (left.v as number) + rect.minX * 100 / pw;
           computedStyle.left = calSize(left, pw);
         }
         if (rect.maxX !== gw) {
-          right.v = (right.v as number) - (rect.maxX! - gw) * 100 / pw;
+          right.v = (right.v as number) - (rect.maxX - gw) * 100 / pw;
           computedStyle.right = calSize(right, pw);
         }
         this.x = parent.x + computedStyle.left;
@@ -138,11 +138,11 @@ class Group extends Container {
       // 高度自动，则上下必然有值
       if (height.u === StyleUnit.AUTO) {
         if (rect.minY !== 0) {
-          top.v = (top.v as number) + rect.minY! * 100 / ph;
+          top.v = (top.v as number) + rect.minY * 100 / ph;
           computedStyle.top = calSize(top, ph);
         }
         if (rect.maxY !== gh) {
-          bottom.v = (bottom.v as number) - (rect.maxY! - gh) * 100 / ph;
+          bottom.v = (bottom.v as number) - (rect.maxY - gh) * 100 / ph;
           computedStyle.bottom = calSize(bottom, ph);
         }
         this.y = parent.y + computedStyle.top;

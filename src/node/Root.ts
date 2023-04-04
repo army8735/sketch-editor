@@ -10,8 +10,6 @@ import Event from '../util/Event';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { checkReflow } from './reflow';
 import Container from './Container';
-import { StyleUnit } from '../style/define';
-import { calSize, equalStyle, normalize } from '../style/css';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
 import { colorFrag, colorVert, mainFrag, mainVert, simpleFrag, simpleVert } from '../gl/glsl';
@@ -353,88 +351,6 @@ class Root extends Container implements FrameCallback {
     const page = this.lastPage;
     if (page) {
       return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
-    }
-  }
-
-  checkNodePosChange(node: Node) {
-    if (node.isDestroyed) {
-      return;
-    }
-    const style = node.style;
-    const {
-      top,
-      right,
-      bottom,
-      left,
-      width,
-      height,
-      translateX,
-      translateY,
-    } = style;
-    // 一定有parent，不会改root下的固定容器子节点
-    let parent = node.parent!;
-    const newStyle: any = {};
-    // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
-    if (width.u === StyleUnit.AUTO) {
-      const x = translateX.v;
-      if (x !== 0) {
-        newStyle.translateX = 0;
-        newStyle.left = (left.v as number) + (x as number) * 100 / parent.width + '%';
-        newStyle.right = (right.v as number) - (x as number) * 100 / parent.width + '%';
-      }
-    }
-    // 固定宽度
-    else {}
-    // 高度和宽度一样
-    if (height.u === StyleUnit.AUTO) {
-      if (translateY.v !== 0) {
-        newStyle.translateY = 0;
-        newStyle.top = (top.v as number) + (translateY.v as number) * 100 / parent.height + '%';
-        newStyle.bottom = (bottom.v as number) - (translateY.v as number) * 100 / parent.height + '%';
-      }
-    }
-    else {}
-    // 只会有TRBL，translate几个值
-    const formatStyle = normalize(newStyle);
-    const keys: Array<string> = [];
-    const computedStyle = node.computedStyle;
-    for (let k in formatStyle) {
-      if (formatStyle.hasOwnProperty(k)) {
-        // @ts-ignore
-        const v = formatStyle[k];
-        if (!equalStyle(k, formatStyle, style)) {
-          // @ts-ignore
-          style[k] = v;
-          if (k === 'translateX' || k === 'translateY') {
-            computedStyle[k] = 0;
-          }
-          else {
-            if (v.u === StyleUnit.AUTO) {
-              // @ts-ignore
-              computedStyle[k] = 0;
-            }
-            else {
-              if (k === 'left' || k === 'right') {
-                computedStyle[k] = calSize(v, parent.width);
-              }
-              else if (k === 'top' || k === 'bottom') {
-                computedStyle[k] = calSize(v, parent.height);
-              }
-            }
-          }
-          keys.push(k);
-        }
-      }
-    }
-    if (keys.length) {
-      while (parent && parent !== this) {
-        if (parent instanceof Group) {
-          if (!parent.checkFitPos()) {
-            break;
-          }
-        }
-        parent = parent.parent!;
-      }
     }
   }
 }

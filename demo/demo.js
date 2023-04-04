@@ -102,7 +102,7 @@ $input.onchange = function(e) {
         }
         const li = genNodeTree(node, abHash);
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
-        const i = children.indexOf(node); console.log(children, i);
+        const i = children.indexOf(node);
         const ol = abHash[uuid].querySelector('ol');
         if (i === children.length - 1) {
           ol.appendChild(li);
@@ -507,7 +507,7 @@ document.addEventListener('mouseup', function(e) {
         const dx = lastX - startX, dy = lastY - startY;
         // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
         if(dx || dy) {
-          root.checkNodePosChange(selectNode);
+          selectNode.checkPosChange(selectNode);
         }
       }
     }
