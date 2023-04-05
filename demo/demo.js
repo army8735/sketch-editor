@@ -294,6 +294,10 @@ function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
   computedStyle = selectNode.getComputedStyle();
+  console.log(style.left, style.width, style.translateX, '=====',
+    computedStyle.left, computedStyle.width, computedStyle.translateX, '======',
+    selectNode.x, selectNode.width, '======',
+    selectNode.matrix.join(','), selectNode.matrixWorld.join(','));
   updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
@@ -374,9 +378,8 @@ function onMove(x, y) {
           const right = (computedStyle.right - dx) * 100 / selectNode.parent.width + '%';
           selectNode.updateStyle({
             right,
-          }, function() {
-            updateSelect();
           });
+          updateSelect();
         }
       }
       else if (controlType === 'b') {}
@@ -390,9 +393,8 @@ function onMove(x, y) {
       selectNode.updateStyle({
         translateX: computedStyle.translateX + dx,
         translateY: computedStyle.translateY + dy,
-      }, function() {
-        updateSelect();
       });
+      updateSelect();
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
