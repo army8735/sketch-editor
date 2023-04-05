@@ -2,7 +2,7 @@ import Root from './Root';
 import Node from './Node';
 
 export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: boolean) {
-  let parent = node.parent!;
+  const parent = node.parent!;
   if (addDom) {
     node.layout({
       x: parent.x,

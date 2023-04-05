@@ -3,7 +3,6 @@ import {
   calUnit,
   FONT_STYLE,
   MIX_BLEND_MODE,
-  StyleNumStrValue,
   StyleNumValue,
   StyleUnit,
   StyleValue,
@@ -405,12 +404,12 @@ export function getBaseline(style: ComputedStyle) {
   return (style.lineHeight - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
-export function calSize(v: StyleNumStrValue, p: number): number {
+export function calSize(v: StyleNumValue, p: number): number {
   if (v.u === StyleUnit.PX) {
-    return v.v as number;
+    return v.v;
   }
   if (v.u === StyleUnit.PERCENT) {
-    return (v.v as number) * p * 0.01;
+    return v.v * p * 0.01;
   }
   return 0;
 }

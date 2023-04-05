@@ -46,10 +46,6 @@ export type StyleValue = {
   u: StyleUnit,
 };
 
-export type StyleNumStrValue = StyleValue & {
-  v: number | string,
-};
-
 export type StyleStrValue = StyleValue & {
   v: string,
 };
@@ -79,13 +75,13 @@ export type StyleMbmValue = StyleValue & {
 };
 
 export type Style = {
-  top: StyleNumStrValue,
-  right: StyleNumStrValue,
-  bottom: StyleNumStrValue,
-  left: StyleNumStrValue,
-  width: StyleNumStrValue,
-  height: StyleNumStrValue,
-  lineHeight: StyleNumStrValue,
+  top: StyleNumValue,
+  right: StyleNumValue,
+  bottom: StyleNumValue,
+  left: StyleNumValue,
+  width: StyleNumValue,
+  height: StyleNumValue,
+  lineHeight: StyleNumValue,
   fontFamily: StyleStrValue,
   fontSize: StyleNumValue,
   fontWeight: StyleNumValue,
@@ -95,12 +91,12 @@ export type Style = {
   backgroundColor: StyleColorValue,
   color: StyleColorValue,
   opacity: StyleNumValue,
-  translateX: StyleNumStrValue,
-  translateY: StyleNumStrValue,
+  translateX: StyleNumValue,
+  translateY: StyleNumValue,
   scaleX: StyleNumValue,
   scaleY: StyleNumValue,
   rotateZ: StyleNumValue,
-  transformOrigin: [StyleNumStrValue, StyleNumStrValue],
+  transformOrigin: [StyleNumValue, StyleNumValue],
   mixBlendMode: StyleMbmValue,
   pointerEvents: StyleBoolValue,
 };
