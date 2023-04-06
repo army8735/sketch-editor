@@ -14,7 +14,7 @@ matchMedia(
 
 let root;
 let originX, originY;
-let isDown, isControl, controlType;
+let isDown, isMove, isControl, controlType;
 let startX, startY, lastX, lastY;
 let hoverNode, selectNode;
 let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
@@ -208,7 +208,9 @@ $tree.addEventListener('mousemove', e => {
   while (parent) {
     if (parent.classList.contains('layer')) {
       if (parent !== selectTree) {
-        showHover(root.refs[parent.getAttribute('uuid')]);
+        const uuid = parent.getAttribute('uuid');
+        const node = root.refs[uuid];
+        showHover(node);
       }
       return;
     }
@@ -294,10 +296,10 @@ function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
   computedStyle = selectNode.getComputedStyle();
-  console.log(style.left, style.width, style.translateX, '=====',
-    computedStyle.left, computedStyle.width, computedStyle.translateX, '======',
-    selectNode.x, selectNode.width, '======',
-    selectNode.matrix.join(','), selectNode.matrixWorld.join(','));
+  // console.log(style.left, style.width, style.translateX, '=====',
+  //   computedStyle.left, computedStyle.width, computedStyle.translateX, '======',
+  //   selectNode.x, selectNode.width, '======',
+  //   selectNode.matrix.join(','), selectNode.matrixWorld.join(','));
   updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
@@ -339,15 +341,15 @@ function onMove(x, y) {
   // 空格按下拖拽画布
   if (spaceKey) {
     if (isDown) {
+      isMove = true;
       curPage.updateStyle({
         translateX: pageTx + dx,
         translateY: pageTy + dy,
-      }, () => {
-        if (selectNode) {
-          updateSelect();
-        }
-        updateHover();
       });
+      if (selectNode) {
+        updateSelect();
+      }
+      updateHover();
     }
     else {
       let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
@@ -364,6 +366,7 @@ function onMove(x, y) {
   else {
     // 拖拽缩放选框，一定有selectNode，防止bug加个防御
     if (isControl) {
+      isMove = true;
       if (!selectNode) {
         return;
       }
@@ -387,14 +390,14 @@ function onMove(x, y) {
     }
     // 拖拽节点本身
     else if (isDown) {
-      if (!selectNode) {
-        return;
+      isMove = true;
+      if(selectNode) {
+        selectNode.updateStyle({
+          translateX: computedStyle.translateX + dx,
+          translateY: computedStyle.translateY + dy,
+        });
+        updateSelect();
       }
-      selectNode.updateStyle({
-        translateX: computedStyle.translateX + dx,
-        translateY: computedStyle.translateY + dy,
-      });
-      updateSelect();
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
@@ -423,6 +426,7 @@ $overlap.addEventListener('mousedown', function(e) {
   // 左键
   if (e.button === 0) {
     isDown = true;
+    isMove = false;
     startX = e.pageX;
     startY = e.pageY;
     // 空格按下移动画布
@@ -503,7 +507,7 @@ document.addEventListener('mouseup', function(e) {
       updateSelect();
     }
     else {
-      if(selectNode) {
+      if(selectNode && isMove) {
         const dx = lastX - startX, dy = lastY - startY;
         // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
         if(dx || dy) {
@@ -512,6 +516,7 @@ document.addEventListener('mouseup', function(e) {
       }
     }
     isDown = false;
+    isMove = false;
     isControl = false;
     if(spaceKey) {
       $overlap.classList.remove('down');
