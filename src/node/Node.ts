@@ -17,7 +17,7 @@ import { d2r } from '../math/geom';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
 import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, normalize } from '../style/css';
-import { ComputedStyle, Style, StyleUnit } from '../style/define';
+import { ComputedStyle, Style, StyleNumValue, StyleUnit } from '../style/define';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
 import { Struct } from '../refresh/struct';
 import { RefreshLevel } from '../refresh/level';
@@ -45,7 +45,6 @@ class Node extends Event {
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
   _matrixWorld: Float64Array; // 世界transform
-  layoutData: LayoutData | undefined; // 之前布局的数据留下次局部更新直接使用
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
   _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
@@ -97,13 +96,6 @@ class Node extends Event {
     this.refreshLevel = RefreshLevel.REFLOW;
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
-    // 布局数据在更新时会用到 TODO sketch的布局似乎简化了用不到
-    this.layoutData = {
-      x: data.x,
-      y: data.y,
-      w: data.w,
-      h: data.h,
-    };
     const { style, computedStyle } = this;
     const {
       left,
@@ -211,8 +203,10 @@ class Node extends Event {
         this.height = 0;
       }
     }
-    // 固定尺寸的情况还要计算距离边auto的实际px
-    if (fixedLeft && fixedRight) {}
+    // 还要计算距离边auto的实际px，以及未声明尺寸根据距离边的计算
+    if (fixedLeft && fixedRight) {
+      computedStyle.width = this.width;
+    }
     else if (fixedLeft) {
       computedStyle.right = data.w - computedStyle.left - this.width;
     }
@@ -223,7 +217,9 @@ class Node extends Event {
       computedStyle.left = this.x - data.x;
       computedStyle.right = data.w - computedStyle.left - this.width;
     }
-    if (fixedTop && fixedBottom) {}
+    if (fixedTop && fixedBottom) {
+      computedStyle.height = this.height;
+    }
     else if (fixedTop) {
       computedStyle.bottom = data.h - computedStyle.top - this.width;
     }
@@ -235,7 +231,7 @@ class Node extends Event {
       computedStyle.bottom = data.h - computedStyle.top - this.width;
     }
     // repaint和matrix计算需要x/y/width/height
-    this.calRepaintStyle();
+    this.calRepaintStyle(RefreshLevel.REFLOW);
     this._rect = undefined;
     this._bbox = undefined;
   }
@@ -267,7 +263,7 @@ class Node extends Event {
     }
   }
 
-  calRepaintStyle() {
+  calRepaintStyle(lv: RefreshLevel) {
     const { style, computedStyle } = this;
     computedStyle.visible = style.visible.v;
     computedStyle.overflow = style.overflow.v;
@@ -276,7 +272,9 @@ class Node extends Event {
     computedStyle.opacity = style.opacity.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
-    this.calMatrix(RefreshLevel.REFLOW);
+    if (lv & RefreshLevel.REFLOW_TRANSFORM) {
+      this.calMatrix(lv);
+    }
   }
 
   calMatrix(lv: RefreshLevel): Float64Array {
@@ -432,7 +430,7 @@ class Node extends Event {
       return;
     }
     parent?.deleteStruct(this);
-    root!.addUpdate(this, [], RefreshLevel.REFLOW, false, true, false, cb);
+    root!.addUpdate(this, [], RefreshLevel.REFLOW, false, true, cb);
   }
 
   destroy() {
@@ -493,7 +491,7 @@ class Node extends Event {
       cb && cb(true);
       return;
     }
-    this.root!.addUpdate(this, keys, undefined, false, false, false, cb);
+    this.root!.addUpdate(this, keys, undefined, false, false, cb);
   }
 
   getComputedStyle() {
@@ -546,16 +544,12 @@ class Node extends Event {
     };
   }
 
-  checkFitPos() {
-    // 啥也不做，组覆盖实现
-    return false;
-  }
-
+  //
   checkPosChange() {
     if (this.isDestroyed) {
       return;
     }
-    const style = this.style;
+    const { style, computedStyle } = this;
     const {
       top,
       right,
@@ -566,47 +560,142 @@ class Node extends Event {
       translateX,
       translateY,
     } = style;
-    // 一定有parent，不会改root下的固定容器子节点
+    // 一定有parent，不会改root下固定的Container子节点
     let parent = this.parent!;
-    const newStyle: any = {};
-    // 非固定宽度，left和right一定是有值非auto的，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
+    let x = 0;
+    // 非固定宽度，left和right一定是有值非auto的，translate单位是px，且拖动前translate一定是0，拖动后如果有水平拖则是x距离
     if (width.u === StyleUnit.AUTO) {
-      const x = translateX.v;
+      x = translateX.v;
       if (x !== 0) {
-        newStyle.translateX = 0;
-        newStyle.left = (left.v as number) + (x as number) * 100 / parent.width + '%';
-        newStyle.right = (right.v as number) - (x as number) * 100 / parent.width + '%';
+        this.x += x;
+        translateX.v = 0;
+        this.adjustLR(left, right, computedStyle, x, parent);
       }
     }
     // 固定宽度
-    else {}
+    else {
+      const half = calSize({ v: -50, u: StyleUnit.PERCENT }, this.width);
+      x = translateX.v - half;
+      if (x !== 0) {
+        this.x += x;
+        this.adjustLR(left, right, computedStyle, x, parent);
+      }
+      // 无论如何都要还原-50%，因为移动过程中可能会变成px
+      translateX.v = -50;
+      translateX.u = StyleUnit.PERCENT;
+    }
+    let y = 0;
     // 高度和宽度一样
     if (height.u === StyleUnit.AUTO) {
-      if (translateY.v !== 0) {
-        newStyle.translateY = 0;
-        newStyle.top = (top.v as number) + (translateY.v as number) * 100 / parent.height + '%';
-        newStyle.bottom = (bottom.v as number) - (translateY.v as number) * 100 / parent.height + '%';
+      y = translateY.v;
+      if (y !== 0) {
+        this.y += y;
+        translateY.v = 0;
+        this.adjustTB(top, bottom, computedStyle, y, parent);
       }
     }
-    else {}
-    // 只会有TRBL，translate几个值
-    this.preUpdateStyleData(newStyle);
-    // 向上检查group的影响，group一定是自适应尺寸需要调整的
-    this.checkPosSizeUp();
+    // 固定高度
+    else {
+      const half = calSize({ v: -50, u: StyleUnit.PERCENT }, this.height);
+      y = translateY.v - half;
+      if (y !== 0) {
+        this.y += y;
+        this.adjustTB(top, bottom, computedStyle, y, parent);
+      }
+      // 无论如何都要还原-50%，因为移动过程中可能会变成px
+      translateY.v = -50;
+      translateY.u = StyleUnit.PERCENT;
+    }
+    // matrix的影响
+    const lv = (x ? RefreshLevel.TRANSLATE_X : 0) | (y ? RefreshLevel.TRANSLATE_Y : 0);
+    if (lv) {
+      this.refreshLevel |= lv; // matrixWorld需重算
+      const root = this.root!;
+      root.rl |= lv;
+      this.calMatrix(lv);
+      const structs = root!.structs, struct = this.struct;
+      const index = structs.indexOf(struct);
+      // 肯定有，所有子节点需跟着同样偏移x/y，稍稍有点多余
+      if (index > -1) {
+        for (let i = index + 1, len = i + struct.total; i < len; i++) {
+          const { node } = structs[i];
+          if (x) {
+            node.x += x;
+          }
+          if (y) {
+            node.y += y;
+          }
+        }
+      }
+      else {
+        throw new Error('Unknown index of checkPosChange()');
+      }
+    }
+    this._rect = undefined;
+    this._bbox = undefined;
+    // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
+    this.checkPosSizeUpward();
+  }
+
+  private adjustLR(left: StyleNumValue, right: StyleNumValue, computedStyle: ComputedStyle, x: number, parent: Container) {
+    if (left.u === StyleUnit.PERCENT) {
+      left.v += x * 100 / parent.width;
+      computedStyle.left += x;
+    }
+    else if (left.u === StyleUnit.PX) {
+      left.v += x;
+      computedStyle.left = left.v;
+    }
+    if (right.u === StyleUnit.PERCENT) {
+      right.v -= x * 100 / parent.width;
+      computedStyle.right -= x;
+    }
+    else if (right.u === StyleUnit.PX) {
+      right.v -= x;
+      computedStyle.right = right.v;
+    }
+  }
+
+  private adjustTB(top: StyleNumValue, bottom: StyleNumValue, computedStyle: ComputedStyle, y: number, parent: Container) {
+    if (top.u === StyleUnit.PERCENT) {
+      top.v += y * 100 / parent.height;
+      computedStyle.top += y;
+    }
+    else if (top.u === StyleUnit.PX) {
+      top.v += y;
+      computedStyle.top = top.v;
+    }
+    if (bottom.u === StyleUnit.PERCENT) {
+      bottom.v -= y * 100 / parent.height;
+      computedStyle.bottom -= y;
+    }
+    else if (bottom.u === StyleUnit.PX) {
+      bottom.v -= y;
+      computedStyle.bottom = bottom.v;
+    }
   }
 
   // 节点位置尺寸发生变更后，会递归向上影响，逐步检查，可能在某层没有影响提前跳出中断
-  checkPosSizeUp() {
+  checkPosSizeUpward() {
     const root = this.root!;
     let parent = this.parent;
     while (parent && parent !== root) {
-      if (!parent.checkFitPos()) {
+      if (!parent.adjustPosAndSize()) { // 无影响中断向上递归，比如拖动节点并未超过组的范围
         break;
       }
       parent = parent.parent;
     }
   }
 
+  // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
+  adjustPosAndSize() {
+    return false;
+  }
+
+  // 自身不再计算，叶子节点调整过程中就是在reflow，自己本身数据已经及时更新。
+  // 如果是组，子节点虽然在reflow过程中更新了数据，但是相对于组的老数据情况，
+  // 子节点reflow过程中可能会对组产生位置尺寸的影响，需要组先根据子节点情况更新自己。
+  // 然后再检查向上影响，是否需要重新计算，组覆盖实现。
   checkSizeChange() {
     // 啥也不做，组覆盖实现
   }
@@ -634,19 +723,21 @@ class Node extends Event {
     const m = this._matrixWorld;
     // root总刷新没有包含变更，可以直接取缓存，否则才重新计算
     if (root.rl & RefreshLevel.REFLOW_TRANSFORM) {
-      let parent = this.parent;
-      let cache = true;
-      // 检测树到根路径有无变更，没有也可以直接取缓存
-      while (parent) {
-        if (parent.refreshLevel & RefreshLevel.REFLOW_TRANSFORM) {
-          cache = false;
-          break;
+      let cache = !(this.refreshLevel & RefreshLevel.REFLOW_TRANSFORM);
+      // 检测树到根路径有无变更，没有也可以直接取缓存，因为可能多次执行或者同树枝提前执行过了 TODO 优化
+      if (!cache) {
+        let parent = this.parent;
+        while (parent) {
+          if (parent.refreshLevel & RefreshLevel.REFLOW_TRANSFORM) {
+            cache = false;
+            break;
+          }
+          parent = parent.parent;
         }
-        parent = parent.parent;
       }
       if (!cache) {
         assignMatrix(m, this.matrix);
-        parent = this.parent;
+        let parent = this.parent;
         while (parent) {
           multiply2(parent.matrix, m);
           parent = parent.parent;

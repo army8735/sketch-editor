@@ -125,7 +125,7 @@ class Bitmap extends Node {
           loader.width = data.width;
           loader.height = data.height;
           if (!this.isDestroyed) {
-            this.root!.addUpdate(this, [], RefreshLevel.REPAINT, false, false, false, undefined);
+            this.root!.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
           }
         }
         else {

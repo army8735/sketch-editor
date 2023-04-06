@@ -138,12 +138,12 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       // 一般不可能有缓存，太特殊的base64了
       if (img) {
         ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img);
-        root.addUpdate(root, [], RefreshLevel.CACHE, false, false, false, undefined)
+        root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined)
       }
       else {
         inject.measureImg(ArtBoard.BOX_SHADOW, (res: any) => {
           ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, res.source);
-          root.addUpdate(root, [], RefreshLevel.CACHE, false, false, false, undefined)
+          root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined)
         });
       }
     }

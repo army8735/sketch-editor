@@ -4,7 +4,6 @@ import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
 import { StyleUnit } from '../style/define';
 import { calSize } from '../style/css';
-import { calMatrixByOrigin } from '../style/transform';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
@@ -45,26 +44,28 @@ class Group extends Container {
       cb && cb(true);
       return;
     }
-    this.root!.addUpdate(this, keys, undefined, false, false, false, cb);
+    this.root!.addUpdate(this, keys, undefined, false, false, cb);
   }
 
-  // 获取单个孩子相对于本父元素为原点的盒子尺寸
+  // 获取单个孩子相对于本父元素的盒子尺寸
   private getChildRect(child: Node) {
     const { x: gx, y: gy } = this;
-    const { x, y, width, height, transform } = child;
-    const r = new Float64Array(4);
-    r[0] = x - gx;
-    r[1] = y - gy;
-    r[2] = r[0] + width;
-    r[3] = r[1] + height;
-    // matrix需要按父级原点计算
-    const matrix = calMatrixByOrigin(transform, r[0] + width * 0.5, r[1] + height * 0.5);
-    const {
+    const { x, y, width, height, matrix } = child;
+    let {
       x1, y1,
       x2, y2,
       x3, y3,
       x4, y4,
-    } = calRectPoint(r[0], r[1], r[2], r[3], matrix);
+    } = calRectPoint(x, y, x + width, y + height, matrix);
+    // 相对父原点
+    x1 -= gx;
+    y1 -= gy;
+    x2 -= gx;
+    y2 -= gy;
+    x3 -= gx;
+    y3 -= gy;
+    x4 -= gx;
+    y4 -= gy;
     return {
       minX: Math.min(x1, x2, x3, x4),
       minY: Math.min(y1, y2, y3, y4),
@@ -73,7 +74,7 @@ class Group extends Container {
     };
   }
 
-  // 获取所有孩子相对于本父元素为原点的盒子尺寸集合的极值
+  // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
   private getChildrenRect() {
     const { width: gw, height: gh, children } = this;
     let rect = children.length
@@ -96,12 +97,13 @@ class Group extends Container {
   }
 
   // 根据新的盒子尺寸调整自己和孩子的定位尺寸
-  private adjustPosAndSize(rect: { minX: number, minY: number, maxX: number, maxY: number }) {
+  override adjustPosAndSize() {
     const { style, computedStyle, parent, children,
       width: gw, height: gh } = this;
     if (!parent) {
       return false;
     }
+    const rect = this.getChildrenRect();
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (rect.minX !== 0 || rect.minY !== 0 || rect.maxX !== gw || rect.maxY !== gh) {
       const { width: pw, height: ph } = parent;
@@ -117,28 +119,30 @@ class Group extends Container {
       // 宽度自动，则左右必然有值
       if (width.u === StyleUnit.AUTO) {
         if (rect.minX !== 0) {
-          left.v = (left.v as number) + rect.minX * 100 / pw;
-          computedStyle.left = calSize(left, pw);
+          this.x += rect.minX;
+          left.v += rect.minX * 100 / pw;
+          computedStyle.left += rect.minX;
         }
         if (rect.maxX !== gw) {
-          right.v = (right.v as number) - (rect.maxX - gw) * 100 / pw;
-          computedStyle.right = calSize(right, pw);
+          const v = rect.maxX - gw;
+          right.v -= v * 100 / pw;
+          computedStyle.right -= v;
         }
-        this.x = parent.x + computedStyle.left;
         this.width = parent.width - computedStyle.left - computedStyle.right;
       }
       else {}
       // 高度自动，则上下必然有值
       if (height.u === StyleUnit.AUTO) {
         if (rect.minY !== 0) {
-          top.v = (top.v as number) + rect.minY * 100 / ph;
-          computedStyle.top = calSize(top, ph);
+          this.y += rect.minY;
+          top.v += rect.minY * 100 / ph;
+          computedStyle.top += rect.minY;
         }
         if (rect.maxY !== gh) {
-          bottom.v = (bottom.v as number) - (rect.maxY - gh) * 100 / ph;
-          computedStyle.bottom = calSize(bottom, ph);
+          const v = rect.maxY - gh;
+          bottom.v -= v * 100 / ph;
+          computedStyle.bottom -= v;
         }
-        this.y = parent.y + computedStyle.top;
         this.height = parent.height - computedStyle.top - computedStyle.bottom;
       }
       else {}
@@ -147,7 +151,7 @@ class Group extends Container {
       this._bbox = undefined;
       // 后面计算要用新的值
       const { width: gw2, height: gh2 } = this;
-      // 再改孩子的，无需递归向下
+      // 再改孩子的，只改TRBL，x/y/width/height/translate不变，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
         const { style, computedStyle } = child;
@@ -202,31 +206,23 @@ class Group extends Container {
     return false;
   }
 
-  // 孩子布局调整后，组需要重新计算x/y/width/height，并且影响子节点的left/width等
-  override checkFitPos() {
-    super.checkFitPos();
-    let rect = this.getChildrenRect();
-    return this.adjustPosAndSize(rect);
-  }
-
-  // 组调整尺寸后，需重新计算x/y/width/height，这个过程是先递归看子节点，因为可能有组嵌套
-  // 再向上看，类似posChange可能影响包含自己的组
+  // 组调整尺寸reflow后，先递归看子节点，可能会变更如left百分比等数据，需重新计算更新，
+  // 这个递归是深度递归回溯，先叶子节点的变化及对其父元素的影响，然后慢慢向上到引发检测的组，
+  // 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
   override checkSizeChange() {
-    super.checkSizeChange();
-    this.checkFitSize();
-    this.checkPosSizeUp();
+    this.checkPosSizeDownward();
+    this.checkPosSizeUpward();
   }
 
-  private checkFitSize() {
+  private checkPosSizeDownward() {
     const { children } = this;
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       if (child instanceof Group) {
-        child.checkFitSize();
+        child.checkPosSizeDownward();
       }
     }
-    const rect = this.getChildrenRect();
-    this.adjustPosAndSize(rect);
+    return this.adjustPosAndSize();
   }
 }
 

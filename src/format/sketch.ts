@@ -116,7 +116,7 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
       name: page.name,
       uuid: page.do_objectID,
       style: {
-        left: page.frame.x,
+        left: page.frame.x, // sketch的page的位置尺寸固定为0
         top: page.frame.y,
         width: page.frame.width,
         height: page.frame.height,
@@ -134,6 +134,13 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
 }
 
 async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<JNode | undefined> {
+  let width = layer.frame.width;
+  let height = layer.frame.height;
+  let translateX = layer.frame.x;
+  let translateY = layer.frame.y;
+  let visible = layer.isVisible;
+  let opacity = layer.style.contextSettings.opacity;
+  let rotateZ = -layer.rotation;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替
   if (layer._class === SketchFormat.ClassValue.Artboard) {
     const children = await Promise.all(
@@ -155,11 +162,13 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         uuid: layer.do_objectID,
         hasBackgroundColor,
         style: {
-          width: layer.frame.width,
-          height: layer.frame.height,
-          translateX: layer.frame.x,
-          translateY: layer.frame.y,
-          visible: layer.isVisible,
+          width, // 画板始终相对于page的原点，没有百分比单位
+          height,
+          visible,
+          opacity,
+          translateX,
+          translateY,
+          rotateZ,
           overflow: 'hidden',
           backgroundColor,
         },
@@ -173,10 +182,6 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     top: number | string = 0,
     right: number | string = 'auto',
     bottom: number | string = 'auto';
-  let width = layer.frame.width,
-    height = layer.frame.height;
-  let translateX = layer.frame.x,
-    translateY = layer.frame.y;
   // 需根据父容器尺寸计算
   if (resizingConstraint) {
     // left
@@ -315,11 +320,11 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           bottom,
           width,
           height,
-          visible: layer.isVisible,
-          opacity: layer.style.contextSettings.opacity,
+          visible,
+          opacity,
           translateX,
           translateY,
-          rotateZ: -layer.rotation,
+          rotateZ,
         },
       },
       children,
@@ -339,11 +344,11 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           bottom,
           width,
           height,
-          visible: layer.isVisible,
-          opacity: layer.style.contextSettings.opacity,
+          visible,
+          opacity,
           translateX,
           translateY,
-          rotateZ: -layer.rotation,
+          rotateZ,
         },
         src: index,
       },
@@ -362,11 +367,11 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           bottom,
           width,
           height,
-          visible: layer.isVisible,
-          opacity: layer.style.contextSettings.opacity,
+          visible,
+          opacity,
           translateX,
           translateY,
-          rotateZ: -layer.rotation,
+          rotateZ,
           overflow: 'hidden',
         },
       },
@@ -378,7 +383,19 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
-        style: {},
+        style: {
+          left,
+          top,
+          right,
+          bottom,
+          width,
+          height,
+          visible,
+          opacity,
+          translateX,
+          translateY,
+          rotateZ,
+        },
       },
     } as JRect;
   }

@@ -156,7 +156,7 @@ class Root extends Container implements FrameCallback {
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
    */
   addUpdate(node: Node, keys: Array<string>, focus: RefreshLevel = RefreshLevel.NONE,
-            addDom: boolean = false, removeDom: boolean = false, sync: boolean = false, cb?: Function) {
+            addDom: boolean = false, removeDom: boolean = false, cb?: Function) {
     if (this.isDestroyed) {
       return;
     }
@@ -171,13 +171,6 @@ class Root extends Container implements FrameCallback {
       this.emit(Event.WILL_REMOVE_DOM, node);
     }
     const res = this.calUpdate(node, lv, addDom, removeDom);
-    // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb，现在没动画
-    if (sync) {
-      if (res) {
-        //
-      }
-      return;
-    }
     // 非动画走这
     if (res) {
       this.asyncDraw(cb);
@@ -224,7 +217,7 @@ class Root extends Container implements FrameCallback {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
         node.releaseCache(this.ctx!);
-        node.calRepaintStyle();
+        node.calRepaintStyle(lv);
       }
       else {
         const { style, computedStyle } = node;

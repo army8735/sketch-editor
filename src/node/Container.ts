@@ -81,7 +81,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   prependChild(node: Node, cb?: Function) {
@@ -102,7 +102,7 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   appendSelf(node: Node, cb?: Function) {
@@ -124,7 +124,7 @@ class Container extends Node {
     }
     node.didMount();
     parent.insertStruct(node, i + 1);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   prependSelf(node: Node, cb?: Function) {
@@ -146,7 +146,7 @@ class Container extends Node {
     }
     node.didMount();
     parent.insertStruct(node, i);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   removeChild(node: Node, cb?: Function) {
@@ -172,7 +172,7 @@ class Container extends Node {
         this.deleteStruct(child);
         child.destroy();
       }
-      root!.addUpdate(this, [], RefreshLevel.REFLOW, false, false, false, cb);
+      root!.addUpdate(this, [], RefreshLevel.REFLOW, false, false, cb);
     }
   }
 
