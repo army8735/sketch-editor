@@ -717,6 +717,7 @@ class Node extends Event {
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }
+    this.checkPosSizeUpward();
   }
 
   get opacity() {

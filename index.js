@@ -18314,6 +18314,7 @@
                 translateY.v = -50;
                 translateY.u = StyleUnit.PERCENT;
             }
+            this.checkPosSizeUpward();
         }
         get opacity() {
             let parent = this.parent;
