@@ -18,9 +18,25 @@ class Group extends Container {
     // 最小尺寸约束
     const parent = this.parent!;
     const computedStyle = this.computedStyle;
-    // 组只能调左/右/左右/宽，不能同时左右和宽，因为互斥
-    if (style.hasOwnProperty('left') && style.hasOwnProperty('right')) {}
-    else if (style.hasOwnProperty('left')) {}
+    // 组只能调左/右，不能同时左右
+    if (style.hasOwnProperty('left')) {
+      const left = calSize(formatStyle.left, parent.width);
+      const w = parent.width - computedStyle.right - left;
+      if (w < this.minWidth) {
+        if (formatStyle.left.u === StyleUnit.PX) {}
+        else if (formatStyle.left.u === StyleUnit.PERCENT) {
+          const max = (parent.width - computedStyle.right - this.minWidth) * 100 / parent.width;
+          // 限制导致的无效更新去除
+          if (formatStyle.left.v === max) {
+            let i = keys.indexOf('left');
+            keys.splice(i, 1);
+          }
+          else {
+            formatStyle.left.v = this.style.left.v = max;
+          }
+        }
+      }
+    }
     else if (style.hasOwnProperty('right')) {
       const right = calSize(formatStyle.right, parent.width);
       const w = parent.width - computedStyle.left - right;
@@ -29,7 +45,7 @@ class Group extends Container {
         else if (formatStyle.right.u === StyleUnit.PERCENT) {
           const max = (parent.width - computedStyle.left - this.minWidth) * 100 / parent.width;
           // 限制导致的无效更新去除
-          if ((formatStyle.right.v as number) === max) {
+          if (formatStyle.right.v === max) {
             let i = keys.indexOf('right');
             keys.splice(i, 1);
           }
@@ -39,7 +55,43 @@ class Group extends Container {
         }
       }
     }
-    else if (style.hasOwnProperty('width')) {}
+    if (style.hasOwnProperty('top')) {
+      const top = calSize(formatStyle.top, parent.height);
+      const h = parent.height - computedStyle.bottom - top;
+      if (h < this.minHeight) {
+        if (formatStyle.top.u === StyleUnit.PX) {
+        }
+        else if (formatStyle.top.u === StyleUnit.PERCENT) {
+          const max = (parent.height - computedStyle.bottom - this.minHeight) * 100 / parent.height;
+          // 限制导致的无效更新去除
+          if (formatStyle.top.v === max) {
+            let i = keys.indexOf('top');
+            keys.splice(i, 1);
+          }
+          else {
+            formatStyle.top.v = this.style.top.v = max;
+          }
+        }
+      }
+    }
+    else if (style.hasOwnProperty('bottom')) {
+      const bottom = calSize(formatStyle.bottom, parent.height);
+      const h = parent.height - computedStyle.top - bottom;
+      if (h < this.minHeight) {
+        if (formatStyle.bottom.u === StyleUnit.PX) {}
+        else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
+          const max = (parent.height - computedStyle.top - this.minHeight) * 100 / parent.height;
+          // 限制导致的无效更新去除
+          if (formatStyle.bottom.v === max) {
+            let i = keys.indexOf('bottom');
+            keys.splice(i, 1);
+          }
+          else {
+            formatStyle.bottom.v = this.style.bottom.v = max;
+          }
+        }
+      }
+    }
     // 再次检测可能因为尺寸限制造成的style更新无效，即限制后和当前一样
     if (this.preUpdateStyleCheck(keys)) {
       cb && cb(true);

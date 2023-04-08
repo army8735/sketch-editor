@@ -377,7 +377,22 @@ function onMove(x, y, isOnControl) {
       else if (controlType === 'tr') {}
       else if (controlType === 'br') {}
       else if (controlType === 'bl') {}
-      else if (controlType === 't') {}
+      else if (controlType === 't') {
+        if (style.width.u === editor.style.define.StyleUnit.AUTO) {
+          const top = (computedStyle.top + dy) * 100 / selectNode.parent.height + '%';
+          selectNode.updateStyle({
+            top,
+          });
+        }
+        else {
+          const top = (computedStyle.top + dy) * 100 / selectNode.parent.height + '%';
+          const height = computedStyle.height;
+          selectNode.updateStyle({
+            top,
+            height: height - dy,
+          });
+        }
+      }
       else if (controlType === 'r') {
         if (style.width.u === editor.style.define.StyleUnit.AUTO) {
           const right = (computedStyle.right - dx) * 100 / selectNode.parent.width + '%';
