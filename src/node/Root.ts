@@ -180,13 +180,13 @@ class Root extends Container implements FrameCallback {
     }
     if (addDom) {
       let isInPage = false;
-      let parent = node.parent!;
+      let parent = node.parent;
       while (parent && parent !== this) {
         if (parent instanceof Group || parent instanceof ArtBoard || parent instanceof Page) {
           isInPage = true;
           break;
         }
-        parent = parent.parent!;
+        parent = parent.parent;
       }
       this.emit(Event.DID_ADD_DOM, node, isInPage);
     }

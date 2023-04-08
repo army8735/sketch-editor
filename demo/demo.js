@@ -5,7 +5,7 @@ const $main = document.querySelector('#main');
 const $canvasC = document.querySelector('#canvasC');
 const $overlap = document.querySelector('#overlap');
 const $hover = document.querySelector('#hover');
-const $selection = document.querySelector('#selection');
+const $selection = $main.querySelector('#selection');
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -330,7 +330,7 @@ function updateSelect() {
   }
 }
 
-function onMove(x, y) {
+function onMove(x, y, isOnControl) {
   lastX = x;
   lastY = y;
   const nx = x - originX;
@@ -353,6 +353,9 @@ function onMove(x, y) {
       }
       updateHover();
     }
+    else if (isOnControl) {
+      hideHover();
+    }
     else {
       let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
       node = getActiveNodeWhenSelected(node);
@@ -366,12 +369,9 @@ function onMove(x, y) {
   }
   // 非空格看情况是操作选框还是节点还是仅hover
   else {
-    // 拖拽缩放选框，一定有selectNode，防止bug加个防御
+    // 拖拽缩放选框，一定有selectNode
     if (isControl) {
       isMove = true;
-      if (!selectNode) {
-        return;
-      }
       const dx = lastX - startX, dy = lastY - startY;
       if (controlType === 'tl') {}
       else if (controlType === 'tr') {}
@@ -399,8 +399,29 @@ function onMove(x, y) {
             bottom,
           });
         }
+        else {
+          const height = computedStyle.height + dy;
+          selectNode.updateStyle({
+            height,
+          });
+        }
       }
-      else if (controlType === 'l') {}
+      else if (controlType === 'l') {
+        if (style.width.u === editor.style.define.StyleUnit.AUTO) {
+          const left = (computedStyle.left + dx) * 100 / selectNode.parent.width + '%';
+          selectNode.updateStyle({
+            left,
+          });
+        }
+        else {
+          const left = (computedStyle.left + dx) * 100 / selectNode.parent.width + '%';
+          const width = computedStyle.width;
+          selectNode.updateStyle({
+            left,
+            width: width - dx,
+          });
+        }
+      }
       updateSelect();
     }
     // 拖拽节点本身
@@ -414,6 +435,9 @@ function onMove(x, y) {
         });
         updateSelect();
       }
+    }
+    else if (isOnControl) {
+      hideHover();
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
@@ -511,7 +535,12 @@ document.addEventListener('mousemove', function(e) {
   if (!curPage) {
     return;
   }
-  onMove(e.pageX, e.pageY);
+  const target = e.target;
+  let isOnControl = false;
+  if (target === $selection || target.parentElement === $selection || target.parentElement.parentElement === $selection) {
+    isOnControl = true;
+  }
+  onMove(e.pageX, e.pageY, isOnControl);
 });
 
 document.addEventListener('mouseup', function(e) {
