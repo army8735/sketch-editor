@@ -50,7 +50,6 @@ class Bitmap extends Node {
           }),
         }).then(res => res.json()).then(res => {
           if (res.success) {
-            // 不触发更新
             // this.src = res.url;
           }
         });

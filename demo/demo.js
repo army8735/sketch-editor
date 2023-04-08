@@ -296,10 +296,12 @@ function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
   computedStyle = selectNode.getComputedStyle();
-  // console.log(style.left, style.width, style.translateX, '=====',
-  //   computedStyle.left, computedStyle.width, computedStyle.translateX, '======',
-  //   selectNode.x, selectNode.width, '======',
-  //   selectNode.matrix.join(','), selectNode.matrixWorld.join(','));
+  console.log('left', style.left, 'right', style.right, 'top', style.top, 'bottom', style.bottom,
+    'width', style.width, 'height', style.height, 'tx', style.translateX, 'ty', style.translateY,
+    'cleft', computedStyle.left, 'cright', computedStyle.right, 'ctop', computedStyle.top,
+    'cbttom', computedStyle.bottom, 'cwidth', computedStyle.width, 'ctx', computedStyle.translateX,
+    'cty', computedStyle.translateY, 'w', selectNode.width, 'h', selectNode.height,
+    'm', selectNode.matrix.join(','), 'mw', selectNode.matrixWorld.join(','));
   updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
@@ -382,16 +384,30 @@ function onMove(x, y) {
           selectNode.updateStyle({
             right,
           });
-          updateSelect();
+        }
+        else {
+          const width = computedStyle.width + dx;
+          selectNode.updateStyle({
+            width,
+          });
         }
       }
-      else if (controlType === 'b') {}
+      else if (controlType === 'b') {
+        if (style.height.u === editor.style.define.StyleUnit.AUTO) {
+          const bottom = (computedStyle.bottom - dy) * 100 / selectNode.parent.height + '%';
+          selectNode.updateStyle({
+            bottom,
+          });
+        }
+      }
       else if (controlType === 'l') {}
+      updateSelect();
     }
     // 拖拽节点本身
     else if (isDown) {
       isMove = true;
       if(selectNode) {
+        // 不变也要更新，并不知道节点的约束类型（size是否auto）
         selectNode.updateStyle({
           translateX: computedStyle.translateX + dx,
           translateY: computedStyle.translateY + dy,
@@ -444,6 +460,8 @@ $overlap.addEventListener('mousedown', function(e) {
       // 注意要判断是否点在选择框上的控制点，进入拖拽拉伸模式，只有几个控制点pointerEvents可以被点击
       if (target.tagName === 'SPAN') {
         isControl = true;
+        // 通知引擎开始拖拽，如果是固定尺寸中心点对齐的要内部转换下，防止拖尺寸时以自身中心点扩展
+        selectNode.startSizeChange();
         // 再更新下，防止重复拖拽数据不及时
         computedStyle = selectNode.getComputedStyle();
         const classList = target.classList;

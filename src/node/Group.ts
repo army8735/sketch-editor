@@ -4,6 +4,7 @@ import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
 import { StyleUnit } from '../style/define';
 import { calSize } from '../style/css';
+import { RefreshLevel } from '../refresh/level';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
@@ -49,23 +50,13 @@ class Group extends Container {
 
   // 获取单个孩子相对于本父元素的盒子尺寸
   private getChildRect(child: Node) {
-    const { x: gx, y: gy } = this;
-    const { x, y, width, height, matrix } = child;
+    const { width, height, matrix } = child;
     let {
       x1, y1,
       x2, y2,
       x3, y3,
       x4, y4,
-    } = calRectPoint(x, y, x + width, y + height, matrix);
-    // 相对父原点
-    x1 -= gx;
-    y1 -= gy;
-    x2 -= gx;
-    y2 -= gy;
-    x3 -= gx;
-    y3 -= gy;
-    x4 -= gx;
-    y4 -= gy;
+    } = calRectPoint(0, 0, width, height, matrix);
     return {
       minX: Math.min(x1, x2, x3, x4),
       minY: Math.min(y1, y2, y3, y4),
@@ -96,120 +87,166 @@ class Group extends Container {
     return rect;
   }
 
-  // 根据新的盒子尺寸调整自己和孩子的定位尺寸
-  override adjustPosAndSize() {
-    const { style, computedStyle, parent, children,
-      width: gw, height: gh } = this;
-    if (!parent) {
-      return false;
+  // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
+  private adjustPosAndSizeSelf(dx: number, dy: number, dw: number, dh: number) {
+    const { style, computedStyle, parent, root } = this;
+    if (!parent || !root) {
+      return;
     }
+    const { width: pw, height: ph } = parent;
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      translateX,
+      translateY,
+    } = style;
+    // 水平调整统一处理，固定此时无效
+    if (dx) {
+      if (left.u === StyleUnit.PX) {
+        left.v += dx;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v += dx * 100 / pw;
+      }
+      computedStyle.left += dx;
+    }
+    if (dw) {
+      if (right.u === StyleUnit.PX) {
+        right.v -= dw;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v -= dw * 100 / pw;
+      }
+      computedStyle.right -= dw;
+    }
+    this.width = computedStyle.width = parent.width - computedStyle.left - computedStyle.right;
+    // translateX调整根据是否固定尺寸，不会有%尺寸目前
+    this.resetTranslateX(left, width, translateX);
+    // 垂直和水平一样
+    if (dy) {
+      if (top.u === StyleUnit.PX) {
+        top.v += dy;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        top.v += dy * 100 / ph;
+      }
+      computedStyle.top += dy;
+    }
+    if (dh) {
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v -= dh;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v -= dh * 100 / ph;
+      }
+      computedStyle.bottom -= dh;
+    }
+    this.height = computedStyle.height = parent.height - computedStyle.top - computedStyle.bottom;
+    this.resetTranslateY(top, height, translateY);
+    // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+    this.refreshLevel |= RefreshLevel.TRANSFORM;
+    root.rl |= RefreshLevel.TRANSFORM;
+    this.calMatrix(RefreshLevel.TRANSFORM);
+    // 记得重置
+    this._rect = undefined;
+    this._bbox = undefined;
+  }
+
+  // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
+  private adjustPosAndSizeChild(child: Node, dx: number, dy: number, dw: number, dh: number, gw: number, gh: number) {
+    const { style, computedStyle, root } = child;
+    if (!root) {
+      return;
+    }
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      translateX,
+      translateY,
+    } = style;
+    // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
+    // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
+    // 2个只要有发生，都会影响左右，因为干扰尺寸
+    if (dx || dw) {
+      computedStyle.left -= dx;
+      if (left.u === StyleUnit.PX) {
+        left.v = computedStyle.left;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v = computedStyle.left * 100 / gw;
+      }
+      computedStyle.right += dw;
+      if (right.u === StyleUnit.PX) {
+        right.v = computedStyle.right;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v = computedStyle.right * 100 / gw;
+      }
+    }
+    this.resetTranslateX(left, width, translateX);
+    // 类似水平情况
+    if (dy || dh) {
+      computedStyle.top -= dy;
+      if (top.u === StyleUnit.PX) {
+        top.v = computedStyle.top;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        top.v = computedStyle.top * 100 / gh;
+      }
+      computedStyle.bottom += dh;
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v = computedStyle.bottom;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v = computedStyle.bottom * 100 / gh;
+      }
+    }
+    this.resetTranslateY(top, height, translateY);
+    // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+    child.refreshLevel |= RefreshLevel.TRANSFORM;
+    root.rl |= RefreshLevel.TRANSFORM;
+    child.calMatrix(RefreshLevel.TRANSFORM);
+    // 记得重置
+    child._rect = undefined;
+    child._bbox = undefined;
+  }
+
+  // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
+  override adjustPosAndSize() {
+    const { children, width: gw, height: gh } = this;
     const rect = this.getChildrenRect();
+    const dx = rect.minX, dy = rect.minY,
+      dw = rect.maxX - gw, dh = rect.maxY - gh;
     // 检查真正有变化，位置相对于自己原本位置为原点
-    if (rect.minX !== 0 || rect.minY !== 0 || rect.maxX !== gw || rect.maxY !== gh) {
-      const { width: pw, height: ph } = parent;
-      // 先改自己的尺寸
-      const {
-        top,
-        right,
-        bottom,
-        left,
-        width,
-        height,
-      } = style;
-      // 宽度自动，则左右必然有值
-      if (width.u === StyleUnit.AUTO) {
-        if (rect.minX !== 0) {
-          this.x += rect.minX;
-          left.v += rect.minX * 100 / pw;
-          computedStyle.left += rect.minX;
-        }
-        if (rect.maxX !== gw) {
-          const v = rect.maxX - gw;
-          right.v -= v * 100 / pw;
-          computedStyle.right -= v;
-        }
-        this.width = parent.width - computedStyle.left - computedStyle.right;
-      }
-      else {}
-      // 高度自动，则上下必然有值
-      if (height.u === StyleUnit.AUTO) {
-        if (rect.minY !== 0) {
-          this.y += rect.minY;
-          top.v += rect.minY * 100 / ph;
-          computedStyle.top += rect.minY;
-        }
-        if (rect.maxY !== gh) {
-          const v = rect.maxY - gh;
-          bottom.v -= v * 100 / ph;
-          computedStyle.bottom -= v;
-        }
-        this.height = parent.height - computedStyle.top - computedStyle.bottom;
-      }
-      else {}
-      // 记得重置
-      this._rect = undefined;
-      this._bbox = undefined;
-      // 后面计算要用新的值
-      const { width: gw2, height: gh2 } = this;
-      // 再改孩子的，只改TRBL，x/y/width/height/translate不变，无需递归向下
+    if (dx || dy || dw || dh) {
+      // 先调整自己，之后尺寸更新用新wh
+      this.adjustPosAndSizeSelf(dx, dy, dw, dh);
+      const { width: gw, height: gh } = this;
+      // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
-        const { style, computedStyle } = child;
-        const {
-          top,
-          right,
-          bottom,
-          left,
-        } = style;
-        // 注意判断条件，组的水平只要有x/width变更，child的水平都得全变
-        if (rect.minX !== 0 || rect.maxX !== gw) {
-          // 如果向左拖发生了group的x变更，则minX为负数，子节点的left值增加
-          computedStyle.left -= rect.minX;
-          if (left.u === StyleUnit.PX) {
-            left.v = computedStyle.left;
-          }
-          else if (left.u === StyleUnit.PERCENT) {
-            left.v = computedStyle.left * 100 / gw2;
-          }
-          // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
-          computedStyle.right += rect.maxX - gw;
-          if (right.u === StyleUnit.PX) {
-            right.v = computedStyle.right;
-          }
-          else if (right.u === StyleUnit.PERCENT) {
-            right.v = computedStyle.right * 100 / gw2;
-          }
-        }
-        // 同上
-        if (rect.minY !== 0 || rect.maxY !== gh) {
-          computedStyle.top -= rect.minY;
-          if (top.u === StyleUnit.PX) {
-            top.v = computedStyle.top;
-          }
-          else if (top.u === StyleUnit.PERCENT) {
-            top.v = computedStyle.top * 100 / gh2;
-          }
-          computedStyle.bottom += rect.maxY - gh;
-          if (bottom.u === StyleUnit.PX) {
-            bottom.v = computedStyle.bottom;
-          }
-          else if (bottom.u === StyleUnit.PERCENT) {
-            bottom.v = computedStyle.bottom * 100 / gh2;
-          }
-        }
-        // 记得重置
-        child._rect = undefined;
-        child._bbox = undefined;
+        this.adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh);
       }
       return true;
     }
     return false;
   }
 
-  // 组调整尺寸reflow后，先递归看子节点，可能会变更如left百分比等数据，需重新计算更新，
-  // 这个递归是深度递归回溯，先叶子节点的变化及对其父元素的影响，然后慢慢向上到引发检测的组，
-  // 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
+  /**
+   * 组调整尺寸reflow后，先递归看子节点，可能会变更如left百分比等数据，需重新计算更新，
+   * 这个递归是深度递归回溯，先叶子节点的变化及对其父元素的影响，然后慢慢向上到引发检测的组，
+   * 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
+   */
   override checkSizeChange() {
+    super.checkSizeChange();
     this.checkPosSizeDownward();
     this.checkPosSizeUpward();
   }
