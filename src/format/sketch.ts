@@ -9,7 +9,7 @@ import {
   JBitmap,
   JText,
   classValue,
-  JRect
+  JRect,
 } from './';
 
 enum ResizingConstraint {
@@ -21,6 +21,8 @@ enum ResizingConstraint {
   HEIGHT = 0b010000,
   TOP =    0b100000,
 }
+
+const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
 
 export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   let zipFile: JSZip;
@@ -355,7 +357,45 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
-    console.log(layer);
+    const { string, attributes } = layer.attributedString;
+    const rich = attributes.length <= 1 ? undefined : attributes.map((item: any) => {
+      const {
+        location,
+        length,
+        attributes: {
+          MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } },
+          MSAttributedStringColorAttribute,
+          kerning,
+        },
+      } = item;
+      const fontFamily = name.replace(subFontFamilyReg, '');
+      return {
+        location,
+        length,
+        fontFamily,
+        fontSize,
+        color: [
+          Math.floor(MSAttributedStringColorAttribute.red * 255),
+          Math.floor(MSAttributedStringColorAttribute.green * 255),
+          Math.floor(MSAttributedStringColorAttribute.blue * 255),
+          MSAttributedStringColorAttribute.alpha,
+        ],
+        letterSpacing: kerning,
+      };
+    });
+    const MSAttributedStringFontAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute?.attributes;
+    const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
+    const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
+    const MSAttributedStringColorAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringColorAttribute;
+    const color = MSAttributedStringColorAttribute ? [
+      Math.floor(MSAttributedStringColorAttribute.red * 255),
+      Math.floor(MSAttributedStringColorAttribute.green * 255),
+      Math.floor(MSAttributedStringColorAttribute.blue * 255),
+      MSAttributedStringColorAttribute.alpha,
+    ] : undefined;
+    const alignment = layer.style?.textStyle?.encodedAttributes?.paragraphStyle?.alignment;
+    const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
+    const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning;
     return {
       type: classValue.Text,
       props: {
@@ -374,7 +414,14 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           translateY,
           rotateZ,
           overflow: 'hidden',
+          fontSize,
+          fontFamily,
+          color,
+          textAlign,
+          letterSpacing,
         },
+        content: string,
+        rich,
       },
     } as JText;
   }

@@ -1,5 +1,5 @@
 import Node from './Node';
-import { Props } from '../format';
+import { TextProps } from '../format';
 import { LayoutData } from './layout';
 import { StyleUnit } from '../style/define';
 import inject from '../util/inject';
@@ -8,9 +8,9 @@ import CanvasCache from '../refresh/CanvasCache';
 
 class Text extends Node {
   content: string;
-  constructor(props: Props, content: string) {
+  constructor(props: TextProps) {
     super(props);
-    this.content = content;
+    this.content = props.content;
   }
 
   override layout(data: LayoutData) {

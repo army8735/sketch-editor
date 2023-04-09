@@ -74,6 +74,10 @@ export type StyleMbmValue = StyleValue & {
   v: MIX_BLEND_MODE,
 };
 
+export type StyleTaValue = StyleValue & {
+  v: TEXT_ALIGN,
+};
+
 export type Style = {
   top: StyleNumValue,
   right: StyleNumValue,
@@ -91,6 +95,8 @@ export type Style = {
   backgroundColor: StyleColorValue,
   color: StyleColorValue,
   opacity: StyleNumValue,
+  letterSpacing: StyleNumValue,
+  textAlign: StyleTaValue,
   translateX: StyleNumValue,
   translateY: StyleNumValue,
   scaleX: StyleNumValue,
@@ -120,6 +126,8 @@ export type ComputedStyle = {
   backgroundColor: Array<number>,
   color: Array<number>,
   opacity: number,
+  letterSpacing: number,
+  textAlign: TEXT_ALIGN,
   translateX: number,
   translateY: number,
   scaleX: number,
@@ -129,6 +137,13 @@ export type ComputedStyle = {
   mixBlendMode: MIX_BLEND_MODE,
   pointerEvents: boolean,
 };
+
+export enum TEXT_ALIGN {
+  LEFT = 0,
+  CENTER = 1,
+  RIGHT = 2,
+  JUSTIFY = 3,
+}
 
 export enum MIX_BLEND_MODE {
   NORMAL = 0,

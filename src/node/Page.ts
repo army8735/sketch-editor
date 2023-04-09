@@ -4,7 +4,8 @@ import ArtBoard from './ArtBoard';
 import Container from './Container';
 import Group from './Group';
 import Rect from './geom/Rect';
-import { ArtBoardProps, BitmapProps, JContainer, Props } from '../format/';
+import Text from './Text';
+import { ArtBoardProps, BitmapProps, JContainer, Props, TextProps } from '../format/';
 import { classValue, JNode, JPage } from '../format';
 
 function parse(json: JNode): Node | undefined {
@@ -32,6 +33,7 @@ function parse(json: JNode): Node | undefined {
     return new Bitmap(json.props as BitmapProps);
   }
   else if (json.type === classValue.Text) {
+    return new Text(json.props as TextProps);
   }
   else if (json.type === classValue.Rect) {
     return new Rect(json.props);

@@ -31,7 +31,8 @@ class Overlay extends Container {
           color: '#777',
           visible: false,
         },
-      }, ab.props.name || '画板');
+        content: ab.props.name || '画板',
+      });
       this.artBoard.appendChild(text);
       this.abList.push({ ab, text });
     }

@@ -9,7 +9,7 @@ import {
   Style,
   ComputedStyle,
 } from './define';
-import { isNil } from '../util/type';
+import { isNil, isString } from '../util/type';
 import inject from '../util/inject';
 import font from './font';
 
@@ -101,7 +101,7 @@ export function normalize(style: JStyle): Style {
       n.v = 16;
     }
     // 防止小数
-    n.v = Math.floor(n.v as number);
+    // n.v = Math.floor(n.v);
     if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
       n.u = StyleUnit.PX;
     }
@@ -109,17 +109,34 @@ export function normalize(style: JStyle): Style {
   }
   const fontWeight = style.fontWeight;
   if (!isNil(fontWeight)) {
-    if (/normal/i.test(fontWeight as string)) {
-      res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
-    }
-    else if (/bold/i.test(fontWeight as string)) {
-      res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
-    }
-    else if (/bolder/i.test(fontWeight as string)) {
-      res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
-    }
-    else if (/lighter/i.test(fontWeight as string)) {
-      res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
+    if (isString(fontWeight)) {
+      if (/thin/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
+      }
+      else if (/lighter/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 200, u: StyleUnit.NUMBER };
+      }
+      else if (/light/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
+      }
+      else if (/medium/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 500, u: StyleUnit.NUMBER };
+      }
+      else if (/semiBold/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 600, u: StyleUnit.NUMBER };
+      }
+      else if (/bold/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
+      }
+      else if (/extraBold/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 800, u: StyleUnit.NUMBER };
+      }
+      else if (/black/i.test(fontWeight as string)) {
+        res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
+      }
+      else {
+        res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
+      }
     }
     else {
       res.fontWeight = {
@@ -171,6 +188,18 @@ export function normalize(style: JStyle): Style {
     compatibleTransform(k, n);
     res[k] = n;
   });
+  const letterSpacing = style.letterSpacing;
+  if (!isNil(letterSpacing)) {
+    let n = calUnit(letterSpacing || 0);
+    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+      n.u = StyleUnit.PX;
+    }
+    res.letterSpacing = n;
+  }
+  const textAlign = style.textAlign;
+  if (!isNil(textAlign)) {
+    res.textAlign = { v: textAlign, u: StyleUnit.STRING };
+  }
   const transformOrigin = style.transformOrigin;
   if (!isNil(transformOrigin)) {
     let o: Array<number | string>;

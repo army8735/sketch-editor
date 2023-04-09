@@ -50,12 +50,15 @@ export type JStyle = {
   visible: boolean,
   fontFamily: string,
   fontSize: number,
-  fontWeight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold' |  'bolder' | 'lighter',
+  fontWeight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900
+    | 'thin' | 'lighter' | 'light' | 'normal' | 'medium' | 'semiBold' | 'bold' | 'extraBold' | 'black',
   fontStyle: 'normal' | 'italic' | 'oblique',
   overflow: 'visible' | 'hidden',
   backgroundColor: string | Array<number>,
   color: string | Array<number>,
   opacity: number,
+  letterSpacing: number,
+  textAlign: string,
   translateX: number,
   translateY: number,
   scaleX: number,
@@ -85,6 +88,8 @@ export function getDefaultStyle(v?: any): JStyle {
     backgroundColor: [0, 0, 0, 0],
     color: [0, 0, 0, 1],
     opacity: 1,
+    letterSpacing: 0,
+    textAlign: 'left',
     translateX: 0,
     translateY: 0,
     scaleX: 1,
@@ -99,7 +104,6 @@ export function getDefaultStyle(v?: any): JStyle {
 export type Props = {
   name?: string,
   uuid?: string,
-  ref?: string,
   style?: object,
 };
 
@@ -111,6 +115,19 @@ export type BitmapProps = Props & {
 
 export type ArtBoardProps = Props & {
   hasBackgroundColor: boolean,
+};
+
+export type TextProps = Props & {
+  content: string,
+  rich?: Array<{
+    location: number,
+    length: number,
+    fontFamily: string,
+    fontSize: number,
+    fontWeight: number,
+    color: string | Array<number>,
+    kerning: number,
+  }>,
 };
 
 export enum classValue {

@@ -15313,6 +15313,8 @@
             backgroundColor: [0, 0, 0, 0],
             color: [0, 0, 0, 1],
             opacity: 1,
+            letterSpacing: 0,
+            textAlign: 'left',
             translateX: 0,
             translateY: 0,
             scaleX: 1,
@@ -15343,6 +15345,7 @@
         ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
         ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
     })(ResizingConstraint || (ResizingConstraint = {}));
+    const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
     function openAndConvertSketchBuffer(arrayBuffer) {
         return __awaiter(this, void 0, void 0, function* () {
             let zipFile;
@@ -15443,6 +15446,7 @@
         });
     }
     function convertItem(layer, opt, w, h) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
@@ -15654,7 +15658,37 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Text) {
-                console.log(layer);
+                const { string, attributes } = layer.attributedString;
+                const rich = attributes.length <= 1 ? undefined : attributes.map((item) => {
+                    const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute, kerning, }, } = item;
+                    const fontFamily = name.replace(subFontFamilyReg, '');
+                    return {
+                        location,
+                        length,
+                        fontFamily,
+                        fontSize,
+                        color: [
+                            Math.floor(MSAttributedStringColorAttribute.red * 255),
+                            Math.floor(MSAttributedStringColorAttribute.green * 255),
+                            Math.floor(MSAttributedStringColorAttribute.blue * 255),
+                            MSAttributedStringColorAttribute.alpha,
+                        ],
+                        letterSpacing: kerning,
+                    };
+                });
+                const MSAttributedStringFontAttribute = (_d = (_c = (_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.textStyle) === null || _b === void 0 ? void 0 : _b.encodedAttributes) === null || _c === void 0 ? void 0 : _c.MSAttributedStringFontAttribute) === null || _d === void 0 ? void 0 : _d.attributes;
+                const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
+                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
+                const MSAttributedStringColorAttribute = (_g = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.textStyle) === null || _f === void 0 ? void 0 : _f.encodedAttributes) === null || _g === void 0 ? void 0 : _g.MSAttributedStringColorAttribute;
+                const color = MSAttributedStringColorAttribute ? [
+                    Math.floor(MSAttributedStringColorAttribute.red * 255),
+                    Math.floor(MSAttributedStringColorAttribute.green * 255),
+                    Math.floor(MSAttributedStringColorAttribute.blue * 255),
+                    MSAttributedStringColorAttribute.alpha,
+                ] : undefined;
+                const alignment = (_l = (_k = (_j = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.textStyle) === null || _j === void 0 ? void 0 : _j.encodedAttributes) === null || _k === void 0 ? void 0 : _k.paragraphStyle) === null || _l === void 0 ? void 0 : _l.alignment;
+                const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
+                const letterSpacing = (_p = (_o = (_m = layer.style) === null || _m === void 0 ? void 0 : _m.textStyle) === null || _o === void 0 ? void 0 : _o.encodedAttributes) === null || _p === void 0 ? void 0 : _p.kerning;
                 return {
                     type: classValue.Text,
                     props: {
@@ -15673,7 +15707,14 @@
                             translateY,
                             rotateZ,
                             overflow: 'hidden',
+                            fontSize,
+                            fontFamily,
+                            color,
+                            textAlign,
+                            letterSpacing,
                         },
+                        content: string,
+                        rich,
                     },
                 };
             }
@@ -16307,6 +16348,13 @@
             u: StyleUnit.NUMBER,
         };
     }
+    var TEXT_ALIGN;
+    (function (TEXT_ALIGN) {
+        TEXT_ALIGN[TEXT_ALIGN["LEFT"] = 0] = "LEFT";
+        TEXT_ALIGN[TEXT_ALIGN["CENTER"] = 1] = "CENTER";
+        TEXT_ALIGN[TEXT_ALIGN["RIGHT"] = 2] = "RIGHT";
+        TEXT_ALIGN[TEXT_ALIGN["JUSTIFY"] = 3] = "JUSTIFY";
+    })(TEXT_ALIGN || (TEXT_ALIGN = {}));
     var MIX_BLEND_MODE;
     (function (MIX_BLEND_MODE) {
         MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
@@ -16845,7 +16893,7 @@
                 n.v = 16;
             }
             // 防止小数
-            n.v = Math.floor(n.v);
+            // n.v = Math.floor(n.v);
             if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
                 n.u = StyleUnit.PX;
             }
@@ -16853,17 +16901,34 @@
         }
         const fontWeight = style.fontWeight;
         if (!isNil(fontWeight)) {
-            if (/normal/i.test(fontWeight)) {
-                res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
-            }
-            else if (/bold/i.test(fontWeight)) {
-                res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
-            }
-            else if (/bolder/i.test(fontWeight)) {
-                res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
-            }
-            else if (/lighter/i.test(fontWeight)) {
-                res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
+            if (isString(fontWeight)) {
+                if (/thin/i.test(fontWeight)) {
+                    res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
+                }
+                else if (/lighter/i.test(fontWeight)) {
+                    res.fontWeight = { v: 200, u: StyleUnit.NUMBER };
+                }
+                else if (/light/i.test(fontWeight)) {
+                    res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
+                }
+                else if (/medium/i.test(fontWeight)) {
+                    res.fontWeight = { v: 500, u: StyleUnit.NUMBER };
+                }
+                else if (/semiBold/i.test(fontWeight)) {
+                    res.fontWeight = { v: 600, u: StyleUnit.NUMBER };
+                }
+                else if (/bold/i.test(fontWeight)) {
+                    res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
+                }
+                else if (/extraBold/i.test(fontWeight)) {
+                    res.fontWeight = { v: 800, u: StyleUnit.NUMBER };
+                }
+                else if (/black/i.test(fontWeight)) {
+                    res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
+                }
+                else {
+                    res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
+                }
             }
             else {
                 res.fontWeight = {
@@ -16915,6 +16980,18 @@
             compatibleTransform(k, n);
             res[k] = n;
         });
+        const letterSpacing = style.letterSpacing;
+        if (!isNil(letterSpacing)) {
+            let n = calUnit(letterSpacing || 0);
+            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+                n.u = StyleUnit.PX;
+            }
+            res.letterSpacing = n;
+        }
+        const textAlign = style.textAlign;
+        if (!isNil(textAlign)) {
+            res.textAlign = { v: textAlign, u: StyleUnit.STRING };
+        }
         const transformOrigin = style.transformOrigin;
         if (!isNil(transformOrigin)) {
             let o;
@@ -19451,57 +19528,10 @@
         }
     }
 
-    function parse(json) {
-        if (json.type === classValue.ArtBoard) {
-            const children = [];
-            for (let i = 0, len = json.children.length; i < len; i++) {
-                const res = parse(json.children[i]);
-                if (res) {
-                    children.push(res);
-                }
-            }
-            return new ArtBoard(json.props, children);
-        }
-        else if (json.type === classValue.Group) {
-            const children = [];
-            for (let i = 0, len = json.children.length; i < len; i++) {
-                const res = parse(json.children[i]);
-                if (res) {
-                    children.push(res);
-                }
-            }
-            return new Group(json.props, children);
-        }
-        else if (json.type === classValue.Bitmap) {
-            return new Bitmap(json.props);
-        }
-        else if (json.type === classValue.Text) ;
-        else if (json.type === classValue.Rect) {
-            return new Rect(json.props);
-        }
-    }
-    class Page extends Container {
-        constructor(props, children) {
-            super(props, children);
-            this.isPage = true;
-        }
-        initIfNot() {
-            if (this.json) {
-                for (let i = 0, len = this.json.children.length; i < len; i++) {
-                    const res = parse(this.json.children[i]);
-                    if (res) {
-                        this.appendChild(res);
-                    }
-                }
-                this.json = undefined;
-            }
-        }
-    }
-
     class Text extends Node {
-        constructor(props, content) {
+        constructor(props) {
             super(props);
-            this.content = content;
+            this.content = props.content;
         }
         layout(data) {
             super.layout(data);
@@ -19540,6 +19570,55 @@
         }
     }
 
+    function parse(json) {
+        if (json.type === classValue.ArtBoard) {
+            const children = [];
+            for (let i = 0, len = json.children.length; i < len; i++) {
+                const res = parse(json.children[i]);
+                if (res) {
+                    children.push(res);
+                }
+            }
+            return new ArtBoard(json.props, children);
+        }
+        else if (json.type === classValue.Group) {
+            const children = [];
+            for (let i = 0, len = json.children.length; i < len; i++) {
+                const res = parse(json.children[i]);
+                if (res) {
+                    children.push(res);
+                }
+            }
+            return new Group(json.props, children);
+        }
+        else if (json.type === classValue.Bitmap) {
+            return new Bitmap(json.props);
+        }
+        else if (json.type === classValue.Text) {
+            return new Text(json.props);
+        }
+        else if (json.type === classValue.Rect) {
+            return new Rect(json.props);
+        }
+    }
+    class Page extends Container {
+        constructor(props, children) {
+            super(props, children);
+            this.isPage = true;
+        }
+        initIfNot() {
+            if (this.json) {
+                for (let i = 0, len = this.json.children.length; i < len; i++) {
+                    const res = parse(this.json.children[i]);
+                    if (res) {
+                        this.appendChild(res);
+                    }
+                }
+                this.json = undefined;
+            }
+        }
+    }
+
     class Overlay extends Container {
         constructor(props, children) {
             super(props, children);
@@ -19564,7 +19643,8 @@
                         color: '#777',
                         visible: false,
                     },
-                }, ab.props.name || '画板');
+                    content: ab.props.name || '画板',
+                });
                 this.artBoard.appendChild(text);
                 this.abList.push({ ab, text });
             }
