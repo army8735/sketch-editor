@@ -357,8 +357,20 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
+    const textBehaviour = layer.textBehaviour;
+    if (textBehaviour === SketchFormat.TextBehaviour.Flexible) {
+      width = 'auto';
+      height = 'auto';
+    }
+    else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
+      // 可能width是auto（left+right），也可能是left+width
+      height = 'auto';
+    }
+    else if (textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
+      // 啥也不干
+    }
     const { string, attributes } = layer.attributedString;
-    const rich = attributes.length <= 1 ? undefined : attributes.map((item: any) => {
+    const rich = attributes.length ? attributes.map((item: any) => {
       const {
         location,
         length,
@@ -382,7 +394,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         ],
         letterSpacing: kerning,
       };
-    });
+    }) : undefined;
     const MSAttributedStringFontAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute?.attributes;
     const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
     const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;

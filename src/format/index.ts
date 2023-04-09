@@ -119,15 +119,17 @@ export type ArtBoardProps = Props & {
 
 export type TextProps = Props & {
   content: string,
-  rich?: Array<{
-    location: number,
-    length: number,
-    fontFamily: string,
-    fontSize: number,
-    fontWeight: number,
-    color: string | Array<number>,
-    kerning: number,
-  }>,
+  rich?: Array<Rich>,
+};
+
+export type Rich = {
+  location: number,
+  length: number,
+  fontFamily: string,
+  fontSize: number,
+  fontWeight: number,
+  color: string | Array<number>,
+  kerning: number,
 };
 
 export enum classValue {

@@ -15658,8 +15658,18 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Text) {
+                const textBehaviour = layer.textBehaviour;
+                if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
+                    width = 'auto';
+                    height = 'auto';
+                }
+                else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
+                    // 可能width是auto（left+right），也可能是left+width
+                    height = 'auto';
+                }
+                else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
                 const { string, attributes } = layer.attributedString;
-                const rich = attributes.length <= 1 ? undefined : attributes.map((item) => {
+                const rich = attributes.length ? attributes.map((item) => {
                     const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute, kerning, }, } = item;
                     const fontFamily = name.replace(subFontFamilyReg, '');
                     return {
@@ -15675,7 +15685,7 @@
                         ],
                         letterSpacing: kerning,
                     };
-                });
+                }) : undefined;
                 const MSAttributedStringFontAttribute = (_d = (_c = (_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.textStyle) === null || _b === void 0 ? void 0 : _b.encodedAttributes) === null || _c === void 0 ? void 0 : _c.MSAttributedStringFontAttribute) === null || _d === void 0 ? void 0 : _d.attributes;
                 const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
                 const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
@@ -18739,7 +18749,7 @@
         collectBsData(index, bsPoint, bsTex, cx, cy) {
             const { width, height, matrixWorld } = this;
             // 先boxShadow部分
-            const tl = calRectPoint(-3, 3, 0, 0, matrixWorld);
+            const tl = calRectPoint(-3, -3, 0, 0, matrixWorld);
             const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
             const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
             const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
@@ -19532,25 +19542,25 @@
         constructor(props) {
             super(props);
             this.content = props.content;
+            this.rich = props.rich;
         }
         layout(data) {
             super.layout(data);
             if (this.isDestroyed) {
                 return;
             }
-            const { style, computedStyle, content } = this;
+            const { rich, style, computedStyle, content } = this;
             const autoW = style.width.u === StyleUnit.AUTO;
             const autoH = style.height.u === StyleUnit.AUTO;
             const ctx = inject.getFontCanvas().ctx;
             ctx.font = setFontStyle(computedStyle);
             if (autoW && autoH) {
-                this.width = computedStyle.width = ctx.measureText(content).width;
-                this.height = computedStyle.height = computedStyle.lineHeight;
+                if (rich) ;
+                else {
+                    this.width = computedStyle.width = ctx.measureText(content).width;
+                    this.height = computedStyle.height = computedStyle.lineHeight;
+                }
             }
-            else if (autoW) {
-                this.width = computedStyle.width = ctx.measureText(content).width;
-            }
-            else ;
         }
         calContent() {
             const { computedStyle, content } = this;

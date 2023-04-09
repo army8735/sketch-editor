@@ -22,7 +22,7 @@ class ArtBoard extends Container {
     const { width, height, matrixWorld } = this;
 
     // 先boxShadow部分
-    const tl = calRectPoint(-3, 3, 0, 0, matrixWorld);
+    const tl = calRectPoint(-3, -3, 0, 0, matrixWorld);
     const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
     const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
     const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
