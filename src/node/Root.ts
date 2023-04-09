@@ -134,6 +134,8 @@ class Root extends Container implements FrameCallback {
         visible: false,
       });
     }
+    // 先置空，否则新页初始化添加DOM会触发事件到老页上
+    this.lastPage = undefined;
     let newPage = this.pageContainer!.children[index] as Page;
     // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
@@ -178,7 +180,8 @@ class Root extends Container implements FrameCallback {
     else {
       cb && cb(true);
     }
-    if (addDom) {
+    // 切页过程中page不存在不触发，防止新老错乱
+    if (addDom && this.lastPage) {
       let isInPage = false;
       let parent = node.parent;
       while (parent && parent !== this) {

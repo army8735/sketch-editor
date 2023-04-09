@@ -355,6 +355,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
+    console.log(layer);
     return {
       type: classValue.Text,
       props: {

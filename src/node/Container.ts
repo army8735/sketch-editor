@@ -49,8 +49,8 @@ class Container extends Node {
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       child.layout({
-        x: this.x,
-        y: this.y,
+        x: 0,
+        y: 0,
         w: this.width,
         h: this.height,
       });

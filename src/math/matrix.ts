@@ -36,7 +36,7 @@ export function multiply(a: Float64Array, b: Float64Array): Float64Array {
 }
 
 // 同引用更改b数据
-export function multiply2(a: Float64Array, b: Float64Array): Float64Array {
+export function multiplyRef(a: Float64Array, b: Float64Array): Float64Array {
   if(isE(a)) {
     return b;
   }
@@ -343,5 +343,5 @@ export default {
   tfoMultiply,
   multiplyTfo,
   multiply,
-  multiply2,
+  multiplyRef,
 };

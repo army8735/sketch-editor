@@ -158,7 +158,7 @@ class Bitmap extends Node {
     super.renderCanvas();
     const { loader } = this;
     if (loader.onlyImg) {
-      const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, -this.x, -this.y, this.src!);
+      const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src!);
       // 第一张图像才绘制，图片解码到canvas上
       if (canvasCache.getCount(this._src!) === 1) {
         canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);

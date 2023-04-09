@@ -44,7 +44,7 @@ class Text extends Node {
   override renderCanvas() {
     super.renderCanvas();
     const computedStyle = this.computedStyle;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height, -this.x, -this.y);
+    const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
     const ctx = canvasCache.offscreen.ctx;
     ctx.font = setFontStyle(computedStyle);
     ctx.fillStyle = color2rgbaStr(computedStyle.color);

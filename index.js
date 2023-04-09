@@ -15654,6 +15654,7 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Text) {
+                console.log(layer);
                 return {
                     type: classValue.Text,
                     props: {
@@ -15918,7 +15919,7 @@
         return c;
     }
     // 同引用更改b数据
-    function multiply2(a, b) {
+    function multiplyRef(a, b) {
         if (isE(a)) {
             return b;
         }
@@ -16184,7 +16185,7 @@
         tfoMultiply,
         multiplyTfo,
         multiply,
-        multiply2,
+        multiplyRef,
     };
 
     function d2r(n) {
@@ -17571,9 +17572,8 @@
             const { node, opacity, matrix, cache } = list[i];
             const { texture } = cache;
             bindTexture(gl, texture, 0);
-            const { x, y, width, height } = node;
-            let x1 = x, y1 = y;
-            const t = calRectPoint(x1, y1, x1 + width, y1 + height, matrix);
+            const { width, height } = node;
+            const t = calRectPoint(0, 0, width, height, matrix);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
             const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -17713,8 +17713,8 @@
             this.style = normalize(getDefaultStyle(props.style));
             // @ts-ignore
             this.computedStyle = {}; // 输出展示的值
-            this.x = 0;
-            this.y = 0;
+            // this.x = 0;
+            // this.y = 0;
             this.width = 0;
             this.height = 0;
             this.minWidth = 0;
@@ -17908,7 +17908,7 @@
                     const sx = matrix[1] = sin * x;
                     const sy = matrix[4] = -sin * y;
                     const cy = matrix[5] = cos * y;
-                    const t = computedStyle.transformOrigin, ox = t[0] + this.x, oy = t[1] + this.y;
+                    const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
                     matrix[12] = transform[12] + ox - cx * ox - oy * sy;
                     matrix[13] = transform[13] + oy - sx * ox - oy * cy;
                 }
@@ -17986,11 +17986,12 @@
         calContent() {
             return this.hasContent = false;
         }
+        // 释放可能存在的老数据，具体渲染由各个子类自己实现
         renderCanvas() {
-            // const canvasCache = this.canvasCache;
-            // if (canvasCache && canvasCache.available) {
-            //   canvasCache.release();
-            // }
+            const canvasCache = this.canvasCache;
+            if (canvasCache && canvasCache.available) {
+                canvasCache.release();
+            }
         }
         genTexture(gl) {
             this.textureCache = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas);
@@ -18354,7 +18355,7 @@
                     assignMatrix(m, this.matrix);
                     let parent = this.parent;
                     while (parent) {
-                        multiply2(parent.matrix, m);
+                        multiplyRef(parent.matrix, m);
                         parent = parent.parent;
                     }
                 }
@@ -18364,10 +18365,10 @@
         get rect() {
             if (!this._rect) {
                 this._rect = new Float64Array(4);
-                this._rect[0] = this.x;
-                this._rect[1] = this.y;
-                this._rect[2] = this.x + this.width;
-                this._rect[3] = this.y + this.height;
+                this._rect[0] = 0;
+                this._rect[1] = 0;
+                this._rect[2] = this.width;
+                this._rect[3] = this.height;
             }
             return this._rect;
         }
@@ -18418,8 +18419,8 @@
             for (let i = 0, len = children.length; i < len; i++) {
                 const child = children[i];
                 child.layout({
-                    x: this.x,
-                    y: this.y,
+                    x: 0,
+                    y: 0,
                     w: this.width,
                     h: this.height,
                 });
@@ -18659,24 +18660,24 @@
             return false;
         }
         collectBsData(index, bsPoint, bsTex, cx, cy) {
-            const { x, y, width, height, matrixWorld } = this;
+            const { width, height, matrixWorld } = this;
             // 先boxShadow部分
-            const tl = calRectPoint(x - 3, y - 3, x, y, matrixWorld);
+            const tl = calRectPoint(-3, 3, 0, 0, matrixWorld);
             const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
             const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
             const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
             const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy);
-            const tr = calRectPoint(x + width, y - 3, x + width + 3, y, matrixWorld);
+            const tr = calRectPoint(width, -3, width + 3, 0, matrixWorld);
             const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy);
             const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy);
             const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy);
             const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy);
-            const br = calRectPoint(x + width, y + height, x + width + 3, y + height + 3, matrixWorld);
+            const br = calRectPoint(width, height, width + 3, height + 3, matrixWorld);
             const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy);
             const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy);
             const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy);
             const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy);
-            const bl = calRectPoint(x - 3, y + height, x, y + height + 3, matrixWorld);
+            const bl = calRectPoint(-3, height, 0, height + 3, matrixWorld);
             const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy);
             const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy);
             const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy);
@@ -18877,12 +18878,12 @@
         }
         renderBgc(gl, cx, cy) {
             const programs = this.root.programs;
-            const { x, y, width, height, matrixWorld, computedStyle } = this;
+            const { width, height, matrixWorld, computedStyle } = this;
             // 白色背景
             const colorProgram = programs.colorProgram;
             gl.useProgram(colorProgram);
             // 矩形固定2个三角形
-            const t = calRectPoint(x, y, x + width, y + height, matrixWorld);
+            const t = calRectPoint(0, 0, width, height, matrixWorld);
             const vtPoint = new Float32Array(12);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
@@ -18922,13 +18923,11 @@
 
     const HASH = {};
     class CanvasCache {
-        constructor(w, h, dx, dy) {
+        constructor(w, h) {
             this.available = false;
             this.offscreen = inject.getOffscreenCanvas(w, h);
             this.w = w;
             this.h = h;
-            this.dx = dx;
-            this.dy = dy;
         }
         release() {
             if (!this.available) {
@@ -18954,16 +18953,16 @@
             var _a;
             return (_a = HASH[url]) === null || _a === void 0 ? void 0 : _a.count;
         }
-        static getInstance(w, h, dx, dy) {
-            return new CanvasCache(w, h, dx, dy);
+        static getInstance(w, h) {
+            return new CanvasCache(w, h);
         }
-        static getImgInstance(w, h, dx, dy, url) {
+        static getImgInstance(w, h, url) {
             if (HASH.hasOwnProperty(url)) {
                 const o = HASH[url];
                 o.count++;
                 return o.value;
             }
-            const o = new CanvasCache(w, h, dx, dy);
+            const o = new CanvasCache(w, h);
             HASH[url] = {
                 value: o,
                 count: 1,
@@ -19102,7 +19101,7 @@
             super.renderCanvas();
             const { loader } = this;
             if (loader.onlyImg) {
-                const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, -this.x, -this.y, this.src);
+                const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src);
                 // 第一张图像才绘制，图片解码到canvas上
                 if (canvasCache.getCount(this._src) === 1) {
                     canvasCache.offscreen.ctx.drawImage(loader.source, 0, 0);
@@ -19533,7 +19532,7 @@
         renderCanvas() {
             super.renderCanvas();
             const computedStyle = this.computedStyle;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height, -this.x, -this.y);
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
             const ctx = canvasCache.offscreen.ctx;
             ctx.font = setFontStyle(computedStyle);
             ctx.fillStyle = color2rgbaStr(computedStyle.color);
@@ -20005,6 +20004,8 @@ void main() {
                     visible: false,
                 });
             }
+            // 先置空，否则新页初始化添加DOM会触发事件到老页上
+            this.lastPage = undefined;
             let newPage = this.pageContainer.children[index];
             // 延迟初始化，第一次需要显示时才从json初始化Page对象
             newPage.initIfNot();
@@ -20046,7 +20047,8 @@ void main() {
             else {
                 cb && cb(true);
             }
-            if (addDom) {
+            // 切页过程中page不存在不触发，防止新老错乱
+            if (addDom && this.lastPage) {
                 let isInPage = false;
                 let parent = node.parent;
                 while (parent && parent !== this) {

@@ -7,7 +7,7 @@ import {
   calRectPoint,
   identity,
   isE,
-  multiply2,
+  multiplyRef,
   multiplyRotateZ,
   multiplyScaleX,
   multiplyScaleY,
@@ -25,8 +25,8 @@ import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
 
 class Node extends Event {
-  x: number;
-  y: number;
+  // x: number;
+  // y: number;
   width: number;
   height: number;
   minWidth: number; // 最小尺寸限制，当子节点有固定尺寸或者子节点还是组递归有固定时，最小限制不能调整
@@ -58,8 +58,8 @@ class Node extends Event {
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
-    this.x = 0;
-    this.y = 0;
+    // this.x = 0;
+    // this.y = 0;
     this.width = 0;
     this.height = 0;
     this.minWidth = 0;
@@ -265,7 +265,7 @@ class Node extends Event {
         const sx = matrix[1] = sin * x;
         const sy = matrix[4] = -sin * y;
         const cy = matrix[5] = cos * y;
-        const t = computedStyle.transformOrigin, ox = t[0] + this.x, oy = t[1] + this.y;
+        const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
         matrix[12] = transform[12] + ox - cx * ox - oy * sy;
         matrix[13] = transform[13] + oy - sx * ox - oy * cy;
       }
@@ -345,11 +345,12 @@ class Node extends Event {
     return this.hasContent = false;
   }
 
+  // 释放可能存在的老数据，具体渲染由各个子类自己实现
   renderCanvas() {
-    // const canvasCache = this.canvasCache;
-    // if (canvasCache && canvasCache.available) {
-    //   canvasCache.release();
-    // }
+    const canvasCache = this.canvasCache;
+    if (canvasCache && canvasCache.available) {
+      canvasCache.release();
+    }
   }
 
   genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
@@ -759,7 +760,7 @@ class Node extends Event {
         assignMatrix(m, this.matrix);
         let parent = this.parent;
         while (parent) {
-          multiply2(parent.matrix, m);
+          multiplyRef(parent.matrix, m);
           parent = parent.parent;
         }
       }
@@ -770,10 +771,10 @@ class Node extends Event {
   get rect(): Float64Array {
     if (!this._rect) {
       this._rect = new Float64Array(4);
-      this._rect[0] = this.x;
-      this._rect[1] = this.y;
-      this._rect[2] = this.x + this.width;
-      this._rect[3] = this.y + this.height;
+      this._rect[0] = 0;
+      this._rect[1] = 0;
+      this._rect[2] = this.width;
+      this._rect[3] = this.height;
     }
     return this._rect;
   }

@@ -52,9 +52,8 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
     const { node, opacity, matrix, cache } = list[i];
     const { texture } = cache;
     bindTexture(gl, texture, 0);
-    const { x, y, width, height } = node;
-    let x1 = x, y1 = y;
-    const t = calRectPoint(x1, y1, x1 + width, y1 + height, matrix);
+    const { width, height } = node;
+    const t = calRectPoint(0, 0, width, height, matrix);
     const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
     const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
     const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
