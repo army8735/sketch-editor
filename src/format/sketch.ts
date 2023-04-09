@@ -187,7 +187,6 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     // left
     if (resizingConstraint & ResizingConstraint.LEFT) {
       left = translateX;
-      translateX = 0;
       // left+right忽略width
       if (resizingConstraint & ResizingConstraint.RIGHT) {
         right = w - translateX - width;
@@ -202,6 +201,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         right = (w - translateX - width) * 100 / w + '%';
         width = 'auto';
       }
+      translateX = 0;
     }
     // right
     else if (resizingConstraint & ResizingConstraint.RIGHT) {
@@ -217,7 +217,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       }
       // 仅right，left是百分比忽略width
       else {
-        left = (w - translateX - width) * 100 / w + '%';
+        left = translateX * 100 / w + '%';
         width = 'auto';
       }
       translateX = 0;
@@ -240,7 +240,6 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     // top
     if (resizingConstraint & ResizingConstraint.TOP) {
       top = translateY;
-      translateY = 0;
       // top+bottom忽略height
       if (resizingConstraint & ResizingConstraint.BOTTOM) {
         bottom = h - translateY - height;
@@ -255,6 +254,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         bottom = (h - translateY - height) * 100 / h + '%';
         height = 'auto';
       }
+      translateY = 0;
     }
     // bottom
     else if (resizingConstraint & ResizingConstraint.BOTTOM) {
@@ -270,7 +270,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       }
       // 仅bottom，top是百分比忽略height
       else {
-        top = (h - translateY - height) * 100 / h + '%';
+        top = translateY * 100 / h + '%';
         height = 'auto';
       }
       translateY = 0;
