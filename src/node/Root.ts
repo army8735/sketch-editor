@@ -141,12 +141,11 @@ class Root extends Container implements FrameCallback {
     newPage.initIfNot();
     newPage.updateStyle({
       visible: true,
-    }, () => {
-      // 触发事件告知外部如刷新图层列表
-      this.emit(Event.PAGE_CHANGED, newPage);
     });
     this.lastPage = newPage;
     this.overlay!.setArtBoard(newPage.children as Array<ArtBoard>);
+    // 触发事件告知外部如刷新图层列表
+    this.emit(Event.PAGE_CHANGED, newPage);
   }
 
   getPages() {
@@ -191,7 +190,10 @@ class Root extends Container implements FrameCallback {
         }
         parent = parent.parent;
       }
-      this.emit(Event.DID_ADD_DOM, node, isInPage);
+      // 防止overlay中的图层
+      if (isInPage) {
+        this.emit(Event.DID_ADD_DOM, node);
+      }
     }
   }
 

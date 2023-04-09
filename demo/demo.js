@@ -95,11 +95,7 @@ $input.onchange = function(e) {
         $tree.appendChild(ol);
       });
 
-      root.on(editor.util.Event.DID_ADD_DOM, function(node, isInPage) {
-        // 防止overlay层的内容
-        if (!isInPage) {
-          return;
-        }
+      root.on(editor.util.Event.DID_ADD_DOM, function(node) {
         const li = genNodeTree(node, abHash);
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
         const i = children.indexOf(node);
@@ -114,6 +110,8 @@ $input.onchange = function(e) {
           ol.insertBefore(node, abHash[node.prev.props.uuid]);
         }
       });
+
+      root.setPageIndex(0);
     });
   }
 }

@@ -20011,12 +20011,11 @@ void main() {
             newPage.initIfNot();
             newPage.updateStyle({
                 visible: true,
-            }, () => {
-                // 触发事件告知外部如刷新图层列表
-                this.emit(Event.PAGE_CHANGED, newPage);
             });
             this.lastPage = newPage;
             this.overlay.setArtBoard(newPage.children);
+            // 触发事件告知外部如刷新图层列表
+            this.emit(Event.PAGE_CHANGED, newPage);
         }
         getPages() {
             return this.pageContainer.children;
@@ -20058,7 +20057,10 @@ void main() {
                     }
                     parent = parent.parent;
                 }
-                this.emit(Event.DID_ADD_DOM, node, isInPage);
+                // 防止overlay中的图层
+                if (isInPage) {
+                    this.emit(Event.DID_ADD_DOM, node);
+                }
             }
         }
         calUpdate(node, lv, addDom, removeDom) {
@@ -20246,7 +20248,7 @@ void main() {
                 },
             });
             root.setJPages(json.pages);
-            root.setPageIndex(0);
+            // root.setPageIndex(0);
             return root;
         },
         openAndConvertSketchBuffer,
