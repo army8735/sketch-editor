@@ -154,6 +154,9 @@ function getNodeType(node) {
   else if (node instanceof editor.node.Bitmap) {
     type = '🖼️';
   }
+  else if (node instanceof editor.node.Text) {
+    type = '🔤';
+  }
   else {
     //
   }
