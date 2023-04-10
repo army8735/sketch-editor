@@ -10,6 +10,54 @@
     var require$$0__default$1 = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
     var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
 
+    function getDefaultStyle(v) {
+        return Object.assign({
+            left: 0,
+            top: 0,
+            right: 'auto',
+            bottom: 'auto',
+            width: 'auto',
+            height: 'auto',
+            lineHeight: 'normal',
+            fontFamily: 'arial',
+            fontSize: 16,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            visible: true,
+            overflow: 'visible',
+            backgroundColor: [0, 0, 0, 0],
+            color: [0, 0, 0, 1],
+            opacity: 1,
+            letterSpacing: 0,
+            textAlign: 'left',
+            translateX: 0,
+            translateY: 0,
+            scaleX: 1,
+            scaleY: 1,
+            rotateZ: 0,
+            transformOrigin: ['center', 'center'],
+            mixBlendMode: 'normal',
+            pointerEvents: true,
+        }, v);
+    }
+    var classValue;
+    (function (classValue) {
+        classValue["Page"] = "page";
+        classValue["ArtBoard"] = "artBoard";
+        classValue["Group"] = "group";
+        classValue["Bitmap"] = "bitmap";
+        classValue["Text"] = "text";
+        classValue["Polyline"] = "polyline";
+    })(classValue || (classValue = {}));
+    var CurveMode$1;
+    (function (CurveMode) {
+        CurveMode[CurveMode["None"] = 0] = "None";
+        CurveMode[CurveMode["Straight"] = 1] = "Straight";
+        CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
+        CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
+        CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
+    })(CurveMode$1 || (CurveMode$1 = {}));
+
     /******************************************************************************
     Copyright (c) Microsoft Corporation.
 
@@ -15129,14 +15177,14 @@
     /**
      * Enumeration of the curve modes that can be applied to vector points
      */
-    var CurveMode$1;
+    var CurveMode;
     (function (CurveMode) {
         CurveMode[CurveMode["None"] = 0] = "None";
         CurveMode[CurveMode["Straight"] = 1] = "Straight";
         CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
         CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
         CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode$1 || (CurveMode$1 = {}));
+    })(CurveMode || (CurveMode = {}));
     /**
      * Enumeration of line spacing behaviour for fixed line height text
      */
@@ -15286,7 +15334,7 @@
         get InferredLayoutAnchor () { return InferredLayoutAnchor; },
         get PointsRadiusBehaviour () { return PointsRadiusBehaviour; },
         get CornerStyle () { return CornerStyle; },
-        get CurveMode () { return CurveMode$1; },
+        get CurveMode () { return CurveMode; },
         get LineSpacingBehaviour () { return LineSpacingBehaviour; },
         get TextBehaviour () { return TextBehaviour; },
         get DocumentLibraryType () { return DocumentLibraryType; },
@@ -15294,54 +15342,6 @@
         get NumericalBool () { return NumericalBool; },
         get ClassValue () { return ClassValue; }
     });
-
-    function getDefaultStyle(v) {
-        return Object.assign({
-            left: 0,
-            top: 0,
-            right: 'auto',
-            bottom: 'auto',
-            width: 'auto',
-            height: 'auto',
-            lineHeight: 'normal',
-            fontFamily: 'arial',
-            fontSize: 16,
-            fontWeight: 400,
-            fontStyle: 'normal',
-            visible: true,
-            overflow: 'visible',
-            backgroundColor: [0, 0, 0, 0],
-            color: [0, 0, 0, 1],
-            opacity: 1,
-            letterSpacing: 0,
-            textAlign: 'left',
-            translateX: 0,
-            translateY: 0,
-            scaleX: 1,
-            scaleY: 1,
-            rotateZ: 0,
-            transformOrigin: ['center', 'center'],
-            mixBlendMode: 'normal',
-            pointerEvents: true,
-        }, v);
-    }
-    var classValue;
-    (function (classValue) {
-        classValue["Page"] = "page";
-        classValue["ArtBoard"] = "artBoard";
-        classValue["Group"] = "group";
-        classValue["Bitmap"] = "bitmap";
-        classValue["Text"] = "text";
-        classValue["Polyline"] = "polyline";
-    })(classValue || (classValue = {}));
-    var CurveMode;
-    (function (CurveMode) {
-        CurveMode[CurveMode["None"] = 0] = "None";
-        CurveMode[CurveMode["Straight"] = 1] = "Straight";
-        CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
-        CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
-        CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode || (CurveMode = {}));
 
     var StyleUnit;
     (function (StyleUnit) {
@@ -19216,17 +19216,14 @@
         }
         calContent() {
             let res = super.calContent();
-            const { computedStyle, loader } = this;
+            const { loader } = this;
             if (res) {
                 loader.onlyImg = false;
             }
             else {
                 loader.onlyImg = true;
-                const { visible, } = computedStyle;
-                if (visible) {
-                    if (loader.source) {
-                        res = true;
-                    }
+                if (loader.source) {
+                    res = true;
                 }
             }
             return this.hasContent = res;
@@ -20659,7 +20656,7 @@ void main() {
             return json.map(item => apply(item, imgs));
         }
         const { type, props = {}, children = [] } = json;
-        if (type === 'Bitmap') {
+        if (type === classValue.Bitmap) {
             const src = props.src;
             if (util.type.isNumber(src)) {
                 props.src = imgs[src];

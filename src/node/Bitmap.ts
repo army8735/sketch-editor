@@ -136,19 +136,14 @@ class Bitmap extends Node {
 
   override calContent(): boolean {
     let res = super.calContent();
-    const { computedStyle, loader } = this;
+    const { loader } = this;
     if (res) {
       loader.onlyImg = false;
     }
     else {
       loader.onlyImg = true;
-      const {
-        visible,
-      } = computedStyle;
-      if (visible) {
-        if (loader.source) {
-          res = true;
-        }
+      if (loader.source) {
+        res = true;
       }
     }
     return this.hasContent = res;
