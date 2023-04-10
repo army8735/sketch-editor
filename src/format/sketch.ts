@@ -9,8 +9,9 @@ import {
   JBitmap,
   JText,
   classValue,
-  JRect,
+  JRect, Rich,
 } from './';
+import { calNormalLineHeight } from '../style/css';
 
 enum ResizingConstraint {
   UNSET =  0b111111,
@@ -376,28 +377,42 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         length,
         attributes: {
           MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } },
-          MSAttributedStringColorAttribute,
+          MSAttributedStringColorAttribute: { red, green, blue, alpha },
           kerning,
+          paragraphStyle: { maximumLineHeight = 0 } = {},
         },
       } = item;
       const fontFamily = name.replace(subFontFamilyReg, '');
-      return {
+      const res = {
         location,
         length,
         fontFamily,
         fontSize,
-        color: [
-          Math.floor(MSAttributedStringColorAttribute.red * 255),
-          Math.floor(MSAttributedStringColorAttribute.green * 255),
-          Math.floor(MSAttributedStringColorAttribute.blue * 255),
-          MSAttributedStringColorAttribute.alpha,
-        ],
+        fontWeight: 400,
+        fontStyle: 'normal',
         letterSpacing: kerning,
-      };
+        lineHeight: maximumLineHeight,
+        color: [
+          Math.floor(red * 255),
+          Math.floor(green * 255),
+          Math.floor(blue * 255),
+          alpha,
+        ],
+      } as Rich;
+      // 自动行高
+      if (!maximumLineHeight) {
+        res.lineHeight = calNormalLineHeight(res);
+      }
+      return res;
     }) : undefined;
     const MSAttributedStringFontAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute?.attributes;
     const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
     const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
+    const paragraphStyle = layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
+    const alignment = paragraphStyle?.alignment;
+    const lineHeight = paragraphStyle?.maximumLineHeight;
+    const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
+    const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning;
     const MSAttributedStringColorAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute ? [
       Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -405,9 +420,6 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       Math.floor(MSAttributedStringColorAttribute.blue * 255),
       MSAttributedStringColorAttribute.alpha,
     ] : undefined;
-    const alignment = layer.style?.textStyle?.encodedAttributes?.paragraphStyle?.alignment;
-    const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
-    const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning;
     return {
       type: classValue.Text,
       props: {
@@ -431,6 +443,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           color,
           textAlign,
           letterSpacing,
+          lineHeight,
         },
         content: string,
         rich,

@@ -39,11 +39,8 @@ class Container extends Node {
     }
   }
 
-  override layout(data: LayoutData) {
-    if (this.isDestroyed) {
-      return;
-    }
-    super.layout(data);
+  override lay(data: LayoutData) {
+    super.lay(data);
     const { children, computedStyle } = this;
     // 递归下去布局
     for (let i = 0, len = children.length; i < len; i++) {

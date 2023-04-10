@@ -1,4 +1,4 @@
-import { JStyle } from '../format';
+import { JStyle, Rich } from '../format';
 import {
   calUnit,
   FONT_STYLE,
@@ -392,7 +392,7 @@ export function color2gl(color: string | Array<number>): Array<number> {
   ];
 }
 
-export function setFontStyle(style: ComputedStyle) {
+export function setFontStyle(style: ComputedStyle | Rich) {
   let fontSize = style.fontSize || 0;
   let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
   if(/\s/.test(fontFamily)) {
@@ -413,7 +413,7 @@ export function calFontFamily(fontFamily: string) {
   return inject.defaultFontFamily;
 }
 
-export function calNormalLineHeight(style: ComputedStyle, ff?: string) {
+export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   if(!ff) {
     ff = calFontFamily(style.fontFamily);
   }
@@ -426,7 +426,7 @@ export function calNormalLineHeight(style: ComputedStyle, ff?: string) {
  * @param style computedStyle
  * @returns {number}
  */
-export function getBaseline(style: ComputedStyle) {
+export function getBaseline(style: ComputedStyle | Rich) {
   let fontSize = style.fontSize;
   let ff = calFontFamily(style.fontFamily);
   let normal = calNormalLineHeight(style, ff);

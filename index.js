@@ -15335,986 +15335,6 @@
         classValue["Rect"] = "Rect";
     })(classValue || (classValue = {}));
 
-    var ResizingConstraint;
-    (function (ResizingConstraint) {
-        ResizingConstraint[ResizingConstraint["UNSET"] = 63] = "UNSET";
-        ResizingConstraint[ResizingConstraint["RIGHT"] = 1] = "RIGHT";
-        ResizingConstraint[ResizingConstraint["WIDTH"] = 2] = "WIDTH";
-        ResizingConstraint[ResizingConstraint["LEFT"] = 4] = "LEFT";
-        ResizingConstraint[ResizingConstraint["BOTTOM"] = 8] = "BOTTOM";
-        ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
-        ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
-    })(ResizingConstraint || (ResizingConstraint = {}));
-    const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
-    function openAndConvertSketchBuffer(arrayBuffer) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let zipFile;
-            try {
-                zipFile = yield lib.loadAsync(arrayBuffer);
-            }
-            catch (err) {
-                alert('Sorry!\nThis is not a zip file. It may be created by an old version sketch app.');
-                throw err;
-            }
-            const document = yield readJsonFile(zipFile, 'document.json');
-            const pages = [];
-            yield Promise.all(document.pages.map((page) => {
-                return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
-                    pages.push(pageJson);
-                });
-            }));
-            const meta = yield readJsonFile(zipFile, 'meta.json');
-            const user = yield readJsonFile(zipFile, 'user.json');
-            return yield convertSketch({
-                document,
-                pages,
-                meta,
-                user,
-            }, zipFile);
-        });
-    }
-    function readJsonFile(zipFile, filename) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            const docStr = yield ((_a = zipFile.file(filename)) === null || _a === void 0 ? void 0 : _a.async('string'));
-            return JSON.parse(docStr);
-        });
-    }
-    function convertSketch(json, zipFile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('sketch', json);
-            const imgs = [], imgHash = {};
-            const fonts = [], fontHash = {};
-            const pages = yield Promise.all(json.pages.map((page) => {
-                return convertPage(page, {
-                    imgs,
-                    imgHash,
-                    fonts,
-                    fontHash,
-                    zipFile,
-                    user: json.user,
-                });
-            }));
-            return {
-                pages,
-                imgs,
-                fonts: [],
-            };
-        });
-    }
-    function convertPage(page, opt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const children = yield Promise.all(page.layers.map((layer) => {
-                return convertItem(layer, opt, page.frame.width, page.frame.height);
-            }));
-            let x = 0, y = 0, zoom = 1;
-            const ua = opt.user[page.do_objectID];
-            if (ua) {
-                const { scrollOrigin, zoomValue } = ua;
-                if (scrollOrigin) {
-                    const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
-                    if (match) {
-                        x = parseFloat(match[1]) || 0;
-                        y = parseFloat(match[2]) || 0;
-                    }
-                }
-                if (zoomValue) {
-                    zoom = zoomValue;
-                }
-            }
-            return {
-                type: classValue.Page,
-                props: {
-                    name: page.name,
-                    uuid: page.do_objectID,
-                    style: {
-                        left: page.frame.x,
-                        top: page.frame.y,
-                        width: page.frame.width,
-                        height: page.frame.height,
-                        visible: false,
-                        translateX: x,
-                        translateY: y,
-                        scaleX: zoom,
-                        scaleY: zoom,
-                        transformOrigin: [0, 0],
-                        pointerEvents: false,
-                    },
-                },
-                children,
-            };
-        });
-    }
-    function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-        return __awaiter(this, void 0, void 0, function* () {
-            let width = layer.frame.width;
-            let height = layer.frame.height;
-            let translateX = layer.frame.x;
-            let translateY = layer.frame.y;
-            let visible = layer.isVisible;
-            let opacity = layer.style.contextSettings.opacity;
-            let rotateZ = -layer.rotation;
-            // artBoard也是固定尺寸和page一样，但x/y用translate代替
-            if (layer._class === FileFormat.ClassValue.Artboard) {
-                const children = yield Promise.all(layer.layers.map((child) => {
-                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
-                }));
-                const hasBackgroundColor = layer.hasBackgroundColor;
-                const backgroundColor = hasBackgroundColor ? [
-                    Math.floor(layer.backgroundColor.r * 255),
-                    Math.floor(layer.backgroundColor.g * 255),
-                    Math.floor(layer.backgroundColor.b * 255),
-                    layer.backgroundColor.a,
-                ] : [255, 255, 255, 1];
-                return {
-                    type: classValue.ArtBoard,
-                    props: {
-                        name: layer.name,
-                        uuid: layer.do_objectID,
-                        hasBackgroundColor,
-                        style: {
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            rotateZ,
-                            overflow: 'hidden',
-                            backgroundColor,
-                        },
-                    },
-                    children,
-                };
-            }
-            // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
-            const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
-            let left = 0, top = 0, right = 'auto', bottom = 'auto';
-            // 需根据父容器尺寸计算
-            if (resizingConstraint) {
-                // left
-                if (resizingConstraint & ResizingConstraint.LEFT) {
-                    left = translateX;
-                    // left+right忽略width
-                    if (resizingConstraint & ResizingConstraint.RIGHT) {
-                        right = w - translateX - width;
-                        width = 'auto';
-                    }
-                    // left+width
-                    else if (resizingConstraint & ResizingConstraint.WIDTH) ;
-                    // 仅left，right是百分比忽略width
-                    else {
-                        right = (w - translateX - width) * 100 / w + '%';
-                        width = 'auto';
-                    }
-                    translateX = 0;
-                }
-                // right
-                else if (resizingConstraint & ResizingConstraint.RIGHT) {
-                    right = w - translateX - width;
-                    // left+right忽略width
-                    if (resizingConstraint & ResizingConstraint.LEFT) {
-                        left = translateX;
-                        width = 'auto';
-                    }
-                    // right+width
-                    else if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = 'auto';
-                    }
-                    // 仅right，left是百分比忽略width
-                    else {
-                        left = translateX * 100 / w + '%';
-                        width = 'auto';
-                    }
-                    translateX = 0;
-                }
-                // 左右都不固定
-                else {
-                    // 仅固定宽度，以中心点占left的百分比
-                    if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = (translateX + width * 0.5) * 100 / w + '%';
-                        translateX = '-50%';
-                    }
-                    // 左右皆为百分比
-                    else {
-                        left = translateX * 100 / w + '%';
-                        right = (w - translateX - width) * 100 / w + '%';
-                        translateX = 0;
-                        width = 'auto';
-                    }
-                }
-                // top
-                if (resizingConstraint & ResizingConstraint.TOP) {
-                    top = translateY;
-                    // top+bottom忽略height
-                    if (resizingConstraint & ResizingConstraint.BOTTOM) {
-                        bottom = h - translateY - height;
-                        height = 'auto';
-                    }
-                    // top+height
-                    else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
-                    // 仅top，bottom是百分比忽略height
-                    else {
-                        bottom = (h - translateY - height) * 100 / h + '%';
-                        height = 'auto';
-                    }
-                    translateY = 0;
-                }
-                // bottom
-                else if (resizingConstraint & ResizingConstraint.BOTTOM) {
-                    bottom = h - translateY - height;
-                    // top+bottom忽略height
-                    if (resizingConstraint & ResizingConstraint.TOP) {
-                        top = translateY;
-                        height = 'auto';
-                    }
-                    // bottom+height
-                    else if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = 'auto';
-                    }
-                    // 仅bottom，top是百分比忽略height
-                    else {
-                        top = translateY * 100 / h + '%';
-                        height = 'auto';
-                    }
-                    translateY = 0;
-                }
-                // 上下都不固定
-                else {
-                    // 仅固定高度，以中心点占top的百分比
-                    if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = (translateY + height * 0.5) * 100 / h + '%';
-                        translateY = '-50%';
-                    }
-                    // 上下皆为百分比
-                    else {
-                        top = translateY * 100 / h + '%';
-                        bottom = (h - translateY - height) * 100 / h + '%';
-                        translateY = 0;
-                        height = 'auto';
-                    }
-                }
-            }
-            // 未设置则上下左右都是百分比
-            else {
-                left = translateX * 100 / w + '%';
-                right = (w - translateX - width) * 100 / w + '%';
-                translateX = 0;
-                width = 'auto';
-                top = translateY * 100 / h + '%';
-                bottom = (h - translateY - height) * 100 / h + '%';
-                translateY = 0;
-                height = 'auto';
-            }
-            if (layer._class === FileFormat.ClassValue.Group) {
-                const children = yield Promise.all(layer.layers.map((child) => {
-                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
-                }));
-                return {
-                    type: classValue.Group,
-                    props: {
-                        name: layer.name,
-                        uuid: layer.do_objectID,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            rotateZ,
-                        },
-                    },
-                    children,
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.Bitmap) {
-                const index = yield readImageFile(layer.image._ref, opt);
-                return {
-                    type: classValue.Bitmap,
-                    props: {
-                        name: layer.name,
-                        uuid: layer.do_objectID,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            rotateZ,
-                        },
-                        src: index,
-                    },
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.Text) {
-                const textBehaviour = layer.textBehaviour;
-                if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
-                    width = 'auto';
-                    height = 'auto';
-                }
-                else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
-                    // 可能width是auto（left+right），也可能是left+width
-                    height = 'auto';
-                }
-                else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
-                const { string, attributes } = layer.attributedString;
-                const rich = attributes.length ? attributes.map((item) => {
-                    const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute, kerning, }, } = item;
-                    const fontFamily = name.replace(subFontFamilyReg, '');
-                    return {
-                        location,
-                        length,
-                        fontFamily,
-                        fontSize,
-                        color: [
-                            Math.floor(MSAttributedStringColorAttribute.red * 255),
-                            Math.floor(MSAttributedStringColorAttribute.green * 255),
-                            Math.floor(MSAttributedStringColorAttribute.blue * 255),
-                            MSAttributedStringColorAttribute.alpha,
-                        ],
-                        letterSpacing: kerning,
-                    };
-                }) : undefined;
-                const MSAttributedStringFontAttribute = (_d = (_c = (_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.textStyle) === null || _b === void 0 ? void 0 : _b.encodedAttributes) === null || _c === void 0 ? void 0 : _c.MSAttributedStringFontAttribute) === null || _d === void 0 ? void 0 : _d.attributes;
-                const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
-                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
-                const MSAttributedStringColorAttribute = (_g = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.textStyle) === null || _f === void 0 ? void 0 : _f.encodedAttributes) === null || _g === void 0 ? void 0 : _g.MSAttributedStringColorAttribute;
-                const color = MSAttributedStringColorAttribute ? [
-                    Math.floor(MSAttributedStringColorAttribute.red * 255),
-                    Math.floor(MSAttributedStringColorAttribute.green * 255),
-                    Math.floor(MSAttributedStringColorAttribute.blue * 255),
-                    MSAttributedStringColorAttribute.alpha,
-                ] : undefined;
-                const alignment = (_l = (_k = (_j = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.textStyle) === null || _j === void 0 ? void 0 : _j.encodedAttributes) === null || _k === void 0 ? void 0 : _k.paragraphStyle) === null || _l === void 0 ? void 0 : _l.alignment;
-                const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
-                const letterSpacing = (_p = (_o = (_m = layer.style) === null || _m === void 0 ? void 0 : _m.textStyle) === null || _o === void 0 ? void 0 : _o.encodedAttributes) === null || _p === void 0 ? void 0 : _p.kerning;
-                return {
-                    type: classValue.Text,
-                    props: {
-                        name: layer.name,
-                        uuid: layer.do_objectID,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            rotateZ,
-                            overflow: 'hidden',
-                            fontSize,
-                            fontFamily,
-                            color,
-                            textAlign,
-                            letterSpacing,
-                        },
-                        content: string,
-                        rich,
-                    },
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.Rectangle) {
-                return {
-                    type: classValue.Rect,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            rotateZ,
-                        },
-                    },
-                };
-            }
-            else {
-                console.error(layer);
-            }
-        });
-    }
-    function readImageFile(filename, opt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!/\.\w+$/.test(filename)) {
-                filename = `${filename}.png`;
-            }
-            if (opt.imgHash.hasOwnProperty(filename)) {
-                return opt.imgHash[filename];
-            }
-            const file = opt.zipFile.file(filename);
-            if (!file) {
-                console.error(`image not exist: >>>${filename}<<<`);
-                return -1;
-            }
-            let base64 = yield file.async('base64');
-            if (!/^data:image\//.test(base64)) {
-                if (filename.endsWith('.png')) {
-                    base64 = 'data:image/png;base64,' + base64;
-                }
-                else if (filename.endsWith('.gif')) {
-                    base64 = 'data:image/gif;base64,' + base64;
-                }
-                else if (filename.endsWith('.jpg')) {
-                    base64 = 'data:image/jpg;base64,' + base64;
-                }
-                else if (filename.endsWith('.jpeg')) {
-                    base64 = 'data:image/jpeg;base64,' + base64;
-                }
-                else if (filename.endsWith('.webp')) {
-                    base64 = 'data:image/webp;base64,' + base64;
-                }
-                else if (filename.endsWith('.bmp')) {
-                    base64 = 'data:image/bmp;base64,' + base64;
-                }
-            }
-            const index = opt.imgs.length;
-            opt.imgs.push(base64);
-            return index;
-        });
-    }
-
-    var RefreshLevel;
-    (function (RefreshLevel) {
-        RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
-        RefreshLevel[RefreshLevel["CACHE"] = 1] = "CACHE";
-        RefreshLevel[RefreshLevel["TRANSLATE_X"] = 2] = "TRANSLATE_X";
-        RefreshLevel[RefreshLevel["TRANSLATE_Y"] = 4] = "TRANSLATE_Y";
-        RefreshLevel[RefreshLevel["TRANSLATE"] = 6] = "TRANSLATE";
-        RefreshLevel[RefreshLevel["ROTATE_Z"] = 8] = "ROTATE_Z";
-        RefreshLevel[RefreshLevel["SCALE_X"] = 16] = "SCALE_X";
-        RefreshLevel[RefreshLevel["SCALE_Y"] = 32] = "SCALE_Y";
-        RefreshLevel[RefreshLevel["SCALE"] = 48] = "SCALE";
-        RefreshLevel[RefreshLevel["TRANSFORM"] = 64] = "TRANSFORM";
-        RefreshLevel[RefreshLevel["TRANSFORM_ALL"] = 126] = "TRANSFORM_ALL";
-        RefreshLevel[RefreshLevel["OPACITY"] = 128] = "OPACITY";
-        RefreshLevel[RefreshLevel["FILTER"] = 256] = "FILTER";
-        RefreshLevel[RefreshLevel["MIX_BLEND_MODE"] = 512] = "MIX_BLEND_MODE";
-        RefreshLevel[RefreshLevel["MASK"] = 1024] = "MASK";
-        RefreshLevel[RefreshLevel["REPAINT"] = 2048] = "REPAINT";
-        RefreshLevel[RefreshLevel["REFLOW"] = 4096] = "REFLOW";
-        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 4222] = "REFLOW_TRANSFORM";
-        RefreshLevel[RefreshLevel["REBUILD"] = 8192] = "REBUILD";
-    })(RefreshLevel || (RefreshLevel = {}));
-    function isReflow(lv) {
-        return lv >= RefreshLevel.REFLOW;
-    }
-    function isRepaint(lv) {
-        return lv < RefreshLevel.REFLOW;
-    }
-    function isRepaintKey(k) {
-        return k === 'visible' || k === 'color' || k === 'backgroundColor'
-            || k === 'mixBlendMode';
-    }
-    function getLevel(k) {
-        if (k === 'pointerEvents') {
-            return RefreshLevel.NONE;
-        }
-        if (k === 'translateX') {
-            return RefreshLevel.TRANSLATE_X;
-        }
-        if (k === 'translateY') {
-            return RefreshLevel.TRANSLATE_Y;
-        }
-        if (k === 'rotateZ') {
-            return RefreshLevel.ROTATE_Z;
-        }
-        if (k === 'scaleX') {
-            return RefreshLevel.SCALE_X;
-        }
-        if (k === 'scaleY') {
-            return RefreshLevel.SCALE_Y;
-        }
-        if (k === 'transformOrigin') {
-            return RefreshLevel.TRANSFORM;
-        }
-        if (k === 'opacity') {
-            return RefreshLevel.OPACITY;
-        }
-        if (k === 'mixBlendMode') {
-            return RefreshLevel.MIX_BLEND_MODE;
-        }
-        if (isRepaintKey(k)) {
-            return RefreshLevel.REPAINT;
-        }
-        return RefreshLevel.REFLOW;
-    }
-    var level = {
-        RefreshLevel,
-        isRepaint,
-        isReflow,
-        isRepaintKey,
-    };
-
-    var refresh = {
-        level,
-    };
-
-    const o = {
-        info: {
-            arial: {
-                lhr: 1.14990234375,
-                // car: 1.1171875, // content-area ratio，(1854+434)/2048
-                blr: 0.9052734375,
-                // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-                lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
-            },
-            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
-            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
-            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
-            helvetica: {
-                lhr: 1.14990234375,
-                blr: 0.919921875, // (1577 + Round((1577 + 471) * 0.15)) / 2048
-            },
-            verdana: {
-                lhr: 1.21533203125,
-                blr: 1.00537109375, // 2059/2048
-            },
-            tahoma: {
-                lhr: 1.20703125,
-                blr: 1.00048828125, // 2049/2048
-            },
-            georgia: {
-                lhr: 1.13623046875,
-                blr: 0.9169921875, // 1878/2048
-            },
-            'courier new': {
-                lhr: 1.1328125,
-                blr: 0.83251953125, // 1705/2048
-            },
-            'pingfang sc': {
-                lhr: 1.4,
-                blr: 1.06, // 1060/1000
-            },
-            simsun: {
-                lhr: 1.4,
-                blr: 1.06,
-            },
-        },
-        hasRegister(fontFamily) {
-            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
-        },
-        hasLoaded(fontFamily) {
-            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
-        },
-    };
-    o.info['宋体'] = o.info.simsun;
-    o.info['pingfang'] = o.info['pingfang sc'];
-
-    // 向量点乘积
-    function dotProduct(x1, y1, x2, y2) {
-        return x1 * x2 + y1 * y2;
-    }
-    // 向量叉乘积
-    function crossProduct(x1, y1, x2, y2) {
-        return x1 * y2 - x2 * y1;
-    }
-    var vector = {
-        dotProduct,
-        crossProduct,
-    };
-
-    function identity() {
-        return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    }
-    // 16位单位矩阵判断，空也认为是
-    function isE(m) {
-        if (!m || !m.length) {
-            return true;
-        }
-        return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
-            && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
-            && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0
-            && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
-    }
-    // 矩阵a*b，固定两个matrix都是长度16
-    function multiply(a, b) {
-        if (isE(a)) {
-            return new Float64Array(b);
-        }
-        if (isE(b)) {
-            return new Float64Array(a);
-        }
-        let c = identity();
-        for (let i = 0; i < 4; i++) {
-            let a0 = a[i];
-            let a1 = a[i + 4];
-            let a2 = a[i + 8];
-            let a3 = a[i + 12];
-            c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
-            c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
-            c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
-            c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
-        }
-        return c;
-    }
-    // 同引用更改b数据
-    function multiplyRef(a, b) {
-        if (isE(a)) {
-            return b;
-        }
-        if (isE(b)) {
-            assignMatrix(b, a);
-            return b;
-        }
-        const b0 = b[0];
-        const b1 = b[1];
-        const b2 = b[2];
-        const b3 = b[3];
-        const b4 = b[4];
-        const b5 = b[5];
-        const b6 = b[6];
-        const b7 = b[7];
-        const b8 = b[8];
-        const b9 = b[9];
-        const b10 = b[10];
-        const b11 = b[11];
-        const b12 = b[12];
-        const b13 = b[13];
-        const b14 = b[14];
-        const b15 = b[15];
-        for (let i = 0; i < 4; i++) {
-            let a0 = a[i];
-            let a1 = a[i + 4];
-            let a2 = a[i + 8];
-            let a3 = a[i + 12];
-            b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
-            b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
-            b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
-            b[i + 12] = a0 * b12 + a1 * b13 + a2 * b14 + a3 * b15;
-        }
-        return b;
-    }
-    function toE(m) {
-        m[0] = 1;
-        m[1] = 0;
-        m[2] = 0;
-        m[3] = 0;
-        m[4] = 0;
-        m[5] = 1;
-        m[6] = 0;
-        m[7] = 0;
-        m[8] = 0;
-        m[9] = 0;
-        m[10] = 1;
-        m[11] = 0;
-        m[12] = 0;
-        m[13] = 0;
-        m[14] = 0;
-        m[15] = 1;
-        return m;
-    }
-    /**
-     * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
-     * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
-     * 参见: https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d()
-     * 对应：
-     * [
-     *   a1,a2,a3,a4,
-     *   b1,b2,b3,b4,
-     *   c1,c2,c3,c4,
-     *   d1,d2,d3,d4,
-     * ]
-     *
-     * 根据公式 A* = |A|A^-1 来计算
-     * A* 表示矩阵 A 的伴随矩阵，A^-1 表示矩阵 A 的逆矩阵，|A| 表示行列式的值
-     *
-     * @returns {number[]}
-     */
-    function inverse4(m) {
-        let inv = [];
-        inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15]
-            + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
-        inv[4] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15]
-            - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
-        inv[8] = m[4] * m[9] * m[15] - m[4] * m[11] * m[13] - m[8] * m[5] * m[15]
-            + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9];
-        inv[12] = -m[4] * m[9] * m[14] + m[4] * m[10] * m[13] + m[8] * m[5] * m[14]
-            - m[8] * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9];
-        inv[1] = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14] + m[9] * m[2] * m[15]
-            - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
-        inv[5] = m[0] * m[10] * m[15] - m[0] * m[11] * m[14] - m[8] * m[2] * m[15]
-            + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
-        inv[9] = -m[0] * m[9] * m[15] + m[0] * m[11] * m[13] + m[8] * m[1] * m[15]
-            - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9];
-        inv[13] = m[0] * m[9] * m[14] - m[0] * m[10] * m[13] - m[8] * m[1] * m[14]
-            + m[8] * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9];
-        inv[2] = m[1] * m[6] * m[15] - m[1] * m[7] * m[14] - m[5] * m[2] * m[15]
-            + m[5] * m[3] * m[14] + m[13] * m[2] * m[7] - m[13] * m[3] * m[6];
-        inv[6] = -m[0] * m[6] * m[15] + m[0] * m[7] * m[14] + m[4] * m[2] * m[15]
-            - m[4] * m[3] * m[14] - m[12] * m[2] * m[7] + m[12] * m[3] * m[6];
-        inv[10] = m[0] * m[5] * m[15] - m[0] * m[7] * m[13] - m[4] * m[1] * m[15]
-            + m[4] * m[3] * m[13] + m[12] * m[1] * m[7] - m[12] * m[3] * m[5];
-        inv[14] = -m[0] * m[5] * m[14] + m[0] * m[6] * m[13] + m[4] * m[1] * m[14]
-            - m[4] * m[2] * m[13] - m[12] * m[1] * m[6] + m[12] * m[2] * m[5];
-        inv[3] = -m[1] * m[6] * m[11] + m[1] * m[7] * m[10] + m[5] * m[2] * m[11]
-            - m[5] * m[3] * m[10] - m[9] * m[2] * m[7] + m[9] * m[3] * m[6];
-        inv[7] = m[0] * m[6] * m[11] - m[0] * m[7] * m[10] - m[4] * m[2] * m[11]
-            + m[4] * m[3] * m[10] + m[8] * m[2] * m[7] - m[8] * m[3] * m[6];
-        inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9] + m[4] * m[1] * m[11]
-            - m[4] * m[3] * m[9] - m[8] * m[1] * m[7] + m[8] * m[3] * m[5];
-        inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10]
-            + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
-        let det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
-        if (det === 0) {
-            return identity();
-        }
-        det = 1 / det;
-        let d = [];
-        for (let i = 0; i < 16; i++) {
-            d[i] = inv[i] * det;
-        }
-        return d;
-    }
-    function assignMatrix(t, v) {
-        if (t && v) {
-            t[0] = v[0];
-            t[1] = v[1];
-            t[2] = v[2];
-            t[3] = v[3];
-            t[4] = v[4];
-            t[5] = v[5];
-            t[6] = v[6];
-            t[7] = v[7];
-            t[8] = v[8];
-            t[9] = v[9];
-            t[10] = v[10];
-            t[11] = v[11];
-            t[12] = v[12];
-            t[13] = v[13];
-            t[14] = v[14];
-            t[15] = v[15];
-        }
-        return t;
-    }
-    function multiplyTfo(m, x, y) {
-        if (!x && !y) {
-            return m;
-        }
-        m[12] += m[0] * x + m[4] * y;
-        m[13] += m[1] * x + m[5] * y;
-        m[14] += m[2] * x + m[6] * y;
-        m[15] += m[3] * x + m[7] * y;
-        return m;
-    }
-    function tfoMultiply(x, y, m) {
-        if (!x && !y) {
-            return m;
-        }
-        let d = m[3], h = m[7], l = m[11], p = m[15];
-        m[0] += d * x;
-        m[1] += d * y;
-        m[4] += h * x;
-        m[5] += h * y;
-        m[8] += l * x;
-        m[9] += l * y;
-        m[12] += p * x;
-        m[13] += p * y;
-        return m;
-    }
-    function multiplyRotateZ(m, v) {
-        if (!v) {
-            return m;
-        }
-        let sin = Math.sin(v);
-        let cos = Math.cos(v);
-        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7];
-        m[0] = a * cos + e * sin;
-        m[1] = b * cos + f * sin;
-        m[2] = c * cos + g * sin;
-        m[3] = d * cos + h * sin;
-        m[4] = a * -sin + e * cos;
-        m[5] = b * -sin + f * cos;
-        m[6] = c * -sin + g * cos;
-        m[7] = d * -sin + h * cos;
-        return m;
-    }
-    function multiplyScaleX(m, v) {
-        if (v === 1) {
-            return m;
-        }
-        m[0] *= v;
-        m[1] *= v;
-        m[2] *= v;
-        m[3] *= v;
-        return m;
-    }
-    function multiplyScaleY(m, v) {
-        if (v === 1) {
-            return m;
-        }
-        m[4] *= v;
-        m[5] *= v;
-        m[6] *= v;
-        m[7] *= v;
-        return m;
-    }
-    function calPoint(point, m) {
-        if (m && !isE(m)) {
-            let { x, y } = point;
-            let a1 = m[0], b1 = m[1];
-            let a2 = m[4], b2 = m[5];
-            let a4 = m[12], b4 = m[13];
-            let o = {
-                x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + a4,
-                y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + b4,
-            };
-            return o;
-        }
-        return point;
-    }
-    /**
-     * 初等行变换求3*3特定css的matrix方阵，一维6长度
-     * https://blog.csdn.net/iloveas2014/article/details/82930946
-     */
-    function inverse(m) {
-        if (m.length === 16) {
-            return inverse4(m);
-        }
-        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
-        if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
-            return m;
-        }
-        let divisor = a * d - b * c;
-        if (divisor === 0) {
-            return m;
-        }
-        return [d / divisor, -b / divisor, -c / divisor, a / divisor,
-            (c * f - d * e) / divisor, (b * e - a * f) / divisor];
-    }
-    function calRectPoint(xa, ya, xb, yb, matrix) {
-        let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
-        let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
-        let x2, y2, x4, y4;
-        // 无旋转的时候可以少算2个点
-        if (!matrix || !matrix.length
-            || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8]) {
-            x2 = x3;
-            y2 = y1;
-            x4 = x1;
-            y4 = y3;
-        }
-        else {
-            let t = calPoint({ x: xb, y: ya }, matrix);
-            x2 = t.x;
-            y2 = t.y;
-            t = calPoint({ x: xa, y: yb }, matrix);
-            x4 = t.x;
-            y4 = t.y;
-        }
-        return { x1, y1, x2, y2, x3, y3, x4, y4 };
-    }
-    var matrix = {
-        identity,
-        isE,
-        toE,
-        assignMatrix,
-        inverse,
-        calPoint,
-        calRectPoint,
-        tfoMultiply,
-        multiplyTfo,
-        multiply,
-        multiplyRef,
-    };
-
-    function d2r(n) {
-        return n * Math.PI / 180;
-    }
-    function r2d(n) {
-        return n * 180 / Math.PI;
-    }
-    /**
-     * 判断点是否在多边形内
-     * @param x 点坐标
-     * @param y
-     * @param vertexes 多边形顶点坐标
-     * @returns {boolean}
-     */
-    function pointInConvexPolygon(x, y, vertexes) {
-        // 先取最大最小值得一个外围矩形，在外边可快速判断false
-        let { x: xmax, y: ymax } = vertexes[0];
-        let { x: xmin, y: ymin } = vertexes[0];
-        let len = vertexes.length;
-        for (let i = 1; i < len; i++) {
-            let { x, y } = vertexes[i];
-            xmax = Math.max(xmax, x);
-            ymax = Math.max(ymax, y);
-            xmin = Math.min(xmin, x);
-            ymin = Math.min(ymin, y);
-        }
-        if (x < xmin || y < ymin || x > xmax || y > ymax) {
-            return false;
-        }
-        let first;
-        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
-        for (let i = 0, len = vertexes.length; i < len; i++) {
-            let { x: x1, y: y1 } = vertexes[i];
-            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
-            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
-            if (n !== 0) {
-                n = n > 0 ? 1 : 0;
-                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
-                if (first === undefined) {
-                    first = n;
-                }
-                else if (first ^ n) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    // 判断点是否在一个矩形，比如事件发生是否在节点上
-    function pointInRect(x, y, x1, y1, x2, y2, matrix) {
-        if (matrix && !isE(matrix)) {
-            let t1 = calPoint({ x: x1, y: y1 }, matrix);
-            let xa = t1.x, ya = t1.y;
-            let t2 = calPoint({ x: x2, y: y1 }, matrix);
-            let xb = t2.x, yb = t2.y;
-            let t3 = calPoint({ x: x2, y: y2 }, matrix);
-            let xc = t3.x, yc = t3.y;
-            let t4 = calPoint({ x: x1, y: y2 }, matrix);
-            let xd = t4.x, yd = t4.y;
-            return pointInConvexPolygon(x, y, [
-                { x: xa, y: ya },
-                { x: xb, y: yb },
-                { x: xc, y: yc },
-                { x: xd, y: yd },
-            ]);
-        }
-        else {
-            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
-        }
-    }
-    var geom = {
-        d2r,
-        r2d,
-        pointInConvexPolygon,
-        pointInRect,
-    };
-
     var StyleUnit;
     (function (StyleUnit) {
         StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
@@ -16816,6 +15836,57 @@
         },
     };
 
+    const o = {
+        info: {
+            arial: {
+                lhr: 1.14990234375,
+                // car: 1.1171875, // content-area ratio，(1854+434)/2048
+                blr: 0.9052734375,
+                // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
+                lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
+            },
+            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
+            helvetica: {
+                lhr: 1.14990234375,
+                blr: 0.919921875, // (1577 + Round((1577 + 471) * 0.15)) / 2048
+            },
+            verdana: {
+                lhr: 1.21533203125,
+                blr: 1.00537109375, // 2059/2048
+            },
+            tahoma: {
+                lhr: 1.20703125,
+                blr: 1.00048828125, // 2049/2048
+            },
+            georgia: {
+                lhr: 1.13623046875,
+                blr: 0.9169921875, // 1878/2048
+            },
+            'courier new': {
+                lhr: 1.1328125,
+                blr: 0.83251953125, // 1705/2048
+            },
+            'pingfang sc': {
+                lhr: 1.4,
+                blr: 1.06, // 1060/1000
+            },
+            simsun: {
+                lhr: 1.4,
+                blr: 1.06,
+            },
+        },
+        hasRegister(fontFamily) {
+            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
+        },
+        hasLoaded(fontFamily) {
+            return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
+        },
+    };
+    o.info['宋体'] = o.info.simsun;
+    o.info['pingfang'] = o.info['pingfang sc'];
+
     function compatibleTransform(k, v) {
         if (k === 'scaleX' || k === 'scaleY') {
             v.u = StyleUnit.NUMBER;
@@ -17245,6 +16316,946 @@
         calNormalLineHeight,
         getBaseline,
         calSize,
+    };
+
+    var ResizingConstraint;
+    (function (ResizingConstraint) {
+        ResizingConstraint[ResizingConstraint["UNSET"] = 63] = "UNSET";
+        ResizingConstraint[ResizingConstraint["RIGHT"] = 1] = "RIGHT";
+        ResizingConstraint[ResizingConstraint["WIDTH"] = 2] = "WIDTH";
+        ResizingConstraint[ResizingConstraint["LEFT"] = 4] = "LEFT";
+        ResizingConstraint[ResizingConstraint["BOTTOM"] = 8] = "BOTTOM";
+        ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
+        ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
+    })(ResizingConstraint || (ResizingConstraint = {}));
+    const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
+    function openAndConvertSketchBuffer(arrayBuffer) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let zipFile;
+            try {
+                zipFile = yield lib.loadAsync(arrayBuffer);
+            }
+            catch (err) {
+                alert('Sorry!\nThis is not a zip file. It may be created by an old version sketch app.');
+                throw err;
+            }
+            const document = yield readJsonFile(zipFile, 'document.json');
+            const pages = [];
+            yield Promise.all(document.pages.map((page) => {
+                return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
+                    pages.push(pageJson);
+                });
+            }));
+            const meta = yield readJsonFile(zipFile, 'meta.json');
+            const user = yield readJsonFile(zipFile, 'user.json');
+            return yield convertSketch({
+                document,
+                pages,
+                meta,
+                user,
+            }, zipFile);
+        });
+    }
+    function readJsonFile(zipFile, filename) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const docStr = yield ((_a = zipFile.file(filename)) === null || _a === void 0 ? void 0 : _a.async('string'));
+            return JSON.parse(docStr);
+        });
+    }
+    function convertSketch(json, zipFile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('sketch', json);
+            const imgs = [], imgHash = {};
+            const fonts = [], fontHash = {};
+            const pages = yield Promise.all(json.pages.map((page) => {
+                return convertPage(page, {
+                    imgs,
+                    imgHash,
+                    fonts,
+                    fontHash,
+                    zipFile,
+                    user: json.user,
+                });
+            }));
+            return {
+                pages,
+                imgs,
+                fonts: [],
+            };
+        });
+    }
+    function convertPage(page, opt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const children = yield Promise.all(page.layers.map((layer) => {
+                return convertItem(layer, opt, page.frame.width, page.frame.height);
+            }));
+            let x = 0, y = 0, zoom = 1;
+            const ua = opt.user[page.do_objectID];
+            if (ua) {
+                const { scrollOrigin, zoomValue } = ua;
+                if (scrollOrigin) {
+                    const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
+                    if (match) {
+                        x = parseFloat(match[1]) || 0;
+                        y = parseFloat(match[2]) || 0;
+                    }
+                }
+                if (zoomValue) {
+                    zoom = zoomValue;
+                }
+            }
+            return {
+                type: classValue.Page,
+                props: {
+                    name: page.name,
+                    uuid: page.do_objectID,
+                    style: {
+                        left: page.frame.x,
+                        top: page.frame.y,
+                        width: page.frame.width,
+                        height: page.frame.height,
+                        visible: false,
+                        translateX: x,
+                        translateY: y,
+                        scaleX: zoom,
+                        scaleY: zoom,
+                        transformOrigin: [0, 0],
+                        pointerEvents: false,
+                    },
+                },
+                children,
+            };
+        });
+    }
+    function convertItem(layer, opt, w, h) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        return __awaiter(this, void 0, void 0, function* () {
+            let width = layer.frame.width;
+            let height = layer.frame.height;
+            let translateX = layer.frame.x;
+            let translateY = layer.frame.y;
+            let visible = layer.isVisible;
+            let opacity = layer.style.contextSettings.opacity;
+            let rotateZ = -layer.rotation;
+            // artBoard也是固定尺寸和page一样，但x/y用translate代替
+            if (layer._class === FileFormat.ClassValue.Artboard) {
+                const children = yield Promise.all(layer.layers.map((child) => {
+                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                }));
+                const hasBackgroundColor = layer.hasBackgroundColor;
+                const backgroundColor = hasBackgroundColor ? [
+                    Math.floor(layer.backgroundColor.r * 255),
+                    Math.floor(layer.backgroundColor.g * 255),
+                    Math.floor(layer.backgroundColor.b * 255),
+                    layer.backgroundColor.a,
+                ] : [255, 255, 255, 1];
+                return {
+                    type: classValue.ArtBoard,
+                    props: {
+                        name: layer.name,
+                        uuid: layer.do_objectID,
+                        hasBackgroundColor,
+                        style: {
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                            overflow: 'hidden',
+                            backgroundColor,
+                        },
+                    },
+                    children,
+                };
+            }
+            // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
+            const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
+            let left = 0, top = 0, right = 'auto', bottom = 'auto';
+            // 需根据父容器尺寸计算
+            if (resizingConstraint) {
+                // left
+                if (resizingConstraint & ResizingConstraint.LEFT) {
+                    left = translateX;
+                    // left+right忽略width
+                    if (resizingConstraint & ResizingConstraint.RIGHT) {
+                        right = w - translateX - width;
+                        width = 'auto';
+                    }
+                    // left+width
+                    else if (resizingConstraint & ResizingConstraint.WIDTH) ;
+                    // 仅left，right是百分比忽略width
+                    else {
+                        right = (w - translateX - width) * 100 / w + '%';
+                        width = 'auto';
+                    }
+                    translateX = 0;
+                }
+                // right
+                else if (resizingConstraint & ResizingConstraint.RIGHT) {
+                    right = w - translateX - width;
+                    // left+right忽略width
+                    if (resizingConstraint & ResizingConstraint.LEFT) {
+                        left = translateX;
+                        width = 'auto';
+                    }
+                    // right+width
+                    else if (resizingConstraint & ResizingConstraint.WIDTH) {
+                        left = 'auto';
+                    }
+                    // 仅right，left是百分比忽略width
+                    else {
+                        left = translateX * 100 / w + '%';
+                        width = 'auto';
+                    }
+                    translateX = 0;
+                }
+                // 左右都不固定
+                else {
+                    // 仅固定宽度，以中心点占left的百分比
+                    if (resizingConstraint & ResizingConstraint.WIDTH) {
+                        left = (translateX + width * 0.5) * 100 / w + '%';
+                        translateX = '-50%';
+                    }
+                    // 左右皆为百分比
+                    else {
+                        left = translateX * 100 / w + '%';
+                        right = (w - translateX - width) * 100 / w + '%';
+                        translateX = 0;
+                        width = 'auto';
+                    }
+                }
+                // top
+                if (resizingConstraint & ResizingConstraint.TOP) {
+                    top = translateY;
+                    // top+bottom忽略height
+                    if (resizingConstraint & ResizingConstraint.BOTTOM) {
+                        bottom = h - translateY - height;
+                        height = 'auto';
+                    }
+                    // top+height
+                    else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
+                    // 仅top，bottom是百分比忽略height
+                    else {
+                        bottom = (h - translateY - height) * 100 / h + '%';
+                        height = 'auto';
+                    }
+                    translateY = 0;
+                }
+                // bottom
+                else if (resizingConstraint & ResizingConstraint.BOTTOM) {
+                    bottom = h - translateY - height;
+                    // top+bottom忽略height
+                    if (resizingConstraint & ResizingConstraint.TOP) {
+                        top = translateY;
+                        height = 'auto';
+                    }
+                    // bottom+height
+                    else if (resizingConstraint & ResizingConstraint.HEIGHT) {
+                        top = 'auto';
+                    }
+                    // 仅bottom，top是百分比忽略height
+                    else {
+                        top = translateY * 100 / h + '%';
+                        height = 'auto';
+                    }
+                    translateY = 0;
+                }
+                // 上下都不固定
+                else {
+                    // 仅固定高度，以中心点占top的百分比
+                    if (resizingConstraint & ResizingConstraint.HEIGHT) {
+                        top = (translateY + height * 0.5) * 100 / h + '%';
+                        translateY = '-50%';
+                    }
+                    // 上下皆为百分比
+                    else {
+                        top = translateY * 100 / h + '%';
+                        bottom = (h - translateY - height) * 100 / h + '%';
+                        translateY = 0;
+                        height = 'auto';
+                    }
+                }
+            }
+            // 未设置则上下左右都是百分比
+            else {
+                left = translateX * 100 / w + '%';
+                right = (w - translateX - width) * 100 / w + '%';
+                translateX = 0;
+                width = 'auto';
+                top = translateY * 100 / h + '%';
+                bottom = (h - translateY - height) * 100 / h + '%';
+                translateY = 0;
+                height = 'auto';
+            }
+            if (layer._class === FileFormat.ClassValue.Group) {
+                const children = yield Promise.all(layer.layers.map((child) => {
+                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                }));
+                return {
+                    type: classValue.Group,
+                    props: {
+                        name: layer.name,
+                        uuid: layer.do_objectID,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                        },
+                    },
+                    children,
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.Bitmap) {
+                const index = yield readImageFile(layer.image._ref, opt);
+                return {
+                    type: classValue.Bitmap,
+                    props: {
+                        name: layer.name,
+                        uuid: layer.do_objectID,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                        },
+                        src: index,
+                    },
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.Text) {
+                const textBehaviour = layer.textBehaviour;
+                if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
+                    width = 'auto';
+                    height = 'auto';
+                }
+                else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
+                    // 可能width是auto（left+right），也可能是left+width
+                    height = 'auto';
+                }
+                else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
+                const { string, attributes } = layer.attributedString;
+                const rich = attributes.length ? attributes.map((item) => {
+                    const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
+                    const fontFamily = name.replace(subFontFamilyReg, '');
+                    const res = {
+                        location,
+                        length,
+                        fontFamily,
+                        fontSize,
+                        fontWeight: 400,
+                        fontStyle: 'normal',
+                        letterSpacing: kerning,
+                        lineHeight: maximumLineHeight,
+                        color: [
+                            Math.floor(red * 255),
+                            Math.floor(green * 255),
+                            Math.floor(blue * 255),
+                            alpha,
+                        ],
+                    };
+                    // 自动行高
+                    if (!maximumLineHeight) {
+                        res.lineHeight = calNormalLineHeight(res);
+                    }
+                    return res;
+                }) : undefined;
+                const MSAttributedStringFontAttribute = (_d = (_c = (_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.textStyle) === null || _b === void 0 ? void 0 : _b.encodedAttributes) === null || _c === void 0 ? void 0 : _c.MSAttributedStringFontAttribute) === null || _d === void 0 ? void 0 : _d.attributes;
+                const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
+                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
+                const paragraphStyle = (_g = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.textStyle) === null || _f === void 0 ? void 0 : _f.encodedAttributes) === null || _g === void 0 ? void 0 : _g.paragraphStyle;
+                const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
+                const lineHeight = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight;
+                const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
+                const letterSpacing = (_k = (_j = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.textStyle) === null || _j === void 0 ? void 0 : _j.encodedAttributes) === null || _k === void 0 ? void 0 : _k.kerning;
+                const MSAttributedStringColorAttribute = (_o = (_m = (_l = layer.style) === null || _l === void 0 ? void 0 : _l.textStyle) === null || _m === void 0 ? void 0 : _m.encodedAttributes) === null || _o === void 0 ? void 0 : _o.MSAttributedStringColorAttribute;
+                const color = MSAttributedStringColorAttribute ? [
+                    Math.floor(MSAttributedStringColorAttribute.red * 255),
+                    Math.floor(MSAttributedStringColorAttribute.green * 255),
+                    Math.floor(MSAttributedStringColorAttribute.blue * 255),
+                    MSAttributedStringColorAttribute.alpha,
+                ] : undefined;
+                return {
+                    type: classValue.Text,
+                    props: {
+                        name: layer.name,
+                        uuid: layer.do_objectID,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                            overflow: 'hidden',
+                            fontSize,
+                            fontFamily,
+                            color,
+                            textAlign,
+                            letterSpacing,
+                            lineHeight,
+                        },
+                        content: string,
+                        rich,
+                    },
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.Rectangle) {
+                return {
+                    type: classValue.Rect,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                        },
+                    },
+                };
+            }
+            else {
+                console.error(layer);
+            }
+        });
+    }
+    function readImageFile(filename, opt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!/\.\w+$/.test(filename)) {
+                filename = `${filename}.png`;
+            }
+            if (opt.imgHash.hasOwnProperty(filename)) {
+                return opt.imgHash[filename];
+            }
+            const file = opt.zipFile.file(filename);
+            if (!file) {
+                console.error(`image not exist: >>>${filename}<<<`);
+                return -1;
+            }
+            let base64 = yield file.async('base64');
+            if (!/^data:image\//.test(base64)) {
+                if (filename.endsWith('.png')) {
+                    base64 = 'data:image/png;base64,' + base64;
+                }
+                else if (filename.endsWith('.gif')) {
+                    base64 = 'data:image/gif;base64,' + base64;
+                }
+                else if (filename.endsWith('.jpg')) {
+                    base64 = 'data:image/jpg;base64,' + base64;
+                }
+                else if (filename.endsWith('.jpeg')) {
+                    base64 = 'data:image/jpeg;base64,' + base64;
+                }
+                else if (filename.endsWith('.webp')) {
+                    base64 = 'data:image/webp;base64,' + base64;
+                }
+                else if (filename.endsWith('.bmp')) {
+                    base64 = 'data:image/bmp;base64,' + base64;
+                }
+            }
+            const index = opt.imgs.length;
+            opt.imgs.push(base64);
+            return index;
+        });
+    }
+
+    var RefreshLevel;
+    (function (RefreshLevel) {
+        RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
+        RefreshLevel[RefreshLevel["CACHE"] = 1] = "CACHE";
+        RefreshLevel[RefreshLevel["TRANSLATE_X"] = 2] = "TRANSLATE_X";
+        RefreshLevel[RefreshLevel["TRANSLATE_Y"] = 4] = "TRANSLATE_Y";
+        RefreshLevel[RefreshLevel["TRANSLATE"] = 6] = "TRANSLATE";
+        RefreshLevel[RefreshLevel["ROTATE_Z"] = 8] = "ROTATE_Z";
+        RefreshLevel[RefreshLevel["SCALE_X"] = 16] = "SCALE_X";
+        RefreshLevel[RefreshLevel["SCALE_Y"] = 32] = "SCALE_Y";
+        RefreshLevel[RefreshLevel["SCALE"] = 48] = "SCALE";
+        RefreshLevel[RefreshLevel["TRANSFORM"] = 64] = "TRANSFORM";
+        RefreshLevel[RefreshLevel["TRANSFORM_ALL"] = 126] = "TRANSFORM_ALL";
+        RefreshLevel[RefreshLevel["OPACITY"] = 128] = "OPACITY";
+        RefreshLevel[RefreshLevel["FILTER"] = 256] = "FILTER";
+        RefreshLevel[RefreshLevel["MIX_BLEND_MODE"] = 512] = "MIX_BLEND_MODE";
+        RefreshLevel[RefreshLevel["MASK"] = 1024] = "MASK";
+        RefreshLevel[RefreshLevel["REPAINT"] = 2048] = "REPAINT";
+        RefreshLevel[RefreshLevel["REFLOW"] = 4096] = "REFLOW";
+        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 4222] = "REFLOW_TRANSFORM";
+        RefreshLevel[RefreshLevel["REBUILD"] = 8192] = "REBUILD";
+    })(RefreshLevel || (RefreshLevel = {}));
+    function isReflow(lv) {
+        return lv >= RefreshLevel.REFLOW;
+    }
+    function isRepaint(lv) {
+        return lv < RefreshLevel.REFLOW;
+    }
+    function isRepaintKey(k) {
+        return k === 'visible' || k === 'color' || k === 'backgroundColor'
+            || k === 'mixBlendMode';
+    }
+    function getLevel(k) {
+        if (k === 'pointerEvents') {
+            return RefreshLevel.NONE;
+        }
+        if (k === 'translateX') {
+            return RefreshLevel.TRANSLATE_X;
+        }
+        if (k === 'translateY') {
+            return RefreshLevel.TRANSLATE_Y;
+        }
+        if (k === 'rotateZ') {
+            return RefreshLevel.ROTATE_Z;
+        }
+        if (k === 'scaleX') {
+            return RefreshLevel.SCALE_X;
+        }
+        if (k === 'scaleY') {
+            return RefreshLevel.SCALE_Y;
+        }
+        if (k === 'transformOrigin') {
+            return RefreshLevel.TRANSFORM;
+        }
+        if (k === 'opacity') {
+            return RefreshLevel.OPACITY;
+        }
+        if (k === 'mixBlendMode') {
+            return RefreshLevel.MIX_BLEND_MODE;
+        }
+        if (isRepaintKey(k)) {
+            return RefreshLevel.REPAINT;
+        }
+        return RefreshLevel.REFLOW;
+    }
+    var level = {
+        RefreshLevel,
+        isRepaint,
+        isReflow,
+        isRepaintKey,
+    };
+
+    var refresh = {
+        level,
+    };
+
+    // 向量点乘积
+    function dotProduct(x1, y1, x2, y2) {
+        return x1 * x2 + y1 * y2;
+    }
+    // 向量叉乘积
+    function crossProduct(x1, y1, x2, y2) {
+        return x1 * y2 - x2 * y1;
+    }
+    var vector = {
+        dotProduct,
+        crossProduct,
+    };
+
+    function identity() {
+        return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    }
+    // 16位单位矩阵判断，空也认为是
+    function isE(m) {
+        if (!m || !m.length) {
+            return true;
+        }
+        return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
+            && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
+            && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0
+            && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
+    }
+    // 矩阵a*b，固定两个matrix都是长度16
+    function multiply(a, b) {
+        if (isE(a)) {
+            return new Float64Array(b);
+        }
+        if (isE(b)) {
+            return new Float64Array(a);
+        }
+        let c = identity();
+        for (let i = 0; i < 4; i++) {
+            let a0 = a[i];
+            let a1 = a[i + 4];
+            let a2 = a[i + 8];
+            let a3 = a[i + 12];
+            c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+            c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+            c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+            c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
+        }
+        return c;
+    }
+    // 同引用更改b数据
+    function multiplyRef(a, b) {
+        if (isE(a)) {
+            return b;
+        }
+        if (isE(b)) {
+            assignMatrix(b, a);
+            return b;
+        }
+        const b0 = b[0];
+        const b1 = b[1];
+        const b2 = b[2];
+        const b3 = b[3];
+        const b4 = b[4];
+        const b5 = b[5];
+        const b6 = b[6];
+        const b7 = b[7];
+        const b8 = b[8];
+        const b9 = b[9];
+        const b10 = b[10];
+        const b11 = b[11];
+        const b12 = b[12];
+        const b13 = b[13];
+        const b14 = b[14];
+        const b15 = b[15];
+        for (let i = 0; i < 4; i++) {
+            let a0 = a[i];
+            let a1 = a[i + 4];
+            let a2 = a[i + 8];
+            let a3 = a[i + 12];
+            b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
+            b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
+            b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
+            b[i + 12] = a0 * b12 + a1 * b13 + a2 * b14 + a3 * b15;
+        }
+        return b;
+    }
+    function toE(m) {
+        m[0] = 1;
+        m[1] = 0;
+        m[2] = 0;
+        m[3] = 0;
+        m[4] = 0;
+        m[5] = 1;
+        m[6] = 0;
+        m[7] = 0;
+        m[8] = 0;
+        m[9] = 0;
+        m[10] = 1;
+        m[11] = 0;
+        m[12] = 0;
+        m[13] = 0;
+        m[14] = 0;
+        m[15] = 1;
+        return m;
+    }
+    /**
+     * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
+     * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
+     * 参见: https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d()
+     * 对应：
+     * [
+     *   a1,a2,a3,a4,
+     *   b1,b2,b3,b4,
+     *   c1,c2,c3,c4,
+     *   d1,d2,d3,d4,
+     * ]
+     *
+     * 根据公式 A* = |A|A^-1 来计算
+     * A* 表示矩阵 A 的伴随矩阵，A^-1 表示矩阵 A 的逆矩阵，|A| 表示行列式的值
+     *
+     * @returns {number[]}
+     */
+    function inverse4(m) {
+        let inv = [];
+        inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15]
+            + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
+        inv[4] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15]
+            - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
+        inv[8] = m[4] * m[9] * m[15] - m[4] * m[11] * m[13] - m[8] * m[5] * m[15]
+            + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9];
+        inv[12] = -m[4] * m[9] * m[14] + m[4] * m[10] * m[13] + m[8] * m[5] * m[14]
+            - m[8] * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9];
+        inv[1] = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14] + m[9] * m[2] * m[15]
+            - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
+        inv[5] = m[0] * m[10] * m[15] - m[0] * m[11] * m[14] - m[8] * m[2] * m[15]
+            + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
+        inv[9] = -m[0] * m[9] * m[15] + m[0] * m[11] * m[13] + m[8] * m[1] * m[15]
+            - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9];
+        inv[13] = m[0] * m[9] * m[14] - m[0] * m[10] * m[13] - m[8] * m[1] * m[14]
+            + m[8] * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9];
+        inv[2] = m[1] * m[6] * m[15] - m[1] * m[7] * m[14] - m[5] * m[2] * m[15]
+            + m[5] * m[3] * m[14] + m[13] * m[2] * m[7] - m[13] * m[3] * m[6];
+        inv[6] = -m[0] * m[6] * m[15] + m[0] * m[7] * m[14] + m[4] * m[2] * m[15]
+            - m[4] * m[3] * m[14] - m[12] * m[2] * m[7] + m[12] * m[3] * m[6];
+        inv[10] = m[0] * m[5] * m[15] - m[0] * m[7] * m[13] - m[4] * m[1] * m[15]
+            + m[4] * m[3] * m[13] + m[12] * m[1] * m[7] - m[12] * m[3] * m[5];
+        inv[14] = -m[0] * m[5] * m[14] + m[0] * m[6] * m[13] + m[4] * m[1] * m[14]
+            - m[4] * m[2] * m[13] - m[12] * m[1] * m[6] + m[12] * m[2] * m[5];
+        inv[3] = -m[1] * m[6] * m[11] + m[1] * m[7] * m[10] + m[5] * m[2] * m[11]
+            - m[5] * m[3] * m[10] - m[9] * m[2] * m[7] + m[9] * m[3] * m[6];
+        inv[7] = m[0] * m[6] * m[11] - m[0] * m[7] * m[10] - m[4] * m[2] * m[11]
+            + m[4] * m[3] * m[10] + m[8] * m[2] * m[7] - m[8] * m[3] * m[6];
+        inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9] + m[4] * m[1] * m[11]
+            - m[4] * m[3] * m[9] - m[8] * m[1] * m[7] + m[8] * m[3] * m[5];
+        inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10]
+            + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
+        let det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+        if (det === 0) {
+            return identity();
+        }
+        det = 1 / det;
+        let d = [];
+        for (let i = 0; i < 16; i++) {
+            d[i] = inv[i] * det;
+        }
+        return d;
+    }
+    function assignMatrix(t, v) {
+        if (t && v) {
+            t[0] = v[0];
+            t[1] = v[1];
+            t[2] = v[2];
+            t[3] = v[3];
+            t[4] = v[4];
+            t[5] = v[5];
+            t[6] = v[6];
+            t[7] = v[7];
+            t[8] = v[8];
+            t[9] = v[9];
+            t[10] = v[10];
+            t[11] = v[11];
+            t[12] = v[12];
+            t[13] = v[13];
+            t[14] = v[14];
+            t[15] = v[15];
+        }
+        return t;
+    }
+    function multiplyTfo(m, x, y) {
+        if (!x && !y) {
+            return m;
+        }
+        m[12] += m[0] * x + m[4] * y;
+        m[13] += m[1] * x + m[5] * y;
+        m[14] += m[2] * x + m[6] * y;
+        m[15] += m[3] * x + m[7] * y;
+        return m;
+    }
+    function tfoMultiply(x, y, m) {
+        if (!x && !y) {
+            return m;
+        }
+        let d = m[3], h = m[7], l = m[11], p = m[15];
+        m[0] += d * x;
+        m[1] += d * y;
+        m[4] += h * x;
+        m[5] += h * y;
+        m[8] += l * x;
+        m[9] += l * y;
+        m[12] += p * x;
+        m[13] += p * y;
+        return m;
+    }
+    function multiplyRotateZ(m, v) {
+        if (!v) {
+            return m;
+        }
+        let sin = Math.sin(v);
+        let cos = Math.cos(v);
+        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7];
+        m[0] = a * cos + e * sin;
+        m[1] = b * cos + f * sin;
+        m[2] = c * cos + g * sin;
+        m[3] = d * cos + h * sin;
+        m[4] = a * -sin + e * cos;
+        m[5] = b * -sin + f * cos;
+        m[6] = c * -sin + g * cos;
+        m[7] = d * -sin + h * cos;
+        return m;
+    }
+    function multiplyScaleX(m, v) {
+        if (v === 1) {
+            return m;
+        }
+        m[0] *= v;
+        m[1] *= v;
+        m[2] *= v;
+        m[3] *= v;
+        return m;
+    }
+    function multiplyScaleY(m, v) {
+        if (v === 1) {
+            return m;
+        }
+        m[4] *= v;
+        m[5] *= v;
+        m[6] *= v;
+        m[7] *= v;
+        return m;
+    }
+    function calPoint(point, m) {
+        if (m && !isE(m)) {
+            let { x, y } = point;
+            let a1 = m[0], b1 = m[1];
+            let a2 = m[4], b2 = m[5];
+            let a4 = m[12], b4 = m[13];
+            let o = {
+                x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + a4,
+                y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + b4,
+            };
+            return o;
+        }
+        return point;
+    }
+    /**
+     * 初等行变换求3*3特定css的matrix方阵，一维6长度
+     * https://blog.csdn.net/iloveas2014/article/details/82930946
+     */
+    function inverse(m) {
+        if (m.length === 16) {
+            return inverse4(m);
+        }
+        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
+        if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
+            return m;
+        }
+        let divisor = a * d - b * c;
+        if (divisor === 0) {
+            return m;
+        }
+        return [d / divisor, -b / divisor, -c / divisor, a / divisor,
+            (c * f - d * e) / divisor, (b * e - a * f) / divisor];
+    }
+    function calRectPoint(xa, ya, xb, yb, matrix) {
+        let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
+        let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
+        let x2, y2, x4, y4;
+        // 无旋转的时候可以少算2个点
+        if (!matrix || !matrix.length
+            || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8]) {
+            x2 = x3;
+            y2 = y1;
+            x4 = x1;
+            y4 = y3;
+        }
+        else {
+            let t = calPoint({ x: xb, y: ya }, matrix);
+            x2 = t.x;
+            y2 = t.y;
+            t = calPoint({ x: xa, y: yb }, matrix);
+            x4 = t.x;
+            y4 = t.y;
+        }
+        return { x1, y1, x2, y2, x3, y3, x4, y4 };
+    }
+    var matrix = {
+        identity,
+        isE,
+        toE,
+        assignMatrix,
+        inverse,
+        calPoint,
+        calRectPoint,
+        tfoMultiply,
+        multiplyTfo,
+        multiply,
+        multiplyRef,
+    };
+
+    function d2r(n) {
+        return n * Math.PI / 180;
+    }
+    function r2d(n) {
+        return n * 180 / Math.PI;
+    }
+    /**
+     * 判断点是否在多边形内
+     * @param x 点坐标
+     * @param y
+     * @param vertexes 多边形顶点坐标
+     * @returns {boolean}
+     */
+    function pointInConvexPolygon(x, y, vertexes) {
+        // 先取最大最小值得一个外围矩形，在外边可快速判断false
+        let { x: xmax, y: ymax } = vertexes[0];
+        let { x: xmin, y: ymin } = vertexes[0];
+        let len = vertexes.length;
+        for (let i = 1; i < len; i++) {
+            let { x, y } = vertexes[i];
+            xmax = Math.max(xmax, x);
+            ymax = Math.max(ymax, y);
+            xmin = Math.min(xmin, x);
+            ymin = Math.min(ymin, y);
+        }
+        if (x < xmin || y < ymin || x > xmax || y > ymax) {
+            return false;
+        }
+        let first;
+        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
+        for (let i = 0, len = vertexes.length; i < len; i++) {
+            let { x: x1, y: y1 } = vertexes[i];
+            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
+            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+            if (n !== 0) {
+                n = n > 0 ? 1 : 0;
+                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+                if (first === undefined) {
+                    first = n;
+                }
+                else if (first ^ n) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    // 判断点是否在一个矩形，比如事件发生是否在节点上
+    function pointInRect(x, y, x1, y1, x2, y2, matrix) {
+        if (matrix && !isE(matrix)) {
+            let t1 = calPoint({ x: x1, y: y1 }, matrix);
+            let xa = t1.x, ya = t1.y;
+            let t2 = calPoint({ x: x2, y: y1 }, matrix);
+            let xb = t2.x, yb = t2.y;
+            let t3 = calPoint({ x: x2, y: y2 }, matrix);
+            let xc = t3.x, yc = t3.y;
+            let t4 = calPoint({ x: x1, y: y2 }, matrix);
+            let xd = t4.x, yd = t4.y;
+            return pointInConvexPolygon(x, y, [
+                { x: xa, y: ya },
+                { x: xb, y: yb },
+                { x: xc, y: yc },
+                { x: xd, y: yd },
+            ]);
+        }
+        else {
+            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
+        }
+    }
+    var geom = {
+        d2r,
+        r2d,
+        pointInConvexPolygon,
+        pointInRect,
     };
 
     function calRotateZ(t, v) {
@@ -17829,10 +17840,7 @@
                 this.root.refs[uuid] = this;
             }
         }
-        layout(data) {
-            if (this.isDestroyed) {
-                return;
-            }
+        lay(data) {
             this.refreshLevel = RefreshLevel.REFLOW;
             // 布局时计算所有样式，更新时根据不同级别调用
             this.calReflowStyle();
@@ -17916,6 +17924,13 @@
                 }
                 computedStyle.top = data.w - computedStyle.bottom - this.height;
             }
+        }
+        // 封装，布局后计算repaint和matrix的样式，清空包围盒等老数据，真的布局计算在lay()中，各子类覆盖实现
+        layout(data) {
+            if (this.isDestroyed) {
+                return;
+            }
+            this.lay(data);
             // repaint和matrix计算需要x/y/width/height
             this.calRepaintStyle(RefreshLevel.REFLOW);
             this._rect = undefined;
@@ -17946,6 +17961,7 @@
                     this.height = computedStyle.height = calSize(height, parent.height);
                 }
             }
+            computedStyle.letterSpacing = style.letterSpacing.v;
         }
         calRepaintStyle(lv) {
             const { style, computedStyle } = this;
@@ -18496,11 +18512,8 @@
                 }
             }
         }
-        layout(data) {
-            if (this.isDestroyed) {
-                return;
-            }
-            super.layout(data);
+        lay(data) {
+            super.lay(data);
             const { children, computedStyle } = this;
             // 递归下去布局
             for (let i = 0, len = children.length; i < len; i++) {
@@ -19120,8 +19133,8 @@
                 }
             }
         }
-        layout(data) {
-            super.layout(data);
+        lay(data) {
+            super.lay(data);
             const src = this.loader.src;
             if (src) {
                 const cache = inject.IMG[src];
@@ -19538,29 +19551,266 @@
         }
     }
 
+    class TextBox {
+        constructor(x, y, w, lineHeight, baseline, str, font) {
+            this.x = 0;
+            this.y = 0;
+            this.w = 0;
+            this.lineHeight = 0;
+            this.baseline = 0;
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.str = str;
+            this.lineHeight = lineHeight;
+            this.baseline = baseline;
+            this.font = font;
+        }
+    }
+
+    class LineBox {
+        constructor(y) {
+            this.y = y;
+            this.w = 0;
+            this.list = [];
+        }
+        add(textBox) {
+            this.list.push(textBox);
+            this.w += textBox.w;
+        }
+        verticalAlign() {
+            const { baseline, list } = this;
+            for (let i = 0, len = list.length; i < len; i++) {
+                const textBox = list[i];
+                const b = textBox.baseline;
+                if (b !== baseline) {
+                    const d = baseline - b;
+                    textBox.y += d;
+                }
+            }
+        }
+        get baseline() {
+            let n = 0;
+            const list = this.list;
+            for (let i = 0, len = list.length; i < len; i++) {
+                n = Math.max(n, list[i].baseline);
+            }
+            return n;
+        }
+        get lineHeight() {
+            let n = 0;
+            const list = this.list;
+            for (let i = 0, len = list.length; i < len; i++) {
+                n = Math.max(n, list[i].lineHeight);
+            }
+            return n;
+        }
+    }
+
+    /**
+     * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
+     * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
+     * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
+     * 简单的2分法实现简单，但是次数稍多，对于性能不是最佳，因为内容的slice裁剪和传递给canvas测量都随尺寸增加而加大
+     * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
+     * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
+     * 返回内容和end索引和长度，最少也要1个字符
+     */
+    function measure(ctx, start, length, content, w, perW, letterSpacing) {
+        let i = start, j = length, rw = 0, newLine = false;
+        // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
+        let hypotheticalNum = Math.round(w / perW);
+        // 不能增长0个字符，至少也要1个
+        if (hypotheticalNum <= 0) {
+            hypotheticalNum = 1;
+        }
+        // 超过内容长度范围也不行
+        else if (hypotheticalNum > length - start) {
+            hypotheticalNum = length - start;
+        }
+        // 类似2分的一个循环
+        while (i < j) {
+            let mw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
+            if (letterSpacing) {
+                mw += hypotheticalNum * letterSpacing;
+            }
+            if (mw === w) {
+                rw = w;
+                newLine = true;
+                break;
+            }
+            // 超出，设置右边界，并根据余量推测减少个数，
+            // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
+            if (mw > w + (1e-10)) {
+                newLine = true;
+                // 限制至少1个
+                if (hypotheticalNum === 1) {
+                    rw = mw;
+                    break;
+                }
+                // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
+                if (i === j - 1 || i - start === hypotheticalNum - 1) {
+                    hypotheticalNum = i - start;
+                    break;
+                }
+                j = hypotheticalNum + start - 1;
+                let reduce = Math.round((mw - w) / perW);
+                if (reduce <= 0) {
+                    reduce = 1;
+                }
+                hypotheticalNum -= reduce;
+                if (hypotheticalNum < i - start) {
+                    hypotheticalNum = i - start;
+                }
+            }
+            // 还有空余，设置左边界，并根据余量推测增加的个数
+            else {
+                rw = mw;
+                if (hypotheticalNum === length - start) {
+                    break;
+                }
+                i = hypotheticalNum + start;
+                let add = Math.round((w - mw) / perW);
+                if (add <= 0) {
+                    add = 1;
+                }
+                hypotheticalNum += add;
+                if (hypotheticalNum > j - start) {
+                    hypotheticalNum = j - start;
+                }
+            }
+        }
+        // 查看是否有空格，防止字符串过长indexOf无效查找
+        for (let i = start, len = start + hypotheticalNum; i < len; i++) {
+            if (content.charAt(i) === '\n') {
+                hypotheticalNum = i - start + 1; // 遇到换行数量变化，包含换行，但宽度测量忽略
+                rw = ctx.measureText(content.slice(start, start + hypotheticalNum - 1)).width;
+                if (letterSpacing) {
+                    rw += hypotheticalNum * letterSpacing;
+                }
+                newLine = true;
+                break;
+            }
+        }
+        return { hypotheticalNum, rw, newLine };
+    }
     class Text extends Node {
         constructor(props) {
             super(props);
             this.content = props.content;
             this.rich = props.rich;
+            this.lineBoxList = [];
         }
-        layout(data) {
-            super.layout(data);
-            if (this.isDestroyed) {
-                return;
-            }
+        lay(data) {
+            super.lay(data);
             const { rich, style, computedStyle, content } = this;
             const autoW = style.width.u === StyleUnit.AUTO;
             const autoH = style.height.u === StyleUnit.AUTO;
-            const ctx = inject.getFontCanvas().ctx;
-            ctx.font = setFontStyle(computedStyle);
-            if (autoW && autoH) {
-                if (rich) ;
-                else {
-                    this.width = computedStyle.width = ctx.measureText(content).width;
-                    this.height = computedStyle.height = computedStyle.lineHeight;
+            let i = 0;
+            let length = content.length;
+            let perW;
+            let letterSpacing;
+            let lineHeight;
+            let baseline;
+            // let maxW = 0;
+            let x = 0, y = 0;
+            let lineBox = new LineBox(y);
+            this.lineBoxList.push(lineBox);
+            // 富文本每串不同的需要设置字体测量
+            const SET_FONT_INDEX = [0];
+            if (rich && rich.length) {
+                for (let i = 0, len = rich.length; i < len; i++) {
+                    const item = rich[i];
+                    SET_FONT_INDEX[item.location] = i;
                 }
             }
+            const ctx = inject.getFontCanvas().ctx;
+            // 第一个肯定要设置测量font
+            if (rich && rich.length) {
+                const first = rich[0];
+                letterSpacing = first.letterSpacing;
+                perW = first.fontSize * 0.8 + letterSpacing;
+                lineHeight = first.lineHeight;
+                baseline = getBaseline(first);
+                ctx.font = setFontStyle(first);
+            }
+            // 无富文本则通用
+            else {
+                letterSpacing = computedStyle.letterSpacing;
+                perW = computedStyle.fontWeight * 0.8 + letterSpacing;
+                lineHeight = computedStyle.lineHeight;
+                baseline = getBaseline(computedStyle);
+                ctx.font = setFontStyle(computedStyle);
+            }
+            // 自动宽度，相当于whiteSpace: nowrap
+            if (autoW && autoH) {
+                if (rich && rich.length) ;
+                else {
+                    this.width = computedStyle.width = ctx.measureText(content).width;
+                    this.height = computedStyle.height = lineHeight;
+                    const textBox = new TextBox(0, 0, this.width, this.height, baseline, content, ctx.font);
+                    lineBox.add(textBox);
+                }
+            }
+            else if (autoW) ;
+            else if (autoH) {
+                if (rich && rich.length) {
+                    while (i < length) {
+                        const setFontIndex = SET_FONT_INDEX[i];
+                        // 每串富文本重置font测量
+                        if (i && setFontIndex) {
+                            const cur = rich[setFontIndex];
+                            letterSpacing = cur.letterSpacing;
+                            perW = cur.fontSize * 0.8 + letterSpacing;
+                            lineHeight = cur.lineHeight;
+                            baseline = getBaseline(cur);
+                            ctx.font = setFontStyle(cur);
+                        }
+                        // 富文本需限制最大length，非富普通情况无需
+                        let len = length;
+                        for (let j = i + 1; j < len; j++) {
+                            if (SET_FONT_INDEX[j]) {
+                                len = j;
+                                break;
+                            }
+                        }
+                        // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
+                        const min = ctx.measureText(content.charAt(i)).width;
+                        if (min > this.width - x + (1e-10) && x) {
+                            x = 0;
+                            y += lineBox.lineHeight;
+                            if (i < length) {
+                                lineBox.verticalAlign();
+                                lineBox = new LineBox(y);
+                                this.lineBoxList.push(lineBox);
+                            }
+                            continue;
+                        }
+                        // 预估法获取测量结果
+                        const { hypotheticalNum: num, rw, newLine } = measure(ctx, i, len, content, this.width - x, perW, letterSpacing);
+                        const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
+                        lineBox.add(textBox);
+                        i += num;
+                        // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
+                        if (newLine) {
+                            x = 0;
+                            y += lineBox.lineHeight;
+                            if (i < length) {
+                                lineBox.verticalAlign();
+                                lineBox = new LineBox(y);
+                                this.lineBoxList.push(lineBox);
+                            }
+                        }
+                        else {
+                            x += rw;
+                        }
+                    }
+                    this.height = computedStyle.height = y;
+                }
+                lineBox.verticalAlign();
+            }
+            // 固定宽高已经计算好，只需排版即可，多余的overflow:hidden掉
+            else ;
         }
         calContent() {
             const { computedStyle, content } = this;
@@ -19571,12 +19821,46 @@
         }
         renderCanvas() {
             super.renderCanvas();
-            const computedStyle = this.computedStyle;
+            const { height, rich, computedStyle, lineBoxList } = this;
             const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
             const ctx = canvasCache.offscreen.ctx;
-            ctx.font = setFontStyle(computedStyle);
-            ctx.fillStyle = color2rgbaStr(computedStyle.color);
-            ctx.fillText(this.content, 0, getBaseline(computedStyle));
+            // 富文本每串不同的需要设置字体颜色
+            const SET_FONT_INDEX = [0];
+            let color;
+            if (rich && rich.length) {
+                for (let i = 0, len = rich.length; i < len; i++) {
+                    const item = rich[i];
+                    SET_FONT_INDEX[item.location] = i;
+                }
+                const first = rich[0];
+                color = color2rgbaStr(first.color);
+            }
+            // 非富默认颜色
+            else {
+                color = color2rgbaStr(computedStyle.color);
+            }
+            let count = 0;
+            for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                const lineBox = lineBoxList[i];
+                // 固定尺寸超过则overflow: hidden
+                if (lineBox.y >= height) {
+                    break;
+                }
+                const list = lineBox.list;
+                for (let i = 0, len = list.length; i < len; i++) {
+                    // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
+                    const setFontIndex = SET_FONT_INDEX[count];
+                    if (rich && rich.length && count && setFontIndex) {
+                        const cur = rich[setFontIndex];
+                        color = color2rgbaStr(cur.color);
+                    }
+                    const textBox = list[i];
+                    ctx.font = textBox.font;
+                    ctx.fillStyle = color;
+                    ctx.fillText(textBox.str, textBox.x, textBox.y + textBox.baseline);
+                    count += textBox.str.length;
+                }
+            }
         }
     }
 
@@ -19816,21 +20100,14 @@
 
     function checkReflow(root, node, addDom, removeDom) {
         const parent = node.parent;
-        if (addDom) {
-            node.layout({
-                x: parent.x,
-                y: parent.y,
-                w: parent.width,
-                h: parent.height,
-            });
-        }
-        else if (removeDom) {
+        if (removeDom) {
             node.destroy();
         }
+        // add和普通修改共用
         else {
             node.layout({
-                x: parent.x,
-                y: parent.y,
+                x: 0,
+                y: 0,
                 w: parent.width,
                 h: parent.height,
             });

@@ -3,21 +3,14 @@ import Node from './Node';
 
 export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: boolean) {
   const parent = node.parent!;
-  if (addDom) {
-    node.layout({
-      x: parent.x,
-      y: parent.y,
-      w: parent.width,
-      h: parent.height,
-    });
-  }
-  else if(removeDom) {
+  if(removeDom) {
     node.destroy();
   }
+  // add和普通修改共用
   else {
     node.layout({
-      x: parent.x,
-      y: parent.y,
+      x: 0,
+      y: 0,
       w: parent.width,
       h: parent.height,
     });

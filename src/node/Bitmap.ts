@@ -85,8 +85,8 @@ class Bitmap extends Node {
     }
   }
 
-  layout(data: LayoutData) {
-    super.layout(data);
+  override lay(data: LayoutData) {
+    super.lay(data);
     const src = this.loader.src;
     if (src) {
       const cache = inject.IMG[src];

@@ -128,8 +128,10 @@ export type Rich = {
   fontFamily: string,
   fontSize: number,
   fontWeight: number,
+  fontStyle: string,
+  lineHeight: number,
+  letterSpacing: number,
   color: string | Array<number>,
-  kerning: number,
 };
 
 export enum classValue {

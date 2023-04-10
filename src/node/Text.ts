@@ -1,6 +1,8 @@
 import Node from './Node';
-import { Rich, TextProps } from '../format';
+import TextBox from './TextBox';
+import LineBox from './LineBox';
 import { LayoutData } from './layout';
+import { Rich, TextProps } from '../format';
 import { StyleUnit } from '../style/define';
 import inject from '../util/inject';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
@@ -16,7 +18,7 @@ import CanvasCache from '../refresh/CanvasCache';
  * 返回内容和end索引和长度，最少也要1个字符
  */
 function measure(ctx: CanvasRenderingContext2D, start: number, length: number, content: string,
-                 w: number, perW: number, letterSpacing: number = 0) {
+                 w: number, perW: number, letterSpacing: number) {
   let i = start, j = length, rw = 0, newLine = false;
   // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
   let hypotheticalNum = Math.round(w / perW);
@@ -30,8 +32,7 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
   }
   // 类似2分的一个循环
   while(i < j) {
-    let mw, str = content.slice(start, start + hypotheticalNum);
-    mw = ctx.measureText(str).width;
+    let mw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
     if(letterSpacing) {
       mw += hypotheticalNum * letterSpacing;
     }
@@ -81,40 +82,146 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
       }
     }
   }
+  // 查看是否有空格，防止字符串过长indexOf无效查找
+  for (let i = start, len = start + hypotheticalNum; i < len; i++) {
+    if (content.charAt(i) === '\n') {
+      hypotheticalNum = i - start + 1; // 遇到换行数量变化，包含换行，但宽度测量忽略
+      rw = ctx.measureText(content.slice(start, start + hypotheticalNum - 1)).width;
+      if (letterSpacing) {
+        rw += hypotheticalNum * letterSpacing;
+      }
+      newLine = true;
+      break;
+    }
+  }
   return { hypotheticalNum, rw, newLine };
 }
 
 class Text extends Node {
   content: string;
   rich?: Array<Rich>;
+  lineBoxList: Array<LineBox>;
   constructor(props: TextProps) {
     super(props);
     this.content = props.content;
     this.rich = props.rich;
+    this.lineBoxList = [];
   }
 
-  override layout(data: LayoutData) {
-    super.layout(data);
-    if (this.isDestroyed) {
-      return;
-    }
+  override lay(data: LayoutData) {
+    super.lay(data);
     const { rich, style, computedStyle, content } = this;
     const autoW = style.width.u === StyleUnit.AUTO;
     const autoH = style.height.u === StyleUnit.AUTO;
+    let i = 0;
+    let length = content.length;
+    let perW: number;
+    let letterSpacing: number;
+    let lineHeight;
+    let baseline;
+    // let maxW = 0;
+    let x = 0, y = 0;
+    let lineBox = new LineBox(y);
+    this.lineBoxList.push(lineBox);
+    // 富文本每串不同的需要设置字体测量
+    const SET_FONT_INDEX: Array<number> = [0];
+    if (rich && rich.length) {
+      for (let i = 0, len = rich.length; i < len; i++) {
+        const item = rich[i];
+        SET_FONT_INDEX[item.location] = i;
+      }
+    }
     const ctx = inject.getFontCanvas().ctx;
-    ctx.font = setFontStyle(computedStyle);
+    // 第一个肯定要设置测量font
+    if (rich && rich.length) {
+      const first = rich[0];
+      letterSpacing = first.letterSpacing;
+      perW = first.fontSize * 0.8 + letterSpacing;
+      lineHeight = first.lineHeight;
+      baseline = getBaseline(first);
+      ctx.font = setFontStyle(first);
+    }
+    // 无富文本则通用
+    else {
+      letterSpacing = computedStyle.letterSpacing;
+      perW = computedStyle.fontWeight * 0.8 + letterSpacing;
+      lineHeight = computedStyle.lineHeight;
+      baseline = getBaseline(computedStyle);
+      ctx.font = setFontStyle(computedStyle);
+    }
+    // 自动宽度，相当于whiteSpace: nowrap
     if (autoW && autoH) {
-      if (rich) {}
+      if (rich && rich.length) {}
       else {
         this.width = computedStyle.width = ctx.measureText(content).width;
-        this.height = computedStyle.height = computedStyle.lineHeight;
+        this.height = computedStyle.height = lineHeight;
+        const textBox = new TextBox(0, 0, this.width, this.height, baseline, content, ctx.font);
+        lineBox.add(textBox);
       }
     }
     else if (autoW) {
       // 暂无这种情况
     }
-    else if (autoH) {}
-    // 固定宽高已经计算好，只需排版即可
+    else if (autoH) {
+      if (rich && rich.length) {
+        while (i < length) {
+          const setFontIndex = SET_FONT_INDEX[i];
+          // 每串富文本重置font测量
+          if (i && setFontIndex) {
+            const cur = rich[setFontIndex];
+            letterSpacing = cur.letterSpacing;
+            perW = cur.fontSize * 0.8 + letterSpacing;
+            lineHeight = cur.lineHeight;
+            baseline = getBaseline(cur);
+            ctx.font = setFontStyle(cur);
+          }
+          // 富文本需限制最大length，非富普通情况无需
+          let len = length;
+          for(let j = i + 1; j < len; j++) {
+            if(SET_FONT_INDEX[j]) {
+              len = j;
+              break;
+            }
+          }
+          // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
+          const min = ctx.measureText(content.charAt(i)).width;
+          if (min > this.width - x + (1e-10) && x) {
+            x = 0;
+            y += lineBox.lineHeight;
+            if (i < length) {
+              lineBox.verticalAlign();
+              lineBox = new LineBox(y);
+              this.lineBoxList.push(lineBox);
+            }
+            continue;
+          }
+          // 预估法获取测量结果
+          const { hypotheticalNum: num, rw, newLine } =
+            measure(ctx, i, len, content, this.width - x, perW, letterSpacing);
+          const textBox = new TextBox(x, y, rw, lineHeight, baseline,
+            content.slice(i, i + num), ctx.font);
+          lineBox.add(textBox);
+          i += num;
+          // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
+          if (newLine) {
+            x = 0;
+            y += lineBox.lineHeight;
+            if (i < length) {
+              lineBox.verticalAlign();
+              lineBox = new LineBox(y);
+              this.lineBoxList.push(lineBox);
+            }
+          }
+          else {
+            x += rw;
+          }
+        }
+        this.height = computedStyle.height = y;
+      }
+      else {}
+      lineBox.verticalAlign();
+    }
+    // 固定宽高已经计算好，只需排版即可，多余的overflow:hidden掉
     else {}
   }
 
@@ -128,12 +235,46 @@ class Text extends Node {
 
   override renderCanvas() {
     super.renderCanvas();
-    const computedStyle = this.computedStyle;
+    const { height, rich, computedStyle, lineBoxList } = this;
     const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
     const ctx = canvasCache.offscreen.ctx;
-    ctx.font = setFontStyle(computedStyle);
-    ctx.fillStyle = color2rgbaStr(computedStyle.color);
-    ctx.fillText(this.content, 0, getBaseline(computedStyle));
+    // 富文本每串不同的需要设置字体颜色
+    const SET_FONT_INDEX: Array<number> = [0];
+    let color: string;
+    if (rich && rich.length) {
+      for (let i = 0, len = rich.length; i < len; i++) {
+        const item = rich[i];
+        SET_FONT_INDEX[item.location] = i;
+      }
+      const first = rich[0];
+      color = color2rgbaStr(first.color);
+    }
+    // 非富默认颜色
+    else {
+      color = color2rgbaStr(computedStyle.color);
+    }
+    let count = 0;
+    for (let i = 0, len = lineBoxList.length; i < len; i++) {
+      const lineBox = lineBoxList[i];
+      // 固定尺寸超过则overflow: hidden
+      if (lineBox.y >= height) {
+        break;
+      }
+      const list = lineBox.list;
+      for (let i = 0, len = list.length; i < len; i++) {
+        // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
+        const setFontIndex = SET_FONT_INDEX[count];
+        if (rich && rich.length && count && setFontIndex) {
+          const cur = rich[setFontIndex];
+          color = color2rgbaStr(cur.color);
+        }
+        const textBox = list[i];
+        ctx.font = textBox.font;
+        ctx.fillStyle = color;
+        ctx.fillText(textBox.str, textBox.x, textBox.y + textBox.baseline);
+        count += textBox.str.length;
+      }
+    }
   }
 }
 

@@ -89,10 +89,7 @@ class Node extends Event {
     }
   }
 
-  layout(data: LayoutData) {
-    if (this.isDestroyed) {
-      return;
-    }
+  lay(data: LayoutData) {
     this.refreshLevel = RefreshLevel.REFLOW;
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
@@ -183,6 +180,14 @@ class Node extends Event {
       }
       computedStyle.top = data.w - computedStyle.bottom - this.height;
     }
+  }
+
+  // 封装，布局后计算repaint和matrix的样式，清空包围盒等老数据，真的布局计算在lay()中，各子类覆盖实现
+  layout(data: LayoutData) {
+    if (this.isDestroyed) {
+      return;
+    }
+    this.lay(data);
     // repaint和matrix计算需要x/y/width/height
     this.calRepaintStyle(RefreshLevel.REFLOW);
     this._rect = undefined;
@@ -214,6 +219,7 @@ class Node extends Event {
         this.height = computedStyle.height = calSize(height, parent.height);
       }
     }
+    computedStyle.letterSpacing = style.letterSpacing.v;
   }
 
   calRepaintStyle(lv: RefreshLevel) {
