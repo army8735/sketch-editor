@@ -240,11 +240,7 @@ class Text extends Node {
   }
 
   override calContent(): boolean {
-    const { computedStyle, content } = this;
-    if (!computedStyle.visible) {
-      return this.hasContent = false;
-    }
-    return this.hasContent = !!content;
+    return this.hasContent = !!this.content;
   }
 
   override renderCanvas() {

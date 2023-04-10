@@ -8,8 +8,9 @@ import {
   JGroup,
   JBitmap,
   JText,
+  JPolyline,
   classValue,
-  JRect, Rich,
+  Rich,
 } from './';
 import { calNormalLineHeight } from '../style/css';
 
@@ -164,6 +165,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         name: layer.name,
         uuid: layer.do_objectID,
         hasBackgroundColor,
+        resizesContent: layer.resizesContent,
         style: {
           width, // 画板始终相对于page的原点，没有百分比单位
           height,
@@ -451,11 +453,29 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     } as JText;
   }
   if (layer._class === SketchFormat.ClassValue.Rectangle) {
+    const points = layer.points.map((item: any) => {
+      const point = parseStrPoint(item.point);
+      const curveFrom = parseStrPoint(item.curveFrom);
+      const curveTo = parseStrPoint(item.curveTo);
+      return {
+        x: point.x,
+        y: point.y,
+        cornerRadius: item.cornerRadius,
+        curveMode: item.curveMode,
+        hasCurveFrom: item.hasCurveFrom,
+        hasCurveTo: item.hasCurveTo,
+        fx: curveFrom.x,
+        fy: curveFrom.y,
+        tx: curveTo.x,
+        ty: curveTo.y,
+      };
+    });
     return {
-      type: classValue.Rect,
+      type: classValue.Polyline,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        points,
         style: {
           left,
           top,
@@ -470,11 +490,19 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           rotateZ,
         },
       },
-    } as JRect;
+    } as JPolyline;
   }
   else {
     console.error(layer);
   }
+}
+
+function parseStrPoint(s: string) {
+  const res = /{(.+),\s*(.+)}/.exec(s);
+  if (!res) {
+    throw new Error('Unknown point: ' + s);
+  }
+  return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
 }
 
 async function readImageFile(filename: string, opt: Opt) {

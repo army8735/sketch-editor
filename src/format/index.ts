@@ -28,15 +28,16 @@ export type JGroup = JContainer & {
 
 export type JBitmap = JContainer & {
   type: classValue.Bitmap,
-  props: BitmapProps;
+  props: BitmapProps,
 };
 
 export type JText = JNode & {
   type: classValue.Text,
 };
 
-export type JRect = JNode & {
-  type: classValue.Rect,
+export type JPolyline = JNode & {
+  type: classValue.Polyline,
+  props: PolylineProps,
 };
 
 export type JStyle = {
@@ -115,6 +116,7 @@ export type BitmapProps = Props & {
 
 export type ArtBoardProps = Props & {
   hasBackgroundColor: boolean,
+  resizesContent: boolean,
 };
 
 export type TextProps = Props & {
@@ -134,11 +136,34 @@ export type Rich = {
   color: string | Array<number>,
 };
 
+export type PolylineProps = Props & {
+  points: Array<Point>,
+};
+
+export type Point = {
+  x: number,
+  y: number,
+  cornerRadius: number,
+  curveMode: CurveMode,
+  curveFrom?: { x: number, y: number },
+  curveTo?: { x: number, y: number },
+  hasCurveFrom: boolean,
+  hasCurveTo: boolean,
+};
+
 export enum classValue {
-  Page = 'Page',
-  ArtBoard = 'ArtBoard',
-  Group = 'Group',
-  Bitmap = 'Bitmap',
-  Text = 'Text',
-  Rect = 'Rect',
+  Page = 'page',
+  ArtBoard = 'artBoard',
+  Group = 'group',
+  Bitmap = 'bitmap',
+  Text = 'text',
+  Polyline = 'polyline',
+}
+
+export enum CurveMode {
+  None = 0,
+  Straight = 1,
+  Mirrored = 2,
+  Asymmetric = 3,
+  Disconnected = 4
 }

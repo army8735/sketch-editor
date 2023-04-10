@@ -3,10 +3,17 @@ import Bitmap from './Bitmap';
 import ArtBoard from './ArtBoard';
 import Container from './Container';
 import Group from './Group';
-import Rect from './geom/Rect';
 import Text from './Text';
-import { ArtBoardProps, BitmapProps, JContainer, Props, TextProps } from '../format/';
+import {
+  Props,
+  ArtBoardProps,
+  BitmapProps,
+  JContainer,
+  PolylineProps,
+  TextProps,
+} from '../format/';
 import { classValue, JNode, JPage } from '../format';
+import Polyline from './geom/Polyline';
 
 function parse(json: JNode): Node | undefined {
   if (json.type === classValue.ArtBoard) {
@@ -35,8 +42,8 @@ function parse(json: JNode): Node | undefined {
   else if (json.type === classValue.Text) {
     return new Text(json.props as TextProps);
   }
-  else if (json.type === classValue.Rect) {
-    return new Rect(json.props);
+  else if (json.type === classValue.Polyline) {
+    return new Polyline(json.props as PolylineProps);
   }
 }
 

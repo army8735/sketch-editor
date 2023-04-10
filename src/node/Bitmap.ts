@@ -200,17 +200,15 @@ class Bitmap extends Node {
         loader.src = v;
         inject.measureImg(v, (res: any) => {
           if (loader.src === v) {
-            const props = this.props as BitmapProps;
+            const { onLoad, onError } = this.props as BitmapProps;
             if (res.success) {
-              if (isFunction(props.onLoad)) {
-                // @ts-ignore
-                props.onLoad();
+              if (onLoad && isFunction(onLoad)) {
+                onLoad();
               }
             }
             else {
-              if (isFunction(props.onError)) {
-                // @ts-ignore
-                props.onError();
+              if (onError && isFunction(onError)) {
+                onError();
               }
             }
           }

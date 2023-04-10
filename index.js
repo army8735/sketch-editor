@@ -15129,14 +15129,14 @@
     /**
      * Enumeration of the curve modes that can be applied to vector points
      */
-    var CurveMode;
+    var CurveMode$1;
     (function (CurveMode) {
         CurveMode[CurveMode["None"] = 0] = "None";
         CurveMode[CurveMode["Straight"] = 1] = "Straight";
         CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
         CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
         CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode || (CurveMode = {}));
+    })(CurveMode$1 || (CurveMode$1 = {}));
     /**
      * Enumeration of line spacing behaviour for fixed line height text
      */
@@ -15286,7 +15286,7 @@
         get InferredLayoutAnchor () { return InferredLayoutAnchor; },
         get PointsRadiusBehaviour () { return PointsRadiusBehaviour; },
         get CornerStyle () { return CornerStyle; },
-        get CurveMode () { return CurveMode; },
+        get CurveMode () { return CurveMode$1; },
         get LineSpacingBehaviour () { return LineSpacingBehaviour; },
         get TextBehaviour () { return TextBehaviour; },
         get DocumentLibraryType () { return DocumentLibraryType; },
@@ -15327,13 +15327,21 @@
     }
     var classValue;
     (function (classValue) {
-        classValue["Page"] = "Page";
-        classValue["ArtBoard"] = "ArtBoard";
-        classValue["Group"] = "Group";
-        classValue["Bitmap"] = "Bitmap";
-        classValue["Text"] = "Text";
-        classValue["Rect"] = "Rect";
+        classValue["Page"] = "page";
+        classValue["ArtBoard"] = "artBoard";
+        classValue["Group"] = "group";
+        classValue["Bitmap"] = "bitmap";
+        classValue["Text"] = "text";
+        classValue["Polyline"] = "polyline";
     })(classValue || (classValue = {}));
+    var CurveMode;
+    (function (CurveMode) {
+        CurveMode[CurveMode["None"] = 0] = "None";
+        CurveMode[CurveMode["Straight"] = 1] = "Straight";
+        CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
+        CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
+        CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
+    })(CurveMode || (CurveMode = {}));
 
     var StyleUnit;
     (function (StyleUnit) {
@@ -16456,6 +16464,7 @@
                         name: layer.name,
                         uuid: layer.do_objectID,
                         hasBackgroundColor,
+                        resizesContent: layer.resizesContent,
                         style: {
                             width,
                             height,
@@ -16723,11 +16732,29 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Rectangle) {
+                const points = layer.points.map((item) => {
+                    const point = parseStrPoint(item.point);
+                    const curveFrom = parseStrPoint(item.curveFrom);
+                    const curveTo = parseStrPoint(item.curveTo);
+                    return {
+                        x: point.x,
+                        y: point.y,
+                        cornerRadius: item.cornerRadius,
+                        curveMode: item.curveMode,
+                        hasCurveFrom: item.hasCurveFrom,
+                        hasCurveTo: item.hasCurveTo,
+                        fx: curveFrom.x,
+                        fy: curveFrom.y,
+                        tx: curveTo.x,
+                        ty: curveTo.y,
+                    };
+                });
                 return {
-                    type: classValue.Rect,
+                    type: classValue.Polyline,
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        points,
                         style: {
                             left,
                             top,
@@ -16748,6 +16775,13 @@
                 console.error(layer);
             }
         });
+    }
+    function parseStrPoint(s) {
+        const res = /{(.+),\s*(.+)}/.exec(s);
+        if (!res) {
+            throw new Error('Unknown point: ' + s);
+        }
+        return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
     }
     function readImageFile(filename, opt) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -19240,17 +19274,15 @@
                     loader.src = v;
                     inject.measureImg(v, (res) => {
                         if (loader.src === v) {
-                            const props = this.props;
+                            const { onLoad, onError } = this.props;
                             if (res.success) {
-                                if (isFunction(props.onLoad)) {
-                                    // @ts-ignore
-                                    props.onLoad();
+                                if (onLoad && isFunction(onLoad)) {
+                                    onLoad();
                                 }
                             }
                             else {
-                                if (isFunction(props.onError)) {
-                                    // @ts-ignore
-                                    props.onError();
+                                if (onError && isFunction(onError)) {
+                                    onError();
                                 }
                             }
                         }
@@ -19539,18 +19571,6 @@
         }
     }
 
-    class Geom extends Node {
-        constructor(props) {
-            super(props);
-        }
-    }
-
-    class Rect extends Geom {
-        constructor(props) {
-            super(props);
-        }
-    }
-
     class TextBox {
         constructor(x, y, w, lineHeight, baseline, str, font) {
             this.x = 0;
@@ -19830,11 +19850,7 @@
             else ;
         }
         calContent() {
-            const { computedStyle, content } = this;
-            if (!computedStyle.visible) {
-                return this.hasContent = false;
-            }
-            return this.hasContent = !!content;
+            return this.hasContent = !!this.content;
         }
         renderCanvas() {
             super.renderCanvas();
@@ -19881,6 +19897,33 @@
         }
     }
 
+    class Geom extends Node {
+        constructor(props) {
+            super(props);
+        }
+        calContent() {
+            return true;
+        }
+    }
+
+    class Polyline extends Geom {
+        constructor(props) {
+            super(props);
+            this.points = props.points.map((item) => {
+                return [];
+            });
+        }
+        lay(data) {
+            super.lay(data);
+            console.log(this.props);
+        }
+        renderCanvas() {
+            super.renderCanvas();
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
+            canvasCache.available = true;
+        }
+    }
+
     function parse(json) {
         if (json.type === classValue.ArtBoard) {
             const children = [];
@@ -19908,8 +19951,8 @@
         else if (json.type === classValue.Text) {
             return new Text(json.props);
         }
-        else if (json.type === classValue.Rect) {
-            return new Rect(json.props);
+        else if (json.type === classValue.Polyline) {
+            return new Polyline(json.props);
         }
     }
     class Page extends Container {
