@@ -312,7 +312,7 @@ class Root extends Container implements FrameCallback {
     // 先重置标识，动画没有触发更新，在每个before执行，如果调用了更新则更改标识
     this.aniChange = false;
     for (let i = 0; i < len; i++) {
-      //
+      // 没动画现在
     }
     if (this.aniChange || len2) {
       this.draw();
@@ -327,7 +327,7 @@ class Root extends Container implements FrameCallback {
     const ani = this.ani, task = this.taskClone.splice(0);
     let len = ani.length, len2 = task.length;
     for (let i = 0; i < len; i++) {
-      //
+      // 没动画现在
     }
     for (let i = 0; i < len2; i++) {
       let item = task[i];
@@ -343,6 +343,12 @@ class Root extends Container implements FrameCallback {
 
   getCurPage() {
     return this.lastPage;
+  }
+
+  getCurPageZoom() {
+    if (this.lastPage) {
+      return this.lastPage.getZoom();
+    }
   }
 
   getNodeFromCurPage(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {

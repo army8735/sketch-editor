@@ -87,7 +87,7 @@ html, body {
 .tree .type {
   width: 16px;
   font-family: Menlo, "Courier New";
-  font-size: 12px;
+  font-size: 14px;
   color: #999;
   cursor: default;
   user-select: none;

@@ -175,6 +175,20 @@ class Text extends Node {
             baseline = getBaseline(cur);
             ctx.font = setFontStyle(cur);
           }
+          // 连续\n，开头会遇到，需跳过
+          if (content.charAt(i) === '\n') {
+            i++;
+            y += lineHeight;
+            if (lineBox.size) {
+              lineBox.verticalAlign();
+              lineBox = new LineBox(y);
+              this.lineBoxList.push(lineBox);
+            }
+            else {
+              lineBox.y = y;
+            }
+            continue;
+          }
           // 富文本需限制最大length，非富普通情况无需
           let len = length;
           for(let j = i + 1; j < len; j++) {

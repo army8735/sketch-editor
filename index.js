@@ -19589,6 +19589,9 @@
                 }
             }
         }
+        get size() {
+            return this.list.length;
+        }
         get baseline() {
             let n = 0;
             const list = this.list;
@@ -19766,6 +19769,20 @@
                             baseline = getBaseline(cur);
                             ctx.font = setFontStyle(cur);
                         }
+                        // 连续\n，开头会遇到，需跳过
+                        if (content.charAt(i) === '\n') {
+                            i++;
+                            y += lineHeight;
+                            if (lineBox.size) {
+                                lineBox.verticalAlign();
+                                lineBox = new LineBox(y);
+                                this.lineBoxList.push(lineBox);
+                            }
+                            else {
+                                lineBox.y = y;
+                            }
+                            continue;
+                        }
                         // 富文本需限制最大length，非富普通情况无需
                         let len = length;
                         for (let j = i + 1; j < len; j++) {
@@ -19910,6 +19927,9 @@
                 }
                 this.json = undefined;
             }
+        }
+        getZoom() {
+            return this.computedStyle.scaleX;
         }
     }
 
@@ -20561,6 +20581,11 @@ void main() {
         }
         getCurPage() {
             return this.lastPage;
+        }
+        getCurPageZoom() {
+            if (this.lastPage) {
+                return this.lastPage.getZoom();
+            }
         }
         getNodeFromCurPage(x, y, includeGroup = false, includeArtBoard = false, lv) {
             const page = this.lastPage;

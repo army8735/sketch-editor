@@ -28,6 +28,10 @@ class LineBox {
     }
   }
 
+  get size() {
+    return this.list.length;
+  }
+
   get baseline(): number {
     let n = 0;
     const list = this.list;
