@@ -170,7 +170,7 @@ export enum classValue {
   Group = 'group',
   Bitmap = 'bitmap',
   Text = 'text',
-  Polyline = 'polyline',
+  Polyline = '$polyline',
 }
 
 export enum CurveMode {

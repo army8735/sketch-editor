@@ -52,7 +52,7 @@
         classValue["Group"] = "group";
         classValue["Bitmap"] = "bitmap";
         classValue["Text"] = "text";
-        classValue["Polyline"] = "polyline";
+        classValue["Polyline"] = "$polyline";
     })(classValue || (classValue = {}));
     var CurveMode$1;
     (function (CurveMode) {
@@ -20885,6 +20885,7 @@ void main() {
         Root,
         Text,
         Geom,
+        Polyline,
     };
 
     var version = "0.0.1";

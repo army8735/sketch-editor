@@ -7,6 +7,7 @@ import Page from './Page';
 import Root from './Root';
 import Text from './Text';
 import Geom from './geom/Geom';
+import Polyline from './geom/Polyline';
 
 export default {
   ArtBoard,
@@ -18,4 +19,5 @@ export default {
   Root,
   Text,
   Geom,
+  Polyline,
 };
