@@ -20119,9 +20119,12 @@
                     }
                     ctx.beginPath();
                     const first = points[0];
+                    let xa, ya; // 起始点
                     if (first.length === 4) ;
                     else if (first.length === 6) ;
                     else {
+                        xa = first[0] - x;
+                        ya = first[1] - y;
                         ctx.moveTo(first[0] - x, first[1] - y);
                     }
                     for (let j = 1, len = points.length; j < len; j++) {
@@ -20129,10 +20132,14 @@
                         if (item.length === 4) ;
                         else if (item.length === 6) ;
                         else {
-                            ctx.lineTo(item[0] - x, item[1] - y);
+                            const xb = item[0] - x, yb = item[1] - y;
+                            ctx.lineTo(xb, yb);
+                            // 自动闭合
+                            if (j === len - 1 && xa === ya && xb === yb) {
+                                ctx.closePath();
+                            }
                         }
                     }
-                    ctx.closePath();
                     if (hasFill) {
                         ctx.fill();
                     }
