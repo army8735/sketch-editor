@@ -15497,14 +15497,13 @@
 
     const SPF = 1000 / 60;
     const CANVAS = {};
-    const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
     function offscreenCanvas(width, height, key, contextAttributes) {
         let o;
         if (!key) {
-            o = !config$1.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+            o = document.createElement('canvas');
         }
         else if (!CANVAS[key]) {
-            o = CANVAS[key] = !config$1.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+            o = CANVAS[key] = document.createElement('canvas');
         }
         else {
             o = CANVAS[key];
