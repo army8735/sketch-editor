@@ -16426,6 +16426,22 @@
     Event.WILL_REMOVE_DOM = 'willRemoveDom';
     Event.PAGE_CHANGED = 'pageChanged';
 
+    function clone(obj) {
+        if (isNil(obj) || typeof obj !== 'object') {
+            return obj;
+        }
+        if (isDate(obj)) {
+            return new Date(obj);
+        }
+        if (!isPlainObject(obj) && !Array.isArray(obj)) {
+            return obj;
+        }
+        const n = Array.isArray(obj) ? [] : {};
+        Object.keys(obj).forEach(i => {
+            n[i] = clone(obj[i]);
+        });
+        return n;
+    }
     var util = {
         type,
         Event,
@@ -16486,6 +16502,174 @@
             };
         }
     }
+    // 获取color-stop区间范围，去除无用值
+    function getColorStop(stops, length) {
+        const list = [];
+        const firstColor = stops[0].color.v;
+        // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
+        for (let i = 0, len = stops.length; i < len; i++) {
+            const item = stops[i];
+            const offset = item.offset;
+            // 考虑是否声明了位置
+            if (offset) {
+                if (offset.u === StyleUnit.PERCENT) {
+                    list.push([item.color.v, offset.v * 0.01]);
+                }
+                else {
+                    list.push([item.color.v, offset.v / length]);
+                }
+            }
+            else {
+                list.push([item.color.v]);
+            }
+        }
+        if (list.length === 1) {
+            list.push(clone(list[0]));
+        }
+        // 首尾不声明默认为[0, 1]
+        if (list[0].length === 1) {
+            list[0].push(0);
+        }
+        if (list.length > 1) {
+            const i = list.length - 1;
+            if (list[i].length === 1) {
+                list[i].push(1);
+            }
+        }
+        // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
+        let start = list[0][1];
+        for (let i = 1, len = list.length; i < len - 1; i++) {
+            const item = list[i];
+            if (item.length > 1) {
+                start = item[1];
+            }
+            else {
+                let j = i + 1;
+                let end = list[list.length - 1][1];
+                for (; j < len - 1; j++) {
+                    const item = list[j];
+                    if (item.length > 1) {
+                        end = item[1];
+                        break;
+                    }
+                }
+                const num = j - i + 1;
+                const per = (end - start) / num;
+                for (let k = i; k < j; k++) {
+                    const item = list[k];
+                    item.push(start + per * (k + 1 - i));
+                }
+                i = j;
+            }
+        }
+        // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
+        for (let i = 1, len = list.length; i < len; i++) {
+            const item = list[i];
+            const prev = list[i - 1];
+            if (item[1] < prev[1]) {
+                item[1] = prev[1];
+            }
+        }
+        // 0之前的和1之后的要过滤掉
+        for (let i = 0, len = list.length; i < len; i++) {
+            const item = list[i];
+            if (item[1] > 1) {
+                list.splice(i);
+                const prev = list[i - 1];
+                if (prev && prev[1] < 1) {
+                    const dr = item[0][0] - prev[0][0];
+                    const dg = item[0][1] - prev[0][1];
+                    const db = item[0][2] - prev[0][2];
+                    const da = item[0][3] - prev[0][3];
+                    const p = (1 - prev[1]) / (item[1] - prev[1]);
+                    list.push([
+                        [
+                            item[0][0] + dr * p,
+                            item[0][1] + dg * p,
+                            item[0][2] + db * p,
+                            item[0][3] + da * p,
+                        ],
+                        1
+                    ]);
+                }
+                break;
+            }
+        }
+        for (let i = list.length - 1; i >= 0; i--) {
+            const item = list[i];
+            if (item[1] < 0) {
+                list.splice(0, i + 1);
+                const next = list[i];
+                if (next && next[1] > 0) {
+                    const dr = next[0][0] - item[0][0];
+                    const dg = next[0][1] - item[0][1];
+                    const db = next[0][2] - item[0][2];
+                    const da = next[0][3] - item[0][3];
+                    const p = (-item[1]) / (next[1] - item[1]);
+                    list.unshift([
+                        [
+                            item[0][0] + dr * p,
+                            item[0][1] + dg * p,
+                            item[0][2] + db * p,
+                            item[0][3] + da * p,
+                        ],
+                        0
+                    ]);
+                }
+                break;
+            }
+        }
+        // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+        list.forEach(item => {
+            if (item[1] < 0) {
+                item[1] = 0;
+            }
+            else if (item[1] > 1) {
+                item[1] = 1;
+            }
+        });
+        // 都超限时，第一个颜色兜底
+        if (!list.length) {
+            list.push([firstColor, 0]);
+        }
+        return list;
+    }
+    // 根据角度和圆心获取渐变的4个点坐标
+    function calLinearCoords(deg, length, cx, cy) {
+        let x0;
+        let y0;
+        let x1;
+        let y1;
+        if (deg >= 270) {
+            const r = d2r(360 - deg);
+            x0 = cx + Math.sin(r) * length;
+            y0 = cy + Math.cos(r) * length;
+            x1 = cx - Math.sin(r) * length;
+            y1 = cy - Math.cos(r) * length;
+        }
+        else if (deg >= 180) {
+            const r = d2r(deg - 180);
+            x0 = cx + Math.sin(r) * length;
+            y0 = cy - Math.cos(r) * length;
+            x1 = cx - Math.sin(r) * length;
+            y1 = cy + Math.cos(r) * length;
+        }
+        else if (deg >= 90) {
+            const r = d2r(180 - deg);
+            x0 = cx - Math.sin(r) * length;
+            y0 = cy - Math.cos(r) * length;
+            x1 = cx + Math.sin(r) * length;
+            y1 = cy + Math.cos(r) * length;
+        }
+        else {
+            const r = d2r(deg);
+            x0 = cx - Math.sin(r) * length;
+            y0 = cy + Math.cos(r) * length;
+            x1 = cx + Math.sin(r) * length;
+            y1 = cy - Math.cos(r) * length;
+        }
+        return [x0, y0, x1, y1];
+    }
     function parseGradient(s) {
         const gradient = reg.gradient.exec(s);
         if (gradient) {
@@ -16497,13 +16681,13 @@
             }[gradient[1].toLowerCase()];
             let d;
             if (t === GRADIENT.LINEAR) {
-                const deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+                const deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
                 if (deg) {
                     d = getLinearDeg(deg[0].toLowerCase());
                 }
                 // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
                 else {
-                    const points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
+                    const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
                     if (points) {
                         d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
                     }
@@ -16604,6 +16788,69 @@
         else {
             throw new Error('Unknown parse gradient');
         }
+    }
+    /**
+     * 生成canvas的linearGradient
+     * @param stops
+     * @param d 控制点或角度
+     * @param ox 原点
+     * @param oy
+     * @param w
+     * @param h
+     * @param dx 可能的偏移
+     * @param dy
+     */
+    function getLinear(stops, d, ox, oy, w, h, dx = 0, dy = 0) {
+        ox += dx;
+        oy += dy;
+        // d为数组是2个坐标点，数字是css标准角度
+        let x1, y1, x2, y2, stop;
+        if (Array.isArray(d)) {
+            x1 = ox + d[0] * w;
+            y1 = oy + d[1] * h;
+            x2 = ox + d[2] * w;
+            y2 = oy + d[3] * h;
+            const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            stop = getColorStop(stops, total);
+        }
+        else {
+            while (d >= 360) {
+                d -= 360;
+            }
+            while (d < 0) {
+                d += 360;
+            }
+            // 根据角度求直线上2点，设置半径为长宽最大值，这样一定在矩形外，看做一个向量A
+            let len = Math.max(w, h);
+            const coords = calLinearCoords(d, len, ox + w * 0.5 + dx, oy + h * 0.5 + dy);
+            len *= 2;
+            // start和4个顶点的向量在A上的投影长度
+            const l1 = dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+            const l2 = dotProduct(ox + w - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+            const l3 = dotProduct(ox + w - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+            const l4 = dotProduct(ox - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+            // 最小和最大值为0~100%
+            let min = l1, max = l1;
+            min = Math.min(min, Math.min(l2, Math.min(l3, l4)));
+            max = Math.max(max, Math.max(l2, Math.max(l3, l4)));
+            // 求得0和100%的长度和坐标
+            const total = max - min;
+            const r1 = min / len;
+            const x = coords[2] - coords[0];
+            const y = coords[3] - coords[1];
+            x1 = coords[0] + x * r1;
+            y1 = coords[1] + y * r1;
+            x2 = coords[2] - x * r1;
+            y2 = coords[3] - y * r1;
+            stop = getColorStop(stops, total);
+        }
+        return {
+            x1,
+            y1,
+            x2,
+            y2,
+            stop,
+        };
     }
 
     function compatibleTransform(k, v) {
@@ -16793,7 +17040,12 @@
         const stroke = style.stroke;
         if (!isNil(stroke)) {
             res.stroke = stroke.map(item => {
-                return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+                if (isString(item) && isGradient(item)) {
+                    return { v: parseGradient(item), u: StyleUnit.GRADIENT };
+                }
+                else {
+                    return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+                }
             });
         }
         const strokeEnable = style.strokeEnable;
@@ -17212,7 +17464,7 @@
                         pointerEvents: false,
                     },
                 },
-                children,
+                children: children.filter(item => item),
             };
         });
     }
@@ -17257,7 +17509,7 @@
                             backgroundColor,
                         },
                     },
-                    children,
+                    children: children.filter(item => item),
                 };
             }
             // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
@@ -17402,7 +17654,7 @@
                             rotateZ,
                         },
                     },
-                    children,
+                    children: children.filter(item => item),
                 };
             }
             if (layer._class === FileFormat.ClassValue.Bitmap) {
@@ -17430,6 +17682,7 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Text) {
+                console.log(layer);
                 const textBehaviour = layer.textBehaviour;
                 if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
                     width = 'auto';
@@ -17467,20 +17720,20 @@
                     return res;
                 }) : undefined;
                 const MSAttributedStringFontAttribute = (_f = (_e = (_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.textStyle) === null || _d === void 0 ? void 0 : _d.encodedAttributes) === null || _e === void 0 ? void 0 : _e.MSAttributedStringFontAttribute) === null || _f === void 0 ? void 0 : _f.attributes;
-                const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
-                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
+                const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : 16;
+                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : 'arial';
                 const paragraphStyle = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
-                const lineHeight = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight;
+                const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
-                const letterSpacing = (_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.kerning;
+                const letterSpacing = ((_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.kerning) || 0;
                 const MSAttributedStringColorAttribute = (_q = (_p = (_o = layer.style) === null || _o === void 0 ? void 0 : _o.textStyle) === null || _p === void 0 ? void 0 : _p.encodedAttributes) === null || _q === void 0 ? void 0 : _q.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute ? [
                     Math.floor(MSAttributedStringColorAttribute.red * 255),
                     Math.floor(MSAttributedStringColorAttribute.green * 255),
                     Math.floor(MSAttributedStringColorAttribute.blue * 255),
                     MSAttributedStringColorAttribute.alpha,
-                ] : undefined;
+                ] : [0, 0, 0, 1];
                 return {
                     tagName: TagName.Text,
                     props: {
@@ -17577,7 +17830,7 @@
                             item.color.alpha,
                         ]);
                         strokeEnable.push(item.isEnabled);
-                        strokeWidth.push(item.thickness);
+                        strokeWidth.push(item.thickness || 0);
                     });
                 }
                 return {
@@ -20150,7 +20403,9 @@
             }
             // 自动宽度，相当于whiteSpace: nowrap
             if (autoW && autoH) {
-                if (rich && rich.length) ;
+                if (rich && rich.length) {
+                    console.warn(this.content);
+                }
                 else {
                     this.width = computedStyle.width = ctx.measureText(content).width;
                     this.height = computedStyle.height = lineHeight;
@@ -20238,7 +20493,8 @@
         renderCanvas() {
             super.renderCanvas();
             const { height, rich, computedStyle, lineBoxList } = this;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
+            console.log(this.content, this.width, this.height);
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, height);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             // 富文本每串不同的需要设置字体颜色
@@ -20288,6 +20544,52 @@
         calContent() {
             return true;
         }
+    }
+
+    function canvasPolygon(ctx, list, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return;
+        }
+        // 防止空值开始
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return;
+        }
+        ctx.beginPath();
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            ctx.moveTo(first[2] + dx, first[3] + dy);
+        }
+        else if (first.length === 6) {
+            ctx.moveTo(first[4] + dx, first[5] + dy);
+        }
+        else {
+            ctx.moveTo(first[0] + dx, first[1] + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                ctx.lineTo(item[0] + dx, item[1] + dy);
+            }
+            else if (item.length === 4) {
+                ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
+            }
+            else if (item.length === 6) {
+                ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
+            }
+        }
+        ctx.closePath();
     }
 
     class Polyline extends Geom {
@@ -20357,48 +20659,50 @@
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             const { fill, fillEnable, stroke, strokeEnable, strokeWidth, } = this.computedStyle;
-            const num = fill.length;
-            for (let i = 0; i < num; i++) {
-                const hasFill = fillEnable[i] && fill[i][3];
-                const hasStroke = strokeEnable[i] && stroke[i][3] && strokeWidth[i];
-                if (hasFill || hasStroke) {
-                    if (hasFill) {
-                        ctx.fillStyle = color2rgbaStr(fill[i]);
-                    }
-                    if (hasStroke) {
-                        ctx.strokeStyle = color2rgbaStr(stroke[i]);
-                        ctx.lineWidth = strokeWidth[i];
-                    }
-                    ctx.beginPath();
-                    const first = points[0];
-                    let xa, ya; // 起始点
-                    if (first.length === 4) ;
-                    else if (first.length === 6) ;
-                    else {
-                        xa = first[0] - x;
-                        ya = first[1] - y;
-                        ctx.moveTo(first[0] - x, first[1] - y);
-                    }
-                    for (let j = 1, len = points.length; j < len; j++) {
-                        const item = points[j];
-                        if (item.length === 4) ;
-                        else if (item.length === 6) ;
-                        else {
-                            const xb = item[0] - x, yb = item[1] - y;
-                            ctx.lineTo(xb, yb);
-                            // 自动闭合
-                            if (j === len - 1 && xa === ya && xb === yb) {
-                                ctx.closePath();
-                            }
-                        }
-                    }
-                    if (hasFill) {
-                        ctx.fill();
-                    }
-                    if (hasStroke) {
-                        ctx.stroke();
-                    }
+            // 先下层的fill
+            for (let i = 0, len = fill.length; i < len; i++) {
+                if (!fillEnable[i]) {
+                    continue;
                 }
+                const f = fill[i];
+                console.log(f);
+                if (Array.isArray(f)) {
+                    if (!f[3]) {
+                        continue;
+                    }
+                    ctx.fillStyle = color2rgbaStr(f);
+                }
+                else {
+                    const gd = getLinear(f.stops, f.d, 0, 0, this.width, this.height, -x, -y);
+                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                    gd.stop.forEach(item => {
+                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                    });
+                    ctx.fillStyle = lg;
+                }
+                canvasPolygon(ctx, points, -x, -y);
+                ctx.fill();
+            }
+            // 再上层的stroke
+            for (let i = 0, len = stroke.length; i < len; i++) {
+                if (!strokeEnable[i] || !strokeWidth[i]) {
+                    continue;
+                }
+                const s = stroke[i];
+                if (Array.isArray(s)) {
+                    ctx.strokeStyle = color2rgbaStr(s);
+                    ctx.lineWidth = strokeWidth[i];
+                }
+                else {
+                    const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
+                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                    gd.stop.forEach(item => {
+                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                    });
+                    ctx.fillStyle = lg;
+                }
+                canvasPolygon(ctx, points, -x, -y);
+                ctx.stroke();
             }
         }
         get bbox() {

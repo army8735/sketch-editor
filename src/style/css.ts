@@ -203,7 +203,12 @@ export function normalize(style: JStyle): Style {
   const stroke = style.stroke;
   if (!isNil(stroke)) {
     res.stroke = stroke.map(item => {
-      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+      if (isString(item) && isGradient(item as string)) {
+        return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
+      }
+      else {
+        return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+      }
     });
   }
   const strokeEnable = style.strokeEnable;

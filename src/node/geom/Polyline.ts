@@ -2,6 +2,8 @@ import Geom from './Geom';
 import { PolylineProps } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
+import { canvasPolygon } from '../../refresh/paint';
+import { getLinear } from '../../style/gradient';
 
 class Polyline extends Geom {
   points?: Array<Array<number>>;
@@ -79,48 +81,49 @@ class Polyline extends Geom {
       strokeEnable,
       strokeWidth,
     } = this.computedStyle;
-    const num = fill.length;
-    for (let i = 0; i < num; i++) {
-      const hasFill = fillEnable[i] && fill[i][3];
-      const hasStroke = strokeEnable[i] && stroke[i][3] && strokeWidth[i];
-      if (hasFill || hasStroke) {
-        if (hasFill) {
-          ctx.fillStyle = color2rgbaStr(fill[i]);
-        }
-        if (hasStroke) {
-          ctx.strokeStyle = color2rgbaStr(stroke[i]);
-          ctx.lineWidth = strokeWidth[i];
-        }
-        ctx.beginPath();
-        const first = points[0];
-        let xa, ya; // 起始点
-        if (first.length === 4) {}
-        else if (first.length === 6) {}
-        else {
-          xa = first[0] - x;
-          ya = first[1] - y;
-          ctx.moveTo(first[0] - x, first[1] - y);
-        }
-        for (let j = 1, len = points.length; j < len; j++) {
-          const item = points[j];
-          if (item.length === 4) {}
-          else if (item.length === 6) {}
-          else {
-            const xb = item[0] - x, yb = item[1] - y;
-            ctx.lineTo(xb, yb);
-            // 自动闭合
-            if (j === len - 1 && xa === ya && xb === yb) {
-              ctx.closePath();
-            }
-          }
-        }
-        if (hasFill) {
-          ctx.fill();
-        }
-        if (hasStroke) {
-          ctx.stroke();
-        }
+    // 先下层的fill
+    for (let i = 0, len = fill.length; i < len; i++) {
+      if (!fillEnable[i]) {
+        continue;
       }
+      const f = fill[i]; console.log(f);
+      if (Array.isArray(f)) {
+        if (!f[3]) {
+          continue;
+        }
+        ctx.fillStyle = color2rgbaStr(f);
+      }
+      else {
+        const gd = getLinear(f.stops, f.d, 0, 0, this.width, this.height, -x, -y);
+        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+        gd.stop.forEach(item => {
+          lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+        });
+        ctx.fillStyle = lg;
+      }
+      canvasPolygon(ctx, points, -x, -y);
+      ctx.fill();
+    }
+    // 再上层的stroke
+    for (let i = 0, len = stroke.length; i < len; i++) {
+      if (!strokeEnable[i] || !strokeWidth[i]) {
+        continue;
+      }
+      const s = stroke[i];
+      if (Array.isArray(s)) {
+        ctx.strokeStyle = color2rgbaStr(s);
+        ctx.lineWidth = strokeWidth[i];
+      }
+      else {
+        const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
+        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+        gd.stop.forEach(item => {
+          lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+        });
+        ctx.fillStyle = lg;
+      }
+      canvasPolygon(ctx, points, -x, -y);
+      ctx.stroke();
     }
   }
 

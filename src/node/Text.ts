@@ -151,7 +151,9 @@ class Text extends Node {
     }
     // 自动宽度，相当于whiteSpace: nowrap
     if (autoW && autoH) {
-      if (rich && rich.length) {}
+      if (rich && rich.length) {
+        console.warn(this.content)
+      }
       else {
         this.width = computedStyle.width = ctx.measureText(content).width;
         this.height = computedStyle.height = lineHeight;
@@ -246,7 +248,8 @@ class Text extends Node {
   override renderCanvas() {
     super.renderCanvas();
     const { height, rich, computedStyle, lineBoxList } = this;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
+    console.log(this.content, this.width, this.height)
+    const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, height);
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     // 富文本每串不同的需要设置字体颜色

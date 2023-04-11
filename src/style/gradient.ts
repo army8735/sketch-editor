@@ -64,24 +64,24 @@ function getRadialPosition(data: string) {
 }
 
 // 获取color-stop区间范围，去除无用值
-function getColorStop(v: any, length: number) {
-  let list = [];
-  let firstColor = v[0][0];
+function getColorStop(stops: Array<ColorStop>, length: number) {
+  const list: Array<[Array<number>, number?]> = [];
+  const firstColor = stops[0].color.v;
   // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
-  for(let i = 0, len = v.length; i < len; i++) {
-    let item = v[i];
+  for(let i = 0, len = stops.length; i < len; i++) {
+    const item = stops[i];
+    const offset = item.offset;
     // 考虑是否声明了位置
-    if(item.length > 1) {
-      let p = item[1];
-      if(p.u === StyleUnit.PERCENT) {
-        list.push([item[0], p.v * 0.01]);
+    if(offset) {
+      if(offset.u === StyleUnit.PERCENT) {
+        list.push([item.color.v, offset.v * 0.01]);
       }
       else {
-        list.push([item[0], p.v / length]);
+        list.push([item.color.v, offset.v / length]);
       }
     }
     else {
-      list.push([item[0]]);
+      list.push([item.color.v]);
     }
   }
   if(list.length === 1) {
@@ -92,7 +92,7 @@ function getColorStop(v: any, length: number) {
     list[0].push(0);
   }
   if(list.length > 1) {
-    let i = list.length - 1;
+    const i = list.length - 1;
     if(list[i].length === 1) {
       list[i].push(1);
     }
@@ -100,7 +100,7 @@ function getColorStop(v: any, length: number) {
   // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
   let start = list[0][1];
   for(let i = 1, len = list.length; i < len - 1; i++) {
-    let item = list[i];
+    const item = list[i];
     if(item.length > 1) {
       start = item[1];
     }
@@ -108,41 +108,41 @@ function getColorStop(v: any, length: number) {
       let j = i + 1;
       let end = list[list.length - 1][1];
       for(; j < len - 1; j++) {
-        let item = list[j];
+        const item = list[j];
         if(item.length > 1) {
           end = item[1];
           break;
         }
       }
-      let num = j - i + 1;
-      let per = (end - start) / num;
+      const num = j - i + 1;
+      const per = (end! - start!) / num;
       for(let k = i; k < j; k++) {
-        let item = list[k];
-        item.push(start + per * (k + 1 - i));
+        const item = list[k];
+        item.push(start! + per * (k + 1 - i));
       }
       i = j;
     }
   }
   // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
   for(let i = 1, len = list.length; i < len; i++) {
-    let item = list[i];
-    let prev = list[i - 1];
-    if(item[1] < prev[1]) {
+    const item = list[i];
+    const prev = list[i - 1];
+    if(item[1]! < prev[1]!) {
       item[1] = prev[1];
     }
   }
   // 0之前的和1之后的要过滤掉
   for(let i = 0, len = list.length; i < len; i++) {
-    let item = list[i];
-    if(item[1] > 1) {
+    const item = list[i];
+    if(item[1]! > 1) {
       list.splice(i);
-      let prev = list[i - 1];
-      if(prev && prev[1] < 1) {
-        let dr = item[0][0] - prev[0][0];
-        let dg = item[0][1] - prev[0][1];
-        let db = item[0][2] - prev[0][2];
-        let da = item[0][3] - prev[0][3];
-        let p = (1 - prev[1]) / (item[1] - prev[1]);
+      const prev = list[i - 1];
+      if(prev && prev[1] !< 1) {
+        const dr = item[0][0] - prev[0][0];
+        const dg = item[0][1] - prev[0][1];
+        const db = item[0][2] - prev[0][2];
+        const da = item[0][3] - prev[0][3];
+        const p = (1 - prev[1]!) / (item[1]! - prev[1]!);
         list.push([
           [
             item[0][0] + dr * p,
@@ -157,16 +157,16 @@ function getColorStop(v: any, length: number) {
     }
   }
   for(let i = list.length - 1; i >= 0; i--) {
-    let item = list[i];
-    if(item[1] < 0) {
+    const item = list[i];
+    if(item[1]! < 0) {
       list.splice(0, i + 1);
-      let next = list[i];
-      if(next && next[1] > 0) {
-        let dr = next[0][0] - item[0][0];
-        let dg = next[0][1] - item[0][1];
-        let db = next[0][2] - item[0][2];
-        let da = next[0][3] - item[0][3];
-        let p = (-item[1]) / (next[1] - item[1]);
+      const next = list[i];
+      if(next && next[1]! > 0) {
+        const dr = next[0][0] - item[0][0];
+        const dg = next[0][1] - item[0][1];
+        const db = next[0][2] - item[0][2];
+        const da = next[0][3] - item[0][3];
+        const p = (-item[1]!) / (next[1]! - item[1]!);
         list.unshift([
           [
             item[0][0] + dr * p,
@@ -182,11 +182,10 @@ function getColorStop(v: any, length: number) {
   }
   // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
   list.forEach(item => {
-    // item[0] = int2rgba(item[0]);
-    if(item[1] < 0) {
+    if(item[1]! < 0) {
       item[1] = 0;
     }
-    else if(item[1] > 1) {
+    else if(item[1]! > 1) {
       item[1] = 1;
     }
   });
@@ -204,28 +203,28 @@ function calLinearCoords(deg: number, length: number, cx: number, cy: number) {
   let x1;
   let y1;
   if(deg >= 270) {
-    let r = d2r(360 - deg);
+    const r = d2r(360 - deg);
     x0 = cx + Math.sin(r) * length;
     y0 = cy + Math.cos(r) * length;
     x1 = cx - Math.sin(r) * length;
     y1 = cy - Math.cos(r) * length;
   }
   else if(deg >= 180) {
-    let r = d2r(deg - 180);
+    const r = d2r(deg - 180);
     x0 = cx + Math.sin(r) * length;
     y0 = cy - Math.cos(r) * length;
     x1 = cx - Math.sin(r) * length;
     y1 = cy + Math.cos(r) * length;
   }
   else if(deg >= 90) {
-    let r = d2r(180 - deg);
+    const r = d2r(180 - deg);
     x0 = cx - Math.sin(r) * length;
     y0 = cy - Math.cos(r) * length;
     x1 = cx + Math.sin(r) * length;
     y1 = cy + Math.cos(r) * length;
   }
   else {
-    let r = d2r(deg);
+    const r = d2r(deg);
     x0 = cx - Math.sin(r) * length;
     y0 = cy + Math.cos(r) * length;
     x1 = cx + Math.sin(r) * length;
@@ -245,13 +244,13 @@ export function parseGradient(s: string) {
     }[gradient[1].toLowerCase()];
     let d: number | Array<number>;
     if(t === GRADIENT.LINEAR) {
-      const deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      const deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
       if(deg) {
         d = getLinearDeg(deg[0].toLowerCase());
       }
       // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        const points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
+        const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
         if(points) {
           d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
         }
@@ -354,11 +353,20 @@ export function parseGradient(s: string) {
   }
 }
 
-export function getLinear(v: any, d: number | Array<number>, ox: number, oy: number, cx: number, cy: number, w: number, h: number, dx = 0, dy = 0) {
+/**
+ * 生成canvas的linearGradient
+ * @param stops
+ * @param d 控制点或角度
+ * @param ox 原点
+ * @param oy
+ * @param w
+ * @param h
+ * @param dx 可能的偏移
+ * @param dy
+ */
+export function getLinear(stops: Array<ColorStop>, d: number | Array<number>, ox: number, oy: number, w: number, h: number, dx = 0, dy = 0) {
   ox += dx;
   oy += dy;
-  cx += dx;
-  cy += dy;
   // d为数组是2个坐标点，数字是css标准角度
   let x1, y1, x2, y2, stop;
   if(Array.isArray(d)) {
@@ -366,8 +374,8 @@ export function getLinear(v: any, d: number | Array<number>, ox: number, oy: num
     y1 = oy + d[1] * h;
     x2 = ox + d[2] * w;
     y2 = oy + d[3] * h;
-    let total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    stop = getColorStop(v, total);
+    const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    stop = getColorStop(stops, total);
   }
   else {
     while(d >= 360) {
@@ -378,27 +386,27 @@ export function getLinear(v: any, d: number | Array<number>, ox: number, oy: num
     }
     // 根据角度求直线上2点，设置半径为长宽最大值，这样一定在矩形外，看做一个向量A
     let len = Math.max(w, h);
-    let coords = calLinearCoords(d, len, cx, cy);
+    const coords = calLinearCoords(d, len, ox + w * 0.5 + dx, oy + h * 0.5 + dy);
     len *= 2;
     // start和4个顶点的向量在A上的投影长度
-    let l1 = dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-    let l2 = dotProduct(ox + w - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-    let l3 = dotProduct(ox + w - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-    let l4 = dotProduct(ox - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    const l1 = dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    const l2 = dotProduct(ox + w - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    const l3 = dotProduct(ox + w - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    const l4 = dotProduct(ox - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
     // 最小和最大值为0~100%
     let min = l1, max = l1;
     min = Math.min(min, Math.min(l2, Math.min(l3, l4)));
     max = Math.max(max, Math.max(l2, Math.max(l3, l4)));
     // 求得0和100%的长度和坐标
-    let total = max - min;
-    let r1 = min / len;
-    let dx = coords[2] - coords[0];
-    let dy = coords[3] - coords[1];
-    x1 = coords[0] + dx * r1;
-    y1 = coords[1] + dy * r1;
-    x2 = coords[2] - dx * r1;
-    y2 = coords[3] - dy * r1;
-    stop = getColorStop(v, total);
+    const total = max - min;
+    const r1 = min / len;
+    const x = coords[2] - coords[0];
+    const y = coords[3] - coords[1];
+    x1 = coords[0] + x * r1;
+    y1 = coords[1] + y * r1;
+    x2 = coords[2] - x * r1;
+    y2 = coords[3] - y * r1;
+    stop = getColorStop(stops, total);
   }
   return {
     x1,

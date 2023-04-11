@@ -133,7 +133,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
         pointerEvents: false,
       },
     },
-    children,
+    children: children.filter(item => item),
   } as JPage;
 }
 
@@ -178,7 +178,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           backgroundColor,
         },
       },
-      children,
+      children: children.filter(item => item),
     } as JArtBoard;
   }
   // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
@@ -332,7 +332,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           rotateZ,
         },
       },
-      children,
+      children: children.filter(item => item),
     } as JGroup;
   }
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
@@ -408,20 +408,20 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       return res;
     }) : undefined;
     const MSAttributedStringFontAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute?.attributes;
-    const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : undefined;
-    const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : undefined;
+    const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : 16;
+    const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : 'arial';
     const paragraphStyle = layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const alignment = paragraphStyle?.alignment;
-    const lineHeight = paragraphStyle?.maximumLineHeight;
+    const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
-    const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning;
+    const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning || 0;
     const MSAttributedStringColorAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute ? [
       Math.floor(MSAttributedStringColorAttribute.red * 255),
       Math.floor(MSAttributedStringColorAttribute.green * 255),
       Math.floor(MSAttributedStringColorAttribute.blue * 255),
       MSAttributedStringColorAttribute.alpha,
-    ] : undefined;
+    ] : [0, 0, 0, 1];
     return {
       tagName: TagName.Text,
       props: {
@@ -520,7 +520,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           item.color.alpha,
         ]);
         strokeEnable.push(item.isEnabled);
-        strokeWidth.push(item.thickness);
+        strokeWidth.push(item.thickness || 0);
       });
     }
     return {
