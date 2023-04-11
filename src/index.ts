@@ -1,4 +1,4 @@
-import { classValue, JFile } from './format';
+import { TagName, JFile } from './format';
 import { openAndConvertSketchBuffer } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -17,7 +17,7 @@ function apply(json: any, imgs: Array<string>): any {
     return json.map(item => apply(item, imgs));
   }
   const { tagName, props = {}, children = [] } = json;
-  if (tagName === classValue.Bitmap) {
+  if (tagName === TagName.Bitmap) {
     const src = props.src;
     if (util.type.isNumber(src)) {
       props.src = imgs[src];

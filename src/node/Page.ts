@@ -12,11 +12,11 @@ import {
   PolylineProps,
   TextProps,
 } from '../format/';
-import { classValue, JNode, JPage } from '../format';
+import { TagName, JNode, JPage } from '../format';
 import Polyline from './geom/Polyline';
 
 function parse(json: JNode): Node | undefined {
-  if (json.tagName === classValue.ArtBoard) {
+  if (json.tagName === TagName.ArtBoard) {
     const children = [];
     for(let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
@@ -26,7 +26,7 @@ function parse(json: JNode): Node | undefined {
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
   }
-  else if (json.tagName === classValue.Group) {
+  else if (json.tagName === TagName.Group) {
     const children = [];
     for(let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
@@ -36,13 +36,13 @@ function parse(json: JNode): Node | undefined {
     }
     return new Group(json.props, children);
   }
-  else if (json.tagName === classValue.Bitmap) {
+  else if (json.tagName === TagName.Bitmap) {
     return new Bitmap(json.props as BitmapProps);
   }
-  else if (json.tagName === classValue.Text) {
+  else if (json.tagName === TagName.Text) {
     return new Text(json.props as TextProps);
   }
-  else if (json.tagName === classValue.Polyline) {
+  else if (json.tagName === TagName.Polyline) {
     return new Polyline(json.props as PolylineProps);
   }
 }

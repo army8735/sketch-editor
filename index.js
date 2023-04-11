@@ -45,15 +45,15 @@
             pointerEvents: true,
         }, v);
     }
-    var classValue;
-    (function (classValue) {
-        classValue["Page"] = "page";
-        classValue["ArtBoard"] = "artBoard";
-        classValue["Group"] = "group";
-        classValue["Bitmap"] = "bitmap";
-        classValue["Text"] = "text";
-        classValue["Polyline"] = "$polyline";
-    })(classValue || (classValue = {}));
+    var TagName;
+    (function (TagName) {
+        TagName["Page"] = "page";
+        TagName["ArtBoard"] = "artBoard";
+        TagName["Group"] = "group";
+        TagName["Bitmap"] = "bitmap";
+        TagName["Text"] = "text";
+        TagName["Polyline"] = "$polyline";
+    })(TagName || (TagName = {}));
     var CurveMode$1;
     (function (CurveMode) {
         CurveMode[CurveMode["None"] = 0] = "None";
@@ -16468,7 +16468,7 @@
                 }
             }
             return {
-                tagName: classValue.Page,
+                tagName: TagName.Page,
                 props: {
                     name: page.name,
                     uuid: page.do_objectID,
@@ -16513,7 +16513,7 @@
                     layer.backgroundColor.a,
                 ] : [255, 255, 255, 1];
                 return {
-                    tagName: classValue.ArtBoard,
+                    tagName: TagName.ArtBoard,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16658,7 +16658,7 @@
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
                 return {
-                    tagName: classValue.Group,
+                    tagName: TagName.Group,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16682,7 +16682,7 @@
             if (layer._class === FileFormat.ClassValue.Bitmap) {
                 const index = yield readImageFile(layer.image._ref, opt);
                 return {
-                    tagName: classValue.Bitmap,
+                    tagName: TagName.Bitmap,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16756,7 +16756,7 @@
                     MSAttributedStringColorAttribute.alpha,
                 ] : undefined;
                 return {
-                    tagName: classValue.Text,
+                    tagName: TagName.Text,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16827,7 +16827,7 @@
                     strokeWidth.push(item.thickness);
                 });
                 return {
-                    tagName: classValue.Polyline,
+                    tagName: TagName.Polyline,
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
@@ -20161,7 +20161,7 @@
     }
 
     function parse(json) {
-        if (json.tagName === classValue.ArtBoard) {
+        if (json.tagName === TagName.ArtBoard) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -20171,7 +20171,7 @@
             }
             return new ArtBoard(json.props, children);
         }
-        else if (json.tagName === classValue.Group) {
+        else if (json.tagName === TagName.Group) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -20181,13 +20181,13 @@
             }
             return new Group(json.props, children);
         }
-        else if (json.tagName === classValue.Bitmap) {
+        else if (json.tagName === TagName.Bitmap) {
             return new Bitmap(json.props);
         }
-        else if (json.tagName === classValue.Text) {
+        else if (json.tagName === TagName.Text) {
             return new Text(json.props);
         }
-        else if (json.tagName === classValue.Polyline) {
+        else if (json.tagName === TagName.Polyline) {
             return new Polyline(json.props);
         }
     }
@@ -20898,7 +20898,7 @@ void main() {
             return json.map(item => apply(item, imgs));
         }
         const { tagName, props = {}, children = [] } = json;
-        if (tagName === classValue.Bitmap) {
+        if (tagName === TagName.Bitmap) {
             const src = props.src;
             if (util.type.isNumber(src)) {
                 props.src = imgs[src];
