@@ -12,7 +12,7 @@ import {
   TagName,
   Rich,
 } from './';
-import { calNormalLineHeight } from '../style/css';
+import { calNormalLineHeight, color2hexStr } from '../style/css';
 
 enum ResizingConstraint {
   UNSET =  0b111111,
@@ -75,7 +75,7 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   const imgs: Array<string> = [], imgHash: any = {};
   const fonts: Array<{ fontFamily: string, url: string }> = [], fontHash: any = {};
   const pages = await Promise.all(
-    json.pages.map((page: any) => {
+    json.pages.map((page: SketchFormat.Page) => {
       return convertPage(page, {
         imgs,
         imgHash,
@@ -93,9 +93,9 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   };
 }
 
-async function convertPage(page: any, opt: Opt): Promise<JPage> {
+async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
   const children = await Promise.all(
-    page.layers.map((layer: any) => {
+    page.layers.map((layer: SketchFormat.AnyLayer) => {
       return convertItem(layer, opt, page.frame.width, page.frame.height);
     })
   );
@@ -137,27 +137,27 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
   } as JPage;
 }
 
-async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<JNode | undefined> {
-  let width = layer.frame.width;
-  let height = layer.frame.height;
-  let translateX = layer.frame.x;
-  let translateY = layer.frame.y;
-  let visible = layer.isVisible;
-  let opacity = layer.style.contextSettings.opacity;
-  let rotateZ = -layer.rotation;
+async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h: number): Promise<JNode | undefined> {
+  let width: number | string = layer.frame.width;
+  let height: number | string = layer.frame.height;
+  let translateX: number | string = layer.frame.x;
+  let translateY: number | string = layer.frame.y;
+  const visible = layer.isVisible;
+  const opacity = layer.style?.contextSettings?.opacity || 1;
+  const rotateZ = -layer.rotation;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替
   if (layer._class === SketchFormat.ClassValue.Artboard) {
     const children = await Promise.all(
-      layer.layers.map((child: any) => {
+      layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
       })
     );
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor ? [
-      Math.floor(layer.backgroundColor.r * 255),
-      Math.floor(layer.backgroundColor.g * 255),
-      Math.floor(layer.backgroundColor.b * 255),
-      layer.backgroundColor.a,
+      Math.floor(layer.backgroundColor.red * 255),
+      Math.floor(layer.backgroundColor.green * 255),
+      Math.floor(layer.backgroundColor.blue * 255),
+      layer.backgroundColor.alpha,
     ] : [255, 255, 255, 1];
     return {
       tagName: TagName.ArtBoard,
@@ -309,7 +309,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children = await Promise.all(
-      layer.layers.map((child: any) => {
+      layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
       })
     );
@@ -471,28 +471,58 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         ty: curveTo.y,
       };
     });
-    const { borders, fills } = layer.style;
-    const fill: Array<Array<number>> = [], fillEnable: Array<boolean> = [];
-    fills.forEach((item: any) => {
-      fill.push([
-        Math.floor(item.color.red * 255),
-        Math.floor(item.color.green * 255),
-        Math.floor(item.color.blue * 255),
-        item.color.alpha,
-      ]);
-      fillEnable.push(item.isEnabled);
-    });
+    const { borders, fills } = layer.style || {};
+    const fill: Array<string | Array<number>> = [], fillEnable: Array<boolean> = [];
+    if (fills) {
+      fills.forEach((item: SketchFormat.Fill) => {
+        if (item.fillType === SketchFormat.FillType.Gradient) {
+          const g = item.gradient;
+          if (g.gradientType === SketchFormat.GradientType.Linear) {
+            const from = parseStrPoint(g.from);
+            const to = parseStrPoint(g.to);
+            const stops = g.stops.map(item => {
+              const color = color2hexStr([
+                Math.floor(item.color.red * 255),
+                Math.floor(item.color.green * 255),
+                Math.floor(item.color.blue * 255),
+                item.color.alpha,
+              ]);
+              return color + ' ' + item.position * 100 + '%';
+            });
+            fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+          }
+          else if (g.gradientType === SketchFormat.GradientType.Radial) {
+          }
+          else if (g.gradientType === SketchFormat.GradientType.Angular) {
+          }
+          else {
+            throw new Error('Unknown gradient');
+          }
+        }
+        else {
+          fill.push([
+            Math.floor(item.color.red * 255),
+            Math.floor(item.color.green * 255),
+            Math.floor(item.color.blue * 255),
+            item.color.alpha,
+          ]);
+        }
+        fillEnable.push(item.isEnabled);
+      });
+    }
     const stroke: Array<Array<number>> = [], strokeEnable: Array<boolean> = [], strokeWidth: Array<number> = [];
-    borders.forEach((item: any) => {
-      stroke.push([
-        Math.floor(item.color.red * 255),
-        Math.floor(item.color.green * 255),
-        Math.floor(item.color.blue * 255),
-        item.color.alpha,
-      ]);
-      strokeEnable.push(item.isEnabled);
-      strokeWidth.push(item.thickness);
-    });
+    if (borders) {
+      borders.forEach((item: SketchFormat.Border) => {
+        stroke.push([
+          Math.floor(item.color.red * 255),
+          Math.floor(item.color.green * 255),
+          Math.floor(item.color.blue * 255),
+          item.color.alpha,
+        ]);
+        strokeEnable.push(item.isEnabled);
+        strokeWidth.push(item.thickness);
+      });
+    }
     return {
       tagName: TagName.Polyline,
       props: {

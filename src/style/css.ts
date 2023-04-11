@@ -1,19 +1,20 @@
 import { JStyle, Rich } from '../format';
 import {
   calUnit,
+  ComputedStyle,
   FONT_STYLE,
   MIX_BLEND_MODE,
+  Style,
   StyleNumValue,
   StyleUnit,
-  StyleValue,
-  Style,
-  ComputedStyle,
 } from './define';
 import { isNil, isString } from '../util/type';
 import inject from '../util/inject';
 import font from './font';
+import reg from './reg';
+import { parseGradient } from './gradient';
 
-function compatibleTransform(k: string, v: StyleValue) {
+function compatibleTransform(k: string, v: StyleNumValue) {
   if (k === 'scaleX' || k === 'scaleY') {
     v.u = StyleUnit.NUMBER;
   }
@@ -27,6 +28,16 @@ function compatibleTransform(k: string, v: StyleValue) {
       v.u = StyleUnit.DEG;
     }
   }
+}
+
+export function isGradient(s: string) {
+  if(reg.gradient.test(s)) {
+    let gradient = reg.gradient.exec(s);
+    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1]) > -1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function normalize(style: JStyle): Style {
@@ -175,7 +186,12 @@ export function normalize(style: JStyle): Style {
   const fill = style.fill;
   if (!isNil(fill)) {
     res.fill = fill.map(item => {
-      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+      if (isString(item) && isGradient(item as string)) {
+        return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
+      }
+      else {
+        return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+      }
     });
   }
   const fillEnable = style.fillEnable;
@@ -396,6 +412,31 @@ export function color2rgbaInt(color: string | Array<number>): Array<number> {
 }
 
 export function color2rgbaStr(color: string | Array<number>): string {
+  const c = color2rgbaInt(color);
+  if (Array.isArray(c)) {
+    c[0] = Math.floor(Math.max(c[0], 0));
+    c[1] = Math.floor(Math.max(c[1], 0));
+    c[2] = Math.floor(Math.max(c[2], 0));
+    if(c.length === 3 || c.length === 4) {
+      if(c.length === 4) {
+        c[3] = Math.max(c[3], 0);
+        return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
+      }
+      return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)';
+    }
+  }
+  return (color as string) || 'rgba(0,0,0,0)';
+}
+
+function toHex(n: number) {
+  let r = n.toString(16);
+  if (r.length === 1) {
+    r = '0' + r;
+  }
+  return r;
+}
+
+export function color2hexStr(color: string | Array<number>): string {
   if(Array.isArray(color)) {
     if(color.length === 3 || color.length === 4) {
       color[0] = Math.floor(Math.max(color[0], 0));
@@ -403,12 +444,13 @@ export function color2rgbaStr(color: string | Array<number>): string {
       color[2] = Math.floor(Math.max(color[2], 0));
       if(color.length === 4) {
         color[3] = Math.max(color[3], 0);
-        return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + color[3] + ')';
+        return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
+          + toHex(Math.floor(color[3] * 255));
       }
-      return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
+      return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
     }
   }
-  return (color as string) || 'rgba(0,0,0,0)';
+  return (color as string) || '#000';
 }
 
 export function color2gl(color: string | Array<number>): Array<number> {

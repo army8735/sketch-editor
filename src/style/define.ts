@@ -42,40 +42,62 @@ export function calUnit(v: string | number): StyleNumValue {
   };
 }
 
-export type StyleValue = {
-  u: StyleUnit,
-};
-
-export type StyleStrValue = StyleValue & {
+export type StyleStrValue = {
   v: string,
+  u: StyleUnit.STRING,
 };
 
-export type StyleNumValue = StyleValue & {
+export type StyleNumValue = {
   v: number,
+  u: StyleUnit.AUTO | StyleUnit.PX | StyleUnit.PERCENT | StyleUnit.NUMBER | StyleUnit.DEG,
 };
 
-export type StyleBoolValue = StyleValue & {
+export type StyleBoolValue = {
   v: boolean,
+  u: StyleUnit.BOOLEAN,
 };
 
-export type StyleColorValue = StyleValue & {
+export type StyleColorValue = {
   v: Array<number>,
+  u: StyleUnit.RGBA,
 };
 
-export type StyleFontStyleValue = StyleValue & {
+export type StyleFontStyleValue = {
   v: FONT_STYLE,
+  u: StyleUnit.STRING,
 };
 
-export type StyleOverflowValue = StyleValue & {
+export type StyleOverflowValue = {
   v: OVERFLOW,
+  u: StyleUnit.NUMBER,
 };
 
-export type StyleMbmValue = StyleValue & {
+export type StyleMbmValue = {
   v: MIX_BLEND_MODE,
+  u: StyleUnit.NUMBER,
 };
 
-export type StyleTaValue = StyleValue & {
+export type StyleTaValue = {
   v: TEXT_ALIGN,
+  u: StyleUnit.NUMBER,
+};
+
+export type ColorStop = {
+  color: StyleColorValue,
+  offset?: StyleNumValue,
+};
+
+export type LinearGradient = {
+  t: GRADIENT,
+  d: number | Array<number>,
+  stops: Array<ColorStop>,
+};
+
+export type Gradient = LinearGradient;
+
+export type StyleGradientValue = {
+  v: Gradient,
+  u: StyleUnit.GRADIENT,
 };
 
 export type Style = {
@@ -95,7 +117,7 @@ export type Style = {
   backgroundColor: StyleColorValue,
   color: StyleColorValue,
   opacity: StyleNumValue,
-  fill: Array<StyleColorValue>,
+  fill: Array<StyleColorValue | StyleGradientValue>,
   fillEnable: Array<StyleBoolValue>,
   stroke: Array<StyleColorValue>,
   strokeEnable: Array<StyleBoolValue>,
@@ -131,7 +153,7 @@ export type ComputedStyle = {
   backgroundColor: Array<number>,
   color: Array<number>,
   opacity: number,
-  fill: Array<Array<number>>,
+  fill: Array<Array<number> | LinearGradient>,
   fillEnable: Array<boolean>,
   stroke: Array<Array<number>>,
   strokeEnable: Array<boolean>,
@@ -189,6 +211,12 @@ export enum MASK_TYPE {
   NONE = 0,
   MASK = 1,
   CLIP = 2,
+}
+
+export enum GRADIENT {
+  LINEAR = 0,
+  RADIAL = 1,
+  CONIC = 2,
 }
 
 export default {
