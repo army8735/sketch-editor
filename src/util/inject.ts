@@ -4,6 +4,7 @@ import { isString, isFunction } from './type';
 const SPF = 1000 / 60;
 
 const CANVAS: any = {};
+const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
 export type OffScreen = {
   canvas: HTMLCanvasElement,
@@ -16,10 +17,10 @@ function offscreenCanvas(width: number, height: number, key?: string,
                          contextAttributes?: CanvasRenderingContext2DSettings): OffScreen {
   let o: any;
   if(!key) {
-    o = document.createElement('canvas');
+    o = !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else if(!CANVAS[key]) {
-    o = CANVAS[key] = document.createElement('canvas');
+    o = CANVAS[key] = !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
     o = CANVAS[key];
