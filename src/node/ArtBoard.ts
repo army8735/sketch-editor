@@ -11,6 +11,7 @@ class ArtBoard extends Container {
     super(props as Props, children);
     this.hasBackgroundColor = props.hasBackgroundColor;
     this.isArtBoard = true;
+    this.artBoard = this;
   }
 
   // 画板统一无内容，背景单独优化渲染

@@ -1,5 +1,7 @@
 import * as uuid from 'uuid';
 import Root from '../node/Root';
+import Page from './Page';
+import ArtBoard from './ArtBoard';
 import Container from '../node/Container';
 import { getDefaultStyle, JStyle, Props } from '../format/';
 import {
@@ -25,8 +27,6 @@ import CanvasCache from '../refresh/CanvasCache';
 import TextureCache from '../refresh/TextureCache';
 
 class Node extends Event {
-  // x: number;
-  // y: number;
   width: number;
   height: number;
   minWidth: number; // 最小尺寸限制，当子节点有固定尺寸或者子节点还是组递归有固定时，最小限制不能调整
@@ -35,6 +35,8 @@ class Node extends Event {
   style: Style;
   computedStyle: ComputedStyle;
   root: Root | undefined;
+  page: Page | undefined;
+  artBoard: ArtBoard | undefined;
   prev: Node | undefined;
   next: Node | undefined;
   parent: Container | undefined;
@@ -58,8 +60,6 @@ class Node extends Event {
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
-    // this.x = 0;
-    // this.y = 0;
     this.width = 0;
     this.height = 0;
     this.minWidth = 0;
@@ -82,10 +82,13 @@ class Node extends Event {
   // 添加到dom后标记非销毁状态，和root引用
   didMount() {
     this.isDestroyed = false;
-    this.root = this.parent!.root!;
+    const parent = this.parent!;
+    const root = this.root = parent.root!;
+    this.page = parent.page!;
+    this.artBoard = parent.artBoard;
     const uuid = this.props.uuid;
     if (uuid) {
-      this.root.refs[uuid] = this;
+      root.refs[uuid] = this;
     }
   }
 

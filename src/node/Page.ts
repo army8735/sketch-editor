@@ -16,7 +16,7 @@ import { classValue, JNode, JPage } from '../format';
 import Polyline from './geom/Polyline';
 
 function parse(json: JNode): Node | undefined {
-  if (json.type === classValue.ArtBoard) {
+  if (json.tagName === classValue.ArtBoard) {
     const children = [];
     for(let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
@@ -26,7 +26,7 @@ function parse(json: JNode): Node | undefined {
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
   }
-  else if (json.type === classValue.Group) {
+  else if (json.tagName === classValue.Group) {
     const children = [];
     for(let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
@@ -36,13 +36,13 @@ function parse(json: JNode): Node | undefined {
     }
     return new Group(json.props, children);
   }
-  else if (json.type === classValue.Bitmap) {
+  else if (json.tagName === classValue.Bitmap) {
     return new Bitmap(json.props as BitmapProps);
   }
-  else if (json.type === classValue.Text) {
+  else if (json.tagName === classValue.Text) {
     return new Text(json.props as TextProps);
   }
-  else if (json.type === classValue.Polyline) {
+  else if (json.tagName === classValue.Polyline) {
     return new Polyline(json.props as PolylineProps);
   }
 }
@@ -52,6 +52,7 @@ class Page extends Container {
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.isPage = true;
+    this.page = this;
   }
 
   initIfNot() {

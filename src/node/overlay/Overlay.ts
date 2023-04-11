@@ -5,23 +5,23 @@ import Text from '../Text';
 import { Props } from '../../format';
 
 class Overlay extends Container {
-  artBoard: Container;
+  artBoards: Container;
   abList: Array<{ ab: ArtBoard, text: Text }>;
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
-    this.artBoard = new Container({
+    this.artBoards = new Container({
       style: {
         width: '100%',
         height: '100%',
         pointerEvents: false,
       },
     }, []);
-    this.appendChild(this.artBoard);
+    this.appendChild(this.artBoards);
     this.abList = [];
   }
 
   setArtBoard(list: Array<ArtBoard>) {
-    this.artBoard.clearChildren();
+    this.artBoards.clearChildren();
     this.abList.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
       const ab = list[i];
@@ -33,7 +33,7 @@ class Overlay extends Container {
         },
         content: ab.props.name || '画板',
       });
-      this.artBoard.appendChild(text);
+      this.artBoards.appendChild(text);
       this.abList.push({ ab, text });
     }
   }

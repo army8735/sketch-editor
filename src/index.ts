@@ -16,8 +16,8 @@ function apply(json: any, imgs: Array<string>): any {
   if (Array.isArray(json)) {
     return json.map(item => apply(item, imgs));
   }
-  const { type, props = {}, children = [] } = json;
-  if (type === classValue.Bitmap) {
+  const { tagName, props = {}, children = [] } = json;
+  if (tagName === classValue.Bitmap) {
     const src = props.src;
     if (util.type.isNumber(src)) {
       props.src = imgs[src];

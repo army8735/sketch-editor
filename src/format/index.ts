@@ -5,7 +5,7 @@ export type JFile = {
 };
 
 export type JNode = {
-  type: string,
+  tagName: string,
   props: Props,
 };
 
@@ -14,29 +14,29 @@ export type JContainer = JNode & {
 };
 
 export type JPage = JContainer & {
-  type: classValue.Page,
+  tagName: classValue.Page,
 };
 
 export type JArtBoard = JContainer & {
-  type: classValue.ArtBoard,
+  tagName: classValue.ArtBoard,
   props: ArtBoardProps,
 };
 
 export type JGroup = JContainer & {
-  type: classValue.Group,
+  tagName: classValue.Group,
 };
 
 export type JBitmap = JContainer & {
-  type: classValue.Bitmap,
+  tagName: classValue.Bitmap,
   props: BitmapProps,
 };
 
 export type JText = JNode & {
-  type: classValue.Text,
+  tagName: classValue.Text,
 };
 
 export type JPolyline = JNode & {
-  type: classValue.Polyline,
+  tagName: classValue.Polyline,
   props: PolylineProps,
 };
 

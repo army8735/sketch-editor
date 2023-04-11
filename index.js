@@ -16468,7 +16468,7 @@
                 }
             }
             return {
-                type: classValue.Page,
+                tagName: classValue.Page,
                 props: {
                     name: page.name,
                     uuid: page.do_objectID,
@@ -16513,7 +16513,7 @@
                     layer.backgroundColor.a,
                 ] : [255, 255, 255, 1];
                 return {
-                    type: classValue.ArtBoard,
+                    tagName: classValue.ArtBoard,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16658,7 +16658,7 @@
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
                 return {
-                    type: classValue.Group,
+                    tagName: classValue.Group,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16682,7 +16682,7 @@
             if (layer._class === FileFormat.ClassValue.Bitmap) {
                 const index = yield readImageFile(layer.image._ref, opt);
                 return {
-                    type: classValue.Bitmap,
+                    tagName: classValue.Bitmap,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16756,7 +16756,7 @@
                     MSAttributedStringColorAttribute.alpha,
                 ] : undefined;
                 return {
-                    type: classValue.Text,
+                    tagName: classValue.Text,
                     props: {
                         name: layer.name,
                         uuid: layer.do_objectID,
@@ -16827,7 +16827,7 @@
                     strokeWidth.push(item.thickness);
                 });
                 return {
-                    type: classValue.Polyline,
+                    tagName: classValue.Polyline,
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
@@ -17928,8 +17928,6 @@
             this.style = normalize(getDefaultStyle(props.style));
             // @ts-ignore
             this.computedStyle = {}; // 输出展示的值
-            // this.x = 0;
-            // this.y = 0;
             this.width = 0;
             this.height = 0;
             this.minWidth = 0;
@@ -17951,10 +17949,13 @@
         // 添加到dom后标记非销毁状态，和root引用
         didMount() {
             this.isDestroyed = false;
-            this.root = this.parent.root;
+            const parent = this.parent;
+            const root = this.root = parent.root;
+            this.page = parent.page;
+            this.artBoard = parent.artBoard;
             const uuid = this.props.uuid;
             if (uuid) {
-                this.root.refs[uuid] = this;
+                root.refs[uuid] = this;
             }
         }
         lay(data) {
@@ -18881,6 +18882,7 @@
             super(props, children);
             this.hasBackgroundColor = props.hasBackgroundColor;
             this.isArtBoard = true;
+            this.artBoard = this;
         }
         // 画板统一无内容，背景单独优化渲染
         calContent() {
@@ -20159,7 +20161,7 @@
     }
 
     function parse(json) {
-        if (json.type === classValue.ArtBoard) {
+        if (json.tagName === classValue.ArtBoard) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -20169,7 +20171,7 @@
             }
             return new ArtBoard(json.props, children);
         }
-        else if (json.type === classValue.Group) {
+        else if (json.tagName === classValue.Group) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -20179,13 +20181,13 @@
             }
             return new Group(json.props, children);
         }
-        else if (json.type === classValue.Bitmap) {
+        else if (json.tagName === classValue.Bitmap) {
             return new Bitmap(json.props);
         }
-        else if (json.type === classValue.Text) {
+        else if (json.tagName === classValue.Text) {
             return new Text(json.props);
         }
-        else if (json.type === classValue.Polyline) {
+        else if (json.tagName === classValue.Polyline) {
             return new Polyline(json.props);
         }
     }
@@ -20193,6 +20195,7 @@
         constructor(props, children) {
             super(props, children);
             this.isPage = true;
+            this.page = this;
         }
         initIfNot() {
             if (this.json) {
@@ -20213,18 +20216,18 @@
     class Overlay extends Container {
         constructor(props, children) {
             super(props, children);
-            this.artBoard = new Container({
+            this.artBoards = new Container({
                 style: {
                     width: '100%',
                     height: '100%',
                     pointerEvents: false,
                 },
             }, []);
-            this.appendChild(this.artBoard);
+            this.appendChild(this.artBoards);
             this.abList = [];
         }
         setArtBoard(list) {
-            this.artBoard.clearChildren();
+            this.artBoards.clearChildren();
             this.abList.splice(0);
             for (let i = 0, len = list.length; i < len; i++) {
                 const ab = list[i];
@@ -20236,7 +20239,7 @@
                     },
                     content: ab.props.name || '画板',
                 });
-                this.artBoard.appendChild(text);
+                this.artBoards.appendChild(text);
                 this.abList.push({ ab, text });
             }
         }
@@ -20893,8 +20896,8 @@ void main() {
         if (Array.isArray(json)) {
             return json.map(item => apply(item, imgs));
         }
-        const { type, props = {}, children = [] } = json;
-        if (type === classValue.Bitmap) {
+        const { tagName, props = {}, children = [] } = json;
+        if (tagName === classValue.Bitmap) {
             const src = props.src;
             if (util.type.isNumber(src)) {
                 props.src = imgs[src];

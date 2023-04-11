@@ -115,7 +115,7 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
     }
   }
   return {
-    type: classValue.Page,
+    tagName: classValue.Page,
     props: {
       name: page.name,
       uuid: page.do_objectID,
@@ -160,7 +160,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       layer.backgroundColor.a,
     ] : [255, 255, 255, 1];
     return {
-      type: classValue.ArtBoard,
+      tagName: classValue.ArtBoard,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -314,7 +314,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       })
     );
     return {
-      type: classValue.Group,
+      tagName: classValue.Group,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -338,7 +338,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
     const index = await readImageFile(layer.image._ref, opt);
     return {
-      type: classValue.Bitmap,
+      tagName: classValue.Bitmap,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -423,7 +423,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       MSAttributedStringColorAttribute.alpha,
     ] : undefined;
     return {
-      type: classValue.Text,
+      tagName: classValue.Text,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -494,7 +494,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       strokeWidth.push(item.thickness);
     });
     return {
-      type: classValue.Polyline,
+      tagName: classValue.Polyline,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
