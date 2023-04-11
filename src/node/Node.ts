@@ -492,7 +492,7 @@ class Node extends Event {
   }
 
   getBoundingClientRect(includeBbox: boolean = false) {
-    const { matrixWorld } = this;
+    const matrixWorld = this._matrixWorld || this.matrixWorld;
     const bbox = includeBbox ? this.bbox : this.rect;
     const { x1, y1, x2, y2, x3, y3, x4, y4 }
       = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);

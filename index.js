@@ -17789,7 +17789,7 @@
             const { texture } = cache;
             bindTexture(gl, texture, 0);
             const bbox = node._bbox || node.bbox;
-            const t = calRectPoint(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1], matrix);
+            const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
             const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -18336,7 +18336,7 @@
             return computedStyle[k];
         }
         getBoundingClientRect(includeBbox = false) {
-            const { matrixWorld } = this;
+            const matrixWorld = this._matrixWorld || this.matrixWorld;
             const bbox = includeBbox ? this.bbox : this.rect;
             const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
             return {
@@ -20099,7 +20099,7 @@
                 this.buildPoints();
             }
             const points = this.points;
-            const bbox = this.bbox;
+            const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
             canvasCache.available = true;

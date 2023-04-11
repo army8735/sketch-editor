@@ -67,7 +67,7 @@ class Polyline extends Geom {
       this.buildPoints();
     }
     const points = this.points!;
-    const bbox = this.bbox;
+    const bbox = this._bbox || this.bbox;
     const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
     const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
     canvasCache.available = true;
