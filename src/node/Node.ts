@@ -229,6 +229,11 @@ class Node extends Event {
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
     computedStyle.opacity = style.opacity.v;
+    computedStyle.fill = style.fill.map(item => item.v);
+    computedStyle.fillEnable = style.fillEnable.map(item => item.v);
+    computedStyle.stroke = style.stroke.map(item => item.v);
+    computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
+    computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
@@ -360,7 +365,11 @@ class Node extends Event {
   }
 
   genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
+    this.textureCache && this.textureCache.release(gl);
+    const canvasCache = this.canvasCache;
+    if (canvasCache && canvasCache.available) {
+      this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
+    }
   }
 
   releaseCache(gl: WebGL2RenderingContext | WebGLRenderingContext) {
@@ -479,8 +488,9 @@ class Node extends Event {
     return computedStyle[k];
   }
 
-  getBoundingClientRect() {
-    const { bbox, matrixWorld } = this;
+  getBoundingClientRect(includeBbox: boolean = false) {
+    const { matrixWorld } = this;
+    const bbox = includeBbox ? this.bbox : this.rect;
     const { x1, y1, x2, y2, x3, y3, x4, y4 }
       = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
     return {

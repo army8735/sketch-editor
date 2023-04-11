@@ -247,6 +247,7 @@ class Text extends Node {
     super.renderCanvas();
     const { height, rich, computedStyle, lineBoxList } = this;
     const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
+    canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     // 富文本每串不同的需要设置字体颜色
     const SET_FONT_INDEX: Array<number> = [0];

@@ -1,4 +1,4 @@
-import debug from './debug';
+import config from './config';
 import { isString, isFunction } from './type';
 
 const SPF = 1000 / 60;
@@ -17,10 +17,10 @@ function offscreenCanvas(width: number, height: number, key?: string,
                          contextAttributes?: CanvasRenderingContext2DSettings): OffScreen {
   let o: any;
   if(!key) {
-    o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else if(!CANVAS[key]) {
-    o = CANVAS[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = CANVAS[key] = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
     o = CANVAS[key];
@@ -30,7 +30,7 @@ function offscreenCanvas(width: number, height: number, key?: string,
   height = Math.ceil(height);
   o.width = width;
   o.height = height;
-  if(debug.flag) {
+  if(config.debug) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
     if(key) {
@@ -55,7 +55,7 @@ function offscreenCanvas(width: number, height: number, key?: string,
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
-      if(debug.flag && o) {
+      if(config.debug && o) {
         document.body.removeChild(o);
       }
       o = null;
@@ -372,7 +372,7 @@ const inject = {
           }
         }
         img.src = url;
-        if(debug.flag && typeof document !== 'undefined') {
+        if(config.debug && typeof document !== 'undefined') {
           document.body.appendChild(img);
         }
       }

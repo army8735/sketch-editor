@@ -453,6 +453,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
     } as JText;
   }
   if (layer._class === SketchFormat.ClassValue.Rectangle) {
+    console.log(layer);
     const points = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
@@ -470,12 +471,35 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
         ty: curveTo.y,
       };
     });
+    const { borders, fills } = layer.style;
+    const fill: Array<Array<number>> = [], fillEnable: Array<boolean> = [];
+    fills.forEach((item: any) => {
+      fill.push([
+        Math.floor(item.color.red * 255),
+        Math.floor(item.color.green * 255),
+        Math.floor(item.color.blue * 255),
+        item.color.alpha,
+      ]);
+      fillEnable.push(item.isEnabled);
+    });
+    const stroke: Array<Array<number>> = [], strokeEnable: Array<boolean> = [], strokeWidth: Array<number> = [];
+    borders.forEach((item: any) => {
+      stroke.push([
+        Math.floor(item.color.red * 255),
+        Math.floor(item.color.green * 255),
+        Math.floor(item.color.blue * 255),
+        item.color.alpha,
+      ]);
+      strokeEnable.push(item.isEnabled);
+      strokeWidth.push(item.thickness);
+    });
     return {
       type: classValue.Polyline,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
         points,
+        isClosed: layer.isClosed,
         style: {
           left,
           top,
@@ -485,6 +509,11 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
           height,
           visible,
           opacity,
+          fill,
+          fillEnable,
+          stroke,
+          strokeEnable,
+          strokeWidth,
           translateX,
           translateY,
           rotateZ,

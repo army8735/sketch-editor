@@ -6,6 +6,7 @@ import Node from './Node';
 import Page from './Page';
 import Root from './Root';
 import Text from './Text';
+import Geom from './geom/Geom';
 
 export default {
   ArtBoard,
@@ -16,4 +17,5 @@ export default {
   Page,
   Root,
   Text,
+  Geom,
 };

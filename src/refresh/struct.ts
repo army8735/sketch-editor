@@ -76,7 +76,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     assignMatrix(node._matrixWorld, matrix);
     // 一般只有一个纹理
     const textureCache = node.textureCache;
-    if (textureCache && opacity > 0) {
+    if (textureCache && textureCache.available && opacity > 0) {
       drawTextureCache(gl, cx, cy, program, [{
         node,
         opacity,

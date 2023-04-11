@@ -157,8 +157,11 @@ function getNodeType(node) {
   else if (node instanceof editor.node.Text) {
     type = '🔤';
   }
+  else if (node instanceof editor.node.Geom) {
+    type = '📐';
+  }
   else {
-    //
+    type = '❓';
   }
   return type;
 }

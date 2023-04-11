@@ -1,3 +1,3 @@
 export default {
-  flag: false,
+  debug: true,
 };

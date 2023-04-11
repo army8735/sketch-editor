@@ -58,6 +58,11 @@ export type JStyle = {
   backgroundColor: string | Array<number>,
   color: string | Array<number>,
   opacity: number,
+  fill: Array<string | Array<number>>,
+  fillEnable: Array<boolean>,
+  stroke: Array<string | Array<number>>,
+  strokeEnable: Array<boolean>,
+  strokeWidth: Array<number>,
   letterSpacing: number,
   textAlign: string,
   translateX: number,
@@ -89,6 +94,11 @@ export function getDefaultStyle(v?: any): JStyle {
     backgroundColor: [0, 0, 0, 0],
     color: [0, 0, 0, 1],
     opacity: 1,
+    fill: [[0, 0, 0, 1]],
+    fillEnable: [false],
+    stroke: [[0, 0, 0, 1]],
+    strokeEnable: [false],
+    strokeWidth: [1],
     letterSpacing: 0,
     textAlign: 'left',
     translateX: 0,
@@ -138,6 +148,7 @@ export type Rich = {
 
 export type PolylineProps = Props & {
   points: Array<Point>,
+  isClosed: boolean,
 };
 
 export type Point = {
@@ -145,8 +156,10 @@ export type Point = {
   y: number,
   cornerRadius: number,
   curveMode: CurveMode,
-  curveFrom?: { x: number, y: number },
-  curveTo?: { x: number, y: number },
+  fx: number,
+  fy: number,
+  tx: number,
+  ty: number,
   hasCurveFrom: boolean,
   hasCurveTo: boolean,
 };

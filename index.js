@@ -28,6 +28,11 @@
             backgroundColor: [0, 0, 0, 0],
             color: [0, 0, 0, 1],
             opacity: 1,
+            fill: [[0, 0, 0, 1]],
+            fillEnable: [false],
+            stroke: [[0, 0, 0, 1]],
+            strokeEnable: [false],
+            strokeWidth: [1],
             letterSpacing: 0,
             textAlign: 'left',
             translateX: 0,
@@ -15486,16 +15491,20 @@
         isPlainObject,
     };
 
+    var config$1 = {
+        debug: true,
+    };
+
     const SPF = 1000 / 60;
     const CANVAS = {};
     const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
     function offscreenCanvas(width, height, key, contextAttributes) {
         let o;
         if (!key) {
-            o = SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+            o = !config$1.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
         }
         else if (!CANVAS[key]) {
-            o = CANVAS[key] = SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+            o = CANVAS[key] = !config$1.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
         }
         else {
             o = CANVAS[key];
@@ -15505,6 +15514,14 @@
         height = Math.ceil(height);
         o.width = width;
         o.height = height;
+        if (config$1.debug) {
+            o.style.width = width + 'px';
+            o.style.height = height + 'px';
+            if (key) {
+                o.setAttribute('key', key);
+            }
+            document.body.appendChild(o);
+        }
         let ctx = o.getContext('2d', contextAttributes);
         if (!ctx) {
             inject.error('Total canvas memory use exceeds the maximum limit');
@@ -15522,6 +15539,9 @@
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.clearRect(0, 0, width, height);
                 o.width = o.height = 0;
+                if (config$1.debug && o) {
+                    document.body.removeChild(o);
+                }
                 o = null;
             },
         };
@@ -15829,6 +15849,9 @@
                         }
                     }
                     img.src = url;
+                    if (config$1.debug && typeof document !== 'undefined') {
+                        document.body.appendChild(img);
+                    }
                 }
                 load(url, cache);
             }
@@ -16053,6 +16076,37 @@
         if (!isNil(opacity)) {
             res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
         }
+        const fill = style.fill;
+        if (!isNil(fill)) {
+            res.fill = fill.map(item => {
+                return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+            });
+        }
+        const fillEnable = style.fillEnable;
+        if (!isNil(fillEnable)) {
+            res.fillEnable = fillEnable.map(item => {
+                return { v: item, u: StyleUnit.BOOLEAN };
+            });
+        }
+        const stroke = style.stroke;
+        if (!isNil(stroke)) {
+            res.stroke = stroke.map(item => {
+                return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+            });
+        }
+        const strokeEnable = style.strokeEnable;
+        if (!isNil(strokeEnable)) {
+            res.strokeEnable = strokeEnable.map(item => {
+                return { v: item, u: StyleUnit.BOOLEAN };
+            });
+        }
+        const strokeWidth = style.strokeWidth;
+        if (!isNil(strokeWidth)) {
+            res.strokeWidth = strokeWidth.map(item => {
+                return { v: Math.max(0, item), u: StyleUnit.PX };
+            });
+        }
+        // 只有这几个，3d没有
         [
             'translateX',
             'translateY',
@@ -16732,6 +16786,7 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Rectangle) {
+                console.log(layer);
                 const points = layer.points.map((item) => {
                     const point = parseStrPoint(item.point);
                     const curveFrom = parseStrPoint(item.curveFrom);
@@ -16749,12 +16804,35 @@
                         ty: curveTo.y,
                     };
                 });
+                const { borders, fills } = layer.style;
+                const fill = [], fillEnable = [];
+                fills.forEach((item) => {
+                    fill.push([
+                        Math.floor(item.color.red * 255),
+                        Math.floor(item.color.green * 255),
+                        Math.floor(item.color.blue * 255),
+                        item.color.alpha,
+                    ]);
+                    fillEnable.push(item.isEnabled);
+                });
+                const stroke = [], strokeEnable = [], strokeWidth = [];
+                borders.forEach((item) => {
+                    stroke.push([
+                        Math.floor(item.color.red * 255),
+                        Math.floor(item.color.green * 255),
+                        Math.floor(item.color.blue * 255),
+                        item.color.alpha,
+                    ]);
+                    strokeEnable.push(item.isEnabled);
+                    strokeWidth.push(item.thickness);
+                });
                 return {
                     type: classValue.Polyline,
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
                         points,
+                        isClosed: layer.isClosed,
                         style: {
                             left,
                             top,
@@ -16764,6 +16842,11 @@
                             height,
                             visible,
                             opacity,
+                            fill,
+                            fillEnable,
+                            stroke,
+                            strokeEnable,
+                            strokeWidth,
                             translateX,
                             translateY,
                             rotateZ,
@@ -17704,8 +17787,8 @@
             const { node, opacity, matrix, cache } = list[i];
             const { texture } = cache;
             bindTexture(gl, texture, 0);
-            const { width, height } = node;
-            const t = calRectPoint(0, 0, width, height, matrix);
+            const bbox = node._bbox || node.bbox;
+            const t = calRectPoint(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1], matrix);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
             const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -18004,6 +18087,11 @@
             computedStyle.color = style.color.v;
             computedStyle.backgroundColor = style.backgroundColor.v;
             computedStyle.opacity = style.opacity.v;
+            computedStyle.fill = style.fill.map(item => item.v);
+            computedStyle.fillEnable = style.fillEnable.map(item => item.v);
+            computedStyle.stroke = style.stroke.map(item => item.v);
+            computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
+            computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
             computedStyle.mixBlendMode = style.mixBlendMode.v;
             computedStyle.pointerEvents = style.pointerEvents.v;
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
@@ -18131,7 +18219,11 @@
             }
         }
         genTexture(gl) {
-            this.textureCache = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas);
+            this.textureCache && this.textureCache.release(gl);
+            const canvasCache = this.canvasCache;
+            if (canvasCache && canvasCache.available) {
+                this.textureCache = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas);
+            }
         }
         releaseCache(gl) {
             var _a, _b;
@@ -18241,8 +18333,9 @@
             // @ts-ignore
             return computedStyle[k];
         }
-        getBoundingClientRect() {
-            const { bbox, matrixWorld } = this;
+        getBoundingClientRect(includeBbox = false) {
+            const { matrixWorld } = this;
+            const bbox = includeBbox ? this.bbox : this.rect;
             const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
             return {
                 left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
@@ -19057,11 +19150,13 @@
 
     const HASH = {};
     class CanvasCache {
-        constructor(w, h) {
+        constructor(w, h, dx = 0, dy = 0) {
             this.available = false;
             this.offscreen = inject.getOffscreenCanvas(w, h);
             this.w = w;
             this.h = h;
+            this.dx = dx;
+            this.dy = dy;
         }
         release() {
             if (!this.available) {
@@ -19087,8 +19182,8 @@
             var _a;
             return (_a = HASH[url]) === null || _a === void 0 ? void 0 : _a.count;
         }
-        static getInstance(w, h) {
-            return new CanvasCache(w, h);
+        static getInstance(w, h, dx = 0, dy = 0) {
+            return new CanvasCache(w, h, dx, dy);
         }
         static getImgInstance(w, h, url) {
             if (HASH.hasOwnProperty(url)) {
@@ -19096,7 +19191,7 @@
                 o.count++;
                 return o.value;
             }
-            const o = new CanvasCache(w, h);
+            const o = new CanvasCache(w, h, 0, 0);
             HASH[url] = {
                 value: o,
                 count: 1,
@@ -19233,11 +19328,11 @@
             const { loader } = this;
             if (loader.onlyImg) {
                 const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src);
+                canvasCache.available = true;
                 // 第一张图像才绘制，图片解码到canvas上
                 if (canvasCache.getCount(this._src) === 1) {
                     canvasCache.offscreen.ctx.drawImage(loader.source, 0, 0);
                 }
-                canvasCache.available = true;
             }
         }
         genTexture(gl) {
@@ -19853,6 +19948,7 @@
             super.renderCanvas();
             const { height, rich, computedStyle, lineBoxList } = this;
             const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
+            canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             // 富文本每串不同的需要设置字体颜色
             const SET_FONT_INDEX = [0];
@@ -19906,18 +20002,159 @@
     class Polyline extends Geom {
         constructor(props) {
             super(props);
-            this.points = props.points.map((item) => {
-                return [];
-            });
         }
-        lay(data) {
-            super.lay(data);
-            console.log(this.props);
+        buildPoints() {
+            const props = this.props;
+            const { width, height } = this;
+            const temp = [];
+            const points = props.points;
+            // 先算出真实尺寸，按w/h把[0,1]坐标转换
+            for (let i = 0, len = points.length; i < len; i++) {
+                const item = points[i];
+                temp.push({
+                    x: item.x * width,
+                    y: item.y * height,
+                    cornerRadius: item.cornerRadius,
+                    curveMode: item.curveMode,
+                    hasCurveFrom: item.hasCurveFrom,
+                    hasCurveTo: item.hasCurveTo,
+                    fx: item.fx * width,
+                    fy: item.fy * height,
+                    tx: item.tx * width,
+                    ty: item.ty * height,
+                });
+            }
+            // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
+            const first = temp[0];
+            const p = [first.x, first.y];
+            const res = [p], len = temp.length;
+            for (let i = 1; i < len; i++) {
+                const item = temp[i];
+                const prev = temp[i - 1];
+                const p = [item.x, item.y];
+                if (item.hasCurveTo) {
+                    p.unshift(item.tx, item.ty);
+                }
+                if (prev.hasCurveFrom) {
+                    p.push(prev.fx, prev.fy);
+                }
+                res.push(p);
+            }
+            // 闭合
+            if (props.isClosed) {
+                const last = temp[len - 1];
+                const p = [first.x, first.y];
+                if (last.hasCurveTo) {
+                    p.push(last.tx, last.ty);
+                }
+                if (first.hasCurveFrom) {
+                    p.push(first.fx, first.fy);
+                }
+                res.push(p);
+            }
+            this.points = res;
         }
         renderCanvas() {
             super.renderCanvas();
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, this.height);
+            if (!this.points) {
+                this.buildPoints();
+            }
+            const points = this.points;
+            const bbox = this.bbox;
+            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
             canvasCache.available = true;
+            const ctx = canvasCache.offscreen.ctx;
+            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, } = this.computedStyle;
+            const num = fill.length;
+            for (let i = 0; i < num; i++) {
+                const hasFill = fillEnable[i] && fill[i][3];
+                const hasStroke = strokeEnable[i] && stroke[i][3] && strokeWidth[i];
+                if (hasFill || hasStroke) {
+                    if (hasFill) {
+                        ctx.fillStyle = color2rgbaStr(fill[i]);
+                    }
+                    if (hasStroke) {
+                        ctx.strokeStyle = color2rgbaStr(stroke[i]);
+                        ctx.lineWidth = strokeWidth[i];
+                    }
+                    ctx.beginPath();
+                    const first = points[0];
+                    if (first.length === 4) ;
+                    else if (first.length === 6) ;
+                    else {
+                        ctx.moveTo(first[0] - x, first[1] - y);
+                    }
+                    for (let j = 1, len = points.length; j < len; j++) {
+                        const item = points[j];
+                        if (item.length === 4) ;
+                        else if (item.length === 6) ;
+                        else {
+                            ctx.lineTo(item[0] - x, item[1] - y);
+                        }
+                    }
+                    ctx.closePath();
+                    if (hasFill) {
+                        ctx.fill();
+                    }
+                    if (hasStroke) {
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        get bbox() {
+            if (!this._bbox) {
+                const bbox = this._bbox = super.bbox;
+                // 可能不存在
+                if (!this.points) {
+                    this.buildPoints();
+                }
+                const { strokeWidth, strokeEnable } = this.computedStyle;
+                // 所有描边最大值，影响bbox
+                let half = 0;
+                strokeWidth.forEach((item, i) => {
+                    if (strokeEnable[i]) {
+                        half = Math.max(half, item * 0.5);
+                    }
+                });
+                const points = this.points;
+                const first = points[0];
+                let xa, ya;
+                if (first.length === 4) {
+                    xa = first[2];
+                    ya = first[3];
+                }
+                else if (first.length === 6) {
+                    xa = first[4];
+                    ya = first[5];
+                }
+                else {
+                    xa = first[0];
+                    ya = first[1];
+                }
+                bbox[0] = Math.min(bbox[0], xa - half);
+                bbox[1] = Math.min(bbox[1], ya - half);
+                bbox[2] = Math.max(bbox[2], xa + half);
+                bbox[3] = Math.max(bbox[3], ya + half);
+                for (let i = 1, len = points.length; i < len; i++) {
+                    const item = points[i];
+                    let xb, yb;
+                    if (item.length === 4) ;
+                    else if (item.length === 6) ;
+                    else {
+                        xb = item[0];
+                        yb = item[1];
+                        bbox[0] = Math.min(bbox[0], xb - half);
+                        bbox[1] = Math.min(bbox[1], yb - half);
+                        bbox[2] = Math.max(bbox[2], xb + half);
+                        bbox[3] = Math.max(bbox[3], yb + half);
+                    }
+                    xa = xb;
+                    ya = yb;
+                }
+            }
+            return this._bbox;
         }
     }
 
@@ -20079,7 +20316,7 @@
             assignMatrix(node._matrixWorld, matrix);
             // 一般只有一个纹理
             const textureCache = node.textureCache;
-            if (textureCache && opacity > 0) {
+            if (textureCache && textureCache.available && opacity > 0) {
                 drawTextureCache(gl, cx, cy, program, [{
                         node,
                         opacity,
@@ -20644,6 +20881,7 @@ void main() {
         Page,
         Root,
         Text,
+        Geom,
     };
 
     var version = "0.0.1";
@@ -20690,6 +20928,7 @@ void main() {
         math,
         util,
         animation,
+        config: config$1,
         version,
     };
 

@@ -4,6 +4,7 @@ import refresh from './refresh';
 import style from './style';
 import math from './math';
 import util from './util';
+import config from './util/config';
 import animation from './animation';
 import node from './node';
 import { version } from '../package.json';
@@ -51,5 +52,6 @@ export default {
   math,
   util,
   animation,
+  config,
   version,
 };

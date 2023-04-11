@@ -172,6 +172,37 @@ export function normalize(style: JStyle): Style {
   if (!isNil(opacity)) {
     res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
   }
+  const fill = style.fill;
+  if (!isNil(fill)) {
+    res.fill = fill.map(item => {
+      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+    });
+  }
+  const fillEnable = style.fillEnable;
+  if (!isNil(fillEnable)) {
+    res.fillEnable = fillEnable.map(item => {
+      return { v: item, u: StyleUnit.BOOLEAN };
+    });
+  }
+  const stroke = style.stroke;
+  if (!isNil(stroke)) {
+    res.stroke = stroke.map(item => {
+      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+    });
+  }
+  const strokeEnable = style.strokeEnable;
+  if (!isNil(strokeEnable)) {
+    res.strokeEnable = strokeEnable.map(item => {
+      return { v: item, u: StyleUnit.BOOLEAN };
+    });
+  }
+  const strokeWidth = style.strokeWidth;
+  if (!isNil(strokeWidth)) {
+    res.strokeWidth = strokeWidth.map(item => {
+      return { v: Math.max(0, item), u: StyleUnit.PX };
+    });
+  }
+  // 只有这几个，3d没有
   [
     'translateX',
     'translateY',

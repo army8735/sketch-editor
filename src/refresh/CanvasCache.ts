@@ -5,13 +5,17 @@ const HASH: any = {};
 class CanvasCache {
   available: boolean;
   offscreen: OffScreen;
+  dx: number; // 离屏都是0, 0开始，和原始对象x, y有个偏移值
+  dy: number;
   w: number; // 实际显示对象尺寸
   h: number;
-  constructor(w: number, h: number) {
+  constructor(w: number, h: number, dx: number = 0, dy: number = 0) {
     this.available = false;
     this.offscreen = inject.getOffscreenCanvas(w, h);
     this.w = w;
     this.h = h;
+    this.dx = dx;
+    this.dy = dy;
   }
 
   release() {
@@ -40,8 +44,8 @@ class CanvasCache {
     return HASH[url]?.count;
   }
 
-  static getInstance(w: number, h: number): CanvasCache {
-    return new CanvasCache(w, h);
+  static getInstance(w: number, h: number, dx: number = 0, dy: number = 0): CanvasCache {
+    return new CanvasCache(w, h, dx, dy);
   }
 
   static getImgInstance(w: number, h: number, url: string) {
@@ -50,7 +54,7 @@ class CanvasCache {
       o.count++;
       return o.value;
     }
-    const o = new CanvasCache(w, h);
+    const o = new CanvasCache(w, h, 0, 0);
     HASH[url] = {
       value: o,
       count: 1,
