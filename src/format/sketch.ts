@@ -9,7 +9,7 @@ import {
   JBitmap,
   JText,
   JPolyline,
-  classValue,
+  TagName,
   Rich,
 } from './';
 import { calNormalLineHeight } from '../style/css';
@@ -115,7 +115,7 @@ async function convertPage(page: any, opt: Opt): Promise<JPage> {
     }
   }
   return {
-    tagName: classValue.Page,
+    tagName: TagName.Page,
     props: {
       name: page.name,
       uuid: page.do_objectID,
@@ -160,7 +160,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       layer.backgroundColor.a,
     ] : [255, 255, 255, 1];
     return {
-      tagName: classValue.ArtBoard,
+      tagName: TagName.ArtBoard,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -314,7 +314,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       })
     );
     return {
-      tagName: classValue.Group,
+      tagName: TagName.Group,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -338,7 +338,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
     const index = await readImageFile(layer.image._ref, opt);
     return {
-      tagName: classValue.Bitmap,
+      tagName: TagName.Bitmap,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -423,7 +423,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       MSAttributedStringColorAttribute.alpha,
     ] : undefined;
     return {
-      tagName: classValue.Text,
+      tagName: TagName.Text,
       props: {
         name: layer.name,
         uuid: layer.do_objectID,
@@ -494,7 +494,7 @@ async function convertItem(layer: any, opt: Opt, w: number, h: number): Promise<
       strokeWidth.push(item.thickness);
     });
     return {
-      tagName: classValue.Polyline,
+      tagName: TagName.Polyline,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,

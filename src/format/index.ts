@@ -14,29 +14,29 @@ export type JContainer = JNode & {
 };
 
 export type JPage = JContainer & {
-  tagName: classValue.Page,
+  tagName: TagName.Page,
 };
 
 export type JArtBoard = JContainer & {
-  tagName: classValue.ArtBoard,
+  tagName: TagName.ArtBoard,
   props: ArtBoardProps,
 };
 
 export type JGroup = JContainer & {
-  tagName: classValue.Group,
+  tagName: TagName.Group,
 };
 
 export type JBitmap = JContainer & {
-  tagName: classValue.Bitmap,
+  tagName: TagName.Bitmap,
   props: BitmapProps,
 };
 
 export type JText = JNode & {
-  tagName: classValue.Text,
+  tagName: TagName.Text,
 };
 
 export type JPolyline = JNode & {
-  tagName: classValue.Polyline,
+  tagName: TagName.Polyline,
   props: PolylineProps,
 };
 
@@ -164,7 +164,7 @@ export type Point = {
   hasCurveTo: boolean,
 };
 
-export enum classValue {
+export enum TagName {
   Page = 'page',
   ArtBoard = 'artBoard',
   Group = 'group',
