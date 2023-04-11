@@ -227,10 +227,11 @@ class Root extends Container implements FrameCallback {
       else {
         const { style, computedStyle } = node;
         if (lv & RefreshLevel.TRANSFORM_ALL) {
-          node.calMatrix(lv);
+          node.calMatrix(lv); // matrixWorld缓存在方法内清除
         }
         if (lv & RefreshLevel.OPACITY) {
           computedStyle.opacity = style.opacity.v;
+          node._opacity = undefined; // 手动删除缓存
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;

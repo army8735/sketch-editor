@@ -17941,7 +17941,6 @@
                 lv: 0,
             };
             this.refreshLevel = RefreshLevel.REFLOW;
-            this._opacity = 1;
             this.transform = identity();
             this.matrix = identity();
             this.hasContent = false;
@@ -18069,6 +18068,7 @@
                 computedStyle.lineHeight = lineHeight.v;
             }
             this.width = this.height = 0;
+            this._opacity = undefined;
             const width = style.width;
             const height = style.height;
             if (parent) {
@@ -18101,6 +18101,7 @@
         }
         calMatrix(lv) {
             const { style, computedStyle, matrix, transform } = this;
+            this._matrixWorld = undefined;
             let optimize = true;
             if (lv >= RefreshLevel.REFLOW
                 || lv & RefreshLevel.TRANSFORM
@@ -18549,17 +18550,51 @@
             this.checkPosSizeUpward();
         }
         get opacity() {
-            let parent = this.parent;
-            // 非Root节点继续向上乘
-            if (parent) {
-                const po = parent.opacity;
-                this._opacity = this.computedStyle.opacity * po;
+            const root = this.root;
+            const opacity = this.computedStyle.opacity;
+            if (!root) {
+                return opacity;
             }
-            // Root的世界透明度就是自己
-            else {
-                this._opacity = this.computedStyle.opacity;
+            let o = this._opacity;
+            // 可能更新过reflow不存在，需重新计算并缓存
+            if (o === undefined) {
+                // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
+                const pList = [];
+                let index = -1;
+                let parent = this.parent;
+                while (parent) {
+                    pList.push(parent);
+                    // 自底向上的索引更新，最后一定是最上层变化的节点
+                    if (!parent._matrixWorld) {
+                        index = pList.length;
+                    }
+                    parent = parent.parent;
+                }
+                // 父级有变化则所有向下都需更新，可能第一个是root
+                if (index > -1) {
+                    pList.splice(index);
+                    pList.reverse();
+                    let last;
+                    for (let i = 0, len = pList.length; i < len; i++) {
+                        const node = pList[i];
+                        if (!i || node === root) {
+                            if (node === root) {
+                                last = node._opacity = node.computedStyle.opacity;
+                            }
+                            else {
+                                last = node._opacity = node.parent._opacity * node.computedStyle.opacity;
+                            }
+                        }
+                        else {
+                            last = node._opacity = last * node.computedStyle.opacity;
+                        }
+                    }
+                }
+                // 仅自身变化，或者有父级变化但父级前面已经算好了
+                parent = this.parent;
+                o = this._opacity = parent._opacity * opacity;
             }
-            return this._opacity;
+            return o;
         }
         // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
         get matrixWorld() {
@@ -18568,26 +18603,27 @@
             if (!root) {
                 return matrix;
             }
+            // 可能更新过matrix或reflow不存在，需重新计算并缓存
             let m = this._matrixWorld;
-            // 先判断root总刷新如果没有包含变更，可以直接取缓存，否则才重新计算
             if (!m) {
                 // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
                 const pList = [];
+                let index = -1;
                 let parent = this.parent;
                 while (parent) {
+                    pList.push(parent);
+                    // 自底向上的索引更新，最后一定是最上层变化的节点
                     if (!parent._matrixWorld) {
-                        pList.unshift(parent);
-                    }
-                    else {
-                        break;
+                        index = pList.length;
                     }
                     parent = parent.parent;
                 }
-                const len = pList.length;
                 // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的matrix）
-                if (pList.length) {
+                if (index > -1) {
+                    pList.splice(index);
+                    pList.reverse();
                     let last;
-                    for (let i = 0; i < len; i++) {
+                    for (let i = 0, len = pList.length; i < len; i++) {
                         const node = pList[i];
                         if (!i || node === root) {
                             if (node === root) {
@@ -19234,22 +19270,7 @@
                 this.loader.error = true;
             }
             else {
-                const isBase64 = /^data:image\/(\w+);base64,/.test(src);
-                if (isBase64) {
-                    fetch('https://karas.alipay.com/api/uploadbase64', {
-                        method: 'post',
-                        headers: {
-                            Accept: 'application/json',
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            data: src,
-                            quality: 1,
-                        }),
-                    }).then(res => res.json()).then(res => {
-                        if (res.success) ;
-                    });
-                }
+                /^data:image\/(\w+);base64,/.test(src);
                 const cache = inject.IMG[src];
                 if (!cache) {
                     inject.measureImg(src, (res) => {
@@ -20320,27 +20341,38 @@
                 i += total;
                 continue;
             }
-            // 继承父的opacity和matrix TODO 优化路径缓存
-            let opacity = computedStyle.opacity;
-            let matrix = node.matrix;
-            const parent = node.parent;
-            if (parent) {
-                const op = parent.opacity, mw = parent._matrixWorld;
-                if (op !== 1) {
-                    opacity *= op;
+            // 继承父的opacity和matrix，可能有缓存也可能需要重算，因为是深度遍历渲染，父级一定先算有缓存值
+            let opacity = node._opacity;
+            let matrix = node._matrixWorld;
+            if (opacity === undefined || !matrix) {
+                const parent = node.parent;
+                if (parent) {
+                    if (opacity === undefined) {
+                        opacity = node._opacity = parent._opacity * computedStyle.opacity;
+                    }
+                    if (!matrix) {
+                        matrix = node._matrixWorld = identity();
+                        assignMatrix(matrix, multiply(parent._matrixWorld, node.matrix));
+                    }
                 }
-                matrix = multiply(mw, matrix);
+                // 只有root
+                else {
+                    if (opacity === undefined) {
+                        opacity = node._opacity = computedStyle.opacity;
+                    }
+                    if (!matrix) {
+                        matrix = node._matrixWorld = identity();
+                        assignMatrix(matrix, node.matrix);
+                    }
+                }
             }
-            node._opacity = opacity;
-            const mw = node._matrixWorld = node._matrixWorld || identity();
-            assignMatrix(mw, matrix);
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && textureCache.available && opacity > 0) {
                 drawTextureCache(gl, cx, cy, program, [{
                         node,
-                        opacity,
-                        matrix,
+                        opacity: opacity,
+                        matrix: matrix,
                         cache: textureCache,
                     }], 1);
             }
@@ -20777,10 +20809,11 @@ void main() {
                 else {
                     const { style, computedStyle } = node;
                     if (lv & RefreshLevel.TRANSFORM_ALL) {
-                        node.calMatrix(lv);
+                        node.calMatrix(lv); // matrixWorld缓存在方法内清除
                     }
                     if (lv & RefreshLevel.OPACITY) {
                         computedStyle.opacity = style.opacity.v;
+                        node._opacity = undefined; // 手动删除缓存
                     }
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
                         computedStyle.mixBlendMode = style.mixBlendMode.v;

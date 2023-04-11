@@ -43,7 +43,7 @@ class Node extends Event {
   isDestroyed: boolean;
   struct: Struct;
   refreshLevel: RefreshLevel;
-  _opacity: number; // 世界透明度
+  _opacity?: number; // 世界透明度
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
   _matrixWorld?: Float64Array; // 世界transform
@@ -72,7 +72,6 @@ class Node extends Event {
       lv: 0,
     }
     this.refreshLevel = RefreshLevel.REFLOW;
-    this._opacity = 1;
     this.transform = identity();
     this.matrix = identity();
     this.hasContent = false;
@@ -211,6 +210,7 @@ class Node extends Event {
       computedStyle.lineHeight = lineHeight.v;
     }
     this.width = this.height = 0;
+    this._opacity = undefined;
     const width = style.width;
     const height = style.height;
     if (parent) {
@@ -245,6 +245,7 @@ class Node extends Event {
 
   calMatrix(lv: RefreshLevel): Float64Array {
     const { style, computedStyle, matrix, transform } = this;
+    this._matrixWorld = undefined;
     let optimize = true;
     if (lv >= RefreshLevel.REFLOW
       || lv & RefreshLevel.TRANSFORM
@@ -740,17 +741,51 @@ class Node extends Event {
   }
 
   get opacity() {
-    let parent = this.parent;
-    // 非Root节点继续向上乘
-    if (parent) {
-      const po = parent.opacity;
-      this._opacity = this.computedStyle.opacity * po;
+    const root = this.root;
+    const opacity = this.computedStyle.opacity;
+    if (!root) {
+      return opacity;
     }
-    // Root的世界透明度就是自己
-    else {
-      this._opacity = this.computedStyle.opacity;
+    let o = this._opacity;
+    // 可能更新过reflow不存在，需重新计算并缓存
+    if (o === undefined) {
+      // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
+      const pList: Array<Container> = [];
+      let index = -1;
+      let parent = this.parent;
+      while (parent) {
+        pList.push(parent);
+        // 自底向上的索引更新，最后一定是最上层变化的节点
+        if (!parent._matrixWorld) {
+          index = pList.length;
+        }
+        parent = parent.parent;
+      }
+      // 父级有变化则所有向下都需更新，可能第一个是root
+      if (index > -1) {
+        pList.splice(index);
+        pList.reverse();
+        let last: number;
+        for (let i = 0, len = pList.length; i < len; i++) {
+          const node = pList[i];
+          if (!i || node === root) {
+            if (node === root) {
+              last = node._opacity = node.computedStyle.opacity;
+            }
+            else {
+              last = node._opacity = node.parent!._opacity! * node.computedStyle.opacity;
+            }
+          }
+          else {
+            last = node._opacity = last! * node.computedStyle.opacity;
+          }
+        }
+      }
+      // 仅自身变化，或者有父级变化但父级前面已经算好了
+      parent = this.parent!;
+      o = this._opacity = parent._opacity! * opacity;
     }
-    return this._opacity;
+    return o;
   }
 
   // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
@@ -760,26 +795,27 @@ class Node extends Event {
     if (!root) {
       return matrix;
     }
+    // 可能更新过matrix或reflow不存在，需重新计算并缓存
     let m = this._matrixWorld;
-    // 先判断root总刷新如果没有包含变更，可以直接取缓存，否则才重新计算
     if (!m) {
       // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
       const pList: Array<Container> = [];
+      let index = -1;
       let parent = this.parent;
       while (parent) {
+        pList.push(parent);
+        // 自底向上的索引更新，最后一定是最上层变化的节点
         if (!parent._matrixWorld) {
-          pList.unshift(parent);
-        }
-        else {
-          break;
+          index = pList.length;
         }
         parent = parent.parent;
       }
-      const len = pList.length;
       // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的matrix）
-      if (pList.length) {
+      if (index > -1) {
+        pList.splice(index);
+        pList.reverse();
         let last: Float64Array;
-        for (let i = 0; i < len; i++) {
+        for (let i = 0, len = pList.length; i < len; i++) {
           const node = pList[i];
           if (!i || node === root) {
             if (node === root) {

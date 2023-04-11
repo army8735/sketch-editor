@@ -38,21 +38,21 @@ class Bitmap extends Node {
     else {
       const isBase64 = /^data:image\/(\w+);base64,/.test(src);
       if (isBase64) {
-        fetch('https://karas.alipay.com/api/uploadbase64', {
-          method: 'post',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            data: src,
-            quality: 1,
-          }),
-        }).then(res => res.json()).then(res => {
-          if (res.success) {
-            // this.src = res.url;
-          }
-        });
+        // fetch('https://karas.alipay.com/api/uploadbase64', {
+        //   method: 'post',
+        //   headers: {
+        //     Accept: 'application/json',
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: JSON.stringify({
+        //     data: src,
+        //     quality: 1,
+        //   }),
+        // }).then(res => res.json()).then(res => {
+        //   if (res.success) {
+        //     this.src = res.url;
+        //   }
+        // });
       }
       const cache = inject.IMG[src];
       if (!cache) {

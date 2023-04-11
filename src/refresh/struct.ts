@@ -61,27 +61,38 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       i += total;
       continue;
     }
-    // 继承父的opacity和matrix TODO 优化路径缓存
-    let opacity = computedStyle.opacity;
-    let matrix = node.matrix;
-    const parent = node.parent;
-    if (parent) {
-      const op = parent.opacity, mw = parent._matrixWorld!;
-      if (op !== 1) {
-        opacity *= op;
+    // 继承父的opacity和matrix，可能有缓存也可能需要重算，因为是深度遍历渲染，父级一定先算有缓存值
+    let opacity = node._opacity;
+    let matrix = node._matrixWorld;
+    if (opacity === undefined || !matrix) {
+      const parent = node.parent;
+      if (parent) {
+        if (opacity === undefined) {
+          opacity = node._opacity = parent._opacity! * computedStyle.opacity;
+        }
+        if (!matrix) {
+          matrix = node._matrixWorld = identity();
+          assignMatrix(matrix, multiply(parent._matrixWorld!, node.matrix));
+        }
       }
-      matrix = multiply(mw, matrix);
+      // 只有root
+      else {
+        if (opacity === undefined) {
+          opacity = node._opacity = computedStyle.opacity;
+        }
+        if (!matrix) {
+          matrix = node._matrixWorld = identity();
+          assignMatrix(matrix, node.matrix);
+        }
+      }
     }
-    node._opacity = opacity;
-    const mw = node._matrixWorld = node._matrixWorld || identity();
-    assignMatrix(mw, matrix);
     // 一般只有一个纹理
     const textureCache = node.textureCache;
-    if (textureCache && textureCache.available && opacity > 0) {
+    if (textureCache && textureCache.available && opacity! > 0) {
       drawTextureCache(gl, cx, cy, program, [{
         node,
-        opacity,
-        matrix,
+        opacity: opacity!,
+        matrix: matrix!,
         cache: textureCache,
       }], 1);
     }
