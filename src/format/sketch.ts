@@ -380,7 +380,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         attributes: {
           MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } },
           MSAttributedStringColorAttribute: { red, green, blue, alpha },
-          kerning,
+          kerning = 0,
           paragraphStyle: { maximumLineHeight = 0 } = {},
         },
       } = item;

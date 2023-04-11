@@ -119,8 +119,9 @@ class Text extends Node {
     let letterSpacing: number;
     let lineHeight;
     let baseline;
-    // let maxW = 0;
+    let maxW = 0;
     let x = 0, y = 0;
+    this.lineBoxList.splice(0);
     let lineBox = new LineBox(y);
     this.lineBoxList.push(lineBox);
     // 富文本每串不同的需要设置字体测量
@@ -152,7 +153,65 @@ class Text extends Node {
     // 自动宽度，相当于whiteSpace: nowrap
     if (autoW && autoH) {
       if (rich && rich.length) {
-        console.warn(this.content)
+        while (i < length) {
+          const setFontIndex = SET_FONT_INDEX[i];
+          // 每串富文本重置font测量
+          if (i && setFontIndex) {
+            const cur = rich[setFontIndex];
+            letterSpacing = cur.letterSpacing;
+            perW = cur.fontSize * 0.8 + letterSpacing;
+            lineHeight = cur.lineHeight;
+            baseline = getBaseline(cur);
+            ctx.font = setFontStyle(cur);
+          }
+          // 连续\n，开头会遇到，需跳过
+          if (content.charAt(i) === '\n') {
+            i++;
+            y += lineHeight;
+            if (lineBox.size) {
+              lineBox.verticalAlign();
+              lineBox = new LineBox(y);
+              this.lineBoxList.push(lineBox);
+            }
+            else {
+              lineBox.y = y;
+            }
+            continue;
+          }
+          // 富文本需限制最大length，非富普通情况无需
+          let len = length;
+          for (let j = i + 1; j < len; j++) {
+            if (SET_FONT_INDEX[j]) {
+              len = j;
+              break;
+            }
+          }
+          // 预估法获取测量结果
+          const { hypotheticalNum: num, rw, newLine } =
+            measure(ctx, i, len, content, Number.MAX_SAFE_INTEGER, perW, letterSpacing);
+          const textBox = new TextBox(x, y, rw, lineHeight, baseline,
+            content.slice(i, i + num), ctx.font);
+          lineBox.add(textBox);
+          i += num;
+          // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
+          if (newLine) {
+            x = 0;
+            y += lineBox.lineHeight;
+            maxW = Math.max(maxW, lineBox.w);
+            // 最后一个对齐外面做
+            if (i < length) {
+              lineBox.verticalAlign();
+              lineBox = new LineBox(y);
+              this.lineBoxList.push(lineBox);
+            }
+          }
+          else {
+            x += rw;
+          }
+        }
+        maxW = Math.max(maxW, lineBox.w);
+        this.width = maxW;
+        this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
       }
       else {
         this.width = computedStyle.width = ctx.measureText(content).width;
@@ -160,6 +219,7 @@ class Text extends Node {
         const textBox = new TextBox(0, 0, this.width, this.height, baseline, content, ctx.font);
         lineBox.add(textBox);
       }
+      lineBox.verticalAlign();
     }
     else if (autoW) {
       // 暂无这种情况
@@ -222,6 +282,7 @@ class Text extends Node {
           if (newLine) {
             x = 0;
             y += lineBox.lineHeight;
+            // 最后一个对齐外面做
             if (i < length) {
               lineBox.verticalAlign();
               lineBox = new LineBox(y);
@@ -232,7 +293,7 @@ class Text extends Node {
             x += rw;
           }
         }
-        this.height = computedStyle.height = y;
+        this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
       }
       else {}
       lineBox.verticalAlign();
@@ -248,7 +309,6 @@ class Text extends Node {
   override renderCanvas() {
     super.renderCanvas();
     const { height, rich, computedStyle, lineBoxList } = this;
-    console.log(this.content, this.width, this.height)
     const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, height);
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;

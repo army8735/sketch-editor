@@ -17682,7 +17682,6 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Text) {
-                console.log(layer);
                 const textBehaviour = layer.textBehaviour;
                 if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
                     width = 'auto';
@@ -17695,7 +17694,7 @@
                 else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
                 const { string, attributes } = layer.attributedString;
                 const rich = attributes.length ? attributes.map((item) => {
-                    const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
+                    const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
                     const fontFamily = name.replace(subFontFamilyReg, '');
                     const res = {
                         location,
@@ -20371,8 +20370,9 @@
             let letterSpacing;
             let lineHeight;
             let baseline;
-            // let maxW = 0;
+            let maxW = 0;
             let x = 0, y = 0;
+            this.lineBoxList.splice(0);
             let lineBox = new LineBox(y);
             this.lineBoxList.push(lineBox);
             // 富文本每串不同的需要设置字体测量
@@ -20404,7 +20404,63 @@
             // 自动宽度，相当于whiteSpace: nowrap
             if (autoW && autoH) {
                 if (rich && rich.length) {
-                    console.warn(this.content);
+                    while (i < length) {
+                        const setFontIndex = SET_FONT_INDEX[i];
+                        // 每串富文本重置font测量
+                        if (i && setFontIndex) {
+                            const cur = rich[setFontIndex];
+                            letterSpacing = cur.letterSpacing;
+                            perW = cur.fontSize * 0.8 + letterSpacing;
+                            lineHeight = cur.lineHeight;
+                            baseline = getBaseline(cur);
+                            ctx.font = setFontStyle(cur);
+                        }
+                        // 连续\n，开头会遇到，需跳过
+                        if (content.charAt(i) === '\n') {
+                            i++;
+                            y += lineHeight;
+                            if (lineBox.size) {
+                                lineBox.verticalAlign();
+                                lineBox = new LineBox(y);
+                                this.lineBoxList.push(lineBox);
+                            }
+                            else {
+                                lineBox.y = y;
+                            }
+                            continue;
+                        }
+                        // 富文本需限制最大length，非富普通情况无需
+                        let len = length;
+                        for (let j = i + 1; j < len; j++) {
+                            if (SET_FONT_INDEX[j]) {
+                                len = j;
+                                break;
+                            }
+                        }
+                        // 预估法获取测量结果
+                        const { hypotheticalNum: num, rw, newLine } = measure(ctx, i, len, content, Number.MAX_SAFE_INTEGER, perW, letterSpacing);
+                        const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
+                        lineBox.add(textBox);
+                        i += num;
+                        // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
+                        if (newLine) {
+                            x = 0;
+                            y += lineBox.lineHeight;
+                            maxW = Math.max(maxW, lineBox.w);
+                            // 最后一个对齐外面做
+                            if (i < length) {
+                                lineBox.verticalAlign();
+                                lineBox = new LineBox(y);
+                                this.lineBoxList.push(lineBox);
+                            }
+                        }
+                        else {
+                            x += rw;
+                        }
+                    }
+                    maxW = Math.max(maxW, lineBox.w);
+                    this.width = maxW;
+                    this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
                 }
                 else {
                     this.width = computedStyle.width = ctx.measureText(content).width;
@@ -20412,6 +20468,7 @@
                     const textBox = new TextBox(0, 0, this.width, this.height, baseline, content, ctx.font);
                     lineBox.add(textBox);
                 }
+                lineBox.verticalAlign();
             }
             else if (autoW) ;
             else if (autoH) {
@@ -20470,6 +20527,7 @@
                         if (newLine) {
                             x = 0;
                             y += lineBox.lineHeight;
+                            // 最后一个对齐外面做
                             if (i < length) {
                                 lineBox.verticalAlign();
                                 lineBox = new LineBox(y);
@@ -20480,7 +20538,7 @@
                             x += rw;
                         }
                     }
-                    this.height = computedStyle.height = y;
+                    this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
                 }
                 lineBox.verticalAlign();
             }
@@ -20493,7 +20551,6 @@
         renderCanvas() {
             super.renderCanvas();
             const { height, rich, computedStyle, lineBoxList } = this;
-            console.log(this.content, this.width, this.height);
             const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, height);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
@@ -20904,38 +20961,27 @@
                 i += total;
                 continue;
             }
-            // 继承父的opacity和matrix，可能有缓存也可能需要重算，因为是深度遍历渲染，父级一定先算有缓存值
-            let opacity = node._opacity;
-            let matrix = node._matrixWorld;
-            if (opacity === undefined || !matrix) {
-                const parent = node.parent;
-                if (parent) {
-                    if (opacity === undefined) {
-                        opacity = node._opacity = parent._opacity * computedStyle.opacity;
-                    }
-                    if (!matrix) {
-                        matrix = node._matrixWorld = identity();
-                        assignMatrix(matrix, multiply(parent._matrixWorld, node.matrix));
-                    }
+            // 继承父的opacity和matrix TODO 优化路径缓存
+            let opacity = computedStyle.opacity;
+            let matrix = node.matrix;
+            const parent = node.parent;
+            if (parent) {
+                const op = parent.opacity, mw = parent._matrixWorld;
+                if (op !== 1) {
+                    opacity *= op;
                 }
-                // 只有root
-                else {
-                    if (opacity === undefined) {
-                        opacity = node._opacity = computedStyle.opacity;
-                    }
-                    if (!matrix) {
-                        matrix = node._matrixWorld = identity();
-                        assignMatrix(matrix, node.matrix);
-                    }
-                }
+                matrix = multiply(mw, matrix);
             }
+            node._opacity = opacity;
+            const mw = node._matrixWorld = node._matrixWorld || identity();
+            assignMatrix(mw, matrix);
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && textureCache.available && opacity > 0) {
                 drawTextureCache(gl, cx, cy, program, [{
                         node,
-                        opacity: opacity,
-                        matrix: matrix,
+                        opacity,
+                        matrix,
                         cache: textureCache,
                     }], 1);
             }
