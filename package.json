@@ -34,7 +34,7 @@
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-terser": "^7.0.2",
     "tslib": "^2.5.0",
-    "typescript": "^5.0.2",
+    "typescript": "^5.0.4",
     "uuid": "^9.0.0",
     "webstorm-disable-index": "^1.2.0"
   },
