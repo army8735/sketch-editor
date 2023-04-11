@@ -17944,7 +17944,6 @@
             this._opacity = 1;
             this.transform = identity();
             this.matrix = identity();
-            this._matrixWorld = identity();
             this.hasContent = false;
         }
         // 添加到dom后标记非销毁状态，和root引用
@@ -18565,32 +18564,48 @@
         // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
         get matrixWorld() {
             const root = this.root;
+            const matrix = this.matrix;
             if (!root) {
-                return this.matrix;
+                return matrix;
             }
-            const m = this._matrixWorld;
-            // root总刷新没有包含变更，可以直接取缓存，否则才重新计算
-            if (root.rl & RefreshLevel.REFLOW_TRANSFORM) {
-                let cache = !(this.refreshLevel & RefreshLevel.REFLOW_TRANSFORM);
-                // 检测树到根路径有无变更，没有也可以直接取缓存，因为可能多次执行或者同树枝提前执行过了 TODO 优化
-                if (cache) {
-                    let parent = this.parent;
-                    while (parent) {
-                        if (parent.refreshLevel & RefreshLevel.REFLOW_TRANSFORM) {
-                            cache = false;
-                            break;
+            let m = this._matrixWorld;
+            // 先判断root总刷新如果没有包含变更，可以直接取缓存，否则才重新计算
+            if (!m) {
+                // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
+                const pList = [];
+                let parent = this.parent;
+                while (parent) {
+                    if (!parent._matrixWorld) {
+                        pList.unshift(parent);
+                    }
+                    else {
+                        break;
+                    }
+                    parent = parent.parent;
+                }
+                const len = pList.length;
+                // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的matrix）
+                if (pList.length) {
+                    let last;
+                    for (let i = 0; i < len; i++) {
+                        const node = pList[i];
+                        if (!i || node === root) {
+                            if (node === root) {
+                                last = node._matrixWorld = identity();
+                                assignMatrix(last, node.matrix);
+                            }
+                            else {
+                                last = node._matrixWorld = multiply(node.parent._matrixWorld, node.matrix);
+                            }
                         }
-                        parent = parent.parent;
+                        else {
+                            last = node._matrixWorld = multiply(last, node.matrix);
+                        }
                     }
                 }
-                if (!cache) {
-                    assignMatrix(m, this.matrix);
-                    let parent = this.parent;
-                    while (parent) {
-                        multiplyRef(parent.matrix, m);
-                        parent = parent.parent;
-                    }
-                }
+                // 仅自身变化，或者有父级变化但父级前面已经算好了
+                parent = this.parent;
+                m = this._matrixWorld = multiply(parent._matrixWorld, matrix);
             }
             return m;
         }
@@ -20317,7 +20332,8 @@
                 matrix = multiply(mw, matrix);
             }
             node._opacity = opacity;
-            assignMatrix(node._matrixWorld, matrix);
+            const mw = node._matrixWorld = node._matrixWorld || identity();
+            assignMatrix(mw, matrix);
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && textureCache.available && opacity > 0) {

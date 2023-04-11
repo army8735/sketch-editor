@@ -2,7 +2,7 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import { RefreshLevel } from './level';
 import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
-import { assignMatrix, multiply } from '../math/matrix';
+import { assignMatrix, identity, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import inject from '../util/inject';
 
@@ -66,14 +66,15 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     let matrix = node.matrix;
     const parent = node.parent;
     if (parent) {
-      const op = parent.opacity, mw = parent._matrixWorld;
+      const op = parent.opacity, mw = parent._matrixWorld!;
       if (op !== 1) {
         opacity *= op;
       }
       matrix = multiply(mw, matrix);
     }
     node._opacity = opacity;
-    assignMatrix(node._matrixWorld, matrix);
+    const mw = node._matrixWorld = node._matrixWorld || identity();
+    assignMatrix(mw, matrix);
     // 一般只有一个纹理
     const textureCache = node.textureCache;
     if (textureCache && textureCache.available && opacity > 0) {
