@@ -557,7 +557,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     } as JPolyline;
   }
   else {
-    console.error(layer);
+    // console.error(layer);
   }
 }
 

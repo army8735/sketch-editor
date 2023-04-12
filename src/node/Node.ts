@@ -746,7 +746,7 @@ class Node extends Event {
   }
 
   getZoom(): number {
-    const m = this._matrixWorld || this.matrixWorld;
+    const m = this.matrixWorld;
     return m[0];
   }
 

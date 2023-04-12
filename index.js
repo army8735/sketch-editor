@@ -17915,9 +17915,6 @@
                     },
                 };
             }
-            else {
-                console.error(layer);
-            }
         });
     }
     function parseStrPoint(s) {
@@ -19113,7 +19110,7 @@
             this.checkPosSizeUpward();
         }
         getZoom() {
-            const m = this._matrixWorld || this.matrixWorld;
+            const m = this.matrixWorld;
             return m[0];
         }
         get opacity() {
@@ -21168,8 +21165,8 @@
             else {
                 const img = inject.IMG[ArtBoard.BOX_SHADOW];
                 // 一般首次不可能有缓存，太特殊的base64了
-                if (img) {
-                    ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img);
+                if (img && img.source) {
+                    ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img.source);
                     root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined);
                 }
                 else {

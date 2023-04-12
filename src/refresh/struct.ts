@@ -137,8 +137,8 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     else {
       const img = inject.IMG[ArtBoard.BOX_SHADOW];
       // 一般首次不可能有缓存，太特殊的base64了
-      if (img) {
-        ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img);
+      if (img && img.source) {
+        ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img.source);
         root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined)
       }
       else {

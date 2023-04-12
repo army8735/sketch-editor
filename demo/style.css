@@ -38,15 +38,22 @@ html, body {
 }
 
 .list {
+  position: relative;
   width: 250px;
+  height: 100%;
   background: #EEE8EA;
 }
 
 .page {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
   margin: 0;
   padding: 5px 8px;
-  border-bottom: 1px solid #CCC;
+  width: 100%;
   height: 150px;
+  border-bottom: 1px solid #CCC;
   overflow-y: scroll;
   list-style: none;
 }
@@ -66,9 +73,13 @@ html, body {
 }
 
 .tree {
-  padding: 5px 8px;
+  position: absolute;
+  left: 0;
+  top: 150px;
+  bottom: 0;
   box-sizing: border-box;
-  min-height: 100%;
+  padding: 5px 8px;
+  width: 100%;
   overflow-y: scroll;
   font-size: 14px;
 }

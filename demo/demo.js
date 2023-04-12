@@ -24,6 +24,7 @@ let style, computedStyle;
 let structs = [];
 let abHash = {}, pageHash = {};
 let hoverTree, selectTree;
+let zoom = 1;
 
 $input.onchange = function(e) {
   const file = $input.files[0];
@@ -81,6 +82,7 @@ $input.onchange = function(e) {
       // 每次切页面更新数据
       root.on(editor.util.Event.PAGE_CHANGED, function(newPage) {
         curPage = newPage;
+        zoom = curPage.getZoom(); console.log('zoom', 1);
         const last = $page.querySelector('.current');
         if (last) {
           last.classList.remove('current');
@@ -345,6 +347,7 @@ function onMove(x, y, isOnControl) {
     return;
   }
   const dx = lastX - startX, dy = lastY - startY;
+  const dx2 = dx / zoom * dpi, dy2 = dy / zoom * dpi;
   // 空格按下拖拽画布
   if (spaceKey) {
     if (isDown) {
@@ -377,36 +380,35 @@ function onMove(x, y, isOnControl) {
     // 拖拽缩放选框，一定有selectNode
     if (isControl) {
       isMove = true;
-      const dx = lastX - startX, dy = lastY - startY;
       if (controlType === 'tl') {}
       else if (controlType === 'tr') {}
       else if (controlType === 'br') {}
       else if (controlType === 'bl') {}
       else if (controlType === 't') {
         if (style.width.u === editor.style.define.StyleUnit.AUTO) {
-          const top = (computedStyle.top + dy) * 100 / selectNode.parent.height + '%';
+          const top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
           selectNode.updateStyle({
             top,
           });
         }
         else {
-          const top = (computedStyle.top + dy) * 100 / selectNode.parent.height + '%';
+          const top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
           const height = computedStyle.height;
           selectNode.updateStyle({
             top,
-            height: height - dy,
+            height: height - dy2,
           });
         }
       }
       else if (controlType === 'r') {
         if (style.width.u === editor.style.define.StyleUnit.AUTO) {
-          const right = (computedStyle.right - dx) * 100 / selectNode.parent.width + '%';
+          const right = (computedStyle.right - dx2) * 100 / selectNode.parent.width + '%';
           selectNode.updateStyle({
             right,
           });
         }
         else {
-          const width = computedStyle.width + dx;
+          const width = computedStyle.width + dx2;
           selectNode.updateStyle({
             width,
           });
@@ -414,13 +416,13 @@ function onMove(x, y, isOnControl) {
       }
       else if (controlType === 'b') {
         if (style.height.u === editor.style.define.StyleUnit.AUTO) {
-          const bottom = (computedStyle.bottom - dy) * 100 / selectNode.parent.height + '%';
+          const bottom = (computedStyle.bottom - dy2) * 100 / selectNode.parent.height + '%';
           selectNode.updateStyle({
             bottom,
           });
         }
         else {
-          const height = computedStyle.height + dy;
+          const height = computedStyle.height + dy2;
           selectNode.updateStyle({
             height,
           });
@@ -428,17 +430,17 @@ function onMove(x, y, isOnControl) {
       }
       else if (controlType === 'l') {
         if (style.width.u === editor.style.define.StyleUnit.AUTO) {
-          const left = (computedStyle.left + dx) * 100 / selectNode.parent.width + '%';
+          const left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
           selectNode.updateStyle({
             left,
           });
         }
         else {
-          const left = (computedStyle.left + dx) * 100 / selectNode.parent.width + '%';
+          const left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
           const width = computedStyle.width;
           selectNode.updateStyle({
             left,
-            width: width - dx,
+            width: width - dx2,
           });
         }
       }
@@ -450,8 +452,8 @@ function onMove(x, y, isOnControl) {
       if(selectNode) {
         // 不变也要更新，并不知道节点的约束类型（size是否auto）
         selectNode.updateStyle({
-          translateX: computedStyle.translateX + dx,
-          translateY: computedStyle.translateY + dy,
+          translateX: computedStyle.translateX + dx2,
+          translateY: computedStyle.translateY + dy2,
         });
         updateSelect();
       }
@@ -637,6 +639,7 @@ document.addEventListener('keyup', function(e) {
 });
 
 $main.addEventListener('wheel', function(e) {
+  console.log(curPage)
   if (!curPage) {
     return;
   }
@@ -712,6 +715,7 @@ $main.addEventListener('wheel', function(e) {
       scaleX: scale,
       scaleY: scale,
     });
+    zoom = curPage.getZoom();
   }
   // shift+滚轮是移动
   else {
@@ -792,7 +796,7 @@ $main.addEventListener('wheel', function(e) {
           sc = -10;
         }
       }
-      const { translateY } = curPage.getComputedStyle();
+      const { translateY } = curPage.getComputedStyle(); console.log(sc);
       curPage.updateStyle({
         translateY: translateY + sc,
       });
