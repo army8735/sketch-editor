@@ -43,7 +43,8 @@ class Node extends Event {
   isDestroyed: boolean;
   struct: Struct;
   refreshLevel: RefreshLevel;
-  _opacity?: number; // 世界透明度
+  _opacity: number; // 世界透明度
+  hasCacheOp: boolean;  // 是否计算过世界opacity
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
   _matrixWorld: Float64Array; // 世界transform
@@ -73,6 +74,8 @@ class Node extends Event {
       lv: 0,
     }
     this.refreshLevel = RefreshLevel.REFLOW;
+    this._opacity = 1;
+    this.hasCacheOp = false;
     this.transform = identity();
     this.matrix = identity();
     this._matrixWorld = identity();
@@ -213,7 +216,7 @@ class Node extends Event {
       computedStyle.lineHeight = lineHeight.v;
     }
     this.width = this.height = 0;
-    this._opacity = undefined;
+    this.hasCacheOp = false;
     const width = style.width;
     const height = style.height;
     if (parent) {
@@ -753,50 +756,65 @@ class Node extends Event {
 
   get opacity() {
     const root = this.root;
-    const opacity = this.computedStyle.opacity;
     if (!root) {
-      return opacity;
+      return this._opacity;
     }
-    let o = this._opacity;
-    // 可能更新过reflow不存在，需重新计算并缓存
-    if (o === undefined) {
-      // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
+    // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
+    let cache = this.hasCacheOp;
+    // 可能开始自己就没缓存，不用再向上判断，肯定要重新计算
+    if (cache) {
+      let parent = this.parent;
+      while (parent) {
+        if (!parent.hasCacheMw) {
+          cache = false;
+          break;
+        }
+        parent = parent.parent;
+      }
+    }
+    // 这里的cache是考虑了向上父级的，只要有失败的就进入，从这条分支上最上层无缓存的父级开始计算
+    if (!cache) {
       const pList: Array<Container> = [];
       let index = -1;
       let parent = this.parent;
       while (parent) {
         pList.push(parent);
         // 自底向上的索引更新，最后一定是最上层变化的节点
-        if (!parent._matrixWorld) {
+        if (!parent.hasCacheMw) {
           index = pList.length;
         }
         parent = parent.parent;
       }
-      // 父级有变化则所有向下都需更新，可能第一个是root
+      // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的opacity）
       if (index > -1) {
         pList.splice(index);
         pList.reverse();
-        let last: number;
         for (let i = 0, len = pList.length; i < len; i++) {
           const node = pList[i];
           if (!i || node === root) {
             if (node === root) {
-              last = node._opacity = node.computedStyle.opacity;
+              node._opacity = node.computedStyle.opacity;
             }
             else {
-              last = node._opacity = node.parent!._opacity! * node.computedStyle.opacity;
+              node._opacity = node.parent!._opacity * node.computedStyle.opacity;
             }
           }
           else {
-            last = node._opacity = last! * node.computedStyle.opacity;
+            node._opacity = pList[i - 1]._opacity * node.computedStyle.opacity;
           }
         }
       }
-      // 仅自身变化，或者有父级变化但父级前面已经算好了
-      parent = this.parent!;
-      o = this._opacity = parent._opacity! * opacity;
+      // 仅自身变化，或者有父级变化但父级前面已经算好了，防止自己是Root
+      parent = this.parent;
+      if (parent) {
+        this._opacity = parent._opacity * this.computedStyle.opacity;
+      }
+      else {
+        this._opacity = this.computedStyle.opacity;
+      }
     }
-    return o;
+    this.hasCacheOp = true; // 计算过了标识有缓存
+    return this._opacity;
   }
 
   // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
@@ -836,31 +854,32 @@ class Node extends Event {
       if (index > -1) {
         pList.splice(index);
         pList.reverse();
-        let last: Float64Array;
         for (let i = 0, len = pList.length; i < len; i++) {
           const node = pList[i];
           if (!i || node === root) {
             if (node === root) {
-              last = node._matrixWorld;
-              assignMatrix(last, node.matrix);
+              assignMatrix(node._matrixWorld, node.matrix);
             }
             else {
-              last = node._matrixWorld;
               const t = multiply(node.parent!._matrixWorld, node.matrix);
-              assignMatrix(last, t);
+              assignMatrix(node._matrixWorld, t);
             }
           }
           else {
-            const t = multiply(last!, node.matrix);
-            last = node._matrixWorld;
-            assignMatrix(last, t);
+            const t = multiply(pList[i - 1]._matrixWorld, node.matrix);
+            assignMatrix(node._matrixWorld, t);
           }
         }
       }
-      // 仅自身变化，或者有父级变化但父级前面已经算好了
-      parent = this.parent!;
-      const t = multiply(parent._matrixWorld, this.matrix);
-      assignMatrix(m, t);
+      // 仅自身变化，或者有父级变化但父级前面已经算好了，防止自己是Root
+      parent = this.parent;
+      if (parent) {
+        const t = multiply(parent._matrixWorld, this.matrix);
+        assignMatrix(m, t);
+      }
+      else {
+        assignMatrix(m, this.matrix);
+      }
     }
     this.hasCacheMw = true; // 计算过了标识有缓存
     return m;

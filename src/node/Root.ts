@@ -237,7 +237,7 @@ class Root extends Container implements FrameCallback {
         }
         if (lv & RefreshLevel.OPACITY) {
           computedStyle.opacity = style.opacity.v;
-          node._opacity = undefined; // 手动删除缓存
+          node.hasCacheOp = false; // 手动删除缓存
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;
