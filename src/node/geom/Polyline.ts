@@ -86,7 +86,7 @@ class Polyline extends Geom {
       if (!fillEnable[i]) {
         continue;
       }
-      const f = fill[i]; console.log(f);
+      const f = fill[i];
       if (Array.isArray(f)) {
         if (!f[3]) {
           continue;

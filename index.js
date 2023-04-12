@@ -17427,8 +17427,10 @@
     }
     function convertPage(page, opt) {
         return __awaiter(this, void 0, void 0, function* () {
+            // sketch的Page没有尺寸，固定100
+            const W = 100, H = 100;
             const children = yield Promise.all(page.layers.map((layer) => {
-                return convertItem(layer, opt, page.frame.width, page.frame.height);
+                return convertItem(layer, opt, W, H);
             }));
             let x = 0, y = 0, zoom = 1;
             const ua = opt.user[page.do_objectID];
@@ -17451,10 +17453,8 @@
                     name: page.name,
                     uuid: page.do_objectID,
                     style: {
-                        left: page.frame.x,
-                        top: page.frame.y,
-                        width: page.frame.width,
-                        height: page.frame.height,
+                        width: W,
+                        height: H,
                         visible: false,
                         translateX: x,
                         translateY: y,
@@ -17764,7 +17764,6 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.Rectangle) {
-                console.log(layer);
                 const points = layer.points.map((item) => {
                     const point = parseStrPoint(item.point);
                     const curveFrom = parseStrPoint(item.curveFrom);
@@ -19052,6 +19051,10 @@
                 translateY.u = StyleUnit.PERCENT;
             }
             this.checkPosSizeUpward();
+        }
+        getZoom() {
+            const m = this._matrixWorld || this.matrixWorld;
+            return m[0];
         }
         get opacity() {
             const root = this.root;
@@ -20722,7 +20725,6 @@
                     continue;
                 }
                 const f = fill[i];
-                console.log(f);
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -20864,9 +20866,6 @@
                 }
                 this.json = undefined;
             }
-        }
-        getZoom() {
-            return this.computedStyle.scaleX;
         }
     }
 
@@ -21338,7 +21337,13 @@ void main() {
                 visible: true,
             });
             this.lastPage = newPage;
-            this.overlay.setArtBoard(newPage.children);
+            const children = [];
+            newPage.children.forEach(item => {
+                if (item instanceof ArtBoard) {
+                    children.push(item);
+                }
+            });
+            this.overlay.setArtBoard(children);
             // 触发事件告知外部如刷新图层列表
             this.emit(Event.PAGE_CHANGED, newPage);
         }
@@ -21525,6 +21530,7 @@ void main() {
             if (this.lastPage) {
                 return this.lastPage.getZoom();
             }
+            return 1;
         }
         getNodeFromCurPage(x, y, includeGroup = false, includeArtBoard = false, lv) {
             const page = this.lastPage;

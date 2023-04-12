@@ -62,6 +62,7 @@ $input.onchange = function(e) {
         const li = document.createElement('li');
         li.setAttribute('uuid', uuid);
         li.innerHTML = '🗒 ' + item.props.name;
+        li.title = item.props.name;
         pageHash[uuid] = li;
         $page.appendChild(li);
       });

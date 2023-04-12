@@ -94,9 +94,11 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
 }
 
 async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
+  // sketch的Page没有尺寸，固定100
+  const W = 100, H = 100;
   const children = await Promise.all(
     page.layers.map((layer: SketchFormat.AnyLayer) => {
-      return convertItem(layer, opt, page.frame.width, page.frame.height);
+      return convertItem(layer, opt, W, H);
     })
   );
   let x = 0, y = 0, zoom = 1;
@@ -120,10 +122,8 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
       name: page.name,
       uuid: page.do_objectID,
       style: {
-        left: page.frame.x, // sketch的page的位置尺寸固定为0
-        top: page.frame.y,
-        width: page.frame.width,
-        height: page.frame.height,
+        width: W,
+        height: H,
         visible: false,
         translateX: x,
         translateY: y,
@@ -453,7 +453,6 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     } as JText;
   }
   if (layer._class === SketchFormat.ClassValue.Rectangle) {
-    console.log(layer);
     const points = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);

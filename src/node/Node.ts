@@ -740,6 +740,11 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
+  getZoom(): number {
+    const m = this._matrixWorld || this.matrixWorld;
+    return m[0];
+  }
+
   get opacity() {
     const root = this.root;
     const opacity = this.computedStyle.opacity;

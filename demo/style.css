@@ -95,6 +95,10 @@ html, body {
 
 .tree .name {
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
 }
 
 .tree .visible {

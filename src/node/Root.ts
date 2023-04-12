@@ -143,7 +143,13 @@ class Root extends Container implements FrameCallback {
       visible: true,
     });
     this.lastPage = newPage;
-    this.overlay!.setArtBoard(newPage.children as Array<ArtBoard>);
+    const children: Array<ArtBoard> = [];
+    newPage.children.forEach(item => {
+      if (item instanceof ArtBoard) {
+        children.push(item);
+      }
+    });
+    this.overlay!.setArtBoard(children);
     // 触发事件告知外部如刷新图层列表
     this.emit(Event.PAGE_CHANGED, newPage);
   }
@@ -350,6 +356,7 @@ class Root extends Container implements FrameCallback {
     if (this.lastPage) {
       return this.lastPage.getZoom();
     }
+    return 1;
   }
 
   getNodeFromCurPage(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {

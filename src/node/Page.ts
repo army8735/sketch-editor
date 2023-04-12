@@ -66,10 +66,6 @@ class Page extends Container {
       this.json = undefined;
     }
   }
-
-  getZoom() {
-    return this.computedStyle.scaleX;
-  }
 }
 
 export default Page;
