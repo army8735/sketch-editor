@@ -797,6 +797,6 @@ document.addEventListener('wheel', function(e) {
         translateY: translateY + sc,
       });
     }
-    updateSelect();
   }
+  updateSelect();
 });

@@ -66,7 +66,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     let matrix = node.matrix;
     const parent = node.parent;
     if (parent) {
-      const op = parent.opacity, mw = parent._matrixWorld!;
+      const op = parent.opacity, mw = parent._matrixWorld;
       if (op !== 1) {
         opacity *= op;
       }

@@ -46,7 +46,8 @@ class Node extends Event {
   _opacity?: number; // 世界透明度
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
-  _matrixWorld?: Float64Array; // 世界transform
+  _matrixWorld: Float64Array; // 世界transform
+  hasCacheMw: boolean; // 是否计算过世界transform
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
   _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
@@ -74,6 +75,8 @@ class Node extends Event {
     this.refreshLevel = RefreshLevel.REFLOW;
     this.transform = identity();
     this.matrix = identity();
+    this._matrixWorld = identity();
+    this.hasCacheMw = false;
     this.hasContent = false;
   }
 
@@ -246,7 +249,8 @@ class Node extends Event {
 
   calMatrix(lv: RefreshLevel): Float64Array {
     const { style, computedStyle, matrix, transform } = this;
-    this._matrixWorld = undefined;
+    // 更新先标识缓存失效，计算再改成功
+    this.hasCacheMw = false;
     let optimize = true;
     if (lv >= RefreshLevel.REFLOW
       || lv & RefreshLevel.TRANSFORM
@@ -493,7 +497,7 @@ class Node extends Event {
   }
 
   getBoundingClientRect(includeBbox: boolean = false) {
-    const matrixWorld = this._matrixWorld || this.matrixWorld;
+    const matrixWorld = this.matrixWorld;
     const bbox = includeBbox ? this.bbox : this.rect;
     const { x1, y1, x2, y2, x3, y3, x4, y4 }
       = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
@@ -797,21 +801,32 @@ class Node extends Event {
   // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
   get matrixWorld(): Float64Array {
     const root = this.root;
-    const matrix = this.matrix;
-    if (!root) {
-      return matrix;
-    }
-    // 可能更新过matrix或reflow不存在，需重新计算并缓存
     let m = this._matrixWorld;
-    if (!m) {
-      // 循环代替递归，把这条分支上无缓存的父级都记录下来计算一次
+    if (!root) {
+      return m;
+    }
+    // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
+    let cache = this.hasCacheMw;
+    // 可能开始自己就没缓存，不用再向上判断，肯定要重新计算
+    if (cache) {
+      let parent = this.parent;
+      while (parent) {
+        if (!parent.hasCacheMw) {
+          cache = false;
+          break;
+        }
+        parent = parent.parent;
+      }
+    }
+    // 这里的cache是考虑了向上父级的，只要有失败的就进入，从这条分支上最上层无缓存的父级开始计算
+    if (!cache) {
       const pList: Array<Container> = [];
       let index = -1;
       let parent = this.parent;
       while (parent) {
         pList.push(parent);
         // 自底向上的索引更新，最后一定是最上层变化的节点
-        if (!parent._matrixWorld) {
+        if (!parent.hasCacheMw) {
           index = pList.length;
         }
         parent = parent.parent;
@@ -825,22 +840,28 @@ class Node extends Event {
           const node = pList[i];
           if (!i || node === root) {
             if (node === root) {
-              last = node._matrixWorld = identity();
+              last = node._matrixWorld;
               assignMatrix(last, node.matrix);
             }
             else {
-              last = node._matrixWorld = multiply(node.parent!._matrixWorld!, node.matrix);
+              last = node._matrixWorld;
+              const t = multiply(node.parent!._matrixWorld, node.matrix);
+              assignMatrix(last, t);
             }
           }
           else {
-            last = node._matrixWorld = multiply(last!, node.matrix);
+            const t = multiply(last!, node.matrix);
+            last = node._matrixWorld;
+            assignMatrix(last, t);
           }
         }
       }
       // 仅自身变化，或者有父级变化但父级前面已经算好了
       parent = this.parent!;
-      m = this._matrixWorld = multiply(parent._matrixWorld!, matrix);
+      const t = multiply(parent._matrixWorld, this.matrix);
+      assignMatrix(m, t);
     }
+    this.hasCacheMw = true; // 计算过了标识有缓存
     return m;
   }
 
