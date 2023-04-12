@@ -7,6 +7,7 @@ import {
   Style,
   StyleNumValue,
   StyleUnit,
+  TEXT_ALIGN,
 } from './define';
 import { isNil, isString } from '../util/type';
 import inject from '../util/inject';
@@ -250,7 +251,17 @@ export function normalize(style: JStyle): Style {
   }
   const textAlign = style.textAlign;
   if (!isNil(textAlign)) {
-    res.textAlign = { v: textAlign, u: StyleUnit.STRING };
+    let v = TEXT_ALIGN.LEFT;
+    if (textAlign === 'center') {
+      v = TEXT_ALIGN.CENTER;
+    }
+    else if (textAlign === 'right') {
+      v = TEXT_ALIGN.RIGHT;
+    }
+    else if (textAlign === 'justify') {
+      v = TEXT_ALIGN.JUSTIFY;
+    }
+    res.textAlign = { v, u: StyleUnit.STRING };
   }
   const transformOrigin = style.transformOrigin;
   if (!isNil(transformOrigin)) {

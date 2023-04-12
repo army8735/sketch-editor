@@ -3,7 +3,7 @@ import TextBox from './TextBox';
 import LineBox from './LineBox';
 import { LayoutData } from './layout';
 import { Rich, TextProps } from '../format';
-import { StyleUnit } from '../style/define';
+import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import inject from '../util/inject';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import CanvasCache from '../refresh/CanvasCache';
@@ -100,19 +100,23 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
 class Text extends Node {
   content: string;
   rich?: Array<Rich>;
+  textBehaviour: number;
   lineBoxList: Array<LineBox>;
   constructor(props: TextProps) {
     super(props);
     this.content = props.content;
     this.rich = props.rich;
+    this.textBehaviour = props.textBehaviour;
     this.lineBoxList = [];
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const { rich, style, computedStyle, content } = this;
-    const autoW = style.width.u === StyleUnit.AUTO;
-    const autoH = style.height.u === StyleUnit.AUTO;
+    const { rich, style, computedStyle, content, lineBoxList } = this;
+    const autoW = style.width.u === StyleUnit.AUTO
+      && (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
+    const autoH = style.height.u === StyleUnit.AUTO
+      && (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
     let i = 0;
     let length = content.length;
     let perW: number;
@@ -121,11 +125,11 @@ class Text extends Node {
     let baseline;
     let maxW = 0;
     let x = 0, y = 0;
-    this.lineBoxList.splice(0);
+    lineBoxList.splice(0);
     let lineBox = new LineBox(y);
-    this.lineBoxList.push(lineBox);
-    // 富文本每串不同的需要设置字体测量
-    const SET_FONT_INDEX: Array<number> = [0];
+    lineBoxList.push(lineBox);
+    // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
+    const SET_FONT_INDEX: Array<number> = [];
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
@@ -150,156 +154,112 @@ class Text extends Node {
       baseline = getBaseline(computedStyle);
       ctx.font = setFontStyle(computedStyle);
     }
-    // 自动宽度，相当于whiteSpace: nowrap
-    if (autoW && autoH) {
+    // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
+    const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
+    const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
+    while (i < length) {
+      // 定高超过不显示也无需定位
+      if (!autoH && y >= H) {
+        break;
+      }
+      const setFontIndex = SET_FONT_INDEX[i];
+      // 每串富文本重置font测量
+      if (i && rich && setFontIndex) {
+        const cur = rich[setFontIndex];
+        letterSpacing = cur.letterSpacing;
+        perW = cur.fontSize * 0.8 + letterSpacing;
+        lineHeight = cur.lineHeight;
+        baseline = getBaseline(cur);
+        ctx.font = setFontStyle(cur);
+      }
+      // 连续\n，开头会遇到，需跳过
+      if (content.charAt(i) === '\n') {
+        i++;
+        y += lineHeight;
+        if (lineBox.size) {
+          lineBox.verticalAlign();
+          lineBox = new LineBox(y);
+          lineBoxList.push(lineBox);
+        }
+        else {
+          lineBox.y = y;
+        }
+        continue;
+      }
+      // 富文本需限制最大length，非富普通情况无需
+      let len = length;
       if (rich && rich.length) {
-        while (i < length) {
-          const setFontIndex = SET_FONT_INDEX[i];
-          // 每串富文本重置font测量
-          if (i && setFontIndex) {
-            const cur = rich[setFontIndex];
-            letterSpacing = cur.letterSpacing;
-            perW = cur.fontSize * 0.8 + letterSpacing;
-            lineHeight = cur.lineHeight;
-            baseline = getBaseline(cur);
-            ctx.font = setFontStyle(cur);
-          }
-          // 连续\n，开头会遇到，需跳过
-          if (content.charAt(i) === '\n') {
-            i++;
-            y += lineHeight;
-            if (lineBox.size) {
-              lineBox.verticalAlign();
-              lineBox = new LineBox(y);
-              this.lineBoxList.push(lineBox);
-            }
-            else {
-              lineBox.y = y;
-            }
-            continue;
-          }
-          // 富文本需限制最大length，非富普通情况无需
-          let len = length;
-          for (let j = i + 1; j < len; j++) {
-            if (SET_FONT_INDEX[j]) {
-              len = j;
-              break;
-            }
-          }
-          // 预估法获取测量结果
-          const { hypotheticalNum: num, rw, newLine } =
-            measure(ctx, i, len, content, Number.MAX_SAFE_INTEGER, perW, letterSpacing);
-          const textBox = new TextBox(x, y, rw, lineHeight, baseline,
-            content.slice(i, i + num), ctx.font);
-          lineBox.add(textBox);
-          i += num;
-          // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
-          if (newLine) {
-            x = 0;
-            y += lineBox.lineHeight;
-            maxW = Math.max(maxW, lineBox.w);
-            // 最后一个对齐外面做
-            if (i < length) {
-              lineBox.verticalAlign();
-              lineBox = new LineBox(y);
-              this.lineBoxList.push(lineBox);
-            }
-          }
-          else {
-            x += rw;
+        for (let j = i + 1; j < len; j++) {
+          if (SET_FONT_INDEX[j]) {
+            len = j;
+            break;
           }
         }
+      }
+      // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
+      const min = ctx.measureText(content.charAt(i)).width;
+      if (min > W - x + (1e-10) && x) {
+        x = 0;
+        y += lineBox.lineHeight;
+        if (i < length) {
+          lineBox.verticalAlign();
+          lineBox = new LineBox(y);
+          lineBoxList.push(lineBox);
+        }
+        continue;
+      }
+      // 预估法获取测量结果
+      const { hypotheticalNum: num, rw, newLine } =
+        measure(ctx, i, len, content, W - x, perW, letterSpacing);
+      const textBox = new TextBox(x, y, rw, lineHeight, baseline,
+        content.slice(i, i + num), ctx.font);
+      lineBox.add(textBox);
+      i += num;
+      // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
+      if (newLine) {
+        x = 0;
+        y += lineBox.lineHeight;
         maxW = Math.max(maxW, lineBox.w);
-        this.width = maxW;
-        this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
+        // 最后一个对齐外面做
+        if (i < length) {
+          lineBox.verticalAlign();
+          lineBox = new LineBox(y);
+          lineBoxList.push(lineBox);
+        }
       }
       else {
-        this.width = computedStyle.width = ctx.measureText(content).width;
-        this.height = computedStyle.height = lineHeight;
-        const textBox = new TextBox(0, 0, this.width, this.height, baseline, content, ctx.font);
-        lineBox.add(textBox);
+        x += rw;
       }
-      lineBox.verticalAlign();
     }
-    else if (autoW) {
-      // 暂无这种情况
+    // 最后一行循环里没算要再算一次
+    maxW = Math.max(maxW, lineBox.w);
+    if (autoW) {
+      this.width = computedStyle.width = maxW;
     }
-    else if (autoH) {
-      if (rich && rich.length) {
-        while (i < length) {
-          const setFontIndex = SET_FONT_INDEX[i];
-          // 每串富文本重置font测量
-          if (i && setFontIndex) {
-            const cur = rich[setFontIndex];
-            letterSpacing = cur.letterSpacing;
-            perW = cur.fontSize * 0.8 + letterSpacing;
-            lineHeight = cur.lineHeight;
-            baseline = getBaseline(cur);
-            ctx.font = setFontStyle(cur);
-          }
-          // 连续\n，开头会遇到，需跳过
-          if (content.charAt(i) === '\n') {
-            i++;
-            y += lineHeight;
-            if (lineBox.size) {
-              lineBox.verticalAlign();
-              lineBox = new LineBox(y);
-              this.lineBoxList.push(lineBox);
-            }
-            else {
-              lineBox.y = y;
-            }
-            continue;
-          }
-          // 富文本需限制最大length，非富普通情况无需
-          let len = length;
-          for(let j = i + 1; j < len; j++) {
-            if(SET_FONT_INDEX[j]) {
-              len = j;
-              break;
-            }
-          }
-          // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
-          const min = ctx.measureText(content.charAt(i)).width;
-          if (min > this.width - x + (1e-10) && x) {
-            x = 0;
-            y += lineBox.lineHeight;
-            if (i < length) {
-              lineBox.verticalAlign();
-              lineBox = new LineBox(y);
-              this.lineBoxList.push(lineBox);
-            }
-            continue;
-          }
-          // 预估法获取测量结果
-          const { hypotheticalNum: num, rw, newLine } =
-            measure(ctx, i, len, content, this.width - x, perW, letterSpacing);
-          const textBox = new TextBox(x, y, rw, lineHeight, baseline,
-            content.slice(i, i + num), ctx.font);
-          lineBox.add(textBox);
-          i += num;
-          // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
-          if (newLine) {
-            x = 0;
-            y += lineBox.lineHeight;
-            // 最后一个对齐外面做
-            if (i < length) {
-              lineBox.verticalAlign();
-              lineBox = new LineBox(y);
-              this.lineBoxList.push(lineBox);
-            }
-          }
-          else {
-            x += rw;
-          }
+    if (autoH) {
+      this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
+    }
+    lineBox.verticalAlign();
+    // 非左对齐偏移
+    const textAlign = computedStyle.textAlign;
+    if (textAlign === TEXT_ALIGN.CENTER) {
+      for (let i = 0, len = lineBoxList.length; i < len; i++) {
+        const lineBox = lineBoxList[i];
+        const d = this.width - lineBox.w;
+        if (d) {
+          lineBox.offsetX(d * 0.5);
         }
-        this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
       }
-      else {}
-      lineBox.verticalAlign();
     }
-    // 固定宽高已经计算好，只需排版即可，多余的overflow:hidden掉
-    else {}
+    else if (textAlign === TEXT_ALIGN.RIGHT) {
+      for (let i = 0, len = lineBoxList.length; i < len; i++) {
+        const lineBox = lineBoxList[i];
+        const d = this.width - lineBox.w;
+        if (d) {
+          lineBox.offsetX(d);
+        }
+      }
+    }
   }
 
   override calContent(): boolean {

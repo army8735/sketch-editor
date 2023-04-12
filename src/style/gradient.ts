@@ -241,7 +241,7 @@ export function parseGradient(s: string) {
       linear: GRADIENT.LINEAR,
       radial: GRADIENT.RADIAL,
       conic: GRADIENT.CONIC,
-    }[gradient[1].toLowerCase()];
+    }[gradient[1].toLowerCase()]!;
     let d: number | Array<number>;
     if(t === GRADIENT.LINEAR) {
       const deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
@@ -325,10 +325,10 @@ export function parseGradient(s: string) {
         o.p = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }];
       }
     }
-    const v = gradient[2].match(/(([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?)|(transparent)/ig) || [];
+    const v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
     const stops: Array<ColorStop> = v.map(item => {
       const color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
-      const percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
+      const percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+/.exec(item);
       let offset;
       if(percent) {
         const v = calUnit(percent[0]);

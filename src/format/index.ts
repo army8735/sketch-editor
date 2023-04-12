@@ -33,6 +33,7 @@ export type JBitmap = JContainer & {
 
 export type JText = JNode & {
   tagName: TagName.Text,
+  props: TextProps,
 };
 
 export type JPolyline = JNode & {
@@ -131,6 +132,7 @@ export type ArtBoardProps = Props & {
 
 export type TextProps = Props & {
   content: string,
+  textBehaviour: number,
   rich?: Array<Rich>,
 };
 

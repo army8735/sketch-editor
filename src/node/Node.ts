@@ -222,6 +222,7 @@ class Node extends Event {
       }
     }
     computedStyle.letterSpacing = style.letterSpacing.v;
+    computedStyle.textAlign = style.textAlign.v;
   }
 
   calRepaintStyle(lv: RefreshLevel) {

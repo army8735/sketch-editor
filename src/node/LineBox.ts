@@ -28,6 +28,13 @@ class LineBox {
     }
   }
 
+  offsetX(n: number) {
+    const list = this.list;
+    for(let i = 0, len = list.length; i < len; i++) {
+      list[i].x += n;
+    }
+  }
+
   get size() {
     return this.list.length;
   }

@@ -16,12 +16,12 @@ import { calNormalLineHeight, color2hexStr } from '../style/css';
 
 enum ResizingConstraint {
   UNSET =  0b111111,
-  RIGHT =  0b000001,
-  WIDTH =  0b000010,
-  LEFT =   0b000100,
-  BOTTOM = 0b001000,
-  HEIGHT = 0b010000,
-  TOP =    0b100000,
+  RIGHT =  0b000001, // 1
+  WIDTH =  0b000010, // 2
+  LEFT =   0b000100, // 4
+  BOTTOM = 0b001000, // 8
+  HEIGHT = 0b010000, // 16
+  TOP =    0b100000, // 32
 }
 
 const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
@@ -413,7 +413,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const paragraphStyle = layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const alignment = paragraphStyle?.alignment;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
-    const textAlign = ['left', 'center', 'right', 'justify'][alignment || 0];
+    const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
     const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning || 0;
     const MSAttributedStringColorAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute ? [
@@ -448,6 +448,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           lineHeight,
         },
         content: string,
+        textBehaviour,
         rich,
       },
     } as JText;
