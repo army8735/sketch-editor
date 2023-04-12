@@ -476,7 +476,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         ty: curveTo.y,
       };
     });
-    const { borders, fills } = layer.style || {};
+    const { borders, borderOptions, fills } = layer.style || {};
     const fill: Array<string | Array<number>> = [], fillEnable: Array<boolean> = [];
     if (fills) {
       fills.forEach((item: SketchFormat.Fill) => {
@@ -528,6 +528,12 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         strokeWidth.push(item.thickness || 0);
       });
     }
+    const strokeDasharray: Array<number> = [];
+    if (borderOptions) {
+      borderOptions.dashPattern.forEach(item => {
+        strokeDasharray.push(item);
+      });
+    }
     return {
       tagName: TagName.Polyline,
       props: {
@@ -549,6 +555,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           stroke,
           strokeEnable,
           strokeWidth,
+          strokeDasharray,
           translateX,
           translateY,
           rotateZ,

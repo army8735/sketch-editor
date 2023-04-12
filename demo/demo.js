@@ -82,7 +82,7 @@ $input.onchange = function(e) {
       // 每次切页面更新数据
       root.on(editor.util.Event.PAGE_CHANGED, function(newPage) {
         curPage = newPage;
-        zoom = curPage.getZoom(); console.log('zoom', 1);
+        zoom = curPage.getZoom();
         const last = $page.querySelector('.current');
         if (last) {
           last.classList.remove('current');
@@ -639,7 +639,6 @@ document.addEventListener('keyup', function(e) {
 });
 
 $main.addEventListener('wheel', function(e) {
-  console.log(curPage)
   if (!curPage) {
     return;
   }
@@ -796,7 +795,7 @@ $main.addEventListener('wheel', function(e) {
           sc = -10;
         }
       }
-      const { translateY } = curPage.getComputedStyle(); console.log(sc);
+      const { translateY } = curPage.getComputedStyle();
       curPage.updateStyle({
         translateY: translateY + sc,
       });

@@ -33,6 +33,7 @@
             stroke: [[0, 0, 0, 1]],
             strokeEnable: [false],
             strokeWidth: [1],
+            strokeDasharray: [],
             letterSpacing: 0,
             textAlign: 'left',
             translateX: 0,
@@ -17096,6 +17097,12 @@
                 return { v: Math.max(0, item), u: StyleUnit.PX };
             });
         }
+        const strokeDasharray = style.strokeDasharray;
+        if (!isNil(strokeDasharray)) {
+            res.strokeDasharray = strokeDasharray.map(item => {
+                return { v: Math.max(0, item), u: StyleUnit.PX };
+            });
+        }
         // 只有这几个，3d没有
         [
             'translateX',
@@ -17837,7 +17844,7 @@
                         ty: curveTo.y,
                     };
                 });
-                const { borders, fills } = layer.style || {};
+                const { borders, borderOptions, fills } = layer.style || {};
                 const fill = [], fillEnable = [];
                 if (fills) {
                     fills.forEach((item) => {
@@ -17887,6 +17894,12 @@
                         strokeWidth.push(item.thickness || 0);
                     });
                 }
+                const strokeDasharray = [];
+                if (borderOptions) {
+                    borderOptions.dashPattern.forEach(item => {
+                        strokeDasharray.push(item);
+                    });
+                }
                 return {
                     tagName: TagName.Polyline,
                     props: {
@@ -17908,6 +17921,7 @@
                             stroke,
                             strokeEnable,
                             strokeWidth,
+                            strokeDasharray,
                             translateX,
                             translateY,
                             rotateZ,
@@ -18652,6 +18666,7 @@
             computedStyle.stroke = style.stroke.map(item => item.v);
             computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
             computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
+            computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
             computedStyle.mixBlendMode = style.mixBlendMode.v;
             computedStyle.pointerEvents = style.pointerEvents.v;
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
@@ -20847,7 +20862,8 @@
             const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, } = this.computedStyle;
+            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = this.computedStyle;
+            ctx.setLineDash(strokeDasharray);
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {

@@ -240,6 +240,7 @@ class Node extends Event {
     computedStyle.stroke = style.stroke.map(item => item.v);
     computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
+    computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {

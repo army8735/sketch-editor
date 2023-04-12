@@ -224,6 +224,12 @@ export function normalize(style: JStyle): Style {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
+  const strokeDasharray = style.strokeDasharray;
+  if (!isNil(strokeDasharray)) {
+    res.strokeDasharray = strokeDasharray.map(item => {
+      return { v: Math.max(0, item), u: StyleUnit.PX };
+    });
+  }
   // 只有这几个，3d没有
   [
     'translateX',

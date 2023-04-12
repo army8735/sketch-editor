@@ -176,7 +176,9 @@ class Polyline extends Geom {
       stroke,
       strokeEnable,
       strokeWidth,
+      strokeDasharray,
     } = this.computedStyle;
+    ctx.setLineDash(strokeDasharray);
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
