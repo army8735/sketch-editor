@@ -15499,7 +15499,7 @@
     };
 
     var config$1 = {
-        debug: true,
+        debug: false,
         offscreenCanvas: true,
     };
 

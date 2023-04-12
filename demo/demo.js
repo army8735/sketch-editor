@@ -313,6 +313,7 @@ function showSelect(node) {
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
   const li = abHash[node.props.uuid];
+  li.scrollIntoView();
   selectTree = li;
   selectTree.classList.add('select');
 }
