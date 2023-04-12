@@ -636,7 +636,7 @@ document.addEventListener('keyup', function(e) {
   }
 });
 
-document.addEventListener('wheel', function(e) {
+$main.addEventListener('wheel', function(e) {
   if (!curPage) {
     return;
   }

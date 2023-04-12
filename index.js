@@ -21719,7 +21719,6 @@ void main() {
                 },
             });
             root.setJPages(json.pages);
-            // root.setPageIndex(0);
             return root;
         },
         openAndConvertSketchBuffer,
