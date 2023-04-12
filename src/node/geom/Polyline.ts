@@ -148,11 +148,11 @@ class Polyline extends Geom {
     if (props.isClosed) {
       const last = temp[len - 1];
       const p = [first.x, first.y];
-      if (last.tx !== undefined) {
-        p.push(last.tx, last.ty);
+      if (first.tx !== undefined) {
+        p.unshift(first.tx, first.ty);
       }
-      if (first.fx !== undefined) {
-        p.push(first.fx, first.fy);
+      if (last.fx !== undefined) {
+        p.unshift(last.fx, last.fy);
       }
       res.push(p);
     }

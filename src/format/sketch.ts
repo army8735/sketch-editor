@@ -453,7 +453,12 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       },
     } as JText;
   }
-  if (layer._class === SketchFormat.ClassValue.Rectangle) {
+  if (layer._class === SketchFormat.ClassValue.Rectangle
+    || layer._class === SketchFormat.ClassValue.Oval
+    || layer._class === SketchFormat.ClassValue.Star
+    || layer._class === SketchFormat.ClassValue.Triangle
+    || layer._class === SketchFormat.ClassValue.Polygon
+    || layer._class === SketchFormat.ClassValue.ShapePath) {
     const points: Array<Point> = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
