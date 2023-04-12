@@ -74,9 +74,35 @@ export function pointInRect(x: number, y: number, x1: number, y1: number, x2: nu
   }
 }
 
+// 两点距离
+export function pointsDistance(x1: number, y1: number, x2: number, y2: number) {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+// 余弦定理3边长求夹角，返回a边对应的角
+export function angleBySides(a: number, b: number, c: number) {
+  // Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB))
+  let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
+  return Math.acos(theta);
+}
+
+export const H = 4 * (Math.sqrt(2) - 1) / 3;
+
+// 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
+export function h(deg: number) {
+  deg *= 0.5;
+  return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
+}
+
 export default {
   d2r,
   r2d,
+  // 贝塞尔曲线模拟1/4圆弧比例
+  H,
+  // <90任意角度贝塞尔曲线拟合圆弧的比例公式
+  h,
   pointInConvexPolygon,
   pointInRect,
+  pointsDistance,
+  angleBySides,
 };

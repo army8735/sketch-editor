@@ -555,6 +555,7 @@ document.addEventListener('mousemove', function(e) {
   if (!curPage) {
     return;
   }
+  e.preventDefault();
   const target = e.target;
   let isOnControl = false;
   if (target === $selection || target.parentElement === $selection || target.parentElement.parentElement === $selection) {
@@ -796,5 +797,6 @@ document.addEventListener('wheel', function(e) {
         translateY: translateY + sc,
       });
     }
+    updateSelect();
   }
 });

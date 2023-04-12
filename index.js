@@ -15939,9 +15939,23 @@
     function crossProduct(x1, y1, x2, y2) {
         return x1 * y2 - x2 * y1;
     }
+    // 向量长度
+    function length(x, y) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    }
+    // 归一化
+    function unitize(x, y) {
+        let n = length(x, y);
+        return {
+            x: x / n,
+            y: y / n,
+        };
+    }
     var vector = {
         dotProduct,
         crossProduct,
+        length,
+        unitize,
     };
 
     function identity() {
@@ -16317,11 +16331,33 @@
             return x >= x1 && y >= y1 && x <= x2 && y <= y2;
         }
     }
+    // 两点距离
+    function pointsDistance(x1, y1, x2, y2) {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+    // 余弦定理3边长求夹角，返回a边对应的角
+    function angleBySides(a, b, c) {
+        // Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB))
+        let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
+        return Math.acos(theta);
+    }
+    const H = 4 * (Math.sqrt(2) - 1) / 3;
+    // 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
+    function h(deg) {
+        deg *= 0.5;
+        return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
+    }
     var geom = {
         d2r,
         r2d,
+        // 贝塞尔曲线模拟1/4圆弧比例
+        H,
+        // <90任意角度贝塞尔曲线拟合圆弧的比例公式
+        h,
         pointInConvexPolygon,
         pointInRect,
+        pointsDistance,
+        angleBySides,
     };
 
     class Event {
@@ -17220,11 +17256,16 @@
         }
         else if (color.charAt(0) === '#') {
             color = color.slice(1);
-            if (color.length === 3) {
+            if (color.length === 3 || color.length === 4) {
                 res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
                 res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
                 res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-                res[3] = 1;
+                if (color.length === 4) {
+                    res[3] = parseInt(color.charAt(3) + color.charAt(3), 16);
+                }
+                else {
+                    res[3] = 1;
+                }
             }
             else if (color.length === 6) {
                 res.push(parseInt(color.slice(0, 2), 16));
@@ -17289,7 +17330,7 @@
                 color[0] = Math.floor(Math.max(color[0], 0));
                 color[1] = Math.floor(Math.max(color[1], 0));
                 color[2] = Math.floor(Math.max(color[2], 0));
-                if (color.length === 4) {
+                if (color.length === 4 && color[3] < 1) {
                     color[3] = Math.max(color[3], 0);
                     return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
                         + toHex(Math.floor(color[3] * 255));
@@ -17769,7 +17810,6 @@
                             lineHeight,
                         },
                         content: string,
-                        textBehaviour,
                         rich,
                     },
                 };
@@ -20378,7 +20418,6 @@
             super(props);
             this.content = props.content;
             this.rich = props.rich;
-            this.textBehaviour = props.textBehaviour;
             this.lineBoxList = [];
         }
         lay(data) {
@@ -20634,6 +20673,9 @@
         ctx.closePath();
     }
 
+    function isCornerPoint(point) {
+        return point.curveMode === CurveMode$1.Straight && point.cornerRadius > 0;
+    }
     class Polyline extends Geom {
         constructor(props) {
             super(props);
@@ -20643,21 +20685,104 @@
             const { width, height } = this;
             const temp = [];
             const points = props.points;
+            let hasCorner = false;
             // 先算出真实尺寸，按w/h把[0,1]坐标转换
             for (let i = 0, len = points.length; i < len; i++) {
                 const item = points[i];
-                temp.push({
+                const res = {
                     x: item.x * width,
                     y: item.y * height,
-                    cornerRadius: item.cornerRadius,
-                    curveMode: item.curveMode,
-                    hasCurveFrom: item.hasCurveFrom,
-                    hasCurveTo: item.hasCurveTo,
-                    fx: item.fx * width,
-                    fy: item.fy * height,
-                    tx: item.tx * width,
-                    ty: item.ty * height,
-                });
+                };
+                if (isCornerPoint(item)) {
+                    hasCorner = true;
+                }
+                else {
+                    if (item.hasCurveTo) {
+                        res.tx = item.tx * width;
+                        res.ty = item.ty * height;
+                    }
+                    if (item.hasCurveFrom) {
+                        res.fx = item.fx * width;
+                        res.fy = item.fy * height;
+                    }
+                }
+                temp.push(res);
+            }
+            // 如果有圆角，拟合画圆
+            if (hasCorner) {
+                // 倒序将圆角点拆分为2个顶点
+                for (let len = points.length, i = len - 1; i >= 0; i--) {
+                    const point = points[i];
+                    if (!isCornerPoint(point)) {
+                        continue;
+                    }
+                    // 观察前后2个顶点的情况
+                    const prevIdx = i ? (i - 1) : (len - 1);
+                    const nextIdx = (i + 1) % len;
+                    const prevPoint = points[prevIdx];
+                    const nextPoint = points[nextIdx];
+                    let radius = point.cornerRadius;
+                    // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
+                    const isPrevCorner = isCornerPoint(prevPoint);
+                    const isPrevStraight = isPrevCorner
+                        || prevPoint.curveMode === CurveMode$1.Straight
+                        || !prevPoint.hasCurveFrom;
+                    const isNextCorner = isCornerPoint(nextPoint);
+                    const isNextStraight = isNextCorner
+                        || nextPoint.curveMode === CurveMode$1.Straight
+                        || !nextPoint.hasCurveTo;
+                    // 先看最普通的直线，可以用角平分线+半径最小值约束求解
+                    if (isPrevStraight && isNextStraight) {
+                        // 2直线边长，ABC3个点，A是prev，B是curr，C是next
+                        const lenAB = pointsDistance(prevPoint.x * width, prevPoint.y * height, point.x * width, point.y * height);
+                        const lenBC = pointsDistance(point.x * width, point.y * height, nextPoint.x * width, nextPoint.y * height);
+                        const lenAC = pointsDistance(prevPoint.x * width, prevPoint.y * height, nextPoint.x * width, nextPoint.y * height);
+                        // 三点之间的夹角
+                        const radian = angleBySides(lenAC, lenAB, lenBC);
+                        // 计算切点距离
+                        const tangent = Math.tan(radian * 0.5);
+                        let dist = radius / tangent;
+                        // 校准 dist，用户设置的 cornerRadius 可能太大，而实际显示 cornerRadius 受到 AB BC 两边长度限制。
+                        // 如果 B C 端点设置了 cornerRadius，可用长度减半
+                        const minDist = Math.min(isPrevCorner ? lenAB * 0.5 : lenAB, isNextCorner ? lenBC * 0.5 : lenBC);
+                        if (dist > minDist) {
+                            dist = minDist;
+                            radius = dist * tangent;
+                        }
+                        // 方向向量
+                        const px = prevPoint.x - point.x, py = prevPoint.y - point.y;
+                        const pv = unitize(px, py);
+                        const nx = nextPoint.x - point.x, ny = nextPoint.y - point.y;
+                        const nv = unitize(nx, ny);
+                        // 相切的点
+                        const prevTangent = { x: pv.x * dist, y: pv.y * dist };
+                        prevTangent.x += temp[i].x;
+                        prevTangent.y += temp[i].y;
+                        const nextTangent = { x: nv.x * dist, y: nv.y * dist };
+                        nextTangent.x += temp[i].x;
+                        nextTangent.y += temp[i].y;
+                        // 计算 cubic handler 位置
+                        const kappa = h(radian);
+                        const prevHandle = { x: pv.x * -radius * kappa, y: pv.y * -radius * kappa };
+                        prevHandle.x += prevTangent.x;
+                        prevHandle.y += prevTangent.y;
+                        const nextHandle = { x: nv.x * -radius * kappa, y: nv.y * -radius * kappa };
+                        nextHandle.x += nextTangent.x;
+                        nextHandle.y += nextTangent.y;
+                        // 删除当前顶点，替换为3阶贝塞尔曲线
+                        temp.splice(i, 1, {
+                            x: prevTangent.x,
+                            y: prevTangent.y,
+                            fx: prevHandle.x,
+                            fy: prevHandle.y,
+                        }, {
+                            x: nextTangent.x,
+                            y: nextTangent.y,
+                            tx: nextHandle.x,
+                            ty: nextHandle.y,
+                        });
+                    }
+                }
             }
             // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
             const first = temp[0];
@@ -20667,11 +20792,11 @@
                 const item = temp[i];
                 const prev = temp[i - 1];
                 const p = [item.x, item.y];
-                if (item.hasCurveTo) {
+                if (item.tx !== undefined) {
                     p.unshift(item.tx, item.ty);
                 }
-                if (prev.hasCurveFrom) {
-                    p.push(prev.fx, prev.fy);
+                if (prev.fx !== undefined) {
+                    p.unshift(prev.fx, prev.fy);
                 }
                 res.push(p);
             }
@@ -20679,10 +20804,10 @@
             if (props.isClosed) {
                 const last = temp[len - 1];
                 const p = [first.x, first.y];
-                if (last.hasCurveTo) {
+                if (last.tx !== undefined) {
                     p.push(last.tx, last.ty);
                 }
-                if (first.hasCurveFrom) {
+                if (first.fx !== undefined) {
                     p.push(first.fx, first.fy);
                 }
                 res.push(p);
@@ -21017,7 +21142,7 @@
             }
             else {
                 const img = inject.IMG[ArtBoard.BOX_SHADOW];
-                // 一般不可能有缓存，太特殊的base64了
+                // 一般首次不可能有缓存，太特殊的base64了
                 if (img) {
                     ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img);
                     root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined);

@@ -386,11 +386,16 @@ export function color2rgbaInt(color: string | Array<number>): Array<number> {
   }
   else if(color.charAt(0) === '#') {
     color = color.slice(1);
-    if(color.length === 3) {
+    if(color.length === 3 || color.length === 4) {
       res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
       res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
       res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-      res[3] = 1;
+      if (color.length === 4) {
+        res[3] = parseInt(color.charAt(3) + color.charAt(3), 16);
+      }
+      else {
+        res[3] = 1;
+      }
     }
     else if(color.length === 6) {
       res.push(parseInt(color.slice(0, 2), 16));
@@ -458,7 +463,7 @@ export function color2hexStr(color: string | Array<number>): string {
       color[0] = Math.floor(Math.max(color[0], 0));
       color[1] = Math.floor(Math.max(color[1], 0));
       color[2] = Math.floor(Math.max(color[2], 0));
-      if(color.length === 4) {
+      if(color.length === 4 && color[3] < 1) {
         color[3] = Math.max(color[3], 0);
         return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
           + toHex(Math.floor(color[3] * 255));

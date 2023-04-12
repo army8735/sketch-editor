@@ -100,13 +100,11 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
 class Text extends Node {
   content: string;
   rich?: Array<Rich>;
-  textBehaviour: number;
   lineBoxList: Array<LineBox>;
   constructor(props: TextProps) {
     super(props);
     this.content = props.content;
     this.rich = props.rich;
-    this.textBehaviour = props.textBehaviour;
     this.lineBoxList = [];
   }
 

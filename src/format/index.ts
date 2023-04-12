@@ -132,7 +132,6 @@ export type ArtBoardProps = Props & {
 
 export type TextProps = Props & {
   content: string,
-  textBehaviour: number,
   rich?: Array<Rich>,
 };
 

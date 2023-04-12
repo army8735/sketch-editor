@@ -1,9 +1,15 @@
 import Geom from './Geom';
-import { PolylineProps } from '../../format';
+import { CurveMode, Point, PolylineProps } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
 import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
+import { angleBySides, pointsDistance, h } from '../../math/geom';
+import { unitize } from '../../math/vector';
+
+function isCornerPoint(point: Point) {
+  return point.curveMode === CurveMode.Straight && point.cornerRadius > 0;
+}
 
 class Polyline extends Geom {
   points?: Array<Array<number>>;
@@ -14,23 +20,113 @@ class Polyline extends Geom {
   private buildPoints() {
     const props = this.props as PolylineProps;
     const { width, height } = this;
-    const temp = [];
+    const temp: Array<any> = [];
     const points = props.points;
+    let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
     for (let i = 0, len = points.length; i < len; i++) {
       const item = points[i];
-      temp.push({
+      const res: any = {
         x: item.x * width,
         y: item.y * height,
-        cornerRadius: item.cornerRadius,
-        curveMode: item.curveMode,
-        hasCurveFrom: item.hasCurveFrom,
-        hasCurveTo: item.hasCurveTo,
-        fx: item.fx * width,
-        fy: item.fy * height,
-        tx: item.tx * width,
-        ty: item.ty * height,
-      });
+      };
+      if (isCornerPoint(item)) {
+        hasCorner = true;
+      }
+      else {
+        if (item.hasCurveTo) {
+          res.tx = item.tx * width;
+          res.ty = item.ty * height;
+        }
+        if (item.hasCurveFrom) {
+          res.fx = item.fx * width;
+          res.fy = item.fy * height;
+        }
+      }
+      temp.push(res);
+    }
+    // 如果有圆角，拟合画圆
+    if (hasCorner) {
+      // 倒序将圆角点拆分为2个顶点
+      for (let len = points.length, i = len - 1; i >= 0; i--) {
+        const point = points[i];
+        if (!isCornerPoint(point)) {
+          continue;
+        }
+        // 观察前后2个顶点的情况
+        const prevIdx = i ? (i - 1) : (len - 1);
+        const nextIdx = (i + 1) % len;
+        const prevPoint = points[prevIdx];
+        const nextPoint = points[nextIdx];
+        let radius = point.cornerRadius;
+        // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
+        const isPrevCorner = isCornerPoint(prevPoint);
+        const isPrevStraight = isPrevCorner
+          || prevPoint.curveMode === CurveMode.Straight
+          || !prevPoint.hasCurveFrom;
+        const isNextCorner = isCornerPoint(nextPoint);
+        const isNextStraight = isNextCorner
+          || nextPoint.curveMode === CurveMode.Straight
+          || !nextPoint.hasCurveTo;
+        // 先看最普通的直线，可以用角平分线+半径最小值约束求解
+        if (isPrevStraight && isNextStraight) {
+          // 2直线边长，ABC3个点，A是prev，B是curr，C是next
+          const lenAB = pointsDistance(prevPoint.x * width, prevPoint.y * height, point.x * width, point.y * height);
+          const lenBC = pointsDistance(point.x * width, point.y * height, nextPoint.x * width, nextPoint.y * height);
+          const lenAC = pointsDistance(prevPoint.x * width, prevPoint.y * height, nextPoint.x * width, nextPoint.y * height);
+          // 三点之间的夹角
+          const radian = angleBySides(lenAC, lenAB, lenBC);
+          // 计算切点距离
+          const tangent = Math.tan(radian * 0.5);
+          let dist = radius / tangent;
+          // 校准 dist，用户设置的 cornerRadius 可能太大，而实际显示 cornerRadius 受到 AB BC 两边长度限制。
+          // 如果 B C 端点设置了 cornerRadius，可用长度减半
+          const minDist = Math.min(
+            isPrevCorner ? lenAB * 0.5 : lenAB,
+            isNextCorner ? lenBC * 0.5 : lenBC,
+          );
+          if (dist > minDist) {
+            dist = minDist;
+            radius = dist * tangent;
+          }
+          // 方向向量
+          const px = prevPoint.x - point.x, py = prevPoint.y - point.y;
+          const pv = unitize(px, py);
+          const nx = nextPoint.x - point.x, ny = nextPoint.y - point.y;
+          const nv = unitize(nx, ny);
+          // 相切的点
+          const prevTangent = { x: pv.x * dist, y: pv.y * dist };
+          prevTangent.x += temp[i].x;
+          prevTangent.y += temp[i].y;
+          const nextTangent = { x: nv.x * dist, y: nv.y * dist };
+          nextTangent.x += temp[i].x;
+          nextTangent.y += temp[i].y;
+          // 计算 cubic handler 位置
+          const kappa = h(radian);
+          const prevHandle = { x: pv.x * -radius * kappa, y: pv.y * -radius * kappa };
+          prevHandle.x += prevTangent.x;
+          prevHandle.y += prevTangent.y;
+          const nextHandle = { x: nv.x * -radius * kappa, y: nv.y * -radius * kappa };
+          nextHandle.x += nextTangent.x;
+          nextHandle.y += nextTangent.y;
+          // 删除当前顶点，替换为3阶贝塞尔曲线
+          temp.splice(i, 1, {
+            x: prevTangent.x,
+            y: prevTangent.y,
+            fx: prevHandle.x,
+            fy: prevHandle.y,
+          }, {
+            x: nextTangent.x,
+            y: nextTangent.y,
+            tx: nextHandle.x,
+            ty: nextHandle.y,
+          });
+        }
+        // 两边只要有贝塞尔（一定是2阶），就只能用离散来逼近求圆心路径，两边中的直线则能直接求，2个圆心路径交点为所需圆心坐标
+        else {
+          // TODO
+        }
+      }
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
     const first = temp[0];
@@ -40,11 +136,11 @@ class Polyline extends Geom {
       const item = temp[i];
       const prev = temp[i - 1];
       const p = [item.x, item.y];
-      if (item.hasCurveTo) {
+      if (item.tx !== undefined) {
         p.unshift(item.tx, item.ty);
       }
-      if (prev.hasCurveFrom) {
-        p.push(prev.fx, prev.fy);
+      if (prev.fx !== undefined) {
+        p.unshift(prev.fx, prev.fy);
       }
       res.push(p);
     }
@@ -52,10 +148,10 @@ class Polyline extends Geom {
     if (props.isClosed) {
       const last = temp[len - 1];
       const p = [first.x, first.y];
-      if (last.hasCurveTo) {
+      if (last.tx !== undefined) {
         p.push(last.tx, last.ty);
       }
-      if (first.hasCurveFrom) {
+      if (first.fx !== undefined) {
         p.push(first.fx, first.fy);
       }
       res.push(p);

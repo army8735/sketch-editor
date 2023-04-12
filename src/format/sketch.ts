@@ -11,6 +11,7 @@ import {
   JPolyline,
   TagName,
   Rich,
+  Point,
 } from './';
 import { calNormalLineHeight, color2hexStr } from '../style/css';
 
@@ -448,13 +449,12 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           lineHeight,
         },
         content: string,
-        textBehaviour,
         rich,
       },
     } as JText;
   }
   if (layer._class === SketchFormat.ClassValue.Rectangle) {
-    const points = layer.points.map((item: any) => {
+    const points: Array<Point> = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
       const curveTo = parseStrPoint(item.curveTo);
