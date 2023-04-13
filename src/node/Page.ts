@@ -4,6 +4,8 @@ import ArtBoard from './ArtBoard';
 import Container from './Container';
 import Group from './Group';
 import Text from './Text';
+import Polyline from './geom/Polyline';
+import ShapeGroup from './geom/ShapeGroup';
 import {
   Props,
   ArtBoardProps,
@@ -13,7 +15,6 @@ import {
   TextProps,
 } from '../format/';
 import { TagName, JNode, JPage } from '../format';
-import Polyline from './geom/Polyline';
 
 function parse(json: JNode): Node | undefined {
   if (json.tagName === TagName.ArtBoard) {
@@ -44,6 +45,16 @@ function parse(json: JNode): Node | undefined {
   }
   else if (json.tagName === TagName.Polyline) {
     return new Polyline(json.props as PolylineProps);
+  }
+  else if (json.tagName === TagName.ShapeGroup) {
+    const children = [];
+    for(let i = 0, len = (json as JContainer).children.length; i < len; i++) {
+      const res = parse((json as JContainer).children[i]);
+      if(res) {
+        children.push(res);
+      }
+    }
+    return new ShapeGroup(json.props, children);
   }
 }
 

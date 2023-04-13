@@ -1,7 +1,12 @@
 import Node from '../Node';
 import { Props } from '../../format';
 
-class Geom extends Node {
+export interface Shape {
+  points?: Array<Array<number>>,
+}
+
+class Geom extends Node implements Shape {
+  points?: Array<Array<number>>;
   constructor(props: Props) {
     super(props);
   }

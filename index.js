@@ -51,6 +51,7 @@
         TagName["Page"] = "page";
         TagName["ArtBoard"] = "artBoard";
         TagName["Group"] = "group";
+        TagName["ShapeGroup"] = "$shapeGroup";
         TagName["Bitmap"] = "bitmap";
         TagName["Text"] = "text";
         TagName["Polyline"] = "$polyline";
@@ -16374,6 +16375,20 @@
         }
         return true;
     }
+    // 2个矩形是否包含，a包含b
+    function isRectsInside(a, b, includeIntersect) {
+        let [ax1, ay1, ax4, ay4] = a;
+        let [bx1, by1, bx4, by4] = b;
+        if (includeIntersect) {
+            if (ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+                return true;
+            }
+        }
+        else if (ax1 < bx1 && ay1 < by1 && ax4 > bx4 && ay4 > by4) {
+            return true;
+        }
+        return false;
+    }
     // 两个直线多边形是否相交重叠
     function isConvexPolygonOverlap(a, b, includeIntersect) {
         for (let i = 0, len = a.length; i < len; i++) {
@@ -16396,6 +16411,7 @@
         pointsDistance,
         angleBySides,
         isRectsOverlap,
+        isRectsInside,
         isConvexPolygonOverlap,
     };
 
@@ -17546,8 +17562,8 @@
             return {
                 tagName: TagName.Page,
                 props: {
-                    name: page.name,
                     uuid: page.do_objectID,
+                    name: page.name,
                     style: {
                         width: W,
                         height: H,
@@ -17589,8 +17605,8 @@
                 return {
                     tagName: TagName.ArtBoard,
                     props: {
-                        name: layer.name,
                         uuid: layer.do_objectID,
+                        name: layer.name,
                         hasBackgroundColor,
                         resizesContent: layer.resizesContent,
                         style: {
@@ -17734,8 +17750,8 @@
                 return {
                     tagName: TagName.Group,
                     props: {
-                        name: layer.name,
                         uuid: layer.do_objectID,
+                        name: layer.name,
                         style: {
                             left,
                             top,
@@ -17758,8 +17774,8 @@
                 return {
                     tagName: TagName.Bitmap,
                     props: {
-                        name: layer.name,
                         uuid: layer.do_objectID,
+                        name: layer.name,
                         style: {
                             left,
                             top,
@@ -17832,8 +17848,8 @@
                 return {
                     tagName: TagName.Text,
                     props: {
-                        name: layer.name,
                         uuid: layer.do_objectID,
+                        name: layer.name,
                         style: {
                             left,
                             top,
@@ -17882,62 +17898,7 @@
                         ty: curveTo.y,
                     };
                 });
-                const { borders, borderOptions, fills } = layer.style || {};
-                const fill = [], fillEnable = [];
-                if (fills) {
-                    fills.forEach((item) => {
-                        if (item.fillType === FileFormat.FillType.Gradient) {
-                            const g = item.gradient;
-                            if (g.gradientType === FileFormat.GradientType.Linear) {
-                                const from = parseStrPoint(g.from);
-                                const to = parseStrPoint(g.to);
-                                const stops = g.stops.map(item => {
-                                    const color = color2hexStr([
-                                        Math.floor(item.color.red * 255),
-                                        Math.floor(item.color.green * 255),
-                                        Math.floor(item.color.blue * 255),
-                                        item.color.alpha,
-                                    ]);
-                                    return color + ' ' + item.position * 100 + '%';
-                                });
-                                fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
-                            }
-                            else if (g.gradientType === FileFormat.GradientType.Radial) ;
-                            else if (g.gradientType === FileFormat.GradientType.Angular) ;
-                            else {
-                                throw new Error('Unknown gradient');
-                            }
-                        }
-                        else {
-                            fill.push([
-                                Math.floor(item.color.red * 255),
-                                Math.floor(item.color.green * 255),
-                                Math.floor(item.color.blue * 255),
-                                item.color.alpha,
-                            ]);
-                        }
-                        fillEnable.push(item.isEnabled);
-                    });
-                }
-                const stroke = [], strokeEnable = [], strokeWidth = [];
-                if (borders) {
-                    borders.forEach((item) => {
-                        stroke.push([
-                            Math.floor(item.color.red * 255),
-                            Math.floor(item.color.green * 255),
-                            Math.floor(item.color.blue * 255),
-                            item.color.alpha,
-                        ]);
-                        strokeEnable.push(item.isEnabled);
-                        strokeWidth.push(item.thickness || 0);
-                    });
-                }
-                const strokeDasharray = [];
-                if (borderOptions) {
-                    borderOptions.dashPattern.forEach(item => {
-                        strokeDasharray.push(item);
-                    });
-                }
+                const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
                 return {
                     tagName: TagName.Polyline,
                     props: {
@@ -17967,7 +17928,108 @@
                     },
                 };
             }
+            if (layer._class === FileFormat.ClassValue.ShapeGroup) {
+                // console.log(layer);
+                const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
+                const children = yield Promise.all(layer.layers.map((child) => {
+                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                }));
+                return {
+                    tagName: TagName.ShapeGroup,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            fill,
+                            fillEnable,
+                            stroke,
+                            strokeEnable,
+                            strokeWidth,
+                            strokeDasharray,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                        },
+                    },
+                    children,
+                };
+            }
+            console.error(layer);
         });
+    }
+    function geomStyle(layer) {
+        const { borders, borderOptions, fills } = layer.style || {};
+        const fill = [], fillEnable = [];
+        if (fills) {
+            fills.forEach((item) => {
+                if (item.fillType === FileFormat.FillType.Gradient) {
+                    const g = item.gradient;
+                    if (g.gradientType === FileFormat.GradientType.Linear) {
+                        const from = parseStrPoint(g.from);
+                        const to = parseStrPoint(g.to);
+                        const stops = g.stops.map(item => {
+                            const color = color2hexStr([
+                                Math.floor(item.color.red * 255),
+                                Math.floor(item.color.green * 255),
+                                Math.floor(item.color.blue * 255),
+                                item.color.alpha,
+                            ]);
+                            return color + ' ' + item.position * 100 + '%';
+                        });
+                        fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+                    }
+                    else if (g.gradientType === FileFormat.GradientType.Radial) ;
+                    else if (g.gradientType === FileFormat.GradientType.Angular) ;
+                    else {
+                        throw new Error('Unknown gradient');
+                    }
+                }
+                else {
+                    fill.push([
+                        Math.floor(item.color.red * 255),
+                        Math.floor(item.color.green * 255),
+                        Math.floor(item.color.blue * 255),
+                        item.color.alpha,
+                    ]);
+                }
+                fillEnable.push(item.isEnabled);
+            });
+        }
+        const stroke = [], strokeEnable = [], strokeWidth = [];
+        if (borders) {
+            borders.forEach((item) => {
+                stroke.push([
+                    Math.floor(item.color.red * 255),
+                    Math.floor(item.color.green * 255),
+                    Math.floor(item.color.blue * 255),
+                    item.color.alpha,
+                ]);
+                strokeEnable.push(item.isEnabled);
+                strokeWidth.push(item.thickness || 0);
+            });
+        }
+        const strokeDasharray = [];
+        if (borderOptions) {
+            borderOptions.dashPattern.forEach(item => {
+                strokeDasharray.push(item);
+            });
+        }
+        return {
+            fill,
+            fillEnable,
+            stroke,
+            strokeEnable,
+            strokeWidth,
+            strokeDasharray,
+        };
     }
     function parseStrPoint(s) {
         const res = /{(.+),\s*(.+)}/.exec(s);
@@ -19382,6 +19444,7 @@
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
             this.isArtBoard = false;
             this.isPage = false;
+            this.isShapeGroup = false;
             this.children = children;
         }
         // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前暂无JSX这种一口气创建一颗子树
@@ -21082,6 +21145,14 @@
         }
     }
 
+    class ShapeGroup extends Container {
+        constructor(props, children) {
+            super(props, children);
+            this.isShapeGroup = true;
+            this.points = [];
+        }
+    }
+
     function parse(json) {
         if (json.tagName === TagName.ArtBoard) {
             const children = [];
@@ -21111,6 +21182,16 @@
         }
         else if (json.tagName === TagName.Polyline) {
             return new Polyline(json.props);
+        }
+        else if (json.tagName === TagName.ShapeGroup) {
+            const children = [];
+            for (let i = 0, len = json.children.length; i < len; i++) {
+                const res = parse(json.children[i]);
+                if (res) {
+                    children.push(res);
+                }
+            }
+            return new ShapeGroup(json.props, children);
         }
     }
     class Page extends Container {
@@ -21848,6 +21929,7 @@ void main() {
         Text,
         Geom,
         Polyline,
+        ShapeGroup,
     };
 
     var version = "0.0.1";

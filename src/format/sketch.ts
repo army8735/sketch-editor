@@ -12,6 +12,7 @@ import {
   TagName,
   Rich,
   Point,
+  JShapeGroup,
 } from './';
 import { calNormalLineHeight, color2hexStr } from '../style/css';
 
@@ -120,8 +121,8 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
   return {
     tagName: TagName.Page,
     props: {
-      name: page.name,
       uuid: page.do_objectID,
+      name: page.name,
       style: {
         width: W,
         height: H,
@@ -163,8 +164,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     return {
       tagName: TagName.ArtBoard,
       props: {
-        name: layer.name,
         uuid: layer.do_objectID,
+        name: layer.name,
         hasBackgroundColor,
         resizesContent: layer.resizesContent,
         style: {
@@ -317,8 +318,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     return {
       tagName: TagName.Group,
       props: {
-        name: layer.name,
         uuid: layer.do_objectID,
+        name: layer.name,
         style: {
           left,
           top,
@@ -341,8 +342,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     return {
       tagName: TagName.Bitmap,
       props: {
-        name: layer.name,
         uuid: layer.do_objectID,
+        name: layer.name,
         style: {
           left,
           top,
@@ -426,8 +427,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     return {
       tagName: TagName.Text,
       props: {
-        name: layer.name,
         uuid: layer.do_objectID,
+        name: layer.name,
         style: {
           left,
           top,
@@ -476,64 +477,14 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         ty: curveTo.y,
       };
     });
-    const { borders, borderOptions, fills } = layer.style || {};
-    const fill: Array<string | Array<number>> = [], fillEnable: Array<boolean> = [];
-    if (fills) {
-      fills.forEach((item: SketchFormat.Fill) => {
-        if (item.fillType === SketchFormat.FillType.Gradient) {
-          const g = item.gradient;
-          if (g.gradientType === SketchFormat.GradientType.Linear) {
-            const from = parseStrPoint(g.from);
-            const to = parseStrPoint(g.to);
-            const stops = g.stops.map(item => {
-              const color = color2hexStr([
-                Math.floor(item.color.red * 255),
-                Math.floor(item.color.green * 255),
-                Math.floor(item.color.blue * 255),
-                item.color.alpha,
-              ]);
-              return color + ' ' + item.position * 100 + '%';
-            });
-            fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
-          }
-          else if (g.gradientType === SketchFormat.GradientType.Radial) {
-          }
-          else if (g.gradientType === SketchFormat.GradientType.Angular) {
-          }
-          else {
-            throw new Error('Unknown gradient');
-          }
-        }
-        else {
-          fill.push([
-            Math.floor(item.color.red * 255),
-            Math.floor(item.color.green * 255),
-            Math.floor(item.color.blue * 255),
-            item.color.alpha,
-          ]);
-        }
-        fillEnable.push(item.isEnabled);
-      });
-    }
-    const stroke: Array<Array<number>> = [], strokeEnable: Array<boolean> = [], strokeWidth: Array<number> = [];
-    if (borders) {
-      borders.forEach((item: SketchFormat.Border) => {
-        stroke.push([
-          Math.floor(item.color.red * 255),
-          Math.floor(item.color.green * 255),
-          Math.floor(item.color.blue * 255),
-          item.color.alpha,
-        ]);
-        strokeEnable.push(item.isEnabled);
-        strokeWidth.push(item.thickness || 0);
-      });
-    }
-    const strokeDasharray: Array<number> = [];
-    if (borderOptions) {
-      borderOptions.dashPattern.forEach(item => {
-        strokeDasharray.push(item);
-      });
-    }
+    const {
+      fill,
+      fillEnable,
+      stroke,
+      strokeEnable,
+      strokeWidth,
+      strokeDasharray,
+    } = geomStyle(layer);
     return {
       tagName: TagName.Polyline,
       props: {
@@ -563,9 +514,119 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       },
     } as JPolyline;
   }
-  else {
-    // console.error(layer);
+  if (layer._class === SketchFormat.ClassValue.ShapeGroup) {
+    // console.log(layer);
+    const {
+      fill,
+      fillEnable,
+      stroke,
+      strokeEnable,
+      strokeWidth,
+      strokeDasharray,
+    } = geomStyle(layer);
+    const children = await Promise.all(
+      layer.layers.map((child: SketchFormat.AnyLayer) => {
+        return convertItem(child, opt, layer.frame.width, layer.frame.height);
+      })
+    );
+    return {
+      tagName: TagName.ShapeGroup,
+      props: {
+        uuid: layer.do_objectID,
+        name: layer.name,
+        style: {
+          left,
+          top,
+          right,
+          bottom,
+          width,
+          height,
+          visible,
+          opacity,
+          fill,
+          fillEnable,
+          stroke,
+          strokeEnable,
+          strokeWidth,
+          strokeDasharray,
+          translateX,
+          translateY,
+          rotateZ,
+        },
+      },
+      children,
+    } as JShapeGroup;
   }
+  console.error(layer);
+}
+
+function geomStyle(layer: SketchFormat.AnyLayer) {
+  const { borders, borderOptions, fills } = layer.style || {};
+  const fill: Array<string | Array<number>> = [], fillEnable: Array<boolean> = [];
+  if (fills) {
+    fills.forEach((item: SketchFormat.Fill) => {
+      if (item.fillType === SketchFormat.FillType.Gradient) {
+        const g = item.gradient;
+        if (g.gradientType === SketchFormat.GradientType.Linear) {
+          const from = parseStrPoint(g.from);
+          const to = parseStrPoint(g.to);
+          const stops = g.stops.map(item => {
+            const color = color2hexStr([
+              Math.floor(item.color.red * 255),
+              Math.floor(item.color.green * 255),
+              Math.floor(item.color.blue * 255),
+              item.color.alpha,
+            ]);
+            return color + ' ' + item.position * 100 + '%';
+          });
+          fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+        }
+        else if (g.gradientType === SketchFormat.GradientType.Radial) {
+        }
+        else if (g.gradientType === SketchFormat.GradientType.Angular) {
+        }
+        else {
+          throw new Error('Unknown gradient');
+        }
+      }
+      else {
+        fill.push([
+          Math.floor(item.color.red * 255),
+          Math.floor(item.color.green * 255),
+          Math.floor(item.color.blue * 255),
+          item.color.alpha,
+        ]);
+      }
+      fillEnable.push(item.isEnabled);
+    });
+  }
+  const stroke: Array<Array<number>> = [], strokeEnable: Array<boolean> = [], strokeWidth: Array<number> = [];
+  if (borders) {
+    borders.forEach((item: SketchFormat.Border) => {
+      stroke.push([
+        Math.floor(item.color.red * 255),
+        Math.floor(item.color.green * 255),
+        Math.floor(item.color.blue * 255),
+        item.color.alpha,
+      ]);
+      strokeEnable.push(item.isEnabled);
+      strokeWidth.push(item.thickness || 0);
+    });
+  }
+  const strokeDasharray: Array<number> = [];
+  if (borderOptions) {
+    borderOptions.dashPattern.forEach(item => {
+      strokeDasharray.push(item);
+    });
+  }
+  return {
+    fill,
+    fillEnable,
+    stroke,
+    strokeEnable,
+    strokeWidth,
+    strokeDasharray,
+  };
 }
 
 function parseStrPoint(s: string) {

@@ -8,6 +8,7 @@ import Root from './Root';
 import Text from './Text';
 import Geom from './geom/Geom';
 import Polyline from './geom/Polyline';
+import ShapeGroup from './geom/ShapeGroup';
 
 export default {
   ArtBoard,
@@ -20,4 +21,5 @@ export default {
   Text,
   Geom,
   Polyline,
+  ShapeGroup,
 };

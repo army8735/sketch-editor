@@ -26,6 +26,10 @@ export type JGroup = JContainer & {
   tagName: TagName.Group,
 };
 
+export type JShapeGroup = JContainer & {
+  tagName: TagName.ShapeGroup,
+};
+
 export type JBitmap = JContainer & {
   tagName: TagName.Bitmap,
   props: BitmapProps,
@@ -171,6 +175,7 @@ export enum TagName {
   Page = 'page',
   ArtBoard = 'artBoard',
   Group = 'group',
+  ShapeGroup = '$shapeGroup',
   Bitmap = 'bitmap',
   Text = 'text',
   Polyline = '$polyline',

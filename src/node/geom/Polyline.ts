@@ -12,7 +12,6 @@ function isCornerPoint(point: Point) {
 }
 
 class Polyline extends Geom {
-  points?: Array<Array<number>>;
   constructor(props: PolylineProps) {
     super(props);
   }
@@ -130,12 +129,12 @@ class Polyline extends Geom {
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
     const first = temp[0];
-    const p = [first.x, first.y];
-    const res = [p], len = temp.length;
+    const p: Array<number> = [first.x, first.y];
+    const res: Array<Array<number>> = [p], len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
-      const p = [item.x, item.y];
+      const p: Array<number> = [item.x, item.y];
       if (item.tx !== undefined) {
         p.unshift(item.tx, item.ty);
       }
@@ -147,7 +146,7 @@ class Polyline extends Geom {
     // 闭合
     if (props.isClosed) {
       const last = temp[len - 1];
-      const p = [first.x, first.y];
+      const p: Array<number> = [first.x, first.y];
       if (first.tx !== undefined) {
         p.unshift(first.tx, first.ty);
       }

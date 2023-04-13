@@ -123,6 +123,21 @@ export function isRectsOverlap(a: Array<number>, b: Array<number>, includeInters
   return true;
 }
 
+// 2个矩形是否包含，a包含b
+export function isRectsInside(a: Array<number>, b: Array<number>, includeIntersect: boolean) {
+  let [ax1, ay1, ax4, ay4] = a;
+  let [bx1, by1, bx4, by4] = b;
+  if(includeIntersect) {
+    if(ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+      return true;
+    }
+  }
+  else if(ax1 < bx1 && ay1 < by1 && ax4 > bx4 && ay4 > by4) {
+    return true;
+  }
+  return false;
+}
+
 // 两个直线多边形是否相交重叠
 export function isConvexPolygonOverlap(a: Array<{ x: number, y: number}>, b: Array<{ x: number, y: number}>, includeIntersect: boolean) {
   for (let i = 0, len = a.length; i < len; i++) {
@@ -146,5 +161,6 @@ export default {
   pointsDistance,
   angleBySides,
   isRectsOverlap,
+  isRectsInside,
   isConvexPolygonOverlap,
 };
