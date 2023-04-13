@@ -51,6 +51,8 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       }
     }
   }
+  // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，overlay更新实际上是下一帧了
+  const overlay = root.overlay;
   const program = programs.program;
   gl.useProgram(programs.program);
   // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
@@ -60,6 +62,10 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for(let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
+    // 特殊的工具覆盖层，如画板名称，同步更新translate直接跟着画板位置刷新
+    if (overlay && overlay === node) {
+      overlay.update();
+    }
     const computedStyle = node.computedStyle;
     if (!computedStyle.visible) {
       i += total;
@@ -177,11 +183,6 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
           root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined)
         });
       }
-    }
-    // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，overlay更新实际上是下一帧了
-    const overlay = root.overlay;
-    if (overlay) {
-      overlay.update();
     }
   }
 }

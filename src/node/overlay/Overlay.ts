@@ -3,6 +3,7 @@ import Node from '../Node';
 import ArtBoard from '../ArtBoard';
 import Text from '../Text';
 import { Props } from '../../format';
+import { RefreshLevel } from '../../refresh/level';
 
 class Overlay extends Container {
   artBoards: Container;
@@ -29,7 +30,6 @@ class Overlay extends Container {
         style: {
           fontSize: 24,
           color: '#777',
-          visible: false,
         },
         content: ab.props.name || '画板',
       });
@@ -43,11 +43,12 @@ class Overlay extends Container {
     for (let i = 0, len = abList.length; i < len; i++) {
       const { ab, text } = abList[i];
       const rect = ab.getBoundingClientRect();
-      text.updateStyle({
-        visible: true,
+      // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
+      text.updateStyleData({
         translateX: rect.left,
         translateY: rect.top - 32,
       });
+      text.calMatrix(RefreshLevel.TRANSLATE);
     }
   }
 }

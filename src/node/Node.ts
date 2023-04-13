@@ -433,7 +433,7 @@ class Node extends Event {
     return [temp];
   }
 
-  preUpdateStyleData(style: any) {
+  updateStyleData(style: any) {
     const keys: Array<string> = [];
     const formatStyle = normalize(style);
     for (let k in formatStyle) {
@@ -450,7 +450,7 @@ class Node extends Event {
     return { keys, formatStyle };
   }
 
-  preUpdateStyleCheck(keys: Array<string>) {
+  updateStyleCheck(keys: Array<string>) {
     if (!keys.length) {
       return true;
     }
@@ -471,9 +471,9 @@ class Node extends Event {
   }
 
   updateStyle(style: any, cb?: Function) {
-    const { keys } = this.preUpdateStyleData(style);
+    const { keys } = this.updateStyleData(style);
     // 无变更或不可见
-    if (this.preUpdateStyleCheck(keys)) {
+    if (this.updateStyleCheck(keys)) {
       cb && cb(true);
       return;
     }
