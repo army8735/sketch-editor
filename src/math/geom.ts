@@ -127,11 +127,11 @@ export function isRectsOverlap(a: Array<number>, b: Array<number>, includeInters
 export function isConvexPolygonOverlap(a: Array<{ x: number, y: number}>, b: Array<{ x: number, y: number}>, includeIntersect: boolean) {
   for (let i = 0, len = a.length; i < len; i++) {
     const { x, y } = a[i];
-    if (!pointInConvexPolygon(x, y, b, includeIntersect)) {
-      return false;
+    if (pointInConvexPolygon(x, y, b, includeIntersect)) {
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 export default {

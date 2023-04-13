@@ -16378,11 +16378,11 @@
     function isConvexPolygonOverlap(a, b, includeIntersect) {
         for (let i = 0, len = a.length; i < len; i++) {
             const { x, y } = a[i];
-            if (!pointInConvexPolygon(x, y, b, includeIntersect)) {
-                return false;
+            if (pointInConvexPolygon(x, y, b, includeIntersect)) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
     var geom = {
         d2r,
@@ -18359,7 +18359,7 @@
     }
 
     function createTexture(gl, n, tex, width, height) {
-        let texture = gl.createTexture();
+        const texture = gl.createTexture();
         bindTexture(gl, texture, n);
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);

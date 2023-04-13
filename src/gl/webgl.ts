@@ -5,7 +5,7 @@ import TextureCache from '../refresh/TextureCache';
 
 export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, n: number,
                               tex?: TexImageSource, width?: number, height?: number): WebGLTexture {
-  let texture = gl.createTexture()!;
+  const texture = gl.createTexture()!;
   bindTexture(gl, texture, n);
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
