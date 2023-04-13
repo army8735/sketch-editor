@@ -45,14 +45,16 @@ class Node extends Event {
   refreshLevel: RefreshLevel;
   _opacity: number; // 世界透明度
   hasCacheOp: boolean;  // 是否计算过世界opacity
+  hasCacheOpLv: boolean; // 同上，每次刷新时变更，供刷新树级计算优化
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
   _matrixWorld: Float64Array; // 世界transform
   hasCacheMw: boolean; // 是否计算过世界transform
+  hasCacheMwLv: boolean; // 同上
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
   _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
-  canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割
+  canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
 
   constructor(props: Props) {
@@ -72,14 +74,16 @@ class Node extends Event {
       num: 0,
       total: 0,
       lv: 0,
-    }
+    };
     this.refreshLevel = RefreshLevel.REFLOW;
     this._opacity = 1;
     this.hasCacheOp = false;
+    this.hasCacheOpLv = false;
     this.transform = identity();
     this.matrix = identity();
     this._matrixWorld = identity();
     this.hasCacheMw = false;
+    this.hasCacheMwLv = false;
     this.hasContent = false;
   }
 
@@ -255,6 +259,7 @@ class Node extends Event {
     const { style, computedStyle, matrix, transform } = this;
     // 更新先标识缓存失效，计算再改成功
     this.hasCacheMw = false;
+    this.hasCacheMwLv = false;
     let optimize = true;
     if (lv >= RefreshLevel.REFLOW
       || lv & RefreshLevel.TRANSFORM

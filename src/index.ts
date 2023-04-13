@@ -34,13 +34,14 @@ export default {
     // json中的imgs下标替换
     json.pages = apply(json.pages, json.imgs);
     const { width, height } = canvas;
-    const root = new node.Root(canvas, {
+    const root = new node.Root({
       dpi,
       style: {
         width,
         height,
       },
     });
+    root.appendTo(canvas);
     root.setJPages(json.pages);
     return root;
   },

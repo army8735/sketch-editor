@@ -23,10 +23,10 @@ type RootProps = Props & {
 
 class Root extends Container implements FrameCallback {
   uuid: number;
-  canvas: HTMLCanvasElement;
-  ctx: WebGL2RenderingContext | WebGLRenderingContext | null;
+  canvas?: HTMLCanvasElement;
+  ctx: WebGL2RenderingContext | WebGLRenderingContext | undefined;
   dpi: number;
-  isWebgl2: boolean;
+  isWebgl2?: boolean;
   programs: any;
   refs: any;
   lastPage: Page | undefined; // 上一个显示的Page对象
@@ -40,9 +40,22 @@ class Root extends Container implements FrameCallback {
   taskClone: Array<Function | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
 
-  constructor(canvas: HTMLCanvasElement, props: RootProps) {
-    super(props, []);
+  constructor(props: RootProps, children: Array<Node> = []) {
+    super(props, children);
     this.uuid = uuid++;
+    // 初始化的数据
+    this.dpi = props.dpi;
+    this.root = this;
+    this.refs = {};
+    this.structs = this.structure(0);
+    this.isAsyncDraw = false;
+    this.task = [];
+    this.taskClone = [];
+    this.rl = RefreshLevel.REBUILD;
+  }
+
+  appendTo(canvas: HTMLCanvasElement) {
+    this.isDestroyed = false;
     this.canvas = canvas;
     // gl的初始化和配置
     let gl: WebGL2RenderingContext | WebGLRenderingContext
@@ -65,16 +78,6 @@ class Root extends Container implements FrameCallback {
     );
     this.programs = {};
     this.initShaders(gl);
-    // 初始化的数据
-    this.dpi = props.dpi;
-    this.root = this;
-    this.refs = {};
-    this.isDestroyed = false;
-    this.structs = this.structure(0);
-    this.isAsyncDraw = false;
-    this.task = [];
-    this.taskClone = [];
-    this.rl = RefreshLevel.REBUILD;
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
@@ -238,6 +241,7 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.OPACITY) {
           computedStyle.opacity = style.opacity.v;
           node.hasCacheOp = false; // 手动删除缓存
+          node.hasCacheOpLv = false;
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;

@@ -18513,10 +18513,12 @@
             this.refreshLevel = RefreshLevel.REFLOW;
             this._opacity = 1;
             this.hasCacheOp = false;
+            this.hasCacheOpLv = false;
             this.transform = identity();
             this.matrix = identity();
             this._matrixWorld = identity();
             this.hasCacheMw = false;
+            this.hasCacheMwLv = false;
             this.hasContent = false;
         }
         // 添加到dom后标记非销毁状态，和root引用
@@ -18679,6 +18681,7 @@
             const { style, computedStyle, matrix, transform } = this;
             // 更新先标识缓存失效，计算再改成功
             this.hasCacheMw = false;
+            this.hasCacheMwLv = false;
             let optimize = true;
             if (lv >= RefreshLevel.REFLOW
                 || lv & RefreshLevel.TRANSFORM
@@ -21115,28 +21118,58 @@
         }
         const program = programs.program;
         gl.useProgram(programs.program);
+        // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
+        const cacheOpList = [];
+        const cacheMwList = [];
+        let lastLv = 0, hasCacheOpLv = false, hasCacheMwLv = false;
         // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
         for (let i = 0, len = structs.length; i < len; i++) {
-            const { node, total } = structs[i];
+            const { node, lv, total } = structs[i];
             const computedStyle = node.computedStyle;
             if (!computedStyle.visible) {
                 i += total;
                 continue;
             }
-            // 继承父的opacity和matrix TODO 优化路径缓存
-            let opacity = computedStyle.opacity;
-            let matrix = node.matrix;
-            const parent = node.parent;
-            if (parent) {
-                const op = parent.opacity, mw = parent._matrixWorld;
-                if (op !== 1) {
-                    opacity *= op;
-                }
-                matrix = multiply(mw, matrix);
+            // 第一个是Root层级0
+            if (!i) {
+                hasCacheOpLv = node.hasCacheOpLv;
+                hasCacheMwLv = node.hasCacheMwLv;
+                cacheOpList.push(hasCacheOpLv);
+                cacheMwList.push(hasCacheMwLv);
             }
-            node._opacity = opacity;
-            const mw = node._matrixWorld = node._matrixWorld || identity();
-            assignMatrix(mw, matrix);
+            // lv变大说明是子节点，如果仍有缓存，要判断子节点是否更新，已经没缓存就不用了
+            else if (lv > lastLv) {
+                if (hasCacheOpLv) {
+                    hasCacheOpLv = node.hasCacheOpLv;
+                }
+                cacheOpList.push(hasCacheOpLv);
+                if (hasCacheMwLv) {
+                    hasCacheMwLv = node.hasCacheMwLv;
+                }
+                cacheMwList.push(hasCacheMwLv);
+            }
+            // lv变小说明是上层节点，不一定是直接父节点，因为可能跨层，出栈对应数量来到对应lv的数据
+            else if (lv < lastLv) {
+                const diff = lastLv - lv;
+                cacheOpList.splice(-diff);
+                hasCacheOpLv = cacheOpList[lv - 1];
+                cacheMwList.splice(-diff);
+                hasCacheMwLv = cacheMwList[lv - 1];
+            }
+            // 不变是同级兄弟，无需特殊处理 else {}
+            lastLv = lv;
+            // 继承父的opacity和matrix，仍然要注意root没有parent
+            const parent = node.parent;
+            if (!hasCacheOpLv) {
+                node._opacity = parent ? parent._opacity * node.computedStyle.opacity : node.computedStyle.opacity;
+                node.hasCacheOpLv = true;
+            }
+            if (!hasCacheMwLv) {
+                assignMatrix(node._matrixWorld, parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix);
+                node.hasCacheMwLv = true;
+            }
+            const opacity = node._opacity;
+            const matrix = node._matrixWorld;
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && textureCache.available && opacity > 0) {
@@ -21402,11 +21435,23 @@ void main() {
 
     let uuid = 0;
     class Root extends Container {
-        constructor(canvas, props) {
-            super(props, []);
+        constructor(props, children = []) {
+            super(props, children);
             this.ani = []; // 动画任务，空占位
             this.aniChange = false;
             this.uuid = uuid++;
+            // 初始化的数据
+            this.dpi = props.dpi;
+            this.root = this;
+            this.refs = {};
+            this.structs = this.structure(0);
+            this.isAsyncDraw = false;
+            this.task = [];
+            this.taskClone = [];
+            this.rl = RefreshLevel.REBUILD;
+        }
+        appendTo(canvas) {
+            this.isDestroyed = false;
             this.canvas = canvas;
             // gl的初始化和配置
             let gl = canvas.getContext('webgl2', ca);
@@ -21425,16 +21470,6 @@ void main() {
             config.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
             this.programs = {};
             this.initShaders(gl);
-            // 初始化的数据
-            this.dpi = props.dpi;
-            this.root = this;
-            this.refs = {};
-            this.isDestroyed = false;
-            this.structs = this.structure(0);
-            this.isAsyncDraw = false;
-            this.task = [];
-            this.taskClone = [];
-            this.rl = RefreshLevel.REBUILD;
             // 刷新动画侦听，目前就一个Root
             frame.addRoot(this);
             this.reLayout();
@@ -21591,6 +21626,7 @@ void main() {
                     if (lv & RefreshLevel.OPACITY) {
                         computedStyle.opacity = style.opacity.v;
                         node.hasCacheOp = false; // 手动删除缓存
+                        node.hasCacheOpLv = false;
                     }
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
                         computedStyle.mixBlendMode = style.mixBlendMode.v;
@@ -21742,13 +21778,14 @@ void main() {
             // json中的imgs下标替换
             json.pages = apply(json.pages, json.imgs);
             const { width, height } = canvas;
-            const root = new node.Root(canvas, {
+            const root = new node.Root({
                 dpi,
                 style: {
                     width,
                     height,
                 },
             });
+            root.appendTo(canvas);
             root.setJPages(json.pages);
             return root;
         },
