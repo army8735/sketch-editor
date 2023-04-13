@@ -114,7 +114,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     // 一般只有一个纹理
     const textureCache = node.textureCache;
     if (textureCache && textureCache.available && opacity > 0) {
-      drawTextureCache(gl, cx, cy, program, [{
+      drawTextureCache(gl, width, height, cx, cy, program, [{
         node,
         opacity,
         matrix,

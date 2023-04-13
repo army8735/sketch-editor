@@ -1,5 +1,6 @@
 import Node from '../node/Node';
 import { calRectPoint } from '../math/matrix';
+import { isConvexPolygonOverlap } from '../math/geom';
 import TextureCache from '../refresh/TextureCache';
 
 export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, n: number,
@@ -40,28 +41,65 @@ export type DrawData = {
   cache: TextureCache,
 };
 
-export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext, cx: number, cy: number,
-                                 program: any, list: Array<DrawData>, vertCount: number) {
+let lastVtPoint: Float32Array, lastVtTex: Float32Array, lastVtOpacity: Float32Array; // 缓存
+
+export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
+                                 cx: number, cy: number, program: any, list: Array<DrawData>, vertCount: number) {
   if (!list.length || !vertCount) {
     return;
   }
   // 单个矩形绘制可优化，2个三角形共享一条边
-  const isSingle = list.length === 1;
+  const isSingle = vertCount === 1;
   const num1 = isSingle ? 8 : (vertCount * 12); // x+y数
   const num2 = isSingle ? 4 : (vertCount * 6); // 顶点数
-  const vtPoint = new Float32Array(num1)
-  const vtTex = new Float32Array(num1);
-  const vtOpacity = new Float32Array(num2);
+  // 是否使用缓存TypeArray，避免垃圾回收
+  let vtPoint: Float32Array, vtTex: Float32Array, vtOpacity: Float32Array;
+  if (lastVtPoint && lastVtPoint.length === num1) {
+    vtPoint = lastVtPoint;
+  }
+  else {
+    vtPoint = lastVtPoint = new Float32Array(num1);
+  }
+  if (lastVtTex && lastVtTex.length === num1) {
+    vtTex = lastVtTex;
+  }
+  else {
+    vtTex = lastVtTex = new Float32Array(num1);
+  }
+  if (lastVtOpacity && lastVtOpacity.length === num2) {
+    vtOpacity = lastVtOpacity;
+  }
+  else {
+    vtOpacity = lastVtOpacity = new Float32Array(num2);
+  }
   for (let i = 0, len = list.length; i < len; i++) {
     const { node, opacity, matrix, cache } = list[i];
     const { texture } = cache;
     bindTexture(gl, texture, 0);
     const bbox = node._bbox || node.bbox;
     const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
-    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
-    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
-    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
-    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy);
+    const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
+    // 不在画布显示范围内忽略
+    if(!isConvexPolygonOverlap([
+      { x: x1, y: y1 },
+      { x: x2, y: y2 },
+      { x: x3, y: y3 },
+      { x: x4, y: y4 },
+    ], [
+      { x: 0, y: 0 },
+      { x: width, y: 0 },
+      { x: width, y: height },
+      { x: 0, y: height},
+    ], true)) {
+      if (isSingle) {
+        return;
+      }
+      continue;
+    }
+    const t1 = convertCoords2Gl(x1, y1, cx, cy);
+    const t2 = convertCoords2Gl(x2, y2, cx, cy);
+    const t3 = convertCoords2Gl(x3, y3, cx, cy);
+    const t4 = convertCoords2Gl(x4, y4, cx, cy);
     let k = i * 12;
     vtPoint[k] = t1.x;
     vtPoint[k + 1] = t1.y;

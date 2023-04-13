@@ -14,9 +14,11 @@ export function r2d(n: number) {
  * @param x 点坐标
  * @param y
  * @param vertexes 多边形顶点坐标
+ * @param includeIntersect 是否包含刚好相交，点在边上
  * @returns {boolean}
  */
-export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: number, y: number }>) {
+export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: number, y: number }>,
+                                     includeIntersect: boolean = false) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
   let { x: xmax, y: ymax } = vertexes[0];
   let { x: xmin, y: ymin } = vertexes[0];
@@ -30,6 +32,11 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
   }
   if(x < xmin || y < ymin || x > xmax || y > ymax) {
     return false;
+  }
+  if (x <= xmin || y <= ymin || x >= xmax || y >= ymax) {
+    if (!includeIntersect) {
+      return false;
+    }
   }
   let first;
   // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
@@ -47,12 +54,16 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
         return false;
       }
     }
+    else if(!includeIntersect) {
+      return false;
+    }
   }
   return true;
 }
 
 // 判断点是否在一个矩形，比如事件发生是否在节点上
-export function pointInRect(x: number, y: number, x1: number, y1: number, x2: number, y2: number, matrix: Float64Array) {
+export function pointInRect(x: number, y: number, x1: number, y1: number, x2: number, y2: number,
+                            matrix: Float64Array, includeIntersect: boolean = false) {
   if(matrix && !isE(matrix)) {
     let t1 = calPoint({ x: x1, y: y1 }, matrix);
     let xa = t1.x, ya = t1.y;
@@ -69,8 +80,11 @@ export function pointInRect(x: number, y: number, x1: number, y1: number, x2: nu
       { x: xd, y: yd },
     ]);
   }
-  else {
+  else if (includeIntersect) {
     return x >= x1 && y >= y1 && x <= x2 && y <= y2;
+  }
+  else {
+    return x > x1 && y > y1 && x < x2 && y < y2;
   }
 }
 
@@ -94,6 +108,32 @@ export function h(deg: number) {
   return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
 }
 
+// 两个矩形是否相交重叠，无旋转，因此各自只需2个坐标：左上和右下
+export function isRectsOverlap(a: Array<number>, b: Array<number>, includeIntersect: boolean) {
+  let [ax1, ay1, ax4, ay4] = a;
+  let [bx1, by1, bx4, by4] = b;
+  if(includeIntersect) {
+    if(ax1 > bx4 || ay1 > by4 || bx1 > ax4 || by1 > ay4) {
+      return false;
+    }
+  }
+  else if(ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+    return false;
+  }
+  return true;
+}
+
+// 两个直线多边形是否相交重叠
+export function isConvexPolygonOverlap(a: Array<{ x: number, y: number}>, b: Array<{ x: number, y: number}>, includeIntersect: boolean) {
+  for (let i = 0, len = a.length; i < len; i++) {
+    const { x, y } = a[i];
+    if (!pointInConvexPolygon(x, y, b, includeIntersect)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export default {
   d2r,
   r2d,
@@ -105,4 +145,6 @@ export default {
   pointInRect,
   pointsDistance,
   angleBySides,
+  isRectsOverlap,
+  isConvexPolygonOverlap,
 };

@@ -16274,9 +16274,10 @@
      * @param x 点坐标
      * @param y
      * @param vertexes 多边形顶点坐标
+     * @param includeIntersect 是否包含刚好相交，点在边上
      * @returns {boolean}
      */
-    function pointInConvexPolygon(x, y, vertexes) {
+    function pointInConvexPolygon(x, y, vertexes, includeIntersect = false) {
         // 先取最大最小值得一个外围矩形，在外边可快速判断false
         let { x: xmax, y: ymax } = vertexes[0];
         let { x: xmin, y: ymin } = vertexes[0];
@@ -16290,6 +16291,11 @@
         }
         if (x < xmin || y < ymin || x > xmax || y > ymax) {
             return false;
+        }
+        if (x <= xmin || y <= ymin || x >= xmax || y >= ymax) {
+            if (!includeIntersect) {
+                return false;
+            }
         }
         let first;
         // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
@@ -16307,11 +16313,14 @@
                     return false;
                 }
             }
+            else if (!includeIntersect) {
+                return false;
+            }
         }
         return true;
     }
     // 判断点是否在一个矩形，比如事件发生是否在节点上
-    function pointInRect(x, y, x1, y1, x2, y2, matrix) {
+    function pointInRect(x, y, x1, y1, x2, y2, matrix, includeIntersect = false) {
         if (matrix && !isE(matrix)) {
             let t1 = calPoint({ x: x1, y: y1 }, matrix);
             let xa = t1.x, ya = t1.y;
@@ -16328,8 +16337,11 @@
                 { x: xd, y: yd },
             ]);
         }
-        else {
+        else if (includeIntersect) {
             return x >= x1 && y >= y1 && x <= x2 && y <= y2;
+        }
+        else {
+            return x > x1 && y > y1 && x < x2 && y < y2;
         }
     }
     // 两点距离
@@ -16348,6 +16360,30 @@
         deg *= 0.5;
         return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
     }
+    // 两个矩形是否相交重叠，无旋转，因此各自只需2个坐标：左上和右下
+    function isRectsOverlap(a, b, includeIntersect) {
+        let [ax1, ay1, ax4, ay4] = a;
+        let [bx1, by1, bx4, by4] = b;
+        if (includeIntersect) {
+            if (ax1 > bx4 || ay1 > by4 || bx1 > ax4 || by1 > ay4) {
+                return false;
+            }
+        }
+        else if (ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+            return false;
+        }
+        return true;
+    }
+    // 两个直线多边形是否相交重叠
+    function isConvexPolygonOverlap(a, b, includeIntersect) {
+        for (let i = 0, len = a.length; i < len; i++) {
+            const { x, y } = a[i];
+            if (!pointInConvexPolygon(x, y, b, includeIntersect)) {
+                return false;
+            }
+        }
+        return true;
+    }
     var geom = {
         d2r,
         r2d,
@@ -16359,6 +16395,8 @@
         pointInRect,
         pointsDistance,
         angleBySides,
+        isRectsOverlap,
+        isConvexPolygonOverlap,
     };
 
     class Event {
@@ -18347,27 +18385,63 @@
         gl.activeTexture(gl['TEXTURE' + n]);
         gl.bindTexture(gl.TEXTURE_2D, texture);
     }
-    function drawTextureCache(gl, cx, cy, program, list, vertCount) {
+    let lastVtPoint, lastVtTex, lastVtOpacity; // 缓存
+    function drawTextureCache(gl, width, height, cx, cy, program, list, vertCount) {
         if (!list.length || !vertCount) {
             return;
         }
         // 单个矩形绘制可优化，2个三角形共享一条边
-        const isSingle = list.length === 1;
+        const isSingle = vertCount === 1;
         const num1 = isSingle ? 8 : (vertCount * 12); // x+y数
         const num2 = isSingle ? 4 : (vertCount * 6); // 顶点数
-        const vtPoint = new Float32Array(num1);
-        const vtTex = new Float32Array(num1);
-        const vtOpacity = new Float32Array(num2);
+        // 是否使用缓存TypeArray，避免垃圾回收
+        let vtPoint, vtTex, vtOpacity;
+        if (lastVtPoint && lastVtPoint.length === num1) {
+            vtPoint = lastVtPoint;
+        }
+        else {
+            vtPoint = lastVtPoint = new Float32Array(num1);
+        }
+        if (lastVtTex && lastVtTex.length === num1) {
+            vtTex = lastVtTex;
+        }
+        else {
+            vtTex = lastVtTex = new Float32Array(num1);
+        }
+        if (lastVtOpacity && lastVtOpacity.length === num2) {
+            vtOpacity = lastVtOpacity;
+        }
+        else {
+            vtOpacity = lastVtOpacity = new Float32Array(num2);
+        }
         for (let i = 0, len = list.length; i < len; i++) {
             const { node, opacity, matrix, cache } = list[i];
             const { texture } = cache;
             bindTexture(gl, texture, 0);
             const bbox = node._bbox || node.bbox;
             const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
-            const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
-            const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
-            const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
-            const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy);
+            const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
+            // 不在画布显示范围内忽略
+            if (!isConvexPolygonOverlap([
+                { x: x1, y: y1 },
+                { x: x2, y: y2 },
+                { x: x3, y: y3 },
+                { x: x4, y: y4 },
+            ], [
+                { x: 0, y: 0 },
+                { x: width, y: 0 },
+                { x: width, y: height },
+                { x: 0, y: height },
+            ], true)) {
+                if (isSingle) {
+                    return;
+                }
+                continue;
+            }
+            const t1 = convertCoords2Gl(x1, y1, cx, cy);
+            const t2 = convertCoords2Gl(x2, y2, cx, cy);
+            const t3 = convertCoords2Gl(x3, y3, cx, cy);
+            const t4 = convertCoords2Gl(x4, y4, cx, cy);
             let k = i * 12;
             vtPoint[k] = t1.x;
             vtPoint[k + 1] = t1.y;
@@ -19521,7 +19595,7 @@
                 const child = children[i];
                 const { struct, computedStyle, rect, matrixWorld } = child;
                 // 在内部且pointerEvents为true才返回
-                if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld)) {
+                if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
                     // 不指定lv则找最深处的child
                     if (lv === undefined) {
                         if (child instanceof Container) {
@@ -21202,7 +21276,7 @@
             // 一般只有一个纹理
             const textureCache = node.textureCache;
             if (textureCache && textureCache.available && opacity > 0) {
-                drawTextureCache(gl, cx, cy, program, [{
+                drawTextureCache(gl, width, height, cx, cy, program, [{
                         node,
                         opacity,
                         matrix,
