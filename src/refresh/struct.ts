@@ -1,9 +1,9 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
+import ArtBoard from '../node/ArtBoard';
 import { RefreshLevel } from './level';
 import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
-import ArtBoard from '../node/ArtBoard';
 import inject from '../util/inject';
 
 export type Struct = {

@@ -386,6 +386,7 @@ class Node extends Event {
     const canvasCache = this.canvasCache;
     if (canvasCache && canvasCache.available) {
       this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
+      canvasCache.release();
     }
   }
 

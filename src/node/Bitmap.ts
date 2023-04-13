@@ -165,7 +165,9 @@ class Bitmap extends Node {
   override genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
     const { loader } = this;
     if (loader.onlyImg) {
-      this.textureCache = TextureCache.getImgInstance(gl, this.canvasCache!.offscreen.canvas, this.src!);
+      const canvasCache = this.canvasCache!;
+      this.textureCache = TextureCache.getImgInstance(gl, canvasCache!.offscreen.canvas, this.src!);
+      canvasCache.release();
     }
     else {
       return super.genTexture(gl);
