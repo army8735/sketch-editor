@@ -18842,6 +18842,8 @@
                 return;
             }
             this.isDestroyed = true;
+            this.canvasCache && this.canvasCache.release();
+            this.textureCache && this.textureCache.release(this.root.ctx);
             this.prev = this.next = this.parent = this.root = undefined;
         }
         structure(lv) {
