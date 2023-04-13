@@ -18351,9 +18351,13 @@
         if (!list.length || !vertCount) {
             return;
         }
-        const vtPoint = new Float32Array(vertCount * 12);
-        const vtTex = new Float32Array(vertCount * 12);
-        const vtOpacity = new Float32Array(vertCount * 6);
+        // 单个矩形绘制可优化，2个三角形共享一条边
+        const isSingle = list.length === 1;
+        const num1 = isSingle ? 8 : (vertCount * 12); // x+y数
+        const num2 = isSingle ? 4 : (vertCount * 6); // 顶点数
+        const vtPoint = new Float32Array(num1);
+        const vtTex = new Float32Array(num1);
+        const vtOpacity = new Float32Array(num2);
         for (let i = 0, len = list.length; i < len; i++) {
             const { node, opacity, matrix, cache } = list[i];
             const { texture } = cache;
@@ -18371,31 +18375,45 @@
             vtPoint[k + 3] = t4.y;
             vtPoint[k + 4] = t2.x;
             vtPoint[k + 5] = t2.y;
-            vtPoint[k + 6] = t4.x;
-            vtPoint[k + 7] = t4.y;
-            vtPoint[k + 8] = t2.x;
-            vtPoint[k + 9] = t2.y;
-            vtPoint[k + 10] = t3.x;
-            vtPoint[k + 11] = t3.y;
+            if (isSingle) {
+                vtPoint[k + 6] = t3.x;
+                vtPoint[k + 7] = t3.y;
+            }
+            else {
+                vtPoint[k + 6] = t4.x;
+                vtPoint[k + 7] = t4.y;
+                vtPoint[k + 8] = t2.x;
+                vtPoint[k + 9] = t2.y;
+                vtPoint[k + 10] = t3.x;
+                vtPoint[k + 11] = t3.y;
+            }
             vtTex[k] = 0;
             vtTex[k + 1] = 0;
             vtTex[k + 2] = 0;
             vtTex[k + 3] = 1;
             vtTex[k + 4] = 1;
             vtTex[k + 5] = 0;
-            vtTex[k + 6] = 0;
-            vtTex[k + 7] = 1;
-            vtTex[k + 8] = 1;
-            vtTex[k + 9] = 0;
-            vtTex[k + 10] = 1;
-            vtTex[k + 11] = 1;
+            if (isSingle) {
+                vtTex[k + 6] = 1;
+                vtTex[k + 7] = 1;
+            }
+            else {
+                vtTex[k + 6] = 0;
+                vtTex[k + 7] = 1;
+                vtTex[k + 8] = 1;
+                vtTex[k + 9] = 0;
+                vtTex[k + 10] = 1;
+                vtTex[k + 11] = 1;
+            }
             k = i * 6;
             vtOpacity[k] = opacity;
             vtOpacity[k + 1] = opacity;
             vtOpacity[k + 2] = opacity;
             vtOpacity[k + 3] = opacity;
-            vtOpacity[k + 4] = opacity;
-            vtOpacity[k + 5] = opacity;
+            if (!isSingle) {
+                vtOpacity[k + 4] = opacity;
+                vtOpacity[k + 5] = opacity;
+            }
         }
         // 顶点buffer
         const pointBuffer = gl.createBuffer();
@@ -18422,7 +18440,7 @@
         let u_texture = gl.getUniformLocation(program, 'u_texture');
         gl.uniform1i(u_texture, 0);
         // 渲染并销毁
-        gl.drawArrays(gl.TRIANGLES, 0, vertCount * 6);
+        gl.drawArrays(isSingle ? gl.TRIANGLE_STRIP : gl.TRIANGLES, 0, num2);
         gl.deleteBuffer(pointBuffer);
         gl.deleteBuffer(texBuffer);
         gl.deleteBuffer(opacityBuffer);
