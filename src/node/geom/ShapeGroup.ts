@@ -1,6 +1,5 @@
 import Container from '../Container';
 import { Props } from '../../format';
-import { Shape } from './Geom';
 import Polyline from './Polyline';
 import { BooleanOperation } from '../../style/define';
 import bo from '../../math/bo';
@@ -36,8 +35,8 @@ function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   return points.map(item => item.slice(0));
 }
 
-class ShapeGroup extends Container implements Shape {
-  points?: Array<Array<number>>;
+class ShapeGroup extends Container {
+  points?: Array<Array<Array<number>>>;
 
   constructor(props: Props, children: Array<Polyline | ShapeGroup>) {
     super(props, children);
@@ -53,16 +52,22 @@ class ShapeGroup extends Container implements Shape {
 
   buildPoints() {
     const { children } = this;
-    let res: Array<Array<number>> = [];
+    let res: Array<Array<Array<number>>> = [];
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i] as (Polyline | ShapeGroup);
       if (!item.points) {
         item.buildPoints();
       }
-      const points = item.points;
+      const { points, matrix } = item;
       if (points && points.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
-        const p = applyMatrixPoints(points, item.matrix);
+        let p: Array<Array<Array<number>>>;
+        if(item instanceof ShapeGroup) {
+          p = points.map(item => applyMatrixPoints(item as number[][], matrix));
+        }
+        else {
+          p = [applyMatrixPoints(points as number[][], matrix)];
+        }
         if (i === 0) {
           res = res.concat(p);
         }
@@ -71,24 +76,32 @@ class ShapeGroup extends Container implements Shape {
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BooleanOperation.INTERSECT) {
             const t = bo.intersect(res, p) as number[][][];
-            res = t[0];
+            res = t || [];
           }
           else if (booleanOperation === BooleanOperation.UNION) {
-            const t = bo.union(res, p) as number[][][];
-            res = t[0];
+            // 可能是条直线，不能用多边形求，直接合并
+            if (p.length <= 2) {
+              res = res.concat(p);
+            }
+            else {
+              const t = bo.union(res, p) as number[][][];
+              res = t || [];
+            }
           }
           else if (booleanOperation === BooleanOperation.SUBTRACT) {
+            console.log(res, p);
             const t = bo.subtract(res, p) as number[][][];
-            res = t[0];
+            console.log(t);
+            res = t || [];
           }
           else if (booleanOperation === BooleanOperation.XOR) {
             const t = bo.xor(res, p) as number[][][];
-            res = t[0];
+            res = t || [];
           }
         }
       }
     }
-    this.points = res.length ? res : [];
+    this.points = res;
   }
 
   override renderCanvas() {
@@ -131,7 +144,9 @@ class ShapeGroup extends Container implements Shape {
         });
         ctx.fillStyle = lg;
       }
-      canvasPolygon(ctx, points, -x, -y);
+      points.forEach(item => {
+        canvasPolygon(ctx, item, -x, -y);
+      });
       ctx.fill();
     }
     // 再上层的stroke
@@ -152,7 +167,9 @@ class ShapeGroup extends Container implements Shape {
         });
         ctx.fillStyle = lg;
       }
-      canvasPolygon(ctx, points, -x, -y);
+      points.forEach(item => {
+        canvasPolygon(ctx, item, -x, -y);
+      });
       ctx.stroke();
     }
   }
@@ -172,40 +189,50 @@ class ShapeGroup extends Container implements Shape {
           half = Math.max(half, item * 0.5);
         }
       });
-      const points = this.points!;
-      const first = points[0];
-      let xa, ya;
-      if (first.length === 4) {
-        xa = first[2];
-        ya = first[3];
-      }
-      else if (first.length === 6) {
-        xa = first[4];
-        ya = first[5];
-      }
-      else {
-        xa = first[0];
-        ya = first[1];
-      }
-      bbox[0] = Math.min(bbox[0], xa - half);
-      bbox[1] = Math.min(bbox[1], ya - half);
-      bbox[2] = Math.max(bbox[2], xa + half);
-      bbox[3] = Math.max(bbox[3], ya + half);
-      for (let i = 1, len = points.length; i < len; i++) {
-        const item = points[i];
-        let xb, yb;
-        if (item.length === 4) {}
-        else if (item.length === 6) {}
-        else {
-          xb = item[0];
-          yb = item[1];
-          bbox[0] = Math.min(bbox[0], xb - half);
-          bbox[1] = Math.min(bbox[1], yb - half);
-          bbox[2] = Math.max(bbox[2], xb + half);
-          bbox[3] = Math.max(bbox[3], yb + half);
+      const points = this.points;
+      if (points && points.length) {
+        const first = points[0][0];
+        let xa: number, ya: number;
+        if (first.length === 4) {
+          xa = first[2];
+          ya = first[3];
         }
-        xa = xb;
-        ya = yb;
+        else if (first.length === 6) {
+          xa = first[4];
+          ya = first[5];
+        }
+        else {
+          xa = first[0];
+          ya = first[1];
+        }
+        bbox[0] = Math.min(bbox[0], xa - half);
+        bbox[1] = Math.min(bbox[1], ya - half);
+        bbox[2] = Math.max(bbox[2], xa + half);
+        bbox[3] = Math.max(bbox[3], ya + half);
+        for (let i = 0, len = points.length; i < len; i++) {
+          const item = points[i];
+          for (let j = 0, len = item.length; j < len; j++) {
+            if (!i && !j) {
+              continue;
+            }
+            let item2 = item[j];
+            let xb: number, yb: number;
+            if (item.length === 4) {
+            }
+            else if (item.length === 6) {
+            }
+            else {
+              xb = item2[0];
+              yb = item2[1];
+              bbox[0] = Math.min(bbox[0], xb - half);
+              bbox[1] = Math.min(bbox[1], yb - half);
+              bbox[2] = Math.max(bbox[2], xb + half);
+              bbox[3] = Math.max(bbox[3], yb + half);
+            }
+            xa = xb!;
+            ya = yb!;
+          }
+        }
       }
     }
     return this._bbox;

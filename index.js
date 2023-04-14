@@ -17995,6 +17995,8 @@
                 || layer._class === FileFormat.ClassValue.Triangle
                 || layer._class === FileFormat.ClassValue.Polygon
                 || layer._class === FileFormat.ClassValue.ShapePath) {
+                const scaleX = layer.isFlippedHorizontal ? -1 : 1;
+                const scaleY = layer.isFlippedVertical ? -1 : 1;
                 const points = layer.points.map((item) => {
                     const point = parseStrPoint(item.point);
                     const curveFrom = parseStrPoint(item.curveFrom);
@@ -18037,6 +18039,8 @@
                             strokeDasharray,
                             translateX,
                             translateY,
+                            scaleX,
+                            scaleY,
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
                         },
@@ -20959,7 +20963,7 @@
             super(props);
         }
         buildPoints() {
-            return [];
+            this.points = [];
         }
         calContent() {
             return this.hasContent = true;
@@ -21009,7 +21013,6 @@
                 ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
             }
         }
-        ctx.closePath();
     }
 
     function isCornerPoint(point) {
@@ -21018,6 +21021,7 @@
     class Polyline extends Geom {
         constructor(props) {
             super(props);
+            this.isClosed = props.isClosed;
         }
         calContent() {
             if (!this.points) {
@@ -21146,7 +21150,7 @@
                 res.push(p);
             }
             // 闭合
-            if (props.isClosed) {
+            if (this.isClosed) {
                 const last = temp[len - 1];
                 const p = [first.x, first.y];
                 if (first.tx !== undefined) {
@@ -21157,7 +21161,6 @@
                 }
                 res.push(p);
             }
-            return res;
         }
         renderCanvas() {
             super.renderCanvas();
@@ -21193,6 +21196,9 @@
                     ctx.fillStyle = lg;
                 }
                 canvasPolygon(ctx, points, -x, -y);
+                if (this.isClosed) {
+                    ctx.closePath();
+                }
                 ctx.fill();
             }
             // 再上层的stroke
@@ -21214,6 +21220,9 @@
                     ctx.fillStyle = lg;
                 }
                 canvasPolygon(ctx, points, -x, -y);
+                if (this.isClosed) {
+                    ctx.closePath();
+                }
                 ctx.stroke();
             }
         }
@@ -24830,10 +24839,16 @@
                 if (!item.points) {
                     item.buildPoints();
                 }
-                const points = item.points;
+                const { points, matrix } = item;
                 if (points && points.length) {
                     // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
-                    const p = applyMatrixPoints(points, item.matrix);
+                    let p;
+                    if (item instanceof ShapeGroup) {
+                        p = points.map(item => applyMatrixPoints(item, matrix));
+                    }
+                    else {
+                        p = [applyMatrixPoints(points, matrix)];
+                    }
                     if (i === 0) {
                         res = res.concat(p);
                     }
@@ -24842,24 +24857,32 @@
                         // TODO 连续多个bo运算中间产物优化
                         if (booleanOperation === BooleanOperation.INTERSECT) {
                             const t = bo.intersect(res, p);
-                            res = t[0];
+                            res = t || [];
                         }
                         else if (booleanOperation === BooleanOperation.UNION) {
-                            const t = bo.union(res, p);
-                            res = t[0];
+                            // 可能是条直线，不能用多边形求，直接合并
+                            if (p.length <= 2) {
+                                res = res.concat(p);
+                            }
+                            else {
+                                const t = bo.union(res, p);
+                                res = t || [];
+                            }
                         }
                         else if (booleanOperation === BooleanOperation.SUBTRACT) {
+                            console.log(res, p);
                             const t = bo.subtract(res, p);
-                            res = t[0];
+                            console.log(t);
+                            res = t || [];
                         }
                         else if (booleanOperation === BooleanOperation.XOR) {
                             const t = bo.xor(res, p);
-                            res = t[0];
+                            res = t || [];
                         }
                     }
                 }
             }
-            this.points = res.length ? res : [];
+            this.points = res;
         }
         renderCanvas() {
             super.renderCanvas();
@@ -24894,7 +24917,9 @@
                     });
                     ctx.fillStyle = lg;
                 }
-                canvasPolygon(ctx, points, -x, -y);
+                points.forEach(item => {
+                    canvasPolygon(ctx, item, -x, -y);
+                });
                 ctx.fill();
             }
             // 再上层的stroke
@@ -24915,7 +24940,9 @@
                     });
                     ctx.fillStyle = lg;
                 }
-                canvasPolygon(ctx, points, -x, -y);
+                points.forEach(item => {
+                    canvasPolygon(ctx, item, -x, -y);
+                });
                 ctx.stroke();
             }
         }
@@ -24935,39 +24962,47 @@
                     }
                 });
                 const points = this.points;
-                const first = points[0];
-                let xa, ya;
-                if (first.length === 4) {
-                    xa = first[2];
-                    ya = first[3];
-                }
-                else if (first.length === 6) {
-                    xa = first[4];
-                    ya = first[5];
-                }
-                else {
-                    xa = first[0];
-                    ya = first[1];
-                }
-                bbox[0] = Math.min(bbox[0], xa - half);
-                bbox[1] = Math.min(bbox[1], ya - half);
-                bbox[2] = Math.max(bbox[2], xa + half);
-                bbox[3] = Math.max(bbox[3], ya + half);
-                for (let i = 1, len = points.length; i < len; i++) {
-                    const item = points[i];
-                    let xb, yb;
-                    if (item.length === 4) ;
-                    else if (item.length === 6) ;
-                    else {
-                        xb = item[0];
-                        yb = item[1];
-                        bbox[0] = Math.min(bbox[0], xb - half);
-                        bbox[1] = Math.min(bbox[1], yb - half);
-                        bbox[2] = Math.max(bbox[2], xb + half);
-                        bbox[3] = Math.max(bbox[3], yb + half);
+                if (points && points.length) {
+                    const first = points[0][0];
+                    let xa, ya;
+                    if (first.length === 4) {
+                        xa = first[2];
+                        ya = first[3];
                     }
-                    xa = xb;
-                    ya = yb;
+                    else if (first.length === 6) {
+                        xa = first[4];
+                        ya = first[5];
+                    }
+                    else {
+                        xa = first[0];
+                        ya = first[1];
+                    }
+                    bbox[0] = Math.min(bbox[0], xa - half);
+                    bbox[1] = Math.min(bbox[1], ya - half);
+                    bbox[2] = Math.max(bbox[2], xa + half);
+                    bbox[3] = Math.max(bbox[3], ya + half);
+                    for (let i = 0, len = points.length; i < len; i++) {
+                        const item = points[i];
+                        for (let j = 0, len = item.length; j < len; j++) {
+                            if (!i && !j) {
+                                continue;
+                            }
+                            let item2 = item[j];
+                            let xb, yb;
+                            if (item.length === 4) ;
+                            else if (item.length === 6) ;
+                            else {
+                                xb = item2[0];
+                                yb = item2[1];
+                                bbox[0] = Math.min(bbox[0], xb - half);
+                                bbox[1] = Math.min(bbox[1], yb - half);
+                                bbox[2] = Math.max(bbox[2], xb + half);
+                                bbox[3] = Math.max(bbox[3], yb + half);
+                            }
+                            xa = xb;
+                            ya = yb;
+                        }
+                    }
                 }
             }
             return this._bbox;

@@ -41,5 +41,4 @@ export function canvasPolygon(ctx: CanvasRenderingContext2D, list: Array<Array<n
       ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
     }
   }
-  ctx.closePath();
 }

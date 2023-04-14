@@ -13,8 +13,10 @@ function isCornerPoint(point: Point) {
 }
 
 class Polyline extends Geom {
+  isClosed: boolean;
   constructor(props: PolylineProps) {
     super(props);
+    this.isClosed = props.isClosed;
   }
 
   override calContent(): boolean {
@@ -24,7 +26,7 @@ class Polyline extends Geom {
     return this.hasContent = !!this.points && this.points.length > 1;
   }
 
-  buildPoints() {
+  override buildPoints() {
     const props = this.props as PolylineProps;
     const { width, height } = this;
     const temp: Array<any> = [];
@@ -152,7 +154,7 @@ class Polyline extends Geom {
       res.push(p);
     }
     // 闭合
-    if (props.isClosed) {
+    if (this.isClosed) {
       const last = temp[len - 1];
       const p: Array<number> = [first.x, first.y];
       if (first.tx !== undefined) {
@@ -163,7 +165,6 @@ class Polyline extends Geom {
       }
       res.push(p);
     }
-    return res;
   }
 
   override renderCanvas() {
@@ -207,6 +208,9 @@ class Polyline extends Geom {
         ctx.fillStyle = lg;
       }
       canvasPolygon(ctx, points, -x, -y);
+      if (this.isClosed) {
+        ctx.closePath();
+      }
       ctx.fill();
     }
     // 再上层的stroke
@@ -228,6 +232,9 @@ class Polyline extends Geom {
         ctx.fillStyle = lg;
       }
       canvasPolygon(ctx, points, -x, -y);
+      if (this.isClosed) {
+        ctx.closePath();
+      }
       ctx.stroke();
     }
   }
@@ -249,7 +256,7 @@ class Polyline extends Geom {
       });
       const points = this.points!;
       const first = points[0];
-      let xa, ya;
+      let xa: number, ya: number;
       if (first.length === 4) {
         xa = first[2];
         ya = first[3];
@@ -268,7 +275,7 @@ class Polyline extends Geom {
       bbox[3] = Math.max(bbox[3], ya + half);
       for (let i = 1, len = points.length; i < len; i++) {
         const item = points[i];
-        let xb, yb;
+        let xb: number, yb: number;
         if (item.length === 4) {}
         else if (item.length === 6) {}
         else {
@@ -279,8 +286,8 @@ class Polyline extends Geom {
           bbox[2] = Math.max(bbox[2], xb + half);
           bbox[3] = Math.max(bbox[3], yb + half);
         }
-        xa = xb;
-        ya = yb;
+        xa = xb!;
+        ya = yb!;
       }
     }
     return this._bbox;

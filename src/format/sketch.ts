@@ -460,6 +460,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     || layer._class === SketchFormat.ClassValue.Triangle
     || layer._class === SketchFormat.ClassValue.Polygon
     || layer._class === SketchFormat.ClassValue.ShapePath) {
+    const scaleX = layer.isFlippedHorizontal ? -1 : 1;
+    const scaleY = layer.isFlippedVertical ? -1 : 1;
     const points: Array<Point> = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
@@ -509,6 +511,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           strokeDasharray,
           translateX,
           translateY,
+          scaleX,
+          scaleY,
           rotateZ,
           booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
         },
