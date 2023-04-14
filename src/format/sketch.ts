@@ -510,12 +510,12 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           translateX,
           translateY,
           rotateZ,
+          booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
         },
       },
     } as JPolyline;
   }
   if (layer._class === SketchFormat.ClassValue.ShapeGroup) {
-    // console.log(layer);
     const {
       fill,
       fillEnable,
@@ -552,6 +552,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           translateX,
           translateY,
           rotateZ,
+          booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
         },
       },
       children,

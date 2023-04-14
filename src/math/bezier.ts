@@ -464,6 +464,52 @@ function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: numbe
   return res;
 }
 
+
+export function bezierSlope(points: Array<{ x: number, y: number }>, t = 0) {
+  if (points.length === 2) {
+    const { x: x1, y: y1 } = points[0];
+    const { x: x2, y: y2 } = points[1];
+    if (x1 === x2) {
+      return Infinity;
+    }
+    return (y2 - y1) / (x2 - x1);
+  }
+  if (points.length === 3) {
+    return bezier2Slope(points, t);
+  }
+  if (points.length === 4) {
+    return bezier3Slope(points, t);
+  }
+  throw new Error('Unsupported order');
+}
+
+function bezier2Slope(points: Array<{ x: number, y: number }>, t = 0) {
+  const { x: x0, y: y0 } = points[0];
+  const { x: x1, y: y1 } = points[1];
+  const { x: x2, y: y2 } = points[2];
+  const x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+  if (x === 0) {
+    return Infinity;
+  }
+  return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+}
+
+function bezier3Slope(points: Array<{ x: number, y: number }>, t: number) {
+  const { x: x0, y: y0 } = points[0];
+  const { x: x1, y: y1 } = points[1];
+  const { x: x2, y: y2 } = points[2];
+  const { x: x3, y: y3 } = points[3];
+  const x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t
+    + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t
+    + 3 * x1 - 3 * x0;
+  if (x === 0) {
+    return Infinity;
+  }
+  return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
+    + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t
+    + 3 * y1 - 3 * y0) / x;
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -472,4 +518,5 @@ export default {
   sliceBezier2Both,
   pointByT,
   getPointT,
+  bezierSlope,
 };

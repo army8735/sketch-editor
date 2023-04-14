@@ -1,24 +1,24 @@
 import Polygon from './Polygon';
-import ch from './chain';
+import chain from './chain';
 import Segment from './Segment';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
 function prefix(polygon: any): Array<Array<Array<number>>> {
-  if(!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
+  if (!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
     return [];
   }
-  if(Array.isArray(polygon[0][0])) {
+  if (Array.isArray(polygon[0][0])) {
     return polygon;
   }
   return [polygon];
 }
 
 function trivial(polygonA: any, polygonB: any) {
-  let isIntermediateA = polygonA instanceof Polygon;
-  let isIntermediateB = polygonB instanceof Polygon;
+  const isIntermediateA = polygonA instanceof Polygon;
+  const isIntermediateB = polygonB instanceof Polygon;
   // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
   let source;
-  if(isIntermediateA) {
+  if (isIntermediateA) {
     source = polygonA.reset(0);
   }
   else {
@@ -27,7 +27,7 @@ function trivial(polygonA: any, polygonB: any) {
   }
   // console.log(source.toString());
   let clip;
-  if(isIntermediateB) {
+  if (isIntermediateB) {
     clip = polygonB.reset(1);
   }
   else {
@@ -68,19 +68,19 @@ const INTERSECT = [
 ];
 
 function filter(segments: Array<Segment>, matrix: Array<number>) {
-  let res: Array<Segment> = [], hash: any = {};
+  const res: Array<Segment> = [], hash: any = {};
   segments.forEach(seg => {
-    let { belong, myFill, otherFill, otherCoincide } = seg;
-    if(otherCoincide) {
+    const { belong, myFill, otherFill, otherCoincide } = seg;
+    if (otherCoincide) {
       // 对方重合线只出现一次
-      let hc = seg.toHash();
-      if(hash.hasOwnProperty(hc)) {
+      const hc = seg.toHash();
+      if (hash.hasOwnProperty(hc)) {
         return;
       }
       hash[hc] = true;
     }
     let i;
-    if(belong) {
+    if (belong) {
       i = (otherFill[0] ? 8 : 0)
         + (myFill[0] ? 4 : 0)
         + (otherFill[1] ? 2 : 0)
@@ -92,7 +92,7 @@ function filter(segments: Array<Segment>, matrix: Array<number>) {
         + (myFill[1] ? 2 : 0)
         + (otherFill[1] ? 1 : 0);
     }
-    if(matrix[i]) {
+    if (matrix[i]) {
       res.push(seg);
     }
   });
@@ -100,59 +100,60 @@ function filter(segments: Array<Segment>, matrix: Array<number>) {
   return res;
 }
 
-export function intersect(polygonA: any, polygonB: any, intermediate: boolean) {
-  let [source, clip] = trivial(polygonA, polygonB);
-  let list = filter(source.segments.concat(clip.segments), INTERSECT);
-  if(intermediate) {
+export function intersect(polygonA: any, polygonB: any, intermediate = false) {
+  const [source, clip] = trivial(polygonA, polygonB);
+  const list = filter(source.segments.concat(clip.segments), INTERSECT);
+  if (intermediate) {
     source.segments = list;
     return source;
   }
   return chain(list);
 }
 
-export function union(polygonA: any, polygonB: any, intermediate: boolean) {
-  let [source, clip] = trivial(polygonA, polygonB);
-  let list = filter(source.segments.concat(clip.segments), UNION);
-  if(intermediate) {
+export function union(polygonA: any, polygonB: any, intermediate = false) {
+  const [source, clip] = trivial(polygonA, polygonB);
+  const list = filter(source.segments.concat(clip.segments), UNION);
+  if (intermediate) {
+    source.segments = list;
+    return source;
+  }
+  const r = chain(list);
+  return r;
+}
+
+export function subtract(polygonA: any, polygonB: any, intermediate = false) {
+  const [source, clip] = trivial(polygonA, polygonB);
+  const list = filter(source.segments.concat(clip.segments), SUBTRACT);
+  if (intermediate) {
     source.segments = list;
     return source;
   }
   return chain(list);
 }
 
-export function subtract(polygonA: any, polygonB: any, intermediate: boolean) {
-  let [source, clip] = trivial(polygonA, polygonB);
-  let list = filter(source.segments.concat(clip.segments), SUBTRACT);
-  if(intermediate) {
+export function subtractRev(polygonA: any, polygonB: any, intermediate = false) {
+  const [source, clip] = trivial(polygonA, polygonB);
+  const list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+  if (intermediate) {
     source.segments = list;
     return source;
   }
   return chain(list);
 }
 
-export function subtractRev(polygonA: any, polygonB: any, intermediate: boolean) {
-  let [source, clip] = trivial(polygonA, polygonB);
-  let list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
-  if(intermediate) {
+export function xor(polygonA: any, polygonB: any, intermediate = false) {
+  const [source, clip] = trivial(polygonA, polygonB);
+  const list = filter(source.segments.concat(clip.segments), XOR);
+  if (intermediate) {
     source.segments = list;
     return source;
   }
   return chain(list);
 }
 
-export function xor(polygonA: any, polygonB: any, intermediate: boolean) {
-  let [source, clip] = trivial(polygonA, polygonB);
-  let list = filter(source.segments.concat(clip.segments), XOR);
-  if(intermediate) {
-    source.segments = list;
-    return source;
-  }
-  return chain(list);
-}
-
-export function chain(polygon: Polygon | Array<Segment>) {
-  if(polygon instanceof Polygon) {
-    return ch(polygon.segments);
+export function ch(polygon: Polygon | Array<Segment>) {
+  if (polygon instanceof Polygon) {
+    return chain(polygon.segments);
   }
   return prefix(polygon);
 }
@@ -163,5 +164,5 @@ export default {
   subtract,
   subtractRev,
   xor,
-  chain,
+  chain: ch,
 };

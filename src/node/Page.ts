@@ -49,7 +49,7 @@ function parse(json: JNode): Node | undefined {
   else if (json.tagName === TagName.ShapeGroup) {
     const children = [];
     for(let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i]);
+      const res = parse((json as JContainer).children[i]) as (Polyline | ShapeGroup);
       if(res) {
         children.push(res);
       }

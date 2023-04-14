@@ -9,14 +9,11 @@ import { ComputedStyle } from '../style/define';
 
 class Container extends Node {
   children: Array<Node>;
-  isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
-  isArtBoard = false;
-  isPage = false;
-  isShapeGroup = false;
 
   constructor(props: Props, children: Array<Node> = []) {
     super(props);
     this.children = children;
+    this.isContainer = true;
   }
 
   // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前暂无JSX这种一口气创建一颗子树

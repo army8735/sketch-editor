@@ -1,5 +1,6 @@
 import { JStyle, Rich } from '../format';
 import {
+  BooleanOperation,
   calUnit,
   ComputedStyle,
   FONT_STYLE,
@@ -309,6 +310,23 @@ export function normalize(style: JStyle): Style {
       }
     }
     res.transformOrigin = arr;
+  }
+  const booleanOperation = style.booleanOperation;
+  if (!isNil(booleanOperation)) {
+    let v = BooleanOperation.NONE;
+    if (booleanOperation  === 'union') {
+      v = BooleanOperation.UNION;
+    }
+    else if (booleanOperation === 'subtract') {
+      v = BooleanOperation.SUBTRACT;
+    }
+    else if (booleanOperation === 'intersect') {
+      v = BooleanOperation.INTERSECT;
+    }
+    else if (booleanOperation === 'xor') {
+      v = BooleanOperation.XOR;
+    }
+    res.booleanOperation = { v, u: StyleUnit.NUMBER };
   }
   const mixBlendMode = style.mixBlendMode;
   if (!isNil(mixBlendMode)) {

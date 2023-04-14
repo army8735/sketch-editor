@@ -1,11 +1,12 @@
 import Geom from './Geom';
-import { CurveMode, Point, PolylineProps } from '../../format';
+import { Point, PolylineProps } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
 import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
 import { angleBySides, pointsDistance, h } from '../../math/geom';
 import { unitize } from '../../math/vector';
+import { CurveMode } from '../../style/define';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CurveMode.Straight && point.cornerRadius > 0;
@@ -16,7 +17,14 @@ class Polyline extends Geom {
     super(props);
   }
 
-  private buildPoints() {
+  override calContent(): boolean {
+    if (!this.points) {
+      this.buildPoints();
+    }
+    return this.hasContent = !!this.points && this.points.length > 1;
+  }
+
+  buildPoints() {
     const props = this.props as PolylineProps;
     const { width, height } = this;
     const temp: Array<any> = [];
@@ -130,7 +138,7 @@ class Polyline extends Geom {
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
     const first = temp[0];
     const p: Array<number> = [first.x, first.y];
-    const res: Array<Array<number>> = [p], len = temp.length;
+    const res: Array<Array<number>> = this.points = [p], len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
@@ -155,7 +163,7 @@ class Polyline extends Geom {
       }
       res.push(p);
     }
-    this.points = res;
+    return res;
   }
 
   override renderCanvas() {

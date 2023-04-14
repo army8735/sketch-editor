@@ -29,7 +29,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
         if(refreshLevel < RefreshLevel.REPAINT) {}
         else {
           const hasContent = node.calContent();
-          // 有内容先以canvas模式绘制到离屏画布上
+          // hasContent
           if (hasContent) {
             node.renderCanvas();
             node.genTexture(gl);
@@ -120,6 +120,10 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
         matrix,
         cache: textureCache,
       }], 1);
+    }
+    // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+    if (node.isShapeGroup) {
+      i += total;
     }
   }
   // 再覆盖渲染artBoard的阴影和标题

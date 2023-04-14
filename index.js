@@ -42,6 +42,7 @@
             scaleY: 1,
             rotateZ: 0,
             transformOrigin: ['center', 'center'],
+            booleanOperation: 'none',
             mixBlendMode: 'normal',
             pointerEvents: true,
         }, v);
@@ -56,14 +57,6 @@
         TagName["Text"] = "text";
         TagName["Polyline"] = "$polyline";
     })(TagName || (TagName = {}));
-    var CurveMode$1;
-    (function (CurveMode) {
-        CurveMode[CurveMode["None"] = 0] = "None";
-        CurveMode[CurveMode["Straight"] = 1] = "Straight";
-        CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
-        CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
-        CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode$1 || (CurveMode$1 = {}));
 
     /******************************************************************************
     Copyright (c) Microsoft Corporation.
@@ -15075,14 +15068,14 @@
     /**
      * Enumeration of the boolean operations that can be applied to combine shapes
      */
-    var BooleanOperation;
+    var BooleanOperation$1;
     (function (BooleanOperation) {
         BooleanOperation[BooleanOperation["None"] = -1] = "None";
         BooleanOperation[BooleanOperation["Union"] = 0] = "Union";
         BooleanOperation[BooleanOperation["Subtract"] = 1] = "Subtract";
         BooleanOperation[BooleanOperation["Intersection"] = 2] = "Intersection";
         BooleanOperation[BooleanOperation["Difference"] = 3] = "Difference";
-    })(BooleanOperation || (BooleanOperation = {}));
+    })(BooleanOperation$1 || (BooleanOperation$1 = {}));
     /**
      * Enumeration of the file formats that can be selected in the layer export options
      */
@@ -15184,14 +15177,14 @@
     /**
      * Enumeration of the curve modes that can be applied to vector points
      */
-    var CurveMode;
+    var CurveMode$1;
     (function (CurveMode) {
         CurveMode[CurveMode["None"] = 0] = "None";
         CurveMode[CurveMode["Straight"] = 1] = "Straight";
         CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
         CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
         CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode || (CurveMode = {}));
+    })(CurveMode$1 || (CurveMode$1 = {}));
     /**
      * Enumeration of line spacing behaviour for fixed line height text
      */
@@ -15330,7 +15323,7 @@
         get TextTransform () { return TextTransform; },
         get UnderlineStyle () { return UnderlineStyle; },
         get StrikethroughStyle () { return StrikethroughStyle; },
-        get BooleanOperation () { return BooleanOperation; },
+        get BooleanOperation () { return BooleanOperation$1; },
         get ExportFileFormat () { return ExportFileFormat; },
         get ExportFormatNamingScheme () { return ExportFormatNamingScheme; },
         get VisibleScaleType () { return VisibleScaleType; },
@@ -15341,7 +15334,7 @@
         get InferredLayoutAnchor () { return InferredLayoutAnchor; },
         get PointsRadiusBehaviour () { return PointsRadiusBehaviour; },
         get CornerStyle () { return CornerStyle; },
-        get CurveMode () { return CurveMode; },
+        get CurveMode () { return CurveMode$1; },
         get LineSpacingBehaviour () { return LineSpacingBehaviour; },
         get TextBehaviour () { return TextBehaviour; },
         get DocumentLibraryType () { return DocumentLibraryType; },
@@ -15442,6 +15435,22 @@
         GRADIENT[GRADIENT["RADIAL"] = 1] = "RADIAL";
         GRADIENT[GRADIENT["CONIC"] = 2] = "CONIC";
     })(GRADIENT || (GRADIENT = {}));
+    var BooleanOperation;
+    (function (BooleanOperation) {
+        BooleanOperation[BooleanOperation["NONE"] = 0] = "NONE";
+        BooleanOperation[BooleanOperation["UNION"] = 1] = "UNION";
+        BooleanOperation[BooleanOperation["SUBTRACT"] = 2] = "SUBTRACT";
+        BooleanOperation[BooleanOperation["INTERSECT"] = 3] = "INTERSECT";
+        BooleanOperation[BooleanOperation["XOR"] = 4] = "XOR";
+    })(BooleanOperation || (BooleanOperation = {}));
+    var CurveMode;
+    (function (CurveMode) {
+        CurveMode[CurveMode["None"] = 0] = "None";
+        CurveMode[CurveMode["Straight"] = 1] = "Straight";
+        CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
+        CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
+        CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
+    })(CurveMode || (CurveMode = {}));
     var define = {
         StyleUnit,
         calUnit,
@@ -15937,13 +15946,26 @@
     function dotProduct(x1, y1, x2, y2) {
         return x1 * x2 + y1 * y2;
     }
+    function dotProduct3$1(x1, y1, z1, x2, y2, z2) {
+        return x1 * x2 + y1 * y2 + z1 * z2;
+    }
     // 向量叉乘积
     function crossProduct(x1, y1, x2, y2) {
         return x1 * y2 - x2 * y1;
     }
+    function crossProduct3$1(x1, y1, z1, x2, y2, z2) {
+        return {
+            x: y1 * z2 - y2 * z1,
+            y: z1 * x2 - z2 * x1,
+            z: x1 * y2 - x2 * y1,
+        };
+    }
     // 向量长度
     function length(x, y) {
         return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    }
+    function length3$1(x, y, z) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
     }
     // 归一化
     function unitize(x, y) {
@@ -15953,11 +15975,86 @@
             y: y / n,
         };
     }
+    function unitize3$1(x, y, z) {
+        let n = length3$1(x, y, z);
+        return {
+            x: x / n,
+            y: y / n,
+            z: z / n,
+        };
+    }
+    // 是否平行
+    function isParallel(x1, y1, x2, y2) {
+        if (isZero(x1, y1, x2, y2)) {
+            return true;
+        }
+        let ag = angle(x1, y1, x2, y2);
+        if (Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        if (Math.PI - Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        return false;
+    }
+    function isParallel3$1(x1, y1, z1, x2, y2, z2) {
+        if (isZero3(x1, y1, z1, x2, y2, z2)) {
+            return true;
+        }
+        let ag = angle3(x1, y1, z1, x2, y2, z2);
+        if (Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        if (Math.PI - Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        return false;
+    }
+    // 是否是零，考虑误差
+    function isZero(x1, y1, x2, y2) {
+        return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9
+            && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9;
+    }
+    function isZero3(x1, y1, z1, x2, y2, z2) {
+        return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9 && Math.abs(z1) < 1e-9
+            && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9 && Math.abs(z2) < 1e-9;
+    }
+    // 向量夹角
+    function angle(x1, y1, x2, y2) {
+        let cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
+        if (cos < -1) {
+            cos = -1;
+        }
+        else if (cos > 1) {
+            cos = 1;
+        }
+        return Math.acos(cos);
+    }
+    function angle3(x1, y1, z1, x2, y2, z2) {
+        let cos = dotProduct3$1(x1, y1, z1, x2, y2, z2) / (length3$1(x1, y1, z1) * length3$1(x2, y2, z2));
+        if (cos < -1) {
+            cos = -1;
+        }
+        else if (cos > 1) {
+            cos = 1;
+        }
+        return Math.acos(cos);
+    }
     var vector = {
         dotProduct,
+        dotProduct3: dotProduct3$1,
         crossProduct,
+        crossProduct3: crossProduct3$1,
         length,
+        length3: length3$1,
         unitize,
+        unitize3: unitize3$1,
+        angle,
+        angle3,
+        isParallel,
+        isParallel3: isParallel3$1,
+        isZero,
+        isZero3,
     };
 
     function identity() {
@@ -16362,7 +16459,7 @@
         return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
     }
     // 两个矩形是否相交重叠，无旋转，因此各自只需2个坐标：左上和右下
-    function isRectsOverlap(a, b, includeIntersect) {
+    function isRectsOverlap$1(a, b, includeIntersect) {
         let [ax1, ay1, ax4, ay4] = a;
         let [bx1, by1, bx4, by4] = b;
         if (includeIntersect) {
@@ -16410,7 +16507,7 @@
         pointInRect,
         pointsDistance,
         angleBySides,
-        isRectsOverlap,
+        isRectsOverlap: isRectsOverlap$1,
         isRectsInside,
         isConvexPolygonOverlap,
     };
@@ -17237,6 +17334,23 @@
             }
             res.transformOrigin = arr;
         }
+        const booleanOperation = style.booleanOperation;
+        if (!isNil(booleanOperation)) {
+            let v = BooleanOperation.NONE;
+            if (booleanOperation === 'union') {
+                v = BooleanOperation.UNION;
+            }
+            else if (booleanOperation === 'subtract') {
+                v = BooleanOperation.SUBTRACT;
+            }
+            else if (booleanOperation === 'intersect') {
+                v = BooleanOperation.INTERSECT;
+            }
+            else if (booleanOperation === 'xor') {
+                v = BooleanOperation.XOR;
+            }
+            res.booleanOperation = { v, u: StyleUnit.NUMBER };
+        }
         const mixBlendMode = style.mixBlendMode;
         if (!isNil(mixBlendMode)) {
             let v = MIX_BLEND_MODE.NORMAL;
@@ -17924,12 +18038,12 @@
                             translateX,
                             translateY,
                             rotateZ,
+                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
                         },
                     },
                 };
             }
             if (layer._class === FileFormat.ClassValue.ShapeGroup) {
-                // console.log(layer);
                 const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
@@ -17957,6 +18071,7 @@
                             translateX,
                             translateY,
                             rotateZ,
+                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
                         },
                     },
                     children,
@@ -18648,6 +18763,11 @@
     class Node extends Event {
         constructor(props) {
             super();
+            this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
+            this.isArtBoard = false;
+            this.isPage = false;
+            this.isShapeGroup = false;
+            this.isContainer = false;
             this.props = props;
             this.props.uuid = this.props.uuid || v4();
             this.style = normalize(getDefaultStyle(props.style));
@@ -18825,6 +18945,7 @@
             computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
             computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
             computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
+            computedStyle.booleanOperation = style.booleanOperation.v;
             computedStyle.mixBlendMode = style.mixBlendMode.v;
             computedStyle.pointerEvents = style.pointerEvents.v;
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
@@ -19441,11 +19562,8 @@
     class Container extends Node {
         constructor(props, children = []) {
             super(props);
-            this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
-            this.isArtBoard = false;
-            this.isPage = false;
-            this.isShapeGroup = false;
             this.children = children;
+            this.isContainer = true;
         }
         // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前暂无JSX这种一口气创建一颗子树
         didMount() {
@@ -20840,8 +20958,11 @@
         constructor(props) {
             super(props);
         }
+        buildPoints() {
+            return [];
+        }
         calContent() {
-            return true;
+            return this.hasContent = true;
         }
     }
 
@@ -20892,11 +21013,17 @@
     }
 
     function isCornerPoint(point) {
-        return point.curveMode === CurveMode$1.Straight && point.cornerRadius > 0;
+        return point.curveMode === CurveMode.Straight && point.cornerRadius > 0;
     }
     class Polyline extends Geom {
         constructor(props) {
             super(props);
+        }
+        calContent() {
+            if (!this.points) {
+                this.buildPoints();
+            }
+            return this.hasContent = !!this.points && this.points.length > 1;
         }
         buildPoints() {
             const props = this.props;
@@ -20943,11 +21070,11 @@
                     // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
                     const isPrevCorner = isCornerPoint(prevPoint);
                     const isPrevStraight = isPrevCorner
-                        || prevPoint.curveMode === CurveMode$1.Straight
+                        || prevPoint.curveMode === CurveMode.Straight
                         || !prevPoint.hasCurveFrom;
                     const isNextCorner = isCornerPoint(nextPoint);
                     const isNextStraight = isNextCorner
-                        || nextPoint.curveMode === CurveMode$1.Straight
+                        || nextPoint.curveMode === CurveMode.Straight
                         || !nextPoint.hasCurveTo;
                     // 先看最普通的直线，可以用角平分线+半径最小值约束求解
                     if (isPrevStraight && isNextStraight) {
@@ -21005,7 +21132,7 @@
             // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
             const first = temp[0];
             const p = [first.x, first.y];
-            const res = [p], len = temp.length;
+            const res = this.points = [p], len = temp.length;
             for (let i = 1; i < len; i++) {
                 const item = temp[i];
                 const prev = temp[i - 1];
@@ -21030,7 +21157,7 @@
                 }
                 res.push(p);
             }
-            this.points = res;
+            return res;
         }
         renderCanvas() {
             super.renderCanvas();
@@ -21145,11 +21272,3705 @@
         }
     }
 
+    const TOLERANCE$1 = 1e-6;
+    /**
+     * 计算线性方程的根
+     * y = ax + b
+     * root = -b / a
+     * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
+     */
+    function getLinearRoot(coefs) {
+        let result = [];
+        let a = coefs[1];
+        if (a !== 0) {
+            result.push(-coefs[0] / a);
+        }
+        return result;
+    }
+    /**
+     * 计算二次方程的根，一元二次方程求根公式
+     * y = ax^2 + bx + c
+     * root = (-b ± sqrt(b^2 - 4ac)) / 2a
+     * @param {Array<Number>} coefs 系数，系数 [c, b, a]
+     */
+    function getQuadraticRoots(coefs) {
+        let results = [];
+        let a = coefs[2];
+        let b = coefs[1] / a;
+        let c = coefs[0] / a;
+        let d = b * b - 4 * c;
+        if (d > 0) {
+            let e = Math.sqrt(d);
+            results.push(0.5 * (-b + e));
+            results.push(0.5 * (-b - e));
+        }
+        else if (d === 0) {
+            // 两个相同的根，只要返回一个
+            results.push(0.5 * -b);
+        }
+        return results;
+    }
+    /**
+     * 计算一元三次方程的根
+     * y = ax^3 + bx^2 + cx + d
+     * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+     * @param {Array<Number>} coefs 系数
+     */
+    function getCubicRoots(coefs) {
+        let results = [];
+        let c3 = coefs[3];
+        let c2 = coefs[2] / c3;
+        let c1 = coefs[1] / c3;
+        let c0 = coefs[0] / c3;
+        let a = (3 * c1 - c2 * c2) / 3;
+        let b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
+        let offset = c2 / 3;
+        let discrim = b * b / 4 + a * a * a / 27;
+        let halfB = b / 2;
+        if (Math.abs(discrim) <= TOLERANCE$1) {
+            discrim = 0;
+        }
+        if (discrim > 0) {
+            let e = Math.sqrt(discrim);
+            let tmp;
+            let root;
+            tmp = -halfB + e;
+            if (tmp >= 0)
+                root = Math.pow(tmp, 1 / 3);
+            else
+                root = -Math.pow(-tmp, 1 / 3);
+            tmp = -halfB - e;
+            if (tmp >= 0)
+                root += Math.pow(tmp, 1 / 3);
+            else
+                root -= Math.pow(-tmp, 1 / 3);
+            results.push(root - offset);
+        }
+        else if (discrim < 0) {
+            let distance = Math.sqrt(-a / 3);
+            let angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
+            let cos = Math.cos(angle);
+            let sin = Math.sin(angle);
+            let sqrt3 = Math.sqrt(3);
+            results.push(2 * distance * cos - offset);
+            results.push(-distance * (cos + sqrt3 * sin) - offset);
+            results.push(-distance * (cos - sqrt3 * sin) - offset);
+        }
+        else {
+            let tmp;
+            if (halfB >= 0)
+                tmp = -Math.pow(halfB, 1 / 3);
+            else
+                tmp = Math.pow(-halfB, 1 / 3);
+            results.push(2 * tmp - offset);
+            // really should return next root twice, but we return only one
+            results.push(-tmp - offset);
+        }
+        return results;
+    }
+    /**
+     * 计算一元四次方程的根
+     * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+     * @param {Array<Number>} coefs 系数
+     */
+    function getQuarticRoots(coefs) {
+        let results = [];
+        let c4 = coefs[4];
+        let c3 = coefs[3] / c4;
+        let c2 = coefs[2] / c4;
+        let c1 = coefs[1] / c4;
+        let c0 = coefs[0] / c4;
+        let resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
+        let y = resolveRoots[0];
+        let discrim = c3 * c3 / 4 - c2 + y;
+        if (Math.abs(discrim) <= TOLERANCE$1)
+            discrim = 0;
+        if (discrim > 0) {
+            let e = Math.sqrt(discrim);
+            let t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
+            let t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
+            let plus = t1 + t2;
+            let minus = t1 - t2;
+            if (Math.abs(plus) <= TOLERANCE$1)
+                plus = 0;
+            if (Math.abs(minus) <= TOLERANCE$1)
+                minus = 0;
+            if (plus >= 0) {
+                let f = Math.sqrt(plus);
+                results.push(-c3 / 4 + (e + f) / 2);
+                results.push(-c3 / 4 + (e - f) / 2);
+            }
+            if (minus >= 0) {
+                let f = Math.sqrt(minus);
+                results.push(-c3 / 4 + (f - e) / 2);
+                results.push(-c3 / 4 - (f + e) / 2);
+            }
+        }
+        else if (discrim < 0) ;
+        else {
+            let t2 = y * y - 4 * c0;
+            if (t2 >= -TOLERANCE$1) {
+                if (t2 < 0)
+                    t2 = 0;
+                t2 = 2 * Math.sqrt(t2);
+                let t1 = 3 * c3 * c3 / 4 - 2 * c2;
+                if (t1 + t2 >= TOLERANCE$1) {
+                    let d = Math.sqrt(t1 + t2);
+                    results.push(-c3 / 4 + d / 2);
+                    results.push(-c3 / 4 - d / 2);
+                }
+                if (t1 - t2 >= TOLERANCE$1) {
+                    let d = Math.sqrt(t1 - t2);
+                    results.push(-c3 / 4 + d / 2);
+                    results.push(-c3 / 4 - d / 2);
+                }
+            }
+        }
+        return results;
+    }
+    /**
+     * 计算方程的根
+     * @param {Array<Number>} coefs 系数按幂次方倒序
+     */
+    function getRoots$1(coefs) {
+        let degree = coefs.length - 1;
+        for (let i = degree; i >= 0; i--) {
+            if (Math.abs(coefs[i]) < 1e-12) {
+                degree--;
+            }
+            else {
+                break;
+            }
+        }
+        let result = [];
+        switch (degree) {
+            case 1:
+                result = getLinearRoot(coefs);
+                break;
+            case 2:
+                result = getQuadraticRoots(coefs);
+                break;
+            case 3:
+                result = getCubicRoots(coefs);
+                break;
+            case 4:
+                result = getQuarticRoots(coefs);
+        }
+        return result;
+    }
+    var equation = {
+        getRoots: getRoots$1,
+    };
+
+    /**
+     * 二阶贝塞尔曲线范围框
+     * @param x0
+     * @param y0
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @returns {number[]}
+     * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
+     */
+    function bboxBezier2(x0, y0, x1, y1, x2, y2) {
+        let minX = Math.min(x0, x2);
+        let minY = Math.min(y0, y2);
+        let maxX = Math.max(x0, x2);
+        let maxY = Math.max(y0, y2);
+        // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
+        if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
+            let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+            if (tx < 0) {
+                tx = 0;
+            }
+            else if (tx > 1) {
+                tx = 1;
+            }
+            let ty = (y0 - y1) / (y0 - 2 * y1 + y2);
+            if (ty < 0) {
+                ty = 0;
+            }
+            else if (ty > 1) {
+                ty = 1;
+            }
+            let sx = 1 - tx;
+            let sy = 1 - ty;
+            let qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
+            let qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
+            minX = Math.min(minX, qx);
+            minY = Math.min(minY, qy);
+            maxX = Math.max(maxX, qx);
+            maxY = Math.max(maxY, qy);
+        }
+        return [minX, minY, maxX, maxY];
+    }
+    /**
+     * 同上三阶的
+     */
+    function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
+        let minX = Math.min(x0, x3);
+        let minY = Math.min(y0, y3);
+        let maxX = Math.max(x0, x3);
+        let maxY = Math.max(y0, y3);
+        if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
+            let cx = -x0 + x1;
+            let cy = -y0 + y1;
+            let bx = x0 - 2 * x1 + x2;
+            let by = y0 - 2 * y1 + y2;
+            let ax = -x0 + 3 * x1 - 3 * x2 + x3;
+            let ay = -y0 + 3 * y1 - 3 * y2 + y3;
+            let hx = bx * bx - ax * cx;
+            let hy = by * by - ay * cy;
+            if (hx > 0) {
+                hx = Math.sqrt(hx);
+                let t = (-bx - hx) / ax;
+                // 2次项系数为0注意降级为一元一次方程
+                if (ax && t > 0 && t < 1) {
+                    let s = 1 - t;
+                    let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+                    minX = Math.min(minX, q);
+                    maxX = Math.max(maxX, q);
+                }
+                t = ax ? ((-bx + hx) / ax) : (-cx * 0.5 / bx);
+                if (t > 0 && t < 1) {
+                    let s = 1 - t;
+                    let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+                    minX = Math.min(minX, q);
+                    maxX = Math.max(maxX, q);
+                }
+            }
+            if (hy > 0) {
+                hy = Math.sqrt(hy);
+                let t = (-by - hy) / ay;
+                if (ay && t > 0 && t < 1) {
+                    let s = 1 - t;
+                    let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
+                    minY = Math.min(minY, q);
+                    maxY = Math.max(maxY, q);
+                }
+                t = ay ? ((-by + hy) / ay) : (-cy * 0.5 / by);
+                if (t > 0 && t < 1) {
+                    let s = 1 - t;
+                    let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
+                    minY = Math.min(minY, q);
+                    maxY = Math.max(maxY, q);
+                }
+            }
+        }
+        return [minX, minY, maxX, maxY];
+    }
+    function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
+        let len = arguments.length;
+        if (len === 4) {
+            let a = Math.min(x0, x1);
+            let b = Math.min(y0, y1);
+            let c = Math.max(x0, x1);
+            let d = Math.max(y0, y1);
+            return [a, b, c, d];
+        }
+        if (len === 6) {
+            return bboxBezier2(x0, y0, x1, y1, x2, y2);
+        }
+        if (len === 8) {
+            return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
+        }
+        throw new Error('Unsupported order');
+    }
+    /**
+     * 范数 or 模
+     */
+    function norm(v) {
+        let order = v.length;
+        let sum = v.reduce((a, b) => Math.pow(a, order) + Math.pow(b, order));
+        return Math.pow(sum, 1 / order);
+    }
+    // https://zhuanlan.zhihu.com/p/130247362
+    function simpson38(derivativeFunc, l, r) {
+        let f = derivativeFunc;
+        let middleL = (2 * l + r) / 3;
+        let middleR = (l + 2 * r) / 3;
+        return (f(l) + 3 * f(middleL) + 3 * f(middleR) + f(r)) * (r - l) / 8;
+    }
+    /**
+     * bezier 曲线的长度
+     * @param derivativeFunc 微分函数
+     * @param l 左点
+     * @param r 右点
+     * @param eps 精度
+     * @return {*} number
+     */
+    function adaptiveSimpson38(derivativeFunc, l, r, eps = 0.001) {
+        let f = derivativeFunc;
+        let mid = (l + r) / 2;
+        let st = simpson38(f, l, r);
+        let sl = simpson38(f, l, mid);
+        let sr = simpson38(f, mid, r);
+        let ans = sl + sr - st;
+        if (Math.abs(ans) <= 15 * eps) {
+            return sl + sr + ans / 15;
+        }
+        return adaptiveSimpson38(f, l, mid, eps / 2) + adaptiveSimpson38(f, mid, r, eps / 2);
+    }
+    /**
+     * bezier 曲线的长度
+     * @param points 曲线的起止点 和 控制点
+     * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
+     * @param endT 计算长度的终点
+     * @return {*} number
+     */
+    function bezierLength(points, startT = 0, endT = 1) {
+        if (points.length === 2) {
+            let { x: x0, y: y0 } = points[0];
+            let { x: x1, y: y1 } = points[1];
+            return Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+        }
+        if (points.length > 4) {
+            throw new Error('Unsupported order');
+        }
+        let derivativeFunc = (t) => {
+            const r = at(t, points);
+            return norm([r.x, r.y]);
+        };
+        return adaptiveSimpson38(derivativeFunc, startT, endT);
+    }
+    /**
+     * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+     */
+    function at3(t, points, order = 1) {
+        let { x: x0, y: y0 } = points[0];
+        let { x: x1, y: y1 } = points[1];
+        let { x: x2, y: y2 } = points[2];
+        let { x: x3, y: y3 } = points[3];
+        let x = 0;
+        let y = 0;
+        // 3阶导数就是常数了，大于3阶的都是0
+        if (order === 0) {
+            x = Math.pow((1 - t), 3) * x0 + 3 * t * Math.pow((1 - t), 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
+            y = Math.pow((1 - t), 3) * y0 + 3 * t * Math.pow((1 - t), 2) * y1 + 3 * (1 - t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y3;
+        }
+        else if (order === 1) {
+            x = 3 * ((1 - t) * (1 - t) * (x1 - x0) + 2 * (1 - t) * t * (x2 - x1) + t * t * (x3 - x2));
+            y = 3 * ((1 - t) * (1 - t) * (y1 - y0) + 2 * (1 - t) * t * (y2 - y1) + t * t * (y3 - y2));
+        }
+        else if (order === 2) {
+            x = 6 * (x2 - 2 * x1 + x0) * (1 - t) + 6 * (x3 - 2 * x2 + x1) * t;
+            y = 6 * (y2 - 2 * y1 + y0) * (1 - t) + 6 * (y3 - 2 * y2 + y1) * t;
+        }
+        else if (order === 3) {
+            x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
+            y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
+        }
+        return { x, y };
+    }
+    /**
+     * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+     */
+    function at2(t, points, order = 1) {
+        let { x: x0, y: y0 } = points[0];
+        let { x: x1, y: y1 } = points[1];
+        let { x: x2, y: y2 } = points[2];
+        let x = 0;
+        let y = 0;
+        if (order === 0) {
+            x = Math.pow((1 - t), 2) * x0 + 2 * t * (1 - t) * x1 + Math.pow(t, 2) * x2;
+            y = Math.pow((1 - t), 2) * y0 + 2 * t * (1 - t) * y1 + Math.pow(t, 2) * y2;
+        }
+        else if (order === 1) {
+            x = 2 * (1 - t) * (x1 - x0) + 2 * t * (x2 - x1);
+            y = 2 * (1 - t) * (y1 - y0) + 2 * t * (y2 - y1);
+        }
+        else if (order === 2) {
+            x = 2 * (x2 - 2 * x1 + x0);
+            y = 2 * (y2 - 2 * y1 + y0);
+        }
+        return { x, y };
+    }
+    function at(t, points, derivativeOrder = 1) {
+        if (points.length === 4) {
+            return at3(t, points, derivativeOrder);
+        }
+        else if (points.length === 3) {
+            return at2(t, points, derivativeOrder);
+        }
+        else {
+            throw new Error('Unsupported order');
+        }
+    }
+    function sliceBezier(points, t) {
+        if (!Array.isArray(points) || points.length < 3) {
+            return points;
+        }
+        const { x: x1, y: y1 } = points[0];
+        const { x: x2, y: y2 } = points[1];
+        const { x: x3, y: y3 } = points[2];
+        const x12 = (x2 - x1) * t + x1;
+        const y12 = (y2 - y1) * t + y1;
+        const x23 = (x3 - x2) * t + x2;
+        const y23 = (y3 - y2) * t + y2;
+        const x123 = (x23 - x12) * t + x12;
+        const y123 = (y23 - y12) * t + y12;
+        if (points.length === 4) {
+            const { x: x4, y: y4 } = points[3];
+            const x34 = (x4 - x3) * t + x3;
+            const y34 = (y4 - y3) * t + y3;
+            const x234 = (x34 - x23) * t + x23;
+            const y234 = (y34 - y23) * t + y23;
+            const x1234 = (x234 - x123) * t + x123;
+            const y1234 = (y234 - y123) * t + y123;
+            return [
+                { x: x1, y: y1 },
+                { x: x12, y: y12 },
+                { x: x123, y: y123 },
+                { x: x1234, y: y1234 },
+            ];
+        }
+        else if (points.length === 3) {
+            return [
+                { x: x1, y: y1 },
+                { x: x12, y: y12 },
+                { x: x123, y: y123 },
+            ];
+        }
+        else {
+            throw new Error('Unsupported order');
+        }
+    }
+    function sliceBezier2Both(points, start = 0, end = 1) {
+        if (!Array.isArray(points) || points.length < 3) {
+            return points;
+        }
+        start = Math.max(start, 0);
+        end = Math.min(end, 1);
+        if (start === 0 && end === 1) {
+            return points;
+        }
+        if (end < 1) {
+            points = sliceBezier(points, end);
+        }
+        if (start > 0) {
+            if (end < 1) {
+                start = start / end;
+            }
+            points = sliceBezier(points.slice(0).reverse(), (1 - start)).reverse();
+        }
+        return points;
+    }
+    function pointByT(points, t = 0) {
+        if (points.length === 4) {
+            return pointByT3(points, t);
+        }
+        else if (points.length === 3) {
+            return pointByT2(points, t);
+        }
+        else {
+            throw new Error('Unsupported order');
+        }
+    }
+    function pointByT2(points, t) {
+        const x = points[0].x * (1 - t) * (1 - t)
+            + 2 * points[1].x * t * (1 - t)
+            + points[2].x * t * t;
+        const y = points[0].y * (1 - t) * (1 - t)
+            + 2 * points[1].y * t * (1 - t)
+            + points[2].y * t * t;
+        return { x, y };
+    }
+    function pointByT3(points, t) {
+        const x = points[0].x * (1 - t) * (1 - t) * (1 - t)
+            + 3 * points[1].x * t * (1 - t) * (1 - t)
+            + 3 * points[2].x * t * t * (1 - t)
+            + points[3].x * t * t * t;
+        const y = points[0].y * (1 - t) * (1 - t) * (1 - t)
+            + 3 * points[1].y * t * (1 - t) * (1 - t)
+            + 3 * points[2].y * t * t * (1 - t)
+            + points[3].y * t * t * t;
+        return { x, y };
+    }
+    // 已知曲线和上面一点获得t
+    function getPointT(points, x, y) {
+        if (points.length === 4) {
+            return getPointT3(points, x, y);
+        }
+        else if (points.length === 3) {
+            return getPointT2(points, x, y);
+        }
+        else {
+            throw new Error('Unsupported order');
+        }
+    }
+    function getPointT2(points, x, y) {
+        // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
+        let tx = equation.getRoots([
+            points[0].x - x,
+            2 * (points[1].x - points[0].x),
+            points[2].x + points[0].x - 2 * points[1].x,
+        ]).filter(i => i >= 0 && i <= 1);
+        let ty = equation.getRoots([
+            points[0].y - y,
+            2 * (points[1].y - points[0].y),
+            points[2].y + points[0].y - 2 * points[1].y,
+        ]).filter(i => i >= 0 && i <= 1);
+        // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
+        let t = [];
+        for (let i = 0, len = tx.length; i < len; i++) {
+            let x = tx[i];
+            for (let j = 0, len = ty.length; j < len; j++) {
+                let y = ty[j];
+                let diff = Math.abs(x - y);
+                // 必须小于一定误差
+                if (diff < 1e-10) {
+                    t.push({
+                        x,
+                        y,
+                        diff,
+                    });
+                }
+            }
+        }
+        t.sort(function (a, b) {
+            return a.diff - b.diff;
+        });
+        if (t.length > 2) {
+            t.splice(2);
+        }
+        // 取均数
+        t = t.map(item => (item.x + item.y) * 0.5);
+        let res = [];
+        t.forEach(t => {
+            let xt = points[0].x * Math.pow(1 - t, 2)
+                + 2 * points[1].x * t * (1 - t)
+                + points[2].x * t * t;
+            let yt = points[0].y * Math.pow(1 - t, 2)
+                + 2 * points[1].y * t * (1 - t)
+                + points[2].y * t * t;
+            // 计算误差忽略
+            if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+                res.push(t);
+            }
+        });
+        return res;
+    }
+    function getPointT3(points, x, y) {
+        let tx = equation.getRoots([
+            points[0].x - x,
+            3 * (points[1].x - points[0].x),
+            3 * (points[2].x + points[0].x - 2 * points[1].x),
+            points[3].x - points[0].x + 3 * points[1].x - 3 * points[2].x,
+        ]).filter(i => i >= 0 && i <= 1);
+        let ty = equation.getRoots([
+            points[0].y - y,
+            3 * (points[1].y - points[0].y),
+            3 * (points[2].y + points[0].y - 2 * points[1].y),
+            points[3].y - points[0].y + 3 * points[1].y - 3 * points[2].y,
+        ]).filter(i => i >= 0 && i <= 1);
+        // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
+        let t = [];
+        for (let i = 0, len = tx.length; i < len; i++) {
+            let x = tx[i];
+            for (let j = 0, len = ty.length; j < len; j++) {
+                let y = ty[j];
+                let diff = Math.abs(x - y);
+                // 必须小于一定误差
+                if (diff < 1e-10) {
+                    t.push({
+                        x,
+                        y,
+                        diff,
+                    });
+                }
+            }
+        }
+        t.sort(function (a, b) {
+            return a.diff - b.diff;
+        });
+        if (t.length > 3) {
+            t.splice(3);
+        }
+        // 取均数
+        t = t.map(item => (item.x + item.y) * 0.5);
+        let res = [];
+        t.forEach(t => {
+            let xt = points[0].x * Math.pow(1 - t, 3)
+                + 3 * points[1].x * t * Math.pow(1 - t, 2)
+                + 3 * points[2].x * t * t * (1 - t)
+                + points[3].x * Math.pow(t, 3);
+            let yt = points[0].y * Math.pow(1 - t, 3)
+                + 3 * points[1].y * t * Math.pow(1 - t, 2)
+                + 3 * points[2].y * t * t * (1 - t)
+                + points[3].y * Math.pow(t, 3);
+            // 计算误差忽略
+            if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+                res.push(t);
+            }
+        });
+        return res;
+    }
+    function bezierSlope(points, t = 0) {
+        if (points.length === 2) {
+            const { x: x1, y: y1 } = points[0];
+            const { x: x2, y: y2 } = points[1];
+            if (x1 === x2) {
+                return Infinity;
+            }
+            return (y2 - y1) / (x2 - x1);
+        }
+        if (points.length === 3) {
+            return bezier2Slope(points, t);
+        }
+        if (points.length === 4) {
+            return bezier3Slope(points, t);
+        }
+        throw new Error('Unsupported order');
+    }
+    function bezier2Slope(points, t = 0) {
+        const { x: x0, y: y0 } = points[0];
+        const { x: x1, y: y1 } = points[1];
+        const { x: x2, y: y2 } = points[2];
+        const x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+        if (x === 0) {
+            return Infinity;
+        }
+        return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+    }
+    function bezier3Slope(points, t) {
+        const { x: x0, y: y0 } = points[0];
+        const { x: x1, y: y1 } = points[1];
+        const { x: x2, y: y2 } = points[2];
+        const { x: x3, y: y3 } = points[3];
+        const x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t
+            + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t
+            + 3 * x1 - 3 * x0;
+        if (x === 0) {
+            return Infinity;
+        }
+        return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
+            + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t
+            + 3 * y1 - 3 * y0) / x;
+    }
+    var bezier = {
+        bboxBezier,
+        bezierLength,
+        at,
+        sliceBezier,
+        sliceBezier2Both,
+        pointByT,
+        getPointT,
+        bezierSlope,
+    };
+
+    class Point {
+        constructor(x, y) {
+            if (Array.isArray(x)) {
+                [x, y] = x;
+            }
+            this.x = x;
+            this.y = y;
+        }
+        toString() {
+            // return this.x.toFixed(1).replace('.0', '') + ',' + this.y.toFixed(1).replace('.0', '');
+            return this.x + ',' + this.y;
+        }
+        equal(o) {
+            return this === o || this.x === o.x && this.y === o.y;
+        }
+        // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
+        static compare(a, b) {
+            if (a.x > b.x) {
+                return true;
+            }
+            return a.x === b.x && a.y > b.y;
+        }
+        static toPoint(point) {
+            return { x: point[0], y: point[1] };
+        }
+        static toPoints(points) {
+            return points.map(item => Point.toPoint(item));
+        }
+    }
+
+    class Segment {
+        constructor(coords, belong) {
+            this.coords = coords;
+            this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
+            this.bbox = this.calBbox();
+            this.myFill = [false, false]; // 自己的上下内外性
+            this.otherFill = [false, false]; // 对方的上下内外性
+            this.myCoincide = 0; // 自己重合次数
+            this.otherCoincide = 0; // 对方重合次数
+            this.isVisited = false; // 扫描求交时用到
+            this.isDeleted = false; // 相交裁剪老的线段会被删除
+        }
+        calBbox() {
+            let coords = this.coords, l = coords.length;
+            const a = coords[0], b = coords[1];
+            if (l === 2) {
+                const x1 = Math.min(a.x, b.x);
+                const y1 = Math.min(a.y, b.y);
+                const x2 = Math.max(a.x, b.x);
+                const y2 = Math.max(a.y, b.y);
+                return [x1, y1, x2, y2];
+            }
+            else {
+                const c = coords[2];
+                if (l === 3) {
+                    return bezier.bboxBezier(a.x, a.y, b.x, b.y, c.x, c.y);
+                }
+                else {
+                    const d = coords[3];
+                    return bezier.bboxBezier(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
+                }
+            }
+        }
+        // 线段边逆序
+        reverse() {
+            this.coords.reverse();
+        }
+        equal(o) {
+            let ca = this.coords, cb = o.coords;
+            if (ca.length !== cb.length) {
+                return false;
+            }
+            for (let i = 0, len = ca.length; i < len; i++) {
+                if (!ca[i].equal(cb[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        toHash() {
+            return this.coords.map(item => item.toString()).join(' ');
+        }
+        toString() {
+            return this.toHash()
+                + ' ' + this.belong
+                + ' ' + this.myCoincide
+                + '' + this.otherCoincide
+                + ' ' + this.myFill.map(i => i ? 1 : 0).join('')
+                + this.otherFill.map(i => i ? 1 : 0).join('');
+        }
+    }
+
+    const getRoots = equation.getRoots;
+    const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
+    // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
+    // 两个三次方程组无法解析表示，只能数值计算
+    // 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
+    const TOLERANCE = 1e-6;
+    const ACCURACY = 6;
+    /**
+     * 获取求导之后的系数
+     * @param coefs
+     */
+    function getDerivativeCoefs(coefs) {
+        let derivative = [];
+        for (let i = 1; i < coefs.length; i++) {
+            derivative.push(i * coefs[i]);
+        }
+        return derivative;
+    }
+    /**
+     * 评估函数
+     * @param x
+     * @param coefs
+     * @return {number}
+     */
+    function evaluate(x, coefs) {
+        let result = 0;
+        for (let i = coefs.length - 1; i >= 0; i--) {
+            result = result * x + coefs[i];
+        }
+        return result;
+    }
+    function bisection(min, max, coefs) {
+        let minValue = evaluate(min, coefs);
+        let maxValue = evaluate(max, coefs);
+        let result;
+        if (Math.abs(minValue) <= TOLERANCE) {
+            result = min;
+        }
+        else if (Math.abs(maxValue) <= TOLERANCE) {
+            result = max;
+        }
+        else if (minValue * maxValue <= 0) {
+            let tmp1 = Math.log(max - min);
+            let tmp2 = Math.LN10 * ACCURACY;
+            let iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
+            for (let i = 0; i < iters; i++) {
+                result = 0.5 * (min + max);
+                let value = evaluate(result, coefs);
+                if (Math.abs(value) <= TOLERANCE) {
+                    break;
+                }
+                if (value * minValue < 0) {
+                    max = result;
+                    maxValue = value;
+                }
+                else {
+                    min = result;
+                    minValue = value;
+                }
+            }
+        }
+        return result;
+    }
+    function getRootsInInterval(min, max, coefs) {
+        // console.log('getRootsInInterval', coefs);
+        let roots = [];
+        let root;
+        let degree = coefs.length - 1;
+        if (degree === 1) {
+            root = bisection(min, max, coefs);
+            if (root !== undefined) {
+                roots.push(root);
+            }
+        }
+        else {
+            let derivativeCoefs = getDerivativeCoefs(coefs);
+            let droots = getRootsInInterval(min, max, derivativeCoefs);
+            if (droots.length > 0) {
+                // find root on [min, droots[0]]
+                root = bisection(min, droots[0], coefs);
+                if (root !== undefined) {
+                    roots.push(root);
+                }
+                // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
+                for (let i = 0; i <= droots.length - 2; i++) {
+                    root = bisection(droots[i], droots[i + 1], coefs);
+                    if (root !== undefined) {
+                        roots.push(root);
+                    }
+                }
+                // find root on [droots[count-1],xmax]
+                root = bisection(droots[droots.length - 1], max, coefs);
+                if (root !== undefined) {
+                    roots.push(root);
+                }
+            }
+            else {
+                // polynomial is monotone on [min,max], has at most one root
+                root = bisection(min, max, coefs);
+                if (root !== undefined) {
+                    roots.push(root);
+                }
+            }
+        }
+        return roots;
+    }
+    /**
+     * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
+     * @return {[]}
+     */
+    function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
+        let c12, c11, c10;
+        let c22, c21, c20;
+        let result = [];
+        c12 = {
+            x: ax1 - 2 * ax2 + ax3,
+            y: ay1 - 2 * ay2 + ay3,
+        };
+        c11 = {
+            x: 2 * ax2 - 2 * ax1,
+            y: 2 * ay2 - 2 * ay1,
+        };
+        c10 = { x: ax1, y: ay1 };
+        c22 = {
+            x: bx1 - 2 * bx2 + bx3,
+            y: by1 - 2 * by2 + by3,
+        };
+        c21 = {
+            x: 2 * bx2 - 2 * bx1,
+            y: 2 * by2 - 2 * by1,
+        };
+        c20 = { x: bx1, y: by1 };
+        let coefs;
+        if (c12.y === 0) {
+            let v0 = c12.x * (c10.y - c20.y);
+            let v1 = v0 - c11.x * c11.y;
+            // let v2 = v0 + v1;
+            let v3 = c11.y * c11.y;
+            coefs = [
+                c12.x * c22.y * c22.y,
+                2 * c12.x * c21.y * c22.y,
+                c12.x * c21.y * c21.y - c22.x * v3 - c22.y * v0 - c22.y * v1,
+                -c21.x * v3 - c21.y * v0 - c21.y * v1,
+                (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1
+            ].reverse();
+        }
+        else {
+            let v0 = c12.x * c22.y - c12.y * c22.x;
+            let v1 = c12.x * c21.y - c21.x * c12.y;
+            let v2 = c11.x * c12.y - c11.y * c12.x;
+            let v3 = c10.y - c20.y;
+            let v4 = c12.y * (c10.x - c20.x) - c12.x * v3;
+            let v5 = -c11.y * v2 + c12.y * v4;
+            let v6 = v2 * v2;
+            coefs = [
+                v0 * v0,
+                2 * v0 * v1,
+                (-c22.y * v6 + c12.y * v1 * v1 + c12.y * v0 * v4 + v0 * v5) / c12.y,
+                (-c21.y * v6 + c12.y * v1 * v4 + v1 * v5) / c12.y,
+                (v3 * v6 + v4 * v5) / c12.y
+            ].reverse();
+        }
+        let roots = getRoots(coefs);
+        for (let i = 0; i < roots.length; i++) {
+            let s = roots[i];
+            if (0 <= s && s <= 1) {
+                let xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
+                let yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
+                if (xRoots.length > 0 && yRoots.length > 0) {
+                    let TOLERANCE = 1e-4;
+                    checkRoots: for (let j = 0; j < xRoots.length; j++) {
+                        let xRoot = xRoots[j];
+                        if (0 <= xRoot && xRoot <= 1) {
+                            for (let k = 0; k < yRoots.length; k++) {
+                                if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+                                    let x = c22.x * s * s + c21.x * s + c20.x;
+                                    let y = c22.y * s * s + c21.y * s + c20.y;
+                                    result.push({ x, y, t: xRoot });
+                                    // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
+                                    break checkRoots;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+        let c13, c12, c11, c10; // 三阶系数
+        let c23, c22, c21, c20;
+        let result = [];
+        c13 = {
+            x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
+            y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
+        };
+        c12 = {
+            x: 3 * ax1 - 6 * ax2 + 3 * ax3,
+            y: 3 * ay1 - 6 * ay2 + 3 * ay3,
+        };
+        c11 = {
+            x: -3 * ax1 + 3 * ax2,
+            y: -3 * ay1 + 3 * ay2,
+        };
+        c10 = { x: ax1, y: ay1 };
+        c23 = {
+            x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
+            y: -by1 + 3 * by2 - 3 * by3 + by4,
+        };
+        c22 = {
+            x: 3 * bx1 - 6 * bx2 + 3 * bx3,
+            y: 3 * by1 - 6 * by2 + 3 * by3,
+        };
+        c21 = {
+            x: -3 * bx1 + 3 * bx2,
+            y: -3 * by1 + 3 * by2,
+        };
+        c20 = { x: bx1, y: by1 };
+        let c10x2 = c10.x * c10.x;
+        let c10x3 = c10.x * c10.x * c10.x;
+        let c10y2 = c10.y * c10.y;
+        let c10y3 = c10.y * c10.y * c10.y;
+        let c11x2 = c11.x * c11.x;
+        let c11x3 = c11.x * c11.x * c11.x;
+        let c11y2 = c11.y * c11.y;
+        let c11y3 = c11.y * c11.y * c11.y;
+        let c12x2 = c12.x * c12.x;
+        let c12x3 = c12.x * c12.x * c12.x;
+        let c12y2 = c12.y * c12.y;
+        let c12y3 = c12.y * c12.y * c12.y;
+        let c13x2 = c13.x * c13.x;
+        let c13x3 = c13.x * c13.x * c13.x;
+        let c13y2 = c13.y * c13.y;
+        let c13y3 = c13.y * c13.y * c13.y;
+        let c20x2 = c20.x * c20.x;
+        let c20x3 = c20.x * c20.x * c20.x;
+        let c20y2 = c20.y * c20.y;
+        let c20y3 = c20.y * c20.y * c20.y;
+        let c21x2 = c21.x * c21.x;
+        let c21x3 = c21.x * c21.x * c21.x;
+        let c21y2 = c21.y * c21.y;
+        let c22x2 = c22.x * c22.x;
+        let c22x3 = c22.x * c22.x * c22.x;
+        let c22y2 = c22.y * c22.y;
+        let c23x2 = c23.x * c23.x;
+        let c23x3 = c23.x * c23.x * c23.x;
+        let c23y2 = c23.y * c23.y;
+        let c23y3 = c23.y * c23.y * c23.y;
+        let coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y +
+                3 * c13x2 * c13.y * c23.x * c23y2,
+            -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 -
+                3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2,
+            -6 * c21.x * c13.x * c13y2 * c23.x * c23.y - 6 * c13.x * c22.x * c13y2 * c22.y * c23.x + 6 * c13x2 * c22.x * c13.y * c22.y * c23.y +
+                3 * c21.x * c13y3 * c23x2 + 3 * c22x2 * c13y3 * c23.x + 3 * c21.x * c13x2 * c13.y * c23y2 - 3 * c13.x * c21.y * c13y2 * c23x2 -
+                3 * c13.x * c22x2 * c13y2 * c23.y + c13x2 * c13.y * c23.x * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-c21.y * c23y2 -
+                2 * c22y2 * c23.y - c23.y * (2 * c21.y * c23.y + c22y2)),
+            c11.x * c12.y * c13.x * c13.y * c23.x * c23.y - c11.y * c12.x * c13.x * c13.y * c23.x * c23.y + 6 * c21.x * c22.x * c13y3 * c23.x +
+                3 * c11.x * c12.x * c13.x * c13.y * c23y2 + 6 * c10.x * c13.x * c13y2 * c23.x * c23.y - 3 * c11.x * c12.x * c13y2 * c23.x * c23.y -
+                3 * c11.y * c12.y * c13.x * c13.y * c23x2 - 6 * c10.y * c13x2 * c13.y * c23.x * c23.y - 6 * c20.x * c13.x * c13y2 * c23.x * c23.y +
+                3 * c11.y * c12.y * c13x2 * c23.x * c23.y - 2 * c12.x * c12y2 * c13.x * c23.x * c23.y - 6 * c21.x * c13.x * c22.x * c13y2 * c23.y -
+                6 * c21.x * c13.x * c13y2 * c22.y * c23.x - 6 * c13.x * c21.y * c22.x * c13y2 * c23.x + 6 * c21.x * c13x2 * c13.y * c22.y * c23.y +
+                2 * c12x2 * c12.y * c13.y * c23.x * c23.y + c22x3 * c13y3 - 3 * c10.x * c13y3 * c23x2 + 3 * c10.y * c13x3 * c23y2 +
+                3 * c20.x * c13y3 * c23x2 + c12y3 * c13.x * c23x2 - c12x3 * c13.y * c23y2 - 3 * c10.x * c13x2 * c13.y * c23y2 +
+                3 * c10.y * c13.x * c13y2 * c23x2 - 2 * c11.x * c12.y * c13x2 * c23y2 + c11.x * c12.y * c13y2 * c23x2 - c11.y * c12.x * c13x2 * c23y2 +
+                2 * c11.y * c12.x * c13y2 * c23x2 + 3 * c20.x * c13x2 * c13.y * c23y2 - c12.x * c12y2 * c13.y * c23x2 -
+                3 * c20.y * c13.x * c13y2 * c23x2 + c12x2 * c12.y * c13.x * c23y2 - 3 * c13.x * c22x2 * c13y2 * c22.y +
+                c13x2 * c13.y * c23.x * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c22.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
+                c13x3 * (-2 * c21.y * c22.y * c23.y - c20.y * c23y2 - c22.y * (2 * c21.y * c23.y + c22y2) - c23.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            6 * c11.x * c12.x * c13.x * c13.y * c22.y * c23.y + c11.x * c12.y * c13.x * c22.x * c13.y * c23.y + c11.x * c12.y * c13.x * c13.y * c22.y * c23.x -
+                c11.y * c12.x * c13.x * c22.x * c13.y * c23.y - c11.y * c12.x * c13.x * c13.y * c22.y * c23.x - 6 * c11.y * c12.y * c13.x * c22.x * c13.y * c23.x -
+                6 * c10.x * c22.x * c13y3 * c23.x + 6 * c20.x * c22.x * c13y3 * c23.x + 6 * c10.y * c13x3 * c22.y * c23.y + 2 * c12y3 * c13.x * c22.x * c23.x -
+                2 * c12x3 * c13.y * c22.y * c23.y + 6 * c10.x * c13.x * c22.x * c13y2 * c23.y + 6 * c10.x * c13.x * c13y2 * c22.y * c23.x +
+                6 * c10.y * c13.x * c22.x * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c23.y - 3 * c11.x * c12.x * c13y2 * c22.y * c23.x +
+                2 * c11.x * c12.y * c22.x * c13y2 * c23.x + 4 * c11.y * c12.x * c22.x * c13y2 * c23.x - 6 * c10.x * c13x2 * c13.y * c22.y * c23.y -
+                6 * c10.y * c13x2 * c22.x * c13.y * c23.y - 6 * c10.y * c13x2 * c13.y * c22.y * c23.x - 4 * c11.x * c12.y * c13x2 * c22.y * c23.y -
+                6 * c20.x * c13.x * c22.x * c13y2 * c23.y - 6 * c20.x * c13.x * c13y2 * c22.y * c23.x - 2 * c11.y * c12.x * c13x2 * c22.y * c23.y +
+                3 * c11.y * c12.y * c13x2 * c22.x * c23.y + 3 * c11.y * c12.y * c13x2 * c22.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c23.y -
+                2 * c12.x * c12y2 * c13.x * c22.y * c23.x - 2 * c12.x * c12y2 * c22.x * c13.y * c23.x - 6 * c20.y * c13.x * c22.x * c13y2 * c23.x -
+                6 * c21.x * c13.x * c21.y * c13y2 * c23.x - 6 * c21.x * c13.x * c22.x * c13y2 * c22.y + 6 * c20.x * c13x2 * c13.y * c22.y * c23.y +
+                2 * c12x2 * c12.y * c13.x * c22.y * c23.y + 2 * c12x2 * c12.y * c22.x * c13.y * c23.y + 2 * c12x2 * c12.y * c13.y * c22.y * c23.x +
+                3 * c21.x * c22x2 * c13y3 + 3 * c21x2 * c13y3 * c23.x - 3 * c13.x * c21.y * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c23.y +
+                c13x2 * c22.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c13.y * c23.x * (6 * c20.y * c22.y + 3 * c21y2) +
+                c21.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c22.y * c23.y - c23.y * (2 * c20.y * c22.y + c21y2) -
+                c21.y * (2 * c21.y * c23.y + c22y2) - c22.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            c11.x * c21.x * c12.y * c13.x * c13.y * c23.y + c11.x * c12.y * c13.x * c21.y * c13.y * c23.x + c11.x * c12.y * c13.x * c22.x * c13.y * c22.y -
+                c11.y * c12.x * c21.x * c13.x * c13.y * c23.y - c11.y * c12.x * c13.x * c21.y * c13.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c22.y -
+                6 * c11.y * c21.x * c12.y * c13.x * c13.y * c23.x - 6 * c10.x * c21.x * c13y3 * c23.x + 6 * c20.x * c21.x * c13y3 * c23.x +
+                2 * c21.x * c12y3 * c13.x * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c23.y + 6 * c10.x * c13.x * c21.y * c13y2 * c23.x +
+                6 * c10.x * c13.x * c22.x * c13y2 * c22.y + 6 * c10.y * c21.x * c13.x * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c23.y -
+                3 * c11.x * c12.x * c21.y * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c22.y + 2 * c11.x * c21.x * c12.y * c13y2 * c23.x +
+                4 * c11.y * c12.x * c21.x * c13y2 * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c23.y - 6 * c10.y * c13x2 * c21.y * c13.y * c23.x -
+                6 * c10.y * c13x2 * c22.x * c13.y * c22.y - 6 * c20.x * c21.x * c13.x * c13y2 * c23.y - 6 * c20.x * c13.x * c21.y * c13y2 * c23.x -
+                6 * c20.x * c13.x * c22.x * c13y2 * c22.y + 3 * c11.y * c21.x * c12.y * c13x2 * c23.y - 3 * c11.y * c12.y * c13.x * c22x2 * c13.y +
+                3 * c11.y * c12.y * c13x2 * c21.y * c23.x + 3 * c11.y * c12.y * c13x2 * c22.x * c22.y - 2 * c12.x * c21.x * c12y2 * c13.x * c23.y -
+                2 * c12.x * c21.x * c12y2 * c13.y * c23.x - 2 * c12.x * c12y2 * c13.x * c21.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c22.y -
+                6 * c20.y * c21.x * c13.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c22.x * c13y2 + 6 * c20.y * c13x2 * c21.y * c13.y * c23.x +
+                2 * c12x2 * c21.x * c12.y * c13.y * c23.y + 2 * c12x2 * c12.y * c21.y * c13.y * c23.x + 2 * c12x2 * c12.y * c22.x * c13.y * c22.y -
+                3 * c10.x * c22x2 * c13y3 + 3 * c20.x * c22x2 * c13y3 + 3 * c21x2 * c22.x * c13y3 + c12y3 * c13.x * c22x2 +
+                3 * c10.y * c13.x * c22x2 * c13y2 + c11.x * c12.y * c22x2 * c13y2 + 2 * c11.y * c12.x * c22x2 * c13y2 -
+                c12.x * c12y2 * c22x2 * c13.y - 3 * c20.y * c13.x * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c22.y +
+                c12x2 * c12.y * c13.x * (2 * c21.y * c23.y + c22y2) + c11.x * c12.x * c13.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
+                c21.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c21.y * c23.y - c22y2) +
+                c10.y * c13x3 * (6 * c21.y * c23.y + 3 * c22y2) + c11.y * c12.x * c13x2 * (-2 * c21.y * c23.y - c22y2) +
+                c11.x * c12.y * c13x2 * (-4 * c21.y * c23.y - 2 * c22y2) + c10.x * c13x2 * c13.y * (-6 * c21.y * c23.y - 3 * c22y2) +
+                c13x2 * c22.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
+                c13x3 * (-2 * c20.y * c21.y * c23.y - c22.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c21.y * c23.y + c22y2) -
+                    c21.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            -c10.x * c11.x * c12.y * c13.x * c13.y * c23.y + c10.x * c11.y * c12.x * c13.x * c13.y * c23.y + 6 * c10.x * c11.y * c12.y * c13.x * c13.y * c23.x -
+                6 * c10.y * c11.x * c12.x * c13.x * c13.y * c23.y - c10.y * c11.x * c12.y * c13.x * c13.y * c23.x + c10.y * c11.y * c12.x * c13.x * c13.y * c23.x +
+                c11.x * c11.y * c12.x * c12.y * c13.x * c23.y - c11.x * c11.y * c12.x * c12.y * c13.y * c23.x + c11.x * c20.x * c12.y * c13.x * c13.y * c23.y +
+                c11.x * c20.y * c12.y * c13.x * c13.y * c23.x + c11.x * c21.x * c12.y * c13.x * c13.y * c22.y + c11.x * c12.y * c13.x * c21.y * c22.x * c13.y -
+                c20.x * c11.y * c12.x * c13.x * c13.y * c23.y - 6 * c20.x * c11.y * c12.y * c13.x * c13.y * c23.x - c11.y * c12.x * c20.y * c13.x * c13.y * c23.x -
+                c11.y * c12.x * c21.x * c13.x * c13.y * c22.y - c11.y * c12.x * c13.x * c21.y * c22.x * c13.y - 6 * c11.y * c21.x * c12.y * c13.x * c22.x * c13.y -
+                6 * c10.x * c20.x * c13y3 * c23.x - 6 * c10.x * c21.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c23.x + 6 * c20.x * c21.x * c22.x * c13y3 +
+                2 * c20.x * c12y3 * c13.x * c23.x + 2 * c21.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c23.y - 6 * c10.x * c10.y * c13.x * c13y2 * c23.x +
+                3 * c10.x * c11.x * c12.x * c13y2 * c23.y - 2 * c10.x * c11.x * c12.y * c13y2 * c23.x - 4 * c10.x * c11.y * c12.x * c13y2 * c23.x +
+                3 * c10.y * c11.x * c12.x * c13y2 * c23.x + 6 * c10.x * c10.y * c13x2 * c13.y * c23.y + 6 * c10.x * c20.x * c13.x * c13y2 * c23.y -
+                3 * c10.x * c11.y * c12.y * c13x2 * c23.y + 2 * c10.x * c12.x * c12y2 * c13.x * c23.y + 2 * c10.x * c12.x * c12y2 * c13.y * c23.x +
+                6 * c10.x * c20.y * c13.x * c13y2 * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c22.y + 6 * c10.x * c13.x * c21.y * c22.x * c13y2 +
+                4 * c10.y * c11.x * c12.y * c13x2 * c23.y + 6 * c10.y * c20.x * c13.x * c13y2 * c23.x + 2 * c10.y * c11.y * c12.x * c13x2 * c23.y -
+                3 * c10.y * c11.y * c12.y * c13x2 * c23.x + 2 * c10.y * c12.x * c12y2 * c13.x * c23.x + 6 * c10.y * c21.x * c13.x * c22.x * c13y2 -
+                3 * c11.x * c20.x * c12.x * c13y2 * c23.y + 2 * c11.x * c20.x * c12.y * c13y2 * c23.x + c11.x * c11.y * c12y2 * c13.x * c23.x -
+                3 * c11.x * c12.x * c20.y * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c22.y - 3 * c11.x * c12.x * c21.y * c22.x * c13y2 +
+                2 * c11.x * c21.x * c12.y * c22.x * c13y2 + 4 * c20.x * c11.y * c12.x * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c22.x * c13y2 -
+                2 * c10.x * c12x2 * c12.y * c13.y * c23.y - 6 * c10.y * c20.x * c13x2 * c13.y * c23.y - 6 * c10.y * c20.y * c13x2 * c13.y * c23.x -
+                6 * c10.y * c21.x * c13x2 * c13.y * c22.y - 2 * c10.y * c12x2 * c12.y * c13.x * c23.y - 2 * c10.y * c12x2 * c12.y * c13.y * c23.x -
+                6 * c10.y * c13x2 * c21.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c23.y - 2 * c11.x * c11y2 * c13.x * c13.y * c23.x +
+                3 * c20.x * c11.y * c12.y * c13x2 * c23.y - 2 * c20.x * c12.x * c12y2 * c13.x * c23.y - 2 * c20.x * c12.x * c12y2 * c13.y * c23.x -
+                6 * c20.x * c20.y * c13.x * c13y2 * c23.x - 6 * c20.x * c21.x * c13.x * c13y2 * c22.y - 6 * c20.x * c13.x * c21.y * c22.x * c13y2 +
+                3 * c11.y * c20.y * c12.y * c13x2 * c23.x + 3 * c11.y * c21.x * c12.y * c13x2 * c22.y + 3 * c11.y * c12.y * c13x2 * c21.y * c22.x -
+                2 * c12.x * c20.y * c12y2 * c13.x * c23.x - 2 * c12.x * c21.x * c12y2 * c13.x * c22.y - 2 * c12.x * c21.x * c12y2 * c22.x * c13.y -
+                2 * c12.x * c12y2 * c13.x * c21.y * c22.x - 6 * c20.y * c21.x * c13.x * c22.x * c13y2 - c11y2 * c12.x * c12.y * c13.x * c23.x +
+                2 * c20.x * c12x2 * c12.y * c13.y * c23.y + 6 * c20.y * c13x2 * c21.y * c22.x * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c23.y +
+                c11x2 * c12.x * c12.y * c13.y * c23.y + 2 * c12x2 * c20.y * c12.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c22.y +
+                2 * c12x2 * c12.y * c21.y * c22.x * c13.y + c21x3 * c13y3 + 3 * c10x2 * c13y3 * c23.x - 3 * c10y2 * c13x3 * c23.y +
+                3 * c20x2 * c13y3 * c23.x + c11y3 * c13x2 * c23.x - c11x3 * c13y2 * c23.y - c11.x * c11y2 * c13x2 * c23.y +
+                c11x2 * c11.y * c13y2 * c23.x - 3 * c10x2 * c13.x * c13y2 * c23.y + 3 * c10y2 * c13x2 * c13.y * c23.x - c11x2 * c12y2 * c13.x * c23.y +
+                c11y2 * c12x2 * c13.y * c23.x - 3 * c21x2 * c13.x * c21.y * c13y2 - 3 * c20x2 * c13.x * c13y2 * c23.y + 3 * c20y2 * c13x2 * c13.y * c23.x +
+                c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
+                c10.y * c13x3 * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c11.y * c12.x * c13x2 * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
+                c12x2 * c12.y * c13.x * (2 * c20.y * c23.y + 2 * c21.y * c22.y) + c11.x * c12.y * c13x2 * (-4 * c20.y * c23.y - 4 * c21.y * c22.y) +
+                c10.x * c13x2 * c13.y * (-6 * c20.y * c23.y - 6 * c21.y * c22.y) + c20.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) +
+                c21.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21.y * c22.y - c20y2 * c23.y -
+                c21.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            -c10.x * c11.x * c12.y * c13.x * c13.y * c22.y + c10.x * c11.y * c12.x * c13.x * c13.y * c22.y + 6 * c10.x * c11.y * c12.y * c13.x * c22.x * c13.y -
+                6 * c10.y * c11.x * c12.x * c13.x * c13.y * c22.y - c10.y * c11.x * c12.y * c13.x * c22.x * c13.y + c10.y * c11.y * c12.x * c13.x * c22.x * c13.y +
+                c11.x * c11.y * c12.x * c12.y * c13.x * c22.y - c11.x * c11.y * c12.x * c12.y * c22.x * c13.y + c11.x * c20.x * c12.y * c13.x * c13.y * c22.y +
+                c11.x * c20.y * c12.y * c13.x * c22.x * c13.y + c11.x * c21.x * c12.y * c13.x * c21.y * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c22.y -
+                6 * c20.x * c11.y * c12.y * c13.x * c22.x * c13.y - c11.y * c12.x * c20.y * c13.x * c22.x * c13.y - c11.y * c12.x * c21.x * c13.x * c21.y * c13.y -
+                6 * c10.x * c20.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c22.x + 2 * c20.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c22.y -
+                6 * c10.x * c10.y * c13.x * c22.x * c13y2 + 3 * c10.x * c11.x * c12.x * c13y2 * c22.y - 2 * c10.x * c11.x * c12.y * c22.x * c13y2 -
+                4 * c10.x * c11.y * c12.x * c22.x * c13y2 + 3 * c10.y * c11.x * c12.x * c22.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c13.y * c22.y +
+                6 * c10.x * c20.x * c13.x * c13y2 * c22.y - 3 * c10.x * c11.y * c12.y * c13x2 * c22.y + 2 * c10.x * c12.x * c12y2 * c13.x * c22.y +
+                2 * c10.x * c12.x * c12y2 * c22.x * c13.y + 6 * c10.x * c20.y * c13.x * c22.x * c13y2 + 6 * c10.x * c21.x * c13.x * c21.y * c13y2 +
+                4 * c10.y * c11.x * c12.y * c13x2 * c22.y + 6 * c10.y * c20.x * c13.x * c22.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c22.y -
+                3 * c10.y * c11.y * c12.y * c13x2 * c22.x + 2 * c10.y * c12.x * c12y2 * c13.x * c22.x - 3 * c11.x * c20.x * c12.x * c13y2 * c22.y +
+                2 * c11.x * c20.x * c12.y * c22.x * c13y2 + c11.x * c11.y * c12y2 * c13.x * c22.x - 3 * c11.x * c12.x * c20.y * c22.x * c13y2 -
+                3 * c11.x * c12.x * c21.x * c21.y * c13y2 + 4 * c20.x * c11.y * c12.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c22.y -
+                6 * c10.y * c20.x * c13x2 * c13.y * c22.y - 6 * c10.y * c20.y * c13x2 * c22.x * c13.y - 6 * c10.y * c21.x * c13x2 * c21.y * c13.y -
+                2 * c10.y * c12x2 * c12.y * c13.x * c22.y - 2 * c10.y * c12x2 * c12.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c22.y -
+                2 * c11.x * c11y2 * c13.x * c22.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c22.y - 2 * c20.x * c12.x * c12y2 * c13.x * c22.y -
+                2 * c20.x * c12.x * c12y2 * c22.x * c13.y - 6 * c20.x * c20.y * c13.x * c22.x * c13y2 - 6 * c20.x * c21.x * c13.x * c21.y * c13y2 +
+                3 * c11.y * c20.y * c12.y * c13x2 * c22.x + 3 * c11.y * c21.x * c12.y * c13x2 * c21.y - 2 * c12.x * c20.y * c12y2 * c13.x * c22.x -
+                2 * c12.x * c21.x * c12y2 * c13.x * c21.y - c11y2 * c12.x * c12.y * c13.x * c22.x + 2 * c20.x * c12x2 * c12.y * c13.y * c22.y -
+                3 * c11.y * c21x2 * c12.y * c13.x * c13.y + 6 * c20.y * c21.x * c13x2 * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c22.y +
+                c11x2 * c12.x * c12.y * c13.y * c22.y + 2 * c12x2 * c20.y * c12.y * c22.x * c13.y + 2 * c12x2 * c21.x * c12.y * c21.y * c13.y -
+                3 * c10.x * c21x2 * c13y3 + 3 * c20.x * c21x2 * c13y3 + 3 * c10x2 * c22.x * c13y3 - 3 * c10y2 * c13x3 * c22.y + 3 * c20x2 * c22.x * c13y3 +
+                c21x2 * c12y3 * c13.x + c11y3 * c13x2 * c22.x - c11x3 * c13y2 * c22.y + 3 * c10.y * c21x2 * c13.x * c13y2 -
+                c11.x * c11y2 * c13x2 * c22.y + c11.x * c21x2 * c12.y * c13y2 + 2 * c11.y * c12.x * c21x2 * c13y2 + c11x2 * c11.y * c22.x * c13y2 -
+                c12.x * c21x2 * c12y2 * c13.y - 3 * c20.y * c21x2 * c13.x * c13y2 - 3 * c10x2 * c13.x * c13y2 * c22.y + 3 * c10y2 * c13x2 * c22.x * c13.y -
+                c11x2 * c12y2 * c13.x * c22.y + c11y2 * c12x2 * c22.x * c13.y - 3 * c20x2 * c13.x * c13y2 * c22.y + 3 * c20y2 * c13x2 * c22.x * c13.y +
+                c12x2 * c12.y * c13.x * (2 * c20.y * c22.y + c21y2) + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
+                c12x3 * c13.y * (-2 * c20.y * c22.y - c21y2) + c10.y * c13x3 * (6 * c20.y * c22.y + 3 * c21y2) +
+                c11.y * c12.x * c13x2 * (-2 * c20.y * c22.y - c21y2) + c11.x * c12.y * c13x2 * (-4 * c20.y * c22.y - 2 * c21y2) +
+                c10.x * c13x2 * c13.y * (-6 * c20.y * c22.y - 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
+                c13x3 * (-2 * c20.y * c21y2 - c20y2 * c22.y - c20.y * (2 * c20.y * c22.y + c21y2)),
+            -c10.x * c11.x * c12.y * c13.x * c21.y * c13.y + c10.x * c11.y * c12.x * c13.x * c21.y * c13.y + 6 * c10.x * c11.y * c21.x * c12.y * c13.x * c13.y -
+                6 * c10.y * c11.x * c12.x * c13.x * c21.y * c13.y - c10.y * c11.x * c21.x * c12.y * c13.x * c13.y + c10.y * c11.y * c12.x * c21.x * c13.x * c13.y -
+                c11.x * c11.y * c12.x * c21.x * c12.y * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c21.y + c11.x * c20.x * c12.y * c13.x * c21.y * c13.y +
+                6 * c11.x * c12.x * c20.y * c13.x * c21.y * c13.y + c11.x * c20.y * c21.x * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c13.x * c21.y * c13.y -
+                6 * c20.x * c11.y * c21.x * c12.y * c13.x * c13.y - c11.y * c12.x * c20.y * c21.x * c13.x * c13.y - 6 * c10.x * c20.x * c21.x * c13y3 -
+                2 * c10.x * c21.x * c12y3 * c13.x + 6 * c10.y * c20.y * c13x3 * c21.y + 2 * c20.x * c21.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c21.y * c13.y -
+                2 * c12x3 * c20.y * c21.y * c13.y - 6 * c10.x * c10.y * c21.x * c13.x * c13y2 + 3 * c10.x * c11.x * c12.x * c21.y * c13y2 -
+                2 * c10.x * c11.x * c21.x * c12.y * c13y2 - 4 * c10.x * c11.y * c12.x * c21.x * c13y2 + 3 * c10.y * c11.x * c12.x * c21.x * c13y2 +
+                6 * c10.x * c10.y * c13x2 * c21.y * c13.y + 6 * c10.x * c20.x * c13.x * c21.y * c13y2 - 3 * c10.x * c11.y * c12.y * c13x2 * c21.y +
+                2 * c10.x * c12.x * c21.x * c12y2 * c13.y + 2 * c10.x * c12.x * c12y2 * c13.x * c21.y + 6 * c10.x * c20.y * c21.x * c13.x * c13y2 +
+                4 * c10.y * c11.x * c12.y * c13x2 * c21.y + 6 * c10.y * c20.x * c21.x * c13.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c21.y -
+                3 * c10.y * c11.y * c21.x * c12.y * c13x2 + 2 * c10.y * c12.x * c21.x * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c21.y * c13y2 +
+                2 * c11.x * c20.x * c21.x * c12.y * c13y2 + c11.x * c11.y * c21.x * c12y2 * c13.x - 3 * c11.x * c12.x * c20.y * c21.x * c13y2 +
+                4 * c20.x * c11.y * c12.x * c21.x * c13y2 - 6 * c10.x * c20.y * c13x2 * c21.y * c13.y - 2 * c10.x * c12x2 * c12.y * c21.y * c13.y -
+                6 * c10.y * c20.x * c13x2 * c21.y * c13.y - 6 * c10.y * c20.y * c21.x * c13x2 * c13.y - 2 * c10.y * c12x2 * c21.x * c12.y * c13.y -
+                2 * c10.y * c12x2 * c12.y * c13.x * c21.y - c11.x * c11.y * c12x2 * c21.y * c13.y - 4 * c11.x * c20.y * c12.y * c13x2 * c21.y -
+                2 * c11.x * c11y2 * c21.x * c13.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c21.y - 2 * c20.x * c12.x * c21.x * c12y2 * c13.y -
+                2 * c20.x * c12.x * c12y2 * c13.x * c21.y - 6 * c20.x * c20.y * c21.x * c13.x * c13y2 - 2 * c11.y * c12.x * c20.y * c13x2 * c21.y +
+                3 * c11.y * c20.y * c21.x * c12.y * c13x2 - 2 * c12.x * c20.y * c21.x * c12y2 * c13.x - c11y2 * c12.x * c21.x * c12.y * c13.x +
+                6 * c20.x * c20.y * c13x2 * c21.y * c13.y + 2 * c20.x * c12x2 * c12.y * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c21.y * c13.y +
+                c11x2 * c12.x * c12.y * c21.y * c13.y + 2 * c12x2 * c20.y * c21.x * c12.y * c13.y + 2 * c12x2 * c20.y * c12.y * c13.x * c21.y +
+                3 * c10x2 * c21.x * c13y3 - 3 * c10y2 * c13x3 * c21.y + 3 * c20x2 * c21.x * c13y3 + c11y3 * c21.x * c13x2 - c11x3 * c21.y * c13y2 -
+                3 * c20y2 * c13x3 * c21.y - c11.x * c11y2 * c13x2 * c21.y + c11x2 * c11.y * c21.x * c13y2 - 3 * c10x2 * c13.x * c21.y * c13y2 +
+                3 * c10y2 * c21.x * c13x2 * c13.y - c11x2 * c12y2 * c13.x * c21.y + c11y2 * c12x2 * c21.x * c13.y - 3 * c20x2 * c13.x * c21.y * c13y2 +
+                3 * c20y2 * c21.x * c13x2 * c13.y,
+            c10.x * c10.y * c11.x * c12.y * c13.x * c13.y - c10.x * c10.y * c11.y * c12.x * c13.x * c13.y + c10.x * c11.x * c11.y * c12.x * c12.y * c13.y -
+                c10.y * c11.x * c11.y * c12.x * c12.y * c13.x - c10.x * c11.x * c20.y * c12.y * c13.x * c13.y + 6 * c10.x * c20.x * c11.y * c12.y * c13.x * c13.y +
+                c10.x * c11.y * c12.x * c20.y * c13.x * c13.y - c10.y * c11.x * c20.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c20.y * c13.x * c13.y +
+                c10.y * c20.x * c11.y * c12.x * c13.x * c13.y - c11.x * c20.x * c11.y * c12.x * c12.y * c13.y + c11.x * c11.y * c12.x * c20.y * c12.y * c13.x +
+                c11.x * c20.x * c20.y * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c20.y * c13.x * c13.y - 2 * c10.x * c20.x * c12y3 * c13.x +
+                2 * c10.y * c12x3 * c20.y * c13.y - 3 * c10.x * c10.y * c11.x * c12.x * c13y2 - 6 * c10.x * c10.y * c20.x * c13.x * c13y2 +
+                3 * c10.x * c10.y * c11.y * c12.y * c13x2 - 2 * c10.x * c10.y * c12.x * c12y2 * c13.x - 2 * c10.x * c11.x * c20.x * c12.y * c13y2 -
+                c10.x * c11.x * c11.y * c12y2 * c13.x + 3 * c10.x * c11.x * c12.x * c20.y * c13y2 - 4 * c10.x * c20.x * c11.y * c12.x * c13y2 +
+                3 * c10.y * c11.x * c20.x * c12.x * c13y2 + 6 * c10.x * c10.y * c20.y * c13x2 * c13.y + 2 * c10.x * c10.y * c12x2 * c12.y * c13.y +
+                2 * c10.x * c11.x * c11y2 * c13.x * c13.y + 2 * c10.x * c20.x * c12.x * c12y2 * c13.y + 6 * c10.x * c20.x * c20.y * c13.x * c13y2 -
+                3 * c10.x * c11.y * c20.y * c12.y * c13x2 + 2 * c10.x * c12.x * c20.y * c12y2 * c13.x + c10.x * c11y2 * c12.x * c12.y * c13.x +
+                c10.y * c11.x * c11.y * c12x2 * c13.y + 4 * c10.y * c11.x * c20.y * c12.y * c13x2 - 3 * c10.y * c20.x * c11.y * c12.y * c13x2 +
+                2 * c10.y * c20.x * c12.x * c12y2 * c13.x + 2 * c10.y * c11.y * c12.x * c20.y * c13x2 + c11.x * c20.x * c11.y * c12y2 * c13.x -
+                3 * c11.x * c20.x * c12.x * c20.y * c13y2 - 2 * c10.x * c12x2 * c20.y * c12.y * c13.y - 6 * c10.y * c20.x * c20.y * c13x2 * c13.y -
+                2 * c10.y * c20.x * c12x2 * c12.y * c13.y - 2 * c10.y * c11x2 * c11.y * c13.x * c13.y - c10.y * c11x2 * c12.x * c12.y * c13.y -
+                2 * c10.y * c12x2 * c20.y * c12.y * c13.x - 2 * c11.x * c20.x * c11y2 * c13.x * c13.y - c11.x * c11.y * c12x2 * c20.y * c13.y +
+                3 * c20.x * c11.y * c20.y * c12.y * c13x2 - 2 * c20.x * c12.x * c20.y * c12y2 * c13.x - c20.x * c11y2 * c12.x * c12.y * c13.x +
+                3 * c10y2 * c11.x * c12.x * c13.x * c13.y + 3 * c11.x * c12.x * c20y2 * c13.x * c13.y + 2 * c20.x * c12x2 * c20.y * c12.y * c13.y -
+                3 * c10x2 * c11.y * c12.y * c13.x * c13.y + 2 * c11x2 * c11.y * c20.y * c13.x * c13.y + c11x2 * c12.x * c20.y * c12.y * c13.y -
+                3 * c20x2 * c11.y * c12.y * c13.x * c13.y - c10x3 * c13y3 + c10y3 * c13x3 + c20x3 * c13y3 - c20y3 * c13x3 -
+                3 * c10.x * c20x2 * c13y3 - c10.x * c11y3 * c13x2 + 3 * c10x2 * c20.x * c13y3 + c10.y * c11x3 * c13y2 +
+                3 * c10.y * c20y2 * c13x3 + c20.x * c11y3 * c13x2 + c10x2 * c12y3 * c13.x - 3 * c10y2 * c20.y * c13x3 - c10y2 * c12x3 * c13.y +
+                c20x2 * c12y3 * c13.x - c11x3 * c20.y * c13y2 - c12x3 * c20y2 * c13.y - c10.x * c11x2 * c11.y * c13y2 +
+                c10.y * c11.x * c11y2 * c13x2 - 3 * c10.x * c10y2 * c13x2 * c13.y - c10.x * c11y2 * c12x2 * c13.y + c10.y * c11x2 * c12y2 * c13.x -
+                c11.x * c11y2 * c20.y * c13x2 + 3 * c10x2 * c10.y * c13.x * c13y2 + c10x2 * c11.x * c12.y * c13y2 +
+                2 * c10x2 * c11.y * c12.x * c13y2 - 2 * c10y2 * c11.x * c12.y * c13x2 - c10y2 * c11.y * c12.x * c13x2 + c11x2 * c20.x * c11.y * c13y2 -
+                3 * c10.x * c20y2 * c13x2 * c13.y + 3 * c10.y * c20x2 * c13.x * c13y2 + c11.x * c20x2 * c12.y * c13y2 - 2 * c11.x * c20y2 * c12.y * c13x2 +
+                c20.x * c11y2 * c12x2 * c13.y - c11.y * c12.x * c20y2 * c13x2 - c10x2 * c12.x * c12y2 * c13.y - 3 * c10x2 * c20.y * c13.x * c13y2 +
+                3 * c10y2 * c20.x * c13x2 * c13.y + c10y2 * c12x2 * c12.y * c13.x - c11x2 * c20.y * c12y2 * c13.x + 2 * c20x2 * c11.y * c12.x * c13y2 +
+                3 * c20.x * c20y2 * c13x2 * c13.y - c20x2 * c12.x * c12y2 * c13.y - 3 * c20x2 * c20.y * c13.x * c13y2 + c12x2 * c20y2 * c12.y * c13.x
+        ].reverse();
+        let roots = getRootsInInterval(0, 1, coefs);
+        for (let i = 0; i < roots.length; i++) {
+            let s = roots[i];
+            let xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+            let yRoots = getRoots([c13.y,
+                c12.y,
+                c11.y,
+                c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
+            if (xRoots.length > 0 && yRoots.length > 0) {
+                let TOLERANCE = 1e-4;
+                checkRoots: for (let j = 0; j < xRoots.length; j++) {
+                    let xRoot = xRoots[j];
+                    if (0 <= xRoot && xRoot <= 1) {
+                        for (let k = 0; k < yRoots.length; k++) {
+                            if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+                                let x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
+                                let y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
+                                result.push({ x, y, t: xRoot });
+                                break checkRoots;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+        let c12, c11, c10;
+        let c23, c22, c21, c20;
+        let result = [];
+        c12 = {
+            x: ax1 - 2 * ax2 + ax3,
+            y: ay1 - 2 * ay2 + ay3,
+        };
+        c11 = {
+            x: 2 * ax2 - 2 * ax1,
+            y: 2 * ay2 - 2 * ay1,
+        };
+        c10 = { x: ax1, y: ay1 };
+        c23 = {
+            x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
+            y: -by1 + 3 * by2 - 3 * by3 + by4,
+        };
+        c22 = {
+            x: 3 * bx1 - 6 * bx2 + 3 * bx3,
+            y: 3 * by1 - 6 * by2 + 3 * by3,
+        };
+        c21 = {
+            x: -3 * bx1 + 3 * bx2,
+            y: -3 * by1 + 3 * by2,
+        };
+        c20 = { x: bx1, y: by1 };
+        let c10x2 = c10.x * c10.x;
+        let c10y2 = c10.y * c10.y;
+        let c11x2 = c11.x * c11.x;
+        let c11y2 = c11.y * c11.y;
+        let c12x2 = c12.x * c12.x;
+        let c12y2 = c12.y * c12.y;
+        let c20x2 = c20.x * c20.x;
+        let c20y2 = c20.y * c20.y;
+        let c21x2 = c21.x * c21.x;
+        let c21y2 = c21.y * c21.y;
+        let c22x2 = c22.x * c22.x;
+        let c22y2 = c22.y * c22.y;
+        let c23x2 = c23.x * c23.x;
+        let c23y2 = c23.y * c23.y;
+        let coefs = [
+            -2 * c12.x * c12.y * c23.x * c23.y + c12x2 * c23y2 + c12y2 * c23x2,
+            -2 * c12.x * c12.y * c22.x * c23.y - 2 * c12.x * c12.y * c22.y * c23.x + 2 * c12y2 * c22.x * c23.x +
+                2 * c12x2 * c22.y * c23.y,
+            -2 * c12.x * c21.x * c12.y * c23.y - 2 * c12.x * c12.y * c21.y * c23.x - 2 * c12.x * c12.y * c22.x * c22.y +
+                2 * c21.x * c12y2 * c23.x + c12y2 * c22x2 + c12x2 * (2 * c21.y * c23.y + c22y2),
+            2 * c10.x * c12.x * c12.y * c23.y + 2 * c10.y * c12.x * c12.y * c23.x + c11.x * c11.y * c12.x * c23.y +
+                c11.x * c11.y * c12.y * c23.x - 2 * c20.x * c12.x * c12.y * c23.y - 2 * c12.x * c20.y * c12.y * c23.x -
+                2 * c12.x * c21.x * c12.y * c22.y - 2 * c12.x * c12.y * c21.y * c22.x - 2 * c10.x * c12y2 * c23.x -
+                2 * c10.y * c12x2 * c23.y + 2 * c20.x * c12y2 * c23.x + 2 * c21.x * c12y2 * c22.x -
+                c11y2 * c12.x * c23.x - c11x2 * c12.y * c23.y + c12x2 * (2 * c20.y * c23.y + 2 * c21.y * c22.y),
+            2 * c10.x * c12.x * c12.y * c22.y + 2 * c10.y * c12.x * c12.y * c22.x + c11.x * c11.y * c12.x * c22.y +
+                c11.x * c11.y * c12.y * c22.x - 2 * c20.x * c12.x * c12.y * c22.y - 2 * c12.x * c20.y * c12.y * c22.x -
+                2 * c12.x * c21.x * c12.y * c21.y - 2 * c10.x * c12y2 * c22.x - 2 * c10.y * c12x2 * c22.y +
+                2 * c20.x * c12y2 * c22.x - c11y2 * c12.x * c22.x - c11x2 * c12.y * c22.y + c21x2 * c12y2 +
+                c12x2 * (2 * c20.y * c22.y + c21y2),
+            2 * c10.x * c12.x * c12.y * c21.y + 2 * c10.y * c12.x * c21.x * c12.y + c11.x * c11.y * c12.x * c21.y +
+                c11.x * c11.y * c21.x * c12.y - 2 * c20.x * c12.x * c12.y * c21.y - 2 * c12.x * c20.y * c21.x * c12.y -
+                2 * c10.x * c21.x * c12y2 - 2 * c10.y * c12x2 * c21.y + 2 * c20.x * c21.x * c12y2 -
+                c11y2 * c12.x * c21.x - c11x2 * c12.y * c21.y + 2 * c12x2 * c20.y * c21.y,
+            -2 * c10.x * c10.y * c12.x * c12.y - c10.x * c11.x * c11.y * c12.y - c10.y * c11.x * c11.y * c12.x +
+                2 * c10.x * c12.x * c20.y * c12.y + 2 * c10.y * c20.x * c12.x * c12.y + c11.x * c20.x * c11.y * c12.y +
+                c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 +
+                c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y -
+                c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 +
+                c20x2 * c12y2 + c12x2 * c20y2
+        ].reverse();
+        let roots = getRootsInInterval(0, 1, coefs);
+        // console.log(roots);
+        for (let i = 0; i < roots.length; i++) {
+            let s = roots[i];
+            let xRoots = getRoots([c12.x,
+                c11.x,
+                c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+            let yRoots = getRoots([c12.y,
+                c11.y,
+                c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
+            //
+            // console.log('xRoots', xRoots);
+            //
+            // console.log('yRoots', yRoots);
+            if (xRoots.length > 0 && yRoots.length > 0) {
+                let TOLERANCE = 1e-4;
+                checkRoots: for (let j = 0; j < xRoots.length; j++) {
+                    let xRoot = xRoots[j];
+                    if (0 <= xRoot && xRoot <= 1) {
+                        for (let k = 0; k < yRoots.length; k++) {
+                            if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+                                let x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
+                                let y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
+                                result.push({ x, y, t: xRoot });
+                                break checkRoots;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
+        let c2, c1, c0;
+        let cl, n;
+        let result = [];
+        let minbx = Math.min(bx1, bx2);
+        let minby = Math.min(by1, by2);
+        let maxbx = Math.max(bx1, bx2);
+        let maxby = Math.max(by1, by2);
+        const dot = (a, b) => a.x * b.x + a.y * b.y;
+        const lerp = (a, b, t) => ({
+            x: a.x - (a.x - b.x) * t,
+            y: a.y - (a.y - b.y) * t,
+            t,
+        });
+        c2 = {
+            x: ax1 - 2 * ax2 + ax3,
+            y: ay1 - 2 * ay2 + ay3,
+        };
+        c1 = {
+            x: -2 * ax1 + 2 * ax2,
+            y: -2 * ay1 + 2 * ay2,
+        };
+        c0 = { x: ax1, y: ay1 };
+        n = { x: by1 - by2, y: bx2 - bx1 };
+        cl = bx1 * by2 - bx2 * by1;
+        // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
+        let coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse();
+        // console.log('intersectBezier2Line coefs', coefs);
+        let roots = getRoots(coefs);
+        // console.log('intersectBezier2Line roots', roots);
+        for (let i = 0; i < roots.length; i++) {
+            let t = roots[i];
+            if (0 <= t && t <= 1) {
+                let p4 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
+                let p5 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
+                let p6 = lerp(p4, p5, t);
+                // console.log('p4, p5, p6', p4, p5, p6);
+                if (bx1 === bx2) {
+                    if (minby <= p6.y && p6.y <= maxby) {
+                        result.push(p6);
+                    }
+                }
+                else if (by1 === by2) {
+                    if (minbx <= p6.x && p6.x <= maxbx) {
+                        result.push(p6);
+                    }
+                }
+                else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
+                    result.push(p6);
+                }
+            }
+        }
+        return result;
+    }
+    /**
+     *
+     *    (-P1+3P2-3P3+P4)t^3 + (3P1-6P2+3P3)t^2 + (-3P1+3P2)t + P1
+     *        /\                     /\                /\        /\
+     *        ||                     ||                ||        ||
+     *        c3                     c2                c1        c0
+     */
+    function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
+        let c3, c2, c1, c0;
+        let cl, n;
+        let result = [];
+        let minbx = Math.min(bx1, bx2);
+        let minby = Math.min(by1, by2);
+        let maxbx = Math.max(bx1, bx2);
+        let maxby = Math.max(by1, by2);
+        const dot = (a, b) => a.x * b.x + a.y * b.y;
+        const lerp = (a, b, t) => ({
+            x: a.x - (a.x - b.x) * t,
+            y: a.y - (a.y - b.y) * t,
+            t,
+        });
+        c3 = {
+            x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
+            y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
+        };
+        c2 = {
+            x: 3 * ax1 - 6 * ax2 + 3 * ax3,
+            y: 3 * ay1 - 6 * ay2 + 3 * ay3,
+        };
+        c1 = {
+            x: -3 * ax1 + 3 * ax2,
+            y: -3 * ay1 + 3 * ay2,
+        };
+        c0 = { x: ax1, y: ay1 };
+        n = { x: by1 - by2, y: bx2 - bx1 };
+        cl = bx1 * by2 - bx2 * by1;
+        let coefs = [
+            cl + dot(n, c0),
+            dot(n, c1),
+            dot(n, c2),
+            dot(n, c3),
+        ];
+        let roots = getRoots(coefs);
+        for (let i = 0; i < roots.length; i++) {
+            let t = roots[i];
+            if (0 <= t && t <= 1) {
+                let p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
+                let p6 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
+                let p7 = lerp({ x: ax3, y: ay3 }, { x: ax4, y: ay4 }, t);
+                let p8 = lerp(p5, p6, t);
+                let p9 = lerp(p6, p7, t);
+                let p10 = lerp(p8, p9, t);
+                if (bx1 === bx2) {
+                    if (minby <= p10.y && p10.y <= maxby) {
+                        result.push(p10);
+                    }
+                }
+                else if (by1 === by2) {
+                    if (minbx <= p10.x && p10.x <= maxbx) {
+                        result.push(p10);
+                    }
+                }
+                else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
+                    result.push(p10);
+                }
+            }
+        }
+        return result;
+    }
+    /**
+     * 3d直线交点，允许误差，传入4个顶点坐标
+     * limitToFiniteSegment可传0、1、2、3，默认0是不考虑点是否在传入的顶点组成的线段上
+     * 1为限制在p1/p2线段，2为限制在p3/p4线段，3为都限制
+     */
+    function intersectLineLine3(p1, p2, p3, p4, limitToFiniteSegment = 0, tolerance = 1e-9) {
+        let p13 = subtractPoint(p1, p3);
+        let p43 = subtractPoint(p4, p3);
+        let p21 = subtractPoint(p2, p1);
+        let d1343 = p13.x * p43.x + p13.y * p43.y + p13.z * p43.z;
+        let d4321 = p43.x * p21.x + p43.y * p21.y + p43.z * p21.z;
+        let d1321 = p13.x * p21.x + p13.y * p21.y + p13.z * p21.z;
+        let d4343 = p43.x * p43.x + p43.y * p43.y + p43.z * p43.z;
+        let d2121 = p21.x * p21.x + p21.y * p21.y + p21.z * p21.z;
+        let denom = d2121 * d4343 - d4321 * d4321;
+        if (Math.abs(denom) < tolerance) {
+            return;
+        }
+        let numer = d1343 * d4321 - d1321 * d4343;
+        let mua = numer / denom;
+        let mub = (d1343 + d4321 * mua) / d4343;
+        let pa = {
+            x: p1.x + mua * p21.x,
+            y: p1.y + mua * p21.y,
+            z: p1.z + mua * p21.z,
+        };
+        let pb = {
+            x: p3.x + mub * p43.x,
+            y: p3.y + mub * p43.y,
+            z: p3.z + mub * p43.z,
+        };
+        let distance = distanceTo(pa, pb);
+        if (distance > tolerance) {
+            return;
+        }
+        let intersectPt = divide(addPoint(pa, pb), 2);
+        if (!limitToFiniteSegment) {
+            return intersectPt;
+        }
+        let paramA = closestParam(intersectPt, p1, p2);
+        let paramB = closestParam(intersectPt, p3, p4);
+        if (paramA < 0 && Math.abs(paramA) < 1e-9) {
+            paramA = 0;
+        }
+        else if (paramA > 1 && paramA - 1 < 1e-9) {
+            paramA = 1;
+        }
+        if (paramB < 0 && Math.abs(paramB) < 1e-9) {
+            paramB = 0;
+        }
+        else if (paramB > 1 && paramB - 1 < 1e-9) {
+            paramB = 1;
+        }
+        intersectPt.pa = paramA;
+        intersectPt.pb = paramB;
+        if (limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
+            return intersectPt;
+        }
+        if (limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
+            return intersectPt;
+        }
+        if (limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
+            return intersectPt;
+        }
+    }
+    function subtractPoint(p1, p2) {
+        return {
+            x: p1.x - p2.x,
+            y: p1.y - p2.y,
+            z: p1.z - p2.z,
+        };
+    }
+    function distanceTo(a, b) {
+        return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2));
+    }
+    function addPoint(a, b) {
+        return {
+            x: a.x + b.x,
+            y: a.y + b.y,
+            z: a.z + b.z,
+        };
+    }
+    function divide(p, t) {
+        let n = 1 / t;
+        return {
+            x: p.x * n,
+            y: p.y * n,
+            z: p.z * n,
+        };
+    }
+    function closestParam(p, from, to) {
+        let startToP = subtractPoint(p, from);
+        let startToEnd = subtractPoint(to, from);
+        let startEnd2 = dotProduct3(startToEnd.x, startToEnd.y, startToEnd.z, startToEnd.x, startToEnd.y, startToEnd.z);
+        let startEnd_startP = dotProduct3(startToEnd.x, startToEnd.y, startToEnd.z, startToP.x, startToP.y, startToP.z);
+        return startEnd_startP / startEnd2;
+    }
+    /**
+     * 平面相交线，传入2个平面的各3个顶点，返回2点式
+     */
+    function intersectPlanePlane(p1, p2, p3, p4, p5, p6) {
+        let v1 = unitize3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z), v2 = unitize3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z), v4 = unitize3(p5.x - p4.x, p5.y - p4.y, p5.z - p4.z), v5 = unitize3(p6.x - p4.x, p6.y - p4.y, p6.z - p4.z);
+        let t1 = crossProduct3(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+        let v3 = unitize3(t1.x, t1.y, t1.z);
+        let t2 = crossProduct3(v4.x, v4.y, v4.z, v5.x, v5.y, v5.z);
+        let v6 = unitize3(t2.x, t2.y, t2.z);
+        if (isParallel3(v3.x, v3.y, v3.z, v6.x, v6.y, v6.z)) {
+            return null;
+        }
+        let normal = crossProduct3(v6.x, v6.y, v6.z, v3.x, v3.y, v3.z);
+        let p7 = addPoint(v1, v4);
+        // planeC
+        let v9 = unitize3(normal.x, normal.y, normal.z);
+        // 3平面相交
+        let a1 = v3.x, b1 = v3.y, c1 = v3.z, d1 = -a1 * p1.x - b1 * p1.y - c1 * p1.z;
+        let a2 = v6.x, b2 = v6.y, c2 = v6.z, d2 = -a2 * p4.x - b2 * p4.y - c2 * p4.z;
+        let a3 = v9.x, b3 = v9.y, c3 = v9.z, d3 = -a3 * p7.x - b3 * p7.y - c3 * p7.z;
+        let mb = [-d1, -d2, -d3];
+        let det = a1 * (b2 * c3 - c2 * b3) - b1 * (a2 * c3 - c2 * a3) + c1 * (a2 * b3 - b2 * a3);
+        if (Math.abs(det) < 1e-9) {
+            return null;
+        }
+        let invDet = 1 / det;
+        let v11 = invDet * (b2 * c3 - c2 * b3);
+        let v12 = invDet * (c1 * b3 - b1 * c3);
+        let v13 = invDet * (b1 * c2 - c1 * b2);
+        let v21 = invDet * (c2 * a3 - a2 * c3);
+        let v22 = invDet * (a1 * c3 - c1 * a3);
+        let v23 = invDet * (c1 * a2 - a1 * c2);
+        let v31 = invDet * (a2 * b3 - b2 * a3);
+        let v32 = invDet * (b1 * a3 - a1 * b3);
+        let v33 = invDet * (a1 * b2 - b1 * a2);
+        let x = v11 * mb[0] + v12 * mb[1] + v13 * mb[2];
+        let y = v21 * mb[0] + v22 * mb[1] + v23 * mb[2];
+        let z = v31 * mb[0] + v32 * mb[1] + v33 * mb[2];
+        let point = { x, y, z };
+        return [
+            point,
+            addPoint(point, v9),
+        ];
+    }
+    // 点是否在线段上，注意误差
+    function pointOnLine3(p, p1, p2) {
+        let v1x = p1.x - p.x, v1y = p1.y - p.y, v1z = p1.z - p.z;
+        let v2x = p2.x - p.x, v2y = p2.y - p.y, v2z = p2.z - p.z;
+        let c = crossProduct3(v1x, v1y, v1z, v2x, v2y, v2z);
+        return length3(c.x, c.y, c.z) < 1e-9;
+    }
+    var isec = {
+        intersectBezier2Line,
+        intersectBezier3Line,
+        intersectBezier2Bezier2,
+        intersectBezier3Bezier3,
+        intersectBezier2Bezier3,
+        intersectLineLine3,
+        intersectPlanePlane,
+        pointOnLine3,
+    };
+
+    const EPS = 1e-9;
+    const EPS2 = 1 - (1e-9);
+    function getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
+        let toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
+        let toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d;
+        // 非顶点相交才是真相交
+        if (toSource > EPS && toSource < EPS2 && toClip > EPS && toClip < EPS2) {
+            let ox = ax1 + toSource * (ax2 - ax1);
+            let oy = ay1 + toSource * (ay2 - ay1);
+            return [{
+                    point: new Point(ox, oy),
+                    toSource,
+                    toClip,
+                }];
+        }
+    }
+    function getIntersectionBezier2Line$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
+        const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
+        if (res.length) {
+            const t = res.map(item => {
+                let toClip;
+                // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+                if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
+                    toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
+                }
+                else {
+                    toClip = Math.abs((item.y - by1) / (by2 - by1));
+                }
+                if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+                    // 还要判断斜率，相等也忽略（小于一定误差）
+                    let k1 = bezier.bezierSlope([
+                        { x: ax1, y: ay1 },
+                        { x: ax2, y: ay2 },
+                        { x: ax3, y: ay3 },
+                    ], item.t);
+                    let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
+                    // 忽略方向，180°也是平行，Infinity相减为NaN
+                    if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+                        return;
+                    }
+                    return {
+                        point: new Point(item.x, item.y),
+                        toSource: item.t,
+                        toClip,
+                    };
+                }
+            }).filter(i => i);
+            if (t.length) {
+                return t;
+            }
+        }
+    }
+    function getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
+        const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
+        if (res.length) {
+            const t = res.map(item => {
+                // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+                const toClip = bezier.getPointT([
+                    { x: ax1, y: ay1 },
+                    { x: ax2, y: ay2 },
+                    { x: ax3, y: ay3 },
+                ], item.x, item.y);
+                // 防止误差无值
+                if (toClip.length) {
+                    const tc = toClip[0];
+                    if (item.t > EPS && item.t < EPS2 && tc > EPS && tc < EPS2) {
+                        // 还要判断斜率，相等也忽略（小于一定误差）
+                        let k1 = bezier.bezierSlope([
+                            { x: ax1, y: ay1 },
+                            { x: ax2, y: ay2 },
+                            { x: ax3, y: ay3 },
+                        ], item.t);
+                        let k2 = bezier.bezierSlope([
+                            { x: bx1, y: by1 },
+                            { x: bx2, y: by2 },
+                            { x: bx3, y: by3 },
+                        ], tc);
+                        // 忽略方向，180°也是平行，Infinity相减为NaN
+                        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+                            return;
+                        }
+                        return {
+                            point: new Point(item.x, item.y),
+                            toSource: item.t,
+                            tc,
+                        };
+                    }
+                }
+            }).filter(i => i);
+            if (t.length) {
+                return t;
+            }
+        }
+    }
+    function getIntersectionBezier2Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+        const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+        if (res.length) {
+            const t = res.map(item => {
+                // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+                let toClip = bezier.getPointT([
+                    { x: bx1, y: by1 },
+                    { x: bx2, y: by2 },
+                    { x: bx3, y: by3 },
+                    { x: bx4, y: by4 },
+                ], item.x, item.y);
+                // 防止误差无值
+                if (toClip.length) {
+                    const tc = toClip[0];
+                    if (item.t > EPS && item.t < EPS2 && tc > EPS && tc < EPS2) {
+                        // 还要判断斜率，相等也忽略（小于一定误差）
+                        let k1 = bezier.bezierSlope([
+                            { x: ax1, y: ay1 },
+                            { x: ax2, y: ay2 },
+                            { x: ax3, y: ay3 },
+                        ], item.t);
+                        let k2 = bezier.bezierSlope([
+                            { x: bx1, y: by1 },
+                            { x: bx2, y: by2 },
+                            { x: bx3, y: by3 },
+                            { x: bx4, y: by4 },
+                        ], tc);
+                        // 忽略方向，180°也是平行，Infinity相减为NaN
+                        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+                            return;
+                        }
+                        return {
+                            point: new Point(item.x, item.y),
+                            toSource: item.t,
+                            toClip: tc,
+                        };
+                    }
+                }
+            }).filter(i => i);
+            if (t.length) {
+                return t;
+            }
+        }
+    }
+    function getIntersectionBezier3Line$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
+        const res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
+        if (res.length) {
+            const t = res.map(item => {
+                // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+                let toClip;
+                if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
+                    toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
+                }
+                else {
+                    toClip = Math.abs((item.y - by1) / (by2 - by1));
+                }
+                if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+                    // 还要判断斜率，相等也忽略（小于一定误差）
+                    let k1 = bezier.bezierSlope([
+                        { x: ax1, y: ay1 },
+                        { x: ax2, y: ay2 },
+                        { x: ax3, y: ay3 },
+                        { x: ax4, y: ay4 },
+                    ], item.t);
+                    let k2 = bezier.bezierSlope([
+                        { x: bx1, y: by1 },
+                        { x: bx2, y: by2 },
+                    ]);
+                    // 忽略方向，180°也是平行，Infinity相减为NaN
+                    if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+                        return;
+                    }
+                    return {
+                        point: new Point(item.x, item.y),
+                        toSource: item.t,
+                        toClip,
+                    };
+                }
+            }).filter(i => i);
+            if (t.length) {
+                return t;
+            }
+        }
+    }
+    function getIntersectionBezier3Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+        const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+        if (res.length) {
+            const t = res.map(item => {
+                // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+                let toClip = bezier.getPointT([
+                    { x: bx1, y: by1 },
+                    { x: bx2, y: by2 },
+                    { x: bx3, y: by3 },
+                    { x: bx4, y: by4 },
+                ], item.x, item.y);
+                // 防止误差无值
+                if (toClip.length) {
+                    const tc = toClip[0];
+                    if (item.t > EPS && item.t < EPS2 && tc > EPS && tc < EPS2) {
+                        // 还要判断斜率，相等也忽略（小于一定误差）
+                        let k1 = bezier.bezierSlope([
+                            { x: ax1, y: ay1 },
+                            { x: ax2, y: ay2 },
+                            { x: ax3, y: ay3 },
+                            { x: ax4, y: ay4 },
+                        ], item.t);
+                        let k2 = bezier.bezierSlope([
+                            { x: bx1, y: by1 },
+                            { x: bx2, y: by2 },
+                            { x: bx3, y: by3 },
+                            { x: bx4, y: by4 },
+                        ], tc);
+                        // 忽略方向，180°也是平行，Infinity相减为NaN
+                        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+                            return;
+                        }
+                        return {
+                            point: new Point(item.x, item.y),
+                            toSource: item.t,
+                            toClip: tc,
+                        };
+                    }
+                }
+            }).filter(i => i);
+            if (t.length) {
+                return t;
+            }
+        }
+    }
+    // 两条线可能多个交点，将交点按原本线段的方向顺序排序
+    function sortIntersection$1(res, isSource) {
+        return res.sort(function (a, b) {
+            if (isSource) {
+                return a.toSource - b.toSource;
+            }
+            return a.toClip - b.toClip;
+        }).map(item => {
+            return {
+                point: item.point,
+                t: isSource ? item.toSource : item.toClip,
+            };
+        }).filter(item => item.t > EPS && item.t < EPS2);
+    }
+    var intersect$1 = {
+        getIntersectionLineLine: getIntersectionLineLine$1,
+        getIntersectionBezier2Line: getIntersectionBezier2Line$1,
+        getIntersectionBezier2Bezier2: getIntersectionBezier2Bezier2$1,
+        getIntersectionBezier2Bezier3: getIntersectionBezier2Bezier3$1,
+        getIntersectionBezier3Line: getIntersectionBezier3Line$1,
+        getIntersectionBezier3Bezier3: getIntersectionBezier3Bezier3$1,
+        sortIntersection: sortIntersection$1,
+    };
+
+    const { getIntersectionLineLine, getIntersectionBezier2Line, getIntersectionBezier2Bezier2, getIntersectionBezier2Bezier3, getIntersectionBezier3Line, getIntersectionBezier3Bezier3, sortIntersection, } = intersect$1;
+    class Polygon {
+        constructor(regions, index) {
+            this.index = index; // 属于source多边形还是clip多边形，0和1区别
+            const segments = this.segments = [];
+            // 多边形有>=1个区域，一般是1个
+            if (!Array.isArray(regions)) {
+                return;
+            }
+            regions.forEach(vertices => {
+                // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
+                if (!Array.isArray(vertices) || vertices.length < 2) {
+                    return;
+                }
+                if (vertices.length === 2 && vertices[1].length <= 2) {
+                    return;
+                }
+                let startPoint = new Point(vertices[0][0], vertices[0][1]), firstPoint = startPoint;
+                // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
+                for (let i = 1, len = vertices.length; i < len; i++) {
+                    let curr = vertices[i], l = curr.length;
+                    // 闭合区域，首尾顶点重复统一
+                    let endPoint = new Point(curr[l - 2], curr[l - 1]);
+                    let seg;
+                    if (l === 2) {
+                        // 长度为0的直线忽略
+                        if (startPoint.equal(endPoint)) {
+                            continue;
+                        }
+                        let coords = Point.compare(startPoint, endPoint) ? [
+                            endPoint,
+                            startPoint,
+                        ] : [
+                            startPoint,
+                            endPoint,
+                        ];
+                        seg = new Segment(coords, index);
+                    }
+                    // 曲线需确保x单调性，如果非单调，则切割为单调的多条
+                    else if (l === 4) {
+                        // 长度为0的曲线忽略
+                        if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1]) {
+                            continue;
+                        }
+                        let cPoint = new Point(curr[0], curr[1]);
+                        let t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
+                        if (t) {
+                            let points = [
+                                [startPoint.x, startPoint.y],
+                                [curr[0], curr[1]],
+                                [endPoint.x, endPoint.y],
+                            ];
+                            let curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
+                            let curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1);
+                            let p1 = new Point(curve1[1].x, curve1[1].y), p2 = new Point(curve1[2].x, curve1[2].y), p3 = new Point(curve2[1].x, curve2[1].y);
+                            let coords = Point.compare(startPoint, p2) ? [
+                                p2,
+                                p1,
+                                startPoint,
+                            ] : [
+                                startPoint,
+                                p1,
+                                p2,
+                            ];
+                            segments.push(new Segment(coords, index));
+                            coords = Point.compare(p2, endPoint) ? [
+                                endPoint,
+                                p3,
+                                p2,
+                            ] : [
+                                p2,
+                                p3,
+                                endPoint,
+                            ];
+                            seg = new Segment(coords, index);
+                        }
+                        else {
+                            let coords = Point.compare(startPoint, endPoint) ? [
+                                endPoint,
+                                cPoint,
+                                startPoint,
+                            ] : [
+                                startPoint,
+                                cPoint,
+                                endPoint,
+                            ];
+                            seg = new Segment(coords, index);
+                        }
+                    }
+                    // 3阶可能有2个单调改变t点
+                    else if (l === 6) {
+                        // 降级为2阶曲线
+                        if (curr[0] === curr[2] && curr[1] === curr[3]) {
+                            curr.splice(2, 2);
+                            i--;
+                            continue;
+                        }
+                        // 长度为0的曲线忽略
+                        if (startPoint.equal(endPoint)
+                            && startPoint.x === curr[0] && startPoint.y === curr[1]
+                            && startPoint.x === curr[2] && startPoint.y === curr[3]) {
+                            continue;
+                        }
+                        let cPoint1 = new Point(curr[0], curr[1]), cPoint2 = new Point(curr[2], curr[3]);
+                        let t = getBezierMonotonicity([startPoint, cPoint1, cPoint2, endPoint], true);
+                        if (t) {
+                            let points = [
+                                [startPoint.x, startPoint.y],
+                                [curr[0], curr[1]],
+                                [curr[2], curr[3]],
+                                [endPoint.x, endPoint.y],
+                            ];
+                            let lastPoint = startPoint, lastT = 0;
+                            t.forEach(t => {
+                                let curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t);
+                                let p1 = new Point(curve[1].x, curve[1].y), p2 = new Point(curve[2].x, curve[2].y), p3 = new Point(curve[3].x, curve[3].y);
+                                let coords = Point.compare(lastPoint, p3) ? [
+                                    p3,
+                                    p2,
+                                    p1,
+                                    lastPoint,
+                                ] : [
+                                    lastPoint,
+                                    p1,
+                                    p2,
+                                    p3,
+                                ];
+                                segments.push(new Segment(coords, index));
+                                lastT = t;
+                                lastPoint = p3;
+                            });
+                            let curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1);
+                            let p1 = new Point(curve[1].x, curve[1].y), p2 = new Point(curve[2].x, curve[2].y);
+                            let coords = Point.compare(lastPoint, endPoint) ? [
+                                endPoint,
+                                p2,
+                                p1,
+                                lastPoint,
+                            ] : [
+                                lastPoint,
+                                p1,
+                                p2,
+                                endPoint,
+                            ];
+                            seg = new Segment(coords, index);
+                        }
+                        else {
+                            let coords = Point.compare(startPoint, endPoint) ? [
+                                endPoint,
+                                cPoint2,
+                                cPoint1,
+                                startPoint,
+                            ] : [
+                                startPoint,
+                                cPoint1,
+                                cPoint2,
+                                endPoint,
+                            ];
+                            seg = new Segment(coords, index);
+                        }
+                    }
+                    segments.push(seg);
+                    // 终点是下条边的起点
+                    startPoint = endPoint;
+                }
+                // 强制要求闭合，非闭合自动连直线到开始点闭合
+                if (!startPoint.equal(firstPoint)) {
+                    let coords = Point.compare(startPoint, firstPoint) ? [
+                        firstPoint,
+                        startPoint,
+                    ] : [
+                        startPoint,
+                        firstPoint,
+                    ];
+                    segments.push(new Segment(coords, index));
+                }
+            });
+        }
+        // 根据y坐标排序，生成有序线段列表，再扫描求交
+        selfIntersect() {
+            let list = genHashXList(this.segments);
+            this.segments = findIntersection(list, false, false, false);
+        }
+        toString() {
+            return this.segments.map(item => item.toString());
+        }
+        reset(index) {
+            this.index = index;
+            this.segments.forEach(seg => {
+                seg.belong = index;
+                seg.otherCoincide = 0;
+                seg.otherFill[0] = seg.otherFill[1] = false;
+            });
+            return this;
+        }
+        // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交
+        static intersect2(polyA, polyB, isIntermediateA, isIntermediateB) {
+            if (!polyA.segments.length || !polyB.segments.length) {
+                return;
+            }
+            let list = genHashXList(polyA.segments.concat(polyB.segments));
+            let segments = findIntersection(list, true, isIntermediateA, isIntermediateB);
+            polyA.segments = segments.filter(item => item.belong === 0);
+            polyB.segments = segments.filter(item => item.belong === 1);
+        }
+        /**
+         * 以Bentley-Ottmann算法为原理，为每个顶点设计事件，按x升序、y升序遍历所有顶点的事件
+         * 每条线段边有2个顶点即2个事件，左下为start，右上为end
+         * 同顶点优先end，start相同则对比线段谁后面的y更小（向量法），其实就是对比非共点部分的y大小
+         * 维护一个活跃边列表ael，同样保证x升序、y升序，start事件线段进入ael，end离开
+         * ael中相邻的线段说明上下相互接壤，接壤一侧则内外填充性一致
+         * 最下面的边（含第一条）可直接得知下方填充性（下面没有了一定是多边形外部），再推测出上方
+         * 其余的边根据自己下方相邻即可确定填充性
+         */
+        static annotate2(polyA, polyB, isIntermediateA, isIntermediateB) {
+            let list = genHashXYList(polyA.segments.concat(polyB.segments));
+            let aelA = [], aelB = [], hashA = {}, hashB = {};
+            // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+            // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
+            list.forEach(item => {
+                let { isStart, seg } = item;
+                let belong = seg.belong;
+                // 连续操作时，已有的中间结果可以跳过
+                if (belong === 0 && isIntermediateA || belong === 1 && isIntermediateB) {
+                    return;
+                }
+                let ael = belong === 0 ? aelA : aelB, hash = belong === 0 ? hashA : hashB;
+                if (isStart) {
+                    // 自己重合的线段只考虑第一条，其它剔除
+                    if (seg.myCoincide) {
+                        let hc = seg.toHash();
+                        if (hash.hasOwnProperty(hc)) {
+                            return;
+                        }
+                        hash[hc] = true;
+                    }
+                    // console.error(seg.toString(), ael.length)
+                    // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
+                    if (!ael.length) {
+                        if (seg.myCoincide) {
+                            seg.myFill[0] = seg.myCoincide % 2 === 0;
+                        }
+                        else {
+                            seg.myFill[0] = true;
+                        }
+                        ael.push(seg);
+                    }
+                    else {
+                        // 插入到ael正确的位置，按照x升序、y升序
+                        let len = ael.length, top = ael[len - 1];
+                        let isAboveLast = segAboveCompare(seg, top);
+                        // 比ael栈顶还高在最上方
+                        if (isAboveLast) {
+                            seg.myFill[1] = top.myFill[0];
+                            if (seg.myCoincide) {
+                                seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                            }
+                            else {
+                                seg.myFill[0] = !seg.myFill[1];
+                            }
+                            ael.push(seg);
+                        }
+                        // 不高且只有1个则在最下方
+                        else if (len === 1) {
+                            if (seg.myCoincide) {
+                                seg.myFill[0] = seg.myCoincide % 2 === 0;
+                            }
+                            else {
+                                seg.myFill[0] = true;
+                            }
+                            ael.unshift(seg);
+                        }
+                        else {
+                            // 遍历，尝试对比是否在ael栈中相邻2条线段之间
+                            for (let i = len - 2; i >= 0; i--) {
+                                let curr = ael[i];
+                                let isAbove = segAboveCompare(seg, curr);
+                                if (isAbove) {
+                                    seg.myFill[1] = curr.myFill[0];
+                                    if (seg.myCoincide) {
+                                        seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                                    }
+                                    else {
+                                        seg.myFill[0] = !seg.myFill[1];
+                                    }
+                                    ael.splice(i + 1, 0, seg);
+                                    break;
+                                }
+                                else if (i === 0) {
+                                    if (seg.myCoincide) {
+                                        seg.myFill[0] = seg.myCoincide % 2 === 0;
+                                    }
+                                    else {
+                                        seg.myFill[0] = true;
+                                    }
+                                    ael.unshift(seg);
+                                }
+                            }
+                        }
+                    }
+                    // console.warn(seg.toString())
+                }
+                else {
+                    let i = ael.indexOf(seg);
+                    // 一般肯定有，重合线段会剔除不进ael
+                    if (i > -1) {
+                        ael.splice(i, 1);
+                    }
+                }
+            });
+            // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
+            // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
+            let ael = [], hash = {};
+            list.forEach(item => {
+                let { isStart, seg } = item;
+                let belong = seg.belong;
+                if (isStart) {
+                    // 自重合或者它重合统一只保留第一条线
+                    if (seg.myCoincide || seg.otherCoincide) {
+                        let hc = seg.toHash();
+                        if (hash.hasOwnProperty(hc)) {
+                            return;
+                        }
+                        hash[hc] = true;
+                    }
+                    // console.error(seg.toString(), ael.length)
+                    let inside = false;
+                    if (!ael.length) {
+                        inside = false;
+                        ael.push(seg);
+                    }
+                    else {
+                        let len = ael.length, top = ael[len - 1];
+                        let isAboveLast = segAboveCompare(seg, top);
+                        if (isAboveLast) {
+                            if (top.belong === belong) {
+                                inside = top.otherFill[0];
+                            }
+                            else {
+                                inside = top.myFill[0];
+                            }
+                            ael.push(seg);
+                        }
+                        else if (len === 1) {
+                            // inside = false;
+                            ael.unshift(seg);
+                        }
+                        else {
+                            for (let i = len - 2; i >= 0; i--) {
+                                let curr = ael[i];
+                                let isAbove = segAboveCompare(seg, curr);
+                                if (isAbove) {
+                                    // 如果在自己的下方线和自己同色，则取下方线的另外色上填充
+                                    if (curr.belong === belong) {
+                                        inside = curr.otherFill[0];
+                                    }
+                                    // 否则取下方线的下方色上填充
+                                    else {
+                                        inside = curr.myFill[0];
+                                    }
+                                    ael.splice(i + 1, 0, seg);
+                                    break;
+                                }
+                                else if (i === 0) {
+                                    // inside = false;
+                                    ael.unshift(seg);
+                                }
+                            }
+                        }
+                    }
+                    // 重合线的otherFill直接引用指向对方myFill，不能普通计算
+                    if (!seg.otherCoincide) {
+                        seg.otherFill[0] = inside;
+                        seg.otherFill[1] = inside;
+                    }
+                    // console.warn(seg.toString(), inside)
+                }
+                else {
+                    let i = ael.indexOf(seg);
+                    if (i > -1) {
+                        ael.splice(i, 1);
+                    }
+                }
+            });
+        }
+    }
+    function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB) {
+        // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
+        let ael = [], delList = [], segments = [];
+        while (list.length) {
+            if (delList.length) {
+                delList.splice(0).forEach(seg => {
+                    let i = ael.indexOf(seg);
+                    ael.splice(i, 1);
+                    if (!seg.isDeleted) {
+                        segments.push(seg);
+                    }
+                });
+            }
+            let { x, arr } = list[0];
+            while (arr.length) {
+                let seg = arr.shift();
+                // 被切割的老线段无效
+                if (seg.isDeleted) {
+                    continue;
+                }
+                let belong = seg.belong, bboxA = seg.bbox;
+                // 第2次访问边是离开活动，考虑删除
+                if (seg.isVisited) {
+                    // console.warn(x, seg.toString());
+                    // console.log(ael.map(item => item.toString()));
+                    // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
+                    if (bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
+                        let i = ael.indexOf(seg);
+                        ael.splice(i, 1);
+                        if (!seg.isDeleted) {
+                            segments.push(seg);
+                        }
+                    }
+                    else {
+                        delList.push(seg);
+                    }
+                    seg.isVisited = false; // 还原以备后面逻辑重复利用
+                    // console.log(ael.map(item => item.toString()));
+                }
+                // 第1次访问边一定是进入活动，求交
+                else {
+                    // console.error(x, seg.toString(), ael.length);
+                    // console.log(ael.map(item => item.toString()));
+                    // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
+                    if (ael.length) {
+                        let coordsA = seg.coords, lenA = coordsA.length;
+                        let { x: ax1, y: ay1 } = coordsA[0];
+                        let { x: ax2, y: ay2 } = coordsA[1];
+                        for (let i = 0; i < ael.length; i++) {
+                            let item = ael[i];
+                            // 被切割的老线段无效，注意seg切割过程中可能变成删除
+                            if (item.isDeleted || seg.isDeleted) {
+                                continue;
+                            }
+                            // 互交所属belong不同才进行检测，自交则不检查belong
+                            if (compareBelong && item.belong === belong) {
+                                continue;
+                            }
+                            // bbox相交才考虑真正计算，加速
+                            let bboxB = item.bbox, coordsB = item.coords, lenB = coordsB.length;
+                            let isSourceReverted = false; // 求交可能a、b线主从互换
+                            if (isRectsOverlap(bboxA, bboxB, lenA, lenB)) {
+                                // 完全重合简化，同矩形的线myFill共享，对方矩形互换otherFill
+                                if (lenA === lenB && seg.equal(item)) {
+                                    if (compareBelong) {
+                                        // 因为一定不自交，所以重合线不会被分割
+                                        seg.otherCoincide++;
+                                        item.otherCoincide++;
+                                        seg.otherFill = item.myFill;
+                                        item.otherFill = seg.myFill;
+                                    }
+                                    else {
+                                        seg.myCoincide++;
+                                        item.myCoincide++;
+                                        seg.myFill = item.myFill;
+                                    }
+                                    continue;
+                                }
+                                let { x: bx1, y: by1 } = coordsB[0];
+                                let { x: bx2, y: by2 } = coordsB[1];
+                                let inters, overs;
+                                // a是直线
+                                if (lenA === 2) {
+                                    // b是直线
+                                    if (lenB === 2) {
+                                        let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+                                        // 平行检查是否重合，否则求交
+                                        if (d === 0) {
+                                            // 垂线特殊，y=kx+b没法求
+                                            if (ax1 === ax2) {
+                                                if (ax1 === bx1 && ax2 === bx2) {
+                                                    overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg, bx1, by1, bx2, by2, item, true);
+                                                }
+                                            }
+                                            else {
+                                                let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                                                let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                                                if (b1 === b2) {
+                                                    overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg, bx1, by1, bx2, by2, item, false);
+                                                }
+                                            }
+                                        }
+                                        else {
+                                            inters = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                                        }
+                                    }
+                                    // b是曲线
+                                    else {
+                                        let { x: bx3, y: by3 } = coordsB[2];
+                                        // b是2阶曲线
+                                        if (lenB === 3) {
+                                            inters = getIntersectionBezier2Line(bx1, by1, bx2, by2, bx3, by3, ax1, ay1, ax2, ay2);
+                                            isSourceReverted = true;
+                                        }
+                                        // b是3阶曲线
+                                        else {
+                                            let { x: bx4, y: by4 } = coordsB[3];
+                                            inters = getIntersectionBezier3Line(bx1, by1, bx2, by2, bx3, by3, bx4, by4, ax1, ay1, ax2, ay2);
+                                            isSourceReverted = true;
+                                        }
+                                    }
+                                }
+                                // a是曲线
+                                else {
+                                    let { x: ax3, y: ay3 } = coordsA[2];
+                                    // a是2阶曲线
+                                    if (lenA === 3) {
+                                        // b是直线
+                                        if (lenB === 2) {
+                                            inters = getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
+                                        }
+                                        // b是曲线
+                                        else {
+                                            let { x: bx3, y: by3 } = coordsB[2];
+                                            // b是2阶曲线
+                                            if (lenB === 3) {
+                                                inters = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
+                                                if (!inters) {
+                                                    overs = checkOverlapBezier(seg, item);
+                                                }
+                                            }
+                                            // b是3阶曲线
+                                            else {
+                                                let { x: bx4, y: by4 } = coordsB[3];
+                                                inters = getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+                                            }
+                                        }
+                                    }
+                                    // a是3阶曲线
+                                    else {
+                                        let { x: ax4, y: ay4 } = coordsA[3];
+                                        // b是直线
+                                        if (lenB === 2) {
+                                            inters = getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
+                                        }
+                                        // b是曲线
+                                        else {
+                                            let { x: bx3, y: by3 } = coordsB[2];
+                                            // b是2阶曲线
+                                            if (lenB === 3) {
+                                                inters = getIntersectionBezier2Bezier3(bx1, by1, bx2, by2, bx3, by3, ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4);
+                                                isSourceReverted = true;
+                                            }
+                                            // b是3阶曲线
+                                            else {
+                                                let { x: bx4, y: by4 } = coordsB[3];
+                                                inters = getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+                                                if (!inters) {
+                                                    overs = checkOverlapBezier(seg, item);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                // 有重合的，重合线段已经求好，直接使用
+                                if (overs) {
+                                    activeNewSeg(segments, list, ael, x, overs.ra);
+                                    activeNewSeg(segments, list, ael, x, overs.rb);
+                                    seg.isDeleted = item.isDeleted = true;
+                                    ael.splice(i, 1);
+                                    break;
+                                }
+                                // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
+                                else if (inters && inters.length) {
+                                    // console.log('inters', i, inters);
+                                    let pa = sortIntersection(inters, !isSourceReverted);
+                                    // console.log(pa);
+                                    let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
+                                    // console.log(ra.map(item => item.toString()));
+                                    let pb = sortIntersection(inters, isSourceReverted);
+                                    // console.log(pb);
+                                    let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
+                                    // console.log(rb.map(item => item.toString()));
+                                    // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
+                                    activeNewSeg(segments, list, ael, x, ra);
+                                    activeNewSeg(segments, list, ael, x, rb);
+                                    // 老的线段被删除无效了，踢出ael，防止seg没被分割
+                                    if (rb.length) {
+                                        ael.splice(i, 1);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // 不相交切割才进入ael
+                    if (!seg.isDeleted) {
+                        ael.push(seg);
+                        seg.isVisited = true;
+                    }
+                    // console.log(ael.map(item => item.toString()));
+                }
+            }
+            list.shift();
+        }
+        // 最后面的线
+        delList.forEach(seg => {
+            if (!seg.isDeleted) {
+                segments.push(seg);
+            }
+        });
+        // 最后再过滤一遍，因为新生成的切割线可能会被再次切割变成删除的无效线段
+        return segments.filter(item => !item.isDeleted);
+    }
+    // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
+    function sliceSegment(seg, ps, isIntermediate) {
+        let res = [];
+        if (!ps.length) {
+            return res;
+        }
+        let belong = seg.belong, coords = seg.coords, len = coords.length;
+        let startPoint = coords[0];
+        let lastT = 0;
+        // 多个点可能截取多条，最后一条保留只修改数据，其它新生成
+        ps.forEach(item => {
+            let point = item.point, t = item.t;
+            let ns;
+            if (len === 2) {
+                ns = new Segment([
+                    startPoint,
+                    point,
+                ], belong);
+            }
+            else if (len === 3) {
+                let c = bezier.sliceBezier2Both(coords, lastT, t);
+                ns = new Segment([
+                    startPoint,
+                    new Point(c[1].x, c[1].y),
+                    point,
+                ], belong);
+            }
+            else if (len === 4) {
+                let c = bezier.sliceBezier2Both(coords, lastT, t);
+                ns = new Segment([
+                    startPoint,
+                    new Point(c[1].x, c[1].y),
+                    new Point(c[2].x, c[2].y),
+                    point,
+                ], belong);
+            }
+            // 连续操作的中间结果已有自己内外性，截取时需继承
+            if (isIntermediate) {
+                ns.myFill[0] = seg.myFill[0];
+                ns.myFill[1] = seg.myFill[1];
+            }
+            startPoint = point;
+            res.push(ns);
+            lastT = t;
+        });
+        // 最后一条
+        let ns;
+        if (len === 2) {
+            ns = new Segment([
+                startPoint,
+                coords[1],
+            ], belong);
+        }
+        else if (len === 3) {
+            let c = bezier.sliceBezier2Both(coords, lastT, 1);
+            ns = new Segment([
+                startPoint,
+                new Point(c[1].x, c[1].y),
+                coords[2],
+            ], belong);
+        }
+        else if (len === 4) {
+            let c = bezier.sliceBezier2Both(coords, lastT, 1);
+            ns = new Segment([
+                startPoint,
+                new Point(c[1].x, c[1].y),
+                new Point(c[2].x, c[2].y),
+                coords[3],
+            ], belong);
+        }
+        if (isIntermediate) {
+            ns.myFill[0] = seg.myFill[0];
+            ns.myFill[1] = seg.myFill[1];
+        }
+        res.push(ns);
+        // 老的打标失效删除
+        seg.isDeleted = true;
+        return res;
+    }
+    // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
+    function activeNewSeg(segments, list, ael, x, ns) {
+        ns.forEach(seg => {
+            let bbox = seg.bbox, x1 = bbox[0], x2 = bbox[2];
+            // console.log(seg.toString(), x1, x2, x);
+            // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
+            if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
+                segments.push(seg);
+                return;
+            }
+            // 按顺序放在list的正确位置，可能x1已经过去不需要加入了，但要考虑ael
+            let i = 0;
+            if (x1 < x) {
+                seg.isVisited = true;
+                ael.push(seg);
+            }
+            else {
+                for (let len = list.length; i < len; i++) {
+                    let item = list[i];
+                    let lx = item.x;
+                    if (x1 === lx) {
+                        item.arr.push(seg);
+                        break;
+                    }
+                    // 新的插入
+                    if (x1 < lx) {
+                        let temp = {
+                            x: x1,
+                            arr: [seg],
+                        };
+                        list.splice(i, 0, temp);
+                        break;
+                    }
+                }
+            }
+            // x2一定会加入
+            for (let len = list.length; i < len; i++) {
+                let item = list[i];
+                let lx = item.x;
+                if (x2 === lx) {
+                    // 访问过的尽可能排在前面早出栈，减少对比次数
+                    item.arr.unshift(seg);
+                    break;
+                }
+                if (x2 < lx) {
+                    let temp = {
+                        x: x2,
+                        arr: [seg],
+                    };
+                    list.splice(i, 0, temp);
+                    break;
+                }
+            }
+        });
+    }
+    // 按x升序将所有线段组成一个垂直扫描线列表，求交用，y方向不用管
+    function genHashXList(segments) {
+        let hashX = {};
+        segments.forEach(seg => {
+            let bbox = seg.bbox, min = bbox[0], max = bbox[2];
+            putHashX(hashX, min, seg);
+            putHashX(hashX, max, seg);
+        });
+        let list = [];
+        Object.keys(hashX).forEach(x => list.push({
+            x: parseFloat(x),
+            arr: hashX[x],
+        }));
+        return list.sort(function (a, b) {
+            return a.x - b.x;
+        });
+    }
+    // 每个线段会放2次，开始点和结束点，哪怕x相同，第1次是开始用push，第2次结束unshift，这样离开时排在前面
+    function putHashX(hashX, x, seg) {
+        let list = hashX[x] = hashX[x] || [];
+        if (seg.isVisited) {
+            list.unshift(seg);
+            seg.isVisited = false;
+        }
+        else {
+            list.push(seg);
+            seg.isVisited = true;
+        }
+    }
+    // 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
+    function genHashXYList(segments) {
+        let hashXY = {};
+        segments.forEach(seg => {
+            let coords = seg.coords, l = coords.length;
+            let start = coords[0], end = coords[l - 1];
+            putHashXY(hashXY, start.x, start.y, seg, true);
+            putHashXY(hashXY, end.x, end.y, seg, false);
+        });
+        let listX = [];
+        Object.keys(hashXY).forEach(x => {
+            let hashY = hashXY[x];
+            let listY = [];
+            Object.keys(hashY).forEach(y => {
+                let arr = hashY[y].sort(function (a, b) {
+                    // end优先于start先触发
+                    if (a.isStart !== b.isStart) {
+                        return a.isStart ? 1 : -1;
+                    }
+                    // start点相同看谁在上谁在下，下方在前，比y极大值，因为start相同又不相交，所以上方的y极值更大
+                    if (a.isStart) {
+                        return segAboveCompare(a.seg, b.seg) ? 1 : -1;
+                    }
+                    // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
+                });
+                // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
+                listY.push({
+                    y: parseFloat(y),
+                    arr,
+                });
+            });
+            listX.push({
+                x: parseFloat(x),
+                arr: listY.sort(function (a, b) {
+                    return a.y - b.y;
+                }),
+            });
+        });
+        listX.sort(function (a, b) {
+            return a.x - b.x;
+        });
+        let list = [];
+        listX.forEach(item => {
+            item.arr.forEach(item => {
+                list = list.concat(item.arr);
+            });
+        });
+        return list;
+    }
+    function putHashXY(hashXY, x, y, seg, isStart) {
+        let hash = hashXY[x] = hashXY[x] || {};
+        let list = hash[y] = hash[y] || [];
+        list.push({
+            isStart,
+            seg,
+        });
+    }
+    // pt在线段left -> right的上方或线上
+    function pointAboveOrOnLine(pt, left, right) {
+        let { x, y } = pt;
+        let { x: x1, y: y1 } = left;
+        let { x: x2, y: y2 } = right;
+        return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
+    }
+    // a是否在b的上边，取x相同部分看y大小，只有start点事件时才判断
+    function segAboveCompare(segA, segB) {
+        let ca = segA.coords, cb = segB.coords;
+        let la = ca.length, lb = cb.length;
+        let a1 = ca[0], b1 = cb[0];
+        // 两条直线用向量积判断，注意开始点是否相同即可
+        if (la === 2 && lb === 2) {
+            let a2 = ca[1], b2 = cb[1];
+            if (a1.equal(b1)) {
+                return pointAboveOrOnLine(a2, b1, b2);
+            }
+            else {
+                return pointAboveOrOnLine(a1, b1, b2);
+            }
+        }
+        // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
+        if (la === 2 && a1.x === ca[1].x) {
+            return b1.x >= a1.x;
+        }
+        // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
+        let x1 = Math.max(a1.x, b1.x), x3 = Math.min(ca[la - 1].x, cb[lb - 1].x), x2 = x1 + (x3 - x1) * 0.5;
+        if (a1 !== b1) {
+            let y1 = getYByX(ca, x1), y2 = getYByX(cb, x1);
+            if (y1 !== y2) {
+                return y1 > y2;
+            }
+        }
+        if (ca[la - 1] !== cb[lb - 1]) {
+            let y1 = getYByX(ca, x3), y2 = getYByX(cb, x3);
+            if (y1 !== y2) {
+                return y1 > y2;
+            }
+        }
+        let y1 = getYByX(ca, x2), y2 = getYByX(cb, x2);
+        if (y1 !== y2) {
+            return y1 > y2;
+        }
+    }
+    // 获取曲线单调性t值，有结果才返回
+    function getBezierMonotonicity(coords, isX) {
+        if (coords.length === 3) {
+            let t = isX
+                ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x)
+                : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
+            if (t > 0 && t < 1) {
+                return [t];
+            }
+        }
+        else if (coords.length === 4) {
+            let t = equation.getRoots([
+                isX
+                    ? 3 * (coords[1].x - coords[0].x)
+                    : 3 * (coords[1].y - coords[0].y),
+                isX
+                    ? 6 * (coords[2].x + coords[0].x - 2 * coords[1].x)
+                    : 6 * (coords[2].y + coords[0].y - 2 * coords[1].y),
+                isX
+                    ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x)
+                    : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y)
+            ]).filter(i => i > 0 && i < 1);
+            if (t.length) {
+                return t.sort(function (a, b) {
+                    return a - b;
+                });
+            }
+        }
+    }
+    // 根据x的值解得t后获取y，由于线段已经x单调，所以解只会有1个而非多个
+    function getYByX(coords, x) {
+        let len = coords.length;
+        if (x === coords[0].x) {
+            return coords[0].y;
+        }
+        if (x === coords[len - 1].x) {
+            return coords[len - 1].y;
+        }
+        if (len === 2) {
+            if (coords[0].y === coords[1].y) {
+                return coords[0].y;
+            }
+            let p = (x - coords[0].x) / (coords[1].x - coords[0].x);
+            return coords[0].y + p * (coords[1].y - coords[0].y);
+        }
+        else if (len === 3) {
+            let t = equation.getRoots([
+                coords[0].x - x,
+                2 * (coords[1].x - coords[0].x),
+                coords[2].x + coords[0].x - 2 * coords[1].x,
+            ]).filter(i => i >= 0 && i <= 1);
+            return bezier.pointByT(coords, t[0]).x;
+        }
+        else if (len === 4) {
+            let t = equation.getRoots([
+                coords[0].x - x,
+                3 * (coords[1].x - coords[0].x),
+                3 * (coords[2].x + coords[0].x - 2 * coords[1].x),
+                coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x
+            ]).filter(i => i >= 0 && i <= 1);
+            return bezier.pointByT(coords, t[0]).y;
+        }
+    }
+    function isRectsOverlap(bboxA, bboxB, lenA, lenB) {
+        if (lenA === 2 && lenB === 2) {
+            // 2条垂线特殊考虑，此时x范围都是0，只能比较y
+            if (bboxA[0] === bboxA[2] && bboxB[0] === bboxB[2] && bboxA[0] === bboxA[2]) {
+                if (bboxA[1] >= bboxB[3] || bboxB[1] >= bboxA[3]) {
+                    return false;
+                }
+                return true;
+            }
+            // 2条水平线也是
+            if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+                if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
+                    return false;
+                }
+                return true;
+            }
+        }
+        return geom.isRectsOverlap(bboxA, bboxB, true);
+    }
+    function checkOverlapLine(ax1, ay1, ax2, ay2, segA, bx1, by1, bx2, by2, segB, isY) {
+        let ra = [], rb = [];
+        let coordsA = segA.coords, coordsB = segB.coords;
+        if (ax1 < bx1 && !isY || ay1 < by1 && isY) {
+            ra.push(new Segment([
+                coordsA[0],
+                coordsB[0],
+            ], segA.belong));
+            if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
+                ra.push(new Segment([
+                    coordsB[0],
+                    coordsA[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsB[0],
+                    coordsA[1],
+                ], segB.belong));
+                rb.push(new Segment([
+                    coordsA[1],
+                    coordsB[1],
+                ], segB.belong));
+            }
+            else if (ax2 === bx2 && !isY || ay2 === by2 && isY) {
+                ra.push(new Segment([
+                    coordsB[0],
+                    coordsB[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsB[0],
+                    coordsB[1],
+                ], segB.belong));
+            }
+            else {
+                ra.push(new Segment([
+                    coordsB[0],
+                    coordsB[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsB[0],
+                    coordsB[1],
+                ], segB.belong));
+                ra.push(new Segment([
+                    coordsB[1],
+                    coordsA[1],
+                ], segA.belong));
+            }
+        }
+        // 不会出现完全重合即ax2 == bx2
+        else if (ax1 === bx1 && !isY || ay1 === by1 && isY) {
+            if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
+                ra.push(new Segment([
+                    coordsA[0],
+                    coordsA[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsA[0],
+                    coordsA[1],
+                ], segB.belong));
+                rb.push(new Segment([
+                    coordsA[1],
+                    coordsB[1],
+                ], segB.belong));
+            }
+            else {
+                ra.push(new Segment([
+                    coordsB[0],
+                    coordsB[1],
+                ], segA.belong));
+                ra.push(new Segment([
+                    coordsB[1],
+                    coordsA[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsB[0],
+                    coordsB[1],
+                ], segB.belong));
+            }
+        }
+        // ax1 > bx1
+        else {
+            rb.push(new Segment([
+                coordsB[0],
+                coordsA[0],
+            ], segB.belong));
+            if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
+                ra.push(new Segment([
+                    coordsA[0],
+                    coordsA[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsA[0],
+                    coordsA[1],
+                ], segB.belong));
+                rb.push(new Segment([
+                    coordsA[1],
+                    coordsB[1],
+                ], segB.belong));
+            }
+            else if (ax2 === bx2 && !isY || ay2 === by2 && isY) {
+                ra.push(new Segment([
+                    coordsA[0],
+                    coordsA[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsA[0],
+                    coordsA[1],
+                ], segB.belong));
+            }
+            else {
+                ra.push(new Segment([
+                    coordsA[0],
+                    coordsB[1],
+                ], segA.belong));
+                rb.push(new Segment([
+                    coordsA[0],
+                    coordsB[1],
+                ], segB.belong));
+                ra.push(new Segment([
+                    coordsB[1],
+                    coordsA[1],
+                ], segA.belong));
+            }
+        }
+        return {
+            ra,
+            rb,
+        };
+    }
+    function checkOverlapBezier(segA, segB) {
+        let ca = segA.coords, la = ca.length;
+        let cb = segB.coords, lb = cb.length;
+        let firstA = ca[0], firstB = cb[0], lastA = ca[la - 1], lastB = cb[lb - 1];
+        let t1 = bezier.getPointT(ca, firstB.x, firstB.y);
+        let t2 = bezier.getPointT(ca, lastB.x, lastB.y);
+        let t3 = bezier.getPointT(cb, firstA.x, firstA.y);
+        let t4 = bezier.getPointT(cb, lastA.x, lastA.y);
+        // console.warn(segA.toString());console.warn(segB.toString());
+        // console.log(t1, t2, t3, t4);
+        let l1 = t1.length, l2 = t2.length, l3 = t3.length, l4 = t4.length;
+        /**
+         * 重合有3种情况，对应4个t（每方各2个）的情况不同：
+         * a. 一个包含另外一个，这样其中一方t为空，另一方t为2个即两个端点各1
+         * b. 一对端点重合另外一侧包含，比上面的t多1个即空的那方t多1
+         * c. 普通部分重合，每方各有1个t
+         */
+        let conditionA = l1 === 1 && l2 === 1 && l3 === 0 && l4 === 0 || l1 === 0 && l2 === 0 && l3 === 1 && l4 === 1;
+        let conditionB = l1 === 1 && l2 === 1 && l3 + l4 === 1 || l1 + l2 === 1 && l3 === 1 && l4 === 1;
+        let conditionC = l1 + l2 === 1 && l3 + l4 === 1;
+        if (conditionA || conditionB || conditionC) {
+            let startA = l1 ? t1[0] : 0;
+            let endA = l2 ? t2[0] : 1;
+            let a = bezier.sliceBezier2Both(ca, startA, endA);
+            let startB = l3 ? t3[0] : 0;
+            let endB = l4 ? t4[0] : 1;
+            let b = bezier.sliceBezier2Both(cb, startB, endB);
+            // console.log(startA, endA, startB, endB);
+            // 确定重合之后就是截取，重合一定出现在左右的中间部分，这样只要分别判断左右两端是否需要各自裁剪即可
+            if (equalBezier(a, b)) {
+                let over = a.map(item => new Point(item.x, item.y));
+                // console.log(over);
+                let ra = [], rb = [];
+                if (startA > 0) {
+                    let s = bezier.sliceBezier2Both(ca, 0, startA);
+                    let arr = [
+                        segA.coords[0],
+                        new Point(s[1].x, s[1].y),
+                        segB.coords[0],
+                    ];
+                    if (la === 4) {
+                        arr.splice(2, 0, new Point(s[2].x, s[2].y));
+                    }
+                    ra.push(new Segment(arr, segA.belong));
+                }
+                ra.push(new Segment(over, segA.belong)); // 重合的部分
+                if (endA < 1) {
+                    let s = bezier.sliceBezier2Both(ca, endA, 1);
+                    let arr = [
+                        segB.coords[lb - 1],
+                        new Point(s[1].x, s[1].y),
+                        segA.coords[la - 1],
+                    ];
+                    if (la === 4) {
+                        arr.splice(2, 0, new Point(s[2].x, s[2].y));
+                    }
+                    ra.push(new Segment(arr, segA.belong));
+                }
+                if (startB > 0) {
+                    let s = bezier.sliceBezier2Both(cb, 0, startB);
+                    let arr = [
+                        segB.coords[0],
+                        new Point(s[1].x, s[1].y),
+                        segA.coords[0],
+                    ];
+                    if (lb === 4) {
+                        arr.splice(2, 0, new Point(s[2].x, s[2].y));
+                    }
+                    rb.push(new Segment(arr, segB.belong));
+                }
+                rb.push(new Segment(over, segB.belong)); // 重合的部分
+                if (endB < 1) {
+                    let s = bezier.sliceBezier2Both(cb, endB, 1);
+                    let arr = [
+                        segA.coords[la - 1],
+                        new Point(s[1].x, s[1].y),
+                        segB.coords[lb - 1],
+                    ];
+                    if (lb === 4) {
+                        arr.splice(2, 0, new Point(s[2].x, s[2].y));
+                    }
+                    rb.push(new Segment(arr, segB.belong));
+                }
+                // console.log(ra.map(item => item.toString()));
+                // console.log(rb.map(item => item.toString()));
+                return {
+                    ra,
+                    rb,
+                };
+            }
+        }
+    }
+    function equalBezier(a, b) {
+        for (let i = 0, len = a.length; i < len; i++) {
+            let ai = a[i], bi = b[i];
+            if (Math.abs(ai.x - bi.x) > 1e-9 || Math.abs(ai.y - bi.y) > 1e-9) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
+    function join(res, chains, chain, index, pt, isHead) {
+        for (let i = 0, len = chains.length; i < len; i++) {
+            let item = chains[i];
+            if (item !== chain) {
+                let l = item.length;
+                let head = item[0], tail = item[l - 1];
+                let ptHead = head.coords[0];
+                let coords = tail.coords, l2 = coords.length;
+                let ptTail = coords[l2 - 1];
+                if (pt.equal(ptHead)) {
+                    if (isHead) {
+                        item = reverse(chain).concat(item);
+                        chains[i] = item;
+                        chains.splice(index, 1);
+                        return close(res, chains, item, i);
+                    }
+                    else {
+                        item = chain.concat(item);
+                        chains[i] = item;
+                        chains.splice(index, 1);
+                        return close(res, chains, item, i);
+                    }
+                }
+                else if (pt.equal(ptTail)) {
+                    if (isHead) {
+                        item = item.concat(chain);
+                        chains[i] = item;
+                        chains.splice(index, 1);
+                        return close(res, chains, item, i);
+                    }
+                    else {
+                        item = item.concat(reverse(chain));
+                        chains[i] = item;
+                        chains.splice(index, 1);
+                        return close(res, chains, item, i);
+                    }
+                }
+            }
+        }
+        // 无法和别的链接，也要检查自身闭合
+        close(res, chains, chain, index);
+    }
+    function close(res, chains, chain, index) {
+        let l = chain.length;
+        let head = chain[0], tail = chain[l - 1];
+        let ptHead = head.coords[0];
+        let coords2 = tail.coords, l2 = coords2.length;
+        let ptTail = coords2[l2 - 1];
+        if (ptHead.equal(ptTail)) {
+            chains.splice(index, 1);
+            res.push(chain);
+        }
+    }
+    // 整条链颠倒，包含每个线段自身颠倒
+    function reverse(chain) {
+        chain.forEach(item => item.reverse());
+        return chain.reverse();
+    }
+    function chain (list) {
+        let chains = [], res = [];
+        // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
+        list.sort(function (a, b) {
+            if (b.otherFill[0] && b.otherFill[1]) {
+                return 1;
+            }
+            return -1;
+        });
+        outer: while (list.length) {
+            let seg = list.shift(), coords = seg.coords, len = coords.length;
+            let start = coords[0], end = coords[len - 1];
+            let temp;
+            // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
+            for (let i = 0, len = chains.length; i < len; i++) {
+                let chain = chains[i], l = chain.length;
+                let head = chain[0], tail = chain[l - 1];
+                let ptHead = head.coords[0];
+                let coords2 = tail.coords, l2 = coords2.length;
+                let ptTail = coords2[l2 - 1];
+                if (start.equal(ptTail)) {
+                    if (seg.belong !== tail.belong) {
+                        chain.push(seg);
+                        join(res, chains, chain, i, end, false);
+                        continue outer;
+                    }
+                    else if (!temp) {
+                        temp = { i, t: 0 };
+                    }
+                }
+                else if (start.equal(ptHead)) {
+                    if (seg.belong !== tail.belong) {
+                        seg.reverse();
+                        chain.unshift(seg);
+                        join(res, chains, chain, i, end, true);
+                        continue outer;
+                    }
+                    else if (!temp) {
+                        temp = { i, t: 1 };
+                    }
+                }
+                else if (end.equal(ptTail)) {
+                    if (seg.belong !== tail.belong) {
+                        seg.reverse();
+                        chain.push(seg);
+                        join(res, chains, chain, i, start, false);
+                        continue outer;
+                    }
+                    else if (!temp) {
+                        temp = { i, t: 2 };
+                    }
+                }
+                else if (end.equal(ptHead)) {
+                    if (seg.belong !== tail.belong) {
+                        chain.unshift(seg);
+                        join(res, chains, chain, i, start, true);
+                        continue outer;
+                    }
+                    else if (!temp) {
+                        temp = { i, t: 3 };
+                    }
+                }
+            }
+            // 如果没有优先添加对方的线段形成包含，则到这里检查是否有己方的进行链接
+            if (temp) {
+                if (temp.t === 0) {
+                    chains[temp.i].push(seg);
+                    join(res, chains, chains[temp.i], temp.i, end, false);
+                }
+                else if (temp.t === 1) {
+                    seg.reverse();
+                    chains[temp.i].unshift(seg);
+                    join(res, chains, chains[temp.i], temp.i, end, true);
+                }
+                else if (temp.t === 2) {
+                    seg.reverse();
+                    chains[temp.i].push(seg);
+                    join(res, chains, chains[temp.i], temp.i, start, false);
+                }
+                else if (temp.t === 3) {
+                    chains[temp.i].unshift(seg);
+                    join(res, chains, chains[temp.i], temp.i, start, true);
+                }
+            }
+            // 找不到则生成新链
+            else {
+                chains.push([seg]);
+            }
+        }
+        // 鞋带公式求得每个多边形的时钟序  https://zhuanlan.zhihu.com/p/401010594
+        let v = res.map(item => {
+            // let isInner = true, isOuter = true;
+            let clockwise = true;
+            let s = 0, lastX = 0, lastY = 0, minX = 0, minY = 0, maxX = 0, maxY = 0;
+            item.forEach((seg, i) => {
+                // 内部是指边的两侧都是对方填充说明在内部
+                // if(!seg.otherFill[0] || !seg.otherFill[1]) {
+                //   isInner = false;
+                // }
+                // // 外部是指边的一侧为空
+                // if(!seg.myFill[0] && !seg.otherFill[0] || !seg.myFill[1] && !seg.otherFill[1]) {}
+                // else {
+                //   isOuter = false;
+                // }
+                let coords = seg.coords, len = coords.length, bbox = seg.bbox;
+                if (i) {
+                    minX = Math.min(minX, bbox[0]);
+                    minY = Math.min(minY, bbox[1]);
+                    maxX = Math.max(maxX, bbox[2]);
+                    maxY = Math.max(maxY, bbox[3]);
+                }
+                else {
+                    minX = bbox[0];
+                    minY = bbox[1];
+                    maxX = bbox[2];
+                    maxY = bbox[3];
+                }
+                if (len === 2) {
+                    if (i) {
+                        s += lastX * coords[1].y - lastY * coords[1].x;
+                    }
+                    else {
+                        s += coords[0].x * coords[1].y - coords[0].y * coords[1].x;
+                    }
+                    lastX = coords[1].x;
+                    lastY = coords[1].y;
+                }
+                else if (len === 3) {
+                    if (i) {
+                        s += lastX * coords[2].y - lastY * coords[2].x;
+                    }
+                    else {
+                        s += coords[0].x * coords[1].y - coords[0].y * coords[2].x;
+                    }
+                    lastX = coords[2].x;
+                    lastY = coords[2].y;
+                }
+                else if (len === 4) {
+                    if (i) {
+                        s += lastX * coords[3].y - lastY * coords[3].x;
+                    }
+                    else {
+                        s += coords[0].x * coords[3].y - coords[0].y * coords[3].x;
+                    }
+                    lastX = coords[3].x;
+                    lastY = coords[3].y;
+                }
+            });
+            // 首个顶点重合
+            let first = item[0], coords = first.coords;
+            s += lastX * coords[0].y - lastY * coords[0].x;
+            if (s < 0) {
+                clockwise = false;
+            }
+            return {
+                // isInner,
+                // isOuter,
+                checked: false,
+                list: item,
+                clockwise,
+                bbox: [minX, minY, maxX, maxY],
+                area: (maxX - minX) * (maxY - minY),
+            };
+        });
+        v.forEach(item => {
+            if (item.checked) {
+                return;
+            }
+            let bbox = item.bbox;
+            let list = [item];
+            for (let i = 0, len = v.length; i < len; i++) {
+                let item2 = v[i];
+                if (item2 !== item) {
+                    // 互相包含则存入列表
+                    if (geom.isRectsInside(bbox, item2.bbox, true) || geom.isRectsInside(item2.bbox, bbox, true)) {
+                        list.push(item2);
+                    }
+                }
+            }
+            // 按面积排序，最小的即最里面的在前面
+            if (list.length > 1) {
+                list.sort(function (a, b) {
+                    return a.area - b.area;
+                });
+                // 可能存在已经排过序的，例如外围a包含了内部的b和c，b和c互不相交，a和b已经调整过排序了，a和c再调整则a已经checked
+                for (let i = 1, len = list.length; i < len; i++) {
+                    let item = list[i];
+                    if (item.checked) {
+                        let clockwise = item.clockwise;
+                        for (let j = i - 1; j >= 0; j--) {
+                            let item2 = list[j];
+                            item2.checked = true;
+                            if (item2.clockwise === clockwise) {
+                                reverse(item2.list);
+                                item2.clockwise = !clockwise;
+                            }
+                            clockwise = !clockwise;
+                        }
+                        clockwise = item.clockwise;
+                        for (let j = i + 1; j < len; j++) {
+                            let item2 = list[j];
+                            item2.checked = true;
+                            if (item2.clockwise === clockwise) {
+                                reverse(item2.list);
+                                item2.clockwise = !clockwise;
+                            }
+                            clockwise = !clockwise;
+                        }
+                        return;
+                    }
+                }
+                // 新的依次时钟序互相颠倒
+                let clockwise = list[0].clockwise;
+                list[0].checked = true;
+                for (let i = 1, len = list.length; i < len; i++) {
+                    let item = list[i];
+                    item.checked = true;
+                    if (item.clockwise === clockwise) {
+                        reverse(item.list);
+                        item.clockwise = !clockwise;
+                    }
+                    clockwise = !clockwise;
+                }
+            }
+        });
+        return v.map(item => {
+            let list = item.list.map((seg) => {
+                let coords = seg.coords, len = coords.length;
+                if (len === 3) {
+                    return [coords[1].x, coords[1].y, coords[2].x, coords[2].y];
+                }
+                else if (len === 4) {
+                    return [coords[1].x, coords[1].y, coords[2].x, coords[2].y, coords[3].x, coords[3].y];
+                }
+                else {
+                    return [coords[1].x, coords[1].y];
+                }
+            });
+            // 首个顶点重合
+            let first = item.list[0], coords = first.coords;
+            list.unshift([coords[0].x, coords[0].y]);
+            return list;
+        });
+    }
+
+    // 多边形都是多个区域，重载支持外部传入1个区域则数组化
+    function prefix(polygon) {
+        if (!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
+            return [];
+        }
+        if (Array.isArray(polygon[0][0])) {
+            return polygon;
+        }
+        return [polygon];
+    }
+    function trivial(polygonA, polygonB) {
+        const isIntermediateA = polygonA instanceof Polygon;
+        const isIntermediateB = polygonB instanceof Polygon;
+        // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
+        let source;
+        if (isIntermediateA) {
+            source = polygonA.reset(0);
+        }
+        else {
+            source = new Polygon(prefix(polygonA), 0);
+            source.selfIntersect();
+        }
+        // console.log(source.toString());
+        let clip;
+        if (isIntermediateB) {
+            clip = polygonB.reset(1);
+        }
+        else {
+            clip = new Polygon(prefix(polygonB), 1);
+            clip.selfIntersect();
+        }
+        // 两个多边形之间再次互相判断相交
+        Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
+        Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
+        return [source, clip];
+    }
+    const INTERSECT = [
+        0, 0, 0, 1,
+        0, 0, 0, 1,
+        0, 0, 0, 1,
+        1, 1, 1, 0,
+    ], UNION = [
+        0, 1, 1, 1,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+    ], SUBTRACT = [
+        0, 0, 1, 0,
+        0, 0, 1, 0,
+        1, 1, 0, 1,
+        0, 0, 1, 0,
+    ], SUBTRACT_REV = [
+        0, 1, 0, 0,
+        1, 0, 1, 1,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+    ], XOR = [
+        0, 1, 1, 0,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 1, 1, 0,
+    ];
+    function filter(segments, matrix) {
+        const res = [], hash = {};
+        segments.forEach(seg => {
+            const { belong, myFill, otherFill, otherCoincide } = seg;
+            if (otherCoincide) {
+                // 对方重合线只出现一次
+                const hc = seg.toHash();
+                if (hash.hasOwnProperty(hc)) {
+                    return;
+                }
+                hash[hc] = true;
+            }
+            let i;
+            if (belong) {
+                i = (otherFill[0] ? 8 : 0)
+                    + (myFill[0] ? 4 : 0)
+                    + (otherFill[1] ? 2 : 0)
+                    + (myFill[1] ? 1 : 0);
+            }
+            else {
+                i = (myFill[0] ? 8 : 0)
+                    + (otherFill[0] ? 4 : 0)
+                    + (myFill[1] ? 2 : 0)
+                    + (otherFill[1] ? 1 : 0);
+            }
+            if (matrix[i]) {
+                res.push(seg);
+            }
+        });
+        // console.log(res.map(item => item.toString()));
+        return res;
+    }
+    function intersect(polygonA, polygonB, intermediate = false) {
+        const [source, clip] = trivial(polygonA, polygonB);
+        const list = filter(source.segments.concat(clip.segments), INTERSECT);
+        if (intermediate) {
+            source.segments = list;
+            return source;
+        }
+        return chain(list);
+    }
+    function union(polygonA, polygonB, intermediate = false) {
+        const [source, clip] = trivial(polygonA, polygonB);
+        const list = filter(source.segments.concat(clip.segments), UNION);
+        if (intermediate) {
+            source.segments = list;
+            return source;
+        }
+        const r = chain(list);
+        return r;
+    }
+    function subtract(polygonA, polygonB, intermediate = false) {
+        const [source, clip] = trivial(polygonA, polygonB);
+        const list = filter(source.segments.concat(clip.segments), SUBTRACT);
+        if (intermediate) {
+            source.segments = list;
+            return source;
+        }
+        return chain(list);
+    }
+    function subtractRev(polygonA, polygonB, intermediate = false) {
+        const [source, clip] = trivial(polygonA, polygonB);
+        const list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+        if (intermediate) {
+            source.segments = list;
+            return source;
+        }
+        return chain(list);
+    }
+    function xor(polygonA, polygonB, intermediate = false) {
+        const [source, clip] = trivial(polygonA, polygonB);
+        const list = filter(source.segments.concat(clip.segments), XOR);
+        if (intermediate) {
+            source.segments = list;
+            return source;
+        }
+        return chain(list);
+    }
+    function ch(polygon) {
+        if (polygon instanceof Polygon) {
+            return chain(polygon.segments);
+        }
+        return prefix(polygon);
+    }
+    var bo = {
+        intersect,
+        union,
+        subtract,
+        subtractRev,
+        xor,
+        chain: ch,
+    };
+
+    function applyMatrixPoints(points, m) {
+        if (m && !isE(m)) {
+            const a1 = m[0], b1 = m[1];
+            const a2 = m[4], b2 = m[5];
+            const a4 = m[12], b4 = m[13];
+            return points.map(item => {
+                const c1 = ((a1 === 1) ? item[0] : (item[0] * a1)) + (a2 ? (item[1] * a2) : 0) + a4;
+                const c2 = ((b1 === 1) ? item[0] : (item[0] * b1)) + (b2 ? (item[1] * b2) : 0) + b4;
+                if (item.length === 4 || item.length === 6) {
+                    const c3 = ((a1 === 1) ? item[2] : (item[2] * a1)) + (a2 ? (item[3] * a2) : 0) + a4;
+                    const c4 = ((b1 === 1) ? item[2] : (item[2] * b1)) + (b2 ? (item[3] * b2) : 0) + b4;
+                    if (item.length === 6) {
+                        const c5 = ((a1 === 1) ? item[4] : (item[4] * a1)) + (a2 ? (item[5] * a2) : 0) + a4;
+                        const c6 = ((b1 === 1) ? item[4] : (item[4] * b1)) + (b2 ? (item[5] * b2) : 0) + b4;
+                        return [c1, c2, c3, c4, c5, c6];
+                    }
+                    return [c1, c2, c3, c4];
+                }
+                else {
+                    return [c1, c2];
+                }
+            });
+        }
+        return points.map(item => item.slice(0));
+    }
     class ShapeGroup extends Container {
         constructor(props, children) {
             super(props, children);
             this.isShapeGroup = true;
-            this.points = [];
+        }
+        calContent() {
+            if (!this.points) {
+                this.buildPoints();
+            }
+            return this.hasContent = !!this.points && this.points.length > 1;
+        }
+        buildPoints() {
+            const { children } = this;
+            let res = [];
+            for (let i = 0, len = children.length; i < len; i++) {
+                const item = children[i];
+                if (!item.points) {
+                    item.buildPoints();
+                }
+                const points = item.points;
+                if (points && points.length) {
+                    // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
+                    const p = applyMatrixPoints(points, item.matrix);
+                    if (i === 0) {
+                        res = res.concat(p);
+                    }
+                    else {
+                        const booleanOperation = item.computedStyle.booleanOperation;
+                        // TODO 连续多个bo运算中间产物优化
+                        if (booleanOperation === BooleanOperation.INTERSECT) {
+                            const t = bo.intersect(res, p);
+                            res = t[0];
+                        }
+                        else if (booleanOperation === BooleanOperation.UNION) {
+                            const t = bo.union(res, p);
+                            res = t[0];
+                        }
+                        else if (booleanOperation === BooleanOperation.SUBTRACT) {
+                            const t = bo.subtract(res, p);
+                            res = t[0];
+                        }
+                        else if (booleanOperation === BooleanOperation.XOR) {
+                            const t = bo.xor(res, p);
+                            res = t[0];
+                        }
+                    }
+                }
+            }
+            this.points = res.length ? res : [];
+        }
+        renderCanvas() {
+            super.renderCanvas();
+            if (!this.points) {
+                this.buildPoints();
+            }
+            const points = this.points;
+            const bbox = this._bbox || this.bbox;
+            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
+            canvasCache.available = true;
+            const ctx = canvasCache.offscreen.ctx;
+            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = this.computedStyle;
+            ctx.setLineDash(strokeDasharray);
+            // 先下层的fill
+            for (let i = 0, len = fill.length; i < len; i++) {
+                if (!fillEnable[i]) {
+                    continue;
+                }
+                const f = fill[i];
+                if (Array.isArray(f)) {
+                    if (!f[3]) {
+                        continue;
+                    }
+                    ctx.fillStyle = color2rgbaStr(f);
+                }
+                else {
+                    const gd = getLinear(f.stops, f.d, 0, 0, this.width, this.height, -x, -y);
+                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                    gd.stop.forEach(item => {
+                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                    });
+                    ctx.fillStyle = lg;
+                }
+                canvasPolygon(ctx, points, -x, -y);
+                ctx.fill();
+            }
+            // 再上层的stroke
+            for (let i = 0, len = stroke.length; i < len; i++) {
+                if (!strokeEnable[i] || !strokeWidth[i]) {
+                    continue;
+                }
+                const s = stroke[i];
+                if (Array.isArray(s)) {
+                    ctx.strokeStyle = color2rgbaStr(s);
+                    ctx.lineWidth = strokeWidth[i];
+                }
+                else {
+                    const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
+                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                    gd.stop.forEach(item => {
+                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                    });
+                    ctx.fillStyle = lg;
+                }
+                canvasPolygon(ctx, points, -x, -y);
+                ctx.stroke();
+            }
+        }
+        get bbox() {
+            if (!this._bbox) {
+                const bbox = this._bbox = super.bbox;
+                // 可能不存在
+                if (!this.points) {
+                    this.buildPoints();
+                }
+                const { strokeWidth, strokeEnable } = this.computedStyle;
+                // 所有描边最大值，影响bbox
+                let half = 0;
+                strokeWidth.forEach((item, i) => {
+                    if (strokeEnable[i]) {
+                        half = Math.max(half, item * 0.5);
+                    }
+                });
+                const points = this.points;
+                const first = points[0];
+                let xa, ya;
+                if (first.length === 4) {
+                    xa = first[2];
+                    ya = first[3];
+                }
+                else if (first.length === 6) {
+                    xa = first[4];
+                    ya = first[5];
+                }
+                else {
+                    xa = first[0];
+                    ya = first[1];
+                }
+                bbox[0] = Math.min(bbox[0], xa - half);
+                bbox[1] = Math.min(bbox[1], ya - half);
+                bbox[2] = Math.max(bbox[2], xa + half);
+                bbox[3] = Math.max(bbox[3], ya + half);
+                for (let i = 1, len = points.length; i < len; i++) {
+                    const item = points[i];
+                    let xb, yb;
+                    if (item.length === 4) ;
+                    else if (item.length === 6) ;
+                    else {
+                        xb = item[0];
+                        yb = item[1];
+                        bbox[0] = Math.min(bbox[0], xb - half);
+                        bbox[1] = Math.min(bbox[1], yb - half);
+                        bbox[2] = Math.max(bbox[2], xb + half);
+                        bbox[3] = Math.max(bbox[3], yb + half);
+                    }
+                    xa = xb;
+                    ya = yb;
+                }
+            }
+            return this._bbox;
         }
     }
 
@@ -21272,7 +25093,7 @@
                     if (refreshLevel < RefreshLevel.REPAINT) ;
                     else {
                         const hasContent = node.calContent();
-                        // 有内容先以canvas模式绘制到离屏画布上
+                        // hasContent
                         if (hasContent) {
                             node.renderCanvas();
                             node.genTexture(gl);
@@ -21363,6 +25184,10 @@
                         matrix,
                         cache: textureCache,
                     }], 1);
+            }
+            // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+            if (node.isShapeGroup) {
+                i += total;
             }
         }
         // 再覆盖渲染artBoard的阴影和标题

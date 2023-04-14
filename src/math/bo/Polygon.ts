@@ -612,11 +612,11 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
               else if(inters && inters.length) {
                 // console.log('inters', i, inters);
-                let pa = sortIntersection(inters, !isSourceReverted);
+                let pa = sortIntersection(inters!, !isSourceReverted);
                 // console.log(pa);
                 let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                 // console.log(ra.map(item => item.toString()));
-                let pb = sortIntersection(inters, isSourceReverted);
+                let pb = sortIntersection(inters!, isSourceReverted);
                 // console.log(pb);
                 let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));

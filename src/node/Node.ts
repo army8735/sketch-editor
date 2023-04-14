@@ -56,6 +56,11 @@ class Node extends Event {
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
+  isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
+  isArtBoard = false;
+  isPage = false;
+  isShapeGroup = false;
+  isContainer = false;
 
   constructor(props: Props) {
     super();
@@ -248,6 +253,7 @@ class Node extends Event {
     computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
     computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
+    computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {

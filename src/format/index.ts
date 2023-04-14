@@ -1,3 +1,5 @@
+import { CurveMode } from '../style/define';
+
 export type JFile = {
   pages: JPage[],
   imgs: Array<string>,
@@ -77,6 +79,7 @@ export type JStyle = {
   scaleY: number,
   rotateZ: number,
   transformOrigin: Array<number | string> | string,
+  booleanOperation: string,
   mixBlendMode: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn'
     | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity',
   pointerEvents: boolean,
@@ -114,6 +117,7 @@ export function getDefaultStyle(v?: any): JStyle {
     scaleY: 1,
     rotateZ: 0,
     transformOrigin: ['center', 'center'],
+    booleanOperation: 'none',
     mixBlendMode: 'normal',
     pointerEvents: true,
   }, v);
@@ -179,12 +183,4 @@ export enum TagName {
   Bitmap = 'bitmap',
   Text = 'text',
   Polyline = '$polyline',
-}
-
-export enum CurveMode {
-  None = 0,
-  Straight = 1,
-  Mirrored = 2,
-  Asymmetric = 3,
-  Disconnected = 4
 }

@@ -72,6 +72,11 @@ export type StyleOverflowValue = {
   u: StyleUnit.NUMBER,
 };
 
+export type StyleBooleanOperationValue = {
+  v: BooleanOperation,
+  u: StyleUnit.NUMBER,
+};
+
 export type StyleMbmValue = {
   v: MIX_BLEND_MODE,
   u: StyleUnit.NUMBER,
@@ -131,6 +136,7 @@ export type Style = {
   scaleY: StyleNumValue,
   rotateZ: StyleNumValue,
   transformOrigin: [StyleNumValue, StyleNumValue],
+  booleanOperation: StyleBooleanOperationValue,
   mixBlendMode: StyleMbmValue,
   pointerEvents: StyleBoolValue,
 };
@@ -168,6 +174,7 @@ export type ComputedStyle = {
   scaleY: number,
   rotateZ: number,
   transformOrigin: [number, number],
+  booleanOperation: BooleanOperation,
   mixBlendMode: MIX_BLEND_MODE,
   pointerEvents: boolean,
 };
@@ -219,6 +226,22 @@ export enum GRADIENT {
   LINEAR = 0,
   RADIAL = 1,
   CONIC = 2,
+}
+
+export enum BooleanOperation {
+  NONE = 0,
+  UNION = 1,
+  SUBTRACT = 2,
+  INTERSECT = 3,
+  XOR = 4,
+}
+
+export enum CurveMode {
+  None = 0,
+  Straight = 1,
+  Mirrored = 2,
+  Asymmetric = 3,
+  Disconnected = 4,
 }
 
 export default {

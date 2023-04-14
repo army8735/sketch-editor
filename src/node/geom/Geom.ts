@@ -3,6 +3,7 @@ import { Props } from '../../format';
 
 export interface Shape {
   points?: Array<Array<number>>,
+  buildPoints: Function,
 }
 
 class Geom extends Node implements Shape {
@@ -11,8 +12,12 @@ class Geom extends Node implements Shape {
     super(props);
   }
 
+  buildPoints(): Array<Array<number>> {
+    return [];
+  }
+
   override calContent(): boolean {
-    return true;
+    return this.hasContent = true;
   }
 }
 
