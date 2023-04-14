@@ -20986,7 +20986,6 @@
         if (start === -1) {
             return;
         }
-        ctx.beginPath();
         let first = list[start];
         // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
         if (first.length === 4) {
@@ -24395,7 +24394,7 @@
         chain.forEach(item => item.reverse());
         return chain.reverse();
     }
-    function chain (list) {
+    function chains (list) {
         let chains = [], res = [];
         // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
         list.sort(function (a, b) {
@@ -24741,7 +24740,7 @@
             source.segments = list;
             return source;
         }
-        return chain(list);
+        return chains(list);
     }
     function union(polygonA, polygonB, intermediate = false) {
         const [source, clip] = trivial(polygonA, polygonB);
@@ -24750,17 +24749,20 @@
             source.segments = list;
             return source;
         }
-        const r = chain(list);
-        return r;
+        return chains(list);
     }
     function subtract(polygonA, polygonB, intermediate = false) {
         const [source, clip] = trivial(polygonA, polygonB);
-        const list = filter(source.segments.concat(clip.segments), SUBTRACT);
+        let list = filter(source.segments.concat(clip.segments), SUBTRACT);
+        // 暂时这样解决反向的问题
+        if (!list.length) {
+            list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+        }
         if (intermediate) {
             source.segments = list;
             return source;
         }
-        return chain(list);
+        return chains(list);
     }
     function subtractRev(polygonA, polygonB, intermediate = false) {
         const [source, clip] = trivial(polygonA, polygonB);
@@ -24769,7 +24771,7 @@
             source.segments = list;
             return source;
         }
-        return chain(list);
+        return chains(list);
     }
     function xor(polygonA, polygonB, intermediate = false) {
         const [source, clip] = trivial(polygonA, polygonB);
@@ -24778,11 +24780,11 @@
             source.segments = list;
             return source;
         }
-        return chain(list);
+        return chains(list);
     }
-    function ch(polygon) {
+    function chain(polygon) {
         if (polygon instanceof Polygon) {
-            return chain(polygon.segments);
+            return chains(polygon.segments);
         }
         return prefix(polygon);
     }
@@ -24792,7 +24794,8 @@
         subtract,
         subtractRev,
         xor,
-        chain: ch,
+        chain,
+        chains,
     };
 
     function applyMatrixPoints(points, m) {
@@ -24870,9 +24873,7 @@
                             }
                         }
                         else if (booleanOperation === BooleanOperation.SUBTRACT) {
-                            console.log(res, p);
                             const t = bo.subtract(res, p);
-                            console.log(t);
                             res = t || [];
                         }
                         else if (booleanOperation === BooleanOperation.XOR) {
@@ -24919,6 +24920,7 @@
                 }
                 points.forEach(item => {
                     canvasPolygon(ctx, item, -x, -y);
+                    ctx.closePath();
                 });
                 ctx.fill();
             }
@@ -24942,6 +24944,7 @@
                 }
                 points.forEach(item => {
                     canvasPolygon(ctx, item, -x, -y);
+                    ctx.closePath();
                 });
                 ctx.stroke();
             }

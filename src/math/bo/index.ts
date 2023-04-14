@@ -1,5 +1,5 @@
 import Polygon from './Polygon';
-import chain from './chain';
+import chains from './chains';
 import Segment from './Segment';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
@@ -107,7 +107,7 @@ export function intersect(polygonA: any, polygonB: any, intermediate = false) {
     source.segments = list;
     return source;
   }
-  return chain(list);
+  return chains(list);
 }
 
 export function union(polygonA: any, polygonB: any, intermediate = false) {
@@ -117,18 +117,21 @@ export function union(polygonA: any, polygonB: any, intermediate = false) {
     source.segments = list;
     return source;
   }
-  const r = chain(list);
-  return r;
+  return chains(list);
 }
 
 export function subtract(polygonA: any, polygonB: any, intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
-  const list = filter(source.segments.concat(clip.segments), SUBTRACT);
+  let list = filter(source.segments.concat(clip.segments), SUBTRACT);
+  // 暂时这样解决反向的问题
+  if (!list.length) {
+    list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+  }
   if (intermediate) {
     source.segments = list;
     return source;
   }
-  return chain(list);
+  return chains(list);
 }
 
 export function subtractRev(polygonA: any, polygonB: any, intermediate = false) {
@@ -138,7 +141,7 @@ export function subtractRev(polygonA: any, polygonB: any, intermediate = false) 
     source.segments = list;
     return source;
   }
-  return chain(list);
+  return chains(list);
 }
 
 export function xor(polygonA: any, polygonB: any, intermediate = false) {
@@ -148,12 +151,12 @@ export function xor(polygonA: any, polygonB: any, intermediate = false) {
     source.segments = list;
     return source;
   }
-  return chain(list);
+  return chains(list);
 }
 
-export function ch(polygon: Polygon | Array<Segment>) {
+export function chain(polygon: Polygon | Array<Segment>) {
   if (polygon instanceof Polygon) {
-    return chain(polygon.segments);
+    return chains(polygon.segments);
   }
   return prefix(polygon);
 }
@@ -164,5 +167,6 @@ export default {
   subtract,
   subtractRev,
   xor,
-  chain: ch,
+  chain,
+  chains,
 };

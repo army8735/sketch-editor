@@ -14,7 +14,6 @@ export function canvasPolygon(ctx: CanvasRenderingContext2D, list: Array<Array<n
   if(start === -1) {
     return;
   }
-  ctx.beginPath();
   let first = list[start];
   // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
   if(first.length === 4) {

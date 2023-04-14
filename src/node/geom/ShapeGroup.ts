@@ -89,9 +89,7 @@ class ShapeGroup extends Container {
             }
           }
           else if (booleanOperation === BooleanOperation.SUBTRACT) {
-            console.log(res, p);
             const t = bo.subtract(res, p) as number[][][];
-            console.log(t);
             res = t || [];
           }
           else if (booleanOperation === BooleanOperation.XOR) {
@@ -146,6 +144,7 @@ class ShapeGroup extends Container {
       }
       points.forEach(item => {
         canvasPolygon(ctx, item, -x, -y);
+        ctx.closePath();
       });
       ctx.fill();
     }
@@ -169,6 +168,7 @@ class ShapeGroup extends Container {
       }
       points.forEach(item => {
         canvasPolygon(ctx, item, -x, -y);
+        ctx.closePath();
       });
       ctx.stroke();
     }
