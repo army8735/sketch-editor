@@ -110,7 +110,7 @@ $input.onchange = function(e) {
           ol.prependChild(li);
         }
         else {
-          ol.insertBefore(node, abHash[node.prev.props.uuid]);
+          ol.insertBefore(node, li);
         }
       });
 
