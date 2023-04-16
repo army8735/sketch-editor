@@ -3,6 +3,7 @@ import {
   BooleanOperation,
   calUnit,
   ComputedStyle,
+  FILL_RULE,
   FONT_STYLE,
   MIX_BLEND_MODE,
   Style,
@@ -201,6 +202,10 @@ export function normalize(style: JStyle): Style {
     res.fillEnable = fillEnable.map(item => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
+  }
+  const fillRule = style.fillRule;
+  if (!isNil(fillRule)) {
+    res.fillRule = { v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO, u: StyleUnit.NUMBER };
   }
   const stroke = style.stroke;
   if (!isNil(stroke)) {

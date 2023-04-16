@@ -30,6 +30,7 @@
             opacity: 1,
             fill: [[0, 0, 0, 1]],
             fillEnable: [false],
+            fillRule: 0,
             stroke: [[0, 0, 0, 1]],
             strokeEnable: [false],
             strokeWidth: [1],
@@ -15451,6 +15452,11 @@
         CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
         CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
     })(CurveMode || (CurveMode = {}));
+    var FILL_RULE;
+    (function (FILL_RULE) {
+        FILL_RULE[FILL_RULE["NON_ZERO"] = 0] = "NON_ZERO";
+        FILL_RULE[FILL_RULE["EVEN_ODD"] = 1] = "EVEN_ODD";
+    })(FILL_RULE || (FILL_RULE = {}));
     var define = {
         StyleUnit,
         calUnit,
@@ -17225,6 +17231,10 @@
                 return { v: item, u: StyleUnit.BOOLEAN };
             });
         }
+        const fillRule = style.fillRule;
+        if (!isNil(fillRule)) {
+            res.fillRule = { v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO, u: StyleUnit.NUMBER };
+        }
         const stroke = style.stroke;
         if (!isNil(stroke)) {
             res.stroke = stroke.map(item => {
@@ -17704,6 +17714,8 @@
             const visible = layer.isVisible;
             const opacity = ((_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.contextSettings) === null || _b === void 0 ? void 0 : _b.opacity) || 1;
             const rotateZ = -layer.rotation;
+            const scaleX = layer.isFlippedHorizontal ? -1 : 1;
+            const scaleY = layer.isFlippedVertical ? -1 : 1;
             // artBoard也是固定尺寸和page一样，但x/y用translate代替
             if (layer._class === FileFormat.ClassValue.Artboard) {
                 const children = yield Promise.all(layer.layers.map((child) => {
@@ -17995,8 +18007,6 @@
                 || layer._class === FileFormat.ClassValue.Triangle
                 || layer._class === FileFormat.ClassValue.Polygon
                 || layer._class === FileFormat.ClassValue.ShapePath) {
-                const scaleX = layer.isFlippedHorizontal ? -1 : 1;
-                const scaleY = layer.isFlippedVertical ? -1 : 1;
                 const points = layer.points.map((item) => {
                     const point = parseStrPoint(item.point);
                     const curveFrom = parseStrPoint(item.curveFrom);
@@ -18014,7 +18024,7 @@
                         ty: curveTo.y,
                     };
                 });
-                const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
+                const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, fillRule, } = geomStyle(layer);
                 return {
                     tagName: TagName.Polyline,
                     props: {
@@ -18033,6 +18043,7 @@
                             opacity,
                             fill,
                             fillEnable,
+                            fillRule,
                             stroke,
                             strokeEnable,
                             strokeWidth,
@@ -18048,7 +18059,7 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.ShapeGroup) {
-                const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
+                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
@@ -18068,12 +18079,15 @@
                             opacity,
                             fill,
                             fillEnable,
+                            fillRule,
                             stroke,
                             strokeEnable,
                             strokeWidth,
                             strokeDasharray,
                             translateX,
                             translateY,
+                            scaleX,
+                            scaleY,
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
                         },
@@ -18085,7 +18099,7 @@
         });
     }
     function geomStyle(layer) {
-        const { borders, borderOptions, fills } = layer.style || {};
+        const { borders, borderOptions, fills, windingRule } = layer.style || {};
         const fill = [], fillEnable = [];
         if (fills) {
             fills.forEach((item) => {
@@ -18144,6 +18158,7 @@
         return {
             fill,
             fillEnable,
+            fillRule: windingRule,
             stroke,
             strokeEnable,
             strokeWidth,
@@ -18945,6 +18960,7 @@
             computedStyle.opacity = style.opacity.v;
             computedStyle.fill = style.fill.map(item => item.v);
             computedStyle.fillEnable = style.fillEnable.map(item => item.v);
+            computedStyle.fillRule = style.fillRule.v;
             computedStyle.stroke = style.stroke.map(item => item.v);
             computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
             computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
@@ -24832,7 +24848,7 @@
             if (!this.points) {
                 this.buildPoints();
             }
-            return this.hasContent = !!this.points && this.points.length > 1;
+            return this.hasContent = !!this.points && !!this.points.length;
         }
         buildPoints() {
             const { children } = this;
@@ -24852,11 +24868,11 @@
                     else {
                         p = [applyMatrixPoints(points, matrix)];
                     }
-                    if (i === 0) {
+                    const booleanOperation = item.computedStyle.booleanOperation;
+                    if (i === 0 || !booleanOperation) {
                         res = res.concat(p);
                     }
                     else {
-                        const booleanOperation = item.computedStyle.booleanOperation;
                         // TODO 连续多个bo运算中间产物优化
                         if (booleanOperation === BooleanOperation.INTERSECT) {
                             const t = bo.intersect(res, p);
@@ -24896,7 +24912,7 @@
             const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = this.computedStyle;
+            const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokeDasharray, } = this.computedStyle;
             ctx.setLineDash(strokeDasharray);
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
@@ -24922,7 +24938,7 @@
                     canvasPolygon(ctx, item, -x, -y);
                     ctx.closePath();
                 });
-                ctx.fill();
+                ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
             }
             // 再上层的stroke
             for (let i = 0, len = stroke.length; i < len; i++) {

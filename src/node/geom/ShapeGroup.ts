@@ -1,7 +1,7 @@
 import Container from '../Container';
 import { Props } from '../../format';
 import Polyline from './Polyline';
-import { BooleanOperation } from '../../style/define';
+import { BooleanOperation, FILL_RULE } from '../../style/define';
 import bo from '../../math/bo';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
@@ -47,7 +47,7 @@ class ShapeGroup extends Container {
     if (!this.points) {
       this.buildPoints();
     }
-    return this.hasContent = !!this.points && this.points.length > 1;
+    return this.hasContent = !!this.points && !!this.points.length;
   }
 
   buildPoints() {
@@ -68,11 +68,11 @@ class ShapeGroup extends Container {
         else {
           p = [applyMatrixPoints(points as number[][], matrix)];
         }
-        if (i === 0) {
+        const booleanOperation = item.computedStyle.booleanOperation;
+        if (i === 0 || !booleanOperation) {
           res = res.concat(p);
         }
         else {
-          const booleanOperation = item.computedStyle.booleanOperation;
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BooleanOperation.INTERSECT) {
             const t = bo.intersect(res, p) as number[][][];
@@ -116,6 +116,7 @@ class ShapeGroup extends Container {
     const {
       fill,
       fillEnable,
+      fillRule,
       stroke,
       strokeEnable,
       strokeWidth,
@@ -146,7 +147,7 @@ class ShapeGroup extends Container {
         canvasPolygon(ctx, item, -x, -y);
         ctx.closePath();
       });
-      ctx.fill();
+      ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
     }
     // 再上层的stroke
     for (let i = 0, len = stroke.length; i < len; i++) {

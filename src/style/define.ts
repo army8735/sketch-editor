@@ -105,6 +105,11 @@ export type StyleGradientValue = {
   u: StyleUnit.GRADIENT,
 };
 
+export type StyleFillRuleValue = {
+  v: FILL_RULE,
+  u: StyleUnit.NUMBER,
+};
+
 export type Style = {
   top: StyleNumValue,
   right: StyleNumValue,
@@ -124,6 +129,7 @@ export type Style = {
   opacity: StyleNumValue,
   fill: Array<StyleColorValue | StyleGradientValue>,
   fillEnable: Array<StyleBoolValue>,
+  fillRule: StyleFillRuleValue,
   stroke: Array<StyleColorValue | StyleGradientValue>,
   strokeEnable: Array<StyleBoolValue>,
   strokeWidth: Array<StyleNumValue>,
@@ -162,6 +168,7 @@ export type ComputedStyle = {
   opacity: number,
   fill: Array<Array<number> | Gradient>,
   fillEnable: Array<boolean>,
+  fillRule: FILL_RULE,
   stroke: Array<Array<number> | Gradient>,
   strokeEnable: Array<boolean>,
   strokeWidth: Array<number>,
@@ -242,6 +249,11 @@ export enum CurveMode {
   Mirrored = 2,
   Asymmetric = 3,
   Disconnected = 4,
+}
+
+export enum FILL_RULE {
+  NON_ZERO = 0,
+  EVEN_ODD = 1,
 }
 
 export default {

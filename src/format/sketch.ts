@@ -147,6 +147,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
   const visible = layer.isVisible;
   const opacity = layer.style?.contextSettings?.opacity || 1;
   const rotateZ = -layer.rotation;
+  const scaleX = layer.isFlippedHorizontal ? -1 : 1;
+  const scaleY = layer.isFlippedVertical ? -1 : 1;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替
   if (layer._class === SketchFormat.ClassValue.Artboard) {
     const children = await Promise.all(
@@ -460,8 +462,6 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     || layer._class === SketchFormat.ClassValue.Triangle
     || layer._class === SketchFormat.ClassValue.Polygon
     || layer._class === SketchFormat.ClassValue.ShapePath) {
-    const scaleX = layer.isFlippedHorizontal ? -1 : 1;
-    const scaleY = layer.isFlippedVertical ? -1 : 1;
     const points: Array<Point> = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
@@ -486,6 +486,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       strokeEnable,
       strokeWidth,
       strokeDasharray,
+      fillRule,
     } = geomStyle(layer);
     return {
       tagName: TagName.Polyline,
@@ -505,6 +506,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           opacity,
           fill,
           fillEnable,
+          fillRule,
           stroke,
           strokeEnable,
           strokeWidth,
@@ -523,6 +525,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const {
       fill,
       fillEnable,
+      fillRule,
       stroke,
       strokeEnable,
       strokeWidth,
@@ -549,12 +552,15 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           opacity,
           fill,
           fillEnable,
+          fillRule,
           stroke,
           strokeEnable,
           strokeWidth,
           strokeDasharray,
           translateX,
           translateY,
+          scaleX,
+          scaleY,
           rotateZ,
           booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
         },
@@ -566,7 +572,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
 }
 
 function geomStyle(layer: SketchFormat.AnyLayer) {
-  const { borders, borderOptions, fills } = layer.style || {};
+  const { borders, borderOptions, fills, windingRule } = layer.style || {};
   const fill: Array<string | Array<number>> = [], fillEnable: Array<boolean> = [];
   if (fills) {
     fills.forEach((item: SketchFormat.Fill) => {
@@ -627,6 +633,7 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
   return {
     fill,
     fillEnable,
+    fillRule: windingRule,
     stroke,
     strokeEnable,
     strokeWidth,

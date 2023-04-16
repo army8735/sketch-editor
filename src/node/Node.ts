@@ -249,6 +249,7 @@ class Node extends Event {
     computedStyle.opacity = style.opacity.v;
     computedStyle.fill = style.fill.map(item => item.v);
     computedStyle.fillEnable = style.fillEnable.map(item => item.v);
+    computedStyle.fillRule = style.fillRule.v;
     computedStyle.stroke = style.stroke.map(item => item.v);
     computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
