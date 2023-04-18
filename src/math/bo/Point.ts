@@ -1,3 +1,5 @@
+import intersect from './intersect';
+
 class Point {
   x: number;
   y: number
@@ -16,6 +18,10 @@ class Point {
 
   equal(o: Point) {
     return this === o || this.x === o.x && this.y === o.y;
+  }
+
+  equalEps(o: Point, eps = 1e-9) {
+    return Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps;
   }
 
   // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true

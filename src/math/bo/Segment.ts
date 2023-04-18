@@ -1,7 +1,10 @@
 import bezier from '../bezier';
 import Point from './Point';
 
+let uuid = 0;
+
 class Segment {
+  uuid: number;
   coords: Array<Point>;
   belong: number;
   myFill: [boolean, boolean];
@@ -13,6 +16,7 @@ class Segment {
   bbox: Array<number>;
 
   constructor(coords: Array<Point>, belong: number) {
+    this.uuid = uuid++;
     this.coords = coords;
     this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
     this.bbox = this.calBbox();

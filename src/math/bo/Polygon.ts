@@ -19,34 +19,35 @@ const {
 class Polygon {
   segments: Array<Segment>;
   index: number;
+
   constructor(regions: Array<Array<Array<number>>>, index: number) {
     this.index = index; // 属于source多边形还是clip多边形，0和1区别
     const segments: Array<Segment> = this.segments = [];
     // 多边形有>=1个区域，一般是1个
-    if(!Array.isArray(regions)) {
+    if (!Array.isArray(regions)) {
       return;
     }
     regions.forEach(vertices => {
       // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
-      if(!Array.isArray(vertices) || vertices.length < 2) {
+      if (!Array.isArray(vertices) || vertices.length < 2) {
         return;
       }
-      if(vertices.length === 2 && vertices[1].length <= 2) {
+      if (vertices.length === 2 && vertices[1].length <= 2) {
         return;
       }
       let startPoint = new Point(vertices[0][0], vertices[0][1]), firstPoint = startPoint;
       // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
-      for(let i = 1, len = vertices.length; i < len; i++) {
-        let curr = vertices[i], l = curr.length;
+      for (let i = 1, len = vertices.length; i < len; i++) {
+        const curr = vertices[i], l = curr.length;
         // 闭合区域，首尾顶点重复统一
-        let endPoint = new Point(curr[l - 2], curr[l - 1]);
+        const endPoint = new Point(curr[l - 2], curr[l - 1]);
         let seg: Segment;
-        if(l === 2) {
+        if (l === 2) {
           // 长度为0的直线忽略
-          if(startPoint.equal(endPoint)) {
+          if (startPoint.equal(endPoint)) {
             continue;
           }
-          let coords = Point.compare(startPoint, endPoint) ? [
+          const coords = Point.compare(startPoint, endPoint) ? [
             endPoint,
             startPoint,
           ] : [
@@ -56,22 +57,22 @@ class Polygon {
           seg = new Segment(coords, index);
         }
         // 曲线需确保x单调性，如果非单调，则切割为单调的多条
-        else if(l === 4) {
+        else if (l === 4) {
           // 长度为0的曲线忽略
-          if(startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1]) {
+          if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1]) {
             continue;
           }
-          let cPoint = new Point(curr[0], curr[1]);
-          let t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
-          if(t) {
-            let points: Array<[number, number]> = [
+          const cPoint = new Point(curr[0], curr[1]);
+          const t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
+          if (t) {
+            const points: Array<[number, number]> = [
               [startPoint.x, startPoint.y],
               [curr[0], curr[1]],
               [endPoint.x, endPoint.y],
             ];
-            let curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
-            let curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1);
-            let p1 = new Point(curve1[1].x, curve1[1].y),
+            const curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
+            const curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1);
+            const p1 = new Point(curve1[1].x, curve1[1].y),
               p2 = new Point(curve1[2].x, curve1[2].y),
               p3 = new Point(curve2[1].x, curve2[1].y);
             let coords = Point.compare(startPoint, p2) ? [
@@ -96,7 +97,7 @@ class Polygon {
             seg = new Segment(coords, index);
           }
           else {
-            let coords = Point.compare(startPoint, endPoint) ? [
+            const coords = Point.compare(startPoint, endPoint) ? [
               endPoint,
               cPoint,
               startPoint,
@@ -109,23 +110,23 @@ class Polygon {
           }
         }
         // 3阶可能有2个单调改变t点
-        else if(l === 6) {
+        else if (l === 6) {
           // 降级为2阶曲线
-          if(curr[0] === curr[2] && curr[1] === curr[3]) {
+          if (curr[0] === curr[2] && curr[1] === curr[3]) {
             curr.splice(2, 2);
             i--;
             continue;
           }
           // 长度为0的曲线忽略
-          if(startPoint.equal(endPoint)
+          if (startPoint.equal(endPoint)
             && startPoint.x === curr[0] && startPoint.y === curr[1]
             && startPoint.x === curr[2] && startPoint.y === curr[3]) {
             continue;
           }
-          let cPoint1 = new Point(curr[0], curr[1]), cPoint2 = new Point(curr[2], curr[3]);
-          let t = getBezierMonotonicity([startPoint, cPoint1, cPoint2, endPoint], true);
-          if(t) {
-            let points: Array<[number, number]> = [
+          const cPoint1 = new Point(curr[0], curr[1]), cPoint2 = new Point(curr[2], curr[3]);
+          const t = getBezierMonotonicity([startPoint, cPoint1, cPoint2, endPoint], true);
+          if (t) {
+            const points: Array<[number, number]> = [
               [startPoint.x, startPoint.y],
               [curr[0], curr[1]],
               [curr[2], curr[3]],
@@ -133,11 +134,11 @@ class Polygon {
             ];
             let lastPoint = startPoint, lastT = 0;
             t.forEach(t => {
-              let curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t);
-              let p1 = new Point(curve[1].x, curve[1].y),
+              const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t);
+              const p1 = new Point(curve[1].x, curve[1].y),
                 p2 = new Point(curve[2].x, curve[2].y),
-                p3 = new Point(curve[3].x ,curve[3].y);
-              let coords = Point.compare(lastPoint, p3) ? [
+                p3 = new Point(curve[3].x, curve[3].y);
+              const coords = Point.compare(lastPoint, p3) ? [
                 p3,
                 p2,
                 p1,
@@ -152,10 +153,10 @@ class Polygon {
               lastT = t;
               lastPoint = p3;
             });
-            let curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1);
-            let p1 = new Point(curve[1].x, curve[1].y),
+            const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1);
+            const p1 = new Point(curve[1].x, curve[1].y),
               p2 = new Point(curve[2].x, curve[2].y);
-            let coords = Point.compare(lastPoint, endPoint) ? [
+            const coords = Point.compare(lastPoint, endPoint) ? [
               endPoint,
               p2,
               p1,
@@ -169,7 +170,7 @@ class Polygon {
             seg = new Segment(coords, index);
           }
           else {
-            let coords = Point.compare(startPoint, endPoint) ? [
+            const coords = Point.compare(startPoint, endPoint) ? [
               endPoint,
               cPoint2,
               cPoint1,
@@ -188,8 +189,8 @@ class Polygon {
         startPoint = endPoint;
       }
       // 强制要求闭合，非闭合自动连直线到开始点闭合
-      if(!startPoint.equal(firstPoint)) {
-        let coords = Point.compare(startPoint, firstPoint) ? [
+      if (!startPoint.equal(firstPoint)) {
+        const coords = Point.compare(startPoint, firstPoint) ? [
           firstPoint,
           startPoint,
         ] : [
@@ -203,7 +204,7 @@ class Polygon {
 
   // 根据y坐标排序，生成有序线段列表，再扫描求交
   selfIntersect() {
-    let list = genHashXList(this.segments);
+    const list = genHashXList(this.segments);
     this.segments = findIntersection(list, false, false, false);
   }
 
@@ -223,12 +224,12 @@ class Polygon {
 
   // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交
   static intersect2(polyA: Polygon, polyB: Polygon, isIntermediateA: boolean, isIntermediateB: boolean) {
-    if(!polyA.segments.length || !polyB.segments.length) {
+    if (!polyA.segments.length || !polyB.segments.length) {
       return;
     }
 
-    let list = genHashXList(polyA.segments.concat(polyB.segments));
-    let segments = findIntersection(list, true, isIntermediateA, isIntermediateB);
+    const list = genHashXList(polyA.segments.concat(polyB.segments));
+    const segments = findIntersection(list, true, isIntermediateA, isIntermediateB);
     polyA.segments = segments.filter(item => item.belong === 0);
     polyB.segments = segments.filter(item => item.belong === 1);
   }
@@ -243,31 +244,37 @@ class Polygon {
    * 其余的边根据自己下方相邻即可确定填充性
    */
   static annotate2(polyA: Polygon, polyB: Polygon, isIntermediateA: boolean, isIntermediateB: boolean) {
-    let list = genHashXYList(polyA.segments.concat(polyB.segments));
-    let aelA: Array<Segment> = [], aelB: Array<Segment> = [], hashA: any = {}, hashB: any = {};
+    const list = genHashXYList(polyA.segments.concat(polyB.segments));
+    const aelA: Array<Segment> = [], aelB: Array<Segment> = [], hashA: any = {}, hashB: any = {};
     // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
     // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
     list.forEach(item => {
-      let { isStart, seg } = item;
-      let belong = seg.belong;
+      const { isStart, seg } = item;
+      const belong = seg.belong;
       // 连续操作时，已有的中间结果可以跳过
-      if(belong === 0 && isIntermediateA || belong === 1 && isIntermediateB) {
+      if (belong === 0 && isIntermediateA || belong === 1 && isIntermediateB) {
         return;
       }
-      let ael: Array<Segment> = belong === 0 ? aelA : aelB, hash = belong === 0 ? hashA : hashB;
-      if(isStart) {
+      const ael: Array<Segment> = belong === 0 ? aelA : aelB, hash = belong === 0 ? hashA : hashB;
+      if (isStart) {
         // 自己重合的线段只考虑第一条，其它剔除
-        if(seg.myCoincide) {
-          let hc = seg.toHash();
-          if(hash.hasOwnProperty(hc)) {
+        if (seg.myCoincide) {
+          const hc = seg.toHash();
+          if (hash.hasOwnProperty(hc)) {
             return;
           }
           hash[hc] = true;
         }
+        // @ts-ignore
+        if (window.ttt) {
+          if (seg.uuid === 23) {
+            // debugger;
+          }
+        }
         // console.error(seg.toString(), ael.length)
         // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
-        if(!ael.length) {
-          if(seg.myCoincide) {
+        if (!ael.length) {
+          if (seg.myCoincide) {
             seg.myFill[0] = seg.myCoincide % 2 === 0;
           }
           else {
@@ -277,12 +284,12 @@ class Polygon {
         }
         else {
           // 插入到ael正确的位置，按照x升序、y升序
-          let len = ael.length, top = ael[len - 1];
-          let isAboveLast = segAboveCompare(seg, top);
+          const len = ael.length, top = ael[len - 1];
+          const isAboveLast = segAboveCompare(seg, top);
           // 比ael栈顶还高在最上方
-          if(isAboveLast) {
+          if (isAboveLast) {
             seg.myFill[1] = top.myFill[0];
-            if(seg.myCoincide) {
+            if (seg.myCoincide) {
               seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
             }
             else {
@@ -291,8 +298,8 @@ class Polygon {
             ael.push(seg);
           }
           // 不高且只有1个则在最下方
-          else if(len === 1) {
-            if(seg.myCoincide) {
+          else if (len === 1) {
+            if (seg.myCoincide) {
               seg.myFill[0] = seg.myCoincide % 2 === 0;
             }
             else {
@@ -302,12 +309,12 @@ class Polygon {
           }
           else {
             // 遍历，尝试对比是否在ael栈中相邻2条线段之间
-            for(let i = len - 2; i >= 0; i--) {
-              let curr = ael[i];
-              let isAbove = segAboveCompare(seg, curr);
-              if(isAbove) {
+            for (let i = len - 2; i >= 0; i--) {
+              const curr = ael[i];
+              const isAbove = segAboveCompare(seg, curr);
+              if (isAbove) {
                 seg.myFill[1] = curr.myFill[0];
-                if(seg.myCoincide) {
+                if (seg.myCoincide) {
                   seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
                 }
                 else {
@@ -316,8 +323,8 @@ class Polygon {
                 ael.splice(i + 1, 0, seg);
                 break;
               }
-              else if(i === 0) {
-                if(seg.myCoincide) {
+              else if (i === 0) {
+                if (seg.myCoincide) {
                   seg.myFill[0] = seg.myCoincide % 2 === 0;
                 }
                 else {
@@ -331,39 +338,47 @@ class Polygon {
         // console.warn(seg.toString())
       }
       else {
-        let i = ael.indexOf(seg);
+        const i = ael.indexOf(seg);
         // 一般肯定有，重合线段会剔除不进ael
-        if(i > -1) {
+        if (i > -1) {
           ael.splice(i, 1);
         }
       }
     });
     // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
     // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
-    let ael: any = [], hash: any = {};
-    list.forEach(item => {
-      let { isStart, seg } = item;
-      let belong = seg.belong;
-      if(isStart) {
+    const ael: any = [], hash: any = {};
+    // @ts-ignore
+    if (window.ttt) {
+      // console.log('ael');
+      // console.table(list.map(item => [item.isStart, item.seg.uuid, ...item.seg.toString().split(' ')]));
+    }
+    list.forEach((item, i) => {
+      const { isStart, seg } = item;
+      const belong = seg.belong;
+      if (isStart) {
         // 自重合或者它重合统一只保留第一条线
-        if(seg.myCoincide || seg.otherCoincide) {
-          let hc = seg.toHash();
-          if(hash.hasOwnProperty(hc)) {
+        if (seg.myCoincide || seg.otherCoincide) {
+          const hc = seg.toHash();
+          if (hash.hasOwnProperty(hc)) {
             return;
           }
           hash[hc] = true;
         }
-        // console.error(seg.toString(), ael.length)
+        // @ts-ignore
+        if (window.ttt) {
+          // console.error(i, seg.toString(), ael.length);
+        }
         let inside = false;
-        if(!ael.length) {
+        if (!ael.length) {
           inside = false;
           ael.push(seg);
         }
         else {
-          let len = ael.length, top = ael[len - 1];
-          let isAboveLast = segAboveCompare(seg, top);
-          if(isAboveLast) {
-            if(top.belong === belong) {
+          const len = ael.length, top = ael[len - 1];
+          const isAboveLast = segAboveCompare(seg, top);
+          if (isAboveLast) {
+            if (top.belong === belong) {
               inside = top.otherFill[0];
             }
             else {
@@ -371,17 +386,17 @@ class Polygon {
             }
             ael.push(seg);
           }
-          else if(len === 1) {
+          else if (len === 1) {
             // inside = false;
             ael.unshift(seg);
           }
           else {
-            for(let i = len - 2; i >= 0; i--) {
-              let curr = ael[i];
-              let isAbove = segAboveCompare(seg, curr);
-              if(isAbove) {
+            for (let i = len - 2; i >= 0; i--) {
+              const curr = ael[i];
+              const isAbove = segAboveCompare(seg, curr);
+              if (isAbove) {
                 // 如果在自己的下方线和自己同色，则取下方线的另外色上填充
-                if(curr.belong === belong) {
+                if (curr.belong === belong) {
                   inside = curr.otherFill[0];
                 }
                 // 否则取下方线的下方色上填充
@@ -391,7 +406,7 @@ class Polygon {
                 ael.splice(i + 1, 0, seg);
                 break;
               }
-              else if(i === 0) {
+              else if (i === 0) {
                 // inside = false;
                 ael.unshift(seg);
               }
@@ -399,53 +414,67 @@ class Polygon {
           }
         }
         // 重合线的otherFill直接引用指向对方myFill，不能普通计算
-        if(!seg.otherCoincide) {
+        if (!seg.otherCoincide) {
           seg.otherFill[0] = inside;
           seg.otherFill[1] = inside;
         }
-        // console.warn(seg.toString(), inside)
+        // @ts-ignore
+        if (window.ttt) {
+          // console.warn(seg.toString(), inside)
+        }
       }
       else {
-        let i = ael.indexOf(seg);
-        if(i > -1) {
+        const i = ael.indexOf(seg);
+        if (i > -1) {
           ael.splice(i, 1);
         }
       }
     });
+    // @ts-ignore
+    if (window.ttt) {
+      // console.log('ael2');
+      // console.table(list.map(item => [item.isStart, item.seg.uuid, ...item.seg.toString().split(' ')]));
+    }
   }
 }
 
+/**
+ * 求交，分为2大块，1是自相交，需要考虑一定精度误差，相交的点如果离原本顶点很近，就认为不相交，
+ * 这种情况一般出现在两条共点线段上，曲线尤甚，不能认为它们相交，此时eps误差可以传一个小精度数值如1e-9。
+ * 2是互交，误差考虑要谨慎，如果还是1e-9，会被忽略然后在注释颜色那里出错，此时eps应该考虑0
+ */
 function findIntersection(list: any, compareBelong: boolean, isIntermediateA: boolean, isIntermediateB: boolean) {
+  const eps = compareBelong ? 1e-9 : 1e-9;
   // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
-  let ael: Array<Segment> = [], delList: Array<Segment> = [], segments: Array<Segment> = [];
-  while(list.length) {
-    if(delList.length) {
+  const ael: Array<Segment> = [], delList: Array<Segment> = [], segments: Array<Segment> = [];
+  while (list.length) {
+    if (delList.length) {
       delList.splice(0).forEach(seg => {
-        let i = ael.indexOf(seg);
+        const i = ael.indexOf(seg);
         ael.splice(i, 1);
-        if(!seg.isDeleted) {
+        if (!seg.isDeleted) {
           segments.push(seg);
         }
       });
     }
 
-    let { x, arr } = list[0];
-    while(arr.length) {
-      let seg = arr.shift();
+    const { x, arr } = list[0];
+    while (arr.length) {
+      const seg = arr.shift();
       // 被切割的老线段无效
-      if(seg.isDeleted) {
+      if (seg.isDeleted) {
         continue;
       }
-      let belong = seg.belong, bboxA = seg.bbox;
+      const belong = seg.belong, bboxA = seg.bbox;
       // 第2次访问边是离开活动，考虑删除
-      if(seg.isVisited) {
+      if (seg.isVisited) {
         // console.warn(x, seg.toString());
         // console.log(ael.map(item => item.toString()));
         // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
-        if(bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
-          let i = ael.indexOf(seg);
+        if (bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
+          const i = ael.indexOf(seg);
           ael.splice(i, 1);
-          if(!seg.isDeleted) {
+          if (!seg.isDeleted) {
             segments.push(seg);
           }
         }
@@ -460,27 +489,33 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
         // console.error(x, seg.toString(), ael.length);
         // console.log(ael.map(item => item.toString()));
         // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
-        if(ael.length) {
-          let coordsA = seg.coords, lenA = coordsA.length;
-          let { x: ax1, y: ay1 } = coordsA[0];
-          let { x: ax2, y: ay2 } = coordsA[1];
-          for(let i = 0; i < ael.length; i++) {
-            let item = ael[i];
+        if (ael.length) {
+          const coordsA = seg.coords, lenA = coordsA.length;
+          const { x: ax1, y: ay1 } = coordsA[0];
+          const { x: ax2, y: ay2 } = coordsA[1];
+          for (let i = 0; i < ael.length; i++) {
+            const item = ael[i];
             // 被切割的老线段无效，注意seg切割过程中可能变成删除
-            if(item.isDeleted || seg.isDeleted) {
+            if (item.isDeleted || seg.isDeleted) {
               continue;
             }
+            // @ts-ignore
+            if (window.ttt) {
+              if (seg.uuid === 15 || item.uuid === 15) {
+                // debugger
+              }
+            }
             // 互交所属belong不同才进行检测，自交则不检查belong
-            if(compareBelong && item.belong === belong) {
+            if (compareBelong && item.belong === belong) {
               continue;
             }
             // bbox相交才考虑真正计算，加速
-            let bboxB = item.bbox, coordsB = item.coords, lenB = coordsB.length;
-            let isSourceReverted = false; // 求交可能a、b线主从互换
-            if(isRectsOverlap(bboxA, bboxB, lenA, lenB)) {
+            const bboxB = item.bbox, coordsB = item.coords, lenB = coordsB.length;
+            let isSourceReverted = false; // 求交可能a、b线主从互换，公式要求a的阶数>=b的
+            if (isRectsOverlap(bboxA, bboxB, lenA, lenB)) {
               // 完全重合简化，同矩形的线myFill共享，对方矩形互换otherFill
-              if(lenA === lenB && seg.equal(item)) {
-                if(compareBelong) {
+              if (lenA === lenB && seg.equal(item)) {
+                if (compareBelong) {
                   // 因为一定不自交，所以重合线不会被分割
                   seg.otherCoincide++;
                   item.otherCoincide++;
@@ -494,27 +529,27 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                 }
                 continue;
               }
-              let { x: bx1, y: by1 } = coordsB[0];
-              let { x: bx2, y: by2 } = coordsB[1];
+              const { x: bx1, y: by1 } = coordsB[0];
+              const { x: bx2, y: by2 } = coordsB[1];
               let inters, overs;
               // a是直线
-              if(lenA === 2) {
+              if (lenA === 2) {
                 // b是直线
-                if(lenB === 2) {
-                  let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+                if (lenB === 2) {
+                  const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
                   // 平行检查是否重合，否则求交
-                  if(d === 0) {
+                  if (d === 0) {
                     // 垂线特殊，y=kx+b没法求
-                    if(ax1 === ax2) {
-                      if(ax1 === bx1 && ax2 === bx2) {
+                    if (ax1 === ax2) {
+                      if (ax1 === bx1 && ax2 === bx2) {
                         overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg,
                           bx1, by1, bx2, by2, item, true);
                       }
                     }
                     else {
-                      let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
-                      let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
-                      if(b1 === b2) {
+                      const b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                      const b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                      if (b1 === b2) {
                         overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg,
                           bx1, by1, bx2, by2, item, false);
                       }
@@ -522,79 +557,79 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                   }
                   else {
                     inters = getIntersectionLineLine(ax1, ay1, ax2, ay2,
-                      bx1, by1, bx2, by2, d);
+                      bx1, by1, bx2, by2, d, eps);
                   }
                 }
                 // b是曲线
                 else {
-                  let { x: bx3, y: by3 } = coordsB[2];
+                  const { x: bx3, y: by3 } = coordsB[2];
                   // b是2阶曲线
-                  if(lenB === 3) {
+                  if (lenB === 3) {
                     inters = getIntersectionBezier2Line(bx1, by1, bx2, by2, bx3, by3,
-                      ax1, ay1, ax2, ay2);
+                      ax1, ay1, ax2, ay2, eps);
                     isSourceReverted = true;
                   }
                   // b是3阶曲线
                   else {
-                    let { x: bx4, y: by4 } = coordsB[3];
+                    const { x: bx4, y: by4 } = coordsB[3];
                     inters = getIntersectionBezier3Line(bx1, by1, bx2, by2, bx3, by3, bx4, by4,
-                      ax1, ay1, ax2, ay2);
+                      ax1, ay1, ax2, ay2, eps);
                     isSourceReverted = true;
                   }
                 }
               }
               // a是曲线
               else {
-                let { x: ax3, y: ay3 } = coordsA[2];
+                const { x: ax3, y: ay3 } = coordsA[2];
                 // a是2阶曲线
-                if(lenA === 3) {
+                if (lenA === 3) {
                   // b是直线
-                  if(lenB === 2) {
+                  if (lenB === 2) {
                     inters = getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
-                      bx1, by1, bx2, by2);
+                      bx1, by1, bx2, by2, eps);
                   }
                   // b是曲线
                   else {
-                    let { x: bx3, y: by3 } = coordsB[2];
+                    const { x: bx3, y: by3 } = coordsB[2];
                     // b是2阶曲线
-                    if(lenB === 3) {
+                    if (lenB === 3) {
                       inters = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
-                        bx1, by1, bx2, by2, bx3, by3);
-                      if(!inters) {
+                        bx1, by1, bx2, by2, bx3, by3, eps);
+                      if (!inters) {
                         overs = checkOverlapBezier(seg, item);
                       }
                     }
                     // b是3阶曲线
                     else {
-                      let { x: bx4, y: by4 } = coordsB[3];
+                      const { x: bx4, y: by4 } = coordsB[3];
                       inters = getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
-                        bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+                        bx1, by1, bx2, by2, bx3, by3, bx4, by4, eps);
                     }
                   }
                 }
                 // a是3阶曲线
                 else {
-                  let { x: ax4, y: ay4 } = coordsA[3];
+                  const { x: ax4, y: ay4 } = coordsA[3];
                   // b是直线
-                  if(lenB === 2) {
+                  if (lenB === 2) {
                     inters = getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
-                      bx1, by1, bx2, by2);
+                      bx1, by1, bx2, by2, eps);
                   }
                   // b是曲线
                   else {
-                    let { x: bx3, y: by3 } = coordsB[2];
+                    const { x: bx3, y: by3 } = coordsB[2];
                     // b是2阶曲线
-                    if(lenB === 3) {
+                    if (lenB === 3) {
                       inters = getIntersectionBezier2Bezier3(bx1, by1, bx2, by2, bx3, by3,
-                        ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4);
+                        ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, eps);
                       isSourceReverted = true;
                     }
                     // b是3阶曲线
                     else {
-                      let { x: bx4, y: by4 } = coordsB[3];
+                      const { x: bx4, y: by4 } = coordsB[3];
                       inters = getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
-                        bx1, by1, bx2, by2, bx3, by3, bx4, by4);
-                      if(!inters) {
+                        bx1, by1, bx2, by2, bx3, by3, bx4, by4, eps);
+                      if (!inters) {
                         overs = checkOverlapBezier(seg, item);
                       }
                     }
@@ -602,7 +637,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                 }
               }
               // 有重合的，重合线段已经求好，直接使用
-              if(overs) {
+              if (overs) {
                 activeNewSeg(segments, list, ael, x, overs.ra);
                 activeNewSeg(segments, list, ael, x, overs.rb);
                 seg.isDeleted = item.isDeleted = true;
@@ -610,21 +645,53 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                 break;
               }
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
-              else if(inters && inters.length) {
+              else if (inters && inters.length) {
+                // @ts-ignore
+                if (window.ttt2) {
+                  // console.warn('inters',isSourceReverted,coordsA.map((item: any) => item), coordsB.map((item: any) => item), inters.map(item => JSON.stringify(item)));
+                }
+                // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
+                // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
+                for (let i = 0, len = inters.length; i < len; i++) {
+                  const pt = inters[i]!;
+                  // 只会有一种可能，如果交点对2条线都是误差忽略，求交时已经被屏蔽
+                  if (pt.toSource <= eps) {
+                    pt.point = isSourceReverted ? coordsB[0] : coordsA[0];
+                  }
+                  else if (pt.toSource >= (1 - eps)) {
+                    pt.point = isSourceReverted ? coordsB[coordsB.length - 1] : coordsA[coordsA.length - 1];
+                  }
+                  else if (pt.toClip <= eps) {
+                    pt.point = isSourceReverted ? coordsA[0] : coordsB[0];
+                  }
+                  else if (pt.toClip >= (1 - eps)) {
+                    pt.point = isSourceReverted ? coordsA[coordsA.length - 1] : coordsB[coordsB.length - 1];
+                  }
+                }
                 // console.log('inters', i, inters);
-                let pa = sortIntersection(inters!, !isSourceReverted);
+                const pa = sortIntersection(inters!, !isSourceReverted);
                 // console.log(pa);
+                const pb = sortIntersection(inters!, isSourceReverted);
+                // console.log(pb);
                 let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                 // console.log(ra.map(item => item.toString()));
-                let pb = sortIntersection(inters!, isSourceReverted);
-                // console.log(pb);
                 let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));
+                // @ts-ignore
+                if (window.ttt2) {
+                  // console.log(ra.map(item => item.toString()), x)
+                  // console.log(x, pa, ra.map(item => item.coords));
+                  // console.log(pb, rb.map(item => item.coords));
+                }
                 // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                 activeNewSeg(segments, list, ael, x, ra);
                 activeNewSeg(segments, list, ael, x, rb);
+                // @ts-ignore
+                if (window.ttt2) {
+                  // console.log(ra.map(item => item.toString()))
+                }
                 // 老的线段被删除无效了，踢出ael，防止seg没被分割
-                if(rb.length) {
+                if (rb.length) {
                   ael.splice(i, 1);
                 }
                 break;
@@ -633,7 +700,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
           }
         }
         // 不相交切割才进入ael
-        if(!seg.isDeleted) {
+        if (!seg.isDeleted) {
           ael.push(seg);
           seg.isVisited = true;
         }
@@ -644,7 +711,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
   }
   // 最后面的线
   delList.forEach(seg => {
-    if(!seg.isDeleted) {
+    if (!seg.isDeleted) {
       segments.push(seg);
     }
   });
@@ -652,44 +719,72 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
   return segments.filter(item => !item.isDeleted);
 }
 
-// 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
+// 给定交点列表分割线段，ps切割点需排好顺序从头到尾，切割后的线段坐标需特别注意，
+// 因为精度的问题，可能切割点并不是十分严格的在线段上，从而造成不是按x增量排序的
 function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
-  let res: Array<Segment> = [];
-  if(!ps.length) {
+  const res: Array<Segment> = [];
+  if (!ps.length) {
     return res;
   }
-  let belong = seg.belong, coords = seg.coords, len = coords.length;
+  const belong = seg.belong, coords = seg.coords, len = coords.length;
   let startPoint = coords[0];
   let lastT = 0;
   // 多个点可能截取多条，最后一条保留只修改数据，其它新生成
   ps.forEach(item => {
-    let point = item.point, t = item.t;
+    const point = item.point, t = item.t;
     let ns: Segment;
-    if(len === 2) {
-      ns = new Segment([
-        startPoint,
-        point,
-      ], belong);
+    if (len === 2) {
+      if (Point.compare(startPoint, point)) {
+        ns = new Segment([
+          point,
+          startPoint,
+        ], belong);
+      }
+      else {
+        ns = new Segment([
+          startPoint,
+          point,
+        ], belong);
+      }
     }
-    else if(len === 3) {
-      let c = bezier.sliceBezier2Both(coords, lastT, t);
-      ns = new Segment([
-        startPoint,
-        new Point(c[1].x, c[1].y),
-        point,
-      ], belong);
+    else if (len === 3) {
+      const c = bezier.sliceBezier2Both(coords, lastT, t);
+      if (Point.compare(startPoint, point)) {
+        ns = new Segment([
+          point,
+          new Point(c[1].x, c[1].y),
+          startPoint,
+        ], belong);
+      }
+      else {
+        ns = new Segment([
+          startPoint,
+          new Point(c[1].x, c[1].y),
+          point,
+        ], belong);
+      }
     }
-    else if(len === 4) {
-      let c = bezier.sliceBezier2Both(coords, lastT, t);
-      ns = new Segment([
-        startPoint,
-        new Point(c[1].x, c[1].y),
-        new Point(c[2].x, c[2].y),
-        point,
-      ], belong);
+    else if (len === 4) {
+      const c = bezier.sliceBezier2Both(coords, lastT, t);
+      if (Point.compare(startPoint, point)) {
+        ns = new Segment([
+          point,
+          new Point(c[2].x, c[2].y),
+          new Point(c[1].x, c[1].y),
+          startPoint,
+        ], belong);
+      }
+      else {
+        ns = new Segment([
+          startPoint,
+          new Point(c[1].x, c[1].y),
+          new Point(c[2].x, c[2].y),
+          point,
+        ], belong);
+      }
     }
     // 连续操作的中间结果已有自己内外性，截取时需继承
-    if(isIntermediate) {
+    if (isIntermediate) {
       ns!.myFill[0] = seg.myFill[0];
       ns!.myFill[1] = seg.myFill[1];
     }
@@ -699,30 +794,57 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
   });
   // 最后一条
   let ns: Segment;
-  if(len === 2) {
-    ns = new Segment([
-      startPoint,
-      coords[1],
-    ], belong);
+  if (len === 2) {
+    if (Point.compare(startPoint, coords[1])) {
+      ns = new Segment([
+        coords[1],
+        startPoint,
+      ], belong);
+    }
+    else {
+      ns = new Segment([
+        startPoint,
+        coords[1],
+      ], belong);
+    }
   }
-  else if(len === 3) {
-    let c = bezier.sliceBezier2Both(coords, lastT, 1);
-    ns = new Segment([
-      startPoint,
-      new Point(c[1].x, c[1].y),
-      coords[2],
-    ], belong);
+  else if (len === 3) {
+    const c = bezier.sliceBezier2Both(coords, lastT, 1);
+    if (Point.compare(startPoint, coords[2])) {
+      ns = new Segment([
+        coords[2],
+        new Point(c[1].x, c[1].y),
+        startPoint,
+      ], belong);
+    }
+    else {
+      ns = new Segment([
+        startPoint,
+        new Point(c[1].x, c[1].y),
+        coords[2],
+      ], belong);
+    }
   }
-  else if(len === 4) {
-    let c = bezier.sliceBezier2Both(coords, lastT, 1);
-    ns = new Segment([
-      startPoint,
-      new Point(c[1].x, c[1].y),
-      new Point(c[2].x, c[2].y),
-      coords[3],
-    ], belong);
+  else if (len === 4) {
+    const c = bezier.sliceBezier2Both(coords, lastT, 1);
+    if (Point.compare(startPoint, coords[3])) {
+      ns = new Segment([
+        coords[3],
+        new Point(c[2].x, c[2].y),
+        new Point(c[1].x, c[1].y),
+        startPoint,
+      ], belong);
+    }
+    else {
+      ns = new Segment([
+        startPoint,
+        new Point(c[1].x, c[1].y),
+        new Point(c[2].x, c[2].y),
+        coords[3],
+      ], belong);
+    }
   }
-  if(isIntermediate) {
+  if (isIntermediate) {
     ns!.myFill[0] = seg.myFill[0];
     ns!.myFill[1] = seg.myFill[1];
   }
@@ -735,30 +857,30 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
 // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
 function activeNewSeg(segments: Array<Segment>, list: any[], ael: Array<Segment>, x: number, ns: Array<Segment>) {
   ns.forEach(seg => {
-    let bbox = seg.bbox, x1 = bbox[0], x2 = bbox[2];
+    const bbox = seg.bbox, x1 = bbox[0], x2 = bbox[2];
     // console.log(seg.toString(), x1, x2, x);
     // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
-    if(x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
+    if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
       segments.push(seg);
       return;
     }
     // 按顺序放在list的正确位置，可能x1已经过去不需要加入了，但要考虑ael
     let i = 0;
-    if(x1 < x) {
+    if (x1 < x) {
       seg.isVisited = true;
       ael.push(seg);
     }
     else {
-      for(let len = list.length; i < len; i++) {
-        let item = list[i];
-        let lx = item.x;
-        if(x1 === lx) {
+      for (let len = list.length; i < len; i++) {
+        const item = list[i];
+        const lx = item.x;
+        if (x1 === lx) {
           item.arr.push(seg);
           break;
         }
         // 新的插入
-        if(x1 < lx) {
-          let temp = {
+        if (x1 < lx) {
+          const temp = {
             x: x1,
             arr: [seg],
           };
@@ -768,16 +890,16 @@ function activeNewSeg(segments: Array<Segment>, list: any[], ael: Array<Segment>
       }
     }
     // x2一定会加入
-    for(let len = list.length; i < len; i++) {
-      let item = list[i];
-      let lx = item.x;
-      if(x2 === lx) {
+    for (let len = list.length; i < len; i++) {
+      const item = list[i];
+      const lx = item.x;
+      if (x2 === lx) {
         // 访问过的尽可能排在前面早出栈，减少对比次数
         item.arr.unshift(seg);
         break;
       }
-      if(x2 < lx) {
-        let temp = {
+      if (x2 < lx) {
+        const temp = {
           x: x2,
           arr: [seg],
         };
@@ -790,26 +912,26 @@ function activeNewSeg(segments: Array<Segment>, list: any[], ael: Array<Segment>
 
 // 按x升序将所有线段组成一个垂直扫描线列表，求交用，y方向不用管
 function genHashXList(segments: Array<Segment>) {
-  let hashX: any = {};
+  const hashX: any = {};
   segments.forEach(seg => {
-    let bbox = seg.bbox, min = bbox[0], max = bbox[2];
+    const bbox = seg.bbox, min = bbox[0], max = bbox[2];
     putHashX(hashX, min, seg);
     putHashX(hashX, max, seg);
   });
-  let list: Array<{ x: number, arr: Array<Segment> }> = [];
+  const list: Array<{ x: number, arr: Array<Segment> }> = [];
   Object.keys(hashX).forEach(x => list.push({
     x: parseFloat(x),
     arr: hashX[x],
   }));
-  return list.sort(function(a, b) {
+  return list.sort(function (a, b) {
     return a.x - b.x;
   });
 }
 
 // 每个线段会放2次，开始点和结束点，哪怕x相同，第1次是开始用push，第2次结束unshift，这样离开时排在前面
 function putHashX(hashX: any, x: number, seg: Segment) {
-  let list = hashX[x] = hashX[x] || [];
-  if(seg.isVisited) {
+  const list = hashX[x] = hashX[x] || [];
+  if (seg.isVisited) {
     list.unshift(seg);
     seg.isVisited = false;
   }
@@ -821,25 +943,36 @@ function putHashX(hashX: any, x: number, seg: Segment) {
 
 // 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
 function genHashXYList(segments: Array<Segment>) {
-  let hashXY: any = {};
+  const hashXY: any = {};
   segments.forEach(seg => {
-    let coords = seg.coords, l = coords.length;
-    let start = coords[0], end = coords[l - 1];
+    const coords = seg.coords, l = coords.length;
+    const start = coords[0], end = coords[l - 1];
+    // @ts-ignore
+    if (window.ttt && seg.uuid === 23) {
+      // console.log(start, end);
+    }
     putHashXY(hashXY, start.x, start.y, seg, true);
     putHashXY(hashXY, end.x, end.y, seg, false);
   });
-  let listX:  Array<{ x: number, arr: Array<{ y: number, arr: Array<{ isStart: boolean, seg: Segment }> }> }> = [];
+  const listX: Array<{ x: number, arr: Array<{ y: number, arr: Array<{ isStart: boolean, seg: Segment }> }> }> = [];
   Object.keys(hashXY).forEach(x => {
-    let hashY = hashXY[x];
-    let listY:  Array<{ y: number, arr: Array<{ isStart: boolean, seg: Segment }> }> = [];
+    const hashY = hashXY[x];
+    // @ts-ignore
+    if (window.ttt) {
+      // console.log(x, hashY)
+    }
+    const listY: Array<{ y: number, arr: Array<{ isStart: boolean, seg: Segment }> }> = [];
     Object.keys(hashY).forEach(y => {
-      let arr = hashY[y].sort(function(a: { isStart: boolean, seg: Segment }, b: { isStart: boolean, seg: Segment }) {
+      const arr = hashY[y].sort(function (a: { isStart: boolean, seg: Segment }, b: {
+        isStart: boolean,
+        seg: Segment
+      }) {
         // end优先于start先触发
-        if(a.isStart !== b.isStart) {
+        if (a.isStart !== b.isStart) {
           return a.isStart ? 1 : -1;
         }
         // start点相同看谁在上谁在下，下方在前，比y极大值，因为start相同又不相交，所以上方的y极值更大
-        if(a.isStart) {
+        if (a.isStart) {
           return segAboveCompare(a.seg, b.seg) ? 1 : -1;
         }
         // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
@@ -852,12 +985,12 @@ function genHashXYList(segments: Array<Segment>) {
     });
     listX.push({
       x: parseFloat(x),
-      arr: listY.sort(function(a, b) {
+      arr: listY.sort(function (a, b) {
         return a.y - b.y;
       }),
     });
   });
-  listX.sort(function(a, b) {
+  listX.sort(function (a, b) {
     return a.x - b.x;
   });
   let list: Array<{ isStart: boolean, seg: Segment }> = [];
@@ -870,8 +1003,8 @@ function genHashXYList(segments: Array<Segment>) {
 }
 
 function putHashXY(hashXY: any, x: number, y: number, seg: Segment, isStart: boolean) {
-  let hash = hashXY[x] = hashXY[x] || {};
-  let list = hash[y] = hash[y] || [];
+  const hash = hashXY[x] = hashXY[x] || {};
+  const list = hash[y] = hash[y] || [];
   list.push({
     isStart,
     seg,
@@ -880,21 +1013,21 @@ function putHashXY(hashXY: any, x: number, y: number, seg: Segment, isStart: boo
 
 // pt在线段left -> right的上方或线上
 function pointAboveOrOnLine(pt: Point, left: Point, right: Point) {
-  let { x, y } = pt;
-  let { x: x1, y: y1 } = left;
-  let { x: x2, y: y2 } = right;
+  const { x, y } = pt;
+  const { x: x1, y: y1 } = left;
+  const { x: x2, y: y2 } = right;
   return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
 }
 
 // a是否在b的上边，取x相同部分看y大小，只有start点事件时才判断
 function segAboveCompare(segA: Segment, segB: Segment) {
-  let ca = segA.coords, cb = segB.coords;
-  let la = ca.length, lb = cb.length;
-  let a1 = ca[0], b1 = cb[0];
+  const ca = segA.coords, cb = segB.coords;
+  const la = ca.length, lb = cb.length;
+  const a1 = ca[0], b1 = cb[0];
   // 两条直线用向量积判断，注意开始点是否相同即可
-  if(la === 2 && lb === 2) {
-    let a2 = ca[1], b2 = cb[1];
-    if(a1.equal(b1)) {
+  if (la === 2 && lb === 2) {
+    const a2 = ca[1], b2 = cb[1];
+    if (a1.equal(b1)) {
       return pointAboveOrOnLine(a2, b1, b2);
     }
     else {
@@ -902,41 +1035,41 @@ function segAboveCompare(segA: Segment, segB: Segment) {
     }
   }
   // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
-  if(la === 2 && a1.x === ca[1].x) {
+  if (la === 2 && a1.x === ca[1].x) {
     return b1.x >= a1.x;
   }
   // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
-  let x1 = Math.max(a1.x, b1.x), x3 = Math.min(ca[la - 1].x, cb[lb - 1].x), x2 = x1 + (x3 - x1) * 0.5;
-  if(a1 !== b1) {
-    let y1 = getYByX(ca, x1)!, y2 = getYByX(cb, x1)!;
-    if(y1 !== y2) {
+  const x1 = Math.max(a1.x, b1.x), x3 = Math.min(ca[la - 1].x, cb[lb - 1].x), x2 = x1 + (x3 - x1) * 0.5;
+  if (a1 !== b1) {
+    const y1 = getYByX(ca, x1)!, y2 = getYByX(cb, x1)!;
+    if (y1 !== y2) {
       return y1 > y2;
     }
   }
-  if(ca[la - 1] !== cb[lb - 1]) {
-    let y1 = getYByX(ca, x3)!, y2 = getYByX(cb, x3)!;
-    if(y1 !== y2) {
+  if (ca[la - 1] !== cb[lb - 1]) {
+    const y1 = getYByX(ca, x3)!, y2 = getYByX(cb, x3)!;
+    if (y1 !== y2) {
       return y1 > y2;
     }
   }
-  let y1 = getYByX(ca, x2)!, y2 = getYByX(cb, x2)!;
-  if(y1 !== y2) {
+  const y1 = getYByX(ca, x2)!, y2 = getYByX(cb, x2)!;
+  if (y1 !== y2) {
     return y1 > y2;
   }
 }
 
 // 获取曲线单调性t值，有结果才返回
 function getBezierMonotonicity(coords: Array<Point>, isX: boolean) {
-  if(coords.length === 3) {
-    let t = isX
+  if (coords.length === 3) {
+    const t = isX
       ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x)
       : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
-    if(t > 1e-9 && t < 1 - (1e-9)) {
+    if (t > 1e-9 && t < 1 - (1e-9)) {
       return [t];
     }
   }
-  else if(coords.length === 4) {
-    let t = equation.getRoots([
+  else if (coords.length === 4) {
+    const t = equation.getRoots([
       isX
         ? 3 * (coords[1].x - coords[0].x)
         : 3 * (coords[1].y - coords[0].y),
@@ -947,8 +1080,8 @@ function getBezierMonotonicity(coords: Array<Point>, isX: boolean) {
         ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x)
         : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y)
     ]).filter(i => i > 1e-9 && i < 1 - (1e-9));
-    if(t.length) {
-      return t.sort(function(a, b) {
+    if (t.length) {
+      return t.sort(function (a, b) {
         return a - b;
       });
     }
@@ -957,30 +1090,30 @@ function getBezierMonotonicity(coords: Array<Point>, isX: boolean) {
 
 // 根据x的值解得t后获取y，由于线段已经x单调，所以解只会有1个而非多个
 function getYByX(coords: Array<Point>, x: number) {
-  let len = coords.length;
-  if(x === coords[0].x) {
+  const len = coords.length;
+  if (x === coords[0].x) {
     return coords[0].y;
   }
-  if(x === coords[len - 1].x) {
+  if (x === coords[len - 1].x) {
     return coords[len - 1].y;
   }
-  if(len === 2) {
-    if(coords[0].y === coords[1].y) {
+  if (len === 2) {
+    if (coords[0].y === coords[1].y) {
       return coords[0].y;
     }
-    let p = (x - coords[0].x) / (coords[1].x - coords[0].x);
+    const p = (x - coords[0].x) / (coords[1].x - coords[0].x);
     return coords[0].y + p * (coords[1].y - coords[0].y);
   }
-  else if(len === 3) {
-    let t = equation.getRoots([
+  else if (len === 3) {
+    const t = equation.getRoots([
       coords[0].x - x,
       2 * (coords[1].x - coords[0].x),
       coords[2].x + coords[0].x - 2 * coords[1].x,
     ]).filter(i => i >= 0 && i <= 1);
     return bezier.pointByT(coords, t[0])!.x;
   }
-  else if(len === 4) {
-    let t = equation.getRoots([
+  else if (len === 4) {
+    const t = equation.getRoots([
       coords[0].x - x,
       3 * (coords[1].x - coords[0].x),
       3 * (coords[2].x + coords[0].x - 2 * coords[1].x),
@@ -991,17 +1124,17 @@ function getYByX(coords: Array<Point>, x: number) {
 }
 
 function isRectsOverlap(bboxA: Array<number>, bboxB: Array<number>, lenA: number, lenB: number) {
-  if(lenA === 2 && lenB === 2) {
+  if (lenA === 2 && lenB === 2) {
     // 2条垂线特殊考虑，此时x范围都是0，只能比较y
-    if(bboxA[0] === bboxA[2] && bboxB[0] === bboxB[2] && bboxA[0] === bboxA[2]) {
-      if(bboxA[1] >= bboxB[3] || bboxB[1] >= bboxA[3]) {
+    if (bboxA[0] === bboxA[2] && bboxB[0] === bboxB[2] && bboxA[0] === bboxA[2]) {
+      if (bboxA[1] >= bboxB[3] || bboxB[1] >= bboxA[3]) {
         return false;
       }
       return true;
     }
     // 2条水平线也是
-    if(bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
-      if(bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
+    if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+      if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
         return false;
       }
       return true;
@@ -1012,14 +1145,14 @@ function isRectsOverlap(bboxA: Array<number>, bboxB: Array<number>, lenA: number
 
 function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, segA: Segment,
                           bx1: number, by1: number, bx2: number, by2: number, segB: Segment, isY: boolean) {
-  let ra = [], rb = [];
-  let coordsA = segA.coords, coordsB = segB.coords;
-  if(ax1 < bx1 && !isY || ay1 < by1 && isY) {
+  const ra = [], rb = [];
+  const coordsA = segA.coords, coordsB = segB.coords;
+  if (ax1 < bx1 && !isY || ay1 < by1 && isY) {
     ra.push(new Segment([
       coordsA[0],
       coordsB[0],
     ], segA.belong));
-    if(ax2 < bx2 && !isY || ay2 < by2 && isY) {
+    if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
       ra.push(new Segment([
         coordsB[0],
         coordsA[1],
@@ -1033,7 +1166,7 @@ function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, se
         coordsB[1],
       ], segB.belong));
     }
-    else if(ax2 === bx2 && !isY || ay2 === by2 && isY) {
+    else if (ax2 === bx2 && !isY || ay2 === by2 && isY) {
       ra.push(new Segment([
         coordsB[0],
         coordsB[1],
@@ -1059,8 +1192,8 @@ function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, se
     }
   }
   // 不会出现完全重合即ax2 == bx2
-  else if(ax1 === bx1 && !isY || ay1 === by1 && isY) {
-    if(ax2 < bx2 && !isY || ay2 < by2 && isY) {
+  else if (ax1 === bx1 && !isY || ay1 === by1 && isY) {
+    if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
       ra.push(new Segment([
         coordsA[0],
         coordsA[1],
@@ -1095,7 +1228,7 @@ function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, se
       coordsB[0],
       coordsA[0],
     ], segB.belong));
-    if(ax2 < bx2 && !isY || ay2 < by2 && isY) {
+    if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
       ra.push(new Segment([
         coordsA[0],
         coordsA[1],
@@ -1109,7 +1242,7 @@ function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, se
         coordsB[1],
       ], segB.belong));
     }
-    else if(ax2 === bx2 && !isY || ay2 === by2 && isY) {
+    else if (ax2 === bx2 && !isY || ay2 === by2 && isY) {
       ra.push(new Segment([
         coordsA[0],
         coordsA[1],
@@ -1141,84 +1274,84 @@ function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, se
 }
 
 function checkOverlapBezier(segA: Segment, segB: Segment) {
-  let ca = segA.coords, la = ca.length;
-  let cb = segB.coords, lb = cb.length;
-  let firstA = ca[0], firstB = cb[0], lastA = ca[la - 1], lastB = cb[lb - 1];
-  let t1 = bezier.getPointT(ca, firstB.x, firstB.y);
-  let t2 = bezier.getPointT(ca, lastB.x, lastB.y);
-  let t3 = bezier.getPointT(cb, firstA.x, firstA.y);
-  let t4 = bezier.getPointT(cb, lastA.x, lastA.y);
+  const ca = segA.coords, la = ca.length;
+  const cb = segB.coords, lb = cb.length;
+  const firstA = ca[0], firstB = cb[0], lastA = ca[la - 1], lastB = cb[lb - 1];
+  const t1 = bezier.getPointT(ca, firstB.x, firstB.y);
+  const t2 = bezier.getPointT(ca, lastB.x, lastB.y);
+  const t3 = bezier.getPointT(cb, firstA.x, firstA.y);
+  const t4 = bezier.getPointT(cb, lastA.x, lastA.y);
   // console.warn(segA.toString());console.warn(segB.toString());
   // console.log(t1, t2, t3, t4);
-  let l1 = t1.length, l2 = t2.length, l3 = t3.length, l4 = t4.length;
+  const l1 = t1.length, l2 = t2.length, l3 = t3.length, l4 = t4.length;
   /**
    * 重合有3种情况，对应4个t（每方各2个）的情况不同：
    * a. 一个包含另外一个，这样其中一方t为空，另一方t为2个即两个端点各1
    * b. 一对端点重合另外一侧包含，比上面的t多1个即空的那方t多1
    * c. 普通部分重合，每方各有1个t
    */
-  let conditionA = l1 === 1 && l2 === 1 && l3 === 0 && l4 === 0 || l1 === 0 && l2 === 0 && l3 === 1 && l4 === 1;
-  let conditionB = l1 === 1 && l2 === 1 && l3 + l4 === 1 || l1 + l2 === 1 && l3 === 1 && l4 === 1;
-  let conditionC = l1 + l2 === 1 && l3 + l4 === 1;
-  if(conditionA || conditionB || conditionC) {
-    let startA = l1 ? t1[0] : 0;
-    let endA = l2 ? t2[0] : 1;
-    let a = bezier.sliceBezier2Both(ca, startA, endA);
-    let startB = l3 ? t3[0] : 0;
-    let endB = l4 ? t4[0] : 1;
-    let b = bezier.sliceBezier2Both(cb, startB, endB);
+  const conditionA = l1 === 1 && l2 === 1 && l3 === 0 && l4 === 0 || l1 === 0 && l2 === 0 && l3 === 1 && l4 === 1;
+  const conditionB = l1 === 1 && l2 === 1 && l3 + l4 === 1 || l1 + l2 === 1 && l3 === 1 && l4 === 1;
+  const conditionC = l1 + l2 === 1 && l3 + l4 === 1;
+  if (conditionA || conditionB || conditionC) {
+    const startA = l1 ? t1[0] : 0;
+    const endA = l2 ? t2[0] : 1;
+    const a = bezier.sliceBezier2Both(ca, startA, endA);
+    const startB = l3 ? t3[0] : 0;
+    const endB = l4 ? t4[0] : 1;
+    const b = bezier.sliceBezier2Both(cb, startB, endB);
     // console.log(startA, endA, startB, endB);
     // 确定重合之后就是截取，重合一定出现在左右的中间部分，这样只要分别判断左右两端是否需要各自裁剪即可
-    if(equalBezier(a, b)) {
-      let over = a.map(item => new Point(item.x, item.y));
+    if (equalBezier(a, b)) {
+      const over = a.map(item => new Point(item.x, item.y));
       // console.log(over);
-      let ra = [], rb = [];
-      if(startA > 0) {
-        let s = bezier.sliceBezier2Both(ca, 0, startA);
-        let arr = [
+      const ra = [], rb = [];
+      if (startA > 0) {
+        const s = bezier.sliceBezier2Both(ca, 0, startA);
+        const arr = [
           segA.coords[0],
           new Point(s[1].x, s[1].y),
           segB.coords[0],
         ];
-        if(la === 4) {
+        if (la === 4) {
           arr.splice(2, 0, new Point(s[2].x, s[2].y));
         }
         ra.push(new Segment(arr, segA.belong));
       }
       ra.push(new Segment(over, segA.belong)); // 重合的部分
-      if(endA < 1) {
-        let s = bezier.sliceBezier2Both(ca, endA, 1);
-        let arr = [
+      if (endA < 1) {
+        const s = bezier.sliceBezier2Both(ca, endA, 1);
+        const arr = [
           segB.coords[lb - 1],
           new Point(s[1].x, s[1].y),
           segA.coords[la - 1],
         ];
-        if(la === 4) {
+        if (la === 4) {
           arr.splice(2, 0, new Point(s[2].x, s[2].y));
         }
         ra.push(new Segment(arr, segA.belong));
       }
-      if(startB > 0) {
-        let s = bezier.sliceBezier2Both(cb, 0, startB);
-        let arr = [
+      if (startB > 0) {
+        const s = bezier.sliceBezier2Both(cb, 0, startB);
+        const arr = [
           segB.coords[0],
           new Point(s[1].x, s[1].y),
           segA.coords[0],
         ];
-        if(lb === 4) {
+        if (lb === 4) {
           arr.splice(2, 0, new Point(s[2].x, s[2].y));
         }
         rb.push(new Segment(arr, segB.belong));
       }
       rb.push(new Segment(over, segB.belong)); // 重合的部分
-      if(endB < 1) {
-        let s = bezier.sliceBezier2Both(cb, endB, 1);
-        let arr = [
+      if (endB < 1) {
+        const s = bezier.sliceBezier2Both(cb, endB, 1);
+        const arr = [
           segA.coords[la - 1],
           new Point(s[1].x, s[1].y),
           segB.coords[lb - 1],
         ];
-        if(lb === 4) {
+        if (lb === 4) {
           arr.splice(2, 0, new Point(s[2].x, s[2].y));
         }
         rb.push(new Segment(arr, segB.belong));
@@ -1234,9 +1367,9 @@ function checkOverlapBezier(segA: Segment, segB: Segment) {
 }
 
 function equalBezier(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>) {
-  for(let i = 0, len = a.length; i < len; i++) {
-    let ai = a[i], bi = b[i];
-    if(Math.abs(ai.x - bi.x) > 1e-9 || Math.abs(ai.y - bi.y) > 1e-9) {
+  for (let i = 0, len = a.length; i < len; i++) {
+    const ai = a[i], bi = b[i];
+    if (Math.abs(ai.x - bi.x) > 1e-9 || Math.abs(ai.y - bi.y) > 1e-9) {
       return false;
     }
   }

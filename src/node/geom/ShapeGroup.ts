@@ -75,7 +75,11 @@ class ShapeGroup extends Container {
         else {
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BooleanOperation.INTERSECT) {
+            // console.log(res, p);
+            // @ts-ignore
+            window.ttt = true;
             const t = bo.intersect(res, p) as number[][][];
+            // console.error(t);
             res = t || [];
           }
           else if (booleanOperation === BooleanOperation.UNION) {

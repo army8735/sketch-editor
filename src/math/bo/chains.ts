@@ -52,7 +52,7 @@ function close(res: Array<Array<Segment>>, chains: Array<Array<Segment>>, chain:
   let ptHead = head.coords[0];
   let coords2 = tail.coords, l2 = coords2.length;
   let ptTail = coords2[l2 - 1];
-  if(ptHead.equal(ptTail)) {
+  if(ptHead.equal(ptTail) || ptHead.equalEps(ptTail)) {
     chains.splice(index, 1);
     res.push(chain);
   }
