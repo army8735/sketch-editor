@@ -187,7 +187,7 @@ function getQuarticRoots(coefs: Array<number>) {
 function getRoots(coefs: Array<number>) {
   let degree = coefs.length - 1;
   for(let i = degree; i >= 0; i--) {
-    if(Math.abs(coefs[i]) < 1e-12) {
+    if(Math.abs(coefs[i]) < 1e-30) {
       degree--;
     }
     else {

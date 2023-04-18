@@ -4,7 +4,7 @@ import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
 import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
-import { angleBySides, pointsDistance, h } from '../../math/geom';
+import { angleBySides, pointsDistance, h, toPrecision } from '../../math/geom';
 import { unitize } from '../../math/vector';
 import { CurveMode } from '../../style/define';
 
@@ -137,31 +137,31 @@ class Polyline extends Geom {
         }
       }
     }
-    // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
+    // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
     const first = temp[0];
     const p: Array<number> = [first.x, first.y];
     const res: Array<Array<number>> = this.points = [p], len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
-      const p: Array<number> = [item.x, item.y];
+      const p: Array<number> = [toPrecision(item.x), toPrecision(item.y)];
       if (item.tx !== undefined) {
-        p.unshift(item.tx, item.ty);
+        p.unshift(toPrecision(item.tx), toPrecision(item.ty));
       }
       if (prev.fx !== undefined) {
-        p.unshift(prev.fx, prev.fy);
+        p.unshift(toPrecision(prev.fx), toPrecision(prev.fy));
       }
       res.push(p);
     }
     // 闭合
     if (this.isClosed) {
       const last = temp[len - 1];
-      const p: Array<number> = [first.x, first.y];
+      const p: Array<number> = [toPrecision(first.x), toPrecision(first.y)];
       if (first.tx !== undefined) {
-        p.unshift(first.tx, first.ty);
+        p.unshift(toPrecision(first.tx), toPrecision(first.ty));
       }
       if (last.fx !== undefined) {
-        p.unshift(last.fx, last.fy);
+        p.unshift(toPrecision(last.fx), toPrecision(last.fy));
       }
       res.push(p);
     }

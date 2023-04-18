@@ -26,7 +26,8 @@ function trivial(polygonA: any, polygonB: any) {
     source.selfIntersect();
     // @ts-ignore
     if(window.ttt) {
-      // console.table(source.segments.map(item => [item.uuid, ...item.coords.toString().split(',')]))
+      // console.log('source')
+      // console.table(source.segments.map(item => [item.uuid, ...item.toHash().split(' ')]))
     }
   }
   // console.log(source.toString());
@@ -40,22 +41,23 @@ function trivial(polygonA: any, polygonB: any) {
     // @ts-ignore
     if(window.ttt) {
       // @ts-ignore
-      // window.ttt2 = true;
-      // console.table(clip.segments.map(item => [item.uuid, ...item.coords.toString().split(',')]))
+      window.ttt2= true;
+      // console.log('clip')
+      // console.table(clip.segments.map(item => [item.uuid, ...item.toHash().split(' ')]))
     }
   }
   // 两个多边形之间再次互相判断相交
   Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
   // @ts-ignore
   if(window.ttt) {
-    // console.log('intersect2')
+    // console.log('intersect2 res')
     // console.table(source.segments.map(item => [item.uuid, ...item.toHash().split(' ')]));
     // console.table(clip.segments.map(item => [item.uuid, ...item.toHash().split(' ')]));
   }
   Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
   // @ts-ignore
   if(window.ttt) {
-    // console.log('annotate2')
+    // console.log('annotate2 res')
     // console.table(source.segments.map(item => item.toString().split(' ')));
     // console.table(clip.segments.map(item => item.toString().split(' ')));
   }

@@ -1,10 +1,13 @@
 import Point from './Point';
 import isec from '../isec';
 import bezier from '../bezier';
+import { toPrecision } from '../geom';
+
+const EPS = 1e-9;
+const EPS2 = 1 - (1e-9);
 
 function getIntersectionLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
-                                 bx1: number, by1: number, bx2: number, by2: number,
-                                 d: number, eps = 0) {
+                                 bx1: number, by1: number, bx2: number, by2: number, d: number) {
   let toSource = (
     (bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)
   ) / d;
@@ -12,9 +15,9 @@ function getIntersectionLineLine(ax1: number, ay1: number, ax2: number, ay2: num
     (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
   ) / d;
   // 非顶点相交才是真相交
-  if (toSource > eps && toSource < (1 - eps) || toClip > eps && toClip < (1 - eps)) {
-    let ox = ax1 + toSource * (ax2 - ax1);
-    let oy = ay1 + toSource * (ay2 - ay1);
+  if (toSource > EPS && toSource < EPS2 || toClip > EPS && toClip < EPS2) {
+    let ox = toPrecision(ax1 + toSource * (ax2 - ax1));
+    let oy = toPrecision(ay1 + toSource * (ay2 - ay1));
     return [{
       point: new Point(ox, oy),
       toSource,
@@ -24,7 +27,7 @@ function getIntersectionLineLine(ax1: number, ay1: number, ax2: number, ay2: num
 }
 
 function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                    bx1: number, by1: number, bx2: number, by2: number, eps = 0) {
+                                    bx1: number, by1: number, bx2: number, by2: number) {
   const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
     bx1, by1, bx2, by2);
   if (res.length) {
@@ -37,8 +40,7 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
       else {
         toClip = Math.abs((item.y - by1) / (by2 - by1));
       }
-      // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
-      if (item.t > eps && item.t < (1 - eps) || toClip > eps && toClip < (1 - eps)) {
+      if (item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         let k1 = bezier.bezierSlope([
           { x: ax1, y: ay1 },
@@ -47,7 +49,7 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
         ], item.t);
         let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
-        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < eps) {
+        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
           return;
         }
         return {
@@ -64,8 +66,7 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
 }
 
 function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                       bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number,
-                                       eps = 0) {
+                                       bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number) {
   const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
     bx1, by1, bx2, by2, bx3, by3);
   if (res.length) {
@@ -79,7 +80,7 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
       // 防止误差无值
       if (toClip.length) {
         const tc = toClip[0];
-        if (item.t > eps && item.t < (1 - eps) && tc > eps && tc < (1 - eps)) {
+        if (item.t > EPS && item.t < EPS2 || tc > EPS && tc < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           let k1 = bezier.bezierSlope([
             { x: ax1, y: ay1 },
@@ -92,7 +93,7 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
             { x: bx3, y: by3 },
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < eps) {
+          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
             return;
           }
           return {
@@ -110,8 +111,7 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
 }
 
 function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                       bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number,
-                                       bx4: number, by4: number, eps = 0) {
+                                       bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
 
   const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
     bx1, by1, bx2, by2, bx3, by3, bx4, by4);
@@ -127,7 +127,7 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
       // 防止误差无值
       if (toClip.length) {
         const tc = toClip[0];
-        if (item.t > eps && item.t < (1 - eps) || tc > eps && tc < (1 - eps)) {
+        if (item.t > EPS && item.t < EPS2 || tc > EPS && tc < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           let k1 = bezier.bezierSlope([
             { x: ax1, y: ay1 },
@@ -141,7 +141,7 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
             { x: bx4, y: by4 },
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < eps) {
+          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
             return;
           }
           return {
@@ -159,11 +159,13 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
 }
 
 function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
-                                    bx1: number, by1: number, bx2: number, by2: number, eps = 0) {
+                                    bx1: number, by1: number, bx2: number, by2: number) {
   const res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
     bx1, by1, bx2, by2);
   if (res.length) {
     const t = res.map(item => {
+      item.x = toPrecision(item.x, 4);
+      item.y = toPrecision(item.y, 4);
       // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
       let toClip;
       if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -172,8 +174,7 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
       else {
         toClip = Math.abs((item.y - by1) / (by2 - by1));
       }
-      // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
-      if (item.t >= eps && item.t <= (1 - eps) || toClip >= eps && toClip <= (1 - eps)) {
+      if (item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         let k1 = bezier.bezierSlope([
           { x: ax1, y: ay1 },
@@ -186,7 +187,7 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
           { x: bx2, y: by2 },
         ]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
-        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < eps) {
+        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
           return;
         }
         return {
@@ -203,8 +204,7 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
 }
 
 function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
-                                       bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
-                                       eps = 0) {
+                                       bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
   const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
     bx1, by1, bx2, by2, bx3, by3, bx4, by4);
   if (res.length) {
@@ -219,7 +219,7 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
       // 防止误差无值
       if (toClip.length) {
         const tc = toClip[0];
-        if (item.t > eps && item.t < (1 - eps) || tc > eps && tc < (1 - eps)) {
+        if (item.t > EPS && item.t < EPS2 || tc > EPS && tc < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           let k1 = bezier.bezierSlope([
             { x: ax1, y: ay1 },
@@ -234,7 +234,7 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
             { x: bx4, y: by4 },
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < eps) {
+          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
             return;
           }
           return {
@@ -252,7 +252,7 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
 }
 
 // 两条线可能多个交点，将交点按原本线段的方向顺序排序
-function sortIntersection(res: Array<{ point: Point, toSource: number, toClip: number }>, isSource: boolean, eps = 0) {
+function sortIntersection(res: Array<{ point: Point, toSource: number, toClip: number }>, isSource: boolean) {
   return res.sort(function (a, b) {
     if (isSource) {
       return a.toSource - b.toSource;
@@ -263,7 +263,7 @@ function sortIntersection(res: Array<{ point: Point, toSource: number, toClip: n
       point: item.point,
       t: isSource ? item.toSource : item.toClip,
     };
-  }).filter(item => item.t > eps && item.t < (1 - eps));
+  }).filter(item => item.t > EPS && item.t < EPS2);
 }
 
 export default {
@@ -274,4 +274,6 @@ export default {
   getIntersectionBezier3Line,
   getIntersectionBezier3Bezier3,
   sortIntersection,
+  EPS,
+  EPS2,
 };

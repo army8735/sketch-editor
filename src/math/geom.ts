@@ -149,6 +149,11 @@ export function isConvexPolygonOverlap(a: Array<{ x: number, y: number}>, b: Arr
   return false;
 }
 
+export function toPrecision(num: number, p: number = 4) {
+  const t = Math.pow(10, 4);
+  return Math.round(num * t) / t;
+}
+
 export default {
   d2r,
   r2d,
@@ -163,4 +168,5 @@ export default {
   isRectsOverlap,
   isRectsInside,
   isConvexPolygonOverlap,
+  toPrecision,
 };

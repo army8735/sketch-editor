@@ -333,6 +333,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           opacity,
           translateX,
           translateY,
+          scaleX,
+          scaleY,
           rotateZ,
         },
       },

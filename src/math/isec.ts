@@ -638,6 +638,8 @@ function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number
                               bx1: number, by1: number, bx2: number, by2: number) {
   let c2, c1, c0;
   let cl, n;
+  const isV = bx1 === bx2;
+  const isH = by1 === by2;
   let result = [];
 
   const minbx = Math.min(bx1, bx2);
@@ -700,6 +702,26 @@ function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number
       }
     }
   }
+  if (isH || isV) {
+    result.forEach(item => {
+      if (isV) {
+        if (item.x < minbx) {
+          item.x = minbx;
+        }
+        else if (item.x > maxbx) {
+          item.x = maxbx;
+        }
+      }
+      else {
+        if (item.y < minby) {
+          item.y = minby;
+        }
+        else if (item.y > maxby) {
+          item.y = maxby;
+        }
+      }
+    });
+  }
   return result;
 }
 
@@ -715,6 +737,8 @@ function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number
                               bx1: number, by1: number, bx2: number, by2: number) {
   let c3, c2, c1, c0;
   let cl, n;
+  const isV = bx1 === bx2;
+  const isH = by1 === by2;
   const result = [];
 
   const minbx = Math.min(bx1, bx2);
@@ -780,6 +804,26 @@ function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number
         result.push(p10);
       }
     }
+  }
+  if (isH || isV) {
+    result.forEach(item => {
+      if (isV) {
+        if (item.x < minbx) {
+          item.x = minbx;
+        }
+        else if (item.x > maxbx) {
+          item.x = maxbx;
+        }
+      }
+      else {
+        if (item.y < minby) {
+          item.y = minby;
+        }
+        else if (item.y > maxby) {
+          item.y = maxby;
+        }
+      }
+    });
   }
   return result;
 }

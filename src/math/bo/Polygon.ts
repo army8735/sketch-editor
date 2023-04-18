@@ -1,4 +1,4 @@
-import geom from '../geom';
+import geom, { toPrecision } from '../geom';
 import vector from '../vector';
 import bezier from '../bezier';
 import equation from '../equation';
@@ -14,6 +14,8 @@ const {
   getIntersectionBezier3Line,
   getIntersectionBezier3Bezier3,
   sortIntersection,
+  EPS,
+  EPS2,
 } = intersect;
 
 class Polygon {
@@ -267,9 +269,6 @@ class Polygon {
         }
         // @ts-ignore
         if (window.ttt) {
-          if (seg.uuid === 23) {
-            // debugger;
-          }
         }
         // console.error(seg.toString(), ael.length)
         // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
@@ -444,7 +443,6 @@ class Polygon {
  * 2是互交，误差考虑要谨慎，如果还是1e-9，会被忽略然后在注释颜色那里出错，此时eps应该考虑0
  */
 function findIntersection(list: any, compareBelong: boolean, isIntermediateA: boolean, isIntermediateB: boolean) {
-  const eps = compareBelong ? 1e-9 : 1e-9;
   // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
   const ael: Array<Segment> = [], delList: Array<Segment> = [], segments: Array<Segment> = [];
   while (list.length) {
@@ -459,6 +457,10 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
     }
 
     const { x, arr } = list[0];
+    // @ts-ignore
+    if (window.ttt2) {
+      // debugger;
+    }
     while (arr.length) {
       const seg = arr.shift();
       // 被切割的老线段无效
@@ -500,9 +502,9 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
               continue;
             }
             // @ts-ignore
-            if (window.ttt) {
-              if (seg.uuid === 15 || item.uuid === 15) {
-                // debugger
+            if (window.ttt2) {
+              if(seg.uuid === 20 && item.uuid === 15) {
+                // debugger;
               }
             }
             // 互交所属belong不同才进行检测，自交则不检查belong
@@ -557,7 +559,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                   }
                   else {
                     inters = getIntersectionLineLine(ax1, ay1, ax2, ay2,
-                      bx1, by1, bx2, by2, d, eps);
+                      bx1, by1, bx2, by2, d);
                   }
                 }
                 // b是曲线
@@ -566,14 +568,14 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                   // b是2阶曲线
                   if (lenB === 3) {
                     inters = getIntersectionBezier2Line(bx1, by1, bx2, by2, bx3, by3,
-                      ax1, ay1, ax2, ay2, eps);
+                      ax1, ay1, ax2, ay2);
                     isSourceReverted = true;
                   }
                   // b是3阶曲线
                   else {
                     const { x: bx4, y: by4 } = coordsB[3];
                     inters = getIntersectionBezier3Line(bx1, by1, bx2, by2, bx3, by3, bx4, by4,
-                      ax1, ay1, ax2, ay2, eps);
+                      ax1, ay1, ax2, ay2);
                     isSourceReverted = true;
                   }
                 }
@@ -586,7 +588,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                   // b是直线
                   if (lenB === 2) {
                     inters = getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
-                      bx1, by1, bx2, by2, eps);
+                      bx1, by1, bx2, by2);
                   }
                   // b是曲线
                   else {
@@ -594,7 +596,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                     // b是2阶曲线
                     if (lenB === 3) {
                       inters = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
-                        bx1, by1, bx2, by2, bx3, by3, eps);
+                        bx1, by1, bx2, by2, bx3, by3);
                       if (!inters) {
                         overs = checkOverlapBezier(seg, item);
                       }
@@ -603,7 +605,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                     else {
                       const { x: bx4, y: by4 } = coordsB[3];
                       inters = getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
-                        bx1, by1, bx2, by2, bx3, by3, bx4, by4, eps);
+                        bx1, by1, bx2, by2, bx3, by3, bx4, by4);
                     }
                   }
                 }
@@ -613,7 +615,7 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                   // b是直线
                   if (lenB === 2) {
                     inters = getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
-                      bx1, by1, bx2, by2, eps);
+                      bx1, by1, bx2, by2);
                   }
                   // b是曲线
                   else {
@@ -621,14 +623,14 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                     // b是2阶曲线
                     if (lenB === 3) {
                       inters = getIntersectionBezier2Bezier3(bx1, by1, bx2, by2, bx3, by3,
-                        ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, eps);
+                        ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4);
                       isSourceReverted = true;
                     }
                     // b是3阶曲线
                     else {
                       const { x: bx4, y: by4 } = coordsB[3];
                       inters = getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
-                        bx1, by1, bx2, by2, bx3, by3, bx4, by4, eps);
+                        bx1, by1, bx2, by2, bx3, by3, bx4, by4);
                       if (!inters) {
                         overs = checkOverlapBezier(seg, item);
                       }
@@ -647,24 +649,24 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
               else if (inters && inters.length) {
                 // @ts-ignore
-                if (window.ttt2) {
-                  // console.warn('inters',isSourceReverted,coordsA.map((item: any) => item), coordsB.map((item: any) => item), inters.map(item => JSON.stringify(item)));
+                if (window.ttt) {
+                  // console.warn('inters',x,compareBelong,isSourceReverted,seg.uuid,coordsA.map((item: any) => item), item.uuid,coordsB.map((item: any) => item), inters.map(item => JSON.stringify(item)));
                 }
                 // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
                 // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
                 for (let i = 0, len = inters.length; i < len; i++) {
                   const pt = inters[i]!;
                   // 只会有一种可能，如果交点对2条线都是误差忽略，求交时已经被屏蔽
-                  if (pt.toSource <= eps) {
+                  if (pt.toSource <= EPS) {
                     pt.point = isSourceReverted ? coordsB[0] : coordsA[0];
                   }
-                  else if (pt.toSource >= (1 - eps)) {
+                  else if (pt.toSource >= EPS2) {
                     pt.point = isSourceReverted ? coordsB[coordsB.length - 1] : coordsA[coordsA.length - 1];
                   }
-                  else if (pt.toClip <= eps) {
+                  else if (pt.toClip <= EPS) {
                     pt.point = isSourceReverted ? coordsA[0] : coordsB[0];
                   }
-                  else if (pt.toClip >= (1 - eps)) {
+                  else if (pt.toClip >= EPS2) {
                     pt.point = isSourceReverted ? coordsA[coordsA.length - 1] : coordsB[coordsB.length - 1];
                   }
                 }
@@ -678,18 +680,15 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                 let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));
                 // @ts-ignore
-                if (window.ttt2) {
-                  // console.log(ra.map(item => item.toString()), x)
-                  // console.log(x, pa, ra.map(item => item.coords));
-                  // console.log(pb, rb.map(item => item.coords));
+                if (window.ttt) {
+                  // console.log(pa);
+                  // console.table(ra.map(item => [item.uuid, ...item.toHash().split(' ')]));
+                  // console.log(pb);
+                  // console.table(rb.map(item => [item.uuid, ...item.toHash().split(' ')]));
                 }
                 // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                 activeNewSeg(segments, list, ael, x, ra);
                 activeNewSeg(segments, list, ael, x, rb);
-                // @ts-ignore
-                if (window.ttt2) {
-                  // console.log(ra.map(item => item.toString()))
-                }
                 // 老的线段被删除无效了，踢出ael，防止seg没被分割
                 if (rb.length) {
                   ael.splice(i, 1);
@@ -726,12 +725,20 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
   if (!ps.length) {
     return res;
   }
+  // @ts-ignore
+  if(window.ttt && seg.uuid === 8) {
+    // debugger
+  }
   const belong = seg.belong, coords = seg.coords, len = coords.length;
   let startPoint = coords[0];
   let lastT = 0;
   // 多个点可能截取多条，最后一条保留只修改数据，其它新生成
   ps.forEach(item => {
     const point = item.point, t = item.t;
+    // 和端点相同忽略
+    if (point.equal(startPoint)) {
+      return;
+    }
     let ns: Segment;
     if (len === 2) {
       if (Point.compare(startPoint, point)) {
@@ -752,14 +759,14 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
       if (Point.compare(startPoint, point)) {
         ns = new Segment([
           point,
-          new Point(c[1].x, c[1].y),
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
           startPoint,
         ], belong);
       }
       else {
         ns = new Segment([
           startPoint,
-          new Point(c[1].x, c[1].y),
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
           point,
         ], belong);
       }
@@ -769,16 +776,16 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
       if (Point.compare(startPoint, point)) {
         ns = new Segment([
           point,
-          new Point(c[2].x, c[2].y),
-          new Point(c[1].x, c[1].y),
+          new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
           startPoint,
         ], belong);
       }
       else {
         ns = new Segment([
           startPoint,
-          new Point(c[1].x, c[1].y),
-          new Point(c[2].x, c[2].y),
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+          new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
           point,
         ], belong);
       }
@@ -794,63 +801,65 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
   });
   // 最后一条
   let ns: Segment;
-  if (len === 2) {
-    if (Point.compare(startPoint, coords[1])) {
-      ns = new Segment([
-        coords[1],
-        startPoint,
-      ], belong);
+  if (!startPoint.equal(coords[coords.length - 1])) {
+    if (len === 2) {
+      if (Point.compare(startPoint, coords[1])) {
+        ns = new Segment([
+          coords[1],
+          startPoint,
+        ], belong);
+      }
+      else {
+        ns = new Segment([
+          startPoint,
+          coords[1],
+        ], belong);
+      }
     }
-    else {
-      ns = new Segment([
-        startPoint,
-        coords[1],
-      ], belong);
+    else if (len === 3) {
+      const c = bezier.sliceBezier2Both(coords, lastT, 1);
+      if (Point.compare(startPoint, coords[2])) {
+        ns = new Segment([
+          coords[2],
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+          startPoint,
+        ], belong);
+      }
+      else {
+        ns = new Segment([
+          startPoint,
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+          coords[2],
+        ], belong);
+      }
     }
+    else if (len === 4) {
+      const c = bezier.sliceBezier2Both(coords, lastT, 1);
+      if (Point.compare(startPoint, coords[3])) {
+        ns = new Segment([
+          coords[3],
+          new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+          startPoint,
+        ], belong);
+      }
+      else {
+        ns = new Segment([
+          startPoint,
+          new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+          new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+          coords[3],
+        ], belong);
+      }
+    }
+    if (isIntermediate) {
+      ns!.myFill[0] = seg.myFill[0];
+      ns!.myFill[1] = seg.myFill[1];
+    }
+    res.push(ns!);
   }
-  else if (len === 3) {
-    const c = bezier.sliceBezier2Both(coords, lastT, 1);
-    if (Point.compare(startPoint, coords[2])) {
-      ns = new Segment([
-        coords[2],
-        new Point(c[1].x, c[1].y),
-        startPoint,
-      ], belong);
-    }
-    else {
-      ns = new Segment([
-        startPoint,
-        new Point(c[1].x, c[1].y),
-        coords[2],
-      ], belong);
-    }
-  }
-  else if (len === 4) {
-    const c = bezier.sliceBezier2Both(coords, lastT, 1);
-    if (Point.compare(startPoint, coords[3])) {
-      ns = new Segment([
-        coords[3],
-        new Point(c[2].x, c[2].y),
-        new Point(c[1].x, c[1].y),
-        startPoint,
-      ], belong);
-    }
-    else {
-      ns = new Segment([
-        startPoint,
-        new Point(c[1].x, c[1].y),
-        new Point(c[2].x, c[2].y),
-        coords[3],
-      ], belong);
-    }
-  }
-  if (isIntermediate) {
-    ns!.myFill[0] = seg.myFill[0];
-    ns!.myFill[1] = seg.myFill[1];
-  }
-  res.push(ns!);
   // 老的打标失效删除
-  seg.isDeleted = true;
+  res.length && (seg.isDeleted = true);
   return res;
 }
 

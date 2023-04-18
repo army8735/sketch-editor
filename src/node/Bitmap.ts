@@ -170,7 +170,7 @@ class Bitmap extends Node {
       canvasCache.release();
     }
     else {
-      return super.genTexture(gl);
+      super.genTexture(gl);
     }
   }
 

@@ -8,6 +8,7 @@ import { color2rgbaStr } from '../../style/css';
 import { getLinear } from '../../style/gradient';
 import { canvasPolygon } from '../../refresh/paint';
 import { isE } from '../../math/matrix';
+import { toPrecision } from '../../math/geom';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -23,12 +24,12 @@ function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
         if (item.length === 6) {
           const c5 = ((a1 === 1) ? item[4] : (item[4] * a1)) + (a2 ? (item[5] * a2) : 0) + a4;
           const c6 = ((b1 === 1) ? item[4] : (item[4] * b1)) + (b2 ? (item[5] * b2) : 0) + b4;
-          return [c1, c2, c3, c4, c5, c6];
+          return [toPrecision(c1), toPrecision(c2), toPrecision(c3), toPrecision(c4), toPrecision(c5), toPrecision(c6)];
         }
-        return [c1, c2, c3, c4];
+        return [toPrecision(c1), toPrecision(c2), toPrecision(c3), toPrecision(c4)];
       }
       else {
-        return [c1, c2];
+        return [toPrecision(c1), toPrecision(c2)];
       }
     });
   }

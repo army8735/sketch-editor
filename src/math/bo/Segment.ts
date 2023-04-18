@@ -13,6 +13,7 @@ class Segment {
   otherCoincide: number;
   isVisited: boolean;
   isDeleted: boolean;
+  isNew: boolean;
   bbox: Array<number>;
 
   constructor(coords: Array<Point>, belong: number) {
@@ -26,6 +27,7 @@ class Segment {
     this.otherCoincide = 0; // 对方重合次数
     this.isVisited = false; // 扫描求交时用到
     this.isDeleted = false; // 相交裁剪老的线段会被删除
+    this.isNew = false; // 求交时新生成的线段虽然被访问过，但也要再次进行求交
   }
 
   calBbox() {
