@@ -503,9 +503,6 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
             }
             // @ts-ignore
             if (window.ttt2) {
-              if(seg.uuid === 20 && item.uuid === 15) {
-                // debugger;
-              }
             }
             // 互交所属belong不同才进行检测，自交则不检查belong
             if (compareBelong && item.belong === belong) {

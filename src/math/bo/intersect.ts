@@ -6,6 +6,24 @@ import { toPrecision } from '../geom';
 const EPS = 1e-9;
 const EPS2 = 1 - (1e-9);
 
+function isParallel(k1: number, k2: number) {
+  if (k1 === Infinity && k2 === Infinity) {
+    return true;
+  }
+  else if (k1 === Infinity && k2 === -Infinity) {
+    return true;
+  }
+  else if (k1 === -Infinity && k2 === -Infinity) {
+    return true;
+  }
+  else if (k1 === -Infinity && k2 === Infinity) {
+    return true;
+  }
+  else {
+    return Math.abs(k1 - k2) < EPS;
+  }
+}
+
 function getIntersectionLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
                                  bx1: number, by1: number, bx2: number, by2: number, d: number) {
   let toSource = (
@@ -51,7 +69,7 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
         ], item.t);
         let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
-        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+        if (isParallel(k1, k2)) {
           return;
         }
         return {
@@ -97,7 +115,7 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
             { x: bx3, y: by3 },
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
           return {
@@ -147,7 +165,7 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
             { x: bx4, y: by4 },
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
           return {
@@ -193,7 +211,7 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
           { x: bx2, y: by2 },
         ]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
-        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+        if (isParallel(k1, k2)) {
           return;
         }
         return {
@@ -242,7 +260,7 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
             { x: bx4, y: by4 },
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
           return {
