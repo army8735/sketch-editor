@@ -21466,7 +21466,7 @@
     function getRoots$1(coefs) {
         let degree = coefs.length - 1;
         for (let i = degree; i >= 0; i--) {
-            if (Math.abs(coefs[i]) < 1e-30) {
+            if (Math.abs(coefs[i]) < 1e-12) {
                 degree--;
             }
             else {
@@ -22036,7 +22036,6 @@
             this.otherCoincide = 0; // 对方重合次数
             this.isVisited = false; // 扫描求交时用到
             this.isDeleted = false; // 相交裁剪老的线段会被删除
-            this.isNew = false; // 求交时新生成的线段虽然被访问过，但也要再次进行求交
         }
         calBbox() {
             let coords = this.coords, l = coords.length;
@@ -22994,6 +22993,8 @@
         const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
         if (res.length) {
             const t = res.map(item => {
+                item.x = toPrecision(item.x, 4);
+                item.y = toPrecision(item.y, 4);
                 let toClip;
                 // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
                 if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -23030,6 +23031,8 @@
         const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
         if (res.length) {
             const t = res.map(item => {
+                item.x = toPrecision(item.x, 4);
+                item.y = toPrecision(item.y, 4);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
                 const toClip = bezier.getPointT([
                     { x: ax1, y: ay1 },
@@ -23072,6 +23075,8 @@
         const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
             const t = res.map(item => {
+                item.x = toPrecision(item.x, 4);
+                item.y = toPrecision(item.y, 4);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
                 let toClip = bezier.getPointT([
                     { x: bx1, y: by1 },
@@ -23158,6 +23163,8 @@
         const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
             const t = res.map(item => {
+                item.x = toPrecision(item.x, 4);
+                item.y = toPrecision(item.y, 4);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
                 let toClip = bezier.getPointT([
                     { x: bx1, y: by1 },
