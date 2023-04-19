@@ -4,9 +4,10 @@ import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
 import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
-import { angleBySides, pointsDistance, h, toPrecision } from '../../math/geom';
+import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { unitize } from '../../math/vector';
 import { CurveMode } from '../../style/define';
+import { clone } from '../../util';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CurveMode.Straight && point.cornerRadius > 0;
@@ -35,38 +36,38 @@ class Polyline extends Geom {
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
     for (let i = 0, len = points.length; i < len; i++) {
       const item = points[i];
-      const res: any = {
-        x: item.x * width,
-        y: item.y * height,
-      };
+      const res: Point = clone(item);
+      res.x = res.x * width;
+      res.y = res.y * height;
       if (isCornerPoint(item)) {
         hasCorner = true;
       }
       else {
-        if (item.hasCurveTo) {
-          res.tx = item.tx * width;
-          res.ty = item.ty * height;
+        if (res.hasCurveTo) {
+          res.tx = res.tx * width;
+          res.ty = res.ty * height;
         }
-        if (item.hasCurveFrom) {
-          res.fx = item.fx * width;
-          res.fy = item.fy * height;
+        if (res.hasCurveFrom) {
+          res.fx = res.fx * width;
+          res.fy = res.fy * height;
         }
       }
       temp.push(res);
     }
     // 如果有圆角，拟合画圆
+    const cache: Array<any> = [];
     if (hasCorner) {
       // 倒序将圆角点拆分为2个顶点
-      for (let len = points.length, i = len - 1; i >= 0; i--) {
-        const point = points[i];
+      for (let i = 0, len = temp.length; i < len; i++) {
+        const point = temp[i];
         if (!isCornerPoint(point)) {
           continue;
         }
         // 观察前后2个顶点的情况
         const prevIdx = i ? (i - 1) : (len - 1);
         const nextIdx = (i + 1) % len;
-        const prevPoint = points[prevIdx];
-        const nextPoint = points[nextIdx];
+        const prevPoint = temp[prevIdx];
+        const nextPoint = temp[nextIdx];
         let radius = point.cornerRadius;
         // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
         const isPrevCorner = isCornerPoint(prevPoint);
@@ -80,9 +81,9 @@ class Polyline extends Geom {
         // 先看最普通的直线，可以用角平分线+半径最小值约束求解
         if (isPrevStraight && isNextStraight) {
           // 2直线边长，ABC3个点，A是prev，B是curr，C是next
-          const lenAB = pointsDistance(prevPoint.x * width, prevPoint.y * height, point.x * width, point.y * height);
-          const lenBC = pointsDistance(point.x * width, point.y * height, nextPoint.x * width, nextPoint.y * height);
-          const lenAC = pointsDistance(prevPoint.x * width, prevPoint.y * height, nextPoint.x * width, nextPoint.y * height);
+          const lenAB = pointsDistance(prevPoint.x, prevPoint.y, point.x, point.y);
+          const lenBC = pointsDistance(point.x, point.y, nextPoint.x, nextPoint.y);
+          const lenAC = pointsDistance(prevPoint.x, prevPoint.y, nextPoint.x, nextPoint.y);
           // 三点之间的夹角
           const radian = angleBySides(lenAC, lenAB, lenBC);
           // 计算切点距离
@@ -111,30 +112,59 @@ class Polyline extends Geom {
           nextTangent.x += temp[i].x;
           nextTangent.y += temp[i].y;
           // 计算 cubic handler 位置
-          const kappa = h(radian);
+          const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
           const prevHandle = { x: pv.x * -radius * kappa, y: pv.y * -radius * kappa };
           prevHandle.x += prevTangent.x;
           prevHandle.y += prevTangent.y;
           const nextHandle = { x: nv.x * -radius * kappa, y: nv.y * -radius * kappa };
           nextHandle.x += nextTangent.x;
           nextHandle.y += nextTangent.y;
-          // 删除当前顶点，替换为3阶贝塞尔曲线
-          temp.splice(i, 1, {
-            x: prevTangent.x,
-            y: prevTangent.y,
-            fx: prevHandle.x,
-            fy: prevHandle.y,
-          }, {
-            x: nextTangent.x,
-            y: nextTangent.y,
-            tx: nextHandle.x,
-            ty: nextHandle.y,
-          });
+          cache[i] = {
+            prevTangent,
+            prevHandle,
+            nextTangent,
+            nextHandle,
+          };
         }
         // 两边只要有贝塞尔（一定是2阶），就只能用离散来逼近求圆心路径，两边中的直线则能直接求，2个圆心路径交点为所需圆心坐标
         else {
           // TODO
         }
+      }
+    }
+    // 将圆角的2个点替换掉原本的1个点
+    for(let i = 0, len = temp.length; i < len; i++) {
+      const c = cache[i];
+      if (c) {
+        const { prevTangent, prevHandle, nextTangent, nextHandle } = c;
+        const p: Point = {
+          x: prevTangent.x,
+          y: prevTangent.y,
+          cornerRadius: 0,
+          curveMode: 0,
+          hasCurveFrom: true,
+          fx: prevHandle.x,
+          fy: prevHandle.y,
+          hasCurveTo: false,
+          tx: 0,
+          ty: 0,
+        };
+        const n: Point = {
+          x: nextTangent.x,
+          y: nextTangent.y,
+          cornerRadius: 0,
+          curveMode: 0,
+          hasCurveFrom: false,
+          fx: 0,
+          fy: 0,
+          hasCurveTo: true,
+          tx: nextHandle.x,
+          ty: nextHandle.y,
+        };
+        temp.splice(i, 1, p, n);
+        i++;
+        len++;
+        cache.splice(i, 0, undefined);
       }
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
@@ -145,10 +175,10 @@ class Polyline extends Geom {
       const item = temp[i];
       const prev = temp[i - 1];
       const p: Array<number> = [toPrecision(item.x), toPrecision(item.y)];
-      if (item.tx !== undefined) {
+      if (item.hasCurveTo) {
         p.unshift(toPrecision(item.tx), toPrecision(item.ty));
       }
-      if (prev.fx !== undefined) {
+      if (prev.hasCurveFrom) {
         p.unshift(toPrecision(prev.fx), toPrecision(prev.fy));
       }
       res.push(p);
@@ -157,10 +187,10 @@ class Polyline extends Geom {
     if (this.isClosed) {
       const last = temp[len - 1];
       const p: Array<number> = [toPrecision(first.x), toPrecision(first.y)];
-      if (first.tx !== undefined) {
+      if (first.hasCurveTo) {
         p.unshift(toPrecision(first.tx), toPrecision(first.ty));
       }
-      if (last.fx !== undefined) {
+      if (last.hasCurveFrom) {
         p.unshift(toPrecision(last.fx), toPrecision(last.fy));
       }
       res.push(p);

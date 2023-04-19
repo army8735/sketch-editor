@@ -16503,7 +16503,7 @@
         return false;
     }
     function toPrecision(num, p = 4) {
-        const t = Math.pow(10, 4);
+        const t = Math.pow(10, p);
         return Math.round(num * t) / t;
     }
     var geom = {
@@ -19007,20 +19007,6 @@
                     transform[13] += diff;
                     matrix[13] += diff;
                 }
-                if (lv & RefreshLevel.ROTATE_Z) {
-                    const v = style.rotateZ.v;
-                    computedStyle.rotateZ = v;
-                    const r = d2r(v);
-                    const sin = Math.sin(r), cos = Math.cos(r);
-                    const x = computedStyle.scaleX, y = computedStyle.scaleY;
-                    const cx = matrix[0] = cos * x;
-                    const sx = matrix[1] = sin * x;
-                    const sy = matrix[4] = -sin * y;
-                    const cy = matrix[5] = cos * y;
-                    const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
-                    matrix[12] = transform[12] + ox - cx * ox - oy * sy;
-                    matrix[13] = transform[13] + oy - sx * ox - oy * cy;
-                }
                 if (lv & RefreshLevel.SCALE) {
                     if (lv & RefreshLevel.SCALE_X) {
                         const v = style.scaleX.v;
@@ -19049,6 +19035,20 @@
                     matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
                     matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
                 }
+                if (lv & RefreshLevel.ROTATE_Z) {
+                    const v = style.rotateZ.v;
+                    computedStyle.rotateZ = v;
+                    const r = d2r(v);
+                    const sin = Math.sin(r), cos = Math.cos(r);
+                    const x = computedStyle.scaleX, y = computedStyle.scaleY;
+                    const cx = matrix[0] = cos * x;
+                    const sx = matrix[1] = sin * x;
+                    const sy = matrix[4] = -sin * y;
+                    const cy = matrix[5] = cos * y;
+                    const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
+                    matrix[12] = transform[12] + ox - cx * ox - oy * sy;
+                    matrix[13] = transform[13] + oy - sx * ox - oy * cy;
+                }
             }
             // 普通布局或者第一次计算
             else {
@@ -19061,12 +19061,6 @@
                 computedStyle.rotateZ = rotateZ;
                 computedStyle.scaleX = scaleX;
                 computedStyle.scaleY = scaleY;
-                if (isE(transform)) {
-                    calRotateZ(transform, rotateZ);
-                }
-                else if (rotateZ) {
-                    multiplyRotateZ(transform, d2r(rotateZ));
-                }
                 if (scaleX !== 1) {
                     if (isE(transform)) {
                         transform[0] = scaleX;
@@ -19082,6 +19076,12 @@
                     else {
                         multiplyScaleY(transform, scaleY);
                     }
+                }
+                if (isE(transform)) {
+                    calRotateZ(transform, rotateZ);
+                }
+                else if (rotateZ) {
+                    multiplyRotateZ(transform, d2r(rotateZ));
                 }
                 const tfo = style.transformOrigin.map((item, i) => {
                     return calSize(item, i ? this.height : this.width);
@@ -21067,38 +21067,38 @@
             // 先算出真实尺寸，按w/h把[0,1]坐标转换
             for (let i = 0, len = points.length; i < len; i++) {
                 const item = points[i];
-                const res = {
-                    x: item.x * width,
-                    y: item.y * height,
-                };
+                const res = clone(item);
+                res.x = res.x * width;
+                res.y = res.y * height;
                 if (isCornerPoint(item)) {
                     hasCorner = true;
                 }
                 else {
-                    if (item.hasCurveTo) {
-                        res.tx = item.tx * width;
-                        res.ty = item.ty * height;
+                    if (res.hasCurveTo) {
+                        res.tx = res.tx * width;
+                        res.ty = res.ty * height;
                     }
-                    if (item.hasCurveFrom) {
-                        res.fx = item.fx * width;
-                        res.fy = item.fy * height;
+                    if (res.hasCurveFrom) {
+                        res.fx = res.fx * width;
+                        res.fy = res.fy * height;
                     }
                 }
                 temp.push(res);
             }
             // 如果有圆角，拟合画圆
+            const cache = [];
             if (hasCorner) {
                 // 倒序将圆角点拆分为2个顶点
-                for (let len = points.length, i = len - 1; i >= 0; i--) {
-                    const point = points[i];
+                for (let i = 0, len = temp.length; i < len; i++) {
+                    const point = temp[i];
                     if (!isCornerPoint(point)) {
                         continue;
                     }
                     // 观察前后2个顶点的情况
                     const prevIdx = i ? (i - 1) : (len - 1);
                     const nextIdx = (i + 1) % len;
-                    const prevPoint = points[prevIdx];
-                    const nextPoint = points[nextIdx];
+                    const prevPoint = temp[prevIdx];
+                    const nextPoint = temp[nextIdx];
                     let radius = point.cornerRadius;
                     // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
                     const isPrevCorner = isCornerPoint(prevPoint);
@@ -21112,9 +21112,9 @@
                     // 先看最普通的直线，可以用角平分线+半径最小值约束求解
                     if (isPrevStraight && isNextStraight) {
                         // 2直线边长，ABC3个点，A是prev，B是curr，C是next
-                        const lenAB = pointsDistance(prevPoint.x * width, prevPoint.y * height, point.x * width, point.y * height);
-                        const lenBC = pointsDistance(point.x * width, point.y * height, nextPoint.x * width, nextPoint.y * height);
-                        const lenAC = pointsDistance(prevPoint.x * width, prevPoint.y * height, nextPoint.x * width, nextPoint.y * height);
+                        const lenAB = pointsDistance(prevPoint.x, prevPoint.y, point.x, point.y);
+                        const lenBC = pointsDistance(point.x, point.y, nextPoint.x, nextPoint.y);
+                        const lenAC = pointsDistance(prevPoint.x, prevPoint.y, nextPoint.x, nextPoint.y);
                         // 三点之间的夹角
                         const radian = angleBySides(lenAC, lenAB, lenBC);
                         // 计算切点距离
@@ -21140,26 +21140,55 @@
                         nextTangent.x += temp[i].x;
                         nextTangent.y += temp[i].y;
                         // 计算 cubic handler 位置
-                        const kappa = h(radian);
+                        const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
                         const prevHandle = { x: pv.x * -radius * kappa, y: pv.y * -radius * kappa };
                         prevHandle.x += prevTangent.x;
                         prevHandle.y += prevTangent.y;
                         const nextHandle = { x: nv.x * -radius * kappa, y: nv.y * -radius * kappa };
                         nextHandle.x += nextTangent.x;
                         nextHandle.y += nextTangent.y;
-                        // 删除当前顶点，替换为3阶贝塞尔曲线
-                        temp.splice(i, 1, {
-                            x: prevTangent.x,
-                            y: prevTangent.y,
-                            fx: prevHandle.x,
-                            fy: prevHandle.y,
-                        }, {
-                            x: nextTangent.x,
-                            y: nextTangent.y,
-                            tx: nextHandle.x,
-                            ty: nextHandle.y,
-                        });
+                        cache[i] = {
+                            prevTangent,
+                            prevHandle,
+                            nextTangent,
+                            nextHandle,
+                        };
                     }
+                }
+            }
+            // 将圆角的2个点替换掉原本的1个点
+            for (let i = 0, len = temp.length; i < len; i++) {
+                const c = cache[i];
+                if (c) {
+                    const { prevTangent, prevHandle, nextTangent, nextHandle } = c;
+                    const p = {
+                        x: prevTangent.x,
+                        y: prevTangent.y,
+                        cornerRadius: 0,
+                        curveMode: 0,
+                        hasCurveFrom: true,
+                        fx: prevHandle.x,
+                        fy: prevHandle.y,
+                        hasCurveTo: false,
+                        tx: 0,
+                        ty: 0,
+                    };
+                    const n = {
+                        x: nextTangent.x,
+                        y: nextTangent.y,
+                        cornerRadius: 0,
+                        curveMode: 0,
+                        hasCurveFrom: false,
+                        fx: 0,
+                        fy: 0,
+                        hasCurveTo: true,
+                        tx: nextHandle.x,
+                        ty: nextHandle.y,
+                    };
+                    temp.splice(i, 1, p, n);
+                    i++;
+                    len++;
+                    cache.splice(i, 0, undefined);
                 }
             }
             // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
@@ -21170,10 +21199,10 @@
                 const item = temp[i];
                 const prev = temp[i - 1];
                 const p = [toPrecision(item.x), toPrecision(item.y)];
-                if (item.tx !== undefined) {
+                if (item.hasCurveTo) {
                     p.unshift(toPrecision(item.tx), toPrecision(item.ty));
                 }
-                if (prev.fx !== undefined) {
+                if (prev.hasCurveFrom) {
                     p.unshift(toPrecision(prev.fx), toPrecision(prev.fy));
                 }
                 res.push(p);
@@ -21182,10 +21211,10 @@
             if (this.isClosed) {
                 const last = temp[len - 1];
                 const p = [toPrecision(first.x), toPrecision(first.y)];
-                if (first.tx !== undefined) {
+                if (first.hasCurveTo) {
                     p.unshift(toPrecision(first.tx), toPrecision(first.ty));
                 }
-                if (last.fx !== undefined) {
+                if (last.hasCurveFrom) {
                     p.unshift(toPrecision(last.fx), toPrecision(last.fy));
                 }
                 res.push(p);
@@ -22980,8 +23009,8 @@
         pointOnLine3,
     };
 
-    const EPS$1 = 1e-9;
-    const EPS2$1 = 1 - (1e-9);
+    const EPS$1 = 1e-4;
+    const EPS2$1 = 1 - (1e-4);
     function isParallel(k1, k2) {
         if (k1 === Infinity && k2 === Infinity) {
             return true;
@@ -23002,8 +23031,8 @@
     function getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
         let toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
         let toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d;
-        // 非顶点相交才是真相交
-        if (toSource > EPS$1 && toSource < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
+        // 非顶点相交才是真相交，先判断在范围内防止超过[0, 1]，再考虑精度
+        if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1 && (toSource > EPS$1 && toSource < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1)) {
             let ox = toPrecision(ax1 + toSource * (ax2 - ax1));
             let oy = toPrecision(ay1 + toSource * (ay2 - ay1));
             return [{
@@ -23017,8 +23046,8 @@
         const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
         if (res.length) {
             const t = res.map(item => {
-                item.x = toPrecision(item.x, 4);
-                item.y = toPrecision(item.y, 4);
+                item.x = toPrecision(item.x);
+                item.y = toPrecision(item.y);
                 let toClip;
                 // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
                 if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -23055,8 +23084,8 @@
         const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
         if (res.length) {
             const t = res.map(item => {
-                item.x = toPrecision(item.x, 4);
-                item.y = toPrecision(item.y, 4);
+                item.x = toPrecision(item.x);
+                item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
                 const toClip = bezier.getPointT([
                     { x: ax1, y: ay1 },
@@ -23099,8 +23128,8 @@
         const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
             const t = res.map(item => {
-                item.x = toPrecision(item.x, 4);
-                item.y = toPrecision(item.y, 4);
+                item.x = toPrecision(item.x);
+                item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
                 let toClip = bezier.getPointT([
                     { x: bx1, y: by1 },
@@ -23145,8 +23174,8 @@
         const res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
         if (res.length) {
             const t = res.map(item => {
-                item.x = toPrecision(item.x, 4);
-                item.y = toPrecision(item.y, 4);
+                item.x = toPrecision(item.x);
+                item.y = toPrecision(item.y);
                 // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
                 let toClip;
                 if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -23187,8 +23216,8 @@
         const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
             const t = res.map(item => {
-                item.x = toPrecision(item.x, 4);
-                item.y = toPrecision(item.y, 4);
+                item.x = toPrecision(item.x);
+                item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
                 let toClip = bezier.getPointT([
                     { x: bx1, y: by1 },
@@ -23310,7 +23339,7 @@
                             ];
                             const curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
                             const curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1);
-                            const p1 = new Point(curve1[1].x, curve1[1].y), p2 = new Point(curve1[2].x, curve1[2].y), p3 = new Point(curve2[1].x, curve2[1].y);
+                            const p1 = new Point(toPrecision(curve1[1].x), toPrecision(curve1[1].y)), p2 = new Point(toPrecision(curve1[2].x), toPrecision(curve1[2].y)), p3 = new Point(toPrecision(curve2[1].x), toPrecision(curve2[1].y));
                             let coords = Point.compare(startPoint, p2) ? [
                                 p2,
                                 p1,
@@ -23371,7 +23400,7 @@
                             let lastPoint = startPoint, lastT = 0;
                             t.forEach(t => {
                                 const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t);
-                                const p1 = new Point(curve[1].x, curve[1].y), p2 = new Point(curve[2].x, curve[2].y), p3 = new Point(curve[3].x, curve[3].y);
+                                const p1 = new Point(toPrecision(curve[1].x), toPrecision(curve[1].y)), p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y)), p3 = new Point(toPrecision(curve[3].x), toPrecision(curve[3].y));
                                 const coords = Point.compare(lastPoint, p3) ? [
                                     p3,
                                     p2,
@@ -23388,7 +23417,7 @@
                                 lastPoint = p3;
                             });
                             const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1);
-                            const p1 = new Point(curve[1].x, curve[1].y), p2 = new Point(curve[2].x, curve[2].y);
+                            const p1 = new Point(toPrecision(curve[1].x), toPrecision(curve[1].y)), p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y));
                             const coords = Point.compare(lastPoint, endPoint) ? [
                                 endPoint,
                                 p2,
@@ -24862,13 +24891,6 @@
         else {
             clip = new Polygon(prefix(polygonB), 1);
             clip.selfIntersect();
-            // @ts-ignore
-            if (window.ttt) {
-                // @ts-ignore
-                window.ttt2 = true;
-                // console.log('clip')
-                // console.table(clip.segments.map(item => [item.uuid, ...item.toHash().split(' ')]))
-            }
         }
         // 两个多边形之间再次互相判断相交
         Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
@@ -25058,21 +25080,28 @@
                     else {
                         // TODO 连续多个bo运算中间产物优化
                         if (booleanOperation === BooleanOperation.INTERSECT) {
-                            // console.log(res, p);
-                            // @ts-ignore
-                            window.ttt = true;
                             const t = bo.intersect(res, p);
-                            // console.error(t);
                             res = t || [];
                         }
                         else if (booleanOperation === BooleanOperation.UNION) {
-                            // 可能是条直线，不能用多边形求，直接合并
-                            if (p.length <= 2) {
-                                res = res.concat(p);
-                            }
-                            else {
-                                const t = bo.union(res, p);
+                            // @ts-ignore
+                            window.ttt = true;
+                            // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
+                            const pp = [], pl = [];
+                            p.forEach(item => {
+                                if (item.length <= 2) {
+                                    pl.push(item);
+                                }
+                                else {
+                                    pp.push(item);
+                                }
+                            });
+                            if (pp.length) {
+                                const t = bo.union(res, pp);
                                 res = t || [];
+                            }
+                            if (pl.length) {
+                                res = res.concat(pl);
                             }
                         }
                         else if (booleanOperation === BooleanOperation.SUBTRACT) {

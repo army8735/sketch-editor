@@ -3,8 +3,8 @@ import isec from '../isec';
 import bezier from '../bezier';
 import { toPrecision } from '../geom';
 
-const EPS = 1e-9;
-const EPS2 = 1 - (1e-9);
+const EPS = 1e-4;
+const EPS2 = 1 - (1e-4);
 
 function isParallel(k1: number, k2: number) {
   if (k1 === Infinity && k2 === Infinity) {
@@ -32,8 +32,8 @@ function getIntersectionLineLine(ax1: number, ay1: number, ax2: number, ay2: num
   let toClip = (
     (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
   ) / d;
-  // 非顶点相交才是真相交
-  if (toSource > EPS && toSource < EPS2 || toClip > EPS && toClip < EPS2) {
+  // 非顶点相交才是真相交，先判断在范围内防止超过[0, 1]，再考虑精度
+  if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1 && (toSource > EPS && toSource < EPS2 || toClip > EPS && toClip < EPS2)) {
     let ox = toPrecision(ax1 + toSource * (ax2 - ax1));
     let oy = toPrecision(ay1 + toSource * (ay2 - ay1));
     return [{
@@ -50,8 +50,8 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
     bx1, by1, bx2, by2);
   if (res.length) {
     const t = res.map(item => {
-      item.x = toPrecision(item.x, 4);
-      item.y = toPrecision(item.y, 4);
+      item.x = toPrecision(item.x);
+      item.y = toPrecision(item.y);
       let toClip;
       // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
       if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -91,8 +91,8 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
     bx1, by1, bx2, by2, bx3, by3);
   if (res.length) {
     const t = res.map(item => {
-      item.x = toPrecision(item.x, 4);
-      item.y = toPrecision(item.y, 4);
+      item.x = toPrecision(item.x);
+      item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
       const toClip = bezier.getPointT([
         { x: ax1, y: ay1 },
@@ -139,8 +139,8 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
     bx1, by1, bx2, by2, bx3, by3, bx4, by4);
   if (res.length) {
     const t = res.map(item => {
-      item.x = toPrecision(item.x, 4);
-      item.y = toPrecision(item.y, 4);
+      item.x = toPrecision(item.x);
+      item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
       let toClip = bezier.getPointT([
         { x: bx1, y: by1 },
@@ -188,8 +188,8 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
     bx1, by1, bx2, by2);
   if (res.length) {
     const t = res.map(item => {
-      item.x = toPrecision(item.x, 4);
-      item.y = toPrecision(item.y, 4);
+      item.x = toPrecision(item.x);
+      item.y = toPrecision(item.y);
       // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
       let toClip;
       if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -233,8 +233,8 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
     bx1, by1, bx2, by2, bx3, by3, bx4, by4);
   if (res.length) {
     const t = res.map(item => {
-      item.x = toPrecision(item.x, 4);
-      item.y = toPrecision(item.y, 4);
+      item.x = toPrecision(item.x);
+      item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
       let toClip = bezier.getPointT([
         { x: bx1, y: by1 },

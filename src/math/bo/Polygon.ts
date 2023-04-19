@@ -74,9 +74,9 @@ class Polygon {
             ];
             const curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
             const curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1);
-            const p1 = new Point(curve1[1].x, curve1[1].y),
-              p2 = new Point(curve1[2].x, curve1[2].y),
-              p3 = new Point(curve2[1].x, curve2[1].y);
+            const p1 = new Point(toPrecision(curve1[1].x), toPrecision(curve1[1].y)),
+              p2 = new Point(toPrecision(curve1[2].x), toPrecision(curve1[2].y)),
+              p3 = new Point(toPrecision(curve2[1].x), toPrecision(curve2[1].y));
             let coords = Point.compare(startPoint, p2) ? [
               p2,
               p1,
@@ -137,9 +137,9 @@ class Polygon {
             let lastPoint = startPoint, lastT = 0;
             t.forEach(t => {
               const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t);
-              const p1 = new Point(curve[1].x, curve[1].y),
-                p2 = new Point(curve[2].x, curve[2].y),
-                p3 = new Point(curve[3].x, curve[3].y);
+              const p1 = new Point(toPrecision(curve[1].x), toPrecision(curve[1].y)),
+                p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y)),
+                p3 = new Point(toPrecision(curve[3].x), toPrecision(curve[3].y));
               const coords = Point.compare(lastPoint, p3) ? [
                 p3,
                 p2,
@@ -156,8 +156,8 @@ class Polygon {
               lastPoint = p3;
             });
             const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1);
-            const p1 = new Point(curve[1].x, curve[1].y),
-              p2 = new Point(curve[2].x, curve[2].y);
+            const p1 = new Point(toPrecision(curve[1].x), toPrecision(curve[1].y)),
+              p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y));
             const coords = Point.compare(lastPoint, endPoint) ? [
               endPoint,
               p2,
@@ -457,10 +457,6 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
     }
 
     const { x, arr } = list[0];
-    // @ts-ignore
-    if (window.ttt2) {
-      // debugger;
-    }
     while (arr.length) {
       const seg = arr.shift();
       // 被切割的老线段无效

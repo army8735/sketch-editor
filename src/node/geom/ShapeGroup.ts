@@ -76,21 +76,28 @@ class ShapeGroup extends Container {
         else {
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BooleanOperation.INTERSECT) {
-            // console.log(res, p);
-            // @ts-ignore
-            window.ttt = true;
             const t = bo.intersect(res, p) as number[][][];
-            // console.error(t);
             res = t || [];
           }
           else if (booleanOperation === BooleanOperation.UNION) {
-            // 可能是条直线，不能用多边形求，直接合并
-            if (p.length <= 2) {
-              res = res.concat(p);
-            }
-            else {
-              const t = bo.union(res, p) as number[][][];
+            // @ts-ignore
+            window.ttt = true;
+            // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
+            const pp: Array<Array<Array<number>>> = [], pl: Array<Array<Array<number>>> = [];
+            p.forEach(item => {
+              if (item.length <= 2) {
+                pl.push(item);
+              }
+              else {
+                pp.push(item);
+              }
+            });
+            if (pp.length) {
+              const t = bo.union(res, pp) as number[][][];
               res = t || [];
+            }
+            if (pl.length) {
+              res = res.concat(pl);
             }
           }
           else if (booleanOperation === BooleanOperation.SUBTRACT) {

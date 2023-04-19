@@ -150,7 +150,7 @@ export function isConvexPolygonOverlap(a: Array<{ x: number, y: number}>, b: Arr
 }
 
 export function toPrecision(num: number, p: number = 4) {
-  const t = Math.pow(10, 4);
+  const t = Math.pow(10, p);
   return Math.round(num * t) / t;
 }
 

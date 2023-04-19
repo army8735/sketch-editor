@@ -41,7 +41,7 @@ function trivial(polygonA: any, polygonB: any) {
     // @ts-ignore
     if(window.ttt) {
       // @ts-ignore
-      window.ttt2= true;
+      // window.ttt2= true;
       // console.log('clip')
       // console.table(clip.segments.map(item => [item.uuid, ...item.toHash().split(' ')]))
     }

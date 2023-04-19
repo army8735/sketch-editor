@@ -290,20 +290,6 @@ class Node extends Event {
         transform[13] += diff;
         matrix[13] += diff;
       }
-      if (lv & RefreshLevel.ROTATE_Z) {
-        const v = style.rotateZ.v;
-        computedStyle.rotateZ = v;
-        const r = d2r(v);
-        const sin = Math.sin(r), cos = Math.cos(r);
-        const x = computedStyle.scaleX, y = computedStyle.scaleY;
-        const cx = matrix[0] = cos * x;
-        const sx = matrix[1] = sin * x;
-        const sy = matrix[4] = -sin * y;
-        const cy = matrix[5] = cos * y;
-        const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
-        matrix[12] = transform[12] + ox - cx * ox - oy * sy;
-        matrix[13] = transform[13] + oy - sx * ox - oy * cy;
-      }
       if (lv & RefreshLevel.SCALE) {
         if (lv & RefreshLevel.SCALE_X) {
           const v = style.scaleX.v;
@@ -332,6 +318,20 @@ class Node extends Event {
         matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
         matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
       }
+      if (lv & RefreshLevel.ROTATE_Z) {
+        const v = style.rotateZ.v;
+        computedStyle.rotateZ = v;
+        const r = d2r(v);
+        const sin = Math.sin(r), cos = Math.cos(r);
+        const x = computedStyle.scaleX, y = computedStyle.scaleY;
+        const cx = matrix[0] = cos * x;
+        const sx = matrix[1] = sin * x;
+        const sy = matrix[4] = -sin * y;
+        const cy = matrix[5] = cos * y;
+        const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
+        matrix[12] = transform[12] + ox - cx * ox - oy * sy;
+        matrix[13] = transform[13] + oy - sx * ox - oy * cy;
+      }
     }
     // 普通布局或者第一次计算
     else {
@@ -344,12 +344,6 @@ class Node extends Event {
       computedStyle.rotateZ = rotateZ;
       computedStyle.scaleX = scaleX;
       computedStyle.scaleY = scaleY;
-      if (isE(transform)) {
-        calRotateZ(transform, rotateZ);
-      }
-      else if (rotateZ) {
-        multiplyRotateZ(transform, d2r(rotateZ));
-      }
       if (scaleX !== 1) {
         if (isE(transform)) {
           transform[0] = scaleX;
@@ -365,6 +359,12 @@ class Node extends Event {
         else {
           multiplyScaleY(transform, scaleY);
         }
+      }
+      if (isE(transform)) {
+        calRotateZ(transform, rotateZ);
+      }
+      else if (rotateZ) {
+        multiplyRotateZ(transform, d2r(rotateZ));
       }
       const tfo = style.transformOrigin.map((item, i) => {
         return calSize(item, i ? this.height : this.width);
