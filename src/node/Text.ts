@@ -85,7 +85,7 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
   // 查看是否有空格，防止字符串过长indexOf无效查找
   for (let i = start, len = start + hypotheticalNum; i < len; i++) {
     if (content.charAt(i) === '\n') {
-      hypotheticalNum = i - start + 1; // 遇到换行数量变化，包含换行，但宽度测量忽略
+      hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
       rw = ctx.measureText(content.slice(start, start + hypotheticalNum - 1)).width;
       if (letterSpacing) {
         rw += hypotheticalNum * letterSpacing;
@@ -123,9 +123,6 @@ class Text extends Node {
     let baseline;
     let maxW = 0;
     let x = 0, y = 0;
-    lineBoxList.splice(0);
-    let lineBox = new LineBox(y);
-    lineBoxList.push(lineBox);
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
     const SET_FONT_INDEX: Array<number> = [];
     if (rich && rich.length) {
@@ -152,6 +149,9 @@ class Text extends Node {
       baseline = getBaseline(computedStyle);
       ctx.font = setFontStyle(computedStyle);
     }
+    let lineBox = new LineBox(y, lineHeight);
+    lineBoxList.splice(0);
+    lineBoxList.push(lineBox);
     // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
     const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
     const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
@@ -173,14 +173,17 @@ class Text extends Node {
       // 连续\n，开头会遇到，需跳过
       if (content.charAt(i) === '\n') {
         i++;
+        x = 0;
         y += lineHeight;
-        if (lineBox.size) {
-          lineBox.verticalAlign();
-          lineBox = new LineBox(y);
+        lineBox.verticalAlign();
+        lineBox = new LineBox(y, lineHeight);
+        lineBoxList.push(lineBox);
+        const textBox = new TextBox(x, y, 0, lineHeight, baseline,
+          '\n', ctx.font);
+        lineBox.add(textBox);
+        // 最后一个\n特殊判断
+        if (i === length) {
           lineBoxList.push(lineBox);
-        }
-        else {
-          lineBox.y = y;
         }
         continue;
       }
@@ -201,7 +204,7 @@ class Text extends Node {
         y += lineBox.lineHeight;
         if (i < length) {
           lineBox.verticalAlign();
-          lineBox = new LineBox(y);
+          lineBox = new LineBox(y, lineHeight);
           lineBoxList.push(lineBox);
         }
         continue;
@@ -213,15 +216,15 @@ class Text extends Node {
         content.slice(i, i + num), ctx.font);
       lineBox.add(textBox);
       i += num;
+      maxW = Math.max(maxW, rw);
       // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
       if (newLine) {
         x = 0;
         y += lineBox.lineHeight;
-        maxW = Math.max(maxW, lineBox.w);
-        // 最后一个对齐外面做
+        // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();
-          lineBox = new LineBox(y);
+          lineBox = new LineBox(y, lineHeight);
           lineBoxList.push(lineBox);
         }
       }
@@ -237,6 +240,7 @@ class Text extends Node {
     if (autoH) {
       this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
     }
+    // 最后一行对齐
     lineBox.verticalAlign();
     // 非左对齐偏移
     const textAlign = computedStyle.textAlign;
@@ -292,8 +296,8 @@ class Text extends Node {
       if (lineBox.y >= height) {
         break;
       }
-      const list = lineBox.list;
-      for (let i = 0, len = list.length; i < len; i++) {
+      const list = lineBox.list, len = list.length;
+      for (let i = 0; i < len; i++) {
         // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
         const setFontIndex = SET_FONT_INDEX[count];
         if (rich && rich.length && count && setFontIndex) {

@@ -15990,7 +15990,7 @@
         };
     }
     // 是否平行
-    function isParallel(x1, y1, x2, y2) {
+    function isParallel$1(x1, y1, x2, y2) {
         if (isZero(x1, y1, x2, y2)) {
             return true;
         }
@@ -16057,7 +16057,7 @@
         unitize3: unitize3$1,
         angle,
         angle3,
-        isParallel,
+        isParallel: isParallel$1,
         isParallel3: isParallel3$1,
         isZero,
         isZero3,
@@ -20642,9 +20642,10 @@
     }
 
     class LineBox {
-        constructor(y) {
+        constructor(y, h) {
             this.y = y;
             this.w = 0;
+            this.h = h;
             this.list = [];
         }
         add(textBox) {
@@ -20680,12 +20681,15 @@
             return n;
         }
         get lineHeight() {
-            let n = 0;
             const list = this.list;
-            for (let i = 0, len = list.length; i < len; i++) {
-                n = Math.max(n, list[i].lineHeight);
+            if (list.length) {
+                let n = 0;
+                for (let i = 0, len = list.length; i < len; i++) {
+                    n = Math.max(n, list[i].lineHeight);
+                }
+                return n;
             }
-            return n;
+            return this.h;
         }
     }
 
@@ -20765,7 +20769,7 @@
         // 查看是否有空格，防止字符串过长indexOf无效查找
         for (let i = start, len = start + hypotheticalNum; i < len; i++) {
             if (content.charAt(i) === '\n') {
-                hypotheticalNum = i - start + 1; // 遇到换行数量变化，包含换行，但宽度测量忽略
+                hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
                 rw = ctx.measureText(content.slice(start, start + hypotheticalNum - 1)).width;
                 if (letterSpacing) {
                     rw += hypotheticalNum * letterSpacing;
@@ -20798,9 +20802,6 @@
             let baseline;
             let maxW = 0;
             let x = 0, y = 0;
-            lineBoxList.splice(0);
-            let lineBox = new LineBox(y);
-            lineBoxList.push(lineBox);
             // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
             const SET_FONT_INDEX = [];
             if (rich && rich.length) {
@@ -20827,6 +20828,9 @@
                 baseline = getBaseline(computedStyle);
                 ctx.font = setFontStyle(computedStyle);
             }
+            let lineBox = new LineBox(y, lineHeight);
+            lineBoxList.splice(0);
+            lineBoxList.push(lineBox);
             // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
             const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
             const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
@@ -20848,14 +20852,16 @@
                 // 连续\n，开头会遇到，需跳过
                 if (content.charAt(i) === '\n') {
                     i++;
+                    x = 0;
                     y += lineHeight;
-                    if (lineBox.size) {
-                        lineBox.verticalAlign();
-                        lineBox = new LineBox(y);
+                    lineBox.verticalAlign();
+                    lineBox = new LineBox(y, lineHeight);
+                    lineBoxList.push(lineBox);
+                    const textBox = new TextBox(x, y, 0, lineHeight, baseline, '\n', ctx.font);
+                    lineBox.add(textBox);
+                    // 最后一个\n特殊判断
+                    if (i === length) {
                         lineBoxList.push(lineBox);
-                    }
-                    else {
-                        lineBox.y = y;
                     }
                     continue;
                 }
@@ -20876,7 +20882,7 @@
                     y += lineBox.lineHeight;
                     if (i < length) {
                         lineBox.verticalAlign();
-                        lineBox = new LineBox(y);
+                        lineBox = new LineBox(y, lineHeight);
                         lineBoxList.push(lineBox);
                     }
                     continue;
@@ -20886,15 +20892,15 @@
                 const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
                 lineBox.add(textBox);
                 i += num;
+                maxW = Math.max(maxW, rw);
                 // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
                 if (newLine) {
                     x = 0;
                     y += lineBox.lineHeight;
-                    maxW = Math.max(maxW, lineBox.w);
-                    // 最后一个对齐外面做
+                    // 最后一行对齐外面做
                     if (i < length) {
                         lineBox.verticalAlign();
-                        lineBox = new LineBox(y);
+                        lineBox = new LineBox(y, lineHeight);
                         lineBoxList.push(lineBox);
                     }
                 }
@@ -20910,6 +20916,7 @@
             if (autoH) {
                 this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
             }
+            // 最后一行对齐
             lineBox.verticalAlign();
             // 非左对齐偏移
             const textAlign = computedStyle.textAlign;
@@ -20963,8 +20970,8 @@
                 if (lineBox.y >= height) {
                     break;
                 }
-                const list = lineBox.list;
-                for (let i = 0, len = list.length; i < len; i++) {
+                const list = lineBox.list, len = list.length;
+                for (let i = 0; i < len; i++) {
                     // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
                     const setFontIndex = SET_FONT_INDEX[count];
                     if (rich && rich.length && count && setFontIndex) {
@@ -22975,6 +22982,23 @@
 
     const EPS$1 = 1e-9;
     const EPS2$1 = 1 - (1e-9);
+    function isParallel(k1, k2) {
+        if (k1 === Infinity && k2 === Infinity) {
+            return true;
+        }
+        else if (k1 === Infinity && k2 === -Infinity) {
+            return true;
+        }
+        else if (k1 === -Infinity && k2 === -Infinity) {
+            return true;
+        }
+        else if (k1 === -Infinity && k2 === Infinity) {
+            return true;
+        }
+        else {
+            return Math.abs(k1 - k2) < EPS$1;
+        }
+    }
     function getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
         let toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
         let toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d;
@@ -23012,7 +23036,7 @@
                     ], item.t);
                     let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
-                    if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS$1) {
+                    if (isParallel(k1, k2)) {
                         return;
                     }
                     return {
@@ -23055,7 +23079,7 @@
                             { x: bx3, y: by3 },
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
-                        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS$1) {
+                        if (isParallel(k1, k2)) {
                             return;
                         }
                         return {
@@ -23101,7 +23125,7 @@
                             { x: bx4, y: by4 },
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
-                        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS$1) {
+                        if (isParallel(k1, k2)) {
                             return;
                         }
                         return {
@@ -23144,7 +23168,7 @@
                         { x: bx2, y: by2 },
                     ]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
-                    if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS$1) {
+                    if (isParallel(k1, k2)) {
                         return;
                     }
                     return {
@@ -23190,7 +23214,7 @@
                             { x: bx4, y: by4 },
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
-                        if (Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS$1) {
+                        if (isParallel(k1, k2)) {
                             return;
                         }
                         return {
@@ -23674,10 +23698,6 @@
                             // 被切割的老线段无效，注意seg切割过程中可能变成删除
                             if (item.isDeleted || seg.isDeleted) {
                                 continue;
-                            }
-                            // @ts-ignore
-                            if (window.ttt2) {
-                                if (seg.uuid === 20 && item.uuid === 15) ;
                             }
                             // 互交所属belong不同才进行检测，自交则不检查belong
                             if (compareBelong && item.belong === belong) {

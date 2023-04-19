@@ -3,11 +3,13 @@ import TextBox from './TextBox';
 class LineBox {
   y: number;
   w: number;
+  h: number;
   list: TextBox[];
 
-  constructor(y: number) {
+  constructor(y: number, h: number) {
     this.y = y;
     this.w = 0;
+    this.h = h;
     this.list = [];
   }
 
@@ -49,12 +51,15 @@ class LineBox {
   }
 
   get lineHeight(): number {
-    let n = 0;
     const list = this.list;
-    for(let i = 0, len = list.length; i < len; i++) {
-      n = Math.max(n, list[i].lineHeight);
+    if (list.length) {
+      let n = 0;
+      for (let i = 0, len = list.length; i < len; i++) {
+        n = Math.max(n, list[i].lineHeight);
+      }
+      return n;
     }
-    return n;
+    return this.h;
   }
 }
 
