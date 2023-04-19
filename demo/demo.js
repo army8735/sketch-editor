@@ -696,10 +696,10 @@ $main.addEventListener('wheel', function(e) {
     const pt1 = editor.math.matrix.calPoint(pt, inverse);
     let scale = scaleX * sc;
     if(scale > 10) {
-      scale = 10;
+      scale = 16;
     }
-    else if(scale < 0.1) {
-      scale = 0.1;
+    else if(scale < 0.0625) {
+      scale = 0.0625;
     }
     const style = editor.style.css.normalize({
       translateX,

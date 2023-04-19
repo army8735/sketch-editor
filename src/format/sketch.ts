@@ -26,7 +26,7 @@ enum ResizingConstraint {
   TOP =    0b100000, // 32
 }
 
-const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
+// const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
 
 export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   let zipFile: JSZip;
@@ -390,7 +390,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           paragraphStyle: { maximumLineHeight = 0 } = {},
         },
       } = item;
-      const fontFamily = name.replace(subFontFamilyReg, '');
+      const fontFamily = name;
       const res = {
         location,
         length,
@@ -415,7 +415,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     }) : undefined;
     const MSAttributedStringFontAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute?.attributes;
     const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : 16;
-    const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : 'arial';
+    const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name : 'arial';
     const paragraphStyle = layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const alignment = paragraphStyle?.alignment;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';

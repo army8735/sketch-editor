@@ -528,7 +528,7 @@ export function setFontStyle(style: ComputedStyle | Rich) {
 export function calFontFamily(fontFamily: string) {
   let ff = fontFamily.split(/\s*,\s*/);
   for(let i = 0, len = ff.length; i < len; i++) {
-    let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+    let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
     if(font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
       return item;
     }
@@ -540,7 +540,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   if(!ff) {
     ff = calFontFamily(style.fontFamily);
   }
-  return style.fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+  return Math.ceil(style.fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr);
 }
 
 /**

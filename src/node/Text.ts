@@ -86,11 +86,11 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
   for (let i = start, len = start + hypotheticalNum; i < len; i++) {
     if (content.charAt(i) === '\n') {
       hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
-      rw = ctx.measureText(content.slice(start, start + hypotheticalNum - 1)).width;
+      rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
       if (letterSpacing) {
         rw += hypotheticalNum * letterSpacing;
       }
-      newLine = true;
+      // newLine = true;
       break;
     }
   }

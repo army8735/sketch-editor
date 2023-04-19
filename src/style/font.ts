@@ -48,6 +48,6 @@ const o: any = {
 };
 
 o.info['宋体'] = o.info.simsun;
-o.info['pingfang'] = o.info['pingfang sc'];
+o.info['pingfang'] = o.info['pingfangsc'] = o.info['pingfangsc-regular'] = o.info['pingfang sc'];
 
 export default o;

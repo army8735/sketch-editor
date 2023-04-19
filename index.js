@@ -15940,7 +15940,7 @@
         },
     };
     o.info['宋体'] = o.info.simsun;
-    o.info['pingfang'] = o.info['pingfang sc'];
+    o.info['pingfang'] = o.info['pingfangsc'] = o.info['pingfangsc-regular'] = o.info['pingfang sc'];
 
     var reg = {
         position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
@@ -17553,7 +17553,7 @@
     function calFontFamily(fontFamily) {
         let ff = fontFamily.split(/\s*,\s*/);
         for (let i = 0, len = ff.length; i < len; i++) {
-            let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+            let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
             if (o.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
                 return item;
             }
@@ -17564,7 +17564,7 @@
         if (!ff) {
             ff = calFontFamily(style.fontFamily);
         }
-        return style.fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr;
+        return Math.ceil(style.fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr);
     }
     /**
      * https://zhuanlan.zhihu.com/p/25808995
@@ -17609,7 +17609,7 @@
         ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
         ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
     })(ResizingConstraint || (ResizingConstraint = {}));
-    const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
+    // const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
     function openAndConvertSketchBuffer(arrayBuffer) {
         return __awaiter(this, void 0, void 0, function* () {
             let zipFile;
@@ -17940,7 +17940,7 @@
                 const { string, attributes } = layer.attributedString;
                 const rich = attributes.length ? attributes.map((item) => {
                     const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
-                    const fontFamily = name.replace(subFontFamilyReg, '');
+                    const fontFamily = name;
                     const res = {
                         location,
                         length,
@@ -17965,7 +17965,7 @@
                 }) : undefined;
                 const MSAttributedStringFontAttribute = (_f = (_e = (_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.textStyle) === null || _d === void 0 ? void 0 : _d.encodedAttributes) === null || _e === void 0 ? void 0 : _e.MSAttributedStringFontAttribute) === null || _f === void 0 ? void 0 : _f.attributes;
                 const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : 16;
-                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name.replace(subFontFamilyReg, '') : 'arial';
+                const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name : 'arial';
                 const paragraphStyle = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
@@ -20770,11 +20770,11 @@
         for (let i = start, len = start + hypotheticalNum; i < len; i++) {
             if (content.charAt(i) === '\n') {
                 hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
-                rw = ctx.measureText(content.slice(start, start + hypotheticalNum - 1)).width;
+                rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
                 if (letterSpacing) {
                     rw += hypotheticalNum * letterSpacing;
                 }
-                newLine = true;
+                // newLine = true;
                 break;
             }
         }
