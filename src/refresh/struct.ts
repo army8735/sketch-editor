@@ -5,6 +5,8 @@ import { RefreshLevel } from './level';
 import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
 import { assignMatrix, multiply } from '../math/matrix';
 import inject from '../util/inject';
+import { MASK } from '../style/define';
+import TextureCache from './TextureCache';
 
 export type Struct = {
   node: Node;
@@ -13,28 +15,88 @@ export type Struct = {
   lv: number;
 };
 
+type Merge = {
+  i: number,
+  lv: number,
+  total: number,
+  node: Node,
+};
+
 export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
                             root: Root, rl: RefreshLevel) {
   const { structs, width, height } = root;
   const cx = width * 0.5, cy = height * 0.5;
+  const mergeList: Array<Merge> = [];
   // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
   if (rl >= RefreshLevel.REPAINT) {
-    for(let i = 0, len = structs.length; i < len; i++) {
-      const { node } = structs[i];
-      const { refreshLevel } = node;
+    let maskStart = 0, maskLv = 0;
+    for (let i = 0, len = structs.length; i < len; i++) {
+      const { node, lv } = structs[i];
+      const { refreshLevel, computedStyle } = node;
       node.refreshLevel = RefreshLevel.NONE;
+      // 检查mask结束，可能本身没有变更，或者到末尾/一个组结束自动关闭mask
+      const { mask } = computedStyle;
+      if (maskStart && (mask & MASK.BREAK || i === len - 1 || lv < maskLv)) {
+        const s = structs[maskStart];
+        mergeList.push({
+          i: maskStart,
+          lv: s.lv,
+          total: i - maskStart - (mask & MASK.BREAK || i === len - 1 ? 0 : 1), // 自动闭合的索引多了1个
+          node: s.node,
+        });
+        maskStart = 0;
+      }
       // 无任何变化即refreshLevel为NONE（0）忽略
-      if(refreshLevel) {
+      if (refreshLevel) {
         // filter之类的变更
-        if(refreshLevel < RefreshLevel.REPAINT) {}
+        if (refreshLevel < RefreshLevel.REPAINT) {
+        }
         else {
           const hasContent = node.calContent();
-          // hasContent
+          // 有内容才渲染生成纹理
           if (hasContent) {
             node.renderCanvas();
             node.genTexture(gl);
           }
+          const { mask } = computedStyle;
+          if (mask & MASK.OA) {
+            maskStart = i;
+            maskLv = lv;
+          }
         }
+      }
+    }
+  }
+  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
+  if(mergeList.length) {
+    mergeList.sort(function (a, b) {
+      if (a.lv === b.lv) {
+        return a.i - b.i;
+      }
+      return b.lv - a.lv;
+    });
+    for (let j = 0, len = mergeList.length; j < len; j++) {
+      const {
+        i,
+        lv,
+        node,
+      } = mergeList[j];
+      const textureCache = node.textureCache!;
+      let textureTotal = node.textureTotal;
+      // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
+      if (!textureTotal || !textureTotal.available) {
+        if (node.struct.total) {
+          textureTotal = node.textureTotal = genTotal(gl, root, node, structs, i, lv, width, height);
+        }
+        else {
+          textureTotal = node.textureTotal = textureCache;
+        }
+      }
+      // 生成mask
+      const computedStyle = node.computedStyle;
+      const { mask } = computedStyle;
+      if (mask & MASK.OA && textureTotal) {
+        genMask(gl, root, node, mask, textureTotal!, structs, i, lv, width, height);
       }
     }
   }
@@ -60,7 +122,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
   const cacheMwList: Array<boolean> = [];
   let lastLv = 0, hasCacheOpLv = false, hasCacheMwLv = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
-  for(let i = 0, len = structs.length; i < len; i++) {
+  for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
     // 特殊的工具覆盖层，如画板名称，同步更新translate直接跟着画板位置刷新
     if (overlay && overlay === node) {
@@ -189,4 +251,14 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       }
     }
   }
+}
+
+function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, structs: Array<Struct>,
+                  i: number, lv: number, width: number, height: number) {
+  // TODO
+  return node.textureCache;
+}
+
+function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, mask: MASK,
+                 textureTotal: TextureCache, structs: Array<Struct>, i: number, lv: number, width: number, height: number) {
 }

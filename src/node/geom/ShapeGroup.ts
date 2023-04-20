@@ -1,7 +1,7 @@
 import Container from '../Container';
 import { Props } from '../../format';
 import Polyline from './Polyline';
-import { BooleanOperation, FILL_RULE } from '../../style/define';
+import { BOOLEAN_OPERATION, FILL_RULE } from '../../style/define';
 import bo from '../../math/bo';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
@@ -75,11 +75,11 @@ class ShapeGroup extends Container {
         }
         else {
           // TODO 连续多个bo运算中间产物优化
-          if (booleanOperation === BooleanOperation.INTERSECT) {
+          if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
             const t = bo.intersect(res, p) as number[][][];
             res = t || [];
           }
-          else if (booleanOperation === BooleanOperation.UNION) {
+          else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
             const pp: Array<Array<Array<number>>> = [], pl: Array<Array<Array<number>>> = [];
             p.forEach(item => {
@@ -98,11 +98,11 @@ class ShapeGroup extends Container {
               res = res.concat(pl);
             }
           }
-          else if (booleanOperation === BooleanOperation.SUBTRACT) {
+          else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
             const t = bo.subtract(res, p) as number[][][];
             res = t || [];
           }
-          else if (booleanOperation === BooleanOperation.XOR) {
+          else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
             const t = bo.xor(res, p) as number[][][];
             res = t || [];
           }

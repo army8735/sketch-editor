@@ -46,6 +46,7 @@
             booleanOperation: 'none',
             mixBlendMode: 'normal',
             pointerEvents: true,
+            mask: 0,
         }, v);
     }
     var TagName;
@@ -15069,14 +15070,14 @@
     /**
      * Enumeration of the boolean operations that can be applied to combine shapes
      */
-    var BooleanOperation$1;
+    var BooleanOperation;
     (function (BooleanOperation) {
         BooleanOperation[BooleanOperation["None"] = -1] = "None";
         BooleanOperation[BooleanOperation["Union"] = 0] = "Union";
         BooleanOperation[BooleanOperation["Subtract"] = 1] = "Subtract";
         BooleanOperation[BooleanOperation["Intersection"] = 2] = "Intersection";
         BooleanOperation[BooleanOperation["Difference"] = 3] = "Difference";
-    })(BooleanOperation$1 || (BooleanOperation$1 = {}));
+    })(BooleanOperation || (BooleanOperation = {}));
     /**
      * Enumeration of the file formats that can be selected in the layer export options
      */
@@ -15324,7 +15325,7 @@
         get TextTransform () { return TextTransform; },
         get UnderlineStyle () { return UnderlineStyle; },
         get StrikethroughStyle () { return StrikethroughStyle; },
-        get BooleanOperation () { return BooleanOperation$1; },
+        get BooleanOperation () { return BooleanOperation; },
         get ExportFileFormat () { return ExportFileFormat; },
         get ExportFormatNamingScheme () { return ExportFormatNamingScheme; },
         get VisibleScaleType () { return VisibleScaleType; },
@@ -15436,14 +15437,14 @@
         GRADIENT[GRADIENT["RADIAL"] = 1] = "RADIAL";
         GRADIENT[GRADIENT["CONIC"] = 2] = "CONIC";
     })(GRADIENT || (GRADIENT = {}));
-    var BooleanOperation;
-    (function (BooleanOperation) {
-        BooleanOperation[BooleanOperation["NONE"] = 0] = "NONE";
-        BooleanOperation[BooleanOperation["UNION"] = 1] = "UNION";
-        BooleanOperation[BooleanOperation["SUBTRACT"] = 2] = "SUBTRACT";
-        BooleanOperation[BooleanOperation["INTERSECT"] = 3] = "INTERSECT";
-        BooleanOperation[BooleanOperation["XOR"] = 4] = "XOR";
-    })(BooleanOperation || (BooleanOperation = {}));
+    var BOOLEAN_OPERATION;
+    (function (BOOLEAN_OPERATION) {
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["NONE"] = 0] = "NONE";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["UNION"] = 1] = "UNION";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["SUBTRACT"] = 2] = "SUBTRACT";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["INTERSECT"] = 3] = "INTERSECT";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["XOR"] = 4] = "XOR";
+    })(BOOLEAN_OPERATION || (BOOLEAN_OPERATION = {}));
     var CurveMode;
     (function (CurveMode) {
         CurveMode[CurveMode["None"] = 0] = "None";
@@ -15457,6 +15458,14 @@
         FILL_RULE[FILL_RULE["NON_ZERO"] = 0] = "NON_ZERO";
         FILL_RULE[FILL_RULE["EVEN_ODD"] = 1] = "EVEN_ODD";
     })(FILL_RULE || (FILL_RULE = {}));
+    var MASK;
+    (function (MASK) {
+        MASK[MASK["NONE"] = 0] = "NONE";
+        MASK[MASK["OUTLINE"] = 1] = "OUTLINE";
+        MASK[MASK["ALPHA"] = 2] = "ALPHA";
+        MASK[MASK["OA"] = 3] = "OA";
+        MASK[MASK["BREAK"] = 4] = "BREAK";
+    })(MASK || (MASK = {}));
     var define = {
         StyleUnit,
         calUnit,
@@ -16647,6 +16656,7 @@
     Event.DID_ADD_DOM = 'didAddDom';
     Event.WILL_REMOVE_DOM = 'willRemoveDom';
     Event.PAGE_CHANGED = 'pageChanged';
+    Event.VISIBLE_CHANGED = 'visibleChanged';
 
     function clone(obj) {
         if (isNil(obj) || typeof obj !== 'object') {
@@ -17374,18 +17384,18 @@
         }
         const booleanOperation = style.booleanOperation;
         if (!isNil(booleanOperation)) {
-            let v = BooleanOperation.NONE;
+            let v = BOOLEAN_OPERATION.NONE;
             if (booleanOperation === 'union') {
-                v = BooleanOperation.UNION;
+                v = BOOLEAN_OPERATION.UNION;
             }
             else if (booleanOperation === 'subtract') {
-                v = BooleanOperation.SUBTRACT;
+                v = BOOLEAN_OPERATION.SUBTRACT;
             }
             else if (booleanOperation === 'intersect') {
-                v = BooleanOperation.INTERSECT;
+                v = BOOLEAN_OPERATION.INTERSECT;
             }
             else if (booleanOperation === 'xor') {
-                v = BooleanOperation.XOR;
+                v = BOOLEAN_OPERATION.XOR;
             }
             res.booleanOperation = { v, u: StyleUnit.NUMBER };
         }
@@ -17442,6 +17452,10 @@
         const pointerEvents = style.pointerEvents;
         if (!isNil(pointerEvents)) {
             res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+        }
+        const mask = style.mask;
+        if (!isNil(mask)) {
+            res.mask = { v: mask, u: StyleUnit.NUMBER };
         }
         return res;
     }
@@ -17727,6 +17741,8 @@
                         transformOrigin: [0, 0],
                         pointerEvents: false,
                     },
+                    isLocked: false,
+                    isExpanded: false,
                 },
                 children: children.filter(item => item),
             };
@@ -17774,6 +17790,8 @@
                             overflow: 'hidden',
                             backgroundColor,
                         },
+                        isLocked: false,
+                        isExpanded: false,
                     },
                     children: children.filter(item => item),
                 };
@@ -17897,6 +17915,17 @@
                 translateY = 0;
                 height = 'auto';
             }
+            // 遮罩转换为唯一枚举表示
+            const { hasClippingMask, clippingMaskMode, shouldBreakMaskChain, } = layer;
+            let mask = MASK.NONE;
+            if (hasClippingMask) {
+                mask |= clippingMaskMode ? MASK.ALPHA : MASK.OUTLINE;
+            }
+            if (shouldBreakMaskChain) {
+                mask |= MASK.BREAK;
+            }
+            const isLocked = layer.isLocked;
+            const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             if (layer._class === FileFormat.ClassValue.Group) {
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
@@ -17920,7 +17949,10 @@
                             scaleX,
                             scaleY,
                             rotateZ,
+                            mask,
                         },
+                        isLocked,
+                        isExpanded,
                     },
                     children: children.filter(item => item),
                 };
@@ -17944,7 +17976,10 @@
                             translateX,
                             translateY,
                             rotateZ,
+                            mask,
                         },
+                        isLocked,
+                        isExpanded,
                         src: index,
                     },
                 };
@@ -18025,7 +18060,10 @@
                             textAlign,
                             letterSpacing,
                             lineHeight,
+                            mask,
                         },
+                        isLocked,
+                        isExpanded,
                         content: string,
                         rich,
                     },
@@ -18084,7 +18122,10 @@
                             scaleY,
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+                            mask,
                         },
+                        isLocked,
+                        isExpanded,
                     },
                 };
             }
@@ -18120,7 +18161,10 @@
                             scaleY,
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+                            mask,
                         },
+                        isLocked,
+                        isExpanded,
                     },
                     children,
                 };
@@ -18946,7 +18990,7 @@
                 return;
             }
             this.lay(data);
-            // repaint和matrix计算需要x/y/width/height
+            // reflow和matrix计算需要x/y/width/height
             this.calRepaintStyle(RefreshLevel.REFLOW);
             this._rect = undefined;
             this._bbox = undefined;
@@ -18997,6 +19041,7 @@
             computedStyle.booleanOperation = style.booleanOperation.v;
             computedStyle.mixBlendMode = style.mixBlendMode.v;
             computedStyle.pointerEvents = style.pointerEvents.v;
+            computedStyle.mask = style.mask.v;
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
             }
@@ -19818,7 +19863,7 @@
                 p = p.parent;
             }
         }
-        // 获取指定位置节点，不包含Page/ArtBoard
+        // 获取指定位置节点，考虑包含Page/ArtBoard和指定lv层级
         getNodeByPointAndLv(x, y, includeGroup = false, includeArtBoard = false, lv) {
             const children = this.children;
             for (let i = children.length - 1; i >= 0; i--) {
@@ -20107,7 +20152,7 @@
             gl.useProgram(colorProgram);
             // 矩形固定2个三角形
             const t = calRectPoint(0, 0, width, height, matrixWorld);
-            const vtPoint = new Float32Array(12);
+            const vtPoint = new Float32Array(8);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
             const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -20118,12 +20163,8 @@
             vtPoint[3] = t4.y;
             vtPoint[4] = t2.x;
             vtPoint[5] = t2.y;
-            vtPoint[6] = t4.x;
-            vtPoint[7] = t4.y;
-            vtPoint[8] = t2.x;
-            vtPoint[9] = t2.y;
-            vtPoint[10] = t3.x;
-            vtPoint[11] = t3.y;
+            vtPoint[6] = t3.x;
+            vtPoint[7] = t3.y;
             // 顶点buffer
             const pointBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -20136,7 +20177,7 @@
             const color = color2gl(computedStyle.backgroundColor);
             gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
             // 渲染并销毁
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             gl.deleteBuffer(pointBuffer);
             gl.disableVertexAttribArray(a_position);
         }
@@ -25104,11 +25145,11 @@
                     }
                     else {
                         // TODO 连续多个bo运算中间产物优化
-                        if (booleanOperation === BooleanOperation.INTERSECT) {
+                        if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
                             const t = bo.intersect(res, p);
                             res = t || [];
                         }
-                        else if (booleanOperation === BooleanOperation.UNION) {
+                        else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
                             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
                             const pp = [], pl = [];
                             p.forEach(item => {
@@ -25127,11 +25168,11 @@
                                 res = res.concat(pl);
                             }
                         }
-                        else if (booleanOperation === BooleanOperation.SUBTRACT) {
+                        else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
                             const t = bo.subtract(res, p);
                             res = t || [];
                         }
-                        else if (booleanOperation === BooleanOperation.XOR) {
+                        else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
                             const t = bo.xor(res, p);
                             res = t || [];
                         }
@@ -25374,25 +25415,71 @@
     function renderWebgl(gl, root, rl) {
         const { structs, width, height } = root;
         const cx = width * 0.5, cy = height * 0.5;
+        const mergeList = [];
         // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
         if (rl >= RefreshLevel.REPAINT) {
+            let maskStart = 0, maskLv = 0;
             for (let i = 0, len = structs.length; i < len; i++) {
-                const { node } = structs[i];
-                const { refreshLevel } = node;
+                const { node, lv } = structs[i];
+                const { refreshLevel, computedStyle } = node;
                 node.refreshLevel = RefreshLevel.NONE;
+                // 检查mask结束，可能本身没有变更，或者到末尾/一个组结束自动关闭mask
+                const { mask } = computedStyle;
+                if (maskStart && (mask & MASK.BREAK || i === len - 1 || lv < maskLv)) {
+                    const s = structs[maskStart];
+                    mergeList.push({
+                        i: maskStart,
+                        lv: s.lv,
+                        total: i - maskStart - (mask & MASK.BREAK || i === len - 1 ? 0 : 1),
+                        node: s.node,
+                    });
+                    maskStart = 0;
+                }
                 // 无任何变化即refreshLevel为NONE（0）忽略
                 if (refreshLevel) {
                     // filter之类的变更
                     if (refreshLevel < RefreshLevel.REPAINT) ;
                     else {
                         const hasContent = node.calContent();
-                        // hasContent
+                        // 有内容才渲染生成纹理
                         if (hasContent) {
                             node.renderCanvas();
                             node.genTexture(gl);
                         }
+                        const { mask } = computedStyle;
+                        if (mask & MASK.OA) {
+                            maskStart = i;
+                            maskLv = lv;
+                        }
                     }
                 }
+            }
+        }
+        // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
+        if (mergeList.length) {
+            mergeList.sort(function (a, b) {
+                if (a.lv === b.lv) {
+                    return a.i - b.i;
+                }
+                return b.lv - a.lv;
+            });
+            for (let j = 0, len = mergeList.length; j < len; j++) {
+                const { i, lv, node, } = mergeList[j];
+                const textureCache = node.textureCache;
+                let textureTotal = node.textureTotal;
+                // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
+                if (!textureTotal || !textureTotal.available) {
+                    if (node.struct.total) {
+                        textureTotal = node.textureTotal = genTotal(gl, root, node);
+                    }
+                    else {
+                        textureTotal = node.textureTotal = textureCache;
+                    }
+                }
+                // 生成mask
+                const computedStyle = node.computedStyle;
+                const { mask } = computedStyle;
+                if (mask & MASK.OA && textureTotal) ;
             }
         }
         const programs = root.programs;
@@ -25546,6 +25633,10 @@
                 }
             }
         }
+    }
+    function genTotal(gl, root, node, structs, i, lv, width, height) {
+        // TODO
+        return node.textureCache;
     }
 
     function checkReflow(root, node, addDom, removeDom) {
@@ -25871,20 +25962,13 @@ void main() {
             else {
                 cb && cb(true);
             }
-            // 切页过程中page不存在不触发，防止新老错乱
-            if (addDom && this.lastPage) {
-                let isInPage = false;
-                let parent = node.parent;
-                while (parent && parent !== this) {
-                    if (parent instanceof Group || parent instanceof ArtBoard || parent instanceof Page) {
-                        isInPage = true;
-                        break;
-                    }
-                    parent = parent.parent;
-                }
-                // 防止overlay中的图层
-                if (isInPage) {
+            // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
+            if (this.lastPage && node.page) {
+                if (addDom) {
                     this.emit(Event.DID_ADD_DOM, node);
+                }
+                else if (keys.indexOf('visible') > -1) {
+                    this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
                 }
             }
         }

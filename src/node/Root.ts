@@ -1,6 +1,5 @@
 import Node from './Node';
 import Page from './Page';
-import Group from './Group';
 import ArtBoard from './ArtBoard';
 import Overlay from './overlay/Overlay';
 import { JPage, Props } from '../format';
@@ -188,20 +187,13 @@ class Root extends Container implements FrameCallback {
     else {
       cb && cb(true);
     }
-    // 切页过程中page不存在不触发，防止新老错乱
-    if (addDom && this.lastPage) {
-      let isInPage = false;
-      let parent = node.parent;
-      while (parent && parent !== this) {
-        if (parent instanceof Group || parent instanceof ArtBoard || parent instanceof Page) {
-          isInPage = true;
-          break;
-        }
-        parent = parent.parent;
-      }
-      // 防止overlay中的图层
-      if (isInPage) {
+    // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
+    if (this.lastPage && node.page) {
+      if (addDom) {
         this.emit(Event.DID_ADD_DOM, node);
+      }
+      else if (keys.indexOf('visible') > -1) {
+        this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
       }
     }
   }

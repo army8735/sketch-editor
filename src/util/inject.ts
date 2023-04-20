@@ -379,13 +379,13 @@ const inject = {
       load(url, cache);
     }
   },
-  log(s: string) {
+  log(s: any) {
     console.log(s);
   },
-  warn(s: string) {
+  warn(s: any) {
     console.warn(s);
   },
-  error(s: string) {
+  error(s: any) {
     console.error(s);
   },
 };

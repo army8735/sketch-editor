@@ -56,6 +56,8 @@ class Node extends Event {
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
+  textureTotal?: TextureCache;
+  textureMask?: TextureCache;
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
   isPage = false;
@@ -204,7 +206,7 @@ class Node extends Event {
       return;
     }
     this.lay(data);
-    // repaint和matrix计算需要x/y/width/height
+    // reflow和matrix计算需要x/y/width/height
     this.calRepaintStyle(RefreshLevel.REFLOW);
     this._rect = undefined;
     this._bbox = undefined;
@@ -257,6 +259,7 @@ class Node extends Event {
     computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
+    computedStyle.mask = style.mask.v;
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
     }

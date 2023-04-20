@@ -1,20 +1,21 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import {
-  JNode,
-  JFile,
-  JPage,
   JArtBoard,
-  JGroup,
   JBitmap,
-  JText,
+  JFile,
+  JGroup,
+  JNode,
+  JPage,
   JPolyline,
-  TagName,
-  Rich,
-  Point,
   JShapeGroup,
+  JText,
+  Point,
+  Rich,
+  TagName,
 } from './';
 import { calNormalLineHeight, color2hexStr } from '../style/css';
+import { MASK } from '../style/define';
 
 enum ResizingConstraint {
   UNSET =  0b111111,
@@ -134,6 +135,8 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
         transformOrigin: [0, 0],
         pointerEvents: false,
       },
+      isLocked: false,
+      isExpanded: false,
     },
     children: children.filter(item => item),
   } as JPage;
@@ -181,6 +184,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           overflow: 'hidden',
           backgroundColor,
         },
+        isLocked: false,
+        isExpanded: false,
       },
       children: children.filter(item => item),
     } as JArtBoard;
@@ -311,6 +316,21 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     translateY = 0;
     height = 'auto';
   }
+  // 遮罩转换为唯一枚举表示
+  const {
+    hasClippingMask,
+    clippingMaskMode,
+    shouldBreakMaskChain,
+  } = layer;
+  let mask = MASK.NONE;
+  if (hasClippingMask) {
+    mask |= clippingMaskMode ? MASK.ALPHA : MASK.OUTLINE;
+  }
+  if (shouldBreakMaskChain) {
+    mask |= MASK.BREAK;
+  }
+  const isLocked = layer.isLocked;
+  const isExpanded = layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
@@ -336,7 +356,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           scaleX,
           scaleY,
           rotateZ,
+          mask,
         },
+        isLocked,
+        isExpanded,
       },
       children: children.filter(item => item),
     } as JGroup;
@@ -360,7 +383,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           translateX,
           translateY,
           rotateZ,
+          mask,
         },
+        isLocked,
+        isExpanded,
         src: index,
       },
     } as JBitmap;
@@ -452,7 +478,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           textAlign,
           letterSpacing,
           lineHeight,
+          mask,
         },
+        isLocked,
+        isExpanded,
         content: string,
         rich,
       },
@@ -519,7 +548,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           scaleY,
           rotateZ,
           booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+          mask,
         },
+        isLocked,
+        isExpanded,
       },
     } as JPolyline;
   }
@@ -565,7 +597,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           scaleY,
           rotateZ,
           booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+          mask,
         },
+        isLocked,
+        isExpanded,
       },
       children,
     } as JShapeGroup;

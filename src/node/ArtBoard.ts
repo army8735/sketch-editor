@@ -265,7 +265,7 @@ class ArtBoard extends Container {
     gl.useProgram(colorProgram);
     // 矩形固定2个三角形
     const t = calRectPoint(0, 0, width, height, matrixWorld);
-    const vtPoint = new Float32Array(12);
+    const vtPoint = new Float32Array(8);
     const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
     const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
     const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
@@ -276,12 +276,8 @@ class ArtBoard extends Container {
     vtPoint[3] = t4.y;
     vtPoint[4] = t2.x;
     vtPoint[5] = t2.y;
-    vtPoint[6] = t4.x;
-    vtPoint[7] = t4.y;
-    vtPoint[8] = t2.x;
-    vtPoint[9] = t2.y;
-    vtPoint[10] = t3.x;
-    vtPoint[11] = t3.y;
+    vtPoint[6] = t3.x;
+    vtPoint[7] = t3.y;
     // 顶点buffer
     const pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -294,7 +290,7 @@ class ArtBoard extends Container {
     const color = color2gl(computedStyle.backgroundColor);
     gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
     // 渲染并销毁
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer);
     gl.disableVertexAttribArray(a_position);
   }

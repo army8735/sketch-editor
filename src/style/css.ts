@@ -1,6 +1,6 @@
 import { JStyle, Rich } from '../format';
 import {
-  BooleanOperation,
+  BOOLEAN_OPERATION,
   calUnit,
   ComputedStyle,
   FILL_RULE,
@@ -318,18 +318,18 @@ export function normalize(style: JStyle): Style {
   }
   const booleanOperation = style.booleanOperation;
   if (!isNil(booleanOperation)) {
-    let v = BooleanOperation.NONE;
+    let v = BOOLEAN_OPERATION.NONE;
     if (booleanOperation  === 'union') {
-      v = BooleanOperation.UNION;
+      v = BOOLEAN_OPERATION.UNION;
     }
     else if (booleanOperation === 'subtract') {
-      v = BooleanOperation.SUBTRACT;
+      v = BOOLEAN_OPERATION.SUBTRACT;
     }
     else if (booleanOperation === 'intersect') {
-      v = BooleanOperation.INTERSECT;
+      v = BOOLEAN_OPERATION.INTERSECT;
     }
     else if (booleanOperation === 'xor') {
-      v = BooleanOperation.XOR;
+      v = BOOLEAN_OPERATION.XOR;
     }
     res.booleanOperation = { v, u: StyleUnit.NUMBER };
   }
@@ -386,6 +386,10 @@ export function normalize(style: JStyle): Style {
   const pointerEvents = style.pointerEvents;
   if (!isNil(pointerEvents)) {
     res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+  }
+  const mask = style.mask;
+  if (!isNil(mask)) {
+    res.mask = { v: mask, u: StyleUnit.NUMBER };
   }
   return res;
 }

@@ -194,24 +194,24 @@ class Container extends Node {
 
   insertStruct(child: Node, childIndex: number) {
     const { struct, root } = this;
-    const cs = child.structure(struct!.lv + 1);
+    const cs = child.structure(struct.lv + 1);
     const structs = root!.structs;
     let i;
     if (childIndex) {
-      const s = this.children[childIndex - 1].struct!;
+      const s = this.children[childIndex - 1].struct;
       const total = s.total;
       i = structs.indexOf(s) + total + 1;
     }
     else {
-      i = structs.indexOf(struct!) + 1;
+      i = structs.indexOf(struct) + 1;
     }
     structs.splice(i, 0, ...cs);
     const total = cs[0].total + 1;
-    struct!.num++;
-    struct!.total += total;
+    struct.num++;
+    struct.total += total;
     let p = this.parent;
     while (p) {
-      p.struct!.total += total;
+      p.struct.total += total;
       p = p.parent;
     }
   }
@@ -232,7 +232,7 @@ class Container extends Node {
     }
   }
 
-  // 获取指定位置节点，不包含Page/ArtBoard
+  // 获取指定位置节点，考虑包含Page/ArtBoard和指定lv层级
   getNodeByPointAndLv(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {

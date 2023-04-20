@@ -73,7 +73,7 @@ export type StyleOverflowValue = {
 };
 
 export type StyleBooleanOperationValue = {
-  v: BooleanOperation,
+  v: BOOLEAN_OPERATION,
   u: StyleUnit.NUMBER,
 };
 
@@ -107,6 +107,11 @@ export type StyleGradientValue = {
 
 export type StyleFillRuleValue = {
   v: FILL_RULE,
+  u: StyleUnit.NUMBER,
+};
+
+export type StyleMaskValue = {
+  v: MASK,
   u: StyleUnit.NUMBER,
 };
 
@@ -145,6 +150,7 @@ export type Style = {
   booleanOperation: StyleBooleanOperationValue,
   mixBlendMode: StyleMbmValue,
   pointerEvents: StyleBoolValue,
+  mask: StyleMaskValue,
 };
 
 export type ComputedStyle = {
@@ -181,9 +187,10 @@ export type ComputedStyle = {
   scaleY: number,
   rotateZ: number,
   transformOrigin: [number, number],
-  booleanOperation: BooleanOperation,
+  booleanOperation: BOOLEAN_OPERATION,
   mixBlendMode: MIX_BLEND_MODE,
   pointerEvents: boolean,
+  mask: MASK,
 };
 
 export enum TEXT_ALIGN {
@@ -235,7 +242,7 @@ export enum GRADIENT {
   CONIC = 2,
 }
 
-export enum BooleanOperation {
+export enum BOOLEAN_OPERATION {
   NONE = 0,
   UNION = 1,
   SUBTRACT = 2,
@@ -254,6 +261,14 @@ export enum CurveMode {
 export enum FILL_RULE {
   NON_ZERO = 0,
   EVEN_ODD = 1,
+}
+
+export enum MASK {
+  NONE =    0b000, // 0
+  OUTLINE = 0b001, // 1
+  ALPHA =   0b010, // 2
+  OA =      0b011, // 3
+  BREAK =   0b100, // 4
 }
 
 export default {
