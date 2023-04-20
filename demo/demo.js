@@ -695,11 +695,11 @@ $main.addEventListener('wheel', function(e) {
     // 求出鼠标屏幕坐标在画布内相对page的坐标
     const pt1 = editor.math.matrix.calPoint(pt, inverse);
     let scale = scaleX * sc;
-    if(scale > 10) {
-      scale = 16;
+    if(scale > 32) {
+      scale = 32;
     }
-    else if(scale < 0.0625) {
-      scale = 0.0625;
+    else if(scale < 0.03125) {
+      scale = 0.03125;
     }
     const style = editor.style.css.normalize({
       translateX,
