@@ -38,6 +38,11 @@ const o: any = {
       lhr: 1.4, // (0+1060+340)/1000
       blr: 1.06,
     },
+    dinpro: {
+      lhr: 1.288, // (10+1041+237)/1000
+      blr: 1.041, // 1041/1000
+      lgr: 0.01, // 10/1000
+    },
   },
   hasRegister(fontFamily: string) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
@@ -48,6 +53,28 @@ const o: any = {
 };
 
 o.info['宋体'] = o.info.simsun;
-o.info['pingfang'] = o.info['pingfangsc'] = o.info['pingfangsc-regular'] = o.info['pingfang sc'];
+[
+  'pingfang',
+  'pingfangsc',
+  'pingfangsc-ultralight', // 极细
+  'pingfangsc-medium', // 中黑
+  'pingfangsc-regular', // 常规
+  'pingfangsc-semibold', // 中粗
+  'pingfangsc-bold', // 粗
+  'pingfangsc-thin', // 细
+  'pingfangsc-light', // 纤细
+].forEach(k => {
+  o.info[k] = o.info['pingfang sc'];
+});
+[
+  'dinpro-medium', // 中黑
+  'dinpro-regular', // 常规
+  'dinpro-semibold', // 中粗
+  'dinpro-bold', // 粗
+  'dinpro-thin', // 细
+  'dinpro-light', // 纤细
+].forEach(k => {
+  o.info[k] = o.info['dinpro'];
+});
 
 export default o;

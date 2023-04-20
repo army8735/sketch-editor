@@ -15679,7 +15679,7 @@
             }
             if (Array.isArray(url)) {
                 if (!url.length) {
-                    return cb && cb();
+                    return cb && cb(null);
                 }
                 let count = 0;
                 let len = url.length;
@@ -15791,7 +15791,7 @@
         measureImg(url, cb) {
             if (Array.isArray(url)) {
                 if (!url.length) {
-                    return cb && cb();
+                    return cb && cb(null);
                 }
                 let count = 0;
                 let len = url.length;
@@ -15852,7 +15852,7 @@
                             load(o, IMG[o]);
                         }
                     };
-                    img.onerror = function (e) {
+                    img.onerror = function () {
                         cache.state = LOADED;
                         cache.success = false;
                         cache.url = url;
@@ -15931,6 +15931,11 @@
                 lhr: 1.4,
                 blr: 1.06,
             },
+            dinpro: {
+                lhr: 1.288,
+                blr: 1.041,
+                lgr: 0.01, // 10/1000
+            },
         },
         hasRegister(fontFamily) {
             return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
@@ -15940,7 +15945,29 @@
         },
     };
     o.info['宋体'] = o.info.simsun;
-    o.info['pingfang'] = o.info['pingfangsc'] = o.info['pingfangsc-regular'] = o.info['pingfang sc'];
+    [
+        'pingfang',
+        'pingfangsc',
+        'pingfangsc-ultralight',
+        'pingfangsc-medium',
+        'pingfangsc-regular',
+        'pingfangsc-semibold',
+        'pingfangsc-bold',
+        'pingfangsc-thin',
+        'pingfangsc-light', // 纤细
+    ].forEach(k => {
+        o.info[k] = o.info['pingfang sc'];
+    });
+    [
+        'dinpro-medium',
+        'dinpro-regular',
+        'dinpro-semibold',
+        'dinpro-bold',
+        'dinpro-thin',
+        'dinpro-light', // 纤细
+    ].forEach(k => {
+        o.info[k] = o.info['dinpro'];
+    });
 
     var reg = {
         position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
@@ -16531,57 +16558,54 @@
             if (!isFunction(handle)) {
                 return;
             }
-            let self = this;
             if (Array.isArray(id)) {
                 for (let i = 0, len = id.length; i < len; i++) {
-                    self.on(id[i], handle);
+                    this.on(id[i], handle);
                 }
             }
             else {
-                if (!self.__eHash.hasOwnProperty(id)) {
-                    self.__eHash[id] = [];
+                if (!this.__eHash.hasOwnProperty(id)) {
+                    this.__eHash[id] = [];
                 }
                 // 遍历防止此handle被侦听过了
-                for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
+                for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
                     if (item[i] === handle) {
-                        return self;
+                        return this;
                     }
                 }
-                self.__eHash[id].push(handle);
+                this.__eHash[id].push(handle);
             }
-            return self;
+            return this;
         }
         once(id, handle) {
             if (!isFunction(handle)) {
                 return;
             }
-            let self = this;
             // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-            function cb() {
-                handle.apply(self, arguments);
-                self.off(id, cb);
-            }
+            const cb = () => {
+                handle.apply(this, Array.prototype.slice.call(arguments));
+                this.off(id, cb);
+            };
             cb.__eventCb = handle;
             if (Array.isArray(id)) {
                 for (let i = 0, len = id.length; i < len; i++) {
-                    self.once(id[i], handle);
+                    this.once(id[i], handle);
                 }
             }
-            else if (handle) {
-                self.on(id, cb);
+            else {
+                this.on(id, cb);
             }
             return this;
         }
         off(id, handle) {
-            let self = this;
             if (Array.isArray(id)) {
                 for (let i = 0, len = id.length; i < len; i++) {
-                    self.off(id[i], handle);
+                    this.off(id[i], handle);
                 }
             }
-            else if (self.__eHash.hasOwnProperty(id)) {
+            else if (this.__eHash.hasOwnProperty(id)) {
                 if (handle) {
-                    for (let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
+                    for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
                         // 需考虑once包裹的引用对比
                         if (item[i] === handle || item[i].__eventCb === handle) {
                             item.splice(i, 1);
@@ -16591,27 +16615,26 @@
                 }
                 // 未定义为全部清除
                 else {
-                    delete self.__eHash[id];
+                    delete this.__eHash[id];
                 }
             }
             return this;
         }
         emit(id, ...data) {
-            let self = this;
             if (Array.isArray(id)) {
                 for (let i = 0, len = id.length; i < len; i++) {
-                    self.emit(id[i], data);
+                    this.emit(id[i], data);
                 }
             }
             else {
-                if (self.__eHash.hasOwnProperty(id)) {
-                    let list = self.__eHash[id];
+                if (this.__eHash.hasOwnProperty(id)) {
+                    let list = this.__eHash[id];
                     if (list.length) {
                         list = list.slice();
                         for (let i = 0, len = list.length; i < len; i++) {
-                            let cb = list[i];
+                            const cb = list[i];
                             if (isFunction(cb)) {
-                                cb.apply(self, data);
+                                cb.apply(this, data);
                             }
                         }
                     }
@@ -18386,15 +18409,14 @@
             this.id = 0;
         }
         init() {
-            let self = this;
-            let { task } = self;
-            inject.cancelAnimationFrame(self.id);
-            let last = self.now = inject.now();
-            function cb() {
+            const { task } = this;
+            inject.cancelAnimationFrame(this.id);
+            let last = this.now = inject.now();
+            const cb = () => {
                 // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
-                inject.cancelAnimationFrame(self.id);
-                self.id = inject.requestAnimationFrame(function () {
-                    let now = self.now = inject.now();
+                inject.cancelAnimationFrame(this.id);
+                this.id = inject.requestAnimationFrame(() => {
+                    const now = this.now = inject.now();
                     if (isPause || !task.length) {
                         return;
                     }
@@ -18403,8 +18425,8 @@
                     // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
                     last = now;
                     // 优先动画计算
-                    let clone = task.slice(0);
-                    let len1 = clone.length;
+                    const clone = task.slice(0);
+                    const len1 = clone.length;
                     // 普通的before/after，动画计算在before，所有回调在after
                     traversalBefore(clone, len1, diff);
                     // 刷新成功后调用after，确保图像生成
@@ -18414,14 +18436,14 @@
                         cb();
                     }
                 });
-            }
+            };
             cb();
         }
         onFrame(handle) {
             if (!handle) {
                 return;
             }
-            let { task } = this;
+            const { task } = this;
             if (!task.length) {
                 this.init();
             }
@@ -18437,9 +18459,9 @@
             if (!handle) {
                 return;
             }
-            let { task } = this;
+            const { task } = this;
             for (let i = 0, len = task.length; i < len; i++) {
-                let item = task[i];
+                const item = task[i];
                 // 需考虑nextFrame包裹的引用对比
                 if (item === handle || item.ref === handle) {
                     task.splice(i, 1);
@@ -18456,7 +18478,7 @@
                 return;
             }
             // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-            let cb = isFunction(handle) ? {
+            const cb = isFunction(handle) ? {
                 after: (diff) => {
                     handle(diff);
                     this.offFrame(cb);
@@ -18484,7 +18506,7 @@
             this.roots.push(root);
         }
         removeRoot(root) {
-            let i = this.roots.indexOf(root);
+            const i = this.roots.indexOf(root);
             if (i > -1) {
                 this.roots.splice(i, 1);
             }
@@ -22041,7 +22063,7 @@
         equal(o) {
             return this === o || this.x === o.x && this.y === o.y;
         }
-        equalEps(o, eps = 1e-9) {
+        equalEps(o, eps = 1e-4) {
             return this === o || Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps;
         }
         // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
@@ -23066,7 +23088,7 @@
                     let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
                     if (isParallel(k1, k2)) {
-                        return;
+                        return null;
                     }
                     return {
                         point: new Point(item.x, item.y),
@@ -23074,6 +23096,7 @@
                         toClip,
                     };
                 }
+                return null;
             }).filter(i => i);
             if (t.length) {
                 return t;
@@ -23109,7 +23132,7 @@
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
                         if (isParallel(k1, k2)) {
-                            return;
+                            return null;
                         }
                         return {
                             point: new Point(item.x, item.y),
@@ -23118,6 +23141,7 @@
                         };
                     }
                 }
+                return null;
             }).filter(i => i);
             if (t.length) {
                 return t;
@@ -23155,7 +23179,7 @@
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
                         if (isParallel(k1, k2)) {
-                            return;
+                            return null;
                         }
                         return {
                             point: new Point(item.x, item.y),
@@ -23164,6 +23188,7 @@
                         };
                     }
                 }
+                return null;
             }).filter(i => i);
             if (t.length) {
                 return t;
@@ -23198,7 +23223,7 @@
                     ]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
                     if (isParallel(k1, k2)) {
-                        return;
+                        return null;
                     }
                     return {
                         point: new Point(item.x, item.y),
@@ -23206,6 +23231,7 @@
                         toClip,
                     };
                 }
+                return null;
             }).filter(i => i);
             if (t.length) {
                 return t;
@@ -23244,7 +23270,7 @@
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
                         if (isParallel(k1, k2)) {
-                            return;
+                            return null;
                         }
                         return {
                             point: new Point(item.x, item.y),
@@ -23253,6 +23279,7 @@
                         };
                     }
                 }
+                return null;
             }).filter(i => i);
             if (t.length) {
                 return t;
@@ -23598,7 +23625,7 @@
             // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
             // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
             const ael = [], hash = {};
-            list.forEach((item, i) => {
+            list.forEach(item => {
                 const { isStart, seg } = item;
                 const belong = seg.belong;
                 if (isStart) {
@@ -23884,6 +23911,7 @@
                                     let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                                     // console.log(ra.map(item => item.toString()));
                                     let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
+                                    // console.log(rb.map(item => item.toString()));
                                     // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                                     activeNewSeg(segments, list, ael, x, ra);
                                     activeNewSeg(segments, list, ael, x, rb);
@@ -23922,8 +23950,6 @@
         if (!ps.length) {
             return res;
         }
-        // @ts-ignore
-        if (window.ttt && seg.uuid === 8) ;
         const belong = seg.belong, coords = seg.coords, len = coords.length;
         let startPoint = coords[0];
         let lastT = 0;
@@ -24147,8 +24173,6 @@
         segments.forEach(seg => {
             const coords = seg.coords, l = coords.length;
             const start = coords[0], end = coords[l - 1];
-            // @ts-ignore
-            if (window.ttt && seg.uuid === 23) ;
             putHashXY(hashXY, start.x, start.y, seg, true);
             putHashXY(hashXY, end.x, end.y, seg, false);
         });
@@ -24166,6 +24190,7 @@
                     if (a.isStart) {
                         return segAboveCompare(a.seg, b.seg) ? 1 : -1;
                     }
+                    return 0;
                     // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
                 });
                 // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
@@ -24318,7 +24343,7 @@
                 return true;
             }
             // 2条水平线也是
-            if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+            if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[3]) {
                 if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
                     return false;
                 }
@@ -25084,8 +25109,6 @@
                             res = t || [];
                         }
                         else if (booleanOperation === BooleanOperation.UNION) {
-                            // @ts-ignore
-                            window.ttt = true;
                             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
                             const pp = [], pl = [];
                             p.forEach(item => {
@@ -25593,7 +25616,7 @@
     function loadShader(gl, type, source) {
         // Create shader object
         let shader = gl.createShader(type);
-        if (shader == null) {
+        if (shader === null) {
             throw new Error('unable to create shader');
         }
         // Set the shader program
@@ -25982,12 +26005,12 @@ void main() {
          * 每帧调用的Root的after回调，将所有动画的after执行，以及主动更新的回调执行
          * 当都清空的时候，取消raf对本Root的侦听
          */
-        after(diff) {
+        after() {
             const ani = this.ani, task = this.taskClone.splice(0);
             let len = ani.length, len2 = task.length;
             for (let i = 0; i < len2; i++) {
                 let item = task[i];
-                item && item();
+                item && item(false);
             }
             len = ani.length; // 动画和渲染任务可能会改变自己的任务队列
             len2 = this.task.length;
@@ -26026,8 +26049,6 @@ void main() {
         Polyline,
         ShapeGroup,
     };
-
-    var version = "0.0.1";
 
     function apply(json, imgs) {
         if (!json) {
@@ -26072,7 +26093,6 @@ void main() {
         util,
         animation,
         config: config$1,
-        version,
     };
 
     return index;

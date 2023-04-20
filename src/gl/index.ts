@@ -60,7 +60,7 @@ export function loadShader(gl: WebGL2RenderingContext | WebGLRenderingContext,
                            type: number, source: string) {
   // Create shader object
   let shader = gl.createShader(type);
-  if(shader == null) {
+  if(shader === null) {
     throw new Error('unable to create shader');
   }
 

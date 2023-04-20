@@ -58,7 +58,7 @@ class Container extends Node {
     }
   }
 
-  appendChild(node: Node, cb?: Function) {
+  appendChild(node: Node, cb?: (sync: boolean) => void) {
     const { root, children } = this;
     const len = children.length;
     if (len) {
@@ -79,7 +79,7 @@ class Container extends Node {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
-  prependChild(node: Node, cb?: Function) {
+  prependChild(node: Node, cb?: (sync: boolean) => void) {
     const { root, children } = this;
     const len = children.length;
     if (len) {
@@ -100,7 +100,7 @@ class Container extends Node {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
-  appendSelf(node: Node, cb?: Function) {
+  appendSelf(node: Node, cb?: (sync: boolean) => void) {
     const { root, parent } = this;
     if (!parent) {
       throw new Error('Can not appendSelf without parent');
@@ -122,7 +122,7 @@ class Container extends Node {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
-  prependSelf(node: Node, cb?: Function) {
+  prependSelf(node: Node, cb?: (sync: boolean) => void) {
     const { root, parent } = this;
     if (!parent) {
       throw new Error('Can not prependBefore without parent');
@@ -144,7 +144,7 @@ class Container extends Node {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
-  removeChild(node: Node, cb?: Function) {
+  removeChild(node: Node, cb?: (sync: boolean) => void) {
     if (node.parent === this) {
       node.remove(cb);
     }
@@ -153,7 +153,7 @@ class Container extends Node {
     }
   }
 
-  clearChildren(cb?: Function) {
+  clearChildren(cb?: (sync: boolean) => void) {
     const { root, children } = this;
     if (children.length) {
       if (this.isDestroyed) {

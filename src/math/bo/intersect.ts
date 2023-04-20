@@ -70,7 +70,7 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
         let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
         if (isParallel(k1, k2)) {
-          return;
+          return null;
         }
         return {
           point: new Point(item.x, item.y),
@@ -78,6 +78,7 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
           toClip,
         };
       }
+      return null;
     }).filter(i => i);
     if (t.length) {
       return t;
@@ -116,7 +117,7 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
           if (isParallel(k1, k2)) {
-            return;
+            return null;
           }
           return {
             point: new Point(item.x, item.y),
@@ -125,6 +126,7 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
           };
         }
       }
+      return null;
     }).filter(i => i);
     if (t.length) {
       return t;
@@ -166,7 +168,7 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
           if (isParallel(k1, k2)) {
-            return;
+            return null;
           }
           return {
             point: new Point(item.x, item.y),
@@ -175,6 +177,7 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
           };
         }
       }
+      return null;
     }).filter(i => i);
     if (t.length) {
       return t;
@@ -212,7 +215,7 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
         ]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
         if (isParallel(k1, k2)) {
-          return;
+          return null;
         }
         return {
           point: new Point(item.x, item.y),
@@ -220,6 +223,7 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
           toClip,
         };
       }
+      return null;
     }).filter(i => i);
     if (t.length) {
       return t;
@@ -261,7 +265,7 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
           if (isParallel(k1, k2)) {
-            return;
+            return null;
           }
           return {
             point: new Point(item.x, item.y),
@@ -270,6 +274,7 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
           };
         }
       }
+      return null;
     }).filter(i => i);
     if (t.length) {
       return t;

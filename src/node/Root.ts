@@ -36,8 +36,8 @@ class Root extends Container implements FrameCallback {
   isAsyncDraw: boolean; // 异步下帧刷新标识，多次刷新任务去重
   ani = []; // 动画任务，空占位
   aniChange = false;
-  task: Array<Function | undefined>; // 刷新任务回调
-  taskClone: Array<Function | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
+  task: Array<((sync: boolean) => void) | undefined>; // 刷新任务回调
+  taskClone: Array<((sync: boolean) => void) | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
 
   constructor(props: RootProps, children: Array<Node> = []) {
@@ -166,7 +166,7 @@ class Root extends Container implements FrameCallback {
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
    */
   addUpdate(node: Node, keys: Array<string>, focus: RefreshLevel = RefreshLevel.NONE,
-            addDom: boolean = false, removeDom: boolean = false, cb?: Function) {
+            addDom: boolean = false, removeDom: boolean = false, cb?: (sync: boolean) => void) {
     if (this.isDestroyed) {
       return;
     }
@@ -257,7 +257,7 @@ class Root extends Container implements FrameCallback {
     return true;
   }
 
-  asyncDraw(cb?: Function) {
+  asyncDraw(cb?: (sync: boolean) => void) {
     if (!this.isAsyncDraw) {
       frame.onFrame(this);
       this.isAsyncDraw = true;
@@ -265,7 +265,7 @@ class Root extends Container implements FrameCallback {
     this.task.push(cb);
   }
 
-  cancelAsyncDraw(cb: Function) {
+  cancelAsyncDraw(cb: (sync: boolean) => void) {
     if (!cb) {
       return;
     }
@@ -334,7 +334,7 @@ class Root extends Container implements FrameCallback {
    * 每帧调用的Root的after回调，将所有动画的after执行，以及主动更新的回调执行
    * 当都清空的时候，取消raf对本Root的侦听
    */
-  after(diff: number) {
+  after() {
     const ani = this.ani, task = this.taskClone.splice(0);
     let len = ani.length, len2 = task.length;
     for (let i = 0; i < len; i++) {
@@ -342,7 +342,7 @@ class Root extends Container implements FrameCallback {
     }
     for (let i = 0; i < len2; i++) {
       let item = task[i];
-      item && item();
+      item && item(false);
     }
     len = ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.task.length;

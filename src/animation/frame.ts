@@ -5,8 +5,8 @@ import { isFunction } from '../util/type';
 let isPause: boolean;
 
 export interface FrameCallback {
-  before?: Function;
-  after: Function;
+  before?: (diff: number) => void;
+  after: (diff: number) => void;
   ref?: any;
 }
 
@@ -40,16 +40,15 @@ export class Frame {
   }
 
   private init() {
-    let self = this;
-    let { task } = self;
-    inject.cancelAnimationFrame(self.id);
-    let last = self.now = inject.now();
+    const { task } = this;
+    inject.cancelAnimationFrame(this.id);
+    let last = this.now = inject.now();
 
-    function cb() {
+    const cb = () => {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
-      inject.cancelAnimationFrame(self.id);
-      self.id = inject.requestAnimationFrame(function () {
-        let now = self.now = inject.now();
+      inject.cancelAnimationFrame(this.id);
+      this.id = inject.requestAnimationFrame(() => {
+        const now = this.now = inject.now();
         if (isPause || !task.length) {
           return;
         }
@@ -58,8 +57,8 @@ export class Frame {
         // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算
-        let clone = task.slice(0);
-        let len1 = clone.length;
+        const clone = task.slice(0);
+        const len1 = clone.length;
         // 普通的before/after，动画计算在before，所有回调在after
         traversalBefore(clone, len1, diff);
         // 刷新成功后调用after，确保图像生成
@@ -74,30 +73,30 @@ export class Frame {
     cb();
   }
 
-  onFrame(handle: FrameCallback | Function) {
+  onFrame(handle: FrameCallback | ((diff: number) => void)) {
     if (!handle) {
       return;
     }
-    let { task } = this;
+    const { task } = this;
     if (!task.length) {
       this.init();
     }
     if (isFunction(handle)) {
       handle = {
-        after: handle as Function,
+        after: handle as (diff: number) => void,
         ref: handle,
       };
     }
     task.push(handle as FrameCallback);
   }
 
-  offFrame(handle: FrameCallback | Function) {
+  offFrame(handle: FrameCallback | ((diff: number) => void)) {
     if (!handle) {
       return;
     }
-    let { task } = this;
+    const { task } = this;
     for (let i = 0, len = task.length; i < len; i++) {
-      let item = task[i];
+      const item = task[i];
       // 需考虑nextFrame包裹的引用对比
       if (item === handle || item.ref === handle) {
         task.splice(i, 1);
@@ -110,14 +109,14 @@ export class Frame {
     }
   }
 
-  nextFrame(handle: FrameCallback | Function) {
+  nextFrame(handle: FrameCallback | ((diff: number) => void)) {
     if (!handle) {
       return;
     }
     // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-    let cb = isFunction(handle) ? {
+    const cb = isFunction(handle) ? {
       after: (diff: number) => {
-        (handle as Function)(diff);
+        (handle as (diff: number) => void)(diff);
         this.offFrame(cb);
       },
     } : {
@@ -147,7 +146,7 @@ export class Frame {
   }
 
   removeRoot(root: Root) {
-    let i = this.roots.indexOf(root);
+    const i = this.roots.indexOf(root);
     if (i > -1) {
       this.roots.splice(i, 1);
     }

@@ -129,7 +129,7 @@ export function norm(v: Array<number>) {
 }
 
 // https://zhuanlan.zhihu.com/p/130247362
-function simpson38(derivativeFunc: Function, l: number, r: number) {
+function simpson38(derivativeFunc: (n: number) => number, l: number, r: number) {
   let f = derivativeFunc;
   let middleL = (2 * l + r) / 3;
   let middleR = (l + 2 * r) / 3;
@@ -144,7 +144,7 @@ function simpson38(derivativeFunc: Function, l: number, r: number) {
  * @param eps 精度
  * @return {*} number
  */
-function adaptiveSimpson38(derivativeFunc: Function, l: number, r: number, eps = 0.001): number {
+function adaptiveSimpson38(derivativeFunc: (n: number) => number, l: number, r: number, eps = 0.001): number {
   let f = derivativeFunc;
   let mid = (l + r) / 2;
   let st = simpson38(f, l, r);

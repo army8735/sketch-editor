@@ -7,7 +7,6 @@ import util from './util';
 import config from './util/config';
 import animation from './animation';
 import node from './node';
-import { version } from '../package.json';
 
 function apply(json: any, imgs: Array<string>): any {
   if (!json) {
@@ -53,5 +52,4 @@ export default {
   util,
   animation,
   config,
-  version,
 };

@@ -267,9 +267,6 @@ class Polygon {
           }
           hash[hc] = true;
         }
-        // @ts-ignore
-        if (window.ttt) {
-        }
         // console.error(seg.toString(), ael.length)
         // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
         if (!ael.length) {
@@ -347,12 +344,7 @@ class Polygon {
     // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
     // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
     const ael: any = [], hash: any = {};
-    // @ts-ignore
-    if (window.ttt) {
-      // console.log('ael');
-      // console.table(list.map(item => [item.isStart, item.seg.uuid, ...item.seg.toString().split(' ')]));
-    }
-    list.forEach((item, i) => {
+    list.forEach(item => {
       const { isStart, seg } = item;
       const belong = seg.belong;
       if (isStart) {
@@ -363,10 +355,6 @@ class Polygon {
             return;
           }
           hash[hc] = true;
-        }
-        // @ts-ignore
-        if (window.ttt) {
-          // console.error(i, seg.toString(), ael.length);
         }
         let inside = false;
         if (!ael.length) {
@@ -417,10 +405,6 @@ class Polygon {
           seg.otherFill[0] = inside;
           seg.otherFill[1] = inside;
         }
-        // @ts-ignore
-        if (window.ttt) {
-          // console.warn(seg.toString(), inside)
-        }
       }
       else {
         const i = ael.indexOf(seg);
@@ -429,11 +413,6 @@ class Polygon {
         }
       }
     });
-    // @ts-ignore
-    if (window.ttt) {
-      // console.log('ael2');
-      // console.table(list.map(item => [item.isStart, item.seg.uuid, ...item.seg.toString().split(' ')]));
-    }
   }
 }
 
@@ -496,9 +475,6 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
             // 被切割的老线段无效，注意seg切割过程中可能变成删除
             if (item.isDeleted || seg.isDeleted) {
               continue;
-            }
-            // @ts-ignore
-            if (window.ttt2) {
             }
             // 互交所属belong不同才进行检测，自交则不检查belong
             if (compareBelong && item.belong === belong) {
@@ -641,10 +617,6 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
               }
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
               else if (inters && inters.length) {
-                // @ts-ignore
-                if (window.ttt) {
-                  // console.warn('inters',x,compareBelong,isSourceReverted,seg.uuid,coordsA.map((item: any) => item), item.uuid,coordsB.map((item: any) => item), inters.map(item => JSON.stringify(item)));
-                }
                 // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
                 // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
                 for (let i = 0, len = inters.length; i < len; i++) {
@@ -672,13 +644,6 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                 // console.log(ra.map(item => item.toString()));
                 let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));
-                // @ts-ignore
-                if (window.ttt) {
-                  // console.log(pa);
-                  // console.table(ra.map(item => [item.uuid, ...item.toHash().split(' ')]));
-                  // console.log(pb);
-                  // console.table(rb.map(item => [item.uuid, ...item.toHash().split(' ')]));
-                }
                 // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                 activeNewSeg(segments, list, ael, x, ra);
                 activeNewSeg(segments, list, ael, x, rb);
@@ -717,10 +682,6 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
   const res: Array<Segment> = [];
   if (!ps.length) {
     return res;
-  }
-  // @ts-ignore
-  if(window.ttt && seg.uuid === 8) {
-    // debugger
   }
   const belong = seg.belong, coords = seg.coords, len = coords.length;
   let startPoint = coords[0];
@@ -949,25 +910,20 @@ function genHashXYList(segments: Array<Segment>) {
   segments.forEach(seg => {
     const coords = seg.coords, l = coords.length;
     const start = coords[0], end = coords[l - 1];
-    // @ts-ignore
-    if (window.ttt && seg.uuid === 23) {
-      // console.log(start, end);
-    }
     putHashXY(hashXY, start.x, start.y, seg, true);
     putHashXY(hashXY, end.x, end.y, seg, false);
   });
   const listX: Array<{ x: number, arr: Array<{ y: number, arr: Array<{ isStart: boolean, seg: Segment }> }> }> = [];
   Object.keys(hashXY).forEach(x => {
     const hashY = hashXY[x];
-    // @ts-ignore
-    if (window.ttt) {
-      // console.log(x, hashY)
-    }
     const listY: Array<{ y: number, arr: Array<{ isStart: boolean, seg: Segment }> }> = [];
     Object.keys(hashY).forEach(y => {
-      const arr = hashY[y].sort(function (a: { isStart: boolean, seg: Segment }, b: {
+      const arr = hashY[y].sort(function (a: {
         isStart: boolean,
-        seg: Segment
+        seg: Segment,
+      }, b: {
+        isStart: boolean,
+        seg: Segment,
       }) {
         // end优先于start先触发
         if (a.isStart !== b.isStart) {
@@ -977,6 +933,7 @@ function genHashXYList(segments: Array<Segment>) {
         if (a.isStart) {
           return segAboveCompare(a.seg, b.seg) ? 1 : -1;
         }
+        return 0;
         // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
       });
       // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
@@ -1135,7 +1092,7 @@ function isRectsOverlap(bboxA: Array<number>, bboxB: Array<number>, lenA: number
       return true;
     }
     // 2条水平线也是
-    if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+    if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[3]) {
       if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
         return false;
       }

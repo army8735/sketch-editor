@@ -80,8 +80,6 @@ class ShapeGroup extends Container {
             res = t || [];
           }
           else if (booleanOperation === BooleanOperation.UNION) {
-            // @ts-ignore
-            window.ttt = true;
             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
             const pp: Array<Array<Array<number>>> = [], pl: Array<Array<Array<number>>> = [];
             p.forEach(item => {

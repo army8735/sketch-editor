@@ -651,37 +651,43 @@ $main.addEventListener('wheel', function(e) {
   if (metaKey) {
     let sc = 1;
     if(e.deltaY < 0) {
-      if(e.deltaY < -200) {
+      if(e.deltaY < -300) {
         sc = 0.125;
       }
-      else if(e.deltaY < -100) {
+      else if(e.deltaY < -200) {
         sc = 0.25;
       }
-      else if(e.deltaY < -50) {
+      else if(e.deltaY < -100) {
         sc = 0.5;
       }
-      else if(e.deltaY < -20) {
+      else if(e.deltaY < -50) {
         sc = 0.75;
       }
-      else {
+      else if(e.deltaY < -20) {
         sc = 0.875;
+      }
+      else {
+        sc = 0.9375;
       }
     }
     else if(e.deltaY > 0) {
-      if(e.deltaY > 200) {
+      if(e.deltaY > 300) {
         sc = 2;
       }
-      else if(e.deltaY > 100) {
+      else if(e.deltaY > 200) {
         sc = 1.75;
       }
-      else if(e.deltaY > 50) {
+      else if(e.deltaY > 100) {
         sc = 1.5;
       }
-      else if(e.deltaY > 20) {
+      else if(e.deltaY > 50) {
         sc = 1.25;
       }
-      else {
+      else if(e.deltaY > 20) {
         sc = 1.125;
+      }
+      else {
+        sc = 1.0625;
       }
     }
     const x = lastX - originX;

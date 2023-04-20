@@ -10,7 +10,7 @@ export type OffScreen = {
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
   available: boolean,
-  release: Function,
+  release: () => void,
 };
 
 function offscreenCanvas(width: number, height: number, key?: string,
@@ -168,7 +168,7 @@ const inject = {
     return SUPPORT_FONT[ff] = false;
   },
   FONT,
-  loadFont(fontFamily: string, url?: string | Function, cb?: Function) {
+  loadFont(fontFamily: string, url?: string | ((cache:any) => void), cb?: (cache:any) => void) {
     if(isFunction(url)) {
       // @ts-ignore
       cb = url;
@@ -176,7 +176,7 @@ const inject = {
     }
     if(Array.isArray(url)) {
       if(!url.length) {
-        return cb && cb();
+        return cb && cb(null);
       }
       let count = 0;
       let len = url.length;
@@ -251,7 +251,7 @@ const inject = {
             cache.success = true;
             cache.url = url;
             let list = cache.task.splice(0);
-            list.forEach((cb: Function) => cb(cache, ab));
+            list.forEach((cb: (cache:any, ab: ArrayBuffer) => void) => cb(cache, ab));
           }).catch(error);
           fontCount++;
           if(fontQueue.length) {
@@ -265,7 +265,7 @@ const inject = {
           cache.success = false;
           cache.url = url;
           let list = cache.task.splice(0);
-          list.forEach((cb: Function) => cb(cache));
+          list.forEach((cb: (cache:any) => void) => cb(cache));
           fontCount--;
           if(fontQueue.length) {
             let o = fontQueue.shift();
@@ -287,10 +287,10 @@ const inject = {
     // @ts-ignore
     MAX_LOAD_NUM = parseInt(v) || 0;
   },
-  measureImg(url: string | undefined | Array<string>, cb?: Function) {
+  measureImg(url: string | undefined | Array<string>, cb?: (cache:any) => void) {
     if(Array.isArray(url)) {
       if(!url.length) {
-        return cb && cb();
+        return cb && cb(null);
       }
       let count = 0;
       let len = url.length;
@@ -342,7 +342,7 @@ const inject = {
           cache.source = img;
           cache.url = url;
           let list = cache.task.splice(0);
-          list.forEach((cb: Function) => {
+          list.forEach((cb: (cache:any) => void) => {
             cb(cache);
           });
           imgCount--;
@@ -351,12 +351,12 @@ const inject = {
             load(o, IMG[o]);
           }
         };
-        img.onerror = function(e) {
+        img.onerror = function() {
           cache.state = LOADED;
           cache.success = false;
           cache.url = url;
           let list = cache.task.splice(0);
-          list.forEach((cb: Function) => cb(cache));
+          list.forEach((cb: (cache:any) => void) => cb(cache));
           imgCount--;
           if(imgQueue.length) {
             let o = imgQueue.shift();

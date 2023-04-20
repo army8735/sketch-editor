@@ -133,8 +133,8 @@ export type Props = {
 
 export type BitmapProps = Props & {
   src: string | undefined,
-  onLoad?: Function,
-  onError?: Function,
+  onLoad?: () => void,
+  onError?: () => void,
 };
 
 export type ArtBoardProps = Props & {

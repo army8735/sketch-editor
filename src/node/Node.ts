@@ -402,7 +402,7 @@ class Node extends Event {
     this.textureCache?.release(gl);
   }
 
-  remove(cb?: Function) {
+  remove(cb?: (sync: boolean) => void) {
     const { root, parent } = this;
     if (parent) {
       const i = parent.children.indexOf(this);
@@ -480,7 +480,7 @@ class Node extends Event {
     return false;
   }
 
-  updateStyle(style: any, cb?: Function) {
+  updateStyle(style: any, cb?: (sync: boolean) => void) {
     const { keys } = this.updateStyleData(style);
     // 无变更或不可见
     if (this.updateStyleCheck(keys)) {

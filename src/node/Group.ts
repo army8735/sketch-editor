@@ -13,7 +13,7 @@ class Group extends Container {
   }
 
   // 覆盖实现，有最小尺寸约束，更新要预防
-  override updateStyle(style: any, cb?: Function) {
+  override updateStyle(style: any, cb?: (sync: boolean) => void) {
     const { keys, formatStyle } = this.updateStyleData(style);
     // 最小尺寸约束
     const parent = this.parent!;
