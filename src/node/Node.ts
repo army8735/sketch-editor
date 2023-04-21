@@ -56,8 +56,11 @@ class Node extends Event {
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
-  textureTotal?: TextureCache;
-  textureMask?: TextureCache;
+  textureTotal?: TextureCache; // 局部子树缓存
+  textureMask?: TextureCache; // 作为mask时的缓存
+  textureTarget?: TextureCache; // 指向自身所有缓存中最优先的那个
+  tempOpacity: number;
+  tempMatrix: Float64Array;
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
   isPage = false;
@@ -92,6 +95,8 @@ class Node extends Event {
     this.hasCacheMw = false;
     this.hasCacheMwLv = false;
     this.hasContent = false;
+    this.tempOpacity = 1;
+    this.tempMatrix = identity();
   }
 
   // 添加到dom后标记非销毁状态，和root引用
@@ -396,7 +401,7 @@ class Node extends Event {
     this.textureCache && this.textureCache.release(gl);
     const canvasCache = this.canvasCache;
     if (canvasCache && canvasCache.available) {
-      this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
+      this.textureTarget = this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
       canvasCache.release();
     }
   }

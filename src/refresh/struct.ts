@@ -3,10 +3,11 @@ import Root from '../node/Root';
 import ArtBoard from '../node/ArtBoard';
 import { RefreshLevel } from './level';
 import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
-import { assignMatrix, multiply } from '../math/matrix';
+import { assignMatrix, multiply, toE } from '../math/matrix';
 import inject from '../util/inject';
 import { MASK } from '../style/define';
 import TextureCache from './TextureCache';
+import textureCache from './TextureCache';
 
 export type Struct = {
   node: Node;
@@ -24,28 +25,15 @@ type Merge = {
 
 export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
                             root: Root, rl: RefreshLevel) {
-  const { structs, width, height } = root;
-  const cx = width * 0.5, cy = height * 0.5;
+  const { structs, width: W, height: H } = root;
+  const cx = W * 0.5, cy = H * 0.5;
   const mergeList: Array<Merge> = [];
   // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
   if (rl >= RefreshLevel.REPAINT) {
-    let maskStart = 0, maskLv = 0;
     for (let i = 0, len = structs.length; i < len; i++) {
-      const { node, lv } = structs[i];
+      const { node, lv, total } = structs[i];
       const { refreshLevel, computedStyle } = node;
       node.refreshLevel = RefreshLevel.NONE;
-      // 检查mask结束，可能本身没有变更，或者到末尾/一个组结束自动关闭mask
-      const { maskMode, breakMask } = computedStyle;
-      if (maskStart && (breakMask || i === len - 1 || lv < maskLv)) {
-        const s = structs[maskStart];
-        mergeList.push({
-          i: maskStart,
-          lv: s.lv,
-          total: i - maskStart - (maskMode || i === len - 1 ? 0 : 1), // 自动闭合的索引多了1个
-          node: s.node,
-        });
-        maskStart = 0;
-      }
       // 无任何变化即refreshLevel为NONE（0）忽略
       if (refreshLevel) {
         // filter之类的变更
@@ -58,11 +46,17 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
             node.renderCanvas();
             node.genTexture(gl);
           }
-          if (maskMode) {
-            maskStart = i;
-            maskLv = lv;
-          }
         }
+      }
+      const { maskMode, opacity } = computedStyle;
+      // 非单节点透明需汇总子树，有mask的也需要
+      if (maskMode || opacity > 0 && opacity < 1 && total) {
+        mergeList.push({
+          i,
+          lv,
+          total,
+          node,
+        });
       }
     }
   }
@@ -78,24 +72,17 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       const {
         i,
         lv,
+        total,
         node,
       } = mergeList[j];
-      const textureCache = node.textureCache!;
-      let textureTotal = node.textureTotal;
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-      if (!textureTotal || !textureTotal.available) {
-        if (node.struct.total) {
-          textureTotal = node.textureTotal = genTotal(gl, root, node, structs, i, lv, width, height);
-        }
-        else {
-          textureTotal = node.textureTotal = textureCache;
-        }
-      }
+      let target = node.textureTotal = node.textureTarget
+        = genTotal(gl, root, node, structs, i, lv, total, W, H);
       // 生成mask
       const computedStyle = node.computedStyle;
       const { maskMode } = computedStyle;
-      if (maskMode && textureTotal) {
-        genMask(gl, root, node, maskMode, textureTotal!, structs, i, lv, width, height);
+      if (maskMode && target) {
+        genMask(gl, root, node, maskMode, target, structs, i, lv, W, H);
       }
     }
   }
@@ -128,7 +115,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       overlay.update();
     }
     const computedStyle = node.computedStyle;
-    if (!computedStyle.visible) {
+    if (!computedStyle.visible || computedStyle.opacity <= 0) {
       i += total;
       continue;
     }
@@ -173,17 +160,21 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     const opacity = node._opacity;
     const matrix = node._matrixWorld;
     // 一般只有一个纹理
-    const textureCache = node.textureCache;
-    if (textureCache && textureCache.available && opacity > 0) {
-      drawTextureCache(gl, width, height, cx, cy, program, [{
-        node,
+    const target = node.textureTarget;
+    if (target && target.available) {
+      drawTextureCache(gl, W, H, cx, cy, program, [{
+        bbox: node._bbox || node.bbox,
         opacity,
         matrix,
-        cache: textureCache,
-      }], 1);
+        cache: target,
+      }], true);
+    }
+    // 有局部子树缓存可以跳过其所有子孙节点
+    if (target && target !== node.textureCache) {
+      i += total;
     }
     // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (node.isShapeGroup) {
+    else if (node.isShapeGroup) {
       i += total;
     }
   }
@@ -253,12 +244,80 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
 }
 
 function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, structs: Array<Struct>,
-                  i: number, lv: number, width: number, height: number) {
-  // TODO
-  return node.textureCache;
+                  index: number, lv: number, total: number, W: number, H: number) {
+  // 缓存仍然还在直接返回，无需重新生成
+  if (node.textureTotal && node.textureTotal.available) {
+    return node.textureTotal!;
+  }
+  // 单个叶子节点也不需要，就是本身节点的内容
+  if (!total) {
+    return node.textureCache!;
+  }
+  const programs = root.programs;
+  const program = programs.program;
+  // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
+  const { bbox } = node;
+  const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+  const cx = w * 0.5, cy = h * 0.5;
+  const target = textureCache.getEmptyInstance(gl, w, h);
+  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+  // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
+  for (let i = index, len = index + total + 1; i < len; i++) {
+    const { node, total } = structs[i];
+    const computedStyle = node.computedStyle;
+    if (!computedStyle.visible || computedStyle.opacity <= 0) {
+      i += total;
+      continue;
+    }
+    let opacity, matrix;
+    // 首个节点即局部根节点
+    if (i === index) {
+      opacity = node.tempOpacity = 1;
+      matrix = toE(node.tempMatrix);
+    }
+    else {
+      const parent = node.parent!;
+      opacity = computedStyle.opacity * parent.tempOpacity;
+      node.tempOpacity = opacity;
+      matrix = multiply(parent.tempMatrix, node.matrix);
+      assignMatrix(node.tempMatrix, matrix);
+    }
+    const target = node.textureTarget;
+    if (target && target.available) {
+      drawTextureCache(gl, W, H, cx, cy, program, [{
+        bbox: node._bbox || node.bbox,
+        opacity,
+        matrix,
+        cache: target,
+      }], false);
+    }
+    // 有局部子树缓存可以跳过其所有子孙节点
+    if (target && target !== node.textureCache) {
+      i += total;
+    }
+    // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+    else if (node.isShapeGroup) {
+      i += total;
+    }
+  }
+  // 删除fbo恢复
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.viewport(0, 0, W, H);
+  return target;
 }
 
 function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, maskMode: MASK,
-                 textureTotal: TextureCache, structs: Array<Struct>, i: number, lv: number, width: number, height: number) {
-  console.log(i);
+                 target: TextureCache, structs: Array<Struct>, index: number, lv: number, W: number, H: number) {
+}
+
+function genFrameBufferWithTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, texture: WebGLTexture,
+                                   width: number, height: number) {
+  const frameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  gl.viewport(0, 0, width, height);
+  return frameBuffer;
 }

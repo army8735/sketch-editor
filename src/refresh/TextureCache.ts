@@ -51,6 +51,11 @@ class TextureCache {
     };
     return new TextureCache(texture);
   }
+
+  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, w: number, h: number) {
+    const texture = createTexture(gl, 0, undefined, w, h);
+    return new TextureCache(texture);
+  }
 }
 
 export default TextureCache;

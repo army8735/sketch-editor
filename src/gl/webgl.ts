@@ -1,4 +1,3 @@
-import Node from '../node/Node';
 import { calRectPoint } from '../math/matrix';
 import { isConvexPolygonOverlap } from '../math/geom';
 import TextureCache from '../refresh/TextureCache';
@@ -35,7 +34,7 @@ export function bindTexture(gl: WebGL2RenderingContext | WebGLRenderingContext,
 }
 
 export type DrawData = {
-  node: Node,
+  bbox: Float64Array,
   opacity: number,
   matrix: Float64Array,
   cache: TextureCache,
@@ -44,14 +43,15 @@ export type DrawData = {
 let lastVtPoint: Float32Array, lastVtTex: Float32Array, lastVtOpacity: Float32Array; // 缓存
 
 export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
-                                 cx: number, cy: number, program: any, list: Array<DrawData>, vertCount: number) {
-  if (!list.length || !vertCount) {
+                                 cx: number, cy: number, program: any, list: Array<DrawData>, revert = true) {
+  const length = list.length;
+  if (!length) {
     return;
   }
   // 单个矩形绘制可优化，2个三角形共享一条边
-  const isSingle = vertCount === 1;
-  const num1 = isSingle ? 8 : (vertCount * 12); // x+y数
-  const num2 = isSingle ? 4 : (vertCount * 6); // 顶点数
+  const isSingle = length === 1;
+  const num1 = isSingle ? 8 : (length * 12); // x+y数
+  const num2 = isSingle ? 4 : (length * 6); // 顶点数
   // 是否使用缓存TypeArray，避免垃圾回收
   let vtPoint: Float32Array, vtTex: Float32Array, vtOpacity: Float32Array;
   if (lastVtPoint && lastVtPoint.length === num1) {
@@ -73,14 +73,13 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
-    const { node, opacity, matrix, cache } = list[i];
+    const { bbox, opacity, matrix, cache } = list[i];
     const { texture } = cache;
     bindTexture(gl, texture, 0);
-    const bbox = node._bbox || node.bbox;
     const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
     const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
     // 不在画布显示范围内忽略
-    if(!isConvexPolygonOverlap([
+    if (!isConvexPolygonOverlap([
       { x: x1, y: y1 },
       { x: x2, y: y2 },
       { x: x3, y: y3 },
@@ -89,17 +88,18 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
       { x: 0, y: 0 },
       { x: width, y: 0 },
       { x: width, y: height },
-      { x: 0, y: height},
+      { x: 0, y: height },
     ], true)) {
+      // 提前跳出不创建gl交互数据
       if (isSingle) {
         return;
       }
       continue;
     }
-    const t1 = convertCoords2Gl(x1, y1, cx, cy);
-    const t2 = convertCoords2Gl(x2, y2, cx, cy);
-    const t3 = convertCoords2Gl(x3, y3, cx, cy);
-    const t4 = convertCoords2Gl(x4, y4, cx, cy);
+    const t1 = convertCoords2Gl(x1, y1, cx, cy, revert);
+    const t2 = convertCoords2Gl(x2, y2, cx, cy, revert);
+    const t3 = convertCoords2Gl(x3, y3, cx, cy, revert);
+    const t4 = convertCoords2Gl(x4, y4, cx, cy, revert);
     let k = i * 12;
     vtPoint[k] = t1.x;
     vtPoint[k + 1] = t1.y;
@@ -182,18 +182,23 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
 
 }
 
-export function convertCoords2Gl(x: number, y: number, cx: number, cy: number) {
-  if(x === cx) {
+export function convertCoords2Gl(x: number, y: number, cx: number, cy: number, revert = true) {
+  if (x === cx) {
     x = 0;
   }
   else {
     x = (x - cx) / cx;
   }
-  if(y === cy) {
+  if (y === cy) {
     y = 0;
   }
   else {
-    y = (cy - y) / cy;
+    if (revert) {
+      y = (cy - y) / cy;
+    }
+    else {
+      y = (y - cy) / cy;
+    }
   }
   return { x, y };
 }

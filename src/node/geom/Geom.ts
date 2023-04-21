@@ -13,10 +13,6 @@ class Geom extends Node {
     this.points = [];
   }
 
-  override calContent(): boolean {
-    return this.hasContent = true;
-  }
-
   toSvg(scale: number) {
     if (!this.points) {
       this.buildPoints();
