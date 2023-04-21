@@ -121,16 +121,18 @@ $input.onchange = function(e) {
 
 function genNodeTree(node, abHash) {
   let type = getNodeType(node);
-  if (node instanceof editor.node.Geom) {
+  if (node instanceof editor.node.Geom || node instanceof editor.node.ShapeGroup) {
     const { width, height } = node;
-    let scale;
+    let scale, x = 0, y = 0;
     if (width >= height) {
-      scale = 16 / width;
+      scale = 14 / width;
+      y = (14 - height * scale) * 0.5;
     }
     else {
-      scale = 16 / height;
+      scale = 14 / height;
+      x = (14 - width * scale) * 0.5;
     }
-    type = node.toSvg(scale);
+    type = `<b style="transform:translate(${x}px, ${y}px) scale(${scale})">` + node.toSvg(scale) + '</b>';
   }
   const li = document.createElement('li');
   li.className = 'layer';

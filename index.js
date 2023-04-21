@@ -21172,16 +21172,17 @@
             if (!this.points) {
                 this.buildPoints();
             }
+            const computedStyle = this.computedStyle;
             const d = svgPolygon(this.points);
-            const fillRule = this.computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
             const props = [
                 ['d', d],
                 ['fill', '#D8D8D8'],
                 ['fill-rule', fillRule],
                 ['stroke', '#979797'],
-                ['stroke-width', '1'],
+                ['stroke-width', (1 / scale).toString()],
             ];
-            let s = `<svg width="${this.width}" height="${this.height}" style="transform: scale(${scale})"><path`;
+            let s = `<svg width="${this.width}" height="${this.height}"><path`;
             props.forEach(item => {
                 s += ' ' + item[0] + '="' + item[1] + '"';
             });
@@ -25326,6 +25327,30 @@
                 });
                 ctx.stroke();
             }
+        }
+        toSvg(scale) {
+            if (!this.points) {
+                this.buildPoints();
+            }
+            const computedStyle = this.computedStyle;
+            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            let s = `<svg width="${this.width}" height="${this.height}">`;
+            this.points.forEach(item => {
+                const d = svgPolygon(item);
+                const props = [
+                    ['d', d],
+                    ['fill', '#D8D8D8'],
+                    ['fill-rule', fillRule],
+                    ['stroke', '#979797'],
+                    ['stroke-width', (1 / scale).toString()],
+                ];
+                s += '<path';
+                props.forEach(item => {
+                    s += ' ' + item[0] + '="' + item[1] + '"';
+                });
+                s += '></path>';
+            });
+            return s + '</svg>';
         }
         get bbox() {
             if (!this._bbox) {
