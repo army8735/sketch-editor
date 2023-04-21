@@ -259,7 +259,8 @@ class Node extends Event {
     computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
-    computedStyle.mask = style.mask.v;
+    computedStyle.maskMode = style.maskMode.v;
+    computedStyle.breakMask = style.breakMask.v;
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
     }
@@ -426,7 +427,7 @@ class Node extends Event {
       cb && cb(true);
       return;
     }
-    parent?.deleteStruct(this);
+    parent!.deleteStruct(this);
     root!.addUpdate(this, [], RefreshLevel.REFLOW, false, true, cb);
   }
 

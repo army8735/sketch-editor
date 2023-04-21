@@ -5,6 +5,7 @@ import {
   ComputedStyle,
   FILL_RULE,
   FONT_STYLE,
+  MASK,
   MIX_BLEND_MODE,
   Style,
   StyleNumValue,
@@ -387,9 +388,20 @@ export function normalize(style: JStyle): Style {
   if (!isNil(pointerEvents)) {
     res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
   }
-  const mask = style.mask;
-  if (!isNil(mask)) {
-    res.mask = { v: mask, u: StyleUnit.NUMBER };
+  const maskMode = style.maskMode;
+  if (!isNil(maskMode)) {
+    let v = MASK.NONE;
+    if (maskMode === 'outline') {
+      v = MASK.OUTLINE;
+    }
+    else if (maskMode === 'alpha') {
+      v = MASK.ALPHA;
+    }
+    res.maskMode = { v, u: StyleUnit.NUMBER };
+  }
+  const breakMask = style.breakMask;
+  if (!isNil(breakMask)) {
+    res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
   }
   return res;
 }

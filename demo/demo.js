@@ -120,7 +120,18 @@ $input.onchange = function(e) {
 }
 
 function genNodeTree(node, abHash) {
-  const type = getNodeType(node);
+  let type = getNodeType(node);
+  if (node instanceof editor.node.Geom) {
+    const { width, height } = node;
+    let scale;
+    if (width >= height) {
+      scale = 16 / width;
+    }
+    else {
+      scale = 16 / height;
+    }
+    type = node.toSvg(scale);
+  }
   const li = document.createElement('li');
   li.className = 'layer';
   li.setAttribute('uuid', node.props.uuid);

@@ -35,13 +35,13 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       const { refreshLevel, computedStyle } = node;
       node.refreshLevel = RefreshLevel.NONE;
       // 检查mask结束，可能本身没有变更，或者到末尾/一个组结束自动关闭mask
-      const { mask } = computedStyle;
-      if (maskStart && (mask & MASK.BREAK || i === len - 1 || lv < maskLv)) {
+      const { maskMode, breakMask } = computedStyle;
+      if (maskStart && (breakMask || i === len - 1 || lv < maskLv)) {
         const s = structs[maskStart];
         mergeList.push({
           i: maskStart,
           lv: s.lv,
-          total: i - maskStart - (mask & MASK.BREAK || i === len - 1 ? 0 : 1), // 自动闭合的索引多了1个
+          total: i - maskStart - (maskMode || i === len - 1 ? 0 : 1), // 自动闭合的索引多了1个
           node: s.node,
         });
         maskStart = 0;
@@ -58,8 +58,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
             node.renderCanvas();
             node.genTexture(gl);
           }
-          const { mask } = computedStyle;
-          if (mask & MASK.OA) {
+          if (maskMode) {
             maskStart = i;
             maskLv = lv;
           }
@@ -94,9 +93,9 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       }
       // 生成mask
       const computedStyle = node.computedStyle;
-      const { mask } = computedStyle;
-      if (mask & MASK.OA && textureTotal) {
-        genMask(gl, root, node, mask, textureTotal!, structs, i, lv, width, height);
+      const { maskMode } = computedStyle;
+      if (maskMode && textureTotal) {
+        genMask(gl, root, node, maskMode, textureTotal!, structs, i, lv, width, height);
       }
     }
   }
@@ -259,6 +258,7 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
   return node.textureCache;
 }
 
-function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, mask: MASK,
+function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, maskMode: MASK,
                  textureTotal: TextureCache, structs: Array<Struct>, i: number, lv: number, width: number, height: number) {
+  console.log(i);
 }

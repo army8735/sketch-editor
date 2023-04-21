@@ -46,7 +46,8 @@
             booleanOperation: 'none',
             mixBlendMode: 'normal',
             pointerEvents: true,
-            mask: 0,
+            maskMode: 'none',
+            breakMask: false,
         }, v);
     }
     var TagName;
@@ -15463,8 +15464,6 @@
         MASK[MASK["NONE"] = 0] = "NONE";
         MASK[MASK["OUTLINE"] = 1] = "OUTLINE";
         MASK[MASK["ALPHA"] = 2] = "ALPHA";
-        MASK[MASK["OA"] = 3] = "OA";
-        MASK[MASK["BREAK"] = 4] = "BREAK";
     })(MASK || (MASK = {}));
     var define = {
         StyleUnit,
@@ -17453,9 +17452,20 @@
         if (!isNil(pointerEvents)) {
             res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
         }
-        const mask = style.mask;
-        if (!isNil(mask)) {
-            res.mask = { v: mask, u: StyleUnit.NUMBER };
+        const maskMode = style.maskMode;
+        if (!isNil(maskMode)) {
+            let v = MASK.NONE;
+            if (maskMode === 'outline') {
+                v = MASK.OUTLINE;
+            }
+            else if (maskMode === 'alpha') {
+                v = MASK.ALPHA;
+            }
+            res.maskMode = { v, u: StyleUnit.NUMBER };
+        }
+        const breakMask = style.breakMask;
+        if (!isNil(breakMask)) {
+            res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
         }
         return res;
     }
@@ -17915,15 +17925,18 @@
                 translateY = 0;
                 height = 'auto';
             }
-            // 遮罩转换为唯一枚举表示
-            const { hasClippingMask, clippingMaskMode, shouldBreakMaskChain, } = layer;
-            let mask = MASK.NONE;
+            // 遮罩转换
+            let maskMode = 'none';
+            const { hasClippingMask, clippingMaskMode, } = layer;
             if (hasClippingMask) {
-                mask |= clippingMaskMode ? MASK.ALPHA : MASK.OUTLINE;
+                if (clippingMaskMode) {
+                    maskMode = 'alpha';
+                }
+                else {
+                    maskMode = 'outline';
+                }
             }
-            if (shouldBreakMaskChain) {
-                mask |= MASK.BREAK;
-            }
+            const breakMask = layer.shouldBreakMaskChain;
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             if (layer._class === FileFormat.ClassValue.Group) {
@@ -17949,7 +17962,8 @@
                             scaleX,
                             scaleY,
                             rotateZ,
-                            mask,
+                            maskMode,
+                            breakMask,
                         },
                         isLocked,
                         isExpanded,
@@ -17976,7 +17990,8 @@
                             translateX,
                             translateY,
                             rotateZ,
-                            mask,
+                            maskMode,
+                            breakMask,
                         },
                         isLocked,
                         isExpanded,
@@ -18060,7 +18075,8 @@
                             textAlign,
                             letterSpacing,
                             lineHeight,
-                            mask,
+                            maskMode,
+                            breakMask,
                         },
                         isLocked,
                         isExpanded,
@@ -18122,7 +18138,8 @@
                             scaleY,
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
-                            mask,
+                            maskMode,
+                            breakMask,
                         },
                         isLocked,
                         isExpanded,
@@ -18161,7 +18178,8 @@
                             scaleY,
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
-                            mask,
+                            maskMode,
+                            breakMask,
                         },
                         isLocked,
                         isExpanded,
@@ -19041,7 +19059,8 @@
             computedStyle.booleanOperation = style.booleanOperation.v;
             computedStyle.mixBlendMode = style.mixBlendMode.v;
             computedStyle.pointerEvents = style.pointerEvents.v;
-            computedStyle.mask = style.mask.v;
+            computedStyle.maskMode = style.maskMode.v;
+            computedStyle.breakMask = style.breakMask.v;
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
             }
@@ -19203,7 +19222,7 @@
                 cb && cb(true);
                 return;
             }
-            parent === null || parent === void 0 ? void 0 : parent.deleteStruct(this);
+            parent.deleteStruct(this);
             root.addUpdate(this, [], RefreshLevel.REFLOW, false, true, cb);
         }
         destroy() {
@@ -21051,18 +21070,6 @@
         }
     }
 
-    class Geom extends Node {
-        constructor(props) {
-            super(props);
-        }
-        buildPoints() {
-            this.points = [];
-        }
-        calContent() {
-            return this.hasContent = true;
-        }
-    }
-
     function canvasPolygon(ctx, list, dx = 0, dy = 0) {
         if (!list || !list.length) {
             return;
@@ -21104,6 +21111,81 @@
             else if (item.length === 6) {
                 ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
             }
+        }
+    }
+    function svgPolygon(list, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return '';
+        }
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return '';
+        }
+        let s;
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            s = 'M' + first[2] + ',' + first[3];
+        }
+        else if (first.length === 6) {
+            s = 'M' + first[4] + ',' + first[5];
+        }
+        else {
+            s = 'M' + first[0] + ',' + first[1];
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                s += 'L' + item[0] + ',' + item[1];
+            }
+            else if (item.length === 4) {
+                s += 'Q' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3];
+            }
+            else if (item.length === 6) {
+                s += 'C' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3] + ' ' + item[4] + ',' + item[5];
+            }
+        }
+        return s;
+    }
+
+    class Geom extends Node {
+        constructor(props) {
+            super(props);
+        }
+        buildPoints() {
+            this.points = [];
+        }
+        calContent() {
+            return this.hasContent = true;
+        }
+        toSvg(scale) {
+            if (!this.points) {
+                this.buildPoints();
+            }
+            const d = svgPolygon(this.points);
+            const fillRule = this.computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            const props = [
+                ['d', d],
+                ['fill', '#D8D8D8'],
+                ['fill-rule', fillRule],
+                ['stroke', '#979797'],
+                ['stroke-width', '1'],
+            ];
+            let s = `<svg width="${this.width}" height="${this.height}" style="transform: scale(${scale})"><path`;
+            props.forEach(item => {
+                s += ' ' + item[0] + '="' + item[1] + '"';
+            });
+            return s + '></path></svg>';
         }
     }
 
@@ -25424,13 +25506,13 @@
                 const { refreshLevel, computedStyle } = node;
                 node.refreshLevel = RefreshLevel.NONE;
                 // 检查mask结束，可能本身没有变更，或者到末尾/一个组结束自动关闭mask
-                const { mask } = computedStyle;
-                if (maskStart && (mask & MASK.BREAK || i === len - 1 || lv < maskLv)) {
+                const { maskMode, breakMask } = computedStyle;
+                if (maskStart && (breakMask || i === len - 1 || lv < maskLv)) {
                     const s = structs[maskStart];
                     mergeList.push({
                         i: maskStart,
                         lv: s.lv,
-                        total: i - maskStart - (mask & MASK.BREAK || i === len - 1 ? 0 : 1),
+                        total: i - maskStart - (maskMode || i === len - 1 ? 0 : 1),
                         node: s.node,
                     });
                     maskStart = 0;
@@ -25446,8 +25528,7 @@
                             node.renderCanvas();
                             node.genTexture(gl);
                         }
-                        const { mask } = computedStyle;
-                        if (mask & MASK.OA) {
+                        if (maskMode) {
                             maskStart = i;
                             maskLv = lv;
                         }
@@ -25478,8 +25559,10 @@
                 }
                 // 生成mask
                 const computedStyle = node.computedStyle;
-                const { mask } = computedStyle;
-                if (mask & MASK.OA && textureTotal) ;
+                const { maskMode } = computedStyle;
+                if (maskMode && textureTotal) {
+                    genMask(gl, root, node, maskMode, textureTotal, structs, i);
+                }
             }
         }
         const programs = root.programs;
@@ -25637,6 +25720,9 @@
     function genTotal(gl, root, node, structs, i, lv, width, height) {
         // TODO
         return node.textureCache;
+    }
+    function genMask(gl, root, node, maskMode, textureTotal, structs, i, lv, width, height) {
+        console.log(i);
     }
 
     function checkReflow(root, node, addDom, removeDom) {
@@ -25933,9 +26019,6 @@ void main() {
             // 触发事件告知外部如刷新图层列表
             this.emit(Event.PAGE_CHANGED, newPage);
         }
-        getPages() {
-            return this.pageContainer.children;
-        }
         /**
          * 添加更新，分析repaint/reflow和上下影响，异步刷新
          * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
@@ -26103,8 +26186,22 @@ void main() {
                 this.isAsyncDraw = false;
             }
         }
+        getPages() {
+            return this.pageContainer.children;
+        }
         getCurPage() {
             return this.lastPage;
+        }
+        getCurPageStructs() {
+            const { structs, lastPage } = this;
+            if (lastPage) {
+                const struct = lastPage.struct;
+                const i = structs.indexOf(struct);
+                if (i === -1) {
+                    throw new Error('Unknown index error');
+                }
+                return structs.slice(i, i + struct.total + 1);
+            }
         }
         getCurPageZoom() {
             if (this.lastPage) {

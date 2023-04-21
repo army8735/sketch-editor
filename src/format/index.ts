@@ -84,7 +84,8 @@ export type JStyle = {
   mixBlendMode: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn'
     | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity',
   pointerEvents: boolean,
-  mask: number,
+  maskMode: 'none' | 'outline' | 'alpha',
+  breakMask: boolean,
 };
 
 export function getDefaultStyle(v?: any): JStyle {
@@ -123,7 +124,8 @@ export function getDefaultStyle(v?: any): JStyle {
     booleanOperation: 'none',
     mixBlendMode: 'normal',
     pointerEvents: true,
-    mask: 0,
+    maskMode: 'none',
+    breakMask: false,
   }, v);
 }
 

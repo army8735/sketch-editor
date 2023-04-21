@@ -150,7 +150,8 @@ export type Style = {
   booleanOperation: StyleBooleanOperationValue,
   mixBlendMode: StyleMbmValue,
   pointerEvents: StyleBoolValue,
-  mask: StyleMaskValue,
+  maskMode: StyleMaskValue,
+  breakMask: StyleBoolValue,
 };
 
 export type ComputedStyle = {
@@ -190,7 +191,8 @@ export type ComputedStyle = {
   booleanOperation: BOOLEAN_OPERATION,
   mixBlendMode: MIX_BLEND_MODE,
   pointerEvents: boolean,
-  mask: MASK,
+  maskMode: MASK,
+  breakMask: boolean,
 };
 
 export enum TEXT_ALIGN {
@@ -264,11 +266,9 @@ export enum FILL_RULE {
 }
 
 export enum MASK {
-  NONE =    0b000, // 0
-  OUTLINE = 0b001, // 1
-  ALPHA =   0b010, // 2
-  OA =      0b011, // 3
-  BREAK =   0b100, // 4
+  NONE =    0,
+  OUTLINE = 1,
+  ALPHA =   2,
 }
 
 export default {

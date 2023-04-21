@@ -156,10 +156,6 @@ class Root extends Container implements FrameCallback {
     this.emit(Event.PAGE_CHANGED, newPage);
   }
 
-  getPages() {
-    return this.pageContainer!.children as Array<Page>;
-  }
-
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
@@ -171,7 +167,7 @@ class Root extends Container implements FrameCallback {
     }
     let lv = focus;
     if (keys && keys.length) {
-      for(let i = 0, len = keys.length; i < len; i++) {
+      for (let i = 0, len = keys.length; i < len; i++) {
         const k = keys[i];
         lv |= getLevel(k);
       }
@@ -344,8 +340,24 @@ class Root extends Container implements FrameCallback {
     }
   }
 
+  getPages() {
+    return this.pageContainer!.children as Array<Page>;
+  }
+
   getCurPage() {
     return this.lastPage;
+  }
+
+  getCurPageStructs() {
+    const { structs, lastPage } = this;
+    if (lastPage) {
+      const struct = lastPage.struct;
+      const i = structs.indexOf(struct);
+      if (i === -1) {
+        throw new Error('Unknown index error');
+      }
+      return structs.slice(i, i + struct.total + 1);
+    }
   }
 
   getCurPageZoom() {
