@@ -115,7 +115,6 @@ html, body {
 .tree .type b {
   display: block;
   position: relative;
-  left: 1px;
   top: 1px;
   width: 14px;
   height: 14px;

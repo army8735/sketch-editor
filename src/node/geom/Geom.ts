@@ -29,7 +29,7 @@ class Geom extends Node {
       ['fill', '#D8D8D8'],
       ['fill-rule', fillRule],
       ['stroke', '#979797'],
-      ['stroke-width', (1 / scale).toString()],
+      ['stroke-width', (2 / scale).toString()],
     ];
     let s = `<svg width="${this.width}" height="${this.height}"><path`;
     props.forEach(item => {

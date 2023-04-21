@@ -21132,13 +21132,13 @@
         let first = list[start];
         // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
         if (first.length === 4) {
-            s = 'M' + first[2] + ',' + first[3];
+            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
         }
         else if (first.length === 6) {
-            s = 'M' + first[4] + ',' + first[5];
+            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
         }
         else {
-            s = 'M' + first[0] + ',' + first[1];
+            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
         }
         for (let i = start + 1, len = list.length; i < len; i++) {
             let item = list[i];
@@ -21146,13 +21146,13 @@
                 continue;
             }
             if (item.length === 2) {
-                s += 'L' + item[0] + ',' + item[1];
+                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
             }
             else if (item.length === 4) {
-                s += 'Q' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3];
+                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
             }
             else if (item.length === 6) {
-                s += 'C' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3] + ' ' + item[4] + ',' + item[5];
+                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
             }
         }
         return s;
@@ -21180,7 +21180,7 @@
                 ['fill', '#D8D8D8'],
                 ['fill-rule', fillRule],
                 ['stroke', '#979797'],
-                ['stroke-width', (1 / scale).toString()],
+                ['stroke-width', (2 / scale).toString()],
             ];
             let s = `<svg width="${this.width}" height="${this.height}"><path`;
             props.forEach(item => {
@@ -25342,7 +25342,7 @@
                     ['fill', '#D8D8D8'],
                     ['fill-rule', fillRule],
                     ['stroke', '#979797'],
-                    ['stroke-width', (1 / scale).toString()],
+                    ['stroke-width', (2 / scale).toString()],
                 ];
                 s += '<path';
                 props.forEach(item => {

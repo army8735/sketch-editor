@@ -199,7 +199,7 @@ class ShapeGroup extends Container {
         ['fill', '#D8D8D8'],
         ['fill-rule', fillRule],
         ['stroke', '#979797'],
-        ['stroke-width', (1 / scale).toString()],
+        ['stroke-width', (2 / scale).toString()],
       ];
       s += '<path';
       props.forEach(item => {
