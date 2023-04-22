@@ -16206,7 +16206,10 @@
      * @returns {number[]}
      */
     function inverse4(m) {
-        let inv = [];
+        if (isE(m)) {
+            return identity();
+        }
+        const inv = new Float64Array(16);
         inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15]
             + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
         inv[4] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15]
@@ -16244,7 +16247,7 @@
             return identity();
         }
         det = 1 / det;
-        let d = [];
+        const d = new Float64Array(16);
         for (let i = 0; i < 16; i++) {
             d[i] = inv[i] * det;
         }
@@ -16363,8 +16366,8 @@
         if (divisor === 0) {
             return m;
         }
-        return [d / divisor, -b / divisor, -c / divisor, a / divisor,
-            (c * f - d * e) / divisor, (b * e - a * f) / divisor];
+        return new Float64Array([d / divisor, -b / divisor, -c / divisor, a / divisor,
+            (c * f - d * e) / divisor, (b * e - a * f) / divisor]);
     }
     function calRectPoint(xa, ya, xb, yb, matrix) {
         let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
@@ -18799,7 +18802,7 @@
         gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_opacity);
         // 纹理单元
-        let u_texture = gl.getUniformLocation(program, 'u_texture');
+        const u_texture = gl.getUniformLocation(program, 'u_texture');
         gl.uniform1i(u_texture, 0);
         // 渲染并销毁
         gl.drawArrays(isSingle ? gl.TRIANGLE_STRIP : gl.TRIANGLES, 0, num2);
@@ -18809,6 +18812,55 @@
         gl.disableVertexAttribArray(a_position);
         gl.disableVertexAttribArray(a_texCoords);
         gl.disableVertexAttribArray(a_opacity);
+    }
+    function drawMask(gl, width, height, program, mask, summary, mode) {
+        const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
+        vtPoint[0] = -1;
+        vtPoint[1] = -1;
+        vtPoint[2] = -1;
+        vtPoint[3] = 1;
+        vtPoint[4] = 1;
+        vtPoint[5] = -1;
+        vtPoint[6] = 1;
+        vtPoint[7] = 1;
+        vtTex[0] = 0;
+        vtTex[1] = 0;
+        vtTex[2] = 0;
+        vtTex[3] = 1;
+        vtTex[4] = 1;
+        vtTex[5] = 0;
+        vtTex[6] = 1;
+        vtTex[7] = 1;
+        // 顶点buffer
+        const pointBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+        const a_position = gl.getAttribLocation(program, 'a_position');
+        gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_position);
+        // 纹理buffer
+        const texBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+        let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+        gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_texCoords);
+        // 纹理单元
+        bindTexture(gl, mask, 0);
+        bindTexture(gl, summary, 1);
+        const u_texture1 = gl.getUniformLocation(program, 'u_texture1');
+        gl.uniform1i(u_texture1, 0);
+        const u_texture2 = gl.getUniformLocation(program, 'u_texture2');
+        gl.uniform1i(u_texture2, 1);
+        // 模式
+        const u_mode = gl.getUniformLocation(program, 'mode');
+        gl.uniform1i(u_mode, mode);
+        // 渲染并销毁
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.deleteBuffer(pointBuffer);
+        gl.deleteBuffer(texBuffer);
+        gl.disableVertexAttribArray(a_position);
+        gl.disableVertexAttribArray(a_texCoords);
     }
     function convertCoords2Gl(x, y, cx, cy, revert = true) {
         if (x === cx) {
@@ -19960,23 +20012,24 @@
         }
         collectBsData(index, bsPoint, bsTex, cx, cy) {
             const { width, height, matrixWorld } = this;
+            const zoom = Math.min(1, this.getZoom());
             // 先boxShadow部分
-            const tl = calRectPoint(-3, -3, 0, 0, matrixWorld);
+            const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
             const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
             const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
             const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
             const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy);
-            const tr = calRectPoint(width, -3, width + 3, 0, matrixWorld);
+            const tr = calRectPoint(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
             const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy);
             const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy);
             const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy);
             const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy);
-            const br = calRectPoint(width, height, width + 3, height + 3, matrixWorld);
+            const br = calRectPoint(width, height, width + 4 / zoom, height + 4 / zoom, matrixWorld);
             const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy);
             const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy);
             const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy);
             const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy);
-            const bl = calRectPoint(-3, height, 0, height + 3, matrixWorld);
+            const bl = calRectPoint(-4 / zoom, height, 0, height + 4 / zoom, matrixWorld);
             const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy);
             const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy);
             const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy);
@@ -20392,7 +20445,7 @@
             const { loader } = this;
             if (loader.onlyImg) {
                 const canvasCache = this.canvasCache;
-                this.textureCache = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this.src);
+                this.textureCache = this.textureTarget = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this.src);
                 canvasCache.release();
             }
             else {
@@ -25577,7 +25630,12 @@
                 node.textureTotal = node.textureTarget
                     = genTotal(gl, root, node, structs, i, lv, total, W, H);
                 // 生成mask
-                node.computedStyle;
+                const computedStyle = node.computedStyle;
+                const { maskMode } = computedStyle;
+                if (maskMode && node.textureTotal && node.textureTotal.available) {
+                    node.textureMask = node.textureTarget
+                        = genMask(gl, root, node, maskMode, structs, i, lv, W, H);
+                }
             }
         }
         const programs = root.programs;
@@ -25593,7 +25651,7 @@
                 }
             }
         }
-        // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，overlay更新实际上是下一帧了
+        // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
         const overlay = root.overlay;
         const program = programs.program;
         gl.useProgram(programs.program);
@@ -25666,6 +25724,16 @@
             // 有局部子树缓存可以跳过其所有子孙节点
             if (target && target !== node.textureCache) {
                 i += total;
+                // mask特殊跳过其后面next节点，除非跳出层级或者中断mask
+                if (target === node.textureMask) {
+                    for (let j = i + 1; j < len; j++) {
+                        const { node, lv: lv2 } = structs[j];
+                        if (lv > lv2 || node.computedStyle.breakMask && lv === lv2) {
+                            i = j - 1;
+                            break;
+                        }
+                    }
+                }
             }
             // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
             else if (node.isShapeGroup) {
@@ -25793,11 +25861,91 @@
             }
         }
         // 删除fbo恢复
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.deleteFramebuffer(frameBuffer);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.viewport(0, 0, W, H);
+        releaseFrameBuffer(gl, frameBuffer, W, H);
+        return target;
+    }
+    function genMask(gl, root, node, maskMode, structs, index, lv, W, H) {
+        // 缓存仍然还在直接返回，无需重新生成
+        if (node.textureMask && node.textureMask.available) {
+            return node.textureMask;
+        }
+        const programs = root.programs;
+        const program = programs.program;
+        // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
+        const { bbox, matrix } = node;
+        const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+        const cx = w * 0.5, cy = h * 0.5;
+        const summary = createTexture(gl, 0, undefined, w, h);
+        const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
+        // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
+        const im = inverse(matrix);
+        // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
+        for (let i = index + 1, len = structs.length; i < len; i++) {
+            const { node, lv: lv2, total } = structs[i];
+            const computedStyle = node.computedStyle;
+            // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
+            if (lv > lv2 || computedStyle.breakMask && lv === lv2) {
+                break;
+            }
+            let opacity, matrix;
+            // 同层级的next作为特殊的局部根节点
+            if (lv === lv2) {
+                opacity = node.tempOpacity = computedStyle.opacity;
+                matrix = multiply(im, node.matrix);
+                assignMatrix(node.tempMatrix, matrix);
+            }
+            else {
+                const parent = node.parent;
+                opacity = computedStyle.opacity * parent.tempOpacity;
+                node.tempOpacity = opacity;
+                matrix = multiply(parent.tempMatrix, node.matrix);
+                assignMatrix(node.tempMatrix, matrix);
+            }
+            const target = node.textureTarget;
+            if (target && target.available) {
+                drawTextureCache(gl, W, H, cx, cy, program, [{
+                        bbox: node._bbox || node.bbox,
+                        opacity,
+                        matrix,
+                        cache: target,
+                    }], false);
+            }
+            // 有局部子树缓存可以跳过其所有子孙节点
+            if (target && target !== node.textureCache) {
+                i += total;
+                // mask特殊跳过其后面next节点，除非跳出层级或者中断mask
+                if (target === node.textureMask) {
+                    for (let j = i + 1; j < len; j++) {
+                        const { node, lv: lv2 } = structs[j];
+                        if (lv > lv2 || node.computedStyle.breakMask && lv === lv2) {
+                            i = j - 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+            else if (node.isShapeGroup) {
+                i += total;
+            }
+        }
+        const target = TextureCache.getEmptyInstance(gl, w, h);
+        const maskProgram = programs.maskProgram;
+        gl.useProgram(maskProgram);
+        // alpha直接应用，汇总乘以mask本身的alpha即可
+        if (maskMode === MASK.ALPHA) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
+            drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary, 1);
+        }
+        // 轮廓将mask本身内容渲染出来，再叠加汇总
+        else if (maskMode === MASK.OUTLINE) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
+            drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary, 0);
+        }
+        // 删除fbo恢复
+        gl.deleteTexture(summary);
+        releaseFrameBuffer(gl, frameBuffer, W, H);
+        gl.useProgram(program);
         return target;
     }
     function genFrameBufferWithTexture(gl, texture, width, height) {
@@ -25806,6 +25954,13 @@
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
         gl.viewport(0, 0, width, height);
         return frameBuffer;
+    }
+    function releaseFrameBuffer(gl, frameBuffer, width, height) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.deleteFramebuffer(frameBuffer);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.viewport(0, 0, width, height);
     }
 
     function checkReflow(root, node, addDom, removeDom) {
@@ -25980,6 +26135,48 @@ void main() {
   vec4 color = texture2D(u_texture, v_texCoords);
   gl_FragColor = color;
 }`;
+    const maskVert = `#version 100
+
+attribute vec4 a_position;
+
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+  gl_Position = a_position;
+  v_texCoords = a_texCoords;
+}`;
+    const maskFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+uniform int mode;
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if (mode == 1) {
+    float a = color1.a * color2.a;
+    gl_FragColor = vec4(color2.rgb, a);
+  }
+  else if (color1.a > .0) {
+    float rs = color2.a;
+    float ds = 1.0 - color2.a;
+    gl_FragColor = vec4(
+      color1.r * ds + color2.r * rs,
+      color1.g * ds + color2.g * rs,
+      color1.b * ds + color2.b * rs,
+      color1.a * ds + color2.a * rs
+    );
+  }
+}`;
 
     var ca = {
         alpha: true,
@@ -26056,13 +26253,13 @@ void main() {
             const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
             this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
             this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
+            this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
             gl.useProgram(program);
         }
         checkRoot() {
-            var _a;
             this.width = this.computedStyle.width = this.style.width.v;
             this.height = this.computedStyle.height = this.style.height.v;
-            (_a = this.ctx) === null || _a === void 0 ? void 0 : _a.viewport(0, 0, this.width, this.height);
+            this.ctx.viewport(0, 0, this.width, this.height);
         }
         setJPages(jPages) {
             jPages.forEach(item => {
@@ -26145,6 +26342,25 @@ void main() {
             }
             if (lv === RefreshLevel.NONE || !this.computedStyle.visible) {
                 return false;
+            }
+            // 先检查mask影响
+            let prev = node.prev;
+            while (prev) {
+                if (prev.computedStyle.maskMode) {
+                    const target = prev.textureMask;
+                    // 一定有，加个防御
+                    if (target) {
+                        target.release(this.ctx);
+                        if (prev.textureTotal && prev.textureTotal.available) {
+                            prev.textureTarget = prev.textureTotal;
+                        }
+                        else {
+                            prev.textureTarget = prev.textureCache;
+                        }
+                    }
+                    break;
+                }
+                prev = prev.prev;
             }
             const isRf = isReflow(lv);
             if (isRf) {

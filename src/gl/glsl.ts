@@ -78,3 +78,47 @@ void main() {
   vec4 color = texture2D(u_texture, v_texCoords);
   gl_FragColor = color;
 }`;
+
+export const maskVert = `#version 100
+
+attribute vec4 a_position;
+
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+  gl_Position = a_position;
+  v_texCoords = a_texCoords;
+}`;
+
+export const maskFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+uniform int mode;
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if (mode == 1) {
+    float a = color1.a * color2.a;
+    gl_FragColor = vec4(color2.rgb, a);
+  }
+  else if (color1.a > .0) {
+    float rs = color2.a;
+    float ds = 1.0 - color2.a;
+    gl_FragColor = vec4(
+      color1.r * ds + color2.r * rs,
+      color1.g * ds + color2.g * rs,
+      color1.b * ds + color2.b * rs,
+      color1.a * ds + color2.a * rs
+    );
+  }
+}`;

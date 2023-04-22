@@ -2,8 +2,8 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import ArtBoard from '../node/ArtBoard';
 import { RefreshLevel } from './level';
-import { bindTexture, createTexture, drawTextureCache } from '../gl/webgl';
-import { assignMatrix, multiply, toE } from '../math/matrix';
+import { bindTexture, createTexture, drawMask, drawTextureCache } from '../gl/webgl';
+import { assignMatrix, inverse, multiply, toE } from '../math/matrix';
 import inject from '../util/inject';
 import { MASK } from '../style/define';
 import TextureCache from './TextureCache';
@@ -75,13 +75,14 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
         node,
       } = mergeList[j];
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-      let target = node.textureTotal = node.textureTarget
+      node.textureTotal = node.textureTarget
         = genTotal(gl, root, node, structs, i, lv, total, W, H);
       // 生成mask
       const computedStyle = node.computedStyle;
       const { maskMode } = computedStyle;
-      if (maskMode && target) {
-        genMask(gl, root, node, maskMode, target, structs, i, lv, W, H);
+      if (maskMode && node.textureTotal && node.textureTotal.available) {
+        node.textureMask = node.textureTarget
+          = genMask(gl, root, node, maskMode, structs, i, lv, W, H);
       }
     }
   }
@@ -98,7 +99,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       }
     }
   }
-  // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，overlay更新实际上是下一帧了
+  // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
   const overlay = root.overlay;
   const program = programs.program;
   gl.useProgram(programs.program);
@@ -171,6 +172,16 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     // 有局部子树缓存可以跳过其所有子孙节点
     if (target && target !== node.textureCache) {
       i += total;
+      // mask特殊跳过其后面next节点，除非跳出层级或者中断mask
+      if (target === node.textureMask) {
+        for (let j = i + 1; j < len; j++) {
+          const { node, lv: lv2 } = structs[j];
+          if (lv > lv2 || node.computedStyle.breakMask && lv === lv2) {
+            i = j - 1;
+            break;
+          }
+        }
+      }
     }
     // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     else if (node.isShapeGroup) {
@@ -300,23 +311,110 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
     }
   }
   // 删除fbo恢复
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteFramebuffer(frameBuffer);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.viewport(0, 0, W, H);
+  releaseFrameBuffer(gl, frameBuffer, W, H);
   return target;
 }
 
 function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, maskMode: MASK,
-                 target: TextureCache, structs: Array<Struct>, index: number, lv: number, W: number, H: number) {
+                 structs: Array<Struct>, index: number, lv: number, W: number, H: number) {
+  // 缓存仍然还在直接返回，无需重新生成
+  if (node.textureMask && node.textureMask.available) {
+    return node.textureMask!;
+  }
+  const programs = root.programs;
+  const program = programs.program;
+  // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
+  const { bbox, matrix } = node;
+  const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+  const cx = w * 0.5, cy = h * 0.5;
+  const summary = createTexture(gl, 0, undefined, w, h);
+  const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
+  // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
+  const im = inverse(matrix);
+  // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
+  for (let i = index + 1, len = structs.length; i < len; i++) {
+    const { node, lv: lv2, total } = structs[i];
+    const computedStyle = node.computedStyle;
+    // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
+    if (lv > lv2 || computedStyle.breakMask && lv === lv2) {
+      break;
+    }
+    let opacity, matrix;
+    // 同层级的next作为特殊的局部根节点
+    if (lv === lv2) {
+      opacity = node.tempOpacity = computedStyle.opacity;
+      matrix = multiply(im, node.matrix);
+      assignMatrix(node.tempMatrix, matrix);
+    }
+    else {
+      const parent = node.parent!;
+      opacity = computedStyle.opacity * parent.tempOpacity;
+      node.tempOpacity = opacity;
+      matrix = multiply(parent.tempMatrix, node.matrix);
+      assignMatrix(node.tempMatrix, matrix);
+    }
+    const target = node.textureTarget;
+    if (target && target.available) {
+      drawTextureCache(gl, W, H, cx, cy, program, [{
+        bbox: node._bbox || node.bbox,
+        opacity,
+        matrix,
+        cache: target,
+      }], false);
+    }
+    // 有局部子树缓存可以跳过其所有子孙节点
+    if (target && target !== node.textureCache) {
+      i += total;
+      // mask特殊跳过其后面next节点，除非跳出层级或者中断mask
+      if (target === node.textureMask) {
+        for (let j = i + 1; j < len; j++) {
+          const { node, lv: lv2 } = structs[j];
+          if (lv > lv2 || node.computedStyle.breakMask && lv === lv2) {
+            i = j - 1;
+            break;
+          }
+        }
+      }
+    }
+    // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+    else if (node.isShapeGroup) {
+      i += total;
+    }
+  }
+  const target = TextureCache.getEmptyInstance(gl, w, h);
+  const maskProgram = programs.maskProgram;
+  gl.useProgram(maskProgram);
+  // alpha直接应用，汇总乘以mask本身的alpha即可
+  if (maskMode === MASK.ALPHA) {
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
+    drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary, 1);
+  }
+  // 轮廓将mask本身内容渲染出来，再叠加汇总
+  else if (maskMode === MASK.OUTLINE) {
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
+    drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary, 0);
+  }
+  // 删除fbo恢复
+  gl.deleteTexture(summary);
+  releaseFrameBuffer(gl, frameBuffer, W, H);
+  gl.useProgram(program);
+  return target;
 }
 
 function genFrameBufferWithTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, texture: WebGLTexture,
                                    width: number, height: number) {
-  const frameBuffer = gl.createFramebuffer();
+  const frameBuffer = gl.createFramebuffer()!;
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   gl.viewport(0, 0, width, height);
   return frameBuffer;
+}
+
+function releaseFrameBuffer(gl: WebGL2RenderingContext | WebGLRenderingContext, frameBuffer: WebGLFramebuffer,
+                            width: number, height: number) {
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.viewport(0, 0, width, height);
 }

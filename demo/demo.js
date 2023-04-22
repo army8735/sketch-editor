@@ -577,7 +577,7 @@ document.addEventListener('mousemove', function(e) {
   e.preventDefault();
   const target = e.target;
   let isOnControl = false;
-  if (target === $selection || target.parentElement === $selection || target.parentElement.parentElement === $selection) {
+  if (target === $selection || target.parentElement === $selection || target.parentElement && target.parentElement.parentElement === $selection) {
     isOnControl = true;
   }
   onMove(e.pageX, e.pageY, isOnControl);

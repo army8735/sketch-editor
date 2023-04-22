@@ -11,7 +11,16 @@ import { checkReflow } from './reflow';
 import Container from './Container';
 import { initShaders } from '../gl';
 import config from '../refresh/config';
-import { colorFrag, colorVert, mainFrag, mainVert, simpleFrag, simpleVert } from '../gl/glsl';
+import {
+  colorFrag,
+  colorVert,
+  mainFrag,
+  mainVert,
+  simpleFrag,
+  simpleVert,
+  maskVert,
+  maskFrag,
+} from '../gl/glsl';
 import ca from '../gl/ca';
 
 let uuid = 0;
@@ -107,13 +116,14 @@ class Root extends Container implements FrameCallback {
     const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
     this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
+    this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
     gl.useProgram(program);
   }
 
   private checkRoot() {
     this.width = this.computedStyle.width = this.style.width.v as number;
     this.height = this.computedStyle.height = this.style.height.v as number;
-    this.ctx?.viewport(0, 0, this.width, this.height);
+    this.ctx!.viewport(0, 0, this.width, this.height);
   }
 
   setJPages(jPages: Array<JPage>) {
@@ -201,6 +211,25 @@ class Root extends Container implements FrameCallback {
     }
     if (lv === RefreshLevel.NONE || !this.computedStyle.visible) {
       return false;
+    }
+    // 先检查mask影响
+    let prev = node.prev;
+    while (prev) {
+      if (prev.computedStyle.maskMode) {
+        const target = prev.textureMask;
+        // 一定有，加个防御
+        if (target) {
+          target.release(this.ctx!);
+          if (prev.textureTotal && prev.textureTotal.available) {
+            prev.textureTarget = prev.textureTotal;
+          }
+          else {
+            prev.textureTarget = prev.textureCache;
+          }
+        }
+        break;
+      }
+      prev = prev.prev;
     }
     const isRf = isReflow(lv);
     if (isRf) {

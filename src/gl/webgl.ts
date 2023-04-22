@@ -169,7 +169,7 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
   gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_opacity);
   // 纹理单元
-  let u_texture = gl.getUniformLocation(program, 'u_texture');
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, 0);
   // 渲染并销毁
   gl.drawArrays(isSingle ? gl.TRIANGLE_STRIP : gl.TRIANGLES, 0, num2);
@@ -180,6 +180,57 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
   gl.disableVertexAttribArray(a_texCoords);
   gl.disableVertexAttribArray(a_opacity);
 
+}
+
+export function drawMask(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
+                         program: any, mask: WebGLTexture, summary: WebGLTexture, mode: number) {
+  const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
+  vtPoint[0] = -1;
+  vtPoint[1] = -1;
+  vtPoint[2] = -1;
+  vtPoint[3] = 1;
+  vtPoint[4] = 1;
+  vtPoint[5] = -1;
+  vtPoint[6] = 1;
+  vtPoint[7] = 1;
+  vtTex[0] = 0;
+  vtTex[1] = 0;
+  vtTex[2] = 0;
+  vtTex[3] = 1;
+  vtTex[4] = 1;
+  vtTex[5] = 0;
+  vtTex[6] = 1;
+  vtTex[7] = 1;
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  const texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  bindTexture(gl, mask, 0);
+  bindTexture(gl, summary, 1);
+  const u_texture1 = gl.getUniformLocation(program, 'u_texture1');
+  gl.uniform1i(u_texture1, 0);
+  const u_texture2 = gl.getUniformLocation(program, 'u_texture2');
+  gl.uniform1i(u_texture2, 1);
+  // 模式
+  const u_mode = gl.getUniformLocation(program, 'mode');
+  gl.uniform1i(u_mode, mode);
+  // 渲染并销毁
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
 }
 
 export function convertCoords2Gl(x: number, y: number, cx: number, cy: number, revert = true) {

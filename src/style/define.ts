@@ -15,7 +15,7 @@ export function calUnit(v: string | number): StyleNumValue {
     return {
       v: 0,
       u: StyleUnit.AUTO,
-    }
+    };
   }
   let n = parseFloat(v as string) || 0;
   if(/%$/.test(v as string)) {

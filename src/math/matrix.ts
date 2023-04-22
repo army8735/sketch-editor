@@ -113,7 +113,10 @@ export function toE(m: Float64Array) {
  */
 
 export function inverse4(m: Float64Array) {
-  let inv = [];
+  if (isE(m)) {
+    return identity();
+  }
+  const inv = new Float64Array(16);
 
   inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15]
     + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
@@ -157,7 +160,7 @@ export function inverse4(m: Float64Array) {
   }
 
   det = 1 / det;
-  let d = [];
+  const d = new Float64Array(16);
   for (let i = 0; i < 16; i++) {
     d[i] = inv[i] * det;
   }
@@ -307,8 +310,8 @@ export function inverse(m: Float64Array) {
   if(divisor === 0) {
     return m;
   }
-  return [d / divisor, -b / divisor, -c / divisor, a / divisor,
-    (c * f - d * e) / divisor, (b * e - a * f) / divisor];
+  return new Float64Array([d / divisor, -b / divisor, -c / divisor, a / divisor,
+    (c * f - d * e) / divisor, (b * e - a * f) / divisor]);
 }
 
 export function calRectPoint(xa: number, ya: number, xb: number, yb: number, matrix: Float64Array) {
