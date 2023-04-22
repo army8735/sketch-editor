@@ -7,7 +7,6 @@ import { assignMatrix, multiply, toE } from '../math/matrix';
 import inject from '../util/inject';
 import { MASK } from '../style/define';
 import TextureCache from './TextureCache';
-import textureCache from './TextureCache';
 
 export type Struct = {
   node: Node;
@@ -259,7 +258,7 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
   const { bbox } = node;
   const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
   const cx = w * 0.5, cy = h * 0.5;
-  const target = textureCache.getEmptyInstance(gl, w, h);
+  const target = TextureCache.getEmptyInstance(gl, w, h);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
   // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
   for (let i = index, len = index + total + 1; i < len; i++) {
