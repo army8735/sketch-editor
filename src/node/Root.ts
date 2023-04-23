@@ -209,24 +209,20 @@ class Root extends Container implements FrameCallback {
     if (addDom || removeDom) {
       lv |= RefreshLevel.REFLOW;
     }
-    if (lv === RefreshLevel.NONE || !this.computedStyle.visible) {
+    if (lv === RefreshLevel.NONE || !this.computedStyle.visible || this.isDestroyed) {
       return false;
     }
-    // 先检查mask影响
-    let prev = node.prev;
+    // 先检查mask影响，向前prev查找到mask节点
+    let prev: Node | undefined = node;
     while (prev) {
       if (prev.computedStyle.maskMode) {
         const target = prev.textureMask;
-        // 一定有，加个防御
-        if (target) {
-          target.release(this.ctx!);
-          if (prev.textureTotal && prev.textureTotal.available) {
-            prev.textureTarget = prev.textureTotal;
-          }
-          else {
-            prev.textureTarget = prev.textureCache;
-          }
-        }
+        target?.release();
+        prev.resetTextureTarget();
+        break;
+      }
+      // 中断停止，一定不会有mask影响
+      if (prev.computedStyle.breakMask) {
         break;
       }
       prev = prev.prev;
@@ -247,8 +243,9 @@ class Root extends Container implements FrameCallback {
     else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
-        node.releaseCache(this.ctx!);
         node.calRepaintStyle(lv);
+        node.clearCache(true);
+        node.clearCacheUpward(false);
       }
       else {
         const { style, computedStyle } = node;

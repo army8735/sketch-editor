@@ -187,7 +187,7 @@ export type ComputedStyle = {
   scaleX: number,
   scaleY: number,
   rotateZ: number,
-  transformOrigin: [number, number],
+  transformOrigin: Array<number>,
   booleanOperation: BOOLEAN_OPERATION,
   mixBlendMode: MIX_BLEND_MODE,
   pointerEvents: boolean,

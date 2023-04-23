@@ -18,7 +18,7 @@ import {
 import { d2r } from '../math/geom';
 import Event from '../util/Event';
 import { LayoutData } from './layout';
-import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, normalize } from '../style/css';
+import { calNormalLineHeight, calSize, equalStyle, normalize } from '../style/css';
 import { ComputedStyle, Style, StyleNumValue, StyleUnit } from '../style/define';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
 import { Struct } from '../refresh/struct';
@@ -213,6 +213,7 @@ class Node extends Event {
     this.lay(data);
     // reflow和matrix计算需要x/y/width/height
     this.calRepaintStyle(RefreshLevel.REFLOW);
+    this.clearCache(true);
     this._rect = undefined;
     this._bbox = undefined;
   }
@@ -398,7 +399,7 @@ class Node extends Event {
   }
 
   genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this.textureCache && this.textureCache.release(gl);
+    this.textureCache?.release();
     const canvasCache = this.canvasCache;
     if (canvasCache && canvasCache.available) {
       this.textureTarget = this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
@@ -406,9 +407,37 @@ class Node extends Event {
     }
   }
 
-  releaseCache(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this.canvasCache?.release();
-    this.textureCache?.release(gl);
+  resetTextureTarget() {
+    const { textureMask, textureTotal, textureCache } = this;
+    if (textureMask && textureMask.available) {
+      this.textureTarget = textureMask;
+    }
+    else if (textureTotal && textureTotal.available) {
+      this.textureTarget = textureTotal;
+    }
+    else {
+      this.textureTarget = textureCache;
+    }
+  }
+
+  clearCache(includeSelf = false) {
+    if (includeSelf) {
+      this.textureCache?.release();
+    }
+    else {
+      this.textureTarget = this.textureCache;
+    }
+    this.textureTotal?.release();
+    this.textureMask?.release();
+    this.refreshLevel |= RefreshLevel.CACHE;
+  }
+
+  clearCacheUpward(includeSelf = false) {
+    let parent = this.parent;
+    while (parent) {
+      parent.clearCache(includeSelf);
+      parent = parent.parent;
+    }
   }
 
   remove(cb?: (sync: boolean) => void) {
@@ -441,8 +470,7 @@ class Node extends Event {
       return;
     }
     this.isDestroyed = true;
-    this.canvasCache && this.canvasCache.release();
-    this.textureCache && this.textureCache.release(this.root!.ctx!);
+    this.clearCache(true);
     this.prev = this.next = this.parent = this.root = undefined;
   }
 
@@ -500,27 +528,32 @@ class Node extends Event {
   }
 
   getComputedStyle() {
-    const computedStyle = this.computedStyle;
-    const res: any = {};
-    for (let k in computedStyle) {
-      if (k === 'color' || k === 'backgroundColor' || k === 'transformOrigin') {
-        res[k] = computedStyle[k].slice(0);
-      }
-      else {
-        // @ts-ignore
-        res[k] = computedStyle[k];
-      }
-    }
+    const res = Object.assign({}, this.computedStyle);
+    res.color = res.color.slice(0);
+    res.backgroundColor = res.backgroundColor.slice(0);
+    res.fill = res.fill.slice(0);
+    res.fillEnable = res.fillEnable.slice(0);
+    res.stroke = res.stroke.slice(0);
+    res.strokeEnable = res.strokeEnable.slice(0);
+    res.strokeWidth = res.strokeWidth.slice(0);
+    res.strokeDasharray = res.strokeDasharray.slice(0);
+    res.transformOrigin = res.transformOrigin.slice(0);
     return res;
   }
 
-  getStyle<T extends keyof JStyle>(k: T): any {
+  getStyle<T extends keyof JStyle>(k: T) {
     const computedStyle = this.computedStyle;
-    if (k === 'color' || k === 'backgroundColor') {
-      // @ts-ignore
-      return color2rgbaStr(computedStyle[k]);
+    if (k === 'color'
+      || k === 'backgroundColor'
+      || k === 'fill'
+      || k === 'fillEnable'
+      || k === 'stroke'
+      || k === 'strokeEnable'
+      || k === 'strokeWidth'
+      || k === 'strokeDasharray'
+      || k === 'transformOrigin') {
+      return (computedStyle[k] as any[]).slice(0);
     }
-    // @ts-ignore
     return computedStyle[k];
   }
 

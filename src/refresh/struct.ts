@@ -28,7 +28,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
   const cx = W * 0.5, cy = H * 0.5;
   const mergeList: Array<Merge> = [];
   // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
-  if (rl >= RefreshLevel.REPAINT) {
+  if (rl >= RefreshLevel.REPAINT || rl & (RefreshLevel.CACHE | RefreshLevel.MASK)) {
     for (let i = 0, len = structs.length; i < len; i++) {
       const { node, lv, total } = structs[i];
       const { refreshLevel, computedStyle } = node;
@@ -389,7 +389,7 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
     drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary, 1);
   }
-  // 轮廓将mask本身内容渲染出来，再叠加汇总
+  // 轮廓需收集mask的轮廓并渲染出来，再叠加汇总
   else if (maskMode === MASK.OUTLINE) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
     drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary, 0);

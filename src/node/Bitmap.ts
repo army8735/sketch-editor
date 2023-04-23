@@ -18,12 +18,12 @@ type Loader = {
 };
 
 class Bitmap extends Node {
-  _src: string | undefined;
+  _src: string;
   loader: Loader;
 
   constructor(props: BitmapProps) {
     super(props);
-    const src = this._src = props.src;
+    const src = this._src = props.src || '';
     this.loader = {
       error: false,
       loading: false,
@@ -174,14 +174,17 @@ class Bitmap extends Node {
     }
   }
 
-  override releaseCache(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+  override clearCache(includeSelf = false) {
     const { loader } = this;
     if (loader.onlyImg) {
-      this.canvasCache?.releaseImg(this._src!);
-      this.textureCache?.releaseImg(gl, this._src!);
+      if (includeSelf) {
+        this.textureCache?.releaseImg(this._src!);
+      }
+      this.textureTotal?.release();
+      this.textureMask?.release();
     }
     else {
-      super.releaseCache(gl);
+      super.clearCache(includeSelf);
     }
   }
 
@@ -189,7 +192,7 @@ class Bitmap extends Node {
     return this._src;
   }
 
-  set src(v) {
+  set src(v: string) {
     this.src = v;
     const loader = this.loader;
     if (v === loader.src || this.isDestroyed || !v && loader.error) {

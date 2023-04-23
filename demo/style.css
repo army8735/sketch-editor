@@ -121,6 +121,11 @@ html, body {
   transform-origin: 0 0;
 }
 
+.tree .type svg {
+  display: block;
+  overflow: visible;
+}
+
 .tree .name {
   flex: 1;
   white-space: nowrap;

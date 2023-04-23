@@ -193,13 +193,13 @@ class ShapeGroup extends Container {
     const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     let s = `<svg width="${this.width}" height="${this.height}">`;
     this.points!.forEach(item => {
-      const d = svgPolygon(item);
+      const d = svgPolygon(item) + 'Z';
       const props = [
         ['d', d],
         ['fill', '#D8D8D8'],
         ['fill-rule', fillRule],
         ['stroke', '#979797'],
-        ['stroke-width', (2 / scale).toString()],
+        ['stroke-width', (1 / scale).toString()],
       ];
       s += '<path';
       props.forEach(item => {

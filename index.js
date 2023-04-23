@@ -18885,18 +18885,19 @@
 
     const HASH$1 = {};
     class TextureCache {
-        constructor(texture) {
+        constructor(gl, texture) {
+            this.gl = gl;
             this.available = true;
             this.texture = texture;
         }
-        release(gl) {
+        release() {
             if (!this.available) {
                 return;
             }
             this.available = false;
-            gl.deleteTexture(this.texture);
+            this.gl.deleteTexture(this.texture);
         }
-        releaseImg(gl, url) {
+        releaseImg(url) {
             if (!this.available) {
                 return;
             }
@@ -18906,29 +18907,29 @@
             if (!o.count) {
                 // 此时无引用计数可清空且释放texture
                 delete HASH$1[url];
-                gl.deleteTexture(this.texture);
+                this.gl.deleteTexture(this.texture);
             }
         }
         static getInstance(gl, canvas) {
             const texture = createTexture(gl, 0, canvas);
-            return new TextureCache(texture);
+            return new TextureCache(gl, texture);
         }
         static getImgInstance(gl, canvas, url) {
             if (HASH$1.hasOwnProperty(url)) {
                 const o = HASH$1[url];
                 o.count++;
-                return new TextureCache(HASH$1[url].value);
+                return new TextureCache(gl, HASH$1[url].value);
             }
             const texture = createTexture(gl, 0, canvas);
             HASH$1[url] = {
                 value: texture,
                 count: 1,
             };
-            return new TextureCache(texture);
+            return new TextureCache(gl, texture);
         }
         static getEmptyInstance(gl, w, h) {
             const texture = createTexture(gl, 0, undefined, w, h);
-            return new TextureCache(texture);
+            return new TextureCache(gl, texture);
         }
     }
 
@@ -19074,6 +19075,7 @@
             this.lay(data);
             // reflow和matrix计算需要x/y/width/height
             this.calRepaintStyle(RefreshLevel.REFLOW);
+            this.clearCache(true);
             this._rect = undefined;
             this._bbox = undefined;
         }
@@ -19253,17 +19255,44 @@
             }
         }
         genTexture(gl) {
-            this.textureCache && this.textureCache.release(gl);
+            var _a;
+            (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.release();
             const canvasCache = this.canvasCache;
             if (canvasCache && canvasCache.available) {
                 this.textureTarget = this.textureCache = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas);
                 canvasCache.release();
             }
         }
-        releaseCache(gl) {
-            var _a, _b;
-            (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.release();
-            (_b = this.textureCache) === null || _b === void 0 ? void 0 : _b.release(gl);
+        resetTextureTarget() {
+            const { textureMask, textureTotal, textureCache } = this;
+            if (textureMask && textureMask.available) {
+                this.textureTarget = textureMask;
+            }
+            else if (textureTotal && textureTotal.available) {
+                this.textureTarget = textureTotal;
+            }
+            else {
+                this.textureTarget = textureCache;
+            }
+        }
+        clearCache(includeSelf = false) {
+            var _a, _b, _c;
+            if (includeSelf) {
+                (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.release();
+            }
+            else {
+                this.textureTarget = this.textureCache;
+            }
+            (_b = this.textureTotal) === null || _b === void 0 ? void 0 : _b.release();
+            (_c = this.textureMask) === null || _c === void 0 ? void 0 : _c.release();
+            this.refreshLevel |= RefreshLevel.CACHE;
+        }
+        clearCacheUpward(includeSelf = false) {
+            let parent = this.parent;
+            while (parent) {
+                parent.clearCache(includeSelf);
+                parent = parent.parent;
+            }
         }
         remove(cb) {
             const { root, parent } = this;
@@ -19294,8 +19323,7 @@
                 return;
             }
             this.isDestroyed = true;
-            this.canvasCache && this.canvasCache.release();
-            this.textureCache && this.textureCache.release(this.root.ctx);
+            this.clearCache(true);
             this.prev = this.next = this.parent = this.root = undefined;
         }
         structure(lv) {
@@ -19348,26 +19376,31 @@
             this.root.addUpdate(this, keys, undefined, false, false, cb);
         }
         getComputedStyle() {
-            const computedStyle = this.computedStyle;
-            const res = {};
-            for (let k in computedStyle) {
-                if (k === 'color' || k === 'backgroundColor' || k === 'transformOrigin') {
-                    res[k] = computedStyle[k].slice(0);
-                }
-                else {
-                    // @ts-ignore
-                    res[k] = computedStyle[k];
-                }
-            }
+            const res = Object.assign({}, this.computedStyle);
+            res.color = res.color.slice(0);
+            res.backgroundColor = res.backgroundColor.slice(0);
+            res.fill = res.fill.slice(0);
+            res.fillEnable = res.fillEnable.slice(0);
+            res.stroke = res.stroke.slice(0);
+            res.strokeEnable = res.strokeEnable.slice(0);
+            res.strokeWidth = res.strokeWidth.slice(0);
+            res.strokeDasharray = res.strokeDasharray.slice(0);
+            res.transformOrigin = res.transformOrigin.slice(0);
             return res;
         }
         getStyle(k) {
             const computedStyle = this.computedStyle;
-            if (k === 'color' || k === 'backgroundColor') {
-                // @ts-ignore
-                return color2rgbaStr(computedStyle[k]);
+            if (k === 'color'
+                || k === 'backgroundColor'
+                || k === 'fill'
+                || k === 'fillEnable'
+                || k === 'stroke'
+                || k === 'strokeEnable'
+                || k === 'strokeWidth'
+                || k === 'strokeDasharray'
+                || k === 'transformOrigin') {
+                return computedStyle[k].slice(0);
             }
-            // @ts-ignore
             return computedStyle[k];
         }
         getBoundingClientRect(includeBbox = false) {
@@ -20324,7 +20357,7 @@
     class Bitmap extends Node {
         constructor(props) {
             super(props);
-            const src = this._src = props.src;
+            const src = this._src = props.src || '';
             this.loader = {
                 error: false,
                 loading: false,
@@ -20452,15 +20485,18 @@
                 super.genTexture(gl);
             }
         }
-        releaseCache(gl) {
-            var _a, _b;
+        clearCache(includeSelf = false) {
+            var _a, _b, _c;
             const { loader } = this;
             if (loader.onlyImg) {
-                (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this._src);
-                (_b = this.textureCache) === null || _b === void 0 ? void 0 : _b.releaseImg(gl, this._src);
+                if (includeSelf) {
+                    (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this._src);
+                }
+                (_b = this.textureTotal) === null || _b === void 0 ? void 0 : _b.release();
+                (_c = this.textureMask) === null || _c === void 0 ? void 0 : _c.release();
             }
             else {
-                super.releaseCache(gl);
+                super.clearCache(includeSelf);
             }
         }
         get src() {
@@ -21230,19 +21266,22 @@
         buildPoints() {
             this.points = [];
         }
-        toSvg(scale) {
+        calContent() {
+            return this.hasContent = true;
+        }
+        toSvg(scale, isClosed = false) {
             if (!this.points) {
                 this.buildPoints();
             }
             const computedStyle = this.computedStyle;
-            const d = svgPolygon(this.points);
+            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
             const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
             const props = [
                 ['d', d],
                 ['fill', '#D8D8D8'],
                 ['fill-rule', fillRule],
                 ['stroke', '#979797'],
-                ['stroke-width', (2 / scale).toString()],
+                ['stroke-width', (1 / scale).toString()],
             ];
             let s = `<svg width="${this.width}" height="${this.height}"><path`;
             props.forEach(item => {
@@ -21491,6 +21530,9 @@
                 }
                 ctx.stroke();
             }
+        }
+        toSvg(scale) {
+            return super.toSvg(scale, this.isClosed);
         }
         get bbox() {
             if (!this._bbox) {
@@ -25398,13 +25440,13 @@
             const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
             let s = `<svg width="${this.width}" height="${this.height}">`;
             this.points.forEach(item => {
-                const d = svgPolygon(item);
+                const d = svgPolygon(item) + 'Z';
                 const props = [
                     ['d', d],
                     ['fill', '#D8D8D8'],
                     ['fill-rule', fillRule],
                     ['stroke', '#979797'],
-                    ['stroke-width', (2 / scale).toString()],
+                    ['stroke-width', (1 / scale).toString()],
                 ];
                 s += '<path';
                 props.forEach(item => {
@@ -25586,7 +25628,7 @@
         const cx = W * 0.5, cy = H * 0.5;
         const mergeList = [];
         // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
-        if (rl >= RefreshLevel.REPAINT) {
+        if (rl >= RefreshLevel.REPAINT || rl & (RefreshLevel.CACHE | RefreshLevel.MASK)) {
             for (let i = 0, len = structs.length; i < len; i++) {
                 const { node, lv, total } = structs[i];
                 const { refreshLevel, computedStyle } = node;
@@ -25937,7 +25979,7 @@
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
             drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary, 1);
         }
-        // 轮廓将mask本身内容渲染出来，再叠加汇总
+        // 轮廓需收集mask的轮廓并渲染出来，再叠加汇总
         else if (maskMode === MASK.OUTLINE) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
             drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary, 0);
@@ -26340,24 +26382,20 @@ void main() {
             if (addDom || removeDom) {
                 lv |= RefreshLevel.REFLOW;
             }
-            if (lv === RefreshLevel.NONE || !this.computedStyle.visible) {
+            if (lv === RefreshLevel.NONE || !this.computedStyle.visible || this.isDestroyed) {
                 return false;
             }
-            // 先检查mask影响
-            let prev = node.prev;
+            // 先检查mask影响，向前prev查找到mask节点
+            let prev = node;
             while (prev) {
                 if (prev.computedStyle.maskMode) {
                     const target = prev.textureMask;
-                    // 一定有，加个防御
-                    if (target) {
-                        target.release(this.ctx);
-                        if (prev.textureTotal && prev.textureTotal.available) {
-                            prev.textureTarget = prev.textureTotal;
-                        }
-                        else {
-                            prev.textureTarget = prev.textureCache;
-                        }
-                    }
+                    target === null || target === void 0 ? void 0 : target.release();
+                    prev.resetTextureTarget();
+                    break;
+                }
+                // 中断停止，一定不会有mask影响
+                if (prev.computedStyle.breakMask) {
                     break;
                 }
                 prev = prev.prev;
@@ -26378,8 +26416,9 @@ void main() {
             else {
                 const isRp = lv >= RefreshLevel.REPAINT;
                 if (isRp) {
-                    node.releaseCache(this.ctx);
                     node.calRepaintStyle(lv);
+                    node.clearCache(true);
+                    node.clearCacheUpward(false);
                 }
                 else {
                     const { style, computedStyle } = node;

@@ -269,6 +269,10 @@ class Polyline extends Geom {
     }
   }
 
+  toSvg(scale: number) {
+    return super.toSvg(scale, this.isClosed);
+  }
+
   override get bbox(): Float64Array {
     if (!this._bbox) {
       const bbox = this._bbox = super.bbox;
