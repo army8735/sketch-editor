@@ -52,6 +52,7 @@ function offscreenCanvas(width: number, height: number, key?: string,
       }
       this.available = false;
       ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;

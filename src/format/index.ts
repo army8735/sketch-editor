@@ -1,4 +1,4 @@
-import { CurveMode } from '../style/define';
+import { CURVE_MODE } from '../style/define';
 
 export type JFile = {
   pages: JPage[];
@@ -88,7 +88,11 @@ export type JStyle = {
   stroke: Array<string | Array<number>>;
   strokeEnable: Array<boolean>;
   strokeWidth: Array<number>;
+  strokePosition: Array<'center' | 'inside' | 'outside'>;
   strokeDasharray: Array<number>;
+  strokeLinecap: 'butt' | 'round' | 'square';
+  strokeLinejoin: 'miter' | 'round' | 'bevel';
+  strokeMiterlimit: number;
   letterSpacing: number;
   textAlign: string;
   translateX: number;
@@ -145,7 +149,11 @@ export function getDefaultStyle(v?: any): JStyle {
       stroke: [[0, 0, 0, 1]],
       strokeEnable: [false],
       strokeWidth: [1],
+      strokePosition: ['center'],
       strokeDasharray: [],
+      strokeLinecap: 'butt',
+      strokeLinejoin: 'miter',
+      strokeMiterlimit: 0,
       letterSpacing: 0,
       textAlign: 'left',
       translateX: 0,
@@ -210,7 +218,7 @@ export type Point = {
   x: number;
   y: number;
   cornerRadius: number;
-  curveMode: CurveMode;
+  curveMode: CURVE_MODE;
   fx: number;
   fy: number;
   tx: number;

@@ -21,7 +21,10 @@ class ArtBoard extends Container {
 
   collectBsData(index: number, bsPoint: Float32Array, bsTex: Float32Array, cx: number, cy: number) {
     const { width, height, matrixWorld } = this;
-    const zoom = Math.min(1, this.getZoom());
+    let zoom = this.getZoom();
+    if (zoom < 1) {
+      zoom = Math.sqrt(zoom);
+    }
 
     // 先boxShadow部分
     const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);

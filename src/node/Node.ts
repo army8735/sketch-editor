@@ -261,7 +261,10 @@ class Node extends Event {
     computedStyle.stroke = style.stroke.map(item => item.v);
     computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
+    computedStyle.strokePosition = style.strokePosition.map(item => item.v);
     computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
+    computedStyle.strokeLinecap = style.strokeLinecap.v;
+    computedStyle.strokeLinejoin = style.strokeLinejoin.v;
     computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
@@ -550,6 +553,7 @@ class Node extends Event {
       || k === 'stroke'
       || k === 'strokeEnable'
       || k === 'strokeWidth'
+      || k === 'strokePosition'
       || k === 'strokeDasharray'
       || k === 'transformOrigin') {
       return (computedStyle[k] as any[]).slice(0);

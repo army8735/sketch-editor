@@ -517,11 +517,14 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const {
       fill,
       fillEnable,
+      fillRule,
       stroke,
       strokeEnable,
       strokeWidth,
+      strokePosition,
       strokeDasharray,
-      fillRule,
+      strokeLinecap,
+      strokeLinejoin,
     } = geomStyle(layer);
     return {
       tagName: TagName.Polyline,
@@ -545,7 +548,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           stroke,
           strokeEnable,
           strokeWidth,
+          strokePosition,
           strokeDasharray,
+          strokeLinecap,
+          strokeLinejoin,
           translateX,
           translateY,
           scaleX,
@@ -568,7 +574,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       stroke,
       strokeEnable,
       strokeWidth,
+      strokePosition,
       strokeDasharray,
+      strokeLinecap,
+      strokeLinejoin,
     } = geomStyle(layer);
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
@@ -595,7 +604,10 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           stroke,
           strokeEnable,
           strokeWidth,
+          strokePosition,
           strokeDasharray,
+          strokeLinecap,
+          strokeLinejoin,
           translateX,
           translateY,
           scaleX,
@@ -615,8 +627,15 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
 }
 
 function geomStyle(layer: SketchFormat.AnyLayer) {
-  const { borders, borderOptions, fills, windingRule } = layer.style || {};
-  const fill: Array<string | Array<number>> = [], fillEnable: Array<boolean> = [];
+  const {
+    borders,
+    borderOptions,
+    fills,
+    windingRule,
+    miterLimit: strokeMiterlimit,
+  } = layer.style || {};
+  const fill: Array<string | Array<number>> = [],
+    fillEnable: Array<boolean> = [];
   if (fills) {
     fills.forEach((item: SketchFormat.Fill) => {
       if (item.fillType === SketchFormat.FillType.Gradient) {
@@ -654,7 +673,10 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
       fillEnable.push(item.isEnabled);
     });
   }
-  const stroke: Array<Array<number>> = [], strokeEnable: Array<boolean> = [], strokeWidth: Array<number> = [];
+  const stroke: Array<Array<number>> = [],
+    strokeEnable: Array<boolean> = [],
+    strokeWidth: Array<number> = [],
+    strokePosition: Array<string> = [];
   if (borders) {
     borders.forEach((item: SketchFormat.Border) => {
       stroke.push([
@@ -665,13 +687,35 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
       ]);
       strokeEnable.push(item.isEnabled);
       strokeWidth.push(item.thickness || 0);
+      if (item.position === SketchFormat.BorderPosition.Inside) {
+        strokePosition.push('inside');
+      }
+      else if (item.position === SketchFormat.BorderPosition.Outside) {
+        strokePosition.push('outside');
+      }
+      else {
+        strokePosition.push('center');
+      }
     });
   }
   const strokeDasharray: Array<number> = [];
+  let strokeLinecap = 'butt', strokeLinejoin = 'miter';
   if (borderOptions) {
     borderOptions.dashPattern.forEach(item => {
       strokeDasharray.push(item);
     });
+    if (borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Round) {
+      strokeLinecap = 'round';
+    }
+    else if (borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Projecting) {
+      strokeLinecap = 'square';
+    }
+    if (borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Round) {
+      strokeLinejoin = 'round';
+    }
+    else if (borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Bevel) {
+      strokeLinejoin = 'bevel';
+    }
   }
   return {
     fill,
@@ -680,7 +724,11 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
     stroke,
     strokeEnable,
     strokeWidth,
+    strokePosition,
     strokeDasharray,
+    strokeLinecap,
+    strokeLinejoin,
+    strokeMiterlimit,
   };
 }
 

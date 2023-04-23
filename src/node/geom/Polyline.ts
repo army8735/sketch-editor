@@ -6,11 +6,12 @@ import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { unitize } from '../../math/vector';
-import { CurveMode } from '../../style/define';
+import { CURVE_MODE, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
 import { clone } from '../../util';
+import inject, { OffScreen } from '../../util/inject';
 
 function isCornerPoint(point: Point) {
-  return point.curveMode === CurveMode.Straight && point.cornerRadius > 0;
+  return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
 }
 
 class Polyline extends Geom {
@@ -72,11 +73,11 @@ class Polyline extends Geom {
         // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
         const isPrevCorner = isCornerPoint(prevPoint);
         const isPrevStraight = isPrevCorner
-          || prevPoint.curveMode === CurveMode.Straight
+          || prevPoint.curveMode === CURVE_MODE.STRAIGHT
           || !prevPoint.hasCurveFrom;
         const isNextCorner = isCornerPoint(nextPoint);
         const isNextStraight = isNextCorner
-          || nextPoint.curveMode === CurveMode.Straight
+          || nextPoint.curveMode === CURVE_MODE.STRAIGHT
           || !nextPoint.hasCurveTo;
         // 先看最普通的直线，可以用角平分线+半径最小值约束求解
         if (isPrevStraight && isNextStraight) {
@@ -214,7 +215,11 @@ class Polyline extends Geom {
       stroke,
       strokeEnable,
       strokeWidth,
+      strokePosition,
       strokeDasharray,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
     } = this.computedStyle;
     ctx.setLineDash(strokeDasharray);
     // 先下层的fill
@@ -243,6 +248,26 @@ class Polyline extends Geom {
       }
       ctx.fill();
     }
+    // 线帽设置
+    if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
+      ctx.lineCap = 'round';
+    }
+    else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+      ctx.lineCap = 'square';
+    }
+    else {
+      ctx.lineCap = 'butt';
+    }
+    if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
+      ctx.lineJoin = 'round';
+    }
+    else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+      ctx.lineJoin = 'bevel';
+    }
+    else {
+      ctx.lineJoin = 'miter';
+    }
+    ctx.miterLimit = strokeMiterlimit;
     // 再上层的stroke
     for (let i = 0, len = stroke.length; i < len; i++) {
       if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -251,7 +276,6 @@ class Polyline extends Geom {
       const s = stroke[i];
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
-        ctx.lineWidth = strokeWidth[i];
       }
       else {
         const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
@@ -259,13 +283,58 @@ class Polyline extends Geom {
         gd.stop.forEach(item => {
           lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
         });
-        ctx.fillStyle = lg;
+        ctx.strokeStyle = lg;
       }
-      canvasPolygon(ctx, points, -x, -y);
+      // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
+      const p = strokePosition[i];
+      let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
+      if (p === STROKE_POSITION.INSIDE) {
+        ctx.lineWidth = strokeWidth[i] * 2;
+        canvasPolygon(ctx, points, -x, -y);
+      }
+      else if (p === STROKE_POSITION.OUTSIDE) {
+        os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+        ctx2 = os.ctx;
+        ctx2.setLineDash(strokeDasharray);
+        ctx2.lineCap = ctx.lineCap;
+        ctx2.lineJoin = ctx.lineJoin;
+        ctx2.miterLimit = ctx.miterLimit;
+        ctx2.strokeStyle = ctx.strokeStyle;
+        ctx2.lineWidth = strokeWidth[i] * 2;
+        canvasPolygon(ctx2, points, -x, -y);
+      }
+      else {
+        ctx.lineWidth = strokeWidth[i];
+        canvasPolygon(ctx, points, -x, -y);
+      }
       if (this.isClosed) {
-        ctx.closePath();
+        if (ctx2) {
+          ctx2.closePath();
+        }
+        else {
+          ctx.closePath();
+        }
       }
-      ctx.stroke();
+      if (p === STROKE_POSITION.INSIDE) {
+        ctx.save();
+        ctx.clip();
+        ctx.stroke();
+        ctx.restore();
+      }
+      else if (p === STROKE_POSITION.OUTSIDE) {
+        ctx2!.stroke();
+        ctx2!.save();
+        ctx2!.clip();
+        ctx2!.globalCompositeOperation = 'destination-out';
+        ctx2!.strokeStyle = '#FFF';
+        ctx2!.stroke();
+        ctx2!.restore();
+        ctx.drawImage(os!.canvas, 0, 0);
+        os!.release();
+      }
+      else {
+        ctx.stroke();
+      }
     }
   }
 
@@ -280,12 +349,20 @@ class Polyline extends Geom {
       if (!this.points) {
         this.buildPoints();
       }
-      const { strokeWidth, strokeEnable } = this.computedStyle;
+      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
       // 所有描边最大值，影响bbox
-      let half = 0;
+      let border = 0;
       strokeWidth.forEach((item, i) => {
         if (strokeEnable[i]) {
-          half = Math.max(half, item * 0.5);
+          if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5);
+          }
+          else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          }
+          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item);
+          }
         }
       });
       const points = this.points!;
@@ -303,10 +380,10 @@ class Polyline extends Geom {
         xa = first[0];
         ya = first[1];
       }
-      bbox[0] = Math.min(bbox[0], xa - half);
-      bbox[1] = Math.min(bbox[1], ya - half);
-      bbox[2] = Math.max(bbox[2], xa + half);
-      bbox[3] = Math.max(bbox[3], ya + half);
+      bbox[0] = Math.min(bbox[0], xa - border);
+      bbox[1] = Math.min(bbox[1], ya - border);
+      bbox[2] = Math.max(bbox[2], xa + border);
+      bbox[3] = Math.max(bbox[3], ya + border);
       for (let i = 1, len = points.length; i < len; i++) {
         const item = points[i];
         let xb: number, yb: number;
@@ -315,10 +392,10 @@ class Polyline extends Geom {
         else {
           xb = item[0];
           yb = item[1];
-          bbox[0] = Math.min(bbox[0], xb - half);
-          bbox[1] = Math.min(bbox[1], yb - half);
-          bbox[2] = Math.max(bbox[2], xb + half);
-          bbox[3] = Math.max(bbox[3], yb + half);
+          bbox[0] = Math.min(bbox[0], xb - border);
+          bbox[1] = Math.min(bbox[1], yb - border);
+          bbox[2] = Math.max(bbox[2], xb + border);
+          bbox[3] = Math.max(bbox[3], yb + border);
         }
         xa = xb!;
         ya = yb!;

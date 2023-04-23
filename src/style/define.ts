@@ -115,6 +115,21 @@ export type StyleMaskValue = {
   u: StyleUnit.NUMBER,
 };
 
+export type StyleStrokeLinecapValue = {
+  v: STROKE_LINE_CAP,
+  u: StyleUnit.NUMBER,
+};
+
+export type StyleStrokeLinejoinValue = {
+  v: STROKE_LINE_JOIN,
+  u: StyleUnit.NUMBER,
+};
+
+export type StyleStrokePositionValue = {
+  v: STROKE_POSITION,
+  u: StyleUnit.NUMBER,
+};
+
 export type Style = {
   top: StyleNumValue,
   right: StyleNumValue,
@@ -138,7 +153,11 @@ export type Style = {
   stroke: Array<StyleColorValue | StyleGradientValue>,
   strokeEnable: Array<StyleBoolValue>,
   strokeWidth: Array<StyleNumValue>,
+  strokePosition: Array<StyleStrokePositionValue>,
   strokeDasharray: Array<StyleNumValue>,
+  strokeLinecap: StyleStrokeLinecapValue,
+  strokeLinejoin: StyleStrokeLinejoinValue,
+  strokeMiterlimit: StyleNumValue,
   letterSpacing: StyleNumValue,
   textAlign: StyleTaValue,
   translateX: StyleNumValue,
@@ -179,7 +198,11 @@ export type ComputedStyle = {
   stroke: Array<Array<number> | Gradient>,
   strokeEnable: Array<boolean>,
   strokeWidth: Array<number>,
+  strokePosition: Array<STROKE_POSITION>,
   strokeDasharray: Array<number>,
+  strokeLinecap: STROKE_LINE_CAP,
+  strokeLinejoin: STROKE_LINE_JOIN,
+  strokeMiterlimit: number,
   letterSpacing: number,
   textAlign: TEXT_ALIGN,
   translateX: number,
@@ -252,12 +275,12 @@ export enum BOOLEAN_OPERATION {
   XOR = 4,
 }
 
-export enum CurveMode {
-  None = 0,
-  Straight = 1,
-  Mirrored = 2,
-  Asymmetric = 3,
-  Disconnected = 4,
+export enum CURVE_MODE {
+  NONE = 0,
+  STRAIGHT = 1,
+  MIRRORED = 2,
+  ASYMMETRIC = 3,
+  DISCONNECTED = 4,
 }
 
 export enum FILL_RULE {
@@ -269,6 +292,24 @@ export enum MASK {
   NONE =    0,
   OUTLINE = 1,
   ALPHA =   2,
+}
+
+export enum STROKE_LINE_CAP {
+  BUTT = 0,
+  ROUND = 1,
+  SQUARE = 2,
+}
+
+export enum STROKE_LINE_JOIN {
+  MITER = 0,
+  ROUND = 1,
+  BEVEL = 2,
+}
+
+export enum STROKE_POSITION {
+  CENTER = 0,
+  INSIDE = 1,
+  OUTSIDE = 2,
 }
 
 export default {

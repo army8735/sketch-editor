@@ -34,7 +34,11 @@
             stroke: [[0, 0, 0, 1]],
             strokeEnable: [false],
             strokeWidth: [1],
+            strokePosition: ['center'],
             strokeDasharray: [],
+            strokeLinecap: 'butt',
+            strokeLinejoin: 'miter',
+            strokeMiterlimit: 0,
             letterSpacing: 0,
             textAlign: 'left',
             translateX: 0,
@@ -15180,14 +15184,14 @@
     /**
      * Enumeration of the curve modes that can be applied to vector points
      */
-    var CurveMode$1;
+    var CurveMode;
     (function (CurveMode) {
         CurveMode[CurveMode["None"] = 0] = "None";
         CurveMode[CurveMode["Straight"] = 1] = "Straight";
         CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
         CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
         CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode$1 || (CurveMode$1 = {}));
+    })(CurveMode || (CurveMode = {}));
     /**
      * Enumeration of line spacing behaviour for fixed line height text
      */
@@ -15337,7 +15341,7 @@
         get InferredLayoutAnchor () { return InferredLayoutAnchor; },
         get PointsRadiusBehaviour () { return PointsRadiusBehaviour; },
         get CornerStyle () { return CornerStyle; },
-        get CurveMode () { return CurveMode$1; },
+        get CurveMode () { return CurveMode; },
         get LineSpacingBehaviour () { return LineSpacingBehaviour; },
         get TextBehaviour () { return TextBehaviour; },
         get DocumentLibraryType () { return DocumentLibraryType; },
@@ -15446,14 +15450,14 @@
         BOOLEAN_OPERATION[BOOLEAN_OPERATION["INTERSECT"] = 3] = "INTERSECT";
         BOOLEAN_OPERATION[BOOLEAN_OPERATION["XOR"] = 4] = "XOR";
     })(BOOLEAN_OPERATION || (BOOLEAN_OPERATION = {}));
-    var CurveMode;
-    (function (CurveMode) {
-        CurveMode[CurveMode["None"] = 0] = "None";
-        CurveMode[CurveMode["Straight"] = 1] = "Straight";
-        CurveMode[CurveMode["Mirrored"] = 2] = "Mirrored";
-        CurveMode[CurveMode["Asymmetric"] = 3] = "Asymmetric";
-        CurveMode[CurveMode["Disconnected"] = 4] = "Disconnected";
-    })(CurveMode || (CurveMode = {}));
+    var CURVE_MODE;
+    (function (CURVE_MODE) {
+        CURVE_MODE[CURVE_MODE["NONE"] = 0] = "NONE";
+        CURVE_MODE[CURVE_MODE["STRAIGHT"] = 1] = "STRAIGHT";
+        CURVE_MODE[CURVE_MODE["MIRRORED"] = 2] = "MIRRORED";
+        CURVE_MODE[CURVE_MODE["ASYMMETRIC"] = 3] = "ASYMMETRIC";
+        CURVE_MODE[CURVE_MODE["DISCONNECTED"] = 4] = "DISCONNECTED";
+    })(CURVE_MODE || (CURVE_MODE = {}));
     var FILL_RULE;
     (function (FILL_RULE) {
         FILL_RULE[FILL_RULE["NON_ZERO"] = 0] = "NON_ZERO";
@@ -15465,6 +15469,24 @@
         MASK[MASK["OUTLINE"] = 1] = "OUTLINE";
         MASK[MASK["ALPHA"] = 2] = "ALPHA";
     })(MASK || (MASK = {}));
+    var STROKE_LINE_CAP;
+    (function (STROKE_LINE_CAP) {
+        STROKE_LINE_CAP[STROKE_LINE_CAP["BUTT"] = 0] = "BUTT";
+        STROKE_LINE_CAP[STROKE_LINE_CAP["ROUND"] = 1] = "ROUND";
+        STROKE_LINE_CAP[STROKE_LINE_CAP["SQUARE"] = 2] = "SQUARE";
+    })(STROKE_LINE_CAP || (STROKE_LINE_CAP = {}));
+    var STROKE_LINE_JOIN;
+    (function (STROKE_LINE_JOIN) {
+        STROKE_LINE_JOIN[STROKE_LINE_JOIN["MITER"] = 0] = "MITER";
+        STROKE_LINE_JOIN[STROKE_LINE_JOIN["ROUND"] = 1] = "ROUND";
+        STROKE_LINE_JOIN[STROKE_LINE_JOIN["BEVEL"] = 2] = "BEVEL";
+    })(STROKE_LINE_JOIN || (STROKE_LINE_JOIN = {}));
+    var STROKE_POSITION;
+    (function (STROKE_POSITION) {
+        STROKE_POSITION[STROKE_POSITION["CENTER"] = 0] = "CENTER";
+        STROKE_POSITION[STROKE_POSITION["INSIDE"] = 1] = "INSIDE";
+        STROKE_POSITION[STROKE_POSITION["OUTSIDE"] = 2] = "OUTSIDE";
+    })(STROKE_POSITION || (STROKE_POSITION = {}));
     var define = {
         StyleUnit,
         calUnit,
@@ -15523,7 +15545,7 @@
     };
 
     var config$1 = {
-        debug: false,
+        debug: true,
         offscreenCanvas: true,
     };
 
@@ -15568,6 +15590,7 @@
                 }
                 this.available = false;
                 ctx.globalAlpha = 1;
+                ctx.globalCompositeOperation = 'source-over';
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.clearRect(0, 0, width, height);
                 o.width = o.height = 0;
@@ -17298,11 +17321,50 @@
                 return { v: Math.max(0, item), u: StyleUnit.PX };
             });
         }
+        const strokePosition = style.strokePosition;
+        if (!isNil(strokePosition)) {
+            res.strokePosition = strokePosition.map(item => {
+                let v = STROKE_POSITION.CENTER;
+                if (item === 'inside') {
+                    v = STROKE_POSITION.INSIDE;
+                }
+                else if (item === 'outside') {
+                    v = STROKE_POSITION.OUTSIDE;
+                }
+                return { v, u: StyleUnit.NUMBER };
+            });
+        }
         const strokeDasharray = style.strokeDasharray;
         if (!isNil(strokeDasharray)) {
             res.strokeDasharray = strokeDasharray.map(item => {
                 return { v: Math.max(0, item), u: StyleUnit.PX };
             });
+        }
+        const strokeLinecap = style.strokeLinecap;
+        if (!isNil(strokeLinecap)) {
+            let v = STROKE_LINE_CAP.BUTT;
+            if (strokeLinecap === 'round') {
+                v = STROKE_LINE_CAP.ROUND;
+            }
+            else if (strokeLinecap === 'square') {
+                v = STROKE_LINE_CAP.SQUARE;
+            }
+            res.strokeLinecap = { v, u: StyleUnit.NUMBER };
+        }
+        const strokeLinejoin = style.strokeLinejoin;
+        if (!isNil(strokeLinejoin)) {
+            let v = STROKE_LINE_JOIN.MITER;
+            if (strokeLinejoin === 'round') {
+                v = STROKE_LINE_JOIN.ROUND;
+            }
+            else if (strokeLinejoin === 'bevel') {
+                v = STROKE_LINE_JOIN.BEVEL;
+            }
+            res.strokeLinejoin = { v, u: StyleUnit.NUMBER };
+        }
+        const strokeMiterlimit = style.strokeMiterlimit;
+        if (!isNil(strokeMiterlimit)) {
+            res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
         }
         // 只有这几个，3d没有
         [
@@ -18111,7 +18173,7 @@
                         ty: curveTo.y,
                     };
                 });
-                const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, fillRule, } = geomStyle(layer);
+                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
                 return {
                     tagName: TagName.Polyline,
                     props: {
@@ -18134,7 +18196,10 @@
                             stroke,
                             strokeEnable,
                             strokeWidth,
+                            strokePosition,
                             strokeDasharray,
+                            strokeLinecap,
+                            strokeLinejoin,
                             translateX,
                             translateY,
                             scaleX,
@@ -18150,7 +18215,7 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.ShapeGroup) {
-                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokeDasharray, } = geomStyle(layer);
+                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
@@ -18174,7 +18239,10 @@
                             stroke,
                             strokeEnable,
                             strokeWidth,
+                            strokePosition,
                             strokeDasharray,
+                            strokeLinecap,
+                            strokeLinejoin,
                             translateX,
                             translateY,
                             scaleX,
@@ -18194,7 +18262,7 @@
         });
     }
     function geomStyle(layer) {
-        const { borders, borderOptions, fills, windingRule } = layer.style || {};
+        const { borders, borderOptions, fills, windingRule, miterLimit: strokeMiterlimit, } = layer.style || {};
         const fill = [], fillEnable = [];
         if (fills) {
             fills.forEach((item) => {
@@ -18231,7 +18299,7 @@
                 fillEnable.push(item.isEnabled);
             });
         }
-        const stroke = [], strokeEnable = [], strokeWidth = [];
+        const stroke = [], strokeEnable = [], strokeWidth = [], strokePosition = [];
         if (borders) {
             borders.forEach((item) => {
                 stroke.push([
@@ -18242,13 +18310,35 @@
                 ]);
                 strokeEnable.push(item.isEnabled);
                 strokeWidth.push(item.thickness || 0);
+                if (item.position === FileFormat.BorderPosition.Inside) {
+                    strokePosition.push('inside');
+                }
+                else if (item.position === FileFormat.BorderPosition.Outside) {
+                    strokePosition.push('outside');
+                }
+                else {
+                    strokePosition.push('center');
+                }
             });
         }
         const strokeDasharray = [];
+        let strokeLinecap = 'butt', strokeLinejoin = 'miter';
         if (borderOptions) {
             borderOptions.dashPattern.forEach(item => {
                 strokeDasharray.push(item);
             });
+            if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Round) {
+                strokeLinecap = 'round';
+            }
+            else if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Projecting) {
+                strokeLinecap = 'square';
+            }
+            if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Round) {
+                strokeLinejoin = 'round';
+            }
+            else if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Bevel) {
+                strokeLinejoin = 'bevel';
+            }
         }
         return {
             fill,
@@ -18257,7 +18347,11 @@
             stroke,
             strokeEnable,
             strokeWidth,
+            strokePosition,
             strokeDasharray,
+            strokeLinecap,
+            strokeLinejoin,
+            strokeMiterlimit,
         };
     }
     function parseStrPoint(s) {
@@ -19121,7 +19215,10 @@
             computedStyle.stroke = style.stroke.map(item => item.v);
             computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
             computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
+            computedStyle.strokePosition = style.strokePosition.map(item => item.v);
             computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
+            computedStyle.strokeLinecap = style.strokeLinecap.v;
+            computedStyle.strokeLinejoin = style.strokeLinejoin.v;
             computedStyle.booleanOperation = style.booleanOperation.v;
             computedStyle.mixBlendMode = style.mixBlendMode.v;
             computedStyle.pointerEvents = style.pointerEvents.v;
@@ -19397,6 +19494,7 @@
                 || k === 'stroke'
                 || k === 'strokeEnable'
                 || k === 'strokeWidth'
+                || k === 'strokePosition'
                 || k === 'strokeDasharray'
                 || k === 'transformOrigin') {
                 return computedStyle[k].slice(0);
@@ -20045,7 +20143,10 @@
         }
         collectBsData(index, bsPoint, bsTex, cx, cy) {
             const { width, height, matrixWorld } = this;
-            const zoom = Math.min(1, this.getZoom());
+            let zoom = this.getZoom();
+            if (zoom < 1) {
+                zoom = Math.sqrt(zoom);
+            }
             // 先boxShadow部分
             const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
             const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
@@ -21292,7 +21393,7 @@
     }
 
     function isCornerPoint(point) {
-        return point.curveMode === CurveMode.Straight && point.cornerRadius > 0;
+        return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
     }
     class Polyline extends Geom {
         constructor(props) {
@@ -21350,11 +21451,11 @@
                     // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
                     const isPrevCorner = isCornerPoint(prevPoint);
                     const isPrevStraight = isPrevCorner
-                        || prevPoint.curveMode === CurveMode.Straight
+                        || prevPoint.curveMode === CURVE_MODE.STRAIGHT
                         || !prevPoint.hasCurveFrom;
                     const isNextCorner = isCornerPoint(nextPoint);
                     const isNextStraight = isNextCorner
-                        || nextPoint.curveMode === CurveMode.Straight
+                        || nextPoint.curveMode === CURVE_MODE.STRAIGHT
                         || !nextPoint.hasCurveTo;
                     // 先看最普通的直线，可以用角平分线+半径最小值约束求解
                     if (isPrevStraight && isNextStraight) {
@@ -21478,7 +21579,7 @@
             const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokeDasharray, } = this.computedStyle;
+            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             ctx.setLineDash(strokeDasharray);
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
@@ -21506,6 +21607,26 @@
                 }
                 ctx.fill();
             }
+            // 线帽设置
+            if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
+                ctx.lineCap = 'round';
+            }
+            else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+                ctx.lineCap = 'square';
+            }
+            else {
+                ctx.lineCap = 'butt';
+            }
+            if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
+                ctx.lineJoin = 'round';
+            }
+            else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+                ctx.lineJoin = 'bevel';
+            }
+            else {
+                ctx.lineJoin = 'miter';
+            }
+            ctx.miterLimit = strokeMiterlimit;
             // 再上层的stroke
             for (let i = 0, len = stroke.length; i < len; i++) {
                 if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -21514,7 +21635,6 @@
                 const s = stroke[i];
                 if (Array.isArray(s)) {
                     ctx.strokeStyle = color2rgbaStr(s);
-                    ctx.lineWidth = strokeWidth[i];
                 }
                 else {
                     const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
@@ -21522,13 +21642,58 @@
                     gd.stop.forEach(item => {
                         lg.addColorStop(item[1], color2rgbaStr(item[0]));
                     });
-                    ctx.fillStyle = lg;
+                    ctx.strokeStyle = lg;
                 }
-                canvasPolygon(ctx, points, -x, -y);
+                // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
+                const p = strokePosition[i];
+                let os, ctx2;
+                if (p === STROKE_POSITION.INSIDE) {
+                    ctx.lineWidth = strokeWidth[i] * 2;
+                    canvasPolygon(ctx, points, -x, -y);
+                }
+                else if (p === STROKE_POSITION.OUTSIDE) {
+                    os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+                    ctx2 = os.ctx;
+                    ctx2.setLineDash(strokeDasharray);
+                    ctx2.lineCap = ctx.lineCap;
+                    ctx2.lineJoin = ctx.lineJoin;
+                    ctx2.miterLimit = ctx.miterLimit;
+                    ctx2.strokeStyle = ctx.strokeStyle;
+                    ctx2.lineWidth = strokeWidth[i] * 2;
+                    canvasPolygon(ctx2, points, -x, -y);
+                }
+                else {
+                    ctx.lineWidth = strokeWidth[i];
+                    canvasPolygon(ctx, points, -x, -y);
+                }
                 if (this.isClosed) {
-                    ctx.closePath();
+                    if (ctx2) {
+                        ctx2.closePath();
+                    }
+                    else {
+                        ctx.closePath();
+                    }
                 }
-                ctx.stroke();
+                if (p === STROKE_POSITION.INSIDE) {
+                    ctx.save();
+                    ctx.clip();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                else if (p === STROKE_POSITION.OUTSIDE) {
+                    ctx2.stroke();
+                    ctx2.save();
+                    ctx2.clip();
+                    ctx2.globalCompositeOperation = 'destination-out';
+                    ctx2.strokeStyle = '#FFF';
+                    ctx2.stroke();
+                    ctx2.restore();
+                    ctx.drawImage(os.canvas, 0, 0);
+                    os.release();
+                }
+                else {
+                    ctx.stroke();
+                }
             }
         }
         toSvg(scale) {
@@ -21541,12 +21706,18 @@
                 if (!this.points) {
                     this.buildPoints();
                 }
-                const { strokeWidth, strokeEnable } = this.computedStyle;
+                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
                 // 所有描边最大值，影响bbox
-                let half = 0;
+                let border = 0;
                 strokeWidth.forEach((item, i) => {
                     if (strokeEnable[i]) {
-                        half = Math.max(half, item * 0.5);
+                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                            border = Math.max(border, item * 0.5);
+                        }
+                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                            border = Math.max(border, item);
+                        }
                     }
                 });
                 const points = this.points;
@@ -21564,10 +21735,10 @@
                     xa = first[0];
                     ya = first[1];
                 }
-                bbox[0] = Math.min(bbox[0], xa - half);
-                bbox[1] = Math.min(bbox[1], ya - half);
-                bbox[2] = Math.max(bbox[2], xa + half);
-                bbox[3] = Math.max(bbox[3], ya + half);
+                bbox[0] = Math.min(bbox[0], xa - border);
+                bbox[1] = Math.min(bbox[1], ya - border);
+                bbox[2] = Math.max(bbox[2], xa + border);
+                bbox[3] = Math.max(bbox[3], ya + border);
                 for (let i = 1, len = points.length; i < len; i++) {
                     const item = points[i];
                     let xb, yb;
@@ -21576,10 +21747,10 @@
                     else {
                         xb = item[0];
                         yb = item[1];
-                        bbox[0] = Math.min(bbox[0], xb - half);
-                        bbox[1] = Math.min(bbox[1], yb - half);
-                        bbox[2] = Math.max(bbox[2], xb + half);
-                        bbox[3] = Math.max(bbox[3], yb + half);
+                        bbox[0] = Math.min(bbox[0], xb - border);
+                        bbox[1] = Math.min(bbox[1], yb - border);
+                        bbox[2] = Math.max(bbox[2], xb + border);
+                        bbox[3] = Math.max(bbox[3], yb + border);
                     }
                     xa = xb;
                     ya = yb;
@@ -25379,7 +25550,7 @@
             const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokeDasharray, } = this.computedStyle;
+            const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             ctx.setLineDash(strokeDasharray);
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
@@ -25407,6 +25578,26 @@
                 });
                 ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
             }
+            // 线帽设置
+            if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
+                ctx.lineCap = 'round';
+            }
+            else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+                ctx.lineCap = 'square';
+            }
+            else {
+                ctx.lineCap = 'butt';
+            }
+            if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
+                ctx.lineJoin = 'round';
+            }
+            else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+                ctx.lineJoin = 'bevel';
+            }
+            else {
+                ctx.lineJoin = 'miter';
+            }
+            ctx.miterLimit = strokeMiterlimit;
             // 再上层的stroke
             for (let i = 0, len = stroke.length; i < len; i++) {
                 if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -25423,13 +25614,68 @@
                     gd.stop.forEach(item => {
                         lg.addColorStop(item[1], color2rgbaStr(item[0]));
                     });
-                    ctx.fillStyle = lg;
+                    ctx.strokeStyle = lg;
                 }
-                points.forEach(item => {
-                    canvasPolygon(ctx, item, -x, -y);
+                // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
+                const p = strokePosition[i];
+                let os, ctx2;
+                if (p === STROKE_POSITION.INSIDE) {
+                    ctx.lineWidth = strokeWidth[i] * 2;
+                    points.forEach(item => {
+                        canvasPolygon(ctx, item, -x, -y);
+                        ctx.closePath();
+                    });
+                }
+                else if (p === STROKE_POSITION.OUTSIDE) {
+                    os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+                    ctx2 = os.ctx;
+                    ctx2.setLineDash(strokeDasharray);
+                    ctx2.lineCap = ctx.lineCap;
+                    ctx2.lineJoin = ctx.lineJoin;
+                    ctx2.miterLimit = ctx.miterLimit;
+                    ctx2.strokeStyle = ctx.strokeStyle;
+                    ctx2.lineWidth = strokeWidth[i] * 2;
+                    points.forEach(item => {
+                        canvasPolygon(ctx2, item, -x, -y);
+                        ctx2.closePath();
+                    });
+                }
+                else {
+                    ctx.lineWidth = strokeWidth[i];
+                    points.forEach(item => {
+                        canvasPolygon(ctx, item, -x, -y);
+                        ctx.closePath();
+                    });
+                }
+                if (ctx2) {
+                    ctx2.closePath();
+                }
+                else {
                     ctx.closePath();
-                });
-                ctx.stroke();
+                }
+                if (p === STROKE_POSITION.INSIDE) {
+                    ctx.save();
+                    ctx.clip();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                else if (p === STROKE_POSITION.OUTSIDE) {
+                    ctx2.stroke();
+                    ctx2.save();
+                    ctx2.clip();
+                    ctx2.globalCompositeOperation = 'destination-out';
+                    ctx2.strokeStyle = '#FFF';
+                    ctx2.stroke();
+                    ctx2.restore();
+                    ctx.drawImage(os.canvas, 0, 0);
+                    os.release();
+                }
+                else {
+                    points.forEach(item => {
+                        canvasPolygon(ctx, item, -x, -y);
+                        ctx.closePath();
+                    });
+                }
             }
         }
         toSvg(scale) {
@@ -25463,12 +25709,18 @@
                 if (!this.points) {
                     this.buildPoints();
                 }
-                const { strokeWidth, strokeEnable } = this.computedStyle;
+                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
                 // 所有描边最大值，影响bbox
-                let half = 0;
+                let border = 0;
                 strokeWidth.forEach((item, i) => {
                     if (strokeEnable[i]) {
-                        half = Math.max(half, item * 0.5);
+                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                            border = Math.max(border, item * 0.5);
+                        }
+                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                            border = Math.max(border, item);
+                        }
                     }
                 });
                 const points = this.points;
@@ -25487,10 +25739,10 @@
                         xa = first[0];
                         ya = first[1];
                     }
-                    bbox[0] = Math.min(bbox[0], xa - half);
-                    bbox[1] = Math.min(bbox[1], ya - half);
-                    bbox[2] = Math.max(bbox[2], xa + half);
-                    bbox[3] = Math.max(bbox[3], ya + half);
+                    bbox[0] = Math.min(bbox[0], xa - border);
+                    bbox[1] = Math.min(bbox[1], ya - border);
+                    bbox[2] = Math.max(bbox[2], xa + border);
+                    bbox[3] = Math.max(bbox[3], ya + border);
                     for (let i = 0, len = points.length; i < len; i++) {
                         const item = points[i];
                         for (let j = 0, len = item.length; j < len; j++) {
@@ -25504,10 +25756,10 @@
                             else {
                                 xb = item2[0];
                                 yb = item2[1];
-                                bbox[0] = Math.min(bbox[0], xb - half);
-                                bbox[1] = Math.min(bbox[1], yb - half);
-                                bbox[2] = Math.max(bbox[2], xb + half);
-                                bbox[3] = Math.max(bbox[3], yb + half);
+                                bbox[0] = Math.min(bbox[0], xb - border);
+                                bbox[1] = Math.min(bbox[1], yb - border);
+                                bbox[2] = Math.max(bbox[2], xb + border);
+                                bbox[3] = Math.max(bbox[3], yb + border);
                             }
                             xa = xb;
                             ya = yb;

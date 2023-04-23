@@ -5,8 +5,11 @@ import {
   ComputedStyle,
   FILL_RULE,
   FONT_STYLE,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN,
   MASK,
   MIX_BLEND_MODE,
+  STROKE_POSITION,
   Style,
   StyleNumValue,
   StyleUnit,
@@ -231,11 +234,50 @@ export function normalize(style: JStyle): Style {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
+  const strokePosition = style.strokePosition;
+  if (!isNil(strokePosition)) {
+    res.strokePosition = strokePosition.map(item => {
+      let v = STROKE_POSITION.CENTER;
+      if (item === 'inside') {
+        v = STROKE_POSITION.INSIDE;
+      }
+      else if (item === 'outside') {
+        v = STROKE_POSITION.OUTSIDE;
+      }
+      return { v, u: StyleUnit.NUMBER };
+    });
+  }
   const strokeDasharray = style.strokeDasharray;
   if (!isNil(strokeDasharray)) {
     res.strokeDasharray = strokeDasharray.map(item => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
+  }
+  const strokeLinecap = style.strokeLinecap;
+  if (!isNil(strokeLinecap)) {
+    let v = STROKE_LINE_CAP.BUTT;
+    if (strokeLinecap === 'round') {
+      v = STROKE_LINE_CAP.ROUND;
+    }
+    else if (strokeLinecap === 'square') {
+      v = STROKE_LINE_CAP.SQUARE;
+    }
+    res.strokeLinecap = { v, u :StyleUnit.NUMBER };
+  }
+  const strokeLinejoin = style.strokeLinejoin;
+  if (!isNil(strokeLinejoin)) {
+    let v = STROKE_LINE_JOIN.MITER;
+    if (strokeLinejoin === 'round') {
+      v = STROKE_LINE_JOIN.ROUND;
+    }
+    else if (strokeLinejoin === 'bevel') {
+      v = STROKE_LINE_JOIN.BEVEL;
+    }
+    res.strokeLinejoin = { v, u :StyleUnit.NUMBER };
+  }
+  const strokeMiterlimit = style.strokeMiterlimit;
+  if (!isNil(strokeMiterlimit)) {
+    res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
   }
   // 只有这几个，3d没有
   [

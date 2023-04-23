@@ -1,4 +1,4 @@
 export default {
-  debug: false,
+  debug: true,
   offscreenCanvas: true,
 };
