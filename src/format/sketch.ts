@@ -16,6 +16,7 @@ import {
 } from './';
 import { calNormalLineHeight, color2hexStr } from '../style/css';
 
+// prettier-ignore
 enum ResizingConstraint {
   UNSET =  0b111111,
   RIGHT =  0b000001, // 1
@@ -97,13 +98,16 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
 
 async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
   // sketch的Page没有尺寸，固定100
-  const W = 100, H = 100;
+  const W = 100,
+    H = 100;
   const children = await Promise.all(
     page.layers.map((layer: SketchFormat.AnyLayer) => {
       return convertItem(layer, opt, W, H);
-    })
+    }),
   );
-  let x = 0, y = 0, zoom = 1;
+  let x = 0,
+    y = 0,
+    zoom = 1;
   const ua = opt.user[page.do_objectID];
   if (ua) {
     const { scrollOrigin, zoomValue } = ua;
@@ -156,7 +160,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
-      })
+      }),
     );
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor ? [
@@ -336,7 +340,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
-      })
+      }),
     );
     return {
       tagName: TagName.Group,
@@ -384,6 +388,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           opacity,
           translateX,
           translateY,
+          scaleX,
+          scaleY,
           rotateZ,
           maskMode,
           breakMask,
@@ -473,6 +479,8 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
           opacity,
           translateX,
           translateY,
+          scaleX,
+          scaleY,
           rotateZ,
           overflow: 'hidden',
           fontSize,

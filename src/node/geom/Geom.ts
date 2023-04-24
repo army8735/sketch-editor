@@ -10,6 +10,10 @@ class Geom extends Node {
   }
 
   buildPoints() {
+    if (this.points) {
+      return;
+    }
+    this.textureOutline?.release();
     this.points = [];
   }
 
@@ -18,9 +22,7 @@ class Geom extends Node {
   }
 
   toSvg(scale: number, isClosed = false) {
-    if (!this.points) {
-      this.buildPoints();
-    }
+    this.buildPoints();
     const computedStyle = this.computedStyle;
     const d = svgPolygon(this.points!) + (isClosed ? 'Z' : '');
     const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';

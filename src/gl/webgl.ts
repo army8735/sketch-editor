@@ -43,7 +43,7 @@ export type DrawData = {
 let lastVtPoint: Float32Array, lastVtTex: Float32Array, lastVtOpacity: Float32Array; // 缓存
 
 export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
-                                 cx: number, cy: number, program: any, list: Array<DrawData>, revert = true) {
+                                 cx: number, cy: number, program: any, list: Array<DrawData>, flipY = true) {
   const length = list.length;
   if (!length) {
     return;
@@ -96,10 +96,10 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
       }
       continue;
     }
-    const t1 = convertCoords2Gl(x1, y1, cx, cy, revert);
-    const t2 = convertCoords2Gl(x2, y2, cx, cy, revert);
-    const t3 = convertCoords2Gl(x3, y3, cx, cy, revert);
-    const t4 = convertCoords2Gl(x4, y4, cx, cy, revert);
+    const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
+    const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
+    const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
+    const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
     let k = i * 12;
     vtPoint[k] = t1.x;
     vtPoint[k + 1] = t1.y;
@@ -183,7 +183,7 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
 }
 
 export function drawMask(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
-                         program: any, mask: WebGLTexture, summary: WebGLTexture, mode: number) {
+                         program: any, mask: WebGLTexture, summary: WebGLTexture) {
   const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
   vtPoint[0] = -1;
   vtPoint[1] = -1;
@@ -222,9 +222,6 @@ export function drawMask(gl: WebGL2RenderingContext | WebGLRenderingContext, wid
   gl.uniform1i(u_texture1, 0);
   const u_texture2 = gl.getUniformLocation(program, 'u_texture2');
   gl.uniform1i(u_texture2, 1);
-  // 模式
-  const u_mode = gl.getUniformLocation(program, 'mode');
-  gl.uniform1i(u_mode, mode);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);
@@ -233,7 +230,7 @@ export function drawMask(gl: WebGL2RenderingContext | WebGLRenderingContext, wid
   gl.disableVertexAttribArray(a_texCoords);
 }
 
-export function convertCoords2Gl(x: number, y: number, cx: number, cy: number, revert = true) {
+export function convertCoords2Gl(x: number, y: number, cx: number, cy: number, flipY = true) {
   if (x === cx) {
     x = 0;
   }
@@ -244,7 +241,7 @@ export function convertCoords2Gl(x: number, y: number, cx: number, cy: number, r
     y = 0;
   }
   else {
-    if (revert) {
+    if (flipY) {
       y = (cy - y) / cy;
     }
     else {

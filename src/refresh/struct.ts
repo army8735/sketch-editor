@@ -5,8 +5,12 @@ import { RefreshLevel } from './level';
 import { bindTexture, createTexture, drawMask, drawTextureCache } from '../gl/webgl';
 import { assignMatrix, inverse, multiply, toE } from '../math/matrix';
 import inject from '../util/inject';
-import { MASK } from '../style/define';
+import { FILL_RULE, MASK } from '../style/define';
 import TextureCache from './TextureCache';
+import Polyline from '../node/geom/Polyline';
+import ShapeGroup from '../node/geom/ShapeGroup';
+import Bitmap from '../node/Bitmap';
+import { canvasPolygon } from './paint';
 
 export type Struct = {
   node: Node;
@@ -82,7 +86,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       const { maskMode } = computedStyle;
       if (maskMode && node.textureTotal && node.textureTotal.available) {
         node.textureMask = node.textureTarget
-          = genMask(gl, root, node, maskMode, structs, i, lv, W, H);
+          = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H);
       }
     }
   }
@@ -316,7 +320,7 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
 }
 
 function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, maskMode: MASK,
-                 structs: Array<Struct>, index: number, lv: number, W: number, H: number) {
+                 structs: Array<Struct>, index: number, lv: number, total: number, W: number, H: number) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureMask && node.textureMask.available) {
     return node.textureMask!;
@@ -332,7 +336,7 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
   // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
   const im = inverse(matrix);
   // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
-  for (let i = index + 1, len = structs.length; i < len; i++) {
+  for (let i = index, len = structs.length; i < len; i++) {
     const { node, lv: lv2, total } = structs[i];
     const computedStyle = node.computedStyle;
     // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
@@ -354,7 +358,8 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
       assignMatrix(node.tempMatrix, matrix);
     }
     const target = node.textureTarget;
-    if (target && target.available) {
+    // 轮廓mask特殊包含自身
+    if (target && target.available && (i > index || maskMode === MASK.OUTLINE)) {
       drawTextureCache(gl, W, H, cx, cy, program, [{
         bbox: node._bbox || node.bbox,
         opacity,
@@ -384,20 +389,68 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
   const target = TextureCache.getEmptyInstance(gl, w, h);
   const maskProgram = programs.maskProgram;
   gl.useProgram(maskProgram);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
   // alpha直接应用，汇总乘以mask本身的alpha即可
   if (maskMode === MASK.ALPHA) {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
-    drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary, 1);
+    drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary);
   }
-  // 轮廓需收集mask的轮廓并渲染出来，再叠加汇总
+  // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用
   else if (maskMode === MASK.OUTLINE) {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
-    drawMask(gl, w, h, maskProgram, node.textureTarget!.texture, summary, 0);
+    node.textureOutline = genOutline(gl, root, node, structs, index, lv, total, w, h);
+    drawMask(gl, w, h, maskProgram, node.textureOutline!.texture, summary);
   }
   // 删除fbo恢复
   gl.deleteTexture(summary);
   releaseFrameBuffer(gl, frameBuffer, W, H);
   gl.useProgram(program);
+  return target;
+}
+
+function genOutline(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, structs: Array<Struct>,
+                    index: number, lv: number, total: number, w: number, h: number) {
+  // 缓存仍然还在直接返回，无需重新生成
+  if (node.textureOutline && node.textureOutline.available) {
+    return node.textureOutline;
+  }
+  const os = inject.getOffscreenCanvas(w, h, 'maskOutline');
+  const ctx = os.ctx;
+  ctx.fillStyle = '#FFF';
+  // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
+  for (let i = index, len = index + total + 1; i < len; i++) {
+    const { node } = structs[i];
+    let matrix;
+    if (i === index) {
+      matrix = toE(node.tempMatrix);
+    }
+    else {
+      const parent = node.parent!;
+      matrix = multiply(parent.tempMatrix, node.matrix);
+      assignMatrix(node.tempMatrix, matrix);
+    }
+    const fillRule = node.computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+    ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+    // 矢量很特殊
+    if (node instanceof Polyline) {
+      const points = node.points!;
+      canvasPolygon(ctx, points, 0, 0);
+      ctx.closePath();
+      ctx.fill(fillRule);
+    }
+    else if (node instanceof ShapeGroup) {
+      const points = node.points!;
+      points.forEach(item => {
+        canvasPolygon(ctx, item, 0, 0);
+        ctx.closePath();
+      });
+      ctx.fill(fillRule);
+    }
+    // 普通节点就是个矩形
+    else if (node instanceof Bitmap) {
+      ctx.fillRect(0, 0, node.width, node.height);
+    }
+  }
+  const target = TextureCache.getInstance(gl, os.canvas);
+  os.release();
   return target;
 }
 

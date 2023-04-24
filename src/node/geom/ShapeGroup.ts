@@ -1,12 +1,18 @@
-import Container from '../Container';
 import { Props } from '../../format';
 import Polyline from './Polyline';
-import { BOOLEAN_OPERATION, FILL_RULE, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
-import bo from '../../math/bo';
+import Group from '../Group';
+import {
+  BOOLEAN_OPERATION,
+  FILL_RULE, MASK,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN,
+  STROKE_POSITION,
+} from '../../style/define';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
 import { getLinear } from '../../style/gradient';
 import { canvasPolygon, svgPolygon } from '../../refresh/paint';
+import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
 import { toPrecision } from '../../math/geom';
 import inject, { OffScreen } from '../../util/inject';
@@ -37,7 +43,7 @@ function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   return points.map(item => item.slice(0));
 }
 
-class ShapeGroup extends Container {
+class ShapeGroup extends Group {
   points?: Array<Array<Array<number>>>;
 
   constructor(props: Props, children: Array<Polyline | ShapeGroup>) {
@@ -46,20 +52,20 @@ class ShapeGroup extends Container {
   }
 
   override calContent(): boolean {
-    if (!this.points) {
-      this.buildPoints();
-    }
+    this.buildPoints();
     return this.hasContent = !!this.points && !!this.points.length;
   }
 
   buildPoints() {
+    if (this.points) {
+      return;
+    }
+    this.textureOutline?.release();
     const { children } = this;
     let res: Array<Array<Array<number>>> = [];
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i] as (Polyline | ShapeGroup);
-      if (!item.points) {
-        item.buildPoints();
-      }
+      item.buildPoints();
       const { points, matrix } = item;
       if (points && points.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
@@ -115,9 +121,7 @@ class ShapeGroup extends Container {
 
   override renderCanvas() {
     super.renderCanvas();
-    if (!this.points) {
-      this.buildPoints();
-    }
+    this.buildPoints();
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
     const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
@@ -257,18 +261,13 @@ class ShapeGroup extends Container {
         os!.release();
       }
       else {
-        points.forEach(item => {
-          canvasPolygon(ctx, item, -x, -y);
-          ctx.closePath();
-        });
+        ctx.stroke();
       }
     }
   }
 
   toSvg(scale: number) {
-    if (!this.points) {
-      this.buildPoints();
-    }
+    this.buildPoints();
     const computedStyle = this.computedStyle;
     const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     let s = `<svg width="${this.width}" height="${this.height}">`;
@@ -294,25 +293,25 @@ class ShapeGroup extends Container {
     if (!this._bbox) {
       const bbox = this._bbox = super.bbox;
       // 可能不存在
-      if (!this.points) {
-        this.buildPoints();
-      }
+      this.buildPoints();
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox
+      // 所有描边最大值，影响bbox，注意轮廓模板忽略外边
       let border = 0;
-      strokeWidth.forEach((item, i) => {
-        if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.CENTER) {
-            border = Math.max(border, item * 0.5);
+      if (this.computedStyle.maskMode !== MASK.OUTLINE) {
+        strokeWidth.forEach((item, i) => {
+          if (strokeEnable[i]) {
+            if (strokePosition[i] === STROKE_POSITION.CENTER) {
+              border = Math.max(border, item * 0.5);
+            }
+            else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+              // 0
+            }
+            else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+              border = Math.max(border, item);
+            }
           }
-          else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-            // 0
-          }
-          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item);
-          }
-        }
-      });
+        });
+      }
       const points = this.points;
       if (points && points.length) {
         const first = points[0][0];

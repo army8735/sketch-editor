@@ -6,7 +6,7 @@ import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { unitize } from '../../math/vector';
-import { CURVE_MODE, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
+import { CURVE_MODE, MASK, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
 import { clone } from '../../util';
 import inject, { OffScreen } from '../../util/inject';
 
@@ -22,13 +22,15 @@ class Polyline extends Geom {
   }
 
   override calContent(): boolean {
-    if (!this.points) {
-      this.buildPoints();
-    }
+    this.buildPoints();
     return this.hasContent = !!this.points && this.points.length > 1;
   }
 
   override buildPoints() {
+    if (this.points) {
+      return;
+    }
+    this.textureOutline?.release();
     const props = this.props as PolylineProps;
     const { width, height } = this;
     const temp: Array<any> = [];
@@ -171,7 +173,7 @@ class Polyline extends Geom {
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
     const first = temp[0];
     const p: Array<number> = [first.x, first.y];
-    const res: Array<Array<number>> = this.points = [p], len = temp.length;
+    const res: Array<Array<number>> = [p], len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
@@ -196,13 +198,12 @@ class Polyline extends Geom {
       }
       res.push(p);
     }
+    this.points = res;
   }
 
   override renderCanvas() {
     super.renderCanvas();
-    if (!this.points) {
-      this.buildPoints();
-    }
+    this.buildPoints();
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
     const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
@@ -346,25 +347,25 @@ class Polyline extends Geom {
     if (!this._bbox) {
       const bbox = this._bbox = super.bbox;
       // 可能不存在
-      if (!this.points) {
-        this.buildPoints();
-      }
+      this.buildPoints();
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox
+      // 所有描边最大值，影响bbox，注意轮廓模板忽略外边
       let border = 0;
-      strokeWidth.forEach((item, i) => {
-        if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.CENTER) {
-            border = Math.max(border, item * 0.5);
+      if (this.computedStyle.maskMode !== MASK.OUTLINE) {
+        strokeWidth.forEach((item, i) => {
+          if (strokeEnable[i]) {
+            if (strokePosition[i] === STROKE_POSITION.CENTER) {
+              border = Math.max(border, item * 0.5);
+            }
+            else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+              // 0
+            }
+            else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+              border = Math.max(border, item);
+            }
           }
-          else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-            // 0
-          }
-          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item);
-          }
-        }
-      });
+        });
+      }
       const points = this.points!;
       const first = points[0];
       let xa: number, ya: number;

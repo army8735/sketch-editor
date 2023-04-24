@@ -15545,7 +15545,7 @@
     };
 
     var config$1 = {
-        debug: true,
+        debug: false,
         offscreenCanvas: true,
     };
 
@@ -17711,6 +17711,7 @@
         calSize,
     };
 
+    // prettier-ignore
     var ResizingConstraint;
     (function (ResizingConstraint) {
         ResizingConstraint[ResizingConstraint["UNSET"] = 63] = "UNSET";
@@ -18054,6 +18055,8 @@
                             opacity,
                             translateX,
                             translateY,
+                            scaleX,
+                            scaleY,
                             rotateZ,
                             maskMode,
                             breakMask,
@@ -18132,6 +18135,8 @@
                             opacity,
                             translateX,
                             translateY,
+                            scaleX,
+                            scaleY,
                             rotateZ,
                             overflow: 'hidden',
                             fontSize,
@@ -18770,7 +18775,7 @@
         gl.bindTexture(gl.TEXTURE_2D, texture);
     }
     let lastVtPoint, lastVtTex, lastVtOpacity; // 缓存
-    function drawTextureCache(gl, width, height, cx, cy, program, list, revert = true) {
+    function drawTextureCache(gl, width, height, cx, cy, program, list, flipY = true) {
         const length = list.length;
         if (!length) {
             return;
@@ -18823,10 +18828,10 @@
                 }
                 continue;
             }
-            const t1 = convertCoords2Gl(x1, y1, cx, cy, revert);
-            const t2 = convertCoords2Gl(x2, y2, cx, cy, revert);
-            const t3 = convertCoords2Gl(x3, y3, cx, cy, revert);
-            const t4 = convertCoords2Gl(x4, y4, cx, cy, revert);
+            const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
+            const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
+            const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
+            const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
             let k = i * 12;
             vtPoint[k] = t1.x;
             vtPoint[k + 1] = t1.y;
@@ -18907,7 +18912,7 @@
         gl.disableVertexAttribArray(a_texCoords);
         gl.disableVertexAttribArray(a_opacity);
     }
-    function drawMask(gl, width, height, program, mask, summary, mode) {
+    function drawMask(gl, width, height, program, mask, summary) {
         const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
         vtPoint[0] = -1;
         vtPoint[1] = -1;
@@ -18946,9 +18951,6 @@
         gl.uniform1i(u_texture1, 0);
         const u_texture2 = gl.getUniformLocation(program, 'u_texture2');
         gl.uniform1i(u_texture2, 1);
-        // 模式
-        const u_mode = gl.getUniformLocation(program, 'mode');
-        gl.uniform1i(u_mode, mode);
         // 渲染并销毁
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.deleteBuffer(pointBuffer);
@@ -18956,7 +18958,7 @@
         gl.disableVertexAttribArray(a_position);
         gl.disableVertexAttribArray(a_texCoords);
     }
-    function convertCoords2Gl(x, y, cx, cy, revert = true) {
+    function convertCoords2Gl(x, y, cx, cy, flipY = true) {
         if (x === cx) {
             x = 0;
         }
@@ -18967,7 +18969,7 @@
             y = 0;
         }
         else {
-            if (revert) {
+            if (flipY) {
                 y = (cy - y) / cy;
             }
             else {
@@ -19163,6 +19165,7 @@
         }
         // 封装，布局后计算repaint和matrix的样式，清空包围盒等老数据，真的布局计算在lay()中，各子类覆盖实现
         layout(data) {
+            var _a;
             if (this.isDestroyed) {
                 return;
             }
@@ -19170,6 +19173,8 @@
             // reflow和matrix计算需要x/y/width/height
             this.calRepaintStyle(RefreshLevel.REFLOW);
             this.clearCache(true);
+            // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
             this._rect = undefined;
             this._bbox = undefined;
         }
@@ -21365,15 +21370,18 @@
             super(props);
         }
         buildPoints() {
+            var _a;
+            if (this.points) {
+                return;
+            }
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
             this.points = [];
         }
         calContent() {
             return this.hasContent = true;
         }
         toSvg(scale, isClosed = false) {
-            if (!this.points) {
-                this.buildPoints();
-            }
+            this.buildPoints();
             const computedStyle = this.computedStyle;
             const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
             const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
@@ -21401,12 +21409,15 @@
             this.isClosed = props.isClosed;
         }
         calContent() {
-            if (!this.points) {
-                this.buildPoints();
-            }
+            this.buildPoints();
             return this.hasContent = !!this.points && this.points.length > 1;
         }
         buildPoints() {
+            var _a;
+            if (this.points) {
+                return;
+            }
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
             const props = this.props;
             const { width, height } = this;
             const temp = [];
@@ -21542,7 +21553,7 @@
             // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
             const first = temp[0];
             const p = [first.x, first.y];
-            const res = this.points = [p], len = temp.length;
+            const res = [p], len = temp.length;
             for (let i = 1; i < len; i++) {
                 const item = temp[i];
                 const prev = temp[i - 1];
@@ -21567,12 +21578,11 @@
                 }
                 res.push(p);
             }
+            this.points = res;
         }
         renderCanvas() {
             super.renderCanvas();
-            if (!this.points) {
-                this.buildPoints();
-            }
+            this.buildPoints();
             const points = this.points;
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
@@ -21703,23 +21713,23 @@
             if (!this._bbox) {
                 const bbox = this._bbox = super.bbox;
                 // 可能不存在
-                if (!this.points) {
-                    this.buildPoints();
-                }
+                this.buildPoints();
                 const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-                // 所有描边最大值，影响bbox
+                // 所有描边最大值，影响bbox，注意轮廓模板忽略外边
                 let border = 0;
-                strokeWidth.forEach((item, i) => {
-                    if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5);
+                if (this.computedStyle.maskMode !== MASK.OUTLINE) {
+                    strokeWidth.forEach((item, i) => {
+                        if (strokeEnable[i]) {
+                            if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                                border = Math.max(border, item * 0.5);
+                            }
+                            else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                            else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                                border = Math.max(border, item);
+                            }
                         }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
-                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-                            border = Math.max(border, item);
-                        }
-                    }
-                });
+                    });
+                }
                 const points = this.points;
                 const first = points[0];
                 let xa, ya;
@@ -25468,25 +25478,26 @@
         }
         return points.map(item => item.slice(0));
     }
-    class ShapeGroup extends Container {
+    class ShapeGroup extends Group {
         constructor(props, children) {
             super(props, children);
             this.isShapeGroup = true;
         }
         calContent() {
-            if (!this.points) {
-                this.buildPoints();
-            }
+            this.buildPoints();
             return this.hasContent = !!this.points && !!this.points.length;
         }
         buildPoints() {
+            var _a;
+            if (this.points) {
+                return;
+            }
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
             const { children } = this;
             let res = [];
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
-                if (!item.points) {
-                    item.buildPoints();
-                }
+                item.buildPoints();
                 const { points, matrix } = item;
                 if (points && points.length) {
                     // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
@@ -25541,9 +25552,7 @@
         }
         renderCanvas() {
             super.renderCanvas();
-            if (!this.points) {
-                this.buildPoints();
-            }
+            this.buildPoints();
             const points = this.points;
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
@@ -25671,17 +25680,12 @@
                     os.release();
                 }
                 else {
-                    points.forEach(item => {
-                        canvasPolygon(ctx, item, -x, -y);
-                        ctx.closePath();
-                    });
+                    ctx.stroke();
                 }
             }
         }
         toSvg(scale) {
-            if (!this.points) {
-                this.buildPoints();
-            }
+            this.buildPoints();
             const computedStyle = this.computedStyle;
             const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
             let s = `<svg width="${this.width}" height="${this.height}">`;
@@ -25706,23 +25710,23 @@
             if (!this._bbox) {
                 const bbox = this._bbox = super.bbox;
                 // 可能不存在
-                if (!this.points) {
-                    this.buildPoints();
-                }
+                this.buildPoints();
                 const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-                // 所有描边最大值，影响bbox
+                // 所有描边最大值，影响bbox，注意轮廓模板忽略外边
                 let border = 0;
-                strokeWidth.forEach((item, i) => {
-                    if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5);
+                if (this.computedStyle.maskMode !== MASK.OUTLINE) {
+                    strokeWidth.forEach((item, i) => {
+                        if (strokeEnable[i]) {
+                            if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                                border = Math.max(border, item * 0.5);
+                            }
+                            else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                            else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                                border = Math.max(border, item);
+                            }
                         }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
-                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-                            border = Math.max(border, item);
-                        }
-                    }
-                });
+                    });
+                }
                 const points = this.points;
                 if (points && points.length) {
                     const first = points[0][0];
@@ -25928,7 +25932,7 @@
                 const { maskMode } = computedStyle;
                 if (maskMode && node.textureTotal && node.textureTotal.available) {
                     node.textureMask = node.textureTarget
-                        = genMask(gl, root, node, maskMode, structs, i, lv, W, H);
+                        = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H);
                 }
             }
         }
@@ -26158,7 +26162,7 @@
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target;
     }
-    function genMask(gl, root, node, maskMode, structs, index, lv, W, H) {
+    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H) {
         // 缓存仍然还在直接返回，无需重新生成
         if (node.textureMask && node.textureMask.available) {
             return node.textureMask;
@@ -26174,7 +26178,7 @@
         // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
         const im = inverse(matrix);
         // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
-        for (let i = index + 1, len = structs.length; i < len; i++) {
+        for (let i = index, len = structs.length; i < len; i++) {
             const { node, lv: lv2, total } = structs[i];
             const computedStyle = node.computedStyle;
             // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
@@ -26196,7 +26200,8 @@
                 assignMatrix(node.tempMatrix, matrix);
             }
             const target = node.textureTarget;
-            if (target && target.available) {
+            // 轮廓mask特殊包含自身
+            if (target && target.available && (i > index || maskMode === MASK.OUTLINE)) {
                 drawTextureCache(gl, W, H, cx, cy, program, [{
                         bbox: node._bbox || node.bbox,
                         opacity,
@@ -26226,20 +26231,66 @@
         const target = TextureCache.getEmptyInstance(gl, w, h);
         const maskProgram = programs.maskProgram;
         gl.useProgram(maskProgram);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
         // alpha直接应用，汇总乘以mask本身的alpha即可
         if (maskMode === MASK.ALPHA) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
-            drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary, 1);
+            drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary);
         }
-        // 轮廓需收集mask的轮廓并渲染出来，再叠加汇总
+        // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用
         else if (maskMode === MASK.OUTLINE) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
-            drawMask(gl, w, h, maskProgram, node.textureTarget.texture, summary, 0);
+            node.textureOutline = genOutline(gl, root, node, structs, index, lv, total, w, h);
+            drawMask(gl, w, h, maskProgram, node.textureOutline.texture, summary);
         }
         // 删除fbo恢复
         gl.deleteTexture(summary);
         releaseFrameBuffer(gl, frameBuffer, W, H);
         gl.useProgram(program);
+        return target;
+    }
+    function genOutline(gl, root, node, structs, index, lv, total, w, h) {
+        // 缓存仍然还在直接返回，无需重新生成
+        if (node.textureOutline && node.textureOutline.available) {
+            return node.textureOutline;
+        }
+        const os = inject.getOffscreenCanvas(w, h, 'maskOutline');
+        const ctx = os.ctx;
+        ctx.fillStyle = '#FFF';
+        // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
+        for (let i = index, len = index + total + 1; i < len; i++) {
+            const { node } = structs[i];
+            let matrix;
+            if (i === index) {
+                matrix = toE(node.tempMatrix);
+            }
+            else {
+                const parent = node.parent;
+                matrix = multiply(parent.tempMatrix, node.matrix);
+                assignMatrix(node.tempMatrix, matrix);
+            }
+            const fillRule = node.computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+            // 矢量很特殊
+            if (node instanceof Polyline) {
+                const points = node.points;
+                canvasPolygon(ctx, points, 0, 0);
+                ctx.closePath();
+                ctx.fill(fillRule);
+            }
+            else if (node instanceof ShapeGroup) {
+                const points = node.points;
+                points.forEach(item => {
+                    canvasPolygon(ctx, item, 0, 0);
+                    ctx.closePath();
+                });
+                ctx.fill(fillRule);
+            }
+            // 普通节点就是个矩形
+            else if (node instanceof Bitmap) {
+                ctx.fillRect(0, 0, node.width, node.height);
+            }
+        }
+        const target = TextureCache.getInstance(gl, os.canvas);
+        os.release();
         return target;
     }
     function genFrameBufferWithTexture(gl, texture, width, height) {
@@ -26456,20 +26507,8 @@ uniform int mode;
 void main() {
   vec4 color1 = texture2D(u_texture1, v_texCoords);
   vec4 color2 = texture2D(u_texture2, v_texCoords);
-  if (mode == 1) {
-    float a = color1.a * color2.a;
-    gl_FragColor = vec4(color2.rgb, a);
-  }
-  else if (color1.a > .0) {
-    float rs = color2.a;
-    float ds = 1.0 - color2.a;
-    gl_FragColor = vec4(
-      color1.r * ds + color2.r * rs,
-      color1.g * ds + color2.g * rs,
-      color1.b * ds + color2.b * rs,
-      color1.a * ds + color2.a * rs
-    );
-  }
+  float a = color1.a * color2.a;
+  gl_FragColor = vec4(color2.rgb, a);
 }`;
 
     var ca = {

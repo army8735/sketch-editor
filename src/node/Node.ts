@@ -59,6 +59,7 @@ class Node extends Event {
   textureTotal?: TextureCache; // 局部子树缓存
   textureMask?: TextureCache; // 作为mask时的缓存
   textureTarget?: TextureCache; // 指向自身所有缓存中最优先的那个
+  textureOutline?: TextureCache; // 轮廓mask特殊使用
   tempOpacity: number;
   tempMatrix: Float64Array;
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
@@ -214,6 +215,8 @@ class Node extends Event {
     // reflow和matrix计算需要x/y/width/height
     this.calRepaintStyle(RefreshLevel.REFLOW);
     this.clearCache(true);
+    // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
+    this.textureOutline?.release();
     this._rect = undefined;
     this._bbox = undefined;
   }
