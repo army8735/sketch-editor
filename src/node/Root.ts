@@ -236,9 +236,6 @@ class Root extends Container implements FrameCallback {
       else {
         checkReflow(this, node, addDom, removeDom);
       }
-      if (removeDom) {
-        node.destroy();
-      }
     }
     else {
       const isRp = lv >= RefreshLevel.REPAINT;

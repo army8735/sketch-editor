@@ -26321,6 +26321,7 @@
                 w: parent.width,
                 h: parent.height,
             });
+            node.clearCacheUpward(false);
         }
     }
 
@@ -26699,9 +26700,6 @@ void main() {
                 }
                 else {
                     checkReflow(this, node, addDom, removeDom);
-                }
-                if (removeDom) {
-                    node.destroy();
                 }
             }
             else {

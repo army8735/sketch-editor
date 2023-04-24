@@ -14,5 +14,6 @@ export function checkReflow(root: Root, node: Node, addDom: boolean, removeDom: 
       w: parent.width,
       h: parent.height,
     });
+    node.clearCacheUpward(false);
   }
 }
