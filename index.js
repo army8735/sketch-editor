@@ -20569,9 +20569,10 @@
             return this.hasContent = res;
         }
         renderCanvas() {
-            super.renderCanvas();
+            var _a;
             const { loader } = this;
             if (loader.onlyImg) {
+                (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this._src);
                 const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src);
                 canvasCache.available = true;
                 // 第一张图像才绘制，图片解码到canvas上
@@ -20581,11 +20582,13 @@
             }
         }
         genTexture(gl) {
+            var _a;
             const { loader } = this;
             if (loader.onlyImg) {
+                (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.release();
                 const canvasCache = this.canvasCache;
                 this.textureCache = this.textureTarget = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this.src);
-                canvasCache.release();
+                canvasCache.releaseImg(this._src);
             }
             else {
                 super.genTexture(gl);
@@ -25989,13 +25992,34 @@
             }
             // lv变小说明是上层节点，不一定是直接父节点，因为可能跨层，出栈对应数量来到对应lv的数据
             else if (lv < lastLv) {
-                const diff = lastLv - lv;
+                const diff = lastLv - lv + 1;
                 cacheOpList.splice(-diff);
                 hasCacheOpLv = cacheOpList[lv - 1];
                 cacheMwList.splice(-diff);
                 hasCacheMwLv = cacheMwList[lv - 1];
+                // 还需考虑本层
+                if (hasCacheOpLv) {
+                    hasCacheOpLv = node.hasCacheOpLv;
+                }
+                cacheOpList.push(hasCacheOpLv);
+                if (hasCacheMwLv) {
+                    hasCacheMwLv = node.hasCacheMwLv;
+                }
+                cacheMwList.push(hasCacheMwLv);
             }
-            // 不变是同级兄弟，无需特殊处理 else {}
+            // 不变是同级兄弟，只需考虑自己
+            else {
+                if (hasCacheOpLv) {
+                    hasCacheOpLv = node.hasCacheOpLv;
+                }
+                cacheOpList.pop();
+                cacheOpList.push(hasCacheOpLv);
+                if (hasCacheMwLv) {
+                    hasCacheMwLv = node.hasCacheMwLv;
+                }
+                cacheMwList.pop();
+                cacheMwList.push(hasCacheMwLv);
+            }
             lastLv = lv;
             // 继承父的opacity和matrix，仍然要注意root没有parent
             const parent = node.parent;
@@ -26169,6 +26193,7 @@
         }
         const programs = root.programs;
         const program = programs.program;
+        gl.useProgram(program);
         // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
         const { bbox, matrix } = node;
         const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];

@@ -143,13 +143,34 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     }
     // lv变小说明是上层节点，不一定是直接父节点，因为可能跨层，出栈对应数量来到对应lv的数据
     else if (lv < lastLv) {
-      const diff = lastLv - lv;
+      const diff = lastLv - lv + 1;
       cacheOpList.splice(-diff);
       hasCacheOpLv = cacheOpList[lv - 1];
       cacheMwList.splice(-diff);
       hasCacheMwLv = cacheMwList[lv - 1];
+      // 还需考虑本层
+      if (hasCacheOpLv) {
+        hasCacheOpLv = node.hasCacheOpLv;
+      }
+      cacheOpList.push(hasCacheOpLv);
+      if (hasCacheMwLv) {
+        hasCacheMwLv = node.hasCacheMwLv;
+      }
+      cacheMwList.push(hasCacheMwLv);
     }
-    // 不变是同级兄弟，无需特殊处理 else {}
+    // 不变是同级兄弟，只需考虑自己
+    else {
+      if (hasCacheOpLv) {
+        hasCacheOpLv = node.hasCacheOpLv;
+      }
+      cacheOpList.pop();
+      cacheOpList.push(hasCacheOpLv);
+      if (hasCacheMwLv) {
+        hasCacheMwLv = node.hasCacheMwLv;
+      }
+      cacheMwList.pop();
+      cacheMwList.push(hasCacheMwLv);
+    }
     lastLv = lv;
     // 继承父的opacity和matrix，仍然要注意root没有parent
     const parent = node.parent;
@@ -327,6 +348,7 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
   }
   const programs = root.programs;
   const program = programs.program;
+  gl.useProgram(program);
   // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
   const { bbox, matrix } = node;
   const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];

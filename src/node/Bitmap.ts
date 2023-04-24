@@ -150,13 +150,13 @@ class Bitmap extends Node {
   }
 
   override renderCanvas() {
-    super.renderCanvas();
     const { loader } = this;
     if (loader.onlyImg) {
-      const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src!);
+      this.canvasCache?.releaseImg(this._src);
+      const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src);
       canvasCache.available = true;
       // 第一张图像才绘制，图片解码到canvas上
-      if (canvasCache.getCount(this._src!) === 1) {
+      if (canvasCache.getCount(this._src) === 1) {
         canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
       }
     }
@@ -165,9 +165,10 @@ class Bitmap extends Node {
   override genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
     const { loader } = this;
     if (loader.onlyImg) {
+      this.textureCache?.release();
       const canvasCache = this.canvasCache!;
-      this.textureCache = this.textureTarget = TextureCache.getImgInstance(gl, canvasCache!.offscreen.canvas, this.src!);
-      canvasCache.release();
+      this.textureCache = this.textureTarget = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this.src);
+      canvasCache.releaseImg(this._src);
     }
     else {
       super.genTexture(gl);
@@ -178,7 +179,7 @@ class Bitmap extends Node {
     const { loader } = this;
     if (loader.onlyImg) {
       if (includeSelf) {
-        this.textureCache?.releaseImg(this._src!);
+        this.textureCache?.releaseImg(this._src);
       }
       this.textureTotal?.release();
       this.textureMask?.release();
