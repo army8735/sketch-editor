@@ -92,13 +92,11 @@ export type ColorStop = {
   offset?: StyleNumValue,
 };
 
-export type LinearGradient = {
+export type Gradient = {
   t: GRADIENT,
-  d: number | Array<number>,
+  d: Array<number>,
   stops: Array<ColorStop>,
 };
-
-export type Gradient = LinearGradient;
 
 export type StyleGradientValue = {
   v: Gradient,

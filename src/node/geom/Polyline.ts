@@ -3,10 +3,10 @@ import { Point, PolylineProps } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { color2rgbaStr } from '../../style/css';
 import { canvasPolygon } from '../../refresh/paint';
-import { getLinear } from '../../style/gradient';
+import { getLinear, getRadial } from '../../style/gradient';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { unitize } from '../../math/vector';
-import { CURVE_MODE, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
+import { CURVE_MODE, GRADIENT, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
 import { clone } from '../../util';
 import inject, { OffScreen } from '../../util/inject';
 import bezier from '../../math/bezier';
@@ -17,6 +17,7 @@ function isCornerPoint(point: Point) {
 
 class Polyline extends Geom {
   isClosed: boolean;
+
   constructor(props: PolylineProps) {
     super(props);
     this.isClosed = props.isClosed;
@@ -137,7 +138,7 @@ class Polyline extends Geom {
       }
     }
     // 将圆角的2个点替换掉原本的1个点
-    for(let i = 0, len = temp.length; i < len; i++) {
+    for (let i = 0, len = temp.length; i < len; i++) {
       const c = cache[i];
       if (c) {
         const { prevTangent, prevHandle, nextTangent, nextHandle } = c;
@@ -237,12 +238,22 @@ class Polyline extends Geom {
         ctx.fillStyle = color2rgbaStr(f);
       }
       else {
-        const gd = getLinear(f.stops, f.d, 0, 0, this.width, this.height, -x, -y);
-        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-        gd.stop.forEach(item => {
-          lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
-        });
-        ctx.fillStyle = lg;
+        if (f.t === GRADIENT.LINEAR) {
+          const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
+          const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+          gd.stop.forEach(item => {
+            lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+          });
+          ctx.fillStyle = lg;
+        }
+        else if (f.t === GRADIENT.RADIAL) {
+          const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
+          const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+          gd.stop.forEach(item => {
+            rg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+          });
+          ctx.fillStyle = rg;
+        }
       }
       canvasPolygon(ctx, points, -x, -y);
       if (this.isClosed) {
@@ -280,12 +291,22 @@ class Polyline extends Geom {
         ctx.strokeStyle = color2rgbaStr(s);
       }
       else {
-        const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
-        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-        gd.stop.forEach(item => {
-          lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
-        });
-        ctx.strokeStyle = lg;
+        if (s.t === GRADIENT.LINEAR) {
+          const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+          const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+          gd.stop.forEach(item => {
+            lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+          });
+          ctx.strokeStyle = lg;
+        }
+        else if (s.t === GRADIENT.RADIAL) {
+          const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+          const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+          gd.stop.forEach(item => {
+            rg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+          });
+          ctx.strokeStyle = rg;
+        }
       }
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
       const p = strokePosition[i];

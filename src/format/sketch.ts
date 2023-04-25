@@ -679,21 +679,23 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
     fills.forEach((item: SketchFormat.Fill) => {
       if (item.fillType === SketchFormat.FillType.Gradient) {
         const g = item.gradient;
+        const from = parseStrPoint(g.from);
+        const to = parseStrPoint(g.to);
+        const stops = g.stops.map(item => {
+          const color = color2hexStr([
+            Math.floor(item.color.red * 255),
+            Math.floor(item.color.green * 255),
+            Math.floor(item.color.blue * 255),
+            item.color.alpha,
+          ]);
+          return color + ' ' + item.position * 100 + '%';
+        });
         if (g.gradientType === SketchFormat.GradientType.Linear) {
-          const from = parseStrPoint(g.from);
-          const to = parseStrPoint(g.to);
-          const stops = g.stops.map(item => {
-            const color = color2hexStr([
-              Math.floor(item.color.red * 255),
-              Math.floor(item.color.green * 255),
-              Math.floor(item.color.blue * 255),
-              item.color.alpha,
-            ]);
-            return color + ' ' + item.position * 100 + '%';
-          });
           fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
         }
         else if (g.gradientType === SketchFormat.GradientType.Radial) {
+          const ellipseLength = g.elipseLength;
+          fill.push(`radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`);
         }
         else if (g.gradientType === SketchFormat.GradientType.Angular) {
         }

@@ -58,14 +58,14 @@ class Container extends Node {
     }
   }
 
-  override clearMask() {
-    super.clearMask();
+  override resetMask() {
+    super.resetMask();
     const children = this.children;
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
       // 判断下可以提高性能，某些情况下被清除过了无需再次递归其子节点
       if (item.mask) {
-        item.clearMask();
+        item.resetMask();
       }
     }
   }

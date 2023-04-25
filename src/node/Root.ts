@@ -16,10 +16,10 @@ import {
   colorVert,
   mainFrag,
   mainVert,
-  simpleFrag,
-  simpleVert,
   maskVert,
   maskFrag,
+  simpleFrag,
+  simpleVert,
 } from '../gl/glsl';
 import ca from '../gl/ca';
 
@@ -212,23 +212,6 @@ class Root extends Container implements FrameCallback {
     if (lv === RefreshLevel.NONE || !this.computedStyle.visible || this.isDestroyed) {
       return false;
     }
-    // 先检查mask影响
-    const mask: Node | undefined = node.mask;
-    if (mask) {
-      const target = mask.textureMask;
-      target?.release();
-      mask.resetTextureTarget();
-      mask.struct.next = 0;
-      // 原本指向mask的引用也需清除
-      let next = mask.next;
-      while (next) {
-        if (next.computedStyle.breakMask) {
-          break;
-        }
-        next.clearMask();
-        next = next.next;
-      }
-    }
     const isRf = isReflow(lv);
     if (isRf) {
       // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
@@ -259,7 +242,19 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;
         }
+        if (lv & RefreshLevel.MASK) {
+          computedStyle.maskMode = style.maskMode.v;
+          node.clearMask();
+        }
+        if (lv & RefreshLevel.BREAK_MASK) {
+          computedStyle.breakMask = style.breakMask.v;
+        }
       }
+    }
+    // 检查mask影响，这里是作为被遮罩对象存在的关系检查
+    const mask = node.mask;
+    if (mask) {
+      mask.clearMask();
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;

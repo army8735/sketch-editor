@@ -5,10 +5,10 @@ import {
   ComputedStyle,
   FILL_RULE,
   FONT_STYLE,
-  STROKE_LINE_CAP,
-  STROKE_LINE_JOIN,
   MASK,
   MIX_BLEND_MODE,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN,
   STROKE_POSITION,
   Style,
   StyleNumValue,
@@ -40,7 +40,7 @@ function compatibleTransform(k: string, v: StyleNumValue) {
 export function isGradient(s: string) {
   if(reg.gradient.test(s)) {
     let gradient = reg.gradient.exec(s);
-    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1]) > -1) {
+    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1) {
       return true;
     }
   }
@@ -194,11 +194,12 @@ export function normalize(style: JStyle): Style {
   if (!isNil(fill)) {
     res.fill = fill.map(item => {
       if (isString(item) && isGradient(item as string)) {
-        return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
+        const v = parseGradient(item as string);
+        if (v) {
+          return { v, u :StyleUnit.GRADIENT };
+        }
       }
-      else {
-        return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
-      }
+      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
     });
   }
   const fillEnable = style.fillEnable;

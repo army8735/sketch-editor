@@ -1,23 +1,24 @@
 export enum RefreshLevel {
-  NONE =             0b00000000000000, // 0
-  CACHE =            0b00000000000001, // 1
-  TRANSLATE_X =      0b00000000000010, // 2
-  TRANSLATE_Y =      0b00000000000100, // 4
-  TRANSLATE =        0b00000000000110, // 6
-  ROTATE_Z =         0b00000000001000, // 8
-  SCALE_X =          0b00000000010000, // 16
-  SCALE_Y =          0b00000000100000, // 32
-  SCALE =            0b00000000110000, // 48
-  TRANSFORM =        0b00000001000000, // 64
-  TRANSFORM_ALL =    0b00000001111110, // 126
-  OPACITY =          0b00000010000000, // 128
-  FILTER =           0b00000100000000, // 256
-  MIX_BLEND_MODE =   0b00001000000000, // 512
-  MASK =             0b00010000000000, // 1024
-  REPAINT =          0b00100000000000, // 2048
-  REFLOW =           0b01000000000000, // 4096
-  REFLOW_TRANSFORM = 0b01000001111110, // 4218
-  REBUILD =          0b10000000000000, // 8192
+  NONE =             0b000000000000000, // 0
+  CACHE =            0b000000000000001, // 1
+  TRANSLATE_X =      0b000000000000010, // 2
+  TRANSLATE_Y =      0b000000000000100, // 4
+  TRANSLATE =        0b000000000000110, // 6
+  ROTATE_Z =         0b000000000001000, // 8
+  SCALE_X =          0b000000000010000, // 16
+  SCALE_Y =          0b000000000100000, // 32
+  SCALE =            0b000000000110000, // 48
+  TRANSFORM =        0b000000001000000, // 64
+  TRANSFORM_ALL =    0b000000001111110, // 126
+  OPACITY =          0b000000010000000, // 128
+  FILTER =           0b000000100000000, // 256
+  MIX_BLEND_MODE =   0b000001000000000, // 512
+  MASK =             0b000010000000000, // 1024
+  BREAK_MASK =       0b000100000000000, // 2048
+  REPAINT =          0b001000000000000, // 4096
+  REFLOW =           0b010000000000000, // 8192
+  REFLOW_TRANSFORM = 0b010000001111110, // 8318
+  REBUILD =          0b100000000000000, // 16384
 }
 
 export function isReflow(lv: number): boolean {
@@ -60,6 +61,12 @@ export function getLevel(k: string): RefreshLevel {
   }
   if (k === 'mixBlendMode') {
     return RefreshLevel.MIX_BLEND_MODE;
+  }
+  if (k === 'maskMode') {
+    return RefreshLevel.MASK;
+  }
+  if (k === 'breakMask') {
+    return RefreshLevel.BREAK_MASK;
   }
   if (isRepaintKey(k)) {
     return RefreshLevel.REPAINT;

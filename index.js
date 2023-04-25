@@ -16006,6 +16006,1777 @@
         img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
     };
 
+    class Event {
+        constructor() {
+            this.__eHash = {};
+        }
+        on(id, handle) {
+            if (!isFunction(handle)) {
+                return;
+            }
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    this.on(id[i], handle);
+                }
+            }
+            else {
+                if (!this.__eHash.hasOwnProperty(id)) {
+                    this.__eHash[id] = [];
+                }
+                // 遍历防止此handle被侦听过了
+                for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
+                    if (item[i] === handle) {
+                        return this;
+                    }
+                }
+                this.__eHash[id].push(handle);
+            }
+            return this;
+        }
+        once(id, handle) {
+            if (!isFunction(handle)) {
+                return;
+            }
+            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
+            const cb = () => {
+                handle.apply(this, Array.prototype.slice.call(arguments));
+                this.off(id, cb);
+            };
+            cb.__eventCb = handle;
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    this.once(id[i], handle);
+                }
+            }
+            else {
+                this.on(id, cb);
+            }
+            return this;
+        }
+        off(id, handle) {
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    this.off(id[i], handle);
+                }
+            }
+            else if (this.__eHash.hasOwnProperty(id)) {
+                if (handle) {
+                    for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
+                        // 需考虑once包裹的引用对比
+                        if (item[i] === handle || item[i].__eventCb === handle) {
+                            item.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+                // 未定义为全部清除
+                else {
+                    delete this.__eHash[id];
+                }
+            }
+            return this;
+        }
+        emit(id, ...data) {
+            if (Array.isArray(id)) {
+                for (let i = 0, len = id.length; i < len; i++) {
+                    this.emit(id[i], data);
+                }
+            }
+            else {
+                if (this.__eHash.hasOwnProperty(id)) {
+                    let list = this.__eHash[id];
+                    if (list.length) {
+                        list = list.slice();
+                        for (let i = 0, len = list.length; i < len; i++) {
+                            const cb = list[i];
+                            if (isFunction(cb)) {
+                                cb.apply(this, data);
+                            }
+                        }
+                    }
+                }
+            }
+            return this;
+        }
+    }
+    Event.REFRESH = 'refresh';
+    Event.DID_ADD_DOM = 'didAddDom';
+    Event.WILL_REMOVE_DOM = 'willRemoveDom';
+    Event.PAGE_CHANGED = 'pageChanged';
+    Event.VISIBLE_CHANGED = 'visibleChanged';
+
+    function clone(obj) {
+        if (isNil(obj) || typeof obj !== 'object') {
+            return obj;
+        }
+        if (isDate(obj)) {
+            return new Date(obj);
+        }
+        if (!isPlainObject(obj) && !Array.isArray(obj)) {
+            return obj;
+        }
+        const n = Array.isArray(obj) ? [] : {};
+        Object.keys(obj).forEach(i => {
+            n[i] = clone(obj[i]);
+        });
+        return n;
+    }
+    var util = {
+        type,
+        Event,
+        inject,
+    };
+
+    // 获取color-stop区间范围，去除无用值
+    function getColorStop(stops, length) {
+        const list = [];
+        const firstColor = stops[0].color.v;
+        // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
+        for (let i = 0, len = stops.length; i < len; i++) {
+            const item = stops[i];
+            const offset = item.offset;
+            // 考虑是否声明了位置
+            if (offset) {
+                if (offset.u === StyleUnit.PERCENT) {
+                    list.push([item.color.v, offset.v * 0.01]);
+                }
+                else {
+                    list.push([item.color.v, offset.v / length]);
+                }
+            }
+            else {
+                list.push([item.color.v]);
+            }
+        }
+        if (list.length === 1) {
+            list.push(clone(list[0]));
+        }
+        // 首尾不声明默认为[0, 1]
+        if (list[0].length === 1) {
+            list[0].push(0);
+        }
+        if (list.length > 1) {
+            const i = list.length - 1;
+            if (list[i].length === 1) {
+                list[i].push(1);
+            }
+        }
+        // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
+        let start = list[0][1];
+        for (let i = 1, len = list.length; i < len - 1; i++) {
+            const item = list[i];
+            if (item.length > 1) {
+                start = item[1];
+            }
+            else {
+                let j = i + 1;
+                let end = list[list.length - 1][1];
+                for (; j < len - 1; j++) {
+                    const item = list[j];
+                    if (item.length > 1) {
+                        end = item[1];
+                        break;
+                    }
+                }
+                const num = j - i + 1;
+                const per = (end - start) / num;
+                for (let k = i; k < j; k++) {
+                    const item = list[k];
+                    item.push(start + per * (k + 1 - i));
+                }
+                i = j;
+            }
+        }
+        // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
+        for (let i = 1, len = list.length; i < len; i++) {
+            const item = list[i];
+            const prev = list[i - 1];
+            if (item[1] < prev[1]) {
+                item[1] = prev[1];
+            }
+        }
+        // 0之前的和1之后的要过滤掉
+        for (let i = 0, len = list.length; i < len; i++) {
+            const item = list[i];
+            if (item[1] > 1) {
+                list.splice(i);
+                const prev = list[i - 1];
+                if (prev && prev[1] < 1) {
+                    const dr = item[0][0] - prev[0][0];
+                    const dg = item[0][1] - prev[0][1];
+                    const db = item[0][2] - prev[0][2];
+                    const da = item[0][3] - prev[0][3];
+                    const p = (1 - prev[1]) / (item[1] - prev[1]);
+                    list.push([
+                        [
+                            item[0][0] + dr * p,
+                            item[0][1] + dg * p,
+                            item[0][2] + db * p,
+                            item[0][3] + da * p,
+                        ],
+                        1
+                    ]);
+                }
+                break;
+            }
+        }
+        for (let i = list.length - 1; i >= 0; i--) {
+            const item = list[i];
+            if (item[1] < 0) {
+                list.splice(0, i + 1);
+                const next = list[i];
+                if (next && next[1] > 0) {
+                    const dr = next[0][0] - item[0][0];
+                    const dg = next[0][1] - item[0][1];
+                    const db = next[0][2] - item[0][2];
+                    const da = next[0][3] - item[0][3];
+                    const p = (-item[1]) / (next[1] - item[1]);
+                    list.unshift([
+                        [
+                            item[0][0] + dr * p,
+                            item[0][1] + dg * p,
+                            item[0][2] + db * p,
+                            item[0][3] + da * p,
+                        ],
+                        0
+                    ]);
+                }
+                break;
+            }
+        }
+        // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+        list.forEach(item => {
+            if (item[1] < 0) {
+                item[1] = 0;
+            }
+            else if (item[1] > 1) {
+                item[1] = 1;
+            }
+        });
+        // 都超限时，第一个颜色兜底
+        if (!list.length) {
+            list.push([firstColor, 0]);
+        }
+        return list;
+    }
+    function parseGradient(s) {
+        const gradient = reg.gradient.exec(s);
+        if (gradient) {
+            const t = {
+                linear: GRADIENT.LINEAR,
+                radial: GRADIENT.RADIAL,
+                conic: GRADIENT.CONIC,
+            }[gradient[1].toLowerCase()];
+            let d;
+            if (t === GRADIENT.LINEAR || t === GRADIENT.CONIC) {
+                const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
+                if (points) {
+                    d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+                }
+                else {
+                    return;
+                }
+            }
+            else if (t === GRADIENT.RADIAL) {
+                const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
+                if (points) {
+                    d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4]), parseFloat(points[5])];
+                }
+                else {
+                    return;
+                }
+            }
+            const v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
+            const stops = v.map(item => {
+                const color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
+                const percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?(?:(?:px)|%)?/.exec(item.replace(color[0], ''));
+                let offset;
+                if (percent) {
+                    const v = calUnit(percent[0]);
+                    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(v.u) > -1) {
+                        v.u = StyleUnit.PX;
+                    }
+                    offset = v;
+                }
+                return {
+                    color: { v: color ? color2rgbaInt(color[0]) : [0, 0, 0, 1], u: StyleUnit.RGBA },
+                    offset,
+                };
+            });
+            return {
+                t,
+                d: d,
+                stops,
+            };
+        }
+    }
+    /**
+     * 生成canvas的linearGradient
+     * @param stops
+     * @param d 控制点或角度
+     * @param ox 原点
+     * @param oy
+     * @param w
+     * @param h
+     */
+    function getLinear(stops, d, ox, oy, w, h) {
+        const x1 = ox + d[0] * w;
+        const y1 = oy + d[1] * h;
+        const x2 = ox + d[2] * w;
+        const y2 = oy + d[3] * h;
+        const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        const stop = getColorStop(stops, total);
+        return {
+            x1,
+            y1,
+            x2,
+            y2,
+            stop,
+        };
+    }
+    function getRadial(stops, d, ox, oy, w, h) {
+        const x1 = ox + d[0] * w;
+        const y1 = oy + d[1] * h;
+        const x2 = ox + d[2] * w;
+        const y2 = oy + d[3] * h;
+        const ellipseLength = d[4];
+        const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        const stop = getColorStop(stops, total);
+        return {
+            cx: x1,
+            cy: y1,
+            tx: x2,
+            ty: y2,
+            ellipseLength,
+            total,
+            stop,
+        };
+    }
+
+    function compatibleTransform(k, v) {
+        if (k === 'scaleX' || k === 'scaleY') {
+            v.u = StyleUnit.NUMBER;
+        }
+        else if (k === 'translateX' || k === 'translateY') {
+            if (v.u === StyleUnit.NUMBER) {
+                v.u = StyleUnit.PX;
+            }
+        }
+        else {
+            if (v.u === StyleUnit.NUMBER) {
+                v.u = StyleUnit.DEG;
+            }
+        }
+    }
+    function isGradient(s) {
+        if (reg.gradient.test(s)) {
+            let gradient = reg.gradient.exec(s);
+            if (gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function normalize(style) {
+        const res = {};
+        [
+            'left',
+            'top',
+            'right',
+            'bottom',
+            'width',
+            'height',
+        ].forEach(k => {
+            let v = style[k];
+            if (isNil(v)) {
+                return;
+            }
+            const n = calUnit(v || 0);
+            // 无单位视为px
+            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+                n.u = StyleUnit.PX;
+            }
+            // 限定正数
+            if (k === 'width' || k === 'height') {
+                if (n.v < 0) {
+                    n.v = 0;
+                }
+            }
+            res[k] = n;
+        });
+        const lineHeight = style.lineHeight;
+        if (!isNil(lineHeight)) {
+            if (lineHeight === 'normal') {
+                res.lineHeight = {
+                    v: 0,
+                    u: StyleUnit.AUTO,
+                };
+            }
+            else {
+                let n = calUnit(lineHeight || 0);
+                if (n.v <= 0) {
+                    n = {
+                        v: 0,
+                        u: StyleUnit.AUTO,
+                    };
+                }
+                else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
+                    n.u = StyleUnit.PX;
+                }
+                res.lineHeight = n;
+            }
+        }
+        const visible = style.visible;
+        if (!isNil(visible)) {
+            res.visible = {
+                v: visible,
+                u: StyleUnit.BOOLEAN,
+            };
+        }
+        const fontFamily = style.fontFamily;
+        if (!isNil(fontFamily)) {
+            res.fontFamily = {
+                v: fontFamily.toString().trim().toLowerCase()
+                    .replace(/['"]/g, '')
+                    .replace(/\s*,\s*/g, ','),
+                u: StyleUnit.STRING,
+            };
+        }
+        const fontSize = style.fontSize;
+        if (!isNil(fontSize)) {
+            let n = calUnit(fontSize || 16);
+            if (n.v <= 0) {
+                n.v = 16;
+            }
+            // 防止小数
+            // n.v = Math.floor(n.v);
+            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+                n.u = StyleUnit.PX;
+            }
+            res.fontSize = n;
+        }
+        const fontWeight = style.fontWeight;
+        if (!isNil(fontWeight)) {
+            if (isString(fontWeight)) {
+                if (/thin/i.test(fontWeight)) {
+                    res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
+                }
+                else if (/lighter/i.test(fontWeight)) {
+                    res.fontWeight = { v: 200, u: StyleUnit.NUMBER };
+                }
+                else if (/light/i.test(fontWeight)) {
+                    res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
+                }
+                else if (/medium/i.test(fontWeight)) {
+                    res.fontWeight = { v: 500, u: StyleUnit.NUMBER };
+                }
+                else if (/semiBold/i.test(fontWeight)) {
+                    res.fontWeight = { v: 600, u: StyleUnit.NUMBER };
+                }
+                else if (/bold/i.test(fontWeight)) {
+                    res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
+                }
+                else if (/extraBold/i.test(fontWeight)) {
+                    res.fontWeight = { v: 800, u: StyleUnit.NUMBER };
+                }
+                else if (/black/i.test(fontWeight)) {
+                    res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
+                }
+                else {
+                    res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
+                }
+            }
+            else {
+                res.fontWeight = {
+                    v: Math.min(900, Math.max(100, parseInt(fontWeight) || 400)),
+                    u: StyleUnit.NUMBER,
+                };
+            }
+        }
+        const fontStyle = style.fontStyle;
+        if (!isNil(fontStyle)) {
+            let v = FONT_STYLE.NORMAL;
+            if (/italic/i.test(fontStyle)) {
+                v = FONT_STYLE.ITALIC;
+            }
+            else if (/oblique/i.test(fontStyle)) {
+                v = FONT_STYLE.OBLIQUE;
+            }
+            res.fontStyle = { v, u: StyleUnit.NUMBER };
+        }
+        const color = style.color;
+        if (!isNil(color)) {
+            res.color = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
+        }
+        const backgroundColor = style.backgroundColor;
+        if (!isNil(backgroundColor)) {
+            res.backgroundColor = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+        }
+        const overflow = style.overflow;
+        if (!isNil(overflow)) {
+            res.overflow = { v: overflow, u: StyleUnit.STRING };
+        }
+        const opacity = style.opacity;
+        if (!isNil(opacity)) {
+            res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
+        }
+        const fill = style.fill;
+        if (!isNil(fill)) {
+            res.fill = fill.map(item => {
+                if (isString(item) && isGradient(item)) {
+                    const v = parseGradient(item);
+                    if (v) {
+                        return { v, u: StyleUnit.GRADIENT };
+                    }
+                }
+                return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+            });
+        }
+        const fillEnable = style.fillEnable;
+        if (!isNil(fillEnable)) {
+            res.fillEnable = fillEnable.map(item => {
+                return { v: item, u: StyleUnit.BOOLEAN };
+            });
+        }
+        const fillRule = style.fillRule;
+        if (!isNil(fillRule)) {
+            res.fillRule = { v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO, u: StyleUnit.NUMBER };
+        }
+        const stroke = style.stroke;
+        if (!isNil(stroke)) {
+            res.stroke = stroke.map(item => {
+                if (isString(item) && isGradient(item)) {
+                    return { v: parseGradient(item), u: StyleUnit.GRADIENT };
+                }
+                else {
+                    return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+                }
+            });
+        }
+        const strokeEnable = style.strokeEnable;
+        if (!isNil(strokeEnable)) {
+            res.strokeEnable = strokeEnable.map(item => {
+                return { v: item, u: StyleUnit.BOOLEAN };
+            });
+        }
+        const strokeWidth = style.strokeWidth;
+        if (!isNil(strokeWidth)) {
+            res.strokeWidth = strokeWidth.map(item => {
+                return { v: Math.max(0, item), u: StyleUnit.PX };
+            });
+        }
+        const strokePosition = style.strokePosition;
+        if (!isNil(strokePosition)) {
+            res.strokePosition = strokePosition.map(item => {
+                let v = STROKE_POSITION.CENTER;
+                if (item === 'inside') {
+                    v = STROKE_POSITION.INSIDE;
+                }
+                else if (item === 'outside') {
+                    v = STROKE_POSITION.OUTSIDE;
+                }
+                return { v, u: StyleUnit.NUMBER };
+            });
+        }
+        const strokeDasharray = style.strokeDasharray;
+        if (!isNil(strokeDasharray)) {
+            res.strokeDasharray = strokeDasharray.map(item => {
+                return { v: Math.max(0, item), u: StyleUnit.PX };
+            });
+        }
+        const strokeLinecap = style.strokeLinecap;
+        if (!isNil(strokeLinecap)) {
+            let v = STROKE_LINE_CAP.BUTT;
+            if (strokeLinecap === 'round') {
+                v = STROKE_LINE_CAP.ROUND;
+            }
+            else if (strokeLinecap === 'square') {
+                v = STROKE_LINE_CAP.SQUARE;
+            }
+            res.strokeLinecap = { v, u: StyleUnit.NUMBER };
+        }
+        const strokeLinejoin = style.strokeLinejoin;
+        if (!isNil(strokeLinejoin)) {
+            let v = STROKE_LINE_JOIN.MITER;
+            if (strokeLinejoin === 'round') {
+                v = STROKE_LINE_JOIN.ROUND;
+            }
+            else if (strokeLinejoin === 'bevel') {
+                v = STROKE_LINE_JOIN.BEVEL;
+            }
+            res.strokeLinejoin = { v, u: StyleUnit.NUMBER };
+        }
+        const strokeMiterlimit = style.strokeMiterlimit;
+        if (!isNil(strokeMiterlimit)) {
+            res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
+        }
+        // 只有这几个，3d没有
+        [
+            'translateX',
+            'translateY',
+            'scaleX',
+            'scaleY',
+            'rotateZ',
+        ].forEach(k => {
+            let v = style[k];
+            if (isNil(v)) {
+                return;
+            }
+            const n = calUnit(v);
+            // 没有单位或默认值处理单位
+            compatibleTransform(k, n);
+            res[k] = n;
+        });
+        const letterSpacing = style.letterSpacing;
+        if (!isNil(letterSpacing)) {
+            let n = calUnit(letterSpacing || 0);
+            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+                n.u = StyleUnit.PX;
+            }
+            res.letterSpacing = n;
+        }
+        const textAlign = style.textAlign;
+        if (!isNil(textAlign)) {
+            let v = TEXT_ALIGN.LEFT;
+            if (textAlign === 'center') {
+                v = TEXT_ALIGN.CENTER;
+            }
+            else if (textAlign === 'right') {
+                v = TEXT_ALIGN.RIGHT;
+            }
+            else if (textAlign === 'justify') {
+                v = TEXT_ALIGN.JUSTIFY;
+            }
+            res.textAlign = { v, u: StyleUnit.STRING };
+        }
+        const transformOrigin = style.transformOrigin;
+        if (!isNil(transformOrigin)) {
+            let o;
+            if (Array.isArray(transformOrigin)) {
+                o = transformOrigin;
+            }
+            else {
+                o = transformOrigin.match(/(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig);
+            }
+            if (o.length === 1) {
+                o[1] = o[0];
+            }
+            const arr = [];
+            for (let i = 0; i < 2; i++) {
+                let item = o[i];
+                if (/^[-+]?[\d.]/.test(item)) {
+                    let n = calUnit(item);
+                    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+                        n.u = StyleUnit.PX;
+                    }
+                    arr.push(n);
+                }
+                else {
+                    arr.push({
+                        v: {
+                            top: 0,
+                            left: 0,
+                            center: 50,
+                            right: 100,
+                            bottom: 100,
+                        }[item],
+                        u: StyleUnit.PERCENT,
+                    });
+                    // 不规范的写法变默认值50%
+                    if (isNil(arr[i].v)) {
+                        arr[i].v = 50;
+                    }
+                }
+            }
+            res.transformOrigin = arr;
+        }
+        const booleanOperation = style.booleanOperation;
+        if (!isNil(booleanOperation)) {
+            let v = BOOLEAN_OPERATION.NONE;
+            if (booleanOperation === 'union') {
+                v = BOOLEAN_OPERATION.UNION;
+            }
+            else if (booleanOperation === 'subtract') {
+                v = BOOLEAN_OPERATION.SUBTRACT;
+            }
+            else if (booleanOperation === 'intersect') {
+                v = BOOLEAN_OPERATION.INTERSECT;
+            }
+            else if (booleanOperation === 'xor') {
+                v = BOOLEAN_OPERATION.XOR;
+            }
+            res.booleanOperation = { v, u: StyleUnit.NUMBER };
+        }
+        const mixBlendMode = style.mixBlendMode;
+        if (!isNil(mixBlendMode)) {
+            let v = MIX_BLEND_MODE.NORMAL;
+            if (/multiply/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.MULTIPLY;
+            }
+            else if (/screen/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.SCREEN;
+            }
+            else if (/overlay/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.OVERLAY;
+            }
+            else if (/darken/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.DARKEN;
+            }
+            else if (/lighten/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.LIGHTEN;
+            }
+            else if (/color-dodge/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.COLOR_DODGE;
+            }
+            else if (/color-burn/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.COLOR_BURN;
+            }
+            else if (/hard-light/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.HARD_LIGHT;
+            }
+            else if (/soft-light/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.SOFT_LIGHT;
+            }
+            else if (/difference/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.DIFFERENCE;
+            }
+            else if (/exclusion/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.EXCLUSION;
+            }
+            else if (/hue/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.HUE;
+            }
+            else if (/saturation/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.SATURATION;
+            }
+            else if (/color/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.COLOR;
+            }
+            else if (/luminosity/i.test(fontStyle)) {
+                v = MIX_BLEND_MODE.LUMINOSITY;
+            }
+            res.mixBlendMode = { v, u: StyleUnit.NUMBER };
+        }
+        const pointerEvents = style.pointerEvents;
+        if (!isNil(pointerEvents)) {
+            res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+        }
+        const maskMode = style.maskMode;
+        if (!isNil(maskMode)) {
+            let v = MASK.NONE;
+            if (maskMode === 'outline') {
+                v = MASK.OUTLINE;
+            }
+            else if (maskMode === 'alpha') {
+                v = MASK.ALPHA;
+            }
+            res.maskMode = { v, u: StyleUnit.NUMBER };
+        }
+        const breakMask = style.breakMask;
+        if (!isNil(breakMask)) {
+            res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
+        }
+        return res;
+    }
+    function equalStyle(k, a, b) {
+        if (k === 'transformOrigin') {
+            return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
+                && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
+        }
+        if (k === 'color' || k === 'backgroundColor') {
+            return a[k].v[0] === b[k].v[0]
+                && a[k].v[1] === b[k].v[1]
+                && a[k].v[2] === b[k].v[2]
+                && a[k].v[3] === b[k].v[3];
+        }
+        // @ts-ignore
+        return a[k].v === b[k].v && a[k].u === b[k].u;
+    }
+    function color2rgbaInt(color) {
+        if (Array.isArray(color)) {
+            return color;
+        }
+        let res = [];
+        if (!color || color === 'transparent') {
+            res = [0, 0, 0, 0];
+        }
+        else if (color.charAt(0) === '#') {
+            color = color.slice(1);
+            if (color.length === 3 || color.length === 4) {
+                res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
+                res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
+                res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+                if (color.length === 4) {
+                    res[3] = parseInt(color.charAt(3) + color.charAt(3), 16);
+                }
+                else {
+                    res[3] = 1;
+                }
+            }
+            else if (color.length === 6) {
+                res.push(parseInt(color.slice(0, 2), 16));
+                res.push(parseInt(color.slice(2, 4), 16));
+                res.push(parseInt(color.slice(4), 16));
+                res[3] = 1;
+            }
+            else if (color.length === 8) {
+                res.push(parseInt(color.slice(0, 2), 16));
+                res.push(parseInt(color.slice(2, 4), 16));
+                res.push(parseInt(color.slice(4, 6), 16));
+                res.push(parseInt(color.slice(6), 16) / 255);
+            }
+            else {
+                res[0] = res[1] = res[2] = 0;
+                res[3] = 1;
+            }
+        }
+        else {
+            let c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+            if (c) {
+                res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
+                if (!isNil(c[4])) {
+                    res[3] = parseFloat(c[4]);
+                }
+                else {
+                    res[3] = 1;
+                }
+            }
+            else {
+                res = [0, 0, 0, 0];
+            }
+        }
+        return res;
+    }
+    function color2rgbaStr(color) {
+        const c = color2rgbaInt(color);
+        if (Array.isArray(c)) {
+            c[0] = Math.floor(Math.max(c[0], 0));
+            c[1] = Math.floor(Math.max(c[1], 0));
+            c[2] = Math.floor(Math.max(c[2], 0));
+            if (c.length === 3 || c.length === 4) {
+                if (c.length === 4) {
+                    c[3] = Math.max(c[3], 0);
+                    return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
+                }
+                return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)';
+            }
+        }
+        return color || 'rgba(0,0,0,0)';
+    }
+    function toHex(n) {
+        let r = n.toString(16);
+        if (r.length === 1) {
+            r = '0' + r;
+        }
+        return r;
+    }
+    function color2hexStr(color) {
+        if (Array.isArray(color)) {
+            if (color.length === 3 || color.length === 4) {
+                color[0] = Math.floor(Math.max(color[0], 0));
+                color[1] = Math.floor(Math.max(color[1], 0));
+                color[2] = Math.floor(Math.max(color[2], 0));
+                if (color.length === 4 && color[3] < 1) {
+                    color[3] = Math.max(color[3], 0);
+                    return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
+                        + toHex(Math.floor(color[3] * 255));
+                }
+                return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
+            }
+        }
+        return color || '#000';
+    }
+    function color2gl(color) {
+        if (!Array.isArray(color)) {
+            color = color2rgbaInt(color);
+        }
+        return [
+            color[0] / 255,
+            color[1] / 255,
+            color[2] / 255,
+            color.length === 3 ? 1 : color[3],
+        ];
+    }
+    function setFontStyle(style) {
+        let fontSize = style.fontSize || 0;
+        let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
+        if (/\s/.test(fontFamily)) {
+            fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
+        }
+        return (style.fontStyle || 'normal') + ' ' + (style.fontWeight || '400') + ' '
+            + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
+    }
+    function calFontFamily(fontFamily) {
+        let ff = fontFamily.split(/\s*,\s*/);
+        for (let i = 0, len = ff.length; i < len; i++) {
+            let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
+            if (o.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+                return item;
+            }
+        }
+        return inject.defaultFontFamily;
+    }
+    function calNormalLineHeight(style, ff) {
+        if (!ff) {
+            ff = calFontFamily(style.fontFamily);
+        }
+        return Math.ceil(style.fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr);
+    }
+    /**
+     * https://zhuanlan.zhihu.com/p/25808995
+     * 根据字形信息计算baseline的正确值，差值上下均分
+     * @param style computedStyle
+     * @returns {number}
+     */
+    function getBaseline(style) {
+        let fontSize = style.fontSize;
+        let ff = calFontFamily(style.fontFamily);
+        let normal = calNormalLineHeight(style, ff);
+        return (style.lineHeight - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
+    }
+    function calSize(v, p) {
+        if (v.u === StyleUnit.PX) {
+            return v.v;
+        }
+        if (v.u === StyleUnit.PERCENT) {
+            return v.v * p * 0.01;
+        }
+        return 0;
+    }
+    var css = {
+        normalize,
+        equalStyle,
+        color2rgbaInt,
+        color2rgbaStr,
+        color2gl,
+        calFontFamily,
+        calNormalLineHeight,
+        getBaseline,
+        calSize,
+    };
+
+    // prettier-ignore
+    var ResizingConstraint;
+    (function (ResizingConstraint) {
+        ResizingConstraint[ResizingConstraint["UNSET"] = 63] = "UNSET";
+        ResizingConstraint[ResizingConstraint["RIGHT"] = 1] = "RIGHT";
+        ResizingConstraint[ResizingConstraint["WIDTH"] = 2] = "WIDTH";
+        ResizingConstraint[ResizingConstraint["LEFT"] = 4] = "LEFT";
+        ResizingConstraint[ResizingConstraint["BOTTOM"] = 8] = "BOTTOM";
+        ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
+        ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
+    })(ResizingConstraint || (ResizingConstraint = {}));
+    // const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
+    function openAndConvertSketchBuffer(arrayBuffer) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let zipFile;
+            try {
+                zipFile = yield lib.loadAsync(arrayBuffer);
+            }
+            catch (err) {
+                alert('Sorry!\nThis is not a zip file. It may be created by an old version sketch app.');
+                throw err;
+            }
+            const document = yield readJsonFile(zipFile, 'document.json');
+            const pages = [];
+            yield Promise.all(document.pages.map((page) => {
+                return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
+                    pages.push(pageJson);
+                });
+            }));
+            const meta = yield readJsonFile(zipFile, 'meta.json');
+            const user = yield readJsonFile(zipFile, 'user.json');
+            return yield convertSketch({
+                document,
+                pages,
+                meta,
+                user,
+            }, zipFile);
+        });
+    }
+    function readJsonFile(zipFile, filename) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const docStr = yield ((_a = zipFile.file(filename)) === null || _a === void 0 ? void 0 : _a.async('string'));
+            return JSON.parse(docStr);
+        });
+    }
+    function convertSketch(json, zipFile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('sketch', json);
+            const imgs = [], imgHash = {};
+            const fonts = [], fontHash = {};
+            const pages = yield Promise.all(json.pages.map((page) => {
+                return convertPage(page, {
+                    imgs,
+                    imgHash,
+                    fonts,
+                    fontHash,
+                    zipFile,
+                    user: json.user,
+                });
+            }));
+            return {
+                pages,
+                imgs,
+                fonts: [],
+            };
+        });
+    }
+    function convertPage(page, opt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // sketch的Page没有尺寸，固定100
+            const W = 100, H = 100;
+            const children = yield Promise.all(page.layers.map((layer) => {
+                return convertItem(layer, opt, W, H);
+            }));
+            let x = 0, y = 0, zoom = 1;
+            const ua = opt.user[page.do_objectID];
+            if (ua) {
+                const { scrollOrigin, zoomValue } = ua;
+                if (scrollOrigin) {
+                    const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
+                    if (match) {
+                        x = parseFloat(match[1]) || 0;
+                        y = parseFloat(match[2]) || 0;
+                    }
+                }
+                if (zoomValue) {
+                    zoom = zoomValue;
+                }
+            }
+            return {
+                tagName: TagName.Page,
+                props: {
+                    uuid: page.do_objectID,
+                    name: page.name,
+                    style: {
+                        width: W,
+                        height: H,
+                        visible: false,
+                        translateX: x,
+                        translateY: y,
+                        scaleX: zoom,
+                        scaleY: zoom,
+                        transformOrigin: [0, 0],
+                        pointerEvents: false,
+                    },
+                    isLocked: false,
+                    isExpanded: false,
+                },
+                children: children.filter(item => item),
+            };
+        });
+    }
+    function convertItem(layer, opt, w, h) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        return __awaiter(this, void 0, void 0, function* () {
+            let width = layer.frame.width;
+            let height = layer.frame.height;
+            let translateX = layer.frame.x;
+            let translateY = layer.frame.y;
+            const visible = layer.isVisible;
+            const opacity = ((_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.contextSettings) === null || _b === void 0 ? void 0 : _b.opacity) || 1;
+            const rotateZ = -layer.rotation;
+            const scaleX = layer.isFlippedHorizontal ? -1 : 1;
+            const scaleY = layer.isFlippedVertical ? -1 : 1;
+            // artBoard也是固定尺寸和page一样，但x/y用translate代替
+            if (layer._class === FileFormat.ClassValue.Artboard) {
+                const children = yield Promise.all(layer.layers.map((child) => {
+                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                }));
+                const hasBackgroundColor = layer.hasBackgroundColor;
+                const backgroundColor = hasBackgroundColor
+                    ? [
+                        Math.floor(layer.backgroundColor.red * 255),
+                        Math.floor(layer.backgroundColor.green * 255),
+                        Math.floor(layer.backgroundColor.blue * 255),
+                        layer.backgroundColor.alpha,
+                    ]
+                    : [255, 255, 255, 1];
+                return {
+                    tagName: TagName.ArtBoard,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        hasBackgroundColor,
+                        resizesContent: layer.resizesContent,
+                        style: {
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            rotateZ,
+                            overflow: 'hidden',
+                            backgroundColor,
+                        },
+                        isLocked: false,
+                        isExpanded: false,
+                    },
+                    children: children.filter(item => item),
+                };
+            }
+            // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
+            const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
+            let left = 0, top = 0, right = 'auto', bottom = 'auto';
+            // 需根据父容器尺寸计算
+            if (resizingConstraint) {
+                // left
+                if (resizingConstraint & ResizingConstraint.LEFT) {
+                    left = translateX;
+                    // left+right忽略width
+                    if (resizingConstraint & ResizingConstraint.RIGHT) {
+                        right = w - translateX - width;
+                        width = 'auto';
+                    }
+                    // left+width
+                    else if (resizingConstraint & ResizingConstraint.WIDTH) ;
+                    // 仅left，right是百分比忽略width
+                    else {
+                        right = (w - translateX - width) * 100 / w + '%';
+                        width = 'auto';
+                    }
+                    translateX = 0;
+                }
+                // right
+                else if (resizingConstraint & ResizingConstraint.RIGHT) {
+                    right = w - translateX - width;
+                    // left+right忽略width
+                    if (resizingConstraint & ResizingConstraint.LEFT) {
+                        left = translateX;
+                        width = 'auto';
+                    }
+                    // right+width
+                    else if (resizingConstraint & ResizingConstraint.WIDTH) {
+                        left = 'auto';
+                    }
+                    // 仅right，left是百分比忽略width
+                    else {
+                        left = translateX * 100 / w + '%';
+                        width = 'auto';
+                    }
+                    translateX = 0;
+                }
+                // 左右都不固定
+                else {
+                    // 仅固定宽度，以中心点占left的百分比
+                    if (resizingConstraint & ResizingConstraint.WIDTH) {
+                        left = (translateX + width * 0.5) * 100 / w + '%';
+                        translateX = '-50%';
+                    }
+                    // 左右皆为百分比
+                    else {
+                        left = translateX * 100 / w + '%';
+                        right = (w - translateX - width) * 100 / w + '%';
+                        translateX = 0;
+                        width = 'auto';
+                    }
+                }
+                // top
+                if (resizingConstraint & ResizingConstraint.TOP) {
+                    top = translateY;
+                    // top+bottom忽略height
+                    if (resizingConstraint & ResizingConstraint.BOTTOM) {
+                        bottom = h - translateY - height;
+                        height = 'auto';
+                    }
+                    // top+height
+                    else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
+                    // 仅top，bottom是百分比忽略height
+                    else {
+                        bottom = (h - translateY - height) * 100 / h + '%';
+                        height = 'auto';
+                    }
+                    translateY = 0;
+                }
+                // bottom
+                else if (resizingConstraint & ResizingConstraint.BOTTOM) {
+                    bottom = h - translateY - height;
+                    // top+bottom忽略height
+                    if (resizingConstraint & ResizingConstraint.TOP) {
+                        top = translateY;
+                        height = 'auto';
+                    }
+                    // bottom+height
+                    else if (resizingConstraint & ResizingConstraint.HEIGHT) {
+                        top = 'auto';
+                    }
+                    // 仅bottom，top是百分比忽略height
+                    else {
+                        top = translateY * 100 / h + '%';
+                        height = 'auto';
+                    }
+                    translateY = 0;
+                }
+                // 上下都不固定
+                else {
+                    // 仅固定高度，以中心点占top的百分比
+                    if (resizingConstraint & ResizingConstraint.HEIGHT) {
+                        top = (translateY + height * 0.5) * 100 / h + '%';
+                        translateY = '-50%';
+                    }
+                    // 上下皆为百分比
+                    else {
+                        top = translateY * 100 / h + '%';
+                        bottom = (h - translateY - height) * 100 / h + '%';
+                        translateY = 0;
+                        height = 'auto';
+                    }
+                }
+            }
+            // 未设置则上下左右都是百分比
+            else {
+                left = translateX * 100 / w + '%';
+                right = (w - translateX - width) * 100 / w + '%';
+                translateX = 0;
+                width = 'auto';
+                top = translateY * 100 / h + '%';
+                bottom = (h - translateY - height) * 100 / h + '%';
+                translateY = 0;
+                height = 'auto';
+            }
+            // 遮罩转换
+            let maskMode = 'none';
+            const { hasClippingMask, clippingMaskMode, } = layer;
+            if (hasClippingMask) {
+                if (clippingMaskMode) {
+                    maskMode = 'alpha';
+                }
+                else {
+                    maskMode = 'outline';
+                }
+            }
+            const breakMask = layer.shouldBreakMaskChain;
+            const isLocked = layer.isLocked;
+            const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
+            if (layer._class === FileFormat.ClassValue.Group) {
+                const children = yield Promise.all(layer.layers.map((child) => {
+                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                }));
+                return {
+                    tagName: TagName.Group,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            scaleX,
+                            scaleY,
+                            rotateZ,
+                            maskMode,
+                            breakMask,
+                        },
+                        isLocked,
+                        isExpanded,
+                    },
+                    children: children.filter(item => item),
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.Bitmap) {
+                let index;
+                if (layer.image._ref_class === 'MSImageData') {
+                    index = yield readImageFile(layer.image._ref, opt);
+                }
+                else if (layer.image._ref_class === 'MSNetworkImage') {
+                    index = yield readNetworkImage(layer.image._ref, opt);
+                }
+                return {
+                    tagName: TagName.Bitmap,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            scaleX,
+                            scaleY,
+                            rotateZ,
+                            maskMode,
+                            breakMask,
+                        },
+                        isLocked,
+                        isExpanded,
+                        src: index,
+                    },
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.Text) {
+                const textBehaviour = layer.textBehaviour;
+                if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
+                    width = 'auto';
+                    height = 'auto';
+                }
+                else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
+                    // 可能width是auto（left+right），也可能是left+width
+                    height = 'auto';
+                }
+                else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
+                const { string, attributes } = layer.attributedString;
+                const rich = attributes.length
+                    ? attributes.map((item) => {
+                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
+                        const fontFamily = name;
+                        const res = {
+                            location,
+                            length,
+                            fontFamily,
+                            fontSize,
+                            fontWeight: 400,
+                            fontStyle: 'normal',
+                            letterSpacing: kerning,
+                            lineHeight: maximumLineHeight,
+                            color: [
+                                Math.floor(red * 255),
+                                Math.floor(green * 255),
+                                Math.floor(blue * 255),
+                                alpha,
+                            ],
+                        };
+                        // 自动行高
+                        if (!maximumLineHeight) {
+                            res.lineHeight = calNormalLineHeight(res);
+                        }
+                        return res;
+                    })
+                    : undefined;
+                const MSAttributedStringFontAttribute = (_f = (_e = (_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.textStyle) === null || _d === void 0 ? void 0 : _d.encodedAttributes) === null || _e === void 0 ? void 0 : _e.MSAttributedStringFontAttribute) === null || _f === void 0 ? void 0 : _f.attributes;
+                const fontSize = MSAttributedStringFontAttribute
+                    ? MSAttributedStringFontAttribute.size
+                    : 16;
+                const fontFamily = MSAttributedStringFontAttribute
+                    ? MSAttributedStringFontAttribute.name
+                    : 'arial';
+                const paragraphStyle = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.paragraphStyle;
+                const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
+                const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
+                const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
+                const letterSpacing = ((_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.kerning) || 0;
+                const MSAttributedStringColorAttribute = (_q = (_p = (_o = layer.style) === null || _o === void 0 ? void 0 : _o.textStyle) === null || _p === void 0 ? void 0 : _p.encodedAttributes) === null || _q === void 0 ? void 0 : _q.MSAttributedStringColorAttribute;
+                const color = MSAttributedStringColorAttribute
+                    ? [
+                        Math.floor(MSAttributedStringColorAttribute.red * 255),
+                        Math.floor(MSAttributedStringColorAttribute.green * 255),
+                        Math.floor(MSAttributedStringColorAttribute.blue * 255),
+                        MSAttributedStringColorAttribute.alpha,
+                    ]
+                    : [0, 0, 0, 1];
+                return {
+                    tagName: TagName.Text,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            translateX,
+                            translateY,
+                            scaleX,
+                            scaleY,
+                            rotateZ,
+                            overflow: 'hidden',
+                            fontSize,
+                            fontFamily,
+                            color,
+                            textAlign,
+                            letterSpacing,
+                            lineHeight,
+                            maskMode,
+                            breakMask,
+                        },
+                        isLocked,
+                        isExpanded,
+                        content: string,
+                        rich,
+                    },
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.Rectangle
+                || layer._class === FileFormat.ClassValue.Oval
+                || layer._class === FileFormat.ClassValue.Star
+                || layer._class === FileFormat.ClassValue.Triangle
+                || layer._class === FileFormat.ClassValue.Polygon
+                || layer._class === FileFormat.ClassValue.ShapePath) {
+                const points = layer.points.map((item) => {
+                    const point = parseStrPoint(item.point);
+                    const curveFrom = parseStrPoint(item.curveFrom);
+                    const curveTo = parseStrPoint(item.curveTo);
+                    return {
+                        x: point.x,
+                        y: point.y,
+                        cornerRadius: item.cornerRadius,
+                        curveMode: item.curveMode,
+                        hasCurveFrom: item.hasCurveFrom,
+                        hasCurveTo: item.hasCurveTo,
+                        fx: curveFrom.x,
+                        fy: curveFrom.y,
+                        tx: curveTo.x,
+                        ty: curveTo.y,
+                    };
+                });
+                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
+                return {
+                    tagName: TagName.Polyline,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        points,
+                        isClosed: layer.isClosed,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            fill,
+                            fillEnable,
+                            fillRule,
+                            stroke,
+                            strokeEnable,
+                            strokeWidth,
+                            strokePosition,
+                            strokeDasharray,
+                            strokeLinecap,
+                            strokeLinejoin,
+                            translateX,
+                            translateY,
+                            scaleX,
+                            scaleY,
+                            rotateZ,
+                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+                            maskMode,
+                            breakMask,
+                        },
+                        isLocked,
+                        isExpanded,
+                    },
+                };
+            }
+            if (layer._class === FileFormat.ClassValue.ShapeGroup) {
+                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
+                const children = yield Promise.all(layer.layers.map((child) => {
+                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                }));
+                return {
+                    tagName: TagName.ShapeGroup,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            fill,
+                            fillEnable,
+                            fillRule,
+                            stroke,
+                            strokeEnable,
+                            strokeWidth,
+                            strokePosition,
+                            strokeDasharray,
+                            strokeLinecap,
+                            strokeLinejoin,
+                            translateX,
+                            translateY,
+                            scaleX,
+                            scaleY,
+                            rotateZ,
+                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+                            maskMode,
+                            breakMask,
+                        },
+                        isLocked,
+                        isExpanded,
+                    },
+                    children,
+                };
+            }
+            console.error(layer);
+        });
+    }
+    function geomStyle(layer) {
+        const { borders, borderOptions, fills, windingRule, miterLimit: strokeMiterlimit, } = layer.style || {};
+        const fill = [], fillEnable = [];
+        if (fills) {
+            fills.forEach((item) => {
+                if (item.fillType === FileFormat.FillType.Gradient) {
+                    const g = item.gradient;
+                    const from = parseStrPoint(g.from);
+                    const to = parseStrPoint(g.to);
+                    const stops = g.stops.map(item => {
+                        const color = color2hexStr([
+                            Math.floor(item.color.red * 255),
+                            Math.floor(item.color.green * 255),
+                            Math.floor(item.color.blue * 255),
+                            item.color.alpha,
+                        ]);
+                        return color + ' ' + item.position * 100 + '%';
+                    });
+                    if (g.gradientType === FileFormat.GradientType.Linear) {
+                        fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+                    }
+                    else if (g.gradientType === FileFormat.GradientType.Radial) {
+                        const ellipseLength = g.elipseLength;
+                        fill.push(`radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`);
+                    }
+                    else if (g.gradientType === FileFormat.GradientType.Angular) ;
+                    else {
+                        throw new Error('Unknown gradient');
+                    }
+                }
+                else {
+                    fill.push([
+                        Math.floor(item.color.red * 255),
+                        Math.floor(item.color.green * 255),
+                        Math.floor(item.color.blue * 255),
+                        item.color.alpha,
+                    ]);
+                }
+                fillEnable.push(item.isEnabled);
+            });
+        }
+        const stroke = [], strokeEnable = [], strokeWidth = [], strokePosition = [];
+        if (borders) {
+            borders.forEach((item) => {
+                stroke.push([
+                    Math.floor(item.color.red * 255),
+                    Math.floor(item.color.green * 255),
+                    Math.floor(item.color.blue * 255),
+                    item.color.alpha,
+                ]);
+                strokeEnable.push(item.isEnabled);
+                strokeWidth.push(item.thickness || 0);
+                if (item.position === FileFormat.BorderPosition.Inside) {
+                    strokePosition.push('inside');
+                }
+                else if (item.position === FileFormat.BorderPosition.Outside) {
+                    strokePosition.push('outside');
+                }
+                else {
+                    strokePosition.push('center');
+                }
+            });
+        }
+        const strokeDasharray = [];
+        let strokeLinecap = 'butt', strokeLinejoin = 'miter';
+        if (borderOptions) {
+            borderOptions.dashPattern.forEach(item => {
+                strokeDasharray.push(item);
+            });
+            if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Round) {
+                strokeLinecap = 'round';
+            }
+            else if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Projecting) {
+                strokeLinecap = 'square';
+            }
+            if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Round) {
+                strokeLinejoin = 'round';
+            }
+            else if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Bevel) {
+                strokeLinejoin = 'bevel';
+            }
+        }
+        return {
+            fill,
+            fillEnable,
+            fillRule: windingRule,
+            stroke,
+            strokeEnable,
+            strokeWidth,
+            strokePosition,
+            strokeDasharray,
+            strokeLinecap,
+            strokeLinejoin,
+            strokeMiterlimit,
+        };
+    }
+    function parseStrPoint(s) {
+        const res = /{(.+),\s*(.+)}/.exec(s);
+        if (!res) {
+            throw new Error('Unknown point: ' + s);
+        }
+        return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
+    }
+    function readNetworkImage(src, opt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (opt.imgHash.hasOwnProperty(src)) {
+                return opt.imgHash[src];
+            }
+            const response = yield fetch(src);
+            const blob = yield response.blob();
+            const base64 = yield new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    if (reader.result) {
+                        resolve('data:image/png;' +
+                            reader.result.replace('data:application/octet-stream;', ''));
+                    }
+                    else {
+                        reject();
+                    }
+                };
+                reader.readAsDataURL(blob);
+            });
+            const index = opt.imgs.length;
+            opt.imgs.push(base64);
+            return index;
+        });
+    }
+    function readImageFile(filename, opt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!/\.\w+$/.test(filename)) {
+                filename = `${filename}.png`;
+            }
+            if (opt.imgHash.hasOwnProperty(filename)) {
+                return opt.imgHash[filename];
+            }
+            const file = opt.zipFile.file(filename);
+            if (!file) {
+                console.error(`image not exist: >>>${filename}<<<`);
+                return -1;
+            }
+            let base64 = yield file.async('base64');
+            if (!/^data:image\//.test(base64)) {
+                if (filename.endsWith('.png')) {
+                    base64 = 'data:image/png;base64,' + base64;
+                }
+                else if (filename.endsWith('.gif')) {
+                    base64 = 'data:image/gif;base64,' + base64;
+                }
+                else if (filename.endsWith('.jpg')) {
+                    base64 = 'data:image/jpg;base64,' + base64;
+                }
+                else if (filename.endsWith('.jpeg')) {
+                    base64 = 'data:image/jpeg;base64,' + base64;
+                }
+                else if (filename.endsWith('.webp')) {
+                    base64 = 'data:image/webp;base64,' + base64;
+                }
+                else if (filename.endsWith('.bmp')) {
+                    base64 = 'data:image/bmp;base64,' + base64;
+                }
+            }
+            const index = opt.imgs.length;
+            opt.imgs.push(base64);
+            return index;
+        });
+    }
+
+    var RefreshLevel;
+    (function (RefreshLevel) {
+        RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
+        RefreshLevel[RefreshLevel["CACHE"] = 1] = "CACHE";
+        RefreshLevel[RefreshLevel["TRANSLATE_X"] = 2] = "TRANSLATE_X";
+        RefreshLevel[RefreshLevel["TRANSLATE_Y"] = 4] = "TRANSLATE_Y";
+        RefreshLevel[RefreshLevel["TRANSLATE"] = 6] = "TRANSLATE";
+        RefreshLevel[RefreshLevel["ROTATE_Z"] = 8] = "ROTATE_Z";
+        RefreshLevel[RefreshLevel["SCALE_X"] = 16] = "SCALE_X";
+        RefreshLevel[RefreshLevel["SCALE_Y"] = 32] = "SCALE_Y";
+        RefreshLevel[RefreshLevel["SCALE"] = 48] = "SCALE";
+        RefreshLevel[RefreshLevel["TRANSFORM"] = 64] = "TRANSFORM";
+        RefreshLevel[RefreshLevel["TRANSFORM_ALL"] = 126] = "TRANSFORM_ALL";
+        RefreshLevel[RefreshLevel["OPACITY"] = 128] = "OPACITY";
+        RefreshLevel[RefreshLevel["FILTER"] = 256] = "FILTER";
+        RefreshLevel[RefreshLevel["MIX_BLEND_MODE"] = 512] = "MIX_BLEND_MODE";
+        RefreshLevel[RefreshLevel["MASK"] = 1024] = "MASK";
+        RefreshLevel[RefreshLevel["BREAK_MASK"] = 2048] = "BREAK_MASK";
+        RefreshLevel[RefreshLevel["REPAINT"] = 4096] = "REPAINT";
+        RefreshLevel[RefreshLevel["REFLOW"] = 8192] = "REFLOW";
+        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 8318] = "REFLOW_TRANSFORM";
+        RefreshLevel[RefreshLevel["REBUILD"] = 16384] = "REBUILD";
+    })(RefreshLevel || (RefreshLevel = {}));
+    function isReflow(lv) {
+        return lv >= RefreshLevel.REFLOW;
+    }
+    function isRepaint(lv) {
+        return lv < RefreshLevel.REFLOW;
+    }
+    function isRepaintKey(k) {
+        return k === 'visible' || k === 'color' || k === 'backgroundColor'
+            || k === 'mixBlendMode';
+    }
+    function getLevel(k) {
+        if (k === 'pointerEvents') {
+            return RefreshLevel.NONE;
+        }
+        if (k === 'translateX') {
+            return RefreshLevel.TRANSLATE_X;
+        }
+        if (k === 'translateY') {
+            return RefreshLevel.TRANSLATE_Y;
+        }
+        if (k === 'rotateZ') {
+            return RefreshLevel.ROTATE_Z;
+        }
+        if (k === 'scaleX') {
+            return RefreshLevel.SCALE_X;
+        }
+        if (k === 'scaleY') {
+            return RefreshLevel.SCALE_Y;
+        }
+        if (k === 'transformOrigin') {
+            return RefreshLevel.TRANSFORM;
+        }
+        if (k === 'opacity') {
+            return RefreshLevel.OPACITY;
+        }
+        if (k === 'mixBlendMode') {
+            return RefreshLevel.MIX_BLEND_MODE;
+        }
+        if (k === 'maskMode') {
+            return RefreshLevel.MASK;
+        }
+        if (k === 'breakMask') {
+            return RefreshLevel.BREAK_MASK;
+        }
+        if (isRepaintKey(k)) {
+            return RefreshLevel.REPAINT;
+        }
+        return RefreshLevel.REFLOW;
+    }
+    var level = {
+        RefreshLevel,
+        isRepaint,
+        isReflow,
+        isRepaintKey,
+    };
+
+    var refresh = {
+        level,
+    };
+
     // 向量点乘积
     function dotProduct(x1, y1, x2, y2) {
         return x1 * x2 + y1 * y2;
@@ -17683,1945 +19454,6 @@
         toPrecision,
     };
 
-    class Event {
-        constructor() {
-            this.__eHash = {};
-        }
-        on(id, handle) {
-            if (!isFunction(handle)) {
-                return;
-            }
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    this.on(id[i], handle);
-                }
-            }
-            else {
-                if (!this.__eHash.hasOwnProperty(id)) {
-                    this.__eHash[id] = [];
-                }
-                // 遍历防止此handle被侦听过了
-                for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
-                    if (item[i] === handle) {
-                        return this;
-                    }
-                }
-                this.__eHash[id].push(handle);
-            }
-            return this;
-        }
-        once(id, handle) {
-            if (!isFunction(handle)) {
-                return;
-            }
-            // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-            const cb = () => {
-                handle.apply(this, Array.prototype.slice.call(arguments));
-                this.off(id, cb);
-            };
-            cb.__eventCb = handle;
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    this.once(id[i], handle);
-                }
-            }
-            else {
-                this.on(id, cb);
-            }
-            return this;
-        }
-        off(id, handle) {
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    this.off(id[i], handle);
-                }
-            }
-            else if (this.__eHash.hasOwnProperty(id)) {
-                if (handle) {
-                    for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
-                        // 需考虑once包裹的引用对比
-                        if (item[i] === handle || item[i].__eventCb === handle) {
-                            item.splice(i, 1);
-                            break;
-                        }
-                    }
-                }
-                // 未定义为全部清除
-                else {
-                    delete this.__eHash[id];
-                }
-            }
-            return this;
-        }
-        emit(id, ...data) {
-            if (Array.isArray(id)) {
-                for (let i = 0, len = id.length; i < len; i++) {
-                    this.emit(id[i], data);
-                }
-            }
-            else {
-                if (this.__eHash.hasOwnProperty(id)) {
-                    let list = this.__eHash[id];
-                    if (list.length) {
-                        list = list.slice();
-                        for (let i = 0, len = list.length; i < len; i++) {
-                            const cb = list[i];
-                            if (isFunction(cb)) {
-                                cb.apply(this, data);
-                            }
-                        }
-                    }
-                }
-            }
-            return this;
-        }
-    }
-    Event.REFRESH = 'refresh';
-    Event.DID_ADD_DOM = 'didAddDom';
-    Event.WILL_REMOVE_DOM = 'willRemoveDom';
-    Event.PAGE_CHANGED = 'pageChanged';
-    Event.VISIBLE_CHANGED = 'visibleChanged';
-
-    function clone(obj) {
-        if (isNil(obj) || typeof obj !== 'object') {
-            return obj;
-        }
-        if (isDate(obj)) {
-            return new Date(obj);
-        }
-        if (!isPlainObject(obj) && !Array.isArray(obj)) {
-            return obj;
-        }
-        const n = Array.isArray(obj) ? [] : {};
-        Object.keys(obj).forEach(i => {
-            n[i] = clone(obj[i]);
-        });
-        return n;
-    }
-    var util = {
-        type,
-        Event,
-        inject,
-    };
-
-    function getLinearDeg(v) {
-        let deg = 180;
-        if (v === 'to top') {
-            deg = 0;
-        }
-        else if (v === 'to top right') {
-            deg = 45;
-        }
-        else if (v === 'to right') {
-            deg = 90;
-        }
-        else if (v === 'to bottom right') {
-            deg = 135;
-        }
-        else if (v === 'to bottom') ;
-        else if (v === 'to bottom left') {
-            deg = 225;
-        }
-        else if (v === 'to left') {
-            deg = 270;
-        }
-        else if (v === 'to top left') {
-            deg = 315;
-        }
-        // 数字角度，没有的话取默认角度
-        else {
-            let match = /([-+]?[\d.]+)deg/.exec(v);
-            if (match) {
-                deg = parseFloat(match[1]);
-            }
-        }
-        return deg % 360;
-    }
-    function getRadialPosition(data) {
-        if (/^[-+]?[\d.]/.test(data)) {
-            let v = calUnit(data);
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(v.u) > -1) {
-                v.u = StyleUnit.PX;
-            }
-            return v;
-        }
-        else {
-            return {
-                v: {
-                    top: 0,
-                    left: 0,
-                    center: 50,
-                    right: 100,
-                    bottom: 100,
-                }[data] || 50,
-                u: StyleUnit.PERCENT,
-            };
-        }
-    }
-    // 获取color-stop区间范围，去除无用值
-    function getColorStop(stops, length) {
-        const list = [];
-        const firstColor = stops[0].color.v;
-        // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
-        for (let i = 0, len = stops.length; i < len; i++) {
-            const item = stops[i];
-            const offset = item.offset;
-            // 考虑是否声明了位置
-            if (offset) {
-                if (offset.u === StyleUnit.PERCENT) {
-                    list.push([item.color.v, offset.v * 0.01]);
-                }
-                else {
-                    list.push([item.color.v, offset.v / length]);
-                }
-            }
-            else {
-                list.push([item.color.v]);
-            }
-        }
-        if (list.length === 1) {
-            list.push(clone(list[0]));
-        }
-        // 首尾不声明默认为[0, 1]
-        if (list[0].length === 1) {
-            list[0].push(0);
-        }
-        if (list.length > 1) {
-            const i = list.length - 1;
-            if (list[i].length === 1) {
-                list[i].push(1);
-            }
-        }
-        // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
-        let start = list[0][1];
-        for (let i = 1, len = list.length; i < len - 1; i++) {
-            const item = list[i];
-            if (item.length > 1) {
-                start = item[1];
-            }
-            else {
-                let j = i + 1;
-                let end = list[list.length - 1][1];
-                for (; j < len - 1; j++) {
-                    const item = list[j];
-                    if (item.length > 1) {
-                        end = item[1];
-                        break;
-                    }
-                }
-                const num = j - i + 1;
-                const per = (end - start) / num;
-                for (let k = i; k < j; k++) {
-                    const item = list[k];
-                    item.push(start + per * (k + 1 - i));
-                }
-                i = j;
-            }
-        }
-        // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
-        for (let i = 1, len = list.length; i < len; i++) {
-            const item = list[i];
-            const prev = list[i - 1];
-            if (item[1] < prev[1]) {
-                item[1] = prev[1];
-            }
-        }
-        // 0之前的和1之后的要过滤掉
-        for (let i = 0, len = list.length; i < len; i++) {
-            const item = list[i];
-            if (item[1] > 1) {
-                list.splice(i);
-                const prev = list[i - 1];
-                if (prev && prev[1] < 1) {
-                    const dr = item[0][0] - prev[0][0];
-                    const dg = item[0][1] - prev[0][1];
-                    const db = item[0][2] - prev[0][2];
-                    const da = item[0][3] - prev[0][3];
-                    const p = (1 - prev[1]) / (item[1] - prev[1]);
-                    list.push([
-                        [
-                            item[0][0] + dr * p,
-                            item[0][1] + dg * p,
-                            item[0][2] + db * p,
-                            item[0][3] + da * p,
-                        ],
-                        1
-                    ]);
-                }
-                break;
-            }
-        }
-        for (let i = list.length - 1; i >= 0; i--) {
-            const item = list[i];
-            if (item[1] < 0) {
-                list.splice(0, i + 1);
-                const next = list[i];
-                if (next && next[1] > 0) {
-                    const dr = next[0][0] - item[0][0];
-                    const dg = next[0][1] - item[0][1];
-                    const db = next[0][2] - item[0][2];
-                    const da = next[0][3] - item[0][3];
-                    const p = (-item[1]) / (next[1] - item[1]);
-                    list.unshift([
-                        [
-                            item[0][0] + dr * p,
-                            item[0][1] + dg * p,
-                            item[0][2] + db * p,
-                            item[0][3] + da * p,
-                        ],
-                        0
-                    ]);
-                }
-                break;
-            }
-        }
-        // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-        list.forEach(item => {
-            if (item[1] < 0) {
-                item[1] = 0;
-            }
-            else if (item[1] > 1) {
-                item[1] = 1;
-            }
-        });
-        // 都超限时，第一个颜色兜底
-        if (!list.length) {
-            list.push([firstColor, 0]);
-        }
-        return list;
-    }
-    // 根据角度和圆心获取渐变的4个点坐标
-    function calLinearCoords(deg, length, cx, cy) {
-        let x0;
-        let y0;
-        let x1;
-        let y1;
-        if (deg >= 270) {
-            const r = d2r(360 - deg);
-            x0 = cx + Math.sin(r) * length;
-            y0 = cy + Math.cos(r) * length;
-            x1 = cx - Math.sin(r) * length;
-            y1 = cy - Math.cos(r) * length;
-        }
-        else if (deg >= 180) {
-            const r = d2r(deg - 180);
-            x0 = cx + Math.sin(r) * length;
-            y0 = cy - Math.cos(r) * length;
-            x1 = cx - Math.sin(r) * length;
-            y1 = cy + Math.cos(r) * length;
-        }
-        else if (deg >= 90) {
-            const r = d2r(180 - deg);
-            x0 = cx - Math.sin(r) * length;
-            y0 = cy - Math.cos(r) * length;
-            x1 = cx + Math.sin(r) * length;
-            y1 = cy + Math.cos(r) * length;
-        }
-        else {
-            const r = d2r(deg);
-            x0 = cx - Math.sin(r) * length;
-            y0 = cy + Math.cos(r) * length;
-            x1 = cx + Math.sin(r) * length;
-            y1 = cy - Math.cos(r) * length;
-        }
-        return [x0, y0, x1, y1];
-    }
-    function parseGradient(s) {
-        const gradient = reg.gradient.exec(s);
-        if (gradient) {
-            const o = {};
-            const t = {
-                linear: GRADIENT.LINEAR,
-                radial: GRADIENT.RADIAL,
-                conic: GRADIENT.CONIC,
-            }[gradient[1].toLowerCase()];
-            let d;
-            if (t === GRADIENT.LINEAR) {
-                const deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
-                if (deg) {
-                    d = getLinearDeg(deg[0].toLowerCase());
-                }
-                // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
-                else {
-                    const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
-                    if (points) {
-                        d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
-                    }
-                    else {
-                        d = 180;
-                    }
-                }
-            }
-            else if (t === GRADIENT.RADIAL) {
-                o.s = gradient[2].indexOf('circle') > -1 ? 'circle' : 'ellipse';
-                const size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
-                if (size) {
-                    o.z = size[0].toLowerCase();
-                }
-                // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
-                else {
-                    const points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([-+]?[\d.]+))?(?:\s+([-+]?[\d.]+))?(?:\s+([-+]?[\d.]+))?/.exec(gradient[2]);
-                    if (points) {
-                        o.z = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
-                        const i5 = !isNil(points[5]), i6 = !isNil(points[6]), i7 = !isNil(points[7]);
-                        // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
-                        if (i5 && i6 && i7) {
-                            o.z.push(parseFloat(points[5]));
-                            o.z.push(parseFloat(points[6]));
-                            o.z.push(parseFloat(points[7]));
-                        }
-                        else if (i5 && i6) {
-                            o.z.push(parseFloat(points[5]));
-                            o.z.push(parseFloat(points[6]));
-                            o.z.push(1);
-                        }
-                        else if (i5) {
-                            o.z.push(o.z[0]);
-                            o.z.push(o.z[1]);
-                            o.z.push(parseFloat(points[5]));
-                        }
-                        else {
-                            o.z.push(o.z[0]);
-                            o.z.push(o.z[1]);
-                            o.z.push(1);
-                        }
-                    }
-                    else {
-                        o.z = 'farthest-corner';
-                    }
-                }
-                const position = /at\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
-                if (position) {
-                    const x = getRadialPosition(position[1]);
-                    const y = position[2] ? getRadialPosition(position[2]) : x;
-                    o.p = [x, y];
-                }
-                else {
-                    o.p = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }];
-                }
-            }
-            else if (t === GRADIENT.CONIC) {
-                const deg = /([-+]?[\d.]+deg)/i.exec(gradient[2]);
-                if (deg) {
-                    d = parseFloat(deg[0]) % 360;
-                }
-                else {
-                    d = 0;
-                }
-                const position = /at\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
-                if (position) {
-                    const x = getRadialPosition(position[1]);
-                    const y = position[2] ? getRadialPosition(position[2]) : x;
-                    o.p = [x, y];
-                }
-                else {
-                    o.p = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }];
-                }
-            }
-            const v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
-            const stops = v.map(item => {
-                const color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
-                const percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+/.exec(item);
-                let offset;
-                if (percent) {
-                    const v = calUnit(percent[0]);
-                    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(v.u) > -1) {
-                        v.u = StyleUnit.PX;
-                    }
-                    offset = v;
-                }
-                return {
-                    color: { v: color ? color2rgbaInt(color[0]) : [0, 0, 0, 1], u: StyleUnit.RGBA },
-                    offset,
-                };
-            });
-            return {
-                t,
-                d: d,
-                stops,
-            };
-        }
-        else {
-            throw new Error('Unknown parse gradient');
-        }
-    }
-    /**
-     * 生成canvas的linearGradient
-     * @param stops
-     * @param d 控制点或角度
-     * @param ox 原点
-     * @param oy
-     * @param w
-     * @param h
-     * @param dx 可能的偏移
-     * @param dy
-     */
-    function getLinear(stops, d, ox, oy, w, h, dx = 0, dy = 0) {
-        ox += dx;
-        oy += dy;
-        // d为数组是2个坐标点，数字是css标准角度
-        let x1, y1, x2, y2, stop;
-        if (Array.isArray(d)) {
-            x1 = ox + d[0] * w;
-            y1 = oy + d[1] * h;
-            x2 = ox + d[2] * w;
-            y2 = oy + d[3] * h;
-            const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-            stop = getColorStop(stops, total);
-        }
-        else {
-            while (d >= 360) {
-                d -= 360;
-            }
-            while (d < 0) {
-                d += 360;
-            }
-            // 根据角度求直线上2点，设置半径为长宽最大值，这样一定在矩形外，看做一个向量A
-            let len = Math.max(w, h);
-            const coords = calLinearCoords(d, len, ox + w * 0.5 + dx, oy + h * 0.5 + dy);
-            len *= 2;
-            // start和4个顶点的向量在A上的投影长度
-            const l1 = dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-            const l2 = dotProduct(ox + w - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-            const l3 = dotProduct(ox + w - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-            const l4 = dotProduct(ox - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
-            // 最小和最大值为0~100%
-            let min = l1, max = l1;
-            min = Math.min(min, Math.min(l2, Math.min(l3, l4)));
-            max = Math.max(max, Math.max(l2, Math.max(l3, l4)));
-            // 求得0和100%的长度和坐标
-            const total = max - min;
-            const r1 = min / len;
-            const x = coords[2] - coords[0];
-            const y = coords[3] - coords[1];
-            x1 = coords[0] + x * r1;
-            y1 = coords[1] + y * r1;
-            x2 = coords[2] - x * r1;
-            y2 = coords[3] - y * r1;
-            stop = getColorStop(stops, total);
-        }
-        return {
-            x1,
-            y1,
-            x2,
-            y2,
-            stop,
-        };
-    }
-
-    function compatibleTransform(k, v) {
-        if (k === 'scaleX' || k === 'scaleY') {
-            v.u = StyleUnit.NUMBER;
-        }
-        else if (k === 'translateX' || k === 'translateY') {
-            if (v.u === StyleUnit.NUMBER) {
-                v.u = StyleUnit.PX;
-            }
-        }
-        else {
-            if (v.u === StyleUnit.NUMBER) {
-                v.u = StyleUnit.DEG;
-            }
-        }
-    }
-    function isGradient(s) {
-        if (reg.gradient.test(s)) {
-            let gradient = reg.gradient.exec(s);
-            if (gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1]) > -1) {
-                return true;
-            }
-        }
-        return false;
-    }
-    function normalize(style) {
-        const res = {};
-        [
-            'left',
-            'top',
-            'right',
-            'bottom',
-            'width',
-            'height',
-        ].forEach(k => {
-            let v = style[k];
-            if (isNil(v)) {
-                return;
-            }
-            const n = calUnit(v || 0);
-            // 无单位视为px
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
-            }
-            // 限定正数
-            if (k === 'width' || k === 'height') {
-                if (n.v < 0) {
-                    n.v = 0;
-                }
-            }
-            res[k] = n;
-        });
-        const lineHeight = style.lineHeight;
-        if (!isNil(lineHeight)) {
-            if (lineHeight === 'normal') {
-                res.lineHeight = {
-                    v: 0,
-                    u: StyleUnit.AUTO,
-                };
-            }
-            else {
-                let n = calUnit(lineHeight || 0);
-                if (n.v <= 0) {
-                    n = {
-                        v: 0,
-                        u: StyleUnit.AUTO,
-                    };
-                }
-                else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
-                    n.u = StyleUnit.PX;
-                }
-                res.lineHeight = n;
-            }
-        }
-        const visible = style.visible;
-        if (!isNil(visible)) {
-            res.visible = {
-                v: visible,
-                u: StyleUnit.BOOLEAN,
-            };
-        }
-        const fontFamily = style.fontFamily;
-        if (!isNil(fontFamily)) {
-            res.fontFamily = {
-                v: fontFamily.toString().trim().toLowerCase()
-                    .replace(/['"]/g, '')
-                    .replace(/\s*,\s*/g, ','),
-                u: StyleUnit.STRING,
-            };
-        }
-        const fontSize = style.fontSize;
-        if (!isNil(fontSize)) {
-            let n = calUnit(fontSize || 16);
-            if (n.v <= 0) {
-                n.v = 16;
-            }
-            // 防止小数
-            // n.v = Math.floor(n.v);
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
-            }
-            res.fontSize = n;
-        }
-        const fontWeight = style.fontWeight;
-        if (!isNil(fontWeight)) {
-            if (isString(fontWeight)) {
-                if (/thin/i.test(fontWeight)) {
-                    res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
-                }
-                else if (/lighter/i.test(fontWeight)) {
-                    res.fontWeight = { v: 200, u: StyleUnit.NUMBER };
-                }
-                else if (/light/i.test(fontWeight)) {
-                    res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
-                }
-                else if (/medium/i.test(fontWeight)) {
-                    res.fontWeight = { v: 500, u: StyleUnit.NUMBER };
-                }
-                else if (/semiBold/i.test(fontWeight)) {
-                    res.fontWeight = { v: 600, u: StyleUnit.NUMBER };
-                }
-                else if (/bold/i.test(fontWeight)) {
-                    res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
-                }
-                else if (/extraBold/i.test(fontWeight)) {
-                    res.fontWeight = { v: 800, u: StyleUnit.NUMBER };
-                }
-                else if (/black/i.test(fontWeight)) {
-                    res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
-                }
-                else {
-                    res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
-                }
-            }
-            else {
-                res.fontWeight = {
-                    v: Math.min(900, Math.max(100, parseInt(fontWeight) || 400)),
-                    u: StyleUnit.NUMBER,
-                };
-            }
-        }
-        const fontStyle = style.fontStyle;
-        if (!isNil(fontStyle)) {
-            let v = FONT_STYLE.NORMAL;
-            if (/italic/i.test(fontStyle)) {
-                v = FONT_STYLE.ITALIC;
-            }
-            else if (/oblique/i.test(fontStyle)) {
-                v = FONT_STYLE.OBLIQUE;
-            }
-            res.fontStyle = { v, u: StyleUnit.NUMBER };
-        }
-        const color = style.color;
-        if (!isNil(color)) {
-            res.color = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
-        }
-        const backgroundColor = style.backgroundColor;
-        if (!isNil(backgroundColor)) {
-            res.backgroundColor = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
-        }
-        const overflow = style.overflow;
-        if (!isNil(overflow)) {
-            res.overflow = { v: overflow, u: StyleUnit.STRING };
-        }
-        const opacity = style.opacity;
-        if (!isNil(opacity)) {
-            res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
-        }
-        const fill = style.fill;
-        if (!isNil(fill)) {
-            res.fill = fill.map(item => {
-                if (isString(item) && isGradient(item)) {
-                    return { v: parseGradient(item), u: StyleUnit.GRADIENT };
-                }
-                else {
-                    return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
-                }
-            });
-        }
-        const fillEnable = style.fillEnable;
-        if (!isNil(fillEnable)) {
-            res.fillEnable = fillEnable.map(item => {
-                return { v: item, u: StyleUnit.BOOLEAN };
-            });
-        }
-        const fillRule = style.fillRule;
-        if (!isNil(fillRule)) {
-            res.fillRule = { v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO, u: StyleUnit.NUMBER };
-        }
-        const stroke = style.stroke;
-        if (!isNil(stroke)) {
-            res.stroke = stroke.map(item => {
-                if (isString(item) && isGradient(item)) {
-                    return { v: parseGradient(item), u: StyleUnit.GRADIENT };
-                }
-                else {
-                    return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
-                }
-            });
-        }
-        const strokeEnable = style.strokeEnable;
-        if (!isNil(strokeEnable)) {
-            res.strokeEnable = strokeEnable.map(item => {
-                return { v: item, u: StyleUnit.BOOLEAN };
-            });
-        }
-        const strokeWidth = style.strokeWidth;
-        if (!isNil(strokeWidth)) {
-            res.strokeWidth = strokeWidth.map(item => {
-                return { v: Math.max(0, item), u: StyleUnit.PX };
-            });
-        }
-        const strokePosition = style.strokePosition;
-        if (!isNil(strokePosition)) {
-            res.strokePosition = strokePosition.map(item => {
-                let v = STROKE_POSITION.CENTER;
-                if (item === 'inside') {
-                    v = STROKE_POSITION.INSIDE;
-                }
-                else if (item === 'outside') {
-                    v = STROKE_POSITION.OUTSIDE;
-                }
-                return { v, u: StyleUnit.NUMBER };
-            });
-        }
-        const strokeDasharray = style.strokeDasharray;
-        if (!isNil(strokeDasharray)) {
-            res.strokeDasharray = strokeDasharray.map(item => {
-                return { v: Math.max(0, item), u: StyleUnit.PX };
-            });
-        }
-        const strokeLinecap = style.strokeLinecap;
-        if (!isNil(strokeLinecap)) {
-            let v = STROKE_LINE_CAP.BUTT;
-            if (strokeLinecap === 'round') {
-                v = STROKE_LINE_CAP.ROUND;
-            }
-            else if (strokeLinecap === 'square') {
-                v = STROKE_LINE_CAP.SQUARE;
-            }
-            res.strokeLinecap = { v, u: StyleUnit.NUMBER };
-        }
-        const strokeLinejoin = style.strokeLinejoin;
-        if (!isNil(strokeLinejoin)) {
-            let v = STROKE_LINE_JOIN.MITER;
-            if (strokeLinejoin === 'round') {
-                v = STROKE_LINE_JOIN.ROUND;
-            }
-            else if (strokeLinejoin === 'bevel') {
-                v = STROKE_LINE_JOIN.BEVEL;
-            }
-            res.strokeLinejoin = { v, u: StyleUnit.NUMBER };
-        }
-        const strokeMiterlimit = style.strokeMiterlimit;
-        if (!isNil(strokeMiterlimit)) {
-            res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
-        }
-        // 只有这几个，3d没有
-        [
-            'translateX',
-            'translateY',
-            'scaleX',
-            'scaleY',
-            'rotateZ',
-        ].forEach(k => {
-            let v = style[k];
-            if (isNil(v)) {
-                return;
-            }
-            const n = calUnit(v);
-            // 没有单位或默认值处理单位
-            compatibleTransform(k, n);
-            res[k] = n;
-        });
-        const letterSpacing = style.letterSpacing;
-        if (!isNil(letterSpacing)) {
-            let n = calUnit(letterSpacing || 0);
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
-            }
-            res.letterSpacing = n;
-        }
-        const textAlign = style.textAlign;
-        if (!isNil(textAlign)) {
-            let v = TEXT_ALIGN.LEFT;
-            if (textAlign === 'center') {
-                v = TEXT_ALIGN.CENTER;
-            }
-            else if (textAlign === 'right') {
-                v = TEXT_ALIGN.RIGHT;
-            }
-            else if (textAlign === 'justify') {
-                v = TEXT_ALIGN.JUSTIFY;
-            }
-            res.textAlign = { v, u: StyleUnit.STRING };
-        }
-        const transformOrigin = style.transformOrigin;
-        if (!isNil(transformOrigin)) {
-            let o;
-            if (Array.isArray(transformOrigin)) {
-                o = transformOrigin;
-            }
-            else {
-                o = transformOrigin.match(/(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig);
-            }
-            if (o.length === 1) {
-                o[1] = o[0];
-            }
-            const arr = [];
-            for (let i = 0; i < 2; i++) {
-                let item = o[i];
-                if (/^[-+]?[\d.]/.test(item)) {
-                    let n = calUnit(item);
-                    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                        n.u = StyleUnit.PX;
-                    }
-                    arr.push(n);
-                }
-                else {
-                    arr.push({
-                        v: {
-                            top: 0,
-                            left: 0,
-                            center: 50,
-                            right: 100,
-                            bottom: 100,
-                        }[item],
-                        u: StyleUnit.PERCENT,
-                    });
-                    // 不规范的写法变默认值50%
-                    if (isNil(arr[i].v)) {
-                        arr[i].v = 50;
-                    }
-                }
-            }
-            res.transformOrigin = arr;
-        }
-        const booleanOperation = style.booleanOperation;
-        if (!isNil(booleanOperation)) {
-            let v = BOOLEAN_OPERATION.NONE;
-            if (booleanOperation === 'union') {
-                v = BOOLEAN_OPERATION.UNION;
-            }
-            else if (booleanOperation === 'subtract') {
-                v = BOOLEAN_OPERATION.SUBTRACT;
-            }
-            else if (booleanOperation === 'intersect') {
-                v = BOOLEAN_OPERATION.INTERSECT;
-            }
-            else if (booleanOperation === 'xor') {
-                v = BOOLEAN_OPERATION.XOR;
-            }
-            res.booleanOperation = { v, u: StyleUnit.NUMBER };
-        }
-        const mixBlendMode = style.mixBlendMode;
-        if (!isNil(mixBlendMode)) {
-            let v = MIX_BLEND_MODE.NORMAL;
-            if (/multiply/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.MULTIPLY;
-            }
-            else if (/screen/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.SCREEN;
-            }
-            else if (/overlay/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.OVERLAY;
-            }
-            else if (/darken/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.DARKEN;
-            }
-            else if (/lighten/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.LIGHTEN;
-            }
-            else if (/color-dodge/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.COLOR_DODGE;
-            }
-            else if (/color-burn/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.COLOR_BURN;
-            }
-            else if (/hard-light/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.HARD_LIGHT;
-            }
-            else if (/soft-light/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.SOFT_LIGHT;
-            }
-            else if (/difference/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.DIFFERENCE;
-            }
-            else if (/exclusion/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.EXCLUSION;
-            }
-            else if (/hue/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.HUE;
-            }
-            else if (/saturation/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.SATURATION;
-            }
-            else if (/color/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.COLOR;
-            }
-            else if (/luminosity/i.test(fontStyle)) {
-                v = MIX_BLEND_MODE.LUMINOSITY;
-            }
-            res.mixBlendMode = { v, u: StyleUnit.NUMBER };
-        }
-        const pointerEvents = style.pointerEvents;
-        if (!isNil(pointerEvents)) {
-            res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
-        }
-        const maskMode = style.maskMode;
-        if (!isNil(maskMode)) {
-            let v = MASK.NONE;
-            if (maskMode === 'outline') {
-                v = MASK.OUTLINE;
-            }
-            else if (maskMode === 'alpha') {
-                v = MASK.ALPHA;
-            }
-            res.maskMode = { v, u: StyleUnit.NUMBER };
-        }
-        const breakMask = style.breakMask;
-        if (!isNil(breakMask)) {
-            res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
-        }
-        return res;
-    }
-    function equalStyle(k, a, b) {
-        if (k === 'transformOrigin') {
-            return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
-                && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
-        }
-        if (k === 'color' || k === 'backgroundColor') {
-            return a[k].v[0] === b[k].v[0]
-                && a[k].v[1] === b[k].v[1]
-                && a[k].v[2] === b[k].v[2]
-                && a[k].v[3] === b[k].v[3];
-        }
-        // @ts-ignore
-        return a[k].v === b[k].v && a[k].u === b[k].u;
-    }
-    function color2rgbaInt(color) {
-        if (Array.isArray(color)) {
-            return color;
-        }
-        let res = [];
-        if (!color || color === 'transparent') {
-            res = [0, 0, 0, 0];
-        }
-        else if (color.charAt(0) === '#') {
-            color = color.slice(1);
-            if (color.length === 3 || color.length === 4) {
-                res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
-                res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
-                res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-                if (color.length === 4) {
-                    res[3] = parseInt(color.charAt(3) + color.charAt(3), 16);
-                }
-                else {
-                    res[3] = 1;
-                }
-            }
-            else if (color.length === 6) {
-                res.push(parseInt(color.slice(0, 2), 16));
-                res.push(parseInt(color.slice(2, 4), 16));
-                res.push(parseInt(color.slice(4), 16));
-                res[3] = 1;
-            }
-            else if (color.length === 8) {
-                res.push(parseInt(color.slice(0, 2), 16));
-                res.push(parseInt(color.slice(2, 4), 16));
-                res.push(parseInt(color.slice(4, 6), 16));
-                res.push(parseInt(color.slice(6), 16) / 255);
-            }
-            else {
-                res[0] = res[1] = res[2] = 0;
-                res[3] = 1;
-            }
-        }
-        else {
-            let c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-            if (c) {
-                res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-                if (!isNil(c[4])) {
-                    res[3] = parseFloat(c[4]);
-                }
-                else {
-                    res[3] = 1;
-                }
-            }
-            else {
-                res = [0, 0, 0, 0];
-            }
-        }
-        return res;
-    }
-    function color2rgbaStr(color) {
-        const c = color2rgbaInt(color);
-        if (Array.isArray(c)) {
-            c[0] = Math.floor(Math.max(c[0], 0));
-            c[1] = Math.floor(Math.max(c[1], 0));
-            c[2] = Math.floor(Math.max(c[2], 0));
-            if (c.length === 3 || c.length === 4) {
-                if (c.length === 4) {
-                    c[3] = Math.max(c[3], 0);
-                    return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
-                }
-                return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)';
-            }
-        }
-        return color || 'rgba(0,0,0,0)';
-    }
-    function toHex(n) {
-        let r = n.toString(16);
-        if (r.length === 1) {
-            r = '0' + r;
-        }
-        return r;
-    }
-    function color2hexStr(color) {
-        if (Array.isArray(color)) {
-            if (color.length === 3 || color.length === 4) {
-                color[0] = Math.floor(Math.max(color[0], 0));
-                color[1] = Math.floor(Math.max(color[1], 0));
-                color[2] = Math.floor(Math.max(color[2], 0));
-                if (color.length === 4 && color[3] < 1) {
-                    color[3] = Math.max(color[3], 0);
-                    return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
-                        + toHex(Math.floor(color[3] * 255));
-                }
-                return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
-            }
-        }
-        return color || '#000';
-    }
-    function color2gl(color) {
-        if (!Array.isArray(color)) {
-            color = color2rgbaInt(color);
-        }
-        return [
-            color[0] / 255,
-            color[1] / 255,
-            color[2] / 255,
-            color.length === 3 ? 1 : color[3],
-        ];
-    }
-    function setFontStyle(style) {
-        let fontSize = style.fontSize || 0;
-        let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
-        if (/\s/.test(fontFamily)) {
-            fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
-        }
-        return (style.fontStyle || 'normal') + ' ' + (style.fontWeight || '400') + ' '
-            + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
-    }
-    function calFontFamily(fontFamily) {
-        let ff = fontFamily.split(/\s*,\s*/);
-        for (let i = 0, len = ff.length; i < len; i++) {
-            let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
-            if (o.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
-                return item;
-            }
-        }
-        return inject.defaultFontFamily;
-    }
-    function calNormalLineHeight(style, ff) {
-        if (!ff) {
-            ff = calFontFamily(style.fontFamily);
-        }
-        return Math.ceil(style.fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr);
-    }
-    /**
-     * https://zhuanlan.zhihu.com/p/25808995
-     * 根据字形信息计算baseline的正确值，差值上下均分
-     * @param style computedStyle
-     * @returns {number}
-     */
-    function getBaseline(style) {
-        let fontSize = style.fontSize;
-        let ff = calFontFamily(style.fontFamily);
-        let normal = calNormalLineHeight(style, ff);
-        return (style.lineHeight - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
-    }
-    function calSize(v, p) {
-        if (v.u === StyleUnit.PX) {
-            return v.v;
-        }
-        if (v.u === StyleUnit.PERCENT) {
-            return v.v * p * 0.01;
-        }
-        return 0;
-    }
-    var css = {
-        normalize,
-        equalStyle,
-        color2rgbaInt,
-        color2rgbaStr,
-        color2gl,
-        calFontFamily,
-        calNormalLineHeight,
-        getBaseline,
-        calSize,
-    };
-
-    // prettier-ignore
-    var ResizingConstraint;
-    (function (ResizingConstraint) {
-        ResizingConstraint[ResizingConstraint["UNSET"] = 63] = "UNSET";
-        ResizingConstraint[ResizingConstraint["RIGHT"] = 1] = "RIGHT";
-        ResizingConstraint[ResizingConstraint["WIDTH"] = 2] = "WIDTH";
-        ResizingConstraint[ResizingConstraint["LEFT"] = 4] = "LEFT";
-        ResizingConstraint[ResizingConstraint["BOTTOM"] = 8] = "BOTTOM";
-        ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
-        ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
-    })(ResizingConstraint || (ResizingConstraint = {}));
-    // const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
-    function openAndConvertSketchBuffer(arrayBuffer) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let zipFile;
-            try {
-                zipFile = yield lib.loadAsync(arrayBuffer);
-            }
-            catch (err) {
-                alert('Sorry!\nThis is not a zip file. It may be created by an old version sketch app.');
-                throw err;
-            }
-            const document = yield readJsonFile(zipFile, 'document.json');
-            const pages = [];
-            yield Promise.all(document.pages.map((page) => {
-                return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
-                    pages.push(pageJson);
-                });
-            }));
-            const meta = yield readJsonFile(zipFile, 'meta.json');
-            const user = yield readJsonFile(zipFile, 'user.json');
-            return yield convertSketch({
-                document,
-                pages,
-                meta,
-                user,
-            }, zipFile);
-        });
-    }
-    function readJsonFile(zipFile, filename) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            const docStr = yield ((_a = zipFile.file(filename)) === null || _a === void 0 ? void 0 : _a.async('string'));
-            return JSON.parse(docStr);
-        });
-    }
-    function convertSketch(json, zipFile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('sketch', json);
-            const imgs = [], imgHash = {};
-            const fonts = [], fontHash = {};
-            const pages = yield Promise.all(json.pages.map((page) => {
-                return convertPage(page, {
-                    imgs,
-                    imgHash,
-                    fonts,
-                    fontHash,
-                    zipFile,
-                    user: json.user,
-                });
-            }));
-            return {
-                pages,
-                imgs,
-                fonts: [],
-            };
-        });
-    }
-    function convertPage(page, opt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // sketch的Page没有尺寸，固定100
-            const W = 100, H = 100;
-            const children = yield Promise.all(page.layers.map((layer) => {
-                return convertItem(layer, opt, W, H);
-            }));
-            let x = 0, y = 0, zoom = 1;
-            const ua = opt.user[page.do_objectID];
-            if (ua) {
-                const { scrollOrigin, zoomValue } = ua;
-                if (scrollOrigin) {
-                    const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
-                    if (match) {
-                        x = parseFloat(match[1]) || 0;
-                        y = parseFloat(match[2]) || 0;
-                    }
-                }
-                if (zoomValue) {
-                    zoom = zoomValue;
-                }
-            }
-            return {
-                tagName: TagName.Page,
-                props: {
-                    uuid: page.do_objectID,
-                    name: page.name,
-                    style: {
-                        width: W,
-                        height: H,
-                        visible: false,
-                        translateX: x,
-                        translateY: y,
-                        scaleX: zoom,
-                        scaleY: zoom,
-                        transformOrigin: [0, 0],
-                        pointerEvents: false,
-                    },
-                    isLocked: false,
-                    isExpanded: false,
-                },
-                children: children.filter(item => item),
-            };
-        });
-    }
-    function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
-        return __awaiter(this, void 0, void 0, function* () {
-            let width = layer.frame.width;
-            let height = layer.frame.height;
-            let translateX = layer.frame.x;
-            let translateY = layer.frame.y;
-            const visible = layer.isVisible;
-            const opacity = ((_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.contextSettings) === null || _b === void 0 ? void 0 : _b.opacity) || 1;
-            const rotateZ = -layer.rotation;
-            const scaleX = layer.isFlippedHorizontal ? -1 : 1;
-            const scaleY = layer.isFlippedVertical ? -1 : 1;
-            // artBoard也是固定尺寸和page一样，但x/y用translate代替
-            if (layer._class === FileFormat.ClassValue.Artboard) {
-                const children = yield Promise.all(layer.layers.map((child) => {
-                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
-                }));
-                const hasBackgroundColor = layer.hasBackgroundColor;
-                const backgroundColor = hasBackgroundColor
-                    ? [
-                        Math.floor(layer.backgroundColor.red * 255),
-                        Math.floor(layer.backgroundColor.green * 255),
-                        Math.floor(layer.backgroundColor.blue * 255),
-                        layer.backgroundColor.alpha,
-                    ]
-                    : [255, 255, 255, 1];
-                return {
-                    tagName: TagName.ArtBoard,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        hasBackgroundColor,
-                        resizesContent: layer.resizesContent,
-                        style: {
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            rotateZ,
-                            overflow: 'hidden',
-                            backgroundColor,
-                        },
-                        isLocked: false,
-                        isExpanded: false,
-                    },
-                    children: children.filter(item => item),
-                };
-            }
-            // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
-            const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
-            let left = 0, top = 0, right = 'auto', bottom = 'auto';
-            // 需根据父容器尺寸计算
-            if (resizingConstraint) {
-                // left
-                if (resizingConstraint & ResizingConstraint.LEFT) {
-                    left = translateX;
-                    // left+right忽略width
-                    if (resizingConstraint & ResizingConstraint.RIGHT) {
-                        right = w - translateX - width;
-                        width = 'auto';
-                    }
-                    // left+width
-                    else if (resizingConstraint & ResizingConstraint.WIDTH) ;
-                    // 仅left，right是百分比忽略width
-                    else {
-                        right = (w - translateX - width) * 100 / w + '%';
-                        width = 'auto';
-                    }
-                    translateX = 0;
-                }
-                // right
-                else if (resizingConstraint & ResizingConstraint.RIGHT) {
-                    right = w - translateX - width;
-                    // left+right忽略width
-                    if (resizingConstraint & ResizingConstraint.LEFT) {
-                        left = translateX;
-                        width = 'auto';
-                    }
-                    // right+width
-                    else if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = 'auto';
-                    }
-                    // 仅right，left是百分比忽略width
-                    else {
-                        left = translateX * 100 / w + '%';
-                        width = 'auto';
-                    }
-                    translateX = 0;
-                }
-                // 左右都不固定
-                else {
-                    // 仅固定宽度，以中心点占left的百分比
-                    if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = (translateX + width * 0.5) * 100 / w + '%';
-                        translateX = '-50%';
-                    }
-                    // 左右皆为百分比
-                    else {
-                        left = translateX * 100 / w + '%';
-                        right = (w - translateX - width) * 100 / w + '%';
-                        translateX = 0;
-                        width = 'auto';
-                    }
-                }
-                // top
-                if (resizingConstraint & ResizingConstraint.TOP) {
-                    top = translateY;
-                    // top+bottom忽略height
-                    if (resizingConstraint & ResizingConstraint.BOTTOM) {
-                        bottom = h - translateY - height;
-                        height = 'auto';
-                    }
-                    // top+height
-                    else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
-                    // 仅top，bottom是百分比忽略height
-                    else {
-                        bottom = (h - translateY - height) * 100 / h + '%';
-                        height = 'auto';
-                    }
-                    translateY = 0;
-                }
-                // bottom
-                else if (resizingConstraint & ResizingConstraint.BOTTOM) {
-                    bottom = h - translateY - height;
-                    // top+bottom忽略height
-                    if (resizingConstraint & ResizingConstraint.TOP) {
-                        top = translateY;
-                        height = 'auto';
-                    }
-                    // bottom+height
-                    else if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = 'auto';
-                    }
-                    // 仅bottom，top是百分比忽略height
-                    else {
-                        top = translateY * 100 / h + '%';
-                        height = 'auto';
-                    }
-                    translateY = 0;
-                }
-                // 上下都不固定
-                else {
-                    // 仅固定高度，以中心点占top的百分比
-                    if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = (translateY + height * 0.5) * 100 / h + '%';
-                        translateY = '-50%';
-                    }
-                    // 上下皆为百分比
-                    else {
-                        top = translateY * 100 / h + '%';
-                        bottom = (h - translateY - height) * 100 / h + '%';
-                        translateY = 0;
-                        height = 'auto';
-                    }
-                }
-            }
-            // 未设置则上下左右都是百分比
-            else {
-                left = translateX * 100 / w + '%';
-                right = (w - translateX - width) * 100 / w + '%';
-                translateX = 0;
-                width = 'auto';
-                top = translateY * 100 / h + '%';
-                bottom = (h - translateY - height) * 100 / h + '%';
-                translateY = 0;
-                height = 'auto';
-            }
-            // 遮罩转换
-            let maskMode = 'none';
-            const { hasClippingMask, clippingMaskMode, } = layer;
-            if (hasClippingMask) {
-                if (clippingMaskMode) {
-                    maskMode = 'alpha';
-                }
-                else {
-                    maskMode = 'outline';
-                }
-            }
-            const breakMask = layer.shouldBreakMaskChain;
-            const isLocked = layer.isLocked;
-            const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
-            if (layer._class === FileFormat.ClassValue.Group) {
-                const children = yield Promise.all(layer.layers.map((child) => {
-                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
-                }));
-                return {
-                    tagName: TagName.Group,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            scaleX,
-                            scaleY,
-                            rotateZ,
-                            maskMode,
-                            breakMask,
-                        },
-                        isLocked,
-                        isExpanded,
-                    },
-                    children: children.filter(item => item),
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.Bitmap) {
-                let index;
-                if (layer.image._ref_class === 'MSImageData') {
-                    index = yield readImageFile(layer.image._ref, opt);
-                }
-                else if (layer.image._ref_class === 'MSNetworkImage') {
-                    index = yield readNetworkImage(layer.image._ref, opt);
-                }
-                return {
-                    tagName: TagName.Bitmap,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            scaleX,
-                            scaleY,
-                            rotateZ,
-                            maskMode,
-                            breakMask,
-                        },
-                        isLocked,
-                        isExpanded,
-                        src: index,
-                    },
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.Text) {
-                const textBehaviour = layer.textBehaviour;
-                if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
-                    width = 'auto';
-                    height = 'auto';
-                }
-                else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
-                    // 可能width是auto（left+right），也可能是left+width
-                    height = 'auto';
-                }
-                else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
-                const { string, attributes } = layer.attributedString;
-                const rich = attributes.length
-                    ? attributes.map((item) => {
-                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
-                        const fontFamily = name;
-                        const res = {
-                            location,
-                            length,
-                            fontFamily,
-                            fontSize,
-                            fontWeight: 400,
-                            fontStyle: 'normal',
-                            letterSpacing: kerning,
-                            lineHeight: maximumLineHeight,
-                            color: [
-                                Math.floor(red * 255),
-                                Math.floor(green * 255),
-                                Math.floor(blue * 255),
-                                alpha,
-                            ],
-                        };
-                        // 自动行高
-                        if (!maximumLineHeight) {
-                            res.lineHeight = calNormalLineHeight(res);
-                        }
-                        return res;
-                    })
-                    : undefined;
-                const MSAttributedStringFontAttribute = (_f = (_e = (_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.textStyle) === null || _d === void 0 ? void 0 : _d.encodedAttributes) === null || _e === void 0 ? void 0 : _e.MSAttributedStringFontAttribute) === null || _f === void 0 ? void 0 : _f.attributes;
-                const fontSize = MSAttributedStringFontAttribute
-                    ? MSAttributedStringFontAttribute.size
-                    : 16;
-                const fontFamily = MSAttributedStringFontAttribute
-                    ? MSAttributedStringFontAttribute.name
-                    : 'arial';
-                const paragraphStyle = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.paragraphStyle;
-                const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
-                const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
-                const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.kerning) || 0;
-                const MSAttributedStringColorAttribute = (_q = (_p = (_o = layer.style) === null || _o === void 0 ? void 0 : _o.textStyle) === null || _p === void 0 ? void 0 : _p.encodedAttributes) === null || _q === void 0 ? void 0 : _q.MSAttributedStringColorAttribute;
-                const color = MSAttributedStringColorAttribute
-                    ? [
-                        Math.floor(MSAttributedStringColorAttribute.red * 255),
-                        Math.floor(MSAttributedStringColorAttribute.green * 255),
-                        Math.floor(MSAttributedStringColorAttribute.blue * 255),
-                        MSAttributedStringColorAttribute.alpha,
-                    ]
-                    : [0, 0, 0, 1];
-                return {
-                    tagName: TagName.Text,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            translateX,
-                            translateY,
-                            scaleX,
-                            scaleY,
-                            rotateZ,
-                            overflow: 'hidden',
-                            fontSize,
-                            fontFamily,
-                            color,
-                            textAlign,
-                            letterSpacing,
-                            lineHeight,
-                            maskMode,
-                            breakMask,
-                        },
-                        isLocked,
-                        isExpanded,
-                        content: string,
-                        rich,
-                    },
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.Rectangle
-                || layer._class === FileFormat.ClassValue.Oval
-                || layer._class === FileFormat.ClassValue.Star
-                || layer._class === FileFormat.ClassValue.Triangle
-                || layer._class === FileFormat.ClassValue.Polygon
-                || layer._class === FileFormat.ClassValue.ShapePath) {
-                const points = layer.points.map((item) => {
-                    const point = parseStrPoint(item.point);
-                    const curveFrom = parseStrPoint(item.curveFrom);
-                    const curveTo = parseStrPoint(item.curveTo);
-                    return {
-                        x: point.x,
-                        y: point.y,
-                        cornerRadius: item.cornerRadius,
-                        curveMode: item.curveMode,
-                        hasCurveFrom: item.hasCurveFrom,
-                        hasCurveTo: item.hasCurveTo,
-                        fx: curveFrom.x,
-                        fy: curveFrom.y,
-                        tx: curveTo.x,
-                        ty: curveTo.y,
-                    };
-                });
-                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
-                return {
-                    tagName: TagName.Polyline,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        points,
-                        isClosed: layer.isClosed,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            fill,
-                            fillEnable,
-                            fillRule,
-                            stroke,
-                            strokeEnable,
-                            strokeWidth,
-                            strokePosition,
-                            strokeDasharray,
-                            strokeLinecap,
-                            strokeLinejoin,
-                            translateX,
-                            translateY,
-                            scaleX,
-                            scaleY,
-                            rotateZ,
-                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
-                            maskMode,
-                            breakMask,
-                        },
-                        isLocked,
-                        isExpanded,
-                    },
-                };
-            }
-            if (layer._class === FileFormat.ClassValue.ShapeGroup) {
-                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
-                const children = yield Promise.all(layer.layers.map((child) => {
-                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
-                }));
-                return {
-                    tagName: TagName.ShapeGroup,
-                    props: {
-                        uuid: layer.do_objectID,
-                        name: layer.name,
-                        style: {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            width,
-                            height,
-                            visible,
-                            opacity,
-                            fill,
-                            fillEnable,
-                            fillRule,
-                            stroke,
-                            strokeEnable,
-                            strokeWidth,
-                            strokePosition,
-                            strokeDasharray,
-                            strokeLinecap,
-                            strokeLinejoin,
-                            translateX,
-                            translateY,
-                            scaleX,
-                            scaleY,
-                            rotateZ,
-                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
-                            maskMode,
-                            breakMask,
-                        },
-                        isLocked,
-                        isExpanded,
-                    },
-                    children,
-                };
-            }
-            console.error(layer);
-        });
-    }
-    function geomStyle(layer) {
-        const { borders, borderOptions, fills, windingRule, miterLimit: strokeMiterlimit, } = layer.style || {};
-        const fill = [], fillEnable = [];
-        if (fills) {
-            fills.forEach((item) => {
-                if (item.fillType === FileFormat.FillType.Gradient) {
-                    const g = item.gradient;
-                    if (g.gradientType === FileFormat.GradientType.Linear) {
-                        const from = parseStrPoint(g.from);
-                        const to = parseStrPoint(g.to);
-                        const stops = g.stops.map(item => {
-                            const color = color2hexStr([
-                                Math.floor(item.color.red * 255),
-                                Math.floor(item.color.green * 255),
-                                Math.floor(item.color.blue * 255),
-                                item.color.alpha,
-                            ]);
-                            return color + ' ' + item.position * 100 + '%';
-                        });
-                        fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
-                    }
-                    else if (g.gradientType === FileFormat.GradientType.Radial) ;
-                    else if (g.gradientType === FileFormat.GradientType.Angular) ;
-                    else {
-                        throw new Error('Unknown gradient');
-                    }
-                }
-                else {
-                    fill.push([
-                        Math.floor(item.color.red * 255),
-                        Math.floor(item.color.green * 255),
-                        Math.floor(item.color.blue * 255),
-                        item.color.alpha,
-                    ]);
-                }
-                fillEnable.push(item.isEnabled);
-            });
-        }
-        const stroke = [], strokeEnable = [], strokeWidth = [], strokePosition = [];
-        if (borders) {
-            borders.forEach((item) => {
-                stroke.push([
-                    Math.floor(item.color.red * 255),
-                    Math.floor(item.color.green * 255),
-                    Math.floor(item.color.blue * 255),
-                    item.color.alpha,
-                ]);
-                strokeEnable.push(item.isEnabled);
-                strokeWidth.push(item.thickness || 0);
-                if (item.position === FileFormat.BorderPosition.Inside) {
-                    strokePosition.push('inside');
-                }
-                else if (item.position === FileFormat.BorderPosition.Outside) {
-                    strokePosition.push('outside');
-                }
-                else {
-                    strokePosition.push('center');
-                }
-            });
-        }
-        const strokeDasharray = [];
-        let strokeLinecap = 'butt', strokeLinejoin = 'miter';
-        if (borderOptions) {
-            borderOptions.dashPattern.forEach(item => {
-                strokeDasharray.push(item);
-            });
-            if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Round) {
-                strokeLinecap = 'round';
-            }
-            else if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Projecting) {
-                strokeLinecap = 'square';
-            }
-            if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Round) {
-                strokeLinejoin = 'round';
-            }
-            else if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Bevel) {
-                strokeLinejoin = 'bevel';
-            }
-        }
-        return {
-            fill,
-            fillEnable,
-            fillRule: windingRule,
-            stroke,
-            strokeEnable,
-            strokeWidth,
-            strokePosition,
-            strokeDasharray,
-            strokeLinecap,
-            strokeLinejoin,
-            strokeMiterlimit,
-        };
-    }
-    function parseStrPoint(s) {
-        const res = /{(.+),\s*(.+)}/.exec(s);
-        if (!res) {
-            throw new Error('Unknown point: ' + s);
-        }
-        return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
-    }
-    function readNetworkImage(src, opt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (opt.imgHash.hasOwnProperty(src)) {
-                return opt.imgHash[src];
-            }
-            const response = yield fetch(src);
-            const blob = yield response.blob();
-            const base64 = yield new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = function () {
-                    if (reader.result) {
-                        resolve('data:image/png;' +
-                            reader.result.replace('data:application/octet-stream;', ''));
-                    }
-                    else {
-                        reject();
-                    }
-                };
-                reader.readAsDataURL(blob);
-            });
-            const index = opt.imgs.length;
-            opt.imgs.push(base64);
-            return index;
-        });
-    }
-    function readImageFile(filename, opt) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!/\.\w+$/.test(filename)) {
-                filename = `${filename}.png`;
-            }
-            if (opt.imgHash.hasOwnProperty(filename)) {
-                return opt.imgHash[filename];
-            }
-            const file = opt.zipFile.file(filename);
-            if (!file) {
-                console.error(`image not exist: >>>${filename}<<<`);
-                return -1;
-            }
-            let base64 = yield file.async('base64');
-            if (!/^data:image\//.test(base64)) {
-                if (filename.endsWith('.png')) {
-                    base64 = 'data:image/png;base64,' + base64;
-                }
-                else if (filename.endsWith('.gif')) {
-                    base64 = 'data:image/gif;base64,' + base64;
-                }
-                else if (filename.endsWith('.jpg')) {
-                    base64 = 'data:image/jpg;base64,' + base64;
-                }
-                else if (filename.endsWith('.jpeg')) {
-                    base64 = 'data:image/jpeg;base64,' + base64;
-                }
-                else if (filename.endsWith('.webp')) {
-                    base64 = 'data:image/webp;base64,' + base64;
-                }
-                else if (filename.endsWith('.bmp')) {
-                    base64 = 'data:image/bmp;base64,' + base64;
-                }
-            }
-            const index = opt.imgs.length;
-            opt.imgs.push(base64);
-            return index;
-        });
-    }
-
-    var RefreshLevel;
-    (function (RefreshLevel) {
-        RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
-        RefreshLevel[RefreshLevel["CACHE"] = 1] = "CACHE";
-        RefreshLevel[RefreshLevel["TRANSLATE_X"] = 2] = "TRANSLATE_X";
-        RefreshLevel[RefreshLevel["TRANSLATE_Y"] = 4] = "TRANSLATE_Y";
-        RefreshLevel[RefreshLevel["TRANSLATE"] = 6] = "TRANSLATE";
-        RefreshLevel[RefreshLevel["ROTATE_Z"] = 8] = "ROTATE_Z";
-        RefreshLevel[RefreshLevel["SCALE_X"] = 16] = "SCALE_X";
-        RefreshLevel[RefreshLevel["SCALE_Y"] = 32] = "SCALE_Y";
-        RefreshLevel[RefreshLevel["SCALE"] = 48] = "SCALE";
-        RefreshLevel[RefreshLevel["TRANSFORM"] = 64] = "TRANSFORM";
-        RefreshLevel[RefreshLevel["TRANSFORM_ALL"] = 126] = "TRANSFORM_ALL";
-        RefreshLevel[RefreshLevel["OPACITY"] = 128] = "OPACITY";
-        RefreshLevel[RefreshLevel["FILTER"] = 256] = "FILTER";
-        RefreshLevel[RefreshLevel["MIX_BLEND_MODE"] = 512] = "MIX_BLEND_MODE";
-        RefreshLevel[RefreshLevel["MASK"] = 1024] = "MASK";
-        RefreshLevel[RefreshLevel["REPAINT"] = 2048] = "REPAINT";
-        RefreshLevel[RefreshLevel["REFLOW"] = 4096] = "REFLOW";
-        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 4222] = "REFLOW_TRANSFORM";
-        RefreshLevel[RefreshLevel["REBUILD"] = 8192] = "REBUILD";
-    })(RefreshLevel || (RefreshLevel = {}));
-    function isReflow(lv) {
-        return lv >= RefreshLevel.REFLOW;
-    }
-    function isRepaint(lv) {
-        return lv < RefreshLevel.REFLOW;
-    }
-    function isRepaintKey(k) {
-        return k === 'visible' || k === 'color' || k === 'backgroundColor'
-            || k === 'mixBlendMode';
-    }
-    function getLevel(k) {
-        if (k === 'pointerEvents') {
-            return RefreshLevel.NONE;
-        }
-        if (k === 'translateX') {
-            return RefreshLevel.TRANSLATE_X;
-        }
-        if (k === 'translateY') {
-            return RefreshLevel.TRANSLATE_Y;
-        }
-        if (k === 'rotateZ') {
-            return RefreshLevel.ROTATE_Z;
-        }
-        if (k === 'scaleX') {
-            return RefreshLevel.SCALE_X;
-        }
-        if (k === 'scaleY') {
-            return RefreshLevel.SCALE_Y;
-        }
-        if (k === 'transformOrigin') {
-            return RefreshLevel.TRANSFORM;
-        }
-        if (k === 'opacity') {
-            return RefreshLevel.OPACITY;
-        }
-        if (k === 'mixBlendMode') {
-            return RefreshLevel.MIX_BLEND_MODE;
-        }
-        if (isRepaintKey(k)) {
-            return RefreshLevel.REPAINT;
-        }
-        return RefreshLevel.REFLOW;
-    }
-    var level = {
-        RefreshLevel,
-        isRepaint,
-        isReflow,
-        isRepaintKey,
-    };
-
-    var refresh = {
-        level,
-    };
-
     function calRotateZ(t, v) {
         v = d2r(v);
         let sin = Math.sin(v);
@@ -20542,8 +20374,23 @@
                 parent = parent.parent;
             }
         }
-        clearMask() {
+        resetMask() {
             this.mask = undefined;
+        }
+        clearMask() {
+            var _a;
+            (_a = this.textureMask) === null || _a === void 0 ? void 0 : _a.release();
+            this.resetTextureTarget();
+            this.struct.next = 0;
+            // 原本指向mask的引用也需清除
+            let next = this.next;
+            while (next) {
+                if (next.computedStyle.breakMask) {
+                    break;
+                }
+                next.resetMask();
+                next = next.next;
+            }
         }
         remove(cb) {
             const { root, parent } = this;
@@ -21067,14 +20914,14 @@
                 computedStyle.minHeight = this.minHeight = Math.max(this.minHeight, child.minHeight);
             }
         }
-        clearMask() {
-            super.clearMask();
+        resetMask() {
+            super.resetMask();
             const children = this.children;
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
                 // 判断下可以提高性能，某些情况下被清除过了无需再次递归其子节点
                 if (item.mask) {
-                    item.clearMask();
+                    item.resetMask();
                 }
             }
         }
@@ -23265,12 +23112,22 @@
                     ctx.fillStyle = color2rgbaStr(f);
                 }
                 else {
-                    const gd = getLinear(f.stops, f.d, 0, 0, this.width, this.height, -x, -y);
-                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                    gd.stop.forEach(item => {
-                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
-                    });
-                    ctx.fillStyle = lg;
+                    if (f.t === GRADIENT.LINEAR) {
+                        const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
+                        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                        gd.stop.forEach(item => {
+                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.fillStyle = lg;
+                    }
+                    else if (f.t === GRADIENT.RADIAL) {
+                        const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                        gd.stop.forEach(item => {
+                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.fillStyle = rg;
+                    }
                 }
                 canvasPolygon(ctx, points, -x, -y);
                 if (this.isClosed) {
@@ -23308,12 +23165,22 @@
                     ctx.strokeStyle = color2rgbaStr(s);
                 }
                 else {
-                    const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
-                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                    gd.stop.forEach(item => {
-                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
-                    });
-                    ctx.strokeStyle = lg;
+                    if (s.t === GRADIENT.LINEAR) {
+                        const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+                        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                        gd.stop.forEach(item => {
+                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.strokeStyle = lg;
+                    }
+                    else if (s.t === GRADIENT.RADIAL) {
+                        const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                        gd.stop.forEach(item => {
+                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.strokeStyle = rg;
+                    }
                 }
                 // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
                 const p = strokePosition[i];
@@ -25676,12 +25543,22 @@
                     ctx.fillStyle = color2rgbaStr(f);
                 }
                 else {
-                    const gd = getLinear(f.stops, f.d, 0, 0, this.width, this.height, -x, -y);
-                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                    gd.stop.forEach(item => {
-                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
-                    });
-                    ctx.fillStyle = lg;
+                    if (f.t === GRADIENT.LINEAR) {
+                        const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
+                        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                        gd.stop.forEach(item => {
+                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.fillStyle = lg;
+                    }
+                    else if (f.t === GRADIENT.RADIAL) {
+                        const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                        gd.stop.forEach(item => {
+                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.fillStyle = rg;
+                    }
                 }
                 points.forEach(item => {
                     canvasPolygon(ctx, item, -x, -y);
@@ -25720,12 +25597,22 @@
                     ctx.lineWidth = strokeWidth[i];
                 }
                 else {
-                    const gd = getLinear(s.stops, s.d, 0, 0, this.width, this.height, -x, -y);
-                    const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                    gd.stop.forEach(item => {
-                        lg.addColorStop(item[1], color2rgbaStr(item[0]));
-                    });
-                    ctx.strokeStyle = lg;
+                    if (s.t === GRADIENT.LINEAR) {
+                        const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+                        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                        gd.stop.forEach(item => {
+                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.strokeStyle = lg;
+                    }
+                    else if (s.t === GRADIENT.RADIAL) {
+                        const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                        gd.stop.forEach(item => {
+                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                        });
+                        ctx.strokeStyle = rg;
+                    }
                 }
                 // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
                 const p = strokePosition[i];
@@ -26877,23 +26764,6 @@ void main() {
             if (lv === RefreshLevel.NONE || !this.computedStyle.visible || this.isDestroyed) {
                 return false;
             }
-            // 先检查mask影响
-            const mask = node.mask;
-            if (mask) {
-                const target = mask.textureMask;
-                target === null || target === void 0 ? void 0 : target.release();
-                mask.resetTextureTarget();
-                mask.struct.next = 0;
-                // 原本指向mask的引用也需清除
-                let next = mask.next;
-                while (next) {
-                    if (next.computedStyle.breakMask) {
-                        break;
-                    }
-                    next.clearMask();
-                    next = next.next;
-                }
-            }
             const isRf = isReflow(lv);
             if (isRf) {
                 // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
@@ -26924,7 +26794,19 @@ void main() {
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
                         computedStyle.mixBlendMode = style.mixBlendMode.v;
                     }
+                    if (lv & RefreshLevel.MASK) {
+                        computedStyle.maskMode = style.maskMode.v;
+                        node.clearMask();
+                    }
+                    if (lv & RefreshLevel.BREAK_MASK) {
+                        computedStyle.breakMask = style.breakMask.v;
+                    }
                 }
+            }
+            // 检查mask影响，这里是作为被遮罩对象存在的关系检查
+            const mask = node.mask;
+            if (mask) {
+                mask.clearMask();
             }
             // 记录节点的刷新等级，以及本帧最大刷新等级
             node.refreshLevel |= lv;

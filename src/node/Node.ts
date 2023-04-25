@@ -455,8 +455,23 @@ class Node extends Event {
     }
   }
 
-  clearMask() {
+  resetMask() {
     this.mask = undefined;
+  }
+
+  clearMask() {
+    this.textureMask?.release();
+    this.resetTextureTarget();
+    this.struct.next = 0;
+    // 原本指向mask的引用也需清除
+    let next = this.next;
+    while (next) {
+      if (next.computedStyle.breakMask) {
+        break;
+      }
+      next.resetMask();
+      next = next.next;
+    }
   }
 
   remove(cb?: (sync: boolean) => void) {
