@@ -1,5 +1,6 @@
-import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
+import JSZip from 'jszip';
+import { calNormalLineHeight, color2hexStr } from '../style/css';
 import {
   JArtBoard,
   JBitmap,
@@ -14,7 +15,6 @@ import {
   Rich,
   TagName,
 } from './';
-import { calNormalLineHeight, color2hexStr } from '../style/css';
 
 // prettier-ignore
 enum ResizingConstraint {
@@ -34,7 +34,9 @@ export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   try {
     zipFile = await JSZip.loadAsync(arrayBuffer);
   } catch (err) {
-    alert('Sorry!\nThis is not a zip file. It may be created by an old version sketch app.');
+    alert(
+      'Sorry!\nThis is not a zip file. It may be created by an old version sketch app.',
+    );
     throw err;
   }
   const document: SketchFormat.Document = await readJsonFile(
@@ -51,12 +53,15 @@ export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   );
   const meta = await readJsonFile(zipFile, 'meta.json');
   const user = await readJsonFile(zipFile, 'user.json');
-  return await convertSketch({
-    document,
-    pages,
-    meta,
-    user,
-  }, zipFile);
+  return await convertSketch(
+    {
+      document,
+      pages,
+      meta,
+      user,
+    },
+    zipFile,
+  );
 }
 
 async function readJsonFile(zipFile: JSZip, filename: string) {
@@ -65,18 +70,20 @@ async function readJsonFile(zipFile: JSZip, filename: string) {
 }
 
 type Opt = {
-  imgs: Array<string>,
+  imgs: Array<string>;
   imgHash: any;
-  fonts: Array<{ fontFamily: string, url: string }>,
-  fontHash: any,
-  zipFile: JSZip,
-  user: any,
-}
+  fonts: Array<{ fontFamily: string; url: string }>;
+  fontHash: any;
+  zipFile: JSZip;
+  user: any;
+};
 
-async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
+export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   console.log('sketch', json);
-  const imgs: Array<string> = [], imgHash: any = {};
-  const fonts: Array<{ fontFamily: string, url: string }> = [], fontHash: any = {};
+  const imgs: Array<string> = [],
+    imgHash: any = {};
+  const fonts: Array<{ fontFamily: string; url: string }> = [],
+    fontHash: any = {};
   const pages = await Promise.all(
     json.pages.map((page: SketchFormat.Page) => {
       return convertPage(page, {
@@ -87,7 +94,7 @@ async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
         zipFile,
         user: json.user,
       });
-    })
+    }),
   );
   return {
     pages,
@@ -163,12 +170,14 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       }),
     );
     const hasBackgroundColor = layer.hasBackgroundColor;
-    const backgroundColor = hasBackgroundColor ? [
-      Math.floor(layer.backgroundColor.red * 255),
-      Math.floor(layer.backgroundColor.green * 255),
-      Math.floor(layer.backgroundColor.blue * 255),
-      layer.backgroundColor.alpha,
-    ] : [255, 255, 255, 1];
+    const backgroundColor = hasBackgroundColor
+      ? [
+        Math.floor(layer.backgroundColor.red * 255),
+        Math.floor(layer.backgroundColor.green * 255),
+        Math.floor(layer.backgroundColor.blue * 255),
+        layer.backgroundColor.alpha,
+      ]
+      : [255, 255, 255, 1];
     return {
       tagName: TagName.ArtBoard,
       props: {
@@ -278,7 +287,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       bottom = h - translateY - height;
       // top+bottom忽略height
       if (resizingConstraint & ResizingConstraint.TOP) {
-        top = translateY
+        top = translateY;
         height = 'auto';
       }
       // bottom+height
@@ -371,7 +380,13 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     } as JGroup;
   }
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
-    const index = await readImageFile(layer.image._ref, opt);
+    let index;
+    if (layer.image._ref_class === 'MSImageData') {
+      index = await readImageFile(layer.image._ref, opt);
+    }
+    else if ((layer.image._ref_class as any) === 'MSNetworkImage') {
+      index = await readNetworkImage(layer.image._ref, opt);
+    }
     return {
       tagName: TagName.Bitmap,
       props: {
@@ -414,55 +429,71 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       // 啥也不干
     }
     const { string, attributes } = layer.attributedString;
-    const rich = attributes.length ? attributes.map((item: any) => {
-      const {
-        location,
-        length,
-        attributes: {
-          MSAttributedStringFontAttribute: { attributes: { name, size: fontSize, } },
-          MSAttributedStringColorAttribute: { red, green, blue, alpha },
-          kerning = 0,
-          paragraphStyle: { maximumLineHeight = 0 } = {},
-        },
-      } = item;
-      const fontFamily = name;
-      const res = {
-        location,
-        length,
-        fontFamily,
-        fontSize,
-        fontWeight: 400,
-        fontStyle: 'normal',
-        letterSpacing: kerning,
-        lineHeight: maximumLineHeight,
-        color: [
-          Math.floor(red * 255),
-          Math.floor(green * 255),
-          Math.floor(blue * 255),
-          alpha,
-        ],
-      } as Rich;
-      // 自动行高
-      if (!maximumLineHeight) {
-        res.lineHeight = calNormalLineHeight(res);
-      }
-      return res;
-    }) : undefined;
-    const MSAttributedStringFontAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute?.attributes;
-    const fontSize = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.size : 16;
-    const fontFamily = MSAttributedStringFontAttribute ? MSAttributedStringFontAttribute.name : 'arial';
-    const paragraphStyle = layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
+    const rich = attributes.length
+      ? attributes.map((item: any) => {
+        const {
+          location,
+          length,
+          attributes: {
+            MSAttributedStringFontAttribute: {
+              attributes: { name, size: fontSize },
+            },
+            MSAttributedStringColorAttribute: { red, green, blue, alpha },
+            kerning = 0,
+            paragraphStyle: { maximumLineHeight = 0 } = {},
+          },
+        } = item;
+        const fontFamily = name;
+        const res = {
+          location,
+          length,
+          fontFamily,
+          fontSize,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          letterSpacing: kerning,
+          lineHeight: maximumLineHeight,
+          color: [
+            Math.floor(red * 255),
+            Math.floor(green * 255),
+            Math.floor(blue * 255),
+            alpha,
+          ],
+        } as Rich;
+        // 自动行高
+        if (!maximumLineHeight) {
+          res.lineHeight = calNormalLineHeight(res);
+        }
+        return res;
+      })
+      : undefined;
+    const MSAttributedStringFontAttribute =
+      layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
+        ?.attributes;
+    const fontSize = MSAttributedStringFontAttribute
+      ? MSAttributedStringFontAttribute.size
+      : 16;
+    const fontFamily = MSAttributedStringFontAttribute
+      ? MSAttributedStringFontAttribute.name
+      : 'arial';
+    const paragraphStyle =
+      layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const alignment = paragraphStyle?.alignment;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-    const letterSpacing = layer.style?.textStyle?.encodedAttributes?.kerning || 0;
-    const MSAttributedStringColorAttribute = layer.style?.textStyle?.encodedAttributes?.MSAttributedStringColorAttribute;
-    const color = MSAttributedStringColorAttribute ? [
-      Math.floor(MSAttributedStringColorAttribute.red * 255),
-      Math.floor(MSAttributedStringColorAttribute.green * 255),
-      Math.floor(MSAttributedStringColorAttribute.blue * 255),
-      MSAttributedStringColorAttribute.alpha,
-    ] : [0, 0, 0, 1];
+    const letterSpacing =
+      layer.style?.textStyle?.encodedAttributes?.kerning || 0;
+    const MSAttributedStringColorAttribute =
+      layer.style?.textStyle?.encodedAttributes
+        ?.MSAttributedStringColorAttribute;
+    const color = MSAttributedStringColorAttribute
+      ? [
+        Math.floor(MSAttributedStringColorAttribute.red * 255),
+        Math.floor(MSAttributedStringColorAttribute.green * 255),
+        Math.floor(MSAttributedStringColorAttribute.blue * 255),
+        MSAttributedStringColorAttribute.alpha,
+      ]
+      : [0, 0, 0, 1];
     return {
       tagName: TagName.Text,
       props: {
@@ -590,7 +621,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
-      })
+      }),
     );
     return {
       tagName: TagName.ShapeGroup,
@@ -746,6 +777,37 @@ function parseStrPoint(s: string) {
     throw new Error('Unknown point: ' + s);
   }
   return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
+}
+
+async function readNetworkImage(src: string, opt: Opt) {
+  if (opt.imgHash.hasOwnProperty(src)) {
+    return opt.imgHash[src];
+  }
+  const response = await fetch(src);
+  const blob = await response.blob();
+
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = function () {
+      if (reader.result) {
+        resolve(
+          'data:image/png;' +
+          (reader.result as string).replace(
+            'data:application/octet-stream;',
+            '',
+          ),
+        );
+      }
+      else {
+        reject();
+      }
+    };
+    reader.readAsDataURL(blob);
+  });
+
+  const index = opt.imgs.length;
+  opt.imgs.push(base64);
+  return index;
 }
 
 async function readImageFile(filename: string, opt: Opt) {
