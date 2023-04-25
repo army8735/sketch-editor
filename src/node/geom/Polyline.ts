@@ -6,9 +6,10 @@ import { canvasPolygon } from '../../refresh/paint';
 import { getLinear } from '../../style/gradient';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { unitize } from '../../math/vector';
-import { CURVE_MODE, MASK, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
+import { CURVE_MODE, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITION } from '../../style/define';
 import { clone } from '../../util';
 import inject, { OffScreen } from '../../util/inject';
+import bezier from '../../math/bezier';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -349,23 +350,21 @@ class Polyline extends Geom {
       // 可能不存在
       this.buildPoints();
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，注意轮廓模板忽略外边
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
       let border = 0;
-      if (this.computedStyle.maskMode !== MASK.OUTLINE) {
-        strokeWidth.forEach((item, i) => {
-          if (strokeEnable[i]) {
-            if (strokePosition[i] === STROKE_POSITION.CENTER) {
-              border = Math.max(border, item * 0.5);
-            }
-            else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-              // 0
-            }
-            else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-              border = Math.max(border, item);
-            }
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5 * 4);
           }
-        });
-      }
+          else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          }
+          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          }
+        }
+      });
       const points = this.points!;
       const first = points[0];
       let xa: number, ya: number;
@@ -388,8 +387,24 @@ class Polyline extends Geom {
       for (let i = 1, len = points.length; i < len; i++) {
         const item = points[i];
         let xb: number, yb: number;
-        if (item.length === 4) {}
-        else if (item.length === 6) {}
+        if (item.length === 4) {
+          xb = item[2];
+          yb = item[3];
+          const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
+          bbox[0] = Math.min(bbox[0], b[0] - border);
+          bbox[1] = Math.min(bbox[1], b[1] - border);
+          bbox[2] = Math.max(bbox[2], b[2] + border);
+          bbox[3] = Math.max(bbox[3], b[3] + border);
+        }
+        else if (item.length === 6) {
+          xb = item[4];
+          yb = item[5];
+          const b = bezier.bboxBezier(xa, ya, item[0], item[1], item[2], item[3], xb, yb);
+          bbox[0] = Math.min(bbox[0], b[0] - border);
+          bbox[1] = Math.min(bbox[1], b[1] - border);
+          bbox[2] = Math.max(bbox[2], b[2] + border);
+          bbox[3] = Math.max(bbox[3], b[3] + border);
+        }
         else {
           xb = item[0];
           yb = item[1];

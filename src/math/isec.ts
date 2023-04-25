@@ -634,6 +634,29 @@ function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: num
   return result;
 }
 
+export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
+                           bx1: number, by1: number, bx2: number, by2: number) {
+  const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+  if (d !== 0) {
+    const toSource = (
+      (bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)
+    ) / d;
+    const toClip = (
+      (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
+    ) / d;
+    if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1) {
+      let ox = ax1 + toSource * (ax2 - ax1);
+      let oy = ay1 + toSource * (ay2 - ay1);
+      return {
+        x: ox,
+        y: oy,
+        toSource,
+        toClip,
+      };
+    }
+  }
+}
+
 function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
                               bx1: number, by1: number, bx2: number, by2: number) {
   let c2, c1, c0;
@@ -1001,6 +1024,7 @@ function pointOnLine3(p: Point3, p1: Point3, p2: Point3) {
 }
 
 export default {
+  intersectLineLine,
   intersectBezier2Line, // 二阶贝塞尔曲线 与 直线
   intersectBezier3Line, // 三阶贝塞尔曲线 与 直线
   intersectBezier2Bezier2, // 二阶贝塞尔曲线 与 二阶贝塞尔曲线

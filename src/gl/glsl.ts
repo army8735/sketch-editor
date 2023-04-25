@@ -108,5 +108,8 @@ void main() {
   vec4 color1 = texture2D(u_texture1, v_texCoords);
   vec4 color2 = texture2D(u_texture2, v_texCoords);
   float a = color1.a * color2.a;
+  if (a <= 0.0) {
+    discard;
+  }
   gl_FragColor = vec4(color2.rgb, a);
 }`;

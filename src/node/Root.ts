@@ -213,19 +213,12 @@ class Root extends Container implements FrameCallback {
       return false;
     }
     // 先检查mask影响，向前prev查找到mask节点
-    let prev: Node | undefined = node;
-    while (prev) {
-      if (prev.computedStyle.maskMode) {
-        const target = prev.textureMask;
-        target?.release();
-        prev.resetTextureTarget();
-        break;
-      }
-      // 中断停止，一定不会有mask影响
-      if (prev.computedStyle.breakMask) {
-        break;
-      }
-      prev = prev.prev;
+    const mask: Node | undefined = node.mask;
+    if (mask) {
+      const target = mask.textureMask;
+      target?.release();
+      mask.resetTextureTarget();
+      mask.struct.next = 0;
     }
     const isRf = isReflow(lv);
     if (isRf) {

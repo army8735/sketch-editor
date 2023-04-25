@@ -3,7 +3,7 @@ import Polyline from './Polyline';
 import Group from '../Group';
 import {
   BOOLEAN_OPERATION,
-  FILL_RULE, MASK,
+  FILL_RULE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -16,6 +16,7 @@ import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
 import { toPrecision } from '../../math/geom';
 import inject, { OffScreen } from '../../util/inject';
+import bezier from '../../math/bezier';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -295,23 +296,21 @@ class ShapeGroup extends Group {
       // 可能不存在
       this.buildPoints();
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，注意轮廓模板忽略外边
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
       let border = 0;
-      if (this.computedStyle.maskMode !== MASK.OUTLINE) {
-        strokeWidth.forEach((item, i) => {
-          if (strokeEnable[i]) {
-            if (strokePosition[i] === STROKE_POSITION.CENTER) {
-              border = Math.max(border, item * 0.5);
-            }
-            else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-              // 0
-            }
-            else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-              border = Math.max(border, item);
-            }
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5 * 4);
           }
-        });
-      }
+          else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          }
+          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          }
+        }
+      });
       const points = this.points;
       if (points && points.length) {
         const first = points[0][0];
@@ -338,11 +337,44 @@ class ShapeGroup extends Group {
             if (!i && !j) {
               continue;
             }
-            let item2 = item[j];
-            let xb: number, yb: number;
-            if (item.length === 4) {
+            const item2 = item[j];
+            if (!j) {
+              if (item2.length === 4) {
+                xa = item2[2];
+                ya = item2[3];
+              }
+              else if (item2.length === 6) {
+                xa = item2[4];
+                ya = item2[5];
+              }
+              else {
+                xa = item2[0];
+                ya = item2[1];
+              }
+              bbox[0] = Math.min(bbox[0], xa - border);
+              bbox[1] = Math.min(bbox[1], ya - border);
+              bbox[2] = Math.max(bbox[2], xa + border);
+              bbox[3] = Math.max(bbox[3], ya + border);
+              continue;
             }
-            else if (item.length === 6) {
+            let xb: number, yb: number;
+            if (item2.length === 4) {
+              xb = item2[2];
+              yb = item2[3];
+              const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
+              bbox[0] = Math.min(bbox[0], b[0] - border);
+              bbox[1] = Math.min(bbox[1], b[1] - border);
+              bbox[2] = Math.max(bbox[2], b[2] + border);
+              bbox[3] = Math.max(bbox[3], b[3] + border);
+            }
+            else if (item2.length === 6) {
+              xb = item2[4];
+              yb = item2[5];
+              const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], item2[2], item2[3], xb, yb);
+              bbox[0] = Math.min(bbox[0], b[0] - border);
+              bbox[1] = Math.min(bbox[1], b[1] - border);
+              bbox[2] = Math.max(bbox[2], b[2] + border);
+              bbox[3] = Math.max(bbox[3], b[3] + border);
             }
             else {
               xb = item2[0];

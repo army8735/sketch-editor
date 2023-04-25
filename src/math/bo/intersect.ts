@@ -26,10 +26,10 @@ function isParallel(k1: number, k2: number) {
 
 function getIntersectionLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
                                  bx1: number, by1: number, bx2: number, by2: number, d: number) {
-  let toSource = (
+  const toSource = (
     (bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)
   ) / d;
-  let toClip = (
+  const toClip = (
     (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
   ) / d;
   // 非顶点相交才是真相交，先判断在范围内防止超过[0, 1]，再考虑精度

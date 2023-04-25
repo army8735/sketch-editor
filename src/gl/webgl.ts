@@ -1,5 +1,5 @@
 import { calRectPoint } from '../math/matrix';
-import { isConvexPolygonOverlap } from '../math/geom';
+import { isRectsOverlap } from '../math/geom';
 import TextureCache from '../refresh/TextureCache';
 
 export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, n: number,
@@ -34,7 +34,6 @@ export function bindTexture(gl: WebGL2RenderingContext | WebGLRenderingContext,
 }
 
 export type DrawData = {
-  bbox: Float64Array,
   opacity: number,
   matrix: Float64Array,
   cache: TextureCache,
@@ -43,14 +42,15 @@ export type DrawData = {
 let lastVtPoint: Float32Array, lastVtTex: Float32Array, lastVtOpacity: Float32Array; // 缓存
 
 export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
-                                 cx: number, cy: number, program: any, list: Array<DrawData>, flipY = true) {
+                                 cx: number, cy: number, program: any, list: Array<DrawData>,
+                                 dx = 0, dy = 0, flipY = true) {
   const length = list.length;
   if (!length) {
     return;
   }
   // 单个矩形绘制可优化，2个三角形共享一条边
   const isSingle = length === 1;
-  const num1 = isSingle ? 8 : (length * 12); // x+y数
+  const num1 = isSingle ? 8 : (length * 12); // xy数
   const num2 = isSingle ? 4 : (length * 6); // 顶点数
   // 是否使用缓存TypeArray，避免垃圾回收
   let vtPoint: Float32Array, vtTex: Float32Array, vtOpacity: Float32Array;
@@ -73,23 +73,17 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
-    const { bbox, opacity, matrix, cache } = list[i];
-    const { texture } = cache;
+    const { opacity, matrix, cache } = list[i];
+    const { bbox, texture } = cache;
     bindTexture(gl, texture, 0);
-    const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+    const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix)
     const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-    // 不在画布显示范围内忽略
-    if (!isConvexPolygonOverlap([
-      { x: x1, y: y1 },
-      { x: x2, y: y2 },
-      { x: x3, y: y3 },
-      { x: x4, y: y4 },
-    ], [
-      { x: 0, y: 0 },
-      { x: width, y: 0 },
-      { x: width, y: height },
-      { x: 0, y: height },
-    ], true)) {
+    // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
+    const xa = Math.min(x1, x2, x3, x4);
+    const ya = Math.min(y1, y2, y3, y4);
+    const xb = Math.max(x1, x2, x3, x4);
+    const yb = Math.max(y1, y2, y3, y4);
+    if (!isRectsOverlap(xa, ya, xb, yb, 0, 0, width, height, true)) {
       // 提前跳出不创建gl交互数据
       if (isSingle) {
         return;

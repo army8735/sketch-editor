@@ -39,6 +39,7 @@ class Node extends Event {
   artBoard: ArtBoard | undefined;
   prev: Node | undefined;
   next: Node | undefined;
+  mask: Node | undefined; // 如果被mask遮罩，指向对方引用
   parent: Container | undefined;
   isDestroyed: boolean;
   struct: Struct;
@@ -85,6 +86,7 @@ class Node extends Event {
       num: 0,
       total: 0,
       lv: 0,
+      next: 0,
     };
     this.refreshLevel = RefreshLevel.REFLOW;
     this._opacity = 1;
@@ -408,8 +410,12 @@ class Node extends Event {
     this.textureCache?.release();
     const canvasCache = this.canvasCache;
     if (canvasCache && canvasCache.available) {
-      this.textureTarget = this.textureCache = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas);
+      this.textureTarget = this.textureCache
+        = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas, (this._bbox || this.bbox).slice(0));
       canvasCache.release();
+    }
+    else {
+      this.textureTarget = undefined;
     }
   }
 
@@ -421,8 +427,11 @@ class Node extends Event {
     else if (textureTotal && textureTotal.available) {
       this.textureTarget = textureTotal;
     }
-    else {
+    else if (textureCache && textureCache.available) {
       this.textureTarget = textureCache;
+    }
+    else {
+      this.textureTarget = undefined;
     }
   }
 
