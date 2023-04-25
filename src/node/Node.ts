@@ -455,6 +455,10 @@ class Node extends Event {
     }
   }
 
+  clearMask() {
+    this.mask = undefined;
+  }
+
   remove(cb?: (sync: boolean) => void) {
     const { root, parent } = this;
     if (parent) {
