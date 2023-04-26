@@ -25996,6 +25996,7 @@
     }
 
     function renderWebgl(gl, root, rl) {
+        var _a;
         // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
         let scale = root.getCurPageZoom(), scaleIndex = 0;
         if (scale < 1.25) {
@@ -26026,32 +26027,34 @@
         const { structs, width: W, height: H } = root;
         const cx = W * 0.5, cy = H * 0.5;
         const mergeList = [], mergeIndex = [];
-        // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
-        if (rl >= RefreshLevel.REPAINT || rl & (RefreshLevel.CACHE | RefreshLevel.MASK)) {
-            for (let i = 0, len = structs.length; i < len; i++) {
-                const { node, lv, total } = structs[i];
-                const { refreshLevel, computedStyle } = node;
-                node.refreshLevel = RefreshLevel.NONE;
-                // 无任何变化即refreshLevel为NONE（0）忽略
-                if (refreshLevel) {
-                    // filter之类的变更
-                    if (refreshLevel < RefreshLevel.REPAINT) ;
-                    else {
-                        node.calContent();
-                        node.textureTarget[scaleIndex] = undefined;
-                    }
+        // 先计算内容matrix等，如果有需要merge合并汇总的记录下来
+        for (let i = 0, len = structs.length; i < len; i++) {
+            const { node, lv, total } = structs[i];
+            const { refreshLevel, computedStyle } = node;
+            node.refreshLevel = RefreshLevel.NONE;
+            // 无任何变化即refreshLevel为NONE（0）忽略
+            if (refreshLevel) {
+                // filter之类的变更
+                if (refreshLevel < RefreshLevel.REPAINT) ;
+                else {
+                    node.calContent();
+                    node.textureTarget[scaleIndex] = undefined;
                 }
-                const { maskMode, opacity } = computedStyle;
-                // 非单节点透明需汇总子树，有mask的也需要
-                if (maskMode && node.next || opacity > 0 && opacity < 1 && total) {
-                    mergeList.push({
-                        i,
-                        lv,
-                        total,
-                        node,
-                    });
-                    mergeIndex[i] = true;
-                }
+            }
+            const { maskMode, opacity } = computedStyle;
+            // 非单节点透明需汇总子树，有mask的也需要
+            const needTotal = opacity > 0 && opacity < 1 && total > 0
+                && (!node.textureTotal[scaleIndex] || !node.textureTotal[scaleIndex].available);
+            const needMask = maskMode > 0 && !!node.next
+                && (!node.textureMask[scaleIndex] || !((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
+            if (needTotal || needMask) {
+                mergeList.push({
+                    i,
+                    lv,
+                    total,
+                    node,
+                });
+                mergeIndex[i] = true;
             }
         }
         // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
@@ -26070,7 +26073,7 @@
                 // 生成mask
                 const computedStyle = node.computedStyle;
                 const { maskMode } = computedStyle;
-                if (maskMode && node.next && node.textureTarget) {
+                if (maskMode && node.next && node.textureTarget[scaleIndex]) {
                     node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
                         = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex);
                 }
@@ -26107,8 +26110,8 @@
                 isOverlay = true;
             }
             const computedStyle = node.computedStyle;
-            if (!computedStyle.visible || computedStyle.opacity <= 0) {
-                i += total;
+            if (!computedStyle.visible && !computedStyle.maskMode || computedStyle.opacity <= 0) {
+                i += total + next;
                 continue;
             }
             // 第一个是Root层级0
@@ -26364,8 +26367,8 @@
         for (let i = index, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
             const computedStyle = node.computedStyle;
-            if (!computedStyle.visible || computedStyle.opacity <= 0) {
-                i += total2;
+            if (!computedStyle.visible && !computedStyle.maskMode || computedStyle.opacity <= 0) {
+                i += total2 + next2;
                 continue;
             }
             let opacity, matrix;
@@ -26419,7 +26422,7 @@
         gl.useProgram(program);
         // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
         const bbox = textureTarget.bbox;
-        const { matrix } = node;
+        const { matrix, computedStyle } = node;
         const x = bbox[0], y = bbox[1];
         let w = bbox[2] - x, h = bbox[3] - y;
         while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
@@ -26507,11 +26510,14 @@
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
             toE(node.tempMatrix);
             multiplyScale(node.tempMatrix, scale);
-            drawTextureCache(gl, w, h, cx, cy, program, [{
-                    opacity: 1,
-                    matrix: node.tempMatrix,
-                    cache: textureTarget,
-                }], dx, dy, false);
+            // mask本身可能不可见
+            if (computedStyle.visible && computedStyle.opacity > 0) {
+                drawTextureCache(gl, w, h, cx, cy, program, [{
+                        opacity: 1,
+                        matrix: node.tempMatrix,
+                        cache: textureTarget,
+                    }], dx, dy, false);
+            }
             drawTextureCache(gl, w, h, cx, cy, program, [{
                     opacity: 1,
                     matrix: node.tempMatrix,
@@ -26526,8 +26532,9 @@
         return target;
     }
     function genOutline(gl, root, node, structs, index, total, bbox, scale) {
+        var _a;
         // 缓存仍然还在直接返回，无需重新生成
-        if (node.textureOutline && node.textureOutline.available) {
+        if ((_a = node.textureOutline) === null || _a === void 0 ? void 0 : _a.available) {
             return node.textureOutline;
         }
         const x = bbox[0], y = bbox[1];
@@ -27047,7 +27054,7 @@ void main() {
             this.clear();
             const rl = this.rl;
             this.rl = RefreshLevel.NONE;
-            renderWebgl(this.ctx, this, rl);
+            renderWebgl(this.ctx, this);
             this.emit(Event.REFRESH, rl);
         }
         reLayout() {
