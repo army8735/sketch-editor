@@ -18130,6 +18130,20 @@
         m[7] *= v;
         return m;
     }
+    function multiplyScale(m, v) {
+        if (v === 1) {
+            return m;
+        }
+        m[0] *= v;
+        m[1] *= v;
+        m[2] *= v;
+        m[3] *= v;
+        m[4] *= v;
+        m[5] *= v;
+        m[6] *= v;
+        m[7] *= v;
+        return m;
+    }
     function calPoint(point, m) {
         if (m && !isE(m)) {
             let { x, y } = point;
@@ -19782,18 +19796,6 @@
             bindTexture(gl, texture, 0);
             const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix);
             const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-            // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
-            const xa = Math.min(x1, x2, x3, x4);
-            const ya = Math.min(y1, y2, y3, y4);
-            const xb = Math.max(x1, x2, x3, x4);
-            const yb = Math.max(y1, y2, y3, y4);
-            if (!isRectsOverlap$1(xa, ya, xb, yb, 0, 0, width, height, true)) {
-                // 提前跳出不创建gl交互数据
-                if (isSingle) {
-                    return;
-                }
-                continue;
-            }
             const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
             const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
             const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
@@ -19990,8 +19992,8 @@
             };
             return new TextureCache(gl, texture, bbox);
         }
-        static getEmptyInstance(gl, bbox) {
-            const texture = createTexture(gl, 0, undefined, bbox[2] - bbox[0], bbox[3] - bbox[1]);
+        static getEmptyInstance(gl, bbox, scale = 1) {
+            const texture = createTexture(gl, 0, undefined, (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale);
             return new TextureCache(gl, texture, bbox);
         }
         static getTextureInstance(gl, texture, bbox) {
@@ -20034,6 +20036,10 @@
             this.hasCacheMw = false;
             this.hasCacheMwLv = false;
             this.hasContent = false;
+            this.textureCache = [];
+            this.textureTotal = [];
+            this.textureMask = [];
+            this.textureTarget = [];
             this.tempOpacity = 1;
             this.tempMatrix = identity();
         }
@@ -20321,50 +20327,53 @@
             return this.hasContent = false;
         }
         // 释放可能存在的老数据，具体渲染由各个子类自己实现
-        renderCanvas() {
+        renderCanvas(scale) {
             const canvasCache = this.canvasCache;
             if (canvasCache && canvasCache.available) {
                 canvasCache.release();
             }
         }
-        genTexture(gl) {
+        genTexture(gl, scale, scaleIndex) {
             var _a;
-            (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.release();
+            this.renderCanvas(scale);
+            (_a = this.textureCache[scaleIndex]) === null || _a === void 0 ? void 0 : _a.release();
             const canvasCache = this.canvasCache;
-            if (canvasCache && canvasCache.available) {
-                this.textureTarget = this.textureCache
+            if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
+                this.textureTarget[scaleIndex] = this.textureCache[scaleIndex]
                     = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._bbox || this.bbox).slice(0));
                 canvasCache.release();
             }
             else {
-                this.textureTarget = undefined;
+                this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] = undefined;
             }
         }
         resetTextureTarget() {
+            var _a, _b, _c;
             const { textureMask, textureTotal, textureCache } = this;
-            if (textureMask && textureMask.available) {
-                this.textureTarget = textureMask;
-            }
-            else if (textureTotal && textureTotal.available) {
-                this.textureTarget = textureTotal;
-            }
-            else if (textureCache && textureCache.available) {
-                this.textureTarget = textureCache;
-            }
-            else {
-                this.textureTarget = undefined;
+            for (let i = 0, len = textureCache.length; i < len; i++) {
+                if ((_a = textureMask[i]) === null || _a === void 0 ? void 0 : _a.available) {
+                    this.textureTarget[i] = textureMask[i];
+                }
+                else if ((_b = textureTotal[i]) === null || _b === void 0 ? void 0 : _b.available) {
+                    this.textureTarget[i] = textureTotal[i];
+                }
+                else if ((_c = textureCache[i]) === null || _c === void 0 ? void 0 : _c.available) {
+                    this.textureTarget[i] = textureCache[i];
+                }
+                else {
+                    this.textureTarget[i] = undefined;
+                }
             }
         }
         clearCache(includeSelf = false) {
-            var _a, _b, _c;
             if (includeSelf) {
-                (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.release();
+                this.textureCache.forEach(item => item === null || item === void 0 ? void 0 : item.release());
             }
             else {
                 this.textureTarget = this.textureCache;
             }
-            (_b = this.textureTotal) === null || _b === void 0 ? void 0 : _b.release();
-            (_c = this.textureMask) === null || _c === void 0 ? void 0 : _c.release();
+            this.textureTotal.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+            this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
             this.refreshLevel |= RefreshLevel.CACHE;
         }
         clearCacheUpward(includeSelf = false) {
@@ -20378,8 +20387,7 @@
             this.mask = undefined;
         }
         clearMask() {
-            var _a;
-            (_a = this.textureMask) === null || _a === void 0 ? void 0 : _a.release();
+            this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
             this.resetTextureTarget();
             this.struct.next = 0;
             // 原本指向mask的引用也需清除
@@ -21467,6 +21475,18 @@
         }
     }
 
+    const config = {
+        MAX_TEXTURE_SIZE: 2048,
+        SMALL_UNIT: 32,
+        MAX_NUM: Math.pow(2048 / 32, 2),
+        MAX_TEXTURE_UNITS: 8,
+        init(maxSize, maxUnits) {
+            this.MAX_TEXTURE_SIZE = maxSize;
+            this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
+            this.MAX_TEXTURE_UNITS = maxUnits;
+        },
+    };
+
     class Bitmap extends Node {
         constructor(props) {
             super(props);
@@ -21575,42 +21595,66 @@
             }
             return this.hasContent = res;
         }
-        renderCanvas() {
+        renderCanvas(scale) {
             var _a;
             const { loader } = this;
             if (loader.onlyImg) {
                 (_a = this.canvasCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this._src);
-                const canvasCache = this.canvasCache = CanvasCache.getImgInstance(loader.width, loader.height, this.src);
+                // 尺寸使用图片原始尺寸
+                let w = loader.width, h = loader.height;
+                if (w > config.MAX_TEXTURE_SIZE || h > config.MAX_TEXTURE_SIZE) {
+                    if (w > h) {
+                        w = config.MAX_TEXTURE_SIZE;
+                        h *= config.MAX_TEXTURE_SIZE / w;
+                    }
+                    else if (w < h) {
+                        h = config.MAX_TEXTURE_SIZE;
+                        w *= config.MAX_TEXTURE_SIZE / h;
+                    }
+                    else {
+                        w = h = config.MAX_TEXTURE_SIZE;
+                    }
+                }
+                const canvasCache = this.canvasCache = CanvasCache.getImgInstance(w, h, this.src);
                 canvasCache.available = true;
                 // 第一张图像才绘制，图片解码到canvas上
                 if (canvasCache.getCount(this._src) === 1) {
                     canvasCache.offscreen.ctx.drawImage(loader.source, 0, 0);
                 }
             }
+            else {
+                super.renderCanvas(scale);
+            }
         }
-        genTexture(gl) {
-            var _a;
+        genTexture(gl, scale, scaleIndex) {
             const { loader } = this;
             if (loader.onlyImg) {
-                (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.release();
+                // 注意图片共享一个实例
+                const target = this.textureCache[0];
+                if (target && target.available) {
+                    this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = target;
+                    return;
+                }
+                this.renderCanvas(scale);
                 const canvasCache = this.canvasCache;
-                this.textureCache = this.textureTarget
-                    = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this.src, (this._bbox || this.bbox).slice(0));
-                canvasCache.releaseImg(this._src);
+                if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
+                    this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = this.textureCache[0]
+                        = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._bbox || this.bbox).slice(0));
+                    canvasCache.releaseImg(this._src);
+                }
             }
             else {
-                super.genTexture(gl);
+                super.genTexture(gl, scale, scaleIndex);
             }
         }
         clearCache(includeSelf = false) {
-            var _a, _b, _c;
             const { loader } = this;
             if (loader.onlyImg) {
                 if (includeSelf) {
-                    (_a = this.textureCache) === null || _a === void 0 ? void 0 : _a.releaseImg(this._src);
+                    this.textureCache.forEach(item => item === null || item === void 0 ? void 0 : item.releaseImg(this._src));
                 }
-                (_b = this.textureTotal) === null || _b === void 0 ? void 0 : _b.release();
-                (_c = this.textureMask) === null || _c === void 0 ? void 0 : _c.release();
+                this.textureTotal.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+                this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
             }
             else {
                 super.clearCache(includeSelf);
@@ -22242,10 +22286,22 @@
         calContent() {
             return this.hasContent = !!this.content;
         }
-        renderCanvas() {
-            super.renderCanvas();
-            const { height, rich, computedStyle, lineBoxList } = this;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, height);
+        renderCanvas(scale) {
+            super.renderCanvas(scale);
+            const bbox = this._bbox || this.bbox;
+            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+                if (scale <= 1) {
+                    break;
+                }
+                scale = scale >> 1;
+            }
+            if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+                return;
+            }
+            const dx = -x * scale, dy = -y * scale;
+            const { rich, computedStyle, lineBoxList } = this;
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             // 富文本每串不同的需要设置字体颜色
@@ -22267,7 +22323,7 @@
             for (let i = 0, len = lineBoxList.length; i < len; i++) {
                 const lineBox = lineBoxList[i];
                 // 固定尺寸超过则overflow: hidden
-                if (lineBox.y >= height) {
+                if (lineBox.y >= h) {
                     break;
                 }
                 const list = lineBox.list, len = list.length;
@@ -22279,16 +22335,21 @@
                         color = color2rgbaStr(cur.color);
                     }
                     const textBox = list[i];
-                    ctx.font = textBox.font;
+                    if (scale !== 1) {
+                        ctx.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                    }
+                    else {
+                        ctx.font = textBox.font;
+                    }
                     ctx.fillStyle = color;
-                    ctx.fillText(textBox.str, textBox.x, textBox.y + textBox.baseline);
+                    ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
                     count += textBox.str.length;
                 }
             }
         }
     }
 
-    function canvasPolygon(ctx, list, dx = 0, dy = 0) {
+    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
         if (!list || !list.length) {
             return;
         }
@@ -22307,13 +22368,13 @@
         let first = list[start];
         // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
         if (first.length === 4) {
-            ctx.moveTo(first[2] + dx, first[3] + dy);
+            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
         }
         else if (first.length === 6) {
-            ctx.moveTo(first[4] + dx, first[5] + dy);
+            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
         }
         else {
-            ctx.moveTo(first[0] + dx, first[1] + dy);
+            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
         }
         for (let i = start + 1, len = list.length; i < len; i++) {
             let item = list[i];
@@ -22321,13 +22382,13 @@
                 continue;
             }
             if (item.length === 2) {
-                ctx.lineTo(item[0] + dx, item[1] + dy);
+                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
             }
             else if (item.length === 4) {
-                ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
+                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
             }
             else if (item.length === 6) {
-                ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
+                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
             }
         }
     }
@@ -23088,17 +23149,33 @@
             }
             this.points = res;
         }
-        renderCanvas() {
-            super.renderCanvas();
+        renderCanvas(scale) {
+            super.renderCanvas(scale);
             this.buildPoints();
             const points = this.points;
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
+            // 暂时这样防止超限，TODO 超大尺寸
+            while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+                if (scale <= 1) {
+                    break;
+                }
+                scale = scale >> 1;
+            }
+            if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+                return;
+            }
+            const dx = -x * scale, dy = -y * scale;
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
-            ctx.setLineDash(strokeDasharray);
+            if (scale !== 1) {
+                ctx.setLineDash(strokeDasharray.map(i => i * scale));
+            }
+            else {
+                ctx.setLineDash(strokeDasharray);
+            }
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {
@@ -23129,7 +23206,7 @@
                         ctx.fillStyle = rg;
                     }
                 }
-                canvasPolygon(ctx, points, -x, -y);
+                canvasPolygon(ctx, points, scale, dx, dy);
                 if (this.isClosed) {
                     ctx.closePath();
                 }
@@ -23154,7 +23231,7 @@
             else {
                 ctx.lineJoin = 'miter';
             }
-            ctx.miterLimit = strokeMiterlimit;
+            ctx.miterLimit = strokeMiterlimit * scale;
             // 再上层的stroke
             for (let i = 0, len = stroke.length; i < len; i++) {
                 if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -23186,7 +23263,7 @@
                 const p = strokePosition[i];
                 let os, ctx2;
                 if (p === STROKE_POSITION.INSIDE) {
-                    ctx.lineWidth = strokeWidth[i] * 2;
+                    ctx.lineWidth = strokeWidth[i] * 2 * scale;
                     canvasPolygon(ctx, points, -x, -y);
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
@@ -23195,14 +23272,14 @@
                     ctx2.setLineDash(strokeDasharray);
                     ctx2.lineCap = ctx.lineCap;
                     ctx2.lineJoin = ctx.lineJoin;
-                    ctx2.miterLimit = ctx.miterLimit;
+                    ctx2.miterLimit = ctx.miterLimit * scale;
                     ctx2.strokeStyle = ctx.strokeStyle;
-                    ctx2.lineWidth = strokeWidth[i] * 2;
-                    canvasPolygon(ctx2, points, -x, -y);
+                    ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                    canvasPolygon(ctx2, points, scale, dx, dy);
                 }
                 else {
-                    ctx.lineWidth = strokeWidth[i];
-                    canvasPolygon(ctx, points, -x, -y);
+                    ctx.lineWidth = strokeWidth[i] * scale;
+                    canvasPolygon(ctx, points, scale, dx, dy);
                 }
                 if (this.isClosed) {
                     if (ctx2) {
@@ -25519,16 +25596,33 @@
             }
             this.points = res;
         }
-        renderCanvas() {
-            super.renderCanvas();
+        renderCanvas(scale) {
+            super.renderCanvas(scale);
             this.buildPoints();
             const points = this.points;
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
+            // 暂时这样防止超限，TODO 超大尺寸
+            while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+                if (scale <= 1) {
+                    break;
+                }
+                scale = scale >> 1;
+            }
+            if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+                return;
+            }
+            const dx = -x * scale, dy = -y * scale;
+            const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
+            if (scale !== 1) {
+                ctx.setLineDash(strokeDasharray.map(i => i * scale));
+            }
+            else {
+                ctx.setLineDash(strokeDasharray);
+            }
             ctx.setLineDash(strokeDasharray);
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
@@ -25561,7 +25655,7 @@
                     }
                 }
                 points.forEach(item => {
-                    canvasPolygon(ctx, item, -x, -y);
+                    canvasPolygon(ctx, item, scale, dx, dy);
                     ctx.closePath();
                 });
                 ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
@@ -25585,7 +25679,7 @@
             else {
                 ctx.lineJoin = 'miter';
             }
-            ctx.miterLimit = strokeMiterlimit;
+            ctx.miterLimit = strokeMiterlimit * scale;
             // 再上层的stroke
             for (let i = 0, len = stroke.length; i < len; i++) {
                 if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -25618,9 +25712,9 @@
                 const p = strokePosition[i];
                 let os, ctx2;
                 if (p === STROKE_POSITION.INSIDE) {
-                    ctx.lineWidth = strokeWidth[i] * 2;
+                    ctx.lineWidth = strokeWidth[i] * 2 * scale;
                     points.forEach(item => {
-                        canvasPolygon(ctx, item, -x, -y);
+                        canvasPolygon(ctx, item, scale, dx, dy);
                         ctx.closePath();
                     });
                 }
@@ -25630,18 +25724,18 @@
                     ctx2.setLineDash(strokeDasharray);
                     ctx2.lineCap = ctx.lineCap;
                     ctx2.lineJoin = ctx.lineJoin;
-                    ctx2.miterLimit = ctx.miterLimit;
+                    ctx2.miterLimit = ctx.miterLimit * scale;
                     ctx2.strokeStyle = ctx.strokeStyle;
-                    ctx2.lineWidth = strokeWidth[i] * 2;
+                    ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                     points.forEach(item => {
-                        canvasPolygon(ctx2, item, -x, -y);
+                        canvasPolygon(ctx2, item, scale, dx, dy);
                         ctx2.closePath();
                     });
                 }
                 else {
-                    ctx.lineWidth = strokeWidth[i];
+                    ctx.lineWidth = strokeWidth[i] * scale;
                     points.forEach(item => {
-                        canvasPolygon(ctx, item, -x, -y);
+                        canvasPolygon(ctx, item, scale, dx, dy);
                         ctx.closePath();
                     });
                 }
@@ -25902,9 +25996,36 @@
     }
 
     function renderWebgl(gl, root, rl) {
+        // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
+        let scale = root.getCurPageZoom(), scaleIndex = 0;
+        if (scale < 1.25) {
+            scale = 1;
+        }
+        else {
+            let n = 2;
+            scaleIndex = 1;
+            while (n < scale) {
+                n = n << 1;
+                scaleIndex++;
+            }
+            if (n > 2) {
+                const m = (n >> 1) * 1.25;
+                // 看0.5n和n之间scale更靠近哪一方（0.5n*1.25分界线），就用那个放大数
+                if (scale >= m) {
+                    scale = n;
+                }
+                else {
+                    scale = n >> 1;
+                    scaleIndex--;
+                }
+            }
+            else {
+                scale = n;
+            }
+        }
         const { structs, width: W, height: H } = root;
         const cx = W * 0.5, cy = H * 0.5;
-        const mergeList = [];
+        const mergeList = [], mergeIndex = [];
         // 第一次或者每次有重新生产的内容或布局触发内容更新，要先绘制，再寻找合并节点重新合并缓存
         if (rl >= RefreshLevel.REPAINT || rl & (RefreshLevel.CACHE | RefreshLevel.MASK)) {
             for (let i = 0, len = structs.length; i < len; i++) {
@@ -25916,12 +26037,8 @@
                     // filter之类的变更
                     if (refreshLevel < RefreshLevel.REPAINT) ;
                     else {
-                        const hasContent = node.calContent();
-                        // 有内容才渲染生成纹理
-                        if (hasContent) {
-                            node.renderCanvas();
-                            node.genTexture(gl);
-                        }
+                        node.calContent();
+                        node.textureTarget[scaleIndex] = undefined;
                     }
                 }
                 const { maskMode, opacity } = computedStyle;
@@ -25933,6 +26050,7 @@
                         total,
                         node,
                     });
+                    mergeIndex[i] = true;
                 }
             }
         }
@@ -25947,14 +26065,14 @@
             for (let j = 0, len = mergeList.length; j < len; j++) {
                 const { i, lv, total, node, } = mergeList[j];
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-                node.textureTotal = node.textureTarget
-                    = genTotal(gl, root, node, structs, i, lv, total, W, H);
+                node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex]
+                    = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
                 // 生成mask
                 const computedStyle = node.computedStyle;
                 const { maskMode } = computedStyle;
                 if (maskMode && node.next && node.textureTarget) {
-                    node.textureMask = node.textureTarget
-                        = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H);
+                    node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
+                        = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex);
                 }
             }
         }
@@ -25973,6 +26091,7 @@
         }
         // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
         const overlay = root.overlay;
+        let isOverlay = false;
         const program = programs.program;
         gl.useProgram(programs.program);
         // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
@@ -25985,6 +26104,7 @@
             // 特殊的工具覆盖层，如画板名称，同步更新translate直接跟着画板位置刷新
             if (overlay && overlay === node) {
                 overlay.update();
+                isOverlay = true;
             }
             const computedStyle = node.computedStyle;
             if (!computedStyle.visible || computedStyle.opacity <= 0) {
@@ -26033,7 +26153,7 @@
             }
             lastLv = lv;
             // 继承父的opacity和matrix，仍然要注意root没有parent
-            const parent = node.parent;
+            const { parent, textureTarget } = node;
             if (!hasCacheOpLv) {
                 node._opacity = parent ? parent._opacity * node.computedStyle.opacity : node.computedStyle.opacity;
                 node.hasCacheOpLv = true;
@@ -26044,18 +26164,50 @@
             }
             const opacity = node._opacity;
             const matrix = node._matrixWorld;
-            // 一般只有一个纹理
-            const target = node.textureTarget;
-            if (target) {
-                drawTextureCache(gl, W, H, cx, cy, program, [{
-                        opacity,
-                        matrix,
-                        cache: target,
-                    }], 0, 0, true);
+            // overlay上的没有高清要忽略
+            if (isOverlay) {
+                let target = textureTarget[0];
+                if (target) {
+                    let isInScreen = checkInScreen(target.bbox, matrix, W, H);
+                    if (isInScreen) {
+                        drawTextureCache(gl, W, H, cx, cy, program, [{
+                                opacity,
+                                matrix,
+                                cache: target,
+                            }], 0, 0, true);
+                    }
+                }
             }
-            // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (target && target !== node.textureCache || node.isShapeGroup) {
-                i += total + next;
+            // 真正的Page内容有高清考虑
+            else {
+                let target = textureTarget[scaleIndex], isInScreen = false;
+                // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
+                if (mergeIndex[i] || target) {
+                    if (target) {
+                        isInScreen = checkInScreen(target.bbox, matrix, W, H);
+                    }
+                }
+                // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
+                else {
+                    if (node.hasContent) {
+                        isInScreen = checkInScreen(node._bbox || node.bbox, matrix, W, H);
+                        if (isInScreen) {
+                            node.genTexture(gl, scale, scaleIndex);
+                            target = textureTarget[scaleIndex];
+                        }
+                    }
+                }
+                if (isInScreen && target) {
+                    drawTextureCache(gl, W, H, cx, cy, program, [{
+                            opacity,
+                            matrix,
+                            cache: target,
+                        }], 0, 0, true);
+                }
+                // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+                if (target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
+                    i += total + next;
+                }
             }
         }
         // 再覆盖渲染artBoard的阴影和标题
@@ -26116,29 +26268,29 @@
                 else {
                     inject.measureImg(ArtBoard.BOX_SHADOW, (res) => {
                         ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, res.source);
-                        root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined);
+                        root.addUpdate(overlay, [], RefreshLevel.REPAINT, false, false, undefined);
                     });
                 }
             }
         }
     }
     // 汇总作为局部根节点的bbox
-    function genBboxTotal(structs, node, index, total) {
-        const res = (node.textureTarget ? node.textureTarget.bbox : (node._bbox || node.bbox)).slice(0);
+    function genBboxTotal(structs, node, index, total, scaleIndex) {
+        var _a;
+        const res = (((_a = node.textureTarget[scaleIndex]) === null || _a === void 0 ? void 0 : _a.bbox) || node._bbox || node.bbox).slice(0);
         toE(node.tempMatrix);
         for (let i = index + 1, len = index + total + 1; i < len; i++) {
-            const { node, total } = structs[i];
-            const parent = node.parent;
-            const m = multiply(parent.tempMatrix, node.matrix);
-            assignMatrix(node.tempMatrix, m);
-            const textureTarget = node.textureTarget;
-            const b = (textureTarget && textureTarget.available)
-                ? textureTarget.bbox : (node._bbox || node.bbox);
+            const { node: node2, total: total2, next: next2 } = structs[i];
+            const parent = node2.parent;
+            const m = multiply(parent.tempMatrix, node2.matrix);
+            assignMatrix(node2.tempMatrix, m);
+            const target = node2.textureTarget[scaleIndex];
+            const b = (target === null || target === void 0 ? void 0 : target.bbox) || node2._bbox || node2.bbox;
             if (b[2] - b[0] && b[3] - b[1]) {
                 mergeBbox(res, transformBbox(b, m));
             }
-            if (textureTarget !== node.textureCache) {
-                i += total;
+            if (target !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+                i += total2 + next2;
             }
         }
         return res;
@@ -26168,22 +26320,45 @@
         bbox[2] = Math.max(bbox[2], t[2]);
         bbox[3] = Math.max(bbox[3], t[3]);
     }
-    function genTotal(gl, root, node, structs, index, lv, total, W, H) {
+    function genTotal(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex) {
+        var _a;
         // 缓存仍然还在直接返回，无需重新生成
-        if (node.textureTotal && node.textureTotal.available) {
-            return node.textureTotal;
+        if ((_a = node.textureTotal[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
+            return node.textureTotal[scaleIndex];
+        }
+        // 先检查范围内，因为可能还没有真实渲染生成内容
+        const bbox = genBboxTotal(structs, node, index, total, scaleIndex);
+        if (!checkInScreen(bbox, node.matrixWorld, W, H)) {
+            return;
         }
         // 单个叶子节点也不需要，就是本身节点的内容
         if (!total) {
-            return node.textureCache;
+            let target = node.textureCache[scaleIndex];
+            if (!target && node.hasContent) {
+                node.genTexture(gl, scale, scaleIndex);
+                target = node.textureCache[scaleIndex];
+            }
+            return target;
         }
         const programs = root.programs;
         const program = programs.program;
         // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
-        const bbox = genBboxTotal(structs, node, index, total);
-        const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+        const x = bbox[0], y = bbox[1];
+        let w = bbox[2] - x, h = bbox[3] - y;
+        while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        const dx = -x * scale, dy = -y * scale;
+        w *= scale;
+        h *= scale;
         const cx = w * 0.5, cy = h * 0.5;
-        const target = TextureCache.getEmptyInstance(gl, bbox);
+        const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
         // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
         for (let i = index, len = index + total + 1; i < len; i++) {
@@ -26193,67 +26368,82 @@
                 i += total2;
                 continue;
             }
-            let opacity;
+            let opacity, matrix;
             // 首个节点即局部根节点
             if (i === index) {
                 opacity = node2.tempOpacity = 1;
+                matrix = multiplyScale(node2.tempMatrix, scale); // 求bbox时已经是E了
             }
             else {
                 const parent = node2.parent;
                 opacity = computedStyle.opacity * parent.tempOpacity;
                 node2.tempOpacity = opacity;
+                matrix = multiply(parent.tempMatrix, node2.matrix);
+                assignMatrix(node2.tempMatrix, matrix);
             }
-            const target = node2.textureTarget;
-            if (target) {
+            let target2 = node2.textureTarget[scaleIndex];
+            // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
+            if (!target2 && node2.hasContent) {
+                node2.genTexture(gl, scale, scaleIndex);
+                target2 = node2.textureTarget[scaleIndex];
+            }
+            if (target2) {
                 drawTextureCache(gl, W, H, cx, cy, program, [{
                         opacity,
                         matrix: node2.tempMatrix,
-                        cache: target,
-                    }], -x, -y, false);
+                        cache: target2,
+                    }], dx, dy, false);
             }
-            // 有局部子树缓存可以跳过其所有子孙节点
-            if (target && target !== node2.textureCache) {
-                i += total2;
-                // mask特殊跳过其后面next节点，除非跳出层级或者中断mask
-                if (target === node.textureMask) {
-                    i += next2;
-                }
-            }
-            // 特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            else if (node2.isShapeGroup) {
-                i += total2;
+            // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+            if (target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+                i += total2 + next2;
             }
         }
         // 删除fbo恢复
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target;
     }
-    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H) {
+    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex) {
+        var _a;
         // 缓存仍然还在直接返回，无需重新生成
-        if (node.textureMask && node.textureMask.available) {
-            return node.textureMask;
+        if ((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
+            return node.textureMask[scaleIndex];
         }
-        // 可能是个单叶子节点，mask申明无效
-        if (!node.next) {
-            return node.textureTarget;
+        // 可能是个单叶子节点，mask申明无效；或者因为可视范围外还未生成汇总total
+        if (!node.next || !node.textureTarget[scaleIndex]) {
+            return node.textureTarget[scaleIndex];
         }
+        const textureTarget = node.textureTarget[scaleIndex];
         const programs = root.programs;
         const program = programs.program;
         gl.useProgram(program);
         // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
-        const bbox = node.textureTarget.bbox;
+        const bbox = textureTarget.bbox;
         const { matrix } = node;
         const x = bbox[0], y = bbox[1];
-        const w = bbox[2] - x, h = bbox[3] - y;
+        let w = bbox[2] - x, h = bbox[3] - y;
+        while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        const dx = -x * scale, dy = -y * scale;
+        w *= scale;
+        h *= scale;
         const cx = w * 0.5, cy = h * 0.5;
         const summary = createTexture(gl, 0, undefined, w, h);
         const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
         // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
         const im = inverse(matrix);
+        multiplyScale(im, scale);
         // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
         for (let i = index + total + 1, len = structs.length; i < len; i++) {
             const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
-            const computedStyle = node.computedStyle;
+            const computedStyle = node2.computedStyle;
             // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
             if (lv > lv2) {
                 node.struct.next = i - index - total - 1;
@@ -26279,21 +26469,25 @@
                 matrix = multiply(parent.tempMatrix, node2.matrix);
                 assignMatrix(node2.tempMatrix, matrix);
             }
-            const target = node2.textureTarget;
-            if (target) {
+            let target2 = node2.textureTarget[scaleIndex];
+            // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
+            if (!target2 && node2.hasContent) {
+                node2.genTexture(gl, scale, scaleIndex);
+                target2 = node2.textureTarget[scaleIndex];
+            }
+            if (target2) {
                 drawTextureCache(gl, W, H, cx, cy, program, [{
                         opacity,
                         matrix,
-                        cache: target,
-                    }], -x, -y, false);
+                        cache: target2,
+                    }], dx, dy, false);
             }
-            // 有局部子树缓存可以跳过其所有子孙节点
-            if (target && target !== node2.textureCache || node2.isShapeGroup) {
+            // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+            if (target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
                 i += total2 + next2;
             }
         }
-        const target = TextureCache.getEmptyInstance(gl, bbox);
-        const textureTarget = node.textureTarget;
+        const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const maskProgram = programs.maskProgram;
         gl.useProgram(maskProgram);
         // alpha直接应用，汇总乘以mask本身的alpha即可
@@ -26303,8 +26497,8 @@
         }
         // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
         else if (maskMode === MASK.OUTLINE) {
-            node.textureOutline = genOutline(gl, root, node, structs, index, total, bbox);
-            const temp = TextureCache.getEmptyInstance(gl, bbox);
+            node.textureOutline = genOutline(gl, root, node, structs, index, total, bbox, scale);
+            const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
             drawMask(gl, w, h, maskProgram, node.textureOutline.texture, summary);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -26312,16 +26506,17 @@
             gl.useProgram(program);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
             toE(node.tempMatrix);
+            multiplyScale(node.tempMatrix, scale);
             drawTextureCache(gl, w, h, cx, cy, program, [{
                     opacity: 1,
                     matrix: node.tempMatrix,
                     cache: textureTarget,
-                }], -x, -y, false);
+                }], dx, dy, false);
             drawTextureCache(gl, w, h, cx, cy, program, [{
                     opacity: 1,
                     matrix: node.tempMatrix,
                     cache: temp,
-                }], -x, -y, false);
+                }], dx, dy, false);
             temp.release();
         }
         // 删除fbo恢复
@@ -26330,14 +26525,24 @@
         gl.useProgram(program);
         return target;
     }
-    function genOutline(gl, root, node, structs, index, total, bbox) {
+    function genOutline(gl, root, node, structs, index, total, bbox, scale) {
         // 缓存仍然还在直接返回，无需重新生成
         if (node.textureOutline && node.textureOutline.available) {
             return node.textureOutline;
         }
         const x = bbox[0], y = bbox[1];
         const w = bbox[2] - x, h = bbox[3] - y;
-        const os = inject.getOffscreenCanvas(w, h, 'maskOutline');
+        while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        const dx = -x * scale, dy = -y * scale;
+        const os = inject.getOffscreenCanvas(w * scale, h * scale, 'maskOutline');
         const ctx = os.ctx;
         ctx.fillStyle = '#FFF';
         // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
@@ -26357,21 +26562,21 @@
             // 矢量很特殊
             if (node instanceof Polyline) {
                 const points = node.points;
-                canvasPolygon(ctx, points, -x, -y);
+                canvasPolygon(ctx, points, scale, dx, dy);
                 ctx.closePath();
                 ctx.fill(fillRule);
             }
             else if (node instanceof ShapeGroup) {
                 const points = node.points;
                 points.forEach(item => {
-                    canvasPolygon(ctx, item, -x, -y);
+                    canvasPolygon(ctx, item, scale, dx, dy);
                     ctx.closePath();
                 });
                 ctx.fill(fillRule);
             }
             // 普通节点就是个矩形
             else if (node instanceof Bitmap) {
-                ctx.fillRect(-x, -y, node.width, node.height);
+                ctx.fillRect(dx, dy, node.width * scale, node.height * scale);
             }
         }
         const target = TextureCache.getInstance(gl, os.canvas, bbox);
@@ -26390,6 +26595,16 @@
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.deleteFramebuffer(frameBuffer);
         gl.viewport(0, 0, width, height);
+    }
+    function checkInScreen(bbox, matrix, width, height) {
+        const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+        const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
+        // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
+        const xa = Math.min(x1, x2, x3, x4);
+        const ya = Math.min(y1, y2, y3, y4);
+        const xb = Math.max(x1, x2, x3, x4);
+        const yb = Math.max(y1, y2, y3, y4);
+        return isRectsOverlap$1(xa, ya, xb, yb, 0, 0, width, height, true);
     }
 
     function checkReflow(root, node, addDom, removeDom) {
@@ -26477,18 +26692,6 @@
         }
         return shader;
     }
-
-    const config = {
-        MAX_TEXTURE_SIZE: 2048,
-        SMALL_UNIT: 32,
-        MAX_NUM: Math.pow(2048 / 32, 2),
-        MAX_TEXTURE_UNITS: 8,
-        init(maxSize, maxUnits) {
-            this.MAX_TEXTURE_SIZE = maxSize;
-            this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
-            this.MAX_TEXTURE_UNITS = maxUnits;
-        },
-    };
 
     const mainVert = `#version 100
 

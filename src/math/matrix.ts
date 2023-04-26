@@ -279,6 +279,21 @@ export function multiplyScaleY(m: Float64Array, v: number) {
   return m;
 }
 
+export function multiplyScale(m: Float64Array, v: number) {
+  if(v === 1) {
+    return m;
+  }
+  m[0] *= v;
+  m[1] *= v;
+  m[2] *= v;
+  m[3] *= v;
+  m[4] *= v;
+  m[5] *= v;
+  m[6] *= v;
+  m[7] *= v;
+  return m;
+}
+
 export function calPoint(point: { x: number, y: number }, m: Float64Array) {
   if(m && !isE(m)) {
     let { x, y } = point;

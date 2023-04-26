@@ -56,10 +56,10 @@ class Node extends Event {
   _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
-  textureCache?: TextureCache; // 从canvasCache生成的纹理缓存
-  textureTotal?: TextureCache; // 局部子树缓存
-  textureMask?: TextureCache; // 作为mask时的缓存
-  textureTarget?: TextureCache; // 指向自身所有缓存中最优先的那个
+  textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
+  textureTotal: Array<TextureCache | undefined>; // 局部子树缓存
+  textureMask: Array<TextureCache | undefined>; // 作为mask时的缓存
+  textureTarget: Array<TextureCache | undefined>; // 指向自身所有缓存中最优先的那个
   textureOutline?: TextureCache; // 轮廓mask特殊使用
   tempOpacity: number;
   tempMatrix: Float64Array;
@@ -98,6 +98,10 @@ class Node extends Event {
     this.hasCacheMw = false;
     this.hasCacheMwLv = false;
     this.hasContent = false;
+    this.textureCache = [];
+    this.textureTotal = [];
+    this.textureMask = [];
+    this.textureTarget = [];
     this.tempOpacity = 1;
     this.tempMatrix = identity();
   }
@@ -399,51 +403,54 @@ class Node extends Event {
   }
 
   // 释放可能存在的老数据，具体渲染由各个子类自己实现
-  renderCanvas() {
+  renderCanvas(scale: number) {
     const canvasCache = this.canvasCache;
     if (canvasCache && canvasCache.available) {
       canvasCache.release();
     }
   }
 
-  genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this.textureCache?.release();
+  genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, scale: number, scaleIndex: number) {
+    this.renderCanvas(scale);
+    this.textureCache[scaleIndex]?.release();
     const canvasCache = this.canvasCache;
-    if (canvasCache && canvasCache.available) {
-      this.textureTarget = this.textureCache
+    if (canvasCache?.available) {
+      this.textureTarget[scaleIndex] = this.textureCache[scaleIndex]
         = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas, (this._bbox || this.bbox).slice(0));
       canvasCache.release();
     }
     else {
-      this.textureTarget = undefined;
+      this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] = undefined;
     }
   }
 
   resetTextureTarget() {
     const { textureMask, textureTotal, textureCache } = this;
-    if (textureMask && textureMask.available) {
-      this.textureTarget = textureMask;
-    }
-    else if (textureTotal && textureTotal.available) {
-      this.textureTarget = textureTotal;
-    }
-    else if (textureCache && textureCache.available) {
-      this.textureTarget = textureCache;
-    }
-    else {
-      this.textureTarget = undefined;
+    for (let i = 0, len = textureCache.length; i < len; i++) {
+      if (textureMask[i]?.available) {
+        this.textureTarget[i] = textureMask[i];
+      }
+      else if (textureTotal[i]?.available) {
+        this.textureTarget[i] = textureTotal[i];
+      }
+      else if (textureCache[i]?.available) {
+        this.textureTarget[i] = textureCache[i];
+      }
+      else {
+        this.textureTarget[i] = undefined;
+      }
     }
   }
 
   clearCache(includeSelf = false) {
     if (includeSelf) {
-      this.textureCache?.release();
+      this.textureCache.forEach(item => item?.release());
     }
     else {
       this.textureTarget = this.textureCache;
     }
-    this.textureTotal?.release();
-    this.textureMask?.release();
+    this.textureTotal.forEach(item => item?.release());
+    this.textureMask.forEach(item => item?.release());
     this.refreshLevel |= RefreshLevel.CACHE;
   }
 
@@ -460,7 +467,7 @@ class Node extends Event {
   }
 
   clearMask() {
-    this.textureMask?.release();
+    this.textureMask.forEach(item => item?.release());
     this.resetTextureTarget();
     this.struct.next = 0;
     // 原本指向mask的引用也需清除

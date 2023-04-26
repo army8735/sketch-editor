@@ -7,6 +7,7 @@ import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import inject from '../util/inject';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import CanvasCache from '../refresh/CanvasCache';
+import config from '../refresh/config';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -268,10 +269,22 @@ class Text extends Node {
     return this.hasContent = !!this.content;
   }
 
-  override renderCanvas() {
-    super.renderCanvas();
-    const { height, rich, computedStyle, lineBoxList } = this;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(this.width, height);
+  override renderCanvas(scale: number) {
+    super.renderCanvas(scale);
+    const bbox = this._bbox || this.bbox;
+    const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+    while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+      if (scale <= 1) {
+        break;
+      }
+      scale = scale >> 1;
+    }
+    if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+      return;
+    }
+    const dx = -x * scale, dy = -y * scale;
+    const { rich, computedStyle, lineBoxList } = this;
+    const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale);
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     // 富文本每串不同的需要设置字体颜色
@@ -293,7 +306,7 @@ class Text extends Node {
     for (let i = 0, len = lineBoxList.length; i < len; i++) {
       const lineBox = lineBoxList[i];
       // 固定尺寸超过则overflow: hidden
-      if (lineBox.y >= height) {
+      if (lineBox.y >= h) {
         break;
       }
       const list = lineBox.list, len = list.length;
@@ -305,9 +318,14 @@ class Text extends Node {
           color = color2rgbaStr(cur.color);
         }
         const textBox = list[i];
-        ctx.font = textBox.font;
+        if (scale !== 1) {
+          ctx.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+        }
+        else {
+          ctx.font = textBox.font;
+        }
         ctx.fillStyle = color;
-        ctx.fillText(textBox.str, textBox.x, textBox.y + textBox.baseline);
+        ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
         count += textBox.str.length;
       }
     }

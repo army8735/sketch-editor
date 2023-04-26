@@ -56,8 +56,8 @@ class TextureCache {
     return new TextureCache(gl, texture, bbox);
   }
 
-  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array) {
-    const texture = createTexture(gl, 0, undefined, bbox[2] - bbox[0], bbox[3] - bbox[1]);
+  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, scale = 1) {
+    const texture = createTexture(gl, 0, undefined, (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale);
     return new TextureCache(gl, texture, bbox);
   }
 

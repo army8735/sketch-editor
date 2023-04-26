@@ -1,5 +1,4 @@
 import { calRectPoint } from '../math/matrix';
-import { isRectsOverlap } from '../math/geom';
 import TextureCache from '../refresh/TextureCache';
 
 export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, n: number,
@@ -78,18 +77,6 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
     bindTexture(gl, texture, 0);
     const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix)
     const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-    // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
-    const xa = Math.min(x1, x2, x3, x4);
-    const ya = Math.min(y1, y2, y3, y4);
-    const xb = Math.max(x1, x2, x3, x4);
-    const yb = Math.max(y1, y2, y3, y4);
-    if (!isRectsOverlap(xa, ya, xb, yb, 0, 0, width, height, true)) {
-      // 提前跳出不创建gl交互数据
-      if (isSingle) {
-        return;
-      }
-      continue;
-    }
     const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
     const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
     const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);

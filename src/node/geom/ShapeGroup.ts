@@ -18,6 +18,7 @@ import { isE } from '../../math/matrix';
 import { toPrecision } from '../../math/geom';
 import inject, { OffScreen } from '../../util/inject';
 import bezier from '../../math/bezier';
+import config from '../../refresh/config';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -121,13 +122,24 @@ class ShapeGroup extends Group {
     this.points = res;
   }
 
-  override renderCanvas() {
-    super.renderCanvas();
+  override renderCanvas(scale: number) {
+    super.renderCanvas(scale);
     this.buildPoints();
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
     const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
+    // 暂时这样防止超限，TODO 超大尺寸
+    while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+      if (scale <= 1) {
+        break;
+      }
+      scale = scale >> 1;
+    }
+    if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+      return;
+    }
+    const dx = -x * scale, dy = -y * scale;
+    const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     const {
@@ -143,6 +155,12 @@ class ShapeGroup extends Group {
       strokeLinejoin,
       strokeMiterlimit,
     } = this.computedStyle;
+    if (scale !== 1) {
+      ctx.setLineDash(strokeDasharray.map(i => i * scale));
+    }
+    else {
+      ctx.setLineDash(strokeDasharray);
+    }
     ctx.setLineDash(strokeDasharray);
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
@@ -175,7 +193,7 @@ class ShapeGroup extends Group {
         }
       }
       points.forEach(item => {
-        canvasPolygon(ctx, item, -x, -y);
+        canvasPolygon(ctx, item, scale, dx, dy);
         ctx.closePath();
       });
       ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
@@ -199,7 +217,7 @@ class ShapeGroup extends Group {
     else {
       ctx.lineJoin = 'miter';
     }
-    ctx.miterLimit = strokeMiterlimit;
+    ctx.miterLimit = strokeMiterlimit * scale;
     // 再上层的stroke
     for (let i = 0, len = stroke.length; i < len; i++) {
       if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -232,9 +250,9 @@ class ShapeGroup extends Group {
       const p = strokePosition[i];
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
-        ctx.lineWidth = strokeWidth[i] * 2;
+        ctx.lineWidth = strokeWidth[i] * 2 * scale;
         points.forEach(item => {
-          canvasPolygon(ctx, item, -x, -y);
+          canvasPolygon(ctx, item, scale, dx, dy);
           ctx.closePath();
         });
       }
@@ -244,18 +262,18 @@ class ShapeGroup extends Group {
         ctx2.setLineDash(strokeDasharray);
         ctx2.lineCap = ctx.lineCap;
         ctx2.lineJoin = ctx.lineJoin;
-        ctx2.miterLimit = ctx.miterLimit;
+        ctx2.miterLimit = ctx.miterLimit * scale;
         ctx2.strokeStyle = ctx.strokeStyle;
-        ctx2.lineWidth = strokeWidth[i] * 2;
+        ctx2.lineWidth = strokeWidth[i] * 2 * scale;
         points.forEach(item => {
-          canvasPolygon(ctx2!, item, -x, -y);
+          canvasPolygon(ctx2!, item, scale, dx, dy);
           ctx2!.closePath();
         });
       }
       else {
-        ctx.lineWidth = strokeWidth[i];
+        ctx.lineWidth = strokeWidth[i] * scale;
         points.forEach(item => {
-          canvasPolygon(ctx, item, -x, -y);
+          canvasPolygon(ctx, item, scale, dx, dy);
           ctx.closePath();
         });
       }

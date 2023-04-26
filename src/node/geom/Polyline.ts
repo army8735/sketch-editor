@@ -10,6 +10,7 @@ import { CURVE_MODE, GRADIENT, STROKE_LINE_CAP, STROKE_LINE_JOIN, STROKE_POSITIO
 import { clone } from '../../util';
 import inject, { OffScreen } from '../../util/inject';
 import bezier from '../../math/bezier';
+import config from '../../refresh/config';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -203,13 +204,24 @@ class Polyline extends Geom {
     this.points = res;
   }
 
-  override renderCanvas() {
-    super.renderCanvas();
+  override renderCanvas(scale: number) {
+    super.renderCanvas(scale);
     this.buildPoints();
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
     const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(w, h, x, y);
+    // 暂时这样防止超限，TODO 超大尺寸
+    while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+      if (scale <= 1) {
+        break;
+      }
+      scale = scale >> 1;
+    }
+    if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+      return;
+    }
+    const dx = -x * scale, dy = -y * scale;
+    const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     const {
@@ -224,7 +236,12 @@ class Polyline extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = this.computedStyle;
-    ctx.setLineDash(strokeDasharray);
+    if (scale !== 1) {
+      ctx.setLineDash(strokeDasharray.map(i => i * scale));
+    }
+    else {
+      ctx.setLineDash(strokeDasharray);
+    }
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
@@ -255,7 +272,7 @@ class Polyline extends Geom {
           ctx.fillStyle = rg;
         }
       }
-      canvasPolygon(ctx, points, -x, -y);
+      canvasPolygon(ctx, points, scale, dx, dy);
       if (this.isClosed) {
         ctx.closePath();
       }
@@ -280,7 +297,7 @@ class Polyline extends Geom {
     else {
       ctx.lineJoin = 'miter';
     }
-    ctx.miterLimit = strokeMiterlimit;
+    ctx.miterLimit = strokeMiterlimit * scale;
     // 再上层的stroke
     for (let i = 0, len = stroke.length; i < len; i++) {
       if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -312,7 +329,7 @@ class Polyline extends Geom {
       const p = strokePosition[i];
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
-        ctx.lineWidth = strokeWidth[i] * 2;
+        ctx.lineWidth = strokeWidth[i] * 2 * scale;
         canvasPolygon(ctx, points, -x, -y);
       }
       else if (p === STROKE_POSITION.OUTSIDE) {
@@ -321,14 +338,14 @@ class Polyline extends Geom {
         ctx2.setLineDash(strokeDasharray);
         ctx2.lineCap = ctx.lineCap;
         ctx2.lineJoin = ctx.lineJoin;
-        ctx2.miterLimit = ctx.miterLimit;
+        ctx2.miterLimit = ctx.miterLimit * scale;
         ctx2.strokeStyle = ctx.strokeStyle;
-        ctx2.lineWidth = strokeWidth[i] * 2;
-        canvasPolygon(ctx2, points, -x, -y);
+        ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+        canvasPolygon(ctx2, points, scale, dx, dy);
       }
       else {
-        ctx.lineWidth = strokeWidth[i];
-        canvasPolygon(ctx, points, -x, -y);
+        ctx.lineWidth = strokeWidth[i] * scale;
+        canvasPolygon(ctx, points, scale, dx, dy);
       }
       if (this.isClosed) {
         if (ctx2) {
