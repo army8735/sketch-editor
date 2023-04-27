@@ -26075,6 +26075,10 @@
                         node,
                     });
                 }
+                // 可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
+                else if (shouldMask) {
+                    genNextCount(node, structs, i, lv, total);
+                }
             }
         }
         // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
@@ -26089,13 +26093,18 @@
                 const { i, lv, total, node, } = mergeList[j];
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
                 node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex]
-                    = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
-                // 生成mask
+                    = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+                // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
                 const computedStyle = node.computedStyle;
                 const { maskMode } = computedStyle;
-                if (maskMode && node.next && node.textureTarget[scaleIndex]) {
-                    node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
-                        = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex);
+                if (maskMode && node.next) {
+                    if (node.textureTarget[scaleIndex]) {
+                        node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
+                            = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+                    }
+                    else {
+                        genNextCount(node, structs, i, lv, total);
+                    }
                 }
             }
         }
@@ -26232,7 +26241,7 @@
                         }], 0, 0, true);
                 }
                 // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-                if (target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
+                if (mergeIndex[i] || target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
                     i += total + next;
                 }
             }
@@ -26348,7 +26357,7 @@
         bbox[2] = Math.max(bbox[2], t[2]);
         bbox[3] = Math.max(bbox[3], t[3]);
     }
-    function genTotal(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex) {
+    function genTotal(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex, mergeIndex) {
         var _a;
         // 缓存仍然还在直接返回，无需重新生成
         if ((_a = node.textureTotal[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
@@ -26423,7 +26432,7 @@
                     }], dx, dy, false);
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+            if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
                 i += total2 + next2;
             }
         }
@@ -26431,7 +26440,7 @@
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target;
     }
-    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex) {
+    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex, mergeIndex) {
         var _a;
         // 缓存仍然还在直接返回，无需重新生成
         if ((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
@@ -26511,7 +26520,7 @@
                     }], dx, dy, false);
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+            if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
                 i += total2 + next2;
             }
         }
@@ -26637,6 +26646,20 @@
         const xb = Math.max(x1, x2, x3, x4);
         const yb = Math.max(y1, y2, y3, y4);
         return isRectsOverlap$1(xa, ya, xb, yb, 0, 0, width, height, true);
+    }
+    function genNextCount(node, structs, index, lv, total) {
+        for (let i = index + total + 1, len = structs.length; i < len; i++) {
+            const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
+            const computedStyle = node2.computedStyle;
+            if (lv > lv2) {
+                node.struct.next = i - index - total - 1;
+                break;
+            }
+            else if (i === len || computedStyle.breakMask && lv === lv2) {
+                node.struct.next = i - index - total + total2 + next2;
+                break;
+            }
+        }
     }
 
     function checkReflow(root, node, addDom, removeDom) {

@@ -94,6 +94,10 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
           node,
         });
       }
+      // 可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
+      else if (shouldMask) {
+        genNextCount(node, structs, i, lv, total);
+      }
     }
   }
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
@@ -113,13 +117,18 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
       } = mergeList[j];
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
       node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex]
-        = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
-      // 生成mask
+        = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+      // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
       const computedStyle = node.computedStyle;
       const { maskMode } = computedStyle;
-      if (maskMode && node.next && node.textureTarget[scaleIndex]) {
-        node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
-          = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex);
+      if (maskMode && node.next) {
+        if (node.textureTarget[scaleIndex]) {
+          node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
+            = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+        }
+        else {
+          genNextCount(node, structs, i, lv, total);
+        }
       }
     }
   }
@@ -257,7 +266,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
         }], 0, 0, true);
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-      if (target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
+      if (mergeIndex[i] || target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
         i += total + next;
       }
     }
@@ -380,7 +389,8 @@ function mergeBbox(bbox: Float64Array, t: Float64Array) {
 }
 
 function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, structs: Array<Struct>,
-                  index: number, lv: number, total: number, W: number, H: number, scale: number, scaleIndex: number) {
+                  index: number, lv: number, total: number, W: number, H: number, scale: number, scaleIndex: number,
+                  mergeIndex: Array<boolean>) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureTotal[scaleIndex]?.available) {
     return node.textureTotal[scaleIndex];
@@ -456,7 +466,7 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
       }], dx, dy, false);
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+    if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
       i += total2 + next2;
     }
   }
@@ -467,7 +477,7 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
 
 function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, maskMode: MASK,
                  structs: Array<Struct>, index: number, lv: number, total: number, W: number, H: number,
-                 scale: number, scaleIndex: number) {
+                 scale: number, scaleIndex: number, mergeIndex: Array<boolean>) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureMask[scaleIndex]?.available) {
     return node.textureMask[scaleIndex];
@@ -549,7 +559,7 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
       }], dx, dy, false);
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+    if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
       i += total2 + next2;
     }
   }
@@ -683,4 +693,19 @@ function checkInScreen(bbox: Float64Array, matrix: Float64Array, width: number, 
   const xb = Math.max(x1, x2, x3, x4);
   const yb = Math.max(y1, y2, y3, y4);
   return isRectsOverlap(xa, ya, xb, yb, 0, 0, width, height, true);
+}
+
+function genNextCount(node: Node, structs: Array<Struct>, index: number, lv: number, total: number) {
+  for(let i = index + total + 1, len = structs.length; i < len; i++) {
+    const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
+    const computedStyle = node2.computedStyle;
+    if (lv > lv2) {
+      node.struct.next = i - index - total - 1;
+      break;
+    }
+    else if (i === len || computedStyle.breakMask && lv === lv2) {
+      node.struct.next = i - index - total + total2 + next2;
+      break;
+    }
+  }
 }
