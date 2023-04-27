@@ -78,18 +78,23 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     }
     const { maskMode, opacity } = computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要
-    const needTotal = opacity > 0 && opacity < 1 && total > 0
+    const shouldTotal = opacity > 0 && opacity < 1 && total > 0;
+    const needTotal = shouldTotal
       && (!node.textureTotal[scaleIndex] || !node.textureTotal[scaleIndex]!.available);
-    const needMask = maskMode > 0 && !!node.next
+    const shouldMask = maskMode > 0 && !!node.next;
+    const needMask = shouldMask
       && (!node.textureMask[scaleIndex] || !node.textureMask[scaleIndex]?.available);
-    if (needTotal || needMask) {
-      mergeList.push({
-        i,
-        lv,
-        total,
-        node,
-      });
+    // 应该生成汇总和需要生成汇总有区别，可能在可视范围外，虽然应该但不需要，对于遍历可以优化跳过
+    if (shouldTotal || shouldMask) {
       mergeIndex[i] = true;
+      if (needTotal || needMask) {
+        mergeList.push({
+          i,
+          lv,
+          total,
+          node,
+        });
+      }
     }
   }
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始

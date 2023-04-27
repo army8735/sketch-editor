@@ -635,7 +635,7 @@ function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: num
 }
 
 export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
-                           bx1: number, by1: number, bx2: number, by2: number) {
+                                  bx1: number, by1: number, bx2: number, by2: number) {
   const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
   if (d !== 0) {
     const toSource = (
