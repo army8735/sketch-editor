@@ -26059,11 +26059,13 @@
             const { maskMode, opacity } = computedStyle;
             // 非单节点透明需汇总子树，有mask的也需要
             const shouldTotal = opacity > 0 && opacity < 1 && total > 0;
-            const needTotal = shouldTotal
-                && (!node.textureTotal[scaleIndex] || !node.textureTotal[scaleIndex].available);
+            const needTotal = shouldTotal &&
+                (!node.textureTotal[scaleIndex] ||
+                    !node.textureTotal[scaleIndex].available);
             const shouldMask = maskMode > 0 && !!node.next;
-            const needMask = shouldMask
-                && (!node.textureMask[scaleIndex] || !((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
+            const needMask = shouldMask &&
+                (!node.textureMask[scaleIndex] ||
+                    !((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
             // 应该生成汇总和需要生成汇总有区别，可能在可视范围外，虽然应该但不需要，对于遍历可以优化跳过
             if (shouldTotal || shouldMask) {
                 mergeIndex[i] = true;
@@ -26090,17 +26092,16 @@
                 return b.lv - a.lv;
             });
             for (let j = 0, len = mergeList.length; j < len; j++) {
-                const { i, lv, total, node, } = mergeList[j];
+                const { i, lv, total, node } = mergeList[j];
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-                node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex]
-                    = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+                node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
                 // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
                 const computedStyle = node.computedStyle;
                 const { maskMode } = computedStyle;
                 if (maskMode && node.next) {
                     if (node.textureTarget[scaleIndex]) {
-                        node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
-                            = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+                        node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] =
+                            genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
                     }
                     else {
                         genNextCount(node, structs, i, lv, total);
@@ -26139,7 +26140,8 @@
                 isOverlay = true;
             }
             const computedStyle = node.computedStyle;
-            if (!computedStyle.visible && !computedStyle.maskMode || computedStyle.opacity <= 0) {
+            if ((!computedStyle.visible && !computedStyle.maskMode) ||
+                computedStyle.opacity <= 0) {
                 i += total + next;
                 continue;
             }
@@ -26187,7 +26189,9 @@
             // 继承父的opacity和matrix，仍然要注意root没有parent
             const { parent, textureTarget } = node;
             if (!hasCacheOpLv) {
-                node._opacity = parent ? parent._opacity * node.computedStyle.opacity : node.computedStyle.opacity;
+                node._opacity = parent
+                    ? parent._opacity * node.computedStyle.opacity
+                    : node.computedStyle.opacity;
                 node.hasCacheOpLv = true;
             }
             if (!hasCacheMwLv) {
@@ -26206,11 +26210,13 @@
                 if (target) {
                     const isInScreen = checkInScreen(target.bbox, matrix, W, H);
                     if (isInScreen) {
-                        drawTextureCache(gl, W, H, cx, cy, program, [{
+                        drawTextureCache(gl, W, H, cx, cy, program, [
+                            {
                                 opacity,
                                 matrix,
                                 cache: target,
-                            }], 0, 0, true);
+                            },
+                        ], 0, 0, true);
                     }
                 }
             }
@@ -26234,14 +26240,18 @@
                     }
                 }
                 if (isInScreen && target) {
-                    drawTextureCache(gl, W, H, cx, cy, program, [{
+                    drawTextureCache(gl, W, H, cx, cy, program, [
+                        {
                             opacity,
                             matrix,
                             cache: target,
-                        }], 0, 0, true);
+                        },
+                    ], 0, 0, true);
                 }
                 // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-                if (mergeIndex[i] || target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
+                if (mergeIndex[i] ||
+                    (target && target !== node.textureCache[scaleIndex]) ||
+                    node.isShapeGroup) {
                     i += total + next;
                 }
             }
@@ -26314,7 +26324,9 @@
     // 汇总作为局部根节点的bbox
     function genBboxTotal(structs, node, index, total, scaleIndex) {
         var _a;
-        const res = (((_a = node.textureTarget[scaleIndex]) === null || _a === void 0 ? void 0 : _a.bbox) || node._bbox || node.bbox).slice(0);
+        const res = (((_a = node.textureTarget[scaleIndex]) === null || _a === void 0 ? void 0 : _a.bbox) ||
+            node._bbox ||
+            node.bbox).slice(0);
         toE(node.tempMatrix);
         for (let i = index + 1, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
@@ -26326,7 +26338,8 @@
             if (b[2] - b[0] && b[3] - b[1]) {
                 mergeBbox(res, transformBbox(b, m));
             }
-            if (target !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+            if ((target && target !== node2.textureCache[scaleIndex]) ||
+                node2.isShapeGroup) {
                 i += total2 + next2;
             }
         }
@@ -26382,13 +26395,15 @@
         // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
         const x = bbox[0], y = bbox[1];
         let w = bbox[2] - x, h = bbox[3] - y;
-        while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
             if (scale <= 1) {
                 break;
             }
             scale = scale >> 1;
         }
-        if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
         const dx = -x * scale, dy = -y * scale;
@@ -26401,7 +26416,8 @@
         for (let i = index, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
             const computedStyle = node.computedStyle;
-            if (!computedStyle.visible && !computedStyle.maskMode || computedStyle.opacity <= 0) {
+            if ((!computedStyle.visible && !computedStyle.maskMode) ||
+                computedStyle.opacity <= 0) {
                 i += total2 + next2;
                 continue;
             }
@@ -26425,14 +26441,18 @@
                 target2 = node2.textureTarget[scaleIndex];
             }
             if (target2) {
-                drawTextureCache(gl, W, H, cx, cy, program, [{
+                drawTextureCache(gl, W, H, cx, cy, program, [
+                    {
                         opacity,
                         matrix: node2.tempMatrix,
                         cache: target2,
-                    }], dx, dy, false);
+                    },
+                ], dx, dy, false);
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+            if (mergeIndex[i] ||
+                (target2 && target2 !== node2.textureCache[scaleIndex]) ||
+                node2.isShapeGroup) {
                 i += total2 + next2;
             }
         }
@@ -26459,13 +26479,15 @@
         const { matrix, computedStyle } = node;
         const x = bbox[0], y = bbox[1];
         let w = bbox[2] - x, h = bbox[3] - y;
-        while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
             if (scale <= 1) {
                 break;
             }
             scale = scale >> 1;
         }
-        if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
         const dx = -x * scale, dy = -y * scale;
@@ -26486,7 +26508,7 @@
                 node.struct.next = i - index - total - 1;
                 break;
             }
-            else if (i === len || computedStyle.breakMask && lv === lv2) {
+            else if (i === len || (computedStyle.breakMask && lv === lv2)) {
                 node.struct.next = i - index - total + total2 + next2;
                 break;
             }
@@ -26513,14 +26535,18 @@
                 target2 = node2.textureTarget[scaleIndex];
             }
             if (target2) {
-                drawTextureCache(gl, W, H, cx, cy, program, [{
+                drawTextureCache(gl, W, H, cx, cy, program, [
+                    {
                         opacity,
                         matrix,
                         cache: target2,
-                    }], dx, dy, false);
+                    },
+                ], dx, dy, false);
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+            if (mergeIndex[i] ||
+                (target2 && target2 !== node2.textureCache[scaleIndex]) ||
+                node2.isShapeGroup) {
                 i += total2 + next2;
             }
         }
@@ -26546,17 +26572,21 @@
             multiplyScale(node.tempMatrix, scale);
             // mask本身可能不可见
             if (computedStyle.visible && computedStyle.opacity > 0) {
-                drawTextureCache(gl, w, h, cx, cy, program, [{
+                drawTextureCache(gl, w, h, cx, cy, program, [
+                    {
                         opacity: 1,
                         matrix: node.tempMatrix,
                         cache: textureTarget,
-                    }], dx, dy, false);
+                    },
+                ], dx, dy, false);
             }
-            drawTextureCache(gl, w, h, cx, cy, program, [{
+            drawTextureCache(gl, w, h, cx, cy, program, [
+                {
                     opacity: 1,
                     matrix: node.tempMatrix,
                     cache: temp,
-                }], dx, dy, false);
+                },
+            ], dx, dy, false);
             temp.release();
         }
         // 删除fbo恢复
@@ -26573,13 +26603,15 @@
         }
         const x = bbox[0], y = bbox[1];
         const w = bbox[2] - x, h = bbox[3] - y;
-        while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
             if (scale <= 1) {
                 break;
             }
             scale = scale >> 1;
         }
-        if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
         const dx = -x * scale, dy = -y * scale;
@@ -26598,7 +26630,9 @@
                 matrix = multiply(parent.tempMatrix, node.matrix);
                 assignMatrix(node.tempMatrix, matrix);
             }
-            const fillRule = node.computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            const fillRule = node.computedStyle.fillRule === FILL_RULE.EVEN_ODD
+                ? 'evenodd'
+                : 'nonzero';
             ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
             // 矢量很特殊
             if (node instanceof Polyline) {
@@ -26609,7 +26643,7 @@
             }
             else if (node instanceof ShapeGroup) {
                 const points = node.points;
-                points.forEach(item => {
+                points.forEach((item) => {
                     canvasPolygon(ctx, item, scale, dx, dy);
                     ctx.closePath();
                 });
@@ -26655,7 +26689,7 @@
                 node.struct.next = i - index - total - 1;
                 break;
             }
-            else if (i === len || computedStyle.breakMask && lv === lv2) {
+            else if (i === len || (computedStyle.breakMask && lv === lv2)) {
                 node.struct.next = i - index - total + total2 + next2;
                 break;
             }

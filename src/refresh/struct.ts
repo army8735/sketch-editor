@@ -1,18 +1,32 @@
-import Node from '../node/Node';
-import Root from '../node/Root';
+import {
+  bindTexture,
+  createTexture,
+  drawMask,
+  drawTextureCache,
+} from '../gl/webgl';
+import { isRectsOverlap } from '../math/geom';
+import {
+  assignMatrix,
+  calPoint,
+  calRectPoint,
+  inverse,
+  isE,
+  multiply,
+  multiplyScale,
+  toE,
+} from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
-import { RefreshLevel } from './level';
-import { bindTexture, createTexture, drawMask, drawTextureCache } from '../gl/webgl';
-import { assignMatrix, calPoint, calRectPoint, inverse, isE, multiply, multiplyScale, toE } from '../math/matrix';
-import inject from '../util/inject';
-import { FILL_RULE, MASK } from '../style/define';
-import TextureCache from './TextureCache';
+import Bitmap from '../node/Bitmap';
 import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import Bitmap from '../node/Bitmap';
-import { canvasPolygon } from './paint';
-import { isRectsOverlap } from '../math/geom';
+import Node from '../node/Node';
+import Root from '../node/Root';
+import { FILL_RULE, MASK } from '../style/define';
+import inject from '../util/inject';
 import config from './config';
+import { RefreshLevel } from './level';
+import { canvasPolygon } from './paint';
+import TextureCache from './TextureCache';
 
 export type Struct = {
   node: Node;
@@ -29,13 +43,16 @@ type Merge = {
   node: Node;
 };
 
-export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root) {
+export function renderWebgl(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+) {
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
-  let scale = root.getCurPageZoom(), scaleIndex = 0;
+  let scale = root.getCurPageZoom(),
+    scaleIndex = 0;
   if (scale < 1.2) {
     scale = 1;
-  }
-  else {
+  } else {
     let n = 2;
     scaleIndex = 1;
     while (n < scale) {
@@ -47,19 +64,19 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
       // 看0.5n和n之间scale更靠近哪一方（0.5n*1.2分界线），就用那个放大数
       if (scale >= m) {
         scale = n;
-      }
-      else {
+      } else {
         scale = n >> 1;
         scaleIndex--;
       }
-    }
-    else {
+    } else {
       scale = n;
     }
   }
   const { structs, width: W, height: H } = root;
-  const cx = W * 0.5, cy = H * 0.5;
-  const mergeList: Array<Merge> = [], mergeIndex: Array<boolean> = [];
+  const cx = W * 0.5,
+    cy = H * 0.5;
+  const mergeList: Array<Merge> = [],
+    mergeIndex: Array<boolean> = [];
   // 先计算内容matrix等，如果有需要merge合并汇总的记录下来
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
@@ -69,8 +86,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
     if (refreshLevel) {
       // filter之类的变更
       if (refreshLevel < RefreshLevel.REPAINT) {
-      }
-      else {
+      } else {
         node.calContent();
         node.textureTarget[scaleIndex] = undefined;
       }
@@ -78,11 +94,15 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
     const { maskMode, opacity } = computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要
     const shouldTotal = opacity > 0 && opacity < 1 && total > 0;
-    const needTotal = shouldTotal
-      && (!node.textureTotal[scaleIndex] || !node.textureTotal[scaleIndex]!.available);
+    const needTotal =
+      shouldTotal &&
+      (!node.textureTotal[scaleIndex] ||
+        !node.textureTotal[scaleIndex]!.available);
     const shouldMask = maskMode > 0 && !!node.next;
-    const needMask = shouldMask
-      && (!node.textureMask[scaleIndex] || !node.textureMask[scaleIndex]?.available);
+    const needMask =
+      shouldMask &&
+      (!node.textureMask[scaleIndex] ||
+        !node.textureMask[scaleIndex]?.available);
     // 应该生成汇总和需要生成汇总有区别，可能在可视范围外，虽然应该但不需要，对于遍历可以优化跳过
     if (shouldTotal || shouldMask) {
       mergeIndex[i] = true;
@@ -109,24 +129,44 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
       return b.lv - a.lv;
     });
     for (let j = 0, len = mergeList.length; j < len; j++) {
-      const {
+      const { i, lv, total, node } = mergeList[j];
+      // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
+      node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(
+        gl,
+        root,
+        node,
+        structs,
         i,
         lv,
         total,
-        node,
-      } = mergeList[j];
-      // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-      node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex]
-        = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+        W,
+        H,
+        scale,
+        scaleIndex,
+        mergeIndex,
+      );
       // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
       const computedStyle = node.computedStyle;
       const { maskMode } = computedStyle;
       if (maskMode && node.next) {
         if (node.textureTarget[scaleIndex]) {
-          node.textureMask[scaleIndex] = node.textureTarget[scaleIndex]
-            = genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
-        }
-        else {
+          node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] =
+            genMask(
+              gl,
+              root,
+              node,
+              maskMode,
+              structs,
+              i,
+              lv,
+              total,
+              W,
+              H,
+              scale,
+              scaleIndex,
+              mergeIndex,
+            );
+        } else {
           genNextCount(node, structs, i, lv, total);
         }
       }
@@ -136,7 +176,8 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
   // 先渲染artBoard的背景色
   const page = root.lastPage;
   if (page) {
-    const children = page.children, len = children.length;
+    const children = page.children,
+      len = children.length;
     // 背景色分开来
     for (let i = 0; i < len; i++) {
       const artBoard = children[i];
@@ -153,7 +194,9 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
   // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
   const cacheOpList: Array<boolean> = [];
   const cacheMwList: Array<boolean> = [];
-  let lastLv = 0, hasCacheOpLv = false, hasCacheMwLv = false;
+  let lastLv = 0,
+    hasCacheOpLv = false,
+    hasCacheMwLv = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total, next } = structs[i];
@@ -163,7 +206,10 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
       isOverlay = true;
     }
     const computedStyle = node.computedStyle;
-    if (!computedStyle.visible && !computedStyle.maskMode || computedStyle.opacity <= 0) {
+    if (
+      (!computedStyle.visible && !computedStyle.maskMode) ||
+      computedStyle.opacity <= 0
+    ) {
       i += total + next;
       continue;
     }
@@ -211,11 +257,16 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
     // 继承父的opacity和matrix，仍然要注意root没有parent
     const { parent, textureTarget } = node;
     if (!hasCacheOpLv) {
-      node._opacity = parent ? parent._opacity * node.computedStyle.opacity : node.computedStyle.opacity;
+      node._opacity = parent
+        ? parent._opacity * node.computedStyle.opacity
+        : node.computedStyle.opacity;
       node.hasCacheOpLv = true;
     }
     if (!hasCacheMwLv) {
-      assignMatrix(node._matrixWorld, parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix);
+      assignMatrix(
+        node._matrixWorld,
+        parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix,
+      );
       node.hasCacheMwLv = true;
     }
     const opacity = node._opacity;
@@ -230,11 +281,24 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
       if (target) {
         const isInScreen = checkInScreen(target.bbox, matrix, W, H);
         if (isInScreen) {
-          drawTextureCache(gl, W, H, cx, cy, program, [{
-            opacity,
-            matrix,
-            cache: target,
-          }], 0, 0, true);
+          drawTextureCache(
+            gl,
+            W,
+            H,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity,
+                matrix,
+                cache: target,
+              },
+            ],
+            0,
+            0,
+            true,
+          );
         }
       }
     }
@@ -259,21 +323,39 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
         }
       }
       if (isInScreen && target) {
-        drawTextureCache(gl, W, H, cx, cy, program, [{
-          opacity,
-          matrix,
-          cache: target,
-        }], 0, 0, true);
+        drawTextureCache(
+          gl,
+          W,
+          H,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity,
+              matrix,
+              cache: target,
+            },
+          ],
+          0,
+          0,
+          true,
+        );
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-      if (mergeIndex[i] || target && target !== node.textureCache[scaleIndex] || node.isShapeGroup) {
+      if (
+        mergeIndex[i] ||
+        (target && target !== node.textureCache[scaleIndex]) ||
+        node.isShapeGroup
+      ) {
         i += total + next;
       }
     }
   }
   // 再覆盖渲染artBoard的阴影和标题
   if (page) {
-    const children = page.children, len = children.length;
+    const children = page.children,
+      len = children.length;
     // boxShadow用统一纹理
     if (ArtBoard.BOX_SHADOW_TEXTURE) {
       let count = 0;
@@ -319,18 +401,30 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
       gl.disableVertexAttribArray(a_position);
       gl.disableVertexAttribArray(a_texCoords);
       gl.useProgram(program);
-    }
-    else {
+    } else {
       const img = inject.IMG[ArtBoard.BOX_SHADOW];
       // 一般首次不可能有缓存，太特殊的base64了
       if (img && img.source) {
         ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img.source);
-        root.addUpdate(overlay, [], RefreshLevel.REPAINT, false, false, undefined);
-      }
-      else {
+        root.addUpdate(
+          overlay,
+          [],
+          RefreshLevel.REPAINT,
+          false,
+          false,
+          undefined,
+        );
+      } else {
         inject.measureImg(ArtBoard.BOX_SHADOW, (res: any) => {
           ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, res.source);
-          root.addUpdate(overlay, [], RefreshLevel.REPAINT, false, false, undefined);
+          root.addUpdate(
+            overlay,
+            [],
+            RefreshLevel.REPAINT,
+            false,
+            false,
+            undefined,
+          );
         });
       }
     }
@@ -338,8 +432,18 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, 
 }
 
 // 汇总作为局部根节点的bbox
-function genBboxTotal(structs: Array<Struct>, node: Node, index: number, total: number, scaleIndex: number) {
-  const res = (node.textureTarget[scaleIndex]?.bbox || node._bbox || node.bbox).slice(0);
+function genBboxTotal(
+  structs: Array<Struct>,
+  node: Node,
+  index: number,
+  total: number,
+  scaleIndex: number,
+) {
+  const res = (
+    node.textureTarget[scaleIndex]?.bbox ||
+    node._bbox ||
+    node.bbox
+  ).slice(0);
   toE(node.tempMatrix);
   for (let i = index + 1, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
@@ -351,7 +455,10 @@ function genBboxTotal(structs: Array<Struct>, node: Node, index: number, total: 
     if (b[2] - b[0] && b[3] - b[1]) {
       mergeBbox(res, transformBbox(b, m));
     }
-    if (target !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+    if (
+      (target && target !== node2.textureCache[scaleIndex]) ||
+      node2.isShapeGroup
+    ) {
       i += total2 + next2;
     }
   }
@@ -361,8 +468,7 @@ function genBboxTotal(structs: Array<Struct>, node: Node, index: number, total: 
 function transformBbox(bbox: Float64Array, matrix: Float64Array) {
   if (isE(matrix)) {
     return bbox.slice(0);
-  }
-  else {
+  } else {
     const [x1, y1, x2, y2] = bbox;
     const t = calPoint({ x: x1, y: y1 }, matrix);
     let xa = t.x,
@@ -388,9 +494,20 @@ function mergeBbox(bbox: Float64Array, t: Float64Array) {
   bbox[3] = Math.max(bbox[3], t[3]);
 }
 
-function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, structs: Array<Struct>,
-                  index: number, lv: number, total: number, W: number, H: number, scale: number, scaleIndex: number,
-                  mergeIndex: Array<boolean>) {
+function genTotal(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  node: Node,
+  structs: Array<Struct>,
+  index: number,
+  lv: number,
+  total: number,
+  W: number,
+  H: number,
+  scale: number,
+  scaleIndex: number,
+  mergeIndex: Array<boolean>,
+) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureTotal[scaleIndex]?.available) {
     return node.textureTotal[scaleIndex];
@@ -416,26 +533,37 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
     y = bbox[1];
   let w = bbox[2] - x,
     h = bbox[3] - y;
-  while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+  while (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+    ) {
     if (scale <= 1) {
       break;
     }
     scale = scale >> 1;
   }
-  if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+  if (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+  ) {
     return;
   }
-  const dx = -x * scale, dy = -y * scale;
+  const dx = -x * scale,
+    dy = -y * scale;
   w *= scale;
   h *= scale;
-  const cx = w * 0.5, cy = h * 0.5;
+  const cx = w * 0.5,
+    cy = h * 0.5;
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
   // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
   for (let i = index, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
     const computedStyle = node.computedStyle;
-    if (!computedStyle.visible && !computedStyle.maskMode || computedStyle.opacity <= 0) {
+    if (
+      (!computedStyle.visible && !computedStyle.maskMode) ||
+      computedStyle.opacity <= 0
+    ) {
       i += total2 + next2;
       continue;
     }
@@ -444,8 +572,7 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
     if (i === index) {
       opacity = node2.tempOpacity = 1;
       matrix = multiplyScale(node2.tempMatrix, scale); // 求bbox时已经是E了
-    }
-    else {
+    } else {
       const parent = node2.parent!;
       opacity = computedStyle.opacity * parent.tempOpacity;
       node2.tempOpacity = opacity;
@@ -459,14 +586,31 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
       target2 = node2.textureTarget[scaleIndex];
     }
     if (target2) {
-      drawTextureCache(gl, W, H, cx, cy, program, [{
-        opacity,
-        matrix: node2.tempMatrix,
-        cache: target2,
-      }], dx, dy, false);
+      drawTextureCache(
+        gl,
+        W,
+        H,
+        cx,
+        cy,
+        program,
+        [
+          {
+            opacity,
+            matrix: node2.tempMatrix,
+            cache: target2,
+          },
+        ],
+        dx,
+        dy,
+        false,
+      );
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+    if (
+      mergeIndex[i] ||
+      (target2 && target2 !== node2.textureCache[scaleIndex]) ||
+      node2.isShapeGroup
+    ) {
       i += total2 + next2;
     }
   }
@@ -475,9 +619,21 @@ function genTotal(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root
   return target;
 }
 
-function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, maskMode: MASK,
-                 structs: Array<Struct>, index: number, lv: number, total: number, W: number, H: number,
-                 scale: number, scaleIndex: number, mergeIndex: Array<boolean>) {
+function genMask(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  node: Node,
+  maskMode: MASK,
+  structs: Array<Struct>,
+  index: number,
+  lv: number,
+  total: number,
+  W: number,
+  H: number,
+  scale: number,
+  scaleIndex: number,
+  mergeIndex: Array<boolean>,
+) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureMask[scaleIndex]?.available) {
     return node.textureMask[scaleIndex];
@@ -497,16 +653,23 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
     y = bbox[1];
   let w = bbox[2] - x,
     h = bbox[3] - y;
-  while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+  while (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+    ) {
     if (scale <= 1) {
       break;
     }
     scale = scale >> 1;
   }
-  if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+  if (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+  ) {
     return;
   }
-  const dx = -x * scale, dy = -y * scale;
+  const dx = -x * scale,
+    dy = -y * scale;
   w *= scale;
   h *= scale;
   const cx = w * 0.5,
@@ -524,8 +687,7 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
     if (lv > lv2) {
       node.struct.next = i - index - total - 1;
       break;
-    }
-    else if (i === len || computedStyle.breakMask && lv === lv2) {
+    } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
       node.struct.next = i - index - total + total2 + next2;
       break;
     }
@@ -537,8 +699,7 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
       opacity = node2.tempOpacity = computedStyle.opacity;
       matrix = multiply(im, node2.matrix);
       assignMatrix(node2.tempMatrix, matrix);
-    }
-    else {
+    } else {
       const parent = node2.parent!;
       opacity = computedStyle.opacity * parent.tempOpacity;
       node2.tempOpacity = opacity;
@@ -552,14 +713,31 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
       target2 = node2.textureTarget[scaleIndex];
     }
     if (target2) {
-      drawTextureCache(gl, W, H, cx, cy, program, [{
-        opacity,
-        matrix,
-        cache: target2,
-      }], dx, dy, false);
+      drawTextureCache(
+        gl,
+        W,
+        H,
+        cx,
+        cy,
+        program,
+        [
+          {
+            opacity,
+            matrix,
+            cache: target2,
+          },
+        ],
+        dx,
+        dy,
+        false,
+      );
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (mergeIndex[i] || target2 && target2 !== node2.textureCache[scaleIndex] || node2.isShapeGroup) {
+    if (
+      mergeIndex[i] ||
+      (target2 && target2 !== node2.textureCache[scaleIndex]) ||
+      node2.isShapeGroup
+    ) {
       i += total2 + next2;
     }
   }
@@ -568,34 +746,93 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
   gl.useProgram(maskProgram);
   // alpha直接应用，汇总乘以mask本身的alpha即可
   if (maskMode === MASK.ALPHA) {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      target.texture,
+      0,
+    );
     drawMask(gl, w, h, maskProgram, textureTarget.texture, summary);
   }
   // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
   else if (maskMode === MASK.OUTLINE) {
-    node.textureOutline = genOutline(gl, root, node, structs, index, total, bbox, scale);
+    node.textureOutline = genOutline(
+      gl,
+      root,
+      node,
+      structs,
+      index,
+      total,
+      bbox,
+      scale,
+    );
     const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      temp.texture,
+      0,
+    );
     drawMask(gl, w, h, maskProgram, node.textureOutline!.texture, summary);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      null,
+      0,
+    );
     // 将mask本身和汇总应用的mask内容绘制到一起
     gl.useProgram(program);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      target.texture,
+      0,
+    );
     toE(node.tempMatrix);
     multiplyScale(node.tempMatrix, scale);
     // mask本身可能不可见
     if (computedStyle.visible && computedStyle.opacity > 0) {
-      drawTextureCache(gl, w, h, cx, cy, program, [{
-        opacity: 1,
-        matrix: node.tempMatrix,
-        cache: textureTarget,
-      }], dx, dy, false);
+      drawTextureCache(
+        gl,
+        w,
+        h,
+        cx,
+        cy,
+        program,
+        [
+          {
+            opacity: 1,
+            matrix: node.tempMatrix,
+            cache: textureTarget,
+          },
+        ],
+        dx,
+        dy,
+        false,
+      );
     }
-    drawTextureCache(gl, w, h, cx, cy, program, [{
-      opacity: 1,
-      matrix: node.tempMatrix,
-      cache: temp,
-    }], dx, dy, false);
+    drawTextureCache(
+      gl,
+      w,
+      h,
+      cx,
+      cy,
+      program,
+      [
+        {
+          opacity: 1,
+          matrix: node.tempMatrix,
+          cache: temp,
+        },
+      ],
+      dx,
+      dy,
+      false,
+    );
     temp.release();
   }
   // 删除fbo恢复
@@ -605,8 +842,16 @@ function genMask(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root,
   return target;
 }
 
-function genOutline(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root, node: Node, structs: Array<Struct>,
-                    index: number, total: number, bbox: Float64Array, scale: number) {
+function genOutline(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  node: Node,
+  structs: Array<Struct>,
+  index: number,
+  total: number,
+  bbox: Float64Array,
+  scale: number,
+) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureOutline?.available) {
     return node.textureOutline;
@@ -615,16 +860,23 @@ function genOutline(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Ro
     y = bbox[1];
   const w = bbox[2] - x,
     h = bbox[3] - y;
-  while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+  while (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+    ) {
     if (scale <= 1) {
       break;
     }
     scale = scale >> 1;
   }
-  if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+  if (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+  ) {
     return;
   }
-  const dx = -x * scale, dy = -y * scale;
+  const dx = -x * scale,
+    dy = -y * scale;
   const os = inject.getOffscreenCanvas(w * scale, h * scale, 'maskOutline');
   const ctx = os.ctx;
   ctx.fillStyle = '#FFF';
@@ -634,24 +886,32 @@ function genOutline(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Ro
     let matrix;
     if (i === index) {
       matrix = toE(node.tempMatrix);
-    }
-    else {
+    } else {
       const parent = node.parent!;
       matrix = multiply(parent.tempMatrix, node.matrix);
       assignMatrix(node.tempMatrix, matrix);
     }
-    const fillRule = node.computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
-    ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+    const fillRule =
+      node.computedStyle.fillRule === FILL_RULE.EVEN_ODD
+        ? 'evenodd'
+        : 'nonzero';
+    ctx.setTransform(
+      matrix[0],
+      matrix[1],
+      matrix[4],
+      matrix[5],
+      matrix[12],
+      matrix[13],
+    );
     // 矢量很特殊
     if (node instanceof Polyline) {
       const points = node.points!;
       canvasPolygon(ctx, points, scale, dx, dy);
       ctx.closePath();
       ctx.fill(fillRule);
-    }
-    else if (node instanceof ShapeGroup) {
+    } else if (node instanceof ShapeGroup) {
       const points = node.points!;
-      points.forEach(item => {
+      points.forEach((item) => {
         canvasPolygon(ctx, item, scale, dx, dy);
         ctx.closePath();
       });
@@ -667,24 +927,49 @@ function genOutline(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Ro
   return target;
 }
 
-function genFrameBufferWithTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, texture: WebGLTexture,
-                                   width: number, height: number) {
+function genFrameBufferWithTexture(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  texture: WebGLTexture,
+  width: number,
+  height: number,
+) {
   const frameBuffer = gl.createFramebuffer()!;
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    texture,
+    0,
+  );
   gl.viewport(0, 0, width, height);
   return frameBuffer;
 }
 
-function releaseFrameBuffer(gl: WebGL2RenderingContext | WebGLRenderingContext, frameBuffer: WebGLFramebuffer,
-                            width: number, height: number) {
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+function releaseFrameBuffer(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  frameBuffer: WebGLFramebuffer,
+  width: number,
+  height: number,
+) {
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    null,
+    0,
+  );
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
   gl.viewport(0, 0, width, height);
 }
 
-function checkInScreen(bbox: Float64Array, matrix: Float64Array, width: number, height: number) {
+function checkInScreen(
+  bbox: Float64Array,
+  matrix: Float64Array,
+  width: number,
+  height: number,
+) {
   const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
   const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
   // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
@@ -695,15 +980,20 @@ function checkInScreen(bbox: Float64Array, matrix: Float64Array, width: number, 
   return isRectsOverlap(xa, ya, xb, yb, 0, 0, width, height, true);
 }
 
-function genNextCount(node: Node, structs: Array<Struct>, index: number, lv: number, total: number) {
-  for(let i = index + total + 1, len = structs.length; i < len; i++) {
+function genNextCount(
+  node: Node,
+  structs: Array<Struct>,
+  index: number,
+  lv: number,
+  total: number,
+) {
+  for (let i = index + total + 1, len = structs.length; i < len; i++) {
     const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
     if (lv > lv2) {
       node.struct.next = i - index - total - 1;
       break;
-    }
-    else if (i === len || computedStyle.breakMask && lv === lv2) {
+    } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
       node.struct.next = i - index - total + total2 + next2;
       break;
     }
