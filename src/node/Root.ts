@@ -295,7 +295,7 @@ class Root extends Container implements FrameCallback {
     this.clear();
     const rl = this.rl;
     this.rl = RefreshLevel.NONE;
-    renderWebgl(this.ctx!, this, rl);
+    renderWebgl(this.ctx!, this);
     this.emit(Event.REFRESH, rl);
   }
 

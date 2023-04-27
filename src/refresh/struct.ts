@@ -29,8 +29,7 @@ type Merge = {
   node: Node;
 };
 
-export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
-                            root: Root, rl: RefreshLevel) {
+export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext, root: Root) {
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(), scaleIndex = 0;
   if (scale < 1.2) {
@@ -317,12 +316,12 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       // 一般首次不可能有缓存，太特殊的base64了
       if (img && img.source) {
         ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img.source);
-        root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined)
+        root.addUpdate(overlay, [], RefreshLevel.REPAINT, false, false, undefined);
       }
       else {
         inject.measureImg(ArtBoard.BOX_SHADOW, (res: any) => {
           ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, res.source);
-          root.addUpdate(overlay, [], RefreshLevel.REPAINT, false, false, undefined)
+          root.addUpdate(overlay, [], RefreshLevel.REPAINT, false, false, undefined);
         });
       }
     }
