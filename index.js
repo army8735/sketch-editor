@@ -26190,6 +26190,10 @@
             // overlay上的没有高清要忽略
             if (isOverlay) {
                 let target = textureTarget[0];
+                if (!target && node.hasContent) {
+                    node.genTexture(gl, 1, 0);
+                    target = textureTarget[0];
+                }
                 if (target) {
                     const isInScreen = checkInScreen(target.bbox, matrix, W, H);
                     if (isInScreen) {
