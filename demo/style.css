@@ -134,6 +134,10 @@ html, body {
   font-size: 12px;
 }
 
+.tree .mask .name {
+  font-style: italic;
+}
+
 .tree .visible {
   font-size: 12px;
   color: #999;

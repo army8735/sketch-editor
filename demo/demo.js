@@ -135,7 +135,12 @@ function genNodeTree(node, abHash) {
     type = `<b style="transform:translate(${x}px, ${y}px) scale(${scale})">` + node.toSvg(scale) + '</b>';
   }
   const li = document.createElement('li');
-  li.className = 'layer';
+  if (node.computedStyle.maskMode) {
+    li.className = 'layer mask';
+  }
+  else {
+    li.className = 'layer';
+  }
   li.setAttribute('uuid', node.props.uuid);
   abHash[node.props.uuid] = li;
   let s = `<div>

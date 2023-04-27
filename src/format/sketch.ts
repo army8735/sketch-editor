@@ -148,11 +148,16 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
       isLocked: false,
       isExpanded: false,
     },
-    children: children.filter(item => item),
+    children: children.filter((item) => item),
   } as JPage;
 }
 
-async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h: number): Promise<JNode | undefined> {
+async function convertItem(
+  layer: SketchFormat.AnyLayer,
+  opt: Opt,
+  w: number,
+  h: number,
+): Promise<JNode | undefined> {
   let width: number | string = layer.frame.width;
   let height: number | string = layer.frame.height;
   let translateX: number | string = layer.frame.x;
@@ -172,11 +177,11 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
       ? [
-        Math.floor(layer.backgroundColor.red * 255),
-        Math.floor(layer.backgroundColor.green * 255),
-        Math.floor(layer.backgroundColor.blue * 255),
-        layer.backgroundColor.alpha,
-      ]
+          Math.floor(layer.backgroundColor.red * 255),
+          Math.floor(layer.backgroundColor.green * 255),
+          Math.floor(layer.backgroundColor.blue * 255),
+          layer.backgroundColor.alpha,
+        ]
       : [255, 255, 255, 1];
     return {
       tagName: TagName.ArtBoard,
@@ -199,11 +204,12 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         isLocked: false,
         isExpanded: false,
       },
-      children: children.filter(item => item),
+      children: children.filter((item) => item),
     } as JArtBoard;
   }
   // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
-  const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
+  const resizingConstraint =
+    layer.resizingConstraint ^ ResizingConstraint.UNSET;
   let left: number | string = 0,
     top: number | string = 0,
     right: number | string = 'auto',
@@ -224,7 +230,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       }
       // 仅left，right是百分比忽略width
       else {
-        right = (w - translateX - width) * 100 / w + '%';
+        right = ((w - translateX - width) * 100) / w + '%';
         width = 'auto';
       }
       translateX = 0;
@@ -243,7 +249,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       }
       // 仅right，left是百分比忽略width
       else {
-        left = translateX * 100 / w + '%';
+        left = (translateX * 100) / w + '%';
         width = 'auto';
       }
       translateX = 0;
@@ -252,13 +258,13 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     else {
       // 仅固定宽度，以中心点占left的百分比
       if (resizingConstraint & ResizingConstraint.WIDTH) {
-        left = (translateX + width * 0.5) * 100 / w + '%';
+        left = ((translateX + width * 0.5) * 100) / w + '%';
         translateX = '-50%';
       }
       // 左右皆为百分比
       else {
-        left = translateX * 100 / w + '%';
-        right = (w - translateX - width) * 100 / w + '%';
+        left = (translateX * 100) / w + '%';
+        right = ((w - translateX - width) * 100) / w + '%';
         translateX = 0;
         width = 'auto';
       }
@@ -277,7 +283,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       }
       // 仅top，bottom是百分比忽略height
       else {
-        bottom = (h - translateY - height) * 100 / h + '%';
+        bottom = ((h - translateY - height) * 100) / h + '%';
         height = 'auto';
       }
       translateY = 0;
@@ -296,7 +302,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
       }
       // 仅bottom，top是百分比忽略height
       else {
-        top = translateY * 100 / h + '%';
+        top = (translateY * 100) / h + '%';
         height = 'auto';
       }
       translateY = 0;
@@ -305,13 +311,13 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     else {
       // 仅固定高度，以中心点占top的百分比
       if (resizingConstraint & ResizingConstraint.HEIGHT) {
-        top = (translateY + height * 0.5) * 100 / h + '%';
+        top = ((translateY + height * 0.5) * 100) / h + '%';
         translateY = '-50%';
       }
       // 上下皆为百分比
       else {
-        top = translateY * 100 / h + '%';
-        bottom = (h - translateY - height) * 100 / h + '%';
+        top = (translateY * 100) / h + '%';
+        bottom = ((h - translateY - height) * 100) / h + '%';
         translateY = 0;
         height = 'auto';
       }
@@ -319,32 +325,29 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
   }
   // 未设置则上下左右都是百分比
   else {
-    left = translateX * 100 / w + '%';
-    right = (w - translateX - width) * 100 / w + '%';
+    left = (translateX * 100) / w + '%';
+    right = ((w - translateX - width) * 100) / w + '%';
     translateX = 0;
     width = 'auto';
-    top = translateY * 100 / h + '%';
-    bottom = (h - translateY - height) * 100 / h + '%';
+    top = (translateY * 100) / h + '%';
+    bottom = ((h - translateY - height) * 100) / h + '%';
     translateY = 0;
     height = 'auto';
   }
   // 遮罩转换
   let maskMode = 'none';
-  const {
-    hasClippingMask,
-    clippingMaskMode,
-  } = layer;
+  const { hasClippingMask, clippingMaskMode } = layer;
   if (hasClippingMask) {
     if (clippingMaskMode) {
       maskMode = 'alpha';
-    }
-    else {
+    } else {
       maskMode = 'outline';
     }
   }
   const breakMask = layer.shouldBreakMaskChain;
   const isLocked = layer.isLocked;
-  const isExpanded = layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
+  const isExpanded =
+    layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
@@ -376,7 +379,7 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         isLocked,
         isExpanded,
       },
-      children: children.filter(item => item),
+      children: children.filter((item) => item),
     } as JGroup;
   }
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
@@ -431,41 +434,41 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
-        const {
-          location,
-          length,
-          attributes: {
-            MSAttributedStringFontAttribute: {
-              attributes: { name, size: fontSize },
+          const {
+            location,
+            length,
+            attributes: {
+              MSAttributedStringFontAttribute: {
+                attributes: { name, size: fontSize },
+              },
+              MSAttributedStringColorAttribute: { red, green, blue, alpha },
+              kerning = 0,
+              paragraphStyle: { maximumLineHeight = 0 } = {},
             },
-            MSAttributedStringColorAttribute: { red, green, blue, alpha },
-            kerning = 0,
-            paragraphStyle: { maximumLineHeight = 0 } = {},
-          },
-        } = item;
-        const fontFamily = name;
-        const res = {
-          location,
-          length,
-          fontFamily,
-          fontSize,
-          fontWeight: 400,
-          fontStyle: 'normal',
-          letterSpacing: kerning,
-          lineHeight: maximumLineHeight,
-          color: [
-            Math.floor(red * 255),
-            Math.floor(green * 255),
-            Math.floor(blue * 255),
-            alpha,
-          ],
-        } as Rich;
-        // 自动行高
-        if (!maximumLineHeight) {
-          res.lineHeight = calNormalLineHeight(res);
-        }
-        return res;
-      })
+          } = item;
+          const fontFamily = name;
+          const res = {
+            location,
+            length,
+            fontFamily,
+            fontSize,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            letterSpacing: kerning,
+            lineHeight: maximumLineHeight,
+            color: [
+              Math.floor(red * 255),
+              Math.floor(green * 255),
+              Math.floor(blue * 255),
+              alpha,
+            ],
+          } as Rich;
+          // 自动行高
+          if (!maximumLineHeight) {
+            res.lineHeight = calNormalLineHeight(res);
+          }
+          return res;
+        })
       : undefined;
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
@@ -488,11 +491,11 @@ async function convertItem(layer: SketchFormat.AnyLayer, opt: Opt, w: number, h:
         ?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute
       ? [
-        Math.floor(MSAttributedStringColorAttribute.red * 255),
-        Math.floor(MSAttributedStringColorAttribute.green * 255),
-        Math.floor(MSAttributedStringColorAttribute.blue * 255),
-        MSAttributedStringColorAttribute.alpha,
-      ]
+          Math.floor(MSAttributedStringColorAttribute.red * 255),
+          Math.floor(MSAttributedStringColorAttribute.green * 255),
+          Math.floor(MSAttributedStringColorAttribute.blue * 255),
+          MSAttributedStringColorAttribute.alpha,
+        ]
       : [0, 0, 0, 1];
     return {
       tagName: TagName.Text,
@@ -691,11 +694,15 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
           return color + ' ' + item.position * 100 + '%';
         });
         if (g.gradientType === SketchFormat.GradientType.Linear) {
-          fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+          fill.push(
+            `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',',)})`,
+          );
         }
         else if (g.gradientType === SketchFormat.GradientType.Radial) {
           const ellipseLength = g.elipseLength;
-          fill.push(`radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`);
+          fill.push(
+            `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`,
+          );
         }
         else if (g.gradientType === SketchFormat.GradientType.Angular) {
         }
@@ -794,10 +801,10 @@ async function readNetworkImage(src: string, opt: Opt) {
       if (reader.result) {
         resolve(
           'data:image/png;' +
-          (reader.result as string).replace(
-            'data:application/octet-stream;',
-            '',
-          ),
+            (reader.result as string).replace(
+              'data:application/octet-stream;',
+              '',
+            ),
         );
       }
       else {
@@ -814,14 +821,14 @@ async function readNetworkImage(src: string, opt: Opt) {
 
 async function readImageFile(filename: string, opt: Opt) {
   if (!/\.\w+$/.test(filename)) {
-    filename = `${ filename }.png`;
+    filename = `${filename}.png`;
   }
   if (opt.imgHash.hasOwnProperty(filename)) {
     return opt.imgHash[filename];
   }
   const file = opt.zipFile.file(filename);
   if (!file) {
-    console.error(`image not exist: >>>${ filename }<<<`);
+    console.error(`image not exist: >>>${filename}<<<`);
     return -1;
   }
   let base64 = await file.async('base64');

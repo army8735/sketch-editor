@@ -33,7 +33,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
                             root: Root, rl: RefreshLevel) {
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(), scaleIndex = 0;
-  if (scale < 1.25) {
+  if (scale < 1.2) {
     scale = 1;
   }
   else {
@@ -44,8 +44,8 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       scaleIndex++;
     }
     if (n > 2) {
-      const m = (n >> 1) * 1.25;
-      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.25分界线），就用那个放大数
+      const m = (n >> 1) * 1.2;
+      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.2分界线），就用那个放大数
       if (scale >= m) {
         scale = n;
       }
@@ -211,7 +211,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
     if (isOverlay) {
       let target = textureTarget[0];
       if (target) {
-        let isInScreen = checkInScreen(target.bbox, matrix, W, H);
+        const isInScreen = checkInScreen(target.bbox, matrix, W, H);
         if (isInScreen) {
           drawTextureCache(gl, W, H, cx, cy, program, [{
             opacity,
@@ -301,6 +301,7 @@ export function renderWebgl(gl: WebGL2RenderingContext | WebGLRenderingContext,
       gl.deleteBuffer(texBuffer);
       gl.disableVertexAttribArray(a_position);
       gl.disableVertexAttribArray(a_texCoords);
+      gl.useProgram(program);
     }
     else {
       const img = inject.IMG[ArtBoard.BOX_SHADOW];

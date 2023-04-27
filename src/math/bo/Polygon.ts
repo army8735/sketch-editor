@@ -1099,7 +1099,7 @@ function isRectsOverlap(bboxA: Array<number>, bboxB: Array<number>, lenA: number
       return true;
     }
   }
-  return geom.isRectsOverlap(bboxA, bboxB, true);
+  return geom.isRectsOverlap(bboxA[0], bboxA[1], bboxA[2], bboxA[3], bboxB[0], bboxB[1], bboxB[2], bboxB[3], true);
 }
 
 function checkOverlapLine(ax1: number, ay1: number, ax2: number, ay2: number, segA: Segment,

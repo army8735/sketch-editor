@@ -17064,7 +17064,7 @@
                     isLocked: false,
                     isExpanded: false,
                 },
-                children: children.filter(item => item),
+                children: children.filter((item) => item),
             };
         });
     }
@@ -17115,7 +17115,7 @@
                         isLocked: false,
                         isExpanded: false,
                     },
-                    children: children.filter(item => item),
+                    children: children.filter((item) => item),
                 };
             }
             // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
@@ -17135,7 +17135,7 @@
                     else if (resizingConstraint & ResizingConstraint.WIDTH) ;
                     // 仅left，right是百分比忽略width
                     else {
-                        right = (w - translateX - width) * 100 / w + '%';
+                        right = ((w - translateX - width) * 100) / w + '%';
                         width = 'auto';
                     }
                     translateX = 0;
@@ -17154,7 +17154,7 @@
                     }
                     // 仅right，left是百分比忽略width
                     else {
-                        left = translateX * 100 / w + '%';
+                        left = (translateX * 100) / w + '%';
                         width = 'auto';
                     }
                     translateX = 0;
@@ -17163,13 +17163,13 @@
                 else {
                     // 仅固定宽度，以中心点占left的百分比
                     if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = (translateX + width * 0.5) * 100 / w + '%';
+                        left = ((translateX + width * 0.5) * 100) / w + '%';
                         translateX = '-50%';
                     }
                     // 左右皆为百分比
                     else {
-                        left = translateX * 100 / w + '%';
-                        right = (w - translateX - width) * 100 / w + '%';
+                        left = (translateX * 100) / w + '%';
+                        right = ((w - translateX - width) * 100) / w + '%';
                         translateX = 0;
                         width = 'auto';
                     }
@@ -17186,7 +17186,7 @@
                     else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
                     // 仅top，bottom是百分比忽略height
                     else {
-                        bottom = (h - translateY - height) * 100 / h + '%';
+                        bottom = ((h - translateY - height) * 100) / h + '%';
                         height = 'auto';
                     }
                     translateY = 0;
@@ -17205,7 +17205,7 @@
                     }
                     // 仅bottom，top是百分比忽略height
                     else {
-                        top = translateY * 100 / h + '%';
+                        top = (translateY * 100) / h + '%';
                         height = 'auto';
                     }
                     translateY = 0;
@@ -17214,13 +17214,13 @@
                 else {
                     // 仅固定高度，以中心点占top的百分比
                     if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = (translateY + height * 0.5) * 100 / h + '%';
+                        top = ((translateY + height * 0.5) * 100) / h + '%';
                         translateY = '-50%';
                     }
                     // 上下皆为百分比
                     else {
-                        top = translateY * 100 / h + '%';
-                        bottom = (h - translateY - height) * 100 / h + '%';
+                        top = (translateY * 100) / h + '%';
+                        bottom = ((h - translateY - height) * 100) / h + '%';
                         translateY = 0;
                         height = 'auto';
                     }
@@ -17228,18 +17228,18 @@
             }
             // 未设置则上下左右都是百分比
             else {
-                left = translateX * 100 / w + '%';
-                right = (w - translateX - width) * 100 / w + '%';
+                left = (translateX * 100) / w + '%';
+                right = ((w - translateX - width) * 100) / w + '%';
                 translateX = 0;
                 width = 'auto';
-                top = translateY * 100 / h + '%';
-                bottom = (h - translateY - height) * 100 / h + '%';
+                top = (translateY * 100) / h + '%';
+                bottom = ((h - translateY - height) * 100) / h + '%';
                 translateY = 0;
                 height = 'auto';
             }
             // 遮罩转换
             let maskMode = 'none';
-            const { hasClippingMask, clippingMaskMode, } = layer;
+            const { hasClippingMask, clippingMaskMode } = layer;
             if (hasClippingMask) {
                 if (clippingMaskMode) {
                     maskMode = 'alpha';
@@ -17280,7 +17280,7 @@
                         isLocked,
                         isExpanded,
                     },
-                    children: children.filter(item => item),
+                    children: children.filter((item) => item),
                 };
             }
             if (layer._class === FileFormat.ClassValue.Bitmap) {
@@ -23390,10 +23390,7 @@
     }
 
     class Point {
-        constructor(x, y) {
-            if (Array.isArray(x)) {
-                [x, y] = x;
-            }
+        constructor(x = 0, y = 0) {
             this.x = x;
             this.y = y;
         }
@@ -23402,10 +23399,26 @@
             return this.x + ',' + this.y;
         }
         equal(o) {
-            return this === o || this.x === o.x && this.y === o.y;
+            return this === o || (this.x === o.x && this.y === o.y);
         }
         equalEps(o, eps = 1e-4) {
-            return this === o || Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps;
+            return (this === o ||
+                (Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps));
+        }
+        add(p) {
+            this.x += p.x;
+            this.y += p.y;
+            return this;
+        }
+        minus(p) {
+            this.x -= p.x;
+            this.y -= p.y;
+            return this;
+        }
+        scale(n) {
+            this.x *= n;
+            this.y *= n;
+            return this;
         }
         // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
         static compare(a, b) {
@@ -23418,7 +23431,7 @@
             return { x: point[0], y: point[1] };
         }
         static toPoints(points) {
-            return points.map(item => Point.toPoint(item));
+            return points.map((item) => Point.toPoint(item));
         }
     }
 
@@ -24805,7 +24818,7 @@
                 return true;
             }
         }
-        return geom.isRectsOverlap(bboxA, bboxB, true);
+        return geom.isRectsOverlap(bboxA[0], bboxA[1], bboxA[2], bboxA[3], bboxB[0], bboxB[1], bboxB[2], bboxB[3], true);
     }
     function checkOverlapLine(ax1, ay1, ax2, ay2, segA, bx1, by1, bx2, by2, segB, isY) {
         const ra = [], rb = [];
@@ -25269,8 +25282,10 @@
             for (let i = 0, len = v.length; i < len; i++) {
                 let item2 = v[i];
                 if (item2 !== item) {
+                    const b = item2.bbox;
                     // 互相包含则存入列表
-                    if (geom.isRectsInside(bbox, item2.bbox, true) || geom.isRectsInside(item2.bbox, bbox, true)) {
+                    if (geom.isRectsInside(bbox[0], bbox[1], bbox[2], bbox[3], b[0], b[1], b[2], b[3], true)
+                        || geom.isRectsInside(b[0], b[1], b[2], b[3], bbox[0], bbox[1], bbox[2], bbox[3], true)) {
                         list.push(item2);
                     }
                 }
@@ -25999,7 +26014,7 @@
         var _a;
         // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
         let scale = root.getCurPageZoom(), scaleIndex = 0;
-        if (scale < 1.25) {
+        if (scale < 1.2) {
             scale = 1;
         }
         else {
@@ -26010,8 +26025,8 @@
                 scaleIndex++;
             }
             if (n > 2) {
-                const m = (n >> 1) * 1.25;
-                // 看0.5n和n之间scale更靠近哪一方（0.5n*1.25分界线），就用那个放大数
+                const m = (n >> 1) * 1.2;
+                // 看0.5n和n之间scale更靠近哪一方（0.5n*1.2分界线），就用那个放大数
                 if (scale >= m) {
                     scale = n;
                 }
@@ -26171,7 +26186,7 @@
             if (isOverlay) {
                 let target = textureTarget[0];
                 if (target) {
-                    let isInScreen = checkInScreen(target.bbox, matrix, W, H);
+                    const isInScreen = checkInScreen(target.bbox, matrix, W, H);
                     if (isInScreen) {
                         drawTextureCache(gl, W, H, cx, cy, program, [{
                                 opacity,
@@ -26260,6 +26275,7 @@
                 gl.deleteBuffer(texBuffer);
                 gl.disableVertexAttribArray(a_position);
                 gl.disableVertexAttribArray(a_texCoords);
+                gl.useProgram(program);
             }
             else {
                 const img = inject.IMG[ArtBoard.BOX_SHADOW];

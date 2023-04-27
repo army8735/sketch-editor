@@ -1,10 +1,7 @@
 class Point {
   x: number;
-  y: number
-  constructor(x: number, y: number) {
-    if(Array.isArray(x)) {
-      [x, y] = x;
-    }
+  y: number;
+  constructor(x: number = 0, y: number = 0) {
     this.x = x;
     this.y = y;
   }
@@ -15,16 +12,40 @@ class Point {
   }
 
   equal(o: Point) {
-    return this === o || this.x === o.x && this.y === o.y;
+    return this === o || (this.x === o.x && this.y === o.y);
   }
 
   equalEps(o: Point, eps = 1e-4) {
-    return this === o || Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps;
+    return (
+      this === o ||
+      (Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps)
+    );
+  }
+
+  add(p: Point) {
+    this.x += p.x;
+    this.y += p.y;
+
+    return this;
+  }
+
+  minus(p: Point) {
+    this.x -= p.x;
+    this.y -= p.y;
+
+    return this;
+  }
+
+  scale(n: number) {
+    this.x *= n;
+    this.y *= n;
+
+    return this;
   }
 
   // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
   static compare(a: Point, b: Point) {
-    if(a.x > b.x) {
+    if (a.x > b.x) {
       return true;
     }
     return a.x === b.x && a.y > b.y;
@@ -35,7 +56,7 @@ class Point {
   }
 
   static toPoints(points: Array<[number, number]>) {
-    return points.map(item => Point.toPoint(item));
+    return points.map((item) => Point.toPoint(item));
   }
 }
 
