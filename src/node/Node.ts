@@ -450,6 +450,7 @@ class Node extends Event {
   clearCache(includeSelf = false) {
     if (includeSelf) {
       this.textureCache.forEach((item) => item?.release());
+      this.textureTarget.splice(0);
     } else {
       this.textureTarget = this.textureCache;
     }
