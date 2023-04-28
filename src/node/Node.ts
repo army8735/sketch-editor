@@ -1,9 +1,6 @@
 import * as uuid from 'uuid';
-import Root from '../node/Root';
-import Page from './Page';
-import ArtBoard from './ArtBoard';
-import Container from '../node/Container';
 import { getDefaultStyle, JStyle, Props } from '../format/';
+import { d2r } from '../math/geom';
 import {
   assignMatrix,
   calRectPoint,
@@ -15,16 +12,29 @@ import {
   multiplyScaleY,
   toE,
 } from '../math/matrix';
-import { d2r } from '../math/geom';
-import Event from '../util/Event';
-import { LayoutData } from './layout';
-import { calNormalLineHeight, calSize, equalStyle, normalize } from '../style/css';
-import { ComputedStyle, Style, StyleNumValue, StyleUnit } from '../style/define';
-import { calMatrixByOrigin, calRotateZ } from '../style/transform';
-import { Struct } from '../refresh/struct';
-import { RefreshLevel } from '../refresh/level';
+import Container from '../node/Container';
+import Root from '../node/Root';
 import CanvasCache from '../refresh/CanvasCache';
+import { RefreshLevel } from '../refresh/level';
+import { Struct } from '../refresh/struct';
 import TextureCache from '../refresh/TextureCache';
+import {
+  calNormalLineHeight,
+  calSize,
+  equalStyle,
+  normalize,
+} from '../style/css';
+import {
+  ComputedStyle,
+  Style,
+  StyleNumValue,
+  StyleUnit,
+} from '../style/define';
+import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import Event from '../util/Event';
+import ArtBoard from './ArtBoard';
+import { LayoutData } from './layout';
+import Page from './Page';
 
 class Node extends Event {
   width: number;
@@ -45,7 +55,7 @@ class Node extends Event {
   struct: Struct;
   refreshLevel: RefreshLevel;
   _opacity: number; // 世界透明度
-  hasCacheOp: boolean;  // 是否计算过世界opacity
+  hasCacheOp: boolean; // 是否计算过世界opacity
   hasCacheOpLv: boolean; // 同上，每次刷新时变更，供刷新树级计算优化
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
@@ -110,7 +120,7 @@ class Node extends Event {
   didMount() {
     this.isDestroyed = false;
     const parent = this.parent!;
-    const root = this.root = parent.root!;
+    const root = (this.root = parent.root!);
     this.page = parent.page!;
     this.artBoard = parent.artBoard;
     const uuid = this.props.uuid;
@@ -124,14 +134,7 @@ class Node extends Event {
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
     const { style, computedStyle } = this;
-    const {
-      left,
-      top,
-      right,
-      bottom,
-      width,
-      height,
-    } = style;
+    const { left, top, right, bottom, width, height } = style;
     // 检查是否按相对边固定（px/%）还是尺寸固定，如左右vs宽度
     let fixedLeft = false;
     let fixedTop = false;
@@ -156,34 +159,29 @@ class Node extends Event {
     // 考虑min值约束
     if (width.u !== StyleUnit.AUTO) {
       this.minWidth = this.width;
-    }
-    else {
+    } else {
       this.minWidth = 0;
     }
     if (height.u !== StyleUnit.AUTO) {
       this.minHeight = this.height;
-    }
-    else {
+    } else {
       this.minHeight = 0;
     }
     // 左右决定x+width
     if (fixedLeft && fixedRight) {
-      this.width = computedStyle.width = data.w - computedStyle.left - computedStyle.right;
-    }
-    else if (fixedLeft) {
+      this.width = computedStyle.width =
+        data.w - computedStyle.left - computedStyle.right;
+    } else if (fixedLeft) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
-      }
-      else {
+      } else {
         this.width = 0;
       }
       computedStyle.right = data.w - computedStyle.left - this.width;
-    }
-    else if (fixedRight) {
+    } else if (fixedRight) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
-      }
-      else {
+      } else {
         this.width = 0;
       }
       computedStyle.left = data.w - computedStyle.right - this.width;
@@ -191,21 +189,17 @@ class Node extends Event {
     // 上下决定y+height
     if (fixedTop && fixedBottom) {
       this.height = data.h - computedStyle.top - computedStyle.bottom;
-    }
-    else if (fixedTop) {
+    } else if (fixedTop) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
-      }
-      else {
+      } else {
         this.height = 0;
       }
       computedStyle.bottom = data.h - computedStyle.top - this.height;
-    }
-    else if (fixedBottom) {
+    } else if (fixedBottom) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
-      }
-      else {
+      } else {
         this.height = 0;
       }
       computedStyle.top = data.w - computedStyle.bottom - this.height;
@@ -237,8 +231,7 @@ class Node extends Event {
     const lineHeight = style.lineHeight;
     if (lineHeight.u === StyleUnit.AUTO) {
       computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-    }
-    else {
+    } else {
       computedStyle.lineHeight = lineHeight.v;
     }
     this.width = this.height = 0;
@@ -264,14 +257,14 @@ class Node extends Event {
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
     computedStyle.opacity = style.opacity.v;
-    computedStyle.fill = style.fill.map(item => item.v);
-    computedStyle.fillEnable = style.fillEnable.map(item => item.v);
+    computedStyle.fill = style.fill.map((item) => item.v);
+    computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
     computedStyle.fillRule = style.fillRule.v;
-    computedStyle.stroke = style.stroke.map(item => item.v);
-    computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
-    computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
-    computedStyle.strokePosition = style.strokePosition.map(item => item.v);
-    computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
+    computedStyle.stroke = style.stroke.map((item) => item.v);
+    computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
+    computedStyle.strokeWidth = style.strokeWidth.map((item) => item.v);
+    computedStyle.strokePosition = style.strokePosition.map((item) => item.v);
+    computedStyle.strokeDasharray = style.strokeDasharray.map((item) => item.v);
     computedStyle.strokeLinecap = style.strokeLinecap.v;
     computedStyle.strokeLinejoin = style.strokeLinejoin.v;
     computedStyle.booleanOperation = style.booleanOperation.v;
@@ -290,10 +283,12 @@ class Node extends Event {
     this.hasCacheMw = false;
     this.hasCacheMwLv = false;
     let optimize = true;
-    if (lv >= RefreshLevel.REFLOW
-      || lv & RefreshLevel.TRANSFORM
-      || (lv & RefreshLevel.SCALE_X) && !computedStyle.scaleX
-      || (lv & RefreshLevel.SCALE_Y) && !computedStyle.scaleY) {
+    if (
+      lv >= RefreshLevel.REFLOW ||
+      lv & RefreshLevel.TRANSFORM ||
+      (lv & RefreshLevel.SCALE_X && !computedStyle.scaleX) ||
+      (lv & RefreshLevel.SCALE_Y && !computedStyle.scaleY)
+    ) {
       optimize = false;
     }
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
@@ -335,7 +330,9 @@ class Node extends Event {
           matrix[5] *= y;
           matrix[6] *= y;
         }
-        const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
+        const t = computedStyle.transformOrigin,
+          ox = t[0],
+          oy = t[1];
         matrix[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
         matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
         matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
@@ -344,13 +341,17 @@ class Node extends Event {
         const v = style.rotateZ.v;
         computedStyle.rotateZ = v;
         const r = d2r(v);
-        const sin = Math.sin(r), cos = Math.cos(r);
-        const x = computedStyle.scaleX, y = computedStyle.scaleY;
-        const cx = matrix[0] = cos * x;
-        const sx = matrix[1] = sin * x;
-        const sy = matrix[4] = -sin * y;
-        const cy = matrix[5] = cos * y;
-        const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
+        const sin = Math.sin(r),
+          cos = Math.cos(r);
+        const x = computedStyle.scaleX,
+          y = computedStyle.scaleY;
+        const cx = (matrix[0] = cos * x);
+        const sx = (matrix[1] = sin * x);
+        const sy = (matrix[4] = -sin * y);
+        const cy = (matrix[5] = cos * y);
+        const t = computedStyle.transformOrigin,
+          ox = t[0],
+          oy = t[1];
         matrix[12] = transform[12] + ox - cx * ox - oy * sy;
         matrix[13] = transform[13] + oy - sx * ox - oy * cy;
       }
@@ -358,8 +359,10 @@ class Node extends Event {
     // 普通布局或者第一次计算
     else {
       toE(transform);
-      transform[12] = computedStyle.translateX = computedStyle.left + calSize(style.translateX, this.width);
-      transform[13] = computedStyle.translateY = computedStyle.top + calSize(style.translateY, this.height);
+      transform[12] = computedStyle.translateX =
+        computedStyle.left + calSize(style.translateX, this.width);
+      transform[13] = computedStyle.translateY =
+        computedStyle.top + calSize(style.translateY, this.height);
       const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
       const scaleX = style.scaleX ? style.scaleX.v : 1;
       const scaleY = style.scaleY ? style.scaleY.v : 1;
@@ -369,23 +372,20 @@ class Node extends Event {
       if (scaleX !== 1) {
         if (isE(transform)) {
           transform[0] = scaleX;
-        }
-        else {
+        } else {
           multiplyScaleX(transform, scaleX);
         }
       }
       if (scaleY !== 1) {
         if (isE(transform)) {
           transform[5] = scaleY;
-        }
-        else {
+        } else {
           multiplyScaleY(transform, scaleY);
         }
       }
       if (isE(transform)) {
         calRotateZ(transform, rotateZ);
-      }
-      else if (rotateZ) {
+      } else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
       const tfo = style.transformOrigin.map((item, i) => {
@@ -399,28 +399,36 @@ class Node extends Event {
   }
 
   calContent(): boolean {
-    return this.hasContent = false;
+    return (this.hasContent = false);
   }
 
   // 释放可能存在的老数据，具体渲染由各个子类自己实现
   renderCanvas(scale: number) {
     const canvasCache = this.canvasCache;
-    if (canvasCache && canvasCache.available) {
+    if (canvasCache && canvasCache.available && scale) {
       canvasCache.release();
     }
   }
 
-  genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, scale: number, scaleIndex: number) {
+  genTexture(
+    gl: WebGL2RenderingContext | WebGLRenderingContext,
+    scale: number,
+    scaleIndex: number,
+  ) {
     this.renderCanvas(scale);
     this.textureCache[scaleIndex]?.release();
     const canvasCache = this.canvasCache;
     if (canvasCache?.available) {
-      this.textureTarget[scaleIndex] = this.textureCache[scaleIndex]
-        = TextureCache.getInstance(gl, this.canvasCache!.offscreen.canvas, (this._bbox || this.bbox).slice(0));
+      this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
+        TextureCache.getInstance(
+          gl,
+          this.canvasCache!.offscreen.canvas,
+          (this._bbox || this.bbox).slice(0),
+        );
       canvasCache.release();
-    }
-    else {
-      this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] = undefined;
+    } else {
+      this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
+        undefined;
     }
   }
 
@@ -429,14 +437,11 @@ class Node extends Event {
     for (let i = 0, len = textureCache.length; i < len; i++) {
       if (textureMask[i]?.available) {
         this.textureTarget[i] = textureMask[i];
-      }
-      else if (textureTotal[i]?.available) {
+      } else if (textureTotal[i]?.available) {
         this.textureTarget[i] = textureTotal[i];
-      }
-      else if (textureCache[i]?.available) {
+      } else if (textureCache[i]?.available) {
         this.textureTarget[i] = textureCache[i];
-      }
-      else {
+      } else {
         this.textureTarget[i] = undefined;
       }
     }
@@ -444,13 +449,12 @@ class Node extends Event {
 
   clearCache(includeSelf = false) {
     if (includeSelf) {
-      this.textureCache.forEach(item => item?.release());
-    }
-    else {
+      this.textureCache.forEach((item) => item?.release());
+    } else {
       this.textureTarget = this.textureCache;
     }
-    this.textureTotal.forEach(item => item?.release());
-    this.textureMask.forEach(item => item?.release());
+    this.textureTotal.forEach((item) => item?.release());
+    this.textureMask.forEach((item) => item?.release());
     this.refreshLevel |= RefreshLevel.CACHE;
   }
 
@@ -467,7 +471,7 @@ class Node extends Event {
   }
 
   clearMask() {
-    this.textureMask.forEach(item => item?.release());
+    this.textureMask.forEach((item) => item?.release());
     this.resetTextureTarget();
     this.struct.next = 0;
     // 原本指向mask的引用也需清除
@@ -512,7 +516,14 @@ class Node extends Event {
     }
     this.isDestroyed = true;
     this.clearCache(true);
-    this.prev = this.next = this.parent = this.root = undefined;
+    this.prev =
+      this.next =
+        this.parent =
+          this.page =
+            this.artBoard =
+              this.mask =
+                this.root =
+                  undefined;
   }
 
   structure(lv: number): Array<Struct> {
@@ -584,16 +595,18 @@ class Node extends Event {
 
   getStyle<T extends keyof JStyle>(k: T) {
     const computedStyle = this.computedStyle;
-    if (k === 'color'
-      || k === 'backgroundColor'
-      || k === 'fill'
-      || k === 'fillEnable'
-      || k === 'stroke'
-      || k === 'strokeEnable'
-      || k === 'strokeWidth'
-      || k === 'strokePosition'
-      || k === 'strokeDasharray'
-      || k === 'transformOrigin') {
+    if (
+      k === 'color' ||
+      k === 'backgroundColor' ||
+      k === 'fill' ||
+      k === 'fillEnable' ||
+      k === 'stroke' ||
+      k === 'strokeEnable' ||
+      k === 'strokeWidth' ||
+      k === 'strokePosition' ||
+      k === 'strokeDasharray' ||
+      k === 'transformOrigin'
+    ) {
       return (computedStyle[k] as any[]).slice(0);
     }
     return computedStyle[k];
@@ -601,27 +614,39 @@ class Node extends Event {
 
   getBoundingClientRect(includeBbox: boolean = false) {
     const matrixWorld = this.matrixWorld;
-    const bbox = includeBbox ? this.bbox : this.rect;
-    const { x1, y1, x2, y2, x3, y3, x4, y4 }
-      = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
+    const bbox = includeBbox
+      ? this._bbox || this.bbox
+      : this._rect || this.rect;
+    const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(
+      bbox[0],
+      bbox[1],
+      bbox[2],
+      bbox[3],
+      matrixWorld,
+    );
     return {
-      left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
-      top: Math.min(y1, Math.min(y2, Math.min(y3, y4))),
-      right: Math.max(x1, Math.max(x2, Math.max(x3, x4))),
-      bottom: Math.max(y1, Math.max(y2, Math.max(y3, y4))),
-      points: [{
-        x: x1,
-        y: y1,
-      }, {
-        x: x2,
-        y: y2,
-      }, {
-        x: x3,
-        y: y3,
-      }, {
-        x: x4,
-        y: y4,
-      }],
+      left: Math.min(x1, x2, x3, x4),
+      top: Math.min(y1, y2, y3, y4),
+      right: Math.max(x1, x2, x3, x4),
+      bottom: Math.max(y1, y2, y3, y4),
+      points: [
+        {
+          x: x1,
+          y: y1,
+        },
+        {
+          x: x2,
+          y: y2,
+        },
+        {
+          x: x3,
+          y: y3,
+        },
+        {
+          x: x4,
+          y: y4,
+        },
+      ],
     };
   }
 
@@ -635,24 +660,17 @@ class Node extends Event {
     if (!parent) {
       return;
     }
-    const {
-      top,
-      left,
-      width,
-      height,
-      translateX,
-      translateY,
-    } = style;
+    const { top, left, width, height, translateX, translateY } = style;
     // 不可能有固定尺寸+right百分比这种情况，right要么auto要么px
     if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
-      const v = computedStyle.left -= width.v * 0.5;
-      left.v = v * 100 / parent.width;
+      const v = (computedStyle.left -= width.v * 0.5);
+      left.v = (v * 100) / parent.width;
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
     if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
-      const v = computedStyle.top -= height.v * 0.5;
-      top.v = v * 100 / parent.height;
+      const v = (computedStyle.top -= height.v * 0.5);
+      top.v = (v * 100) / parent.height;
       translateY.v = 0;
       translateY.u = StyleUnit.PX;
     }
@@ -664,50 +682,35 @@ class Node extends Event {
     if (!parent) {
       return;
     }
-    const {
-      top,
-      right,
-      bottom,
-      left,
-      width,
-      height,
-      translateX,
-      translateY,
-    } = style;
-    const {
-      translateX: tx,
-      translateY: ty,
-    } = computedStyle;
+    const { top, right, bottom, left, width, height, translateX, translateY } =
+      style;
+    const { translateX: tx, translateY: ty } = computedStyle;
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent;
     // 宽度自动，left和right一定是有值，translateX单位是px
     if (width.u === StyleUnit.AUTO) {
       if (left.u === StyleUnit.PX) {
         left.v = tx;
-      }
-      else if (left.u === StyleUnit.PERCENT) {
-        left.v = tx * 100 / pw;
+      } else if (left.u === StyleUnit.PERCENT) {
+        left.v = (tx * 100) / pw;
       }
       if (right.u === StyleUnit.PX) {
         right.v = pw - tx - this.width;
-      }
-      else if (right.u === StyleUnit.PERCENT) {
-        right.v = (pw - tx - this.width) * 100 / pw;
+      } else if (right.u === StyleUnit.PERCENT) {
+        right.v = ((pw - tx - this.width) * 100) / pw;
       }
     }
     // 固定宽度，发生过变更单位会变成px（节点可能只上下移动，看实现，这里多预防下），left/right至少有一个固定值，translateX需要重置为-50%
     else if (translateX.u === StyleUnit.PX) {
       if (left.u === StyleUnit.PX) {
         left.v = tx + this.width * 0.5;
-      }
-      else if (left.u === StyleUnit.PERCENT) {
-        left.v = (tx + this.width * 0.5) * 100 / pw;
+      } else if (left.u === StyleUnit.PERCENT) {
+        left.v = ((tx + this.width * 0.5) * 100) / pw;
       }
       if (right.u === StyleUnit.PX) {
         right.v = pw - tx - this.width * 1.5;
-      }
-      else if (right.u === StyleUnit.PERCENT) {
-        right.v = (pw - tx - this.width * 1.5) * 100 / pw;
+      } else if (right.u === StyleUnit.PERCENT) {
+        right.v = ((pw - tx - this.width * 1.5) * 100) / pw;
       }
     }
     this.resetTranslateX(left, width, translateX);
@@ -729,30 +732,26 @@ class Node extends Event {
     if (height.u === StyleUnit.AUTO) {
       if (top.u === StyleUnit.PX) {
         top.v = ty;
-      }
-      else if (top.u === StyleUnit.PERCENT) {
-        top.v = ty * 100 / ph;
+      } else if (top.u === StyleUnit.PERCENT) {
+        top.v = (ty * 100) / ph;
       }
       if (bottom.u === StyleUnit.PX) {
         bottom.v = ph - ty - this.height;
-      }
-      else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = (ph - ty - this.height) * 100 / ph;
+      } else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v = ((ph - ty - this.height) * 100) / ph;
       }
     }
     // 固定高度，和固定宽度一样
     else if (translateY.u === StyleUnit.PX) {
       if (top.u === StyleUnit.PX) {
         top.v = ty + this.height * 0.5;
-      }
-      else if (top.u === StyleUnit.PERCENT) {
-        top.v = (ty + this.height * 0.5) * 100 / ph;
+      } else if (top.u === StyleUnit.PERCENT) {
+        top.v = ((ty + this.height * 0.5) * 100) / ph;
       }
       if (bottom.u === StyleUnit.PX) {
         bottom.v = ph - ty - this.height * 1.5;
-      }
-      else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = (ph - ty - this.height * 1.5) * 100 / ph;
+      } else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v = ((ph - ty - this.height * 1.5) * 100) / ph;
       }
     }
     this.resetTranslateY(top, height, translateY);
@@ -775,21 +774,27 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
-  resetTranslateX(left: StyleNumValue, width: StyleNumValue, translateX: StyleNumValue) {
+  resetTranslateX(
+    left: StyleNumValue,
+    width: StyleNumValue,
+    translateX: StyleNumValue,
+  ) {
     if (width.u === StyleUnit.AUTO) {
       translateX.v = 0;
-    }
-    else if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
+    } else if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
     }
   }
 
-  resetTranslateY(top: StyleNumValue, height: StyleNumValue, translateY: StyleNumValue) {
+  resetTranslateY(
+    top: StyleNumValue,
+    height: StyleNumValue,
+    translateY: StyleNumValue,
+  ) {
     if (height.u === StyleUnit.AUTO) {
       translateY.v = 0;
-    }
-    else if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
+    } else if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }
@@ -800,7 +805,8 @@ class Node extends Event {
     const root = this.root!;
     let parent = this.parent;
     while (parent && parent !== root) {
-      if (!parent.adjustPosAndSize()) { // 无影响中断向上递归，比如拖动节点并未超过组的范围
+      if (!parent.adjustPosAndSize()) {
+        // 无影响中断向上递归，比如拖动节点并未超过组的范围
         break;
       }
       parent = parent.parent;
@@ -825,23 +831,16 @@ class Node extends Event {
     if (!parent) {
       return;
     }
-    const {
-      top,
-      left,
-      width,
-      height,
-      translateX,
-      translateY,
-    } = style;
+    const { top, left, width, height, translateX, translateY } = style;
     if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
-      const v = computedStyle.left += width.v * 0.5;
-      left.v = v * 100 / parent.width;
+      const v = (computedStyle.left += width.v * 0.5);
+      left.v = (v * 100) / parent.width;
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
     }
     if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
-      const v = computedStyle.top += height.v * 0.5;
-      top.v = v * 100 / parent.height;
+      const v = (computedStyle.top += height.v * 0.5);
+      top.v = (v * 100) / parent.height;
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }
@@ -893,12 +892,11 @@ class Node extends Event {
           if (!i || node === root) {
             if (node === root) {
               node._opacity = node.computedStyle.opacity;
+            } else {
+              node._opacity =
+                node.parent!._opacity * node.computedStyle.opacity;
             }
-            else {
-              node._opacity = node.parent!._opacity * node.computedStyle.opacity;
-            }
-          }
-          else {
+          } else {
             node._opacity = pList[i - 1]._opacity * node.computedStyle.opacity;
           }
         }
@@ -907,8 +905,7 @@ class Node extends Event {
       parent = this.parent;
       if (parent) {
         this._opacity = parent._opacity * this.computedStyle.opacity;
-      }
-      else {
+      } else {
         this._opacity = this.computedStyle.opacity;
       }
     }
@@ -958,13 +955,11 @@ class Node extends Event {
           if (!i || node === root) {
             if (node === root) {
               assignMatrix(node._matrixWorld, node.matrix);
-            }
-            else {
+            } else {
               const t = multiply(node.parent!._matrixWorld, node.matrix);
               assignMatrix(node._matrixWorld, t);
             }
-          }
-          else {
+          } else {
             const t = multiply(pList[i - 1]._matrixWorld, node.matrix);
             assignMatrix(node._matrixWorld, t);
           }
@@ -975,8 +970,7 @@ class Node extends Event {
       if (parent) {
         const t = multiply(parent._matrixWorld, this.matrix);
         assignMatrix(m, t);
-      }
-      else {
+      } else {
         assignMatrix(m, this.matrix);
       }
     }
@@ -1002,7 +996,6 @@ class Node extends Event {
     }
     return this._bbox;
   }
-
 }
 
 export default Node;

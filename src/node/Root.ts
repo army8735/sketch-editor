@@ -1,32 +1,32 @@
-import Node from './Node';
-import Page from './Page';
-import ArtBoard from './ArtBoard';
-import Overlay from './overlay/Overlay';
-import { JPage, Props } from '../format';
-import { renderWebgl, Struct } from '../refresh/struct';
 import { frame, FrameCallback } from '../animation/frame';
-import Event from '../util/Event';
-import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
-import { checkReflow } from './reflow';
-import Container from './Container';
+import { JPage, Props } from '../format';
 import { initShaders } from '../gl';
-import config from '../refresh/config';
+import ca from '../gl/ca';
 import {
   colorFrag,
   colorVert,
   mainFrag,
   mainVert,
-  maskVert,
   maskFrag,
+  maskVert,
   simpleFrag,
   simpleVert,
 } from '../gl/glsl';
-import ca from '../gl/ca';
+import config from '../refresh/config';
+import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
+import { renderWebgl, Struct } from '../refresh/struct';
+import Event from '../util/Event';
+import ArtBoard from './ArtBoard';
+import Container from './Container';
+import Node from './Node';
+import Overlay from './overlay/Overlay';
+import Page from './Page';
+import { checkReflow } from './reflow';
 
 let uuid = 0;
 
 type RootProps = Props & {
-  dpi: number,
+  dpi: number;
 };
 
 class Root extends Container implements FrameCallback {
@@ -66,13 +66,14 @@ class Root extends Container implements FrameCallback {
     this.isDestroyed = false;
     this.canvas = canvas;
     // gl的初始化和配置
-    let gl: WebGL2RenderingContext | WebGLRenderingContext
-      = canvas.getContext('webgl2', ca) as WebGL2RenderingContext;
+    let gl: WebGL2RenderingContext | WebGLRenderingContext = canvas.getContext(
+      'webgl2',
+      ca,
+    ) as WebGL2RenderingContext;
     if (gl) {
       this.ctx = gl;
       this.isWebgl2 = true;
-    }
-    else {
+    } else {
       this.ctx = gl = canvas.getContext('webgl', ca) as WebGLRenderingContext;
       this.isWebgl2 = false;
     }
@@ -82,7 +83,7 @@ class Root extends Container implements FrameCallback {
     }
     config.init(
       gl.getParameter(gl.MAX_TEXTURE_SIZE),
-      gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
+      gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
     );
     this.programs = {};
     this.initShaders(gl);
@@ -90,30 +91,40 @@ class Root extends Container implements FrameCallback {
     frame.addRoot(this);
     this.reLayout();
     // 存所有Page
-    this.pageContainer = new Container({
-      style: {
-        width: '100%',
-        height: '100%',
-        pointerEvents: false,
-        scaleX: this.dpi,
-        scaleY: this.dpi,
-        transformOrigin: [0, 0],
+    this.pageContainer = new Container(
+      {
+        style: {
+          width: '100%',
+          height: '100%',
+          pointerEvents: false,
+          scaleX: this.dpi,
+          scaleY: this.dpi,
+          transformOrigin: [0, 0],
+        },
       },
-    }, []);
+      [],
+    );
     this.appendChild(this.pageContainer);
     // 存上层的展示工具标尺等
-    this.overlay = new Overlay({
-      style: {
-        width: '100%',
-        height: '100%',
-        pointerEvents: false,
+    this.overlay = new Overlay(
+      {
+        style: {
+          width: '100%',
+          height: '100%',
+          pointerEvents: false,
+        },
       },
-    }, []);
+      [],
+    );
     this.appendChild(this.overlay);
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
+    const program = (this.programs.program = initShaders(
+      gl,
+      mainVert,
+      mainFrag,
+    ));
     this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
@@ -127,7 +138,7 @@ class Root extends Container implements FrameCallback {
   }
 
   setJPages(jPages: Array<JPage>) {
-    jPages.forEach(item => {
+    jPages.forEach((item) => {
       const page = new Page(item.props, []);
       page.json = item;
       this.pageContainer!.appendChild(page);
@@ -156,7 +167,7 @@ class Root extends Container implements FrameCallback {
     });
     this.lastPage = newPage;
     const children: Array<ArtBoard> = [];
-    newPage.children.forEach(item => {
+    newPage.children.forEach((item) => {
       if (item instanceof ArtBoard) {
         children.push(item);
       }
@@ -170,8 +181,14 @@ class Root extends Container implements FrameCallback {
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
    */
-  addUpdate(node: Node, keys: Array<string>, focus: RefreshLevel = RefreshLevel.NONE,
-            addDom: boolean = false, removeDom: boolean = false, cb?: (sync: boolean) => void) {
+  addUpdate(
+    node: Node,
+    keys: Array<string>,
+    focus: RefreshLevel = RefreshLevel.NONE,
+    addDom: boolean = false,
+    removeDom: boolean = false,
+    cb?: (sync: boolean) => void,
+  ) {
     if (this.isDestroyed) {
       return;
     }
@@ -189,27 +206,34 @@ class Root extends Container implements FrameCallback {
     // 非动画走这
     if (res) {
       this.asyncDraw(cb);
-    }
-    else {
+    } else {
       cb && cb(true);
     }
     // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
     if (this.lastPage && node.page) {
       if (addDom) {
         this.emit(Event.DID_ADD_DOM, node);
-      }
-      else if (keys.indexOf('visible') > -1) {
+      } else if (keys.indexOf('visible') > -1) {
         this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
       }
     }
   }
 
-  private calUpdate(node: Node, lv: RefreshLevel, addDom: boolean, removeDom: boolean): boolean {
+  private calUpdate(
+    node: Node,
+    lv: RefreshLevel,
+    addDom: boolean,
+    removeDom: boolean,
+  ): boolean {
     // 防御一下
     if (addDom || removeDom) {
       lv |= RefreshLevel.REFLOW;
     }
-    if (lv === RefreshLevel.NONE || !this.computedStyle.visible || this.isDestroyed) {
+    if (
+      lv === RefreshLevel.NONE ||
+      !this.computedStyle.visible ||
+      this.isDestroyed
+    ) {
       return false;
     }
     const isRf = isReflow(lv);
@@ -217,19 +241,16 @@ class Root extends Container implements FrameCallback {
       // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
       if (node === this) {
         this.reLayout();
-      }
-      else {
+      } else {
         checkReflow(this, node, addDom, removeDom);
       }
-    }
-    else {
+    } else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
         node.calRepaintStyle(lv);
         node.clearCache(true);
         node.clearCacheUpward(false);
-      }
-      else {
+      } else {
         const { style, computedStyle } = node;
         if (lv & RefreshLevel.TRANSFORM_ALL) {
           node.calMatrix(lv); // matrixWorld缓存在方法内清除
@@ -326,8 +347,10 @@ class Root extends Container implements FrameCallback {
    * 每帧调用Root的before回调，先将存储的动画before执行，触发数据先变更完，然后若有变化或主动更新则刷新
    */
   before() {
-    const ani = this.ani, task = this.taskClone = this.task.splice(0);
-    let len = ani.length, len2 = task.length;
+    const ani = this.ani,
+      task = (this.taskClone = this.task.splice(0));
+    let len = ani.length,
+      len2 = task.length;
     // 先重置标识，动画没有触发更新，在每个before执行，如果调用了更新则更改标识
     this.aniChange = false;
     for (let i = 0; i < len; i++) {
@@ -343,8 +366,10 @@ class Root extends Container implements FrameCallback {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   after() {
-    const ani = this.ani, task = this.taskClone.splice(0);
-    let len = ani.length, len2 = task.length;
+    const ani = this.ani,
+      task = this.taskClone.splice(0);
+    let len = ani.length,
+      len2 = task.length;
     for (let i = 0; i < len; i++) {
       // 没动画现在
     }
@@ -387,10 +412,22 @@ class Root extends Container implements FrameCallback {
     return 1;
   }
 
-  getNodeFromCurPage(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {
+  getNodeFromCurPage(
+    x: number,
+    y: number,
+    includeGroup = false,
+    includeArtBoard = false,
+    lv?: number,
+  ): Node | undefined {
     const page = this.lastPage;
     if (page) {
-      return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
+      return page.getNodeByPointAndLv(
+        x,
+        y,
+        includeGroup,
+        includeArtBoard,
+        lv === undefined ? lv : lv + 3,
+      );
     }
   }
 }

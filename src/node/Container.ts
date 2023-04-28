@@ -1,11 +1,11 @@
-import Node from '../node/Node';
 import { Props } from '../format';
-import { RefreshLevel } from '../refresh/level';
-import inject from '../util/inject';
-import { Struct } from '../refresh/struct';
-import { LayoutData } from './layout';
 import { pointInRect } from '../math/geom';
+import Node from '../node/Node';
+import { RefreshLevel } from '../refresh/level';
+import { Struct } from '../refresh/struct';
 import { ComputedStyle } from '../style/define';
+import inject from '../util/inject';
+import { LayoutData } from './layout';
 
 class Container extends Node {
   children: Array<Node>;
@@ -53,8 +53,14 @@ class Container extends Node {
     // 回溯收集minWidth/minHeight
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
-      computedStyle.minWidth = this.minWidth = Math.max(this.minWidth, child.minWidth);
-      computedStyle.minHeight = this.minHeight = Math.max(this.minHeight, child.minHeight);
+      computedStyle.minWidth = this.minWidth = Math.max(
+        this.minWidth,
+        child.minWidth,
+      );
+      computedStyle.minHeight = this.minHeight = Math.max(
+        this.minHeight,
+        child.minHeight,
+      );
     }
   }
 
@@ -159,8 +165,7 @@ class Container extends Node {
   removeChild(node: Node, cb?: (sync: boolean) => void) {
     if (node.parent === this) {
       node.remove(cb);
-    }
-    else {
+    } else {
       inject.error('Invalid parameter of removeChild()');
     }
   }
@@ -196,7 +201,7 @@ class Container extends Node {
 
   override structure(lv: number): Array<Struct> {
     let res = super.structure(lv);
-    this.children.forEach(child => {
+    this.children.forEach((child) => {
       res = res.concat(child.structure(lv + 1));
     });
     res[0].num = this.children.length;
@@ -213,8 +218,7 @@ class Container extends Node {
       const s = this.children[childIndex - 1].struct;
       const total = s.total;
       i = structs.indexOf(s) + total + 1;
-    }
-    else {
+    } else {
       i = structs.indexOf(struct) + 1;
     }
     structs.splice(i, 0, ...cs);
@@ -231,7 +235,8 @@ class Container extends Node {
   deleteStruct(child: Node) {
     const cs = child.struct;
     const total = cs.total + 1;
-    const root = this.root!, structs = root.structs;
+    const root = this.root!,
+      structs = root.structs;
     const i = structs.indexOf(cs);
     structs.splice(i, total);
     const struct = this.struct;
@@ -245,31 +250,61 @@ class Container extends Node {
   }
 
   // 获取指定位置节点，考虑包含Page/ArtBoard和指定lv层级
-  getNodeByPointAndLv(x: number, y: number, includeGroup = false, includeArtBoard = false, lv?: number): Node | undefined {
+  getNodeByPointAndLv(
+    x: number,
+    y: number,
+    includeGroup = false,
+    includeArtBoard = false,
+    lv?: number,
+  ): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
       const { struct, computedStyle, rect, matrixWorld } = child;
       // 在内部且pointerEvents为true才返回
-      if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
+      if (
+        pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)
+      ) {
         // 不指定lv则找最深处的child
         if (lv === undefined) {
           if (child instanceof Container) {
-            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
+            const res = child.getNodeByPointAndLv(
+              x,
+              y,
+              includeGroup,
+              includeArtBoard,
+              lv,
+            );
             if (res) {
               return res;
             }
           }
-          return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
+          return this.getNodeCheck(
+            child,
+            computedStyle,
+            includeGroup,
+            includeArtBoard,
+          );
         }
         // 指定lv判断lv是否相等，超过不再递归下去
         else {
           if (struct.lv === lv) {
-            return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
+            return this.getNodeCheck(
+              child,
+              computedStyle,
+              includeGroup,
+              includeArtBoard,
+            );
           }
           // 父级且是container继续深入寻找
           else if (struct.lv < lv && child instanceof Container) {
-            const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
+            const res = child.getNodeByPointAndLv(
+              x,
+              y,
+              includeGroup,
+              includeArtBoard,
+              lv,
+            );
             if (res) {
               return res;
             }
@@ -280,10 +315,17 @@ class Container extends Node {
   }
 
   // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
-  private getNodeCheck(child: Node, computedStyle: ComputedStyle, includeGroup: boolean, includeArtBoard: boolean): Node | undefined {
-    if (computedStyle.pointerEvents
-      && (includeGroup || !(child instanceof Container && child.isGroup))
-      && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+  private getNodeCheck(
+    child: Node,
+    computedStyle: ComputedStyle,
+    includeGroup: boolean,
+    includeArtBoard: boolean,
+  ): Node | undefined {
+    if (
+      computedStyle.pointerEvents &&
+      (includeGroup || !(child instanceof Container && child.isGroup)) &&
+      (includeArtBoard || !(child instanceof Container && child.isArtBoard))
+    ) {
       return child;
     }
   }

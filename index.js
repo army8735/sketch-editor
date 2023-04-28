@@ -20034,7 +20034,7 @@
         didMount() {
             this.isDestroyed = false;
             const parent = this.parent;
-            const root = this.root = parent.root;
+            const root = (this.root = parent.root);
             this.page = parent.page;
             this.artBoard = parent.artBoard;
             const uuid = this.props.uuid;
@@ -20047,7 +20047,7 @@
             // 布局时计算所有样式，更新时根据不同级别调用
             this.calReflowStyle();
             const { style, computedStyle } = this;
-            const { left, top, right, bottom, width, height, } = style;
+            const { left, top, right, bottom, width, height } = style;
             // 检查是否按相对边固定（px/%）还是尺寸固定，如左右vs宽度
             let fixedLeft = false;
             let fixedTop = false;
@@ -20084,7 +20084,8 @@
             }
             // 左右决定x+width
             if (fixedLeft && fixedRight) {
-                this.width = computedStyle.width = data.w - computedStyle.left - computedStyle.right;
+                this.width = computedStyle.width =
+                    data.w - computedStyle.left - computedStyle.right;
             }
             else if (fixedLeft) {
                 if (width.u !== StyleUnit.AUTO) {
@@ -20178,14 +20179,14 @@
             computedStyle.color = style.color.v;
             computedStyle.backgroundColor = style.backgroundColor.v;
             computedStyle.opacity = style.opacity.v;
-            computedStyle.fill = style.fill.map(item => item.v);
-            computedStyle.fillEnable = style.fillEnable.map(item => item.v);
+            computedStyle.fill = style.fill.map((item) => item.v);
+            computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
             computedStyle.fillRule = style.fillRule.v;
-            computedStyle.stroke = style.stroke.map(item => item.v);
-            computedStyle.strokeEnable = style.strokeEnable.map(item => item.v);
-            computedStyle.strokeWidth = style.strokeWidth.map(item => item.v);
-            computedStyle.strokePosition = style.strokePosition.map(item => item.v);
-            computedStyle.strokeDasharray = style.strokeDasharray.map(item => item.v);
+            computedStyle.stroke = style.stroke.map((item) => item.v);
+            computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
+            computedStyle.strokeWidth = style.strokeWidth.map((item) => item.v);
+            computedStyle.strokePosition = style.strokePosition.map((item) => item.v);
+            computedStyle.strokeDasharray = style.strokeDasharray.map((item) => item.v);
             computedStyle.strokeLinecap = style.strokeLinecap.v;
             computedStyle.strokeLinejoin = style.strokeLinejoin.v;
             computedStyle.booleanOperation = style.booleanOperation.v;
@@ -20203,10 +20204,10 @@
             this.hasCacheMw = false;
             this.hasCacheMwLv = false;
             let optimize = true;
-            if (lv >= RefreshLevel.REFLOW
-                || lv & RefreshLevel.TRANSFORM
-                || (lv & RefreshLevel.SCALE_X) && !computedStyle.scaleX
-                || (lv & RefreshLevel.SCALE_Y) && !computedStyle.scaleY) {
+            if (lv >= RefreshLevel.REFLOW ||
+                lv & RefreshLevel.TRANSFORM ||
+                (lv & RefreshLevel.SCALE_X && !computedStyle.scaleX) ||
+                (lv & RefreshLevel.SCALE_Y && !computedStyle.scaleY)) {
                 optimize = false;
             }
             // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
@@ -20259,10 +20260,10 @@
                     const r = d2r(v);
                     const sin = Math.sin(r), cos = Math.cos(r);
                     const x = computedStyle.scaleX, y = computedStyle.scaleY;
-                    const cx = matrix[0] = cos * x;
-                    const sx = matrix[1] = sin * x;
-                    const sy = matrix[4] = -sin * y;
-                    const cy = matrix[5] = cos * y;
+                    const cx = (matrix[0] = cos * x);
+                    const sx = (matrix[1] = sin * x);
+                    const sy = (matrix[4] = -sin * y);
+                    const cy = (matrix[5] = cos * y);
                     const t = computedStyle.transformOrigin, ox = t[0], oy = t[1];
                     matrix[12] = transform[12] + ox - cx * ox - oy * sy;
                     matrix[13] = transform[13] + oy - sx * ox - oy * cy;
@@ -20271,8 +20272,10 @@
             // 普通布局或者第一次计算
             else {
                 toE(transform);
-                transform[12] = computedStyle.translateX = computedStyle.left + calSize(style.translateX, this.width);
-                transform[13] = computedStyle.translateY = computedStyle.top + calSize(style.translateY, this.height);
+                transform[12] = computedStyle.translateX =
+                    computedStyle.left + calSize(style.translateX, this.width);
+                transform[13] = computedStyle.translateY =
+                    computedStyle.top + calSize(style.translateY, this.height);
                 const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
                 const scaleX = style.scaleX ? style.scaleX.v : 1;
                 const scaleY = style.scaleY ? style.scaleY.v : 1;
@@ -20311,12 +20314,12 @@
             return matrix;
         }
         calContent() {
-            return this.hasContent = false;
+            return (this.hasContent = false);
         }
         // 释放可能存在的老数据，具体渲染由各个子类自己实现
         renderCanvas(scale) {
             const canvasCache = this.canvasCache;
-            if (canvasCache && canvasCache.available) {
+            if (canvasCache && canvasCache.available && scale) {
                 canvasCache.release();
             }
         }
@@ -20326,12 +20329,13 @@
             (_a = this.textureCache[scaleIndex]) === null || _a === void 0 ? void 0 : _a.release();
             const canvasCache = this.canvasCache;
             if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
-                this.textureTarget[scaleIndex] = this.textureCache[scaleIndex]
-                    = TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._bbox || this.bbox).slice(0));
+                this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
+                    TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._bbox || this.bbox).slice(0));
                 canvasCache.release();
             }
             else {
-                this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] = undefined;
+                this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
+                    undefined;
             }
         }
         resetTextureTarget() {
@@ -20354,13 +20358,13 @@
         }
         clearCache(includeSelf = false) {
             if (includeSelf) {
-                this.textureCache.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+                this.textureCache.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             }
             else {
                 this.textureTarget = this.textureCache;
             }
-            this.textureTotal.forEach(item => item === null || item === void 0 ? void 0 : item.release());
-            this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+            this.textureTotal.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
+            this.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.refreshLevel |= RefreshLevel.CACHE;
         }
         clearCacheUpward(includeSelf = false) {
@@ -20374,7 +20378,7 @@
             this.mask = undefined;
         }
         clearMask() {
-            this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+            this.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.resetTextureTarget();
             this.struct.next = 0;
             // 原本指向mask的引用也需清除
@@ -20417,7 +20421,14 @@
             }
             this.isDestroyed = true;
             this.clearCache(true);
-            this.prev = this.next = this.parent = this.root = undefined;
+            this.prev =
+                this.next =
+                    this.parent =
+                        this.page =
+                            this.artBoard =
+                                this.mask =
+                                    this.root =
+                                        undefined;
         }
         structure(lv) {
             const temp = this.struct;
@@ -20483,42 +20494,49 @@
         }
         getStyle(k) {
             const computedStyle = this.computedStyle;
-            if (k === 'color'
-                || k === 'backgroundColor'
-                || k === 'fill'
-                || k === 'fillEnable'
-                || k === 'stroke'
-                || k === 'strokeEnable'
-                || k === 'strokeWidth'
-                || k === 'strokePosition'
-                || k === 'strokeDasharray'
-                || k === 'transformOrigin') {
+            if (k === 'color' ||
+                k === 'backgroundColor' ||
+                k === 'fill' ||
+                k === 'fillEnable' ||
+                k === 'stroke' ||
+                k === 'strokeEnable' ||
+                k === 'strokeWidth' ||
+                k === 'strokePosition' ||
+                k === 'strokeDasharray' ||
+                k === 'transformOrigin') {
                 return computedStyle[k].slice(0);
             }
             return computedStyle[k];
         }
         getBoundingClientRect(includeBbox = false) {
             const matrixWorld = this.matrixWorld;
-            const bbox = includeBbox ? this.bbox : this.rect;
+            const bbox = includeBbox
+                ? this._bbox || this.bbox
+                : this._rect || this.rect;
             const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
             return {
-                left: Math.min(x1, Math.min(x2, Math.min(x3, x4))),
-                top: Math.min(y1, Math.min(y2, Math.min(y3, y4))),
-                right: Math.max(x1, Math.max(x2, Math.max(x3, x4))),
-                bottom: Math.max(y1, Math.max(y2, Math.max(y3, y4))),
-                points: [{
+                left: Math.min(x1, x2, x3, x4),
+                top: Math.min(y1, y2, y3, y4),
+                right: Math.max(x1, x2, x3, x4),
+                bottom: Math.max(y1, y2, y3, y4),
+                points: [
+                    {
                         x: x1,
                         y: y1,
-                    }, {
+                    },
+                    {
                         x: x2,
                         y: y2,
-                    }, {
+                    },
+                    {
                         x: x3,
                         y: y3,
-                    }, {
+                    },
+                    {
                         x: x4,
                         y: y4,
-                    }],
+                    },
+                ],
             };
         }
         /**
@@ -20531,17 +20549,17 @@
             if (!parent) {
                 return;
             }
-            const { top, left, width, height, translateX, translateY, } = style;
+            const { top, left, width, height, translateX, translateY } = style;
             // 不可能有固定尺寸+right百分比这种情况，right要么auto要么px
             if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
-                const v = computedStyle.left -= width.v * 0.5;
-                left.v = v * 100 / parent.width;
+                const v = (computedStyle.left -= width.v * 0.5);
+                left.v = (v * 100) / parent.width;
                 translateX.v = 0;
                 translateX.u = StyleUnit.PX;
             }
             if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
-                const v = computedStyle.top -= height.v * 0.5;
-                top.v = v * 100 / parent.height;
+                const v = (computedStyle.top -= height.v * 0.5);
+                top.v = (v * 100) / parent.height;
                 translateY.v = 0;
                 translateY.u = StyleUnit.PX;
             }
@@ -20552,8 +20570,8 @@
             if (!parent) {
                 return;
             }
-            const { top, right, bottom, left, width, height, translateX, translateY, } = style;
-            const { translateX: tx, translateY: ty, } = computedStyle;
+            const { top, right, bottom, left, width, height, translateX, translateY } = style;
+            const { translateX: tx, translateY: ty } = computedStyle;
             // 一定有parent，不会改root下固定的Container子节点
             const { width: pw, height: ph } = parent;
             // 宽度自动，left和right一定是有值，translateX单位是px
@@ -20562,13 +20580,13 @@
                     left.v = tx;
                 }
                 else if (left.u === StyleUnit.PERCENT) {
-                    left.v = tx * 100 / pw;
+                    left.v = (tx * 100) / pw;
                 }
                 if (right.u === StyleUnit.PX) {
                     right.v = pw - tx - this.width;
                 }
                 else if (right.u === StyleUnit.PERCENT) {
-                    right.v = (pw - tx - this.width) * 100 / pw;
+                    right.v = ((pw - tx - this.width) * 100) / pw;
                 }
             }
             // 固定宽度，发生过变更单位会变成px（节点可能只上下移动，看实现，这里多预防下），left/right至少有一个固定值，translateX需要重置为-50%
@@ -20577,13 +20595,13 @@
                     left.v = tx + this.width * 0.5;
                 }
                 else if (left.u === StyleUnit.PERCENT) {
-                    left.v = (tx + this.width * 0.5) * 100 / pw;
+                    left.v = ((tx + this.width * 0.5) * 100) / pw;
                 }
                 if (right.u === StyleUnit.PX) {
                     right.v = pw - tx - this.width * 1.5;
                 }
                 else if (right.u === StyleUnit.PERCENT) {
-                    right.v = (pw - tx - this.width * 1.5) * 100 / pw;
+                    right.v = ((pw - tx - this.width * 1.5) * 100) / pw;
                 }
             }
             this.resetTranslateX(left, width, translateX);
@@ -20607,13 +20625,13 @@
                     top.v = ty;
                 }
                 else if (top.u === StyleUnit.PERCENT) {
-                    top.v = ty * 100 / ph;
+                    top.v = (ty * 100) / ph;
                 }
                 if (bottom.u === StyleUnit.PX) {
                     bottom.v = ph - ty - this.height;
                 }
                 else if (bottom.u === StyleUnit.PERCENT) {
-                    bottom.v = (ph - ty - this.height) * 100 / ph;
+                    bottom.v = ((ph - ty - this.height) * 100) / ph;
                 }
             }
             // 固定高度，和固定宽度一样
@@ -20622,13 +20640,13 @@
                     top.v = ty + this.height * 0.5;
                 }
                 else if (top.u === StyleUnit.PERCENT) {
-                    top.v = (ty + this.height * 0.5) * 100 / ph;
+                    top.v = ((ty + this.height * 0.5) * 100) / ph;
                 }
                 if (bottom.u === StyleUnit.PX) {
                     bottom.v = ph - ty - this.height * 1.5;
                 }
                 else if (bottom.u === StyleUnit.PERCENT) {
-                    bottom.v = (ph - ty - this.height * 1.5) * 100 / ph;
+                    bottom.v = ((ph - ty - this.height * 1.5) * 100) / ph;
                 }
             }
             this.resetTranslateY(top, height, translateY);
@@ -20673,7 +20691,8 @@
             const root = this.root;
             let parent = this.parent;
             while (parent && parent !== root) {
-                if (!parent.adjustPosAndSize()) { // 无影响中断向上递归，比如拖动节点并未超过组的范围
+                if (!parent.adjustPosAndSize()) {
+                    // 无影响中断向上递归，比如拖动节点并未超过组的范围
                     break;
                 }
                 parent = parent.parent;
@@ -20696,16 +20715,16 @@
             if (!parent) {
                 return;
             }
-            const { top, left, width, height, translateX, translateY, } = style;
+            const { top, left, width, height, translateX, translateY } = style;
             if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
-                const v = computedStyle.left += width.v * 0.5;
-                left.v = v * 100 / parent.width;
+                const v = (computedStyle.left += width.v * 0.5);
+                left.v = (v * 100) / parent.width;
                 translateX.v = -50;
                 translateX.u = StyleUnit.PERCENT;
             }
             if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
-                const v = computedStyle.top += height.v * 0.5;
-                top.v = v * 100 / parent.height;
+                const v = (computedStyle.top += height.v * 0.5);
+                top.v = (v * 100) / parent.height;
                 translateY.v = -50;
                 translateY.u = StyleUnit.PERCENT;
             }
@@ -20757,7 +20776,8 @@
                                 node._opacity = node.computedStyle.opacity;
                             }
                             else {
-                                node._opacity = node.parent._opacity * node.computedStyle.opacity;
+                                node._opacity =
+                                    node.parent._opacity * node.computedStyle.opacity;
                             }
                         }
                         else {
@@ -21039,7 +21059,7 @@
         }
         structure(lv) {
             let res = super.structure(lv);
-            this.children.forEach(child => {
+            this.children.forEach((child) => {
                 res = res.concat(child.structure(lv + 1));
             });
             res[0].num = this.children.length;
@@ -21120,9 +21140,9 @@
         }
         // 必须是pointerEvents不被忽略前提，然后看group和artBoard选项
         getNodeCheck(child, computedStyle, includeGroup, includeArtBoard) {
-            if (computedStyle.pointerEvents
-                && (includeGroup || !(child instanceof Container && child.isGroup))
-                && (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
+            if (computedStyle.pointerEvents &&
+                (includeGroup || !(child instanceof Container && child.isGroup)) &&
+                (includeArtBoard || !(child instanceof Container && child.isArtBoard))) {
                 return child;
             }
         }
@@ -25953,49 +25973,192 @@
         }
     }
 
-    class Overlay extends Container {
-        constructor(props, children) {
-            super(props, children);
-            this.artBoards = new Container({
-                style: {
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: false,
-                },
-            }, []);
-            this.appendChild(this.artBoards);
-            this.abList = [];
+    function initShaders(gl, vshader, fshader) {
+        let program = createProgram(gl, vshader, fshader);
+        if (!program) {
+            throw new Error('Failed to create program');
         }
-        setArtBoard(list) {
-            this.artBoards.clearChildren();
-            this.abList.splice(0);
-            for (let i = 0, len = list.length; i < len; i++) {
-                const ab = list[i];
-                const text = new Text({
-                    style: {
-                        fontSize: 24,
-                        color: '#777',
-                    },
-                    content: ab.props.name || '画板',
-                });
-                this.artBoards.appendChild(text);
-                this.abList.push({ ab, text });
-            }
-        }
-        update() {
-            const abList = this.abList;
-            for (let i = 0, len = abList.length; i < len; i++) {
-                const { ab, text } = abList[i];
-                const rect = ab.getBoundingClientRect();
-                // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
-                text.updateStyleData({
-                    translateX: rect.left,
-                    translateY: rect.top - 32,
-                });
-                text.calMatrix(RefreshLevel.TRANSLATE);
-            }
-        }
+        // 要开启透明度，用以绘制透明的图形
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        return program;
     }
+    function createProgram(gl, vshader, fshader) {
+        // Create shader object
+        let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+        let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+        if (!vertexShader || !fragmentShader) {
+            return null;
+        }
+        // Create a program object
+        let program = gl.createProgram();
+        if (!program) {
+            return null;
+        }
+        // @ts-ignore
+        program.vertexShader = vertexShader;
+        // @ts-ignore
+        program.fragmentShader = fragmentShader;
+        // Attach the shader objects
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        // Link the program object
+        gl.linkProgram(program);
+        // Check the result of linking
+        let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+        if (!linked) {
+            let error = gl.getProgramInfoLog(program);
+            gl.deleteProgram(program);
+            gl.deleteShader(fragmentShader);
+            gl.deleteShader(vertexShader);
+            throw new Error('Failed to link program: ' + error);
+        }
+        return program;
+    }
+    /**
+     * Create a shader object
+     * @param gl GL context
+     * @param type the type of the shader object to be created
+     * @param source shader program (string)
+     * @return created shader object, or null if the creation has failed.
+     */
+    function loadShader(gl, type, source) {
+        // Create shader object
+        let shader = gl.createShader(type);
+        if (shader === null) {
+            throw new Error('unable to create shader');
+        }
+        // Set the shader program
+        gl.shaderSource(shader, source);
+        // Compile the shader
+        gl.compileShader(shader);
+        // Check the result of compilation
+        let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+        if (!compiled) {
+            let error = gl.getShaderInfoLog(shader);
+            gl.deleteShader(shader);
+            throw new Error('Failed to compile shader: ' + error);
+        }
+        return shader;
+    }
+
+    var ca = {
+        alpha: true,
+        antialias: true,
+        premultipliedAlpha: true,
+        preserveDrawingBuffer: false,
+        depth: true,
+        stencil: true,
+    };
+
+    const mainVert = `#version 100
+
+attribute vec2 a_position;
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+attribute float a_opacity;
+varying float v_opacity;
+
+void main() {
+  gl_Position = vec4(a_position, 0, 1);
+  v_texCoords = a_texCoords;
+  v_opacity = a_opacity;
+}`;
+    const mainFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+varying float v_opacity;
+
+uniform sampler2D u_texture;
+
+void main() {
+  float opacity = v_opacity;
+  if(opacity <= 0.0) {
+    discard;
+  }
+  opacity = clamp(opacity, 0.0, 1.0);
+  vec4 color = texture2D(u_texture, v_texCoords);
+  gl_FragColor = color * opacity;
+}`;
+    const colorVert = `#version 100
+
+attribute vec2 a_position;
+
+void main() {
+  gl_Position = vec4(a_position, 0, 1);
+}`;
+    const colorFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec4 u_color;
+
+void main() {
+  gl_FragColor = u_color;
+}`;
+    const simpleVert = `#version 100
+
+attribute vec2 a_position;
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+  gl_Position = vec4(a_position, 0, 1);
+  v_texCoords = a_texCoords;
+}`;
+    const simpleFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture;
+
+void main() {
+  vec4 color = texture2D(u_texture, v_texCoords);
+  gl_FragColor = color;
+}`;
+    const maskVert = `#version 100
+
+attribute vec4 a_position;
+
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+  gl_Position = a_position;
+  v_texCoords = a_texCoords;
+}`;
+    const maskFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+uniform int mode;
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  float a = color1.a * color2.a;
+  if (a <= 0.0) {
+    discard;
+  }
+  gl_FragColor = vec4(color2.rgb, a);
+}`;
 
     function renderWebgl(gl, root) {
         var _a;
@@ -26692,6 +26855,50 @@
         }
     }
 
+    class Overlay extends Container {
+        constructor(props, children) {
+            super(props, children);
+            this.artBoards = new Container({
+                style: {
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: false,
+                },
+            }, []);
+            this.appendChild(this.artBoards);
+            this.abList = [];
+        }
+        setArtBoard(list) {
+            this.artBoards.clearChildren();
+            this.abList.splice(0);
+            for (let i = 0, len = list.length; i < len; i++) {
+                const ab = list[i];
+                const text = new Text({
+                    style: {
+                        fontSize: 24,
+                        color: '#777',
+                    },
+                    content: ab.props.name || '画板',
+                });
+                this.artBoards.appendChild(text);
+                this.abList.push({ ab, text });
+            }
+        }
+        update() {
+            const abList = this.abList;
+            for (let i = 0, len = abList.length; i < len; i++) {
+                const { ab, text } = abList[i];
+                const rect = ab.getBoundingClientRect();
+                // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
+                text.updateStyleData({
+                    translateX: rect.left,
+                    translateY: rect.top - 32,
+                });
+                text.calMatrix(RefreshLevel.TRANSLATE);
+            }
+        }
+    }
+
     function checkReflow(root, node, addDom, removeDom) {
         const parent = node.parent;
         if (removeDom) {
@@ -26708,193 +26915,6 @@
             node.clearCacheUpward(false);
         }
     }
-
-    function initShaders(gl, vshader, fshader) {
-        let program = createProgram(gl, vshader, fshader);
-        if (!program) {
-            throw new Error('Failed to create program');
-        }
-        // 要开启透明度，用以绘制透明的图形
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        return program;
-    }
-    function createProgram(gl, vshader, fshader) {
-        // Create shader object
-        let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
-        let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-        if (!vertexShader || !fragmentShader) {
-            return null;
-        }
-        // Create a program object
-        let program = gl.createProgram();
-        if (!program) {
-            return null;
-        }
-        // @ts-ignore
-        program.vertexShader = vertexShader;
-        // @ts-ignore
-        program.fragmentShader = fragmentShader;
-        // Attach the shader objects
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        // Link the program object
-        gl.linkProgram(program);
-        // Check the result of linking
-        let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-        if (!linked) {
-            let error = gl.getProgramInfoLog(program);
-            gl.deleteProgram(program);
-            gl.deleteShader(fragmentShader);
-            gl.deleteShader(vertexShader);
-            throw new Error('Failed to link program: ' + error);
-        }
-        return program;
-    }
-    /**
-     * Create a shader object
-     * @param gl GL context
-     * @param type the type of the shader object to be created
-     * @param source shader program (string)
-     * @return created shader object, or null if the creation has failed.
-     */
-    function loadShader(gl, type, source) {
-        // Create shader object
-        let shader = gl.createShader(type);
-        if (shader === null) {
-            throw new Error('unable to create shader');
-        }
-        // Set the shader program
-        gl.shaderSource(shader, source);
-        // Compile the shader
-        gl.compileShader(shader);
-        // Check the result of compilation
-        let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-        if (!compiled) {
-            let error = gl.getShaderInfoLog(shader);
-            gl.deleteShader(shader);
-            throw new Error('Failed to compile shader: ' + error);
-        }
-        return shader;
-    }
-
-    const mainVert = `#version 100
-
-attribute vec2 a_position;
-attribute vec2 a_texCoords;
-varying vec2 v_texCoords;
-attribute float a_opacity;
-varying float v_opacity;
-
-void main() {
-  gl_Position = vec4(a_position, 0, 1);
-  v_texCoords = a_texCoords;
-  v_opacity = a_opacity;
-}`;
-    const mainFrag = `#version 100
-
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-varying vec2 v_texCoords;
-varying float v_opacity;
-
-uniform sampler2D u_texture;
-
-void main() {
-  float opacity = v_opacity;
-  if(opacity <= 0.0) {
-    discard;
-  }
-  opacity = clamp(opacity, 0.0, 1.0);
-  vec4 color = texture2D(u_texture, v_texCoords);
-  gl_FragColor = color * opacity;
-}`;
-    const colorVert = `#version 100
-
-attribute vec2 a_position;
-
-void main() {
-  gl_Position = vec4(a_position, 0, 1);
-}`;
-    const colorFrag = `#version 100
-
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-uniform vec4 u_color;
-
-void main() {
-  gl_FragColor = u_color;
-}`;
-    const simpleVert = `#version 100
-
-attribute vec2 a_position;
-attribute vec2 a_texCoords;
-varying vec2 v_texCoords;
-
-void main() {
-  gl_Position = vec4(a_position, 0, 1);
-  v_texCoords = a_texCoords;
-}`;
-    const simpleFrag = `#version 100
-
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-varying vec2 v_texCoords;
-
-uniform sampler2D u_texture;
-
-void main() {
-  vec4 color = texture2D(u_texture, v_texCoords);
-  gl_FragColor = color;
-}`;
-    const maskVert = `#version 100
-
-attribute vec4 a_position;
-
-attribute vec2 a_texCoords;
-varying vec2 v_texCoords;
-
-void main() {
-  gl_Position = a_position;
-  v_texCoords = a_texCoords;
-}`;
-    const maskFrag = `#version 100
-
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-varying vec2 v_texCoords;
-
-uniform sampler2D u_texture1;
-uniform sampler2D u_texture2;
-
-uniform int mode;
-
-void main() {
-  vec4 color1 = texture2D(u_texture1, v_texCoords);
-  vec4 color2 = texture2D(u_texture2, v_texCoords);
-  float a = color1.a * color2.a;
-  if (a <= 0.0) {
-    discard;
-  }
-  gl_FragColor = vec4(color2.rgb, a);
-}`;
-
-    var ca = {
-        alpha: true,
-        antialias: true,
-        premultipliedAlpha: true,
-        preserveDrawingBuffer: false,
-        depth: true,
-        stencil: true,
-    };
 
     let uuid = 0;
     class Root extends Container {
@@ -26959,7 +26979,7 @@ void main() {
             this.appendChild(this.overlay);
         }
         initShaders(gl) {
-            const program = this.programs.program = initShaders(gl, mainVert, mainFrag);
+            const program = (this.programs.program = initShaders(gl, mainVert, mainFrag));
             this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
             this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
             this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
@@ -26971,7 +26991,7 @@ void main() {
             this.ctx.viewport(0, 0, this.width, this.height);
         }
         setJPages(jPages) {
-            jPages.forEach(item => {
+            jPages.forEach((item) => {
                 const page = new Page(item.props, []);
                 page.json = item;
                 this.pageContainer.appendChild(page);
@@ -26999,7 +27019,7 @@ void main() {
             });
             this.lastPage = newPage;
             const children = [];
-            newPage.children.forEach(item => {
+            newPage.children.forEach((item) => {
                 if (item instanceof ArtBoard) {
                     children.push(item);
                 }
@@ -27049,7 +27069,9 @@ void main() {
             if (addDom || removeDom) {
                 lv |= RefreshLevel.REFLOW;
             }
-            if (lv === RefreshLevel.NONE || !this.computedStyle.visible || this.isDestroyed) {
+            if (lv === RefreshLevel.NONE ||
+                !this.computedStyle.visible ||
+                this.isDestroyed) {
                 return false;
             }
             const isRf = isReflow(lv);
@@ -27159,7 +27181,7 @@ void main() {
          * 每帧调用Root的before回调，先将存储的动画before执行，触发数据先变更完，然后若有变化或主动更新则刷新
          */
         before() {
-            const ani = this.ani, task = this.taskClone = this.task.splice(0);
+            const ani = this.ani, task = (this.taskClone = this.task.splice(0));
             ani.length; let len2 = task.length;
             // 先重置标识，动画没有触发更新，在每个before执行，如果调用了更新则更改标识
             this.aniChange = false;
@@ -27211,7 +27233,7 @@ void main() {
         getNodeFromCurPage(x, y, includeGroup = false, includeArtBoard = false, lv) {
             const page = this.lastPage;
             if (page) {
-                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : (lv + 3));
+                return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : lv + 3);
             }
         }
     }
