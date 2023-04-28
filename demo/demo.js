@@ -114,6 +114,11 @@ $input.onchange = function(e) {
         }
       });
 
+      root.on(editor.util.Event.WILL_REMOVE_DOM, function(node) {
+        const li = abHash[node.props.uuid];
+        li.parentElement.removeChild(li);
+      });
+
       root.setPageIndex(0);
     });
   }
@@ -272,9 +277,9 @@ function updateHover() {
 
 function hideHover() {
   if (hoverNode) {
-    hoverNode = null;
     $hover.classList.remove('show');
     hoverTree.classList.remove('hover');
+    hoverNode = null;
     hoverTree = null;
   }
 }
@@ -341,9 +346,9 @@ function showSelect(node) {
 
 function hideSelect() {
   if (selectNode) {
-    selectNode = null;
     $selection.classList.remove('show');
     selectTree.classList.remove('select');
+    selectNode = null;
     selectTree = null;
   }
 }
@@ -636,7 +641,12 @@ document.addEventListener('keydown', function(e) {
   if (m !== e.metaKey) {
     onMove(lastX, lastY);
   }
-  if (e.keyCode === 32) {
+  if (e.keyCode === 8) {
+    selectNode && selectNode.remove();
+    updateHover();
+    hideSelect();
+  }
+  else if (e.keyCode === 32) {
     spaceKey = true;
     $overlap.classList.add('space');
   }

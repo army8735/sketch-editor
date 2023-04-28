@@ -26903,6 +26903,8 @@ void main() {
     function checkReflow(root, node, addDom, removeDom) {
         const parent = node.parent;
         if (removeDom) {
+            node.checkPosSizeUpward();
+            node.clearCacheUpward(false);
             node.destroy();
         }
         // add和普通修改共用
