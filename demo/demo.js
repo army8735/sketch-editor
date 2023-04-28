@@ -147,7 +147,7 @@ function genNodeTree(node, abHash) {
 <span class="type">${type}</span>
 <span class="name">${node.props.name}</span>`
   if (!(node instanceof editor.node.ArtBoard)) {
-    s += `<span class="visible ${node.computedStyle.visible ? 't' : ''}">可见</span>`;
+    s += `<span class="visible ${node.computedStyle.visible ? 't' : ''}">${node.computedStyle.visible ? '可见' : '隐藏'}</span>`;
   }
   s += '</div>';
   li.innerHTML = s;

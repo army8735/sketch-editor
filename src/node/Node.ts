@@ -519,12 +519,12 @@ class Node extends Event {
     this.clearCache(true);
     this.prev =
       this.next =
-        this.parent =
-          this.page =
-            this.artBoard =
-              this.mask =
-                this.root =
-                  undefined;
+      this.parent =
+      this.page =
+      this.artBoard =
+      this.mask =
+      this.root =
+        undefined;
   }
 
   structure(lv: number): Array<Struct> {
