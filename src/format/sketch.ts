@@ -177,11 +177,11 @@ async function convertItem(
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
       ? [
-          Math.floor(layer.backgroundColor.red * 255),
-          Math.floor(layer.backgroundColor.green * 255),
-          Math.floor(layer.backgroundColor.blue * 255),
-          layer.backgroundColor.alpha,
-        ]
+        Math.floor(layer.backgroundColor.red * 255),
+        Math.floor(layer.backgroundColor.green * 255),
+        Math.floor(layer.backgroundColor.blue * 255),
+        layer.backgroundColor.alpha,
+      ]
       : [255, 255, 255, 1];
     return {
       tagName: TagName.ArtBoard,
@@ -386,8 +386,7 @@ async function convertItem(
     let index;
     if (layer.image._ref_class === 'MSImageData') {
       index = await readImageFile(layer.image._ref, opt);
-    }
-    else if ((layer.image._ref_class as any) === 'MSNetworkImage') {
+    } else if ((layer.image._ref_class as any) === 'MSNetworkImage') {
       index = await readNetworkImage(layer.image._ref, opt);
     }
     return {
@@ -423,52 +422,52 @@ async function convertItem(
     if (textBehaviour === SketchFormat.TextBehaviour.Flexible) {
       width = 'auto';
       height = 'auto';
-    }
-    else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
+    } else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
       // 可能width是auto（left+right），也可能是left+width
       height = 'auto';
-    }
-    else if (textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
+    } else if (
+      textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight
+    ) {
       // 啥也不干
     }
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
-          const {
-            location,
-            length,
-            attributes: {
-              MSAttributedStringFontAttribute: {
-                attributes: { name, size: fontSize },
-              },
-              MSAttributedStringColorAttribute: { red, green, blue, alpha },
-              kerning = 0,
-              paragraphStyle: { maximumLineHeight = 0 } = {},
+        const {
+          location,
+          length,
+          attributes: {
+            MSAttributedStringFontAttribute: {
+              attributes: { name, size: fontSize },
             },
-          } = item;
-          const fontFamily = name;
-          const res = {
-            location,
-            length,
-            fontFamily,
-            fontSize,
-            fontWeight: 400,
-            fontStyle: 'normal',
-            letterSpacing: kerning,
-            lineHeight: maximumLineHeight,
-            color: [
-              Math.floor(red * 255),
-              Math.floor(green * 255),
-              Math.floor(blue * 255),
-              alpha,
-            ],
-          } as Rich;
-          // 自动行高
-          if (!maximumLineHeight) {
-            res.lineHeight = calNormalLineHeight(res);
-          }
-          return res;
-        })
+            MSAttributedStringColorAttribute: { red, green, blue, alpha },
+            kerning = 0,
+            paragraphStyle: { maximumLineHeight = 0 } = {},
+          },
+        } = item;
+        const fontFamily = name;
+        const res = {
+          location,
+          length,
+          fontFamily,
+          fontSize,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          letterSpacing: kerning,
+          lineHeight: maximumLineHeight,
+          color: [
+            Math.floor(red * 255),
+            Math.floor(green * 255),
+            Math.floor(blue * 255),
+            alpha,
+          ],
+        } as Rich;
+        // 自动行高
+        if (!maximumLineHeight) {
+          res.lineHeight = calNormalLineHeight(res);
+        }
+        return res;
+      })
       : undefined;
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
@@ -491,11 +490,11 @@ async function convertItem(
         ?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute
       ? [
-          Math.floor(MSAttributedStringColorAttribute.red * 255),
-          Math.floor(MSAttributedStringColorAttribute.green * 255),
-          Math.floor(MSAttributedStringColorAttribute.blue * 255),
-          MSAttributedStringColorAttribute.alpha,
-        ]
+        Math.floor(MSAttributedStringColorAttribute.red * 255),
+        Math.floor(MSAttributedStringColorAttribute.green * 255),
+        Math.floor(MSAttributedStringColorAttribute.blue * 255),
+        MSAttributedStringColorAttribute.alpha,
+      ]
       : [0, 0, 0, 1];
     return {
       tagName: TagName.Text,
@@ -533,12 +532,14 @@ async function convertItem(
       },
     } as JText;
   }
-  if (layer._class === SketchFormat.ClassValue.Rectangle
-    || layer._class === SketchFormat.ClassValue.Oval
-    || layer._class === SketchFormat.ClassValue.Star
-    || layer._class === SketchFormat.ClassValue.Triangle
-    || layer._class === SketchFormat.ClassValue.Polygon
-    || layer._class === SketchFormat.ClassValue.ShapePath) {
+  if (
+    layer._class === SketchFormat.ClassValue.Rectangle ||
+    layer._class === SketchFormat.ClassValue.Oval ||
+    layer._class === SketchFormat.ClassValue.Star ||
+    layer._class === SketchFormat.ClassValue.Triangle ||
+    layer._class === SketchFormat.ClassValue.Polygon ||
+    layer._class === SketchFormat.ClassValue.ShapePath
+  ) {
     const points: Array<Point> = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
@@ -599,7 +600,9 @@ async function convertItem(
           scaleX,
           scaleY,
           rotateZ,
-          booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+          booleanOperation:
+            ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
+            'none',
           maskMode,
           breakMask,
         },
@@ -655,7 +658,9 @@ async function convertItem(
           scaleX,
           scaleY,
           rotateZ,
-          booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+          booleanOperation:
+            ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
+            'none',
           maskMode,
           breakMask,
         },
@@ -684,7 +689,7 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
         const g = item.gradient;
         const from = parseStrPoint(g.from);
         const to = parseStrPoint(g.to);
-        const stops = g.stops.map(item => {
+        const stops = g.stops.map((item) => {
           const color = color2hexStr([
             Math.floor(item.color.red * 255),
             Math.floor(item.color.green * 255),
@@ -695,22 +700,22 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
         });
         if (g.gradientType === SketchFormat.GradientType.Linear) {
           fill.push(
-            `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',',)})`,
+            `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+              ',',
+            )})`,
           );
-        }
-        else if (g.gradientType === SketchFormat.GradientType.Radial) {
+        } else if (g.gradientType === SketchFormat.GradientType.Radial) {
           const ellipseLength = g.elipseLength;
           fill.push(
-            `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`,
+            `radialGradient(${from.x} ${from.y} ${to.x} ${
+              to.y
+            } ${ellipseLength},${stops.join(',')})`,
           );
-        }
-        else if (g.gradientType === SketchFormat.GradientType.Angular) {
-        }
-        else {
+        } else if (g.gradientType === SketchFormat.GradientType.Angular) {
+        } else {
           throw new Error('Unknown gradient');
         }
-      }
-      else {
+      } else {
         fill.push([
           Math.floor(item.color.red * 255),
           Math.floor(item.color.green * 255),
@@ -737,31 +742,32 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
       strokeWidth.push(item.thickness || 0);
       if (item.position === SketchFormat.BorderPosition.Inside) {
         strokePosition.push('inside');
-      }
-      else if (item.position === SketchFormat.BorderPosition.Outside) {
+      } else if (item.position === SketchFormat.BorderPosition.Outside) {
         strokePosition.push('outside');
-      }
-      else {
+      } else {
         strokePosition.push('center');
       }
     });
   }
   const strokeDasharray: Array<number> = [];
-  let strokeLinecap = 'butt', strokeLinejoin = 'miter';
+  let strokeLinecap = 'butt',
+    strokeLinejoin = 'miter';
   if (borderOptions) {
-    borderOptions.dashPattern.forEach(item => {
+    borderOptions.dashPattern.forEach((item) => {
       strokeDasharray.push(item);
     });
     if (borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Round) {
       strokeLinecap = 'round';
-    }
-    else if (borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Projecting) {
+    } else if (
+      borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Projecting
+    ) {
       strokeLinecap = 'square';
     }
     if (borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Round) {
       strokeLinejoin = 'round';
-    }
-    else if (borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Bevel) {
+    } else if (
+      borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Bevel
+    ) {
       strokeLinejoin = 'bevel';
     }
   }
@@ -792,30 +798,8 @@ async function readNetworkImage(src: string, opt: Opt) {
   if (opt.imgHash.hasOwnProperty(src)) {
     return opt.imgHash[src];
   }
-  const response = await fetch(src);
-  const blob = await response.blob();
-
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = function () {
-      if (reader.result) {
-        resolve(
-          'data:image/png;' +
-            (reader.result as string).replace(
-              'data:application/octet-stream;',
-              '',
-            ),
-        );
-      }
-      else {
-        reject();
-      }
-    };
-    reader.readAsDataURL(blob);
-  });
-
   const index = opt.imgs.length;
-  opt.imgs.push(base64);
+  opt.imgs.push(src);
   return index;
 }
 
@@ -835,20 +819,15 @@ async function readImageFile(filename: string, opt: Opt) {
   if (!/^data:image\//.test(base64)) {
     if (filename.endsWith('.png')) {
       base64 = 'data:image/png;base64,' + base64;
-    }
-    else if (filename.endsWith('.gif')) {
+    } else if (filename.endsWith('.gif')) {
       base64 = 'data:image/gif;base64,' + base64;
-    }
-    else if (filename.endsWith('.jpg')) {
+    } else if (filename.endsWith('.jpg')) {
       base64 = 'data:image/jpg;base64,' + base64;
-    }
-    else if (filename.endsWith('.jpeg')) {
+    } else if (filename.endsWith('.jpeg')) {
       base64 = 'data:image/jpeg;base64,' + base64;
-    }
-    else if (filename.endsWith('.webp')) {
+    } else if (filename.endsWith('.webp')) {
       base64 = 'data:image/webp;base64,' + base64;
-    }
-    else if (filename.endsWith('.bmp')) {
+    } else if (filename.endsWith('.bmp')) {
       base64 = 'data:image/bmp;base64,' + base64;
     }
   }
