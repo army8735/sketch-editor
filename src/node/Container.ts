@@ -183,7 +183,7 @@ class Container extends Node {
     }
   }
 
-  destroy() {
+  override destroy() {
     const { isDestroyed, children } = this;
     if (isDestroyed) {
       return;
@@ -194,7 +194,7 @@ class Container extends Node {
     super.destroy();
   }
 
-  structure(lv: number): Array<Struct> {
+  override structure(lv: number): Array<Struct> {
     let res = super.structure(lv);
     this.children.forEach(child => {
       res = res.concat(child.structure(lv + 1));

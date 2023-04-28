@@ -17415,12 +17415,12 @@
                     },
                 };
             }
-            if (layer._class === FileFormat.ClassValue.Rectangle
-                || layer._class === FileFormat.ClassValue.Oval
-                || layer._class === FileFormat.ClassValue.Star
-                || layer._class === FileFormat.ClassValue.Triangle
-                || layer._class === FileFormat.ClassValue.Polygon
-                || layer._class === FileFormat.ClassValue.ShapePath) {
+            if (layer._class === FileFormat.ClassValue.Rectangle ||
+                layer._class === FileFormat.ClassValue.Oval ||
+                layer._class === FileFormat.ClassValue.Star ||
+                layer._class === FileFormat.ClassValue.Triangle ||
+                layer._class === FileFormat.ClassValue.Polygon ||
+                layer._class === FileFormat.ClassValue.ShapePath) {
                 const points = layer.points.map((item) => {
                     const point = parseStrPoint(item.point);
                     const curveFrom = parseStrPoint(item.curveFrom);
@@ -17470,7 +17470,8 @@
                             scaleX,
                             scaleY,
                             rotateZ,
-                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
+                                'none',
                             maskMode,
                             breakMask,
                         },
@@ -17513,7 +17514,8 @@
                             scaleX,
                             scaleY,
                             rotateZ,
-                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] || 'none',
+                            booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
+                                'none',
                             maskMode,
                             breakMask,
                         },
@@ -17535,7 +17537,7 @@
                     const g = item.gradient;
                     const from = parseStrPoint(g.from);
                     const to = parseStrPoint(g.to);
-                    const stops = g.stops.map(item => {
+                    const stops = g.stops.map((item) => {
                         const color = color2hexStr([
                             Math.floor(item.color.red * 255),
                             Math.floor(item.color.green * 255),
@@ -17592,7 +17594,7 @@
         const strokeDasharray = [];
         let strokeLinecap = 'butt', strokeLinejoin = 'miter';
         if (borderOptions) {
-            borderOptions.dashPattern.forEach(item => {
+            borderOptions.dashPattern.forEach((item) => {
                 strokeDasharray.push(item);
             });
             if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Round) {
@@ -17634,23 +17636,8 @@
             if (opt.imgHash.hasOwnProperty(src)) {
                 return opt.imgHash[src];
             }
-            const response = yield fetch(src);
-            const blob = yield response.blob();
-            const base64 = yield new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = function () {
-                    if (reader.result) {
-                        resolve('data:image/png;' +
-                            reader.result.replace('data:application/octet-stream;', ''));
-                    }
-                    else {
-                        reject();
-                    }
-                };
-                reader.readAsDataURL(blob);
-            });
             const index = opt.imgs.length;
-            opt.imgs.push(base64);
+            opt.imgs.push(src);
             return index;
         });
     }
@@ -26041,7 +26028,7 @@
         }
         const { structs, width: W, height: H } = root;
         const cx = W * 0.5, cy = H * 0.5;
-        const mergeList = [], mergeIndex = [];
+        const mergeList = [], mergeIndex = [], mergeHash = new WeakMap();
         // 先计算内容matrix等，如果有需要merge合并汇总的记录下来
         for (let i = 0, len = structs.length; i < len; i++) {
             const { node, lv, total } = structs[i];
@@ -26076,8 +26063,8 @@
                         total,
                         node,
                     });
+                    mergeHash.set(node, true);
                 }
-                // 可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
                 else if (shouldMask) {
                     genNextCount(node, structs, i, lv, total);
                 }
@@ -26094,16 +26081,16 @@
             for (let j = 0, len = mergeList.length; j < len; j++) {
                 const { i, lv, total, node } = mergeList[j];
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-                node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+                node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex, mergeHash);
                 // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
                 const computedStyle = node.computedStyle;
                 const { maskMode } = computedStyle;
                 if (maskMode && node.next) {
                     if (node.textureTarget[scaleIndex]) {
                         node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] =
-                            genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex, mergeIndex);
+                            genMask(gl, root, node, maskMode, structs, i, lv, total, W, H, scale, scaleIndex);
                     }
-                    else {
+                    else if (!node.struct.next) {
                         genNextCount(node, structs, i, lv, total);
                     }
                 }
@@ -26370,16 +26357,27 @@
         bbox[2] = Math.max(bbox[2], t[2]);
         bbox[3] = Math.max(bbox[3], t[3]);
     }
-    function genTotal(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex, mergeIndex) {
+    function genTotal(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex, mergeHash) {
         var _a;
         // 缓存仍然还在直接返回，无需重新生成
         if ((_a = node.textureTotal[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
             return node.textureTotal[scaleIndex];
         }
-        // 先检查范围内，因为可能还没有真实渲染生成内容
+        // 先检查可视范围内，因为可能还没有真实渲染生成内容
         const bbox = genBboxTotal(structs, node, index, total, scaleIndex);
         if (!checkInScreen(bbox, node.matrixWorld, W, H)) {
-            return;
+            // 可能在可视范围外，但是祖父节点中有范围内的merge汇总，不能被忽略
+            let parent = node.parent, ignore = true;
+            while (parent) {
+                if (mergeHash.get(parent)) {
+                    ignore = false;
+                    break;
+                }
+                parent = parent.parent;
+            }
+            if (ignore) {
+                return;
+            }
         }
         // 单个叶子节点也不需要，就是本身节点的内容
         if (!total) {
@@ -26450,8 +26448,7 @@
                 ], dx, dy, false);
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (mergeIndex[i] ||
-                (target2 && target2 !== node2.textureCache[scaleIndex]) ||
+            if ((target2 && target2 !== node2.textureCache[scaleIndex]) ||
                 node2.isShapeGroup) {
                 i += total2 + next2;
             }
@@ -26460,7 +26457,7 @@
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target;
     }
-    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex, mergeIndex) {
+    function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex) {
         var _a;
         // 缓存仍然还在直接返回，无需重新生成
         if ((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
@@ -26544,8 +26541,7 @@
                 ], dx, dy, false);
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-            if (mergeIndex[i] ||
-                (target2 && target2 !== node2.textureCache[scaleIndex]) ||
+            if ((target2 && target2 !== node2.textureCache[scaleIndex]) ||
                 node2.isShapeGroup) {
                 i += total2 + next2;
             }

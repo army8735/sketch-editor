@@ -76,7 +76,8 @@ export function renderWebgl(
   const cx = W * 0.5,
     cy = H * 0.5;
   const mergeList: Array<Merge> = [],
-    mergeIndex: Array<boolean> = [];
+    mergeIndex: Array<boolean> = [],
+    mergeHash: WeakMap<Node, boolean> = new WeakMap();
   // 先计算内容matrix等，如果有需要merge合并汇总的记录下来
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
@@ -113,8 +114,8 @@ export function renderWebgl(
           total,
           node,
         });
+        mergeHash.set(node, true);
       }
-      // 可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
       else if (shouldMask) {
         genNextCount(node, structs, i, lv, total);
       }
@@ -143,7 +144,7 @@ export function renderWebgl(
         H,
         scale,
         scaleIndex,
-        mergeIndex,
+        mergeHash,
       );
       // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
       const computedStyle = node.computedStyle;
@@ -164,9 +165,8 @@ export function renderWebgl(
               H,
               scale,
               scaleIndex,
-              mergeIndex,
             );
-        } else {
+        } else if (!node.struct.next) {
           genNextCount(node, structs, i, lv, total);
         }
       }
@@ -506,16 +506,27 @@ function genTotal(
   H: number,
   scale: number,
   scaleIndex: number,
-  mergeIndex: Array<boolean>,
+  mergeHash: WeakMap<Node, boolean>,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureTotal[scaleIndex]?.available) {
     return node.textureTotal[scaleIndex];
   }
-  // 先检查范围内，因为可能还没有真实渲染生成内容
+  // 先检查可视范围内，因为可能还没有真实渲染生成内容
   const bbox = genBboxTotal(structs, node, index, total, scaleIndex);
   if (!checkInScreen(bbox, node.matrixWorld, W, H)) {
-    return;
+    // 可能在可视范围外，但是祖父节点中有范围内的merge汇总，不能被忽略
+    let parent = node.parent, ignore = true;
+    while (parent) {
+      if (mergeHash.get(parent)) {
+        ignore = false;
+        break;
+      }
+      parent = parent.parent;
+    }
+    if (ignore) {
+      return;
+    }
   }
   // 单个叶子节点也不需要，就是本身节点的内容
   if (!total) {
@@ -607,7 +618,6 @@ function genTotal(
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
-      mergeIndex[i] ||
       (target2 && target2 !== node2.textureCache[scaleIndex]) ||
       node2.isShapeGroup
     ) {
@@ -632,7 +642,6 @@ function genMask(
   H: number,
   scale: number,
   scaleIndex: number,
-  mergeIndex: Array<boolean>,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureMask[scaleIndex]?.available) {
@@ -734,7 +743,6 @@ function genMask(
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
-      mergeIndex[i] ||
       (target2 && target2 !== node2.textureCache[scaleIndex]) ||
       node2.isShapeGroup
     ) {

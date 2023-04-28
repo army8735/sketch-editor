@@ -317,7 +317,7 @@ class Root extends Container implements FrameCallback {
     }
   }
 
-  destroy() {
+  override destroy() {
     super.destroy();
     frame.removeRoot(this);
   }
