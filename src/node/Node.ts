@@ -853,6 +853,10 @@ class Node extends Event {
     return m[0];
   }
 
+  rename(s: string) {
+    this.props.name = s;
+  }
+
   get opacity() {
     const root = this.root;
     if (!root) {

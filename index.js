@@ -20735,6 +20735,9 @@
             const m = this.matrixWorld;
             return m[0];
         }
+        rename(s) {
+            this.props.name = s;
+        }
         get opacity() {
             const root = this.root;
             if (!root) {
@@ -21168,6 +21171,11 @@
         // 画板统一无内容，背景单独优化渲染
         calContent() {
             return false;
+        }
+        rename(s) {
+            var _a, _b;
+            super.rename(s);
+            (_b = (_a = this.root) === null || _a === void 0 ? void 0 : _a.overlay) === null || _b === void 0 ? void 0 : _b.updateArtBoard(this);
         }
         collectBsData(index, bsPoint, bsTex, cx, cy) {
             const { width, height, matrixWorld } = this;
@@ -22135,19 +22143,19 @@
     class Text extends Node {
         constructor(props) {
             super(props);
-            this.content = props.content;
+            this._content = props.content;
             this.rich = props.rich;
             this.lineBoxList = [];
         }
         lay(data) {
             super.lay(data);
-            const { rich, style, computedStyle, content, lineBoxList } = this;
+            const { rich, style, computedStyle, _content, lineBoxList } = this;
             const autoW = style.width.u === StyleUnit.AUTO
                 && (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
             const autoH = style.height.u === StyleUnit.AUTO
                 && (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
             let i = 0;
-            let length = content.length;
+            let length = _content.length;
             let perW;
             let letterSpacing;
             let lineHeight;
@@ -22202,7 +22210,7 @@
                     ctx.font = setFontStyle(cur);
                 }
                 // 连续\n，开头会遇到，需跳过
-                if (content.charAt(i) === '\n') {
+                if (_content.charAt(i) === '\n') {
                     i++;
                     x = 0;
                     y += lineHeight;
@@ -22228,7 +22236,7 @@
                     }
                 }
                 // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
-                const min = ctx.measureText(content.charAt(i)).width;
+                const min = ctx.measureText(_content.charAt(i)).width;
                 if (min > W - x + (1e-10) && x) {
                     x = 0;
                     y += lineBox.lineHeight;
@@ -22240,8 +22248,8 @@
                     continue;
                 }
                 // 预估法获取测量结果
-                const { hypotheticalNum: num, rw, newLine } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
-                const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
+                const { hypotheticalNum: num, rw, newLine } = measure(ctx, i, len, _content, W - x, perW, letterSpacing);
+                const textBox = new TextBox(x, y, rw, lineHeight, baseline, _content.slice(i, i + num), ctx.font);
                 lineBox.add(textBox);
                 i += num;
                 maxW = Math.max(maxW, rw);
@@ -22292,7 +22300,7 @@
             }
         }
         calContent() {
-            return this.hasContent = !!this.content;
+            return this.hasContent = !!this._content;
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);
@@ -22353,6 +22361,16 @@
                     ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
                     count += textBox.str.length;
                 }
+            }
+        }
+        get content() {
+            return this._content;
+        }
+        set content(v) {
+            var _a;
+            if (v !== this._content) {
+                this._content = v;
+                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
             }
         }
     }
@@ -26867,29 +26885,40 @@ void main() {
                 },
             }, []);
             this.appendChild(this.artBoards);
-            this.abList = [];
+            this.artBoardList = [];
         }
         setArtBoard(list) {
             this.artBoards.clearChildren();
-            this.abList.splice(0);
+            this.artBoardList.splice(0);
             for (let i = 0, len = list.length; i < len; i++) {
-                const ab = list[i];
+                const artBoard = list[i];
                 const text = new Text({
                     style: {
                         fontSize: 24,
                         color: '#777',
                     },
-                    content: ab.props.name || '画板',
+                    content: artBoard.props.name || '画板',
                 });
                 this.artBoards.appendChild(text);
-                this.abList.push({ ab, text });
+                this.artBoardList.push({ artBoard, text });
+            }
+        }
+        updateArtBoard(artBoard) {
+            console.log(artBoard);
+            const list = this.artBoardList;
+            for (let i = 0, len = list.length; i < len; i++) {
+                if (list[i].artBoard === artBoard) {
+                    console.log(i);
+                    list[i].text.content = artBoard.props.name || '画板';
+                    break;
+                }
             }
         }
         update() {
-            const abList = this.abList;
-            for (let i = 0, len = abList.length; i < len; i++) {
-                const { ab, text } = abList[i];
-                const rect = ab.getBoundingClientRect();
+            const artBoardList = this.artBoardList;
+            for (let i = 0, len = artBoardList.length; i < len; i++) {
+                const { artBoard, text } = artBoardList[i];
+                const rect = artBoard.getBoundingClientRect();
                 // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
                 text.updateStyleData({
                     translateX: rect.left,

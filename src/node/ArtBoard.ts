@@ -19,6 +19,11 @@ class ArtBoard extends Container {
     return false;
   }
 
+  override rename(s: string) {
+    super.rename(s);
+    this.root?.overlay?.updateArtBoard(this);
+  }
+
   collectBsData(index: number, bsPoint: Float32Array, bsTex: Float32Array, cx: number, cy: number) {
     const { width, height, matrixWorld } = this;
     let zoom = this.getZoom();

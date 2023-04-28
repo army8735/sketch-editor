@@ -8,6 +8,7 @@ import inject from '../util/inject';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
+import { RefreshLevel } from '../refresh/level';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -99,25 +100,25 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
 }
 
 class Text extends Node {
-  content: string;
+  private _content: string;
   rich?: Array<Rich>;
   lineBoxList: Array<LineBox>;
   constructor(props: TextProps) {
     super(props);
-    this.content = props.content;
+    this._content = props.content;
     this.rich = props.rich;
     this.lineBoxList = [];
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const { rich, style, computedStyle, content, lineBoxList } = this;
+    const { rich, style, computedStyle, _content, lineBoxList } = this;
     const autoW = style.width.u === StyleUnit.AUTO
       && (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
     const autoH = style.height.u === StyleUnit.AUTO
       && (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
     let i = 0;
-    let length = content.length;
+    let length = _content.length;
     let perW: number;
     let letterSpacing: number;
     let lineHeight;
@@ -172,7 +173,7 @@ class Text extends Node {
         ctx.font = setFontStyle(cur);
       }
       // 连续\n，开头会遇到，需跳过
-      if (content.charAt(i) === '\n') {
+      if (_content.charAt(i) === '\n') {
         i++;
         x = 0;
         y += lineHeight;
@@ -199,7 +200,7 @@ class Text extends Node {
         }
       }
       // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
-      const min = ctx.measureText(content.charAt(i)).width;
+      const min = ctx.measureText(_content.charAt(i)).width;
       if (min > W - x + (1e-10) && x) {
         x = 0;
         y += lineBox.lineHeight;
@@ -212,9 +213,9 @@ class Text extends Node {
       }
       // 预估法获取测量结果
       const { hypotheticalNum: num, rw, newLine } =
-        measure(ctx, i, len, content, W - x, perW, letterSpacing);
+        measure(ctx, i, len, _content, W - x, perW, letterSpacing);
       const textBox = new TextBox(x, y, rw, lineHeight, baseline,
-        content.slice(i, i + num), ctx.font);
+        _content.slice(i, i + num), ctx.font);
       lineBox.add(textBox);
       i += num;
       maxW = Math.max(maxW, rw);
@@ -266,7 +267,7 @@ class Text extends Node {
   }
 
   override calContent(): boolean {
-    return this.hasContent = !!this.content;
+    return this.hasContent = !!this._content;
   }
 
   override renderCanvas(scale: number) {
@@ -328,6 +329,17 @@ class Text extends Node {
         ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
         count += textBox.str.length;
       }
+    }
+  }
+
+  get content() {
+    return this._content;
+  }
+
+  set content(v: string) {
+    if (v !== this._content) {
+      this._content = v;
+      this.root?.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
     }
   }
 }
