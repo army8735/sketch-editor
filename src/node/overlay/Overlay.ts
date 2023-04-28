@@ -1,22 +1,25 @@
-import Container from '../Container';
-import Node from '../Node';
-import ArtBoard from '../ArtBoard';
-import Text from '../Text';
 import { Props } from '../../format';
 import { RefreshLevel } from '../../refresh/level';
+import ArtBoard from '../ArtBoard';
+import Container from '../Container';
+import Node from '../Node';
+import Text from '../Text';
 
 class Overlay extends Container {
   artBoards: Container;
-  artBoardList: Array<{ artBoard: ArtBoard, text: Text }>;
+  artBoardList: Array<{ artBoard: ArtBoard; text: Text }>;
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
-    this.artBoards = new Container({
-      style: {
-        width: '100%',
-        height: '100%',
-        pointerEvents: false,
+    this.artBoards = new Container(
+      {
+        style: {
+          width: '100%',
+          height: '100%',
+          pointerEvents: false,
+        },
       },
-    }, []);
+      [],
+    );
     this.appendChild(this.artBoards);
     this.artBoardList = [];
   }
@@ -38,10 +41,10 @@ class Overlay extends Container {
     }
   }
 
-  updateArtBoard(artBoard: ArtBoard) { console.log(artBoard);
+  updateArtBoard(artBoard: ArtBoard) {
     const list = this.artBoardList;
     for (let i = 0, len = list.length; i < len; i++) {
-      if (list[i].artBoard === artBoard) { console.log(i);
+      if (list[i].artBoard === artBoard) {
         list[i].text.content = artBoard.props.name || '画板';
         break;
       }

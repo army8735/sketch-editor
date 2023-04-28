@@ -1,13 +1,13 @@
-import Node from './Node';
-import TextBox from './TextBox';
-import LineBox from './LineBox';
-import { LayoutData } from './layout';
 import { Rich, TextProps } from '../format';
-import { StyleUnit, TEXT_ALIGN } from '../style/define';
-import inject from '../util/inject';
-import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
+import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
+import { StyleUnit, TEXT_ALIGN } from '../style/define';
+import inject from '../util/inject';
+import { LayoutData } from './layout';
+import LineBox from './LineBox';
+import Node from './Node';
+import TextBox from './TextBox';
 import { RefreshLevel } from '../refresh/level';
 
 /**
@@ -19,67 +19,79 @@ import { RefreshLevel } from '../refresh/level';
  * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
  * 返回内容和end索引和长度，最少也要1个字符
  */
-function measure(ctx: CanvasRenderingContext2D, start: number, length: number, content: string,
-                 w: number, perW: number, letterSpacing: number) {
-  let i = start, j = length, rw = 0, newLine = false;
+function measure(
+  ctx: CanvasRenderingContext2D,
+  start: number,
+  length: number,
+  content: string,
+  w: number,
+  perW: number,
+  letterSpacing: number,
+) {
+  let i = start,
+    j = length,
+    rw = 0,
+    newLine = false;
   // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
   let hypotheticalNum = Math.round(w / perW);
   // 不能增长0个字符，至少也要1个
-  if(hypotheticalNum <= 0) {
+  if (hypotheticalNum <= 0) {
     hypotheticalNum = 1;
   }
   // 超过内容长度范围也不行
-  else if(hypotheticalNum > length - start) {
+  else if (hypotheticalNum > length - start) {
     hypotheticalNum = length - start;
   }
   // 类似2分的一个循环
-  while(i < j) {
-    let mw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
-    if(letterSpacing) {
+  while (i < j) {
+    let mw = ctx.measureText(
+      content.slice(start, start + hypotheticalNum),
+    ).width;
+    if (letterSpacing) {
       mw += hypotheticalNum * letterSpacing;
     }
-    if(mw === w) {
+    if (mw === w) {
       rw = w;
       newLine = true;
       break;
     }
     // 超出，设置右边界，并根据余量推测减少个数，
     // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
-    if(mw > w + (1e-10)) {
+    if (mw > w + 1e-10) {
       newLine = true;
       // 限制至少1个
-      if(hypotheticalNum === 1) {
+      if (hypotheticalNum === 1) {
         rw = mw;
         break;
       }
       // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
-      if(i === j - 1 || i - start === hypotheticalNum - 1) {
+      if (i === j - 1 || i - start === hypotheticalNum - 1) {
         hypotheticalNum = i - start;
         break;
       }
       j = hypotheticalNum + start - 1;
       let reduce = Math.round((mw - w) / perW);
-      if(reduce <= 0) {
+      if (reduce <= 0) {
         reduce = 1;
       }
       hypotheticalNum -= reduce;
-      if(hypotheticalNum < i - start) {
+      if (hypotheticalNum < i - start) {
         hypotheticalNum = i - start;
       }
     }
     // 还有空余，设置左边界，并根据余量推测增加的个数
     else {
       rw = mw;
-      if(hypotheticalNum === length - start) {
+      if (hypotheticalNum === length - start) {
         break;
       }
       i = hypotheticalNum + start;
       let add = Math.round((w - mw) / perW);
-      if(add <= 0) {
+      if (add <= 0) {
         add = 1;
       }
       hypotheticalNum += add;
-      if(hypotheticalNum > j - start) {
+      if (hypotheticalNum > j - start) {
         hypotheticalNum = j - start;
       }
     }
@@ -100,7 +112,7 @@ function measure(ctx: CanvasRenderingContext2D, start: number, length: number, c
 }
 
 class Text extends Node {
-  private _content: string;
+  _content: string;
   rich?: Array<Rich>;
   lineBoxList: Array<LineBox>;
   constructor(props: TextProps) {
@@ -112,19 +124,22 @@ class Text extends Node {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const { rich, style, computedStyle, _content, lineBoxList } = this;
-    const autoW = style.width.u === StyleUnit.AUTO
-      && (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
-    const autoH = style.height.u === StyleUnit.AUTO
-      && (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
+    const { rich, style, computedStyle, _content: content, lineBoxList } = this;
+    const autoW =
+      style.width.u === StyleUnit.AUTO &&
+      (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
+    const autoH =
+      style.height.u === StyleUnit.AUTO &&
+      (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
     let i = 0;
-    let length = _content.length;
+    let length = content.length;
     let perW: number;
     let letterSpacing: number;
     let lineHeight;
     let baseline;
     let maxW = 0;
-    let x = 0, y = 0;
+    let x = 0,
+      y = 0;
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
     const SET_FONT_INDEX: Array<number> = [];
     if (rich && rich.length) {
@@ -173,15 +188,22 @@ class Text extends Node {
         ctx.font = setFontStyle(cur);
       }
       // 连续\n，开头会遇到，需跳过
-      if (_content.charAt(i) === '\n') {
+      if (content.charAt(i) === '\n') {
         i++;
         x = 0;
         y += lineHeight;
         lineBox.verticalAlign();
         lineBox = new LineBox(y, lineHeight);
         lineBoxList.push(lineBox);
-        const textBox = new TextBox(x, y, 0, lineHeight, baseline,
-          '\n', ctx.font);
+        const textBox = new TextBox(
+          x,
+          y,
+          0,
+          lineHeight,
+          baseline,
+          '\n',
+          ctx.font,
+        );
         lineBox.add(textBox);
         // 最后一个\n特殊判断
         if (i === length) {
@@ -200,8 +222,8 @@ class Text extends Node {
         }
       }
       // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
-      const min = ctx.measureText(_content.charAt(i)).width;
-      if (min > W - x + (1e-10) && x) {
+      const min = ctx.measureText(content.charAt(i)).width;
+      if (min > W - x + 1e-10 && x) {
         x = 0;
         y += lineBox.lineHeight;
         if (i < length) {
@@ -212,10 +234,20 @@ class Text extends Node {
         continue;
       }
       // 预估法获取测量结果
-      const { hypotheticalNum: num, rw, newLine } =
-        measure(ctx, i, len, _content, W - x, perW, letterSpacing);
-      const textBox = new TextBox(x, y, rw, lineHeight, baseline,
-        _content.slice(i, i + num), ctx.font);
+      const {
+        hypotheticalNum: num,
+        rw,
+        newLine,
+      } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
+      const textBox = new TextBox(
+        x,
+        y,
+        rw,
+        lineHeight,
+        baseline,
+        content.slice(i, i + num),
+        ctx.font,
+      );
       lineBox.add(textBox);
       i += num;
       maxW = Math.max(maxW, rw);
@@ -229,8 +261,7 @@ class Text extends Node {
           lineBox = new LineBox(y, lineHeight);
           lineBoxList.push(lineBox);
         }
-      }
-      else {
+      } else {
         x += rw;
       }
     }
@@ -254,8 +285,7 @@ class Text extends Node {
           lineBox.offsetX(d * 0.5);
         }
       }
-    }
-    else if (textAlign === TEXT_ALIGN.RIGHT) {
+    } else if (textAlign === TEXT_ALIGN.RIGHT) {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
         const d = this.width - lineBox.w;
@@ -267,25 +297,38 @@ class Text extends Node {
   }
 
   override calContent(): boolean {
-    return this.hasContent = !!this._content;
+    return (this.hasContent = !!this._content);
   }
 
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     const bbox = this._bbox || this.bbox;
-    const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-    while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+    const x = bbox[0],
+      y = bbox[1],
+      w = bbox[2] - x,
+      h = bbox[3] - y;
+    while (
+      w * scale > config.MAX_TEXTURE_SIZE ||
+      h * scale > config.MAX_TEXTURE_SIZE
+      ) {
       if (scale <= 1) {
         break;
       }
       scale = scale >> 1;
     }
-    if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+    if (
+      w * scale > config.MAX_TEXTURE_SIZE ||
+      h * scale > config.MAX_TEXTURE_SIZE
+    ) {
       return;
     }
-    const dx = -x * scale, dy = -y * scale;
+    const dx = -x * scale,
+      dy = -y * scale;
     const { rich, computedStyle, lineBoxList } = this;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale);
+    const canvasCache = (this.canvasCache = CanvasCache.getInstance(
+      w * scale,
+      h * scale,
+    ));
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     // 富文本每串不同的需要设置字体颜色
@@ -310,7 +353,8 @@ class Text extends Node {
       if (lineBox.y >= h) {
         break;
       }
-      const list = lineBox.list, len = list.length;
+      const list = lineBox.list,
+        len = list.length;
       for (let i = 0; i < len; i++) {
         // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
         const setFontIndex = SET_FONT_INDEX[count];
@@ -320,13 +364,19 @@ class Text extends Node {
         }
         const textBox = list[i];
         if (scale !== 1) {
-          ctx.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
-        }
-        else {
+          ctx.font = textBox.font.replace(
+            /([\d.e+-]+)px/gi,
+            ($0, $1) => $1 * scale + 'px',
+          );
+        } else {
           ctx.font = textBox.font;
         }
         ctx.fillStyle = color;
-        ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
+        ctx.fillText(
+          textBox.str,
+          textBox.x * scale + dx,
+          (textBox.y + textBox.baseline) * scale + dy,
+        );
         count += textBox.str.length;
       }
     }

@@ -19655,71 +19655,6 @@
         frame,
     };
 
-    // Unique ID creation requires a high quality random # generator. In the browser we therefore
-    // require the crypto API and do not support built-in fallback to lower quality random number
-    // generators (like Math.random()).
-    let getRandomValues;
-    const rnds8 = new Uint8Array(16);
-    function rng() {
-      // lazy load so that environments that need to polyfill have a chance to do so
-      if (!getRandomValues) {
-        // getRandomValues needs to be invoked in a context where "this" is a Crypto implementation.
-        getRandomValues = typeof crypto !== 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
-
-        if (!getRandomValues) {
-          throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
-        }
-      }
-
-      return getRandomValues(rnds8);
-    }
-
-    /**
-     * Convert array of 16 byte values to UUID string format of the form:
-     * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-     */
-
-    const byteToHex = [];
-
-    for (let i = 0; i < 256; ++i) {
-      byteToHex.push((i + 0x100).toString(16).slice(1));
-    }
-
-    function unsafeStringify(arr, offset = 0) {
-      // Note: Be careful editing this code!  It's been tuned for performance
-      // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
-      return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
-    }
-
-    const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID.bind(crypto);
-    var native = {
-      randomUUID
-    };
-
-    function v4(options, buf, offset) {
-      if (native.randomUUID && !buf && !options) {
-        return native.randomUUID();
-      }
-
-      options = options || {};
-      const rnds = options.random || (options.rng || rng)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-
-      rnds[6] = rnds[6] & 0x0f | 0x40;
-      rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
-
-      if (buf) {
-        offset = offset || 0;
-
-        for (let i = 0; i < 16; ++i) {
-          buf[offset + i] = rnds[i];
-        }
-
-        return buf;
-      }
-
-      return unsafeStringify(rnds);
-    }
-
     function createTexture(gl, n, tex, width, height) {
         const texture = gl.createTexture();
         bindTexture(gl, texture, n);
@@ -19932,6 +19867,71 @@
             }
         }
         return { x, y };
+    }
+
+    // Unique ID creation requires a high quality random # generator. In the browser we therefore
+    // require the crypto API and do not support built-in fallback to lower quality random number
+    // generators (like Math.random()).
+    let getRandomValues;
+    const rnds8 = new Uint8Array(16);
+    function rng() {
+      // lazy load so that environments that need to polyfill have a chance to do so
+      if (!getRandomValues) {
+        // getRandomValues needs to be invoked in a context where "this" is a Crypto implementation.
+        getRandomValues = typeof crypto !== 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
+
+        if (!getRandomValues) {
+          throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
+        }
+      }
+
+      return getRandomValues(rnds8);
+    }
+
+    /**
+     * Convert array of 16 byte values to UUID string format of the form:
+     * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+     */
+
+    const byteToHex = [];
+
+    for (let i = 0; i < 256; ++i) {
+      byteToHex.push((i + 0x100).toString(16).slice(1));
+    }
+
+    function unsafeStringify(arr, offset = 0) {
+      // Note: Be careful editing this code!  It's been tuned for performance
+      // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
+      return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+    }
+
+    const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+    var native = {
+      randomUUID
+    };
+
+    function v4(options, buf, offset) {
+      if (native.randomUUID && !buf && !options) {
+        return native.randomUUID();
+      }
+
+      options = options || {};
+      const rnds = options.random || (options.rng || rng)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+
+      rnds[6] = rnds[6] & 0x0f | 0x40;
+      rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
+
+      if (buf) {
+        offset = offset || 0;
+
+        for (let i = 0; i < 16; ++i) {
+          buf[offset + i] = rnds[i];
+        }
+
+        return buf;
+      }
+
+      return unsafeStringify(rnds);
     }
 
     const HASH$1 = {};
@@ -21984,23 +21984,6 @@
         }
     }
 
-    class TextBox {
-        constructor(x, y, w, lineHeight, baseline, str, font) {
-            this.x = 0;
-            this.y = 0;
-            this.w = 0;
-            this.lineHeight = 0;
-            this.baseline = 0;
-            this.x = x;
-            this.y = y;
-            this.w = w;
-            this.str = str;
-            this.lineHeight = lineHeight;
-            this.baseline = baseline;
-            this.font = font;
-        }
-    }
-
     class LineBox {
         constructor(y, h) {
             this.y = y;
@@ -22053,6 +22036,23 @@
         }
     }
 
+    class TextBox {
+        constructor(x, y, w, lineHeight, baseline, str, font) {
+            this.x = 0;
+            this.y = 0;
+            this.w = 0;
+            this.lineHeight = 0;
+            this.baseline = 0;
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.str = str;
+            this.lineHeight = lineHeight;
+            this.baseline = baseline;
+            this.font = font;
+        }
+    }
+
     /**
      * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
      * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
@@ -22087,7 +22087,7 @@
             }
             // 超出，设置右边界，并根据余量推测减少个数，
             // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
-            if (mw > w + (1e-10)) {
+            if (mw > w + 1e-10) {
                 newLine = true;
                 // 限制至少1个
                 if (hypotheticalNum === 1) {
@@ -22149,13 +22149,13 @@
         }
         lay(data) {
             super.lay(data);
-            const { rich, style, computedStyle, _content, lineBoxList } = this;
-            const autoW = style.width.u === StyleUnit.AUTO
-                && (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
-            const autoH = style.height.u === StyleUnit.AUTO
-                && (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
+            const { rich, style, computedStyle, _content: content, lineBoxList } = this;
+            const autoW = style.width.u === StyleUnit.AUTO &&
+                (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
+            const autoH = style.height.u === StyleUnit.AUTO &&
+                (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
             let i = 0;
-            let length = _content.length;
+            let length = content.length;
             let perW;
             let letterSpacing;
             let lineHeight;
@@ -22210,7 +22210,7 @@
                     ctx.font = setFontStyle(cur);
                 }
                 // 连续\n，开头会遇到，需跳过
-                if (_content.charAt(i) === '\n') {
+                if (content.charAt(i) === '\n') {
                     i++;
                     x = 0;
                     y += lineHeight;
@@ -22236,8 +22236,8 @@
                     }
                 }
                 // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
-                const min = ctx.measureText(_content.charAt(i)).width;
-                if (min > W - x + (1e-10) && x) {
+                const min = ctx.measureText(content.charAt(i)).width;
+                if (min > W - x + 1e-10 && x) {
                     x = 0;
                     y += lineBox.lineHeight;
                     if (i < length) {
@@ -22248,8 +22248,8 @@
                     continue;
                 }
                 // 预估法获取测量结果
-                const { hypotheticalNum: num, rw, newLine } = measure(ctx, i, len, _content, W - x, perW, letterSpacing);
-                const textBox = new TextBox(x, y, rw, lineHeight, baseline, _content.slice(i, i + num), ctx.font);
+                const { hypotheticalNum: num, rw, newLine, } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
+                const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
                 lineBox.add(textBox);
                 i += num;
                 maxW = Math.max(maxW, rw);
@@ -22300,24 +22300,26 @@
             }
         }
         calContent() {
-            return this.hasContent = !!this._content;
+            return (this.hasContent = !!this._content);
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-            while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            while (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
                 if (scale <= 1) {
                     break;
                 }
                 scale = scale >> 1;
             }
-            if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            if (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
                 return;
             }
             const dx = -x * scale, dy = -y * scale;
             const { rich, computedStyle, lineBoxList } = this;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale);
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             // 富文本每串不同的需要设置字体颜色
@@ -26904,11 +26906,9 @@ void main() {
             }
         }
         updateArtBoard(artBoard) {
-            console.log(artBoard);
             const list = this.artBoardList;
             for (let i = 0, len = list.length; i < len; i++) {
                 if (list[i].artBoard === artBoard) {
-                    console.log(i);
                     list[i].text.content = artBoard.props.name || '画板';
                     break;
                 }
