@@ -16104,6 +16104,7 @@
     Event.WILL_REMOVE_DOM = 'willRemoveDom';
     Event.PAGE_CHANGED = 'pageChanged';
     Event.VISIBLE_CHANGED = 'visibleChanged';
+    Event.ADD_NEW_PAGE = 'addNewPage';
 
     function clone(obj) {
         if (isNil(obj) || typeof obj !== 'object') {
@@ -20035,8 +20036,12 @@
             this.isDestroyed = false;
             const parent = this.parent;
             const root = (this.root = parent.root);
-            this.page = parent.page;
-            this.artBoard = parent.artBoard;
+            if (!this.isPage) {
+                this.page = parent.page;
+            }
+            if (!this.isArtBoard) {
+                this.artBoard = parent.artBoard;
+            }
             const uuid = this.props.uuid;
             if (uuid) {
                 root.refs[uuid] = this;
@@ -23463,10 +23468,10 @@
         }
     }
 
-    let uuid$1 = 0;
+    let uuid = 0;
     class Segment {
         constructor(coords, belong) {
-            this.uuid = uuid$1++;
+            this.uuid = uuid++;
             this.coords = coords;
             this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
             this.bbox = this.calBbox();
@@ -26948,13 +26953,12 @@ void main() {
         }
     }
 
-    let uuid = 0;
     class Root extends Container {
         constructor(props, children = []) {
             super(props, children);
             this.ani = []; // 动画任务，空占位
             this.aniChange = false;
-            this.uuid = uuid++;
+            this.uuid = v4();
             // 初始化的数据
             this.dpi = props.dpi;
             this.root = this;
@@ -27060,6 +27064,29 @@ void main() {
             // 触发事件告知外部如刷新图层列表
             this.emit(Event.PAGE_CHANGED, newPage);
         }
+        addNewPage(page, setCurrent = false) {
+            const pageContainer = this.pageContainer;
+            if (!page) {
+                page = new Page({
+                    uuid: v4(),
+                    name: '页面 ' + (pageContainer.children.length + 1),
+                    style: {
+                        width: 100,
+                        height: 100,
+                        visible: false,
+                        transformOrigin: [0, 0],
+                        pointerEvents: false,
+                    },
+                    isLocked: false,
+                    isExpanded: false,
+                }, []);
+            }
+            pageContainer.appendChild(page);
+            if (setCurrent) {
+                this.setCurPage(page);
+            }
+            return page;
+        }
         /**
          * 添加更新，分析repaint/reflow和上下影响，异步刷新
          * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
@@ -27089,7 +27116,12 @@ void main() {
             // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
             if (this.lastPage && node.page) {
                 if (addDom) {
-                    this.emit(Event.DID_ADD_DOM, node);
+                    if (node instanceof Page) {
+                        this.emit(Event.ADD_NEW_PAGE, node);
+                    }
+                    else {
+                        this.emit(Event.DID_ADD_DOM, node);
+                    }
                 }
                 else if (keys.indexOf('visible') > -1) {
                     this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
@@ -27244,6 +27276,10 @@ void main() {
         }
         getCurPage() {
             return this.lastPage;
+        }
+        setCurPage(page) {
+            const i = this.pageContainer.children.indexOf(page);
+            this.setPageIndex(i);
         }
         getCurPageStructs() {
             const { structs, lastPage } = this;

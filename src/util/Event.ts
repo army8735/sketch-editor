@@ -15,13 +15,16 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.on(id[i], handle);
       }
-    }
-    else {
+    } else {
       if (!this.__eHash.hasOwnProperty(id)) {
         this.__eHash[id] = [];
       }
       // 遍历防止此handle被侦听过了
-      for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
+      for (
+        let i = 0, item = this.__eHash[id], len = item.length;
+        i < len;
+        i++
+      ) {
         if (item[i] === handle) {
           return this;
         }
@@ -40,15 +43,14 @@ class Event {
     const cb = () => {
       handle.apply(this, Array.prototype.slice.call(arguments));
       this.off(id, cb);
-    }
+    };
 
     cb.__eventCb = handle;
     if (Array.isArray(id)) {
       for (let i = 0, len = id.length; i < len; i++) {
         this.once(id[i], handle);
       }
-    }
-    else {
+    } else {
       this.on(id, cb);
     }
     return this;
@@ -59,10 +61,13 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.off(id[i], handle);
       }
-    }
-    else if (this.__eHash.hasOwnProperty(id)) {
+    } else if (this.__eHash.hasOwnProperty(id)) {
       if (handle) {
-        for (let i = 0, item = this.__eHash[id], len = item.length; i < len; i++) {
+        for (
+          let i = 0, item = this.__eHash[id], len = item.length;
+          i < len;
+          i++
+        ) {
           // 需考虑once包裹的引用对比
           if (item[i] === handle || item[i].__eventCb === handle) {
             item.splice(i, 1);
@@ -83,8 +88,7 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.emit(id[i], data);
       }
-    }
-    else {
+    } else {
       if (this.__eHash.hasOwnProperty(id)) {
         let list = this.__eHash[id];
         if (list.length) {
@@ -106,7 +110,7 @@ class Event {
   static WILL_REMOVE_DOM = 'willRemoveDom';
   static PAGE_CHANGED = 'pageChanged';
   static VISIBLE_CHANGED = 'visibleChanged';
-
+  static ADD_NEW_PAGE = 'addNewPage';
 }
 
 export default Event;

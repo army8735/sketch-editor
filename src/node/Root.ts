@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import { frame, FrameCallback } from '../animation/frame';
 import { JPage, Props } from '../format';
 import { initShaders } from '../gl';
@@ -23,14 +24,12 @@ import Overlay from './overlay/Overlay';
 import Page from './Page';
 import { checkReflow } from './reflow';
 
-let uuid = 0;
-
 type RootProps = Props & {
   dpi: number;
 };
 
 class Root extends Container implements FrameCallback {
-  uuid: number;
+  uuid: string;
   canvas?: HTMLCanvasElement;
   ctx: WebGL2RenderingContext | WebGLRenderingContext | undefined;
   dpi: number;
@@ -50,7 +49,7 @@ class Root extends Container implements FrameCallback {
 
   constructor(props: RootProps, children: Array<Node> = []) {
     super(props, children);
-    this.uuid = uuid++;
+    this.uuid = uuid.v4();
     // 初始化的数据
     this.dpi = props.dpi;
     this.root = this;
@@ -177,6 +176,30 @@ class Root extends Container implements FrameCallback {
     this.emit(Event.PAGE_CHANGED, newPage);
   }
 
+  addNewPage(page?: Page, setCurrent = false) {
+    const pageContainer = this.pageContainer!;
+    if (!page) {
+      page = new Page({
+        uuid: uuid.v4(),
+        name: '页面 ' + (pageContainer.children.length + 1),
+        style: {
+          width: 100,
+          height: 100,
+          visible: false,
+          transformOrigin: [0, 0],
+          pointerEvents: false,
+        },
+        isLocked: false,
+        isExpanded: false,
+      }, []);
+    }
+    pageContainer.appendChild(page);
+    if (setCurrent) {
+      this.setCurPage(page);
+    }
+    return page;
+  }
+
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
@@ -212,7 +235,11 @@ class Root extends Container implements FrameCallback {
     // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
     if (this.lastPage && node.page) {
       if (addDom) {
-        this.emit(Event.DID_ADD_DOM, node);
+        if (node instanceof Page) {
+          this.emit(Event.ADD_NEW_PAGE, node);
+        } else {
+          this.emit(Event.DID_ADD_DOM, node);
+        }
       } else if (keys.indexOf('visible') > -1) {
         this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
       }
@@ -391,6 +418,11 @@ class Root extends Container implements FrameCallback {
 
   getCurPage() {
     return this.lastPage;
+  }
+
+  setCurPage(page: Page) {
+    const i = this.pageContainer!.children.indexOf(page);
+    this.setPageIndex(i);
   }
 
   getCurPageStructs() {

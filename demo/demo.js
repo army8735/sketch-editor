@@ -98,6 +98,16 @@ $input.onchange = function(e) {
         $tree.appendChild(ol);
       });
 
+      root.on(editor.util.Event.ADD_NEW_PAGE, function(newPage) {
+        const uuid = newPage.props.uuid;
+        const li = document.createElement('li');
+        li.setAttribute('uuid', uuid);
+        li.innerHTML = '🗒 ' + newPage.props.name;
+        li.title = newPage.props.name;
+        pageHash[uuid] = li;
+        $page.appendChild(li);
+      });
+
       root.on(editor.util.Event.DID_ADD_DOM, function(node) {
         const li = genNodeTree(node, abHash);
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;

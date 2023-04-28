@@ -121,8 +121,12 @@ class Node extends Event {
     this.isDestroyed = false;
     const parent = this.parent!;
     const root = (this.root = parent.root!);
-    this.page = parent.page!;
-    this.artBoard = parent.artBoard;
+    if (!this.isPage) {
+      this.page = parent.page;
+    }
+    if (!this.isArtBoard) {
+      this.artBoard = parent.artBoard;
+    }
     const uuid = this.props.uuid;
     if (uuid) {
       root.refs[uuid] = this;
