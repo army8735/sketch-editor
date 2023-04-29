@@ -41,6 +41,9 @@ type Merge = {
   lv: number;
   total: number;
   node: Node;
+  valid: boolean;
+  subList: Array<Merge>; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
+  isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可是范围外有tempBbox
 };
 
 export function renderWebgl(
@@ -76,8 +79,7 @@ export function renderWebgl(
   const cx = W * 0.5,
     cy = H * 0.5;
   const mergeList: Array<Merge> = [],
-    mergeIndex: Array<boolean> = [],
-    mergeHash: WeakMap<Node, boolean> = new WeakMap();
+    mergeHash: Array<Merge> = [];
   // 先计算内容matrix等，如果有需要merge合并汇总的记录下来
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
@@ -93,32 +95,28 @@ export function renderWebgl(
       }
     }
     const { maskMode, opacity } = computedStyle;
-    // 非单节点透明需汇总子树，有mask的也需要
-    const shouldTotal = opacity > 0 && opacity < 1 && total > 0;
+    // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
-      shouldTotal &&
+      opacity > 0 && opacity < 1 && total > 0 &&
       (!node.textureTotal[scaleIndex] ||
         !node.textureTotal[scaleIndex]!.available);
-    const shouldMask = maskMode > 0 && !!node.next;
     const needMask =
-      shouldMask &&
+      maskMode > 0 && !!node.next &&
       (!node.textureMask[scaleIndex] ||
         !node.textureMask[scaleIndex]?.available);
-    // 应该生成汇总和需要生成汇总有区别，可能在可视范围外，虽然应该但不需要，对于遍历可以优化跳过
-    if (shouldTotal || shouldMask) {
-      mergeIndex[i] = true;
-      if (needTotal || needMask) {
-        mergeList.push({
-          i,
-          lv,
-          total,
-          node,
-        });
-        mergeHash.set(node, true);
-      }
-      else if (shouldMask) {
-        genNextCount(node, structs, i, lv, total);
-      }
+    // 记录汇总的同时以下标为k记录个类hash
+    if (needTotal || needMask) {
+      const t: Merge = {
+        i,
+        lv,
+        total,
+        node,
+        valid: false,
+        subList: [],
+        isNew: false,
+      };
+      mergeList.push(t);
+      mergeHash[i] = t;
     }
   }
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
@@ -129,8 +127,46 @@ export function renderWebgl(
       }
       return b.lv - a.lv;
     });
+    // 先循环求一遍各自merge是否在可视范围内，标记valid，同时父级发现有子级merge时，记录个引用
     for (let j = 0, len = mergeList.length; j < len; j++) {
-      const { i, lv, total, node } = mergeList[j];
+      const item = mergeList[j];
+      const { i, total, node, subList } = item;
+      // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算
+      let isNew = false;
+      if (!node.tempBbox) {
+        isNew = true;
+        node.tempBbox = genBboxTotal(structs, node, i, total, scaleIndex, item, mergeHash);
+      }
+      // 范围内的
+      if (checkInScreen(node.tempBbox, node.matrixWorld, W, H)) {
+        item.valid = true;
+        // 检查子节点中有因为可视范围外暂时忽略的，全部标记valid
+        while (subList.length) {
+          const t = subList.pop()!;
+          t.valid = true;
+          const sub2 = t.subList;
+          while (sub2.length) {
+            subList.push(sub2.pop()!);
+          }
+        }
+      }
+      // 新的可视范围外的要记录下，后续判断是否是mask影响后续节点next数量，不立刻做因为可能会被父级影响强制valid
+      else {
+        if (isNew) {
+          item.isNew = true;
+        }
+      }
+    }
+    // 再一遍循环根据可视范围内valid标记产生真正的merge汇总
+    for (let j = 0, len = mergeList.length; j < len; j++) {
+      const { i, lv, total, node, valid, isNew } = mergeList[j];
+      // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
+      if (!valid) {
+        if (isNew && node.computedStyle.maskMode) {
+          genNextCount(node, structs, i, lv, total);
+        }
+        continue;
+      }
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
       node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(
         gl,
@@ -144,12 +180,12 @@ export function renderWebgl(
         H,
         scale,
         scaleIndex,
-        mergeHash,
       );
-      // 生成mask，可能在可视范围外没有前置生成汇总而无需生成，但要标记next数量
+      // 生成mask
       const computedStyle = node.computedStyle;
       const { maskMode } = computedStyle;
       if (maskMode && node.next) {
+        // 可能超过尺寸没有total汇总，暂时防御下
         if (node.textureTarget[scaleIndex]) {
           node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] =
             genMask(
@@ -166,8 +202,6 @@ export function renderWebgl(
               scale,
               scaleIndex,
             );
-        } else if (!node.struct.next) {
-          genNextCount(node, structs, i, lv, total);
         }
       }
     }
@@ -307,10 +341,8 @@ export function renderWebgl(
       let target = textureTarget[scaleIndex],
         isInScreen = false;
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
-      if (mergeIndex[i] || target) {
-        if (target) {
-          isInScreen = checkInScreen(target.bbox, matrix, W, H);
-        }
+      if (target) {
+        isInScreen = checkInScreen(target.bbox, matrix, W, H);
       }
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
       else {
@@ -344,7 +376,6 @@ export function renderWebgl(
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
       if (
-        mergeIndex[i] ||
         (target && target !== node.textureCache[scaleIndex]) ||
         node.isShapeGroup
       ) {
@@ -438,9 +469,12 @@ function genBboxTotal(
   index: number,
   total: number,
   scaleIndex: number,
+  merge: Merge,
+  mergeHash: Array<Merge>,
 ) {
   const res = (
     node.textureTarget[scaleIndex]?.bbox ||
+    node.tempBbox ||
     node._bbox ||
     node.bbox
   ).slice(0);
@@ -460,6 +494,11 @@ function genBboxTotal(
       node2.isShapeGroup
     ) {
       i += total2 + next2;
+    }
+    // 收集子节点中无效merge，等待可能的上层merge判断是否强制valid展示
+    const mg = mergeHash[i];
+    if (mg && !mg.valid) {
+      merge.subList.push(mg);
     }
   }
   return res;
@@ -506,28 +545,13 @@ function genTotal(
   H: number,
   scale: number,
   scaleIndex: number,
-  mergeHash: WeakMap<Node, boolean>,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureTotal[scaleIndex]?.available) {
     return node.textureTotal[scaleIndex];
   }
-  // 先检查可视范围内，因为可能还没有真实渲染生成内容
-  const bbox = genBboxTotal(structs, node, index, total, scaleIndex);
-  if (!checkInScreen(bbox, node.matrixWorld, W, H)) {
-    // 可能在可视范围外，但是祖父节点中有范围内的merge汇总，不能被忽略
-    let parent = node.parent, ignore = true;
-    while (parent) {
-      if (mergeHash.get(parent)) {
-        ignore = false;
-        break;
-      }
-      parent = parent.parent;
-    }
-    if (ignore) {
-      return;
-    }
-  }
+  const bbox = node.tempBbox!;
+  node.tempBbox = undefined;
   // 单个叶子节点也不需要，就是本身节点的内容
   if (!total) {
     let target = node.textureCache[scaleIndex];
@@ -582,7 +606,8 @@ function genTotal(
     // 首个节点即局部根节点
     if (i === index) {
       opacity = node2.tempOpacity = 1;
-      matrix = multiplyScale(node2.tempMatrix, scale); // 求bbox时已经是E了
+      toE(node2.tempMatrix);
+      matrix = multiplyScale(node2.tempMatrix, scale);
     } else {
       const parent = node2.parent!;
       opacity = computedStyle.opacity * parent.tempOpacity;

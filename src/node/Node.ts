@@ -71,8 +71,9 @@ class Node extends Event {
   textureMask: Array<TextureCache | undefined>; // 作为mask时的缓存
   textureTarget: Array<TextureCache | undefined>; // 指向自身所有缓存中最优先的那个
   textureOutline?: TextureCache; // 轮廓mask特殊使用
-  tempOpacity: number;
+  tempOpacity: number; // 局部根节点merge汇总临时用到的2个
   tempMatrix: Float64Array;
+  tempBbox?: Float64Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
   isPage = false;
@@ -223,6 +224,7 @@ class Node extends Event {
     this.textureOutline?.release();
     this._rect = undefined;
     this._bbox = undefined;
+    this.tempBbox = undefined;
   }
 
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值

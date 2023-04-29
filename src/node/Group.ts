@@ -206,6 +206,7 @@ class Group extends Container {
     // 记得重置
     this._rect = undefined;
     this._bbox = undefined;
+    this.tempBbox = undefined;
   }
 
   // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
