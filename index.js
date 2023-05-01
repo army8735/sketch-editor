@@ -20022,7 +20022,9 @@
             this.matrix = identity();
             this._matrixWorld = identity();
             this.hasCacheMw = false;
-            this.hasCacheMwLv = false;
+            // this.hasCacheMwLv = false;
+            this.localMwId = 0;
+            this.parentMwId = 0;
             this.hasContent = false;
             this.textureCache = [];
             this.textureTotal = [];
@@ -20035,6 +20037,11 @@
         didMount() {
             this.isDestroyed = false;
             const parent = this.parent;
+            // 只有root没有parent
+            if (!parent) {
+                return;
+            }
+            this.parentMwId = parent.localMwId;
             const root = (this.root = parent.root);
             if (!this.isPage) {
                 this.page = parent.page;
@@ -20206,9 +20213,14 @@
         }
         calMatrix(lv) {
             const { style, computedStyle, matrix, transform } = this;
-            // 更新先标识缓存失效，计算再改成功
-            this.hasCacheMw = false;
-            this.hasCacheMwLv = false;
+            if (!lv) {
+                return matrix;
+            }
+            // 每次更新标识且id++，获取matrixWorld或者每帧渲染会置true，首次0时强制进入，虽然布局过程中会调用，防止手动调用不可预期
+            if (this.hasCacheMw || !this.localMwId) {
+                this.hasCacheMw = false;
+                this.localMwId++;
+            }
             let optimize = true;
             if (lv >= RefreshLevel.REFLOW ||
                 lv & RefreshLevel.TRANSFORM ||
@@ -20781,6 +20793,7 @@
                     pList.reverse();
                     for (let i = 0, len = pList.length; i < len; i++) {
                         const node = pList[i];
+                        // node.hasCacheOp = true; // 标记缓存
                         if (!i || node === root) {
                             if (node === root) {
                                 node._opacity = node.computedStyle.opacity;
@@ -20809,6 +20822,7 @@
         }
         // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
         get matrixWorld() {
+            var _a;
             const root = this.root;
             let m = this._matrixWorld;
             if (!root) {
@@ -20816,62 +20830,63 @@
             }
             // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
             let cache = this.hasCacheMw;
-            // 可能开始自己就没缓存，不用再向上判断，肯定要重新计算
-            if (cache) {
-                let parent = this.parent;
-                while (parent) {
-                    if (!parent.hasCacheMw) {
-                        cache = false;
-                        break;
-                    }
-                    parent = parent.parent;
+            let node = this, parent = node.parent, index = -1;
+            const pList = [];
+            while (parent) {
+                pList.push(parent);
+                // 父级变更过后id就会对不上，但首次初始化后是一致的，防止初始化后立刻调用所以要多判断下
+                if (!parent.hasCacheMw || parent.localMwId !== node.parentMwId) {
+                    // console.log(parent.hasCacheMw, parent.localMwId, node.parentMwId, parent);
+                    cache = false;
+                    index = pList.length; // 供后面splice裁剪用
                 }
+                node = parent;
+                parent = parent.parent;
             }
             // 这里的cache是考虑了向上父级的，只要有失败的就进入，从这条分支上最上层无缓存的父级开始计算
             if (!cache) {
-                const pList = [];
-                let index = -1;
-                let parent = this.parent;
-                while (parent) {
-                    pList.push(parent);
-                    // 自底向上的索引更新，最后一定是最上层变化的节点
-                    if (!parent.hasCacheMw) {
-                        index = pList.length;
-                    }
-                    parent = parent.parent;
-                }
                 // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的matrix）
                 if (index > -1) {
                     pList.splice(index);
                     pList.reverse();
                     for (let i = 0, len = pList.length; i < len; i++) {
                         const node = pList[i];
-                        if (!i || node === root) {
-                            if (node === root) {
-                                assignMatrix(node._matrixWorld, node.matrix);
-                            }
-                            else {
-                                const t = multiply(node.parent._matrixWorld, node.matrix);
-                                assignMatrix(node._matrixWorld, t);
-                            }
+                        /**
+                         * 被动变更判断，自己没有变更但父级发生了变更需要更新id，这里的情况比较多
+                         * 某个父节点可能没有变更，也可能发生变更，变更后如果进行了读取则不会被记录进来
+                         * 记录的顶层父节点比较特殊，会发生上述情况，中间父节点不会有变更后读取的情况
+                         * 因此只有没有变化且和父级id不一致时，其id自增标识，有变化已经主动更新过了
+                         */
+                        if (node.hasCacheMw && node.parentMwId !== ((_a = node.parent) === null || _a === void 0 ? void 0 : _a.localMwId)) {
+                            node.localMwId++;
+                        }
+                        node.hasCacheMw = true;
+                        if (node === root) {
+                            assignMatrix(node._matrixWorld, node.matrix);
                         }
                         else {
-                            const t = multiply(pList[i - 1]._matrixWorld, node.matrix);
+                            const t = multiply(node.parent._matrixWorld, node.matrix);
                             assignMatrix(node._matrixWorld, t);
+                            node.parentMwId = node.parent.localMwId;
                         }
                     }
                 }
+                // 自己没有变化但父级出现变化影响了这条链路，被动变更，这里父级id一定是不一致的，否则进不来
+                if (this.hasCacheMw) {
+                    this.localMwId++;
+                }
+                this.hasCacheMw = true;
                 // 仅自身变化，或者有父级变化但父级前面已经算好了，防止自己是Root
                 parent = this.parent;
                 if (parent) {
                     const t = multiply(parent._matrixWorld, this.matrix);
                     assignMatrix(m, t);
+                    this.parentMwId = parent.localMwId; // 更新以便后续对比
                 }
                 else {
                     assignMatrix(m, this.matrix);
                 }
             }
-            this.hasCacheMw = true; // 计算过了标识有缓存
             return m;
         }
         get rect() {
@@ -25989,6 +26004,7 @@
             this.page = this;
         }
         initIfNot() {
+            console.error('init', this.json);
             if (this.json) {
                 for (let i = 0, len = this.json.children.length; i < len; i++) {
                     const res = parse(this.json.children[i]);
@@ -26229,6 +26245,7 @@ void main() {
             if (refreshLevel) {
                 // filter之类的变更
                 if (refreshLevel < RefreshLevel.REPAINT) ;
+                // repaint
                 else {
                     node.calContent();
                     node.textureTarget[scaleIndex] = undefined;
@@ -26257,6 +26274,7 @@ void main() {
                 mergeHash[i] = t;
             }
         }
+        // console.warn(mergeList);
         // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
         if (mergeList.length) {
             mergeList.sort(function (a, b) {
@@ -26265,37 +26283,35 @@ void main() {
                 }
                 return b.lv - a.lv;
             });
-            // 先循环求一遍各自merge是否在可视范围内，标记valid，同时父级发现有子级merge时，记录个引用
+            // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
             for (let j = 0, len = mergeList.length; j < len; j++) {
                 const item = mergeList[j];
-                const { i, total, node, subList } = item;
+                const { i, total, node } = item;
                 // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算
-                let isNew = false;
-                if (!node.tempBbox) {
-                    isNew = true;
-                    node.tempBbox = genBboxTotal(structs, node, i, total, scaleIndex, item, mergeHash);
-                }
-                // 范围内的
-                if (checkInScreen(node.tempBbox, node.matrixWorld, W, H)) {
-                    item.valid = true;
-                    // 检查子节点中有因为可视范围外暂时忽略的，全部标记valid
-                    while (subList.length) {
-                        const t = subList.pop();
-                        t.valid = true;
-                        const sub2 = t.subList;
-                        while (sub2.length) {
-                            subList.push(sub2.pop());
+                const isNew = item.isNew = !node.tempBbox;
+                node.tempBbox = genBboxTotal(structs, node, i, total, isNew, scaleIndex, item, mergeHash);
+            }
+            // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
+            for (let j = 0, len = mergeList.length; j < len; j++) {
+                const item = mergeList[j];
+                const { subList, node } = item;
+                // 没有嵌套的都是最上层merge
+                if (!item.subList.length) {
+                    if (checkInScreen(node.tempBbox, node.matrixWorld, W, H)) {
+                        item.valid = true;
+                        // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
+                        while (subList.length) {
+                            const t = subList.pop();
+                            t.valid = true;
+                            const subList2 = t.subList;
+                            while (subList2.length) {
+                                subList.push(subList2.pop());
+                            }
                         }
                     }
                 }
-                // 新的可视范围外的要记录下，后续判断是否是mask影响后续节点next数量，不立刻做因为可能会被父级影响强制valid
-                else {
-                    if (isNew) {
-                        item.isNew = true;
-                    }
-                }
             }
-            // 再一遍循环根据可视范围内valid标记产生真正的merge汇总
+            // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
             for (let j = 0, len = mergeList.length; j < len; j++) {
                 const { i, lv, total, node, valid, isNew } = mergeList[j];
                 // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
@@ -26339,8 +26355,7 @@ void main() {
         gl.useProgram(programs.program);
         // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
         const cacheOpList = [];
-        const cacheMwList = [];
-        let lastLv = 0, hasCacheOpLv = false, hasCacheMwLv = false;
+        let lastLv = 0, hasCacheOpLv = false, hasCacheMw = false;
         // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
         for (let i = 0, len = structs.length; i < len; i++) {
             const { node, lv, total, next } = structs[i];
@@ -26358,42 +26373,33 @@ void main() {
             // 第一个是Root层级0
             if (!i) {
                 hasCacheOpLv = node.hasCacheOpLv;
-                hasCacheMwLv = node.hasCacheMwLv;
+                hasCacheMw = node.hasCacheMw;
             }
             // lv变大说明是子节点，如果仍有缓存，要判断子节点是否更新，已经没缓存就不用了
             else if (lv > lastLv) {
                 cacheOpList.push(hasCacheOpLv);
-                cacheMwList.push(hasCacheMwLv);
                 if (hasCacheOpLv) {
                     hasCacheOpLv = node.hasCacheOpLv;
                 }
-                if (hasCacheMwLv) {
-                    hasCacheMwLv = node.hasCacheMwLv;
-                }
+                hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent.localMwId;
             }
             // lv变小说明是上层节点，不一定是直接父节点，因为可能跨层，出栈对应数量来到对应lv的数据
             else if (lv < lastLv) {
                 const diff = lastLv - lv;
                 cacheOpList.splice(-diff);
                 hasCacheOpLv = cacheOpList[lv - 1];
-                cacheMwList.splice(-diff);
-                hasCacheMwLv = cacheMwList[lv - 1];
                 // 还需考虑本层
                 if (hasCacheOpLv) {
                     hasCacheOpLv = node.hasCacheOpLv;
                 }
-                if (hasCacheMwLv) {
-                    hasCacheMwLv = node.hasCacheMwLv;
-                }
+                hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent.localMwId;
             }
             // 不变是同级兄弟，只需考虑自己
             else {
                 if (hasCacheOpLv) {
                     hasCacheOpLv = node.hasCacheOpLv;
                 }
-                if (hasCacheMwLv) {
-                    hasCacheMwLv = node.hasCacheMwLv;
-                }
+                hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent.localMwId;
             }
             lastLv = lv;
             // 继承父的opacity和matrix，仍然要注意root没有parent
@@ -26404,9 +26410,15 @@ void main() {
                     : node.computedStyle.opacity;
                 node.hasCacheOpLv = true;
             }
-            if (!hasCacheMwLv) {
+            if (!hasCacheMw) {
                 assignMatrix(node._matrixWorld, parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix);
-                node.hasCacheMwLv = true;
+                if (parent) {
+                    node.parentMwId = parent.localMwId;
+                }
+                if (node.hasCacheMw) {
+                    node.localMwId++;
+                }
+                node.hasCacheMw = true;
             }
             const opacity = node._opacity;
             const matrix = node._matrixWorld;
@@ -26529,7 +26541,7 @@ void main() {
         }
     }
     // 汇总作为局部根节点的bbox
-    function genBboxTotal(structs, node, index, total, scaleIndex, merge, mergeHash) {
+    function genBboxTotal(structs, node, index, total, isNew, scaleIndex, merge, mergeHash) {
         var _a;
         const res = (((_a = node.textureTarget[scaleIndex]) === null || _a === void 0 ? void 0 : _a.bbox) ||
             node.tempBbox ||
@@ -26539,20 +26551,22 @@ void main() {
         for (let i = index + 1, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
             const parent = node2.parent;
-            const m = multiply(parent.tempMatrix, node2.matrix);
-            assignMatrix(node2.tempMatrix, m);
             const target = node2.textureTarget[scaleIndex];
-            const b = (target === null || target === void 0 ? void 0 : target.bbox) || node2._bbox || node2.bbox;
-            if (b[2] - b[0] && b[3] - b[1]) {
-                mergeBbox(res, transformBbox(b, m));
+            if (isNew) {
+                const m = multiply(parent.tempMatrix, node2.matrix);
+                assignMatrix(node2.tempMatrix, m);
+                const b = (target === null || target === void 0 ? void 0 : target.bbox) || node2._bbox || node2.bbox;
+                if (b[2] - b[0] && b[3] - b[1]) {
+                    mergeBbox(res, transformBbox(b, m));
+                }
             }
             if ((target && target !== node2.textureCache[scaleIndex]) ||
                 node2.isShapeGroup) {
                 i += total2 + next2;
             }
-            // 收集子节点中无效merge，等待可能的上层merge判断是否强制valid展示
+            // 收集子节点中的嵌套关系
             const mg = mergeHash[i];
-            if (mg && !mg.valid) {
+            if (mg) {
                 merge.subList.push(mg);
             }
         }
@@ -26909,6 +26923,7 @@ void main() {
         constructor(props, children) {
             super(props, children);
             this.artBoards = new Container({
+                name: 'overlay-artBoards',
                 style: {
                     width: '100%',
                     height: '100%',
@@ -26923,7 +26938,9 @@ void main() {
             this.artBoardList.splice(0);
             for (let i = 0, len = list.length; i < len; i++) {
                 const artBoard = list[i];
+                const name = 'overlay-' + (artBoard.props.name || '画板');
                 const text = new Text({
+                    name,
                     style: {
                         fontSize: 24,
                         color: '#777',
@@ -26949,11 +26966,13 @@ void main() {
                 const { artBoard, text } = artBoardList[i];
                 const rect = artBoard.getBoundingClientRect();
                 // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
-                text.updateStyleData({
+                const res = text.updateStyleData({
                     translateX: rect.left,
                     translateY: rect.top - 32,
                 });
-                text.calMatrix(RefreshLevel.TRANSLATE);
+                if (res.keys.length) {
+                    text.calMatrix(RefreshLevel.TRANSLATE);
+                }
             }
         }
     }
@@ -27013,11 +27032,13 @@ void main() {
             config.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
             this.programs = {};
             this.initShaders(gl);
+            this.didMount();
             // 刷新动画侦听，目前就一个Root
             frame.addRoot(this);
             this.reLayout();
             // 存所有Page
             this.pageContainer = new Container({
+                name: 'pageContainer',
                 style: {
                     width: '100%',
                     height: '100%',
@@ -27030,6 +27051,7 @@ void main() {
             this.appendChild(this.pageContainer);
             // 存上层的展示工具标尺等
             this.overlay = new Overlay({
+                name: 'overlay',
                 style: {
                     width: '100%',
                     height: '100%',

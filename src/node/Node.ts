@@ -61,7 +61,9 @@ class Node extends Event {
   matrix: Float64Array; // 包含transformOrigin
   _matrixWorld: Float64Array; // 世界transform
   hasCacheMw: boolean; // 是否计算过世界transform
-  hasCacheMwLv: boolean; // 同上
+  localMwId: number;
+  parentMwId: number;
+  // hasCacheMwLv: boolean; // 同上
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
   _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
@@ -107,7 +109,9 @@ class Node extends Event {
     this.matrix = identity();
     this._matrixWorld = identity();
     this.hasCacheMw = false;
-    this.hasCacheMwLv = false;
+    // this.hasCacheMwLv = false;
+    this.localMwId = 0;
+    this.parentMwId = 0;
     this.hasContent = false;
     this.textureCache = [];
     this.textureTotal = [];
@@ -120,7 +124,12 @@ class Node extends Event {
   // 添加到dom后标记非销毁状态，和root引用
   didMount() {
     this.isDestroyed = false;
-    const parent = this.parent!;
+    const parent = this.parent;
+    // 只有root没有parent
+    if (!parent) {
+      return;
+    }
+    this.parentMwId = parent.localMwId;
     const root = (this.root = parent.root!);
     if (!this.isPage) {
       this.page = parent.page;
@@ -285,9 +294,14 @@ class Node extends Event {
 
   calMatrix(lv: RefreshLevel): Float64Array {
     const { style, computedStyle, matrix, transform } = this;
-    // 更新先标识缓存失效，计算再改成功
-    this.hasCacheMw = false;
-    this.hasCacheMwLv = false;
+    if (!lv) {
+      return matrix;
+    }
+    // 每次更新标识且id++，获取matrixWorld或者每帧渲染会置true，首次0时强制进入，虽然布局过程中会调用，防止手动调用不可预期
+    if (this.hasCacheMw || !this.localMwId) {
+      this.hasCacheMw = false;
+      this.localMwId++;
+    }
     let optimize = true;
     if (
       lv >= RefreshLevel.REFLOW ||
@@ -900,6 +914,7 @@ class Node extends Event {
         pList.reverse();
         for (let i = 0, len = pList.length; i < len; i++) {
           const node = pList[i];
+          // node.hasCacheOp = true; // 标记缓存
           if (!i || node === root) {
             if (node === root) {
               node._opacity = node.computedStyle.opacity;
@@ -933,59 +948,63 @@ class Node extends Event {
     }
     // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
     let cache = this.hasCacheMw;
-    // 可能开始自己就没缓存，不用再向上判断，肯定要重新计算
-    if (cache) {
-      let parent = this.parent;
-      while (parent) {
-        if (!parent.hasCacheMw) {
-          cache = false;
-          break;
-        }
-        parent = parent.parent;
+    let node: Node = this,
+      parent = node.parent,
+      index = -1;
+    const pList: Array<Container> = [];
+    while (parent) {
+      pList.push(parent);
+      // 父级变更过后id就会对不上，但首次初始化后是一致的，防止初始化后立刻调用所以要多判断下
+      if (!parent.hasCacheMw || parent.localMwId !== node.parentMwId) {
+        // console.log(parent.hasCacheMw, parent.localMwId, node.parentMwId, parent);
+        cache = false;
+        index = pList.length; // 供后面splice裁剪用
       }
+      node = parent;
+      parent = parent.parent;
     }
     // 这里的cache是考虑了向上父级的，只要有失败的就进入，从这条分支上最上层无缓存的父级开始计算
     if (!cache) {
-      const pList: Array<Container> = [];
-      let index = -1;
-      let parent = this.parent;
-      while (parent) {
-        pList.push(parent);
-        // 自底向上的索引更新，最后一定是最上层变化的节点
-        if (!parent.hasCacheMw) {
-          index = pList.length;
-        }
-        parent = parent.parent;
-      }
       // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的matrix）
       if (index > -1) {
         pList.splice(index);
         pList.reverse();
         for (let i = 0, len = pList.length; i < len; i++) {
           const node = pList[i];
-          if (!i || node === root) {
-            if (node === root) {
-              assignMatrix(node._matrixWorld, node.matrix);
-            } else {
-              const t = multiply(node.parent!._matrixWorld, node.matrix);
-              assignMatrix(node._matrixWorld, t);
-            }
+          /**
+           * 被动变更判断，自己没有变更但父级发生了变更需要更新id，这里的情况比较多
+           * 某个父节点可能没有变更，也可能发生变更，变更后如果进行了读取则不会被记录进来
+           * 记录的顶层父节点比较特殊，会发生上述情况，中间父节点不会有变更后读取的情况
+           * 因此只有没有变化且和父级id不一致时，其id自增标识，有变化已经主动更新过了
+           */
+          if (node.hasCacheMw && node.parentMwId !== node.parent?.localMwId) {
+            node.localMwId++;
+          }
+          node.hasCacheMw = true;
+          if (node === root) {
+            assignMatrix(node._matrixWorld, node.matrix);
           } else {
-            const t = multiply(pList[i - 1]._matrixWorld, node.matrix);
+            const t = multiply(node.parent!._matrixWorld, node.matrix);
             assignMatrix(node._matrixWorld, t);
+            node.parentMwId = node.parent!.localMwId;
           }
         }
       }
+      // 自己没有变化但父级出现变化影响了这条链路，被动变更，这里父级id一定是不一致的，否则进不来
+      if (this.hasCacheMw) {
+        this.localMwId++;
+      }
+      this.hasCacheMw = true;
       // 仅自身变化，或者有父级变化但父级前面已经算好了，防止自己是Root
       parent = this.parent;
       if (parent) {
         const t = multiply(parent._matrixWorld, this.matrix);
         assignMatrix(m, t);
+        this.parentMwId = parent.localMwId; // 更新以便后续对比
       } else {
         assignMatrix(m, this.matrix);
       }
     }
-    this.hasCacheMw = true; // 计算过了标识有缓存
     return m;
   }
 

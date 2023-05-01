@@ -12,6 +12,7 @@ class Overlay extends Container {
     super(props, children);
     this.artBoards = new Container(
       {
+        name: 'overlay-artBoards',
         style: {
           width: '100%',
           height: '100%',
@@ -29,7 +30,9 @@ class Overlay extends Container {
     this.artBoardList.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
       const artBoard = list[i];
+      const name = 'overlay-' + (artBoard.props.name || '画板');
       const text = new Text({
+        name,
         style: {
           fontSize: 24,
           color: '#777',
@@ -57,11 +60,13 @@ class Overlay extends Container {
       const { artBoard, text } = artBoardList[i];
       const rect = artBoard.getBoundingClientRect();
       // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
-      text.updateStyleData({
+      const res = text.updateStyleData({
         translateX: rect.left,
         translateY: rect.top - 32,
       });
-      text.calMatrix(RefreshLevel.TRANSLATE);
+      if (res.keys.length) {
+        text.calMatrix(RefreshLevel.TRANSLATE);
+      }
     }
   }
 }

@@ -89,7 +89,9 @@ export function renderWebgl(
     if (refreshLevel) {
       // filter之类的变更
       if (refreshLevel < RefreshLevel.REPAINT) {
-      } else {
+      }
+      // repaint
+      else {
         node.calContent();
         node.textureTarget[scaleIndex] = undefined;
       }
@@ -119,6 +121,7 @@ export function renderWebgl(
       mergeHash[i] = t;
     }
   }
+  // console.warn(mergeList);
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
   if (mergeList.length) {
     mergeList.sort(function (a, b) {
@@ -127,37 +130,35 @@ export function renderWebgl(
       }
       return b.lv - a.lv;
     });
-    // 先循环求一遍各自merge是否在可视范围内，标记valid，同时父级发现有子级merge时，记录个引用
+    // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
     for (let j = 0, len = mergeList.length; j < len; j++) {
       const item = mergeList[j];
-      const { i, total, node, subList } = item;
+      const { i, total, node } = item;
       // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算
-      let isNew = false;
-      if (!node.tempBbox) {
-        isNew = true;
-        node.tempBbox = genBboxTotal(structs, node, i, total, scaleIndex, item, mergeHash);
-      }
-      // 范围内的
-      if (checkInScreen(node.tempBbox, node.matrixWorld, W, H)) {
-        item.valid = true;
-        // 检查子节点中有因为可视范围外暂时忽略的，全部标记valid
-        while (subList.length) {
-          const t = subList.pop()!;
-          t.valid = true;
-          const sub2 = t.subList;
-          while (sub2.length) {
-            subList.push(sub2.pop()!);
+      const isNew = item.isNew = !node.tempBbox;
+      node.tempBbox = genBboxTotal(structs, node, i, total, isNew, scaleIndex, item, mergeHash);
+    }
+    // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
+    for (let j = 0, len = mergeList.length; j < len; j++) {
+      const item = mergeList[j];
+      const { subList, node } = item;
+      // 没有嵌套的都是最上层merge
+      if (!item.subList.length) {
+        if (checkInScreen(node.tempBbox!, node.matrixWorld, W, H)) {
+          item.valid = true;
+          // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
+          while (subList.length) {
+            const t = subList.pop()!;
+            t.valid = true;
+            const subList2 = t.subList;
+            while (subList2.length) {
+              subList.push(subList2.pop()!);
+            }
           }
         }
       }
-      // 新的可视范围外的要记录下，后续判断是否是mask影响后续节点next数量，不立刻做因为可能会被父级影响强制valid
-      else {
-        if (isNew) {
-          item.isNew = true;
-        }
-      }
     }
-    // 再一遍循环根据可视范围内valid标记产生真正的merge汇总
+    // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
     for (let j = 0, len = mergeList.length; j < len; j++) {
       const { i, lv, total, node, valid, isNew } = mergeList[j];
       // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
@@ -227,10 +228,9 @@ export function renderWebgl(
   gl.useProgram(programs.program);
   // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
   const cacheOpList: Array<boolean> = [];
-  const cacheMwList: Array<boolean> = [];
   let lastLv = 0,
     hasCacheOpLv = false,
-    hasCacheMwLv = false;
+    hasCacheMw = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total, next } = structs[i];
@@ -250,42 +250,33 @@ export function renderWebgl(
     // 第一个是Root层级0
     if (!i) {
       hasCacheOpLv = node.hasCacheOpLv;
-      hasCacheMwLv = node.hasCacheMwLv;
+      hasCacheMw = node.hasCacheMw;
     }
     // lv变大说明是子节点，如果仍有缓存，要判断子节点是否更新，已经没缓存就不用了
     else if (lv > lastLv) {
       cacheOpList.push(hasCacheOpLv);
-      cacheMwList.push(hasCacheMwLv);
       if (hasCacheOpLv) {
         hasCacheOpLv = node.hasCacheOpLv;
       }
-      if (hasCacheMwLv) {
-        hasCacheMwLv = node.hasCacheMwLv;
-      }
+      hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent!.localMwId;
     }
     // lv变小说明是上层节点，不一定是直接父节点，因为可能跨层，出栈对应数量来到对应lv的数据
     else if (lv < lastLv) {
       const diff = lastLv - lv;
       cacheOpList.splice(-diff);
       hasCacheOpLv = cacheOpList[lv - 1];
-      cacheMwList.splice(-diff);
-      hasCacheMwLv = cacheMwList[lv - 1];
       // 还需考虑本层
       if (hasCacheOpLv) {
         hasCacheOpLv = node.hasCacheOpLv;
       }
-      if (hasCacheMwLv) {
-        hasCacheMwLv = node.hasCacheMwLv;
-      }
+      hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent!.localMwId;
     }
     // 不变是同级兄弟，只需考虑自己
     else {
       if (hasCacheOpLv) {
         hasCacheOpLv = node.hasCacheOpLv;
       }
-      if (hasCacheMwLv) {
-        hasCacheMwLv = node.hasCacheMwLv;
-      }
+      hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent!.localMwId;
     }
     lastLv = lv;
     // 继承父的opacity和matrix，仍然要注意root没有parent
@@ -296,13 +287,20 @@ export function renderWebgl(
         : node.computedStyle.opacity;
       node.hasCacheOpLv = true;
     }
-    if (!hasCacheMwLv) {
+    if (!hasCacheMw) {
       assignMatrix(
         node._matrixWorld,
         parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix,
       );
-      node.hasCacheMwLv = true;
+      if (parent) {
+        node.parentMwId = parent.localMwId;
+      }
+      if (node.hasCacheMw) {
+        node.localMwId++;
+      }
+      node.hasCacheMw = true;
     }
+
     const opacity = node._opacity;
     const matrix = node._matrixWorld;
     // overlay上的没有高清要忽略
@@ -468,6 +466,7 @@ function genBboxTotal(
   node: Node,
   index: number,
   total: number,
+  isNew: boolean,
   scaleIndex: number,
   merge: Merge,
   mergeHash: Array<Merge>,
@@ -482,12 +481,14 @@ function genBboxTotal(
   for (let i = index + 1, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
     const parent = node2.parent!;
-    const m = multiply(parent.tempMatrix, node2.matrix);
-    assignMatrix(node2.tempMatrix, m);
     const target = node2.textureTarget[scaleIndex];
-    const b = target?.bbox || node2._bbox || node2.bbox;
-    if (b[2] - b[0] && b[3] - b[1]) {
-      mergeBbox(res, transformBbox(b, m));
+    if (isNew) {
+      const m = multiply(parent.tempMatrix, node2.matrix);
+      assignMatrix(node2.tempMatrix, m);
+      const b = target?.bbox || node2._bbox || node2.bbox;
+      if (b[2] - b[0] && b[3] - b[1]) {
+        mergeBbox(res, transformBbox(b, m));
+      }
     }
     if (
       (target && target !== node2.textureCache[scaleIndex]) ||
@@ -495,9 +496,9 @@ function genBboxTotal(
     ) {
       i += total2 + next2;
     }
-    // 收集子节点中无效merge，等待可能的上层merge判断是否强制valid展示
+    // 收集子节点中的嵌套关系
     const mg = mergeHash[i];
-    if (mg && !mg.valid) {
+    if (mg) {
       merge.subList.push(mg);
     }
   }

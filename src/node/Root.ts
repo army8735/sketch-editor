@@ -86,12 +86,14 @@ class Root extends Container implements FrameCallback {
     );
     this.programs = {};
     this.initShaders(gl);
+    this.didMount();
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
     // 存所有Page
     this.pageContainer = new Container(
       {
+        name: 'pageContainer',
         style: {
           width: '100%',
           height: '100%',
@@ -107,6 +109,7 @@ class Root extends Container implements FrameCallback {
     // 存上层的展示工具标尺等
     this.overlay = new Overlay(
       {
+        name: 'overlay',
         style: {
           width: '100%',
           height: '100%',
