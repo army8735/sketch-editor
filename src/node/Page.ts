@@ -66,7 +66,7 @@ class Page extends Container {
     this.page = this;
   }
 
-  initIfNot() { console.error('init', this.json)
+  initIfNot() {
     if (this.json) {
       for(let i = 0, len = this.json.children.length; i < len; i++) {
         const res = parse(this.json.children[i]);

@@ -227,13 +227,10 @@ export function renderWebgl(
   const program = programs.program;
   gl.useProgram(programs.program);
   // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
-  const cacheOpList: Array<boolean> = [];
-  let lastLv = 0,
-    hasCacheOpLv = false,
-    hasCacheMw = false;
+  let hasCacheOp = false, hasCacheMw = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
-    const { node, lv, total, next } = structs[i];
+    const { node, total, next } = structs[i];
     // 特殊的工具覆盖层，如画板名称，同步更新translate直接跟着画板位置刷新
     if (overlay && overlay === node) {
       overlay.update();
@@ -247,45 +244,25 @@ export function renderWebgl(
       i += total + next;
       continue;
     }
-    // 第一个是Root层级0
-    if (!i) {
-      hasCacheOpLv = node.hasCacheOpLv;
-      hasCacheMw = node.hasCacheMw;
-    }
-    // lv变大说明是子节点，如果仍有缓存，要判断子节点是否更新，已经没缓存就不用了
-    else if (lv > lastLv) {
-      cacheOpList.push(hasCacheOpLv);
-      if (hasCacheOpLv) {
-        hasCacheOpLv = node.hasCacheOpLv;
-      }
-      hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent!.localMwId;
-    }
-    // lv变小说明是上层节点，不一定是直接父节点，因为可能跨层，出栈对应数量来到对应lv的数据
-    else if (lv < lastLv) {
-      const diff = lastLv - lv;
-      cacheOpList.splice(-diff);
-      hasCacheOpLv = cacheOpList[lv - 1];
-      // 还需考虑本层
-      if (hasCacheOpLv) {
-        hasCacheOpLv = node.hasCacheOpLv;
-      }
-      hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent!.localMwId;
-    }
-    // 不变是同级兄弟，只需考虑自己
-    else {
-      if (hasCacheOpLv) {
-        hasCacheOpLv = node.hasCacheOpLv;
-      }
-      hasCacheMw = node.hasCacheMw && node.parentMwId === node.parent!.localMwId;
-    }
-    lastLv = lv;
     // 继承父的opacity和matrix，仍然要注意root没有parent
     const { parent, textureTarget } = node;
-    if (!hasCacheOpLv) {
+    // 第一个是Root层级0
+    if (!i) {
+      hasCacheOp = node.hasCacheOp;
+      hasCacheMw = node.hasCacheMw;
+    }
+    else {
+      hasCacheOp = node.hasCacheOp && node.parentOpId === parent!.localOpId;
+      hasCacheMw = node.hasCacheMw && node.parentMwId === parent!.localMwId;
+    }
+    if (!hasCacheOp) {
       node._opacity = parent
         ? parent._opacity * node.computedStyle.opacity
         : node.computedStyle.opacity;
-      node.hasCacheOpLv = true;
+      if (parent) {
+        node.parentOpId = parent.localOpId;
+      }
+      node.hasCacheOp = true;
     }
     if (!hasCacheMw) {
       assignMatrix(

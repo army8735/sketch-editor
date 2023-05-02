@@ -56,14 +56,14 @@ class Node extends Event {
   refreshLevel: RefreshLevel;
   _opacity: number; // 世界透明度
   hasCacheOp: boolean; // 是否计算过世界opacity
-  hasCacheOpLv: boolean; // 同上，每次刷新时变更，供刷新树级计算优化
+  localOpId: number; // 同下面的matrix
+  parentOpId: number;
   transform: Float64Array; // 不包含transformOrigin
   matrix: Float64Array; // 包含transformOrigin
   _matrixWorld: Float64Array; // 世界transform
-  hasCacheMw: boolean; // 是否计算过世界transform
-  localMwId: number;
-  parentMwId: number;
-  // hasCacheMwLv: boolean; // 同上
+  hasCacheMw: boolean; // 是否计算过世界matrix
+  localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
+  parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
   _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
@@ -104,12 +104,12 @@ class Node extends Event {
     this.refreshLevel = RefreshLevel.REFLOW;
     this._opacity = 1;
     this.hasCacheOp = false;
-    this.hasCacheOpLv = false;
+    this.localOpId = 0;
+    this.parentOpId = 0;
     this.transform = identity();
     this.matrix = identity();
     this._matrixWorld = identity();
     this.hasCacheMw = false;
-    // this.hasCacheMwLv = false;
     this.localMwId = 0;
     this.parentMwId = 0;
     this.hasContent = false;
@@ -129,6 +129,7 @@ class Node extends Event {
     if (!parent) {
       return;
     }
+    this.parentOpId = parent.localOpId;
     this.parentMwId = parent.localMwId;
     const root = (this.root = parent.root!);
     if (!this.isPage) {
@@ -250,7 +251,6 @@ class Node extends Event {
       computedStyle.lineHeight = lineHeight.v;
     }
     this.width = this.height = 0;
-    this.hasCacheOp = false;
     const width = style.width;
     const height = style.height;
     if (parent) {
@@ -271,6 +271,11 @@ class Node extends Event {
     computedStyle.overflow = style.overflow.v;
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
+    // 同下面的matrix
+    if (this.hasCacheOp || !this.localOpId) {
+      this.hasCacheOp = false;
+      this.localOpId++;
+    }
     computedStyle.opacity = style.opacity.v;
     computedStyle.fill = style.fill.map((item) => item.v);
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
@@ -884,58 +889,54 @@ class Node extends Event {
     }
     // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
     let cache = this.hasCacheOp;
-    // 可能开始自己就没缓存，不用再向上判断，肯定要重新计算
-    if (cache) {
-      let parent = this.parent;
-      while (parent) {
-        if (!parent.hasCacheMw) {
-          cache = false;
-          break;
-        }
-        parent = parent.parent;
+    let node: Node = this,
+      parent = node.parent,
+      index = -1;
+    const pList: Array<Container> = [];
+    while (parent) {
+      pList.push(parent);
+      // 父级变更过后id就会对不上，但首次初始化后是一致的，防止初始化后立刻调用所以要多判断下
+      if (!parent.hasCacheOp || parent.localOpId !== node.parentOpId) {
+        cache = false;
+        index = pList.length; // 供后面splice裁剪用
       }
+      node = parent;
+      parent = parent.parent;
     }
     // 这里的cache是考虑了向上父级的，只要有失败的就进入，从这条分支上最上层无缓存的父级开始计算
     if (!cache) {
-      const pList: Array<Container> = [];
-      let index = -1;
-      let parent = this.parent;
-      while (parent) {
-        pList.push(parent);
-        // 自底向上的索引更新，最后一定是最上层变化的节点
-        if (!parent.hasCacheMw) {
-          index = pList.length;
-        }
-        parent = parent.parent;
-      }
       // 父级有变化则所有向下都需更新，可能第一个是root（极少场景会修改root的opacity）
       if (index > -1) {
         pList.splice(index);
         pList.reverse();
         for (let i = 0, len = pList.length; i < len; i++) {
           const node = pList[i];
-          // node.hasCacheOp = true; // 标记缓存
-          if (!i || node === root) {
-            if (node === root) {
-              node._opacity = node.computedStyle.opacity;
-            } else {
-              node._opacity =
-                node.parent!._opacity * node.computedStyle.opacity;
-            }
+          if (node.hasCacheOp && node.localOpId !== node.parent?.parentOpId) {
+            node.localOpId++;
+          }
+          node.hasCacheOp = true;
+          if (node === root) {
+            node._opacity = node.computedStyle.opacity;
           } else {
-            node._opacity = pList[i - 1]._opacity * node.computedStyle.opacity;
+            node._opacity = node.parent!._opacity * node.computedStyle.opacity;
+            node.parentOpId = node.parent!.localOpId;
           }
         }
       }
+      // 自己没有变化但父级出现变化影响了这条链路，被动变更，这里父级id一定是不一致的，否则进不来
+      if (this.hasCacheOp) {
+        this.localOpId++;
+      }
+      this.hasCacheOp = true;
       // 仅自身变化，或者有父级变化但父级前面已经算好了，防止自己是Root
       parent = this.parent;
       if (parent) {
         this._opacity = parent._opacity * this.computedStyle.opacity;
+        this.parentOpId = parent.localOpId;
       } else {
         this._opacity = this.computedStyle.opacity;
       }
     }
-    this.hasCacheOp = true; // 计算过了标识有缓存
     return this._opacity;
   }
 
@@ -956,7 +957,6 @@ class Node extends Event {
       pList.push(parent);
       // 父级变更过后id就会对不上，但首次初始化后是一致的，防止初始化后立刻调用所以要多判断下
       if (!parent.hasCacheMw || parent.localMwId !== node.parentMwId) {
-        // console.log(parent.hasCacheMw, parent.localMwId, node.parentMwId, parent);
         cache = false;
         index = pList.length; // 供后面splice裁剪用
       }
