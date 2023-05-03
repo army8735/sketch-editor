@@ -272,7 +272,7 @@ class Node extends Event {
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
     // 同下面的matrix
-    if (this.hasCacheOp || !this.localOpId) {
+    if (lv & RefreshLevel.REFLOW_OPACITY && (this.hasCacheOp || !this.localOpId)) {
       this.hasCacheOp = false;
       this.localOpId++;
     }
@@ -292,6 +292,7 @@ class Node extends Event {
     computedStyle.pointerEvents = style.pointerEvents.v;
     computedStyle.maskMode = style.maskMode.v;
     computedStyle.breakMask = style.breakMask.v;
+    // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
     }

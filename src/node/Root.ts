@@ -287,7 +287,7 @@ class Root extends Container implements FrameCallback {
         }
         if (lv & RefreshLevel.OPACITY) {
           computedStyle.opacity = style.opacity.v;
-          // 手动删除缓存
+          // 手动删除缓存，这里一定是不相等的才能进来，因为updateStyle会前置校验
           if (node.hasCacheOp || !node.localOpId) {
             node.hasCacheOp = false;
             node.localOpId++;

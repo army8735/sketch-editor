@@ -17702,7 +17702,8 @@
         RefreshLevel[RefreshLevel["BREAK_MASK"] = 2048] = "BREAK_MASK";
         RefreshLevel[RefreshLevel["REPAINT"] = 4096] = "REPAINT";
         RefreshLevel[RefreshLevel["REFLOW"] = 8192] = "REFLOW";
-        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 8318] = "REFLOW_TRANSFORM";
+        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 8320] = "REFLOW_TRANSFORM";
+        RefreshLevel[RefreshLevel["REFLOW_OPACITY"] = 8192] = "REFLOW_OPACITY";
         RefreshLevel[RefreshLevel["REBUILD"] = 16384] = "REBUILD";
     })(RefreshLevel || (RefreshLevel = {}));
     function isReflow(lv) {
@@ -20192,7 +20193,7 @@
             computedStyle.color = style.color.v;
             computedStyle.backgroundColor = style.backgroundColor.v;
             // 同下面的matrix
-            if (this.hasCacheOp || !this.localOpId) {
+            if (lv & RefreshLevel.REFLOW_OPACITY && (this.hasCacheOp || !this.localOpId)) {
                 this.hasCacheOp = false;
                 this.localOpId++;
             }
@@ -20212,6 +20213,7 @@
             computedStyle.pointerEvents = style.pointerEvents.v;
             computedStyle.maskMode = style.maskMode.v;
             computedStyle.breakMask = style.breakMask.v;
+            // 只有重布局或者改transform才影响，普通repaint不变
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
             }
@@ -27184,7 +27186,7 @@ void main() {
                     }
                     if (lv & RefreshLevel.OPACITY) {
                         computedStyle.opacity = style.opacity.v;
-                        // 手动删除缓存
+                        // 手动删除缓存，这里一定是不相等的才能进来，因为updateStyle会前置校验
                         if (node.hasCacheOp || !node.localOpId) {
                             node.hasCacheOp = false;
                             node.localOpId++;
