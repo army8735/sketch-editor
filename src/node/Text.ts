@@ -1,6 +1,7 @@
 import { Rich, TextProps } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
+import { RefreshLevel } from '../refresh/level';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import inject from '../util/inject';
@@ -8,7 +9,6 @@ import { LayoutData } from './layout';
 import LineBox from './LineBox';
 import Node from './Node';
 import TextBox from './TextBox';
-import { RefreshLevel } from '../refresh/level';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -389,7 +389,14 @@ class Text extends Node {
   set content(v: string) {
     if (v !== this._content) {
       this._content = v;
-      this.root?.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
+      this.root?.addUpdate(
+        this,
+        [],
+        RefreshLevel.REFLOW,
+        false,
+        false,
+        undefined,
+      );
     }
   }
 }

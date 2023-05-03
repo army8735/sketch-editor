@@ -182,19 +182,22 @@ class Root extends Container implements FrameCallback {
   addNewPage(page?: Page, setCurrent = false) {
     const pageContainer = this.pageContainer!;
     if (!page) {
-      page = new Page({
-        uuid: uuid.v4(),
-        name: '页面 ' + (pageContainer.children.length + 1),
-        style: {
-          width: 100,
-          height: 100,
-          visible: false,
-          transformOrigin: [0, 0],
-          pointerEvents: false,
+      page = new Page(
+        {
+          uuid: uuid.v4(),
+          name: '页面 ' + (pageContainer.children.length + 1),
+          style: {
+            width: 100,
+            height: 100,
+            visible: false,
+            transformOrigin: [0, 0],
+            pointerEvents: false,
+          },
+          isLocked: false,
+          isExpanded: false,
         },
-        isLocked: false,
-        isExpanded: false,
-      }, []);
+        [],
+      );
     }
     pageContainer.appendChild(page);
     if (setCurrent) {
