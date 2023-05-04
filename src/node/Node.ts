@@ -76,6 +76,7 @@ class Node extends Event {
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
   tempMatrix: Float64Array;
   tempBbox?: Float64Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
+  tempIndex: number;
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
   isPage = false;
@@ -119,6 +120,7 @@ class Node extends Event {
     this.textureTarget = [];
     this.tempOpacity = 1;
     this.tempMatrix = identity();
+    this.tempIndex = 0;
   }
 
   // 添加到dom后标记非销毁状态，和root引用
@@ -235,6 +237,50 @@ class Node extends Event {
     this._rect = undefined;
     this._bbox = undefined;
     this.tempBbox = undefined;
+  }
+
+  insertAfter(node: Node, cb?: (sync: boolean) => void) {
+    const { root, parent } = this;
+    if (!parent) {
+      throw new Error('Can not appendSelf without parent');
+    }
+    node.parent = parent;
+    node.prev = this;
+    node.next = this.next;
+    this.next = node;
+    node.root = root;
+    const children = parent.children;
+    const i = children.indexOf(this);
+    children.splice(i + 1, 0, node);
+    if (parent.isDestroyed) {
+      cb && cb(true);
+      return;
+    }
+    node.didMount();
+    parent.insertStruct(node, i + 1);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
+  }
+
+  insertBefore(node: Node, cb?: (sync: boolean) => void) {
+    const { root, parent } = this;
+    if (!parent) {
+      throw new Error('Can not prependBefore without parent');
+    }
+    node.parent = parent;
+    node.prev = this.prev;
+    node.next = this;
+    this.prev = node;
+    node.root = root;
+    const children = parent.children;
+    const i = children.indexOf(this);
+    children.splice(i, 0, node);
+    if (parent.isDestroyed) {
+      cb && cb(true);
+      return;
+    }
+    node.didMount();
+    parent.insertStruct(node, i);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值

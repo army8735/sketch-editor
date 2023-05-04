@@ -16104,7 +16104,8 @@
     Event.WILL_REMOVE_DOM = 'willRemoveDom';
     Event.PAGE_CHANGED = 'pageChanged';
     Event.VISIBLE_CHANGED = 'visibleChanged';
-    Event.ADD_NEW_PAGE = 'addNewPage';
+    Event.DID_ADD_PAGE = 'didAddPage';
+    Event.WILL_REMOVE_PAGE = 'willRemovePage';
 
     function clone(obj) {
         if (isNil(obj) || typeof obj !== 'object') {
@@ -17122,121 +17123,97 @@
             // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
             const resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
             let left = 0, top = 0, right = 'auto', bottom = 'auto';
-            // 需根据父容器尺寸计算
-            if (resizingConstraint) {
-                // left
-                if (resizingConstraint & ResizingConstraint.LEFT) {
-                    left = translateX;
-                    // left+right忽略width
-                    if (resizingConstraint & ResizingConstraint.RIGHT) {
-                        right = w - translateX - width;
-                        width = 'auto';
-                    }
-                    // left+width
-                    else if (resizingConstraint & ResizingConstraint.WIDTH) ;
-                    // 仅left，right是百分比忽略width
-                    else {
-                        right = ((w - translateX - width) * 100) / w + '%';
-                        width = 'auto';
-                    }
-                    translateX = 0;
-                }
-                // right
-                else if (resizingConstraint & ResizingConstraint.RIGHT) {
+            // left
+            if (resizingConstraint & ResizingConstraint.LEFT) {
+                left = translateX;
+                // left+right忽略width
+                if (resizingConstraint & ResizingConstraint.RIGHT) {
                     right = w - translateX - width;
-                    // left+right忽略width
-                    if (resizingConstraint & ResizingConstraint.LEFT) {
-                        left = translateX;
-                        width = 'auto';
-                    }
-                    // right+width
-                    else if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = 'auto';
-                    }
-                    // 仅right，left是百分比忽略width
-                    else {
-                        left = (translateX * 100) / w + '%';
-                        width = 'auto';
-                    }
+                    width = 'auto';
+                }
+                // left+width
+                else if (resizingConstraint & ResizingConstraint.WIDTH) ;
+                // 仅left，right是百分比忽略width
+                else {
+                    right = ((w - translateX - width) * 100) / w + '%';
+                    width = 'auto';
+                }
+                translateX = 0;
+            }
+            // right
+            else if (resizingConstraint & ResizingConstraint.RIGHT) {
+                right = w - translateX - width;
+                // right+width
+                if (resizingConstraint & ResizingConstraint.WIDTH) {
+                    left = 'auto';
+                }
+                // 仅right，left是百分比忽略width
+                else {
+                    left = (translateX * 100) / w + '%';
+                    width = 'auto';
+                }
+                translateX = 0;
+            }
+            // 左右都不固定
+            else {
+                // 仅固定宽度，以中心点占left的百分比
+                if (resizingConstraint & ResizingConstraint.WIDTH) {
+                    left = ((translateX + width * 0.5) * 100) / w + '%';
+                    translateX = '-50%';
+                }
+                // 左右皆为百分比
+                else {
+                    left = (translateX * 100) / w + '%';
+                    right = ((w - translateX - width) * 100) / w + '%';
                     translateX = 0;
-                }
-                // 左右都不固定
-                else {
-                    // 仅固定宽度，以中心点占left的百分比
-                    if (resizingConstraint & ResizingConstraint.WIDTH) {
-                        left = ((translateX + width * 0.5) * 100) / w + '%';
-                        translateX = '-50%';
-                    }
-                    // 左右皆为百分比
-                    else {
-                        left = (translateX * 100) / w + '%';
-                        right = ((w - translateX - width) * 100) / w + '%';
-                        translateX = 0;
-                        width = 'auto';
-                    }
-                }
-                // top
-                if (resizingConstraint & ResizingConstraint.TOP) {
-                    top = translateY;
-                    // top+bottom忽略height
-                    if (resizingConstraint & ResizingConstraint.BOTTOM) {
-                        bottom = h - translateY - height;
-                        height = 'auto';
-                    }
-                    // top+height
-                    else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
-                    // 仅top，bottom是百分比忽略height
-                    else {
-                        bottom = ((h - translateY - height) * 100) / h + '%';
-                        height = 'auto';
-                    }
-                    translateY = 0;
-                }
-                // bottom
-                else if (resizingConstraint & ResizingConstraint.BOTTOM) {
-                    bottom = h - translateY - height;
-                    // top+bottom忽略height
-                    if (resizingConstraint & ResizingConstraint.TOP) {
-                        top = translateY;
-                        height = 'auto';
-                    }
-                    // bottom+height
-                    else if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = 'auto';
-                    }
-                    // 仅bottom，top是百分比忽略height
-                    else {
-                        top = (translateY * 100) / h + '%';
-                        height = 'auto';
-                    }
-                    translateY = 0;
-                }
-                // 上下都不固定
-                else {
-                    // 仅固定高度，以中心点占top的百分比
-                    if (resizingConstraint & ResizingConstraint.HEIGHT) {
-                        top = ((translateY + height * 0.5) * 100) / h + '%';
-                        translateY = '-50%';
-                    }
-                    // 上下皆为百分比
-                    else {
-                        top = (translateY * 100) / h + '%';
-                        bottom = ((h - translateY - height) * 100) / h + '%';
-                        translateY = 0;
-                        height = 'auto';
-                    }
+                    width = 'auto';
                 }
             }
-            // 未设置则上下左右都是百分比
-            else {
-                left = (translateX * 100) / w + '%';
-                right = ((w - translateX - width) * 100) / w + '%';
-                translateX = 0;
-                width = 'auto';
-                top = (translateY * 100) / h + '%';
-                bottom = ((h - translateY - height) * 100) / h + '%';
+            // top
+            if (resizingConstraint & ResizingConstraint.TOP) {
+                top = translateY;
+                // top+bottom忽略height
+                if (resizingConstraint & ResizingConstraint.BOTTOM) {
+                    bottom = h - translateY - height;
+                    height = 'auto';
+                }
+                // top+height
+                else if (resizingConstraint & ResizingConstraint.HEIGHT) ;
+                // 仅top，bottom是百分比忽略height
+                else {
+                    bottom = ((h - translateY - height) * 100) / h + '%';
+                    height = 'auto';
+                }
                 translateY = 0;
-                height = 'auto';
+            }
+            // bottom
+            else if (resizingConstraint & ResizingConstraint.BOTTOM) {
+                bottom = h - translateY - height;
+                // bottom+height
+                if (resizingConstraint & ResizingConstraint.HEIGHT) {
+                    top = 'auto';
+                }
+                // 仅bottom，top是百分比忽略height
+                else {
+                    top = (translateY * 100) / h + '%';
+                    height = 'auto';
+                }
+                translateY = 0;
+            }
+            // 上下都不固定
+            else {
+                // 仅固定高度，以中心点占top的百分比
+                if (resizingConstraint & ResizingConstraint.HEIGHT) {
+                    top = ((translateY + height * 0.5) * 100) / h + '%';
+                    translateY = '-50%';
+                }
+                // 上下皆为百分比
+                else {
+                    top = (translateY * 100) / h + '%';
+                    bottom = ((h - translateY - height) * 100) / h + '%';
+                    translateY = 0;
+                    height = 'auto';
+                }
             }
             // 遮罩转换
             let maskMode = 'none';
@@ -20033,6 +20010,7 @@
             this.textureTarget = [];
             this.tempOpacity = 1;
             this.tempMatrix = identity();
+            this.tempIndex = 0;
         }
         // 添加到dom后标记非销毁状态，和root引用
         didMount() {
@@ -20157,6 +20135,48 @@
             this._rect = undefined;
             this._bbox = undefined;
             this.tempBbox = undefined;
+        }
+        insertAfter(node, cb) {
+            const { root, parent } = this;
+            if (!parent) {
+                throw new Error('Can not appendSelf without parent');
+            }
+            node.parent = parent;
+            node.prev = this;
+            node.next = this.next;
+            this.next = node;
+            node.root = root;
+            const children = parent.children;
+            const i = children.indexOf(this);
+            children.splice(i + 1, 0, node);
+            if (parent.isDestroyed) {
+                cb && cb(true);
+                return;
+            }
+            node.didMount();
+            parent.insertStruct(node, i + 1);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
+        }
+        insertBefore(node, cb) {
+            const { root, parent } = this;
+            if (!parent) {
+                throw new Error('Can not prependBefore without parent');
+            }
+            node.parent = parent;
+            node.prev = this.prev;
+            node.next = this;
+            this.prev = node;
+            node.root = root;
+            const children = parent.children;
+            const i = children.indexOf(this);
+            children.splice(i, 0, node);
+            if (parent.isDestroyed) {
+                cb && cb(true);
+                return;
+            }
+            node.didMount();
+            parent.insertStruct(node, i);
+            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
         }
         // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
         calReflowStyle() {
@@ -21005,48 +21025,6 @@
             }
             node.didMount();
             this.insertStruct(node, 0);
-            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
-        }
-        appendSelf(node, cb) {
-            const { root, parent } = this;
-            if (!parent) {
-                throw new Error('Can not appendSelf without parent');
-            }
-            node.parent = parent;
-            node.prev = this;
-            node.next = this.next;
-            this.next = node;
-            node.root = root;
-            const children = parent.children;
-            const i = children.indexOf(this);
-            children.splice(i + 1, 0, node);
-            if (parent.isDestroyed) {
-                cb && cb(true);
-                return;
-            }
-            node.didMount();
-            parent.insertStruct(node, i + 1);
-            root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
-        }
-        prependSelf(node, cb) {
-            const { root, parent } = this;
-            if (!parent) {
-                throw new Error('Can not prependBefore without parent');
-            }
-            node.parent = parent;
-            node.prev = this.prev;
-            node.next = this;
-            this.prev = node;
-            node.root = root;
-            const children = parent.children;
-            const i = children.indexOf(this);
-            children.splice(i, 0, node);
-            if (parent.isDestroyed) {
-                cb && cb(true);
-                return;
-            }
-            node.didMount();
-            parent.insertStruct(node, i);
             root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
         }
         removeChild(node, cb) {
@@ -22006,6 +21984,183 @@
                 }
             }
             return this.adjustPosAndSize();
+        }
+        unGroup() {
+            if (this.isDestroyed) {
+                throw new Error('Can not unGroup a destroyed Node');
+            }
+            const prev = this.prev;
+            const next = this.next;
+            const zoom = this.getZoom();
+            const parent = this.parent;
+            const width = parent.width;
+            const height = parent.height;
+            const rect = parent.getBoundingClientRect();
+            const x = rect.left / zoom;
+            const y = rect.top / zoom;
+            const children = this.children.slice(0);
+            for (let i = 0, len = children.length; i < len; i++) {
+                const item = children[i];
+                checkGroup(x, y, width, height, zoom, item);
+                // 插入到group的原本位置，有prev/next优先使用定位
+                if (prev) {
+                    prev.insertAfter(item);
+                }
+                else if (next) {
+                    next.insertBefore(item);
+                }
+                // 没有prev/next则parent原本只有一个节点
+                else {
+                    parent.appendChild(item);
+                }
+            }
+            this.remove();
+        }
+        // 至少1个node进行编组，以第0个位置为基准
+        static group(nodes, props) {
+            if (!nodes.length) {
+                return;
+            }
+            let structs;
+            // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                const item = nodes[i];
+                if (item.isDestroyed) {
+                    throw new Error('Can not group a destroyed Node');
+                }
+                if (!i) {
+                    structs = item.root.structs;
+                }
+                item.tempIndex = structs.indexOf(item.struct);
+            }
+            nodes.sort((a, b) => {
+                return a.tempIndex - b.tempIndex;
+            });
+            const first = nodes[0];
+            const prev = first.prev;
+            const next = first.next;
+            const zoom = first.getZoom();
+            const parent = first.parent;
+            const width = parent.width;
+            const height = parent.height;
+            const rect = parent.getBoundingClientRect();
+            const x = rect.left / zoom;
+            const y = rect.top / zoom;
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                const item = nodes[i];
+                checkGroup(x, y, width, height, zoom, item);
+            }
+            const p = Object.assign({
+                uuid: v4(),
+                name: '编组',
+                style: {
+                    left: '0%',
+                    top: '0%',
+                    right: '0%',
+                    bottom: '0%',
+                },
+            }, props);
+            const group = new Group(p, nodes);
+            // 插入到first的原本位置，有prev/next优先使用定位
+            if (prev) {
+                prev.insertAfter(group);
+            }
+            else if (next) {
+                next.insertBefore(group);
+            }
+            // 没有prev/next则parent原本只有一个节点
+            else {
+                parent.appendChild(group);
+            }
+            group.checkSizeChange();
+        }
+    }
+    function checkGroup(x, y, width, height, zoom, node) {
+        const r = node.getBoundingClientRect();
+        const x1 = r.left / zoom;
+        const y1 = r.top / zoom;
+        node.remove();
+        const style = node.style;
+        // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
+        const leftConstraint = style.left.u === StyleUnit.PX;
+        const rightConstraint = style.right.u === StyleUnit.PX;
+        const topConstraint = style.top.u === StyleUnit.PX;
+        const bottomConstraint = style.bottom.u === StyleUnit.PX;
+        const widthConstraint = style.width.u === StyleUnit.PX;
+        const heightConstraint = style.height.u === StyleUnit.PX;
+        // left
+        if (leftConstraint) {
+            const left = x1 - x;
+            style.left.v = left;
+            // left+right忽略width
+            if (rightConstraint) {
+                style.right.v = width - left - node.width;
+            }
+            // left+width
+            else if (widthConstraint) ;
+            // 仅left，right是百分比忽略width
+            else {
+                style.right.v = (width - left - node.width) * 100 / width;
+            }
+        }
+        // right
+        else if (rightConstraint) {
+            // right+width
+            if (widthConstraint) ;
+            // 仅right，left是百分比忽略width
+            else {
+                style.left.v = (width - style.right.v - node.width) * 100 / width;
+            }
+        }
+        // 左右都不固定
+        else {
+            const left = x1 - x;
+            // 仅固定宽度，以中心点占left的百分比
+            if (widthConstraint) {
+                style.left.v = (left - style.width.v * 0.5) * 100 / width;
+            }
+            // 左右皆为百分比
+            else {
+                style.left.v = left * 100 / width;
+                style.right.v = (width - left - node.width) * 100 / width;
+            }
+        }
+        // top
+        if (topConstraint) {
+            const top = y1 - y;
+            style.top.v = top;
+            // top+bottom忽略height
+            if (bottomConstraint) {
+                style.bottom.v = height - top - node.height;
+            }
+            // top+height
+            else if (heightConstraint) ;
+            // 仅top，bottom是百分比忽略height
+            else {
+                style.bottom.v = (height - top - node.height) * 100 / height;
+            }
+        }
+        // bottom
+        else if (bottomConstraint) {
+            // bottom+height
+            if (heightConstraint) ;
+            // 仅bottom，top是百分比忽略height
+            else {
+                style.top.v = (height - style.bottom.v - node.height) * 100 / height;
+            }
+        }
+        // 上下都不固定
+        else {
+            const top = y1 - y;
+            // 仅固定宽度，以中心点占top的百分比
+            if (heightConstraint) {
+                style.top.v = (top - style.height.v * 0.5) * 100 / height;
+            }
+            // 左右皆为百分比
+            else {
+                style.top.v = top * 100 / height;
+                style.bottom.v = (height - top - node.height) * 100 / height;
+            }
         }
     }
 
@@ -27130,7 +27285,12 @@ void main() {
                 }
             }
             if (removeDom) {
-                this.emit(Event.WILL_REMOVE_DOM, node);
+                if (node instanceof Page) {
+                    this.emit(Event.WILL_REMOVE_PAGE, node);
+                }
+                else {
+                    this.emit(Event.WILL_REMOVE_DOM, node);
+                }
             }
             const res = this.calUpdate(node, lv, addDom, removeDom);
             // 非动画走这
@@ -27144,7 +27304,7 @@ void main() {
             if (this.lastPage && node.page) {
                 if (addDom) {
                     if (node instanceof Page) {
-                        this.emit(Event.ADD_NEW_PAGE, node);
+                        this.emit(Event.DID_ADD_PAGE, node);
                     }
                     else {
                         this.emit(Event.DID_ADD_DOM, node);

@@ -214,125 +214,101 @@ async function convertItem(
     top: number | string = 0,
     right: number | string = 'auto',
     bottom: number | string = 'auto';
-  // 需根据父容器尺寸计算
-  if (resizingConstraint) {
-    // left
-    if (resizingConstraint & ResizingConstraint.LEFT) {
-      left = translateX;
-      // left+right忽略width
-      if (resizingConstraint & ResizingConstraint.RIGHT) {
-        right = w - translateX - width;
-        width = 'auto';
-      }
-      // left+width
-      else if (resizingConstraint & ResizingConstraint.WIDTH) {
-        // 默认right就是auto啥也不做
-      }
-      // 仅left，right是百分比忽略width
-      else {
-        right = ((w - translateX - width) * 100) / w + '%';
-        width = 'auto';
-      }
-      translateX = 0;
-    }
-    // right
-    else if (resizingConstraint & ResizingConstraint.RIGHT) {
+  // left
+  if (resizingConstraint & ResizingConstraint.LEFT) {
+    left = translateX;
+    // left+right忽略width
+    if (resizingConstraint & ResizingConstraint.RIGHT) {
       right = w - translateX - width;
-      // left+right忽略width
-      if (resizingConstraint & ResizingConstraint.LEFT) {
-        left = translateX;
-        width = 'auto';
-      }
-      // right+width
-      else if (resizingConstraint & ResizingConstraint.WIDTH) {
-        left = 'auto';
-      }
-      // 仅right，left是百分比忽略width
-      else {
-        left = (translateX * 100) / w + '%';
-        width = 'auto';
-      }
+      width = 'auto';
+    }
+    // left+width
+    else if (resizingConstraint & ResizingConstraint.WIDTH) {
+      // 默认right就是auto啥也不做
+    }
+    // 仅left，right是百分比忽略width
+    else {
+      right = ((w - translateX - width) * 100) / w + '%';
+      width = 'auto';
+    }
+    translateX = 0;
+  }
+  // right
+  else if (resizingConstraint & ResizingConstraint.RIGHT) {
+    right = w - translateX - width;
+    // right+width
+    if (resizingConstraint & ResizingConstraint.WIDTH) {
+      left = 'auto';
+    }
+    // 仅right，left是百分比忽略width
+    else {
+      left = (translateX * 100) / w + '%';
+      width = 'auto';
+    }
+    translateX = 0;
+  }
+  // 左右都不固定
+  else {
+    // 仅固定宽度，以中心点占left的百分比
+    if (resizingConstraint & ResizingConstraint.WIDTH) {
+      left = ((translateX + width * 0.5) * 100) / w + '%';
+      translateX = '-50%';
+    }
+    // 左右皆为百分比
+    else {
+      left = (translateX * 100) / w + '%';
+      right = ((w - translateX - width) * 100) / w + '%';
       translateX = 0;
-    }
-    // 左右都不固定
-    else {
-      // 仅固定宽度，以中心点占left的百分比
-      if (resizingConstraint & ResizingConstraint.WIDTH) {
-        left = ((translateX + width * 0.5) * 100) / w + '%';
-        translateX = '-50%';
-      }
-      // 左右皆为百分比
-      else {
-        left = (translateX * 100) / w + '%';
-        right = ((w - translateX - width) * 100) / w + '%';
-        translateX = 0;
-        width = 'auto';
-      }
-    }
-    // top
-    if (resizingConstraint & ResizingConstraint.TOP) {
-      top = translateY;
-      // top+bottom忽略height
-      if (resizingConstraint & ResizingConstraint.BOTTOM) {
-        bottom = h - translateY - height;
-        height = 'auto';
-      }
-      // top+height
-      else if (resizingConstraint & ResizingConstraint.HEIGHT) {
-        // 默认啥也不做
-      }
-      // 仅top，bottom是百分比忽略height
-      else {
-        bottom = ((h - translateY - height) * 100) / h + '%';
-        height = 'auto';
-      }
-      translateY = 0;
-    }
-    // bottom
-    else if (resizingConstraint & ResizingConstraint.BOTTOM) {
-      bottom = h - translateY - height;
-      // top+bottom忽略height
-      if (resizingConstraint & ResizingConstraint.TOP) {
-        top = translateY;
-        height = 'auto';
-      }
-      // bottom+height
-      else if (resizingConstraint & ResizingConstraint.HEIGHT) {
-        top = 'auto';
-      }
-      // 仅bottom，top是百分比忽略height
-      else {
-        top = (translateY * 100) / h + '%';
-        height = 'auto';
-      }
-      translateY = 0;
-    }
-    // 上下都不固定
-    else {
-      // 仅固定高度，以中心点占top的百分比
-      if (resizingConstraint & ResizingConstraint.HEIGHT) {
-        top = ((translateY + height * 0.5) * 100) / h + '%';
-        translateY = '-50%';
-      }
-      // 上下皆为百分比
-      else {
-        top = (translateY * 100) / h + '%';
-        bottom = ((h - translateY - height) * 100) / h + '%';
-        translateY = 0;
-        height = 'auto';
-      }
+      width = 'auto';
     }
   }
-  // 未设置则上下左右都是百分比
-  else {
-    left = (translateX * 100) / w + '%';
-    right = ((w - translateX - width) * 100) / w + '%';
-    translateX = 0;
-    width = 'auto';
-    top = (translateY * 100) / h + '%';
-    bottom = ((h - translateY - height) * 100) / h + '%';
+  // top
+  if (resizingConstraint & ResizingConstraint.TOP) {
+    top = translateY;
+    // top+bottom忽略height
+    if (resizingConstraint & ResizingConstraint.BOTTOM) {
+      bottom = h - translateY - height;
+      height = 'auto';
+    }
+    // top+height
+    else if (resizingConstraint & ResizingConstraint.HEIGHT) {
+      // 默认啥也不做
+    }
+    // 仅top，bottom是百分比忽略height
+    else {
+      bottom = ((h - translateY - height) * 100) / h + '%';
+      height = 'auto';
+    }
     translateY = 0;
-    height = 'auto';
+  }
+  // bottom
+  else if (resizingConstraint & ResizingConstraint.BOTTOM) {
+    bottom = h - translateY - height;
+    // bottom+height
+    if (resizingConstraint & ResizingConstraint.HEIGHT) {
+      top = 'auto';
+    }
+    // 仅bottom，top是百分比忽略height
+    else {
+      top = (translateY * 100) / h + '%';
+      height = 'auto';
+    }
+    translateY = 0;
+  }
+  // 上下都不固定
+  else {
+    // 仅固定高度，以中心点占top的百分比
+    if (resizingConstraint & ResizingConstraint.HEIGHT) {
+      top = ((translateY + height * 0.5) * 100) / h + '%';
+      translateY = '-50%';
+    }
+    // 上下皆为百分比
+    else {
+      top = (translateY * 100) / h + '%';
+      bottom = ((h - translateY - height) * 100) / h + '%';
+      translateY = 0;
+      height = 'auto';
+    }
   }
   // 遮罩转换
   let maskMode = 'none';

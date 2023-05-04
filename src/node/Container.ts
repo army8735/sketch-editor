@@ -118,50 +118,6 @@ class Container extends Node {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
-  appendSelf(node: Node, cb?: (sync: boolean) => void) {
-    const { root, parent } = this;
-    if (!parent) {
-      throw new Error('Can not appendSelf without parent');
-    }
-    node.parent = parent;
-    node.prev = this;
-    node.next = this.next;
-    this.next = node;
-    node.root = root;
-    const children = parent.children;
-    const i = children.indexOf(this);
-    children.splice(i + 1, 0, node);
-    if (parent.isDestroyed) {
-      cb && cb(true);
-      return;
-    }
-    node.didMount();
-    parent.insertStruct(node, i + 1);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
-  }
-
-  prependSelf(node: Node, cb?: (sync: boolean) => void) {
-    const { root, parent } = this;
-    if (!parent) {
-      throw new Error('Can not prependBefore without parent');
-    }
-    node.parent = parent;
-    node.prev = this.prev;
-    node.next = this;
-    this.prev = node;
-    node.root = root;
-    const children = parent.children;
-    const i = children.indexOf(this);
-    children.splice(i, 0, node);
-    if (parent.isDestroyed) {
-      cb && cb(true);
-      return;
-    }
-    node.didMount();
-    parent.insertStruct(node, i);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
-  }
-
   removeChild(node: Node, cb?: (sync: boolean) => void) {
     if (node.parent === this) {
       node.remove(cb);

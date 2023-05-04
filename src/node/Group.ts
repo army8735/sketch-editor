@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import Node from './Node';
 import Container from './Container';
 import { Props } from '../format';
@@ -5,6 +6,7 @@ import { calRectPoint } from '../math/matrix';
 import { StyleUnit } from '../style/define';
 import { calSize } from '../style/css';
 import { RefreshLevel } from '../refresh/level';
+import { Struct } from '../refresh/struct';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
@@ -314,6 +316,192 @@ class Group extends Container {
       }
     }
     return this.adjustPosAndSize();
+  }
+
+  unGroup() {
+    if (this.isDestroyed) {
+      throw new Error('Can not unGroup a destroyed Node');
+    }
+    const prev = this.prev;
+    const next = this.next;
+    const zoom = this.getZoom();
+    const parent = this.parent!;
+    const width = parent.width;
+    const height = parent.height;
+    const rect = parent.getBoundingClientRect();
+    const x = rect.left / zoom;
+    const y = rect.top / zoom;
+    const children = this.children.slice(0);
+    for (let i = 0, len = children.length; i < len; i++) {
+      const item = children[i];
+      checkGroup(x, y, width, height, zoom, item);
+      // 插入到group的原本位置，有prev/next优先使用定位
+      if (prev) {
+        prev.insertAfter(item);
+      } else if (next) {
+        next.insertBefore(item);
+      }
+      // 没有prev/next则parent原本只有一个节点
+      else {
+        parent.appendChild(item);
+      }
+    }
+    this.remove();
+  }
+
+  // 至少1个node进行编组，以第0个位置为基准
+  static group(nodes: Array<Node>, props?: Props) {
+    if (!nodes.length) {
+      return;
+    }
+    let structs: Array<Struct>;
+    // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
+    for (let i = 0, len = nodes.length; i < len; i++) {
+      const item = nodes[i];
+      if (item.isDestroyed) {
+        throw new Error('Can not group a destroyed Node');
+      }
+      if (!i) {
+        structs = item.root!.structs;
+      }
+      item.tempIndex = structs!.indexOf(item.struct);
+    }
+    nodes.sort((a, b) => {
+      return a.tempIndex - b.tempIndex;
+    });
+    const first = nodes[0];
+    const prev = first.prev;
+    const next = first.next;
+    const zoom = first.getZoom();
+    const parent = first.parent!;
+    const width = parent.width;
+    const height = parent.height;
+    const rect = parent.getBoundingClientRect();
+    const x = rect.left / zoom;
+    const y = rect.top / zoom;
+    for (let i = 0, len = nodes.length; i < len; i++) {
+      const item = nodes[i];
+      checkGroup(x, y, width, height, zoom, item);
+    }
+    const p = Object.assign({
+      uuid: uuid.v4(),
+      name: '编组',
+      style: {
+        left: '0%',
+        top: '0%',
+        right: '0%',
+        bottom: '0%',
+      },
+    }, props);
+    const group = new Group(p, nodes);
+    // 插入到first的原本位置，有prev/next优先使用定位
+    if (prev) {
+      prev.insertAfter(group);
+    } else if (next) {
+      next.insertBefore(group);
+    }
+    // 没有prev/next则parent原本只有一个节点
+    else {
+      parent.appendChild(group);
+    }
+    group.checkSizeChange();
+  }
+}
+
+function checkGroup(x: number, y: number, width: number, height: number, zoom: number, node: Node) {
+  const r = node.getBoundingClientRect();
+  const x1 = r.left / zoom;
+  const y1 = r.top / zoom;
+  node.remove();
+  const style = node.style;
+  // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
+  const leftConstraint = style.left.u === StyleUnit.PX;
+  const rightConstraint = style.right.u === StyleUnit.PX;
+  const topConstraint = style.top.u === StyleUnit.PX;
+  const bottomConstraint = style.bottom.u === StyleUnit.PX;
+  const widthConstraint = style.width.u === StyleUnit.PX;
+  const heightConstraint = style.height.u === StyleUnit.PX;
+  // left
+  if (leftConstraint) {
+    const left = x1 - x;
+    style.left.v = left;
+    // left+right忽略width
+    if (rightConstraint) {
+      style.right.v = width - left - node.width;
+    }
+    // left+width
+    else if (widthConstraint) {
+      // 默认right就是auto啥也不做
+    }
+    // 仅left，right是百分比忽略width
+    else {
+      style.right.v = (width - left - node.width) * 100 / width;
+    }
+  }
+  // right
+  else if (rightConstraint) {
+    // right+width
+    if (widthConstraint) {
+      // 默认left就是auto啥也不做
+    }
+    // 仅right，left是百分比忽略width
+    else {
+      style.left.v = (width - style.right.v - node.width) * 100 / width;
+    }
+  }
+  // 左右都不固定
+  else {
+    const left = x1 - x;
+    // 仅固定宽度，以中心点占left的百分比
+    if (widthConstraint) {
+      style.left.v = (left - style.width.v * 0.5) * 100 / width;
+    }
+    // 左右皆为百分比
+    else {
+      style.left.v = left * 100 / width;
+      style.right.v = (width - left - node.width) * 100 / width;
+    }
+  }
+  // top
+  if (topConstraint) {
+    const top = y1 - y;
+    style.top.v = top;
+    // top+bottom忽略height
+    if (bottomConstraint) {
+      style.bottom.v = height - top - node.height;
+    }
+    // top+height
+    else if (heightConstraint) {
+      // 默认bottom就是auto啥也不做
+    }
+    // 仅top，bottom是百分比忽略height
+    else {
+      style.bottom.v = (height - top - node.height) * 100 / height;
+    }
+  }
+  // bottom
+  else if (bottomConstraint) {
+    // bottom+height
+    if (heightConstraint) {
+      // 默认top就是auto啥也不做
+    }
+    // 仅bottom，top是百分比忽略height
+    else {
+      style.top.v = (height - style.bottom.v - node.height) * 100 / height;
+    }
+  }
+  // 上下都不固定
+  else {
+    const top = y1 - y;
+    // 仅固定宽度，以中心点占top的百分比
+    if (heightConstraint) {
+      style.top.v = (top - style.height.v * 0.5) * 100 / height;
+    }
+    // 左右皆为百分比
+    else {
+      style.top.v = top * 100 / height;
+      style.bottom.v = (height - top - node.height) * 100 / height;
+    }
   }
 }
 
