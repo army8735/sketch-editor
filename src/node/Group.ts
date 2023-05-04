@@ -270,6 +270,7 @@ class Group extends Container {
     // 记得重置
     child._rect = undefined;
     child._bbox = undefined;
+    child.tempBbox = undefined;
   }
 
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true

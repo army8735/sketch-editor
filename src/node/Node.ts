@@ -296,6 +296,7 @@ class Node extends Event {
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
     }
+    this.tempBbox = undefined;
   }
 
   calMatrix(lv: RefreshLevel): Float64Array {
@@ -488,6 +489,7 @@ class Node extends Event {
   clearCacheUpward(includeSelf = false) {
     let parent = this.parent;
     while (parent) {
+      parent.tempBbox = undefined;
       parent.clearCache(includeSelf);
       parent = parent.parent;
     }

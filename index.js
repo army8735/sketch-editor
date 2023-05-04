@@ -20217,6 +20217,7 @@
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
             }
+            this.tempBbox = undefined;
         }
         calMatrix(lv) {
             const { style, computedStyle, matrix, transform } = this;
@@ -20396,6 +20397,7 @@
         clearCacheUpward(includeSelf = false) {
             let parent = this.parent;
             while (parent) {
+                parent.tempBbox = undefined;
                 parent.clearCache(includeSelf);
                 parent = parent.parent;
             }
@@ -21964,6 +21966,7 @@
             // 记得重置
             child._rect = undefined;
             child._bbox = undefined;
+            child.tempBbox = undefined;
         }
         // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
         adjustPosAndSize() {
@@ -27202,6 +27205,7 @@ void main() {
                     if (lv & RefreshLevel.BREAK_MASK) {
                         computedStyle.breakMask = style.breakMask.v;
                     }
+                    node.clearCacheUpward(false);
                 }
             }
             // 检查mask影响，这里是作为被遮罩对象存在的关系检查

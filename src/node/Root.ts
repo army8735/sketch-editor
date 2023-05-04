@@ -306,6 +306,7 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
         }
+        node.clearCacheUpward(false);
       }
     }
     // 检查mask影响，这里是作为被遮罩对象存在的关系检查
