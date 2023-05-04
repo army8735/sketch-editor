@@ -891,8 +891,9 @@ class Node extends Event {
       return this._opacity;
     }
     // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
-    let cache = this.hasCacheOp;
+    /* eslint-disable */
     let node: Node = this,
+      cache = this.hasCacheOp,
       parent = node.parent,
       index = -1;
     const pList: Array<Container> = [];
@@ -951,8 +952,9 @@ class Node extends Event {
       return m;
     }
     // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
-    let cache = this.hasCacheMw;
+    /* eslint-disable */
     let node: Node = this,
+      cache = this.hasCacheOp,
       parent = node.parent,
       index = -1;
     const pList: Array<Container> = [];

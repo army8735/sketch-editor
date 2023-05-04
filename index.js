@@ -20772,8 +20772,8 @@
                 return this._opacity;
             }
             // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
-            let cache = this.hasCacheOp;
-            let node = this, parent = node.parent, index = -1;
+            /* eslint-disable */
+            let node = this, cache = this.hasCacheOp, parent = node.parent, index = -1;
             const pList = [];
             while (parent) {
                 pList.push(parent);
@@ -20832,8 +20832,8 @@
                 return m;
             }
             // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
-            let cache = this.hasCacheMw;
-            let node = this, parent = node.parent, index = -1;
+            /* eslint-disable */
+            let node = this, cache = this.hasCacheOp, parent = node.parent, index = -1;
             const pList = [];
             while (parent) {
                 pList.push(parent);
