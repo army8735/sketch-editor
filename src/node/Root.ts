@@ -229,7 +229,12 @@ class Root extends Container implements FrameCallback {
       }
     }
     if (removeDom) {
-      this.emit(Event.WILL_REMOVE_DOM, node);
+      if (node instanceof Page) {
+        this.emit(Event.WILL_REMOVE_PAGE, node);
+      }
+      else {
+        this.emit(Event.WILL_REMOVE_DOM, node);
+      }
     }
     const res = this.calUpdate(node, lv, addDom, removeDom);
     // 非动画走这
@@ -242,7 +247,7 @@ class Root extends Container implements FrameCallback {
     if (this.lastPage && node.page) {
       if (addDom) {
         if (node instanceof Page) {
-          this.emit(Event.ADD_NEW_PAGE, node);
+          this.emit(Event.DID_ADD_PAGE, node);
         } else {
           this.emit(Event.DID_ADD_DOM, node);
         }

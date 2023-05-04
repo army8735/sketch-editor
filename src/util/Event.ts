@@ -110,7 +110,8 @@ class Event {
   static WILL_REMOVE_DOM = 'willRemoveDom';
   static PAGE_CHANGED = 'pageChanged';
   static VISIBLE_CHANGED = 'visibleChanged';
-  static ADD_NEW_PAGE = 'addNewPage';
+  static DID_ADD_PAGE = 'didAddPage';
+  static WILL_REMOVE_PAGE = 'willRemovePage';
 }
 
 export default Event;
