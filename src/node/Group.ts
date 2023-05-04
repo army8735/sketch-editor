@@ -1,12 +1,12 @@
 import * as uuid from 'uuid';
-import Node from './Node';
-import Container from './Container';
 import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
-import { StyleUnit } from '../style/define';
-import { calSize } from '../style/css';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
+import { calSize } from '../style/css';
+import { StyleUnit } from '../style/define';
+import Container from './Container';
+import Node from './Node';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
@@ -25,33 +25,34 @@ class Group extends Container {
       const left = calSize(formatStyle.left, parent.width);
       const w = parent.width - computedStyle.right - left;
       if (w < this.minWidth) {
-        if (formatStyle.left.u === StyleUnit.PX) {}
-        else if (formatStyle.left.u === StyleUnit.PERCENT) {
-          const max = (parent.width - computedStyle.right - this.minWidth) * 100 / parent.width;
+        if (formatStyle.left.u === StyleUnit.PX) {
+        } else if (formatStyle.left.u === StyleUnit.PERCENT) {
+          const max =
+            ((parent.width - computedStyle.right - this.minWidth) * 100) /
+            parent.width;
           // 限制导致的无效更新去除
           if (formatStyle.left.v === max) {
             let i = keys.indexOf('left');
             keys.splice(i, 1);
-          }
-          else {
+          } else {
             formatStyle.left.v = this.style.left.v = max;
           }
         }
       }
-    }
-    else if (style.hasOwnProperty('right')) {
+    } else if (style.hasOwnProperty('right')) {
       const right = calSize(formatStyle.right, parent.width);
       const w = parent.width - computedStyle.left - right;
       if (w < this.minWidth) {
-        if (formatStyle.right.u === StyleUnit.PX) {}
-        else if (formatStyle.right.u === StyleUnit.PERCENT) {
-          const max = (parent.width - computedStyle.left - this.minWidth) * 100 / parent.width;
+        if (formatStyle.right.u === StyleUnit.PX) {
+        } else if (formatStyle.right.u === StyleUnit.PERCENT) {
+          const max =
+            ((parent.width - computedStyle.left - this.minWidth) * 100) /
+            parent.width;
           // 限制导致的无效更新去除
           if (formatStyle.right.v === max) {
             let i = keys.indexOf('right');
             keys.splice(i, 1);
-          }
-          else {
+          } else {
             formatStyle.right.v = this.style.right.v = max;
           }
         }
@@ -62,33 +63,33 @@ class Group extends Container {
       const h = parent.height - computedStyle.bottom - top;
       if (h < this.minHeight) {
         if (formatStyle.top.u === StyleUnit.PX) {
-        }
-        else if (formatStyle.top.u === StyleUnit.PERCENT) {
-          const max = (parent.height - computedStyle.bottom - this.minHeight) * 100 / parent.height;
+        } else if (formatStyle.top.u === StyleUnit.PERCENT) {
+          const max =
+            ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
+            parent.height;
           // 限制导致的无效更新去除
           if (formatStyle.top.v === max) {
             let i = keys.indexOf('top');
             keys.splice(i, 1);
-          }
-          else {
+          } else {
             formatStyle.top.v = this.style.top.v = max;
           }
         }
       }
-    }
-    else if (style.hasOwnProperty('bottom')) {
+    } else if (style.hasOwnProperty('bottom')) {
       const bottom = calSize(formatStyle.bottom, parent.height);
       const h = parent.height - computedStyle.top - bottom;
       if (h < this.minHeight) {
-        if (formatStyle.bottom.u === StyleUnit.PX) {}
-        else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
-          const max = (parent.height - computedStyle.top - this.minHeight) * 100 / parent.height;
+        if (formatStyle.bottom.u === StyleUnit.PX) {
+        } else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
+          const max =
+            ((parent.height - computedStyle.top - this.minHeight) * 100) /
+            parent.height;
           // 限制导致的无效更新去除
           if (formatStyle.bottom.v === max) {
             let i = keys.indexOf('bottom');
             keys.splice(i, 1);
-          }
-          else {
+          } else {
             formatStyle.bottom.v = this.style.bottom.v = max;
           }
         }
@@ -105,12 +106,13 @@ class Group extends Container {
   // 获取单个孩子相对于本父元素的盒子尺寸
   private getChildRect(child: Node) {
     const { width, height, matrix } = child;
-    let {
-      x1, y1,
-      x2, y2,
-      x3, y3,
-      x4, y4,
-    } = calRectPoint(0, 0, width, height, matrix);
+    let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(
+      0,
+      0,
+      width,
+      height,
+      matrix,
+    );
     return {
       minX: Math.min(x1, x2, x3, x4),
       minY: Math.min(y1, y2, y3, y4),
@@ -148,58 +150,48 @@ class Group extends Container {
       return;
     }
     const { width: pw, height: ph } = parent;
-    const {
-      top,
-      right,
-      bottom,
-      left,
-      width,
-      height,
-      translateX,
-      translateY,
-    } = style;
+    const { top, right, bottom, left, width, height, translateX, translateY } =
+      style;
     // 水平调整统一处理，固定此时无效
     if (dx) {
       if (left.u === StyleUnit.PX) {
         left.v += dx;
-      }
-      else if (left.u === StyleUnit.PERCENT) {
-        left.v += dx * 100 / pw;
+      } else if (left.u === StyleUnit.PERCENT) {
+        left.v += (dx * 100) / pw;
       }
       computedStyle.left += dx;
     }
     if (dw) {
       if (right.u === StyleUnit.PX) {
         right.v -= dw;
-      }
-      else if (right.u === StyleUnit.PERCENT) {
-        right.v -= dw * 100 / pw;
+      } else if (right.u === StyleUnit.PERCENT) {
+        right.v -= (dw * 100) / pw;
       }
       computedStyle.right -= dw;
     }
-    this.width = computedStyle.width = parent.width - computedStyle.left - computedStyle.right;
+    this.width = computedStyle.width =
+      parent.width - computedStyle.left - computedStyle.right;
     // translateX调整根据是否固定尺寸，不会有%尺寸目前
     this.resetTranslateX(left, width, translateX);
     // 垂直和水平一样
     if (dy) {
       if (top.u === StyleUnit.PX) {
         top.v += dy;
-      }
-      else if (top.u === StyleUnit.PERCENT) {
-        top.v += dy * 100 / ph;
+      } else if (top.u === StyleUnit.PERCENT) {
+        top.v += (dy * 100) / ph;
       }
       computedStyle.top += dy;
     }
     if (dh) {
       if (bottom.u === StyleUnit.PX) {
         bottom.v -= dh;
-      }
-      else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v -= dh * 100 / ph;
+      } else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v -= (dh * 100) / ph;
       }
       computedStyle.bottom -= dh;
     }
-    this.height = computedStyle.height = parent.height - computedStyle.top - computedStyle.bottom;
+    this.height = computedStyle.height =
+      parent.height - computedStyle.top - computedStyle.bottom;
     this.resetTranslateY(top, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     this.refreshLevel |= RefreshLevel.TRANSFORM;
@@ -212,21 +204,21 @@ class Group extends Container {
   }
 
   // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
-  private adjustPosAndSizeChild(child: Node, dx: number, dy: number, dw: number, dh: number, gw: number, gh: number) {
+  private adjustPosAndSizeChild(
+    child: Node,
+    dx: number,
+    dy: number,
+    dw: number,
+    dh: number,
+    gw: number,
+    gh: number,
+  ) {
     const { style, computedStyle, root } = child;
     if (!root) {
       return;
     }
-    const {
-      top,
-      right,
-      bottom,
-      left,
-      width,
-      height,
-      translateX,
-      translateY,
-    } = style;
+    const { top, right, bottom, left, width, height, translateX, translateY } =
+      style;
     // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
     // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
     // 2个只要有发生，都会影响左右，因为干扰尺寸
@@ -234,16 +226,14 @@ class Group extends Container {
       computedStyle.left -= dx;
       if (left.u === StyleUnit.PX) {
         left.v = computedStyle.left;
-      }
-      else if (left.u === StyleUnit.PERCENT) {
-        left.v = computedStyle.left * 100 / gw;
+      } else if (left.u === StyleUnit.PERCENT) {
+        left.v = (computedStyle.left * 100) / gw;
       }
       computedStyle.right += dw;
       if (right.u === StyleUnit.PX) {
         right.v = computedStyle.right;
-      }
-      else if (right.u === StyleUnit.PERCENT) {
-        right.v = computedStyle.right * 100 / gw;
+      } else if (right.u === StyleUnit.PERCENT) {
+        right.v = (computedStyle.right * 100) / gw;
       }
     }
     this.resetTranslateX(left, width, translateX);
@@ -252,16 +242,14 @@ class Group extends Container {
       computedStyle.top -= dy;
       if (top.u === StyleUnit.PX) {
         top.v = computedStyle.top;
-      }
-      else if (top.u === StyleUnit.PERCENT) {
-        top.v = computedStyle.top * 100 / gh;
+      } else if (top.u === StyleUnit.PERCENT) {
+        top.v = (computedStyle.top * 100) / gh;
       }
       computedStyle.bottom += dh;
       if (bottom.u === StyleUnit.PX) {
         bottom.v = computedStyle.bottom;
-      }
-      else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = computedStyle.bottom * 100 / gh;
+      } else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v = (computedStyle.bottom * 100) / gh;
       }
     }
     this.resetTranslateY(top, height, translateY);
@@ -279,8 +267,10 @@ class Group extends Container {
   override adjustPosAndSize() {
     const { children, width: gw, height: gh } = this;
     const rect = this.getChildrenRect();
-    const dx = rect.minX, dy = rect.minY,
-      dw = rect.maxX - gw, dh = rect.maxY - gh;
+    const dx = rect.minX,
+      dy = rect.minY,
+      dw = rect.maxX - gw,
+      dh = rect.maxY - gh;
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (dx || dy || dw || dh) {
       // 先调整自己，之后尺寸更新用新wh
@@ -383,16 +373,19 @@ class Group extends Container {
       const item = nodes[i];
       checkGroup(x, y, width, height, zoom, item);
     }
-    const p = Object.assign({
-      uuid: uuid.v4(),
-      name: '编组',
-      style: {
-        left: '0%',
-        top: '0%',
-        right: '0%',
-        bottom: '0%',
+    const p = Object.assign(
+      {
+        uuid: uuid.v4(),
+        name: '编组',
+        style: {
+          left: '0%',
+          top: '0%',
+          right: '0%',
+          bottom: '0%',
+        },
       },
-    }, props);
+      props,
+    );
     const group = new Group(p, nodes);
     // 插入到first的原本位置，有prev/next优先使用定位
     if (prev) {
@@ -408,7 +401,14 @@ class Group extends Container {
   }
 }
 
-function checkGroup(x: number, y: number, width: number, height: number, zoom: number, node: Node) {
+function checkGroup(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  zoom: number,
+  node: Node,
+) {
   const r = node.getBoundingClientRect();
   const x1 = r.left / zoom;
   const y1 = r.top / zoom;
@@ -435,7 +435,7 @@ function checkGroup(x: number, y: number, width: number, height: number, zoom: n
     }
     // 仅left，right是百分比忽略width
     else {
-      style.right.v = (width - left - node.width) * 100 / width;
+      style.right.v = ((width - left - node.width) * 100) / width;
     }
   }
   // right
@@ -446,7 +446,7 @@ function checkGroup(x: number, y: number, width: number, height: number, zoom: n
     }
     // 仅right，left是百分比忽略width
     else {
-      style.left.v = (width - style.right.v - node.width) * 100 / width;
+      style.left.v = ((width - style.right.v - node.width) * 100) / width;
     }
   }
   // 左右都不固定
@@ -454,12 +454,12 @@ function checkGroup(x: number, y: number, width: number, height: number, zoom: n
     const left = x1 - x;
     // 仅固定宽度，以中心点占left的百分比
     if (widthConstraint) {
-      style.left.v = (left - style.width.v * 0.5) * 100 / width;
+      style.left.v = ((left - style.width.v * 0.5) * 100) / width;
     }
     // 左右皆为百分比
     else {
-      style.left.v = left * 100 / width;
-      style.right.v = (width - left - node.width) * 100 / width;
+      style.left.v = (left * 100) / width;
+      style.right.v = ((width - left - node.width) * 100) / width;
     }
   }
   // top
@@ -476,7 +476,7 @@ function checkGroup(x: number, y: number, width: number, height: number, zoom: n
     }
     // 仅top，bottom是百分比忽略height
     else {
-      style.bottom.v = (height - top - node.height) * 100 / height;
+      style.bottom.v = ((height - top - node.height) * 100) / height;
     }
   }
   // bottom
@@ -487,7 +487,7 @@ function checkGroup(x: number, y: number, width: number, height: number, zoom: n
     }
     // 仅bottom，top是百分比忽略height
     else {
-      style.top.v = (height - style.bottom.v - node.height) * 100 / height;
+      style.top.v = ((height - style.bottom.v - node.height) * 100) / height;
     }
   }
   // 上下都不固定
@@ -495,12 +495,12 @@ function checkGroup(x: number, y: number, width: number, height: number, zoom: n
     const top = y1 - y;
     // 仅固定宽度，以中心点占top的百分比
     if (heightConstraint) {
-      style.top.v = (top - style.height.v * 0.5) * 100 / height;
+      style.top.v = ((top - style.height.v * 0.5) * 100) / height;
     }
     // 左右皆为百分比
     else {
-      style.top.v = top * 100 / height;
-      style.bottom.v = (height - top - node.height) * 100 / height;
+      style.top.v = (top * 100) / height;
+      style.bottom.v = ((height - top - node.height) * 100) / height;
     }
   }
 }
