@@ -90,7 +90,9 @@ $input.onchange = function(e) {
         pageHash[curPage.props.uuid].classList.add('current');
         $tree.innerHTML = '';
         const ol = document.createElement('ol');
-        abHash = {};
+        abHash = {
+          [curPage.props.uuid]: $tree,
+        };
         const children = curPage.children;
         for(let i = children.length - 1; i >= 0; i--) {
           ol.appendChild(genNodeTree(children[i], abHash));
@@ -120,7 +122,7 @@ $input.onchange = function(e) {
           ol.appendChild(li);
         }
         else {
-          ol.insertBefore(li, ol.children[i]);
+          ol.insertBefore(li, ol.children[ol.children.length - i]);
         }
       });
 

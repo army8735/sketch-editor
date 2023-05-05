@@ -321,6 +321,15 @@ async function convertItem(
     }
   }
   const breakMask = layer.shouldBreakMaskChain;
+  // 模糊
+  let blur: string | undefined;
+  if (layer.style?.blur?.isEnabled) {
+    const b = layer.style.blur;
+    const type = b.type;
+    if (type === SketchFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
+      blur = `gauss(${b.radius}px)`;
+    }
+  }
   const isLocked = layer.isLocked;
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
@@ -351,6 +360,7 @@ async function convertItem(
           rotateZ,
           maskMode,
           breakMask,
+          blur,
         },
         isLocked,
         isExpanded,
@@ -386,6 +396,7 @@ async function convertItem(
           rotateZ,
           maskMode,
           breakMask,
+          blur,
         },
         isLocked,
         isExpanded,
@@ -500,6 +511,7 @@ async function convertItem(
           lineHeight,
           maskMode,
           breakMask,
+          blur,
         },
         isLocked,
         isExpanded,
@@ -581,6 +593,7 @@ async function convertItem(
             'none',
           maskMode,
           breakMask,
+          blur,
         },
         isLocked,
         isExpanded,
@@ -639,6 +652,7 @@ async function convertItem(
             'none',
           maskMode,
           breakMask,
+          blur,
         },
         isLocked,
         isExpanded,

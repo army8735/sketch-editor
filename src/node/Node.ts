@@ -192,14 +192,14 @@ class Node extends Event {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
       } else {
-        this.width = 0.5;
+        this.width = 0;
       }
       computedStyle.right = data.w - computedStyle.left - this.width;
     } else if (fixedRight) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
       } else {
-        this.width = 0.5;
+        this.width = 0;
       }
       computedStyle.left = data.w - computedStyle.right - this.width;
     }
@@ -210,14 +210,14 @@ class Node extends Event {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
       } else {
-        this.height = 0.5;
+        this.height = 0;
       }
       computedStyle.bottom = data.h - computedStyle.top - this.height;
     } else if (fixedBottom) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
       } else {
-        this.height = 0.5;
+        this.height = 0;
       }
       computedStyle.top = data.w - computedStyle.bottom - this.height;
     }

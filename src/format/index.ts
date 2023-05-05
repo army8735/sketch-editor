@@ -122,6 +122,7 @@ export type JStyle = {
   pointerEvents: boolean;
   maskMode: 'none' | 'outline' | 'alpha';
   breakMask: boolean;
+  blur: string;
 };
 
 export function getDefaultStyle(v?: any): JStyle {
@@ -167,6 +168,7 @@ export function getDefaultStyle(v?: any): JStyle {
       pointerEvents: true,
       maskMode: 'none',
       breakMask: false,
+      blur: 'none',
     },
     v,
   );

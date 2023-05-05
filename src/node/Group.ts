@@ -454,7 +454,7 @@ function checkGroup(
     const left = x1 - x;
     // 仅固定宽度，以中心点占left的百分比
     if (widthConstraint) {
-      style.left.v = ((left - style.width.v * 0.5) * 100) / width;
+      style.left.v = ((left + style.width.v * 0.5) * 100) / width;
     }
     // 左右皆为百分比
     else {
@@ -495,7 +495,7 @@ function checkGroup(
     const top = y1 - y;
     // 仅固定宽度，以中心点占top的百分比
     if (heightConstraint) {
-      style.top.v = ((top - style.height.v * 0.5) * 100) / height;
+      style.top.v = ((top + style.height.v * 0.5) * 100) / height;
     }
     // 左右皆为百分比
     else {

@@ -8,29 +8,28 @@ export enum StyleUnit {
   BOOLEAN = 6,
   STRING = 7,
   GRADIENT = 8,
+  BLUR = 9,
 }
 
 export function calUnit(v: string | number): StyleNumValue {
-  if(v === 'auto') {
+  if (v === 'auto') {
     return {
       v: 0,
       u: StyleUnit.AUTO,
     };
   }
   let n = parseFloat(v as string) || 0;
-  if(/%$/.test(v as string)) {
+  if (/%$/.test(v as string)) {
     return {
       v: n,
       u: StyleUnit.PERCENT,
     };
-  }
-  else if(/px$/i.test(v as string)) {
+  } else if (/px$/i.test(v as string)) {
     return {
       v: n,
       u: StyleUnit.PX,
     };
-  }
-  else if(/deg$/i.test(v as string)) {
+  } else if (/deg$/i.test(v as string)) {
     return {
       v: n,
       u: StyleUnit.DEG,
@@ -43,177 +42,197 @@ export function calUnit(v: string | number): StyleNumValue {
 }
 
 export type StyleStrValue = {
-  v: string,
-  u: StyleUnit.STRING,
+  v: string;
+  u: StyleUnit.STRING;
 };
 
 export type StyleNumValue = {
-  v: number,
-  u: StyleUnit.AUTO | StyleUnit.PX | StyleUnit.PERCENT | StyleUnit.NUMBER | StyleUnit.DEG,
+  v: number;
+  u:
+    | StyleUnit.AUTO
+    | StyleUnit.PX
+    | StyleUnit.PERCENT
+    | StyleUnit.NUMBER
+    | StyleUnit.DEG;
 };
 
 export type StyleBoolValue = {
-  v: boolean,
-  u: StyleUnit.BOOLEAN,
+  v: boolean;
+  u: StyleUnit.BOOLEAN;
 };
 
 export type StyleColorValue = {
-  v: Array<number>,
-  u: StyleUnit.RGBA,
+  v: Array<number>;
+  u: StyleUnit.RGBA;
 };
 
 export type StyleFontStyleValue = {
-  v: FONT_STYLE,
-  u: StyleUnit.STRING,
+  v: FONT_STYLE;
+  u: StyleUnit.STRING;
 };
 
 export type StyleOverflowValue = {
-  v: OVERFLOW,
-  u: StyleUnit.NUMBER,
+  v: OVERFLOW;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleBooleanOperationValue = {
-  v: BOOLEAN_OPERATION,
-  u: StyleUnit.NUMBER,
+  v: BOOLEAN_OPERATION;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleMbmValue = {
-  v: MIX_BLEND_MODE,
-  u: StyleUnit.NUMBER,
+  v: MIX_BLEND_MODE;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleTaValue = {
-  v: TEXT_ALIGN,
-  u: StyleUnit.NUMBER,
+  v: TEXT_ALIGN;
+  u: StyleUnit.NUMBER;
 };
 
 export type ColorStop = {
-  color: StyleColorValue,
-  offset?: StyleNumValue,
+  color: StyleColorValue;
+  offset?: StyleNumValue;
 };
 
 export type Gradient = {
-  t: GRADIENT,
-  d: Array<number>,
-  stops: Array<ColorStop>,
+  t: GRADIENT;
+  d: Array<number>;
+  stops: Array<ColorStop>;
 };
 
 export type StyleGradientValue = {
-  v: Gradient,
-  u: StyleUnit.GRADIENT,
+  v: Gradient;
+  u: StyleUnit.GRADIENT;
 };
 
 export type StyleFillRuleValue = {
-  v: FILL_RULE,
-  u: StyleUnit.NUMBER,
+  v: FILL_RULE;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleMaskValue = {
-  v: MASK,
-  u: StyleUnit.NUMBER,
+  v: MASK;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleStrokeLinecapValue = {
-  v: STROKE_LINE_CAP,
-  u: StyleUnit.NUMBER,
+  v: STROKE_LINE_CAP;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleStrokeLinejoinValue = {
-  v: STROKE_LINE_JOIN,
-  u: StyleUnit.NUMBER,
+  v: STROKE_LINE_JOIN;
+  u: StyleUnit.NUMBER;
 };
 
 export type StyleStrokePositionValue = {
-  v: STROKE_POSITION,
-  u: StyleUnit.NUMBER,
+  v: STROKE_POSITION;
+  u: StyleUnit.NUMBER;
+};
+
+export type Blur = {
+  t: BLUR;
+  center?: [number, number];
+  saturation?: number;
+  angle?: number;
+  radius?: number;
+};
+
+export type StyleBlurValue = {
+  v: Blur;
+  u: StyleUnit.BLUR;
 };
 
 export type Style = {
-  top: StyleNumValue,
-  right: StyleNumValue,
-  bottom: StyleNumValue,
-  left: StyleNumValue,
-  width: StyleNumValue,
-  height: StyleNumValue,
-  lineHeight: StyleNumValue,
-  fontFamily: StyleStrValue,
-  fontSize: StyleNumValue,
-  fontWeight: StyleNumValue,
-  fontStyle: StyleFontStyleValue,
-  visible: StyleBoolValue,
-  overflow: StyleOverflowValue,
-  backgroundColor: StyleColorValue,
-  color: StyleColorValue,
-  opacity: StyleNumValue,
-  fill: Array<StyleColorValue | StyleGradientValue>,
-  fillEnable: Array<StyleBoolValue>,
-  fillRule: StyleFillRuleValue,
-  stroke: Array<StyleColorValue | StyleGradientValue>,
-  strokeEnable: Array<StyleBoolValue>,
-  strokeWidth: Array<StyleNumValue>,
-  strokePosition: Array<StyleStrokePositionValue>,
-  strokeDasharray: Array<StyleNumValue>,
-  strokeLinecap: StyleStrokeLinecapValue,
-  strokeLinejoin: StyleStrokeLinejoinValue,
-  strokeMiterlimit: StyleNumValue,
-  letterSpacing: StyleNumValue,
-  textAlign: StyleTaValue,
-  translateX: StyleNumValue,
-  translateY: StyleNumValue,
-  scaleX: StyleNumValue,
-  scaleY: StyleNumValue,
-  rotateZ: StyleNumValue,
-  transformOrigin: [StyleNumValue, StyleNumValue],
-  booleanOperation: StyleBooleanOperationValue,
-  mixBlendMode: StyleMbmValue,
-  pointerEvents: StyleBoolValue,
-  maskMode: StyleMaskValue,
-  breakMask: StyleBoolValue,
+  top: StyleNumValue;
+  right: StyleNumValue;
+  bottom: StyleNumValue;
+  left: StyleNumValue;
+  width: StyleNumValue;
+  height: StyleNumValue;
+  lineHeight: StyleNumValue;
+  fontFamily: StyleStrValue;
+  fontSize: StyleNumValue;
+  fontWeight: StyleNumValue;
+  fontStyle: StyleFontStyleValue;
+  visible: StyleBoolValue;
+  overflow: StyleOverflowValue;
+  backgroundColor: StyleColorValue;
+  color: StyleColorValue;
+  opacity: StyleNumValue;
+  fill: Array<StyleColorValue | StyleGradientValue>;
+  fillEnable: Array<StyleBoolValue>;
+  fillRule: StyleFillRuleValue;
+  stroke: Array<StyleColorValue | StyleGradientValue>;
+  strokeEnable: Array<StyleBoolValue>;
+  strokeWidth: Array<StyleNumValue>;
+  strokePosition: Array<StyleStrokePositionValue>;
+  strokeDasharray: Array<StyleNumValue>;
+  strokeLinecap: StyleStrokeLinecapValue;
+  strokeLinejoin: StyleStrokeLinejoinValue;
+  strokeMiterlimit: StyleNumValue;
+  letterSpacing: StyleNumValue;
+  textAlign: StyleTaValue;
+  translateX: StyleNumValue;
+  translateY: StyleNumValue;
+  scaleX: StyleNumValue;
+  scaleY: StyleNumValue;
+  rotateZ: StyleNumValue;
+  transformOrigin: [StyleNumValue, StyleNumValue];
+  booleanOperation: StyleBooleanOperationValue;
+  mixBlendMode: StyleMbmValue;
+  pointerEvents: StyleBoolValue;
+  maskMode: StyleMaskValue;
+  breakMask: StyleBoolValue;
+  blur: StyleBlurValue;
 };
 
 export type ComputedStyle = {
-  top: number,
-  right: number,
-  bottom: number,
-  left: number,
-  width: number,
-  height: number,
-  minWidth: number,
-  minHeight: number,
-  lineHeight: number,
-  fontFamily: string,
-  fontSize: number,
-  fontWeight: number,
-  fontStyle: FONT_STYLE,
-  visible: boolean,
-  overflow: OVERFLOW,
-  backgroundColor: Array<number>,
-  color: Array<number>,
-  opacity: number,
-  fill: Array<Array<number> | Gradient>,
-  fillEnable: Array<boolean>,
-  fillRule: FILL_RULE,
-  stroke: Array<Array<number> | Gradient>,
-  strokeEnable: Array<boolean>,
-  strokeWidth: Array<number>,
-  strokePosition: Array<STROKE_POSITION>,
-  strokeDasharray: Array<number>,
-  strokeLinecap: STROKE_LINE_CAP,
-  strokeLinejoin: STROKE_LINE_JOIN,
-  strokeMiterlimit: number,
-  letterSpacing: number,
-  textAlign: TEXT_ALIGN,
-  translateX: number,
-  translateY: number,
-  scaleX: number,
-  scaleY: number,
-  rotateZ: number,
-  transformOrigin: Array<number>,
-  booleanOperation: BOOLEAN_OPERATION,
-  mixBlendMode: MIX_BLEND_MODE,
-  pointerEvents: boolean,
-  maskMode: MASK,
-  breakMask: boolean,
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
+  minWidth: number;
+  minHeight: number;
+  lineHeight: number;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: number;
+  fontStyle: FONT_STYLE;
+  visible: boolean;
+  overflow: OVERFLOW;
+  backgroundColor: Array<number>;
+  color: Array<number>;
+  opacity: number;
+  fill: Array<Array<number> | Gradient>;
+  fillEnable: Array<boolean>;
+  fillRule: FILL_RULE;
+  stroke: Array<Array<number> | Gradient>;
+  strokeEnable: Array<boolean>;
+  strokeWidth: Array<number>;
+  strokePosition: Array<STROKE_POSITION>;
+  strokeDasharray: Array<number>;
+  strokeLinecap: STROKE_LINE_CAP;
+  strokeLinejoin: STROKE_LINE_JOIN;
+  strokeMiterlimit: number;
+  letterSpacing: number;
+  textAlign: TEXT_ALIGN;
+  translateX: number;
+  translateY: number;
+  scaleX: number;
+  scaleY: number;
+  rotateZ: number;
+  transformOrigin: Array<number>;
+  booleanOperation: BOOLEAN_OPERATION;
+  mixBlendMode: MIX_BLEND_MODE;
+  pointerEvents: boolean;
+  maskMode: MASK;
+  breakMask: boolean;
+  blur: Blur;
 };
 
 export enum TEXT_ALIGN {
@@ -265,6 +284,14 @@ export enum GRADIENT {
   CONIC = 2,
 }
 
+export enum BLUR {
+  NONE = 0,
+  GAUSSIAN = 1,
+  MOTION = 2,
+  ZOOM = 3,
+  BACKGROUND = 4,
+}
+
 export enum BOOLEAN_OPERATION {
   NONE = 0,
   UNION = 1,
@@ -287,9 +314,9 @@ export enum FILL_RULE {
 }
 
 export enum MASK {
-  NONE =    0,
+  NONE = 0,
   OUTLINE = 1,
-  ALPHA =   2,
+  ALPHA = 2,
 }
 
 export enum STROKE_LINE_CAP {

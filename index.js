@@ -52,6 +52,7 @@
             pointerEvents: true,
             maskMode: 'none',
             breakMask: false,
+            blur: 'none',
         }, v);
     }
     var TagName;
@@ -15361,6 +15362,7 @@
         StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
         StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
         StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
+        StyleUnit[StyleUnit["BLUR"] = 9] = "BLUR";
     })(StyleUnit || (StyleUnit = {}));
     function calUnit(v) {
         if (v === 'auto') {
@@ -15442,6 +15444,14 @@
         GRADIENT[GRADIENT["RADIAL"] = 1] = "RADIAL";
         GRADIENT[GRADIENT["CONIC"] = 2] = "CONIC";
     })(GRADIENT || (GRADIENT = {}));
+    var BLUR;
+    (function (BLUR) {
+        BLUR[BLUR["NONE"] = 0] = "NONE";
+        BLUR[BLUR["GAUSSIAN"] = 1] = "GAUSSIAN";
+        BLUR[BLUR["MOTION"] = 2] = "MOTION";
+        BLUR[BLUR["ZOOM"] = 3] = "ZOOM";
+        BLUR[BLUR["BACKGROUND"] = 4] = "BACKGROUND";
+    })(BLUR || (BLUR = {}));
     var BOOLEAN_OPERATION;
     (function (BOOLEAN_OPERATION) {
         BOOLEAN_OPERATION[BOOLEAN_OPERATION["NONE"] = 0] = "NONE";
@@ -17071,7 +17081,7 @@
         });
     }
     function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
@@ -17227,6 +17237,15 @@
                 }
             }
             const breakMask = layer.shouldBreakMaskChain;
+            // 模糊
+            let blur;
+            if ((_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.blur) === null || _d === void 0 ? void 0 : _d.isEnabled) {
+                const b = layer.style.blur;
+                const type = b.type;
+                if (type === FileFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
+                    blur = `gauss(${b.radius}px)`;
+                }
+            }
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             if (layer._class === FileFormat.ClassValue.Group) {
@@ -17254,6 +17273,7 @@
                             rotateZ,
                             maskMode,
                             breakMask,
+                            blur,
                         },
                         isLocked,
                         isExpanded,
@@ -17290,6 +17310,7 @@
                             rotateZ,
                             maskMode,
                             breakMask,
+                            blur,
                         },
                         isLocked,
                         isExpanded,
@@ -17336,19 +17357,19 @@
                         return res;
                     })
                     : undefined;
-                const MSAttributedStringFontAttribute = (_f = (_e = (_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.textStyle) === null || _d === void 0 ? void 0 : _d.encodedAttributes) === null || _e === void 0 ? void 0 : _e.MSAttributedStringFontAttribute) === null || _f === void 0 ? void 0 : _f.attributes;
+                const MSAttributedStringFontAttribute = (_h = (_g = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.textStyle) === null || _f === void 0 ? void 0 : _f.encodedAttributes) === null || _g === void 0 ? void 0 : _g.MSAttributedStringFontAttribute) === null || _h === void 0 ? void 0 : _h.attributes;
                 const fontSize = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.size
                     : 16;
                 const fontFamily = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.name
                     : 'arial';
-                const paragraphStyle = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.paragraphStyle;
+                const paragraphStyle = (_l = (_k = (_j = layer.style) === null || _j === void 0 ? void 0 : _j.textStyle) === null || _k === void 0 ? void 0 : _k.encodedAttributes) === null || _l === void 0 ? void 0 : _l.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.kerning) || 0;
-                const MSAttributedStringColorAttribute = (_q = (_p = (_o = layer.style) === null || _o === void 0 ? void 0 : _o.textStyle) === null || _p === void 0 ? void 0 : _p.encodedAttributes) === null || _q === void 0 ? void 0 : _q.MSAttributedStringColorAttribute;
+                const letterSpacing = ((_p = (_o = (_m = layer.style) === null || _m === void 0 ? void 0 : _m.textStyle) === null || _o === void 0 ? void 0 : _o.encodedAttributes) === null || _p === void 0 ? void 0 : _p.kerning) || 0;
+                const MSAttributedStringColorAttribute = (_s = (_r = (_q = layer.style) === null || _q === void 0 ? void 0 : _q.textStyle) === null || _r === void 0 ? void 0 : _r.encodedAttributes) === null || _s === void 0 ? void 0 : _s.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
                         Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -17385,6 +17406,7 @@
                             lineHeight,
                             maskMode,
                             breakMask,
+                            blur,
                         },
                         isLocked,
                         isExpanded,
@@ -17452,6 +17474,7 @@
                                 'none',
                             maskMode,
                             breakMask,
+                            blur,
                         },
                         isLocked,
                         isExpanded,
@@ -17496,6 +17519,7 @@
                                 'none',
                             maskMode,
                             breakMask,
+                            blur,
                         },
                         isLocked,
                         isExpanded,
@@ -20084,7 +20108,7 @@
                     this.width = computedStyle.width;
                 }
                 else {
-                    this.width = 0.5;
+                    this.width = 0;
                 }
                 computedStyle.right = data.w - computedStyle.left - this.width;
             }
@@ -20093,7 +20117,7 @@
                     this.width = computedStyle.width;
                 }
                 else {
-                    this.width = 0.5;
+                    this.width = 0;
                 }
                 computedStyle.left = data.w - computedStyle.right - this.width;
             }
@@ -20106,7 +20130,7 @@
                     this.height = computedStyle.height;
                 }
                 else {
-                    this.height = 0.5;
+                    this.height = 0;
                 }
                 computedStyle.bottom = data.h - computedStyle.top - this.height;
             }
@@ -20115,7 +20139,7 @@
                     this.height = computedStyle.height;
                 }
                 else {
-                    this.height = 0.5;
+                    this.height = 0;
                 }
                 computedStyle.top = data.w - computedStyle.bottom - this.height;
             }
@@ -22125,7 +22149,7 @@
             const left = x1 - x;
             // 仅固定宽度，以中心点占left的百分比
             if (widthConstraint) {
-                style.left.v = ((left - style.width.v * 0.5) * 100) / width;
+                style.left.v = ((left + style.width.v * 0.5) * 100) / width;
             }
             // 左右皆为百分比
             else {
@@ -22162,7 +22186,7 @@
             const top = y1 - y;
             // 仅固定宽度，以中心点占top的百分比
             if (heightConstraint) {
-                style.top.v = ((top - style.height.v * 0.5) * 100) / height;
+                style.top.v = ((top + style.height.v * 0.5) * 100) / height;
             }
             // 左右皆为百分比
             else {
