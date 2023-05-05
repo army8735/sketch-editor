@@ -92,8 +92,8 @@ class Node extends Event {
     this.computedStyle = {}; // 输出展示的值
     this.width = 0;
     this.height = 0;
-    this.minWidth = 0;
-    this.minHeight = 0;
+    this.minWidth = 0.5;
+    this.minHeight = 0.5;
     this.isDestroyed = true;
     this.struct = {
       node: this,
@@ -177,12 +177,12 @@ class Node extends Event {
     if (width.u !== StyleUnit.AUTO) {
       this.minWidth = this.width;
     } else {
-      this.minWidth = 0;
+      this.minWidth = 0.5;
     }
     if (height.u !== StyleUnit.AUTO) {
       this.minHeight = this.height;
     } else {
-      this.minHeight = 0;
+      this.minHeight = 0.5;
     }
     // 左右决定x+width
     if (fixedLeft && fixedRight) {
@@ -192,14 +192,14 @@ class Node extends Event {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
       } else {
-        this.width = 0;
+        this.width = 0.5;
       }
       computedStyle.right = data.w - computedStyle.left - this.width;
     } else if (fixedRight) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
       } else {
-        this.width = 0;
+        this.width = 0.5;
       }
       computedStyle.left = data.w - computedStyle.right - this.width;
     }
@@ -210,14 +210,14 @@ class Node extends Event {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
       } else {
-        this.height = 0;
+        this.height = 0.5;
       }
       computedStyle.bottom = data.h - computedStyle.top - this.height;
     } else if (fixedBottom) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
       } else {
-        this.height = 0;
+        this.height = 0.5;
       }
       computedStyle.top = data.w - computedStyle.bottom - this.height;
     }

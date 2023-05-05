@@ -83,6 +83,7 @@ class Root extends Container implements FrameCallback {
     config.init(
       gl.getParameter(gl.MAX_TEXTURE_SIZE),
       gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
+      gl.getParameter(gl.MAX_VARYING_VECTORS),
     );
     this.programs = {};
     this.initShaders(gl);

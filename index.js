@@ -19982,8 +19982,8 @@
             this.computedStyle = {}; // 输出展示的值
             this.width = 0;
             this.height = 0;
-            this.minWidth = 0;
-            this.minHeight = 0;
+            this.minWidth = 0.5;
+            this.minHeight = 0.5;
             this.isDestroyed = true;
             this.struct = {
                 node: this,
@@ -20066,13 +20066,13 @@
                 this.minWidth = this.width;
             }
             else {
-                this.minWidth = 0;
+                this.minWidth = 0.5;
             }
             if (height.u !== StyleUnit.AUTO) {
                 this.minHeight = this.height;
             }
             else {
-                this.minHeight = 0;
+                this.minHeight = 0.5;
             }
             // 左右决定x+width
             if (fixedLeft && fixedRight) {
@@ -20084,7 +20084,7 @@
                     this.width = computedStyle.width;
                 }
                 else {
-                    this.width = 0;
+                    this.width = 0.5;
                 }
                 computedStyle.right = data.w - computedStyle.left - this.width;
             }
@@ -20093,7 +20093,7 @@
                     this.width = computedStyle.width;
                 }
                 else {
-                    this.width = 0;
+                    this.width = 0.5;
                 }
                 computedStyle.left = data.w - computedStyle.right - this.width;
             }
@@ -20106,7 +20106,7 @@
                     this.height = computedStyle.height;
                 }
                 else {
-                    this.height = 0;
+                    this.height = 0.5;
                 }
                 computedStyle.bottom = data.h - computedStyle.top - this.height;
             }
@@ -20115,7 +20115,7 @@
                     this.height = computedStyle.height;
                 }
                 else {
-                    this.height = 0;
+                    this.height = 0.5;
                 }
                 computedStyle.top = data.w - computedStyle.bottom - this.height;
             }
@@ -21497,10 +21497,12 @@
         SMALL_UNIT: 32,
         MAX_NUM: Math.pow(2048 / 32, 2),
         MAX_TEXTURE_UNITS: 8,
-        init(maxSize, maxUnits) {
+        MAX_VARYING_VECTORS: 15,
+        init(maxSize, maxUnits, maxVectors) {
             this.MAX_TEXTURE_SIZE = maxSize;
             this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
             this.MAX_TEXTURE_UNITS = maxUnits;
+            this.MAX_VARYING_VECTORS = maxVectors;
         },
     };
 
@@ -22563,133 +22565,6 @@
         }
     }
 
-    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return;
-        }
-        // 防止空值开始
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return;
-        }
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
-        }
-        else if (first.length === 6) {
-            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
-        }
-        else {
-            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
-            }
-            else if (item.length === 4) {
-                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
-            }
-            else if (item.length === 6) {
-                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
-            }
-        }
-    }
-    function svgPolygon(list, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return '';
-        }
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return '';
-        }
-        let s;
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
-        }
-        else if (first.length === 6) {
-            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
-        }
-        else {
-            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
-            }
-            else if (item.length === 4) {
-                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
-            }
-            else if (item.length === 6) {
-                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
-            }
-        }
-        return s;
-    }
-
-    class Geom extends Node {
-        constructor(props) {
-            super(props);
-        }
-        lay(data) {
-            super.lay(data);
-            this.points = undefined;
-        }
-        buildPoints() {
-            var _a;
-            if (this.points) {
-                return;
-            }
-            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
-            this.points = [];
-        }
-        calContent() {
-            return this.hasContent = true;
-        }
-        toSvg(scale, isClosed = false) {
-            this.buildPoints();
-            const computedStyle = this.computedStyle;
-            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
-            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
-            const props = [
-                ['d', d],
-                ['fill', '#D8D8D8'],
-                ['fill-rule', fillRule],
-                ['stroke', '#979797'],
-                ['stroke-width', (1 / scale).toString()],
-            ];
-            let s = `<svg width="${this.width}" height="${this.height}"><path`;
-            props.forEach(item => {
-                s += ' ' + item[0] + '="' + item[1] + '"';
-            });
-            return s + '></path></svg>';
-        }
-    }
-
     /**
      * 二阶贝塞尔曲线范围框
      * @param x0
@@ -23187,6 +23062,134 @@
         bezierSlope,
     };
 
+    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return;
+        }
+        // 防止空值开始
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return;
+        }
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
+        }
+        else if (first.length === 6) {
+            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
+        }
+        else {
+            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
+            }
+            else if (item.length === 4) {
+                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
+            }
+            else if (item.length === 6) {
+                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
+            }
+        }
+    }
+    function svgPolygon(list, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return '';
+        }
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return '';
+        }
+        let s;
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
+        }
+        else if (first.length === 6) {
+            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
+        }
+        else {
+            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
+            }
+            else if (item.length === 4) {
+                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
+            }
+            else if (item.length === 6) {
+                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
+            }
+        }
+        return s;
+    }
+
+    class Geom extends Node {
+        constructor(props) {
+            super(props);
+        }
+        lay(data) {
+            super.lay(data);
+            this.points = undefined;
+        }
+        buildPoints() {
+            var _a;
+            if (this.points) {
+                return;
+            }
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
+            this.points = [];
+        }
+        calContent() {
+            this.buildPoints();
+            return (this.hasContent = !!this.points && this.points.length > 1);
+        }
+        toSvg(scale, isClosed = false) {
+            this.buildPoints();
+            const computedStyle = this.computedStyle;
+            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
+            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            const props = [
+                ['d', d],
+                ['fill', '#D8D8D8'],
+                ['fill-rule', fillRule],
+                ['stroke', '#979797'],
+                ['stroke-width', (1 / scale).toString()],
+            ];
+            let s = `<svg width="${this.width}" height="${this.height}"><path`;
+            props.forEach((item) => {
+                s += ' ' + item[0] + '="' + item[1] + '"';
+            });
+            return s + '></path></svg>';
+        }
+    }
+
     function isCornerPoint(point) {
         return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
     }
@@ -23194,10 +23197,6 @@
         constructor(props) {
             super(props);
             this.isClosed = props.isClosed;
-        }
-        calContent() {
-            this.buildPoints();
-            return this.hasContent = !!this.points && this.points.length > 1;
         }
         buildPoints() {
             var _a;
@@ -23241,20 +23240,20 @@
                         continue;
                     }
                     // 观察前后2个顶点的情况
-                    const prevIdx = i ? (i - 1) : (len - 1);
+                    const prevIdx = i ? i - 1 : len - 1;
                     const nextIdx = (i + 1) % len;
                     const prevPoint = temp[prevIdx];
                     const nextPoint = temp[nextIdx];
                     let radius = point.cornerRadius;
                     // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
                     const isPrevCorner = isCornerPoint(prevPoint);
-                    const isPrevStraight = isPrevCorner
-                        || prevPoint.curveMode === CURVE_MODE.STRAIGHT
-                        || !prevPoint.hasCurveFrom;
+                    const isPrevStraight = isPrevCorner ||
+                        prevPoint.curveMode === CURVE_MODE.STRAIGHT ||
+                        !prevPoint.hasCurveFrom;
                     const isNextCorner = isCornerPoint(nextPoint);
-                    const isNextStraight = isNextCorner
-                        || nextPoint.curveMode === CURVE_MODE.STRAIGHT
-                        || !nextPoint.hasCurveTo;
+                    const isNextStraight = isNextCorner ||
+                        nextPoint.curveMode === CURVE_MODE.STRAIGHT ||
+                        !nextPoint.hasCurveTo;
                     // 先看最普通的直线，可以用角平分线+半径最小值约束求解
                     if (isPrevStraight && isNextStraight) {
                         // 2直线边长，ABC3个点，A是prev，B是curr，C是next
@@ -23287,10 +23286,16 @@
                         nextTangent.y += temp[i].y;
                         // 计算 cubic handler 位置
                         const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
-                        const prevHandle = { x: pv.x * -radius * kappa, y: pv.y * -radius * kappa };
+                        const prevHandle = {
+                            x: pv.x * -radius * kappa,
+                            y: pv.y * -radius * kappa,
+                        };
                         prevHandle.x += prevTangent.x;
                         prevHandle.y += prevTangent.y;
-                        const nextHandle = { x: nv.x * -radius * kappa, y: nv.y * -radius * kappa };
+                        const nextHandle = {
+                            x: nv.x * -radius * kappa,
+                            y: nv.y * -radius * kappa,
+                        };
                         nextHandle.x += nextTangent.x;
                         nextHandle.y += nextTangent.y;
                         cache[i] = {
@@ -23374,22 +23379,24 @@
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
-            while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            while (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
                 if (scale <= 1) {
                     break;
                 }
                 scale = scale >> 1;
             }
-            if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            if (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
                 return;
             }
             const dx = -x * scale, dy = -y * scale;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             if (scale !== 1) {
-                ctx.setLineDash(strokeDasharray.map(i => i * scale));
+                ctx.setLineDash(strokeDasharray.map((i) => i * scale));
             }
             else {
                 ctx.setLineDash(strokeDasharray);
@@ -23410,7 +23417,7 @@
                     if (f.t === GRADIENT.LINEAR) {
                         const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             lg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.fillStyle = lg;
@@ -23418,7 +23425,7 @@
                     else if (f.t === GRADIENT.RADIAL) {
                         const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             rg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.fillStyle = rg;
@@ -23463,7 +23470,7 @@
                     if (s.t === GRADIENT.LINEAR) {
                         const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             lg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.strokeStyle = lg;
@@ -23471,7 +23478,7 @@
                     else if (s.t === GRADIENT.RADIAL) {
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             rg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.strokeStyle = rg;
@@ -23534,7 +23541,7 @@
         }
         get bbox() {
             if (!this._bbox) {
-                const bbox = this._bbox = super.bbox;
+                const bbox = (this._bbox = super.bbox);
                 // 可能不存在
                 this.buildPoints();
                 const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
@@ -25737,25 +25744,37 @@
             const a1 = m[0], b1 = m[1];
             const a2 = m[4], b2 = m[5];
             const a4 = m[12], b4 = m[13];
-            return points.map(item => {
-                const c1 = ((a1 === 1) ? item[0] : (item[0] * a1)) + (a2 ? (item[1] * a2) : 0) + a4;
-                const c2 = ((b1 === 1) ? item[0] : (item[0] * b1)) + (b2 ? (item[1] * b2) : 0) + b4;
+            return points.map((item) => {
+                const c1 = (a1 === 1 ? item[0] : item[0] * a1) + (a2 ? item[1] * a2 : 0) + a4;
+                const c2 = (b1 === 1 ? item[0] : item[0] * b1) + (b2 ? item[1] * b2 : 0) + b4;
                 if (item.length === 4 || item.length === 6) {
-                    const c3 = ((a1 === 1) ? item[2] : (item[2] * a1)) + (a2 ? (item[3] * a2) : 0) + a4;
-                    const c4 = ((b1 === 1) ? item[2] : (item[2] * b1)) + (b2 ? (item[3] * b2) : 0) + b4;
+                    const c3 = (a1 === 1 ? item[2] : item[2] * a1) + (a2 ? item[3] * a2 : 0) + a4;
+                    const c4 = (b1 === 1 ? item[2] : item[2] * b1) + (b2 ? item[3] * b2 : 0) + b4;
                     if (item.length === 6) {
-                        const c5 = ((a1 === 1) ? item[4] : (item[4] * a1)) + (a2 ? (item[5] * a2) : 0) + a4;
-                        const c6 = ((b1 === 1) ? item[4] : (item[4] * b1)) + (b2 ? (item[5] * b2) : 0) + b4;
-                        return [toPrecision(c1), toPrecision(c2), toPrecision(c3), toPrecision(c4), toPrecision(c5), toPrecision(c6)];
+                        const c5 = (a1 === 1 ? item[4] : item[4] * a1) + (a2 ? item[5] * a2 : 0) + a4;
+                        const c6 = (b1 === 1 ? item[4] : item[4] * b1) + (b2 ? item[5] * b2 : 0) + b4;
+                        return [
+                            toPrecision(c1),
+                            toPrecision(c2),
+                            toPrecision(c3),
+                            toPrecision(c4),
+                            toPrecision(c5),
+                            toPrecision(c6),
+                        ];
                     }
-                    return [toPrecision(c1), toPrecision(c2), toPrecision(c3), toPrecision(c4)];
+                    return [
+                        toPrecision(c1),
+                        toPrecision(c2),
+                        toPrecision(c3),
+                        toPrecision(c4),
+                    ];
                 }
                 else {
                     return [toPrecision(c1), toPrecision(c2)];
                 }
             });
         }
-        return points.map(item => item.slice(0));
+        return points.map((item) => item.slice(0));
     }
     class ShapeGroup extends Group {
         constructor(props, children) {
@@ -25768,7 +25787,7 @@
         }
         calContent() {
             this.buildPoints();
-            return this.hasContent = !!this.points && !!this.points.length;
+            return (this.hasContent = !!this.points && !!this.points.length);
         }
         buildPoints() {
             var _a;
@@ -25786,7 +25805,7 @@
                     // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
                     let p;
                     if (item instanceof ShapeGroup) {
-                        p = points.map(item => applyMatrixPoints(item, matrix));
+                        p = points.map((item) => applyMatrixPoints(item, matrix));
                     }
                     else {
                         p = [applyMatrixPoints(points, matrix)];
@@ -25804,7 +25823,7 @@
                         else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
                             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
                             const pp = [], pl = [];
-                            p.forEach(item => {
+                            p.forEach((item) => {
                                 if (item.length <= 2) {
                                     pl.push(item);
                                 }
@@ -25840,22 +25859,24 @@
             const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
-            while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            while (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
                 if (scale <= 1) {
                     break;
                 }
                 scale = scale >> 1;
             }
-            if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+            if (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
                 return;
             }
             const dx = -x * scale, dy = -y * scale;
-            const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             if (scale !== 1) {
-                ctx.setLineDash(strokeDasharray.map(i => i * scale));
+                ctx.setLineDash(strokeDasharray.map((i) => i * scale));
             }
             else {
                 ctx.setLineDash(strokeDasharray);
@@ -25877,7 +25898,7 @@
                     if (f.t === GRADIENT.LINEAR) {
                         const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             lg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.fillStyle = lg;
@@ -25885,13 +25906,13 @@
                     else if (f.t === GRADIENT.RADIAL) {
                         const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             rg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.fillStyle = rg;
                     }
                 }
-                points.forEach(item => {
+                points.forEach((item) => {
                     canvasPolygon(ctx, item, scale, dx, dy);
                     ctx.closePath();
                 });
@@ -25931,7 +25952,7 @@
                     if (s.t === GRADIENT.LINEAR) {
                         const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             lg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.strokeStyle = lg;
@@ -25939,7 +25960,7 @@
                     else if (s.t === GRADIENT.RADIAL) {
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-                        gd.stop.forEach(item => {
+                        gd.stop.forEach((item) => {
                             rg.addColorStop(item[1], color2rgbaStr(item[0]));
                         });
                         ctx.strokeStyle = rg;
@@ -25950,7 +25971,7 @@
                 let os, ctx2;
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
-                    points.forEach(item => {
+                    points.forEach((item) => {
                         canvasPolygon(ctx, item, scale, dx, dy);
                         ctx.closePath();
                     });
@@ -25964,14 +25985,14 @@
                     ctx2.miterLimit = ctx.miterLimit * scale;
                     ctx2.strokeStyle = ctx.strokeStyle;
                     ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-                    points.forEach(item => {
+                    points.forEach((item) => {
                         canvasPolygon(ctx2, item, scale, dx, dy);
                         ctx2.closePath();
                     });
                 }
                 else {
                     ctx.lineWidth = strokeWidth[i] * scale;
-                    points.forEach(item => {
+                    points.forEach((item) => {
                         canvasPolygon(ctx, item, scale, dx, dy);
                         ctx.closePath();
                     });
@@ -26009,7 +26030,7 @@
             const computedStyle = this.computedStyle;
             const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
             let s = `<svg width="${this.width}" height="${this.height}">`;
-            this.points.forEach(item => {
+            this.points.forEach((item) => {
                 const d = svgPolygon(item) + 'Z';
                 const props = [
                     ['d', d],
@@ -26019,7 +26040,7 @@
                     ['stroke-width', (1 / scale).toString()],
                 ];
                 s += '<path';
-                props.forEach(item => {
+                props.forEach((item) => {
                     s += ' ' + item[0] + '="' + item[1] + '"';
                 });
                 s += '></path>';
@@ -26028,7 +26049,7 @@
         }
         get bbox() {
             if (!this._bbox) {
-                const bbox = this._bbox = super.bbox;
+                const bbox = (this._bbox = super.bbox);
                 // 可能不存在
                 this.buildPoints();
                 const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
@@ -27179,7 +27200,7 @@ void main() {
                 alert('Webgl unsupported!');
                 throw new Error('Webgl unsupported!');
             }
-            config.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+            config.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS), gl.getParameter(gl.MAX_VARYING_VECTORS));
             this.programs = {};
             this.initShaders(gl);
             this.didMount();

@@ -24,7 +24,8 @@ class Geom extends Node {
   }
 
   override calContent(): boolean {
-    return (this.hasContent = true);
+    this.buildPoints();
+    return (this.hasContent = !!this.points && this.points.length > 1);
   }
 
   toSvg(scale: number, isClosed = false) {
