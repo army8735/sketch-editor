@@ -1,8 +1,8 @@
-import Node from '../Node';
 import { Props } from '../../format';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE } from '../../style/define';
 import { LayoutData } from '../layout';
+import Node from '../Node';
 
 class Geom extends Node {
   points?: Array<Array<number>>;
@@ -24,14 +24,15 @@ class Geom extends Node {
   }
 
   override calContent(): boolean {
-    return this.hasContent = true;
+    return (this.hasContent = true);
   }
 
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
     const d = svgPolygon(this.points!) + (isClosed ? 'Z' : '');
-    const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+    const fillRule =
+      computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     const props = [
       ['d', d],
       ['fill', '#D8D8D8'],
@@ -40,7 +41,7 @@ class Geom extends Node {
       ['stroke-width', (1 / scale).toString()],
     ];
     let s = `<svg width="${this.width}" height="${this.height}"><path`;
-    props.forEach(item => {
+    props.forEach((item) => {
       s += ' ' + item[0] + '="' + item[1] + '"';
     });
     return s + '></path></svg>';

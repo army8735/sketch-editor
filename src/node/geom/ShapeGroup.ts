@@ -1,6 +1,12 @@
 import { Props } from '../../format';
-import Polyline from './Polyline';
-import Group from '../Group';
+import bezier from '../../math/bezier';
+import bo from '../../math/bo';
+import { toPrecision } from '../../math/geom';
+import { isE } from '../../math/matrix';
+import CanvasCache from '../../refresh/CanvasCache';
+import config from '../../refresh/config';
+import { canvasPolygon, svgPolygon } from '../../refresh/paint';
+import { color2rgbaStr } from '../../style/css';
 import {
   BOOLEAN_OPERATION,
   FILL_RULE,
@@ -9,42 +15,56 @@ import {
   STROKE_LINE_JOIN,
   STROKE_POSITION,
 } from '../../style/define';
-import CanvasCache from '../../refresh/CanvasCache';
-import { color2rgbaStr } from '../../style/css';
 import { getLinear, getRadial } from '../../style/gradient';
-import { canvasPolygon, svgPolygon } from '../../refresh/paint';
-import bo from '../../math/bo';
-import { isE } from '../../math/matrix';
-import { toPrecision } from '../../math/geom';
 import inject, { OffScreen } from '../../util/inject';
-import bezier from '../../math/bezier';
-import config from '../../refresh/config';
+import Group from '../Group';
 import { LayoutData } from '../layout';
+import Polyline from './Polyline';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
-    const a1 = m[0], b1 = m[1];
-    const a2 = m[4], b2 = m[5];
-    const a4 = m[12], b4 = m[13];
-    return points.map(item => {
-      const c1 = ((a1 === 1) ? item[0] : (item[0] * a1)) + (a2 ? (item[1] * a2) : 0) + a4;
-      const c2 = ((b1 === 1) ? item[0] : (item[0] * b1)) + (b2 ? (item[1] * b2) : 0) + b4;
+    const a1 = m[0],
+      b1 = m[1];
+    const a2 = m[4],
+      b2 = m[5];
+    const a4 = m[12],
+      b4 = m[13];
+    return points.map((item) => {
+      const c1 =
+        (a1 === 1 ? item[0] : item[0] * a1) + (a2 ? item[1] * a2 : 0) + a4;
+      const c2 =
+        (b1 === 1 ? item[0] : item[0] * b1) + (b2 ? item[1] * b2 : 0) + b4;
       if (item.length === 4 || item.length === 6) {
-        const c3 = ((a1 === 1) ? item[2] : (item[2] * a1)) + (a2 ? (item[3] * a2) : 0) + a4;
-        const c4 = ((b1 === 1) ? item[2] : (item[2] * b1)) + (b2 ? (item[3] * b2) : 0) + b4;
+        const c3 =
+          (a1 === 1 ? item[2] : item[2] * a1) + (a2 ? item[3] * a2 : 0) + a4;
+        const c4 =
+          (b1 === 1 ? item[2] : item[2] * b1) + (b2 ? item[3] * b2 : 0) + b4;
         if (item.length === 6) {
-          const c5 = ((a1 === 1) ? item[4] : (item[4] * a1)) + (a2 ? (item[5] * a2) : 0) + a4;
-          const c6 = ((b1 === 1) ? item[4] : (item[4] * b1)) + (b2 ? (item[5] * b2) : 0) + b4;
-          return [toPrecision(c1), toPrecision(c2), toPrecision(c3), toPrecision(c4), toPrecision(c5), toPrecision(c6)];
+          const c5 =
+            (a1 === 1 ? item[4] : item[4] * a1) + (a2 ? item[5] * a2 : 0) + a4;
+          const c6 =
+            (b1 === 1 ? item[4] : item[4] * b1) + (b2 ? item[5] * b2 : 0) + b4;
+          return [
+            toPrecision(c1),
+            toPrecision(c2),
+            toPrecision(c3),
+            toPrecision(c4),
+            toPrecision(c5),
+            toPrecision(c6),
+          ];
         }
-        return [toPrecision(c1), toPrecision(c2), toPrecision(c3), toPrecision(c4)];
-      }
-      else {
+        return [
+          toPrecision(c1),
+          toPrecision(c2),
+          toPrecision(c3),
+          toPrecision(c4),
+        ];
+      } else {
         return [toPrecision(c1), toPrecision(c2)];
       }
     });
   }
-  return points.map(item => item.slice(0));
+  return points.map((item) => item.slice(0));
 }
 
 class ShapeGroup extends Group {
@@ -62,7 +82,7 @@ class ShapeGroup extends Group {
 
   override calContent(): boolean {
     this.buildPoints();
-    return this.hasContent = !!this.points && !!this.points.length;
+    return (this.hasContent = !!this.points && !!this.points.length);
   }
 
   buildPoints() {
@@ -73,36 +93,35 @@ class ShapeGroup extends Group {
     const { children } = this;
     let res: Array<Array<Array<number>>> = [];
     for (let i = 0, len = children.length; i < len; i++) {
-      const item = children[i] as (Polyline | ShapeGroup);
+      const item = children[i] as Polyline | ShapeGroup;
       item.buildPoints();
       const { points, matrix } = item;
       if (points && points.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
         let p: Array<Array<Array<number>>>;
-        if(item instanceof ShapeGroup) {
-          p = points.map(item => applyMatrixPoints(item as number[][], matrix));
-        }
-        else {
+        if (item instanceof ShapeGroup) {
+          p = points.map((item) =>
+            applyMatrixPoints(item as number[][], matrix),
+          );
+        } else {
           p = [applyMatrixPoints(points as number[][], matrix)];
         }
         const booleanOperation = item.computedStyle.booleanOperation;
         if (i === 0 || !booleanOperation) {
           res = res.concat(p);
-        }
-        else {
+        } else {
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
             const t = bo.intersect(res, p) as number[][][];
             res = t || [];
-          }
-          else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
+          } else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
-            const pp: Array<Array<Array<number>>> = [], pl: Array<Array<Array<number>>> = [];
-            p.forEach(item => {
+            const pp: Array<Array<Array<number>>> = [],
+              pl: Array<Array<Array<number>>> = [];
+            p.forEach((item) => {
               if (item.length <= 2) {
                 pl.push(item);
-              }
-              else {
+              } else {
                 pp.push(item);
               }
             });
@@ -113,12 +132,10 @@ class ShapeGroup extends Group {
             if (pl.length) {
               res = res.concat(pl);
             }
-          }
-          else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
+          } else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
             const t = bo.subtract(res, p) as number[][][];
             res = t || [];
-          }
-          else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
+          } else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
             const t = bo.xor(res, p) as number[][][];
             res = t || [];
           }
@@ -133,19 +150,34 @@ class ShapeGroup extends Group {
     this.buildPoints();
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
-    const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+    const x = bbox[0],
+      y = bbox[1],
+      w = bbox[2] - x,
+      h = bbox[3] - y;
     // 暂时这样防止超限，TODO 超大尺寸
-    while (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+    while (
+      w * scale > config.MAX_TEXTURE_SIZE ||
+      h * scale > config.MAX_TEXTURE_SIZE
+      ) {
       if (scale <= 1) {
         break;
       }
       scale = scale >> 1;
     }
-    if (w * scale > config.MAX_TEXTURE_SIZE || h * scale > config.MAX_TEXTURE_SIZE) {
+    if (
+      w * scale > config.MAX_TEXTURE_SIZE ||
+      h * scale > config.MAX_TEXTURE_SIZE
+    ) {
       return;
     }
-    const dx = -x * scale, dy = -y * scale;
-    const canvasCache = this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy);
+    const dx = -x * scale,
+      dy = -y * scale;
+    const canvasCache = (this.canvasCache = CanvasCache.getInstance(
+      w * scale,
+      h * scale,
+      dx,
+      dy,
+    ));
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     const {
@@ -162,9 +194,8 @@ class ShapeGroup extends Group {
       strokeMiterlimit,
     } = this.computedStyle;
     if (scale !== 1) {
-      ctx.setLineDash(strokeDasharray.map(i => i * scale));
-    }
-    else {
+      ctx.setLineDash(strokeDasharray.map((i) => i * scale));
+    } else {
       ctx.setLineDash(strokeDasharray);
     }
     ctx.setLineDash(strokeDasharray);
@@ -179,26 +210,31 @@ class ShapeGroup extends Group {
           continue;
         }
         ctx.fillStyle = color2rgbaStr(f);
-      }
-      else {
+      } else {
         if (f.t === GRADIENT.LINEAR) {
           const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-          gd.stop.forEach(item => {
+          gd.stop.forEach((item) => {
             lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.fillStyle = lg;
-        }
-        else if (f.t === GRADIENT.RADIAL) {
+        } else if (f.t === GRADIENT.RADIAL) {
           const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
-          const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-          gd.stop.forEach(item => {
+          const rg = ctx.createRadialGradient(
+            gd.cx,
+            gd.cy,
+            0,
+            gd.cx,
+            gd.cy,
+            gd.total,
+          );
+          gd.stop.forEach((item) => {
             rg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.fillStyle = rg;
         }
       }
-      points.forEach(item => {
+      points.forEach((item) => {
         canvasPolygon(ctx, item, scale, dx, dy);
         ctx.closePath();
       });
@@ -207,20 +243,16 @@ class ShapeGroup extends Group {
     // 线帽设置
     if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
       ctx.lineCap = 'round';
-    }
-    else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+    } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
       ctx.lineCap = 'square';
-    }
-    else {
+    } else {
       ctx.lineCap = 'butt';
     }
     if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
       ctx.lineJoin = 'round';
-    }
-    else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+    } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
       ctx.lineJoin = 'bevel';
-    }
-    else {
+    } else {
       ctx.lineJoin = 'miter';
     }
     ctx.miterLimit = strokeMiterlimit * scale;
@@ -233,20 +265,25 @@ class ShapeGroup extends Group {
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
         ctx.lineWidth = strokeWidth[i];
-      }
-      else {
+      } else {
         if (s.t === GRADIENT.LINEAR) {
           const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-          gd.stop.forEach(item => {
+          gd.stop.forEach((item) => {
             lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.strokeStyle = lg;
-        }
-        else if (s.t === GRADIENT.RADIAL) {
+        } else if (s.t === GRADIENT.RADIAL) {
           const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
-          const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-          gd.stop.forEach(item => {
+          const rg = ctx.createRadialGradient(
+            gd.cx,
+            gd.cy,
+            0,
+            gd.cx,
+            gd.cy,
+            gd.total,
+          );
+          gd.stop.forEach((item) => {
             rg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.strokeStyle = rg;
@@ -257,12 +294,11 @@ class ShapeGroup extends Group {
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
-        points.forEach(item => {
+        points.forEach((item) => {
           canvasPolygon(ctx, item, scale, dx, dy);
           ctx.closePath();
         });
-      }
-      else if (p === STROKE_POSITION.OUTSIDE) {
+      } else if (p === STROKE_POSITION.OUTSIDE) {
         os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
         ctx2 = os.ctx;
         ctx2.setLineDash(strokeDasharray);
@@ -271,22 +307,20 @@ class ShapeGroup extends Group {
         ctx2.miterLimit = ctx.miterLimit * scale;
         ctx2.strokeStyle = ctx.strokeStyle;
         ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-        points.forEach(item => {
+        points.forEach((item) => {
           canvasPolygon(ctx2!, item, scale, dx, dy);
           ctx2!.closePath();
         });
-      }
-      else {
+      } else {
         ctx.lineWidth = strokeWidth[i] * scale;
-        points.forEach(item => {
+        points.forEach((item) => {
           canvasPolygon(ctx, item, scale, dx, dy);
           ctx.closePath();
         });
       }
       if (ctx2) {
         ctx2.closePath();
-      }
-      else {
+      } else {
         ctx.closePath();
       }
       if (p === STROKE_POSITION.INSIDE) {
@@ -294,8 +328,7 @@ class ShapeGroup extends Group {
         ctx.clip();
         ctx.stroke();
         ctx.restore();
-      }
-      else if (p === STROKE_POSITION.OUTSIDE) {
+      } else if (p === STROKE_POSITION.OUTSIDE) {
         ctx2!.stroke();
         ctx2!.save();
         ctx2!.clip();
@@ -305,8 +338,7 @@ class ShapeGroup extends Group {
         ctx2!.restore();
         ctx.drawImage(os!.canvas, 0, 0);
         os!.release();
-      }
-      else {
+      } else {
         ctx.stroke();
       }
     }
@@ -315,9 +347,10 @@ class ShapeGroup extends Group {
   toSvg(scale: number) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
-    const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+    const fillRule =
+      computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     let s = `<svg width="${this.width}" height="${this.height}">`;
-    this.points!.forEach(item => {
+    this.points!.forEach((item) => {
       const d = svgPolygon(item) + 'Z';
       const props = [
         ['d', d],
@@ -327,7 +360,7 @@ class ShapeGroup extends Group {
         ['stroke-width', (1 / scale).toString()],
       ];
       s += '<path';
-      props.forEach(item => {
+      props.forEach((item) => {
         s += ' ' + item[0] + '="' + item[1] + '"';
       });
       s += '></path>';
@@ -337,7 +370,7 @@ class ShapeGroup extends Group {
 
   override get bbox(): Float64Array {
     if (!this._bbox) {
-      const bbox = this._bbox = super.bbox;
+      const bbox = (this._bbox = super.bbox);
       // 可能不存在
       this.buildPoints();
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
@@ -347,11 +380,9 @@ class ShapeGroup extends Group {
         if (strokeEnable[i]) {
           if (strokePosition[i] === STROKE_POSITION.CENTER) {
             border = Math.max(border, item * 0.5 * 4);
-          }
-          else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
             // 0
-          }
-          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
             border = Math.max(border, item * 4);
           }
         }
@@ -363,12 +394,10 @@ class ShapeGroup extends Group {
         if (first.length === 4) {
           xa = first[2];
           ya = first[3];
-        }
-        else if (first.length === 6) {
+        } else if (first.length === 6) {
           xa = first[4];
           ya = first[5];
-        }
-        else {
+        } else {
           xa = first[0];
           ya = first[1];
         }
@@ -387,12 +416,10 @@ class ShapeGroup extends Group {
               if (item2.length === 4) {
                 xa = item2[2];
                 ya = item2[3];
-              }
-              else if (item2.length === 6) {
+              } else if (item2.length === 6) {
                 xa = item2[4];
                 ya = item2[5];
-              }
-              else {
+              } else {
                 xa = item2[0];
                 ya = item2[1];
               }
@@ -411,17 +438,24 @@ class ShapeGroup extends Group {
               bbox[1] = Math.min(bbox[1], b[1] - border);
               bbox[2] = Math.max(bbox[2], b[2] + border);
               bbox[3] = Math.max(bbox[3], b[3] + border);
-            }
-            else if (item2.length === 6) {
+            } else if (item2.length === 6) {
               xb = item2[4];
               yb = item2[5];
-              const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], item2[2], item2[3], xb, yb);
+              const b = bezier.bboxBezier(
+                xa,
+                ya,
+                item2[0],
+                item2[1],
+                item2[2],
+                item2[3],
+                xb,
+                yb,
+              );
               bbox[0] = Math.min(bbox[0], b[0] - border);
               bbox[1] = Math.min(bbox[1], b[1] - border);
               bbox[2] = Math.max(bbox[2], b[2] + border);
               bbox[3] = Math.max(bbox[3], b[3] + border);
-            }
-            else {
+            } else {
               xb = item2[0];
               yb = item2[1];
               bbox[0] = Math.min(bbox[0], xb - border);
