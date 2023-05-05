@@ -19,6 +19,7 @@ import { toPrecision } from '../../math/geom';
 import inject, { OffScreen } from '../../util/inject';
 import bezier from '../../math/bezier';
 import config from '../../refresh/config';
+import { LayoutData } from '../layout';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -52,6 +53,11 @@ class ShapeGroup extends Group {
   constructor(props: Props, children: Array<Polyline | ShapeGroup>) {
     super(props, children);
     this.isShapeGroup = true;
+  }
+
+  override lay(data: LayoutData) {
+    super.lay(data);
+    this.points = undefined;
   }
 
   override calContent(): boolean {

@@ -2,11 +2,17 @@ import Node from '../Node';
 import { Props } from '../../format';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE } from '../../style/define';
+import { LayoutData } from '../layout';
 
 class Geom extends Node {
   points?: Array<Array<number>>;
   constructor(props: Props) {
     super(props);
+  }
+
+  override lay(data: LayoutData) {
+    super.lay(data);
+    this.points = undefined;
   }
 
   buildPoints() {

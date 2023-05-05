@@ -22655,6 +22655,10 @@
         constructor(props) {
             super(props);
         }
+        lay(data) {
+            super.lay(data);
+            this.points = undefined;
+        }
         buildPoints() {
             var _a;
             if (this.points) {
@@ -25757,6 +25761,10 @@
         constructor(props, children) {
             super(props, children);
             this.isShapeGroup = true;
+        }
+        lay(data) {
+            super.lay(data);
+            this.points = undefined;
         }
         calContent() {
             this.buildPoints();
