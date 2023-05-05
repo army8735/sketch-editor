@@ -177,11 +177,11 @@ async function convertItem(
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
       ? [
-        Math.floor(layer.backgroundColor.red * 255),
-        Math.floor(layer.backgroundColor.green * 255),
-        Math.floor(layer.backgroundColor.blue * 255),
-        layer.backgroundColor.alpha,
-      ]
+          Math.floor(layer.backgroundColor.red * 255),
+          Math.floor(layer.backgroundColor.green * 255),
+          Math.floor(layer.backgroundColor.blue * 255),
+          layer.backgroundColor.alpha,
+        ]
       : [255, 255, 255, 1];
     return {
       tagName: TagName.ArtBoard,
@@ -420,41 +420,41 @@ async function convertItem(
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
-        const {
-          location,
-          length,
-          attributes: {
-            MSAttributedStringFontAttribute: {
-              attributes: { name, size: fontSize },
+          const {
+            location,
+            length,
+            attributes: {
+              MSAttributedStringFontAttribute: {
+                attributes: { name, size: fontSize },
+              },
+              MSAttributedStringColorAttribute: { red, green, blue, alpha },
+              kerning = 0,
+              paragraphStyle: { maximumLineHeight = 0 } = {},
             },
-            MSAttributedStringColorAttribute: { red, green, blue, alpha },
-            kerning = 0,
-            paragraphStyle: { maximumLineHeight = 0 } = {},
-          },
-        } = item;
-        const fontFamily = name;
-        const res = {
-          location,
-          length,
-          fontFamily,
-          fontSize,
-          fontWeight: 400,
-          fontStyle: 'normal',
-          letterSpacing: kerning,
-          lineHeight: maximumLineHeight,
-          color: [
-            Math.floor(red * 255),
-            Math.floor(green * 255),
-            Math.floor(blue * 255),
-            alpha,
-          ],
-        } as Rich;
-        // 自动行高
-        if (!maximumLineHeight) {
-          res.lineHeight = calNormalLineHeight(res);
-        }
-        return res;
-      })
+          } = item;
+          const fontFamily = name;
+          const res = {
+            location,
+            length,
+            fontFamily,
+            fontSize,
+            fontWeight: 400,
+            fontStyle: 'normal',
+            letterSpacing: kerning,
+            lineHeight: maximumLineHeight,
+            color: [
+              Math.floor(red * 255),
+              Math.floor(green * 255),
+              Math.floor(blue * 255),
+              alpha,
+            ],
+          } as Rich;
+          // 自动行高
+          if (!maximumLineHeight) {
+            res.lineHeight = calNormalLineHeight(res);
+          }
+          return res;
+        })
       : undefined;
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
@@ -477,11 +477,11 @@ async function convertItem(
         ?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute
       ? [
-        Math.floor(MSAttributedStringColorAttribute.red * 255),
-        Math.floor(MSAttributedStringColorAttribute.green * 255),
-        Math.floor(MSAttributedStringColorAttribute.blue * 255),
-        MSAttributedStringColorAttribute.alpha,
-      ]
+          Math.floor(MSAttributedStringColorAttribute.red * 255),
+          Math.floor(MSAttributedStringColorAttribute.green * 255),
+          Math.floor(MSAttributedStringColorAttribute.blue * 255),
+          MSAttributedStringColorAttribute.alpha,
+        ]
       : [0, 0, 0, 1];
     return {
       tagName: TagName.Text,
