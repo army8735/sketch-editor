@@ -13,10 +13,23 @@ class Container extends Node {
   constructor(props: Props, children: Array<Node> = []) {
     super(props);
     this.children = children;
+    const len = children.length;
+    if (len) {
+      const first = children[0];
+      first.parent = this;
+      let last = first;
+      for (let i = 1; i < len; i++) {
+        const child = children[i];
+        child.parent = this;
+        last.next = child;
+        child.prev = last;
+        last = child;
+      }
+    }
     this.isContainer = true;
   }
 
-  // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前暂无JSX这种一口气创建一颗子树
+  // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，一口气创建/移动一颗子树时需要
   didMount() {
     super.didMount();
     const { children } = this;
@@ -77,6 +90,7 @@ class Container extends Node {
   }
 
   appendChild(node: Node, cb?: (sync: boolean) => void) {
+    node.remove();
     const { root, children } = this;
     const len = children.length;
     if (len) {
@@ -98,6 +112,7 @@ class Container extends Node {
   }
 
   prependChild(node: Node, cb?: (sync: boolean) => void) {
+    node.remove();
     const { root, children } = this;
     const len = children.length;
     if (len) {

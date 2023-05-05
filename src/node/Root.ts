@@ -281,26 +281,26 @@ class Root extends Container implements FrameCallback {
       if (node === this) {
         this.reLayout();
       } else {
-        checkReflow(this, node, addDom, removeDom);
+        checkReflow(node, addDom, removeDom);
       }
     } else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
         node.calRepaintStyle(lv);
         node.clearCache(true);
-        node.clearCacheUpward(false);
       } else {
         const { style, computedStyle } = node;
         if (lv & RefreshLevel.TRANSFORM_ALL) {
-          node.calMatrix(lv); // matrixWorld缓存在方法内清除
+          node.calMatrix(lv);
         }
         if (lv & RefreshLevel.OPACITY) {
-          computedStyle.opacity = style.opacity.v;
-          // 手动删除缓存，这里一定是不相等的才能进来，因为updateStyle会前置校验
-          if (node.hasCacheOp || !node.localOpId) {
-            node.hasCacheOp = false;
-            node.localOpId++;
-          }
+          node.calOpacity();
+        }
+        if (lv & RefreshLevel.FILTER) {
+          computedStyle.blur = style.blur.v;
+          node._bbox = undefined;
+          node.tempBbox = undefined;
+          node.clearCache(false);
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;
@@ -312,8 +312,8 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
         }
-        node.clearCacheUpward(false);
       }
+      node.clearCacheUpward(false);
     }
     // 检查mask影响，这里是作为被遮罩对象存在的关系检查
     const mask = node.mask;

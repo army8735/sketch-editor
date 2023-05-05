@@ -330,6 +330,9 @@ async function convertItem(
       blur = `gauss(${b.radius}px)`;
     }
   }
+  else {
+    blur = 'none';
+  }
   const isLocked = layer.isLocked;
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;

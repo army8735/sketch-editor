@@ -15351,155 +15351,9 @@
     JSZip.external = external$3;
     var lib = JSZip;
 
-    var StyleUnit;
-    (function (StyleUnit) {
-        StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
-        StyleUnit[StyleUnit["PX"] = 1] = "PX";
-        StyleUnit[StyleUnit["PERCENT"] = 2] = "PERCENT";
-        StyleUnit[StyleUnit["NUMBER"] = 3] = "NUMBER";
-        StyleUnit[StyleUnit["DEG"] = 4] = "DEG";
-        StyleUnit[StyleUnit["RGBA"] = 5] = "RGBA";
-        StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
-        StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
-        StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
-        StyleUnit[StyleUnit["BLUR"] = 9] = "BLUR";
-    })(StyleUnit || (StyleUnit = {}));
-    function calUnit(v) {
-        if (v === 'auto') {
-            return {
-                v: 0,
-                u: StyleUnit.AUTO,
-            };
-        }
-        let n = parseFloat(v) || 0;
-        if (/%$/.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.PERCENT,
-            };
-        }
-        else if (/px$/i.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.PX,
-            };
-        }
-        else if (/deg$/i.test(v)) {
-            return {
-                v: n,
-                u: StyleUnit.DEG,
-            };
-        }
-        return {
-            v: n,
-            u: StyleUnit.NUMBER,
-        };
-    }
-    var TEXT_ALIGN;
-    (function (TEXT_ALIGN) {
-        TEXT_ALIGN[TEXT_ALIGN["LEFT"] = 0] = "LEFT";
-        TEXT_ALIGN[TEXT_ALIGN["CENTER"] = 1] = "CENTER";
-        TEXT_ALIGN[TEXT_ALIGN["RIGHT"] = 2] = "RIGHT";
-        TEXT_ALIGN[TEXT_ALIGN["JUSTIFY"] = 3] = "JUSTIFY";
-    })(TEXT_ALIGN || (TEXT_ALIGN = {}));
-    var MIX_BLEND_MODE;
-    (function (MIX_BLEND_MODE) {
-        MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["MULTIPLY"] = 1] = "MULTIPLY";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SCREEN"] = 2] = "SCREEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["OVERLAY"] = 3] = "OVERLAY";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["DARKEN"] = 4] = "DARKEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["LIGHTEN"] = 5] = "LIGHTEN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_DODGE"] = 6] = "COLOR_DODGE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_BURN"] = 7] = "COLOR_BURN";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["HARD_LIGHT"] = 8] = "HARD_LIGHT";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SOFT_LIGHT"] = 9] = "SOFT_LIGHT";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["DIFFERENCE"] = 10] = "DIFFERENCE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["EXCLUSION"] = 11] = "EXCLUSION";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["HUE"] = 12] = "HUE";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["SATURATION"] = 13] = "SATURATION";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR"] = 14] = "COLOR";
-        MIX_BLEND_MODE[MIX_BLEND_MODE["LUMINOSITY"] = 15] = "LUMINOSITY";
-    })(MIX_BLEND_MODE || (MIX_BLEND_MODE = {}));
-    var OVERFLOW;
-    (function (OVERFLOW) {
-        OVERFLOW[OVERFLOW["VISIBLE"] = 0] = "VISIBLE";
-        OVERFLOW[OVERFLOW["HIDDEN"] = 1] = "HIDDEN";
-    })(OVERFLOW || (OVERFLOW = {}));
-    var FONT_STYLE;
-    (function (FONT_STYLE) {
-        FONT_STYLE[FONT_STYLE["NORMAL"] = 0] = "NORMAL";
-        FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
-        FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
-    })(FONT_STYLE || (FONT_STYLE = {}));
-    var MASK_TYPE;
-    (function (MASK_TYPE) {
-        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
-        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
-        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
-    })(MASK_TYPE || (MASK_TYPE = {}));
-    var GRADIENT;
-    (function (GRADIENT) {
-        GRADIENT[GRADIENT["LINEAR"] = 0] = "LINEAR";
-        GRADIENT[GRADIENT["RADIAL"] = 1] = "RADIAL";
-        GRADIENT[GRADIENT["CONIC"] = 2] = "CONIC";
-    })(GRADIENT || (GRADIENT = {}));
-    var BLUR;
-    (function (BLUR) {
-        BLUR[BLUR["NONE"] = 0] = "NONE";
-        BLUR[BLUR["GAUSSIAN"] = 1] = "GAUSSIAN";
-        BLUR[BLUR["MOTION"] = 2] = "MOTION";
-        BLUR[BLUR["ZOOM"] = 3] = "ZOOM";
-        BLUR[BLUR["BACKGROUND"] = 4] = "BACKGROUND";
-    })(BLUR || (BLUR = {}));
-    var BOOLEAN_OPERATION;
-    (function (BOOLEAN_OPERATION) {
-        BOOLEAN_OPERATION[BOOLEAN_OPERATION["NONE"] = 0] = "NONE";
-        BOOLEAN_OPERATION[BOOLEAN_OPERATION["UNION"] = 1] = "UNION";
-        BOOLEAN_OPERATION[BOOLEAN_OPERATION["SUBTRACT"] = 2] = "SUBTRACT";
-        BOOLEAN_OPERATION[BOOLEAN_OPERATION["INTERSECT"] = 3] = "INTERSECT";
-        BOOLEAN_OPERATION[BOOLEAN_OPERATION["XOR"] = 4] = "XOR";
-    })(BOOLEAN_OPERATION || (BOOLEAN_OPERATION = {}));
-    var CURVE_MODE;
-    (function (CURVE_MODE) {
-        CURVE_MODE[CURVE_MODE["NONE"] = 0] = "NONE";
-        CURVE_MODE[CURVE_MODE["STRAIGHT"] = 1] = "STRAIGHT";
-        CURVE_MODE[CURVE_MODE["MIRRORED"] = 2] = "MIRRORED";
-        CURVE_MODE[CURVE_MODE["ASYMMETRIC"] = 3] = "ASYMMETRIC";
-        CURVE_MODE[CURVE_MODE["DISCONNECTED"] = 4] = "DISCONNECTED";
-    })(CURVE_MODE || (CURVE_MODE = {}));
-    var FILL_RULE;
-    (function (FILL_RULE) {
-        FILL_RULE[FILL_RULE["NON_ZERO"] = 0] = "NON_ZERO";
-        FILL_RULE[FILL_RULE["EVEN_ODD"] = 1] = "EVEN_ODD";
-    })(FILL_RULE || (FILL_RULE = {}));
-    var MASK;
-    (function (MASK) {
-        MASK[MASK["NONE"] = 0] = "NONE";
-        MASK[MASK["OUTLINE"] = 1] = "OUTLINE";
-        MASK[MASK["ALPHA"] = 2] = "ALPHA";
-    })(MASK || (MASK = {}));
-    var STROKE_LINE_CAP;
-    (function (STROKE_LINE_CAP) {
-        STROKE_LINE_CAP[STROKE_LINE_CAP["BUTT"] = 0] = "BUTT";
-        STROKE_LINE_CAP[STROKE_LINE_CAP["ROUND"] = 1] = "ROUND";
-        STROKE_LINE_CAP[STROKE_LINE_CAP["SQUARE"] = 2] = "SQUARE";
-    })(STROKE_LINE_CAP || (STROKE_LINE_CAP = {}));
-    var STROKE_LINE_JOIN;
-    (function (STROKE_LINE_JOIN) {
-        STROKE_LINE_JOIN[STROKE_LINE_JOIN["MITER"] = 0] = "MITER";
-        STROKE_LINE_JOIN[STROKE_LINE_JOIN["ROUND"] = 1] = "ROUND";
-        STROKE_LINE_JOIN[STROKE_LINE_JOIN["BEVEL"] = 2] = "BEVEL";
-    })(STROKE_LINE_JOIN || (STROKE_LINE_JOIN = {}));
-    var STROKE_POSITION;
-    (function (STROKE_POSITION) {
-        STROKE_POSITION[STROKE_POSITION["CENTER"] = 0] = "CENTER";
-        STROKE_POSITION[STROKE_POSITION["INSIDE"] = 1] = "INSIDE";
-        STROKE_POSITION[STROKE_POSITION["OUTSIDE"] = 2] = "OUTSIDE";
-    })(STROKE_POSITION || (STROKE_POSITION = {}));
-    var define = {
-        StyleUnit,
-        calUnit,
+    var config$1 = {
+        debug: false,
+        offscreenCanvas: true,
     };
 
     // @ts-ignore
@@ -15552,11 +15406,6 @@
         isDate,
         isFunction,
         isPlainObject,
-    };
-
-    var config$1 = {
-        debug: false,
-        offscreenCanvas: true,
     };
 
     const SPF = 1000 / 60;
@@ -15932,6 +15781,157 @@
         },
     };
 
+    var StyleUnit;
+    (function (StyleUnit) {
+        StyleUnit[StyleUnit["AUTO"] = 0] = "AUTO";
+        StyleUnit[StyleUnit["PX"] = 1] = "PX";
+        StyleUnit[StyleUnit["PERCENT"] = 2] = "PERCENT";
+        StyleUnit[StyleUnit["NUMBER"] = 3] = "NUMBER";
+        StyleUnit[StyleUnit["DEG"] = 4] = "DEG";
+        StyleUnit[StyleUnit["RGBA"] = 5] = "RGBA";
+        StyleUnit[StyleUnit["BOOLEAN"] = 6] = "BOOLEAN";
+        StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
+        StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
+        StyleUnit[StyleUnit["BLUR"] = 9] = "BLUR";
+    })(StyleUnit || (StyleUnit = {}));
+    function calUnit(v) {
+        if (v === 'auto') {
+            return {
+                v: 0,
+                u: StyleUnit.AUTO,
+            };
+        }
+        let n = parseFloat(v) || 0;
+        if (/%$/.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.PERCENT,
+            };
+        }
+        else if (/px$/i.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.PX,
+            };
+        }
+        else if (/deg$/i.test(v)) {
+            return {
+                v: n,
+                u: StyleUnit.DEG,
+            };
+        }
+        return {
+            v: n,
+            u: StyleUnit.NUMBER,
+        };
+    }
+    var TEXT_ALIGN;
+    (function (TEXT_ALIGN) {
+        TEXT_ALIGN[TEXT_ALIGN["LEFT"] = 0] = "LEFT";
+        TEXT_ALIGN[TEXT_ALIGN["CENTER"] = 1] = "CENTER";
+        TEXT_ALIGN[TEXT_ALIGN["RIGHT"] = 2] = "RIGHT";
+        TEXT_ALIGN[TEXT_ALIGN["JUSTIFY"] = 3] = "JUSTIFY";
+    })(TEXT_ALIGN || (TEXT_ALIGN = {}));
+    var MIX_BLEND_MODE;
+    (function (MIX_BLEND_MODE) {
+        MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["MULTIPLY"] = 1] = "MULTIPLY";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SCREEN"] = 2] = "SCREEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["OVERLAY"] = 3] = "OVERLAY";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["DARKEN"] = 4] = "DARKEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["LIGHTEN"] = 5] = "LIGHTEN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_DODGE"] = 6] = "COLOR_DODGE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR_BURN"] = 7] = "COLOR_BURN";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["HARD_LIGHT"] = 8] = "HARD_LIGHT";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SOFT_LIGHT"] = 9] = "SOFT_LIGHT";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["DIFFERENCE"] = 10] = "DIFFERENCE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["EXCLUSION"] = 11] = "EXCLUSION";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["HUE"] = 12] = "HUE";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["SATURATION"] = 13] = "SATURATION";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["COLOR"] = 14] = "COLOR";
+        MIX_BLEND_MODE[MIX_BLEND_MODE["LUMINOSITY"] = 15] = "LUMINOSITY";
+    })(MIX_BLEND_MODE || (MIX_BLEND_MODE = {}));
+    var OVERFLOW;
+    (function (OVERFLOW) {
+        OVERFLOW[OVERFLOW["VISIBLE"] = 0] = "VISIBLE";
+        OVERFLOW[OVERFLOW["HIDDEN"] = 1] = "HIDDEN";
+    })(OVERFLOW || (OVERFLOW = {}));
+    var FONT_STYLE;
+    (function (FONT_STYLE) {
+        FONT_STYLE[FONT_STYLE["NORMAL"] = 0] = "NORMAL";
+        FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
+        FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
+    })(FONT_STYLE || (FONT_STYLE = {}));
+    var MASK_TYPE;
+    (function (MASK_TYPE) {
+        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
+        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
+        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
+    })(MASK_TYPE || (MASK_TYPE = {}));
+    var GRADIENT;
+    (function (GRADIENT) {
+        GRADIENT[GRADIENT["LINEAR"] = 0] = "LINEAR";
+        GRADIENT[GRADIENT["RADIAL"] = 1] = "RADIAL";
+        GRADIENT[GRADIENT["CONIC"] = 2] = "CONIC";
+    })(GRADIENT || (GRADIENT = {}));
+    var BLUR;
+    (function (BLUR) {
+        BLUR[BLUR["NONE"] = 0] = "NONE";
+        BLUR[BLUR["GAUSSIAN"] = 1] = "GAUSSIAN";
+        BLUR[BLUR["MOTION"] = 2] = "MOTION";
+        BLUR[BLUR["ZOOM"] = 3] = "ZOOM";
+        BLUR[BLUR["BACKGROUND"] = 4] = "BACKGROUND";
+    })(BLUR || (BLUR = {}));
+    var BOOLEAN_OPERATION;
+    (function (BOOLEAN_OPERATION) {
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["NONE"] = 0] = "NONE";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["UNION"] = 1] = "UNION";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["SUBTRACT"] = 2] = "SUBTRACT";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["INTERSECT"] = 3] = "INTERSECT";
+        BOOLEAN_OPERATION[BOOLEAN_OPERATION["XOR"] = 4] = "XOR";
+    })(BOOLEAN_OPERATION || (BOOLEAN_OPERATION = {}));
+    var CURVE_MODE;
+    (function (CURVE_MODE) {
+        CURVE_MODE[CURVE_MODE["NONE"] = 0] = "NONE";
+        CURVE_MODE[CURVE_MODE["STRAIGHT"] = 1] = "STRAIGHT";
+        CURVE_MODE[CURVE_MODE["MIRRORED"] = 2] = "MIRRORED";
+        CURVE_MODE[CURVE_MODE["ASYMMETRIC"] = 3] = "ASYMMETRIC";
+        CURVE_MODE[CURVE_MODE["DISCONNECTED"] = 4] = "DISCONNECTED";
+    })(CURVE_MODE || (CURVE_MODE = {}));
+    var FILL_RULE;
+    (function (FILL_RULE) {
+        FILL_RULE[FILL_RULE["NON_ZERO"] = 0] = "NON_ZERO";
+        FILL_RULE[FILL_RULE["EVEN_ODD"] = 1] = "EVEN_ODD";
+    })(FILL_RULE || (FILL_RULE = {}));
+    var MASK;
+    (function (MASK) {
+        MASK[MASK["NONE"] = 0] = "NONE";
+        MASK[MASK["OUTLINE"] = 1] = "OUTLINE";
+        MASK[MASK["ALPHA"] = 2] = "ALPHA";
+    })(MASK || (MASK = {}));
+    var STROKE_LINE_CAP;
+    (function (STROKE_LINE_CAP) {
+        STROKE_LINE_CAP[STROKE_LINE_CAP["BUTT"] = 0] = "BUTT";
+        STROKE_LINE_CAP[STROKE_LINE_CAP["ROUND"] = 1] = "ROUND";
+        STROKE_LINE_CAP[STROKE_LINE_CAP["SQUARE"] = 2] = "SQUARE";
+    })(STROKE_LINE_CAP || (STROKE_LINE_CAP = {}));
+    var STROKE_LINE_JOIN;
+    (function (STROKE_LINE_JOIN) {
+        STROKE_LINE_JOIN[STROKE_LINE_JOIN["MITER"] = 0] = "MITER";
+        STROKE_LINE_JOIN[STROKE_LINE_JOIN["ROUND"] = 1] = "ROUND";
+        STROKE_LINE_JOIN[STROKE_LINE_JOIN["BEVEL"] = 2] = "BEVEL";
+    })(STROKE_LINE_JOIN || (STROKE_LINE_JOIN = {}));
+    var STROKE_POSITION;
+    (function (STROKE_POSITION) {
+        STROKE_POSITION[STROKE_POSITION["CENTER"] = 0] = "CENTER";
+        STROKE_POSITION[STROKE_POSITION["INSIDE"] = 1] = "INSIDE";
+        STROKE_POSITION[STROKE_POSITION["OUTSIDE"] = 2] = "OUTSIDE";
+    })(STROKE_POSITION || (STROKE_POSITION = {}));
+    var define = {
+        StyleUnit,
+        calUnit,
+    };
+
     const o = {
         info: {
             arial: {
@@ -16009,12 +16009,6 @@
     ].forEach(k => {
         o.info[k] = o.info['dinpro'];
     });
-
-    var reg = {
-        position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
-        gradient: /\b(\w+)-?gradient\((.+)\)/i,
-        img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
-    };
 
     class Event {
         constructor() {
@@ -16139,6 +16133,13 @@
         inject,
     };
 
+    var reg = {
+        position: /(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
+        gradient: /\b(\w+)-?gradient\s*\((.+)\)/i,
+        img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
+        blur: /(\w+)\s*\((.+)\)/i,
+    };
+
     // 获取color-stop区间范围，去除无用值
     function getColorStop(stops, length) {
         const list = [];
@@ -16226,7 +16227,7 @@
                             item[0][2] + db * p,
                             item[0][3] + da * p,
                         ],
-                        1
+                        1,
                     ]);
                 }
                 break;
@@ -16242,7 +16243,7 @@
                     const dg = next[0][1] - item[0][1];
                     const db = next[0][2] - item[0][2];
                     const da = next[0][3] - item[0][3];
-                    const p = (-item[1]) / (next[1] - item[1]);
+                    const p = -item[1] / (next[1] - item[1]);
                     list.unshift([
                         [
                             item[0][0] + dr * p,
@@ -16250,14 +16251,14 @@
                             item[0][2] + db * p,
                             item[0][3] + da * p,
                         ],
-                        0
+                        0,
                     ]);
                 }
                 break;
             }
         }
         // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-        list.forEach(item => {
+        list.forEach((item) => {
             if (item[1] < 0) {
                 item[1] = 0;
             }
@@ -16283,7 +16284,12 @@
             if (t === GRADIENT.LINEAR || t === GRADIENT.CONIC) {
                 const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
                 if (points) {
-                    d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+                    d = [
+                        parseFloat(points[1]),
+                        parseFloat(points[2]),
+                        parseFloat(points[3]),
+                        parseFloat(points[4]),
+                    ];
                 }
                 else {
                     return;
@@ -16292,14 +16298,20 @@
             else if (t === GRADIENT.RADIAL) {
                 const points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
                 if (points) {
-                    d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4]), parseFloat(points[5])];
+                    d = [
+                        parseFloat(points[1]),
+                        parseFloat(points[2]),
+                        parseFloat(points[3]),
+                        parseFloat(points[4]),
+                        parseFloat(points[5]),
+                    ];
                 }
                 else {
                     return;
                 }
             }
-            const v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
-            const stops = v.map(item => {
+            const v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)?)|(transparent)/gi) || [];
+            const stops = v.map((item) => {
                 const color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
                 const percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?(?:(?:px)|%)?/.exec(item.replace(color[0], ''));
                 let offset;
@@ -16311,7 +16323,10 @@
                     offset = v;
                 }
                 return {
-                    color: { v: color ? color2rgbaInt(color[0]) : [0, 0, 0, 1], u: StyleUnit.RGBA },
+                    color: {
+                        v: color ? color2rgbaInt(color[0]) : [0, 0, 0, 1],
+                        u: StyleUnit.RGBA,
+                    },
                     offset,
                 };
             });
@@ -16383,7 +16398,8 @@
     function isGradient(s) {
         if (reg.gradient.test(s)) {
             let gradient = reg.gradient.exec(s);
-            if (gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1) {
+            if (gradient &&
+                ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1) {
                 return true;
             }
         }
@@ -16391,14 +16407,7 @@
     }
     function normalize(style) {
         const res = {};
-        [
-            'left',
-            'top',
-            'right',
-            'bottom',
-            'width',
-            'height',
-        ].forEach(k => {
+        ['left', 'top', 'right', 'bottom', 'width', 'height'].forEach((k) => {
             let v = style[k];
             if (isNil(v)) {
                 return;
@@ -16448,7 +16457,10 @@
         const fontFamily = style.fontFamily;
         if (!isNil(fontFamily)) {
             res.fontFamily = {
-                v: fontFamily.toString().trim().toLowerCase()
+                v: fontFamily
+                    .toString()
+                    .trim()
+                    .toLowerCase()
                     .replace(/['"]/g, '')
                     .replace(/\s*,\s*/g, ','),
                 u: StyleUnit.STRING,
@@ -16522,7 +16534,10 @@
         }
         const backgroundColor = style.backgroundColor;
         if (!isNil(backgroundColor)) {
-            res.backgroundColor = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+            res.backgroundColor = {
+                v: color2rgbaInt(backgroundColor),
+                u: StyleUnit.RGBA,
+            };
         }
         const overflow = style.overflow;
         if (!isNil(overflow)) {
@@ -16534,7 +16549,7 @@
         }
         const fill = style.fill;
         if (!isNil(fill)) {
-            res.fill = fill.map(item => {
+            res.fill = fill.map((item) => {
                 if (isString(item) && isGradient(item)) {
                     const v = parseGradient(item);
                     if (v) {
@@ -16546,17 +16561,20 @@
         }
         const fillEnable = style.fillEnable;
         if (!isNil(fillEnable)) {
-            res.fillEnable = fillEnable.map(item => {
+            res.fillEnable = fillEnable.map((item) => {
                 return { v: item, u: StyleUnit.BOOLEAN };
             });
         }
         const fillRule = style.fillRule;
         if (!isNil(fillRule)) {
-            res.fillRule = { v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO, u: StyleUnit.NUMBER };
+            res.fillRule = {
+                v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO,
+                u: StyleUnit.NUMBER,
+            };
         }
         const stroke = style.stroke;
         if (!isNil(stroke)) {
-            res.stroke = stroke.map(item => {
+            res.stroke = stroke.map((item) => {
                 if (isString(item) && isGradient(item)) {
                     return { v: parseGradient(item), u: StyleUnit.GRADIENT };
                 }
@@ -16567,19 +16585,19 @@
         }
         const strokeEnable = style.strokeEnable;
         if (!isNil(strokeEnable)) {
-            res.strokeEnable = strokeEnable.map(item => {
+            res.strokeEnable = strokeEnable.map((item) => {
                 return { v: item, u: StyleUnit.BOOLEAN };
             });
         }
         const strokeWidth = style.strokeWidth;
         if (!isNil(strokeWidth)) {
-            res.strokeWidth = strokeWidth.map(item => {
+            res.strokeWidth = strokeWidth.map((item) => {
                 return { v: Math.max(0, item), u: StyleUnit.PX };
             });
         }
         const strokePosition = style.strokePosition;
         if (!isNil(strokePosition)) {
-            res.strokePosition = strokePosition.map(item => {
+            res.strokePosition = strokePosition.map((item) => {
                 let v = STROKE_POSITION.CENTER;
                 if (item === 'inside') {
                     v = STROKE_POSITION.INSIDE;
@@ -16592,7 +16610,7 @@
         }
         const strokeDasharray = style.strokeDasharray;
         if (!isNil(strokeDasharray)) {
-            res.strokeDasharray = strokeDasharray.map(item => {
+            res.strokeDasharray = strokeDasharray.map((item) => {
                 return { v: Math.max(0, item), u: StyleUnit.PX };
             });
         }
@@ -16623,13 +16641,7 @@
             res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
         }
         // 只有这几个，3d没有
-        [
-            'translateX',
-            'translateY',
-            'scaleX',
-            'scaleY',
-            'rotateZ',
-        ].forEach(k => {
+        ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
             let v = style[k];
             if (isNil(v)) {
                 return;
@@ -16668,7 +16680,7 @@
                 o = transformOrigin;
             }
             else {
-                o = transformOrigin.match(/(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig);
+                o = transformOrigin.match(reg.position);
             }
             if (o.length === 1) {
                 o[1] = o[0];
@@ -16788,18 +16800,39 @@
         if (!isNil(breakMask)) {
             res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
         }
+        const blur = style.blur;
+        if (!isNil(blur)) {
+            const v = reg.blur.exec(blur);
+            if (v) {
+                const t = v[1].toLowerCase();
+                if (t === 'gauss') {
+                    res.blur = {
+                        v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) },
+                        u: StyleUnit.BLUR,
+                    };
+                }
+                else {
+                    res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
+                }
+            }
+            else {
+                res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
+            }
+        }
         return res;
     }
     function equalStyle(k, a, b) {
         if (k === 'transformOrigin') {
-            return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
-                && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
+            return (a[k][0].v === b[k][0].v &&
+                a[k][0].u === b[k][0].u &&
+                a[k][1].v === b[k][1].v &&
+                a[k][1].u === b[k][1].u);
         }
         if (k === 'color' || k === 'backgroundColor') {
-            return a[k].v[0] === b[k].v[0]
-                && a[k].v[1] === b[k].v[1]
-                && a[k].v[2] === b[k].v[2]
-                && a[k].v[3] === b[k].v[3];
+            return (a[k].v[0] === b[k].v[0] &&
+                a[k].v[1] === b[k].v[1] &&
+                a[k].v[2] === b[k].v[2] &&
+                a[k].v[3] === b[k].v[3]);
         }
         // @ts-ignore
         return a[k].v === b[k].v && a[k].u === b[k].u;
@@ -16890,8 +16923,11 @@
                 color[2] = Math.floor(Math.max(color[2], 0));
                 if (color.length === 4 && color[3] < 1) {
                     color[3] = Math.max(color[3], 0);
-                    return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
-                        + toHex(Math.floor(color[3] * 255));
+                    return ('#' +
+                        toHex(color[0]) +
+                        toHex(color[1]) +
+                        toHex(color[2]) +
+                        toHex(Math.floor(color[3] * 255)));
                 }
                 return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
             }
@@ -16915,8 +16951,15 @@
         if (/\s/.test(fontFamily)) {
             fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
         }
-        return (style.fontStyle || 'normal') + ' ' + (style.fontWeight || '400') + ' '
-            + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
+        return ((style.fontStyle || 'normal') +
+            ' ' +
+            (style.fontWeight || '400') +
+            ' ' +
+            fontSize +
+            'px/' +
+            fontSize +
+            'px ' +
+            fontFamily);
     }
     function calFontFamily(fontFamily) {
         let ff = fontFamily.split(/\s*,\s*/);
@@ -16932,7 +16975,9 @@
         if (!ff) {
             ff = calFontFamily(style.fontFamily);
         }
-        return Math.ceil(style.fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).lhr);
+        return Math.ceil(style.fontSize *
+            (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial)
+                .lhr);
     }
     /**
      * https://zhuanlan.zhihu.com/p/25808995
@@ -16944,7 +16989,10 @@
         let fontSize = style.fontSize;
         let ff = calFontFamily(style.fontFamily);
         let normal = calNormalLineHeight(style, ff);
-        return (style.lineHeight - normal) * 0.5 + fontSize * (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial).blr;
+        return ((style.lineHeight - normal) * 0.5 +
+            fontSize *
+                (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial)
+                    .blr);
     }
     function calSize(v, p) {
         if (v.u === StyleUnit.PX) {
@@ -17245,6 +17293,9 @@
                 if (type === FileFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
                     blur = `gauss(${b.radius}px)`;
                 }
+            }
+            else {
+                blur = 'none';
             }
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
@@ -17683,6 +17734,7 @@
         });
     }
 
+    // prettier-ignore
     var RefreshLevel;
     (function (RefreshLevel) {
         RefreshLevel[RefreshLevel["NONE"] = 0] = "NONE";
@@ -17714,8 +17766,10 @@
         return lv < RefreshLevel.REFLOW;
     }
     function isRepaintKey(k) {
-        return k === 'visible' || k === 'color' || k === 'backgroundColor'
-            || k === 'mixBlendMode';
+        return (k === 'visible' ||
+            k === 'color' ||
+            k === 'backgroundColor' ||
+            k === 'mixBlendMode');
     }
     function getLevel(k) {
         if (k === 'pointerEvents') {
@@ -17741,6 +17795,9 @@
         }
         if (k === 'opacity') {
             return RefreshLevel.OPACITY;
+        }
+        if (k === 'blur') {
+            return RefreshLevel.FILTER;
         }
         if (k === 'mixBlendMode') {
             return RefreshLevel.MIX_BLEND_MODE;
@@ -20030,6 +20087,7 @@
             this.hasContent = false;
             this.textureCache = [];
             this.textureTotal = [];
+            this.textureFilter = [];
             this.textureMask = [];
             this.textureTarget = [];
             this.tempOpacity = 1;
@@ -20160,7 +20218,9 @@
             this._bbox = undefined;
             this.tempBbox = undefined;
         }
+        // 插入node到自己后面
         insertAfter(node, cb) {
+            node.remove();
             const { root, parent } = this;
             if (!parent) {
                 throw new Error('Can not appendSelf without parent');
@@ -20181,7 +20241,9 @@
             parent.insertStruct(node, i + 1);
             root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
         }
+        // 插入node到自己前面
         insertBefore(node, cb) {
+            node.remove();
             const { root, parent } = this;
             if (!parent) {
                 throw new Error('Can not prependBefore without parent');
@@ -20236,12 +20298,6 @@
             computedStyle.overflow = style.overflow.v;
             computedStyle.color = style.color.v;
             computedStyle.backgroundColor = style.backgroundColor.v;
-            // 同下面的matrix
-            if (lv & RefreshLevel.REFLOW_OPACITY && (this.hasCacheOp || !this.localOpId)) {
-                this.hasCacheOp = false;
-                this.localOpId++;
-            }
-            computedStyle.opacity = style.opacity.v;
             computedStyle.fill = style.fill.map((item) => item.v);
             computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
             computedStyle.fillRule = style.fillRule.v;
@@ -20257,17 +20313,20 @@
             computedStyle.pointerEvents = style.pointerEvents.v;
             computedStyle.maskMode = style.maskMode.v;
             computedStyle.breakMask = style.breakMask.v;
+            computedStyle.blur = style.blur.v;
             // 只有重布局或者改transform才影响，普通repaint不变
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
             }
+            // 同matrix
+            if (lv & RefreshLevel.REFLOW_OPACITY) {
+                this.calOpacity();
+            }
+            this._bbox = undefined;
             this.tempBbox = undefined;
         }
         calMatrix(lv) {
             const { style, computedStyle, matrix, transform } = this;
-            if (!lv) {
-                return matrix;
-            }
             // 每次更新标识且id++，获取matrixWorld或者每帧渲染会置true，首次0时强制进入，虽然布局过程中会调用，防止手动调用不可预期
             if (this.hasCacheMw || !this.localMwId) {
                 this.hasCacheMw = false;
@@ -20383,6 +20442,14 @@
             }
             return matrix;
         }
+        calOpacity() {
+            const { style, computedStyle } = this;
+            if (this.hasCacheOp || !this.localOpId) {
+                this.hasCacheOp = false;
+                this.localOpId++;
+            }
+            computedStyle.opacity = style.opacity.v;
+        }
         calContent() {
             return (this.hasContent = false);
         }
@@ -20409,16 +20476,19 @@
             }
         }
         resetTextureTarget() {
-            var _a, _b, _c;
-            const { textureMask, textureTotal, textureCache } = this;
+            var _a, _b, _c, _d;
+            const { textureMask, textureFilter, textureTotal, textureCache, } = this;
             for (let i = 0, len = textureCache.length; i < len; i++) {
                 if ((_a = textureMask[i]) === null || _a === void 0 ? void 0 : _a.available) {
                     this.textureTarget[i] = textureMask[i];
                 }
-                else if ((_b = textureTotal[i]) === null || _b === void 0 ? void 0 : _b.available) {
+                else if ((_b = textureFilter[i]) === null || _b === void 0 ? void 0 : _b.available) {
+                    this.textureTarget[i] = textureFilter[i];
+                }
+                else if ((_c = textureTotal[i]) === null || _c === void 0 ? void 0 : _c.available) {
                     this.textureTarget[i] = textureTotal[i];
                 }
-                else if ((_c = textureCache[i]) === null || _c === void 0 ? void 0 : _c.available) {
+                else if ((_d = textureCache[i]) === null || _d === void 0 ? void 0 : _d.available) {
                     this.textureTarget[i] = textureCache[i];
                 }
                 else {
@@ -20435,6 +20505,7 @@
                 this.textureTarget = this.textureCache;
             }
             this.textureTotal.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
+            this.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.refreshLevel |= RefreshLevel.CACHE;
         }
@@ -20479,6 +20550,19 @@
                     next.prev = prev;
                 }
             }
+            // 无论是否真实dom，都清空
+            this.prev =
+                this.next =
+                    this.parent =
+                        this.root =
+                            undefined;
+            // 特殊的判断，防止Page/ArtBoard自身删除了引用
+            if (!this.isPage) {
+                this.page = undefined;
+            }
+            if (!this.isArtBoard) {
+                this.artBoard = undefined;
+            }
             // 未添加到dom时
             if (this.isDestroyed) {
                 cb && cb(true);
@@ -20493,14 +20577,7 @@
             }
             this.isDestroyed = true;
             this.clearCache(true);
-            this.prev =
-                this.next =
-                    this.parent =
-                        this.page =
-                            this.artBoard =
-                                this.mask =
-                                    this.root =
-                                        undefined;
+            this.mask = undefined;
         }
         structure(lv) {
             const temp = this.struct;
@@ -20580,12 +20657,32 @@
             }
             return computedStyle[k];
         }
-        getBoundingClientRect(includeBbox = false) {
-            const matrixWorld = this.matrixWorld;
+        getBoundingClientRect(includeBbox = false, excludeRotate = false) {
             const bbox = includeBbox
                 ? this._bbox || this.bbox
                 : this._rect || this.rect;
-            const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrixWorld);
+            let t;
+            // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
+            if (excludeRotate && !this.isPage) {
+                const parent = this.parent;
+                const i = identity();
+                const matrix = this.matrix;
+                i[12] = matrix[12];
+                i[13] = matrix[13];
+                const m = multiply(parent.matrixWorld, i);
+                t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+            }
+            else {
+                t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
+            }
+            let x1 = t.x1;
+            let y1 = t.y1;
+            let x2 = t.x2;
+            let y2 = t.y2;
+            let x3 = t.x3;
+            let y3 = t.y3;
+            let x4 = t.x4;
+            let y4 = t.y4;
             return {
                 left: Math.min(x1, x2, x3, x4),
                 top: Math.min(y1, y2, y3, y4),
@@ -20877,7 +20974,7 @@
             }
             // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
             /* eslint-disable */
-            let node = this, cache = this.hasCacheOp, parent = node.parent, index = -1;
+            let node = this, cache = this.hasCacheMw, parent = node.parent, index = -1;
             const pList = [];
             while (parent) {
                 pList.push(parent);
@@ -20958,9 +21055,22 @@
         constructor(props, children = []) {
             super(props);
             this.children = children;
+            const len = children.length;
+            if (len) {
+                const first = children[0];
+                first.parent = this;
+                let last = first;
+                for (let i = 1; i < len; i++) {
+                    const child = children[i];
+                    child.parent = this;
+                    last.next = child;
+                    child.prev = last;
+                    last = child;
+                }
+            }
             this.isContainer = true;
         }
-        // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，目前暂无JSX这种一口气创建一颗子树
+        // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，一口气创建/移动一颗子树时需要
         didMount() {
             super.didMount();
             const { children } = this;
@@ -21012,6 +21122,7 @@
             }
         }
         appendChild(node, cb) {
+            node.remove();
             const { root, children } = this;
             const len = children.length;
             if (len) {
@@ -21032,6 +21143,7 @@
             root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
         }
         prependChild(node, cb) {
+            node.remove();
             const { root, children } = this;
             const len = children.length;
             if (len) {
@@ -21735,857 +21847,131 @@
         }
     }
 
-    class Group extends Container {
-        constructor(props, children) {
-            super(props, children);
-            this.isGroup = true;
+    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return;
         }
-        // 覆盖实现，有最小尺寸约束，更新要预防
-        updateStyle(style, cb) {
-            const { keys, formatStyle } = this.updateStyleData(style);
-            // 最小尺寸约束
-            const parent = this.parent;
-            const computedStyle = this.computedStyle;
-            // 组只能调左/右，不能同时左右
-            if (style.hasOwnProperty('left')) {
-                const left = calSize(formatStyle.left, parent.width);
-                const w = parent.width - computedStyle.right - left;
-                if (w < this.minWidth) {
-                    if (formatStyle.left.u === StyleUnit.PX) ;
-                    else if (formatStyle.left.u === StyleUnit.PERCENT) {
-                        const max = ((parent.width - computedStyle.right - this.minWidth) * 100) /
-                            parent.width;
-                        // 限制导致的无效更新去除
-                        if (formatStyle.left.v === max) {
-                            let i = keys.indexOf('left');
-                            keys.splice(i, 1);
-                        }
-                        else {
-                            formatStyle.left.v = this.style.left.v = max;
-                        }
-                    }
-                }
-            }
-            else if (style.hasOwnProperty('right')) {
-                const right = calSize(formatStyle.right, parent.width);
-                const w = parent.width - computedStyle.left - right;
-                if (w < this.minWidth) {
-                    if (formatStyle.right.u === StyleUnit.PX) ;
-                    else if (formatStyle.right.u === StyleUnit.PERCENT) {
-                        const max = ((parent.width - computedStyle.left - this.minWidth) * 100) /
-                            parent.width;
-                        // 限制导致的无效更新去除
-                        if (formatStyle.right.v === max) {
-                            let i = keys.indexOf('right');
-                            keys.splice(i, 1);
-                        }
-                        else {
-                            formatStyle.right.v = this.style.right.v = max;
-                        }
-                    }
-                }
-            }
-            if (style.hasOwnProperty('top')) {
-                const top = calSize(formatStyle.top, parent.height);
-                const h = parent.height - computedStyle.bottom - top;
-                if (h < this.minHeight) {
-                    if (formatStyle.top.u === StyleUnit.PX) ;
-                    else if (formatStyle.top.u === StyleUnit.PERCENT) {
-                        const max = ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
-                            parent.height;
-                        // 限制导致的无效更新去除
-                        if (formatStyle.top.v === max) {
-                            let i = keys.indexOf('top');
-                            keys.splice(i, 1);
-                        }
-                        else {
-                            formatStyle.top.v = this.style.top.v = max;
-                        }
-                    }
-                }
-            }
-            else if (style.hasOwnProperty('bottom')) {
-                const bottom = calSize(formatStyle.bottom, parent.height);
-                const h = parent.height - computedStyle.top - bottom;
-                if (h < this.minHeight) {
-                    if (formatStyle.bottom.u === StyleUnit.PX) ;
-                    else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
-                        const max = ((parent.height - computedStyle.top - this.minHeight) * 100) /
-                            parent.height;
-                        // 限制导致的无效更新去除
-                        if (formatStyle.bottom.v === max) {
-                            let i = keys.indexOf('bottom');
-                            keys.splice(i, 1);
-                        }
-                        else {
-                            formatStyle.bottom.v = this.style.bottom.v = max;
-                        }
-                    }
-                }
-            }
-            // 再次检测可能因为尺寸限制造成的style更新无效，即限制后和当前一样
-            if (this.updateStyleCheck(keys)) {
-                cb && cb(true);
-                return;
-            }
-            this.root.addUpdate(this, keys, undefined, false, false, cb);
-        }
-        // 获取单个孩子相对于本父元素的盒子尺寸
-        getChildRect(child) {
-            const { width, height, matrix } = child;
-            let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(0, 0, width, height, matrix);
-            return {
-                minX: Math.min(x1, x2, x3, x4),
-                minY: Math.min(y1, y2, y3, y4),
-                maxX: Math.max(x1, x2, x3, x4),
-                maxY: Math.max(y1, y2, y3, y4),
-            };
-        }
-        // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
-        getChildrenRect() {
-            const { width: gw, height: gh, children } = this;
-            let rect = children.length
-                ? this.getChildRect(children[0])
-                : {
-                    minX: 0,
-                    minY: 0,
-                    maxX: gw,
-                    maxY: gh,
-                };
-            for (let i = 1, len = children.length; i < len; i++) {
-                const child = children[i];
-                const { minX, minY, maxX, maxY } = this.getChildRect(child);
-                rect.minX = Math.min(rect.minX, minX);
-                rect.minY = Math.min(rect.minY, minY);
-                rect.maxX = Math.max(rect.maxX, maxX);
-                rect.maxY = Math.max(rect.maxY, maxY);
-            }
-            return rect;
-        }
-        // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
-        adjustPosAndSizeSelf(dx, dy, dw, dh) {
-            const { style, computedStyle, parent, root } = this;
-            if (!parent || !root) {
-                return;
-            }
-            const { width: pw, height: ph } = parent;
-            const { top, right, bottom, left, width, height, translateX, translateY } = style;
-            // 水平调整统一处理，固定此时无效
-            if (dx) {
-                if (left.u === StyleUnit.PX) {
-                    left.v += dx;
-                }
-                else if (left.u === StyleUnit.PERCENT) {
-                    left.v += (dx * 100) / pw;
-                }
-                computedStyle.left += dx;
-            }
-            if (dw) {
-                if (right.u === StyleUnit.PX) {
-                    right.v -= dw;
-                }
-                else if (right.u === StyleUnit.PERCENT) {
-                    right.v -= (dw * 100) / pw;
-                }
-                computedStyle.right -= dw;
-            }
-            this.width = computedStyle.width =
-                parent.width - computedStyle.left - computedStyle.right;
-            // translateX调整根据是否固定尺寸，不会有%尺寸目前
-            this.resetTranslateX(left, width, translateX);
-            // 垂直和水平一样
-            if (dy) {
-                if (top.u === StyleUnit.PX) {
-                    top.v += dy;
-                }
-                else if (top.u === StyleUnit.PERCENT) {
-                    top.v += (dy * 100) / ph;
-                }
-                computedStyle.top += dy;
-            }
-            if (dh) {
-                if (bottom.u === StyleUnit.PX) {
-                    bottom.v -= dh;
-                }
-                else if (bottom.u === StyleUnit.PERCENT) {
-                    bottom.v -= (dh * 100) / ph;
-                }
-                computedStyle.bottom -= dh;
-            }
-            this.height = computedStyle.height =
-                parent.height - computedStyle.top - computedStyle.bottom;
-            this.resetTranslateY(top, height, translateY);
-            // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
-            this.refreshLevel |= RefreshLevel.TRANSFORM;
-            root.rl |= RefreshLevel.TRANSFORM;
-            this.calMatrix(RefreshLevel.TRANSFORM);
-            // 记得重置
-            this._rect = undefined;
-            this._bbox = undefined;
-            this.tempBbox = undefined;
-        }
-        // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
-        adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh) {
-            const { style, computedStyle, root } = child;
-            if (!root) {
-                return;
-            }
-            const { top, right, bottom, left, width, height, translateX, translateY } = style;
-            // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
-            // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
-            // 2个只要有发生，都会影响左右，因为干扰尺寸
-            if (dx || dw) {
-                computedStyle.left -= dx;
-                if (left.u === StyleUnit.PX) {
-                    left.v = computedStyle.left;
-                }
-                else if (left.u === StyleUnit.PERCENT) {
-                    left.v = (computedStyle.left * 100) / gw;
-                }
-                computedStyle.right += dw;
-                if (right.u === StyleUnit.PX) {
-                    right.v = computedStyle.right;
-                }
-                else if (right.u === StyleUnit.PERCENT) {
-                    right.v = (computedStyle.right * 100) / gw;
-                }
-            }
-            this.resetTranslateX(left, width, translateX);
-            // 类似水平情况
-            if (dy || dh) {
-                computedStyle.top -= dy;
-                if (top.u === StyleUnit.PX) {
-                    top.v = computedStyle.top;
-                }
-                else if (top.u === StyleUnit.PERCENT) {
-                    top.v = (computedStyle.top * 100) / gh;
-                }
-                computedStyle.bottom += dh;
-                if (bottom.u === StyleUnit.PX) {
-                    bottom.v = computedStyle.bottom;
-                }
-                else if (bottom.u === StyleUnit.PERCENT) {
-                    bottom.v = (computedStyle.bottom * 100) / gh;
-                }
-            }
-            this.resetTranslateY(top, height, translateY);
-            // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
-            child.refreshLevel |= RefreshLevel.TRANSFORM;
-            root.rl |= RefreshLevel.TRANSFORM;
-            child.calMatrix(RefreshLevel.TRANSFORM);
-            // 记得重置
-            child._rect = undefined;
-            child._bbox = undefined;
-            child.tempBbox = undefined;
-        }
-        // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
-        adjustPosAndSize() {
-            const { children, width: gw, height: gh } = this;
-            const rect = this.getChildrenRect();
-            const dx = rect.minX, dy = rect.minY, dw = rect.maxX - gw, dh = rect.maxY - gh;
-            // 检查真正有变化，位置相对于自己原本位置为原点
-            if (dx || dy || dw || dh) {
-                // 先调整自己，之后尺寸更新用新wh
-                this.adjustPosAndSizeSelf(dx, dy, dw, dh);
-                const { width: gw, height: gh } = this;
-                // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
-                for (let i = 0, len = children.length; i < len; i++) {
-                    const child = children[i];
-                    this.adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh);
-                }
-                return true;
-            }
-            return false;
-        }
-        /**
-         * 组调整尺寸reflow后，先递归看子节点，可能会变更如left百分比等数据，需重新计算更新，
-         * 这个递归是深度递归回溯，先叶子节点的变化及对其父元素的影响，然后慢慢向上到引发检测的组，
-         * 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
-         */
-        checkSizeChange() {
-            super.checkSizeChange();
-            this.checkPosSizeDownward();
-            this.checkPosSizeUpward();
-        }
-        checkPosSizeDownward() {
-            const { children } = this;
-            for (let i = 0, len = children.length; i < len; i++) {
-                const child = children[i];
-                if (child instanceof Group) {
-                    child.checkPosSizeDownward();
-                }
-            }
-            return this.adjustPosAndSize();
-        }
-        unGroup() {
-            if (this.isDestroyed) {
-                throw new Error('Can not unGroup a destroyed Node');
-            }
-            const prev = this.prev;
-            const next = this.next;
-            const zoom = this.getZoom();
-            const parent = this.parent;
-            const width = parent.width;
-            const height = parent.height;
-            const rect = parent.getBoundingClientRect();
-            const x = rect.left / zoom;
-            const y = rect.top / zoom;
-            const children = this.children.slice(0);
-            for (let i = 0, len = children.length; i < len; i++) {
-                const item = children[i];
-                checkGroup(x, y, width, height, zoom, item);
-                // 插入到group的原本位置，有prev/next优先使用定位
-                if (prev) {
-                    prev.insertAfter(item);
-                }
-                else if (next) {
-                    next.insertBefore(item);
-                }
-                // 没有prev/next则parent原本只有一个节点
-                else {
-                    parent.appendChild(item);
-                }
-            }
-            this.remove();
-        }
-        // 至少1个node进行编组，以第0个位置为基准
-        static group(nodes, props) {
-            if (!nodes.length) {
-                return;
-            }
-            let structs;
-            // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
-            for (let i = 0, len = nodes.length; i < len; i++) {
-                const item = nodes[i];
-                if (item.isDestroyed) {
-                    throw new Error('Can not group a destroyed Node');
-                }
-                if (!i) {
-                    structs = item.root.structs;
-                }
-                item.tempIndex = structs.indexOf(item.struct);
-            }
-            nodes.sort((a, b) => {
-                return a.tempIndex - b.tempIndex;
-            });
-            const first = nodes[0];
-            const prev = first.prev;
-            const next = first.next;
-            const zoom = first.getZoom();
-            const parent = first.parent;
-            const width = parent.width;
-            const height = parent.height;
-            const rect = parent.getBoundingClientRect();
-            const x = rect.left / zoom;
-            const y = rect.top / zoom;
-            for (let i = 0, len = nodes.length; i < len; i++) {
-                const item = nodes[i];
-                checkGroup(x, y, width, height, zoom, item);
-            }
-            const p = Object.assign({
-                uuid: v4(),
-                name: '编组',
-                style: {
-                    left: '0%',
-                    top: '0%',
-                    right: '0%',
-                    bottom: '0%',
-                },
-            }, props);
-            const group = new Group(p, nodes);
-            // 插入到first的原本位置，有prev/next优先使用定位
-            if (prev) {
-                prev.insertAfter(group);
-            }
-            else if (next) {
-                next.insertBefore(group);
-            }
-            // 没有prev/next则parent原本只有一个节点
-            else {
-                parent.appendChild(group);
-            }
-            group.checkSizeChange();
-        }
-    }
-    function checkGroup(x, y, width, height, zoom, node) {
-        const r = node.getBoundingClientRect();
-        const x1 = r.left / zoom;
-        const y1 = r.top / zoom;
-        node.remove();
-        const style = node.style;
-        // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
-        const leftConstraint = style.left.u === StyleUnit.PX;
-        const rightConstraint = style.right.u === StyleUnit.PX;
-        const topConstraint = style.top.u === StyleUnit.PX;
-        const bottomConstraint = style.bottom.u === StyleUnit.PX;
-        const widthConstraint = style.width.u === StyleUnit.PX;
-        const heightConstraint = style.height.u === StyleUnit.PX;
-        // left
-        if (leftConstraint) {
-            const left = x1 - x;
-            style.left.v = left;
-            // left+right忽略width
-            if (rightConstraint) {
-                style.right.v = width - left - node.width;
-            }
-            // left+width
-            else if (widthConstraint) ;
-            // 仅left，right是百分比忽略width
-            else {
-                style.right.v = ((width - left - node.width) * 100) / width;
-            }
-        }
-        // right
-        else if (rightConstraint) {
-            // right+width
-            if (widthConstraint) ;
-            // 仅right，left是百分比忽略width
-            else {
-                style.left.v = ((width - style.right.v - node.width) * 100) / width;
-            }
-        }
-        // 左右都不固定
-        else {
-            const left = x1 - x;
-            // 仅固定宽度，以中心点占left的百分比
-            if (widthConstraint) {
-                style.left.v = ((left + style.width.v * 0.5) * 100) / width;
-            }
-            // 左右皆为百分比
-            else {
-                style.left.v = (left * 100) / width;
-                style.right.v = ((width - left - node.width) * 100) / width;
-            }
-        }
-        // top
-        if (topConstraint) {
-            const top = y1 - y;
-            style.top.v = top;
-            // top+bottom忽略height
-            if (bottomConstraint) {
-                style.bottom.v = height - top - node.height;
-            }
-            // top+height
-            else if (heightConstraint) ;
-            // 仅top，bottom是百分比忽略height
-            else {
-                style.bottom.v = ((height - top - node.height) * 100) / height;
-            }
-        }
-        // bottom
-        else if (bottomConstraint) {
-            // bottom+height
-            if (heightConstraint) ;
-            // 仅bottom，top是百分比忽略height
-            else {
-                style.top.v = ((height - style.bottom.v - node.height) * 100) / height;
-            }
-        }
-        // 上下都不固定
-        else {
-            const top = y1 - y;
-            // 仅固定宽度，以中心点占top的百分比
-            if (heightConstraint) {
-                style.top.v = ((top + style.height.v * 0.5) * 100) / height;
-            }
-            // 左右皆为百分比
-            else {
-                style.top.v = (top * 100) / height;
-                style.bottom.v = ((height - top - node.height) * 100) / height;
-            }
-        }
-    }
-
-    class LineBox {
-        constructor(y, h) {
-            this.y = y;
-            this.w = 0;
-            this.h = h;
-            this.list = [];
-        }
-        add(textBox) {
-            this.list.push(textBox);
-            this.w += textBox.w;
-        }
-        verticalAlign() {
-            const { baseline, list } = this;
-            for (let i = 0, len = list.length; i < len; i++) {
-                const textBox = list[i];
-                const b = textBox.baseline;
-                if (b !== baseline) {
-                    const d = baseline - b;
-                    textBox.y += d;
-                }
-            }
-        }
-        offsetX(n) {
-            const list = this.list;
-            for (let i = 0, len = list.length; i < len; i++) {
-                list[i].x += n;
-            }
-        }
-        get size() {
-            return this.list.length;
-        }
-        get baseline() {
-            let n = 0;
-            const list = this.list;
-            for (let i = 0, len = list.length; i < len; i++) {
-                n = Math.max(n, list[i].baseline);
-            }
-            return n;
-        }
-        get lineHeight() {
-            const list = this.list;
-            if (list.length) {
-                let n = 0;
-                for (let i = 0, len = list.length; i < len; i++) {
-                    n = Math.max(n, list[i].lineHeight);
-                }
-                return n;
-            }
-            return this.h;
-        }
-    }
-
-    class TextBox {
-        constructor(x, y, w, lineHeight, baseline, str, font) {
-            this.x = 0;
-            this.y = 0;
-            this.w = 0;
-            this.lineHeight = 0;
-            this.baseline = 0;
-            this.x = x;
-            this.y = y;
-            this.w = w;
-            this.str = str;
-            this.lineHeight = lineHeight;
-            this.baseline = baseline;
-            this.font = font;
-        }
-    }
-
-    /**
-     * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
-     * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
-     * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
-     * 简单的2分法实现简单，但是次数稍多，对于性能不是最佳，因为内容的slice裁剪和传递给canvas测量都随尺寸增加而加大
-     * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
-     * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
-     * 返回内容和end索引和长度，最少也要1个字符
-     */
-    function measure(ctx, start, length, content, w, perW, letterSpacing) {
-        let i = start, j = length, rw = 0, newLine = false;
-        // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
-        let hypotheticalNum = Math.round(w / perW);
-        // 不能增长0个字符，至少也要1个
-        if (hypotheticalNum <= 0) {
-            hypotheticalNum = 1;
-        }
-        // 超过内容长度范围也不行
-        else if (hypotheticalNum > length - start) {
-            hypotheticalNum = length - start;
-        }
-        // 类似2分的一个循环
-        while (i < j) {
-            let mw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
-            if (letterSpacing) {
-                mw += hypotheticalNum * letterSpacing;
-            }
-            if (mw === w) {
-                rw = w;
-                newLine = true;
-                break;
-            }
-            // 超出，设置右边界，并根据余量推测减少个数，
-            // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
-            if (mw > w + 1e-10) {
-                newLine = true;
-                // 限制至少1个
-                if (hypotheticalNum === 1) {
-                    rw = mw;
-                    break;
-                }
-                // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
-                if (i === j - 1 || i - start === hypotheticalNum - 1) {
-                    hypotheticalNum = i - start;
-                    break;
-                }
-                j = hypotheticalNum + start - 1;
-                let reduce = Math.round((mw - w) / perW);
-                if (reduce <= 0) {
-                    reduce = 1;
-                }
-                hypotheticalNum -= reduce;
-                if (hypotheticalNum < i - start) {
-                    hypotheticalNum = i - start;
-                }
-            }
-            // 还有空余，设置左边界，并根据余量推测增加的个数
-            else {
-                rw = mw;
-                if (hypotheticalNum === length - start) {
-                    break;
-                }
-                i = hypotheticalNum + start;
-                let add = Math.round((w - mw) / perW);
-                if (add <= 0) {
-                    add = 1;
-                }
-                hypotheticalNum += add;
-                if (hypotheticalNum > j - start) {
-                    hypotheticalNum = j - start;
-                }
-            }
-        }
-        // 查看是否有空格，防止字符串过长indexOf无效查找
-        for (let i = start, len = start + hypotheticalNum; i < len; i++) {
-            if (content.charAt(i) === '\n') {
-                hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
-                rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
-                if (letterSpacing) {
-                    rw += hypotheticalNum * letterSpacing;
-                }
-                // newLine = true;
+        // 防止空值开始
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
                 break;
             }
         }
-        return { hypotheticalNum, rw, newLine };
+        if (start === -1) {
+            return;
+        }
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
+        }
+        else if (first.length === 6) {
+            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
+        }
+        else {
+            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
+            }
+            else if (item.length === 4) {
+                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
+            }
+            else if (item.length === 6) {
+                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
+            }
+        }
     }
-    class Text extends Node {
+    function svgPolygon(list, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return '';
+        }
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return '';
+        }
+        let s;
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
+        }
+        else if (first.length === 6) {
+            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
+        }
+        else {
+            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
+            }
+            else if (item.length === 4) {
+                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
+            }
+            else if (item.length === 6) {
+                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
+            }
+        }
+        return s;
+    }
+
+    class Geom extends Node {
         constructor(props) {
             super(props);
-            this._content = props.content;
-            this.rich = props.rich;
-            this.lineBoxList = [];
         }
         lay(data) {
             super.lay(data);
-            const { rich, style, computedStyle, _content: content, lineBoxList } = this;
-            const autoW = style.width.u === StyleUnit.AUTO &&
-                (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
-            const autoH = style.height.u === StyleUnit.AUTO &&
-                (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
-            let i = 0;
-            let length = content.length;
-            let perW;
-            let letterSpacing;
-            let lineHeight;
-            let baseline;
-            let maxW = 0;
-            let x = 0, y = 0;
-            // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
-            const SET_FONT_INDEX = [];
-            if (rich && rich.length) {
-                for (let i = 0, len = rich.length; i < len; i++) {
-                    const item = rich[i];
-                    SET_FONT_INDEX[item.location] = i;
-                }
-            }
-            const ctx = inject.getFontCanvas().ctx;
-            // 第一个肯定要设置测量font
-            if (rich && rich.length) {
-                const first = rich[0];
-                letterSpacing = first.letterSpacing;
-                perW = first.fontSize * 0.8 + letterSpacing;
-                lineHeight = first.lineHeight;
-                baseline = getBaseline(first);
-                ctx.font = setFontStyle(first);
-            }
-            // 无富文本则通用
-            else {
-                letterSpacing = computedStyle.letterSpacing;
-                perW = computedStyle.fontWeight * 0.8 + letterSpacing;
-                lineHeight = computedStyle.lineHeight;
-                baseline = getBaseline(computedStyle);
-                ctx.font = setFontStyle(computedStyle);
-            }
-            let lineBox = new LineBox(y, lineHeight);
-            lineBoxList.splice(0);
-            lineBoxList.push(lineBox);
-            // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
-            const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
-            const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
-            while (i < length) {
-                // 定高超过不显示也无需定位
-                if (!autoH && y >= H) {
-                    break;
-                }
-                const setFontIndex = SET_FONT_INDEX[i];
-                // 每串富文本重置font测量
-                if (i && rich && setFontIndex) {
-                    const cur = rich[setFontIndex];
-                    letterSpacing = cur.letterSpacing;
-                    perW = cur.fontSize * 0.8 + letterSpacing;
-                    lineHeight = cur.lineHeight;
-                    baseline = getBaseline(cur);
-                    ctx.font = setFontStyle(cur);
-                }
-                // 连续\n，开头会遇到，需跳过
-                if (content.charAt(i) === '\n') {
-                    i++;
-                    x = 0;
-                    y += lineHeight;
-                    lineBox.verticalAlign();
-                    lineBox = new LineBox(y, lineHeight);
-                    lineBoxList.push(lineBox);
-                    const textBox = new TextBox(x, y, 0, lineHeight, baseline, '\n', ctx.font);
-                    lineBox.add(textBox);
-                    // 最后一个\n特殊判断
-                    if (i === length) {
-                        lineBoxList.push(lineBox);
-                    }
-                    continue;
-                }
-                // 富文本需限制最大length，非富普通情况无需
-                let len = length;
-                if (rich && rich.length) {
-                    for (let j = i + 1; j < len; j++) {
-                        if (SET_FONT_INDEX[j]) {
-                            len = j;
-                            break;
-                        }
-                    }
-                }
-                // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
-                const min = ctx.measureText(content.charAt(i)).width;
-                if (min > W - x + 1e-10 && x) {
-                    x = 0;
-                    y += lineBox.lineHeight;
-                    if (i < length) {
-                        lineBox.verticalAlign();
-                        lineBox = new LineBox(y, lineHeight);
-                        lineBoxList.push(lineBox);
-                    }
-                    continue;
-                }
-                // 预估法获取测量结果
-                const { hypotheticalNum: num, rw, newLine, } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
-                const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
-                lineBox.add(textBox);
-                i += num;
-                maxW = Math.max(maxW, rw);
-                // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
-                if (newLine) {
-                    x = 0;
-                    y += lineBox.lineHeight;
-                    // 最后一行对齐外面做
-                    if (i < length) {
-                        lineBox.verticalAlign();
-                        lineBox = new LineBox(y, lineHeight);
-                        lineBoxList.push(lineBox);
-                    }
-                }
-                else {
-                    x += rw;
-                }
-            }
-            // 最后一行循环里没算要再算一次
-            maxW = Math.max(maxW, lineBox.w);
-            if (autoW) {
-                this.width = computedStyle.width = maxW;
-            }
-            if (autoH) {
-                this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
-            }
-            // 最后一行对齐
-            lineBox.verticalAlign();
-            // 非左对齐偏移
-            const textAlign = computedStyle.textAlign;
-            if (textAlign === TEXT_ALIGN.CENTER) {
-                for (let i = 0, len = lineBoxList.length; i < len; i++) {
-                    const lineBox = lineBoxList[i];
-                    const d = this.width - lineBox.w;
-                    if (d) {
-                        lineBox.offsetX(d * 0.5);
-                    }
-                }
-            }
-            else if (textAlign === TEXT_ALIGN.RIGHT) {
-                for (let i = 0, len = lineBoxList.length; i < len; i++) {
-                    const lineBox = lineBoxList[i];
-                    const d = this.width - lineBox.w;
-                    if (d) {
-                        lineBox.offsetX(d);
-                    }
-                }
-            }
+            this.points = undefined;
         }
-        calContent() {
-            return (this.hasContent = !!this._content);
-        }
-        renderCanvas(scale) {
-            super.renderCanvas(scale);
-            const bbox = this._bbox || this.bbox;
-            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
-            while (w * scale > config.MAX_TEXTURE_SIZE ||
-                h * scale > config.MAX_TEXTURE_SIZE) {
-                if (scale <= 1) {
-                    break;
-                }
-                scale = scale >> 1;
-            }
-            if (w * scale > config.MAX_TEXTURE_SIZE ||
-                h * scale > config.MAX_TEXTURE_SIZE) {
+        buildPoints() {
+            var _a;
+            if (this.points) {
                 return;
             }
-            const dx = -x * scale, dy = -y * scale;
-            const { rich, computedStyle, lineBoxList } = this;
-            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale));
-            canvasCache.available = true;
-            const ctx = canvasCache.offscreen.ctx;
-            // 富文本每串不同的需要设置字体颜色
-            const SET_FONT_INDEX = [0];
-            let color;
-            if (rich && rich.length) {
-                for (let i = 0, len = rich.length; i < len; i++) {
-                    const item = rich[i];
-                    SET_FONT_INDEX[item.location] = i;
-                }
-                const first = rich[0];
-                color = color2rgbaStr(first.color);
-            }
-            // 非富默认颜色
-            else {
-                color = color2rgbaStr(computedStyle.color);
-            }
-            let count = 0;
-            for (let i = 0, len = lineBoxList.length; i < len; i++) {
-                const lineBox = lineBoxList[i];
-                // 固定尺寸超过则overflow: hidden
-                if (lineBox.y >= h) {
-                    break;
-                }
-                const list = lineBox.list, len = list.length;
-                for (let i = 0; i < len; i++) {
-                    // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
-                    const setFontIndex = SET_FONT_INDEX[count];
-                    if (rich && rich.length && count && setFontIndex) {
-                        const cur = rich[setFontIndex];
-                        color = color2rgbaStr(cur.color);
-                    }
-                    const textBox = list[i];
-                    if (scale !== 1) {
-                        ctx.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
-                    }
-                    else {
-                        ctx.font = textBox.font;
-                    }
-                    ctx.fillStyle = color;
-                    ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
-                    count += textBox.str.length;
-                }
-            }
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
+            this.points = [];
         }
-        get content() {
-            return this._content;
+        calContent() {
+            this.buildPoints();
+            return (this.hasContent = !!this.points && this.points.length > 1);
         }
-        set content(v) {
-            var _a;
-            if (v !== this._content) {
-                this._content = v;
-                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
-            }
+        toSvg(scale, isClosed = false) {
+            this.buildPoints();
+            const computedStyle = this.computedStyle;
+            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
+            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            const props = [
+                ['d', d],
+                ['fill', '#D8D8D8'],
+                ['fill-rule', fillRule],
+                ['stroke', '#979797'],
+                ['stroke-width', (1 / scale).toString()],
+            ];
+            let s = `<svg width="${this.width}" height="${this.height}"><path`;
+            props.forEach((item) => {
+                s += ' ' + item[0] + '="' + item[1] + '"';
+            });
+            return s + '></path></svg>';
         }
     }
 
@@ -23085,134 +22471,6 @@
         getPointT,
         bezierSlope,
     };
-
-    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return;
-        }
-        // 防止空值开始
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return;
-        }
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
-        }
-        else if (first.length === 6) {
-            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
-        }
-        else {
-            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
-            }
-            else if (item.length === 4) {
-                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
-            }
-            else if (item.length === 6) {
-                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
-            }
-        }
-    }
-    function svgPolygon(list, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return '';
-        }
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return '';
-        }
-        let s;
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
-        }
-        else if (first.length === 6) {
-            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
-        }
-        else {
-            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
-            }
-            else if (item.length === 4) {
-                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
-            }
-            else if (item.length === 6) {
-                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
-            }
-        }
-        return s;
-    }
-
-    class Geom extends Node {
-        constructor(props) {
-            super(props);
-        }
-        lay(data) {
-            super.lay(data);
-            this.points = undefined;
-        }
-        buildPoints() {
-            var _a;
-            if (this.points) {
-                return;
-            }
-            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
-            this.points = [];
-        }
-        calContent() {
-            this.buildPoints();
-            return (this.hasContent = !!this.points && this.points.length > 1);
-        }
-        toSvg(scale, isClosed = false) {
-            this.buildPoints();
-            const computedStyle = this.computedStyle;
-            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
-            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
-            const props = [
-                ['d', d],
-                ['fill', '#D8D8D8'],
-                ['fill-rule', fillRule],
-                ['stroke', '#979797'],
-                ['stroke-width', (1 / scale).toString()],
-            ];
-            let s = `<svg width="${this.width}" height="${this.height}"><path`;
-            props.forEach((item) => {
-                s += ' ' + item[0] + '="' + item[1] + '"';
-            });
-            return s + '></path></svg>';
-        }
-    }
 
     function isCornerPoint(point) {
         return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -25763,6 +25021,525 @@
         chains,
     };
 
+    function checkReflow(node, addDom, removeDom) {
+        const parent = node.parent;
+        if (removeDom) {
+            node.checkPosSizeUpward();
+            node.clearCacheUpward(false);
+            node.destroy();
+        }
+        // add和普通修改共用
+        else {
+            node.layout({
+                x: 0,
+                y: 0,
+                w: parent.width,
+                h: parent.height,
+            });
+            node.clearCacheUpward(false);
+        }
+    }
+    var POSITION;
+    (function (POSITION) {
+        POSITION[POSITION["UNDER"] = 0] = "UNDER";
+        POSITION[POSITION["BEFORE"] = 1] = "BEFORE";
+        POSITION[POSITION["AFTER"] = 2] = "AFTER";
+    })(POSITION || (POSITION = {}));
+    function moveTo(nodes, target, position = POSITION.UNDER) {
+        if (!nodes.length) {
+            return;
+        }
+        if (target.isDestroyed) {
+            throw new Error('Can not moveTo a destroyed Node');
+        }
+        const parent = target.parent;
+        const width = parent.width;
+        const height = parent.height;
+        const rect = parent.getBoundingClientRect(false, true);
+        const zoom = parent.getZoom();
+        const x = rect.left / zoom;
+        const y = rect.top / zoom;
+        for (let i = 0, len = nodes.length; i < len; i++) {
+            const item = nodes[i];
+            migrate(x, y, width, height, zoom, item);
+            if (position === POSITION.BEFORE) {
+                target.insertBefore(item);
+            }
+            else if (position === POSITION.AFTER) {
+                target.insertAfter(item);
+            }
+            // 默认under
+            else if (target instanceof Container) {
+                target.appendChild(item);
+            }
+        }
+    }
+    function migrate(x, y, width, height, zoom, node) {
+        const r = node.getBoundingClientRect(false, true);
+        const x1 = r.left / zoom;
+        const y1 = r.top / zoom;
+        node.remove();
+        const style = node.style;
+        // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
+        const leftConstraint = style.left.u === StyleUnit.PX;
+        const rightConstraint = style.right.u === StyleUnit.PX;
+        const topConstraint = style.top.u === StyleUnit.PX;
+        const bottomConstraint = style.bottom.u === StyleUnit.PX;
+        const widthConstraint = style.width.u === StyleUnit.PX;
+        const heightConstraint = style.height.u === StyleUnit.PX;
+        // left
+        if (leftConstraint) {
+            const left = x1 - x;
+            style.left.v = left;
+            // left+right忽略width
+            if (rightConstraint) {
+                style.right.v = width - left - node.width;
+            }
+            // left+width
+            else if (widthConstraint) ;
+            // 仅left，right是百分比忽略width
+            else {
+                style.right.v = ((width - left - node.width) * 100) / width;
+            }
+        }
+        // right
+        else if (rightConstraint) {
+            // right+width
+            if (widthConstraint) ;
+            // 仅right，left是百分比忽略width
+            else {
+                style.left.v = ((width - style.right.v - node.width) * 100) / width;
+            }
+        }
+        // 左右都不固定
+        else {
+            const left = x1 - x;
+            // 仅固定宽度，以中心点占left的百分比
+            if (widthConstraint) {
+                style.left.v = ((left + style.width.v * 0.5) * 100) / width;
+            }
+            // 左右皆为百分比
+            else {
+                style.left.v = (left * 100) / width;
+                style.right.v = ((width - left - node.width) * 100) / width;
+            }
+        }
+        // top
+        if (topConstraint) {
+            const top = y1 - y;
+            style.top.v = top;
+            // top+bottom忽略height
+            if (bottomConstraint) {
+                style.bottom.v = height - top - node.height;
+            }
+            // top+height
+            else if (heightConstraint) ;
+            // 仅top，bottom是百分比忽略height
+            else {
+                style.bottom.v = ((height - top - node.height) * 100) / height;
+            }
+        }
+        // bottom
+        else if (bottomConstraint) {
+            // bottom+height
+            if (heightConstraint) ;
+            // 仅bottom，top是百分比忽略height
+            else {
+                style.top.v = ((height - style.bottom.v - node.height) * 100) / height;
+            }
+        }
+        // 上下都不固定
+        else {
+            const top = y1 - y;
+            // 仅固定宽度，以中心点占top的百分比
+            if (heightConstraint) {
+                style.top.v = ((top + style.height.v * 0.5) * 100) / height;
+            }
+            // 左右皆为百分比
+            else {
+                style.top.v = (top * 100) / height;
+                style.bottom.v = ((height - top - node.height) * 100) / height;
+            }
+        }
+    }
+    var reflow = {
+        moveTo,
+        POSITION,
+    };
+
+    class Group extends Container {
+        constructor(props, children) {
+            super(props, children);
+            this.isGroup = true;
+        }
+        // 覆盖实现，有最小尺寸约束，更新要预防
+        updateStyle(style, cb) {
+            const { keys, formatStyle } = this.updateStyleData(style);
+            // 最小尺寸约束
+            const parent = this.parent;
+            const computedStyle = this.computedStyle;
+            // 组只能调左/右，不能同时左右
+            if (style.hasOwnProperty('left')) {
+                const left = calSize(formatStyle.left, parent.width);
+                const w = parent.width - computedStyle.right - left;
+                if (w < this.minWidth) {
+                    if (formatStyle.left.u === StyleUnit.PX) ;
+                    else if (formatStyle.left.u === StyleUnit.PERCENT) {
+                        const max = ((parent.width - computedStyle.right - this.minWidth) * 100) /
+                            parent.width;
+                        // 限制导致的无效更新去除
+                        if (formatStyle.left.v === max) {
+                            let i = keys.indexOf('left');
+                            keys.splice(i, 1);
+                        }
+                        else {
+                            formatStyle.left.v = this.style.left.v = max;
+                        }
+                    }
+                }
+            }
+            else if (style.hasOwnProperty('right')) {
+                const right = calSize(formatStyle.right, parent.width);
+                const w = parent.width - computedStyle.left - right;
+                if (w < this.minWidth) {
+                    if (formatStyle.right.u === StyleUnit.PX) ;
+                    else if (formatStyle.right.u === StyleUnit.PERCENT) {
+                        const max = ((parent.width - computedStyle.left - this.minWidth) * 100) /
+                            parent.width;
+                        // 限制导致的无效更新去除
+                        if (formatStyle.right.v === max) {
+                            let i = keys.indexOf('right');
+                            keys.splice(i, 1);
+                        }
+                        else {
+                            formatStyle.right.v = this.style.right.v = max;
+                        }
+                    }
+                }
+            }
+            if (style.hasOwnProperty('top')) {
+                const top = calSize(formatStyle.top, parent.height);
+                const h = parent.height - computedStyle.bottom - top;
+                if (h < this.minHeight) {
+                    if (formatStyle.top.u === StyleUnit.PX) ;
+                    else if (formatStyle.top.u === StyleUnit.PERCENT) {
+                        const max = ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
+                            parent.height;
+                        // 限制导致的无效更新去除
+                        if (formatStyle.top.v === max) {
+                            let i = keys.indexOf('top');
+                            keys.splice(i, 1);
+                        }
+                        else {
+                            formatStyle.top.v = this.style.top.v = max;
+                        }
+                    }
+                }
+            }
+            else if (style.hasOwnProperty('bottom')) {
+                const bottom = calSize(formatStyle.bottom, parent.height);
+                const h = parent.height - computedStyle.top - bottom;
+                if (h < this.minHeight) {
+                    if (formatStyle.bottom.u === StyleUnit.PX) ;
+                    else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
+                        const max = ((parent.height - computedStyle.top - this.minHeight) * 100) /
+                            parent.height;
+                        // 限制导致的无效更新去除
+                        if (formatStyle.bottom.v === max) {
+                            let i = keys.indexOf('bottom');
+                            keys.splice(i, 1);
+                        }
+                        else {
+                            formatStyle.bottom.v = this.style.bottom.v = max;
+                        }
+                    }
+                }
+            }
+            // 再次检测可能因为尺寸限制造成的style更新无效，即限制后和当前一样
+            if (this.updateStyleCheck(keys)) {
+                cb && cb(true);
+                return;
+            }
+            this.root.addUpdate(this, keys, undefined, false, false, cb);
+        }
+        // 获取单个孩子相对于本父元素的盒子尺寸
+        getChildRect(child) {
+            const { width, height, matrix } = child;
+            let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(0, 0, width, height, matrix);
+            return {
+                minX: Math.min(x1, x2, x3, x4),
+                minY: Math.min(y1, y2, y3, y4),
+                maxX: Math.max(x1, x2, x3, x4),
+                maxY: Math.max(y1, y2, y3, y4),
+            };
+        }
+        // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
+        getChildrenRect() {
+            const { width: gw, height: gh, children } = this;
+            let rect = children.length
+                ? this.getChildRect(children[0])
+                : {
+                    minX: 0,
+                    minY: 0,
+                    maxX: gw,
+                    maxY: gh,
+                };
+            for (let i = 1, len = children.length; i < len; i++) {
+                const child = children[i];
+                const { minX, minY, maxX, maxY } = this.getChildRect(child);
+                rect.minX = Math.min(rect.minX, minX);
+                rect.minY = Math.min(rect.minY, minY);
+                rect.maxX = Math.max(rect.maxX, maxX);
+                rect.maxY = Math.max(rect.maxY, maxY);
+            }
+            return rect;
+        }
+        // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
+        adjustPosAndSizeSelf(dx, dy, dw, dh) {
+            const { style, computedStyle, parent, root } = this;
+            if (!parent || !root) {
+                return;
+            }
+            const { width: pw, height: ph } = parent;
+            const { top, right, bottom, left, width, height, translateX, translateY } = style;
+            // 水平调整统一处理，固定此时无效
+            if (dx) {
+                if (left.u === StyleUnit.PX) {
+                    left.v += dx;
+                }
+                else if (left.u === StyleUnit.PERCENT) {
+                    left.v += (dx * 100) / pw;
+                }
+                computedStyle.left += dx;
+            }
+            if (dw) {
+                if (right.u === StyleUnit.PX) {
+                    right.v -= dw;
+                }
+                else if (right.u === StyleUnit.PERCENT) {
+                    right.v -= (dw * 100) / pw;
+                }
+                computedStyle.right -= dw;
+            }
+            this.width = computedStyle.width =
+                parent.width - computedStyle.left - computedStyle.right;
+            // translateX调整根据是否固定尺寸，不会有%尺寸目前
+            this.resetTranslateX(left, width, translateX);
+            // 垂直和水平一样
+            if (dy) {
+                if (top.u === StyleUnit.PX) {
+                    top.v += dy;
+                }
+                else if (top.u === StyleUnit.PERCENT) {
+                    top.v += (dy * 100) / ph;
+                }
+                computedStyle.top += dy;
+            }
+            if (dh) {
+                if (bottom.u === StyleUnit.PX) {
+                    bottom.v -= dh;
+                }
+                else if (bottom.u === StyleUnit.PERCENT) {
+                    bottom.v -= (dh * 100) / ph;
+                }
+                computedStyle.bottom -= dh;
+            }
+            this.height = computedStyle.height =
+                parent.height - computedStyle.top - computedStyle.bottom;
+            this.resetTranslateY(top, height, translateY);
+            // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+            this.refreshLevel |= RefreshLevel.TRANSFORM;
+            root.rl |= RefreshLevel.TRANSFORM;
+            this.calMatrix(RefreshLevel.TRANSFORM);
+            // 记得重置
+            this._rect = undefined;
+            this._bbox = undefined;
+            this.tempBbox = undefined;
+        }
+        // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
+        adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh) {
+            const { style, computedStyle, root } = child;
+            if (!root) {
+                return;
+            }
+            const { top, right, bottom, left, width, height, translateX, translateY, } = style;
+            // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
+            // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
+            // 2个只要有发生，都会影响左右，因为干扰尺寸
+            if (dx || dw) {
+                computedStyle.left -= dx;
+                if (left.u === StyleUnit.PX) {
+                    left.v = computedStyle.left;
+                }
+                else if (left.u === StyleUnit.PERCENT) {
+                    left.v = (computedStyle.left * 100) / gw;
+                }
+                computedStyle.right += dw;
+                if (right.u === StyleUnit.PX) {
+                    right.v = computedStyle.right;
+                }
+                else if (right.u === StyleUnit.PERCENT) {
+                    right.v = (computedStyle.right * 100) / gw;
+                }
+            }
+            this.resetTranslateX(left, width, translateX);
+            // 类似水平情况
+            if (dy || dh) {
+                computedStyle.top -= dy;
+                if (top.u === StyleUnit.PX) {
+                    top.v = computedStyle.top;
+                }
+                else if (top.u === StyleUnit.PERCENT) {
+                    top.v = (computedStyle.top * 100) / gh;
+                }
+                computedStyle.bottom += dh;
+                if (bottom.u === StyleUnit.PX) {
+                    bottom.v = computedStyle.bottom;
+                }
+                else if (bottom.u === StyleUnit.PERCENT) {
+                    bottom.v = (computedStyle.bottom * 100) / gh;
+                }
+            }
+            this.resetTranslateY(top, height, translateY);
+            // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+            child.refreshLevel |= RefreshLevel.TRANSFORM;
+            root.rl |= RefreshLevel.TRANSFORM;
+            child.calMatrix(RefreshLevel.TRANSFORM);
+            // 记得重置
+            child._rect = undefined;
+            child._bbox = undefined;
+            child.tempBbox = undefined;
+        }
+        // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
+        adjustPosAndSize() {
+            const { children, width: gw, height: gh } = this;
+            const rect = this.getChildrenRect();
+            const dx = rect.minX, dy = rect.minY, dw = rect.maxX - gw, dh = rect.maxY - gh;
+            // 检查真正有变化，位置相对于自己原本位置为原点
+            if (dx || dy || dw || dh) {
+                // 先调整自己，之后尺寸更新用新wh
+                this.adjustPosAndSizeSelf(dx, dy, dw, dh);
+                const { width: gw, height: gh } = this;
+                // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
+                for (let i = 0, len = children.length; i < len; i++) {
+                    const child = children[i];
+                    this.adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh);
+                }
+                return true;
+            }
+            return false;
+        }
+        /**
+         * 组调整尺寸reflow后，先递归看子节点，可能会变更如left百分比等数据，需重新计算更新，
+         * 这个递归是深度递归回溯，先叶子节点的变化及对其父元素的影响，然后慢慢向上到引发检测的组，
+         * 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
+         */
+        checkSizeChange() {
+            super.checkSizeChange();
+            this.checkPosSizeDownward();
+            this.checkPosSizeUpward();
+        }
+        checkPosSizeDownward() {
+            const { children } = this;
+            for (let i = 0, len = children.length; i < len; i++) {
+                const child = children[i];
+                if (child instanceof Group) {
+                    child.checkPosSizeDownward();
+                }
+            }
+            return this.adjustPosAndSize();
+        }
+        unGroup() {
+            if (this.isDestroyed) {
+                throw new Error('Can not unGroup a destroyed Node');
+            }
+            const prev = this.prev;
+            const next = this.next;
+            const zoom = this.getZoom();
+            const parent = this.parent;
+            const width = parent.width;
+            const height = parent.height;
+            const rect = parent.getBoundingClientRect(false, true);
+            const x = rect.left / zoom;
+            const y = rect.top / zoom;
+            const children = this.children.slice(0);
+            for (let i = 0, len = children.length; i < len; i++) {
+                const item = children[i];
+                migrate(x, y, width, height, zoom, item);
+                // 插入到group的原本位置，有prev/next优先使用定位
+                if (prev) {
+                    prev.insertAfter(item);
+                }
+                else if (next) {
+                    next.insertBefore(item);
+                }
+                // 没有prev/next则parent原本只有一个节点
+                else {
+                    parent.appendChild(item);
+                }
+            }
+            this.remove();
+        }
+        // 至少1个node进行编组，以第0个位置为基准
+        static group(nodes, props) {
+            if (!nodes.length) {
+                return;
+            }
+            let structs;
+            // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                const item = nodes[i];
+                if (item.isDestroyed) {
+                    throw new Error('Can not group a destroyed Node');
+                }
+                if (!i) {
+                    structs = item.root.structs;
+                }
+                item.tempIndex = structs.indexOf(item.struct);
+            }
+            nodes.sort((a, b) => {
+                return a.tempIndex - b.tempIndex;
+            });
+            const first = nodes[0];
+            const prev = first.prev;
+            const next = first.next;
+            const zoom = first.getZoom();
+            const parent = first.parent;
+            const width = parent.width;
+            const height = parent.height;
+            const rect = parent.getBoundingClientRect(false, true);
+            const x = rect.left / zoom;
+            const y = rect.top / zoom;
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                const item = nodes[i];
+                migrate(x, y, width, height, zoom, item);
+            }
+            const p = Object.assign({
+                uuid: v4(),
+                name: '编组',
+                style: {
+                    left: '0%',
+                    top: '0%',
+                    right: '0%',
+                    bottom: '0%',
+                },
+            }, props);
+            const group = new Group(p, nodes);
+            // 插入到first的原本位置，有prev/next优先使用定位
+            if (prev) {
+                prev.insertAfter(group);
+            }
+            else if (next) {
+                next.insertBefore(group);
+            }
+            // 没有prev/next则parent原本只有一个节点
+            else {
+                parent.appendChild(group);
+            }
+            group.checkSizeChange();
+        }
+    }
+
     function applyMatrixPoints(points, m) {
         if (m && !isE(m)) {
             const a1 = m[0], b1 = m[1];
@@ -26170,6 +25947,399 @@
                 }
             }
             return this._bbox;
+        }
+    }
+
+    class LineBox {
+        constructor(y, h) {
+            this.y = y;
+            this.w = 0;
+            this.h = h;
+            this.list = [];
+        }
+        add(textBox) {
+            this.list.push(textBox);
+            this.w += textBox.w;
+        }
+        verticalAlign() {
+            const { baseline, list } = this;
+            for (let i = 0, len = list.length; i < len; i++) {
+                const textBox = list[i];
+                const b = textBox.baseline;
+                if (b !== baseline) {
+                    const d = baseline - b;
+                    textBox.y += d;
+                }
+            }
+        }
+        offsetX(n) {
+            const list = this.list;
+            for (let i = 0, len = list.length; i < len; i++) {
+                list[i].x += n;
+            }
+        }
+        get size() {
+            return this.list.length;
+        }
+        get baseline() {
+            let n = 0;
+            const list = this.list;
+            for (let i = 0, len = list.length; i < len; i++) {
+                n = Math.max(n, list[i].baseline);
+            }
+            return n;
+        }
+        get lineHeight() {
+            const list = this.list;
+            if (list.length) {
+                let n = 0;
+                for (let i = 0, len = list.length; i < len; i++) {
+                    n = Math.max(n, list[i].lineHeight);
+                }
+                return n;
+            }
+            return this.h;
+        }
+    }
+
+    class TextBox {
+        constructor(x, y, w, lineHeight, baseline, str, font) {
+            this.x = 0;
+            this.y = 0;
+            this.w = 0;
+            this.lineHeight = 0;
+            this.baseline = 0;
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.str = str;
+            this.lineHeight = lineHeight;
+            this.baseline = baseline;
+            this.font = font;
+        }
+    }
+
+    /**
+     * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
+     * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
+     * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
+     * 简单的2分法实现简单，但是次数稍多，对于性能不是最佳，因为内容的slice裁剪和传递给canvas测量都随尺寸增加而加大
+     * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
+     * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
+     * 返回内容和end索引和长度，最少也要1个字符
+     */
+    function measure(ctx, start, length, content, w, perW, letterSpacing) {
+        let i = start, j = length, rw = 0, newLine = false;
+        // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
+        let hypotheticalNum = Math.round(w / perW);
+        // 不能增长0个字符，至少也要1个
+        if (hypotheticalNum <= 0) {
+            hypotheticalNum = 1;
+        }
+        // 超过内容长度范围也不行
+        else if (hypotheticalNum > length - start) {
+            hypotheticalNum = length - start;
+        }
+        // 类似2分的一个循环
+        while (i < j) {
+            let mw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
+            if (letterSpacing) {
+                mw += hypotheticalNum * letterSpacing;
+            }
+            if (mw === w) {
+                rw = w;
+                newLine = true;
+                break;
+            }
+            // 超出，设置右边界，并根据余量推测减少个数，
+            // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
+            if (mw > w + 1e-10) {
+                newLine = true;
+                // 限制至少1个
+                if (hypotheticalNum === 1) {
+                    rw = mw;
+                    break;
+                }
+                // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
+                if (i === j - 1 || i - start === hypotheticalNum - 1) {
+                    hypotheticalNum = i - start;
+                    break;
+                }
+                j = hypotheticalNum + start - 1;
+                let reduce = Math.round((mw - w) / perW);
+                if (reduce <= 0) {
+                    reduce = 1;
+                }
+                hypotheticalNum -= reduce;
+                if (hypotheticalNum < i - start) {
+                    hypotheticalNum = i - start;
+                }
+            }
+            // 还有空余，设置左边界，并根据余量推测增加的个数
+            else {
+                rw = mw;
+                if (hypotheticalNum === length - start) {
+                    break;
+                }
+                i = hypotheticalNum + start;
+                let add = Math.round((w - mw) / perW);
+                if (add <= 0) {
+                    add = 1;
+                }
+                hypotheticalNum += add;
+                if (hypotheticalNum > j - start) {
+                    hypotheticalNum = j - start;
+                }
+            }
+        }
+        // 查看是否有空格，防止字符串过长indexOf无效查找
+        for (let i = start, len = start + hypotheticalNum; i < len; i++) {
+            if (content.charAt(i) === '\n') {
+                hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
+                rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
+                if (letterSpacing) {
+                    rw += hypotheticalNum * letterSpacing;
+                }
+                // newLine = true;
+                break;
+            }
+        }
+        return { hypotheticalNum, rw, newLine };
+    }
+    class Text extends Node {
+        constructor(props) {
+            super(props);
+            this._content = props.content;
+            this.rich = props.rich;
+            this.lineBoxList = [];
+        }
+        lay(data) {
+            super.lay(data);
+            const { rich, style, computedStyle, _content: content, lineBoxList } = this;
+            const autoW = style.width.u === StyleUnit.AUTO &&
+                (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
+            const autoH = style.height.u === StyleUnit.AUTO &&
+                (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
+            let i = 0;
+            let length = content.length;
+            let perW;
+            let letterSpacing;
+            let lineHeight;
+            let baseline;
+            let maxW = 0;
+            let x = 0, y = 0;
+            // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
+            const SET_FONT_INDEX = [];
+            if (rich && rich.length) {
+                for (let i = 0, len = rich.length; i < len; i++) {
+                    const item = rich[i];
+                    SET_FONT_INDEX[item.location] = i;
+                }
+            }
+            const ctx = inject.getFontCanvas().ctx;
+            // 第一个肯定要设置测量font
+            if (rich && rich.length) {
+                const first = rich[0];
+                letterSpacing = first.letterSpacing;
+                perW = first.fontSize * 0.8 + letterSpacing;
+                lineHeight = first.lineHeight;
+                baseline = getBaseline(first);
+                ctx.font = setFontStyle(first);
+            }
+            // 无富文本则通用
+            else {
+                letterSpacing = computedStyle.letterSpacing;
+                perW = computedStyle.fontWeight * 0.8 + letterSpacing;
+                lineHeight = computedStyle.lineHeight;
+                baseline = getBaseline(computedStyle);
+                ctx.font = setFontStyle(computedStyle);
+            }
+            let lineBox = new LineBox(y, lineHeight);
+            lineBoxList.splice(0);
+            lineBoxList.push(lineBox);
+            // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
+            const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
+            const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
+            while (i < length) {
+                // 定高超过不显示也无需定位
+                if (!autoH && y >= H) {
+                    break;
+                }
+                const setFontIndex = SET_FONT_INDEX[i];
+                // 每串富文本重置font测量
+                if (i && rich && setFontIndex) {
+                    const cur = rich[setFontIndex];
+                    letterSpacing = cur.letterSpacing;
+                    perW = cur.fontSize * 0.8 + letterSpacing;
+                    lineHeight = cur.lineHeight;
+                    baseline = getBaseline(cur);
+                    ctx.font = setFontStyle(cur);
+                }
+                // 连续\n，开头会遇到，需跳过
+                if (content.charAt(i) === '\n') {
+                    i++;
+                    x = 0;
+                    y += lineHeight;
+                    lineBox.verticalAlign();
+                    lineBox = new LineBox(y, lineHeight);
+                    lineBoxList.push(lineBox);
+                    const textBox = new TextBox(x, y, 0, lineHeight, baseline, '\n', ctx.font);
+                    lineBox.add(textBox);
+                    // 最后一个\n特殊判断
+                    if (i === length) {
+                        lineBoxList.push(lineBox);
+                    }
+                    continue;
+                }
+                // 富文本需限制最大length，非富普通情况无需
+                let len = length;
+                if (rich && rich.length) {
+                    for (let j = i + 1; j < len; j++) {
+                        if (SET_FONT_INDEX[j]) {
+                            len = j;
+                            break;
+                        }
+                    }
+                }
+                // 如果无法放下一个字符，且x不是0开头则换行，预估测量里限制了至少有1个字符
+                const min = ctx.measureText(content.charAt(i)).width;
+                if (min > W - x + 1e-10 && x) {
+                    x = 0;
+                    y += lineBox.lineHeight;
+                    if (i < length) {
+                        lineBox.verticalAlign();
+                        lineBox = new LineBox(y, lineHeight);
+                        lineBoxList.push(lineBox);
+                    }
+                    continue;
+                }
+                // 预估法获取测量结果
+                const { hypotheticalNum: num, rw, newLine, } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
+                const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
+                lineBox.add(textBox);
+                i += num;
+                maxW = Math.max(maxW, rw);
+                // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
+                if (newLine) {
+                    x = 0;
+                    y += lineBox.lineHeight;
+                    // 最后一行对齐外面做
+                    if (i < length) {
+                        lineBox.verticalAlign();
+                        lineBox = new LineBox(y, lineHeight);
+                        lineBoxList.push(lineBox);
+                    }
+                }
+                else {
+                    x += rw;
+                }
+            }
+            // 最后一行循环里没算要再算一次
+            maxW = Math.max(maxW, lineBox.w);
+            if (autoW) {
+                this.width = computedStyle.width = maxW;
+            }
+            if (autoH) {
+                this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
+            }
+            // 最后一行对齐
+            lineBox.verticalAlign();
+            // 非左对齐偏移
+            const textAlign = computedStyle.textAlign;
+            if (textAlign === TEXT_ALIGN.CENTER) {
+                for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                    const lineBox = lineBoxList[i];
+                    const d = this.width - lineBox.w;
+                    if (d) {
+                        lineBox.offsetX(d * 0.5);
+                    }
+                }
+            }
+            else if (textAlign === TEXT_ALIGN.RIGHT) {
+                for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                    const lineBox = lineBoxList[i];
+                    const d = this.width - lineBox.w;
+                    if (d) {
+                        lineBox.offsetX(d);
+                    }
+                }
+            }
+        }
+        calContent() {
+            return (this.hasContent = !!this._content);
+        }
+        renderCanvas(scale) {
+            super.renderCanvas(scale);
+            const bbox = this._bbox || this.bbox;
+            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            while (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
+                if (scale <= 1) {
+                    break;
+                }
+                scale = scale >> 1;
+            }
+            if (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
+                return;
+            }
+            const dx = -x * scale, dy = -y * scale;
+            const { rich, computedStyle, lineBoxList } = this;
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale));
+            canvasCache.available = true;
+            const ctx = canvasCache.offscreen.ctx;
+            // 富文本每串不同的需要设置字体颜色
+            const SET_FONT_INDEX = [0];
+            let color;
+            if (rich && rich.length) {
+                for (let i = 0, len = rich.length; i < len; i++) {
+                    const item = rich[i];
+                    SET_FONT_INDEX[item.location] = i;
+                }
+                const first = rich[0];
+                color = color2rgbaStr(first.color);
+            }
+            // 非富默认颜色
+            else {
+                color = color2rgbaStr(computedStyle.color);
+            }
+            let count = 0;
+            for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                const lineBox = lineBoxList[i];
+                // 固定尺寸超过则overflow: hidden
+                if (lineBox.y >= h) {
+                    break;
+                }
+                const list = lineBox.list, len = list.length;
+                for (let i = 0; i < len; i++) {
+                    // textBox的分隔一定是按rich的，用字符统计数量作索引来获取颜色
+                    const setFontIndex = SET_FONT_INDEX[count];
+                    if (rich && rich.length && count && setFontIndex) {
+                        const cur = rich[setFontIndex];
+                        color = color2rgbaStr(cur.color);
+                    }
+                    const textBox = list[i];
+                    if (scale !== 1) {
+                        ctx.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                    }
+                    else {
+                        ctx.font = textBox.font;
+                    }
+                    ctx.fillStyle = color;
+                    ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
+                    count += textBox.str.length;
+                }
+            }
+        }
+        get content() {
+            return this._content;
+        }
+        set content(v) {
+            var _a;
+            if (v !== this._content) {
+                this._content = v;
+                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
+            }
         }
     }
 
@@ -27172,25 +27342,6 @@ void main() {
         }
     }
 
-    function checkReflow(root, node, addDom, removeDom) {
-        const parent = node.parent;
-        if (removeDom) {
-            node.checkPosSizeUpward();
-            node.clearCacheUpward(false);
-            node.destroy();
-        }
-        // add和普通修改共用
-        else {
-            node.layout({
-                x: 0,
-                y: 0,
-                w: parent.width,
-                h: parent.height,
-            });
-            node.clearCacheUpward(false);
-        }
-    }
-
     class Root extends Container {
         constructor(props, children = []) {
             super(props, children);
@@ -27391,7 +27542,7 @@ void main() {
                     this.reLayout();
                 }
                 else {
-                    checkReflow(this, node, addDom, removeDom);
+                    checkReflow(node, addDom, removeDom);
                 }
             }
             else {
@@ -27399,20 +27550,20 @@ void main() {
                 if (isRp) {
                     node.calRepaintStyle(lv);
                     node.clearCache(true);
-                    node.clearCacheUpward(false);
                 }
                 else {
                     const { style, computedStyle } = node;
                     if (lv & RefreshLevel.TRANSFORM_ALL) {
-                        node.calMatrix(lv); // matrixWorld缓存在方法内清除
+                        node.calMatrix(lv);
                     }
                     if (lv & RefreshLevel.OPACITY) {
-                        computedStyle.opacity = style.opacity.v;
-                        // 手动删除缓存，这里一定是不相等的才能进来，因为updateStyle会前置校验
-                        if (node.hasCacheOp || !node.localOpId) {
-                            node.hasCacheOp = false;
-                            node.localOpId++;
-                        }
+                        node.calOpacity();
+                    }
+                    if (lv & RefreshLevel.FILTER) {
+                        computedStyle.blur = style.blur.v;
+                        node._bbox = undefined;
+                        node.tempBbox = undefined;
+                        node.clearCache(false);
                     }
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
                         computedStyle.mixBlendMode = style.mixBlendMode.v;
@@ -27424,8 +27575,8 @@ void main() {
                     if (lv & RefreshLevel.BREAK_MASK) {
                         computedStyle.breakMask = style.breakMask.v;
                     }
-                    node.clearCacheUpward(false);
                 }
+                node.clearCacheUpward(false);
             }
             // 检查mask影响，这里是作为被遮罩对象存在的关系检查
             const mask = node.mask;
@@ -27568,6 +27719,7 @@ void main() {
         Geom,
         Polyline,
         ShapeGroup,
+        reflow,
     };
 
     function apply(json, imgs) {

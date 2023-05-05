@@ -1,3 +1,4 @@
+// prettier-ignore
 export enum RefreshLevel {
   NONE =             0b000000000000000, // 0
   CACHE =            0b000000000000001, // 1
@@ -31,8 +32,12 @@ export function isRepaint(lv: number): boolean {
 }
 
 export function isRepaintKey(k: string): boolean {
-  return k === 'visible' || k === 'color' || k === 'backgroundColor'
-    || k === 'mixBlendMode';
+  return (
+    k === 'visible' ||
+    k === 'color' ||
+    k === 'backgroundColor' ||
+    k === 'mixBlendMode'
+  );
 }
 
 export function getLevel(k: string): RefreshLevel {
@@ -59,6 +64,9 @@ export function getLevel(k: string): RefreshLevel {
   }
   if (k === 'opacity') {
     return RefreshLevel.OPACITY;
+  }
+  if (k === 'blur') {
+    return RefreshLevel.FILTER;
   }
   if (k === 'mixBlendMode') {
     return RefreshLevel.MIX_BLEND_MODE;

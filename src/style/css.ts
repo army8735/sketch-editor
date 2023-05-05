@@ -1,5 +1,8 @@
 import { JStyle, Rich } from '../format';
+import inject from '../util/inject';
+import { isNil, isString } from '../util/type';
 import {
+  BLUR,
   BOOLEAN_OPERATION,
   calUnit,
   ComputedStyle,
@@ -15,22 +18,18 @@ import {
   StyleUnit,
   TEXT_ALIGN,
 } from './define';
-import { isNil, isString } from '../util/type';
-import inject from '../util/inject';
 import font from './font';
-import reg from './reg';
 import { parseGradient } from './gradient';
+import reg from './reg';
 
 function compatibleTransform(k: string, v: StyleNumValue) {
   if (k === 'scaleX' || k === 'scaleY') {
     v.u = StyleUnit.NUMBER;
-  }
-  else if (k === 'translateX' || k === 'translateY') {
+  } else if (k === 'translateX' || k === 'translateY') {
     if (v.u === StyleUnit.NUMBER) {
       v.u = StyleUnit.PX;
     }
-  }
-  else {
+  } else {
     if (v.u === StyleUnit.NUMBER) {
       v.u = StyleUnit.DEG;
     }
@@ -38,9 +37,12 @@ function compatibleTransform(k: string, v: StyleNumValue) {
 }
 
 export function isGradient(s: string) {
-  if(reg.gradient.test(s)) {
+  if (reg.gradient.test(s)) {
     let gradient = reg.gradient.exec(s);
-    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1) {
+    if (
+      gradient &&
+      ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1
+    ) {
       return true;
     }
   }
@@ -49,19 +51,12 @@ export function isGradient(s: string) {
 
 export function normalize(style: JStyle): Style {
   const res: any = {};
-  [
-    'left',
-    'top',
-    'right',
-    'bottom',
-    'width',
-    'height',
-  ].forEach(k => {
+  ['left', 'top', 'right', 'bottom', 'width', 'height'].forEach((k) => {
     let v = style[k as keyof JStyle];
     if (isNil(v)) {
       return;
     }
-    const n = calUnit(v as string | number || 0);
+    const n = calUnit((v as string | number) || 0);
     // 无单位视为px
     if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
       n.u = StyleUnit.PX;
@@ -81,16 +76,14 @@ export function normalize(style: JStyle): Style {
         v: 0,
         u: StyleUnit.AUTO,
       };
-    }
-    else {
+    } else {
       let n = calUnit(lineHeight || 0);
       if (n.v <= 0) {
         n = {
           v: 0,
           u: StyleUnit.AUTO,
         };
-      }
-      else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
+      } else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
         n.u = StyleUnit.PX;
       }
       res.lineHeight = n;
@@ -106,11 +99,14 @@ export function normalize(style: JStyle): Style {
   const fontFamily = style.fontFamily;
   if (!isNil(fontFamily)) {
     res.fontFamily = {
-      v: fontFamily.toString().trim().toLowerCase()
+      v: fontFamily
+        .toString()
+        .trim()
+        .toLowerCase()
         .replace(/['"]/g, '')
         .replace(/\s*,\s*/g, ','),
       u: StyleUnit.STRING,
-    }
+    };
   }
   const fontSize = style.fontSize;
   if (!isNil(fontSize)) {
@@ -130,33 +126,24 @@ export function normalize(style: JStyle): Style {
     if (isString(fontWeight)) {
       if (/thin/i.test(fontWeight as string)) {
         res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
-      }
-      else if (/lighter/i.test(fontWeight as string)) {
+      } else if (/lighter/i.test(fontWeight as string)) {
         res.fontWeight = { v: 200, u: StyleUnit.NUMBER };
-      }
-      else if (/light/i.test(fontWeight as string)) {
+      } else if (/light/i.test(fontWeight as string)) {
         res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
-      }
-      else if (/medium/i.test(fontWeight as string)) {
+      } else if (/medium/i.test(fontWeight as string)) {
         res.fontWeight = { v: 500, u: StyleUnit.NUMBER };
-      }
-      else if (/semiBold/i.test(fontWeight as string)) {
+      } else if (/semiBold/i.test(fontWeight as string)) {
         res.fontWeight = { v: 600, u: StyleUnit.NUMBER };
-      }
-      else if (/bold/i.test(fontWeight as string)) {
+      } else if (/bold/i.test(fontWeight as string)) {
         res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
-      }
-      else if (/extraBold/i.test(fontWeight as string)) {
+      } else if (/extraBold/i.test(fontWeight as string)) {
         res.fontWeight = { v: 800, u: StyleUnit.NUMBER };
-      }
-      else if (/black/i.test(fontWeight as string)) {
+      } else if (/black/i.test(fontWeight as string)) {
         res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
-      }
-      else {
+      } else {
         res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
       }
-    }
-    else {
+    } else {
       res.fontWeight = {
         v: Math.min(900, Math.max(100, parseInt(fontWeight as string) || 400)),
         u: StyleUnit.NUMBER,
@@ -168,8 +155,7 @@ export function normalize(style: JStyle): Style {
     let v = FONT_STYLE.NORMAL;
     if (/italic/i.test(fontStyle)) {
       v = FONT_STYLE.ITALIC;
-    }
-    else if (/oblique/i.test(fontStyle)) {
+    } else if (/oblique/i.test(fontStyle)) {
       v = FONT_STYLE.OBLIQUE;
     }
     res.fontStyle = { v, u: StyleUnit.NUMBER };
@@ -180,7 +166,10 @@ export function normalize(style: JStyle): Style {
   }
   const backgroundColor = style.backgroundColor;
   if (!isNil(backgroundColor)) {
-    res.backgroundColor = { v: color2rgbaInt(backgroundColor), u: StyleUnit.RGBA };
+    res.backgroundColor = {
+      v: color2rgbaInt(backgroundColor),
+      u: StyleUnit.RGBA,
+    };
   }
   const overflow = style.overflow;
   if (!isNil(overflow)) {
@@ -192,11 +181,11 @@ export function normalize(style: JStyle): Style {
   }
   const fill = style.fill;
   if (!isNil(fill)) {
-    res.fill = fill.map(item => {
+    res.fill = fill.map((item) => {
       if (isString(item) && isGradient(item as string)) {
         const v = parseGradient(item as string);
         if (v) {
-          return { v, u :StyleUnit.GRADIENT };
+          return { v, u: StyleUnit.GRADIENT };
         }
       }
       return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
@@ -204,45 +193,46 @@ export function normalize(style: JStyle): Style {
   }
   const fillEnable = style.fillEnable;
   if (!isNil(fillEnable)) {
-    res.fillEnable = fillEnable.map(item => {
+    res.fillEnable = fillEnable.map((item) => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
   const fillRule = style.fillRule;
   if (!isNil(fillRule)) {
-    res.fillRule = { v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO, u: StyleUnit.NUMBER };
+    res.fillRule = {
+      v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO,
+      u: StyleUnit.NUMBER,
+    };
   }
   const stroke = style.stroke;
   if (!isNil(stroke)) {
-    res.stroke = stroke.map(item => {
+    res.stroke = stroke.map((item) => {
       if (isString(item) && isGradient(item as string)) {
         return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
-      }
-      else {
+      } else {
         return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
       }
     });
   }
   const strokeEnable = style.strokeEnable;
   if (!isNil(strokeEnable)) {
-    res.strokeEnable = strokeEnable.map(item => {
+    res.strokeEnable = strokeEnable.map((item) => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
   const strokeWidth = style.strokeWidth;
   if (!isNil(strokeWidth)) {
-    res.strokeWidth = strokeWidth.map(item => {
+    res.strokeWidth = strokeWidth.map((item) => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
   const strokePosition = style.strokePosition;
   if (!isNil(strokePosition)) {
-    res.strokePosition = strokePosition.map(item => {
+    res.strokePosition = strokePosition.map((item) => {
       let v = STROKE_POSITION.CENTER;
       if (item === 'inside') {
         v = STROKE_POSITION.INSIDE;
-      }
-      else if (item === 'outside') {
+      } else if (item === 'outside') {
         v = STROKE_POSITION.OUTSIDE;
       }
       return { v, u: StyleUnit.NUMBER };
@@ -250,7 +240,7 @@ export function normalize(style: JStyle): Style {
   }
   const strokeDasharray = style.strokeDasharray;
   if (!isNil(strokeDasharray)) {
-    res.strokeDasharray = strokeDasharray.map(item => {
+    res.strokeDasharray = strokeDasharray.map((item) => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
@@ -259,35 +249,27 @@ export function normalize(style: JStyle): Style {
     let v = STROKE_LINE_CAP.BUTT;
     if (strokeLinecap === 'round') {
       v = STROKE_LINE_CAP.ROUND;
-    }
-    else if (strokeLinecap === 'square') {
+    } else if (strokeLinecap === 'square') {
       v = STROKE_LINE_CAP.SQUARE;
     }
-    res.strokeLinecap = { v, u :StyleUnit.NUMBER };
+    res.strokeLinecap = { v, u: StyleUnit.NUMBER };
   }
   const strokeLinejoin = style.strokeLinejoin;
   if (!isNil(strokeLinejoin)) {
     let v = STROKE_LINE_JOIN.MITER;
     if (strokeLinejoin === 'round') {
       v = STROKE_LINE_JOIN.ROUND;
-    }
-    else if (strokeLinejoin === 'bevel') {
+    } else if (strokeLinejoin === 'bevel') {
       v = STROKE_LINE_JOIN.BEVEL;
     }
-    res.strokeLinejoin = { v, u :StyleUnit.NUMBER };
+    res.strokeLinejoin = { v, u: StyleUnit.NUMBER };
   }
   const strokeMiterlimit = style.strokeMiterlimit;
   if (!isNil(strokeMiterlimit)) {
     res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
   }
   // 只有这几个，3d没有
-  [
-    'translateX',
-    'translateY',
-    'scaleX',
-    'scaleY',
-    'rotateZ',
-  ].forEach(k => {
+  ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
     let v = style[k as keyof JStyle];
     if (isNil(v)) {
       return;
@@ -310,11 +292,9 @@ export function normalize(style: JStyle): Style {
     let v = TEXT_ALIGN.LEFT;
     if (textAlign === 'center') {
       v = TEXT_ALIGN.CENTER;
-    }
-    else if (textAlign === 'right') {
+    } else if (textAlign === 'right') {
       v = TEXT_ALIGN.RIGHT;
-    }
-    else if (textAlign === 'justify') {
+    } else if (textAlign === 'justify') {
       v = TEXT_ALIGN.JUSTIFY;
     }
     res.textAlign = { v, u: StyleUnit.STRING };
@@ -324,9 +304,8 @@ export function normalize(style: JStyle): Style {
     let o: Array<number | string>;
     if (Array.isArray(transformOrigin)) {
       o = transformOrigin;
-    }
-    else {
-      o = transformOrigin.match(/(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig) as Array<string>;
+    } else {
+      o = transformOrigin.match(reg.position) as Array<string>;
     }
     if (o.length === 1) {
       o[1] = o[0];
@@ -340,8 +319,7 @@ export function normalize(style: JStyle): Style {
           n.u = StyleUnit.PX;
         }
         arr.push(n);
-      }
-      else {
+      } else {
         arr.push({
           v: {
             top: 0,
@@ -363,16 +341,13 @@ export function normalize(style: JStyle): Style {
   const booleanOperation = style.booleanOperation;
   if (!isNil(booleanOperation)) {
     let v = BOOLEAN_OPERATION.NONE;
-    if (booleanOperation  === 'union') {
+    if (booleanOperation === 'union') {
       v = BOOLEAN_OPERATION.UNION;
-    }
-    else if (booleanOperation === 'subtract') {
+    } else if (booleanOperation === 'subtract') {
       v = BOOLEAN_OPERATION.SUBTRACT;
-    }
-    else if (booleanOperation === 'intersect') {
+    } else if (booleanOperation === 'intersect') {
       v = BOOLEAN_OPERATION.INTERSECT;
-    }
-    else if (booleanOperation === 'xor') {
+    } else if (booleanOperation === 'xor') {
       v = BOOLEAN_OPERATION.XOR;
     }
     res.booleanOperation = { v, u: StyleUnit.NUMBER };
@@ -382,47 +357,33 @@ export function normalize(style: JStyle): Style {
     let v = MIX_BLEND_MODE.NORMAL;
     if (/multiply/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.MULTIPLY;
-    }
-    else if (/screen/i.test(fontStyle)) {
+    } else if (/screen/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.SCREEN;
-    }
-    else if (/overlay/i.test(fontStyle)) {
+    } else if (/overlay/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.OVERLAY;
-    }
-    else if (/darken/i.test(fontStyle)) {
+    } else if (/darken/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.DARKEN;
-    }
-    else if (/lighten/i.test(fontStyle)) {
+    } else if (/lighten/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.LIGHTEN;
-    }
-    else if (/color-dodge/i.test(fontStyle)) {
+    } else if (/color-dodge/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.COLOR_DODGE;
-    }
-    else if (/color-burn/i.test(fontStyle)) {
+    } else if (/color-burn/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.COLOR_BURN;
-    }
-    else if (/hard-light/i.test(fontStyle)) {
+    } else if (/hard-light/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.HARD_LIGHT;
-    }
-    else if (/soft-light/i.test(fontStyle)) {
+    } else if (/soft-light/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.SOFT_LIGHT;
-    }
-    else if (/difference/i.test(fontStyle)) {
+    } else if (/difference/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.DIFFERENCE;
-    }
-    else if (/exclusion/i.test(fontStyle)) {
+    } else if (/exclusion/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.EXCLUSION;
-    }
-    else if (/hue/i.test(fontStyle)) {
+    } else if (/hue/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.HUE;
-    }
-    else if (/saturation/i.test(fontStyle)) {
+    } else if (/saturation/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.SATURATION;
-    }
-    else if (/color/i.test(fontStyle)) {
+    } else if (/color/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.COLOR;
-    }
-    else if (/luminosity/i.test(fontStyle)) {
+    } else if (/luminosity/i.test(fontStyle)) {
       v = MIX_BLEND_MODE.LUMINOSITY;
     }
     res.mixBlendMode = { v, u: StyleUnit.NUMBER };
@@ -436,8 +397,7 @@ export function normalize(style: JStyle): Style {
     let v = MASK.NONE;
     if (maskMode === 'outline') {
       v = MASK.OUTLINE;
-    }
-    else if (maskMode === 'alpha') {
+    } else if (maskMode === 'alpha') {
       v = MASK.ALPHA;
     }
     res.maskMode = { v, u: StyleUnit.NUMBER };
@@ -446,74 +406,91 @@ export function normalize(style: JStyle): Style {
   if (!isNil(breakMask)) {
     res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
   }
+  const blur = style.blur;
+  if (!isNil(blur)) {
+    const v = reg.blur.exec(blur);
+    if (v) {
+      const t = v[1].toLowerCase();
+      if (t === 'gauss') {
+        res.blur = {
+          v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) },
+          u: StyleUnit.BLUR,
+        };
+      } else {
+        res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
+      }
+    } else {
+      res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
+    }
+  }
   return res;
 }
 
 export function equalStyle(k: string, a: Style, b: Style) {
   if (k === 'transformOrigin') {
-    return a[k][0].v === b[k][0].v && a[k][0].u === b[k][0].u
-      && a[k][1].v === b[k][1].v && a[k][1].u === b[k][1].u;
+    return (
+      a[k][0].v === b[k][0].v &&
+      a[k][0].u === b[k][0].u &&
+      a[k][1].v === b[k][1].v &&
+      a[k][1].u === b[k][1].u
+    );
   }
   if (k === 'color' || k === 'backgroundColor') {
-    return a[k].v[0] === b[k].v[0]
-      && a[k].v[1] === b[k].v[1]
-      && a[k].v[2] === b[k].v[2]
-      && a[k].v[3] === b[k].v[3];
+    return (
+      a[k].v[0] === b[k].v[0] &&
+      a[k].v[1] === b[k].v[1] &&
+      a[k].v[2] === b[k].v[2] &&
+      a[k].v[3] === b[k].v[3]
+    );
   }
   // @ts-ignore
   return a[k].v === b[k].v && a[k].u === b[k].u;
 }
 
 export function color2rgbaInt(color: string | Array<number>): Array<number> {
-  if(Array.isArray(color)) {
+  if (Array.isArray(color)) {
     return color;
   }
   let res = [];
-  if(!color || color === 'transparent') {
+  if (!color || color === 'transparent') {
     res = [0, 0, 0, 0];
-  }
-  else if(color.charAt(0) === '#') {
+  } else if (color.charAt(0) === '#') {
     color = color.slice(1);
-    if(color.length === 3 || color.length === 4) {
+    if (color.length === 3 || color.length === 4) {
       res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
       res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
       res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
       if (color.length === 4) {
         res[3] = parseInt(color.charAt(3) + color.charAt(3), 16);
-      }
-      else {
+      } else {
         res[3] = 1;
       }
-    }
-    else if(color.length === 6) {
+    } else if (color.length === 6) {
       res.push(parseInt(color.slice(0, 2), 16));
       res.push(parseInt(color.slice(2, 4), 16));
       res.push(parseInt(color.slice(4), 16));
       res[3] = 1;
-    }
-    else if(color.length === 8) {
+    } else if (color.length === 8) {
       res.push(parseInt(color.slice(0, 2), 16));
       res.push(parseInt(color.slice(2, 4), 16));
       res.push(parseInt(color.slice(4, 6), 16));
       res.push(parseInt(color.slice(6), 16) / 255);
-    }
-    else {
+    } else {
       res[0] = res[1] = res[2] = 0;
       res[3] = 1;
     }
-  }
-  else {
-    let c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-    if(c) {
+  } else {
+    let c = color.match(
+      /rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i,
+    );
+    if (c) {
       res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-      if(!isNil(c[4])) {
+      if (!isNil(c[4])) {
         res[3] = parseFloat(c[4]);
-      }
-      else {
+      } else {
         res[3] = 1;
       }
-    }
-    else {
+    } else {
       res = [0, 0, 0, 0];
     }
   }
@@ -526,8 +503,8 @@ export function color2rgbaStr(color: string | Array<number>): string {
     c[0] = Math.floor(Math.max(c[0], 0));
     c[1] = Math.floor(Math.max(c[1], 0));
     c[2] = Math.floor(Math.max(c[2], 0));
-    if(c.length === 3 || c.length === 4) {
-      if(c.length === 4) {
+    if (c.length === 3 || c.length === 4) {
+      if (c.length === 4) {
         c[3] = Math.max(c[3], 0);
         return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
       }
@@ -546,15 +523,20 @@ function toHex(n: number) {
 }
 
 export function color2hexStr(color: string | Array<number>): string {
-  if(Array.isArray(color)) {
-    if(color.length === 3 || color.length === 4) {
+  if (Array.isArray(color)) {
+    if (color.length === 3 || color.length === 4) {
       color[0] = Math.floor(Math.max(color[0], 0));
       color[1] = Math.floor(Math.max(color[1], 0));
       color[2] = Math.floor(Math.max(color[2], 0));
-      if(color.length === 4 && color[3] < 1) {
+      if (color.length === 4 && color[3] < 1) {
         color[3] = Math.max(color[3], 0);
-        return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2])
-          + toHex(Math.floor(color[3] * 255));
+        return (
+          '#' +
+          toHex(color[0]) +
+          toHex(color[1]) +
+          toHex(color[2]) +
+          toHex(Math.floor(color[3] * 255))
+        );
       }
       return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
     }
@@ -577,18 +559,27 @@ export function color2gl(color: string | Array<number>): Array<number> {
 export function setFontStyle(style: ComputedStyle | Rich) {
   let fontSize = style.fontSize || 0;
   let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
-  if(/\s/.test(fontFamily)) {
+  if (/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
-  return (style.fontStyle || 'normal') + ' ' + (style.fontWeight || '400') + ' '
-    + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
+  return (
+    (style.fontStyle || 'normal') +
+    ' ' +
+    (style.fontWeight || '400') +
+    ' ' +
+    fontSize +
+    'px/' +
+    fontSize +
+    'px ' +
+    fontFamily
+  );
 }
 
 export function calFontFamily(fontFamily: string) {
   let ff = fontFamily.split(/\s*,\s*/);
-  for(let i = 0, len = ff.length; i < len; i++) {
+  for (let i = 0, len = ff.length; i < len; i++) {
     let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
-    if(font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+    if (font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
       return item;
     }
   }
@@ -596,10 +587,14 @@ export function calFontFamily(fontFamily: string) {
 }
 
 export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
-  if(!ff) {
+  if (!ff) {
     ff = calFontFamily(style.fontFamily);
   }
-  return Math.ceil(style.fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr);
+  return Math.ceil(
+    style.fontSize *
+    (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial)
+      .lhr,
+  );
 }
 
 /**
@@ -612,7 +607,12 @@ export function getBaseline(style: ComputedStyle | Rich) {
   let fontSize = style.fontSize;
   let ff = calFontFamily(style.fontFamily);
   let normal = calNormalLineHeight(style, ff);
-  return (style.lineHeight - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
+  return (
+    (style.lineHeight - normal) * 0.5 +
+    fontSize *
+    (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial)
+      .blr
+  );
 }
 
 export function calSize(v: StyleNumValue, p: number): number {

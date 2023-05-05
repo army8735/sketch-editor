@@ -70,6 +70,7 @@ class Node extends Event {
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
   textureTotal: Array<TextureCache | undefined>; // 局部子树缓存
+  textureFilter: Array<TextureCache | undefined>; // 有filter时的缓存
   textureMask: Array<TextureCache | undefined>; // 作为mask时的缓存
   textureTarget: Array<TextureCache | undefined>; // 指向自身所有缓存中最优先的那个
   textureOutline?: TextureCache; // 轮廓mask特殊使用
@@ -116,6 +117,7 @@ class Node extends Event {
     this.hasContent = false;
     this.textureCache = [];
     this.textureTotal = [];
+    this.textureFilter = [];
     this.textureMask = [];
     this.textureTarget = [];
     this.tempOpacity = 1;
@@ -239,7 +241,9 @@ class Node extends Event {
     this.tempBbox = undefined;
   }
 
+  // 插入node到自己后面
   insertAfter(node: Node, cb?: (sync: boolean) => void) {
+    node.remove();
     const { root, parent } = this;
     if (!parent) {
       throw new Error('Can not appendSelf without parent');
@@ -261,7 +265,9 @@ class Node extends Event {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
+  // 插入node到自己前面
   insertBefore(node: Node, cb?: (sync: boolean) => void) {
+    node.remove();
     const { root, parent } = this;
     if (!parent) {
       throw new Error('Can not prependBefore without parent');
@@ -317,12 +323,6 @@ class Node extends Event {
     computedStyle.overflow = style.overflow.v;
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
-    // 同下面的matrix
-    if (lv & RefreshLevel.REFLOW_OPACITY && (this.hasCacheOp || !this.localOpId)) {
-      this.hasCacheOp = false;
-      this.localOpId++;
-    }
-    computedStyle.opacity = style.opacity.v;
     computedStyle.fill = style.fill.map((item) => item.v);
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
     computedStyle.fillRule = style.fillRule.v;
@@ -338,18 +338,21 @@ class Node extends Event {
     computedStyle.pointerEvents = style.pointerEvents.v;
     computedStyle.maskMode = style.maskMode.v;
     computedStyle.breakMask = style.breakMask.v;
+    computedStyle.blur = style.blur.v;
     // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
     }
+    // 同matrix
+    if (lv & RefreshLevel.REFLOW_OPACITY) {
+      this.calOpacity();
+    }
+    this._bbox = undefined;
     this.tempBbox = undefined;
   }
 
   calMatrix(lv: RefreshLevel): Float64Array {
     const { style, computedStyle, matrix, transform } = this;
-    if (!lv) {
-      return matrix;
-    }
     // 每次更新标识且id++，获取matrixWorld或者每帧渲染会置true，首次0时强制进入，虽然布局过程中会调用，防止手动调用不可预期
     if (this.hasCacheMw || !this.localMwId) {
       this.hasCacheMw = false;
@@ -471,6 +474,15 @@ class Node extends Event {
     return matrix;
   }
 
+  calOpacity() {
+    const { style, computedStyle } = this;
+    if (this.hasCacheOp || !this.localOpId) {
+      this.hasCacheOp = false;
+      this.localOpId++;
+    }
+    computedStyle.opacity = style.opacity.v;
+  }
+
   calContent(): boolean {
     return (this.hasContent = false);
   }
@@ -506,10 +518,17 @@ class Node extends Event {
   }
 
   resetTextureTarget() {
-    const { textureMask, textureTotal, textureCache } = this;
+    const {
+      textureMask,
+      textureFilter,
+      textureTotal,
+      textureCache,
+    } = this;
     for (let i = 0, len = textureCache.length; i < len; i++) {
       if (textureMask[i]?.available) {
         this.textureTarget[i] = textureMask[i];
+      } else if (textureFilter[i]?.available) {
+        this.textureTarget[i] = textureFilter[i];
       } else if (textureTotal[i]?.available) {
         this.textureTarget[i] = textureTotal[i];
       } else if (textureCache[i]?.available) {
@@ -528,6 +547,7 @@ class Node extends Event {
       this.textureTarget = this.textureCache;
     }
     this.textureTotal.forEach((item) => item?.release());
+    this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
     this.refreshLevel |= RefreshLevel.CACHE;
   }
@@ -576,6 +596,19 @@ class Node extends Event {
         next.prev = prev;
       }
     }
+    // 无论是否真实dom，都清空
+    this.prev =
+      this.next =
+      this.parent =
+      this.root =
+        undefined;
+    // 特殊的判断，防止Page/ArtBoard自身删除了引用
+    if (!this.isPage) {
+      this.page = undefined;
+    }
+    if (!this.isArtBoard) {
+      this.artBoard = undefined;
+    }
     // 未添加到dom时
     if (this.isDestroyed) {
       cb && cb(true);
@@ -591,14 +624,7 @@ class Node extends Event {
     }
     this.isDestroyed = true;
     this.clearCache(true);
-    this.prev =
-      this.next =
-      this.parent =
-      this.page =
-      this.artBoard =
-      this.mask =
-      this.root =
-        undefined;
+    this.mask = undefined;
   }
 
   structure(lv: number): Array<Struct> {
@@ -687,18 +713,44 @@ class Node extends Event {
     return computedStyle[k];
   }
 
-  getBoundingClientRect(includeBbox: boolean = false) {
-    const matrixWorld = this.matrixWorld;
+  getBoundingClientRect(includeBbox: boolean = false, excludeRotate = false) {
     const bbox = includeBbox
       ? this._bbox || this.bbox
       : this._rect || this.rect;
-    const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(
-      bbox[0],
-      bbox[1],
-      bbox[2],
-      bbox[3],
-      matrixWorld,
-    );
+    let t;
+    // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
+    if (excludeRotate && !this.isPage) {
+      const parent = this.parent!;
+      const i = identity();
+      const matrix = this.matrix;
+      i[12] = matrix[12];
+      i[13] = matrix[13];
+      const m = multiply(parent.matrixWorld, i);
+      t = calRectPoint(
+        bbox[0],
+        bbox[1],
+        bbox[2],
+        bbox[3],
+        m,
+      );
+    }
+    else {
+      t = calRectPoint(
+        bbox[0],
+        bbox[1],
+        bbox[2],
+        bbox[3],
+        this.matrixWorld,
+      );
+    }
+    let x1 = t.x1;
+    let y1 = t.y1;
+    let x2 = t.x2;
+    let y2 = t.y2;
+    let x3 = t.x3;
+    let y3 = t.y3;
+    let x4 = t.x4;
+    let y4 = t.y4;
     return {
       left: Math.min(x1, x2, x3, x4),
       top: Math.min(y1, y2, y3, y4),
@@ -1000,7 +1052,7 @@ class Node extends Event {
     // 循环代替递归，判断包含自己在内的这条分支上的父级是否有缓存，如果都有缓存，则无需计算
     /* eslint-disable */
     let node: Node = this,
-      cache = this.hasCacheOp,
+      cache = this.hasCacheMw,
       parent = node.parent,
       index = -1;
     const pList: Array<Container> = [];

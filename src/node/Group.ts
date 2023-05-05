@@ -7,6 +7,7 @@ import { calSize } from '../style/css';
 import { StyleUnit } from '../style/define';
 import Container from './Container';
 import Node from './Node';
+import { migrate } from './reflow';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
@@ -217,8 +218,16 @@ class Group extends Container {
     if (!root) {
       return;
     }
-    const { top, right, bottom, left, width, height, translateX, translateY } =
-      style;
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      translateX,
+      translateY,
+    } = style;
     // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
     // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
     // 2个只要有发生，都会影响左右，因为干扰尺寸
@@ -318,13 +327,13 @@ class Group extends Container {
     const parent = this.parent!;
     const width = parent.width;
     const height = parent.height;
-    const rect = parent.getBoundingClientRect();
+    const rect = parent.getBoundingClientRect(false, true);
     const x = rect.left / zoom;
     const y = rect.top / zoom;
     const children = this.children.slice(0);
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
-      checkGroup(x, y, width, height, zoom, item);
+      migrate(x, y, width, height, zoom, item);
       // 插入到group的原本位置，有prev/next优先使用定位
       if (prev) {
         prev.insertAfter(item);
@@ -366,12 +375,12 @@ class Group extends Container {
     const parent = first.parent!;
     const width = parent.width;
     const height = parent.height;
-    const rect = parent.getBoundingClientRect();
+    const rect = parent.getBoundingClientRect(false, true);
     const x = rect.left / zoom;
     const y = rect.top / zoom;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
-      checkGroup(x, y, width, height, zoom, item);
+      migrate(x, y, width, height, zoom, item);
     }
     const p = Object.assign(
       {
@@ -398,110 +407,6 @@ class Group extends Container {
       parent.appendChild(group);
     }
     group.checkSizeChange();
-  }
-}
-
-function checkGroup(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  zoom: number,
-  node: Node,
-) {
-  const r = node.getBoundingClientRect();
-  const x1 = r.left / zoom;
-  const y1 = r.top / zoom;
-  node.remove();
-  const style = node.style;
-  // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
-  const leftConstraint = style.left.u === StyleUnit.PX;
-  const rightConstraint = style.right.u === StyleUnit.PX;
-  const topConstraint = style.top.u === StyleUnit.PX;
-  const bottomConstraint = style.bottom.u === StyleUnit.PX;
-  const widthConstraint = style.width.u === StyleUnit.PX;
-  const heightConstraint = style.height.u === StyleUnit.PX;
-  // left
-  if (leftConstraint) {
-    const left = x1 - x;
-    style.left.v = left;
-    // left+right忽略width
-    if (rightConstraint) {
-      style.right.v = width - left - node.width;
-    }
-    // left+width
-    else if (widthConstraint) {
-      // 默认right就是auto啥也不做
-    }
-    // 仅left，right是百分比忽略width
-    else {
-      style.right.v = ((width - left - node.width) * 100) / width;
-    }
-  }
-  // right
-  else if (rightConstraint) {
-    // right+width
-    if (widthConstraint) {
-      // 默认left就是auto啥也不做
-    }
-    // 仅right，left是百分比忽略width
-    else {
-      style.left.v = ((width - style.right.v - node.width) * 100) / width;
-    }
-  }
-  // 左右都不固定
-  else {
-    const left = x1 - x;
-    // 仅固定宽度，以中心点占left的百分比
-    if (widthConstraint) {
-      style.left.v = ((left + style.width.v * 0.5) * 100) / width;
-    }
-    // 左右皆为百分比
-    else {
-      style.left.v = (left * 100) / width;
-      style.right.v = ((width - left - node.width) * 100) / width;
-    }
-  }
-  // top
-  if (topConstraint) {
-    const top = y1 - y;
-    style.top.v = top;
-    // top+bottom忽略height
-    if (bottomConstraint) {
-      style.bottom.v = height - top - node.height;
-    }
-    // top+height
-    else if (heightConstraint) {
-      // 默认bottom就是auto啥也不做
-    }
-    // 仅top，bottom是百分比忽略height
-    else {
-      style.bottom.v = ((height - top - node.height) * 100) / height;
-    }
-  }
-  // bottom
-  else if (bottomConstraint) {
-    // bottom+height
-    if (heightConstraint) {
-      // 默认top就是auto啥也不做
-    }
-    // 仅bottom，top是百分比忽略height
-    else {
-      style.top.v = ((height - style.bottom.v - node.height) * 100) / height;
-    }
-  }
-  // 上下都不固定
-  else {
-    const top = y1 - y;
-    // 仅固定宽度，以中心点占top的百分比
-    if (heightConstraint) {
-      style.top.v = ((top + style.height.v * 0.5) * 100) / height;
-    }
-    // 左右皆为百分比
-    else {
-      style.top.v = (top * 100) / height;
-      style.bottom.v = ((height - top - node.height) * 100) / height;
-    }
   }
 }
 

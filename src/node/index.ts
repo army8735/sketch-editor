@@ -1,14 +1,15 @@
 import ArtBoard from './ArtBoard';
 import Bitmap from './Bitmap';
 import Container from './Container';
-import Group from './Group';
-import Node from './Node';
-import Page from './Page';
-import Root from './Root';
-import Text from './Text';
 import Geom from './geom/Geom';
 import Polyline from './geom/Polyline';
 import ShapeGroup from './geom/ShapeGroup';
+import Group from './Group';
+import Node from './Node';
+import Page from './Page';
+import reflow from './reflow';
+import Root from './Root';
+import Text from './Text';
 
 export default {
   ArtBoard,
@@ -22,4 +23,5 @@ export default {
   Geom,
   Polyline,
   ShapeGroup,
+  reflow,
 };
