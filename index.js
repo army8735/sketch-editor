@@ -17286,16 +17286,13 @@
             }
             const breakMask = layer.shouldBreakMaskChain;
             // 模糊
-            let blur;
+            let blur = 'none';
             if ((_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.blur) === null || _d === void 0 ? void 0 : _d.isEnabled) {
                 const b = layer.style.blur;
                 const type = b.type;
                 if (type === FileFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
                     blur = `gauss(${b.radius}px)`;
                 }
-            }
-            else {
-                blur = 'none';
             }
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;

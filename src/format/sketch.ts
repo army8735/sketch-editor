@@ -322,16 +322,13 @@ async function convertItem(
   }
   const breakMask = layer.shouldBreakMaskChain;
   // 模糊
-  let blur: string | undefined;
+  let blur = 'none';
   if (layer.style?.blur?.isEnabled) {
     const b = layer.style.blur;
     const type = b.type;
     if (type === SketchFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
       blur = `gauss(${b.radius}px)`;
     }
-  }
-  else {
-    blur = 'none';
   }
   const isLocked = layer.isLocked;
   const isExpanded =
