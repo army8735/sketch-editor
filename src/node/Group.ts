@@ -2,7 +2,6 @@ import * as uuid from 'uuid';
 import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
 import { RefreshLevel } from '../refresh/level';
-import { Struct } from '../refresh/struct';
 import { calSize } from '../style/css';
 import { StyleUnit } from '../style/define';
 import Container from './Container';
@@ -353,15 +352,12 @@ class Group extends Container {
     if (!nodes.length) {
       return;
     }
-    let structs: Array<Struct>;
+    const structs = nodes[0].root!.structs;
     // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
       if (item.isDestroyed) {
         throw new Error('Can not group a destroyed Node');
-      }
-      if (!i) {
-        structs = item.root!.structs;
       }
       item.tempIndex = structs!.indexOf(item.struct);
     }

@@ -34,6 +34,9 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
   if (target.isDestroyed) {
     throw new Error('Can not moveTo a destroyed Node');
   }
+  if (nodes.indexOf(target) > -1) {
+    throw new Error('Can not moveTo self');
+  }
   const parent = target.parent!;
   const width = parent.width;
   const height = parent.height;

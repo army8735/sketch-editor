@@ -25052,6 +25052,9 @@
         if (target.isDestroyed) {
             throw new Error('Can not moveTo a destroyed Node');
         }
+        if (nodes.indexOf(target) > -1) {
+            throw new Error('Can not moveTo self');
+        }
         const parent = target.parent;
         const width = parent.width;
         const height = parent.height;
@@ -25485,15 +25488,12 @@
             if (!nodes.length) {
                 return;
             }
-            let structs;
+            const structs = nodes[0].root.structs;
             // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
                 if (item.isDestroyed) {
                     throw new Error('Can not group a destroyed Node');
-                }
-                if (!i) {
-                    structs = item.root.structs;
                 }
                 item.tempIndex = structs.indexOf(item.struct);
             }
