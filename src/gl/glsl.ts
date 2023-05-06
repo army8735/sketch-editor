@@ -111,5 +111,33 @@ void main() {
   if (a <= 0.0) {
     discard;
   }
+  a = clamp(a, 0.0, 1.0);
   gl_FragColor = vec4(color2.rgb, a);
+}`;
+
+export const gaussVert = `#version 100
+
+attribute vec4 a_position;
+
+attribute vec2 a_texCoords;
+varying vec2 v_texCoordsBlur[3];
+
+uniform vec2 u_direction;
+
+void main() {
+  gl_Position = a_position;
+}`;
+
+export const gaussFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoordsBlur[3];
+
+uniform sampler2D u_texture;
+
+void main() {
+  gl_FragColor = vec4(0.0);
 }`;

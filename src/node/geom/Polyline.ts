@@ -234,7 +234,7 @@ class Polyline extends Geom {
     super.renderCanvas(scale);
     this.buildPoints();
     const points = this.points!;
-    const bbox = this._bbox || this.bbox;
+    const bbox = this._rect || this.rect;
     const x = bbox[0],
       y = bbox[1],
       w = bbox[2] - x,

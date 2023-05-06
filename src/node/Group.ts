@@ -324,15 +324,10 @@ class Group extends Container {
     const next = this.next;
     const zoom = this.getZoom();
     const parent = this.parent!;
-    const width = parent.width;
-    const height = parent.height;
-    const rect = parent.getBoundingClientRect(false, true);
-    const x = rect.left / zoom;
-    const y = rect.top / zoom;
     const children = this.children.slice(0);
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
-      migrate(x, y, width, height, zoom, item);
+      migrate(parent, zoom, item);
       // 插入到group的原本位置，有prev/next优先使用定位
       if (prev) {
         prev.insertAfter(item);
@@ -369,14 +364,9 @@ class Group extends Container {
     const next = first.next;
     const zoom = first.getZoom();
     const parent = first.parent!;
-    const width = parent.width;
-    const height = parent.height;
-    const rect = parent.getBoundingClientRect(false, true);
-    const x = rect.left / zoom;
-    const y = rect.top / zoom;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
-      migrate(x, y, width, height, zoom, item);
+      migrate(parent, zoom, item);
     }
     const p = Object.assign(
       {

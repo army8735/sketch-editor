@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import { frame, FrameCallback } from '../animation/frame';
 import { JPage, Props } from '../format';
-import { initShaders } from '../gl';
+import { initShaders } from '../gl/webgl';
 import ca from '../gl/ca';
 import {
   colorFrag,

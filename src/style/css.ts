@@ -413,7 +413,7 @@ export function normalize(style: JStyle): Style {
       const t = v[1].toLowerCase();
       if (t === 'gauss') {
         res.blur = {
-          v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) },
+          v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) || 0 },
           u: StyleUnit.BLUR,
         };
       } else {

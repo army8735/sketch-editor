@@ -25,6 +25,7 @@ import {
   normalize,
 } from '../style/css';
 import {
+  BLUR,
   ComputedStyle,
   Style,
   StyleNumValue,
@@ -35,6 +36,7 @@ import Event from '../util/Event';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
+import { kernelSize, outerSizeByD } from '../math/blur';
 
 class Node extends Event {
   width: number;
@@ -508,7 +510,7 @@ class Node extends Event {
         TextureCache.getInstance(
           gl,
           this.canvasCache!.offscreen.canvas,
-          (this._bbox || this.bbox).slice(0),
+          (this._rect || this.rect).slice(0),
         );
       canvasCache.release();
     } else {
@@ -1112,22 +1114,38 @@ class Node extends Event {
   }
 
   get rect(): Float64Array {
-    if (!this._rect) {
-      this._rect = new Float64Array(4);
-      this._rect[0] = 0;
-      this._rect[1] = 0;
-      this._rect[2] = this.width;
-      this._rect[3] = this.height;
+    let res = this._rect;
+    if (!res) {
+      res = this._rect = new Float64Array(4);
+      res[0] = 0;
+      res[1] = 0;
+      res[2] = this.width;
+      res[3] = this.height;
     }
-    return this._rect;
+    return res;
   }
 
   get bbox(): Float64Array {
-    if (!this._bbox) {
+    let res = this._bbox;
+    if (!res) {
       const bbox = this._rect || this.rect;
-      this._bbox = bbox.slice(0);
+      res = this._bbox = bbox.slice(0);
+      const { blur } = this.computedStyle;
+      if (blur.t === BLUR.GAUSSIAN) {
+        const r = blur.radius!;
+        if (r > 0) {
+          const d = kernelSize(r);
+          const spread = outerSizeByD(d);
+          if (spread) {
+            res[0] -= spread;
+            res[1] -= spread;
+            res[2] += spread;
+            res[3] += spread;
+          }
+        }
+      }
     }
-    return this._bbox;
+    return res;
   }
 }
 

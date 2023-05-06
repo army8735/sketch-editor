@@ -38,15 +38,10 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
     throw new Error('Can not moveTo self');
   }
   const parent = target.parent!;
-  const width = parent.width;
-  const height = parent.height;
-  const rect = parent.getBoundingClientRect(false, true);
-  const zoom = parent.getZoom();
-  const x = rect.left / zoom;
-  const y = rect.top / zoom;
+  const zoom = target.getZoom();
   for (let i = 0, len = nodes.length; i < len; i++) {
     const item = nodes[i];
-    migrate(x, y, width, height, zoom, item);
+    migrate(parent, zoom, item);
     if (position === POSITION.BEFORE) {
       target.insertBefore(item);
     } else if (position === POSITION.AFTER) {
@@ -60,13 +55,15 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
 }
 
 export function migrate(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
+  parent: Node,
   zoom: number,
   node: Node,
 ) {
+  const width = parent.width;
+  const height = parent.height;
+  const rect = parent.getBoundingClientRect(false, true);
+  const x = rect.left / zoom;
+  const y = rect.top / zoom;
   const r = node.getBoundingClientRect(false, true);
   const x1 = r.left / zoom;
   const y1 = r.top / zoom;

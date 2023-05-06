@@ -194,7 +194,7 @@ class Bitmap extends Node {
       const canvasCache = this.canvasCache;
       if (canvasCache?.available) {
         this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = this.textureCache[0]
-          = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._bbox || this.bbox).slice(0));
+          = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._rect || this.rect).slice(0));
         canvasCache.releaseImg(this._src);
       }
     }

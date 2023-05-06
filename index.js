@@ -16807,7 +16807,7 @@
                 const t = v[1].toLowerCase();
                 if (t === 'gauss') {
                     res.blur = {
-                        v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) },
+                        v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) || 0 },
                         u: StyleUnit.BLUR,
                     };
                 }
@@ -19715,6 +19715,74 @@
         frame,
     };
 
+    function initShaders(gl, vshader, fshader) {
+        let program = createProgram(gl, vshader, fshader);
+        if (!program) {
+            throw new Error('Failed to create program');
+        }
+        // 要开启透明度，用以绘制透明的图形
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        return program;
+    }
+    function createProgram(gl, vshader, fshader) {
+        // Create shader object
+        let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+        let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+        if (!vertexShader || !fragmentShader) {
+            return null;
+        }
+        // Create a program object
+        let program = gl.createProgram();
+        if (!program) {
+            return null;
+        }
+        // @ts-ignore
+        program.vertexShader = vertexShader;
+        // @ts-ignore
+        program.fragmentShader = fragmentShader;
+        // Attach the shader objects
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        // Link the program object
+        gl.linkProgram(program);
+        // Check the result of linking
+        let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+        if (!linked) {
+            let error = gl.getProgramInfoLog(program);
+            gl.deleteProgram(program);
+            gl.deleteShader(fragmentShader);
+            gl.deleteShader(vertexShader);
+            throw new Error('Failed to link program: ' + error);
+        }
+        return program;
+    }
+    /**
+     * Create a shader object
+     * @param gl GL context
+     * @param type the type of the shader object to be created
+     * @param source shader program (string)
+     * @return created shader object, or null if the creation has failed.
+     */
+    function loadShader(gl, type, source) {
+        // Create shader object
+        let shader = gl.createShader(type);
+        if (shader === null) {
+            throw new Error('unable to create shader');
+        }
+        // Set the shader program
+        gl.shaderSource(shader, source);
+        // Compile the shader
+        gl.compileShader(shader);
+        // Check the result of compilation
+        let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+        if (!compiled) {
+            let error = gl.getShaderInfoLog(shader);
+            gl.deleteShader(shader);
+            throw new Error('Failed to compile shader: ' + error);
+        }
+        return shader;
+    }
     function createTexture(gl, n, tex, width, height) {
         const texture = gl.createTexture();
         bindTexture(gl, texture, n);
@@ -19743,7 +19811,7 @@
         gl.bindTexture(gl.TEXTURE_2D, texture);
     }
     let lastVtPoint, lastVtTex, lastVtOpacity; // 缓存
-    function drawTextureCache(gl, width, height, cx, cy, program, list, dx = 0, dy = 0, flipY = true) {
+    function drawTextureCache(gl, cx, cy, program, list, dx = 0, dy = 0, flipY = true) {
         const length = list.length;
         if (!length) {
             return;
@@ -19908,6 +19976,95 @@
         gl.disableVertexAttribArray(a_position);
         gl.disableVertexAttribArray(a_texCoords);
     }
+    /**
+     * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+     * 按照css规范的优化方法执行3次，避免卷积核扩大3倍性能慢
+     * x/y方向分开执行，加速性能，计算次数由d*d变为d+d，d为卷积核大小
+     * spread由d和sigma计算得出，d由sigma计算得出，sigma即css的blur()参数
+     * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+     * 3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
+     */
+    function drawGauss(gl, program, texture, width, height) {
+        const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
+        vtPoint[0] = -1;
+        vtPoint[1] = -1;
+        vtPoint[2] = -1;
+        vtPoint[3] = 1;
+        vtPoint[4] = 1;
+        vtPoint[5] = -1;
+        vtPoint[6] = 1;
+        vtPoint[7] = 1;
+        vtTex[0] = 0;
+        vtTex[1] = 0;
+        vtTex[2] = 0;
+        vtTex[3] = 1;
+        vtTex[4] = 1;
+        vtTex[5] = 0;
+        vtTex[6] = 1;
+        vtTex[7] = 1;
+        // 顶点buffer
+        const pointBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+        const a_position = gl.getAttribLocation(program, 'a_position');
+        gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_position);
+        // 纹理buffer
+        const texBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+        let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+        gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_texCoords);
+        /**
+         * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
+         * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
+         * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
+         * tex1和tex2来回3次，最后是到tex1
+         */
+        const u_texture = gl.getUniformLocation(program, 'u_texture');
+        const u_direction = gl.getUniformLocation(program, 'u_direction');
+        const recycle = []; // 3次过程中新生成的中间纹理需要回收
+        const max = 100 / Math.max(width, height);
+        const ratio = width / height;
+        let tex1 = texture;
+        for (let i = 0; i < 3; i++) {
+            // tex1到tex2
+            let tex2 = createTexture(gl, 1, undefined, width, height);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
+            bindTexture(gl, tex1, 0);
+            if (width >= height) {
+                gl.uniform2f(u_direction, max, 0);
+            }
+            else {
+                gl.uniform2f(u_direction, max * ratio, 0);
+            }
+            gl.uniform1i(u_texture, 0);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            // tex2到tex1
+            let tex3 = createTexture(gl, 0, undefined, width, height);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+            bindTexture(gl, tex2, 1);
+            if (width >= height) {
+                gl.uniform2f(u_direction, 0, max * ratio);
+            }
+            else {
+                gl.uniform2f(u_direction, 0, max);
+            }
+            gl.uniform1i(u_texture, 1);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            recycle.push(tex1);
+            recycle.push(tex2);
+            tex1 = tex3;
+        }
+        // 回收
+        gl.deleteBuffer(pointBuffer);
+        gl.deleteBuffer(texBuffer);
+        gl.disableVertexAttribArray(a_position);
+        gl.disableVertexAttribArray(a_texCoords);
+        recycle.forEach(item => gl.deleteTexture(item));
+        return tex1;
+    }
     function convertCoords2Gl(x, y, cx, cy, flipY = true) {
         if (x === cx) {
             x = 0;
@@ -20046,6 +20203,56 @@
         static getTextureInstance(gl, texture, bbox) {
             return new TextureCache(gl, texture, bbox);
         }
+    }
+
+    /**
+     * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+     * 根据模糊参数sigma求卷积核尺寸
+     * @param sigma
+     * @returns {number}
+     */
+    function kernelSize(sigma) {
+        if (sigma <= 0) {
+            return 0;
+        }
+        let d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+        if (d < 2) {
+            d = 2;
+        }
+        if (d % 2 === 0) {
+            d++;
+        }
+        return d;
+    }
+    function outerSizeByD(d) {
+        return Math.floor(d * 0.5) * 3;
+    }
+    /**
+     * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
+     * @param sigma
+     * @param d
+     */
+    function gaussianWeight(sigma, d) {
+        const list = [];
+        const len = Math.floor(d * 0.5);
+        let total = 0;
+        for (let i = len; i >= 0; i--) {
+            const n = Math.pow(Math.E, -Math.pow(i, 2) / (2 * Math.pow(sigma, 2)))
+                / (sigma * Math.sqrt(2 * Math.PI));
+            list.push(n);
+            total += n;
+        }
+        for (let i = 1; i <= len; i++) {
+            const n = list[len - i];
+            list.push(n);
+            total += n;
+        }
+        if (total !== 1) {
+            for (let i = 0; i < d; i++) {
+                list[i] /= total;
+            }
+        }
+        return list;
     }
 
     class Node extends Event {
@@ -20467,7 +20674,7 @@
             const canvasCache = this.canvasCache;
             if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
                 this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
-                    TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._bbox || this.bbox).slice(0));
+                    TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._rect || this.rect).slice(0));
                 canvasCache.release();
             }
             else {
@@ -21033,21 +21240,37 @@
             return m;
         }
         get rect() {
-            if (!this._rect) {
-                this._rect = new Float64Array(4);
-                this._rect[0] = 0;
-                this._rect[1] = 0;
-                this._rect[2] = this.width;
-                this._rect[3] = this.height;
+            let res = this._rect;
+            if (!res) {
+                res = this._rect = new Float64Array(4);
+                res[0] = 0;
+                res[1] = 0;
+                res[2] = this.width;
+                res[3] = this.height;
             }
-            return this._rect;
+            return res;
         }
         get bbox() {
-            if (!this._bbox) {
+            let res = this._bbox;
+            if (!res) {
                 const bbox = this._rect || this.rect;
-                this._bbox = bbox.slice(0);
+                res = this._bbox = bbox.slice(0);
+                const { blur } = this.computedStyle;
+                if (blur.t === BLUR.GAUSSIAN) {
+                    const r = blur.radius;
+                    if (r > 0) {
+                        const d = kernelSize(r);
+                        const spread = outerSizeByD(d);
+                        if (spread) {
+                            res[0] -= spread;
+                            res[1] -= spread;
+                            res[2] += spread;
+                            res[3] += spread;
+                        }
+                    }
+                }
             }
-            return this._bbox;
+            return res;
         }
     }
 
@@ -21794,7 +22017,7 @@
                 const canvasCache = this.canvasCache;
                 if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
                     this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = this.textureCache[0]
-                        = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._bbox || this.bbox).slice(0));
+                        = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._rect || this.rect).slice(0));
                     canvasCache.releaseImg(this._src);
                 }
             }
@@ -22658,7 +22881,7 @@
             super.renderCanvas(scale);
             this.buildPoints();
             const points = this.points;
-            const bbox = this._bbox || this.bbox;
+            const bbox = this._rect || this.rect;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
             while (w * scale > config.MAX_TEXTURE_SIZE ||
@@ -25056,15 +25279,10 @@
             throw new Error('Can not moveTo self');
         }
         const parent = target.parent;
-        const width = parent.width;
-        const height = parent.height;
-        const rect = parent.getBoundingClientRect(false, true);
-        const zoom = parent.getZoom();
-        const x = rect.left / zoom;
-        const y = rect.top / zoom;
+        const zoom = target.getZoom();
         for (let i = 0, len = nodes.length; i < len; i++) {
             const item = nodes[i];
-            migrate(x, y, width, height, zoom, item);
+            migrate(parent, zoom, item);
             if (position === POSITION.BEFORE) {
                 target.insertBefore(item);
             }
@@ -25077,7 +25295,12 @@
             }
         }
     }
-    function migrate(x, y, width, height, zoom, node) {
+    function migrate(parent, zoom, node) {
+        const width = parent.width;
+        const height = parent.height;
+        const rect = parent.getBoundingClientRect(false, true);
+        const x = rect.left / zoom;
+        const y = rect.top / zoom;
         const r = node.getBoundingClientRect(false, true);
         const x1 = r.left / zoom;
         const y1 = r.top / zoom;
@@ -25460,15 +25683,10 @@
             const next = this.next;
             const zoom = this.getZoom();
             const parent = this.parent;
-            const width = parent.width;
-            const height = parent.height;
-            const rect = parent.getBoundingClientRect(false, true);
-            const x = rect.left / zoom;
-            const y = rect.top / zoom;
             const children = this.children.slice(0);
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
-                migrate(x, y, width, height, zoom, item);
+                migrate(parent, zoom, item);
                 // 插入到group的原本位置，有prev/next优先使用定位
                 if (prev) {
                     prev.insertAfter(item);
@@ -25505,14 +25723,9 @@
             const next = first.next;
             const zoom = first.getZoom();
             const parent = first.parent;
-            const width = parent.width;
-            const height = parent.height;
-            const rect = parent.getBoundingClientRect(false, true);
-            const x = rect.left / zoom;
-            const y = rect.top / zoom;
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
-                migrate(x, y, width, height, zoom, item);
+                migrate(parent, zoom, item);
             }
             const p = Object.assign({
                 uuid: v4(),
@@ -25657,7 +25870,7 @@
             super.renderCanvas(scale);
             this.buildPoints();
             const points = this.points;
-            const bbox = this._bbox || this.bbox;
+            const bbox = this._rect || this.rect;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
             while (w * scale > config.MAX_TEXTURE_SIZE ||
@@ -26270,7 +26483,7 @@
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);
-            const bbox = this._bbox || this.bbox;
+            const bbox = this._rect || this.rect;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             while (w * scale > config.MAX_TEXTURE_SIZE ||
                 h * scale > config.MAX_TEXTURE_SIZE) {
@@ -26403,75 +26616,6 @@
         }
     }
 
-    function initShaders(gl, vshader, fshader) {
-        let program = createProgram(gl, vshader, fshader);
-        if (!program) {
-            throw new Error('Failed to create program');
-        }
-        // 要开启透明度，用以绘制透明的图形
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        return program;
-    }
-    function createProgram(gl, vshader, fshader) {
-        // Create shader object
-        let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
-        let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-        if (!vertexShader || !fragmentShader) {
-            return null;
-        }
-        // Create a program object
-        let program = gl.createProgram();
-        if (!program) {
-            return null;
-        }
-        // @ts-ignore
-        program.vertexShader = vertexShader;
-        // @ts-ignore
-        program.fragmentShader = fragmentShader;
-        // Attach the shader objects
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        // Link the program object
-        gl.linkProgram(program);
-        // Check the result of linking
-        let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-        if (!linked) {
-            let error = gl.getProgramInfoLog(program);
-            gl.deleteProgram(program);
-            gl.deleteShader(fragmentShader);
-            gl.deleteShader(vertexShader);
-            throw new Error('Failed to link program: ' + error);
-        }
-        return program;
-    }
-    /**
-     * Create a shader object
-     * @param gl GL context
-     * @param type the type of the shader object to be created
-     * @param source shader program (string)
-     * @return created shader object, or null if the creation has failed.
-     */
-    function loadShader(gl, type, source) {
-        // Create shader object
-        let shader = gl.createShader(type);
-        if (shader === null) {
-            throw new Error('unable to create shader');
-        }
-        // Set the shader program
-        gl.shaderSource(shader, source);
-        // Compile the shader
-        gl.compileShader(shader);
-        // Check the result of compilation
-        let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-        if (!compiled) {
-            let error = gl.getShaderInfoLog(shader);
-            gl.deleteShader(shader);
-            throw new Error('Failed to compile shader: ' + error);
-        }
-        return shader;
-    }
-
     var ca = {
         alpha: true,
         antialias: true,
@@ -26587,11 +26731,37 @@ void main() {
   if (a <= 0.0) {
     discard;
   }
+  a = clamp(a, 0.0, 1.0);
   gl_FragColor = vec4(color2.rgb, a);
+}`;
+    const gaussVert = `#version 100
+
+attribute vec4 a_position;
+
+attribute vec2 a_texCoords;
+varying vec2 v_texCoordsBlur[3];
+
+uniform vec2 u_direction;
+
+void main() {
+  gl_Position = a_position;
+}`;
+    const gaussFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoordsBlur[3];
+
+uniform sampler2D u_texture;
+
+void main() {
+  gl_FragColor = vec4(0.0);
 }`;
 
     function renderWebgl(gl, root) {
-        var _a;
+        var _a, _b;
         // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
         let scale = root.getCurPageZoom(), scaleIndex = 0;
         if (scale < 1.2) {
@@ -26627,26 +26797,30 @@ void main() {
             const { node, lv, total } = structs[i];
             const { refreshLevel, computedStyle } = node;
             node.refreshLevel = RefreshLevel.NONE;
+            const { textureTotal, textureFilter, textureMask, } = node;
             // 无任何变化即refreshLevel为NONE（0）忽略
             if (refreshLevel) {
                 // filter之类的变更
                 if (refreshLevel < RefreshLevel.REPAINT) ;
-                // repaint
+                // repaint及以上都要重新生成内容
                 else {
                     node.calContent();
                     node.textureTarget[scaleIndex] = undefined;
                 }
             }
-            const { maskMode, opacity } = computedStyle;
+            const { maskMode, opacity, blur } = computedStyle;
             // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
             const needTotal = opacity > 0 && opacity < 1 && total > 0 &&
-                (!node.textureTotal[scaleIndex] ||
-                    !node.textureTotal[scaleIndex].available);
+                (!textureTotal[scaleIndex] ||
+                    !textureTotal[scaleIndex].available);
+            const needBlur = blur.t !== BLUR.NONE &&
+                (!textureFilter[scaleIndex] ||
+                    !((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
             const needMask = maskMode > 0 && !!node.next &&
-                (!node.textureMask[scaleIndex] ||
-                    !((_a = node.textureMask[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
+                (!textureMask[scaleIndex] ||
+                    !((_b = textureMask[scaleIndex]) === null || _b === void 0 ? void 0 : _b.available));
             // 记录汇总的同时以下标为k记录个类hash
-            if (needTotal || needMask) {
+            if (needTotal || needBlur || needMask) {
                 const t = {
                     i,
                     lv,
@@ -26673,7 +26847,7 @@ void main() {
             for (let j = 0, len = mergeList.length; j < len; j++) {
                 const item = mergeList[j];
                 const { i, total, node } = item;
-                // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算
+                // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算，但需要统计嵌套关系
                 const isNew = item.isNew = !node.tempBbox;
                 node.tempBbox = genBboxTotal(structs, node, i, total, isNew, scaleIndex, item, mergeHash);
             }
@@ -26707,11 +26881,24 @@ void main() {
                     }
                     continue;
                 }
+                // 不可见的但要排除mask
+                const computedStyle = node.computedStyle;
+                if ((!computedStyle.visible && !computedStyle.maskMode) ||
+                    computedStyle.opacity <= 0) {
+                    continue;
+                }
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
                 node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
+                const { blur, maskMode } = computedStyle;
+                // 生成filter
+                if (blur.t !== BLUR.NONE) {
+                    // 可能超过尺寸没有total汇总，暂时防御下
+                    if (node.textureTarget[scaleIndex]) {
+                        node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] =
+                            genFilter(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
+                    }
+                }
                 // 生成mask
-                const computedStyle = node.computedStyle;
-                const { maskMode } = computedStyle;
                 if (maskMode && node.next) {
                     // 可能超过尺寸没有total汇总，暂时防御下
                     if (node.textureTarget[scaleIndex]) {
@@ -26749,6 +26936,7 @@ void main() {
                 overlay.update();
                 isOverlay = true;
             }
+            // 不可见的但要排除mask
             const computedStyle = node.computedStyle;
             if ((!computedStyle.visible && !computedStyle.maskMode) ||
                 computedStyle.opacity <= 0) {
@@ -26797,7 +26985,7 @@ void main() {
                 if (target) {
                     const isInScreen = checkInScreen(target.bbox, matrix, W, H);
                     if (isInScreen) {
-                        drawTextureCache(gl, W, H, cx, cy, program, [
+                        drawTextureCache(gl, cx, cy, program, [
                             {
                                 opacity,
                                 matrix,
@@ -26825,7 +27013,7 @@ void main() {
                     }
                 }
                 if (isInScreen && target) {
-                    drawTextureCache(gl, W, H, cx, cy, program, [
+                    drawTextureCache(gl, cx, cy, program, [
                         {
                             opacity,
                             matrix,
@@ -26905,24 +27093,24 @@ void main() {
             }
         }
     }
-    // 汇总作为局部根节点的bbox
+    // 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
     function genBboxTotal(structs, node, index, total, isNew, scaleIndex, merge, mergeHash) {
-        var _a;
-        const res = (((_a = node.textureTarget[scaleIndex]) === null || _a === void 0 ? void 0 : _a.bbox) ||
-            node.tempBbox ||
-            node._bbox ||
-            node.bbox).slice(0);
+        const res = (node.tempBbox ||
+            node._rect ||
+            node.rect).slice(0);
         toE(node.tempMatrix);
         for (let i = index + 1, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
-            const parent = node2.parent;
             const target = node2.textureTarget[scaleIndex];
+            // 已有省略计算
             if (isNew) {
+                const parent = node2.parent;
                 const m = multiply(parent.tempMatrix, node2.matrix);
                 assignMatrix(node2.tempMatrix, m);
                 const b = (target === null || target === void 0 ? void 0 : target.bbox) || node2._bbox || node2.bbox;
+                // 防止空
                 if (b[2] - b[0] && b[3] - b[1]) {
-                    mergeBbox(res, transformBbox(b, m));
+                    mergeBbox(res, b, m);
                 }
             }
             if ((target && target !== node2.textureCache[scaleIndex]) ||
@@ -26937,12 +27125,9 @@ void main() {
         }
         return res;
     }
-    function transformBbox(bbox, matrix) {
-        if (isE(matrix)) {
-            return bbox.slice(0);
-        }
-        else {
-            const [x1, y1, x2, y2] = bbox;
+    function mergeBbox(bbox, t, matrix) {
+        let [x1, y1, x2, y2] = bbox;
+        if (!isE(matrix)) {
             const t = calPoint({ x: x1, y: y1 }, matrix);
             let xa = t.x, ya = t.y, xb = t.x, yb = t.y;
             const list = [x2, y1, x1, y2, x2, y2];
@@ -26953,14 +27138,15 @@ void main() {
                 xb = Math.max(xb, t.x);
                 yb = Math.max(yb, t.y);
             }
-            return new Float64Array([xa, ya, xb, yb]);
+            x1 = xa;
+            y1 = ya;
+            x2 = xb;
+            y2 = yb;
         }
-    }
-    function mergeBbox(bbox, t) {
-        bbox[0] = Math.min(bbox[0], t[0]);
-        bbox[1] = Math.min(bbox[1], t[1]);
-        bbox[2] = Math.max(bbox[2], t[2]);
-        bbox[3] = Math.max(bbox[3], t[3]);
+        bbox[0] = Math.min(bbox[0], x1);
+        bbox[1] = Math.min(bbox[1], y1);
+        bbox[2] = Math.max(bbox[2], x2);
+        bbox[3] = Math.max(bbox[3], y2);
     }
     function genTotal(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex) {
         var _a;
@@ -27031,7 +27217,7 @@ void main() {
                 target2 = node2.textureTarget[scaleIndex];
             }
             if (target2) {
-                drawTextureCache(gl, W, H, cx, cy, program, [
+                drawTextureCache(gl, cx, cy, program, [
                     {
                         opacity,
                         matrix: node2.tempMatrix,
@@ -27049,6 +27235,105 @@ void main() {
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target;
     }
+    function genFilter(gl, root, node, structs, index, lv, total, W, H, scale, scaleIndex) {
+        var _a;
+        // 缓存仍然还在直接返回，无需重新生成
+        if ((_a = node.textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available) {
+            return node.textureFilter[scaleIndex];
+        }
+        let res;
+        const { blur } = node.computedStyle;
+        if (blur.t === BLUR.GAUSSIAN && blur.radius) {
+            res = genGaussBlur(gl, root, node, blur.radius, structs, index, lv, total, W, H, scale, scaleIndex);
+        }
+        return res;
+    }
+    /**
+     * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+     * 按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
+     * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+     * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
+     * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
+     */
+    function genGaussBlur(gl, root, node, sigma, structs, index, lv, total, W, H, scale, scaleIndex) {
+        let d = kernelSize(sigma);
+        const max = config.MAX_VARYING_VECTORS * 2; // vec2比vec4可以多一倍
+        while (d > max) {
+            d -= 2;
+        }
+        const spread = outerSizeByD(d);
+        const textureTarget = node.textureTarget[scaleIndex];
+        const bbox = textureTarget.bbox.slice(0);
+        bbox[0] -= spread;
+        bbox[1] -= spread;
+        bbox[2] += spread;
+        bbox[3] += spread;
+        // 写到一个扩展好尺寸的tex中方便后续处理
+        const x = bbox[0], y = bbox[1];
+        let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        const programs = root.programs;
+        const program = programs.program;
+        const dx = -x * scale, dy = -y * scale;
+        w *= scale;
+        h *= scale;
+        const cx = w * 0.5, cy = h * 0.5;
+        const target = TextureCache.getEmptyInstance(gl, bbox, scale);
+        const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+        toE(node.tempMatrix);
+        drawTextureCache(gl, cx, cy, program, [
+            {
+                opacity: 1,
+                matrix: node.tempMatrix,
+                cache: textureTarget,
+            }
+        ], dx, dy, false);
+        // 再建一个空白尺寸纹理，2个纹理互相写入对方，循环3次模糊，水平垂直分开
+        const programGauss = genBlurShader(gl, programs, sigma, d);
+        gl.useProgram(programGauss);
+        const res = drawGauss(gl, programGauss, target.texture, w, h);
+        gl.deleteTexture(target.texture);
+        target.texture = res;
+        // 删除fbo恢复
+        gl.useProgram(program);
+        releaseFrameBuffer(gl, frameBuffer, W, H);
+        return target;
+    }
+    function genBlurShader(gl, programs, sigma, d) {
+        const key = 'programGauss,' + sigma + ',' + d;
+        if (programs.hasOwnProperty(key)) {
+            return programs[key];
+        }
+        const weights = gaussianWeight(sigma, d);
+        let vert = '';
+        let frag = '';
+        const r = Math.floor(d * 0.5);
+        for (let i = 0; i < r; i++) {
+            let c = (r - i) * 0.01;
+            vert += `v_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;\n`;
+            frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};\n`;
+        }
+        vert += `v_texCoordsBlur[${r}] = a_texCoords;\n`;
+        frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};\n`;
+        for (let i = 0; i < r; i++) {
+            let c = (i + 1) * 0.01;
+            vert += `v_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;\n`;
+            frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};\n`;
+        }
+        vert = gaussVert.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
+        frag = gaussFrag.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
+        return programs[key] = initShaders(gl, vert, frag);
+    }
     function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex) {
         var _a;
         // 缓存仍然还在直接返回，无需重新生成
@@ -27062,7 +27347,6 @@ void main() {
         const textureTarget = node.textureTarget[scaleIndex];
         const programs = root.programs;
         const program = programs.program;
-        gl.useProgram(program);
         // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
         const bbox = textureTarget.bbox;
         const { matrix, computedStyle } = node;
@@ -27124,7 +27408,7 @@ void main() {
                 target2 = node2.textureTarget[scaleIndex];
             }
             if (target2) {
-                drawTextureCache(gl, W, H, cx, cy, program, [
+                drawTextureCache(gl, cx, cy, program, [
                     {
                         opacity,
                         matrix,
@@ -27145,6 +27429,7 @@ void main() {
         if (maskMode === MASK.ALPHA) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
             drawMask(gl, w, h, maskProgram, textureTarget.texture, summary);
+            gl.useProgram(program);
         }
         // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
         else if (maskMode === MASK.OUTLINE) {
@@ -27160,7 +27445,7 @@ void main() {
             multiplyScale(node.tempMatrix, scale);
             // mask本身可能不可见
             if (computedStyle.visible && computedStyle.opacity > 0) {
-                drawTextureCache(gl, w, h, cx, cy, program, [
+                drawTextureCache(gl, cx, cy, program, [
                     {
                         opacity: 1,
                         matrix: node.tempMatrix,
@@ -27168,7 +27453,7 @@ void main() {
                     },
                 ], dx, dy, false);
             }
-            drawTextureCache(gl, w, h, cx, cy, program, [
+            drawTextureCache(gl, cx, cy, program, [
                 {
                     opacity: 1,
                     matrix: node.tempMatrix,
@@ -27180,7 +27465,6 @@ void main() {
         // 删除fbo恢复
         gl.deleteTexture(summary);
         releaseFrameBuffer(gl, frameBuffer, W, H);
-        gl.useProgram(program);
         return target;
     }
     function genOutline(gl, root, node, structs, index, total, bbox, scale) {
