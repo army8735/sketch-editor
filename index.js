@@ -26805,7 +26805,6 @@ void main() {
                 // repaint及以上都要重新生成内容
                 else {
                     node.calContent();
-                    node.textureTarget[scaleIndex] = undefined;
                 }
             }
             const { maskMode, opacity, blur } = computedStyle;
