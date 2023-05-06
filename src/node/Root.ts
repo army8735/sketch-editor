@@ -299,7 +299,8 @@ class Root extends Container implements FrameCallback {
           computedStyle.blur = style.blur.v;
           node._bbox = undefined;
           node.tempBbox = undefined;
-          node.clearCache(false);
+          node.textureFilter.forEach((item) => item?.release());
+          node.textureMask.forEach((item) => item?.release());
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;

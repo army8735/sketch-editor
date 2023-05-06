@@ -27844,7 +27844,8 @@ void main() {
                         computedStyle.blur = style.blur.v;
                         node._bbox = undefined;
                         node.tempBbox = undefined;
-                        node.clearCache(false);
+                        node.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
+                        node.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
                     }
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
                         computedStyle.mixBlendMode = style.mixBlendMode.v;
