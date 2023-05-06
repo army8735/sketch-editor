@@ -19818,8 +19818,8 @@
         }
         // 单个矩形绘制可优化，2个三角形共享一条边
         const isSingle = length === 1;
-        const num1 = isSingle ? 8 : (length * 12); // xy数
-        const num2 = isSingle ? 4 : (length * 6); // 顶点数
+        const num1 = isSingle ? 8 : length * 12; // xy数
+        const num2 = isSingle ? 4 : length * 6; // 顶点数
         // 是否使用缓存TypeArray，避免垃圾回收
         let vtPoint, vtTex, vtOpacity;
         if (lastVtPoint && lastVtPoint.length === num1) {
@@ -20062,7 +20062,7 @@
         gl.deleteBuffer(texBuffer);
         gl.disableVertexAttribArray(a_position);
         gl.disableVertexAttribArray(a_texCoords);
-        recycle.forEach(item => gl.deleteTexture(item));
+        recycle.forEach((item) => gl.deleteTexture(item));
         return tex1;
     }
     function convertCoords2Gl(x, y, cx, cy, flipY = true) {
@@ -26797,7 +26797,7 @@ void main() {
             const { node, lv, total } = structs[i];
             const { refreshLevel, computedStyle } = node;
             node.refreshLevel = RefreshLevel.NONE;
-            const { textureTotal, textureFilter, textureMask, } = node;
+            const { textureTotal, textureFilter, textureMask } = node;
             // 无任何变化即refreshLevel为NONE（0）忽略
             if (refreshLevel) {
                 // filter之类的变更
@@ -26810,15 +26810,15 @@ void main() {
             }
             const { maskMode, opacity, blur } = computedStyle;
             // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
-            const needTotal = opacity > 0 && opacity < 1 && total > 0 &&
-                (!textureTotal[scaleIndex] ||
-                    !textureTotal[scaleIndex].available);
+            const needTotal = opacity > 0 &&
+                opacity < 1 &&
+                total > 0 &&
+                (!textureTotal[scaleIndex] || !textureTotal[scaleIndex].available);
             const needBlur = blur.t !== BLUR.NONE &&
-                (!textureFilter[scaleIndex] ||
-                    !((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
-            const needMask = maskMode > 0 && !!node.next &&
-                (!textureMask[scaleIndex] ||
-                    !((_b = textureMask[scaleIndex]) === null || _b === void 0 ? void 0 : _b.available));
+                (!textureFilter[scaleIndex] || !((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
+            const needMask = maskMode > 0 &&
+                !!node.next &&
+                (!textureMask[scaleIndex] || !((_b = textureMask[scaleIndex]) === null || _b === void 0 ? void 0 : _b.available));
             // 记录汇总的同时以下标为k记录个类hash
             if (needTotal || needBlur || needMask) {
                 const t = {
@@ -26848,7 +26848,7 @@ void main() {
                 const item = mergeList[j];
                 const { i, total, node } = item;
                 // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算，但需要统计嵌套关系
-                const isNew = item.isNew = !node.tempBbox;
+                const isNew = (item.isNew = !node.tempBbox);
                 node.tempBbox = genBboxTotal(structs, node, i, total, isNew, scaleIndex, item, mergeHash);
             }
             // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
@@ -27095,9 +27095,7 @@ void main() {
     }
     // 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
     function genBboxTotal(structs, node, index, total, isNew, scaleIndex, merge, mergeHash) {
-        const res = (node.tempBbox ||
-            node._rect ||
-            node.rect).slice(0);
+        const res = (node.tempBbox || node._rect || node.rect).slice(0);
         toE(node.tempMatrix);
         for (let i = index + 1, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
@@ -27296,7 +27294,7 @@ void main() {
                 opacity: 1,
                 matrix: node.tempMatrix,
                 cache: textureTarget,
-            }
+            },
         ], dx, dy, false);
         // 再建一个空白尺寸纹理，2个纹理互相写入对方，循环3次模糊，水平垂直分开
         const programGauss = genBlurShader(gl, programs, sigma, d);
@@ -27332,7 +27330,7 @@ void main() {
         }
         vert = gaussVert.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
         frag = gaussFrag.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-        return programs[key] = initShaders(gl, vert, frag);
+        return (programs[key] = initShaders(gl, vert, frag));
     }
     function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex) {
         var _a;

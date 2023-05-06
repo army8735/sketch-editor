@@ -232,8 +232,7 @@ class Root extends Container implements FrameCallback {
     if (removeDom) {
       if (node instanceof Page) {
         this.emit(Event.WILL_REMOVE_PAGE, node);
-      }
-      else {
+      } else {
         this.emit(Event.WILL_REMOVE_DOM, node);
       }
     }

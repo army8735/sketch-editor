@@ -1,6 +1,24 @@
-import { bindTexture, createTexture, drawGauss, drawMask, drawTextureCache, initShaders } from '../gl/webgl';
+import { gaussFrag, gaussVert } from '../gl/glsl';
+import {
+  bindTexture,
+  createTexture,
+  drawGauss,
+  drawMask,
+  drawTextureCache,
+  initShaders,
+} from '../gl/webgl';
+import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { isRectsOverlap } from '../math/geom';
-import { assignMatrix, calPoint, calRectPoint, inverse, isE, multiply, multiplyScale, toE, } from '../math/matrix';
+import {
+  assignMatrix,
+  calPoint,
+  calRectPoint,
+  inverse,
+  isE,
+  multiply,
+  multiplyScale,
+  toE,
+} from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Bitmap from '../node/Bitmap';
 import Polyline from '../node/geom/Polyline';
@@ -13,8 +31,6 @@ import config from './config';
 import { RefreshLevel } from './level';
 import { canvasPolygon } from './paint';
 import TextureCache from './TextureCache';
-import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
-import { gaussVert, gaussFrag } from '../gl/glsl';
 
 export type Struct = {
   node: Node;
@@ -73,11 +89,7 @@ export function renderWebgl(
     const { node, lv, total } = structs[i];
     const { refreshLevel, computedStyle } = node;
     node.refreshLevel = RefreshLevel.NONE;
-    const {
-      textureTotal,
-      textureFilter,
-      textureMask,
-    } = node;
+    const { textureTotal, textureFilter, textureMask } = node;
     // 无任何变化即refreshLevel为NONE（0）忽略
     if (refreshLevel) {
       // filter之类的变更
@@ -92,17 +104,17 @@ export function renderWebgl(
     const { maskMode, opacity, blur } = computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
-      opacity > 0 && opacity < 1 && total > 0 &&
-      (!textureTotal[scaleIndex] ||
-        !textureTotal[scaleIndex]!.available);
+      opacity > 0 &&
+      opacity < 1 &&
+      total > 0 &&
+      (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
     const needBlur =
       blur.t !== BLUR.NONE &&
-      (!textureFilter[scaleIndex] ||
-        !textureFilter[scaleIndex]?.available);
+      (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
     const needMask =
-      maskMode > 0 && !!node.next &&
-      (!textureMask[scaleIndex] ||
-        !textureMask[scaleIndex]?.available);
+      maskMode > 0 &&
+      !!node.next &&
+      (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
     // 记录汇总的同时以下标为k记录个类hash
     if (needTotal || needBlur || needMask) {
       const t: Merge = {
@@ -132,8 +144,17 @@ export function renderWebgl(
       const item = mergeList[j];
       const { i, total, node } = item;
       // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算，但需要统计嵌套关系
-      const isNew = item.isNew = !node.tempBbox;
-      node.tempBbox = genBboxTotal(structs, node, i, total, isNew, scaleIndex, item, mergeHash);
+      const isNew = (item.isNew = !node.tempBbox);
+      node.tempBbox = genBboxTotal(
+        structs,
+        node,
+        i,
+        total,
+        isNew,
+        scaleIndex,
+        item,
+        mergeHash,
+      );
     }
     // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
     for (let j = 0, len = mergeList.length; j < len; j++) {
@@ -251,7 +272,8 @@ export function renderWebgl(
   const program = programs.program;
   gl.useProgram(programs.program);
   // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
-  let hasCacheOp = false, hasCacheMw = false;
+  let hasCacheOp = false,
+    hasCacheMw = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];
@@ -275,8 +297,7 @@ export function renderWebgl(
     if (!i) {
       hasCacheOp = node.hasCacheOp;
       hasCacheMw = node.hasCacheMw;
-    }
-    else {
+    } else {
       hasCacheOp = node.hasCacheOp && node.parentOpId === parent!.localOpId;
       hasCacheMw = node.hasCacheMw && node.parentMwId === parent!.localMwId;
     }
@@ -469,11 +490,7 @@ function genBboxTotal(
   merge: Merge,
   mergeHash: Array<Merge>,
 ) {
-  const res = (
-    node.tempBbox ||
-    node._rect ||
-    node.rect
-  ).slice(0);
+  const res = (node.tempBbox || node._rect || node.rect).slice(0);
   toE(node.tempMatrix);
   for (let i = index + 1, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
@@ -762,7 +779,7 @@ function genGaussBlur(
         opacity: 1,
         matrix: node.tempMatrix,
         cache: textureTarget,
-      }
+      },
     ],
     dx,
     dy,
@@ -780,30 +797,39 @@ function genGaussBlur(
   return target;
 }
 
-function genBlurShader(gl: WebGL2RenderingContext | WebGLRenderingContext, programs: any, sigma: number, d: number) {
+function genBlurShader(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  programs: any,
+  sigma: number,
+  d: number,
+) {
   const key = 'programGauss,' + sigma + ',' + d;
-  if(programs.hasOwnProperty(key)) {
+  if (programs.hasOwnProperty(key)) {
     return programs[key];
   }
   const weights = gaussianWeight(sigma, d);
   let vert = '';
   let frag = '';
   const r = Math.floor(d * 0.5);
-  for(let i = 0; i < r; i++) {
+  for (let i = 0; i < r; i++) {
     let c = (r - i) * 0.01;
     vert += `v_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;\n`;
     frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};\n`;
   }
   vert += `v_texCoordsBlur[${r}] = a_texCoords;\n`;
   frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};\n`;
-  for(let i = 0; i < r; i++) {
+  for (let i = 0; i < r; i++) {
     let c = (i + 1) * 0.01;
-    vert += `v_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;\n`;
-    frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};\n`;
+    vert += `v_texCoordsBlur[${
+      i + r + 1
+    }] = a_texCoords + vec2(${c}, ${c}) * u_direction;\n`;
+    frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${
+      i + r + 1
+    }]) * ${weights[i + r + 1]};\n`;
   }
   vert = gaussVert.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = gaussFrag.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return programs[key] = initShaders(gl, vert, frag);
+  return (programs[key] = initShaders(gl, vert, frag));
 }
 
 function genMask(

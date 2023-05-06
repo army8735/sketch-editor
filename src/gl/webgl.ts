@@ -1,10 +1,13 @@
 import { calRectPoint } from '../math/matrix';
 import TextureCache from '../refresh/TextureCache';
 
-export function initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext,
-                            vshader: string, fshader: string) {
+export function initShaders(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  vshader: string,
+  fshader: string,
+) {
   let program = createProgram(gl, vshader, fshader);
-  if(!program) {
+  if (!program) {
     throw new Error('Failed to create program');
   }
 
@@ -14,18 +17,21 @@ export function initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext,
   return program;
 }
 
-function createProgram(gl: WebGL2RenderingContext | WebGLRenderingContext,
-                       vshader: string, fshader: string) {
+function createProgram(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  vshader: string,
+  fshader: string,
+) {
   // Create shader object
   let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
   let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-  if(!vertexShader || !fragmentShader) {
+  if (!vertexShader || !fragmentShader) {
     return null;
   }
 
   // Create a program object
   let program = gl.createProgram();
-  if(!program) {
+  if (!program) {
     return null;
   }
   // @ts-ignore
@@ -42,7 +48,7 @@ function createProgram(gl: WebGL2RenderingContext | WebGLRenderingContext,
 
   // Check the result of linking
   let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-  if(!linked) {
+  if (!linked) {
     let error = gl.getProgramInfoLog(program);
     gl.deleteProgram(program);
     gl.deleteShader(fragmentShader);
@@ -59,11 +65,14 @@ function createProgram(gl: WebGL2RenderingContext | WebGLRenderingContext,
  * @param source shader program (string)
  * @return created shader object, or null if the creation has failed.
  */
-export function loadShader(gl: WebGL2RenderingContext | WebGLRenderingContext,
-                           type: number, source: string) {
+export function loadShader(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  type: number,
+  source: string,
+) {
   // Create shader object
   let shader = gl.createShader(type);
-  if(shader === null) {
+  if (shader === null) {
     throw new Error('unable to create shader');
   }
 
@@ -75,7 +84,7 @@ export function loadShader(gl: WebGL2RenderingContext | WebGLRenderingContext,
 
   // Check the result of compilation
   let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-  if(!compiled) {
+  if (!compiled) {
     let error = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
     throw new Error('Failed to compile shader: ' + error);
@@ -84,8 +93,13 @@ export function loadShader(gl: WebGL2RenderingContext | WebGLRenderingContext,
   return shader;
 }
 
-export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, n: number,
-                              tex?: TexImageSource, width?: number, height?: number): WebGLTexture {
+export function createTexture(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  n: number,
+  tex?: TexImageSource,
+  width?: number,
+  height?: number,
+): WebGLTexture {
   const texture = gl.createTexture()!;
   bindTexture(gl, texture, n);
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
@@ -96,9 +110,18 @@ export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext
   }
   // 或者尺寸来绑定fbo
   else if (width && height) {
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  }
-  else {
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      width,
+      height,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      null,
+    );
+  } else {
     throw new Error('Missing texImageSource or w/h');
   }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -108,57 +131,72 @@ export function createTexture(gl: WebGL2RenderingContext | WebGLRenderingContext
   return texture;
 }
 
-export function bindTexture(gl: WebGL2RenderingContext | WebGLRenderingContext,
-                            texture: WebGLTexture, n: number) {
+export function bindTexture(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  texture: WebGLTexture,
+  n: number,
+) {
   // @ts-ignore
   gl.activeTexture(gl['TEXTURE' + n]);
   gl.bindTexture(gl.TEXTURE_2D, texture);
 }
 
 export type DrawData = {
-  opacity: number,
-  matrix: Float64Array,
-  cache: TextureCache,
+  opacity: number;
+  matrix: Float64Array;
+  cache: TextureCache;
 };
 
-let lastVtPoint: Float32Array, lastVtTex: Float32Array, lastVtOpacity: Float32Array; // 缓存
+let lastVtPoint: Float32Array,
+  lastVtTex: Float32Array,
+  lastVtOpacity: Float32Array; // 缓存
 
-export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingContext,
-                                 cx: number, cy: number, program: any, list: Array<DrawData>,
-                                 dx = 0, dy = 0, flipY = true) {
+export function drawTextureCache(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cx: number,
+  cy: number,
+  program: any,
+  list: Array<DrawData>,
+  dx = 0,
+  dy = 0,
+  flipY = true,
+) {
   const length = list.length;
   if (!length) {
     return;
   }
   // 单个矩形绘制可优化，2个三角形共享一条边
   const isSingle = length === 1;
-  const num1 = isSingle ? 8 : (length * 12); // xy数
-  const num2 = isSingle ? 4 : (length * 6); // 顶点数
+  const num1 = isSingle ? 8 : length * 12; // xy数
+  const num2 = isSingle ? 4 : length * 6; // 顶点数
   // 是否使用缓存TypeArray，避免垃圾回收
   let vtPoint: Float32Array, vtTex: Float32Array, vtOpacity: Float32Array;
   if (lastVtPoint && lastVtPoint.length === num1) {
     vtPoint = lastVtPoint;
-  }
-  else {
+  } else {
     vtPoint = lastVtPoint = new Float32Array(num1);
   }
   if (lastVtTex && lastVtTex.length === num1) {
     vtTex = lastVtTex;
-  }
-  else {
+  } else {
     vtTex = lastVtTex = new Float32Array(num1);
   }
   if (lastVtOpacity && lastVtOpacity.length === num2) {
     vtOpacity = lastVtOpacity;
-  }
-  else {
+  } else {
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
     const { opacity, matrix, cache } = list[i];
     const { bbox, texture } = cache;
     bindTexture(gl, texture, 0);
-    const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix)
+    const t = calRectPoint(
+      bbox[0] + dx,
+      bbox[1] + dy,
+      bbox[2] + dx,
+      bbox[3] + dy,
+      matrix,
+    );
     const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
     const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
     const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
@@ -174,8 +212,7 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
     if (isSingle) {
       vtPoint[k + 6] = t3.x;
       vtPoint[k + 7] = t3.y;
-    }
-    else {
+    } else {
       vtPoint[k + 6] = t4.x;
       vtPoint[k + 7] = t4.y;
       vtPoint[k + 8] = t2.x;
@@ -192,8 +229,7 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
     if (isSingle) {
       vtTex[k + 6] = 1;
       vtTex[k + 7] = 1;
-    }
-    else {
+    } else {
       vtTex[k + 6] = 0;
       vtTex[k + 7] = 1;
       vtTex[k + 8] = 1;
@@ -243,12 +279,18 @@ export function drawTextureCache(gl: WebGL2RenderingContext | WebGLRenderingCont
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
   gl.disableVertexAttribArray(a_opacity);
-
 }
 
-export function drawMask(gl: WebGL2RenderingContext | WebGLRenderingContext, width: number, height: number,
-                         program: any, mask: WebGLTexture, summary: WebGLTexture) {
-  const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
+export function drawMask(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  width: number,
+  height: number,
+  program: any,
+  mask: WebGLTexture,
+  summary: WebGLTexture,
+) {
+  const vtPoint = new Float32Array(8),
+    vtTex = new Float32Array(8);
   vtPoint[0] = -1;
   vtPoint[1] = -1;
   vtPoint[2] = -1;
@@ -309,7 +351,8 @@ export function drawGauss(
   width: number,
   height: number,
 ) {
-  const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
+  const vtPoint = new Float32Array(8),
+    vtTex = new Float32Array(8);
   vtPoint[0] = -1;
   vtPoint[1] = -1;
   vtPoint[2] = -1;
@@ -355,24 +398,34 @@ export function drawGauss(
   for (let i = 0; i < 3; i++) {
     // tex1到tex2
     let tex2 = createTexture(gl, 1, undefined, width, height);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex2,
+      0,
+    );
     bindTexture(gl, tex1, 0);
-    if(width >= height) {
+    if (width >= height) {
       gl.uniform2f(u_direction, max, 0);
-    }
-    else {
+    } else {
       gl.uniform2f(u_direction, max * ratio, 0);
     }
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     // tex2到tex1
     let tex3 = createTexture(gl, 0, undefined, width, height);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex3,
+      0,
+    );
     bindTexture(gl, tex2, 1);
-    if(width >= height) {
+    if (width >= height) {
       gl.uniform2f(u_direction, 0, max * ratio);
-    }
-    else {
+    } else {
       gl.uniform2f(u_direction, 0, max);
     }
     gl.uniform1i(u_texture, 1);
@@ -386,25 +439,28 @@ export function drawGauss(
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  recycle.forEach(item => gl.deleteTexture(item));
+  recycle.forEach((item) => gl.deleteTexture(item));
   return tex1;
 }
 
-export function convertCoords2Gl(x: number, y: number, cx: number, cy: number, flipY = true) {
+export function convertCoords2Gl(
+  x: number,
+  y: number,
+  cx: number,
+  cy: number,
+  flipY = true,
+) {
   if (x === cx) {
     x = 0;
-  }
-  else {
+  } else {
     x = (x - cx) / cx;
   }
   if (y === cy) {
     y = 0;
-  }
-  else {
+  } else {
     if (flipY) {
       y = (cy - y) / cy;
-    }
-    else {
+    } else {
       y = (y - cy) / cy;
     }
   }
