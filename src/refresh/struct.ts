@@ -25,7 +25,7 @@ import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { BLUR, FILL_RULE, MASK } from '../style/define';
+import { BLUR, FILL_RULE, MASK, MIX_BLEND_MODE } from '../style/define';
 import inject from '../util/inject';
 import config from './config';
 import { RefreshLevel } from './level';
@@ -49,6 +49,9 @@ type Merge = {
   subList: Array<Merge>; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
   isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可是范围外有tempBbox
 };
+
+let resTexture: WebGLTexture | undefined;
+let resFrameBuffer: WebGLFramebuffer | undefined;
 
 export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -100,11 +103,10 @@ export function renderWebgl(
         node.calContent();
       }
     }
-    const { maskMode, opacity, blur } = computedStyle;
+    const { maskMode, opacity, blur, mixBlendMode } = computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
-      opacity > 0 &&
-      opacity < 1 &&
+      (opacity > 0 && opacity < 1 || mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
       total > 0 &&
       (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
     const needBlur =
@@ -129,7 +131,7 @@ export function renderWebgl(
       mergeHash[i] = t;
     }
   }
-  // console.warn(mergeList);
+  console.warn(mergeList);
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
   if (mergeList.length) {
     mergeList.sort(function (a, b) {
@@ -252,7 +254,7 @@ export function renderWebgl(
     }
   }
   const programs = root.programs;
-  // 先渲染artBoard的背景色
+  // 先渲染artBoard的默认背景色即白色到底层，非默认则是自定义按照普通内容渲染不走这里
   const page = root.lastPage;
   if (page) {
     const children = page.children,
@@ -265,12 +267,30 @@ export function renderWebgl(
       }
     }
   }
+  // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode
+  if (!resTexture) {
+    resTexture = createTexture(gl, 0, undefined, W, H);
+    resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
+  }
+  // 复用
+  else {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer!);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      resTexture,
+      0,
+    );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
   const overlay = root.overlay!;
   let isOverlay = false;
   const program = programs.program;
   gl.useProgram(programs.program);
-  // 世界opacity和matrix不一定需要重算，这里记录个list，按深度lv，如果出现了无缓存，则之后的深度lv都需要重算
+  // 世界opacity和matrix不一定需要重算，有可能之前调用算过了有缓存
   let hasCacheOp = false,
     hasCacheMw = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
@@ -300,6 +320,7 @@ export function renderWebgl(
       hasCacheOp = node.hasCacheOp && node.parentOpId === parent!.localOpId;
       hasCacheMw = node.hasCacheMw && node.parentMwId === parent!.localMwId;
     }
+    // opacity和matrix的世界计算，父子相乘
     if (!hasCacheOp) {
       node._opacity = parent
         ? parent._opacity * node.computedStyle.opacity
@@ -344,7 +365,8 @@ export function renderWebgl(
               {
                 opacity,
                 matrix,
-                cache: target,
+                bbox: target.bbox,
+                texture: target.texture,
               },
             ],
             0,
@@ -382,7 +404,8 @@ export function renderWebgl(
             {
               opacity,
               matrix,
-              cache: target,
+              bbox: target.bbox,
+              texture: target.texture,
             },
           ],
           0,
@@ -476,6 +499,32 @@ export function renderWebgl(
       }
     }
   }
+  // 最后将离屏离屏frameBuffer绘入画布，不删除缓存，复用
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    null,
+    0,
+  );
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  drawTextureCache(
+    gl,
+    cx,
+    cy,
+    program,
+    [
+      {
+        opacity: 1,
+        matrix: undefined,
+        bbox: new Float64Array([0, 0, W, H]),
+        texture: resTexture,
+      }
+    ],
+    0,
+    0,
+    false,
+  );
 }
 
 // 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
@@ -645,7 +694,8 @@ function genTotal(
           {
             opacity,
             matrix: node2.tempMatrix,
-            cache: target2,
+            bbox: target2.bbox,
+            texture: target2.texture,
           },
         ],
         dx,
@@ -777,7 +827,8 @@ function genGaussBlur(
       {
         opacity: 1,
         matrix: node.tempMatrix,
-        cache: textureTarget,
+        bbox: textureTarget.bbox,
+        texture: textureTarget.texture,
       },
     ],
     dx,
@@ -932,7 +983,8 @@ function genMask(
           {
             opacity,
             matrix,
-            cache: target2,
+            bbox: target2.bbox,
+            texture: target2.texture,
           },
         ],
         dx,
@@ -1013,7 +1065,8 @@ function genMask(
           {
             opacity: 1,
             matrix: node.tempMatrix,
-            cache: textureTarget,
+            bbox: textureTarget.bbox,
+            texture: textureTarget.texture,
           },
         ],
         dx,
@@ -1030,7 +1083,8 @@ function genMask(
         {
           opacity: 1,
           matrix: node.tempMatrix,
-          cache: temp,
+          bbox: temp.bbox,
+          texture: temp.texture,
         },
       ],
       dx,

@@ -294,7 +294,7 @@ export function multiplyScale(m: Float64Array, v: number) {
   return m;
 }
 
-export function calPoint(point: { x: number, y: number }, m: Float64Array) {
+export function calPoint(point: { x: number, y: number }, m?: Float64Array) {
   if(m && !isE(m)) {
     let { x, y } = point;
     let a1 = m[0], b1 = m[1];
@@ -329,7 +329,7 @@ export function inverse(m: Float64Array) {
     (c * f - d * e) / divisor, (b * e - a * f) / divisor]);
 }
 
-export function calRectPoint(xa: number, ya: number, xb: number, yb: number, matrix: Float64Array) {
+export function calRectPoint(xa: number, ya: number, xb: number, yb: number, matrix?: Float64Array) {
   let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
   let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
   let x2, y2, x4, y4;

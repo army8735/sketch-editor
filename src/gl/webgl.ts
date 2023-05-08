@@ -1,5 +1,4 @@
 import { calRectPoint } from '../math/matrix';
-import TextureCache from '../refresh/TextureCache';
 
 export function initShaders(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -143,8 +142,10 @@ export function bindTexture(
 
 export type DrawData = {
   opacity: number;
-  matrix: Float64Array;
-  cache: TextureCache;
+  matrix?: Float64Array;
+  // cache: TextureCache;
+  bbox: Float64Array;
+  texture: WebGLTexture;
 };
 
 let lastVtPoint: Float32Array,
@@ -187,8 +188,7 @@ export function drawTextureCache(
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
-    const { opacity, matrix, cache } = list[i];
-    const { bbox, texture } = cache;
+    const { opacity, matrix, bbox, texture } = list[i];
     bindTexture(gl, texture, 0);
     const t = calRectPoint(
       bbox[0] + dx,
