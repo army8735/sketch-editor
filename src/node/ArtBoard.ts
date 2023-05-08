@@ -3,6 +3,9 @@ import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoint } from '../math/matrix';
 import Container from './Container';
 import Node from './Node';
+import config from '../refresh/config';
+import CanvasCache from '../refresh/CanvasCache';
+import { color2rgbaStr } from '../style/css';
 
 class ArtBoard extends Container {
   hasBackgroundColor: boolean;
@@ -13,9 +16,46 @@ class ArtBoard extends Container {
     this.artBoard = this;
   }
 
-  // 画板统一无内容，背景单独优化渲染
+  // 画板有自定义背景色时有内容
   override calContent(): boolean {
-    return false;
+    return (this.hasContent = this.hasBackgroundColor);
+  }
+
+  override renderCanvas(scale: number) {
+    super.renderCanvas(scale);
+    const bbox = this._rect || this.rect;
+    const x = bbox[0],
+      y = bbox[1],
+      w = bbox[2] - x,
+      h = bbox[3] - y;
+    while (
+      w * scale > config.MAX_TEXTURE_SIZE ||
+      h * scale > config.MAX_TEXTURE_SIZE
+      ) {
+      if (scale <= 1) {
+        break;
+      }
+      scale = scale >> 1;
+    }
+    if (
+      w * scale > config.MAX_TEXTURE_SIZE ||
+      h * scale > config.MAX_TEXTURE_SIZE
+    ) {
+      return;
+    }
+    const dx = -x * scale,
+      dy = -y * scale;
+    // TODO 纯色背景可以优化为小尺寸
+    const canvasCache = (this.canvasCache = CanvasCache.getInstance(
+      w * scale,
+      h * scale,
+      dx,
+      dy,
+    ));
+    canvasCache.available = true;
+    const ctx = canvasCache.offscreen.ctx;
+    ctx.fillStyle = color2rgbaStr(this.computedStyle.backgroundColor);
+    ctx.fillRect(0, 0, w * scale, h * scale);
   }
 
   override rename(s: string) {

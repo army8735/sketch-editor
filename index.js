@@ -21579,6 +21579,72 @@
         }
     }
 
+    const config = {
+        MAX_TEXTURE_SIZE: 2048,
+        SMALL_UNIT: 32,
+        MAX_NUM: Math.pow(2048 / 32, 2),
+        MAX_TEXTURE_UNITS: 8,
+        MAX_VARYING_VECTORS: 15,
+        init(maxSize, maxUnits, maxVectors) {
+            this.MAX_TEXTURE_SIZE = maxSize;
+            this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
+            this.MAX_TEXTURE_UNITS = maxUnits;
+            this.MAX_VARYING_VECTORS = maxVectors;
+        },
+    };
+
+    const HASH = {};
+    class CanvasCache {
+        constructor(w, h, dx = 0, dy = 0) {
+            this.available = false;
+            this.offscreen = inject.getOffscreenCanvas(w, h);
+            this.w = w;
+            this.h = h;
+            this.dx = dx;
+            this.dy = dy;
+        }
+        release() {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            this.offscreen.release();
+        }
+        releaseImg(url) {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            const o = HASH[url];
+            o.count--;
+            if (!o.count) {
+                // 此时无引用计数可清空且释放离屏canvas
+                delete HASH[url];
+                this.offscreen.release();
+            }
+        }
+        getCount(url) {
+            var _a;
+            return (_a = HASH[url]) === null || _a === void 0 ? void 0 : _a.count;
+        }
+        static getInstance(w, h, dx = 0, dy = 0) {
+            return new CanvasCache(w, h, dx, dy);
+        }
+        static getImgInstance(w, h, url) {
+            if (HASH.hasOwnProperty(url)) {
+                const o = HASH[url];
+                o.count++;
+                return o.value;
+            }
+            const o = new CanvasCache(w, h, 0, 0);
+            HASH[url] = {
+                value: o,
+                count: 1,
+            };
+            return o;
+        }
+    }
+
     class ArtBoard extends Container {
         constructor(props, children) {
             super(props, children);
@@ -21586,9 +21652,32 @@
             this.isArtBoard = true;
             this.artBoard = this;
         }
-        // 画板统一无内容，背景单独优化渲染
+        // 画板有自定义背景色时有内容
         calContent() {
-            return false;
+            return (this.hasContent = this.hasBackgroundColor);
+        }
+        renderCanvas(scale) {
+            super.renderCanvas(scale);
+            const bbox = this._rect || this.rect;
+            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            while (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
+                if (scale <= 1) {
+                    break;
+                }
+                scale = scale >> 1;
+            }
+            if (w * scale > config.MAX_TEXTURE_SIZE ||
+                h * scale > config.MAX_TEXTURE_SIZE) {
+                return;
+            }
+            const dx = -x * scale, dy = -y * scale;
+            // TODO 纯色背景可以优化为小尺寸
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
+            canvasCache.available = true;
+            const ctx = canvasCache.offscreen.ctx;
+            ctx.fillStyle = color2rgbaStr(this.computedStyle.backgroundColor);
+            ctx.fillRect(0, 0, w * scale, h * scale);
         }
         rename(s) {
             var _a, _b;
@@ -21860,72 +21949,6 @@
     }
     ArtBoard.BOX_SHADOW = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDkuMC1jMDAwIDc5LjE3MWMyN2ZhYiwgMjAyMi8wOC8xNi0yMjozNTo0MSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6Q0YxOEMzRkFDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6Q0YxOEMzRjlDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCRDFFMUYwM0M0QTExMUVEOTIxOUREMjgyNjUzODRENSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCRDFFMUYwNEM0QTExMUVEOTIxOUREMjgyNjUzODRENSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PrnWkg0AAACjSURBVHja7JXhCsIwDISTLsr2/i8rbjZueMGjbJhJ/+nBQSj0o224VOUllbe4zsi5VgIUWE9AHa6wGMEMHuCMHvAC1xY4rr4CqInTbbD76luc0uiKA2AT4BnggnoOjlEj4qrb2iUJFNqn/Ibc4XD5AKx7DSzSWX/gLwDtIOwR+Mxg8D2gN0GXE9GLfR5Ab4IuXwyHADrHrMv46j5gtfcX8BRgAOX7OzJVtOaeAAAAAElFTkSuQmCC';
     ArtBoard.BOX_SHADOW_TEXTURE = null;
-
-    const HASH = {};
-    class CanvasCache {
-        constructor(w, h, dx = 0, dy = 0) {
-            this.available = false;
-            this.offscreen = inject.getOffscreenCanvas(w, h);
-            this.w = w;
-            this.h = h;
-            this.dx = dx;
-            this.dy = dy;
-        }
-        release() {
-            if (!this.available) {
-                return;
-            }
-            this.available = false;
-            this.offscreen.release();
-        }
-        releaseImg(url) {
-            if (!this.available) {
-                return;
-            }
-            this.available = false;
-            const o = HASH[url];
-            o.count--;
-            if (!o.count) {
-                // 此时无引用计数可清空且释放离屏canvas
-                delete HASH[url];
-                this.offscreen.release();
-            }
-        }
-        getCount(url) {
-            var _a;
-            return (_a = HASH[url]) === null || _a === void 0 ? void 0 : _a.count;
-        }
-        static getInstance(w, h, dx = 0, dy = 0) {
-            return new CanvasCache(w, h, dx, dy);
-        }
-        static getImgInstance(w, h, url) {
-            if (HASH.hasOwnProperty(url)) {
-                const o = HASH[url];
-                o.count++;
-                return o.value;
-            }
-            const o = new CanvasCache(w, h, 0, 0);
-            HASH[url] = {
-                value: o,
-                count: 1,
-            };
-            return o;
-        }
-    }
-
-    const config = {
-        MAX_TEXTURE_SIZE: 2048,
-        SMALL_UNIT: 32,
-        MAX_NUM: Math.pow(2048 / 32, 2),
-        MAX_TEXTURE_UNITS: 8,
-        MAX_VARYING_VECTORS: 15,
-        init(maxSize, maxUnits, maxVectors) {
-            this.MAX_TEXTURE_SIZE = maxSize;
-            this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
-            this.MAX_TEXTURE_UNITS = maxUnits;
-            this.MAX_VARYING_VECTORS = maxVectors;
-        },
-    };
 
     class Bitmap extends Node {
         constructor(props) {
