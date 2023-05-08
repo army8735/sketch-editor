@@ -77,7 +77,6 @@ class Root extends Container implements FrameCallback {
       this.isWebgl2 = false;
     }
     if (!gl) {
-      alert('Webgl unsupported!');
       throw new Error('Webgl unsupported!');
     }
     config.init(

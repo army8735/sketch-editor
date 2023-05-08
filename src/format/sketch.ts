@@ -364,7 +364,7 @@ async function convertItem(
   } else if (blend === SketchFormat.BlendMode.Luminosity) {
     mixBlendMode = 'luminosity';
   } else if (blend === SketchFormat.BlendMode.PlusDarker) {
-    // mixBlendMode = 'plus-darker'; TODO css暂无
+    // mixBlendMode = 'plus-darker'; TODO 暂无
   } else if (blend === SketchFormat.BlendMode.PlusLighter) {
     // mixBlendMode = 'plus-lighter';
   }

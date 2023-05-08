@@ -16734,49 +16734,49 @@
         const mixBlendMode = style.mixBlendMode;
         if (!isNil(mixBlendMode)) {
             let v = MIX_BLEND_MODE.NORMAL;
-            if (/multiply/i.test(fontStyle)) {
+            if (/multiply/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.MULTIPLY;
             }
-            else if (/screen/i.test(fontStyle)) {
+            else if (/screen/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.SCREEN;
             }
-            else if (/overlay/i.test(fontStyle)) {
+            else if (/overlay/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.OVERLAY;
             }
-            else if (/darken/i.test(fontStyle)) {
+            else if (/darken/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.DARKEN;
             }
-            else if (/lighten/i.test(fontStyle)) {
+            else if (/lighten/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.LIGHTEN;
             }
-            else if (/color-dodge/i.test(fontStyle)) {
+            else if (/color-dodge/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.COLOR_DODGE;
             }
-            else if (/color-burn/i.test(fontStyle)) {
+            else if (/color-burn/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.COLOR_BURN;
             }
-            else if (/hard-light/i.test(fontStyle)) {
+            else if (/hard-light/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.HARD_LIGHT;
             }
-            else if (/soft-light/i.test(fontStyle)) {
+            else if (/soft-light/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.SOFT_LIGHT;
             }
-            else if (/difference/i.test(fontStyle)) {
+            else if (/difference/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.DIFFERENCE;
             }
-            else if (/exclusion/i.test(fontStyle)) {
+            else if (/exclusion/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.EXCLUSION;
             }
-            else if (/hue/i.test(fontStyle)) {
+            else if (/hue/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.HUE;
             }
-            else if (/saturation/i.test(fontStyle)) {
+            else if (/saturation/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.SATURATION;
             }
-            else if (/color/i.test(fontStyle)) {
+            else if (/color/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.COLOR;
             }
-            else if (/luminosity/i.test(fontStyle)) {
+            else if (/luminosity/i.test(mixBlendMode)) {
                 v = MIX_BLEND_MODE.LUMINOSITY;
             }
             res.mixBlendMode = { v, u: StyleUnit.NUMBER };
@@ -26386,12 +26386,12 @@
         // 查看是否有空格，防止字符串过长indexOf无效查找
         for (let i = start, len = start + hypotheticalNum; i < len; i++) {
             if (content.charAt(i) === '\n') {
-                hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
+                hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
                 rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
                 if (letterSpacing) {
                     rw += hypotheticalNum * letterSpacing;
                 }
-                // newLine = true;
+                newLine = false;
                 break;
             }
         }
@@ -27763,7 +27763,6 @@ void main() {
                 this.isWebgl2 = false;
             }
             if (!gl) {
-                alert('Webgl unsupported!');
                 throw new Error('Webgl unsupported!');
             }
             config.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS), gl.getParameter(gl.MAX_VARYING_VECTORS));

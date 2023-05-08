@@ -355,35 +355,35 @@ export function normalize(style: JStyle): Style {
   const mixBlendMode = style.mixBlendMode;
   if (!isNil(mixBlendMode)) {
     let v = MIX_BLEND_MODE.NORMAL;
-    if (/multiply/i.test(fontStyle)) {
+    if (/multiply/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.MULTIPLY;
-    } else if (/screen/i.test(fontStyle)) {
+    } else if (/screen/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.SCREEN;
-    } else if (/overlay/i.test(fontStyle)) {
+    } else if (/overlay/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.OVERLAY;
-    } else if (/darken/i.test(fontStyle)) {
+    } else if (/darken/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.DARKEN;
-    } else if (/lighten/i.test(fontStyle)) {
+    } else if (/lighten/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.LIGHTEN;
-    } else if (/color-dodge/i.test(fontStyle)) {
+    } else if (/color-dodge/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.COLOR_DODGE;
-    } else if (/color-burn/i.test(fontStyle)) {
+    } else if (/color-burn/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.COLOR_BURN;
-    } else if (/hard-light/i.test(fontStyle)) {
+    } else if (/hard-light/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.HARD_LIGHT;
-    } else if (/soft-light/i.test(fontStyle)) {
+    } else if (/soft-light/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.SOFT_LIGHT;
-    } else if (/difference/i.test(fontStyle)) {
+    } else if (/difference/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.DIFFERENCE;
-    } else if (/exclusion/i.test(fontStyle)) {
+    } else if (/exclusion/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.EXCLUSION;
-    } else if (/hue/i.test(fontStyle)) {
+    } else if (/hue/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.HUE;
-    } else if (/saturation/i.test(fontStyle)) {
+    } else if (/saturation/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.SATURATION;
-    } else if (/color/i.test(fontStyle)) {
+    } else if (/color/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.COLOR;
-    } else if (/luminosity/i.test(fontStyle)) {
+    } else if (/luminosity/i.test(mixBlendMode)) {
       v = MIX_BLEND_MODE.LUMINOSITY;
     }
     res.mixBlendMode = { v, u: StyleUnit.NUMBER };

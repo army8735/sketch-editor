@@ -99,12 +99,12 @@ function measure(
   // 查看是否有空格，防止字符串过长indexOf无效查找
   for (let i = start, len = start + hypotheticalNum; i < len; i++) {
     if (content.charAt(i) === '\n') {
-      hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine
+      hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
       rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
       if (letterSpacing) {
         rw += hypotheticalNum * letterSpacing;
       }
-      // newLine = true;
+      newLine = false;
       break;
     }
   }
