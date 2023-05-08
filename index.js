@@ -17129,7 +17129,7 @@
         });
     }
     function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
@@ -17294,6 +17294,62 @@
                     blur = `gauss(${b.radius}px)`;
                 }
             }
+            // 混合模式
+            let mixBlendMode = 'normal';
+            const blend = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.contextSettings) === null || _f === void 0 ? void 0 : _f.blendMode;
+            if (blend === FileFormat.BlendMode.Darken) {
+                mixBlendMode = 'darken';
+            }
+            else if (blend === FileFormat.BlendMode.Multiply) {
+                mixBlendMode = 'multiply';
+            }
+            else if (blend === FileFormat.BlendMode.ColorBurn) {
+                mixBlendMode = 'color-burn';
+            }
+            else if (blend === FileFormat.BlendMode.Lighten) {
+                mixBlendMode = 'lighten';
+            }
+            else if (blend === FileFormat.BlendMode.Screen) {
+                mixBlendMode = 'screen';
+            }
+            else if (blend === FileFormat.BlendMode.ColorDodge) {
+                mixBlendMode = 'color-dodge';
+            }
+            else if (blend === FileFormat.BlendMode.Overlay) {
+                mixBlendMode = 'overlay';
+            }
+            else if (blend === FileFormat.BlendMode.SoftLight) {
+                mixBlendMode = 'soft-light';
+            }
+            else if (blend === FileFormat.BlendMode.HardLight) {
+                mixBlendMode = 'hard-light';
+            }
+            else if (blend === FileFormat.BlendMode.Difference) {
+                mixBlendMode = 'difference';
+            }
+            else if (blend === FileFormat.BlendMode.Exclusion) {
+                mixBlendMode = 'exclusion';
+            }
+            else if (blend === FileFormat.BlendMode.Hue) {
+                mixBlendMode = 'hue';
+            }
+            else if (blend === FileFormat.BlendMode.Saturation) {
+                mixBlendMode = 'saturation';
+            }
+            else if (blend === FileFormat.BlendMode.Color) {
+                mixBlendMode = 'color';
+            }
+            else if (blend === FileFormat.BlendMode.Luminosity) {
+                mixBlendMode = 'luminosity';
+            }
+            else if (blend === FileFormat.BlendMode.PlusDarker) ;
+            else if (blend === FileFormat.BlendMode.PlusLighter) ;
+            // 阴影
+            // const shadow: string[] = [];
+            // const shadowEnable: boolean[] = [];
+            // const innerShadow: string[] = [];
+            // const innerShadowEnable: boolean[] = [];
+            // 渲染无关的锁定/展开
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             if (layer._class === FileFormat.ClassValue.Group) {
@@ -17319,6 +17375,7 @@
                             scaleX,
                             scaleY,
                             rotateZ,
+                            mixBlendMode,
                             maskMode,
                             breakMask,
                             blur,
@@ -17356,6 +17413,7 @@
                             scaleX,
                             scaleY,
                             rotateZ,
+                            mixBlendMode,
                             maskMode,
                             breakMask,
                             blur,
@@ -17405,19 +17463,19 @@
                         return res;
                     })
                     : undefined;
-                const MSAttributedStringFontAttribute = (_h = (_g = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.textStyle) === null || _f === void 0 ? void 0 : _f.encodedAttributes) === null || _g === void 0 ? void 0 : _g.MSAttributedStringFontAttribute) === null || _h === void 0 ? void 0 : _h.attributes;
+                const MSAttributedStringFontAttribute = (_k = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.MSAttributedStringFontAttribute) === null || _k === void 0 ? void 0 : _k.attributes;
                 const fontSize = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.size
                     : 16;
                 const fontFamily = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.name
                     : 'arial';
-                const paragraphStyle = (_l = (_k = (_j = layer.style) === null || _j === void 0 ? void 0 : _j.textStyle) === null || _k === void 0 ? void 0 : _k.encodedAttributes) === null || _l === void 0 ? void 0 : _l.paragraphStyle;
+                const paragraphStyle = (_o = (_m = (_l = layer.style) === null || _l === void 0 ? void 0 : _l.textStyle) === null || _m === void 0 ? void 0 : _m.encodedAttributes) === null || _o === void 0 ? void 0 : _o.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_p = (_o = (_m = layer.style) === null || _m === void 0 ? void 0 : _m.textStyle) === null || _o === void 0 ? void 0 : _o.encodedAttributes) === null || _p === void 0 ? void 0 : _p.kerning) || 0;
-                const MSAttributedStringColorAttribute = (_s = (_r = (_q = layer.style) === null || _q === void 0 ? void 0 : _q.textStyle) === null || _r === void 0 ? void 0 : _r.encodedAttributes) === null || _s === void 0 ? void 0 : _s.MSAttributedStringColorAttribute;
+                const letterSpacing = ((_r = (_q = (_p = layer.style) === null || _p === void 0 ? void 0 : _p.textStyle) === null || _q === void 0 ? void 0 : _q.encodedAttributes) === null || _r === void 0 ? void 0 : _r.kerning) || 0;
+                const MSAttributedStringColorAttribute = (_u = (_t = (_s = layer.style) === null || _s === void 0 ? void 0 : _s.textStyle) === null || _t === void 0 ? void 0 : _t.encodedAttributes) === null || _u === void 0 ? void 0 : _u.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
                         Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -17452,6 +17510,7 @@
                             textAlign,
                             letterSpacing,
                             lineHeight,
+                            mixBlendMode,
                             maskMode,
                             breakMask,
                             blur,
@@ -17520,6 +17579,7 @@
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
                                 'none',
+                            mixBlendMode,
                             maskMode,
                             breakMask,
                             blur,
@@ -17565,6 +17625,7 @@
                             rotateZ,
                             booleanOperation: ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
                                 'none',
+                            mixBlendMode,
                             maskMode,
                             breakMask,
                             blur,
@@ -21755,9 +21816,13 @@
             bsTex[j + 94] = 0.3;
             bsTex[j + 95] = 0.7;
         }
+        // 在没有背景色的情况下渲染默认白色背景
         renderBgc(gl, cx, cy) {
+            if (this.hasBackgroundColor) {
+                return;
+            }
             const programs = this.root.programs;
-            const { width, height, matrixWorld, computedStyle } = this;
+            const { width, height, matrixWorld } = this;
             // 白色背景
             const colorProgram = programs.colorProgram;
             gl.useProgram(colorProgram);
@@ -21785,8 +21850,8 @@
             gl.enableVertexAttribArray(a_position);
             // color
             let u_color = gl.getUniformLocation(colorProgram, 'u_color');
-            const color = color2gl(computedStyle.backgroundColor);
-            gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
+            // const color = color2gl(computedStyle.backgroundColor);
+            gl.uniform4f(u_color, 1.0, 1.0, 1.0, 1.0);
             // 渲染并销毁
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             gl.deleteBuffer(pointBuffer);

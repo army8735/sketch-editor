@@ -330,6 +330,50 @@ async function convertItem(
       blur = `gauss(${b.radius}px)`;
     }
   }
+  // 混合模式
+  let mixBlendMode = 'normal';
+  const blend = layer.style?.contextSettings?.blendMode;
+  if (blend === SketchFormat.BlendMode.Darken) {
+    mixBlendMode = 'darken';
+  } else if (blend === SketchFormat.BlendMode.Multiply) {
+    mixBlendMode = 'multiply';
+  } else if (blend === SketchFormat.BlendMode.ColorBurn) {
+    mixBlendMode = 'color-burn';
+  } else if (blend === SketchFormat.BlendMode.Lighten) {
+    mixBlendMode = 'lighten';
+  } else if (blend === SketchFormat.BlendMode.Screen) {
+    mixBlendMode = 'screen';
+  } else if (blend === SketchFormat.BlendMode.ColorDodge) {
+    mixBlendMode = 'color-dodge';
+  } else if (blend === SketchFormat.BlendMode.Overlay) {
+    mixBlendMode = 'overlay';
+  } else if (blend === SketchFormat.BlendMode.SoftLight) {
+    mixBlendMode = 'soft-light';
+  } else if (blend === SketchFormat.BlendMode.HardLight) {
+    mixBlendMode = 'hard-light';
+  } else if (blend === SketchFormat.BlendMode.Difference) {
+    mixBlendMode = 'difference';
+  } else if (blend === SketchFormat.BlendMode.Exclusion) {
+    mixBlendMode = 'exclusion';
+  } else if (blend === SketchFormat.BlendMode.Hue) {
+    mixBlendMode = 'hue';
+  } else if (blend === SketchFormat.BlendMode.Saturation) {
+    mixBlendMode = 'saturation';
+  } else if (blend === SketchFormat.BlendMode.Color) {
+    mixBlendMode = 'color';
+  } else if (blend === SketchFormat.BlendMode.Luminosity) {
+    mixBlendMode = 'luminosity';
+  } else if (blend === SketchFormat.BlendMode.PlusDarker) {
+    // mixBlendMode = 'plus-darker'; TODO css暂无
+  } else if (blend === SketchFormat.BlendMode.PlusLighter) {
+    // mixBlendMode = 'plus-lighter';
+  }
+  // 阴影
+  // const shadow: string[] = [];
+  // const shadowEnable: boolean[] = [];
+  // const innerShadow: string[] = [];
+  // const innerShadowEnable: boolean[] = [];
+  // 渲染无关的锁定/展开
   const isLocked = layer.isLocked;
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
@@ -358,6 +402,7 @@ async function convertItem(
           scaleX,
           scaleY,
           rotateZ,
+          mixBlendMode,
           maskMode,
           breakMask,
           blur,
@@ -394,6 +439,7 @@ async function convertItem(
           scaleX,
           scaleY,
           rotateZ,
+          mixBlendMode,
           maskMode,
           breakMask,
           blur,
@@ -509,6 +555,7 @@ async function convertItem(
           textAlign,
           letterSpacing,
           lineHeight,
+          mixBlendMode,
           maskMode,
           breakMask,
           blur,
@@ -591,6 +638,7 @@ async function convertItem(
           booleanOperation:
             ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
             'none',
+          mixBlendMode,
           maskMode,
           breakMask,
           blur,
@@ -650,6 +698,7 @@ async function convertItem(
           booleanOperation:
             ['union', 'subtract', 'intersect', 'xor'][layer.booleanOperation] ||
             'none',
+          mixBlendMode,
           maskMode,
           breakMask,
           blur,

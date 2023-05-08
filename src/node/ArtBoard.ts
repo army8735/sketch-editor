@@ -1,7 +1,6 @@
 import { ArtBoardProps, Props } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoint } from '../math/matrix';
-import { color2gl } from '../style/css';
 import Container from './Container';
 import Node from './Node';
 
@@ -284,13 +283,17 @@ class ArtBoard extends Container {
     bsTex[j + 95] = 0.7;
   }
 
+  // 在没有背景色的情况下渲染默认白色背景
   renderBgc(
     gl: WebGL2RenderingContext | WebGLRenderingContext,
     cx: number,
     cy: number,
   ) {
+    if (this.hasBackgroundColor) {
+      return;
+    }
     const programs = this.root!.programs;
-    const { width, height, matrixWorld, computedStyle } = this;
+    const { width, height, matrixWorld } = this;
     // 白色背景
     const colorProgram = programs.colorProgram;
     gl.useProgram(colorProgram);
@@ -318,8 +321,8 @@ class ArtBoard extends Container {
     gl.enableVertexAttribArray(a_position);
     // color
     let u_color = gl.getUniformLocation(colorProgram, 'u_color');
-    const color = color2gl(computedStyle.backgroundColor);
-    gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
+    // const color = color2gl(computedStyle.backgroundColor);
+    gl.uniform4f(u_color, 1.0, 1.0, 1.0, 1.0);
     // 渲染并销毁
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer);
