@@ -18005,10 +18005,22 @@
         if (!m || !m.length) {
             return true;
         }
-        return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
-            && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
-            && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0
-            && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
+        return (m[0] === 1 &&
+            m[1] === 0 &&
+            m[2] === 0 &&
+            m[3] === 0 &&
+            m[4] === 0 &&
+            m[5] === 1 &&
+            m[6] === 0 &&
+            m[7] === 0 &&
+            m[8] === 0 &&
+            m[9] === 0 &&
+            m[10] === 1 &&
+            m[11] === 0 &&
+            m[12] === 0 &&
+            m[13] === 0 &&
+            m[14] === 0 &&
+            m[15] === 1);
     }
     // 矩阵a*b，固定两个matrix都是长度16
     function multiply(a, b) {
@@ -18109,38 +18121,118 @@
             return identity();
         }
         const inv = new Float64Array(16);
-        inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15]
-            + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
-        inv[4] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15]
-            - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
-        inv[8] = m[4] * m[9] * m[15] - m[4] * m[11] * m[13] - m[8] * m[5] * m[15]
-            + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9];
-        inv[12] = -m[4] * m[9] * m[14] + m[4] * m[10] * m[13] + m[8] * m[5] * m[14]
-            - m[8] * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9];
-        inv[1] = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14] + m[9] * m[2] * m[15]
-            - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
-        inv[5] = m[0] * m[10] * m[15] - m[0] * m[11] * m[14] - m[8] * m[2] * m[15]
-            + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
-        inv[9] = -m[0] * m[9] * m[15] + m[0] * m[11] * m[13] + m[8] * m[1] * m[15]
-            - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9];
-        inv[13] = m[0] * m[9] * m[14] - m[0] * m[10] * m[13] - m[8] * m[1] * m[14]
-            + m[8] * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9];
-        inv[2] = m[1] * m[6] * m[15] - m[1] * m[7] * m[14] - m[5] * m[2] * m[15]
-            + m[5] * m[3] * m[14] + m[13] * m[2] * m[7] - m[13] * m[3] * m[6];
-        inv[6] = -m[0] * m[6] * m[15] + m[0] * m[7] * m[14] + m[4] * m[2] * m[15]
-            - m[4] * m[3] * m[14] - m[12] * m[2] * m[7] + m[12] * m[3] * m[6];
-        inv[10] = m[0] * m[5] * m[15] - m[0] * m[7] * m[13] - m[4] * m[1] * m[15]
-            + m[4] * m[3] * m[13] + m[12] * m[1] * m[7] - m[12] * m[3] * m[5];
-        inv[14] = -m[0] * m[5] * m[14] + m[0] * m[6] * m[13] + m[4] * m[1] * m[14]
-            - m[4] * m[2] * m[13] - m[12] * m[1] * m[6] + m[12] * m[2] * m[5];
-        inv[3] = -m[1] * m[6] * m[11] + m[1] * m[7] * m[10] + m[5] * m[2] * m[11]
-            - m[5] * m[3] * m[10] - m[9] * m[2] * m[7] + m[9] * m[3] * m[6];
-        inv[7] = m[0] * m[6] * m[11] - m[0] * m[7] * m[10] - m[4] * m[2] * m[11]
-            + m[4] * m[3] * m[10] + m[8] * m[2] * m[7] - m[8] * m[3] * m[6];
-        inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9] + m[4] * m[1] * m[11]
-            - m[4] * m[3] * m[9] - m[8] * m[1] * m[7] + m[8] * m[3] * m[5];
-        inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10]
-            + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
+        inv[0] =
+            m[5] * m[10] * m[15] -
+                m[5] * m[11] * m[14] -
+                m[9] * m[6] * m[15] +
+                m[9] * m[7] * m[14] +
+                m[13] * m[6] * m[11] -
+                m[13] * m[7] * m[10];
+        inv[4] =
+            -m[4] * m[10] * m[15] +
+                m[4] * m[11] * m[14] +
+                m[8] * m[6] * m[15] -
+                m[8] * m[7] * m[14] -
+                m[12] * m[6] * m[11] +
+                m[12] * m[7] * m[10];
+        inv[8] =
+            m[4] * m[9] * m[15] -
+                m[4] * m[11] * m[13] -
+                m[8] * m[5] * m[15] +
+                m[8] * m[7] * m[13] +
+                m[12] * m[5] * m[11] -
+                m[12] * m[7] * m[9];
+        inv[12] =
+            -m[4] * m[9] * m[14] +
+                m[4] * m[10] * m[13] +
+                m[8] * m[5] * m[14] -
+                m[8] * m[6] * m[13] -
+                m[12] * m[5] * m[10] +
+                m[12] * m[6] * m[9];
+        inv[1] =
+            -m[1] * m[10] * m[15] +
+                m[1] * m[11] * m[14] +
+                m[9] * m[2] * m[15] -
+                m[9] * m[3] * m[14] -
+                m[13] * m[2] * m[11] +
+                m[13] * m[3] * m[10];
+        inv[5] =
+            m[0] * m[10] * m[15] -
+                m[0] * m[11] * m[14] -
+                m[8] * m[2] * m[15] +
+                m[8] * m[3] * m[14] +
+                m[12] * m[2] * m[11] -
+                m[12] * m[3] * m[10];
+        inv[9] =
+            -m[0] * m[9] * m[15] +
+                m[0] * m[11] * m[13] +
+                m[8] * m[1] * m[15] -
+                m[8] * m[3] * m[13] -
+                m[12] * m[1] * m[11] +
+                m[12] * m[3] * m[9];
+        inv[13] =
+            m[0] * m[9] * m[14] -
+                m[0] * m[10] * m[13] -
+                m[8] * m[1] * m[14] +
+                m[8] * m[2] * m[13] +
+                m[12] * m[1] * m[10] -
+                m[12] * m[2] * m[9];
+        inv[2] =
+            m[1] * m[6] * m[15] -
+                m[1] * m[7] * m[14] -
+                m[5] * m[2] * m[15] +
+                m[5] * m[3] * m[14] +
+                m[13] * m[2] * m[7] -
+                m[13] * m[3] * m[6];
+        inv[6] =
+            -m[0] * m[6] * m[15] +
+                m[0] * m[7] * m[14] +
+                m[4] * m[2] * m[15] -
+                m[4] * m[3] * m[14] -
+                m[12] * m[2] * m[7] +
+                m[12] * m[3] * m[6];
+        inv[10] =
+            m[0] * m[5] * m[15] -
+                m[0] * m[7] * m[13] -
+                m[4] * m[1] * m[15] +
+                m[4] * m[3] * m[13] +
+                m[12] * m[1] * m[7] -
+                m[12] * m[3] * m[5];
+        inv[14] =
+            -m[0] * m[5] * m[14] +
+                m[0] * m[6] * m[13] +
+                m[4] * m[1] * m[14] -
+                m[4] * m[2] * m[13] -
+                m[12] * m[1] * m[6] +
+                m[12] * m[2] * m[5];
+        inv[3] =
+            -m[1] * m[6] * m[11] +
+                m[1] * m[7] * m[10] +
+                m[5] * m[2] * m[11] -
+                m[5] * m[3] * m[10] -
+                m[9] * m[2] * m[7] +
+                m[9] * m[3] * m[6];
+        inv[7] =
+            m[0] * m[6] * m[11] -
+                m[0] * m[7] * m[10] -
+                m[4] * m[2] * m[11] +
+                m[4] * m[3] * m[10] +
+                m[8] * m[2] * m[7] -
+                m[8] * m[3] * m[6];
+        inv[11] =
+            -m[0] * m[5] * m[11] +
+                m[0] * m[7] * m[9] +
+                m[4] * m[1] * m[11] -
+                m[4] * m[3] * m[9] -
+                m[8] * m[1] * m[7] +
+                m[8] * m[3] * m[5];
+        inv[15] =
+            m[0] * m[5] * m[10] -
+                m[0] * m[6] * m[9] -
+                m[4] * m[1] * m[10] +
+                m[4] * m[2] * m[9] +
+                m[8] * m[1] * m[6] -
+                m[8] * m[2] * m[5];
         let det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
         if (det === 0) {
             return identity();
@@ -18256,8 +18348,8 @@
             let a2 = m[4], b2 = m[5];
             let a4 = m[12], b4 = m[13];
             let o = {
-                x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + a4,
-                y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + b4,
+                x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
+                y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
             };
             return o;
         }
@@ -18279,16 +18371,28 @@
         if (divisor === 0) {
             return m;
         }
-        return new Float64Array([d / divisor, -b / divisor, -c / divisor, a / divisor,
-            (c * f - d * e) / divisor, (b * e - a * f) / divisor]);
+        return new Float64Array([
+            d / divisor,
+            -b / divisor,
+            -c / divisor,
+            a / divisor,
+            (c * f - d * e) / divisor,
+            (b * e - a * f) / divisor,
+        ]);
     }
     function calRectPoint(xa, ya, xb, yb, matrix) {
         let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
         let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
         let x2, y2, x4, y4;
         // 无旋转的时候可以少算2个点
-        if (!matrix || !matrix.length
-            || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8]) {
+        if (!matrix ||
+            !matrix.length ||
+            (!matrix[1] &&
+                !matrix[2] &&
+                !matrix[4] &&
+                !matrix[6] &&
+                !matrix[7] &&
+                !matrix[8])) {
             x2 = x3;
             y2 = y1;
             x4 = x1;
@@ -20208,6 +20312,56 @@
       return unsafeStringify(rnds);
     }
 
+    /**
+     * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+     * 根据模糊参数sigma求卷积核尺寸
+     * @param sigma
+     * @returns {number}
+     */
+    function kernelSize(sigma) {
+        if (sigma <= 0) {
+            return 0;
+        }
+        let d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+        if (d < 2) {
+            d = 2;
+        }
+        if (d % 2 === 0) {
+            d++;
+        }
+        return d;
+    }
+    function outerSizeByD(d) {
+        return Math.floor(d * 0.5) * 3;
+    }
+    /**
+     * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
+     * @param sigma
+     * @param d
+     */
+    function gaussianWeight(sigma, d) {
+        const list = [];
+        const len = Math.floor(d * 0.5);
+        let total = 0;
+        for (let i = len; i >= 0; i--) {
+            const n = Math.pow(Math.E, -Math.pow(i, 2) / (2 * Math.pow(sigma, 2)))
+                / (sigma * Math.sqrt(2 * Math.PI));
+            list.push(n);
+            total += n;
+        }
+        for (let i = 1; i <= len; i++) {
+            const n = list[len - i];
+            list.push(n);
+            total += n;
+        }
+        if (total !== 1) {
+            for (let i = 0; i < d; i++) {
+                list[i] /= total;
+            }
+        }
+        return list;
+    }
+
     const HASH$1 = {};
     class TextureCache {
         constructor(gl, texture, bbox) {
@@ -20262,57 +20416,26 @@
         }
     }
 
-    /**
-     * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
-     * 根据模糊参数sigma求卷积核尺寸
-     * @param sigma
-     * @returns {number}
-     */
-    function kernelSize(sigma) {
-        if (sigma <= 0) {
-            return 0;
-        }
-        let d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
-        if (d < 2) {
-            d = 2;
-        }
-        if (d % 2 === 0) {
-            d++;
-        }
-        return d;
-    }
-    function outerSizeByD(d) {
-        return Math.floor(d * 0.5) * 3;
-    }
-    /**
-     * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
-     * @param sigma
-     * @param d
-     */
-    function gaussianWeight(sigma, d) {
-        const list = [];
-        const len = Math.floor(d * 0.5);
-        let total = 0;
-        for (let i = len; i >= 0; i--) {
-            const n = Math.pow(Math.E, -Math.pow(i, 2) / (2 * Math.pow(sigma, 2)))
-                / (sigma * Math.sqrt(2 * Math.PI));
-            list.push(n);
-            total += n;
-        }
-        for (let i = 1; i <= len; i++) {
-            const n = list[len - i];
-            list.push(n);
-            total += n;
-        }
-        if (total !== 1) {
-            for (let i = 0; i < d; i++) {
-                list[i] /= total;
-            }
-        }
-        return list;
-    }
-
     class Node extends Event {
+        // 获取n个节点总共占据的矩形大小
+        static getWholeNodesBoundingClientRect(nodes) {
+            if (!nodes.length) {
+                return false;
+            }
+            const rect = nodes[0].getBoundingClientRect();
+            for (let item of nodes) {
+                const r = item.getBoundingClientRect();
+                rect.left = Math.min(rect.left, r.left);
+                rect.right = Math.max(rect.right, r.right);
+                rect.top = Math.min(rect.top, r.top);
+                rect.bottom = Math.max(rect.bottom, r.bottom);
+                rect.points[0].x = rect.left;
+                rect.points[0].y = rect.top;
+                rect.points[1].x = rect.right;
+                rect.points[1].y = rect.bottom;
+            }
+            return rect;
+        }
         constructor(props) {
             super();
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
@@ -20741,7 +20864,7 @@
         }
         resetTextureTarget() {
             var _a, _b, _c, _d;
-            const { textureMask, textureFilter, textureTotal, textureCache, } = this;
+            const { textureMask, textureFilter, textureTotal, textureCache } = this;
             for (let i = 0, len = textureCache.length; i < len; i++) {
                 if ((_a = textureMask[i]) === null || _a === void 0 ? void 0 : _a.available) {
                     this.textureTarget[i] = textureMask[i];
@@ -20815,11 +20938,7 @@
                 }
             }
             // 无论是否真实dom，都清空
-            this.prev =
-                this.next =
-                    this.parent =
-                        this.root =
-                            undefined;
+            this.prev = this.next = this.parent = this.root = undefined;
             // 特殊的判断，防止Page/ArtBoard自身删除了引用
             if (!this.isPage) {
                 this.page = undefined;
@@ -26889,7 +27008,8 @@ void main() {
             }
             const { maskMode, opacity, blur, mixBlendMode } = computedStyle;
             // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
-            const needTotal = (opacity > 0 && opacity < 1 || mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
+            const needTotal = ((opacity > 0 && opacity < 1) ||
+                mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
                 total > 0 &&
                 (!textureTotal[scaleIndex] || !textureTotal[scaleIndex].available);
             const needBlur = blur.t !== BLUR.NONE &&
@@ -27194,7 +27314,7 @@ void main() {
                 matrix: undefined,
                 bbox: new Float64Array([0, 0, W, H]),
                 texture: resTexture,
-            }
+            },
         ], 0, 0, false);
     }
     // 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
@@ -27360,7 +27480,7 @@ void main() {
      */
     function genGaussBlur(gl, root, node, sigma, structs, index, lv, total, W, H, scale, scaleIndex) {
         let d = kernelSize(sigma);
-        const max = config.MAX_VARYING_VECTORS * 2; // vec2比vec4可以多一倍
+        const max = config.MAX_VARYING_VECTORS;
         while (d > max) {
             d -= 2;
         }

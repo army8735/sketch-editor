@@ -1,5 +1,6 @@
 import * as uuid from 'uuid';
 import { getDefaultStyle, JStyle, Props } from '../format/';
+import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
   assignMatrix,
@@ -36,7 +37,6 @@ import Event from '../util/Event';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
-import { kernelSize, outerSizeByD } from '../math/blur';
 
 class Node extends Event {
   width: number;
@@ -85,6 +85,26 @@ class Node extends Event {
   isPage = false;
   isShapeGroup = false;
   isContainer = false;
+
+  // 获取n个节点总共占据的矩形大小
+  static getWholeNodesBoundingClientRect(nodes: Node[]) {
+    if (!nodes.length) {
+      return false;
+    }
+    const rect = nodes[0].getBoundingClientRect();
+    for (let item of nodes) {
+      const r = item.getBoundingClientRect();
+      rect.left = Math.min(rect.left, r.left);
+      rect.right = Math.max(rect.right, r.right);
+      rect.top = Math.min(rect.top, r.top);
+      rect.bottom = Math.max(rect.bottom, r.bottom);
+      rect.points[0].x = rect.left;
+      rect.points[0].y = rect.top;
+      rect.points[1].x = rect.right;
+      rect.points[1].y = rect.bottom;
+    }
+    return rect;
+  }
 
   constructor(props: Props) {
     super();
@@ -520,12 +540,7 @@ class Node extends Event {
   }
 
   resetTextureTarget() {
-    const {
-      textureMask,
-      textureFilter,
-      textureTotal,
-      textureCache,
-    } = this;
+    const { textureMask, textureFilter, textureTotal, textureCache } = this;
     for (let i = 0, len = textureCache.length; i < len; i++) {
       if (textureMask[i]?.available) {
         this.textureTarget[i] = textureMask[i];
@@ -599,11 +614,7 @@ class Node extends Event {
       }
     }
     // 无论是否真实dom，都清空
-    this.prev =
-      this.next =
-      this.parent =
-      this.root =
-        undefined;
+    this.prev = this.next = this.parent = this.root = undefined;
     // 特殊的判断，防止Page/ArtBoard自身删除了引用
     if (!this.isPage) {
       this.page = undefined;
@@ -809,22 +820,9 @@ class Node extends Event {
       i[12] = matrix[12];
       i[13] = matrix[13];
       const m = multiply(parent.matrixWorld, i);
-      t = calRectPoint(
-        bbox[0],
-        bbox[1],
-        bbox[2],
-        bbox[3],
-        m,
-      );
-    }
-    else {
-      t = calRectPoint(
-        bbox[0],
-        bbox[1],
-        bbox[2],
-        bbox[3],
-        this.matrixWorld,
-      );
+      t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+    } else {
+      t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
     }
     let x1 = t.x1;
     let y1 = t.y1;

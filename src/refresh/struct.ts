@@ -106,7 +106,8 @@ export function renderWebgl(
     const { maskMode, opacity, blur, mixBlendMode } = computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
-      (opacity > 0 && opacity < 1 || mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
+      ((opacity > 0 && opacity < 1) ||
+        mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
       total > 0 &&
       (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
     const needBlur =
@@ -519,7 +520,7 @@ export function renderWebgl(
         matrix: undefined,
         bbox: new Float64Array([0, 0, W, H]),
         texture: resTexture,
-      }
+      },
     ],
     0,
     0,
@@ -776,7 +777,7 @@ function genGaussBlur(
   scaleIndex: number,
 ) {
   let d = kernelSize(sigma);
-  const max = config.MAX_VARYING_VECTORS * 2; // vec2比vec4可以多一倍
+  const max = config.MAX_VARYING_VECTORS;
   while (d > max) {
     d -= 2;
   }
