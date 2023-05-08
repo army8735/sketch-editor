@@ -196,14 +196,14 @@ class Node extends Event {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
       } else {
-        this.width = 0;
+        this.width = 0.5;
       }
       computedStyle.right = data.w - computedStyle.left - this.width;
     } else if (fixedRight) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
       } else {
-        this.width = 0;
+        this.width = 0.5;
       }
       computedStyle.left = data.w - computedStyle.right - this.width;
     }
@@ -214,14 +214,14 @@ class Node extends Event {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
       } else {
-        this.height = 0;
+        this.height = 0.5;
       }
       computedStyle.bottom = data.h - computedStyle.top - this.height;
     } else if (fixedBottom) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
       } else {
-        this.height = 0;
+        this.height = 0.5;
       }
       computedStyle.top = data.w - computedStyle.bottom - this.height;
     }
@@ -646,6 +646,87 @@ class Node extends Event {
           // @ts-ignore
           this.style[k] = v;
           keys.push(k);
+        }
+      }
+    }
+    // 最小尺寸约束
+    const parent = this.parent;
+    if (parent) {
+      const computedStyle = this.computedStyle;
+      // 只能调左/右，不能同时左右
+      if (style.hasOwnProperty('left')) {
+        const left = calSize(formatStyle.left, parent.width);
+        const w = parent.width - computedStyle.right - left;
+        if (w < this.minWidth) {
+          if (formatStyle.left.u === StyleUnit.PX) {
+          } else if (formatStyle.left.u === StyleUnit.PERCENT) {
+            const max =
+              ((parent.width - computedStyle.right - this.minWidth) * 100) /
+              parent.width;
+            // 限制导致的无效更新去除
+            if (formatStyle.left.v === max) {
+              let i = keys.indexOf('left');
+              keys.splice(i, 1);
+            } else {
+              formatStyle.left.v = this.style.left.v = max;
+            }
+          }
+        }
+      } else if (style.hasOwnProperty('right')) {
+        const right = calSize(formatStyle.right, parent.width);
+        const w = parent.width - computedStyle.left - right;
+        if (w < this.minWidth) {
+          if (formatStyle.right.u === StyleUnit.PX) {
+          } else if (formatStyle.right.u === StyleUnit.PERCENT) {
+            const max =
+              ((parent.width - computedStyle.left - this.minWidth) * 100) /
+              parent.width;
+            // 限制导致的无效更新去除
+            if (formatStyle.right.v === max) {
+              let i = keys.indexOf('right');
+              keys.splice(i, 1);
+            } else {
+              formatStyle.right.v = this.style.right.v = max;
+            }
+          }
+        }
+      }
+      // 上下也一样
+      if (style.hasOwnProperty('top')) {
+        const top = calSize(formatStyle.top, parent.height);
+        const h = parent.height - computedStyle.bottom - top;
+        if (h < this.minHeight) {
+          if (formatStyle.top.u === StyleUnit.PX) {
+          } else if (formatStyle.top.u === StyleUnit.PERCENT) {
+            const max =
+              ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
+              parent.height;
+            // 限制导致的无效更新去除
+            if (formatStyle.top.v === max) {
+              let i = keys.indexOf('top');
+              keys.splice(i, 1);
+            } else {
+              formatStyle.top.v = this.style.top.v = max;
+            }
+          }
+        }
+      } else if (style.hasOwnProperty('bottom')) {
+        const bottom = calSize(formatStyle.bottom, parent.height);
+        const h = parent.height - computedStyle.top - bottom;
+        if (h < this.minHeight) {
+          if (formatStyle.bottom.u === StyleUnit.PX) {
+          } else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
+            const max =
+              ((parent.height - computedStyle.top - this.minHeight) * 100) /
+              parent.height;
+            // 限制导致的无效更新去除
+            if (formatStyle.bottom.v === max) {
+              let i = keys.indexOf('bottom');
+              keys.splice(i, 1);
+            } else {
+              formatStyle.bottom.v = this.style.bottom.v = max;
+            }
+          }
         }
       }
     }
