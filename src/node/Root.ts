@@ -4,14 +4,30 @@ import { JPage, Props } from '../format';
 import { initShaders } from '../gl/webgl';
 import ca from '../gl/ca';
 import {
-  colorFrag,
-  colorVert,
+  bgColorFrag,
+  bgColorVert,
   mainFrag,
   mainVert,
   maskFrag,
   maskVert,
   simpleFrag,
   simpleVert,
+  mbmVert,
+  multiplyFrag,
+  screenFrag,
+  overlayFrag,
+  darkenFrag,
+  lightenFrag,
+  colorDodgeFrag,
+  colorBurnFrag,
+  hardLightFrag,
+  softLightFrag,
+  differenceFrag,
+  exclusionFrag,
+  hueFrag,
+  saturationFrag,
+  colorFrag,
+  luminosityFrag,
 } from '../gl/glsl';
 import config from '../refresh/config';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
@@ -127,9 +143,24 @@ class Root extends Container implements FrameCallback {
       mainVert,
       mainFrag,
     ));
-    this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
+    this.programs.bgColorProgram = initShaders(gl, bgColorVert, bgColorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
+    this.programs.multiplyProgram = initShaders(gl, mbmVert, multiplyFrag);
+    this.programs.screenProgram = initShaders(gl, mbmVert, screenFrag);
+    this.programs.overlayProgram = initShaders(gl, mbmVert, overlayFrag);
+    this.programs.darkenProgram = initShaders(gl, mbmVert, darkenFrag);
+    this.programs.lightenProgram = initShaders(gl, mbmVert, lightenFrag);
+    this.programs.colorDodgeProgram = initShaders(gl, mbmVert, colorDodgeFrag);
+    this.programs.colorBurnProgram = initShaders(gl, mbmVert, colorBurnFrag);
+    this.programs.hardLightProgram = initShaders(gl, mbmVert, hardLightFrag);
+    this.programs.softLightProgram = initShaders(gl, mbmVert, softLightFrag);
+    this.programs.differenceProgram = initShaders(gl, mbmVert, differenceFrag);
+    this.programs.exclusionProgram = initShaders(gl, mbmVert, exclusionFrag);
+    this.programs.hueProgram = initShaders(gl, mbmVert, hueFrag);
+    this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
+    this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
+    this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
     gl.useProgram(program);
   }
 

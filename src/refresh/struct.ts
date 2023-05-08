@@ -1,24 +1,8 @@
 import { gaussFrag, gaussVert } from '../gl/glsl';
-import {
-  bindTexture,
-  createTexture,
-  drawGauss,
-  drawMask,
-  drawTextureCache,
-  initShaders,
-} from '../gl/webgl';
+import { bindTexture, createTexture, drawGauss, drawMask, drawMbm, drawTextureCache, initShaders, } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { isRectsOverlap } from '../math/geom';
-import {
-  assignMatrix,
-  calPoint,
-  calRectPoint,
-  inverse,
-  isE,
-  multiply,
-  multiplyScale,
-  toE,
-} from '../math/matrix';
+import { assignMatrix, calPoint, calRectPoint, inverse, isE, multiply, multiplyScale, toE, } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Bitmap from '../node/Bitmap';
 import Polyline from '../node/geom/Polyline';
@@ -132,7 +116,7 @@ export function renderWebgl(
       mergeHash[i] = t;
     }
   }
-  console.warn(mergeList);
+  // console.warn(mergeList);
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
   if (mergeList.length) {
     mergeList.sort(function (a, b) {
@@ -372,7 +356,7 @@ export function renderWebgl(
             ],
             0,
             0,
-            true,
+            false,
           );
         }
       }
@@ -396,6 +380,20 @@ export function renderWebgl(
         }
       }
       if (isInScreen && target) {
+        const mixBlendMode = computedStyle.mixBlendMode;
+        let tex: WebGLTexture | undefined;
+        // 有mbm先将本节点内容绘制到和root同尺寸纹理上
+        if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+          tex = createTexture(gl, 0, undefined, W, H);
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tex,
+            0,
+          );
+        }
+        // 有无mbm都复用这段逻辑
         drawTextureCache(
           gl,
           cx,
@@ -411,8 +409,21 @@ export function renderWebgl(
           ],
           0,
           0,
-          true,
+          false,
         );
+        // 这里才是真正生成mbm
+        if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+          resTexture = genMbm(
+            gl,
+            resFrameBuffer!,
+            resTexture!,
+            tex!,
+            mixBlendMode,
+            programs,
+            W,
+            H,
+          );
+        }
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
       if (
@@ -519,12 +530,12 @@ export function renderWebgl(
         opacity: 1,
         matrix: undefined,
         bbox: new Float64Array([0, 0, W, H]),
-        texture: resTexture,
+        texture: resTexture!,
       },
     ],
     0,
     0,
-    false,
+    true,
   );
 }
 
@@ -658,7 +669,7 @@ function genTotal(
   // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
   for (let i = index, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
-    const computedStyle = node.computedStyle;
+    const computedStyle = node2.computedStyle;
     if (
       (!computedStyle.visible && !computedStyle.maskMode) ||
       computedStyle.opacity <= 0
@@ -1013,7 +1024,7 @@ function genMask(
       target.texture,
       0,
     );
-    drawMask(gl, w, h, maskProgram, textureTarget.texture, summary);
+    drawMask(gl, maskProgram, textureTarget.texture, summary);
     gl.useProgram(program);
   }
   // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
@@ -1036,7 +1047,7 @@ function genMask(
       temp.texture,
       0,
     );
-    drawMask(gl, w, h, maskProgram, node.textureOutline!.texture, summary);
+    drawMask(gl, maskProgram, node.textureOutline!.texture, summary);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -1098,6 +1109,66 @@ function genMask(
   gl.deleteTexture(summary);
   releaseFrameBuffer(gl, frameBuffer, W, H);
   return target;
+}
+
+function genMbm(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  frameBuffer: WebGLFramebuffer,
+  tex1: WebGLTexture,
+  tex2: WebGLTexture,
+  mixBlendMode: MIX_BLEND_MODE,
+  programs: any,
+  w: number,
+  h: number,
+) {
+  // 获取对应的mbm程序
+  let program: any;
+  if (mixBlendMode === MIX_BLEND_MODE.MULTIPLY) {
+    program = programs.multiplyProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.SCREEN) {
+    program = programs.screenProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.OVERLAY) {
+    program = programs.overlayProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.DARKEN) {
+    program = programs.darkenProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.LIGHTEN) {
+    program = programs.lightenProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.COLOR_DODGE) {
+    program = programs.colorDodgeProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.COLOR_BURN) {
+    program = programs.colorBurnProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.HARD_LIGHT) {
+    program = programs.hardLightProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.SOFT_LIGHT) {
+    program = programs.softLightProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.DIFFERENCE) {
+    program = programs.differenceProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.EXCLUSION) {
+    program = programs.exclusionProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.HUE) {
+    program = programs.hueProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.SATURATION) {
+    program = programs.saturationProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.COLOR) {
+    program = programs.colorProgram;
+  } else if (mixBlendMode === MIX_BLEND_MODE.LUMINOSITY) {
+    program = programs.luminosityProgram;
+  } else {
+    throw new Error('Unknown mixBlendMode');
+  }
+  gl.useProgram(program);
+  const res = createTexture(gl, 0, undefined, w, h);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    res,
+    0,
+  );
+  drawMbm(gl, program, tex1, tex2);
+  gl.deleteTexture(tex1);
+  gl.useProgram(programs.program);
+  return res;
 }
 
 function genOutline(

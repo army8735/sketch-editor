@@ -1060,6 +1060,13 @@ class Node extends Event {
     return m[0];
   }
 
+  setZoom(n: number) {
+    this.updateStyle({
+      scaleX: n,
+      scaleY: n,
+    });
+  }
+
   rename(s: string) {
     this.props.name = s;
   }

@@ -78,16 +78,16 @@ class ArtBoard extends Container {
 
     // 先boxShadow部分
     const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
-    const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
-    const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
-    const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
-    const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy);
+    const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy, false);
+    const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy, false);
+    const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy, false);
+    const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy, false);
 
     const tr = calRectPoint(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
-    const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy);
-    const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy);
-    const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy);
-    const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy);
+    const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy, false);
+    const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy, false);
+    const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy, false);
+    const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy, false);
 
     const br = calRectPoint(
       width,
@@ -96,10 +96,10 @@ class ArtBoard extends Container {
       height + 4 / zoom,
       matrixWorld,
     );
-    const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy);
-    const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy);
-    const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy);
-    const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy);
+    const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy, false);
+    const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy, false);
+    const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy, false);
+    const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy, false);
 
     const bl = calRectPoint(
       -4 / zoom,
@@ -108,10 +108,10 @@ class ArtBoard extends Container {
       height + 4 / zoom,
       matrixWorld,
     );
-    const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy);
-    const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy);
-    const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy);
-    const t16 = convertCoords2Gl(bl.x4, bl.y4, cx, cy);
+    const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy, false);
+    const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy, false);
+    const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy, false);
+    const t16 = convertCoords2Gl(bl.x4, bl.y4, cx, cy, false);
 
     const j = index * 96;
     bsPoint[j] = t1.x;
@@ -335,15 +335,15 @@ class ArtBoard extends Container {
     const programs = this.root!.programs;
     const { width, height, matrixWorld } = this;
     // 白色背景
-    const colorProgram = programs.colorProgram;
-    gl.useProgram(colorProgram);
+    const bgColorProgram = programs.bgColorProgram;
+    gl.useProgram(bgColorProgram);
     // 矩形固定2个三角形
     const t = calRectPoint(0, 0, width, height, matrixWorld);
     const vtPoint = new Float32Array(8);
-    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
-    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
-    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
-    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy);
+    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, false);
+    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, false);
+    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, false);
+    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, false);
     vtPoint[0] = t1.x;
     vtPoint[1] = t1.y;
     vtPoint[2] = t4.x;
@@ -356,11 +356,11 @@ class ArtBoard extends Container {
     const pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-    const a_position = gl.getAttribLocation(colorProgram, 'a_position');
+    const a_position = gl.getAttribLocation(bgColorProgram, 'a_position');
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_position);
     // color
-    let u_color = gl.getUniformLocation(colorProgram, 'u_color');
+    let u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
     // const color = color2gl(computedStyle.backgroundColor);
     gl.uniform4f(u_color, 1.0, 1.0, 1.0, 1.0);
     // 渲染并销毁

@@ -281,14 +281,7 @@ export function drawTextureCache(
   gl.disableVertexAttribArray(a_opacity);
 }
 
-export function drawMask(
-  gl: WebGL2RenderingContext | WebGLRenderingContext,
-  width: number,
-  height: number,
-  program: any,
-  mask: WebGLTexture,
-  summary: WebGLTexture,
-) {
+function getSingleCoords() {
   const vtPoint = new Float32Array(8),
     vtTex = new Float32Array(8);
   vtPoint[0] = -1;
@@ -307,6 +300,16 @@ export function drawMask(
   vtTex[5] = 0;
   vtTex[6] = 1;
   vtTex[7] = 1;
+  return { vtPoint, vtTex };
+}
+
+export function drawMask(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: any,
+  mask: WebGLTexture,
+  summary: WebGLTexture,
+) {
+  const { vtPoint, vtTex } = getSingleCoords();
   // 顶点buffer
   const pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -443,12 +446,14 @@ export function drawGauss(
   return tex1;
 }
 
+export const drawMbm = drawMask;
+
 export function convertCoords2Gl(
   x: number,
   y: number,
   cx: number,
   cy: number,
-  flipY = true,
+  flipY = false,
 ) {
   if (x === cx) {
     x = 0;

@@ -17095,7 +17095,7 @@
             if (ua) {
                 const { scrollOrigin, zoomValue } = ua;
                 if (scrollOrigin) {
-                    const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
+                    const match = /\{([+-.\d]+),\s*([+-.\d]+)\}/.exec(scrollOrigin);
                     if (match) {
                         x = parseFloat(match[1]) || 0;
                         y = parseFloat(match[2]) || 0;
@@ -17129,14 +17129,14 @@
         });
     }
     function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
             let translateX = layer.frame.x;
             let translateY = layer.frame.y;
             const visible = layer.isVisible;
-            const opacity = ((_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.contextSettings) === null || _b === void 0 ? void 0 : _b.opacity) || 1;
+            const opacity = (_c = (_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.contextSettings) === null || _b === void 0 ? void 0 : _b.opacity) !== null && _c !== void 0 ? _c : 1;
             const rotateZ = -layer.rotation;
             const scaleX = layer.isFlippedHorizontal ? -1 : 1;
             const scaleY = layer.isFlippedVertical ? -1 : 1;
@@ -17287,7 +17287,7 @@
             const breakMask = layer.shouldBreakMaskChain;
             // 模糊
             let blur = 'none';
-            if ((_d = (_c = layer.style) === null || _c === void 0 ? void 0 : _c.blur) === null || _d === void 0 ? void 0 : _d.isEnabled) {
+            if ((_e = (_d = layer.style) === null || _d === void 0 ? void 0 : _d.blur) === null || _e === void 0 ? void 0 : _e.isEnabled) {
                 const b = layer.style.blur;
                 const type = b.type;
                 if (type === FileFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
@@ -17296,7 +17296,7 @@
             }
             // 混合模式
             let mixBlendMode = 'normal';
-            const blend = (_f = (_e = layer.style) === null || _e === void 0 ? void 0 : _e.contextSettings) === null || _f === void 0 ? void 0 : _f.blendMode;
+            const blend = (_g = (_f = layer.style) === null || _f === void 0 ? void 0 : _f.contextSettings) === null || _g === void 0 ? void 0 : _g.blendMode;
             if (blend === FileFormat.BlendMode.Darken) {
                 mixBlendMode = 'darken';
             }
@@ -17463,19 +17463,19 @@
                         return res;
                     })
                     : undefined;
-                const MSAttributedStringFontAttribute = (_k = (_j = (_h = (_g = layer.style) === null || _g === void 0 ? void 0 : _g.textStyle) === null || _h === void 0 ? void 0 : _h.encodedAttributes) === null || _j === void 0 ? void 0 : _j.MSAttributedStringFontAttribute) === null || _k === void 0 ? void 0 : _k.attributes;
+                const MSAttributedStringFontAttribute = (_l = (_k = (_j = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.textStyle) === null || _j === void 0 ? void 0 : _j.encodedAttributes) === null || _k === void 0 ? void 0 : _k.MSAttributedStringFontAttribute) === null || _l === void 0 ? void 0 : _l.attributes;
                 const fontSize = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.size
                     : 16;
                 const fontFamily = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.name
                     : 'arial';
-                const paragraphStyle = (_o = (_m = (_l = layer.style) === null || _l === void 0 ? void 0 : _l.textStyle) === null || _m === void 0 ? void 0 : _m.encodedAttributes) === null || _o === void 0 ? void 0 : _o.paragraphStyle;
+                const paragraphStyle = (_p = (_o = (_m = layer.style) === null || _m === void 0 ? void 0 : _m.textStyle) === null || _o === void 0 ? void 0 : _o.encodedAttributes) === null || _p === void 0 ? void 0 : _p.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_r = (_q = (_p = layer.style) === null || _p === void 0 ? void 0 : _p.textStyle) === null || _q === void 0 ? void 0 : _q.encodedAttributes) === null || _r === void 0 ? void 0 : _r.kerning) || 0;
-                const MSAttributedStringColorAttribute = (_u = (_t = (_s = layer.style) === null || _s === void 0 ? void 0 : _s.textStyle) === null || _t === void 0 ? void 0 : _t.encodedAttributes) === null || _u === void 0 ? void 0 : _u.MSAttributedStringColorAttribute;
+                const letterSpacing = ((_s = (_r = (_q = layer.style) === null || _q === void 0 ? void 0 : _q.textStyle) === null || _r === void 0 ? void 0 : _r.encodedAttributes) === null || _s === void 0 ? void 0 : _s.kerning) || 0;
+                const MSAttributedStringColorAttribute = (_v = (_u = (_t = layer.style) === null || _t === void 0 ? void 0 : _t.textStyle) === null || _u === void 0 ? void 0 : _u.encodedAttributes) === null || _v === void 0 ? void 0 : _v.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
                         Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -20091,7 +20091,7 @@
         gl.disableVertexAttribArray(a_texCoords);
         gl.disableVertexAttribArray(a_opacity);
     }
-    function drawMask(gl, width, height, program, mask, summary) {
+    function getSingleCoords() {
         const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
         vtPoint[0] = -1;
         vtPoint[1] = -1;
@@ -20109,6 +20109,10 @@
         vtTex[5] = 0;
         vtTex[6] = 1;
         vtTex[7] = 1;
+        return { vtPoint, vtTex };
+    }
+    function drawMask(gl, program, mask, summary) {
+        const { vtPoint, vtTex } = getSingleCoords();
         // 顶点buffer
         const pointBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -20226,7 +20230,8 @@
         recycle.forEach((item) => gl.deleteTexture(item));
         return tex1;
     }
-    function convertCoords2Gl(x, y, cx, cy, flipY = true) {
+    const drawMbm = drawMask;
+    function convertCoords2Gl(x, y, cx, cy, flipY = false) {
         if (x === cx) {
             x = 0;
         }
@@ -21369,6 +21374,12 @@
             const m = this.matrixWorld;
             return m[0];
         }
+        setZoom(n) {
+            this.updateStyle({
+                scaleX: n,
+                scaleY: n,
+            });
+        }
         rename(s) {
             this.props.name = s;
         }
@@ -21893,25 +21904,25 @@
             }
             // 先boxShadow部分
             const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
-            const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy);
-            const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy);
-            const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy);
-            const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy);
+            const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy, false);
+            const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy, false);
+            const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy, false);
+            const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy, false);
             const tr = calRectPoint(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
-            const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy);
-            const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy);
-            const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy);
-            const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy);
+            const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy, false);
+            const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy, false);
+            const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy, false);
+            const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy, false);
             const br = calRectPoint(width, height, width + 4 / zoom, height + 4 / zoom, matrixWorld);
-            const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy);
-            const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy);
-            const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy);
-            const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy);
+            const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy, false);
+            const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy, false);
+            const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy, false);
+            const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy, false);
             const bl = calRectPoint(-4 / zoom, height, 0, height + 4 / zoom, matrixWorld);
-            const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy);
-            const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy);
-            const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy);
-            const t16 = convertCoords2Gl(bl.x4, bl.y4, cx, cy);
+            const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy, false);
+            const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy, false);
+            const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy, false);
+            const t16 = convertCoords2Gl(bl.x4, bl.y4, cx, cy, false);
             const j = index * 96;
             bsPoint[j] = t1.x;
             bsPoint[j + 1] = t1.y;
@@ -22114,15 +22125,15 @@
             const programs = this.root.programs;
             const { width, height, matrixWorld } = this;
             // 白色背景
-            const colorProgram = programs.colorProgram;
-            gl.useProgram(colorProgram);
+            const bgColorProgram = programs.bgColorProgram;
+            gl.useProgram(bgColorProgram);
             // 矩形固定2个三角形
             const t = calRectPoint(0, 0, width, height, matrixWorld);
             const vtPoint = new Float32Array(8);
-            const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy);
-            const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy);
-            const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy);
-            const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy);
+            const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, false);
+            const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, false);
+            const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, false);
+            const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, false);
             vtPoint[0] = t1.x;
             vtPoint[1] = t1.y;
             vtPoint[2] = t4.x;
@@ -22135,11 +22146,11 @@
             const pointBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-            const a_position = gl.getAttribLocation(colorProgram, 'a_position');
+            const a_position = gl.getAttribLocation(bgColorProgram, 'a_position');
             gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(a_position);
             // color
-            let u_color = gl.getUniformLocation(colorProgram, 'u_color');
+            let u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
             // const color = color2gl(computedStyle.backgroundColor);
             gl.uniform4f(u_color, 1.0, 1.0, 1.0, 1.0);
             // 渲染并销毁
@@ -26855,14 +26866,14 @@ void main() {
   vec4 color = texture2D(u_texture, v_texCoords);
   gl_FragColor = color * opacity;
 }`;
-    const colorVert = `#version 100
+    const bgColorVert = `#version 100
 
 attribute vec2 a_position;
 
 void main() {
   gl_Position = vec4(a_position, 0, 1);
 }`;
-    const colorFrag = `#version 100
+    const bgColorFrag = `#version 100
 
 #ifdef GL_ES
 precision mediump float;
@@ -26956,6 +26967,1278 @@ uniform sampler2D u_texture;
 void main() {
   gl_FragColor = vec4(0.0);
 }`;
+    const mbmVert = maskVert;
+    const multiplyFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return ((1.0 - a2 / a3) * c1 * 255.0 + a2 / a3 * ((1.0 - a1) * c2 * 255.0 + a1 * c3 * 255.0)) / 255.0;
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = bottom * top;
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const screenFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return a + b - a * b;
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const overlayFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return b <= 0.5 ? (2.0 * a * b) : (a + 2.0 * b - 1.0 - a * (2.0 * b - 1.0));
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(top.r, bottom.r), op(top.g, bottom.g), op(top.b, bottom.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const darkenFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return min(a, b);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const lightenFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return max(a, b);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+    alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+    alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+    alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+    a
+    );
+  }
+}`;
+    const colorDodgeFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  if(b == 1.0) {
+    return a == 0.0 ? a : 1.0;
+  }
+  return min(1.0, a / (1.0 - b));
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const colorBurnFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  if(b == 0.0) {
+    return a == 1.0 ? a : 0.0;
+  }
+  return 1.0 - min(1.0, (1.0 - a) / b);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const hardLightFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return b <= 0.5 ? (2.0 * a * b) : (a + 2.0 * b - 1.0 - a * (2.0 * b - 1.0));
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const softLightFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return b <= 0.5
+    ? a - (1.0 - 2.0 * b) * a * (1.0 - a)
+    : a + (2.0 * b - 1.0) * (a <= 0.25
+      ? ((16.0 * a - 12.0) * a + 4.0) * a
+      : sqrt(a) - a);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const differenceFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return abs(a - b);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const exclusionFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float op(float a, float b) {
+  return a + b - 2.0 * a * b;
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+      gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const hueFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float getLuminosity(vec3 color) {
+  return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2];
+}
+
+float clipLowest(float channel, float lowestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * luminosity) / (luminosity - lowestChannel);
+}
+
+float clipHighest(float channel, float highestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * (1.0 - luminosity)) / (highestChannel - luminosity);
+}
+
+vec3 clipColor(vec3 rgb) {
+  float luminosity = getLuminosity(rgb);
+  float lowestChannel = min(rgb[0], min(rgb[1], rgb[2]));
+  float highestChannel = max(rgb[0], max(rgb[1], rgb[2]));
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  if(lowestChannel < 0.0) {
+    r = clipLowest(r, lowestChannel, luminosity);
+    g = clipLowest(g, lowestChannel, luminosity);
+    b = clipLowest(b, lowestChannel, luminosity);
+  }
+  if(highestChannel > 1.0) {
+    r = clipHighest(r, highestChannel, luminosity);
+    g = clipHighest(g, highestChannel, luminosity);
+    b = clipHighest(b, highestChannel, luminosity);
+  }
+  return vec3(r, g, b);
+}
+
+vec3 setLuminosity(vec3 rgb, float luminosity) {
+  float delta = luminosity - getLuminosity(rgb);
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  return clipColor(vec3(r + delta, g + delta, b + delta));
+}
+
+float getSaturation(vec3 rgb) {
+  return max(rgb[0], max(rgb[1], rgb[2])) - min(rgb[0], min(rgb[1], rgb[2]));
+}
+
+vec3 setSaturation(vec3 rgb, float saturation) {
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  float maxC = 0.0, minC = 0.0, midC = 0.0;
+  int maxI = 0, minI = 0, midI = 0;
+  if(r >= g && r >= b) {
+    maxI = 0;
+    maxC = r;
+    if(g >= b) {
+      minI = 2;
+      midI = 1;
+      minC = b;
+      midC = g;
+    }
+    else {
+      minI = 1;
+      midI = 2;
+      minC = g;
+      midC = b;
+    }
+  }
+  else if(g >= r && g >= b) {
+    maxI = 1;
+    maxC = g;
+    if(r >= b) {
+      minI = 2;
+      midI = 0;
+      minC = b;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 2;
+      minC = r;
+      midC = b;
+    }
+  }
+  else if(b >= r && b >= g) {
+    maxI = 2;
+    maxC = b;
+    if(r >= g) {
+      minI = 1;
+      midI = 0;
+      minC = g;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 1;
+      minC = r;
+      midC = g;
+    }
+  }
+  vec3 result = vec3(r, g, b);
+  if(maxC > minC) {
+    midC = (midC - minC) * saturation / (maxC - minC);
+    maxC = saturation;
+  }
+  else {
+    maxC = midC = 0.0;
+  }
+  minC = 0.0;
+  if(maxI == 0) {
+    result[0] = maxC;
+  }
+  else if(maxI == 1) {
+    result[1] = maxC;
+  }
+  else if(maxI == 2) {
+    result[2] = maxC;
+  }
+  if(minI == 0) {
+    result[0] = minC;
+  }
+  else if(minI == 1) {
+    result[1] = minC;
+  }
+  else if(minI == 2) {
+    result[2] = minC;
+  }
+  if(midI == 0) {
+    result[0] = midC;
+  }
+  else if(midI == 1) {
+    result[1] = midC;
+  }
+  else if(midI == 2) {
+    result[2] = midC;
+  }
+  return result;
+}
+
+vec3 op(vec3 a, vec3 b) {
+  float s = getSaturation(a);
+  float l = getLuminosity(a);
+  return setLuminosity(setSaturation(b, s), l);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = op(bottom, top);
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const saturationFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float getLuminosity(vec3 color) {
+  return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2];
+}
+
+float clipLowest(float channel, float lowestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * luminosity) / (luminosity - lowestChannel);
+}
+
+float clipHighest(float channel, float highestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * (1.0 - luminosity)) / (highestChannel - luminosity);
+}
+
+vec3 clipColor(vec3 rgb) {
+  float luminosity = getLuminosity(rgb);
+  float lowestChannel = min(rgb[0], min(rgb[1], rgb[2]));
+  float highestChannel = max(rgb[0], max(rgb[1], rgb[2]));
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  if(lowestChannel < 0.0) {
+    r = clipLowest(r, lowestChannel, luminosity);
+    g = clipLowest(g, lowestChannel, luminosity);
+    b = clipLowest(b, lowestChannel, luminosity);
+  }
+  if(highestChannel > 1.0) {
+    r = clipHighest(r, highestChannel, luminosity);
+    g = clipHighest(g, highestChannel, luminosity);
+    b = clipHighest(b, highestChannel, luminosity);
+  }
+  return vec3(r, g, b);
+}
+
+vec3 setLuminosity(vec3 rgb, float luminosity) {
+  float delta = luminosity - getLuminosity(rgb);
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  return clipColor(vec3(r + delta, g + delta, b + delta));
+}
+
+float getSaturation(vec3 rgb) {
+  return max(rgb[0], max(rgb[1], rgb[2])) - min(rgb[0], min(rgb[1], rgb[2]));
+}
+
+vec3 setSaturation(vec3 rgb, float saturation) {
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  float maxC = 0.0, minC = 0.0, midC = 0.0;
+  int maxI = 0, minI = 0, midI = 0;
+  if(r >= g && r >= b) {
+    maxI = 0;
+    maxC = r;
+    if(g >= b) {
+      minI = 2;
+      midI = 1;
+      minC = b;
+      midC = g;
+    }
+    else {
+      minI = 1;
+      midI = 2;
+      minC = g;
+      midC = b;
+    }
+  }
+  else if(g >= r && g >= b) {
+    maxI = 1;
+    maxC = g;
+    if(r >= b) {
+      minI = 2;
+      midI = 0;
+      minC = b;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 2;
+      minC = r;
+      midC = b;
+    }
+  }
+  else if(b >= r && b >= g) {
+    maxI = 2;
+    maxC = b;
+    if(r >= g) {
+      minI = 1;
+      midI = 0;
+      minC = g;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 1;
+      minC = r;
+      midC = g;
+    }
+  }
+  vec3 result = vec3(r, g, b);
+  if(maxC > minC) {
+    midC = (midC - minC) * saturation / (maxC - minC);
+    maxC = saturation;
+  }
+  else {
+    maxC = midC = 0.0;
+  }
+  minC = 0.0;
+  if(maxI == 0) {
+    result[0] = maxC;
+  }
+  else if(maxI == 1) {
+    result[1] = maxC;
+  }
+  else if(maxI == 2) {
+    result[2] = maxC;
+  }
+  if(minI == 0) {
+    result[0] = minC;
+  }
+  else if(minI == 1) {
+    result[1] = minC;
+  }
+  else if(minI == 2) {
+    result[2] = minC;
+  }
+  if(midI == 0) {
+    result[0] = midC;
+  }
+  else if(midI == 1) {
+    result[1] = midC;
+  }
+  else if(midI == 2) {
+    result[2] = midC;
+  }
+  return result;
+}
+
+vec3 op(vec3 a, vec3 b) {
+  float s = getSaturation(b);
+  float l = getLuminosity(a);
+  return setLuminosity(setSaturation(a, s), l);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = op(bottom, top);
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const colorFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float getLuminosity(vec3 color) {
+  return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2];
+}
+
+float clipLowest(float channel, float lowestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * luminosity) / (luminosity - lowestChannel);
+}
+
+float clipHighest(float channel, float highestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * (1.0 - luminosity)) / (highestChannel - luminosity);
+}
+
+vec3 clipColor(vec3 rgb) {
+  float luminosity = getLuminosity(rgb);
+  float lowestChannel = min(rgb[0], min(rgb[1], rgb[2]));
+  float highestChannel = max(rgb[0], max(rgb[1], rgb[2]));
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  if(lowestChannel < 0.0) {
+    r = clipLowest(r, lowestChannel, luminosity);
+    g = clipLowest(g, lowestChannel, luminosity);
+    b = clipLowest(b, lowestChannel, luminosity);
+  }
+  if(highestChannel > 1.0) {
+    r = clipHighest(r, highestChannel, luminosity);
+    g = clipHighest(g, highestChannel, luminosity);
+    b = clipHighest(b, highestChannel, luminosity);
+  }
+  return vec3(r, g, b);
+}
+
+vec3 setLuminosity(vec3 rgb, float luminosity) {
+  float delta = luminosity - getLuminosity(rgb);
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  return clipColor(vec3(r + delta, g + delta, b + delta));
+}
+
+float getSaturation(vec3 rgb) {
+  return max(rgb[0], max(rgb[1], rgb[2])) - min(rgb[0], min(rgb[1], rgb[2]));
+}
+
+vec3 setSaturation(vec3 rgb, float saturation) {
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  float maxC = 0.0, minC = 0.0, midC = 0.0;
+  int maxI = 0, minI = 0, midI = 0;
+  if(r >= g && r >= b) {
+    maxI = 0;
+    maxC = r;
+    if(g >= b) {
+      minI = 2;
+      midI = 1;
+      minC = b;
+      midC = g;
+    }
+    else {
+      minI = 1;
+      midI = 2;
+      minC = g;
+      midC = b;
+    }
+  }
+  else if(g >= r && g >= b) {
+    maxI = 1;
+    maxC = g;
+    if(r >= b) {
+      minI = 2;
+      midI = 0;
+      minC = b;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 2;
+      minC = r;
+      midC = b;
+    }
+  }
+  else if(b >= r && b >= g) {
+    maxI = 2;
+    maxC = b;
+    if(r >= g) {
+      minI = 1;
+      midI = 0;
+      minC = g;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 1;
+      minC = r;
+      midC = g;
+    }
+  }
+  vec3 result = vec3(r, g, b);
+  if(maxC > minC) {
+    midC = (midC - minC) * saturation / (maxC - minC);
+    maxC = saturation;
+  }
+  else {
+    maxC = midC = 0.0;
+  }
+  minC = 0.0;
+  if(maxI == 0) {
+    result[0] = maxC;
+  }
+  else if(maxI == 1) {
+    result[1] = maxC;
+  }
+  else if(maxI == 2) {
+    result[2] = maxC;
+  }
+  if(minI == 0) {
+    result[0] = minC;
+  }
+  else if(minI == 1) {
+    result[1] = minC;
+  }
+  else if(minI == 2) {
+    result[2] = minC;
+  }
+  if(midI == 0) {
+    result[0] = midC;
+  }
+  else if(midI == 1) {
+    result[1] = midC;
+  }
+  else if(midI == 2) {
+    result[2] = midC;
+  }
+  return result;
+}
+
+vec3 op(vec3 a, vec3 b) {
+  float l = getLuminosity(a);
+  return setLuminosity(b, l);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = op(bottom, top);
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
+    const luminosityFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+float getLuminosity(vec3 color) {
+  return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2];
+}
+
+float clipLowest(float channel, float lowestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * luminosity) / (luminosity - lowestChannel);
+}
+
+float clipHighest(float channel, float highestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * (1.0 - luminosity)) / (highestChannel - luminosity);
+}
+
+vec3 clipColor(vec3 rgb) {
+  float luminosity = getLuminosity(rgb);
+  float lowestChannel = min(rgb[0], min(rgb[1], rgb[2]));
+  float highestChannel = max(rgb[0], max(rgb[1], rgb[2]));
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  if(lowestChannel < 0.0) {
+    r = clipLowest(r, lowestChannel, luminosity);
+    g = clipLowest(g, lowestChannel, luminosity);
+    b = clipLowest(b, lowestChannel, luminosity);
+  }
+  if(highestChannel > 1.0) {
+    r = clipHighest(r, highestChannel, luminosity);
+    g = clipHighest(g, highestChannel, luminosity);
+    b = clipHighest(b, highestChannel, luminosity);
+  }
+  return vec3(r, g, b);
+}
+
+vec3 setLuminosity(vec3 rgb, float luminosity) {
+  float delta = luminosity - getLuminosity(rgb);
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  return clipColor(vec3(r + delta, g + delta, b + delta));
+}
+
+float getSaturation(vec3 rgb) {
+  return max(rgb[0], max(rgb[1], rgb[2])) - min(rgb[0], min(rgb[1], rgb[2]));
+}
+
+vec3 setSaturation(vec3 rgb, float saturation) {
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  float maxC = 0.0, minC = 0.0, midC = 0.0;
+  int maxI = 0, minI = 0, midI = 0;
+  if(r >= g && r >= b) {
+    maxI = 0;
+    maxC = r;
+    if(g >= b) {
+      minI = 2;
+      midI = 1;
+      minC = b;
+      midC = g;
+    }
+    else {
+      minI = 1;
+      midI = 2;
+      minC = g;
+      midC = b;
+    }
+  }
+  else if(g >= r && g >= b) {
+    maxI = 1;
+    maxC = g;
+    if(r >= b) {
+      minI = 2;
+      midI = 0;
+      minC = b;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 2;
+      minC = r;
+      midC = b;
+    }
+  }
+  else if(b >= r && b >= g) {
+    maxI = 2;
+    maxC = b;
+    if(r >= g) {
+      minI = 1;
+      midI = 0;
+      minC = g;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 1;
+      minC = r;
+      midC = g;
+    }
+  }
+  vec3 result = vec3(r, g, b);
+  if(maxC > minC) {
+    midC = (midC - minC) * saturation / (maxC - minC);
+    maxC = saturation;
+  }
+  else {
+    maxC = midC = 0.0;
+  }
+  minC = 0.0;
+  if(maxI == 0) {
+    result[0] = maxC;
+  }
+  else if(maxI == 1) {
+    result[1] = maxC;
+  }
+  else if(maxI == 2) {
+    result[2] = maxC;
+  }
+  if(minI == 0) {
+    result[0] = minC;
+  }
+  else if(minI == 1) {
+    result[1] = minC;
+  }
+  else if(minI == 2) {
+    result[2] = minC;
+  }
+  if(midI == 0) {
+    result[0] = midC;
+  }
+  else if(midI == 1) {
+    result[1] = midC;
+  }
+  else if(midI == 2) {
+    result[2] = midC;
+  }
+  return result;
+}
+
+vec3 op(vec3 a, vec3 b) {
+  float l = getLuminosity(b);
+  return setLuminosity(a, l);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
+}
+
+void main() {
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if(color1.a == 0.0) {
+    gl_FragColor = color2;
+  }
+  else if(color2.a == 0.0) {
+    gl_FragColor = color1;
+  }
+  else {
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = op(bottom, top);
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
+  }
+}`;
 
     let resTexture;
     let resFrameBuffer;
@@ -27032,7 +28315,7 @@ void main() {
                 mergeHash[i] = t;
             }
         }
-        console.warn(mergeList);
+        // console.warn(mergeList);
         // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
         if (mergeList.length) {
             mergeList.sort(function (a, b) {
@@ -27203,7 +28486,7 @@ void main() {
                                 bbox: target.bbox,
                                 texture: target.texture,
                             },
-                        ], 0, 0, true);
+                        ], 0, 0, false);
                     }
                 }
             }
@@ -27225,6 +28508,14 @@ void main() {
                     }
                 }
                 if (isInScreen && target) {
+                    const mixBlendMode = computedStyle.mixBlendMode;
+                    let tex;
+                    // 有mbm先将本节点内容绘制到和root同尺寸纹理上
+                    if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+                        tex = createTexture(gl, 0, undefined, W, H);
+                        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+                    }
+                    // 有无mbm都复用这段逻辑
                     drawTextureCache(gl, cx, cy, program, [
                         {
                             opacity,
@@ -27232,7 +28523,11 @@ void main() {
                             bbox: target.bbox,
                             texture: target.texture,
                         },
-                    ], 0, 0, true);
+                    ], 0, 0, false);
+                    // 这里才是真正生成mbm
+                    if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+                        resTexture = genMbm(gl, resFrameBuffer, resTexture, tex, mixBlendMode, programs, W, H);
+                    }
                 }
                 // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
                 if ((target && target !== node.textureCache[scaleIndex]) ||
@@ -27315,7 +28610,7 @@ void main() {
                 bbox: new Float64Array([0, 0, W, H]),
                 texture: resTexture,
             },
-        ], 0, 0, false);
+        ], 0, 0, true);
     }
     // 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
     function genBboxTotal(structs, node, index, total, isNew, scaleIndex, merge, mergeHash) {
@@ -27412,7 +28707,7 @@ void main() {
         // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
         for (let i = index, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
-            const computedStyle = node.computedStyle;
+            const computedStyle = node2.computedStyle;
             if ((!computedStyle.visible && !computedStyle.maskMode) ||
                 computedStyle.opacity <= 0) {
                 i += total2 + next2;
@@ -27653,7 +28948,7 @@ void main() {
         // alpha直接应用，汇总乘以mask本身的alpha即可
         if (maskMode === MASK.ALPHA) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0);
-            drawMask(gl, w, h, maskProgram, textureTarget.texture, summary);
+            drawMask(gl, maskProgram, textureTarget.texture, summary);
             gl.useProgram(program);
         }
         // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
@@ -27661,7 +28956,7 @@ void main() {
             node.textureOutline = genOutline(gl, root, node, structs, index, total, bbox, scale);
             const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
-            drawMask(gl, w, h, maskProgram, node.textureOutline.texture, summary);
+            drawMask(gl, maskProgram, node.textureOutline.texture, summary);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             // 将mask本身和汇总应用的mask内容绘制到一起
             gl.useProgram(program);
@@ -27693,6 +28988,65 @@ void main() {
         gl.deleteTexture(summary);
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target;
+    }
+    function genMbm(gl, frameBuffer, tex1, tex2, mixBlendMode, programs, w, h) {
+        // 获取对应的mbm程序
+        let program;
+        if (mixBlendMode === MIX_BLEND_MODE.MULTIPLY) {
+            program = programs.multiplyProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.SCREEN) {
+            program = programs.screenProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.OVERLAY) {
+            program = programs.overlayProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.DARKEN) {
+            program = programs.darkenProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.LIGHTEN) {
+            program = programs.lightenProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.COLOR_DODGE) {
+            program = programs.colorDodgeProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.COLOR_BURN) {
+            program = programs.colorBurnProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.HARD_LIGHT) {
+            program = programs.hardLightProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.SOFT_LIGHT) {
+            program = programs.softLightProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.DIFFERENCE) {
+            program = programs.differenceProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.EXCLUSION) {
+            program = programs.exclusionProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.HUE) {
+            program = programs.hueProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.SATURATION) {
+            program = programs.saturationProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.COLOR) {
+            program = programs.colorProgram;
+        }
+        else if (mixBlendMode === MIX_BLEND_MODE.LUMINOSITY) {
+            program = programs.luminosityProgram;
+        }
+        else {
+            throw new Error('Unknown mixBlendMode');
+        }
+        gl.useProgram(program);
+        const res = createTexture(gl, 0, undefined, w, h);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, res, 0);
+        drawMbm(gl, program, tex1, tex2);
+        gl.deleteTexture(tex1);
+        gl.useProgram(programs.program);
+        return res;
     }
     function genOutline(gl, root, node, structs, index, total, bbox, scale) {
         var _a;
@@ -27918,9 +29272,24 @@ void main() {
         }
         initShaders(gl) {
             const program = (this.programs.program = initShaders(gl, mainVert, mainFrag));
-            this.programs.colorProgram = initShaders(gl, colorVert, colorFrag);
+            this.programs.bgColorProgram = initShaders(gl, bgColorVert, bgColorFrag);
             this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
             this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
+            this.programs.multiplyProgram = initShaders(gl, mbmVert, multiplyFrag);
+            this.programs.screenProgram = initShaders(gl, mbmVert, screenFrag);
+            this.programs.overlayProgram = initShaders(gl, mbmVert, overlayFrag);
+            this.programs.darkenProgram = initShaders(gl, mbmVert, darkenFrag);
+            this.programs.lightenProgram = initShaders(gl, mbmVert, lightenFrag);
+            this.programs.colorDodgeProgram = initShaders(gl, mbmVert, colorDodgeFrag);
+            this.programs.colorBurnProgram = initShaders(gl, mbmVert, colorBurnFrag);
+            this.programs.hardLightProgram = initShaders(gl, mbmVert, hardLightFrag);
+            this.programs.softLightProgram = initShaders(gl, mbmVert, softLightFrag);
+            this.programs.differenceProgram = initShaders(gl, mbmVert, differenceFrag);
+            this.programs.exclusionProgram = initShaders(gl, mbmVert, exclusionFrag);
+            this.programs.hueProgram = initShaders(gl, mbmVert, hueFrag);
+            this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
+            this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
+            this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
             gl.useProgram(program);
         }
         checkRoot() {

@@ -119,7 +119,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
   if (ua) {
     const { scrollOrigin, zoomValue } = ua;
     if (scrollOrigin) {
-      const match = /\{(\d+),\s*(\d+)\}/.exec(scrollOrigin);
+      const match = /\{([+-.\d]+),\s*([+-.\d]+)\}/.exec(scrollOrigin);
       if (match) {
         x = parseFloat(match[1]) || 0;
         y = parseFloat(match[2]) || 0;
@@ -163,7 +163,7 @@ async function convertItem(
   let translateX: number | string = layer.frame.x;
   let translateY: number | string = layer.frame.y;
   const visible = layer.isVisible;
-  const opacity = layer.style?.contextSettings?.opacity || 1;
+  const opacity = layer.style?.contextSettings?.opacity ?? 1;
   const rotateZ = -layer.rotation;
   const scaleX = layer.isFlippedHorizontal ? -1 : 1;
   const scaleY = layer.isFlippedVertical ? -1 : 1;
