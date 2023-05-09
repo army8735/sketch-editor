@@ -3,9 +3,9 @@ import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
 import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
+import { migrate } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
-import { migrate } from './reflow';
 
 class Group extends Container {
   constructor(props: Props, children: Array<Node>) {

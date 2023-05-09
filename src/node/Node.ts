@@ -90,26 +90,6 @@ class Node extends Event {
   isShapeGroup = false;
   isContainer = false;
 
-  // 获取n个节点总共占据的矩形大小
-  static getWholeNodesBoundingClientRect(nodes: Node[]) {
-    if (!nodes.length) {
-      return false;
-    }
-    const rect = nodes[0].getBoundingClientRect();
-    for (let item of nodes) {
-      const r = item.getBoundingClientRect();
-      rect.left = Math.min(rect.left, r.left);
-      rect.right = Math.max(rect.right, r.right);
-      rect.top = Math.min(rect.top, r.top);
-      rect.bottom = Math.max(rect.bottom, r.bottom);
-      rect.points[0].x = rect.left;
-      rect.points[0].y = rect.top;
-      rect.points[1].x = rect.right;
-      rect.points[1].y = rect.bottom;
-    }
-    return rect;
-  }
-
   constructor(props: Props) {
     super();
     this.props = props;

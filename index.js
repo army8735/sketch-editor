@@ -20488,25 +20488,6 @@
     }
 
     class Node extends Event {
-        // 获取n个节点总共占据的矩形大小
-        static getWholeNodesBoundingClientRect(nodes) {
-            if (!nodes.length) {
-                return false;
-            }
-            const rect = nodes[0].getBoundingClientRect();
-            for (let item of nodes) {
-                const r = item.getBoundingClientRect();
-                rect.left = Math.min(rect.left, r.left);
-                rect.right = Math.max(rect.right, r.right);
-                rect.top = Math.min(rect.top, r.top);
-                rect.bottom = Math.max(rect.bottom, r.bottom);
-                rect.points[0].x = rect.left;
-                rect.points[0].y = rect.top;
-                rect.points[1].x = rect.right;
-                rect.points[1].y = rect.bottom;
-            }
-            return rect;
-        }
         constructor(props) {
             super();
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
@@ -25562,57 +25543,12 @@
         chains,
     };
 
-    function checkReflow(node, addDom, removeDom) {
-        const parent = node.parent;
-        if (removeDom) {
-            node.checkPosSizeUpward();
-            node.clearCacheUpward(false);
-            node.destroy();
-        }
-        // add和普通修改共用
-        else {
-            node.layout({
-                x: 0,
-                y: 0,
-                w: parent.width,
-                h: parent.height,
-            });
-            node.clearCacheUpward(false);
-        }
-    }
     var POSITION;
     (function (POSITION) {
         POSITION[POSITION["UNDER"] = 0] = "UNDER";
         POSITION[POSITION["BEFORE"] = 1] = "BEFORE";
         POSITION[POSITION["AFTER"] = 2] = "AFTER";
     })(POSITION || (POSITION = {}));
-    function moveTo(nodes, target, position = POSITION.UNDER) {
-        if (!nodes.length) {
-            return;
-        }
-        if (target.isDestroyed) {
-            throw new Error('Can not moveTo a destroyed Node');
-        }
-        if (nodes.indexOf(target) > -1) {
-            throw new Error('Can not moveTo self');
-        }
-        const parent = target.parent;
-        const zoom = target.getZoom();
-        for (let i = 0, len = nodes.length; i < len; i++) {
-            const item = nodes[i];
-            migrate(parent, zoom, item);
-            if (position === POSITION.BEFORE) {
-                target.insertBefore(item);
-            }
-            else if (position === POSITION.AFTER) {
-                target.insertAfter(item);
-            }
-            // 默认under
-            else if (target instanceof Container) {
-                target.appendChild(item);
-            }
-        }
-    }
     function migrate(parent, zoom, node) {
         const width = parent.width;
         const height = parent.height;
@@ -25706,10 +25642,6 @@
             }
         }
     }
-    var reflow = {
-        moveTo,
-        POSITION,
-    };
 
     class Group extends Container {
         constructor(props, children) {
@@ -26847,6 +26779,28 @@
             }
         }
     }
+
+    function checkReflow(node, addDom, removeDom) {
+        const parent = node.parent;
+        if (removeDom) {
+            node.checkPosSizeUpward();
+            node.clearCacheUpward(false);
+            node.destroy();
+        }
+        // add和普通修改共用
+        else {
+            node.layout({
+                x: 0,
+                y: 0,
+                w: parent.width,
+                h: parent.height,
+            });
+            node.clearCacheUpward(false);
+        }
+    }
+    var reflow = {
+        checkReflow,
+    };
 
     var ca = {
         alpha: true,
