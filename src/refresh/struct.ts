@@ -53,6 +53,7 @@ type Merge = {
 
 let resTexture: WebGLTexture | undefined;
 let resFrameBuffer: WebGLFramebuffer | undefined;
+let lastW = 0, lastH = 0;
 
 export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -271,12 +272,14 @@ export function renderWebgl(
     }
   }
   // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode
-  if (!resTexture) {
+  if (!resTexture || lastW !== W || lastH !== H) {
+    if (resTexture) {
+      gl.deleteTexture(resTexture);
+    }
     resTexture = createTexture(gl, 0, undefined, W, H);
-    resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   }
   // 复用
-  else {
+  if (resFrameBuffer) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer!);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
@@ -287,6 +290,8 @@ export function renderWebgl(
     );
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+  } else {
+    resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   }
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
   const overlay = root.overlay!;

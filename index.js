@@ -28266,6 +28266,7 @@ void main() {
 
     let resTexture;
     let resFrameBuffer;
+    let lastW = 0, lastH = 0;
     function renderWebgl(gl, root) {
         var _a, _b;
         // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
@@ -28428,16 +28429,21 @@ void main() {
             }
         }
         // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode
-        if (!resTexture) {
+        if (!resTexture || lastW !== W || lastH !== H) {
+            if (resTexture) {
+                gl.deleteTexture(resTexture);
+            }
             resTexture = createTexture(gl, 0, undefined, W, H);
-            resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
         }
         // 复用
-        else {
+        if (resFrameBuffer) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, resTexture, 0);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        else {
+            resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
         }
         // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
         const overlay = root.overlay;
