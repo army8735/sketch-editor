@@ -1055,12 +1055,18 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
-  getZoom(): number {
-    const m = this.matrixWorld;
-    return m[0];
+  getZoom(excludeDpi = false): number {
+    const n = this.matrixWorld[0];
+    if (excludeDpi && this.root) {
+      return n / this.root.dpi;
+    }
+    return n;
   }
 
-  setZoom(n: number) {
+  setZoom(n: number, excludeDpi = false) {
+    if (excludeDpi && this.root) {
+      n /= this.root.dpi;
+    }
     this.updateStyle({
       scaleX: n,
       scaleY: n,
