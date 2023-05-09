@@ -137,6 +137,24 @@ export function migrate(parent: Node, zoom: number, node: Node) {
   }
 }
 
+export function sortTempIndex(nodes: Node[]) {
+  if (!nodes.length) {
+    return;
+  }
+  const structs = nodes[0].root!.structs;
+  // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
+  for (let i = 0, len = nodes.length; i < len; i++) {
+    const item = nodes[i];
+    if (item.isDestroyed) {
+      throw new Error('Can not group a destroyed Node');
+    }
+    item.tempIndex = structs!.indexOf(item.struct);
+  }
+  nodes.sort((a, b) => {
+    return a.tempIndex - b.tempIndex;
+  });
+}
+
 export function getWholeBoundingClientRect(
   nodes: Node[],
   includeBbox = false,
@@ -161,5 +179,6 @@ export default {
   moveTo,
   POSITION,
   migrate,
+  sortTempIndex,
   getWholeBoundingClientRect,
 };

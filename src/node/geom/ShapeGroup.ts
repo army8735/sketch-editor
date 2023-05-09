@@ -1,4 +1,5 @@
-import { Props } from '../../format';
+import * as uuid from 'uuid';
+import { getDefaultStyle, Props } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { toPrecision } from '../../math/geom';
@@ -13,13 +14,15 @@ import {
   GRADIENT,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
-  STROKE_POSITION,
+  STROKE_POSITION, StyleUnit,
 } from '../../style/define';
 import { getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
 import Group from '../Group';
 import { LayoutData } from '../layout';
+import Node from '../Node';
 import Polyline from './Polyline';
+import { migrate, sortTempIndex } from '../../tools/node';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -70,7 +73,7 @@ function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
 class ShapeGroup extends Group {
   points?: Array<Array<Array<number>>>;
 
-  constructor(props: Props, children: Array<Polyline | ShapeGroup>) {
+  constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.isShapeGroup = true;
   }
@@ -93,9 +96,23 @@ class ShapeGroup extends Group {
     const { children } = this;
     let res: Array<Array<Array<number>>> = [];
     for (let i = 0, len = children.length; i < len; i++) {
-      const item = children[i] as Polyline | ShapeGroup;
-      item.buildPoints();
-      const { points, matrix } = item;
+      const item = children[i];
+      let points;
+      // shapeGroup可以包含任意内容，非矢量视作矩形，TODO 文本矢量
+      if (item instanceof Polyline || item instanceof ShapeGroup) {
+        item.buildPoints();
+        points = item.points;
+      } else {
+        const { width, height } = item;
+        points = [
+          [0, 0],
+          [width, 0],
+          [width, height],
+          [0, height],
+          [0, 0],
+        ];
+      }
+      const { matrix } = item;
       if (points && points.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
         let p: Array<Array<Array<number>>>;
@@ -470,6 +487,80 @@ class ShapeGroup extends Group {
       }
     }
     return this._bbox;
+  }
+
+  static groupAsShape(nodes: Node[], bo = BOOLEAN_OPERATION.NONE, props?: Props) {
+    if (!nodes.length) {
+      return;
+    }
+    sortTempIndex(nodes);
+    const first = nodes[0];
+    let prev = first.prev;
+    while (prev && nodes.indexOf(prev) > -1) {
+      prev = prev.prev;
+    }
+    let next = first.next;
+    while (next && nodes.indexOf(next) > -1) {
+      next = next.next;
+    }
+    const zoom = first.getZoom();
+    const parent = first.parent!;
+    for (let i = 0, len = nodes.length; i < len; i++) {
+      const item = nodes[i];
+      migrate(parent, zoom, item);
+      if (i) {
+        item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
+      }
+    }
+    // 取第一个矢量图形的描绘属性
+    let style;
+    for (let i = 0, len = nodes.length; i < len; i++) {
+      const item = nodes[i];
+      if (item instanceof Polyline || item instanceof ShapeGroup) {
+        style = item.getComputedStyle(true);
+        break;
+      }
+    }
+    if (!style) {
+      style = getDefaultStyle();
+    }
+    const p = Object.assign(
+      {
+        uuid: uuid.v4(),
+        name: '形状结合',
+        style: {
+          left: '0%',
+          top: '0%',
+          right: '0%',
+          bottom: '0%',
+          fill: style.fill,
+          fillEnable: style.fillEnable,
+          fillRule: style.fillRule,
+          stroke: style.stroke,
+          strokeEnable: style.strokeEnable,
+          strokeWidth: style.strokeWidth,
+          strokePosition: style.strokePosition,
+          strokeDasharray: style.strokeDasharray,
+          strokeLinecap: style.strokeLinecap,
+          strokeLinejoin: style.strokeLinejoin,
+          strokeMiterlimit: style.strokeMiterlimit,
+        },
+      },
+      props,
+    );
+    const shapeGroup = new ShapeGroup(p, nodes);
+    // 插入到first的原本位置，有prev/next优先使用定位
+    if (prev) {
+      prev.insertAfter(shapeGroup);
+    } else if (next) {
+      next.insertBefore(shapeGroup);
+    }
+    // 没有prev/next则parent原本只有一个节点
+    else {
+      parent.appendChild(shapeGroup);
+    }
+    shapeGroup.checkSizeChange();
+    return shapeGroup;
   }
 }
 

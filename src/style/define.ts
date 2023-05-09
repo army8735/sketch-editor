@@ -272,12 +272,6 @@ export enum FONT_STYLE {
   OBLIQUE = 2,
 }
 
-export enum MASK_TYPE {
-  NONE = 0,
-  MASK = 1,
-  CLIP = 2,
-}
-
 export enum GRADIENT {
   LINEAR = 0,
   RADIAL = 1,

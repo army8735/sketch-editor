@@ -15862,12 +15862,6 @@
         FONT_STYLE[FONT_STYLE["ITALIC"] = 1] = "ITALIC";
         FONT_STYLE[FONT_STYLE["OBLIQUE"] = 2] = "OBLIQUE";
     })(FONT_STYLE || (FONT_STYLE = {}));
-    var MASK_TYPE;
-    (function (MASK_TYPE) {
-        MASK_TYPE[MASK_TYPE["NONE"] = 0] = "NONE";
-        MASK_TYPE[MASK_TYPE["MASK"] = 1] = "MASK";
-        MASK_TYPE[MASK_TYPE["CLIP"] = 2] = "CLIP";
-    })(MASK_TYPE || (MASK_TYPE = {}));
     var GRADIENT;
     (function (GRADIENT) {
         GRADIENT[GRADIENT["LINEAR"] = 0] = "LINEAR";
@@ -20598,7 +20592,7 @@
             else {
                 this.minHeight = 0.5;
             }
-            // 左右决定x+width
+            // 左右决定width
             if (fixedLeft && fixedRight) {
                 this.width = computedStyle.width =
                     data.w - computedStyle.left - computedStyle.right;
@@ -20621,9 +20615,10 @@
                 }
                 computedStyle.left = data.w - computedStyle.right - this.width;
             }
-            // 上下决定y+height
+            // 上下决定height
             if (fixedTop && fixedBottom) {
-                this.height = data.h - computedStyle.top - computedStyle.bottom;
+                this.height = computedStyle.height =
+                    data.h - computedStyle.top - computedStyle.bottom;
             }
             else if (fixedTop) {
                 if (height.u !== StyleUnit.AUTO) {
@@ -21151,34 +21146,67 @@
             }
             this.root.addUpdate(this, keys, undefined, false, false, cb);
         }
-        getComputedStyle() {
+        getComputedStyle(toCssString = false) {
             const res = Object.assign({}, this.computedStyle);
-            res.color = res.color.slice(0);
-            res.backgroundColor = res.backgroundColor.slice(0);
-            res.fill = res.fill.slice(0);
+            if (toCssString) {
+                res.color = color2hexStr(res.color);
+                res.backgroundColor = color2hexStr(res.backgroundColor);
+                res.fontSize = ['normal', 'italic', 'oblique'][res.fontSize];
+                res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
+                res.mixBlendMode = [
+                    'normal',
+                    'multiply',
+                    'screen',
+                    'overlay',
+                    'darken',
+                    'lighten',
+                    'color-dodge',
+                    'color-burn',
+                    'hard-light',
+                    'soft-light',
+                    'difference',
+                    'exclusion',
+                    'hue',
+                    'saturation',
+                    'color',
+                    'luminosity',
+                ][res.mixBlendMode];
+                ['fill', 'stroke'].forEach((k) => {
+                    res[k] = res[k].map((item) => {
+                        if (Array.isArray(item)) {
+                            return color2hexStr(item);
+                        }
+                        else {
+                            if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL) {
+                                return `linear-gradient(${item.d.join(' ')}, ${item.stops.map((stop) => {
+                                return color2hexStr(stop.color.v) + ' ' + stop.offset.v * 100 + '%';
+                            })})`;
+                            }
+                            return '';
+                        }
+                    });
+                });
+                res.strokeLinecap = ['butt', 'round', 'square'][res.strokeLinecap];
+                res.strokeLinejoin = ['miter', 'round', 'bevel'][res.strokeLinejoin];
+                res.strokePosition = res.strokePosition.map((item) => {
+                    return ['center', 'inside', 'outside'][item];
+                });
+                res.mask = ['none', 'outline', 'alpha'][res.mask];
+                res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
+                res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][res.booleanOperation];
+            }
+            else {
+                res.color = res.color.slice(0);
+                res.backgroundColor = res.backgroundColor.slice(0);
+                res.fill = res.fill.slice(0);
+                res.stroke = res.stroke.slice(0);
+            }
             res.fillEnable = res.fillEnable.slice(0);
-            res.stroke = res.stroke.slice(0);
             res.strokeEnable = res.strokeEnable.slice(0);
             res.strokeWidth = res.strokeWidth.slice(0);
-            res.strokeDasharray = res.strokeDasharray.slice(0);
             res.transformOrigin = res.transformOrigin.slice(0);
+            res.strokeDasharray = res.strokeDasharray.slice(0);
             return res;
-        }
-        getStyle(k) {
-            const computedStyle = this.computedStyle;
-            if (k === 'color' ||
-                k === 'backgroundColor' ||
-                k === 'fill' ||
-                k === 'fillEnable' ||
-                k === 'stroke' ||
-                k === 'strokeEnable' ||
-                k === 'strokeWidth' ||
-                k === 'strokePosition' ||
-                k === 'strokeDasharray' ||
-                k === 'transformOrigin') {
-                return computedStyle[k].slice(0);
-            }
-            return computedStyle[k];
         }
         getBoundingClientRect(includeBbox = false, excludeRotate = false) {
             const bbox = includeBbox
@@ -21440,6 +21468,29 @@
         }
         rename(s) {
             this.props.name = s;
+        }
+        getXYWH() {
+            if (this.isDestroyed) {
+                return;
+            }
+            const top = this.artBoard || this.page;
+            const { width, height, matrix, computedStyle } = this;
+            let x = matrix[12], y = matrix[13];
+            let parent = this.parent;
+            while (parent && parent !== top) {
+                const m = parent.matrix;
+                x += m[12];
+                y += m[13];
+                parent = parent.parent;
+            }
+            return {
+                x,
+                y,
+                w: width,
+                h: height,
+                isFlippedHorizontal: computedStyle.scaleX === -1,
+                isFlippedVertical: computedStyle.scaleY === -1,
+            };
         }
         get opacity() {
             var _a;
@@ -25642,6 +25693,23 @@
             }
         }
     }
+    function sortTempIndex(nodes) {
+        if (!nodes.length) {
+            return;
+        }
+        const structs = nodes[0].root.structs;
+        // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
+        for (let i = 0, len = nodes.length; i < len; i++) {
+            const item = nodes[i];
+            if (item.isDestroyed) {
+                throw new Error('Can not group a destroyed Node');
+            }
+            item.tempIndex = structs.indexOf(item.struct);
+        }
+        nodes.sort((a, b) => {
+            return a.tempIndex - b.tempIndex;
+        });
+    }
 
     class Group extends Container {
         constructor(props, children) {
@@ -25868,21 +25936,16 @@
             if (!nodes.length) {
                 return;
             }
-            const structs = nodes[0].root.structs;
-            // 按照先根遍历顺序排列这些节点，最先的是编组位置参照
-            for (let i = 0, len = nodes.length; i < len; i++) {
-                const item = nodes[i];
-                if (item.isDestroyed) {
-                    throw new Error('Can not group a destroyed Node');
-                }
-                item.tempIndex = structs.indexOf(item.struct);
-            }
-            nodes.sort((a, b) => {
-                return a.tempIndex - b.tempIndex;
-            });
+            sortTempIndex(nodes);
             const first = nodes[0];
-            const prev = first.prev;
-            const next = first.next;
+            let prev = first.prev;
+            while (prev && nodes.indexOf(prev) > -1) {
+                prev = prev.prev;
+            }
+            let next = first.next;
+            while (next && nodes.indexOf(next) > -1) {
+                next = next.next;
+            }
             const zoom = first.getZoom();
             const parent = first.parent;
             for (let i = 0, len = nodes.length; i < len; i++) {
@@ -25976,8 +26039,23 @@
             let res = [];
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
-                item.buildPoints();
-                const { points, matrix } = item;
+                let points;
+                // shapeGroup可以包含任意内容，非矢量视作矩形，TODO 文本矢量
+                if (item instanceof Polyline || item instanceof ShapeGroup) {
+                    item.buildPoints();
+                    points = item.points;
+                }
+                else {
+                    const { width, height } = item;
+                    points = [
+                        [0, 0],
+                        [width, 0],
+                        [width, height],
+                        [0, height],
+                        [0, 0],
+                    ];
+                }
+                const { matrix } = item;
                 if (points && points.length) {
                     // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
                     let p;
@@ -26323,6 +26401,77 @@
                 }
             }
             return this._bbox;
+        }
+        static groupAsShape(nodes, bo = BOOLEAN_OPERATION.NONE, props) {
+            if (!nodes.length) {
+                return;
+            }
+            sortTempIndex(nodes);
+            const first = nodes[0];
+            let prev = first.prev;
+            while (prev && nodes.indexOf(prev) > -1) {
+                prev = prev.prev;
+            }
+            let next = first.next;
+            while (next && nodes.indexOf(next) > -1) {
+                next = next.next;
+            }
+            const zoom = first.getZoom();
+            const parent = first.parent;
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                const item = nodes[i];
+                migrate(parent, zoom, item);
+                if (i) {
+                    item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
+                }
+            }
+            // 取第一个矢量图形的描绘属性
+            let style;
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                const item = nodes[i];
+                if (item instanceof Polyline || item instanceof ShapeGroup) {
+                    style = item.getComputedStyle(true);
+                    break;
+                }
+            }
+            if (!style) {
+                style = getDefaultStyle();
+            }
+            const p = Object.assign({
+                uuid: v4(),
+                name: '形状结合',
+                style: {
+                    left: '0%',
+                    top: '0%',
+                    right: '0%',
+                    bottom: '0%',
+                    fill: style.fill,
+                    fillEnable: style.fillEnable,
+                    fillRule: style.fillRule,
+                    stroke: style.stroke,
+                    strokeEnable: style.strokeEnable,
+                    strokeWidth: style.strokeWidth,
+                    strokePosition: style.strokePosition,
+                    strokeDasharray: style.strokeDasharray,
+                    strokeLinecap: style.strokeLinecap,
+                    strokeLinejoin: style.strokeLinejoin,
+                    strokeMiterlimit: style.strokeMiterlimit,
+                },
+            }, props);
+            const shapeGroup = new ShapeGroup(p, nodes);
+            // 插入到first的原本位置，有prev/next优先使用定位
+            if (prev) {
+                prev.insertAfter(shapeGroup);
+            }
+            else if (next) {
+                next.insertBefore(shapeGroup);
+            }
+            // 没有prev/next则parent原本只有一个节点
+            else {
+                parent.appendChild(shapeGroup);
+            }
+            shapeGroup.checkSizeChange();
+            return shapeGroup;
         }
     }
 
