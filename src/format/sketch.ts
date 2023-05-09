@@ -167,6 +167,10 @@ async function convertItem(
   const rotateZ = -layer.rotation;
   const scaleX = layer.isFlippedHorizontal ? -1 : 1;
   const scaleY = layer.isFlippedVertical ? -1 : 1;
+  // 渲染无关的锁定/展开
+  const isLocked = layer.isLocked;
+  const isExpanded =
+    layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替
   if (layer._class === SketchFormat.ClassValue.Artboard) {
     const children = await Promise.all(
@@ -201,8 +205,8 @@ async function convertItem(
           overflow: 'hidden',
           backgroundColor,
         },
-        isLocked: false,
-        isExpanded: false,
+        isLocked,
+        isExpanded,
       },
       children: children.filter((item) => item),
     } as JArtBoard;
@@ -373,10 +377,6 @@ async function convertItem(
   // const shadowEnable: boolean[] = [];
   // const innerShadow: string[] = [];
   // const innerShadowEnable: boolean[] = [];
-  // 渲染无关的锁定/展开
-  const isLocked = layer.isLocked;
-  const isExpanded =
-    layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {

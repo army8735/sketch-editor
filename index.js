@@ -17140,6 +17140,9 @@
             const rotateZ = -layer.rotation;
             const scaleX = layer.isFlippedHorizontal ? -1 : 1;
             const scaleY = layer.isFlippedVertical ? -1 : 1;
+            // 渲染无关的锁定/展开
+            const isLocked = layer.isLocked;
+            const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             // artBoard也是固定尺寸和page一样，但x/y用translate代替
             if (layer._class === FileFormat.ClassValue.Artboard) {
                 const children = yield Promise.all(layer.layers.map((child) => {
@@ -17172,8 +17175,8 @@
                             overflow: 'hidden',
                             backgroundColor,
                         },
-                        isLocked: false,
-                        isExpanded: false,
+                        isLocked,
+                        isExpanded,
                     },
                     children: children.filter((item) => item),
                 };
@@ -17349,9 +17352,6 @@
             // const shadowEnable: boolean[] = [];
             // const innerShadow: string[] = [];
             // const innerShadowEnable: boolean[] = [];
-            // 渲染无关的锁定/展开
-            const isLocked = layer.isLocked;
-            const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             if (layer._class === FileFormat.ClassValue.Group) {
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
@@ -28434,17 +28434,19 @@ void main() {
                 gl.deleteTexture(resTexture);
             }
             resTexture = createTexture(gl, 0, undefined, W, H);
+            lastW = W;
+            lastH = H;
         }
         // 复用
         if (resFrameBuffer) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, resTexture, 0);
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
         }
         else {
             resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
         }
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
         // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
         const overlay = root.overlay;
         let isOverlay = false;

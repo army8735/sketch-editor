@@ -277,6 +277,8 @@ export function renderWebgl(
       gl.deleteTexture(resTexture);
     }
     resTexture = createTexture(gl, 0, undefined, W, H);
+    lastW = W;
+    lastH = H;
   }
   // 复用
   if (resFrameBuffer) {
@@ -288,11 +290,11 @@ export function renderWebgl(
       resTexture,
       0,
     );
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
   } else {
     resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   }
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
   const overlay = root.overlay!;
   let isOverlay = false;
@@ -395,7 +397,12 @@ export function renderWebgl(
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
       else {
         if (node.hasContent) {
-          isInScreen = checkInScreen(node._filterBbox || node.filterBbox, matrix, W, H);
+          isInScreen = checkInScreen(
+            node._filterBbox || node.filterBbox,
+            matrix,
+            W,
+            H,
+          );
           if (isInScreen) {
             node.genTexture(gl, scale, scaleIndex);
             target = textureTarget[scaleIndex];
