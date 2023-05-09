@@ -1,11 +1,11 @@
 import { ArtBoardProps, Props } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoint } from '../math/matrix';
+import CanvasCache from '../refresh/CanvasCache';
+import config from '../refresh/config';
+import { color2rgbaStr } from '../style/css';
 import Container from './Container';
 import Node from './Node';
-import config from '../refresh/config';
-import CanvasCache from '../refresh/CanvasCache';
-import { color2rgbaStr } from '../style/css';
 
 class ArtBoard extends Container {
   hasBackgroundColor: boolean;
@@ -340,10 +340,10 @@ class ArtBoard extends Container {
     // 矩形固定2个三角形
     const t = calRectPoint(0, 0, width, height, matrixWorld);
     const vtPoint = new Float32Array(8);
-    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, false);
-    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, false);
-    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, false);
-    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, false);
+    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, true);
+    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, true);
+    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, true);
+    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, true);
     vtPoint[0] = t1.x;
     vtPoint[1] = t1.y;
     vtPoint[2] = t4.x;

@@ -110,6 +110,7 @@ class Group extends Container {
     // 记得重置
     this._rect = undefined;
     this._bbox = undefined;
+    this._filterBbox = undefined;
     this.tempBbox = undefined;
   }
 
@@ -178,6 +179,7 @@ class Group extends Container {
     // 记得重置
     child._rect = undefined;
     child._bbox = undefined;
+    child._filterBbox = undefined;
     child.tempBbox = undefined;
   }
 

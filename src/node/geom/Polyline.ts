@@ -28,6 +28,7 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.isClosed = props.isClosed;
+    this.isPolyline = true;
   }
 
   override buildPoints() {
@@ -234,7 +235,7 @@ class Polyline extends Geom {
     super.renderCanvas(scale);
     this.buildPoints();
     const points = this.points!;
-    const bbox = this._rect || this.rect;
+    const bbox = this._bbox || this.bbox;
     const x = bbox[0],
       y = bbox[1],
       w = bbox[2] - x,
@@ -295,14 +296,14 @@ class Polyline extends Geom {
         ctx.fillStyle = color2rgbaStr(f);
       } else {
         if (f.t === GRADIENT.LINEAR) {
-          const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
+          const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.fillStyle = lg;
         } else if (f.t === GRADIENT.RADIAL) {
-          const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
+          const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,

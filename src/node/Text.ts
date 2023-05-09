@@ -117,6 +117,7 @@ class Text extends Node {
   lineBoxList: Array<LineBox>;
   constructor(props: TextProps) {
     super(props);
+    this.isText = true;
     this._content = props.content;
     this.rich = props.rich;
     this.lineBoxList = [];
@@ -302,7 +303,7 @@ class Text extends Node {
 
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
-    const bbox = this._rect || this.rect;
+    const bbox = this._bbox || this.bbox;
     const x = bbox[0],
       y = bbox[1],
       w = bbox[2] - x,

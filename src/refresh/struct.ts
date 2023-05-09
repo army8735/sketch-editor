@@ -1,8 +1,25 @@
 import { gaussFrag, gaussVert } from '../gl/glsl';
-import { bindTexture, createTexture, drawGauss, drawMask, drawMbm, drawTextureCache, initShaders, } from '../gl/webgl';
+import {
+  bindTexture,
+  createTexture,
+  drawGauss,
+  drawMask,
+  drawMbm,
+  drawTextureCache,
+  initShaders,
+} from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { isRectsOverlap } from '../math/geom';
-import { assignMatrix, calPoint, calRectPoint, inverse, isE, multiply, multiplyScale, toE, } from '../math/matrix';
+import {
+  assignMatrix,
+  calPoint,
+  calRectPoint,
+  inverse,
+  isE,
+  multiply,
+  multiplyScale,
+  toE,
+} from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Bitmap from '../node/Bitmap';
 import Polyline from '../node/geom/Polyline';
@@ -93,6 +110,7 @@ export function renderWebgl(
       ((opacity > 0 && opacity < 1) ||
         mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
       total > 0 &&
+      !node.isShapeGroup &&
       (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
     const needBlur =
       blur.t !== BLUR.NONE &&
@@ -372,7 +390,7 @@ export function renderWebgl(
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
       else {
         if (node.hasContent) {
-          isInScreen = checkInScreen(node._bbox || node.bbox, matrix, W, H);
+          isInScreen = checkInScreen(node._filterBbox || node.filterBbox, matrix, W, H);
           if (isInScreen) {
             node.genTexture(gl, scale, scaleIndex);
             target = textureTarget[scaleIndex];
@@ -560,7 +578,7 @@ function genBboxTotal(
       const parent = node2.parent!;
       const m = multiply(parent.tempMatrix, node2.matrix);
       assignMatrix(node2.tempMatrix, m);
-      const b = target?.bbox || node2._bbox || node2.bbox;
+      const b = target?.bbox || node2._filterBbox || node2.filterBbox;
       // 防止空
       if (b[2] - b[0] && b[3] - b[1]) {
         mergeBbox(res, b, m);
@@ -697,6 +715,20 @@ function genTotal(
       target2 = node2.textureTarget[scaleIndex];
     }
     if (target2) {
+      const mixBlendMode = computedStyle.mixBlendMode;
+      let tex: WebGLTexture | undefined;
+      // 有mbm先将本节点内容绘制到同尺寸纹理上
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+        tex = createTexture(gl, 0, undefined, w, h);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+      }
+      // 有无mbm都复用这段逻辑
       drawTextureCache(
         gl,
         cx,
@@ -714,6 +746,19 @@ function genTotal(
         dy,
         false,
       );
+      // 这里才是真正生成mbm
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+        target.texture = genMbm(
+          gl,
+          frameBuffer,
+          target.texture,
+          tex!,
+          mixBlendMode,
+          programs,
+          w,
+          h,
+        );
+      }
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (

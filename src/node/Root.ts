@@ -1,34 +1,34 @@
 import * as uuid from 'uuid';
 import { frame, FrameCallback } from '../animation/frame';
 import { JPage, Props } from '../format';
-import { initShaders } from '../gl/webgl';
 import ca from '../gl/ca';
 import {
   bgColorFrag,
   bgColorVert,
+  colorBurnFrag,
+  colorDodgeFrag,
+  colorFrag,
+  darkenFrag,
+  differenceFrag,
+  exclusionFrag,
+  hardLightFrag,
+  hueFrag,
+  lightenFrag,
+  luminosityFrag,
   mainFrag,
   mainVert,
   maskFrag,
   maskVert,
-  simpleFrag,
-  simpleVert,
   mbmVert,
   multiplyFrag,
-  screenFrag,
   overlayFrag,
-  darkenFrag,
-  lightenFrag,
-  colorDodgeFrag,
-  colorBurnFrag,
-  hardLightFrag,
-  softLightFrag,
-  differenceFrag,
-  exclusionFrag,
-  hueFrag,
   saturationFrag,
-  colorFrag,
-  luminosityFrag,
+  screenFrag,
+  simpleFrag,
+  simpleVert,
+  softLightFrag,
 } from '../gl/glsl';
+import { initShaders } from '../gl/webgl';
 import config from '../refresh/config';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { renderWebgl, Struct } from '../refresh/struct';
@@ -282,7 +282,7 @@ class Root extends Container implements FrameCallback {
           this.emit(Event.DID_ADD_DOM, node);
         }
       } else if (keys.indexOf('visible') > -1) {
-        this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
+        this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible, node);
       }
     }
   }
@@ -327,7 +327,7 @@ class Root extends Container implements FrameCallback {
         }
         if (lv & RefreshLevel.FILTER) {
           computedStyle.blur = style.blur.v;
-          node._bbox = undefined;
+          node._filterBbox = undefined;
           node.tempBbox = undefined;
           node.textureFilter.forEach((item) => item?.release());
           node.textureMask.forEach((item) => item?.release());

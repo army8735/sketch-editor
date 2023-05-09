@@ -67,7 +67,8 @@ class Node extends Event {
   localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
   parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
-  _bbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
+  _bbox: Float64Array | undefined; // 包含边框包围盒
+  _filterBbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
@@ -83,6 +84,9 @@ class Node extends Event {
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
   isPage = false;
+  isText = false;
+  isPolyline = false;
+  isBitmap = false;
   isShapeGroup = false;
   isContainer = false;
 
@@ -260,6 +264,7 @@ class Node extends Event {
     this.textureOutline?.release();
     this._rect = undefined;
     this._bbox = undefined;
+    this._filterBbox = undefined;
     this.tempBbox = undefined;
   }
 
@@ -370,6 +375,7 @@ class Node extends Event {
       this.calOpacity();
     }
     this._bbox = undefined;
+    this._filterBbox = undefined;
     this.tempBbox = undefined;
   }
 
@@ -809,7 +815,7 @@ class Node extends Event {
 
   getBoundingClientRect(includeBbox: boolean = false, excludeRotate = false) {
     const bbox = includeBbox
-      ? this._bbox || this.bbox
+      ? this._filterBbox || this.filterBbox
       : this._rect || this.rect;
     let t;
     // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
@@ -1222,6 +1228,15 @@ class Node extends Event {
     if (!res) {
       const bbox = this._rect || this.rect;
       res = this._bbox = bbox.slice(0);
+    }
+    return res;
+  }
+
+  get filterBbox(): Float64Array {
+    let res = this._filterBbox;
+    if (!res) {
+      const bbox = this._bbox || this.bbox;
+      res = this._filterBbox = bbox.slice(0);
       const { blur } = this.computedStyle;
       if (blur.t === BLUR.GAUSSIAN) {
         const r = blur.radius!;

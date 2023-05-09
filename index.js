@@ -20252,6 +20252,72 @@
         return { x, y };
     }
 
+    const HASH$1 = {};
+    class CanvasCache {
+        constructor(w, h, dx = 0, dy = 0) {
+            this.available = false;
+            this.offscreen = inject.getOffscreenCanvas(w, h);
+            this.w = w;
+            this.h = h;
+            this.dx = dx;
+            this.dy = dy;
+        }
+        release() {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            this.offscreen.release();
+        }
+        releaseImg(url) {
+            if (!this.available) {
+                return;
+            }
+            this.available = false;
+            const o = HASH$1[url];
+            o.count--;
+            if (!o.count) {
+                // 此时无引用计数可清空且释放离屏canvas
+                delete HASH$1[url];
+                this.offscreen.release();
+            }
+        }
+        getCount(url) {
+            var _a;
+            return (_a = HASH$1[url]) === null || _a === void 0 ? void 0 : _a.count;
+        }
+        static getInstance(w, h, dx = 0, dy = 0) {
+            return new CanvasCache(w, h, dx, dy);
+        }
+        static getImgInstance(w, h, url) {
+            if (HASH$1.hasOwnProperty(url)) {
+                const o = HASH$1[url];
+                o.count++;
+                return o.value;
+            }
+            const o = new CanvasCache(w, h, 0, 0);
+            HASH$1[url] = {
+                value: o,
+                count: 1,
+            };
+            return o;
+        }
+    }
+
+    const config = {
+        MAX_TEXTURE_SIZE: 2048,
+        SMALL_UNIT: 32,
+        MAX_NUM: Math.pow(2048 / 32, 2),
+        MAX_TEXTURE_UNITS: 8,
+        MAX_VARYING_VECTORS: 15,
+        init(maxSize, maxUnits, maxVectors) {
+            this.MAX_TEXTURE_SIZE = maxSize;
+            this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
+            this.MAX_TEXTURE_UNITS = maxUnits;
+            this.MAX_VARYING_VECTORS = maxVectors;
+        },
+    };
+
     // Unique ID creation requires a high quality random # generator. In the browser we therefore
     // require the crypto API and do not support built-in fallback to lower quality random number
     // generators (like Math.random()).
@@ -20367,7 +20433,7 @@
         return list;
     }
 
-    const HASH$1 = {};
+    const HASH = {};
     class TextureCache {
         constructor(gl, texture, bbox) {
             this.gl = gl;
@@ -20387,11 +20453,11 @@
                 return;
             }
             this.available = false;
-            const o = HASH$1[url];
+            const o = HASH[url];
             o.count--;
             if (!o.count) {
                 // 此时无引用计数可清空且释放texture
-                delete HASH$1[url];
+                delete HASH[url];
                 this.gl.deleteTexture(this.texture);
             }
         }
@@ -20400,13 +20466,13 @@
             return new TextureCache(gl, texture, bbox);
         }
         static getImgInstance(gl, canvas, url, bbox) {
-            if (HASH$1.hasOwnProperty(url)) {
-                const o = HASH$1[url];
+            if (HASH.hasOwnProperty(url)) {
+                const o = HASH[url];
                 o.count++;
-                return new TextureCache(gl, HASH$1[url].value, bbox);
+                return new TextureCache(gl, HASH[url].value, bbox);
             }
             const texture = createTexture(gl, 0, canvas);
-            HASH$1[url] = {
+            HASH[url] = {
                 value: texture,
                 count: 1,
             };
@@ -20446,6 +20512,9 @@
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
             this.isArtBoard = false;
             this.isPage = false;
+            this.isText = false;
+            this.isPolyline = false;
+            this.isBitmap = false;
             this.isShapeGroup = false;
             this.isContainer = false;
             this.props = props;
@@ -20608,6 +20677,7 @@
             (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
             this._rect = undefined;
             this._bbox = undefined;
+            this._filterBbox = undefined;
             this.tempBbox = undefined;
         }
         // 插入node到自己后面
@@ -20715,6 +20785,7 @@
                 this.calOpacity();
             }
             this._bbox = undefined;
+            this._filterBbox = undefined;
             this.tempBbox = undefined;
         }
         calMatrix(lv) {
@@ -21130,7 +21201,7 @@
         }
         getBoundingClientRect(includeBbox = false, excludeRotate = false) {
             const bbox = includeBbox
-                ? this._bbox || this.bbox
+                ? this._filterBbox || this.filterBbox
                 : this._rect || this.rect;
             let t;
             // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
@@ -21531,6 +21602,14 @@
             if (!res) {
                 const bbox = this._rect || this.rect;
                 res = this._bbox = bbox.slice(0);
+            }
+            return res;
+        }
+        get filterBbox() {
+            let res = this._filterBbox;
+            if (!res) {
+                const bbox = this._bbox || this.bbox;
+                res = this._filterBbox = bbox.slice(0);
                 const { blur } = this.computedStyle;
                 if (blur.t === BLUR.GAUSSIAN) {
                     const r = blur.radius;
@@ -21794,72 +21873,6 @@
             const struct = this.struct;
             const i = structs.indexOf(struct);
             return structs.slice(i, i + struct.total + 1);
-        }
-    }
-
-    const config = {
-        MAX_TEXTURE_SIZE: 2048,
-        SMALL_UNIT: 32,
-        MAX_NUM: Math.pow(2048 / 32, 2),
-        MAX_TEXTURE_UNITS: 8,
-        MAX_VARYING_VECTORS: 15,
-        init(maxSize, maxUnits, maxVectors) {
-            this.MAX_TEXTURE_SIZE = maxSize;
-            this.MAX_NUM = Math.pow(maxSize / this.SMALL_UNIT, 2);
-            this.MAX_TEXTURE_UNITS = maxUnits;
-            this.MAX_VARYING_VECTORS = maxVectors;
-        },
-    };
-
-    const HASH = {};
-    class CanvasCache {
-        constructor(w, h, dx = 0, dy = 0) {
-            this.available = false;
-            this.offscreen = inject.getOffscreenCanvas(w, h);
-            this.w = w;
-            this.h = h;
-            this.dx = dx;
-            this.dy = dy;
-        }
-        release() {
-            if (!this.available) {
-                return;
-            }
-            this.available = false;
-            this.offscreen.release();
-        }
-        releaseImg(url) {
-            if (!this.available) {
-                return;
-            }
-            this.available = false;
-            const o = HASH[url];
-            o.count--;
-            if (!o.count) {
-                // 此时无引用计数可清空且释放离屏canvas
-                delete HASH[url];
-                this.offscreen.release();
-            }
-        }
-        getCount(url) {
-            var _a;
-            return (_a = HASH[url]) === null || _a === void 0 ? void 0 : _a.count;
-        }
-        static getInstance(w, h, dx = 0, dy = 0) {
-            return new CanvasCache(w, h, dx, dy);
-        }
-        static getImgInstance(w, h, url) {
-            if (HASH.hasOwnProperty(url)) {
-                const o = HASH[url];
-                o.count++;
-                return o.value;
-            }
-            const o = new CanvasCache(w, h, 0, 0);
-            HASH[url] = {
-                value: o,
-                count: 1,
-            };
-            return o;
         }
     }
 
@@ -22136,10 +22149,10 @@
             // 矩形固定2个三角形
             const t = calRectPoint(0, 0, width, height, matrixWorld);
             const vtPoint = new Float32Array(8);
-            const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, false);
-            const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, false);
-            const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, false);
-            const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, false);
+            const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, true);
+            const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, true);
+            const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, true);
+            const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, true);
             vtPoint[0] = t1.x;
             vtPoint[1] = t1.y;
             vtPoint[2] = t4.x;
@@ -22171,6 +22184,7 @@
     class Bitmap extends Node {
         constructor(props) {
             super(props);
+            this.isBitmap = true;
             const src = this._src = props.src || '';
             this.loader = {
                 error: false,
@@ -23005,6 +23019,7 @@
         constructor(props) {
             super(props);
             this.isClosed = props.isClosed;
+            this.isPolyline = true;
         }
         buildPoints() {
             var _a;
@@ -23184,7 +23199,7 @@
             super.renderCanvas(scale);
             this.buildPoints();
             const points = this.points;
-            const bbox = this._rect || this.rect;
+            const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
             while (w * scale > config.MAX_TEXTURE_SIZE ||
@@ -23223,7 +23238,7 @@
                 }
                 else {
                     if (f.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
+                        const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
                             lg.addColorStop(item[1], color2rgbaStr(item[0]));
@@ -23231,7 +23246,7 @@
                         ctx.fillStyle = lg;
                     }
                     else if (f.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
+                        const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item[1], color2rgbaStr(item[0]));
@@ -25793,6 +25808,7 @@
             // 记得重置
             this._rect = undefined;
             this._bbox = undefined;
+            this._filterBbox = undefined;
             this.tempBbox = undefined;
         }
         // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
@@ -25847,6 +25863,7 @@
             // 记得重置
             child._rect = undefined;
             child._bbox = undefined;
+            child._filterBbox = undefined;
             child.tempBbox = undefined;
         }
         // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
@@ -26084,7 +26101,7 @@
             super.renderCanvas(scale);
             this.buildPoints();
             const points = this.points;
-            const bbox = this._rect || this.rect;
+            const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
             while (w * scale > config.MAX_TEXTURE_SIZE ||
@@ -26124,7 +26141,7 @@
                 }
                 else {
                     if (f.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(f.stops, f.d, -x, -y, this.width, this.height);
+                        const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
                             lg.addColorStop(item[1], color2rgbaStr(item[0]));
@@ -26132,7 +26149,7 @@
                         ctx.fillStyle = lg;
                     }
                     else if (f.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(f.stops, f.d, -x, -y, this.width, this.height);
+                        const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item[1], color2rgbaStr(item[0]));
@@ -26536,6 +26553,7 @@
     class Text extends Node {
         constructor(props) {
             super(props);
+            this.isText = true;
             this._content = props.content;
             this.rich = props.rich;
             this.lineBoxList = [];
@@ -26697,7 +26715,7 @@
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);
-            const bbox = this._rect || this.rect;
+            const bbox = this._bbox || this.bbox;
             const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
             while (w * scale > config.MAX_TEXTURE_SIZE ||
                 h * scale > config.MAX_TEXTURE_SIZE) {
@@ -28300,6 +28318,7 @@ void main() {
             const needTotal = ((opacity > 0 && opacity < 1) ||
                 mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
                 total > 0 &&
+                !node.isShapeGroup &&
                 (!textureTotal[scaleIndex] || !textureTotal[scaleIndex].available);
             const needBlur = blur.t !== BLUR.NONE &&
                 (!textureFilter[scaleIndex] || !((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
@@ -28506,7 +28525,7 @@ void main() {
                 // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
                 else {
                     if (node.hasContent) {
-                        isInScreen = checkInScreen(node._bbox || node.bbox, matrix, W, H);
+                        isInScreen = checkInScreen(node._filterBbox || node.filterBbox, matrix, W, H);
                         if (isInScreen) {
                             node.genTexture(gl, scale, scaleIndex);
                             target = textureTarget[scaleIndex];
@@ -28630,7 +28649,7 @@ void main() {
                 const parent = node2.parent;
                 const m = multiply(parent.tempMatrix, node2.matrix);
                 assignMatrix(node2.tempMatrix, m);
-                const b = (target === null || target === void 0 ? void 0 : target.bbox) || node2._bbox || node2.bbox;
+                const b = (target === null || target === void 0 ? void 0 : target.bbox) || node2._filterBbox || node2.filterBbox;
                 // 防止空
                 if (b[2] - b[0] && b[3] - b[1]) {
                     mergeBbox(res, b, m);
@@ -28740,6 +28759,14 @@ void main() {
                 target2 = node2.textureTarget[scaleIndex];
             }
             if (target2) {
+                const mixBlendMode = computedStyle.mixBlendMode;
+                let tex;
+                // 有mbm先将本节点内容绘制到同尺寸纹理上
+                if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+                    tex = createTexture(gl, 0, undefined, w, h);
+                    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+                }
+                // 有无mbm都复用这段逻辑
                 drawTextureCache(gl, cx, cy, program, [
                     {
                         opacity,
@@ -28748,6 +28775,10 @@ void main() {
                         texture: target2.texture,
                     },
                 ], dx, dy, false);
+                // 这里才是真正生成mbm
+                if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+                    target.texture = genMbm(gl, frameBuffer, target.texture, tex, mixBlendMode, programs, w, h);
+                }
             }
             // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
             if ((target2 && target2 !== node2.textureCache[scaleIndex]) ||
@@ -29406,7 +29437,7 @@ void main() {
                     }
                 }
                 else if (keys.indexOf('visible') > -1) {
-                    this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible);
+                    this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible, node);
                 }
             }
         }
@@ -29446,7 +29477,7 @@ void main() {
                     }
                     if (lv & RefreshLevel.FILTER) {
                         computedStyle.blur = style.blur.v;
-                        node._bbox = undefined;
+                        node._filterBbox = undefined;
                         node.tempBbox = undefined;
                         node.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
                         node.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
