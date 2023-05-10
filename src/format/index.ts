@@ -228,6 +228,12 @@ export type Point = {
   ty: number;
   hasCurveFrom: boolean;
   hasCurveTo: boolean;
+  absX?: number; // 副本，算上宽高matrix的最终展示值
+  absY?: number;
+  absFx?: number;
+  absFy?: number;
+  absTx?: number;
+  absTy?: number;
 };
 
 export enum TagName {

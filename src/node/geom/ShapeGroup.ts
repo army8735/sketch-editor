@@ -3,7 +3,7 @@ import { getDefaultStyle, Props } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { toPrecision } from '../../math/geom';
-import { calPoint, isE } from '../../math/matrix';
+import { isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
 import { canvasPolygon, svgPolygon } from '../../refresh/paint';
@@ -14,15 +14,16 @@ import {
   GRADIENT,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
-  STROKE_POSITION, StyleUnit,
+  STROKE_POSITION,
+  StyleUnit,
 } from '../../style/define';
 import { getLinear, getRadial } from '../../style/gradient';
+import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
 import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
-import { migrate, sortTempIndex } from '../../tools/node';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -128,7 +129,6 @@ class ShapeGroup extends Group {
         } else {
           p = [applyMatrixPoints(points as number[][], matrix)];
         }
-        console.log(i, points, matrix, p);
         const booleanOperation = item.computedStyle.booleanOperation;
         if (i === 0 || !booleanOperation) {
           res = res.concat(p);
@@ -235,14 +235,28 @@ class ShapeGroup extends Group {
         ctx.fillStyle = color2rgbaStr(f);
       } else {
         if (f.t === GRADIENT.LINEAR) {
-          const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+          const gd = getLinear(
+            f.stops,
+            f.d,
+            dx,
+            dy,
+            this.width * scale,
+            this.height * scale,
+          );
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.fillStyle = lg;
         } else if (f.t === GRADIENT.RADIAL) {
-          const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+          const gd = getRadial(
+            f.stops,
+            f.d,
+            dx,
+            dy,
+            this.width * scale,
+            this.height * scale,
+          );
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -365,27 +379,6 @@ class ShapeGroup extends Group {
         ctx.stroke();
       }
     }
-  }
-
-  override getFrameProps() {
-    if (this.isDestroyed) {
-      return;
-    }
-    const res = super.getFrameProps()!;
-    this.buildPoints();
-    const points = this.points || [];
-    const m = res.matrix;
-    res.points = points.map((item) => {
-      return item.map((item) => {
-        const res: number[] = [];
-        for (let i = 0, len = item.length; i < len; i += 2) {
-          const p = calPoint({ x: item[i], y: item[i + 1] }, m);
-          res.push(p.x, p.y);
-        }
-        return res;
-      });
-    });
-    return res;
   }
 
   toSvg(scale: number) {
@@ -516,7 +509,11 @@ class ShapeGroup extends Group {
     return this._bbox;
   }
 
-  static groupAsShape(nodes: Node[], bo = BOOLEAN_OPERATION.NONE, props?: Props) {
+  static groupAsShape(
+    nodes: Node[],
+    bo = BOOLEAN_OPERATION.NONE,
+    props?: Props,
+  ) {
     if (!nodes.length) {
       return;
     }

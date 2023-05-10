@@ -148,7 +148,7 @@ export function sortTempIndex(nodes: Node[]) {
     if (item.isDestroyed) {
       throw new Error('Can not group a destroyed Node');
     }
-    item.tempIndex = structs!.indexOf(item.struct);
+    item.tempIndex = structs.indexOf(item.struct);
   }
   nodes.sort((a, b) => {
     return a.tempIndex - b.tempIndex;

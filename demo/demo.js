@@ -547,9 +547,7 @@ $overlap.addEventListener('mousedown', function(e) {
       if (target.tagName === 'SPAN') {
         isControl = true;
         // 通知引擎开始拖拽，如果是固定尺寸中心点对齐的要内部转换下，防止拖尺寸时以自身中心点扩展
-        selectNode.startSizeChange();
-        // 再更新下，防止重复拖拽数据不及时
-        computedStyle = selectNode.getComputedStyle();
+        computedStyle = selectNode.startSizeChange();
         const classList = target.classList;
         if (classList.contains('tl')) {
           controlType = 'tl';

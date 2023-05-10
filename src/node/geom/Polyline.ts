@@ -14,10 +14,9 @@ import {
   STROKE_POSITION,
 } from '../../style/define';
 import { getLinear, getRadial } from '../../style/gradient';
-import { clone } from '../../util';
 import inject, { OffScreen } from '../../util/inject';
 import Geom from './Geom';
-import { calPoint } from '../../math/matrix';
+import { calPoint, inverse4 } from '../../math/matrix';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -39,43 +38,40 @@ class Polyline extends Geom {
     this.textureOutline?.release();
     const props = this.props as PolylineProps;
     const { width, height } = this;
-    const temp: Array<any> = [];
     const points = props.points;
     let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
     for (let i = 0, len = points.length; i < len; i++) {
       const item = points[i];
-      const res: Point = clone(item);
-      res.x = res.x * width;
-      res.y = res.y * height;
+      item.absX = item.x * width;
+      item.absY = item.y * height;
       if (isCornerPoint(item)) {
         hasCorner = true;
       } else {
-        if (res.hasCurveTo) {
-          res.tx = res.tx * width;
-          res.ty = res.ty * height;
+        if (item.hasCurveTo) {
+          item.absTx = item.tx * width;
+          item.absTy = item.ty * height;
         }
-        if (res.hasCurveFrom) {
-          res.fx = res.fx * width;
-          res.fy = res.fy * height;
+        if (item.hasCurveFrom) {
+          item.absFx = item.fx * width;
+          item.absFy = item.fy * height;
         }
       }
-      temp.push(res);
     }
     // 如果有圆角，拟合画圆
     const cache: Array<any> = [];
     if (hasCorner) {
-      // 倒序将圆角点拆分为2个顶点
-      for (let i = 0, len = temp.length; i < len; i++) {
-        const point = temp[i];
+      // 将圆角点拆分为2个顶点
+      for (let i = 0, len = points.length; i < len; i++) {
+        const point = points[i];
         if (!isCornerPoint(point)) {
           continue;
         }
         // 观察前后2个顶点的情况
         const prevIdx = i ? i - 1 : len - 1;
         const nextIdx = (i + 1) % len;
-        const prevPoint = temp[prevIdx];
-        const nextPoint = temp[nextIdx];
+        const prevPoint = points[prevIdx];
+        const nextPoint = points[nextIdx];
         let radius = point.cornerRadius;
         // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
         const isPrevCorner = isCornerPoint(prevPoint);
@@ -133,11 +129,11 @@ class Polyline extends Geom {
           const nv = unitize(nx, ny);
           // 相切的点
           const prevTangent = { x: pv.x * dist, y: pv.y * dist };
-          prevTangent.x += temp[i].x;
-          prevTangent.y += temp[i].y;
+          prevTangent.x += points[i].x;
+          prevTangent.y += points[i].y;
           const nextTangent = { x: nv.x * dist, y: nv.y * dist };
-          nextTangent.x += temp[i].x;
-          nextTangent.y += temp[i].y;
+          nextTangent.x += points[i].x;
+          nextTangent.y += points[i].y;
           // 计算 cubic handler 位置
           const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
           const prevHandle = {
@@ -166,33 +162,46 @@ class Polyline extends Geom {
       }
     }
     // 将圆角的2个点替换掉原本的1个点
+    const temp = points.slice(0);
     for (let i = 0, len = temp.length; i < len; i++) {
       const c = cache[i];
       if (c) {
         const { prevTangent, prevHandle, nextTangent, nextHandle } = c;
         const p: Point = {
-          x: prevTangent.x,
-          y: prevTangent.y,
+          x: 0,
+          y: 0,
           cornerRadius: 0,
           curveMode: 0,
           hasCurveFrom: true,
-          fx: prevHandle.x,
-          fy: prevHandle.y,
+          fx: 0,
+          fy: 0,
           hasCurveTo: false,
           tx: 0,
           ty: 0,
+          absX: prevTangent.x,
+          absY: prevTangent.y,
+          absFx: prevHandle.x,
+          absFy: prevHandle.y,
+          absTx: 0,
+          absTy: 0,
         };
         const n: Point = {
-          x: nextTangent.x,
-          y: nextTangent.y,
+          x: 0,
+          y: 0,
           cornerRadius: 0,
           curveMode: 0,
           hasCurveFrom: false,
           fx: 0,
           fy: 0,
           hasCurveTo: true,
-          tx: nextHandle.x,
-          ty: nextHandle.y,
+          tx: 0,
+          ty: 0,
+          absX: nextTangent.x,
+          absY: nextTangent.y,
+          absFx: 0,
+          absFy: 0,
+          absTx: nextHandle.x,
+          absTy: nextHandle.y,
         };
         temp.splice(i, 1, p, n);
         i++;
@@ -202,30 +211,30 @@ class Polyline extends Geom {
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
     const first = temp[0];
-    const p: Array<number> = [first.x, first.y];
+    const p: Array<number> = [first.absX!, first.absY!];
     const res: Array<Array<number>> = [p],
       len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
-      const p: Array<number> = [toPrecision(item.x), toPrecision(item.y)];
+      const p: Array<number> = [toPrecision(item.absX!), toPrecision(item.absY!)];
       if (item.hasCurveTo) {
-        p.unshift(toPrecision(item.tx), toPrecision(item.ty));
+        p.unshift(toPrecision(item.absTx!), toPrecision(item.absTy!));
       }
       if (prev.hasCurveFrom) {
-        p.unshift(toPrecision(prev.fx), toPrecision(prev.fy));
+        p.unshift(toPrecision(prev.absFx!), toPrecision(prev.absFy!));
       }
       res.push(p);
     }
     // 闭合
     if (this.isClosed) {
       const last = temp[len - 1];
-      const p: Array<number> = [toPrecision(first.x), toPrecision(first.y)];
+      const p: Array<number> = [toPrecision(first.absX!), toPrecision(first.absY!)];
       if (first.hasCurveTo) {
-        p.unshift(toPrecision(first.tx), toPrecision(first.ty));
+        p.unshift(toPrecision(first.absTx!), toPrecision(first.absTy!));
       }
       if (last.hasCurveFrom) {
-        p.unshift(toPrecision(last.fx), toPrecision(last.fy));
+        p.unshift(toPrecision(last.absFx!), toPrecision(last.absFy!));
       }
       res.push(p);
     }
@@ -297,14 +306,28 @@ class Polyline extends Geom {
         ctx.fillStyle = color2rgbaStr(f);
       } else {
         if (f.t === GRADIENT.LINEAR) {
-          const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+          const gd = getLinear(
+            f.stops,
+            f.d,
+            dx,
+            dy,
+            this.width * scale,
+            this.height * scale,
+          );
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
           });
           ctx.fillStyle = lg;
         } else if (f.t === GRADIENT.RADIAL) {
-          const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+          const gd = getRadial(
+            f.stops,
+            f.d,
+            dx,
+            dy,
+            this.width * scale,
+            this.height * scale,
+          );
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -422,23 +445,71 @@ class Polyline extends Geom {
   }
 
   override getFrameProps() {
-    if (this.isDestroyed) {
-      return;
-    }
-    const res = super.getFrameProps()!;
+    const res = super.getFrameProps();
     this.buildPoints();
     res.isLine = this.isLine();
-    const points = this.points || [];
+    const points = (this.props as PolylineProps).points;
+    if (res.isLine) {
+      res.length = Math.sqrt(
+        Math.pow(points[1].absX! - points[0].absY!, 2) +
+          Math.pow(points[1].absX! - points[0].absY!, 2),
+      );
+    }
     const m = res.matrix;
     res.points = points.map((item) => {
-      const res: number[] = [];
-      for (let i = 0, len = item.length; i < len; i += 2) {
-        const p = calPoint({ x: item[i], y: item[i + 1] }, m);
-        res.push(p.x, p.y);
+      const p = calPoint({ x: item.absX!, y: item.absY! }, m);
+      const o: Point = {
+        x: p.x,
+        y: p.y,
+        cornerRadius: item.cornerRadius,
+        curveMode: item.curveMode,
+        fx: item.absFx!,
+        fy: item.absFy!,
+        tx: item.absTx!,
+        ty: item.absTy!,
+        hasCurveFrom: item.hasCurveFrom,
+        hasCurveTo: item.hasCurveTo,
+      };
+      if (o.hasCurveFrom) {
+        const p = calPoint({ x: item.absFx!, y: item.absFy! }, m);
+        o.fx = p.x;
+        o.fy = p.y;
       }
-      return res;
+      if (o.hasCurveTo) {
+        const p = calPoint({ x: item.absTx!, y: item.absTy! }, m);
+        o.tx = p.x;
+        o.ty = p.y;
+      }
+      return o;
     });
     return res;
+  }
+
+  // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
+  updatePointBaseOnAP(index: number, newPoint: Point, matrix: Float64Array) {
+    const points = (this.props as PolylineProps).points;
+    if (!points || index < 0 || index >= points.length) {
+      throw new Error('Can not update non-existent point');
+    }
+    const { width, height } = this;
+    const point = points[index];
+    Object.assign(point, newPoint);
+    // 逆向还原矩阵和归一化点坐标
+    const i = inverse4(matrix);
+    const p = calPoint({ x: point.x, y: point.y }, i);
+    point.x = p.x / width;
+    point.y = p.y / height;
+    if (point.hasCurveFrom) {
+      const p = calPoint({ x: point.fx, y: point.fy }, i);
+      point.fx = p.x / width;
+      point.fy = p.y / height;
+    }
+    if (point.hasCurveTo) {
+      const p = calPoint({ x: point.tx, y: point.ty }, i);
+      point.tx = p.x / width;
+      point.ty = p.y / height;
+    }
+    return point;
   }
 
   toSvg(scale: number) {

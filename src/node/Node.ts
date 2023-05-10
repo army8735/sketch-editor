@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { getDefaultStyle, Props } from '../format/';
+import { getDefaultStyle, Point, Props } from '../format/';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
@@ -884,23 +884,24 @@ class Node extends Event {
    */
   startSizeChange() {
     const { style, computedStyle, parent } = this;
-    if (!parent) {
-      return;
+    if (this.isDestroyed) {
+      throw new Error('Can not resize a destroyed Node');
     }
     const { top, left, width, height, translateX, translateY } = style;
     // 不可能有固定尺寸+right百分比这种情况，right要么auto要么px
     if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
       const v = (computedStyle.left -= width.v * 0.5);
-      left.v = (v * 100) / parent.width;
+      left.v = (v * 100) / parent!.width;
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
     if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
       const v = (computedStyle.top -= height.v * 0.5);
-      top.v = (v * 100) / parent.height;
+      top.v = (v * 100) / parent!.height;
       translateY.v = 0;
       translateY.u = StyleUnit.PX;
     }
+    return this.getComputedStyle();
   }
 
   // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，如果是固定尺寸，还要还原translate为-50%（中心点对齐）
@@ -1101,9 +1102,6 @@ class Node extends Event {
   }
 
   getFrameProps() {
-    if (this.isDestroyed) {
-      return;
-    }
     const list: Node[] = [this];
     const top = this.artBoard || this.page;
     let parent = this.parent;
@@ -1139,7 +1137,8 @@ class Node extends Event {
       constrainProportions: this.props.constrainProportions,
       matrix: m,
       isLine: false,
-      points: [] as any,
+      points: [] as Point[],
+      length: 0,
     };
   }
 
