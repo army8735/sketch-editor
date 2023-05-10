@@ -1054,6 +1054,11 @@ class Node extends Event {
    * 在这里结束后需要转换回来，即自身中点为基准，translate为-50%。
    */
   checkSizeChange() {
+    this.checkTranslateHalf();
+    this.checkPosSizeUpward();
+  }
+
+  protected checkTranslateHalf() {
     const { style, computedStyle, parent } = this;
     if (!parent) {
       return;
@@ -1071,7 +1076,6 @@ class Node extends Event {
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }
-    this.checkPosSizeUpward();
   }
 
   getZoom(excludeDpi = false): number {

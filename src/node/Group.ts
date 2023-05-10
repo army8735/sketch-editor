@@ -212,7 +212,7 @@ class Group extends Container {
    * 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
    */
   override checkSizeChange() {
-    super.checkSizeChange();
+    this.checkTranslateHalf();
     this.checkPosSizeDownward();
     this.checkPosSizeUpward();
   }
