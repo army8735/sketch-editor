@@ -178,6 +178,7 @@ export type Props = {
   name?: string;
   uuid?: string;
   style?: object;
+  constrainProportions?: boolean;
   isLocked?: boolean;
   isExpanded?: boolean;
   isSelected?: boolean;

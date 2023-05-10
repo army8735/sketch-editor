@@ -167,10 +167,11 @@ async function convertItem(
   const rotateZ = -layer.rotation;
   const scaleX = layer.isFlippedHorizontal ? -1 : 1;
   const scaleY = layer.isFlippedVertical ? -1 : 1;
-  // 渲染无关的锁定/展开
+  // 渲染无关的锁定/展开/固定宽高比
   const isLocked = layer.isLocked;
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
+  const constrainProportions = layer.frame.constrainProportions;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替
   if (layer._class === SketchFormat.ClassValue.Artboard) {
     const children = await Promise.all(
@@ -192,6 +193,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        constrainProportions,
         hasBackgroundColor,
         resizesContent: layer.resizesContent,
         style: {
@@ -388,6 +390,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        constrainProportions,
         style: {
           left,
           top,
@@ -425,6 +428,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        constrainProportions,
         style: {
           left,
           top,
@@ -534,6 +538,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        constrainProportions,
         style: {
           left,
           top,
@@ -609,6 +614,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        constrainProportions,
         points,
         isClosed: layer.isClosed,
         style: {
@@ -671,6 +677,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        constrainProportions,
         style: {
           left,
           top,

@@ -406,11 +406,10 @@ export function calPoint(point: { x: number; y: number }, m?: Float64Array) {
       b2 = m[5];
     let a4 = m[12],
       b4 = m[13];
-    let o = {
+    return {
       x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
       y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
     };
-    return o;
   }
   return point;
 }

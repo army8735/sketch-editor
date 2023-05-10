@@ -28,6 +28,14 @@ class Geom extends Node {
     return (this.hasContent = !!this.points && this.points.length > 1);
   }
 
+  isLine() {
+    this.buildPoints();
+    const points = this.points || [];
+    return points.length === 2 &&
+      points[0].length === 2 &&
+      points[1].length === 2;
+  }
+
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;

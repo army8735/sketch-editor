@@ -17134,9 +17134,10 @@
             const rotateZ = -layer.rotation;
             const scaleX = layer.isFlippedHorizontal ? -1 : 1;
             const scaleY = layer.isFlippedVertical ? -1 : 1;
-            // 渲染无关的锁定/展开
+            // 渲染无关的锁定/展开/固定宽高比
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
+            const constrainProportions = layer.frame.constrainProportions;
             // artBoard也是固定尺寸和page一样，但x/y用translate代替
             if (layer._class === FileFormat.ClassValue.Artboard) {
                 const children = yield Promise.all(layer.layers.map((child) => {
@@ -17156,6 +17157,7 @@
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        constrainProportions,
                         hasBackgroundColor,
                         resizesContent: layer.resizesContent,
                         style: {
@@ -17355,6 +17357,7 @@
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        constrainProportions,
                         style: {
                             left,
                             top,
@@ -17393,6 +17396,7 @@
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        constrainProportions,
                         style: {
                             left,
                             top,
@@ -17483,6 +17487,7 @@
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        constrainProportions,
                         style: {
                             left,
                             top,
@@ -17545,6 +17550,7 @@
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        constrainProportions,
                         points,
                         isClosed: layer.isClosed,
                         style: {
@@ -17593,6 +17599,7 @@
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
+                        constrainProportions,
                         style: {
                             left,
                             top,
@@ -18341,11 +18348,10 @@
             let a1 = m[0], b1 = m[1];
             let a2 = m[4], b2 = m[5];
             let a4 = m[12], b4 = m[13];
-            let o = {
+            return {
                 x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
                 y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
             };
-            return o;
         }
         return point;
     }
@@ -21226,14 +21232,14 @@
             else {
                 t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
             }
-            let x1 = t.x1;
-            let y1 = t.y1;
-            let x2 = t.x2;
-            let y2 = t.y2;
-            let x3 = t.x3;
-            let y3 = t.y3;
-            let x4 = t.x4;
-            let y4 = t.y4;
+            const x1 = t.x1;
+            const y1 = t.y1;
+            const x2 = t.x2;
+            const y2 = t.y2;
+            const x3 = t.x3;
+            const y3 = t.y3;
+            const x4 = t.x4;
+            const y4 = t.y4;
             return {
                 left: Math.min(x1, x2, x3, x4),
                 top: Math.min(y1, y2, y3, y4),
@@ -21431,6 +21437,10 @@
          * 在这里结束后需要转换回来，即自身中点为基准，translate为-50%。
          */
         checkSizeChange() {
+            this.checkTranslateHalf();
+            this.checkPosSizeUpward();
+        }
+        checkTranslateHalf() {
             const { style, computedStyle, parent } = this;
             if (!parent) {
                 return;
@@ -21448,7 +21458,6 @@
                 translateY.v = -50;
                 translateY.u = StyleUnit.PERCENT;
             }
-            this.checkPosSizeUpward();
         }
         getZoom(excludeDpi = false) {
             const n = this.matrixWorld[0];
@@ -21469,27 +21478,46 @@
         rename(s) {
             this.props.name = s;
         }
-        getXYWH() {
+        getFrameProps() {
             if (this.isDestroyed) {
                 return;
             }
+            const list = [this];
             const top = this.artBoard || this.page;
-            const { width, height, matrix, computedStyle } = this;
-            let x = matrix[12], y = matrix[13];
             let parent = this.parent;
             while (parent && parent !== top) {
-                const m = parent.matrix;
-                x += m[12];
-                y += m[13];
+                list.unshift(parent);
                 parent = parent.parent;
             }
+            let m = identity();
+            for (let i = 0, len = list.length; i < len; i++) {
+                m = multiply(m, list[i].matrix);
+            }
+            const bbox = this._rect || this.rect;
+            const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+            const x1 = t.x1;
+            const y1 = t.y1;
+            const x2 = t.x2;
+            const y2 = t.y2;
+            const x3 = t.x3;
+            const y3 = t.y3;
+            const x4 = t.x4;
+            const y4 = t.y4;
+            const { width, height, computedStyle } = this;
             return {
-                x,
-                y,
+                x: Math.min(x1, x2, x3, x4),
+                y: Math.min(y1, y2, y3, y4),
                 w: width,
                 h: height,
                 isFlippedHorizontal: computedStyle.scaleX === -1,
                 isFlippedVertical: computedStyle.scaleY === -1,
+                rotation: computedStyle.rotateZ,
+                opacity: computedStyle.opacity,
+                mixBlendMode: computedStyle.mixBlendMode,
+                constrainProportions: this.props.constrainProportions,
+                matrix: m,
+                isLine: false,
+                points: [],
             };
         }
         get opacity() {
@@ -22527,6 +22555,13 @@
             this.buildPoints();
             return (this.hasContent = !!this.points && this.points.length > 1);
         }
+        isLine() {
+            this.buildPoints();
+            const points = this.points || [];
+            return points.length === 2 &&
+                points[0].length === 2 &&
+                points[1].length === 2;
+        }
         toSvg(scale, isClosed = false) {
             this.buildPoints();
             const computedStyle = this.computedStyle;
@@ -23390,6 +23425,25 @@
                     ctx.stroke();
                 }
             }
+        }
+        getFrameProps() {
+            if (this.isDestroyed) {
+                return;
+            }
+            const res = super.getFrameProps();
+            this.buildPoints();
+            res.isLine = this.isLine();
+            const points = this.points || [];
+            const m = res.matrix;
+            res.points = points.map((item) => {
+                const res = [];
+                for (let i = 0, len = item.length; i < len; i += 2) {
+                    const p = calPoint({ x: item[i], y: item[i + 1] }, m);
+                    res.push(p.x, p.y);
+                }
+                return res;
+            });
+            return res;
         }
         toSvg(scale) {
             return super.toSvg(scale, this.isClosed);
@@ -25891,7 +25945,7 @@
          * 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
          */
         checkSizeChange() {
-            super.checkSizeChange();
+            this.checkTranslateHalf();
             this.checkPosSizeDownward();
             this.checkPosSizeUpward();
         }
@@ -26025,6 +26079,10 @@
             super.lay(data);
             this.points = undefined;
         }
+        checkSizeChange() {
+            super.checkSizeChange();
+            this.points = undefined;
+        }
         calContent() {
             this.buildPoints();
             return (this.hasContent = !!this.points && !!this.points.length);
@@ -26065,6 +26123,7 @@
                     else {
                         p = [applyMatrixPoints(points, matrix)];
                     }
+                    console.log(i, points, matrix, p);
                     const booleanOperation = item.computedStyle.booleanOperation;
                     if (i === 0 || !booleanOperation) {
                         res = res.concat(p);
@@ -26279,6 +26338,26 @@
                     ctx.stroke();
                 }
             }
+        }
+        getFrameProps() {
+            if (this.isDestroyed) {
+                return;
+            }
+            const res = super.getFrameProps();
+            this.buildPoints();
+            const points = this.points || [];
+            const m = res.matrix;
+            res.points = points.map((item) => {
+                return item.map((item) => {
+                    const res = [];
+                    for (let i = 0, len = item.length; i < len; i += 2) {
+                        const p = calPoint({ x: item[i], y: item[i + 1] }, m);
+                        res.push(p.x, p.y);
+                    }
+                    return res;
+                });
+            });
+            return res;
         }
         toSvg(scale) {
             this.buildPoints();

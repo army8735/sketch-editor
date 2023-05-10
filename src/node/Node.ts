@@ -843,14 +843,14 @@ class Node extends Event {
     } else {
       t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
     }
-    let x1 = t.x1;
-    let y1 = t.y1;
-    let x2 = t.x2;
-    let y2 = t.y2;
-    let x3 = t.x3;
-    let y3 = t.y3;
-    let x4 = t.x4;
-    let y4 = t.y4;
+    const x1 = t.x1;
+    const y1 = t.y1;
+    const x2 = t.x2;
+    const y2 = t.y2;
+    const x3 = t.x3;
+    const y3 = t.y3;
+    const x4 = t.x4;
+    const y4 = t.y4;
     return {
       left: Math.min(x1, x2, x3, x4),
       top: Math.min(y1, y2, y3, y4),
@@ -1100,27 +1100,46 @@ class Node extends Event {
     this.props.name = s;
   }
 
-  getXYWH() {
+  getFrameProps() {
     if (this.isDestroyed) {
       return;
     }
+    const list: Node[] = [this];
     const top = this.artBoard || this.page;
-    const { width, height, matrix, computedStyle } = this;
-    let x = matrix[12], y = matrix[13];
     let parent = this.parent;
     while (parent && parent !== top) {
-      const m = parent.matrix;
-      x += m[12];
-      y += m[13];
+      list.unshift(parent);
       parent = parent.parent;
     }
+    let m = identity();
+    for (let i = 0, len = list.length; i < len; i++) {
+      m = multiply(m, list[i].matrix);
+    }
+    const bbox = this._rect || this.rect;
+    const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+    const x1 = t.x1;
+    const y1 = t.y1;
+    const x2 = t.x2;
+    const y2 = t.y2;
+    const x3 = t.x3;
+    const y3 = t.y3;
+    const x4 = t.x4;
+    const y4 = t.y4;
+    const { width, height, computedStyle } = this;
     return {
-      x,
-      y,
+      x: Math.min(x1, x2, x3, x4),
+      y: Math.min(y1, y2, y3, y4),
       w: width,
       h: height,
       isFlippedHorizontal: computedStyle.scaleX === -1,
       isFlippedVertical: computedStyle.scaleY === -1,
+      rotation: computedStyle.rotateZ,
+      opacity: computedStyle.opacity,
+      mixBlendMode: computedStyle.mixBlendMode,
+      constrainProportions: this.props.constrainProportions,
+      matrix: m,
+      isLine: false,
+      points: [] as any,
     };
   }
 

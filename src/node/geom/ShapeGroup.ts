@@ -3,7 +3,7 @@ import { getDefaultStyle, Props } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { toPrecision } from '../../math/geom';
-import { isE } from '../../math/matrix';
+import { calPoint, isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
 import { canvasPolygon, svgPolygon } from '../../refresh/paint';
@@ -83,6 +83,11 @@ class ShapeGroup extends Group {
     this.points = undefined;
   }
 
+  override checkSizeChange() {
+    super.checkSizeChange();
+    this.points = undefined;
+  }
+
   override calContent(): boolean {
     this.buildPoints();
     return (this.hasContent = !!this.points && !!this.points.length);
@@ -123,6 +128,7 @@ class ShapeGroup extends Group {
         } else {
           p = [applyMatrixPoints(points as number[][], matrix)];
         }
+        console.log(i, points, matrix, p);
         const booleanOperation = item.computedStyle.booleanOperation;
         if (i === 0 || !booleanOperation) {
           res = res.concat(p);
@@ -359,6 +365,27 @@ class ShapeGroup extends Group {
         ctx.stroke();
       }
     }
+  }
+
+  override getFrameProps() {
+    if (this.isDestroyed) {
+      return;
+    }
+    const res = super.getFrameProps()!;
+    this.buildPoints();
+    const points = this.points || [];
+    const m = res.matrix;
+    res.points = points.map((item) => {
+      return item.map((item) => {
+        const res: number[] = [];
+        for (let i = 0, len = item.length; i < len; i += 2) {
+          const p = calPoint({ x: item[i], y: item[i + 1] }, m);
+          res.push(p.x, p.y);
+        }
+        return res;
+      });
+    });
+    return res;
   }
 
   toSvg(scale: number) {

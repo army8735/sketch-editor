@@ -17,6 +17,7 @@ import { getLinear, getRadial } from '../../style/gradient';
 import { clone } from '../../util';
 import inject, { OffScreen } from '../../util/inject';
 import Geom from './Geom';
+import { calPoint } from '../../math/matrix';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -418,6 +419,26 @@ class Polyline extends Geom {
         ctx.stroke();
       }
     }
+  }
+
+  override getFrameProps() {
+    if (this.isDestroyed) {
+      return;
+    }
+    const res = super.getFrameProps()!;
+    this.buildPoints();
+    res.isLine = this.isLine();
+    const points = this.points || [];
+    const m = res.matrix;
+    res.points = points.map((item) => {
+      const res: number[] = [];
+      for (let i = 0, len = item.length; i < len; i += 2) {
+        const p = calPoint({ x: item[i], y: item[i + 1] }, m);
+        res.push(p.x, p.y);
+      }
+      return res;
+    });
+    return res;
   }
 
   toSvg(scale: number) {
