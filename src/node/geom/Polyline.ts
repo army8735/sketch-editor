@@ -2,10 +2,10 @@ import { Point, PolylineProps } from '../../format';
 import bezier from '../../math/bezier';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
-import { RefreshLevel } from '../../refresh/level';
 import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
+import { RefreshLevel } from '../../refresh/level';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
@@ -453,84 +453,136 @@ class Polyline extends Geom {
 
   override getFrameProps() {
     const res = super.getFrameProps();
-    this.buildPoints();
     res.isLine = this.isLine();
     const points = (this.props as PolylineProps).points;
     if (res.isLine) {
       res.length = Math.sqrt(
         Math.pow(points[1].absX! - points[0].absY!, 2) +
-          Math.pow(points[1].absX! - points[0].absY!, 2),
+        Math.pow(points[1].absX! - points[0].absY!, 2),
       );
     }
     const m = res.matrix;
-    res.points = points.map((item) => {
+    points.forEach((item) => {
       const p = calPoint({ x: item.absX!, y: item.absY! }, m);
-      const o: Point = {
-        x: p.x,
-        y: p.y,
-        cornerRadius: item.cornerRadius,
-        curveMode: item.curveMode,
-        fx: item.absFx!,
-        fy: item.absFy!,
-        tx: item.absTx!,
-        ty: item.absTy!,
-        hasCurveFrom: item.hasCurveFrom,
-        hasCurveTo: item.hasCurveTo,
-      };
-      if (o.hasCurveFrom) {
+      item.dspX = p.x;
+      item.dspY = p.y;
+      if (item.hasCurveFrom) {
         const p = calPoint({ x: item.absFx!, y: item.absFy! }, m);
-        o.fx = p.x;
-        o.fy = p.y;
+        item.dspFx = p.x;
+        item.dspFy = p.y;
       }
-      if (o.hasCurveTo) {
+      if (item.hasCurveTo) {
         const p = calPoint({ x: item.absTx!, y: item.absTy! }, m);
-        o.tx = p.x;
-        o.ty = p.y;
+        item.dspTx = p.x;
+        item.dspTy = p.y;
       }
-      return o;
     });
+    res.points = points;
     return res;
   }
 
   // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
-  updatePointBaseOnAP(index: number, newPoint: Point, matrix: Float64Array) {
-    const points = (this.props as PolylineProps).points;
-    if (!points || index < 0 || index >= points.length) {
-      throw new Error('Can not update non-existent point');
+  updatePointBaseOnAP(points: Point[], matrix: Float64Array) {
+    if (!points.length) {
+      return points;
     }
+    const list = (this.props as PolylineProps).points;
     const { width, height } = this;
-    const point = points[index];
-    Object.assign(point, newPoint);
     // 逆向还原矩阵和归一化点坐标
     const i = inverse4(matrix);
-    const p = calPoint({ x: point.x, y: point.y }, i);
-    point.x = p.x / width;
-    point.y = p.y / height;
-    point.absX = newPoint.x;
-    point.absY = newPoint.y;
-    if (point.hasCurveFrom) {
-      const p = calPoint({ x: point.fx, y: point.fy }, i);
-      point.fx = p.x / width;
-      point.fy = p.y / height;
-      point.absFx = newPoint.fx;
-      point.absFy = newPoint.fy;
-    }
-    if (point.hasCurveTo) {
-      const p = calPoint({ x: point.tx, y: point.ty }, i);
-      point.tx = p.x / width;
-      point.ty = p.y / height;
-      point.absTx = newPoint.tx;
-      point.absTy = newPoint.ty;
-    }
-    const root = this.root;
-    if (root) {
-      root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
-    }
-    return point;
+    points.forEach((point) => {
+      if (list.indexOf(point) === -1) {
+        throw new Error('Can not update non-existent point');
+      }
+      const p = calPoint({ x: point.dspX!, y: point.dspY! }, i);
+      point.x = p.x / width;
+      point.y = p.y / height;
+      if (point.hasCurveFrom) {
+        const p = calPoint({ x: point.dspFx!, y: point.dspFy! }, i);
+        point.fx = p.x / width;
+        point.fy = p.y / height;
+      }
+      if (point.hasCurveTo) {
+        const p = calPoint({ x: point.dspTx!, y: point.dspTy! }, i);
+        point.tx = p.x / width;
+        point.ty = p.y / height;
+      }
+    });
+    this.root?.addUpdate(
+      this,
+      [],
+      RefreshLevel.REPAINT,
+      false,
+      false,
+      undefined,
+    );
+    return points;
   }
 
+  // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
   checkPointsChange() {
-    // const points = (this.props as PolylineProps).points;
+    const old = this._rect || this.rect;
+    this.buildPoints();
+    const points = this.points!;
+    const first = points[0];
+    let xa: number, ya: number;
+    if (first.length === 4) {
+      xa = first[2];
+      ya = first[3];
+    } else if (first.length === 6) {
+      xa = first[4];
+      ya = first[5];
+    } else {
+      xa = first[0];
+      ya = first[1];
+    }
+    const rect = new Float64Array([xa, ya, xa, ya]);
+    for (let i = 1, len = points.length; i < len; i++) {
+      const item = points[i];
+      let xb: number, yb: number;
+      if (item.length === 4) {
+        xb = item[2];
+        yb = item[3];
+        const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
+        rect[0] = Math.min(rect[0], b[0]);
+        rect[1] = Math.min(rect[1], b[1]);
+        rect[2] = Math.max(rect[2], b[2]);
+        rect[3] = Math.max(rect[3], b[3]);
+      } else if (item.length === 6) {
+        xb = item[4];
+        yb = item[5];
+        const b = bezier.bboxBezier(
+          xa,
+          ya,
+          item[0],
+          item[1],
+          item[2],
+          item[3],
+          xb,
+          yb,
+        );
+        rect[0] = Math.min(rect[0], b[0]);
+        rect[1] = Math.min(rect[1], b[1]);
+        rect[2] = Math.max(rect[2], b[2]);
+        rect[3] = Math.max(rect[3], b[3]);
+      } else {
+        xb = item[0];
+        yb = item[1];
+        rect[0] = Math.min(rect[0], xb);
+        rect[1] = Math.min(rect[1], yb);
+        rect[2] = Math.max(rect[2], xb);
+        rect[3] = Math.max(rect[3], yb);
+      }
+      xa = xb!;
+      ya = yb!;
+    }
+    if (
+      old[0] !== rect[0] ||
+      old[1] !== rect[1] ||
+      old[2] !== rect[2] ||
+      old[3] !== rect[3]
+    ) {
+    }
   }
 
   toSvg(scale: number) {
@@ -556,62 +608,10 @@ class Polyline extends Geom {
           }
         }
       });
-      const points = this.points!;
-      const first = points[0];
-      let xa: number, ya: number;
-      if (first.length === 4) {
-        xa = first[2];
-        ya = first[3];
-      } else if (first.length === 6) {
-        xa = first[4];
-        ya = first[5];
-      } else {
-        xa = first[0];
-        ya = first[1];
-      }
-      bbox[0] = Math.min(bbox[0], xa - border);
-      bbox[1] = Math.min(bbox[1], ya - border);
-      bbox[2] = Math.max(bbox[2], xa + border);
-      bbox[3] = Math.max(bbox[3], ya + border);
-      for (let i = 1, len = points.length; i < len; i++) {
-        const item = points[i];
-        let xb: number, yb: number;
-        if (item.length === 4) {
-          xb = item[2];
-          yb = item[3];
-          const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-          bbox[0] = Math.min(bbox[0], b[0] - border);
-          bbox[1] = Math.min(bbox[1], b[1] - border);
-          bbox[2] = Math.max(bbox[2], b[2] + border);
-          bbox[3] = Math.max(bbox[3], b[3] + border);
-        } else if (item.length === 6) {
-          xb = item[4];
-          yb = item[5];
-          const b = bezier.bboxBezier(
-            xa,
-            ya,
-            item[0],
-            item[1],
-            item[2],
-            item[3],
-            xb,
-            yb,
-          );
-          bbox[0] = Math.min(bbox[0], b[0] - border);
-          bbox[1] = Math.min(bbox[1], b[1] - border);
-          bbox[2] = Math.max(bbox[2], b[2] + border);
-          bbox[3] = Math.max(bbox[3], b[3] + border);
-        } else {
-          xb = item[0];
-          yb = item[1];
-          bbox[0] = Math.min(bbox[0], xb - border);
-          bbox[1] = Math.min(bbox[1], yb - border);
-          bbox[2] = Math.max(bbox[2], xb + border);
-          bbox[3] = Math.max(bbox[3], yb + border);
-        }
-        xa = xb!;
-        ya = yb!;
-      }
+      bbox[0] -= border;
+      bbox[1] -= border;
+      bbox[2] += border;
+      bbox[3] += border;
     }
     return this._bbox;
   }

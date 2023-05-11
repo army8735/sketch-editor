@@ -16816,20 +16816,91 @@
         return res;
     }
     function equalStyle(k, a, b) {
+        // @ts-ignore
+        const av = a[k];
+        // @ts-ignore
+        const bv = b[k];
         if (k === 'transformOrigin') {
-            return (a[k][0].v === b[k][0].v &&
-                a[k][0].u === b[k][0].u &&
-                a[k][1].v === b[k][1].v &&
-                a[k][1].u === b[k][1].u);
+            return (av[0].v === bv[0].v &&
+                av[0].u === bv[0].u &&
+                av[1].v === bv[1].v &&
+                av[1].u === bv[1].u);
         }
         if (k === 'color' || k === 'backgroundColor') {
-            return (a[k].v[0] === b[k].v[0] &&
-                a[k].v[1] === b[k].v[1] &&
-                a[k].v[2] === b[k].v[2] &&
-                a[k].v[3] === b[k].v[3]);
+            return (av.v[0] === bv.v[0] &&
+                av.v[1] === bv.v[1] &&
+                av.v[2] === bv.v[2] &&
+                av.v[3] === bv.v[3]);
         }
-        // @ts-ignore
-        return a[k].v === b[k].v && a[k].u === b[k].u;
+        if (k === 'fill' || k === 'stroke') {
+            if (av.length !== bv.length) {
+                return false;
+            }
+            for (let i = 0, len = av.length; i < len; i++) {
+                const ai = av[i], bi = bv[i];
+                if (ai.u !== bi.u) {
+                    return false;
+                }
+                if (ai.u === StyleUnit.RGBA) {
+                    if (ai.v[0] !== bi.v[0] ||
+                        ai.v[1] !== bi.v[1] ||
+                        ai.v[2] !== bi.v[2] ||
+                        ai.v[3] !== bi.v[3]) {
+                        return false;
+                    }
+                }
+                else if (ai.u === StyleUnit.GRADIENT) {
+                    if (ai.v.t !== bi.v.t) {
+                        return false;
+                    }
+                    if (ai.v.d.length !== bi.v.d.length) {
+                        return false;
+                    }
+                    for (let i = 0, len = ai.v.d.length; i < len; i++) {
+                        if (ai.v.d[i] !== bi.v.d[i]) {
+                            return false;
+                        }
+                    }
+                    if (ai.v.stops.length !== bi.v.stops.length) {
+                        return false;
+                    }
+                    for (let i = 0, len = ai.v.stops.length; i < len; i++) {
+                        const as = ai.v.stops[i], bs = bi.v.stops[i];
+                        if (as.color.v[0] !== bs.color.v[0] ||
+                            as.color.v[1] !== bs.color.v[1] ||
+                            as.color.v[2] !== bs.color.v[2] ||
+                            as.color.v[3] !== bs.color.v[3]) {
+                            return false;
+                        }
+                        if (as.offset && !bs.offset || !as.offset && bs.offset) {
+                            return false;
+                        }
+                        if (as.offset.u !== bs.offset.u || as.offset.v !== bs.offset.v) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+        if (k === 'fillEnable' ||
+            k === 'fillRule' ||
+            k === 'strokeEnable' ||
+            k === 'strokeWidth' ||
+            k === 'strokePosition' ||
+            k === 'strokeDasharray') {
+            if (av.length !== bv.length) {
+                return false;
+            }
+            for (let i = 0, len = av.length; i < len; i++) {
+                const ai = av[i], bi = bv[i];
+                if (ai.u !== bi.u || ai.v !== bi.v) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return av.v === bv.v && av.u === bv.u;
     }
     function color2rgbaInt(color) {
         if (Array.isArray(color)) {
@@ -20766,6 +20837,7 @@
             if (lv & RefreshLevel.REFLOW_OPACITY) {
                 this.calOpacity();
             }
+            this.clearCache(true);
             this._bbox = undefined;
             this._filterBbox = undefined;
             this.tempBbox = undefined;
@@ -21151,13 +21223,18 @@
             this.updateFormatStyle(formatStyle, cb);
         }
         updateFormatStyle(style, cb) {
+            var _a;
             const keys = this.updateFormatStyleData(style);
             // 无变更或不可见
             if (this.updateStyleCheck(keys)) {
                 cb && cb(true);
                 return;
             }
-            this.root.addUpdate(this, keys, undefined, false, false, cb);
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
+        }
+        refresh(lv = RefreshLevel.REPAINT, cb) {
+            var _a;
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], lv, false, false, cb);
         }
         getComputedStyle(toCssString = false) {
             const res = Object.assign({}, this.computedStyle);
@@ -22545,11 +22622,21 @@
     }
 
     class Geom extends Node {
+        static isLine(node) {
+            if (node instanceof Geom) {
+                return node.isLine();
+            }
+            return false;
+        }
         constructor(props) {
             super(props);
         }
         lay(data) {
             super.lay(data);
+            this.points = undefined;
+        }
+        calRepaintStyle(lv) {
+            super.calRepaintStyle(lv);
             this.points = undefined;
         }
         buildPoints() {
@@ -22567,9 +22654,7 @@
         isLine() {
             this.buildPoints();
             const points = this.points || [];
-            return points.length === 2 &&
-                points[0].length === 2 &&
-                points[1].length === 2;
+            return (points.length === 2 && points[0].length === 2 && points[1].length === 2);
         }
         toSvg(scale, isClosed = false) {
             this.buildPoints();
@@ -23453,7 +23538,6 @@
         }
         getFrameProps() {
             const res = super.getFrameProps();
-            this.buildPoints();
             res.isLine = this.isLine();
             const points = this.props.points;
             if (res.isLine) {
@@ -23461,72 +23545,111 @@
                     Math.pow(points[1].absX - points[0].absY, 2));
             }
             const m = res.matrix;
-            res.points = points.map((item) => {
+            points.forEach((item) => {
                 const p = calPoint({ x: item.absX, y: item.absY }, m);
-                const o = {
-                    x: p.x,
-                    y: p.y,
-                    cornerRadius: item.cornerRadius,
-                    curveMode: item.curveMode,
-                    fx: item.absFx,
-                    fy: item.absFy,
-                    tx: item.absTx,
-                    ty: item.absTy,
-                    hasCurveFrom: item.hasCurveFrom,
-                    hasCurveTo: item.hasCurveTo,
-                };
-                if (o.hasCurveFrom) {
+                item.dspX = p.x;
+                item.dspY = p.y;
+                if (item.hasCurveFrom) {
                     const p = calPoint({ x: item.absFx, y: item.absFy }, m);
-                    o.fx = p.x;
-                    o.fy = p.y;
+                    item.dspFx = p.x;
+                    item.dspFy = p.y;
                 }
-                if (o.hasCurveTo) {
+                if (item.hasCurveTo) {
                     const p = calPoint({ x: item.absTx, y: item.absTy }, m);
-                    o.tx = p.x;
-                    o.ty = p.y;
+                    item.dspTx = p.x;
+                    item.dspTy = p.y;
                 }
-                return o;
             });
+            res.points = points;
             return res;
         }
         // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
-        updatePointBaseOnAP(index, newPoint, matrix) {
-            const points = this.props.points;
-            if (!points || index < 0 || index >= points.length) {
-                throw new Error('Can not update non-existent point');
+        updatePointBaseOnAP(points, matrix) {
+            var _a;
+            if (!points.length) {
+                return points;
             }
+            const list = this.props.points;
             const { width, height } = this;
-            const point = points[index];
-            Object.assign(point, newPoint);
             // 逆向还原矩阵和归一化点坐标
             const i = inverse4(matrix);
-            const p = calPoint({ x: point.x, y: point.y }, i);
-            point.x = p.x / width;
-            point.y = p.y / height;
-            point.absX = newPoint.x;
-            point.absY = newPoint.y;
-            if (point.hasCurveFrom) {
-                const p = calPoint({ x: point.fx, y: point.fy }, i);
-                point.fx = p.x / width;
-                point.fy = p.y / height;
-                point.absFx = newPoint.fx;
-                point.absFy = newPoint.fy;
-            }
-            if (point.hasCurveTo) {
-                const p = calPoint({ x: point.tx, y: point.ty }, i);
-                point.tx = p.x / width;
-                point.ty = p.y / height;
-                point.absTx = newPoint.tx;
-                point.absTy = newPoint.ty;
-            }
-            const root = this.root;
-            if (root) {
-                root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
-            }
-            return point;
+            points.forEach((point) => {
+                if (list.indexOf(point) === -1) {
+                    throw new Error('Can not update non-existent point');
+                }
+                const p = calPoint({ x: point.dspX, y: point.dspY }, i);
+                point.x = p.x / width;
+                point.y = p.y / height;
+                if (point.hasCurveFrom) {
+                    const p = calPoint({ x: point.dspFx, y: point.dspFy }, i);
+                    point.fx = p.x / width;
+                    point.fy = p.y / height;
+                }
+                if (point.hasCurveTo) {
+                    const p = calPoint({ x: point.dspTx, y: point.dspTy }, i);
+                    point.tx = p.x / width;
+                    point.ty = p.y / height;
+                }
+            });
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            return points;
         }
+        // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
         checkPointsChange() {
-            // const points = (this.props as PolylineProps).points;
+            const old = this._rect || this.rect;
+            this.buildPoints();
+            const points = this.points;
+            const first = points[0];
+            let xa, ya;
+            if (first.length === 4) {
+                xa = first[2];
+                ya = first[3];
+            }
+            else if (first.length === 6) {
+                xa = first[4];
+                ya = first[5];
+            }
+            else {
+                xa = first[0];
+                ya = first[1];
+            }
+            const rect = new Float64Array([xa, ya, xa, ya]);
+            for (let i = 1, len = points.length; i < len; i++) {
+                const item = points[i];
+                let xb, yb;
+                if (item.length === 4) {
+                    xb = item[2];
+                    yb = item[3];
+                    const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
+                    rect[0] = Math.min(rect[0], b[0]);
+                    rect[1] = Math.min(rect[1], b[1]);
+                    rect[2] = Math.max(rect[2], b[2]);
+                    rect[3] = Math.max(rect[3], b[3]);
+                }
+                else if (item.length === 6) {
+                    xb = item[4];
+                    yb = item[5];
+                    const b = bezier.bboxBezier(xa, ya, item[0], item[1], item[2], item[3], xb, yb);
+                    rect[0] = Math.min(rect[0], b[0]);
+                    rect[1] = Math.min(rect[1], b[1]);
+                    rect[2] = Math.max(rect[2], b[2]);
+                    rect[3] = Math.max(rect[3], b[3]);
+                }
+                else {
+                    xb = item[0];
+                    yb = item[1];
+                    rect[0] = Math.min(rect[0], xb);
+                    rect[1] = Math.min(rect[1], yb);
+                    rect[2] = Math.max(rect[2], xb);
+                    rect[3] = Math.max(rect[3], yb);
+                }
+                xa = xb;
+                ya = yb;
+            }
+            if (old[0] !== rect[0] ||
+                old[1] !== rect[1] ||
+                old[2] !== rect[2] ||
+                old[3] !== rect[3]) ;
         }
         toSvg(scale) {
             return super.toSvg(scale, this.isClosed);
@@ -23550,57 +23673,10 @@
                         }
                     }
                 });
-                const points = this.points;
-                const first = points[0];
-                let xa, ya;
-                if (first.length === 4) {
-                    xa = first[2];
-                    ya = first[3];
-                }
-                else if (first.length === 6) {
-                    xa = first[4];
-                    ya = first[5];
-                }
-                else {
-                    xa = first[0];
-                    ya = first[1];
-                }
-                bbox[0] = Math.min(bbox[0], xa - border);
-                bbox[1] = Math.min(bbox[1], ya - border);
-                bbox[2] = Math.max(bbox[2], xa + border);
-                bbox[3] = Math.max(bbox[3], ya + border);
-                for (let i = 1, len = points.length; i < len; i++) {
-                    const item = points[i];
-                    let xb, yb;
-                    if (item.length === 4) {
-                        xb = item[2];
-                        yb = item[3];
-                        const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-                        bbox[0] = Math.min(bbox[0], b[0] - border);
-                        bbox[1] = Math.min(bbox[1], b[1] - border);
-                        bbox[2] = Math.max(bbox[2], b[2] + border);
-                        bbox[3] = Math.max(bbox[3], b[3] + border);
-                    }
-                    else if (item.length === 6) {
-                        xb = item[4];
-                        yb = item[5];
-                        const b = bezier.bboxBezier(xa, ya, item[0], item[1], item[2], item[3], xb, yb);
-                        bbox[0] = Math.min(bbox[0], b[0] - border);
-                        bbox[1] = Math.min(bbox[1], b[1] - border);
-                        bbox[2] = Math.max(bbox[2], b[2] + border);
-                        bbox[3] = Math.max(bbox[3], b[3] + border);
-                    }
-                    else {
-                        xb = item[0];
-                        yb = item[1];
-                        bbox[0] = Math.min(bbox[0], xb - border);
-                        bbox[1] = Math.min(bbox[1], yb - border);
-                        bbox[2] = Math.max(bbox[2], xb + border);
-                        bbox[3] = Math.max(bbox[3], yb + border);
-                    }
-                    xa = xb;
-                    ya = yb;
-                }
+                bbox[0] -= border;
+                bbox[1] -= border;
+                bbox[2] += border;
+                bbox[3] += border;
             }
             return this._bbox;
         }
@@ -26462,84 +26538,10 @@
                         }
                     }
                 });
-                const points = this.points;
-                if (points && points.length) {
-                    const first = points[0][0];
-                    let xa, ya;
-                    if (first.length === 4) {
-                        xa = first[2];
-                        ya = first[3];
-                    }
-                    else if (first.length === 6) {
-                        xa = first[4];
-                        ya = first[5];
-                    }
-                    else {
-                        xa = first[0];
-                        ya = first[1];
-                    }
-                    bbox[0] = Math.min(bbox[0], xa - border);
-                    bbox[1] = Math.min(bbox[1], ya - border);
-                    bbox[2] = Math.max(bbox[2], xa + border);
-                    bbox[3] = Math.max(bbox[3], ya + border);
-                    for (let i = 0, len = points.length; i < len; i++) {
-                        const item = points[i];
-                        for (let j = 0, len = item.length; j < len; j++) {
-                            if (!i && !j) {
-                                continue;
-                            }
-                            const item2 = item[j];
-                            if (!j) {
-                                if (item2.length === 4) {
-                                    xa = item2[2];
-                                    ya = item2[3];
-                                }
-                                else if (item2.length === 6) {
-                                    xa = item2[4];
-                                    ya = item2[5];
-                                }
-                                else {
-                                    xa = item2[0];
-                                    ya = item2[1];
-                                }
-                                bbox[0] = Math.min(bbox[0], xa - border);
-                                bbox[1] = Math.min(bbox[1], ya - border);
-                                bbox[2] = Math.max(bbox[2], xa + border);
-                                bbox[3] = Math.max(bbox[3], ya + border);
-                                continue;
-                            }
-                            let xb, yb;
-                            if (item2.length === 4) {
-                                xb = item2[2];
-                                yb = item2[3];
-                                const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
-                                bbox[0] = Math.min(bbox[0], b[0] - border);
-                                bbox[1] = Math.min(bbox[1], b[1] - border);
-                                bbox[2] = Math.max(bbox[2], b[2] + border);
-                                bbox[3] = Math.max(bbox[3], b[3] + border);
-                            }
-                            else if (item2.length === 6) {
-                                xb = item2[4];
-                                yb = item2[5];
-                                const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], item2[2], item2[3], xb, yb);
-                                bbox[0] = Math.min(bbox[0], b[0] - border);
-                                bbox[1] = Math.min(bbox[1], b[1] - border);
-                                bbox[2] = Math.max(bbox[2], b[2] + border);
-                                bbox[3] = Math.max(bbox[3], b[3] + border);
-                            }
-                            else {
-                                xb = item2[0];
-                                yb = item2[1];
-                                bbox[0] = Math.min(bbox[0], xb - border);
-                                bbox[1] = Math.min(bbox[1], yb - border);
-                                bbox[2] = Math.max(bbox[2], xb + border);
-                                bbox[3] = Math.max(bbox[3], yb + border);
-                            }
-                            xa = xb;
-                            ya = yb;
-                        }
-                    }
-                }
+                bbox[0] -= border;
+                bbox[1] -= border;
+                bbox[2] += border;
+                bbox[3] += border;
             }
             return this._bbox;
         }
@@ -29489,7 +29491,7 @@ void main() {
                     translateX: rect.left,
                     translateY: rect.top - 32,
                 });
-                if (res.keys.length) {
+                if (res.length) {
                     text.calMatrix(RefreshLevel.TRANSLATE);
                 }
             }
@@ -29717,7 +29719,6 @@ void main() {
                 const isRp = lv >= RefreshLevel.REPAINT;
                 if (isRp) {
                     node.calRepaintStyle(lv);
-                    node.clearCache(true);
                 }
                 else {
                     const { style, computedStyle } = node;

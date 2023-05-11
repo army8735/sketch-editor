@@ -427,24 +427,95 @@ export function normalize(style: JStyle): Style {
 }
 
 export function equalStyle(k: string, a: Style, b: Style) {
+  // @ts-ignore
+  const av = a[k];
+  // @ts-ignore
+  const bv = b[k];
   if (k === 'transformOrigin') {
     return (
-      a[k][0].v === b[k][0].v &&
-      a[k][0].u === b[k][0].u &&
-      a[k][1].v === b[k][1].v &&
-      a[k][1].u === b[k][1].u
+      av[0].v === bv[0].v &&
+      av[0].u === bv[0].u &&
+      av[1].v === bv[1].v &&
+      av[1].u === bv[1].u
     );
   }
   if (k === 'color' || k === 'backgroundColor') {
     return (
-      a[k].v[0] === b[k].v[0] &&
-      a[k].v[1] === b[k].v[1] &&
-      a[k].v[2] === b[k].v[2] &&
-      a[k].v[3] === b[k].v[3]
+      av.v[0] === bv.v[0] &&
+      av.v[1] === bv.v[1] &&
+      av.v[2] === bv.v[2] &&
+      av.v[3] === bv.v[3]
     );
   }
-  // @ts-ignore
-  return a[k].v === b[k].v && a[k].u === b[k].u;
+  if (k === 'fill' || k === 'stroke') {
+    if (av.length !== bv.length) {
+      return false;
+    }
+    for (let i = 0, len = av.length; i < len; i++) {
+      const ai = av[i], bi = bv[i];
+      if (ai.u !== bi.u) {
+        return false;
+      }
+      if (ai.u === StyleUnit.RGBA) {
+        if (ai.v[0] !== bi.v[0] ||
+          ai.v[1] !== bi.v[1] ||
+          ai.v[2] !== bi.v[2] ||
+          ai.v[3] !== bi.v[3]) {
+          return false;
+        }
+      } else if (ai.u === StyleUnit.GRADIENT) {
+        if (ai.v.t !== bi.v.t) {
+          return false;
+        }
+        if (ai.v.d.length !== bi.v.d.length) {
+          return false;
+        }
+        for (let i = 0, len = ai.v.d.length; i < len; i++) {
+          if (ai.v.d[i] !== bi.v.d[i]) {
+            return false;
+          }
+        }
+        if (ai.v.stops.length !== bi.v.stops.length) {
+          return false;
+        }
+        for (let i = 0, len = ai.v.stops.length; i < len; i++) {
+          const as = ai.v.stops[i],
+            bs = bi.v.stops[i];
+          if (as.color.v[0] !== bs.color.v[0] ||
+            as.color.v[1] !== bs.color.v[1] ||
+            as.color.v[2] !== bs.color.v[2] ||
+            as.color.v[3] !== bs.color.v[3]) {
+            return false;
+          }
+          if (as.offset && !bs.offset || !as.offset && bs.offset) {
+            return false;
+          }
+          if (as.offset.u !== bs.offset.u || as.offset.v !== bs.offset.v) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+  if (k === 'fillEnable' ||
+    k === 'fillRule' ||
+    k === 'strokeEnable' ||
+    k === 'strokeWidth' ||
+    k === 'strokePosition' ||
+    k === 'strokeDasharray') {
+    if (av.length !== bv.length) {
+      return false;
+    }
+    for (let i = 0, len = av.length; i < len; i++) {
+      const ai = av[i], bi = bv[i];
+      if (ai.u !== bi.u || ai.v !== bi.v) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return av.v === bv.v && av.u === bv.u;
 }
 
 export function color2rgbaInt(color: string | Array<number>): Array<number> {

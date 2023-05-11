@@ -64,7 +64,7 @@ class Overlay extends Container {
         translateX: rect.left,
         translateY: rect.top - 32,
       });
-      if (res.keys.length) {
+      if (res.length) {
         text.calMatrix(RefreshLevel.TRANSLATE);
       }
     }

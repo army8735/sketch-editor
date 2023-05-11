@@ -359,6 +359,7 @@ class Node extends Event {
     if (lv & RefreshLevel.REFLOW_OPACITY) {
       this.calOpacity();
     }
+    this.clearCache(true);
     this._bbox = undefined;
     this._filterBbox = undefined;
     this.tempBbox = undefined;
@@ -771,7 +772,11 @@ class Node extends Event {
       cb && cb(true);
       return;
     }
-    this.root!.addUpdate(this, keys, undefined, false, false, cb);
+    this.root?.addUpdate(this, keys, undefined, false, false, cb);
+  }
+
+  refresh(lv = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
+    this.root?.addUpdate(this, [], lv, false, false, cb);
   }
 
   getComputedStyle(toCssString = false) {

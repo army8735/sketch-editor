@@ -2,16 +2,28 @@ import { Props } from '../../format';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE } from '../../style/define';
 import { LayoutData } from '../layout';
+import { RefreshLevel } from '../../refresh/level';
 import Node from '../Node';
 
 class Geom extends Node {
   points?: Array<Array<number>>;
+  static isLine(node: Node) {
+    if (node instanceof Geom) {
+      return node.isLine();
+    }
+    return false;
+  }
   constructor(props: Props) {
     super(props);
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
+    this.points = undefined;
+  }
+
+  override calRepaintStyle(lv: RefreshLevel) {
+    super.calRepaintStyle(lv);
     this.points = undefined;
   }
 
@@ -31,9 +43,9 @@ class Geom extends Node {
   isLine() {
     this.buildPoints();
     const points = this.points || [];
-    return points.length === 2 &&
-      points[0].length === 2 &&
-      points[1].length === 2;
+    return (
+      points.length === 2 && points[0].length === 2 && points[1].length === 2
+    );
   }
 
   toSvg(scale: number, isClosed = false) {

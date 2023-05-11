@@ -316,7 +316,6 @@ class Root extends Container implements FrameCallback {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
         node.calRepaintStyle(lv);
-        node.clearCache(true);
       } else {
         const { style, computedStyle } = node;
         if (lv & RefreshLevel.TRANSFORM_ALL) {

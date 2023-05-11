@@ -1,6 +1,5 @@
 import * as uuid from 'uuid';
 import { getDefaultStyle, Props } from '../../format';
-import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { toPrecision } from '../../math/geom';
 import { isE } from '../../math/matrix';
@@ -424,87 +423,10 @@ class ShapeGroup extends Group {
           }
         }
       });
-      const points = this.points;
-      if (points && points.length) {
-        const first = points[0][0];
-        let xa: number, ya: number;
-        if (first.length === 4) {
-          xa = first[2];
-          ya = first[3];
-        } else if (first.length === 6) {
-          xa = first[4];
-          ya = first[5];
-        } else {
-          xa = first[0];
-          ya = first[1];
-        }
-        bbox[0] = Math.min(bbox[0], xa - border);
-        bbox[1] = Math.min(bbox[1], ya - border);
-        bbox[2] = Math.max(bbox[2], xa + border);
-        bbox[3] = Math.max(bbox[3], ya + border);
-        for (let i = 0, len = points.length; i < len; i++) {
-          const item = points[i];
-          for (let j = 0, len = item.length; j < len; j++) {
-            if (!i && !j) {
-              continue;
-            }
-            const item2 = item[j];
-            if (!j) {
-              if (item2.length === 4) {
-                xa = item2[2];
-                ya = item2[3];
-              } else if (item2.length === 6) {
-                xa = item2[4];
-                ya = item2[5];
-              } else {
-                xa = item2[0];
-                ya = item2[1];
-              }
-              bbox[0] = Math.min(bbox[0], xa - border);
-              bbox[1] = Math.min(bbox[1], ya - border);
-              bbox[2] = Math.max(bbox[2], xa + border);
-              bbox[3] = Math.max(bbox[3], ya + border);
-              continue;
-            }
-            let xb: number, yb: number;
-            if (item2.length === 4) {
-              xb = item2[2];
-              yb = item2[3];
-              const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
-              bbox[0] = Math.min(bbox[0], b[0] - border);
-              bbox[1] = Math.min(bbox[1], b[1] - border);
-              bbox[2] = Math.max(bbox[2], b[2] + border);
-              bbox[3] = Math.max(bbox[3], b[3] + border);
-            } else if (item2.length === 6) {
-              xb = item2[4];
-              yb = item2[5];
-              const b = bezier.bboxBezier(
-                xa,
-                ya,
-                item2[0],
-                item2[1],
-                item2[2],
-                item2[3],
-                xb,
-                yb,
-              );
-              bbox[0] = Math.min(bbox[0], b[0] - border);
-              bbox[1] = Math.min(bbox[1], b[1] - border);
-              bbox[2] = Math.max(bbox[2], b[2] + border);
-              bbox[3] = Math.max(bbox[3], b[3] + border);
-            } else {
-              xb = item2[0];
-              yb = item2[1];
-              bbox[0] = Math.min(bbox[0], xb - border);
-              bbox[1] = Math.min(bbox[1], yb - border);
-              bbox[2] = Math.max(bbox[2], xb + border);
-              bbox[3] = Math.max(bbox[3], yb + border);
-            }
-            xa = xb!;
-            ya = yb!;
-          }
-        }
-      }
+      bbox[0] -= border;
+      bbox[1] -= border;
+      bbox[2] += border;
+      bbox[3] += border;
     }
     return this._bbox;
   }
