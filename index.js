@@ -21025,14 +21025,13 @@
             temp.lv = lv;
             return [temp];
         }
-        updateStyleData(style) {
+        updateFormatStyleData(style) {
             const keys = [];
-            const formatStyle = normalize(style);
-            for (let k in formatStyle) {
-                if (formatStyle.hasOwnProperty(k)) {
+            for (let k in style) {
+                if (style.hasOwnProperty(k)) {
                     // @ts-ignore
-                    const v = formatStyle[k];
-                    if (!equalStyle(k, formatStyle, this.style)) {
+                    const v = style[k];
+                    if (!equalStyle(k, style, this.style)) {
                         // @ts-ignore
                         this.style[k] = v;
                         keys.push(k);
@@ -21045,84 +21044,88 @@
                 const computedStyle = this.computedStyle;
                 // 只能调左/右，不能同时左右
                 if (style.hasOwnProperty('left')) {
-                    const left = calSize(formatStyle.left, parent.width);
+                    const left = calSize(style.left, parent.width);
                     const w = parent.width - computedStyle.right - left;
                     if (w < this.minWidth) {
-                        if (formatStyle.left.u === StyleUnit.PX) ;
-                        else if (formatStyle.left.u === StyleUnit.PERCENT) {
+                        if (style.left.u === StyleUnit.PX) ;
+                        else if (style.left.u === StyleUnit.PERCENT) {
                             const max = ((parent.width - computedStyle.right - this.minWidth) * 100) /
                                 parent.width;
                             // 限制导致的无效更新去除
-                            if (formatStyle.left.v === max) {
+                            if (style.left.v === max) {
                                 let i = keys.indexOf('left');
                                 keys.splice(i, 1);
                             }
                             else {
-                                formatStyle.left.v = this.style.left.v = max;
+                                style.left.v = this.style.left.v = max;
                             }
                         }
                     }
                 }
                 else if (style.hasOwnProperty('right')) {
-                    const right = calSize(formatStyle.right, parent.width);
+                    const right = calSize(style.right, parent.width);
                     const w = parent.width - computedStyle.left - right;
                     if (w < this.minWidth) {
-                        if (formatStyle.right.u === StyleUnit.PX) ;
-                        else if (formatStyle.right.u === StyleUnit.PERCENT) {
+                        if (style.right.u === StyleUnit.PX) ;
+                        else if (style.right.u === StyleUnit.PERCENT) {
                             const max = ((parent.width - computedStyle.left - this.minWidth) * 100) /
                                 parent.width;
                             // 限制导致的无效更新去除
-                            if (formatStyle.right.v === max) {
+                            if (style.right.v === max) {
                                 let i = keys.indexOf('right');
                                 keys.splice(i, 1);
                             }
                             else {
-                                formatStyle.right.v = this.style.right.v = max;
+                                style.right.v = this.style.right.v = max;
                             }
                         }
                     }
                 }
                 // 上下也一样
                 if (style.hasOwnProperty('top')) {
-                    const top = calSize(formatStyle.top, parent.height);
+                    const top = calSize(style.top, parent.height);
                     const h = parent.height - computedStyle.bottom - top;
                     if (h < this.minHeight) {
-                        if (formatStyle.top.u === StyleUnit.PX) ;
-                        else if (formatStyle.top.u === StyleUnit.PERCENT) {
+                        if (style.top.u === StyleUnit.PX) ;
+                        else if (style.top.u === StyleUnit.PERCENT) {
                             const max = ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
                                 parent.height;
                             // 限制导致的无效更新去除
-                            if (formatStyle.top.v === max) {
+                            if (style.top.v === max) {
                                 let i = keys.indexOf('top');
                                 keys.splice(i, 1);
                             }
                             else {
-                                formatStyle.top.v = this.style.top.v = max;
+                                style.top.v = this.style.top.v = max;
                             }
                         }
                     }
                 }
                 else if (style.hasOwnProperty('bottom')) {
-                    const bottom = calSize(formatStyle.bottom, parent.height);
+                    const bottom = calSize(style.bottom, parent.height);
                     const h = parent.height - computedStyle.top - bottom;
                     if (h < this.minHeight) {
-                        if (formatStyle.bottom.u === StyleUnit.PX) ;
-                        else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
+                        if (style.bottom.u === StyleUnit.PX) ;
+                        else if (style.bottom.u === StyleUnit.PERCENT) {
                             const max = ((parent.height - computedStyle.top - this.minHeight) * 100) /
                                 parent.height;
                             // 限制导致的无效更新去除
-                            if (formatStyle.bottom.v === max) {
+                            if (style.bottom.v === max) {
                                 let i = keys.indexOf('bottom');
                                 keys.splice(i, 1);
                             }
                             else {
-                                formatStyle.bottom.v = this.style.bottom.v = max;
+                                style.bottom.v = this.style.bottom.v = max;
                             }
                         }
                     }
                 }
             }
-            return { keys, formatStyle };
+            return keys;
+        }
+        updateStyleData(style) {
+            const formatStyle = normalize(style);
+            return this.updateFormatStyleData(formatStyle);
         }
         updateStyleCheck(keys) {
             if (!keys.length) {
@@ -21144,7 +21147,11 @@
             return false;
         }
         updateStyle(style, cb) {
-            const { keys } = this.updateStyleData(style);
+            const formatStyle = normalize(style);
+            this.updateFormatStyle(formatStyle, cb);
+        }
+        updateFormatStyle(style, cb) {
+            const keys = this.updateFormatStyleData(style);
             // 无变更或不可见
             if (this.updateStyleCheck(keys)) {
                 cb && cb(true);
@@ -21185,7 +21192,10 @@
                         else {
                             if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL) {
                                 return `linear-gradient(${item.d.join(' ')}, ${item.stops.map((stop) => {
-                                return color2hexStr(stop.color.v) + ' ' + stop.offset.v * 100 + '%';
+                                return (color2hexStr(stop.color.v) +
+                                    ' ' +
+                                    stop.offset.v * 100 +
+                                    '%');
                             })})`;
                             }
                             return '';
@@ -23248,7 +23258,10 @@
             for (let i = 1; i < len; i++) {
                 const item = temp[i];
                 const prev = temp[i - 1];
-                const p = [toPrecision(item.absX), toPrecision(item.absY)];
+                const p = [
+                    toPrecision(item.absX),
+                    toPrecision(item.absY),
+                ];
                 if (item.hasCurveTo) {
                     p.unshift(toPrecision(item.absTx), toPrecision(item.absTy));
                 }
@@ -23260,7 +23273,10 @@
             // 闭合
             if (this.isClosed) {
                 const last = temp[len - 1];
-                const p = [toPrecision(first.absX), toPrecision(first.absY)];
+                const p = [
+                    toPrecision(first.absX),
+                    toPrecision(first.absY),
+                ];
                 if (first.hasCurveTo) {
                     p.unshift(toPrecision(first.absTx), toPrecision(first.absTy));
                 }
@@ -23487,17 +23503,30 @@
             const p = calPoint({ x: point.x, y: point.y }, i);
             point.x = p.x / width;
             point.y = p.y / height;
+            point.absX = newPoint.x;
+            point.absY = newPoint.y;
             if (point.hasCurveFrom) {
                 const p = calPoint({ x: point.fx, y: point.fy }, i);
                 point.fx = p.x / width;
                 point.fy = p.y / height;
+                point.absFx = newPoint.fx;
+                point.absFy = newPoint.fy;
             }
             if (point.hasCurveTo) {
                 const p = calPoint({ x: point.tx, y: point.ty }, i);
                 point.tx = p.x / width;
                 point.ty = p.y / height;
+                point.absTx = newPoint.tx;
+                point.absTy = newPoint.ty;
+            }
+            const root = this.root;
+            if (root) {
+                root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
             }
             return point;
+        }
+        checkPointsChange() {
+            // const points = (this.props as PolylineProps).points;
         }
         toSvg(scale) {
             return super.toSvg(scale, this.isClosed);

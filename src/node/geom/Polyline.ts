@@ -1,6 +1,8 @@
 import { Point, PolylineProps } from '../../format';
 import bezier from '../../math/bezier';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
+import { calPoint, inverse4 } from '../../math/matrix';
+import { RefreshLevel } from '../../refresh/level';
 import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
@@ -16,7 +18,6 @@ import {
 import { getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
 import Geom from './Geom';
-import { calPoint, inverse4 } from '../../math/matrix';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -217,7 +218,10 @@ class Polyline extends Geom {
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
-      const p: Array<number> = [toPrecision(item.absX!), toPrecision(item.absY!)];
+      const p: Array<number> = [
+        toPrecision(item.absX!),
+        toPrecision(item.absY!),
+      ];
       if (item.hasCurveTo) {
         p.unshift(toPrecision(item.absTx!), toPrecision(item.absTy!));
       }
@@ -229,7 +233,10 @@ class Polyline extends Geom {
     // 闭合
     if (this.isClosed) {
       const last = temp[len - 1];
-      const p: Array<number> = [toPrecision(first.absX!), toPrecision(first.absY!)];
+      const p: Array<number> = [
+        toPrecision(first.absX!),
+        toPrecision(first.absY!),
+      ];
       if (first.hasCurveTo) {
         p.unshift(toPrecision(first.absTx!), toPrecision(first.absTy!));
       }
@@ -499,17 +506,31 @@ class Polyline extends Geom {
     const p = calPoint({ x: point.x, y: point.y }, i);
     point.x = p.x / width;
     point.y = p.y / height;
+    point.absX = newPoint.x;
+    point.absY = newPoint.y;
     if (point.hasCurveFrom) {
       const p = calPoint({ x: point.fx, y: point.fy }, i);
       point.fx = p.x / width;
       point.fy = p.y / height;
+      point.absFx = newPoint.fx;
+      point.absFy = newPoint.fy;
     }
     if (point.hasCurveTo) {
       const p = calPoint({ x: point.tx, y: point.ty }, i);
       point.tx = p.x / width;
       point.ty = p.y / height;
+      point.absTx = newPoint.tx;
+      point.absTy = newPoint.ty;
+    }
+    const root = this.root;
+    if (root) {
+      root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
     }
     return point;
+  }
+
+  checkPointsChange() {
+    // const points = (this.props as PolylineProps).points;
   }
 
   toSvg(scale: number) {

@@ -637,14 +637,13 @@ class Node extends Event {
     return [temp];
   }
 
-  updateStyleData(style: any) {
+  updateFormatStyleData(style: any) {
     const keys: Array<string> = [];
-    const formatStyle = normalize(style);
-    for (let k in formatStyle) {
-      if (formatStyle.hasOwnProperty(k)) {
+    for (let k in style) {
+      if (style.hasOwnProperty(k)) {
         // @ts-ignore
-        const v = formatStyle[k];
-        if (!equalStyle(k, formatStyle, this.style)) {
+        const v = style[k];
+        if (!equalStyle(k, style, this.style)) {
           // @ts-ignore
           this.style[k] = v;
           keys.push(k);
@@ -657,82 +656,87 @@ class Node extends Event {
       const computedStyle = this.computedStyle;
       // 只能调左/右，不能同时左右
       if (style.hasOwnProperty('left')) {
-        const left = calSize(formatStyle.left, parent.width);
+        const left = calSize(style.left, parent.width);
         const w = parent.width - computedStyle.right - left;
         if (w < this.minWidth) {
-          if (formatStyle.left.u === StyleUnit.PX) {
-          } else if (formatStyle.left.u === StyleUnit.PERCENT) {
+          if (style.left.u === StyleUnit.PX) {
+          } else if (style.left.u === StyleUnit.PERCENT) {
             const max =
               ((parent.width - computedStyle.right - this.minWidth) * 100) /
               parent.width;
             // 限制导致的无效更新去除
-            if (formatStyle.left.v === max) {
+            if (style.left.v === max) {
               let i = keys.indexOf('left');
               keys.splice(i, 1);
             } else {
-              formatStyle.left.v = this.style.left.v = max;
+              style.left.v = this.style.left.v = max;
             }
           }
         }
       } else if (style.hasOwnProperty('right')) {
-        const right = calSize(formatStyle.right, parent.width);
+        const right = calSize(style.right, parent.width);
         const w = parent.width - computedStyle.left - right;
         if (w < this.minWidth) {
-          if (formatStyle.right.u === StyleUnit.PX) {
-          } else if (formatStyle.right.u === StyleUnit.PERCENT) {
+          if (style.right.u === StyleUnit.PX) {
+          } else if (style.right.u === StyleUnit.PERCENT) {
             const max =
               ((parent.width - computedStyle.left - this.minWidth) * 100) /
               parent.width;
             // 限制导致的无效更新去除
-            if (formatStyle.right.v === max) {
+            if (style.right.v === max) {
               let i = keys.indexOf('right');
               keys.splice(i, 1);
             } else {
-              formatStyle.right.v = this.style.right.v = max;
+              style.right.v = this.style.right.v = max;
             }
           }
         }
       }
       // 上下也一样
       if (style.hasOwnProperty('top')) {
-        const top = calSize(formatStyle.top, parent.height);
+        const top = calSize(style.top, parent.height);
         const h = parent.height - computedStyle.bottom - top;
         if (h < this.minHeight) {
-          if (formatStyle.top.u === StyleUnit.PX) {
-          } else if (formatStyle.top.u === StyleUnit.PERCENT) {
+          if (style.top.u === StyleUnit.PX) {
+          } else if (style.top.u === StyleUnit.PERCENT) {
             const max =
               ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
               parent.height;
             // 限制导致的无效更新去除
-            if (formatStyle.top.v === max) {
+            if (style.top.v === max) {
               let i = keys.indexOf('top');
               keys.splice(i, 1);
             } else {
-              formatStyle.top.v = this.style.top.v = max;
+              style.top.v = this.style.top.v = max;
             }
           }
         }
       } else if (style.hasOwnProperty('bottom')) {
-        const bottom = calSize(formatStyle.bottom, parent.height);
+        const bottom = calSize(style.bottom, parent.height);
         const h = parent.height - computedStyle.top - bottom;
         if (h < this.minHeight) {
-          if (formatStyle.bottom.u === StyleUnit.PX) {
-          } else if (formatStyle.bottom.u === StyleUnit.PERCENT) {
+          if (style.bottom.u === StyleUnit.PX) {
+          } else if (style.bottom.u === StyleUnit.PERCENT) {
             const max =
               ((parent.height - computedStyle.top - this.minHeight) * 100) /
               parent.height;
             // 限制导致的无效更新去除
-            if (formatStyle.bottom.v === max) {
+            if (style.bottom.v === max) {
               let i = keys.indexOf('bottom');
               keys.splice(i, 1);
             } else {
-              formatStyle.bottom.v = this.style.bottom.v = max;
+              style.bottom.v = this.style.bottom.v = max;
             }
           }
         }
       }
     }
-    return { keys, formatStyle };
+    return keys;
+  }
+
+  updateStyleData(style: any) {
+    const formatStyle = normalize(style);
+    return this.updateFormatStyleData(formatStyle);
   }
 
   updateStyleCheck(keys: Array<string>) {
@@ -756,7 +760,12 @@ class Node extends Event {
   }
 
   updateStyle(style: any, cb?: (sync: boolean) => void) {
-    const { keys } = this.updateStyleData(style);
+    const formatStyle = normalize(style);
+    this.updateFormatStyle(formatStyle, cb);
+  }
+
+  updateFormatStyle(style: any, cb?: (sync: boolean) => void) {
+    const keys = this.updateFormatStyleData(style);
     // 无变更或不可见
     if (this.updateStyleCheck(keys)) {
       cb && cb(true);
@@ -796,9 +805,16 @@ class Node extends Event {
             return color2hexStr(item);
           } else {
             if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL) {
-              return `linear-gradient(${item.d.join(' ')}, ${item.stops.map((stop: ColorStop) => {
-                return color2hexStr(stop.color.v) + ' ' + stop.offset!.v * 100 + '%';
-              })})`;
+              return `linear-gradient(${item.d.join(' ')}, ${item.stops.map(
+                (stop: ColorStop) => {
+                  return (
+                    color2hexStr(stop.color.v) +
+                    ' ' +
+                    stop.offset!.v * 100 +
+                    '%'
+                  );
+                },
+              )})`;
             }
             return '';
           }
@@ -811,7 +827,9 @@ class Node extends Event {
       });
       res.mask = ['none', 'outline', 'alpha'][res.mask];
       res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
-      res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][res.booleanOperation];
+      res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
+        res.booleanOperation
+        ];
     } else {
       res.color = res.color.slice(0);
       res.backgroundColor = res.backgroundColor.slice(0);
