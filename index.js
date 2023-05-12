@@ -16194,14 +16194,7 @@
                 i = j;
             }
         }
-        // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
-        for (let i = 1, len = list.length; i < len; i++) {
-            const item = list[i];
-            const prev = list[i - 1];
-            if (item[1] < prev[1]) {
-                item[1] = prev[1];
-            }
-        }
+        // 每个不能小于前面的，按大小排序，canvas/svg兼容这种情况，无需处理
         // 0之前的和1之后的要过滤掉
         for (let i = 0, len = list.length; i < len; i++) {
             const item = list[i];
@@ -21482,6 +21475,69 @@
             // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
             this.checkPosSizeUpward();
         }
+        // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
+        adjustPosAndSizeSelf(dx, dy, dw, dh) {
+            const { style, computedStyle, parent, root } = this;
+            if (!parent || !root || !dx && !dy && !dw && !dh) {
+                return;
+            }
+            const { width: pw, height: ph } = parent;
+            const { top, right, bottom, left, width, height, translateX, translateY } = style;
+            // 水平调整统一处理，固定此时无效
+            if (dx) {
+                if (left.u === StyleUnit.PX) {
+                    left.v += dx;
+                }
+                else if (left.u === StyleUnit.PERCENT) {
+                    left.v += (dx * 100) / pw;
+                }
+                computedStyle.left += dx;
+            }
+            if (dw) {
+                if (right.u === StyleUnit.PX) {
+                    right.v -= dw;
+                }
+                else if (right.u === StyleUnit.PERCENT) {
+                    right.v -= (dw * 100) / pw;
+                }
+                computedStyle.right -= dw;
+            }
+            this.width = computedStyle.width =
+                parent.width - computedStyle.left - computedStyle.right;
+            // translateX调整根据是否固定尺寸，不会有%尺寸目前
+            this.resetTranslateX(left, width, translateX);
+            // 垂直和水平一样
+            if (dy) {
+                if (top.u === StyleUnit.PX) {
+                    top.v += dy;
+                }
+                else if (top.u === StyleUnit.PERCENT) {
+                    top.v += (dy * 100) / ph;
+                }
+                computedStyle.top += dy;
+            }
+            if (dh) {
+                if (bottom.u === StyleUnit.PX) {
+                    bottom.v -= dh;
+                }
+                else if (bottom.u === StyleUnit.PERCENT) {
+                    bottom.v -= (dh * 100) / ph;
+                }
+                computedStyle.bottom -= dh;
+            }
+            this.height = computedStyle.height =
+                parent.height - computedStyle.top - computedStyle.bottom;
+            this.resetTranslateY(top, height, translateY);
+            // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+            this.refreshLevel |= RefreshLevel.TRANSFORM;
+            root.rl |= RefreshLevel.TRANSFORM;
+            this.calMatrix(RefreshLevel.TRANSFORM);
+            // 记得重置
+            this._rect = undefined;
+            this._bbox = undefined;
+            this._filterBbox = undefined;
+            this.tempBbox = undefined;
+        }
         resetTranslateX(left, width, translateX) {
             if (width.u === StyleUnit.AUTO) {
                 translateX.v = 0;
@@ -23578,15 +23634,21 @@
                     throw new Error('Can not update non-existent point');
                 }
                 const p = calPoint({ x: point.dspX, y: point.dspY }, i);
+                point.absX = p.x;
+                point.absY = p.y;
                 point.x = p.x / width;
                 point.y = p.y / height;
                 if (point.hasCurveFrom) {
                     const p = calPoint({ x: point.dspFx, y: point.dspFy }, i);
+                    point.absFx = p.x;
+                    point.absFy = p.y;
                     point.fx = p.x / width;
                     point.fy = p.y / height;
                 }
                 if (point.hasCurveTo) {
                     const p = calPoint({ x: point.dspTx, y: point.dspTy }, i);
+                    point.absTx = p.x;
+                    point.absTy = p.y;
                     point.tx = p.x / width;
                     point.ty = p.y / height;
                 }
@@ -23596,6 +23658,7 @@
         }
         // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
         checkPointsChange() {
+            var _a;
             const old = this._rect || this.rect;
             this.buildPoints();
             const points = this.points;
@@ -23646,10 +23709,22 @@
                 xa = xb;
                 ya = yb;
             }
-            if (old[0] !== rect[0] ||
-                old[1] !== rect[1] ||
-                old[2] !== rect[2] ||
-                old[3] !== rect[3]) ;
+            const dx = rect[0], dy = rect[1], dw = (rect[2] - rect[0]) - (old[2] - old[0]), dh = (rect[3] - rect[1]) - (old[3] - old[1]);
+            // 检查真正有变化，位置相对于自己原本位置为原点
+            if (dx || dy || dw || dh) {
+                this.adjustPosAndSizeSelf(dx, dy, dw, dh);
+                this.adjustPoints(dx, dy);
+                this.checkPosSizeUpward();
+                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            }
+        }
+        adjustPoints(dx, dy) {
+            const { width, height } = this;
+            const points = this.props.points;
+            points.forEach((point) => {
+                point.x = (point.absX + dx) / width;
+                point.y = (point.absY + dy) / height;
+            });
         }
         toSvg(scale) {
             return super.toSvg(scale, this.isClosed);
@@ -25960,69 +26035,6 @@
                 rect.maxY = Math.max(rect.maxY, maxY);
             }
             return rect;
-        }
-        // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
-        adjustPosAndSizeSelf(dx, dy, dw, dh) {
-            const { style, computedStyle, parent, root } = this;
-            if (!parent || !root) {
-                return;
-            }
-            const { width: pw, height: ph } = parent;
-            const { top, right, bottom, left, width, height, translateX, translateY } = style;
-            // 水平调整统一处理，固定此时无效
-            if (dx) {
-                if (left.u === StyleUnit.PX) {
-                    left.v += dx;
-                }
-                else if (left.u === StyleUnit.PERCENT) {
-                    left.v += (dx * 100) / pw;
-                }
-                computedStyle.left += dx;
-            }
-            if (dw) {
-                if (right.u === StyleUnit.PX) {
-                    right.v -= dw;
-                }
-                else if (right.u === StyleUnit.PERCENT) {
-                    right.v -= (dw * 100) / pw;
-                }
-                computedStyle.right -= dw;
-            }
-            this.width = computedStyle.width =
-                parent.width - computedStyle.left - computedStyle.right;
-            // translateX调整根据是否固定尺寸，不会有%尺寸目前
-            this.resetTranslateX(left, width, translateX);
-            // 垂直和水平一样
-            if (dy) {
-                if (top.u === StyleUnit.PX) {
-                    top.v += dy;
-                }
-                else if (top.u === StyleUnit.PERCENT) {
-                    top.v += (dy * 100) / ph;
-                }
-                computedStyle.top += dy;
-            }
-            if (dh) {
-                if (bottom.u === StyleUnit.PX) {
-                    bottom.v -= dh;
-                }
-                else if (bottom.u === StyleUnit.PERCENT) {
-                    bottom.v -= (dh * 100) / ph;
-                }
-                computedStyle.bottom -= dh;
-            }
-            this.height = computedStyle.height =
-                parent.height - computedStyle.top - computedStyle.bottom;
-            this.resetTranslateY(top, height, translateY);
-            // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
-            this.refreshLevel |= RefreshLevel.TRANSFORM;
-            root.rl |= RefreshLevel.TRANSFORM;
-            this.calMatrix(RefreshLevel.TRANSFORM);
-            // 记得重置
-            this._rect = undefined;
-            this._bbox = undefined;
-            this._filterBbox = undefined;
-            this.tempBbox = undefined;
         }
         // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
         adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh) {

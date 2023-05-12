@@ -495,15 +495,21 @@ class Polyline extends Geom {
         throw new Error('Can not update non-existent point');
       }
       const p = calPoint({ x: point.dspX!, y: point.dspY! }, i);
+      point.absX = p.x;
+      point.absY = p.y;
       point.x = p.x / width;
       point.y = p.y / height;
       if (point.hasCurveFrom) {
         const p = calPoint({ x: point.dspFx!, y: point.dspFy! }, i);
+        point.absFx = p.x;
+        point.absFy = p.y;
         point.fx = p.x / width;
         point.fy = p.y / height;
       }
       if (point.hasCurveTo) {
         const p = calPoint({ x: point.dspTx!, y: point.dspTy! }, i);
+        point.absTx = p.x;
+        point.absTy = p.y;
         point.tx = p.x / width;
         point.ty = p.y / height;
       }
@@ -576,13 +582,33 @@ class Polyline extends Geom {
       xa = xb!;
       ya = yb!;
     }
-    if (
-      old[0] !== rect[0] ||
-      old[1] !== rect[1] ||
-      old[2] !== rect[2] ||
-      old[3] !== rect[3]
-    ) {
+    const dx = rect[0],
+      dy = rect[1],
+      dw = (rect[2] - rect[0]) - (old[2] - old[0]),
+      dh = (rect[3] - rect[1]) - (old[3] - old[1]);
+    // 检查真正有变化，位置相对于自己原本位置为原点
+    if (dx || dy || dw || dh) {
+      this.adjustPosAndSizeSelf(dx, dy, dw, dh);
+      this.adjustPoints(dx, dy);
+      this.checkPosSizeUpward();
+      this.root?.addUpdate(
+        this,
+        [],
+        RefreshLevel.REPAINT,
+        false,
+        false,
+        undefined,
+      );
     }
+  }
+
+  private adjustPoints(dx: number, dy: number) {
+    const { width, height } = this;
+    const points = (this.props as PolylineProps).points;
+    points.forEach((point) => {
+      point.x = (point.absX! + dx) / width;
+      point.y = (point.absY! + dy) / height;
+    });
   }
 
   toSvg(scale: number) {

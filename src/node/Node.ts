@@ -1025,6 +1025,68 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
+
+  // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
+  protected adjustPosAndSizeSelf(dx: number, dy: number, dw: number, dh: number) {
+    const { style, computedStyle, parent, root } = this;
+    if (!parent || !root || !dx && !dy && !dw && !dh) {
+      return;
+    }
+    const { width: pw, height: ph } = parent;
+    const { top, right, bottom, left, width, height, translateX, translateY } =
+      style;
+    // 水平调整统一处理，固定此时无效
+    if (dx) {
+      if (left.u === StyleUnit.PX) {
+        left.v += dx;
+      } else if (left.u === StyleUnit.PERCENT) {
+        left.v += (dx * 100) / pw;
+      }
+      computedStyle.left += dx;
+    }
+    if (dw) {
+      if (right.u === StyleUnit.PX) {
+        right.v -= dw;
+      } else if (right.u === StyleUnit.PERCENT) {
+        right.v -= (dw * 100) / pw;
+      }
+      computedStyle.right -= dw;
+    }
+    this.width = computedStyle.width =
+      parent.width - computedStyle.left - computedStyle.right;
+    // translateX调整根据是否固定尺寸，不会有%尺寸目前
+    this.resetTranslateX(left, width, translateX);
+    // 垂直和水平一样
+    if (dy) {
+      if (top.u === StyleUnit.PX) {
+        top.v += dy;
+      } else if (top.u === StyleUnit.PERCENT) {
+        top.v += (dy * 100) / ph;
+      }
+      computedStyle.top += dy;
+    }
+    if (dh) {
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v -= dh;
+      } else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v -= (dh * 100) / ph;
+      }
+      computedStyle.bottom -= dh;
+    }
+    this.height = computedStyle.height =
+      parent.height - computedStyle.top - computedStyle.bottom;
+    this.resetTranslateY(top, height, translateY);
+    // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+    this.refreshLevel |= RefreshLevel.TRANSFORM;
+    root.rl |= RefreshLevel.TRANSFORM;
+    this.calMatrix(RefreshLevel.TRANSFORM);
+    // 记得重置
+    this._rect = undefined;
+    this._bbox = undefined;
+    this._filterBbox = undefined;
+    this.tempBbox = undefined;
+  }
+
   resetTranslateX(
     left: StyleNumValue,
     width: StyleNumValue,
