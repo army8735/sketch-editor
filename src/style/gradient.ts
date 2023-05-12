@@ -4,7 +4,7 @@ import { calUnit, ColorStop, GRADIENT, StyleUnit } from './define';
 import reg from './reg';
 
 // 获取color-stop区间范围，去除无用值
-function getColorStop(stops: Array<ColorStop>, length: number) {
+export function getColorStop(stops: Array<ColorStop>, length: number, isConic = false) {
   const list: Array<{ color: Array<number>, offset?: number }> = [];
   const firstColor = stops[0].color.v;
   // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
@@ -68,7 +68,10 @@ function getColorStop(stops: Array<ColorStop>, length: number) {
       i = j;
     }
   }
-  // 每个不能小于前面的，按大小排序，canvas/svg兼容这种情况，无需处理
+  // 每个不能小于前面的，按大小排序，canvas/svg兼容这种情况，但还是排序下
+  list.sort((a, b) => {
+    return a.offset! - b.offset!;
+  });
   // 0之前的和1之后的要过滤掉
   for (let i = 0, len = list.length; i < len; i++) {
     const item = list[i];
@@ -135,6 +138,42 @@ function getColorStop(stops: Array<ColorStop>, length: number) {
       color: firstColor,
       offset: 1,
     });
+  }
+  // 首尾可以省略，即不是[0,1]区间，对于conic来说会错误，首尾需线性相接成为一个环
+  if (isConic) {
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (first.offset! > 0 || last.offset! < 1) {
+      const dr = last.color[0] - first.color[0];
+      const dg = last.color[1] - first.color[1];
+      const db = last.color[2] - first.color[2];
+      const da = last.color[3] - first.color[3];
+      const dp = first.offset! + (1 - last.offset!);
+      if (first.offset! > 0) {
+        const p = first.offset! / dp;
+        list.unshift({
+          color: [
+            first.color[0] + dr * p,
+            first.color[1] + dg * p,
+            first.color[2] + db * p,
+            first.color[3] + da * p,
+          ],
+          offset: 0,
+        });
+      }
+      if (last.offset! < 1) {
+        const p = (1 - last.offset!) / dp;
+        list.push({
+          color: [
+            last.color[0] - dr * p,
+            last.color[1] - dg * p,
+            last.color[2] - db * p,
+            last.color[3] - da * p,
+          ],
+          offset: 1,
+        });
+      }
+    }
   }
   return list;
 }
@@ -237,7 +276,7 @@ export function getLinear(
   const x2 = ox + d[2] * w;
   const y2 = oy + d[3] * h;
   const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  const stop = getColorStop(stops, total);
+  const stop = getColorStop(stops, total, false);
   return {
     x1,
     y1,
@@ -261,7 +300,7 @@ export function getRadial(
   const y2 = oy + d[3] * h;
   const ellipseLength = d[4];
   const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  const stop = getColorStop(stops, total);
+  const stop = getColorStop(stops, total, false);
   return {
     cx: x1,
     cy: y1,
@@ -272,3 +311,44 @@ export function getRadial(
     stop,
   };
 }
+
+export function getConic(
+  stops: Array<ColorStop>,
+  d: Array<number>,
+  ox: number,
+  oy: number,
+  w: number,
+  h: number,
+) {
+  const x1 = ox + d[0] * w;
+  const y1 = oy + d[1] * h;
+  const x2 = ox + d[2] * w;
+  const y2 = oy + d[3] * h;
+  const x = x2 - x1;
+  const y = y2 - y1;
+  let angle = 0;
+  if (x === 0) {
+    if (y >= 0) {
+      angle = 0;
+    } else {
+      angle = 180;
+    }
+  } else {
+    angle = Math.atan(y / x);
+  }
+  const total = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+  const stop = getColorStop(stops, total, true);
+  return {
+    angle,
+    cx: x1,
+    cy: y1,
+    stop,
+  };
+}
+
+export default {
+  getColorStop,
+  getLinear,
+  getRadial,
+  getConic,
+};

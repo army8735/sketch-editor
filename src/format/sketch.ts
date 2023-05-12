@@ -758,6 +758,11 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
             } ${ellipseLength},${stops.join(',')})`,
           );
         } else if (g.gradientType === SketchFormat.GradientType.Angular) {
+          fill.push(
+            `conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+              ',',
+            )})`,
+          );
         } else {
           throw new Error('Unknown gradient');
         }

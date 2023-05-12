@@ -17,7 +17,7 @@ import {
   STROKE_POSITION,
   StyleUnit,
 } from '../../style/define';
-import { getLinear, getRadial } from '../../style/gradient';
+import { getConic, getLinear, getRadial } from '../../style/gradient';
 import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
 import { mergeBbox } from '../../util/util';
@@ -276,6 +276,20 @@ class ShapeGroup extends Group {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = rg;
+        } else if (f.t === GRADIENT.CONIC) {
+          const gd = getConic(
+            f.stops,
+            f.d,
+            dx,
+            dy,
+            this.width * scale,
+            this.height * scale,
+          );
+          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          gd.stop.forEach((item) => {
+            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          });
+          ctx.fillStyle = cg;
         }
       }
       points.forEach((item) => {
@@ -331,6 +345,20 @@ class ShapeGroup extends Group {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.strokeStyle = rg;
+        } else if (s.t === GRADIENT.CONIC) {
+          const gd = getConic(
+            s.stops,
+            s.d,
+            dx,
+            dy,
+            this.width * scale,
+            this.height * scale,
+          );
+          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          gd.stop.forEach((item) => {
+            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          });
+          ctx.fillStyle = cg;
         }
       }
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
