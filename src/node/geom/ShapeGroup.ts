@@ -358,7 +358,7 @@ class ShapeGroup extends Group {
           gd.stop.forEach((item) => {
             cg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
-          ctx.fillStyle = cg;
+          ctx.strokeStyle = cg;
         }
       }
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
