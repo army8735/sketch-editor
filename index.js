@@ -20977,7 +20977,7 @@
             const canvasCache = this.canvasCache;
             if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
                 this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
-                    TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._rect || this.rect).slice(0));
+                    TextureCache.getInstance(gl, this.canvasCache.offscreen.canvas, (this._bbox || this.bbox).slice(0));
                 canvasCache.release();
             }
             else {
@@ -21008,11 +21008,16 @@
         }
         clearCache(includeSelf = false) {
             if (includeSelf) {
+                this.refreshLevel |= RefreshLevel.REPAINT;
                 this.textureCache.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
                 this.textureTarget.splice(0);
             }
             else {
-                this.textureTarget = this.textureCache;
+                this.textureCache.forEach((item, i) => {
+                    if (item && item.available) {
+                        this.textureTarget[i] = item;
+                    }
+                });
             }
             this.textureTotal.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
@@ -21213,7 +21218,7 @@
         }
         updateStyle(style, cb) {
             const formatStyle = normalize(style);
-            this.updateFormatStyle(formatStyle, cb);
+            return this.updateFormatStyle(formatStyle, cb);
         }
         updateFormatStyle(style, cb) {
             var _a;
@@ -21221,9 +21226,10 @@
             // 无变更或不可见
             if (this.updateStyleCheck(keys)) {
                 cb && cb(true);
-                return;
+                return keys;
             }
             (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
+            return keys;
         }
         refresh(lv = RefreshLevel.REPAINT, cb) {
             var _a;
@@ -21475,6 +21481,9 @@
             // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
             this.checkPosSizeUpward();
         }
+        checkChangeAsShape() {
+            // 空实现，Geom覆盖
+        }
         // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
         adjustPosAndSizeSelf(dx, dy, dw, dh) {
             const { style, computedStyle, parent, root } = this;
@@ -21571,6 +21580,9 @@
         // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
         adjustPosAndSize() {
             return false;
+        }
+        clearPoints() {
+            // 空实现，ShapeGroup覆盖
         }
         /**
          * 自身不再计算，叶子节点调整过程中就是在reflow，自己本身数据已经及时更新。
@@ -22677,59 +22689,11 @@
         return s;
     }
 
-    class Geom extends Node {
-        static isLine(node) {
-            if (node instanceof Geom) {
-                return node.isLine();
-            }
-            return false;
-        }
-        constructor(props) {
-            super(props);
-        }
-        lay(data) {
-            super.lay(data);
-            this.points = undefined;
-        }
-        calRepaintStyle(lv) {
-            super.calRepaintStyle(lv);
-            this.points = undefined;
-        }
-        buildPoints() {
-            var _a;
-            if (this.points) {
-                return;
-            }
-            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
-            this.points = [];
-        }
-        calContent() {
-            this.buildPoints();
-            return (this.hasContent = !!this.points && this.points.length > 1);
-        }
-        isLine() {
-            this.buildPoints();
-            const points = this.points || [];
-            return (points.length === 2 && points[0].length === 2 && points[1].length === 2);
-        }
-        toSvg(scale, isClosed = false) {
-            this.buildPoints();
-            const computedStyle = this.computedStyle;
-            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
-            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
-            const props = [
-                ['d', d],
-                ['fill', '#D8D8D8'],
-                ['fill-rule', fillRule],
-                ['stroke', '#979797'],
-                ['stroke-width', (1 / scale).toString()],
-            ];
-            let s = `<svg width="${this.width}" height="${this.height}"><path`;
-            props.forEach((item) => {
-                s += ' ' + item[0] + '="' + item[1] + '"';
-            });
-            return s + '></path></svg>';
-        }
+    function mergeBbox$1(bbox, a, b, c, d) {
+        bbox[0] = Math.min(bbox[0], a);
+        bbox[1] = Math.min(bbox[1], b);
+        bbox[2] = Math.max(bbox[2], c);
+        bbox[3] = Math.max(bbox[3], d);
     }
 
     /**
@@ -23228,6 +23192,132 @@
         getPointT,
         bezierSlope,
     };
+
+    class Geom extends Node {
+        static isLine(node) {
+            if (node instanceof Geom) {
+                return node.isLine();
+            }
+            return false;
+        }
+        constructor(props) {
+            super(props);
+        }
+        lay(data) {
+            super.lay(data);
+            this.points = undefined;
+        }
+        calRepaintStyle(lv) {
+            super.calRepaintStyle(lv);
+            this.points = undefined;
+        }
+        buildPoints() {
+            var _a;
+            if (this.points) {
+                return;
+            }
+            (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
+            this.points = [];
+        }
+        calContent() {
+            this.buildPoints();
+            return (this.hasContent = !!this.points && this.points.length > 1);
+        }
+        isLine() {
+            this.buildPoints();
+            const points = this.points || [];
+            return (points.length === 2 && points[0].length === 2 && points[1].length === 2);
+        }
+        checkChangeAsShape() {
+            let parent = this.parent;
+            while (parent && parent.isShapeGroup) {
+                parent.clearPoints();
+                parent = parent.parent;
+            }
+        }
+        toSvg(scale, isClosed = false) {
+            this.buildPoints();
+            const computedStyle = this.computedStyle;
+            const d = svgPolygon(this.points) + (isClosed ? 'Z' : '');
+            const fillRule = computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+            const props = [
+                ['d', d],
+                ['fill', '#D8D8D8'],
+                ['fill-rule', fillRule],
+                ['stroke', '#979797'],
+                ['stroke-width', (1 / scale).toString()],
+            ];
+            let s = `<svg width="${this.width}" height="${this.height}"><path`;
+            props.forEach((item) => {
+                s += ' ' + item[0] + '="' + item[1] + '"';
+            });
+            return s + '></path></svg>';
+        }
+        get bbox() {
+            if (!this._bbox) {
+                const bbox = (this._bbox = super.bbox);
+                // 可能不存在
+                this.buildPoints();
+                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+                // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+                let border = 0;
+                strokeWidth.forEach((item, i) => {
+                    if (strokeEnable[i]) {
+                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                            border = Math.max(border, item * 0.5 * 4);
+                        }
+                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                            border = Math.max(border, item * 4);
+                        }
+                    }
+                });
+                // 可能矢量编辑过程中超过原本尺寸范围
+                const points = this.points;
+                if (points && points.length) {
+                    const first = points[0];
+                    let xa, ya;
+                    if (first.length === 4) {
+                        xa = first[2];
+                        ya = first[3];
+                    }
+                    else if (first.length === 6) {
+                        xa = first[4];
+                        ya = first[5];
+                    }
+                    else {
+                        xa = first[0];
+                        ya = first[1];
+                    }
+                    mergeBbox$1(bbox, xa - border, ya - border, xa + border, ya + border);
+                    for (let i = 1, len = points.length; i < len; i++) {
+                        const item = points[i];
+                        let xb, yb;
+                        if (item.length === 4) {
+                            xb = item[2];
+                            yb = item[3];
+                            const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
+                            mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                        }
+                        else if (item.length === 6) {
+                            xb = item[4];
+                            yb = item[5];
+                            const b = bezier.bboxBezier(xa, ya, item[0], item[1], item[2], item[3], xb, yb);
+                            mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                        }
+                        else {
+                            xb = item[0];
+                            yb = item[1];
+                            mergeBbox$1(bbox, xb - border, yb - border, xb + border, yb + border);
+                        }
+                        xa = xb;
+                        ya = yb;
+                    }
+                }
+            }
+            return this._bbox;
+        }
+    }
 
     function isCornerPoint(point) {
         return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -23728,32 +23818,6 @@
         }
         toSvg(scale) {
             return super.toSvg(scale, this.isClosed);
-        }
-        get bbox() {
-            if (!this._bbox) {
-                const bbox = (this._bbox = super.bbox);
-                // 可能不存在
-                this.buildPoints();
-                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-                // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
-                let border = 0;
-                strokeWidth.forEach((item, i) => {
-                    if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5 * 4);
-                        }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
-                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-                            border = Math.max(border, item * 4);
-                        }
-                    }
-                });
-                bbox[0] -= border;
-                bbox[1] -= border;
-                bbox[2] += border;
-                bbox[3] += border;
-            }
-            return this._bbox;
         }
     }
 
@@ -26254,6 +26318,11 @@
             super.checkSizeChange();
             this.points = undefined;
         }
+        clearPoints() {
+            this.points = undefined;
+            this._bbox = undefined;
+            this.clearCache(true);
+        }
         calContent() {
             this.buildPoints();
             return (this.hasContent = !!this.points && !!this.points.length);
@@ -26550,10 +26619,72 @@
                         }
                     }
                 });
-                bbox[0] -= border;
-                bbox[1] -= border;
-                bbox[2] += border;
-                bbox[3] += border;
+                // 子元素可能因为编辑模式临时超过范围
+                const points = this.points;
+                if (points && points.length) {
+                    const first = points[0][0];
+                    let xa, ya;
+                    if (first.length === 4) {
+                        xa = first[2];
+                        ya = first[3];
+                    }
+                    else if (first.length === 6) {
+                        xa = first[4];
+                        ya = first[5];
+                    }
+                    else {
+                        xa = first[0];
+                        ya = first[1];
+                    }
+                    mergeBbox$1(bbox, xa - border, ya - border, xa + border, ya + border);
+                    for (let i = 0, len = points.length; i < len; i++) {
+                        const item = points[i];
+                        for (let j = 0, len = item.length; j < len; j++) {
+                            // first已经处理过了
+                            if (!i && !j) {
+                                continue;
+                            }
+                            const item2 = item[j];
+                            // 每个区域的第一个特殊处理
+                            if (!j) {
+                                if (item2.length === 4) {
+                                    xa = item2[2];
+                                    ya = item2[3];
+                                }
+                                else if (item2.length === 6) {
+                                    xa = item2[4];
+                                    ya = item2[5];
+                                }
+                                else {
+                                    xa = item2[0];
+                                    ya = item2[1];
+                                }
+                                mergeBbox$1(bbox, xa - border, ya - border, xa + border, ya + border);
+                                continue;
+                            }
+                            let xb, yb;
+                            if (item2.length === 4) {
+                                xb = item2[2];
+                                yb = item2[3];
+                                const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
+                                mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                            }
+                            else if (item2.length === 6) {
+                                xb = item2[4];
+                                yb = item2[5];
+                                const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], item2[2], item2[3], xb, yb);
+                                mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                            }
+                            else {
+                                xb = item2[0];
+                                yb = item2[1];
+                                mergeBbox$1(bbox, xb - border, yb - border, xb + border, yb + border);
+                            }
+                            xa = xb;
+                            ya = yb;
+                        }
+                    }
+                }
             }
             return this._bbox;
         }

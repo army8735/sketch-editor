@@ -614,33 +614,6 @@ class Polyline extends Geom {
   toSvg(scale: number) {
     return super.toSvg(scale, this.isClosed);
   }
-
-  override get bbox(): Float64Array {
-    if (!this._bbox) {
-      const bbox = (this._bbox = super.bbox);
-      // 可能不存在
-      this.buildPoints();
-      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
-      let border = 0;
-      strokeWidth.forEach((item, i) => {
-        if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.CENTER) {
-            border = Math.max(border, item * 0.5 * 4);
-          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-            // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item * 4);
-          }
-        }
-      });
-      bbox[0] -= border;
-      bbox[1] -= border;
-      bbox[2] += border;
-      bbox[3] += border;
-    }
-    return this._bbox;
-  }
 }
 
 export default Polyline;

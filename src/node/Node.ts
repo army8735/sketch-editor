@@ -522,7 +522,7 @@ class Node extends Event {
         TextureCache.getInstance(
           gl,
           this.canvasCache!.offscreen.canvas,
-          (this._rect || this.rect).slice(0),
+          (this._bbox || this.bbox).slice(0),
         );
       canvasCache.release();
     } else {
@@ -550,10 +550,15 @@ class Node extends Event {
 
   clearCache(includeSelf = false) {
     if (includeSelf) {
+      this.refreshLevel |= RefreshLevel.REPAINT;
       this.textureCache.forEach((item) => item?.release());
       this.textureTarget.splice(0);
     } else {
-      this.textureTarget = this.textureCache;
+      this.textureCache.forEach((item, i) => {
+        if (item && item.available) {
+          this.textureTarget[i] = item;
+        }
+      });
     }
     this.textureTotal.forEach((item) => item?.release());
     this.textureFilter.forEach((item) => item?.release());
@@ -762,7 +767,7 @@ class Node extends Event {
 
   updateStyle(style: any, cb?: (sync: boolean) => void) {
     const formatStyle = normalize(style);
-    this.updateFormatStyle(formatStyle, cb);
+    return this.updateFormatStyle(formatStyle, cb);
   }
 
   updateFormatStyle(style: any, cb?: (sync: boolean) => void) {
@@ -770,9 +775,10 @@ class Node extends Event {
     // 无变更或不可见
     if (this.updateStyleCheck(keys)) {
       cb && cb(true);
-      return;
+      return keys;
     }
     this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    return keys;
   }
 
   refresh(lv = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
@@ -1025,6 +1031,9 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
+  checkChangeAsShape() {
+    // 空实现，Geom覆盖
+  }
 
   // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
   protected adjustPosAndSizeSelf(dx: number, dy: number, dw: number, dh: number) {
@@ -1129,6 +1138,10 @@ class Node extends Event {
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
   adjustPosAndSize() {
     return false;
+  }
+
+  clearPoints() {
+    // 空实现，ShapeGroup覆盖
   }
 
   /**

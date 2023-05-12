@@ -1,9 +1,11 @@
 import { Props } from '../../format';
 import { svgPolygon } from '../../refresh/paint';
-import { FILL_RULE } from '../../style/define';
+import { FILL_RULE, STROKE_POSITION } from '../../style/define';
 import { LayoutData } from '../layout';
 import { RefreshLevel } from '../../refresh/level';
+import { mergeBbox } from '../../util/util';
 import Node from '../Node';
+import bezier from '../../math/bezier';
 
 class Geom extends Node {
   points?: Array<Array<number>>;
@@ -48,6 +50,14 @@ class Geom extends Node {
     );
   }
 
+  override checkChangeAsShape() {
+    let parent = this.parent;
+    while (parent && parent.isShapeGroup) {
+      parent.clearPoints();
+      parent = parent.parent;
+    }
+  }
+
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
@@ -66,6 +76,80 @@ class Geom extends Node {
       s += ' ' + item[0] + '="' + item[1] + '"';
     });
     return s + '></path></svg>';
+  }
+
+  override get bbox(): Float64Array {
+    if (!this._bbox) {
+      const bbox = (this._bbox = super.bbox);
+      // 可能不存在
+      this.buildPoints();
+      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+      let border = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5 * 4);
+          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          }
+        }
+      });
+      // 可能矢量编辑过程中超过原本尺寸范围
+      const points = this.points!;
+      if (points && points.length) {
+        const first = points[0];
+        let xa: number, ya: number;
+        if (first.length === 4) {
+          xa = first[2];
+          ya = first[3];
+        }
+        else if (first.length === 6) {
+          xa = first[4];
+          ya = first[5];
+        }
+        else {
+          xa = first[0];
+          ya = first[1];
+        }
+        mergeBbox(bbox, xa - border, ya - border, xa + border, ya + border);
+        for (let i = 1, len = points.length; i < len; i++) {
+          const item = points[i];
+          let xb: number, yb: number;
+          if (item.length === 4) {
+            xb = item[2];
+            yb = item[3];
+            const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
+            mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+          }
+          else if (item.length === 6) {
+            xb = item[4];
+            yb = item[5];
+            const b = bezier.bboxBezier(
+              xa,
+              ya,
+              item[0],
+              item[1],
+              item[2],
+              item[3],
+              xb,
+              yb,
+            );
+            mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+          }
+          else {
+            xb = item[0];
+            yb = item[1];
+            mergeBbox(bbox, xb - border, yb - border, xb + border, yb + border);
+          }
+          xa = xb;
+          ya = yb;
+        }
+      }
+    }
+    return this._bbox;
   }
 }
 

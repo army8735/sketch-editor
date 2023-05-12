@@ -1,5 +1,6 @@
 import * as uuid from 'uuid';
 import { getDefaultStyle, Props } from '../../format';
+import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { toPrecision } from '../../math/geom';
 import { isE } from '../../math/matrix';
@@ -23,6 +24,7 @@ import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
+import { mergeBbox } from '../../util/util';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -86,6 +88,12 @@ class ShapeGroup extends Group {
   override checkSizeChange() {
     super.checkSizeChange();
     this.points = undefined;
+  }
+
+  override clearPoints() {
+    this.points = undefined;
+    this._bbox = undefined;
+    this.clearCache(true);
   }
 
   override calContent(): boolean {
@@ -423,10 +431,75 @@ class ShapeGroup extends Group {
           }
         }
       });
-      bbox[0] -= border;
-      bbox[1] -= border;
-      bbox[2] += border;
-      bbox[3] += border;
+      // 子元素可能因为编辑模式临时超过范围
+      const points = this.points;
+      if (points && points.length) {
+        const first = points[0][0];
+        let xa: number, ya: number;
+        if (first.length === 4) {
+          xa = first[2];
+          ya = first[3];
+        } else if (first.length === 6) {
+          xa = first[4];
+          ya = first[5];
+        } else {
+          xa = first[0];
+          ya = first[1];
+        }
+        mergeBbox(bbox, xa - border, ya - border, xa + border, ya + border);
+        for (let i = 0, len = points.length; i < len; i++) {
+          const item = points[i];
+          for (let j = 0, len = item.length; j < len; j++) {
+            // first已经处理过了
+            if (!i && !j) {
+              continue;
+            }
+            const item2 = item[j];
+            // 每个区域的第一个特殊处理
+            if (!j) {
+              if (item2.length === 4) {
+                xa = item2[2];
+                ya = item2[3];
+              } else if (item2.length === 6) {
+                xa = item2[4];
+                ya = item2[5];
+              } else {
+                xa = item2[0];
+                ya = item2[1];
+              }
+              mergeBbox(bbox, xa - border, ya - border, xa + border, ya + border);
+              continue;
+            }
+            let xb: number, yb: number;
+            if (item2.length === 4) {
+              xb = item2[2];
+              yb = item2[3];
+              const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
+              mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+            } else if (item2.length === 6) {
+              xb = item2[4];
+              yb = item2[5];
+              const b = bezier.bboxBezier(
+                xa,
+                ya,
+                item2[0],
+                item2[1],
+                item2[2],
+                item2[3],
+                xb,
+                yb,
+              );
+              mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+            } else {
+              xb = item2[0];
+              yb = item2[1];
+              mergeBbox(bbox, xb - border, yb - border, xb + border, yb + border);
+            }
+            xa = xb;
+            ya = yb;
+          }
+        }
+      }
     }
     return this._bbox;
   }

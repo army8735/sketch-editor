@@ -484,6 +484,7 @@ function onMove(x, y, isOnControl) {
           });
         }
       }
+      selectNode.checkChangeAsShape();
       updateSelect();
     }
     // 拖拽节点本身
@@ -495,6 +496,7 @@ function onMove(x, y, isOnControl) {
           translateX: computedStyle.translateX + dx2,
           translateY: computedStyle.translateY + dy2,
         });
+        selectNode.checkChangeAsShape();
         updateSelect();
       }
     }
@@ -619,7 +621,7 @@ document.addEventListener('mouseup', function(e) {
         const dx = lastX - startX, dy = lastY - startY;
         // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
         if(dx || dy) {
-          selectNode.checkPosChange(selectNode);
+          selectNode.checkPosChange();
         }
       }
     }
