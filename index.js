@@ -23620,7 +23620,7 @@
             return res;
         }
         // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
-        updatePointBaseOnAP(points, matrix) {
+        updatePointsBaseOnAP(points, matrix) {
             var _a;
             if (!points.length) {
                 return points;
@@ -26042,7 +26042,7 @@
             if (!root) {
                 return;
             }
-            const { top, right, bottom, left, width, height, translateX, translateY, } = style;
+            const { top, right, bottom, left, width, height, translateX, translateY } = style;
             // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
             // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
             // 2个只要有发生，都会影响左右，因为干扰尺寸

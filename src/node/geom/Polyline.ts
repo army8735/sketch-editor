@@ -482,7 +482,7 @@ class Polyline extends Geom {
   }
 
   // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
-  updatePointBaseOnAP(points: Point[], matrix: Float64Array) {
+  updatePointsBaseOnAP(points: Point[], matrix: Float64Array) {
     if (!points.length) {
       return points;
     }
