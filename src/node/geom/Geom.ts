@@ -1,11 +1,11 @@
 import { Props } from '../../format';
+import bezier from '../../math/bezier';
+import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE, STROKE_POSITION } from '../../style/define';
-import { LayoutData } from '../layout';
-import { RefreshLevel } from '../../refresh/level';
 import { mergeBbox } from '../../util/util';
+import { LayoutData } from '../layout';
 import Node from '../Node';
-import bezier from '../../math/bezier';
 
 class Geom extends Node {
   points?: Array<Array<number>>;
@@ -105,12 +105,10 @@ class Geom extends Node {
         if (first.length === 4) {
           xa = first[2];
           ya = first[3];
-        }
-        else if (first.length === 6) {
+        } else if (first.length === 6) {
           xa = first[4];
           ya = first[5];
-        }
-        else {
+        } else {
           xa = first[0];
           ya = first[1];
         }
@@ -122,9 +120,14 @@ class Geom extends Node {
             xb = item[2];
             yb = item[3];
             const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-            mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
-          }
-          else if (item.length === 6) {
+            mergeBbox(
+              bbox,
+              b[0] - border,
+              b[1] - border,
+              b[2] + border,
+              b[3] + border,
+            );
+          } else if (item.length === 6) {
             xb = item[4];
             yb = item[5];
             const b = bezier.bboxBezier(
@@ -137,9 +140,14 @@ class Geom extends Node {
               xb,
               yb,
             );
-            mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
-          }
-          else {
+            mergeBbox(
+              bbox,
+              b[0] - border,
+              b[1] - border,
+              b[2] + border,
+              b[3] + border,
+            );
+          } else {
             xb = item[0];
             yb = item[1];
             mergeBbox(bbox, xb - border, yb - border, xb + border, yb + border);

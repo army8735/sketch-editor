@@ -20,11 +20,11 @@ import {
 import { getLinear, getRadial } from '../../style/gradient';
 import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
+import { mergeBbox } from '../../util/util';
 import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
-import { mergeBbox } from '../../util/util';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -467,7 +467,13 @@ class ShapeGroup extends Group {
                 xa = item2[0];
                 ya = item2[1];
               }
-              mergeBbox(bbox, xa - border, ya - border, xa + border, ya + border);
+              mergeBbox(
+                bbox,
+                xa - border,
+                ya - border,
+                xa + border,
+                ya + border,
+              );
               continue;
             }
             let xb: number, yb: number;
@@ -475,7 +481,13 @@ class ShapeGroup extends Group {
               xb = item2[2];
               yb = item2[3];
               const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
-              mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+              mergeBbox(
+                bbox,
+                b[0] - border,
+                b[1] - border,
+                b[2] + border,
+                b[3] + border,
+              );
             } else if (item2.length === 6) {
               xb = item2[4];
               yb = item2[5];
@@ -489,11 +501,23 @@ class ShapeGroup extends Group {
                 xb,
                 yb,
               );
-              mergeBbox(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+              mergeBbox(
+                bbox,
+                b[0] - border,
+                b[1] - border,
+                b[2] + border,
+                b[3] + border,
+              );
             } else {
               xb = item2[0];
               yb = item2[1];
-              mergeBbox(bbox, xb - border, yb - border, xb + border, yb + border);
+              mergeBbox(
+                bbox,
+                xb - border,
+                yb - border,
+                xb + border,
+                yb + border,
+              );
             }
             xa = xb;
             ya = yb;
