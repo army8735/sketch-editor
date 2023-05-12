@@ -16145,43 +16145,51 @@
             // 考虑是否声明了位置
             if (offset) {
                 if (offset.u === StyleUnit.PERCENT) {
-                    list.push([item.color.v, offset.v * 0.01]);
+                    list.push({
+                        color: item.color.v,
+                        offset: offset.v * 0.01,
+                    });
                 }
                 else {
-                    list.push([item.color.v, offset.v / length]);
+                    list.push({
+                        color: item.color.v,
+                        offset: offset.v / length,
+                    });
                 }
             }
             else {
-                list.push([item.color.v]);
+                list.push({
+                    color: item.color.v,
+                });
             }
         }
         if (list.length === 1) {
             list.push(clone(list[0]));
         }
         // 首尾不声明默认为[0, 1]
-        if (list[0].length === 1) {
-            list[0].push(0);
+        if (list[0].offset === undefined) {
+            list[0].offset = 0;
         }
         if (list.length > 1) {
             const i = list.length - 1;
-            if (list[i].length === 1) {
-                list[i].push(1);
+            if (list[i].offset === undefined) {
+                list[i].offset = 1;
             }
         }
         // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
-        let start = list[0][1];
+        let start = list[0].offset;
         for (let i = 1, len = list.length; i < len - 1; i++) {
             const item = list[i];
-            if (item.length > 1) {
-                start = item[1];
+            if (item.offset !== undefined) {
+                start = item.offset;
             }
             else {
                 let j = i + 1;
-                let end = list[list.length - 1][1];
+                let end = list[list.length - 1].offset;
                 for (; j < len - 1; j++) {
                     const item = list[j];
-                    if (item.length > 1) {
-                        end = item[1];
+                    if (item.offset !== undefined) {
+                        end = item.offset;
                         break;
                     }
                 }
@@ -16189,7 +16197,7 @@
                 const per = (end - start) / num;
                 for (let k = i; k < j; k++) {
                     const item = list[k];
-                    item.push(start + per * (k + 1 - i));
+                    item.offset = start + per * (k + 1 - i);
                 }
                 i = j;
             }
@@ -16198,64 +16206,70 @@
         // 0之前的和1之后的要过滤掉
         for (let i = 0, len = list.length; i < len; i++) {
             const item = list[i];
-            if (item[1] > 1) {
+            if (item.offset > 1) {
                 list.splice(i);
                 const prev = list[i - 1];
-                if (prev && prev[1] < 1) {
-                    const dr = item[0][0] - prev[0][0];
-                    const dg = item[0][1] - prev[0][1];
-                    const db = item[0][2] - prev[0][2];
-                    const da = item[0][3] - prev[0][3];
-                    const p = (1 - prev[1]) / (item[1] - prev[1]);
-                    list.push([
-                        [
-                            item[0][0] + dr * p,
-                            item[0][1] + dg * p,
-                            item[0][2] + db * p,
-                            item[0][3] + da * p,
+                if (prev && prev.offset < 1) {
+                    const dr = item.color[0] - prev.color[0];
+                    const dg = item.color[1] - prev.color[1];
+                    const db = item.color[2] - prev.color[2];
+                    const da = item.color[3] - prev.color[3];
+                    const p = (1 - prev.offset) / (item.offset - prev.offset);
+                    list.push({
+                        color: [
+                            item.color[0] + dr * p,
+                            item.color[1] + dg * p,
+                            item.color[2] + db * p,
+                            item.color[3] + da * p,
                         ],
-                        1,
-                    ]);
+                        offset: 1,
+                    });
                 }
                 break;
             }
         }
         for (let i = list.length - 1; i >= 0; i--) {
             const item = list[i];
-            if (item[1] < 0) {
+            if (item.offset < 0) {
                 list.splice(0, i + 1);
                 const next = list[i];
-                if (next && next[1] > 0) {
-                    const dr = next[0][0] - item[0][0];
-                    const dg = next[0][1] - item[0][1];
-                    const db = next[0][2] - item[0][2];
-                    const da = next[0][3] - item[0][3];
-                    const p = -item[1] / (next[1] - item[1]);
-                    list.unshift([
-                        [
-                            item[0][0] + dr * p,
-                            item[0][1] + dg * p,
-                            item[0][2] + db * p,
-                            item[0][3] + da * p,
+                if (next && next.offset > 0) {
+                    const dr = next.color[0] - item.color[0];
+                    const dg = next.color[1] - item.color[1];
+                    const db = next.color[2] - item.color[2];
+                    const da = next.color[3] - item.color[3];
+                    const p = -item.offset / (next.offset - item.offset);
+                    list.unshift({
+                        color: [
+                            item.color[0] + dr * p,
+                            item.color[1] + dg * p,
+                            item.color[2] + db * p,
+                            item.color[3] + da * p,
                         ],
-                        0,
-                    ]);
+                        offset: 0,
+                    });
                 }
                 break;
             }
         }
         // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
         list.forEach((item) => {
-            if (item[1] < 0) {
-                item[1] = 0;
+            if (item.offset < 0) {
+                item.offset = 0;
             }
-            else if (item[1] > 1) {
-                item[1] = 1;
+            else if (item.offset > 1) {
+                item.offset = 1;
             }
         });
         // 都超限时，第一个颜色兜底
         if (!list.length) {
-            list.push([firstColor, 0]);
+            list.push({
+                color: firstColor,
+                offset: 0,
+            }, {
+                color: firstColor,
+                offset: 1,
+            });
         }
         return list;
     }
@@ -22601,101 +22615,6 @@
         }
     }
 
-    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return;
-        }
-        // 防止空值开始
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return;
-        }
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
-        }
-        else if (first.length === 6) {
-            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
-        }
-        else {
-            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
-            }
-            else if (item.length === 4) {
-                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
-            }
-            else if (item.length === 6) {
-                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
-            }
-        }
-    }
-    function svgPolygon(list, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return '';
-        }
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return '';
-        }
-        let s;
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
-        }
-        else if (first.length === 6) {
-            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
-        }
-        else {
-            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
-            }
-            else if (item.length === 4) {
-                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
-            }
-            else if (item.length === 6) {
-                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
-            }
-        }
-        return s;
-    }
-
-    function mergeBbox$1(bbox, a, b, c, d) {
-        bbox[0] = Math.min(bbox[0], a);
-        bbox[1] = Math.min(bbox[1], b);
-        bbox[2] = Math.max(bbox[2], c);
-        bbox[3] = Math.max(bbox[3], d);
-    }
-
     /**
      * 二阶贝塞尔曲线范围框
      * @param x0
@@ -23193,6 +23112,101 @@
         bezierSlope,
     };
 
+    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return;
+        }
+        // 防止空值开始
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return;
+        }
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
+        }
+        else if (first.length === 6) {
+            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
+        }
+        else {
+            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
+            }
+            else if (item.length === 4) {
+                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
+            }
+            else if (item.length === 6) {
+                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
+            }
+        }
+    }
+    function svgPolygon(list, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return '';
+        }
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return '';
+        }
+        let s;
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
+        }
+        else if (first.length === 6) {
+            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
+        }
+        else {
+            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
+            }
+            else if (item.length === 4) {
+                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
+            }
+            else if (item.length === 6) {
+                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
+            }
+        }
+        return s;
+    }
+
+    function mergeBbox$1(bbox, a, b, c, d) {
+        bbox[0] = Math.min(bbox[0], a);
+        bbox[1] = Math.min(bbox[1], b);
+        bbox[2] = Math.max(bbox[2], c);
+        bbox[3] = Math.max(bbox[3], d);
+    }
+
     class Geom extends Node {
         static isLine(node) {
             if (node instanceof Geom) {
@@ -23564,7 +23578,7 @@
                         const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
-                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            lg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.fillStyle = lg;
                     }
@@ -23572,7 +23586,7 @@
                         const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
-                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.fillStyle = rg;
                     }
@@ -23617,7 +23631,7 @@
                         const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
-                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            lg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.strokeStyle = lg;
                     }
@@ -23625,7 +23639,7 @@
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
-                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.strokeStyle = rg;
                     }
@@ -26452,7 +26466,7 @@
                         const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
-                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            lg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.fillStyle = lg;
                     }
@@ -26460,7 +26474,7 @@
                         const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
-                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.fillStyle = rg;
                     }
@@ -26506,7 +26520,7 @@
                         const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
-                            lg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            lg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.strokeStyle = lg;
                     }
@@ -26514,7 +26528,7 @@
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
-                            rg.addColorStop(item[1], color2rgbaStr(item[0]));
+                            rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.strokeStyle = rg;
                     }

@@ -252,7 +252,7 @@ class ShapeGroup extends Group {
           );
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
-            lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+            lg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = lg;
         } else if (f.t === GRADIENT.RADIAL) {
@@ -273,7 +273,7 @@ class ShapeGroup extends Group {
             gd.total,
           );
           gd.stop.forEach((item) => {
-            rg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+            rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = rg;
         }
@@ -314,7 +314,7 @@ class ShapeGroup extends Group {
           const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
-            lg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+            lg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.strokeStyle = lg;
         } else if (s.t === GRADIENT.RADIAL) {
@@ -328,7 +328,7 @@ class ShapeGroup extends Group {
             gd.total,
           );
           gd.stop.forEach((item) => {
-            rg.addColorStop(item[1]!, color2rgbaStr(item[0]));
+            rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.strokeStyle = rg;
         }

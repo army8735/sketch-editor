@@ -5,7 +5,7 @@ import reg from './reg';
 
 // 获取color-stop区间范围，去除无用值
 function getColorStop(stops: Array<ColorStop>, length: number) {
-  const list: Array<[Array<number>, number?]> = [];
+  const list: Array<{ color: Array<number>, offset?: number }> = [];
   const firstColor = stops[0].color.v;
   // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
   for (let i = 0, len = stops.length; i < len; i++) {
@@ -14,40 +14,48 @@ function getColorStop(stops: Array<ColorStop>, length: number) {
     // 考虑是否声明了位置
     if (offset) {
       if (offset.u === StyleUnit.PERCENT) {
-        list.push([item.color.v, offset.v * 0.01]);
+        list.push({
+          color: item.color.v,
+          offset: offset.v * 0.01,
+        });
       } else {
-        list.push([item.color.v, offset.v / length]);
+        list.push({
+          color: item.color.v,
+          offset: offset.v / length,
+        });
       }
     } else {
-      list.push([item.color.v]);
+      list.push({
+        color: item.color.v,
+      });
     }
   }
   if (list.length === 1) {
     list.push(clone(list[0]));
   }
   // 首尾不声明默认为[0, 1]
-  if (list[0].length === 1) {
-    list[0].push(0);
+  if (list[0].offset === undefined) {
+    list[0].offset = 0;
   }
   if (list.length > 1) {
     const i = list.length - 1;
-    if (list[i].length === 1) {
-      list[i].push(1);
+    if (list[i].offset === undefined) {
+      list[i].offset = 1;
     }
   }
   // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
-  let start = list[0][1];
+  let start = list[0].offset;
   for (let i = 1, len = list.length; i < len - 1; i++) {
     const item = list[i];
-    if (item.length > 1) {
-      start = item[1];
+    if (item.offset !== undefined) {
+      start = item.offset;
     } else {
       let j = i + 1;
-      let end = list[list.length - 1][1];
+      let end = list[list.length - 1].offset;
       for (; j < len - 1; j++) {
         const item = list[j];
-        if (item.length > 1) {
-          end = item[1];
+        if (item.offset !== undefined) {
+          end = item.offset;
           break;
         }
       }
@@ -55,7 +63,7 @@ function getColorStop(stops: Array<ColorStop>, length: number) {
       const per = (end! - start!) / num;
       for (let k = i; k < j; k++) {
         const item = list[k];
-        item.push(start! + per * (k + 1 - i));
+        item.offset = start! + per * (k + 1 - i)
       }
       i = j;
     }
@@ -64,63 +72,69 @@ function getColorStop(stops: Array<ColorStop>, length: number) {
   // 0之前的和1之后的要过滤掉
   for (let i = 0, len = list.length; i < len; i++) {
     const item = list[i];
-    if (item[1]! > 1) {
+    if (item.offset! > 1) {
       list.splice(i);
       const prev = list[i - 1];
-      if (prev && prev[1]! < 1) {
-        const dr = item[0][0] - prev[0][0];
-        const dg = item[0][1] - prev[0][1];
-        const db = item[0][2] - prev[0][2];
-        const da = item[0][3] - prev[0][3];
-        const p = (1 - prev[1]!) / (item[1]! - prev[1]!);
-        list.push([
-          [
-            item[0][0] + dr * p,
-            item[0][1] + dg * p,
-            item[0][2] + db * p,
-            item[0][3] + da * p,
+      if (prev && prev.offset! < 1) {
+        const dr = item.color[0] - prev.color[0];
+        const dg = item.color[1] - prev.color[1];
+        const db = item.color[2] - prev.color[2];
+        const da = item.color[3] - prev.color[3];
+        const p = (1 - prev.offset!) / (item.offset! - prev.offset!);
+        list.push({
+          color: [
+            item.color[0] + dr * p,
+            item.color[1] + dg * p,
+            item.color[2] + db * p,
+            item.color[3] + da * p,
           ],
-          1,
-        ]);
+          offset: 1,
+        });
       }
       break;
     }
   }
   for (let i = list.length - 1; i >= 0; i--) {
     const item = list[i];
-    if (item[1]! < 0) {
+    if (item.offset! < 0) {
       list.splice(0, i + 1);
       const next = list[i];
-      if (next && next[1]! > 0) {
-        const dr = next[0][0] - item[0][0];
-        const dg = next[0][1] - item[0][1];
-        const db = next[0][2] - item[0][2];
-        const da = next[0][3] - item[0][3];
-        const p = -item[1]! / (next[1]! - item[1]!);
-        list.unshift([
-          [
-            item[0][0] + dr * p,
-            item[0][1] + dg * p,
-            item[0][2] + db * p,
-            item[0][3] + da * p,
+      if (next && next.offset! > 0) {
+        const dr = next.color[0] - item.color[0];
+        const dg = next.color[1] - item.color[1];
+        const db = next.color[2] - item.color[2];
+        const da = next.color[3] - item.color[3];
+        const p = -item.offset! / (next.offset! - item.offset!);
+        list.unshift({
+          color: [
+            item.color[0] + dr * p,
+            item.color[1] + dg * p,
+            item.color[2] + db * p,
+            item.color[3] + da * p,
           ],
-          0,
-        ]);
+          offset: 0,
+       });
       }
       break;
     }
   }
   // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
   list.forEach((item) => {
-    if (item[1]! < 0) {
-      item[1] = 0;
-    } else if (item[1]! > 1) {
-      item[1] = 1;
+    if (item.offset! < 0) {
+      item.offset = 0;
+    } else if (item.offset! > 1) {
+      item.offset = 1;
     }
   });
   // 都超限时，第一个颜色兜底
   if (!list.length) {
-    list.push([firstColor, 0]);
+    list.push({
+      color: firstColor,
+      offset: 0,
+    }, {
+      color: firstColor,
+      offset: 1,
+    });
   }
   return list;
 }
