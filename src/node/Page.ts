@@ -169,15 +169,15 @@ class Page extends Container {
     // 可视矩形和浏览器画布矩形长短比例不一定一致，一边缩放后另一边需居中对齐，以较长的一边为缩放基准
     if (sx >= sy) {
       this.updateStyle({
-        translateX: -tx - (w * sy - width) * 0.5,
-        translateY: -ty,
+        translateX: -tx * sy - (w * sy - width) * 0.5,
+        translateY: -ty * sy,
         scaleX: sy,
         scaleY: sy,
       });
     } else {
       this.updateStyle({
-        translateX: -tx,
-        translateY: -ty - (h * sx - height) * 0.5,
+        translateX: -tx * sx,
+        translateY: -ty * sx - (h * sx - height) * 0.5,
         scaleX: sx,
         scaleY: sx,
       });
