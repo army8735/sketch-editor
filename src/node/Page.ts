@@ -7,7 +7,9 @@ import {
   Props,
   TextProps,
 } from '../format/';
-import { calPoint } from '../math/matrix';
+import { calPoint, inverse4 } from '../math/matrix';
+import { normalize } from '../style/css';
+import { calMatrix } from '../style/transform';
 import ArtBoard from './ArtBoard';
 import Bitmap from './Bitmap';
 import Container from './Container';
@@ -76,8 +78,44 @@ class Page extends Container {
     }
   }
 
-  zoomTo(scale: number) {
+  // 以cx/cy为中心点进行缩放，默认画布50%中心处
+  zoomTo(scale: number, cx = 0.5, cy = 0.5) {
+    if (!this.root || this.isDestroyed) {
+      this.updateStyle({
+        scaleX: scale,
+        scaleY: scale,
+      });
+      return;
+    }
+    const { translateX, translateY, scaleX } = this.getComputedStyle();
+    if (scaleX === scale) {
+      return;
+    }
+    const i = inverse4(this.matrixWorld);
+    const { width, height, dpi } = this.root;
+    const x = (cx * width) / dpi;
+    const y = (cy * height) / dpi;
+    const pt = {
+      x: x * dpi,
+      y: y * dpi,
+    };
+    // 求出鼠标屏幕坐标在画布内相对page的坐标
+    const pt1 = calPoint(pt, i);
+    const style = normalize({
+      translateX,
+      translateY,
+      scaleX: scale,
+      scaleY: scale,
+    });
+    const newMatrix = calMatrix(style);
+    // 新缩放尺寸，位置不动，相对page坐标在新matrix下的坐标
+    const pt2 = calPoint(pt1, newMatrix);
+    // 差值是需要调整的距离
+    const dx = pt2.x - pt.x / dpi;
+    const dy = pt2.y - pt.y / dpi;
     this.updateStyle({
+      translateX: translateX - dx,
+      translateY: translateY - dy,
       scaleX: scale,
       scaleY: scale,
     });

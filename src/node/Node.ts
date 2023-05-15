@@ -611,7 +611,7 @@ class Node extends Event {
       }
     }
     // 无论是否真实dom，都清空
-    this.prev = this.next = this.parent = this.root = undefined;
+    this.prev = this.next = undefined;
     // 特殊的判断，防止Page/ArtBoard自身删除了引用
     if (!this.isPage) {
       this.page = undefined;
@@ -634,7 +634,7 @@ class Node extends Event {
     }
     this.isDestroyed = true;
     this.clearCache(true);
-    this.mask = undefined;
+    this.parent = this.root = this.mask = undefined;
   }
 
   structure(lv: number): Array<Struct> {

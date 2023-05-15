@@ -49,7 +49,7 @@ export function isGradient(s: string) {
   return false;
 }
 
-export function normalize(style: JStyle): Style {
+export function normalize(style: any): Style {
   const res: any = {};
   ['left', 'top', 'right', 'bottom', 'width', 'height'].forEach((k) => {
     let v = style[k as keyof JStyle];
@@ -181,7 +181,7 @@ export function normalize(style: JStyle): Style {
   }
   const fill = style.fill;
   if (!isNil(fill)) {
-    res.fill = fill.map((item) => {
+    res.fill = fill.map((item: any) => {
       if (isString(item) && isGradient(item as string)) {
         const v = parseGradient(item as string);
         if (v) {
@@ -193,7 +193,7 @@ export function normalize(style: JStyle): Style {
   }
   const fillEnable = style.fillEnable;
   if (!isNil(fillEnable)) {
-    res.fillEnable = fillEnable.map((item) => {
+    res.fillEnable = fillEnable.map((item: any) => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
@@ -206,7 +206,7 @@ export function normalize(style: JStyle): Style {
   }
   const stroke = style.stroke;
   if (!isNil(stroke)) {
-    res.stroke = stroke.map((item) => {
+    res.stroke = stroke.map((item: any) => {
       if (isString(item) && isGradient(item as string)) {
         return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
       } else {
@@ -216,19 +216,19 @@ export function normalize(style: JStyle): Style {
   }
   const strokeEnable = style.strokeEnable;
   if (!isNil(strokeEnable)) {
-    res.strokeEnable = strokeEnable.map((item) => {
+    res.strokeEnable = strokeEnable.map((item: any) => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
   const strokeWidth = style.strokeWidth;
   if (!isNil(strokeWidth)) {
-    res.strokeWidth = strokeWidth.map((item) => {
+    res.strokeWidth = strokeWidth.map((item: any) => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
   const strokePosition = style.strokePosition;
   if (!isNil(strokePosition)) {
-    res.strokePosition = strokePosition.map((item) => {
+    res.strokePosition = strokePosition.map((item: any) => {
       let v = STROKE_POSITION.CENTER;
       if (item === 'inside') {
         v = STROKE_POSITION.INSIDE;
@@ -240,7 +240,7 @@ export function normalize(style: JStyle): Style {
   }
   const strokeDasharray = style.strokeDasharray;
   if (!isNil(strokeDasharray)) {
-    res.strokeDasharray = strokeDasharray.map((item) => {
+    res.strokeDasharray = strokeDasharray.map((item: any) => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
@@ -452,15 +452,18 @@ export function equalStyle(k: string, a: Style, b: Style) {
       return false;
     }
     for (let i = 0, len = av.length; i < len; i++) {
-      const ai = av[i], bi = bv[i];
+      const ai = av[i],
+        bi = bv[i];
       if (ai.u !== bi.u) {
         return false;
       }
       if (ai.u === StyleUnit.RGBA) {
-        if (ai.v[0] !== bi.v[0] ||
+        if (
+          ai.v[0] !== bi.v[0] ||
           ai.v[1] !== bi.v[1] ||
           ai.v[2] !== bi.v[2] ||
-          ai.v[3] !== bi.v[3]) {
+          ai.v[3] !== bi.v[3]
+        ) {
           return false;
         }
       } else if (ai.u === StyleUnit.GRADIENT) {
@@ -481,13 +484,15 @@ export function equalStyle(k: string, a: Style, b: Style) {
         for (let i = 0, len = ai.v.stops.length; i < len; i++) {
           const as = ai.v.stops[i],
             bs = bi.v.stops[i];
-          if (as.color.v[0] !== bs.color.v[0] ||
+          if (
+            as.color.v[0] !== bs.color.v[0] ||
             as.color.v[1] !== bs.color.v[1] ||
             as.color.v[2] !== bs.color.v[2] ||
-            as.color.v[3] !== bs.color.v[3]) {
+            as.color.v[3] !== bs.color.v[3]
+          ) {
             return false;
           }
-          if (as.offset && !bs.offset || !as.offset && bs.offset) {
+          if ((as.offset && !bs.offset) || (!as.offset && bs.offset)) {
             return false;
           }
           if (as.offset.u !== bs.offset.u || as.offset.v !== bs.offset.v) {
@@ -498,17 +503,20 @@ export function equalStyle(k: string, a: Style, b: Style) {
     }
     return true;
   }
-  if (k === 'fillEnable' ||
+  if (
+    k === 'fillEnable' ||
     k === 'fillRule' ||
     k === 'strokeEnable' ||
     k === 'strokeWidth' ||
     k === 'strokePosition' ||
-    k === 'strokeDasharray') {
+    k === 'strokeDasharray'
+  ) {
     if (av.length !== bv.length) {
       return false;
     }
     for (let i = 0, len = av.length; i < len; i++) {
-      const ai = av[i], bi = bv[i];
+      const ai = av[i],
+        bi = bv[i];
       if (ai.u !== bi.u || ai.v !== bi.v) {
         return false;
       }

@@ -16946,7 +16946,7 @@
                             as.color.v[3] !== bs.color.v[3]) {
                             return false;
                         }
-                        if (as.offset && !bs.offset || !as.offset && bs.offset) {
+                        if ((as.offset && !bs.offset) || (!as.offset && bs.offset)) {
                             return false;
                         }
                         if (as.offset.u !== bs.offset.u || as.offset.v !== bs.offset.v) {
@@ -21149,7 +21149,7 @@
                 }
             }
             // 无论是否真实dom，都清空
-            this.prev = this.next = this.parent = this.root = undefined;
+            this.prev = this.next = undefined;
             // 特殊的判断，防止Page/ArtBoard自身删除了引用
             if (!this.isPage) {
                 this.page = undefined;
@@ -21171,7 +21171,7 @@
             }
             this.isDestroyed = true;
             this.clearCache(true);
-            this.mask = undefined;
+            this.parent = this.root = this.mask = undefined;
         }
         structure(lv) {
             const temp = this.struct;
@@ -27328,8 +27328,44 @@
                 this.json = undefined;
             }
         }
-        zoomTo(scale) {
+        // 以cx/cy为中心点进行缩放，默认画布50%中心处
+        zoomTo(scale, cx = 0.5, cy = 0.5) {
+            if (!this.root || this.isDestroyed) {
+                this.updateStyle({
+                    scaleX: scale,
+                    scaleY: scale,
+                });
+                return;
+            }
+            const { translateX, translateY, scaleX } = this.getComputedStyle();
+            if (scaleX === scale) {
+                return;
+            }
+            const i = inverse4(this.matrixWorld);
+            const { width, height, dpi } = this.root;
+            const x = (cx * width) / dpi;
+            const y = (cy * height) / dpi;
+            const pt = {
+                x: x * dpi,
+                y: y * dpi,
+            };
+            // 求出鼠标屏幕坐标在画布内相对page的坐标
+            const pt1 = calPoint(pt, i);
+            const style = normalize({
+                translateX,
+                translateY,
+                scaleX: scale,
+                scaleY: scale,
+            });
+            const newMatrix = calMatrix(style);
+            // 新缩放尺寸，位置不动，相对page坐标在新matrix下的坐标
+            const pt2 = calPoint(pt1, newMatrix);
+            // 差值是需要调整的距离
+            const dx = pt2.x - pt.x / dpi;
+            const dy = pt2.y - pt.y / dpi;
             this.updateStyle({
+                translateX: translateX - dx,
+                translateY: translateY - dy,
                 scaleX: scale,
                 scaleY: scale,
             });
@@ -30196,9 +30232,9 @@ void main() {
                 return page.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv === undefined ? lv : lv + 3);
             }
         }
-        zoomTo(scale) {
+        zoomTo(scale, cx, cy) {
             var _a;
-            (_a = this.lastPage) === null || _a === void 0 ? void 0 : _a.zoomTo(scale);
+            (_a = this.lastPage) === null || _a === void 0 ? void 0 : _a.zoomTo(scale, cx, cy);
         }
         zoomFit() {
             var _a;

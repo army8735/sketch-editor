@@ -733,14 +733,9 @@ $main.addEventListener('wheel', function(e) {
     }
     const x = lastX - originX;
     const y = lastY - originY;
-    const pt = {
-      x: x * dpi,
-      y: y * dpi,
-    };
-    const { translateX, translateY, scaleX } = curPage.getComputedStyle();
-    const inverse = editor.math.matrix.inverse(curPage.matrixWorld);
-    // 求出鼠标屏幕坐标在画布内相对page的坐标
-    const pt1 = editor.math.matrix.calPoint(pt, inverse);
+    const x1 = x * dpi / root.width;
+    const y1 = y * dpi / root.height;
+    const scaleX = curPage.computedStyle.scaleX;
     let scale = scaleX * sc;
     if(scale > 32) {
       scale = 32;
@@ -748,23 +743,7 @@ $main.addEventListener('wheel', function(e) {
     else if(scale < 0.03125) {
       scale = 0.03125;
     }
-    const style = editor.style.css.normalize({
-      translateX,
-      translateY,
-      scaleX: scale,
-      scaleY: scale,
-    });
-    const newMatrix = editor.style.transform.calMatrix(style);
-    // 新缩放尺寸，位置不动，相对page坐标在新matrix下的坐标
-    const pt2 = editor.math.matrix.calPoint(pt1, newMatrix);
-    // 差值是需要调整的距离
-    const dx = pt2.x - pt.x / dpi, dy = pt2.y - pt.y / dpi;
-    curPage.updateStyle({
-      translateX: translateX - dx,
-      translateY: translateY - dy,
-      scaleX: scale,
-      scaleY: scale,
-    });
+    root.zoomTo(scale, x1, y1);
     zoom = curPage.getZoom();
   }
   // shift+滚轮是移动

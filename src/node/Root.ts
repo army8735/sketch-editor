@@ -508,8 +508,8 @@ class Root extends Container implements FrameCallback {
     }
   }
 
-  zoomTo(scale: number) {
-    this.lastPage?.zoomTo(scale);
+  zoomTo(scale: number, cx?: number, cy?: number) {
+    this.lastPage?.zoomTo(scale, cx, cy);
   }
 
   zoomFit() {
