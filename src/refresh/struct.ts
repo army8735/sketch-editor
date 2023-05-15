@@ -614,23 +614,14 @@ function genBboxTotal(
 function mergeBbox(bbox: Float64Array, t: Float64Array, matrix: Float64Array) {
   let [x1, y1, x2, y2] = bbox;
   if (!isE(matrix)) {
-    const t = calPoint({ x: x1, y: y1 }, matrix);
-    let xa = t.x,
-      ya = t.y,
-      xb = t.x,
-      yb = t.y;
-    const list = [x2, y1, x1, y2, x2, y2];
-    for (let i = 0; i < 6; i += 2) {
-      const t = calPoint({ x: list[i], y: list[i + 1] }, matrix);
-      xa = Math.min(xa, t.x);
-      ya = Math.min(ya, t.y);
-      xb = Math.max(xb, t.x);
-      yb = Math.max(yb, t.y);
-    }
-    x1 = xa;
-    y1 = ya;
-    x2 = xb;
-    y2 = yb;
+    const t1 = calPoint({ x: x1, y: y1 }, matrix);
+    const t2 = calPoint({ x: x1, y: y2 }, matrix);
+    const t3 = calPoint({ x: x2, y: y1 }, matrix);
+    const t4 = calPoint({ x: x2, y: y2 }, matrix);
+    x1 = Math.min(t1.x, t2.x, t3.x, t4.x);
+    y1 = Math.min(t1.y, t2.y, t3.y, t4.y);
+    x2 = Math.max(t1.x, t2.x, t3.x, t4.x);
+    y2 = Math.max(t1.y, t2.y, t3.y, t4.y);
   }
   bbox[0] = Math.min(bbox[0], x1);
   bbox[1] = Math.min(bbox[1], y1);

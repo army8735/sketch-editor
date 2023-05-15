@@ -507,6 +507,14 @@ class Root extends Container implements FrameCallback {
       );
     }
   }
+
+  zoomTo(scale: number) {
+    this.lastPage?.zoomTo(scale);
+  }
+
+  zoomFit() {
+    this.lastPage?.zoomFit();
+  }
 }
 
 export default Root;
