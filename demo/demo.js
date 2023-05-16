@@ -26,6 +26,24 @@ let abHash = {}, pageHash = {};
 let hoverTree, selectTree;
 let zoom = 1;
 
+async function initFonts() {
+  try {
+    const status = await navigator.permissions.query({
+      name: 'local-fonts',
+    });
+    if(status.state !== 'granted') {
+      console.error('No Permission.');
+      return;
+    }
+    const fonts = await window.queryLocalFonts();
+    editor.style.font.registerLocalFonts(fonts);
+  } catch(err) {
+    console.error(err.message);
+  }
+}
+
+initFonts();
+
 $input.onchange = function(e) {
   const file = $input.files[0];
   $input.value = null;
