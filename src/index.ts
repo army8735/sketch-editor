@@ -1,5 +1,5 @@
 import { TagName, JFile } from './format';
-import { openAndConvertSketchBuffer } from './format/sketch';
+import { openAndConvertSketchBuffer, convertSketch } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
 import math from './math';
@@ -45,6 +45,7 @@ export default {
     return root;
   },
   openAndConvertSketchBuffer,
+  convertSketch,
   node,
   refresh,
   style,

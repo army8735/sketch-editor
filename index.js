@@ -18357,7 +18357,7 @@
         let ff = fontFamily.split(/\s*,\s*/);
         for (let i = 0, len = ff.length; i < len; i++) {
             let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
-            if (o.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+            if (o.hasRegister(item) || inject.checkSupportFontFamily(item)) {
                 return item;
             }
         }
@@ -18368,7 +18368,7 @@
             ff = calFontFamily(style.fontFamily);
         }
         return Math.ceil(style.fontSize *
-            (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial)
+            (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
                 .lhr);
     }
     /**
@@ -18383,7 +18383,7 @@
         let normal = calNormalLineHeight(style, ff);
         return ((style.lineHeight - normal) * 0.5 +
             fontSize *
-                (o.info[ff] || o.info[inject.defaultFontFamily] || o.info.arial)
+                (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
                     .blr);
     }
     function calSize(v, p) {
@@ -31546,6 +31546,7 @@ void main() {
             return root;
         },
         openAndConvertSketchBuffer,
+        convertSketch,
         node,
         refresh,
         style,

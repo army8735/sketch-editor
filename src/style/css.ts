@@ -658,7 +658,7 @@ export function calFontFamily(fontFamily: string) {
   let ff = fontFamily.split(/\s*,\s*/);
   for (let i = 0, len = ff.length; i < len; i++) {
     let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
-    if (font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+    if (font.hasRegister(item) || inject.checkSupportFontFamily(item)) {
       return item;
     }
   }
@@ -671,7 +671,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   }
   return Math.ceil(
     style.fontSize *
-    (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial)
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
       .lhr,
   );
 }
@@ -689,7 +689,7 @@ export function getBaseline(style: ComputedStyle | Rich) {
   return (
     (style.lineHeight - normal) * 0.5 +
     fontSize *
-    (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial)
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
       .blr
   );
 }
