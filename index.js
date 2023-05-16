@@ -16134,11 +16134,12 @@
         /* decode code lengths for the dynamic trees */
         for (num = 0; num < hlit + hdist;) {
           let sym = tinf_decode_symbol(d, code_tree);
+          let prev;
 
           switch (sym) {
             case 16:
               /* copy previous code length 3-6 times (read 2 bits) */
-              let prev = lengths[num - 1];
+              prev = lengths[num - 1];
               for (length = tinf_read_bits(d, 2, 3); length; --length) {
                 lengths[num++] = prev;
               }
@@ -17203,33 +17204,35 @@
         registerLocalFonts(fonts) {
             return __awaiter(this, void 0, void 0, function* () {
                 for (let k in fonts) {
-                    const font = fonts[k];
-                    const postscriptName = font.postscriptName.toLowerCase();
-                    const family = font.family.toLowerCase();
-                    const style = font.style.toLowerCase();
-                    if (!this.info.hasOwnProperty(family)) {
-                        const o = this.info[family] = {
-                            styles: [],
-                        };
-                        const blob = yield font.blob();
-                        const arrayBuffer = yield blob.arrayBuffer();
-                        const f = opentype.parse(arrayBuffer);
-                        if (f && f.name && f.name.fontFamily) {
-                            o.name = f.name.fontFamily.zh;
+                    if (fonts.hasOwnProperty(k)) {
+                        const font = fonts[k];
+                        const postscriptName = font.postscriptName.toLowerCase();
+                        const family = font.family.toLowerCase();
+                        const style = font.style.toLowerCase();
+                        if (!this.info.hasOwnProperty(family)) {
+                            const o = this.info[family] = {
+                                styles: [],
+                            };
+                            const blob = yield font.blob();
+                            const arrayBuffer = yield blob.arrayBuffer();
+                            const f = opentype.parse(arrayBuffer);
+                            if (f && f.name && f.name.fontFamily) {
+                                o.name = f.name.fontFamily.zh || f.name.fontFamily.en;
+                            }
+                            if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
+                                const spread = Math.round((f.ascent + f.descent) * 0.15);
+                                o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
+                                o.blr = (f.ascent + spread) / f.emSquare;
+                            }
+                            else {
+                                o.lhr = (f.ascent + f.descent + f.lineGap) / f.emSquare;
+                                o.blr = f.ascent / f.emSquare;
+                            }
+                            o.lgr = f.lineGap / f.emSquare;
                         }
-                        if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
-                            const spread = Math.round((f.ascent + f.descent) * 0.15);
-                            o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
-                            o.blr = (f.ascent + spread) / f.emSquare;
-                        }
-                        else {
-                            o.lhr = (f.ascent + f.descent + f.lineGap) / f.emSquare;
-                            o.blr = f.ascent / f.emSquare;
-                        }
-                        o.lgr = f.lineGap / f.emSquare;
+                        this.info[family].styles.push(style);
+                        this.info[postscriptName] = this.info[family];
                     }
-                    this.info[family].styles.push(style);
-                    this.info[postscriptName] = this.info[family];
                 }
             });
         },
@@ -17347,7 +17350,7 @@
             return obj;
         }
         const n = Array.isArray(obj) ? [] : {};
-        Object.keys(obj).forEach(i => {
+        Object.keys(obj).forEach((i) => {
             n[i] = clone(obj[i]);
         });
         return n;
@@ -17356,6 +17359,7 @@
         type,
         Event,
         inject,
+        opentype,
     };
 
     var reg = {

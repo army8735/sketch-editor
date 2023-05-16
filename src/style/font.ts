@@ -20,32 +20,35 @@ const o: any = {
   },
   async registerLocalFonts(fonts: any) {
     for (let k in fonts) {
-      const font = fonts[k];
-      const postscriptName = font.postscriptName.toLowerCase();
-      const family = font.family.toLowerCase();
-      const style = font.style.toLowerCase();
-      if (!this.info.hasOwnProperty(family)) {
-        const o: any = this.info[family] = {
-          styles: [],
-        };
-        const blob = await font.blob();
-        const arrayBuffer = await blob.arrayBuffer();
-        const f: any = opentype.parse(arrayBuffer);
-        if (f && f.name && f.name.fontFamily) {
-          o.name = f.name.fontFamily.zh;
+      if (fonts.hasOwnProperty(k)) {
+        const font = fonts[k];
+        const postscriptName = font.postscriptName.toLowerCase();
+        const family = font.family.toLowerCase();
+        const style = font.style.toLowerCase();
+        if (!this.info.hasOwnProperty(family)) {
+          const o: any = this.info[family] = {
+            styles: [],
+          };
+          const blob = await font.blob();
+          const arrayBuffer = await blob.arrayBuffer();
+          const f: any = opentype.parse(arrayBuffer);
+          if (f && f.name && f.name.fontFamily) {
+            o.name = f.name.fontFamily.zh || f.name.fontFamily.en;
+          }
+          if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
+            const spread = Math.round((f.ascent + f.descent) * 0.15);
+            o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
+            o.blr = (f.ascent + spread) / f.emSquare;
+          }
+          else {
+            o.lhr = (f.ascent + f.descent + f.lineGap) / f.emSquare;
+            o.blr = f.ascent / f.emSquare;
+          }
+          o.lgr = f.lineGap / f.emSquare;
         }
-        if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
-          const spread = Math.round((f.ascent + f.descent) * 0.15);
-          o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
-          o.blr = (f.ascent + spread) / f.emSquare;
-        } else {
-          o.lhr = (f.ascent + f.descent + f.lineGap) / f.emSquare;
-          o.blr = f.ascent / f.emSquare;
-        }
-        o.lgr = f.lineGap / f.emSquare;
+        this.info[family].styles.push(style);
+        this.info[postscriptName] = this.info[family];
       }
-      this.info[family].styles.push(style);
-      this.info[postscriptName] = this.info[family];
     }
   },
 };

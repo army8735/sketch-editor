@@ -208,11 +208,12 @@ const inflate = (function() {
     /* decode code lengths for the dynamic trees */
     for (num = 0; num < hlit + hdist;) {
       let sym = tinf_decode_symbol(d, code_tree);
+      let prev;
 
       switch (sym) {
         case 16:
           /* copy previous code length 3-6 times (read 2 bits) */
-          let prev = lengths[num - 1];
+          prev = lengths[num - 1];
           for (length = tinf_read_bits(d, 2, 3); length; --length) {
             lengths[num++] = prev;
           }

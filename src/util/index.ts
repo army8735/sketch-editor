@@ -1,17 +1,18 @@
-import type, { isNil, isDate, isPlainObject } from './type';
 import Event from './Event';
 import inject from './inject';
+import opentype from './opentype';
+import type, { isDate, isNil, isPlainObject } from './type';
 
 export function extend(target: any, source: any, keys?: Array<string>) {
-  if(source === null || typeof source !== 'object') {
+  if (source === null || typeof source !== 'object') {
     return target;
   }
-  if(!keys) {
+  if (!keys) {
     keys = Object.keys(source);
   }
   let i = 0;
   const len = keys.length;
-  while(i < len) {
+  while (i < len) {
     const k = keys[i];
     target[k] = source[k];
     i++;
@@ -20,17 +21,17 @@ export function extend(target: any, source: any, keys?: Array<string>) {
 }
 
 export function clone(obj: any) {
-  if(isNil(obj) || typeof obj !== 'object') {
+  if (isNil(obj) || typeof obj !== 'object') {
     return obj;
   }
-  if(isDate(obj)) {
+  if (isDate(obj)) {
     return new Date(obj);
   }
-  if(!isPlainObject(obj) && !Array.isArray(obj)) {
+  if (!isPlainObject(obj) && !Array.isArray(obj)) {
     return obj;
   }
   const n: any = Array.isArray(obj) ? [] : {};
-  Object.keys(obj).forEach(i => {
+  Object.keys(obj).forEach((i) => {
     n[i] = clone(obj[i]);
   });
   return n;
@@ -40,4 +41,5 @@ export default {
   type,
   Event,
   inject,
+  opentype,
 };
