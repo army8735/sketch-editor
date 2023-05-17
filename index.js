@@ -24720,9 +24720,9 @@
                     // 先看最普通的直线，可以用角平分线+半径最小值约束求解
                     if (isPrevStraight && isNextStraight) {
                         // 2直线边长，ABC3个点，A是prev，B是curr，C是next
-                        const lenAB = pointsDistance(prevPoint.x, prevPoint.y, point.x, point.y);
-                        const lenBC = pointsDistance(point.x, point.y, nextPoint.x, nextPoint.y);
-                        const lenAC = pointsDistance(prevPoint.x, prevPoint.y, nextPoint.x, nextPoint.y);
+                        const lenAB = pointsDistance(prevPoint.absX, prevPoint.absY, point.absX, point.absY);
+                        const lenBC = pointsDistance(point.absX, point.absY, nextPoint.absX, nextPoint.absY);
+                        const lenAC = pointsDistance(prevPoint.absX, prevPoint.absY, nextPoint.absX, nextPoint.absY);
                         // 三点之间的夹角
                         const radian = angleBySides(lenAC, lenAB, lenBC);
                         // 计算切点距离
@@ -24736,17 +24736,17 @@
                             radius = dist * tangent;
                         }
                         // 方向向量
-                        const px = prevPoint.x - point.x, py = prevPoint.y - point.y;
+                        const px = prevPoint.absX - point.absX, py = prevPoint.absY - point.absY;
                         const pv = unitize(px, py);
-                        const nx = nextPoint.x - point.x, ny = nextPoint.y - point.y;
+                        const nx = nextPoint.absX - point.absX, ny = nextPoint.absY - point.absY;
                         const nv = unitize(nx, ny);
                         // 相切的点
                         const prevTangent = { x: pv.x * dist, y: pv.y * dist };
-                        prevTangent.x += points[i].x;
-                        prevTangent.y += points[i].y;
+                        prevTangent.x += points[i].absX;
+                        prevTangent.y += points[i].absY;
                         const nextTangent = { x: nv.x * dist, y: nv.y * dist };
-                        nextTangent.x += points[i].x;
-                        nextTangent.y += points[i].y;
+                        nextTangent.x += points[i].absX;
+                        nextTangent.y += points[i].absY;
                         // 计算 cubic handler 位置
                         const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
                         const prevHandle = {
@@ -30204,11 +30204,11 @@ void main() {
             }
         }
         // console.warn(mergeList);
-        // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
+        // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始后根遍历
         if (mergeList.length) {
             mergeList.sort(function (a, b) {
                 if (a.lv === b.lv) {
-                    return a.i - b.i;
+                    return b.i - a.i;
                 }
                 return b.lv - a.lv;
             });
@@ -30250,10 +30250,9 @@ void main() {
                     }
                     continue;
                 }
-                // 不可见的但要排除mask
+                // 不可见的
                 const computedStyle = node.computedStyle;
-                if ((!computedStyle.visible && !computedStyle.maskMode) ||
-                    computedStyle.opacity <= 0) {
+                if (!computedStyle.visible || computedStyle.opacity <= 0) {
                     continue;
                 }
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
@@ -30326,8 +30325,7 @@ void main() {
             }
             // 不可见的但要排除mask
             const computedStyle = node.computedStyle;
-            if ((!computedStyle.visible && !computedStyle.maskMode) ||
-                computedStyle.opacity <= 0) {
+            if (!computedStyle.visible || computedStyle.opacity <= 0) {
                 i += total + next;
                 continue;
             }
@@ -30597,8 +30595,7 @@ void main() {
         for (let i = index, len = index + total + 1; i < len; i++) {
             const { node: node2, total: total2, next: next2 } = structs[i];
             const computedStyle = node2.computedStyle;
-            if ((!computedStyle.visible && !computedStyle.maskMode) ||
-                computedStyle.opacity <= 0) {
+            if (!computedStyle.visible || computedStyle.opacity <= 0) {
                 i += total2 + next2;
                 continue;
             }
@@ -30789,13 +30786,19 @@ void main() {
         const cx = w * 0.5, cy = h * 0.5;
         const summary = createTexture(gl, 0, undefined, w, h);
         const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
+        const m = identity();
+        assignMatrix(m, matrix);
+        multiplyScale(m, 1 / scale);
         // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
-        const im = inverse(matrix);
-        multiplyScale(im, scale);
+        const im = inverse(m);
         // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
         for (let i = index + total + 1, len = structs.length; i < len; i++) {
             const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
             const computedStyle = node2.computedStyle;
+            if (!computedStyle.visible || computedStyle.opacity <= 0) {
+                i += total2 + next2;
+                continue;
+            }
             // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
             if (lv > lv2) {
                 node.struct.next = i - index - total - 1;
@@ -31358,10 +31361,11 @@ void main() {
                 }
                 node.clearCacheUpward(false);
             }
-            // 检查mask影响，这里是作为被遮罩对象存在的关系检查
-            const mask = node.mask;
-            if (mask) {
+            // 检查mask影响，这里是作为被遮罩对象存在的关系检查，可能会有连续
+            let mask = node.mask;
+            while (mask) {
                 mask.clearMask();
+                mask = mask.mask;
             }
             // 记录节点的刷新等级，以及本帧最大刷新等级
             node.refreshLevel |= lv;

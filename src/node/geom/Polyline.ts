@@ -89,22 +89,22 @@ class Polyline extends Geom {
         if (isPrevStraight && isNextStraight) {
           // 2直线边长，ABC3个点，A是prev，B是curr，C是next
           const lenAB = pointsDistance(
-            prevPoint.x,
-            prevPoint.y,
-            point.x,
-            point.y,
+            prevPoint.absX!,
+            prevPoint.absY!,
+            point.absX!,
+            point.absY!,
           );
           const lenBC = pointsDistance(
-            point.x,
-            point.y,
-            nextPoint.x,
-            nextPoint.y,
+            point.absX!,
+            point.absY!,
+            nextPoint.absX!,
+            nextPoint.absY!,
           );
           const lenAC = pointsDistance(
-            prevPoint.x,
-            prevPoint.y,
-            nextPoint.x,
-            nextPoint.y,
+            prevPoint.absX!,
+            prevPoint.absY!,
+            nextPoint.absX!,
+            nextPoint.absY!,
           );
           // 三点之间的夹角
           const radian = angleBySides(lenAC, lenAB, lenBC);
@@ -122,19 +122,19 @@ class Polyline extends Geom {
             radius = dist * tangent;
           }
           // 方向向量
-          const px = prevPoint.x - point.x,
-            py = prevPoint.y - point.y;
+          const px = prevPoint.absX! - point.absX!,
+            py = prevPoint.absY! - point.absY!;
           const pv = unitize(px, py);
-          const nx = nextPoint.x - point.x,
-            ny = nextPoint.y - point.y;
+          const nx = nextPoint.absX! - point.absX!,
+            ny = nextPoint.absY! - point.absY!;
           const nv = unitize(nx, ny);
           // 相切的点
           const prevTangent = { x: pv.x * dist, y: pv.y * dist };
-          prevTangent.x += points[i].x;
-          prevTangent.y += points[i].y;
+          prevTangent.x += points[i].absX!;
+          prevTangent.y += points[i].absY!;
           const nextTangent = { x: nv.x * dist, y: nv.y * dist };
-          nextTangent.x += points[i].x;
-          nextTangent.y += points[i].y;
+          nextTangent.x += points[i].absX!;
+          nextTangent.y += points[i].absY!;
           // 计算 cubic handler 位置
           const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
           const prevHandle = {

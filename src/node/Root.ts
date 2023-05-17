@@ -344,10 +344,11 @@ class Root extends Container implements FrameCallback {
       }
       node.clearCacheUpward(false);
     }
-    // 检查mask影响，这里是作为被遮罩对象存在的关系检查
-    const mask = node.mask;
-    if (mask) {
+    // 检查mask影响，这里是作为被遮罩对象存在的关系检查，可能会有连续
+    let mask = node.mask;
+    while (mask) {
       mask.clearMask();
+      mask = mask.mask;
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;

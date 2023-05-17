@@ -14,6 +14,7 @@ import {
   assignMatrix,
   calPoint,
   calRectPoint,
+  identity,
   inverse,
   isE,
   multiply,
@@ -136,11 +137,11 @@ export function renderWebgl(
     }
   }
   // console.warn(mergeList);
-  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始
+  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始后根遍历
   if (mergeList.length) {
     mergeList.sort(function (a, b) {
       if (a.lv === b.lv) {
-        return a.i - b.i;
+        return b.i - a.i;
       }
       return b.lv - a.lv;
     });
@@ -191,12 +192,9 @@ export function renderWebgl(
         }
         continue;
       }
-      // 不可见的但要排除mask
+      // 不可见的
       const computedStyle = node.computedStyle;
-      if (
-        (!computedStyle.visible && !computedStyle.maskMode) ||
-        computedStyle.opacity <= 0
-      ) {
+      if (!computedStyle.visible || computedStyle.opacity <= 0) {
         continue;
       }
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
@@ -313,10 +311,7 @@ export function renderWebgl(
     }
     // 不可见的但要排除mask
     const computedStyle = node.computedStyle;
-    if (
-      (!computedStyle.visible && !computedStyle.maskMode) ||
-      computedStyle.opacity <= 0
-    ) {
+    if (!computedStyle.visible || computedStyle.opacity <= 0) {
       i += total + next;
       continue;
     }
@@ -691,10 +686,7 @@ function genTotal(
   for (let i = index, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
-    if (
-      (!computedStyle.visible && !computedStyle.maskMode) ||
-      computedStyle.opacity <= 0
-    ) {
+    if (!computedStyle.visible || computedStyle.opacity <= 0) {
       i += total2 + next2;
       continue;
     }
@@ -997,13 +989,19 @@ function genMask(
     cy = h * 0.5;
   const summary = createTexture(gl, 0, undefined, w, h);
   const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
+  const m = identity();
+  assignMatrix(m, matrix);
+  multiplyScale(m, 1 / scale);
   // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
-  const im = inverse(matrix);
-  multiplyScale(im, scale);
+  const im = inverse(m);
   // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
   for (let i = index + total + 1, len = structs.length; i < len; i++) {
     const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
+    if (!computedStyle.visible || computedStyle.opacity <= 0) {
+      i += total2 + next2;
+      continue;
+    }
     // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
     if (lv > lv2) {
       node.struct.next = i - index - total - 1;
