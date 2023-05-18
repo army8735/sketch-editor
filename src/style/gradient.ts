@@ -4,8 +4,12 @@ import { calUnit, ColorStop, GRADIENT, StyleUnit } from './define';
 import reg from './reg';
 
 // 获取color-stop区间范围，去除无用值
-export function getColorStop(stops: Array<ColorStop>, length: number, isConic = false) {
-  const list: Array<{ color: Array<number>, offset?: number }> = [];
+export function getColorStop(
+  stops: Array<ColorStop>,
+  length: number,
+  isConic = false,
+) {
+  const list: Array<{ color: Array<number>; offset?: number }> = [];
   const firstColor = stops[0].color.v;
   // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
   for (let i = 0, len = stops.length; i < len; i++) {
@@ -63,7 +67,7 @@ export function getColorStop(stops: Array<ColorStop>, length: number, isConic = 
       const per = (end! - start!) / num;
       for (let k = i; k < j; k++) {
         const item = list[k];
-        item.offset = start! + per * (k + 1 - i)
+        item.offset = start! + per * (k + 1 - i);
       }
       i = j;
     }
@@ -116,7 +120,7 @@ export function getColorStop(stops: Array<ColorStop>, length: number, isConic = 
             item.color[3] + da * p,
           ],
           offset: 0,
-       });
+        });
       }
       break;
     }
@@ -131,13 +135,16 @@ export function getColorStop(stops: Array<ColorStop>, length: number, isConic = 
   });
   // 都超限时，第一个颜色兜底
   if (!list.length) {
-    list.push({
-      color: firstColor,
-      offset: 0,
-    }, {
-      color: firstColor,
-      offset: 1,
-    });
+    list.push(
+      {
+        color: firstColor,
+        offset: 0,
+      },
+      {
+        color: firstColor,
+        offset: 1,
+      },
+    );
   }
   // 首尾可以省略，即不是[0,1]区间，对于conic来说会错误，首尾需线性相接成为一个环
   if (isConic) {
@@ -254,6 +261,15 @@ export function parseGradient(s: string) {
   }
 }
 
+export type Linear = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  total: number;
+  stop: { color: number[]; offset?: number }[];
+};
+
 /**
  * 生成canvas的linearGradient
  * @param stops
@@ -270,7 +286,7 @@ export function getLinear(
   oy: number,
   w: number,
   h: number,
-) {
+): Linear {
   const x1 = ox + d[0] * w;
   const y1 = oy + d[1] * h;
   const x2 = ox + d[2] * w;
@@ -282,9 +298,20 @@ export function getLinear(
     y1,
     x2,
     y2,
+    total,
     stop,
   };
 }
+
+export type Radial = {
+  cx: number;
+  cy: number;
+  tx: number;
+  ty: number;
+  ellipseLength: number;
+  total: number;
+  stop: { color: number[]; offset?: number }[];
+};
 
 export function getRadial(
   stops: Array<ColorStop>,
@@ -293,7 +320,7 @@ export function getRadial(
   oy: number,
   w: number,
   h: number,
-) {
+): Radial {
   const x1 = ox + d[0] * w;
   const y1 = oy + d[1] * h;
   const x2 = ox + d[2] * w;
