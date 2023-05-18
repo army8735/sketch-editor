@@ -17651,6 +17651,7 @@
             y1,
             x2,
             y2,
+            total,
             stop,
         };
     }
@@ -19166,30 +19167,27 @@
                 console.error(`image not exist: >>>${filename}<<<`);
                 return -1;
             }
-            let base64 = yield file.async('base64');
-            if (!/^data:image\//.test(base64)) {
-                if (filename.endsWith('.png')) {
-                    base64 = 'data:image/png;base64,' + base64;
-                }
-                else if (filename.endsWith('.gif')) {
-                    base64 = 'data:image/gif;base64,' + base64;
-                }
-                else if (filename.endsWith('.jpg')) {
-                    base64 = 'data:image/jpg;base64,' + base64;
-                }
-                else if (filename.endsWith('.jpeg')) {
-                    base64 = 'data:image/jpeg;base64,' + base64;
-                }
-                else if (filename.endsWith('.webp')) {
-                    base64 = 'data:image/webp;base64,' + base64;
-                }
-                else if (filename.endsWith('.bmp')) {
-                    base64 = 'data:image/bmp;base64,' + base64;
-                }
-            }
+            let ab = yield file.async('arraybuffer');
+            const buffer = new Uint8Array(ab);
+            const blob = new Blob([buffer.buffer]);
+            const img = yield loadImg(blob);
             const index = opt.imgs.length;
-            opt.imgs.push(base64);
+            opt.imgs.push(img.src);
             return index;
+        });
+    }
+    function loadImg(blob) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const img = new Image();
+            return new Promise((resolve, reject) => {
+                img.onload = () => {
+                    resolve(img);
+                };
+                img.onerror = (e) => {
+                    reject(e);
+                };
+                img.src = URL.createObjectURL(blob);
+            });
         });
     }
 

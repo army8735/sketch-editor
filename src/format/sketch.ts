@@ -866,23 +866,24 @@ async function readImageFile(filename: string, opt: Opt) {
     console.error(`image not exist: >>>${filename}<<<`);
     return -1;
   }
-  let base64 = await file.async('base64');
-  if (!/^data:image\//.test(base64)) {
-    if (filename.endsWith('.png')) {
-      base64 = 'data:image/png;base64,' + base64;
-    } else if (filename.endsWith('.gif')) {
-      base64 = 'data:image/gif;base64,' + base64;
-    } else if (filename.endsWith('.jpg')) {
-      base64 = 'data:image/jpg;base64,' + base64;
-    } else if (filename.endsWith('.jpeg')) {
-      base64 = 'data:image/jpeg;base64,' + base64;
-    } else if (filename.endsWith('.webp')) {
-      base64 = 'data:image/webp;base64,' + base64;
-    } else if (filename.endsWith('.bmp')) {
-      base64 = 'data:image/bmp;base64,' + base64;
-    }
-  }
+  let ab = await file.async('arraybuffer');
+  const buffer = new Uint8Array(ab);
+  const blob = new Blob([buffer.buffer]);
+  const img = await loadImg(blob);
   const index = opt.imgs.length;
-  opt.imgs.push(base64);
+  opt.imgs.push(img.src);
   return index;
+}
+
+async function loadImg(blob: Blob): Promise<HTMLImageElement> {
+  const img = new Image();
+  return new Promise((resolve, reject) => {
+    img.onload = () => {
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      reject(e);
+    };
+    img.src = URL.createObjectURL(blob);
+  });
 }
