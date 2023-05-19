@@ -9,6 +9,7 @@ import { LayoutData } from './layout';
 import LineBox from './LineBox';
 import Node from './Node';
 import TextBox from './TextBox';
+import { calPoint, inverse4 } from '../math/matrix';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -115,12 +116,14 @@ class Text extends Node {
   _content: string;
   rich?: Array<Rich>;
   lineBoxList: Array<LineBox>;
+  cursorIndex: Int32Array; // 0:LineBox索引，1:TextBox索引，2:字符索引，3:是否为上行尾
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
     this._content = props.content;
     this.rich = props.rich;
     this.lineBoxList = [];
+    this.cursorIndex = new Int32Array([-1, -1, -1, -1]);
   }
 
   override lay(data: LayoutData) {
@@ -188,7 +191,7 @@ class Text extends Node {
         baseline = getBaseline(cur);
         ctx.font = setFontStyle(cur);
       }
-      // 连续\n，开头会遇到，需跳过
+      // 连续\n，行开头会遇到，需跳过
       if (content.charAt(i) === '\n') {
         i++;
         x = 0;
@@ -202,6 +205,7 @@ class Text extends Node {
           0,
           lineHeight,
           baseline,
+          i,
           '\n',
           ctx.font,
         );
@@ -246,6 +250,7 @@ class Text extends Node {
         rw,
         lineHeight,
         baseline,
+        i,
         content.slice(i, i + num),
         ctx.font,
       );
@@ -380,6 +385,102 @@ class Text extends Node {
         );
         count += textBox.str.length;
       }
+    }
+  }
+
+  getCursorPos(x: number, y: number) {
+    const dpi = this.root!.dpi;
+    const m = this.matrixWorld;
+    const im = inverse4(m);
+    const local = calPoint({ x: x * dpi, y: y * dpi }, im);
+    const lineBoxList = this.lineBoxList;
+    const cursorIndex = this.cursorIndex;
+    for (let i = 0, len = lineBoxList.length; i < len; i++) {
+      const item = lineBoxList[i];
+      if (local.y >= item.y && local.y < item.y + item.h) {
+        cursorIndex[0] = i;
+        let rx = 0, ry = item.y, rh = item.lineHeight;
+        const list = item.list;
+        outer:
+          for (let i = 0, len = list.length; i < len; i++) {
+            const { x, w, str, font } = list[i];
+            if (local.x >= x && local.x <= x + w) {
+              cursorIndex[1] = i;
+              const ctx = inject.getFontCanvas().ctx;
+              ctx.font = font;
+              let start = 0, end = str.length;
+              while (start < end) {
+                if (start === end - 1) {
+                  // 只差1个情况看更靠近哪边
+                  const w1 = ctx.measureText(str.slice(0, start)).width;
+                  const w2 = ctx.measureText(str.slice(0, end)).width;
+                  if (local.x - (x + w1) > (x + w2) - local.x) {
+                    rx = x + w2;
+                    cursorIndex[2] = end;
+                  } else {
+                    rx = x + w1;
+                    cursorIndex[2] = start;
+                  }
+                  break outer;
+                }
+                const mid = start + ((end - start) >> 1);
+                const w = ctx.measureText(str.slice(0, mid)).width;
+                if (local.x > x + w) {
+                  start = mid;
+                } else if (local.x < x + w) {
+                  end = mid;
+                } else {
+                  cursorIndex[2] = mid;
+                  rx = x + w;
+                  break outer;
+                }
+              }
+            }
+          }
+        const p = calPoint({ x: rx, y: ry }, m);
+        return {
+          x: p.x,
+          y: p.y,
+          h: rh * m[0],
+        };
+      }
+    }
+    cursorIndex[0] = cursorIndex[1] = cursorIndex[2] = cursorIndex[3] = -1; // 还原一下
+  }
+
+  /**
+   * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
+   * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
+   * 不会出现仅右百分比的情况
+   */
+  inputContent(s: string) {
+    const { style, computedStyle } = this;
+    const { left, right, width, translateX } = style;
+    const isLeft = width.u === StyleUnit.AUTO && left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO;
+    if (isLeft) {
+      const { left: left2, width: width2 } = computedStyle;
+      // console.warn(left2, width2, left2 - width2 * 0.5)
+      left.v = left2 - width2 * 0.5;
+      left.u = StyleUnit.PX;
+      translateX.v = 0;
+      translateX.u = StyleUnit.PX;
+    }
+    const cursorIndex = this.cursorIndex;
+    const lineBox = this.lineBoxList[cursorIndex[0]];
+    const textBox = lineBox.list[cursorIndex[1]];
+    const i = textBox.index + cursorIndex[2];
+    const c = this._content;
+    this._content = c.slice(0, i) + s + c.slice(i);
+    this.root?.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
+    if (isLeft) {
+      const width = this.width;
+      const v = computedStyle.left + width * 0.5;
+      // console.log(width, v * 100 / this.parent!.width)
+      left.v = (computedStyle.left + width * 0.5) * 100 / this.parent!.width;
+      left.u = StyleUnit.PERCENT;
+      translateX.v = -50;
+      translateX.u = StyleUnit.PERCENT;
+      computedStyle.left = v;
     }
   }
 

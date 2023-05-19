@@ -2,10 +2,12 @@ const $input = document.querySelector('#file');
 const $page = document.querySelector('#page');
 const $tree = document.querySelector('#tree');
 const $main = document.querySelector('#main');
-const $canvasC = document.querySelector('#canvasC');
-const $overlap = document.querySelector('#overlap');
-const $hover = document.querySelector('#hover');
+const $canvasC = $main.querySelector('#canvasC');
+const $overlap = $main.querySelector('#overlap');
+const $hover = $main.querySelector('#hover');
 const $selection = $main.querySelector('#selection');
+const $inputContainer = $main.querySelector('#input-container');
+const $inputText = $inputContainer.querySelector('input');
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -360,12 +362,12 @@ function showSelect(node) {
   selectNode = node;
   style = selectNode.style;
   computedStyle = selectNode.getComputedStyle();
-  console.log('left', style.left, 'right', style.right, 'top', style.top, 'bottom', style.bottom,
-    'width', style.width, 'height', style.height, 'tx', style.translateX, 'ty', style.translateY,
-    'cleft', computedStyle.left, 'cright', computedStyle.right, 'ctop', computedStyle.top,
-    'cbttom', computedStyle.bottom, 'cwidth', computedStyle.width, 'ctx', computedStyle.translateX,
-    'cty', computedStyle.translateY, 'w', selectNode.width, 'h', selectNode.height,
-    'm', selectNode.matrix.join(','), 'mw', selectNode.matrixWorld.join(','));
+  // console.log('left', style.left, 'right', style.right, 'top', style.top, 'bottom', style.bottom,
+  //   'width', style.width, 'height', style.height, 'tx', style.translateX, 'ty', style.translateY,
+  //   'cleft', computedStyle.left, 'cright', computedStyle.right, 'ctop', computedStyle.top,
+  //   'cbttom', computedStyle.bottom, 'cwidth', computedStyle.width, 'ctx', computedStyle.translateX,
+  //   'cty', computedStyle.translateY, 'w', selectNode.width, 'h', selectNode.height,
+  //   'm', selectNode.matrix.join(','), 'mw', selectNode.matrixWorld.join(','));
   updateSelect();
   $selection.classList.add('show');
   selectTree && selectTree.classList.remove('select');
@@ -607,8 +609,57 @@ $overlap.addEventListener('mousedown', function(e) {
           hideSelect();
         }
       }
+      $inputContainer.style.display = 'none';
+      $inputText.blur();
     }
   }
+});
+
+$overlap.addEventListener('dblclick', function(e) {
+  const { offsetX, offsetY } = e;
+  const x = $selection.offsetLeft + offsetX;
+  const y = $selection.offsetTop + offsetY;
+  if (selectNode && selectNode instanceof editor.node.Text) {
+    const p = selectNode.getCursorPos(x, y);
+    if (!p) {
+      return;
+    }
+    // selectNode.setEditMode(true);
+    const style = $inputContainer.style;
+    style.display = 'block';
+    style.left = p.x / dpi + 'px';
+    style.top = p.y / dpi + 'px';
+    style.height = p.h / dpi + 'px';
+    $inputText.focus();
+  }
+});
+
+let isIme = false;
+$inputText.addEventListener('keydown', (e) => {
+  const keyCode = e.keyCode;
+  if (keyCode === 13) {
+    // 回车等候一下让input先触发，输入法状态不会触发
+    setTimeout(() => {
+    }, 1);
+  } else if (keyCode === 8) {
+  } else if (keyCode >= 37 && keyCode <= 40) {
+  }
+});
+$inputText.addEventListener('input', (e) => {
+  if (!isIme) {
+    const s = e.data;
+    selectNode.inputContent(s);
+    $inputText.value = '';
+  }
+});
+$inputText.addEventListener('compositionstart', (e) => {
+  isIme = true;
+});
+$inputText.addEventListener('compositionend', (e) => {
+  isIme = false;
+  const s = e.data;
+  selectNode.inputContent(s);
+  $inputText.value = '';
 });
 
 document.addEventListener('mousemove', function(e) {
@@ -636,11 +687,8 @@ document.addEventListener('mouseup', function(e) {
     }
     else {
       if(selectNode && isMove) {
-        const dx = lastX - startX, dy = lastY - startY;
         // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
-        if(dx || dy) {
-          selectNode.checkPosChange();
-        }
+        selectNode.checkPosChange();
       }
     }
     isDown = false;

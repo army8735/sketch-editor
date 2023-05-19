@@ -907,7 +907,7 @@ class Node extends Event {
   }
 
   /**
-   * 拖拽开始变更尺寸前预校验，如果是固定尺寸+百分比对齐，以为是以自身中心点为基准，需要改成普通模式，
+   * 拖拽开始变更尺寸前预校验，如果是固定尺寸+百分比对齐，是以自身中心点为基准，需要改成普通模式，
    * 即left百分比调整到以左侧为基准，translateX不再-50%，垂直方向同理，改为top上侧基准，translateY不再-50%。
    * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回自身中心基准数据。
    */
@@ -944,12 +944,17 @@ class Node extends Event {
     const { translateX: tx, translateY: ty } = computedStyle;
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent;
-    // 宽度自动，left和right一定是有值，translateX单位是px
+    // 宽度自动，left一定有值，right一般有值（Text自适应宽度除外），translateX单位是px
     if (width.u === StyleUnit.AUTO) {
       if (left.u === StyleUnit.PX) {
         left.v = tx;
       } else if (left.u === StyleUnit.PERCENT) {
-        left.v = (tx * 100) / pw;
+        if (right.u === StyleUnit.AUTO) {
+          left.v = (tx + this.width * 0.5) * 100 / pw;
+        }
+        else {
+          left.v = (tx * 100) / pw;
+        }
       }
       if (right.u === StyleUnit.PX) {
         right.v = pw - tx - this.width;
@@ -970,7 +975,7 @@ class Node extends Event {
         right.v = ((pw - tx - this.width * 1.5) * 100) / pw;
       }
     }
-    this.resetTranslateX(left, width, translateX);
+    this.resetTranslateX(left, right, width, translateX);
     // 换算，固定不固定统一处理
     if (left.u !== StyleUnit.AUTO) {
       computedStyle.left = calSize(left, pw);
@@ -990,7 +995,12 @@ class Node extends Event {
       if (top.u === StyleUnit.PX) {
         top.v = ty;
       } else if (top.u === StyleUnit.PERCENT) {
-        top.v = (ty * 100) / ph;
+        if (bottom.u === StyleUnit.AUTO) {
+          top.v = (ty + this.height * 0.5) * 100 / ph;
+        }
+        else {
+          top.v = (ty * 100) / ph;
+        }
       }
       if (bottom.u === StyleUnit.PX) {
         bottom.v = ph - ty - this.height;
@@ -1011,7 +1021,7 @@ class Node extends Event {
         bottom.v = ((ph - ty - this.height * 1.5) * 100) / ph;
       }
     }
-    this.resetTranslateY(top, height, translateY);
+    this.resetTranslateY(top, bottom, height, translateY);
     // 换算，固定不固定统一处理
     if (top.u !== StyleUnit.AUTO) {
       computedStyle.top = calSize(top, ph);
@@ -1021,10 +1031,10 @@ class Node extends Event {
     }
     // auto依赖top/bottom处理完
     if (top.u === StyleUnit.AUTO) {
-      computedStyle.top = pw - computedStyle.bottom - this.height;
+      computedStyle.top = ph - computedStyle.bottom - this.height;
     }
     if (bottom.u === StyleUnit.AUTO) {
-      computedStyle.bottom = pw - computedStyle.top - this.height;
+      computedStyle.bottom = ph - computedStyle.top - this.height;
     }
     // matrix并无变化，移动过程中一直在更新translate，并触发了matrix变更
     // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
@@ -1064,7 +1074,7 @@ class Node extends Event {
     this.width = computedStyle.width =
       parent.width - computedStyle.left - computedStyle.right;
     // translateX调整根据是否固定尺寸，不会有%尺寸目前
-    this.resetTranslateX(left, width, translateX);
+    this.resetTranslateX(left, right, width, translateX);
     // 垂直和水平一样
     if (dy) {
       if (top.u === StyleUnit.PX) {
@@ -1084,7 +1094,7 @@ class Node extends Event {
     }
     this.height = computedStyle.height =
       parent.height - computedStyle.top - computedStyle.bottom;
-    this.resetTranslateY(top, height, translateY);
+    this.resetTranslateY(top, bottom, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     this.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;
@@ -1098,12 +1108,15 @@ class Node extends Event {
 
   resetTranslateX(
     left: StyleNumValue,
+    right: StyleNumValue,
     width: StyleNumValue,
     translateX: StyleNumValue,
   ) {
-    if (width.u === StyleUnit.AUTO) {
+    if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
       translateX.v = 0;
-    } else if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
+    } else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
+      translateX.v = 0;
+    } else {
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
     }
@@ -1111,12 +1124,15 @@ class Node extends Event {
 
   resetTranslateY(
     top: StyleNumValue,
+    bottom: StyleNumValue,
     height: StyleNumValue,
     translateY: StyleNumValue,
   ) {
-    if (height.u === StyleUnit.AUTO) {
+    if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
       translateY.v = 0;
-    } else if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
+    } else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
+      translateY.v = 0;
+    } else {
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }

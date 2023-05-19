@@ -22686,7 +22686,7 @@
             };
         }
         /**
-         * 拖拽开始变更尺寸前预校验，如果是固定尺寸+百分比对齐，以为是以自身中心点为基准，需要改成普通模式，
+         * 拖拽开始变更尺寸前预校验，如果是固定尺寸+百分比对齐，是以自身中心点为基准，需要改成普通模式，
          * 即left百分比调整到以左侧为基准，translateX不再-50%，垂直方向同理，改为top上侧基准，translateY不再-50%。
          * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回自身中心基准数据。
          */
@@ -22721,13 +22721,18 @@
             const { translateX: tx, translateY: ty } = computedStyle;
             // 一定有parent，不会改root下固定的Container子节点
             const { width: pw, height: ph } = parent;
-            // 宽度自动，left和right一定是有值，translateX单位是px
+            // 宽度自动，left一定有值，right一般有值（Text自适应宽度除外），translateX单位是px
             if (width.u === StyleUnit.AUTO) {
                 if (left.u === StyleUnit.PX) {
                     left.v = tx;
                 }
                 else if (left.u === StyleUnit.PERCENT) {
-                    left.v = (tx * 100) / pw;
+                    if (right.u === StyleUnit.AUTO) {
+                        left.v = (tx + this.width * 0.5) * 100 / pw;
+                    }
+                    else {
+                        left.v = (tx * 100) / pw;
+                    }
                 }
                 if (right.u === StyleUnit.PX) {
                     right.v = pw - tx - this.width;
@@ -22751,7 +22756,7 @@
                     right.v = ((pw - tx - this.width * 1.5) * 100) / pw;
                 }
             }
-            this.resetTranslateX(left, width, translateX);
+            this.resetTranslateX(left, right, width, translateX);
             // 换算，固定不固定统一处理
             if (left.u !== StyleUnit.AUTO) {
                 computedStyle.left = calSize(left, pw);
@@ -22772,7 +22777,12 @@
                     top.v = ty;
                 }
                 else if (top.u === StyleUnit.PERCENT) {
-                    top.v = (ty * 100) / ph;
+                    if (bottom.u === StyleUnit.AUTO) {
+                        top.v = (ty + this.height * 0.5) * 100 / ph;
+                    }
+                    else {
+                        top.v = (ty * 100) / ph;
+                    }
                 }
                 if (bottom.u === StyleUnit.PX) {
                     bottom.v = ph - ty - this.height;
@@ -22796,7 +22806,7 @@
                     bottom.v = ((ph - ty - this.height * 1.5) * 100) / ph;
                 }
             }
-            this.resetTranslateY(top, height, translateY);
+            this.resetTranslateY(top, bottom, height, translateY);
             // 换算，固定不固定统一处理
             if (top.u !== StyleUnit.AUTO) {
                 computedStyle.top = calSize(top, ph);
@@ -22806,10 +22816,10 @@
             }
             // auto依赖top/bottom处理完
             if (top.u === StyleUnit.AUTO) {
-                computedStyle.top = pw - computedStyle.bottom - this.height;
+                computedStyle.top = ph - computedStyle.bottom - this.height;
             }
             if (bottom.u === StyleUnit.AUTO) {
-                computedStyle.bottom = pw - computedStyle.top - this.height;
+                computedStyle.bottom = ph - computedStyle.top - this.height;
             }
             // matrix并无变化，移动过程中一直在更新translate，并触发了matrix变更
             // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
@@ -22848,7 +22858,7 @@
             this.width = computedStyle.width =
                 parent.width - computedStyle.left - computedStyle.right;
             // translateX调整根据是否固定尺寸，不会有%尺寸目前
-            this.resetTranslateX(left, width, translateX);
+            this.resetTranslateX(left, right, width, translateX);
             // 垂直和水平一样
             if (dy) {
                 if (top.u === StyleUnit.PX) {
@@ -22870,7 +22880,7 @@
             }
             this.height = computedStyle.height =
                 parent.height - computedStyle.top - computedStyle.bottom;
-            this.resetTranslateY(top, height, translateY);
+            this.resetTranslateY(top, bottom, height, translateY);
             // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
             this.refreshLevel |= RefreshLevel.TRANSFORM;
             root.rl |= RefreshLevel.TRANSFORM;
@@ -22881,20 +22891,26 @@
             this._filterBbox = undefined;
             this.tempBbox = undefined;
         }
-        resetTranslateX(left, width, translateX) {
-            if (width.u === StyleUnit.AUTO) {
+        resetTranslateX(left, right, width, translateX) {
+            if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
                 translateX.v = 0;
             }
-            else if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
+            else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
+                translateX.v = 0;
+            }
+            else {
                 translateX.v = -50;
                 translateX.u = StyleUnit.PERCENT;
             }
         }
-        resetTranslateY(top, height, translateY) {
-            if (height.u === StyleUnit.AUTO) {
+        resetTranslateY(top, bottom, height, translateY) {
+            if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
                 translateY.v = 0;
             }
-            else if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
+            else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
+                translateY.v = 0;
+            }
+            else {
                 translateY.v = -50;
                 translateY.u = StyleUnit.PERCENT;
             }
@@ -23733,7 +23749,7 @@
         constructor(props) {
             super(props);
             this.isBitmap = true;
-            const src = this._src = props.src || '';
+            const src = (this._src = props.src || '');
             this.loader = {
                 error: false,
                 loading: false,
@@ -23836,7 +23852,7 @@
                     res = true;
                 }
             }
-            return this.hasContent = res;
+            return (this.hasContent = res);
         }
         renderCanvas(scale) {
             var _a;
@@ -23858,7 +23874,7 @@
                         w = h = config.MAX_TEXTURE_SIZE;
                     }
                 }
-                const canvasCache = this.canvasCache = CanvasCache.getImgInstance(w, h, this.src);
+                const canvasCache = (this.canvasCache = CanvasCache.getImgInstance(w, h, this.src));
                 canvasCache.available = true;
                 // 第一张图像才绘制，图片解码到canvas上
                 if (canvasCache.getCount(this._src) === 1) {
@@ -23881,8 +23897,10 @@
                 this.renderCanvas(scale);
                 const canvasCache = this.canvasCache;
                 if (canvasCache === null || canvasCache === void 0 ? void 0 : canvasCache.available) {
-                    this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = this.textureCache[0]
-                        = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._rect || this.rect).slice(0));
+                    this.textureCache[scaleIndex] =
+                        this.textureTarget[scaleIndex] =
+                            this.textureCache[0] =
+                                TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._rect || this.rect).slice(0));
                     canvasCache.releaseImg(this._src);
                 }
             }
@@ -23894,12 +23912,12 @@
             const { loader } = this;
             if (loader.onlyImg) {
                 if (includeSelf) {
-                    this.textureCache.forEach(item => item === null || item === void 0 ? void 0 : item.releaseImg(this._src));
+                    this.textureCache.forEach((item) => item === null || item === void 0 ? void 0 : item.releaseImg(this._src));
                 }
                 this.textureTarget.splice(0);
                 // total是本身无需
                 this.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
-                this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+                this.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             }
             else {
                 super.clearCache(includeSelf);
@@ -23911,7 +23929,7 @@
         set src(v) {
             this.src = v;
             const loader = this.loader;
-            if (v === loader.src || this.isDestroyed || !v && loader.error) {
+            if (v === loader.src || this.isDestroyed || (!v && loader.error)) {
                 if (v && v !== loader.src) {
                     loader.src = v;
                     inject.measureImg(v, (res) => {
@@ -28182,18 +28200,20 @@
     }
 
     class TextBox {
-        constructor(x, y, w, lineHeight, baseline, str, font) {
+        constructor(x, y, w, lineHeight, baseline, index, str, font) {
             this.x = 0;
             this.y = 0;
             this.w = 0;
             this.lineHeight = 0;
             this.baseline = 0;
+            this.index = 0;
             this.x = x;
             this.y = y;
             this.w = w;
-            this.str = str;
             this.lineHeight = lineHeight;
             this.baseline = baseline;
+            this.index = index;
+            this.str = str;
             this.font = font;
         }
     }
@@ -28292,6 +28312,7 @@
             this._content = props.content;
             this.rich = props.rich;
             this.lineBoxList = [];
+            this.cursorIndex = new Int32Array([-1, -1, -1, -1]);
         }
         lay(data) {
             super.lay(data);
@@ -28355,7 +28376,7 @@
                     baseline = getBaseline(cur);
                     ctx.font = setFontStyle(cur);
                 }
-                // 连续\n，开头会遇到，需跳过
+                // 连续\n，行开头会遇到，需跳过
                 if (content.charAt(i) === '\n') {
                     i++;
                     x = 0;
@@ -28363,7 +28384,7 @@
                     lineBox.verticalAlign();
                     lineBox = new LineBox(y, lineHeight);
                     lineBoxList.push(lineBox);
-                    const textBox = new TextBox(x, y, 0, lineHeight, baseline, '\n', ctx.font);
+                    const textBox = new TextBox(x, y, 0, lineHeight, baseline, i, '\n', ctx.font);
                     lineBox.add(textBox);
                     // 最后一个\n特殊判断
                     if (i === length) {
@@ -28395,7 +28416,7 @@
                 }
                 // 预估法获取测量结果
                 const { hypotheticalNum: num, rw, newLine, } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
-                const textBox = new TextBox(x, y, rw, lineHeight, baseline, content.slice(i, i + num), ctx.font);
+                const textBox = new TextBox(x, y, rw, lineHeight, baseline, i, content.slice(i, i + num), ctx.font);
                 lineBox.add(textBox);
                 i += num;
                 maxW = Math.max(maxW, rw);
@@ -28509,6 +28530,103 @@
                     ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
                     count += textBox.str.length;
                 }
+            }
+        }
+        getCursorPos(x, y) {
+            const dpi = this.root.dpi;
+            const m = this.matrixWorld;
+            const im = inverse4(m);
+            const local = calPoint({ x: x * dpi, y: y * dpi }, im);
+            const lineBoxList = this.lineBoxList;
+            const cursorIndex = this.cursorIndex;
+            for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                const item = lineBoxList[i];
+                if (local.y >= item.y && local.y < item.y + item.h) {
+                    cursorIndex[0] = i;
+                    let rx = 0, ry = item.y, rh = item.lineHeight;
+                    const list = item.list;
+                    outer: for (let i = 0, len = list.length; i < len; i++) {
+                        const { x, w, str, font } = list[i];
+                        if (local.x >= x && local.x <= x + w) {
+                            cursorIndex[1] = i;
+                            const ctx = inject.getFontCanvas().ctx;
+                            ctx.font = font;
+                            let start = 0, end = str.length;
+                            while (start < end) {
+                                if (start === end - 1) {
+                                    // 只差1个情况看更靠近哪边
+                                    const w1 = ctx.measureText(str.slice(0, start)).width;
+                                    const w2 = ctx.measureText(str.slice(0, end)).width;
+                                    if (local.x - (x + w1) > (x + w2) - local.x) {
+                                        rx = x + w2;
+                                        cursorIndex[2] = end;
+                                    }
+                                    else {
+                                        rx = x + w1;
+                                        cursorIndex[2] = start;
+                                    }
+                                    break outer;
+                                }
+                                const mid = start + ((end - start) >> 1);
+                                const w = ctx.measureText(str.slice(0, mid)).width;
+                                if (local.x > x + w) {
+                                    start = mid;
+                                }
+                                else if (local.x < x + w) {
+                                    end = mid;
+                                }
+                                else {
+                                    cursorIndex[2] = mid;
+                                    rx = x + w;
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                    const p = calPoint({ x: rx, y: ry }, m);
+                    return {
+                        x: p.x,
+                        y: p.y,
+                        h: rh * m[0],
+                    };
+                }
+            }
+            cursorIndex[0] = cursorIndex[1] = cursorIndex[2] = cursorIndex[3] = -1; // 还原一下
+        }
+        /**
+         * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
+         * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
+         * 不会出现仅右百分比的情况
+         */
+        inputContent(s) {
+            var _a;
+            const { style, computedStyle } = this;
+            const { left, right, width, translateX } = style;
+            const isLeft = width.u === StyleUnit.AUTO && left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO;
+            if (isLeft) {
+                const { left: left2, width: width2 } = computedStyle;
+                // console.warn(left2, width2, left2 - width2 * 0.5)
+                left.v = left2 - width2 * 0.5;
+                left.u = StyleUnit.PX;
+                translateX.v = 0;
+                translateX.u = StyleUnit.PX;
+            }
+            const cursorIndex = this.cursorIndex;
+            const lineBox = this.lineBoxList[cursorIndex[0]];
+            const textBox = lineBox.list[cursorIndex[1]];
+            const i = textBox.index + cursorIndex[2];
+            const c = this._content;
+            this._content = c.slice(0, i) + s + c.slice(i);
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
+            if (isLeft) {
+                const width = this.width;
+                const v = computedStyle.left + width * 0.5;
+                // console.log(width, v * 100 / this.parent!.width)
+                left.v = (computedStyle.left + width * 0.5) * 100 / this.parent.width;
+                left.u = StyleUnit.PERCENT;
+                translateX.v = -50;
+                translateX.u = StyleUnit.PERCENT;
+                computedStyle.left = v;
             }
         }
         get content() {
