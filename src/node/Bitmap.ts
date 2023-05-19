@@ -1,21 +1,21 @@
-import Node from './Node';
 import { BitmapProps } from '../format';
+import CanvasCache from '../refresh/CanvasCache';
+import config from '../refresh/config';
+import { RefreshLevel } from '../refresh/level';
+import TextureCache from '../refresh/TextureCache';
 import inject from '../util/inject';
 import { isFunction } from '../util/type';
 import { LayoutData } from './layout';
-import { RefreshLevel } from '../refresh/level';
-import CanvasCache from '../refresh/CanvasCache';
-import TextureCache from '../refresh/TextureCache';
-import config from '../refresh/config';
+import Node from './Node';
 
 type Loader = {
-  error: boolean,
-  loading: boolean,
-  src?: string,
-  source?: HTMLImageElement,
-  width: number,
-  height: number,
-  onlyImg: boolean,
+  error: boolean;
+  loading: boolean;
+  src?: string;
+  source?: HTMLImageElement;
+  width: number;
+  height: number;
+  onlyImg: boolean;
 };
 
 class Bitmap extends Node {
@@ -25,7 +25,7 @@ class Bitmap extends Node {
   constructor(props: BitmapProps) {
     super(props);
     this.isBitmap = true;
-    const src = this._src = props.src || '';
+    const src = (this._src = props.src || '');
     this.loader = {
       error: false,
       loading: false,
@@ -36,8 +36,7 @@ class Bitmap extends Node {
     };
     if (!src) {
       this.loader.error = true;
-    }
-    else {
+    } else {
       const isBlob = /^blob:/.test(src);
       if (isBlob) {
         // fetch('https://karas.alipay.com/api/uploadbase64', {
@@ -65,22 +64,19 @@ class Bitmap extends Node {
               if (isFunction(props.onLoad)) {
                 props.onLoad!();
               }
-            }
-            else {
+            } else {
               if (isFunction(props.onError)) {
                 props.onError!();
               }
             }
           }
         });
-      }
-      else if (cache.state === inject.LOADED) {
+      } else if (cache.state === inject.LOADED) {
         if (cache.success) {
           this.loader.source = cache.source;
           this.loader.width = cache.source.width;
           this.loader.height = cache.source.height;
-        }
-        else {
+        } else {
           this.loader.error = true;
         }
       }
@@ -96,15 +92,13 @@ class Bitmap extends Node {
         if (!this.loader.loading) {
           this.loadAndRefresh();
         }
-      }
-      else if (cache && cache.state === inject.LOADED) {
+      } else if (cache && cache.state === inject.LOADED) {
         this.loader.loading = false;
         if (cache.success) {
           this.loader.source = cache.source;
           this.loader.width = cache.width;
           this.loader.height = cache.height;
-        }
-        else {
+        } else {
           this.loader.error = true;
         }
       }
@@ -126,10 +120,16 @@ class Bitmap extends Node {
           loader.width = data.width;
           loader.height = data.height;
           if (!this.isDestroyed) {
-            this.root!.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            this.root!.addUpdate(
+              this,
+              [],
+              RefreshLevel.REPAINT,
+              false,
+              false,
+              undefined,
+            );
           }
-        }
-        else {
+        } else {
           loader.error = true;
         }
       }
@@ -141,14 +141,13 @@ class Bitmap extends Node {
     const { loader } = this;
     if (res) {
       loader.onlyImg = false;
-    }
-    else {
+    } else {
       loader.onlyImg = true;
       if (loader.source) {
         res = true;
       }
     }
-    return this.hasContent = res;
+    return (this.hasContent = res);
   }
 
   override renderCanvas(scale: number) {
@@ -156,33 +155,39 @@ class Bitmap extends Node {
     if (loader.onlyImg) {
       this.canvasCache?.releaseImg(this._src);
       // 尺寸使用图片原始尺寸
-      let w = loader.width, h = loader.height;
+      let w = loader.width,
+        h = loader.height;
       if (w > config.MAX_TEXTURE_SIZE || h > config.MAX_TEXTURE_SIZE) {
         if (w > h) {
           w = config.MAX_TEXTURE_SIZE;
           h *= config.MAX_TEXTURE_SIZE / w;
-        }
-        else if (w < h) {
+        } else if (w < h) {
           h = config.MAX_TEXTURE_SIZE;
           w *= config.MAX_TEXTURE_SIZE / h;
-        }
-        else {
+        } else {
           w = h = config.MAX_TEXTURE_SIZE;
         }
       }
-      const canvasCache = this.canvasCache = CanvasCache.getImgInstance(w, h, this.src);
+      const canvasCache = (this.canvasCache = CanvasCache.getImgInstance(
+        w,
+        h,
+        this.src,
+      ));
       canvasCache.available = true;
       // 第一张图像才绘制，图片解码到canvas上
       if (canvasCache.getCount(this._src) === 1) {
         canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
       }
-    }
-    else {
+    } else {
       super.renderCanvas(scale);
     }
   }
 
-  override genTexture(gl: WebGL2RenderingContext | WebGLRenderingContext, scale: number, scaleIndex: number) {
+  override genTexture(
+    gl: WebGL2RenderingContext | WebGLRenderingContext,
+    scale: number,
+    scaleIndex: number,
+  ) {
     const { loader } = this;
     if (loader.onlyImg) {
       // 注意图片共享一个实例
@@ -194,12 +199,18 @@ class Bitmap extends Node {
       this.renderCanvas(scale);
       const canvasCache = this.canvasCache;
       if (canvasCache?.available) {
-        this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = this.textureCache[0]
-          = TextureCache.getImgInstance(gl, canvasCache.offscreen.canvas, this._src, (this._rect || this.rect).slice(0));
+        this.textureCache[scaleIndex] =
+          this.textureTarget[scaleIndex] =
+            this.textureCache[0] =
+              TextureCache.getImgInstance(
+                gl,
+                canvasCache.offscreen.canvas,
+                this._src,
+                (this._rect || this.rect).slice(0),
+              );
         canvasCache.releaseImg(this._src);
       }
-    }
-    else {
+    } else {
       super.genTexture(gl, scale, scaleIndex);
     }
   }
@@ -208,14 +219,13 @@ class Bitmap extends Node {
     const { loader } = this;
     if (loader.onlyImg) {
       if (includeSelf) {
-        this.textureCache.forEach(item => item?.releaseImg(this._src));
+        this.textureCache.forEach((item) => item?.releaseImg(this._src));
       }
       this.textureTarget.splice(0);
       // total是本身无需
       this.textureFilter.forEach((item) => item?.release());
-      this.textureMask.forEach(item => item?.release());
-    }
-    else {
+      this.textureMask.forEach((item) => item?.release());
+    } else {
       super.clearCache(includeSelf);
     }
   }
@@ -227,7 +237,7 @@ class Bitmap extends Node {
   set src(v: string) {
     this.src = v;
     const loader = this.loader;
-    if (v === loader.src || this.isDestroyed || !v && loader.error) {
+    if (v === loader.src || this.isDestroyed || (!v && loader.error)) {
       if (v && v !== loader.src) {
         loader.src = v;
         inject.measureImg(v, (res: any) => {
@@ -237,8 +247,7 @@ class Bitmap extends Node {
               if (onLoad && isFunction(onLoad)) {
                 onLoad();
               }
-            }
-            else {
+            } else {
               if (onError && isFunction(onError)) {
                 onError();
               }
