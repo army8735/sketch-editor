@@ -38,8 +38,8 @@ class Bitmap extends Node {
       this.loader.error = true;
     }
     else {
-      const isBase64 = /^data:image\/(\w+);base64,/.test(src);
-      if (isBase64) {
+      const isBlob = /^blob:/.test(src);
+      if (isBlob) {
         // fetch('https://karas.alipay.com/api/uploadbase64', {
         //   method: 'post',
         //   headers: {
@@ -210,7 +210,9 @@ class Bitmap extends Node {
       if (includeSelf) {
         this.textureCache.forEach(item => item?.releaseImg(this._src));
       }
-      this.textureTotal.forEach(item => item?.release());
+      this.textureTarget.splice(0);
+      // total是本身无需
+      this.textureFilter.forEach((item) => item?.release());
       this.textureMask.forEach(item => item?.release());
     }
     else {

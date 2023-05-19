@@ -23746,7 +23746,7 @@
                 this.loader.error = true;
             }
             else {
-                /^data:image\/(\w+);base64,/.test(src);
+                /^blob:/.test(src);
                 const cache = inject.IMG[src];
                 if (!cache) {
                     inject.measureImg(src, (res) => {
@@ -23896,7 +23896,9 @@
                 if (includeSelf) {
                     this.textureCache.forEach(item => item === null || item === void 0 ? void 0 : item.releaseImg(this._src));
                 }
-                this.textureTotal.forEach(item => item === null || item === void 0 ? void 0 : item.release());
+                this.textureTarget.splice(0);
+                // total是本身无需
+                this.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
                 this.textureMask.forEach(item => item === null || item === void 0 ? void 0 : item.release());
             }
             else {
