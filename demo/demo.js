@@ -27,6 +27,7 @@ let structs = [];
 let abHash = {}, pageHash = {};
 let hoverTree, selectTree;
 let zoom = 1;
+let isEditText;
 
 async function initFonts() {
   try {
@@ -150,6 +151,11 @@ $input.onchange = function(e) {
         const li = abHash[node.props.uuid];
         li.parentElement.removeChild(li);
         delete abHash[node.props.uuid];
+      });
+
+      root.on(editor.util.Event.UPDATE_CURSOR, function(x, y, h) {
+        showEditText(x / dpi, y / dpi, h / dpi);
+        updateSelect();
       });
 
       root.setPageIndex(0);
@@ -560,7 +566,7 @@ $overlap.addEventListener('mousedown', function(e) {
       pageTy = o.translateY;
       $overlap.classList.add('down');
     }
-    // 普通是选择
+    // 普通是选择或者编辑文本
     else {
       const nx = startX - originX;
       const ny = startY - originY;
@@ -602,15 +608,27 @@ $overlap.addEventListener('mousedown', function(e) {
         let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
         node = getActiveNodeWhenSelected(node);
         if(node) {
-          showSelect(node);
-          hideHover();
+          if (isEditText && node === selectNode) {
+            const { offsetX, offsetY } = e;
+            const x = $selection.offsetLeft + offsetX;
+            const y = $selection.offsetTop + offsetY;
+            const p = selectNode.getCursorPos(x, y);
+            if (!p) {
+              throw new Error('Unknown cursor');
+            }
+            showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
+          }
+          else {
+            showSelect(node);
+            hideHover();
+            hideEditText();
+          }
         }
         else {
           hideSelect();
+          hideEditText();
         }
       }
-      $inputContainer.style.display = 'none';
-      $inputText.blur();
     }
   }
 });
@@ -622,17 +640,29 @@ $overlap.addEventListener('dblclick', function(e) {
   if (selectNode && selectNode instanceof editor.node.Text) {
     const p = selectNode.getCursorPos(x, y);
     if (!p) {
-      return;
+      throw new Error('Unknown cursor');
     }
-    // selectNode.setEditMode(true);
-    const style = $inputContainer.style;
-    style.display = 'block';
-    style.left = p.x / dpi + 'px';
-    style.top = p.y / dpi + 'px';
-    style.height = p.h / dpi + 'px';
-    $inputText.focus();
+    showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
   }
 });
+
+function showEditText(x, y, h) {
+  isEditText = true;
+  const style = $inputContainer.style;
+  style.left = x + 'px';
+  style.top = y + 'px';
+  style.height = h + 'px';
+  style.display = 'block';
+  $inputText.focus();
+}
+
+function hideEditText() {
+  if (isEditText) {
+    isEditText = false;
+    $inputContainer.style.display = 'none';
+    $inputText.blur();
+  }
+}
 
 let isIme = false;
 $inputText.addEventListener('keydown', (e) => {
@@ -640,6 +670,7 @@ $inputText.addEventListener('keydown', (e) => {
   if (keyCode === 13) {
     // 回车等候一下让input先触发，输入法状态不会触发
     setTimeout(() => {
+      selectNode.enter();
     }, 1);
   } else if (keyCode === 8) {
   } else if (keyCode >= 37 && keyCode <= 40) {

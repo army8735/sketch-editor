@@ -112,6 +112,7 @@ class Event {
   static VISIBLE_CHANGED = 'visibleChanged';
   static DID_ADD_PAGE = 'didAddPage';
   static WILL_REMOVE_PAGE = 'willRemovePage';
+  static UPDATE_CURSOR = 'updateCursor';
 }
 
 export default Event;

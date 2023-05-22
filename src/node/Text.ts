@@ -4,6 +4,7 @@ import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
+import Event from '../util/Event';
 import inject from '../util/inject';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
@@ -396,11 +397,11 @@ class Text extends Node {
     const lineBoxList = this.lineBoxList;
     const cursorIndex = this.cursorIndex;
     for (let i = 0, len = lineBoxList.length; i < len; i++) {
-      const item = lineBoxList[i];
-      if (local.y >= item.y && local.y < item.y + item.h) {
+      const lineBox = lineBoxList[i];
+      if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
         cursorIndex[0] = i;
-        let rx = 0, ry = item.y, rh = item.lineHeight;
-        const list = item.list;
+        let rx = 0, ry = lineBox.y, rh = lineBox.lineHeight;
+        const list = lineBox.list;
         outer:
           for (let i = 0, len = list.length; i < len; i++) {
             const { x, w, str, font } = list[i];
@@ -445,7 +446,8 @@ class Text extends Node {
         };
       }
     }
-    cursorIndex[0] = cursorIndex[1] = cursorIndex[2] = cursorIndex[3] = -1; // 还原一下
+    // 找不到还原清空
+    cursorIndex[0] = cursorIndex[1] = cursorIndex[2] = cursorIndex[3] = -1;
   }
 
   /**
@@ -459,29 +461,56 @@ class Text extends Node {
     const isLeft = width.u === StyleUnit.AUTO && left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO;
     if (isLeft) {
       const { left: left2, width: width2 } = computedStyle;
-      // console.warn(left2, width2, left2 - width2 * 0.5)
       left.v = left2 - width2 * 0.5;
       left.u = StyleUnit.PX;
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
+    const lineBoxList = this.lineBoxList;
     const cursorIndex = this.cursorIndex;
-    const lineBox = this.lineBoxList[cursorIndex[0]];
-    const textBox = lineBox.list[cursorIndex[1]];
-    const i = textBox.index + cursorIndex[2];
+    // 先记录下光标对应字符的索引
+    const [i, j, k] = cursorIndex;
+    const lineBox = lineBoxList[i];
+    const textBox = lineBox.list[j];
+    const m = textBox.index + k;
     const c = this._content;
-    this._content = c.slice(0, i) + s + c.slice(i);
-    this.root?.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
+    this.content = c.slice(0, m) + s + c.slice(m);
+    const n = m + s.length;
+    // 位移还原，无需渲染仅数据即可
     if (isLeft) {
       const width = this.width;
       const v = computedStyle.left + width * 0.5;
-      // console.log(width, v * 100 / this.parent!.width)
       left.v = (computedStyle.left + width * 0.5) * 100 / this.parent!.width;
       left.u = StyleUnit.PERCENT;
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
       computedStyle.left = v;
     }
+    // 同步更新光标位置
+    for (let i = 0, len = lineBoxList.length; i < len; i++) {
+      const lineBox = lineBoxList[i];
+      const list = lineBox.list;
+      for (let j = 0, len = list.length; j < len; j++) {
+        const textBox = list[j];
+        if (n >= textBox.index && n < textBox.index + textBox.str.length) {
+          cursorIndex[0] = i;
+          cursorIndex[1] = j;
+          cursorIndex[2] = n - textBox.index;
+          const ctx = inject.getFontCanvas().ctx;
+          ctx.font = textBox.font;
+          const str = textBox.str;
+          const w = ctx.measureText(str.slice(0, cursorIndex[2])).width;
+          const m = this.matrixWorld;
+          const p = calPoint({x : textBox.x + w, y: textBox.y}, m);
+          this.root?.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
+          return;
+        }
+      }
+    }
+  }
+
+  enter() {
+    console.log(this.cursorIndex)
   }
 
   get content() {
