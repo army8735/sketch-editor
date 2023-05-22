@@ -16,7 +16,7 @@ matchMedia(
 
 let root;
 let originX, originY;
-let isDown, isMove, isControl, controlType;
+let isMouseDown, isMouseMove, isControl, controlType;
 let startX, startY, lastX, lastY;
 let hoverNode, selectNode;
 let metaKey, shiftKey, ctrlKey, altKey, spaceKey;
@@ -410,8 +410,8 @@ function onMove(x, y, isOnControl) {
   const dx2 = dx / zoom * dpi, dy2 = dy / zoom * dpi;
   // 空格按下拖拽画布
   if (spaceKey) {
-    if (isDown) {
-      isMove = true;
+    if (isMouseDown) {
+      isMouseMove = true;
       curPage.updateStyle({
         translateX: pageTx + dx,
         translateY: pageTy + dy,
@@ -439,7 +439,7 @@ function onMove(x, y, isOnControl) {
   else {
     // 拖拽缩放选框，一定有selectNode
     if (isControl) {
-      isMove = true;
+      isMouseMove = true;
       if (controlType === 'tl') {}
       else if (controlType === 'tr') {}
       else if (controlType === 'br') {}
@@ -508,8 +508,8 @@ function onMove(x, y, isOnControl) {
       updateSelect();
     }
     // 拖拽节点本身
-    else if (isDown) {
-      isMove = true;
+    else if (isMouseDown) {
+      isMouseMove = true;
       if(selectNode) {
         // 不变也要更新，并不知道节点的约束类型（size是否auto）
         selectNode.updateStyle({
@@ -549,8 +549,8 @@ $overlap.addEventListener('mousedown', function(e) {
   }
   // 左键
   if (e.button === 0) {
-    isDown = true;
-    isMove = false;
+    isMouseDown = true;
+    isMouseMove = false;
     startX = e.pageX;
     startY = e.pageY;
     // 空格按下移动画布
@@ -686,13 +686,13 @@ document.addEventListener('mouseup', function(e) {
       updateSelect();
     }
     else {
-      if(selectNode && isMove) {
+      if(selectNode && isMouseMove) {
         // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
         selectNode.checkPosChange();
       }
     }
-    isDown = false;
-    isMove = false;
+    isMouseDown = false;
+    isMouseMove = false;
     isControl = false;
     if(spaceKey) {
       $overlap.classList.remove('down');
