@@ -1,10 +1,10 @@
 class TextBox {
-  x = 0;
-  y = 0;
-  w = 0;
-  lineHeight = 0;
-  baseline = 0;
-  index = 0;
+  x: number;
+  y: number;
+  w: number;
+  lineHeight: number;
+  baseline: number;
+  index: number; // 位于整个Text字符串的索引
   str: string;
   font: string;
 

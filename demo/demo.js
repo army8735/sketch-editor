@@ -617,6 +617,8 @@ $overlap.addEventListener('mousedown', function(e) {
               throw new Error('Unknown cursor');
             }
             showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
+            // 防止触发click事件失焦
+            e.preventDefault();
           }
           else {
             showSelect(node);
@@ -674,6 +676,7 @@ $inputText.addEventListener('keydown', (e) => {
     }, 1);
   } else if (keyCode === 8) {
   } else if (keyCode >= 37 && keyCode <= 40) {
+    selectNode.moveCursor(keyCode);
   }
 });
 $inputText.addEventListener('input', (e) => {
