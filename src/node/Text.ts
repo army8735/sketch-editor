@@ -670,14 +670,22 @@ class Text extends Node {
   }
 
   delete() {
+    const c = this._content;
+    // 没内容没法删
+    if (!c) {
+      return;
+    }
     const cursorIndex = this.cursorIndex;
     const [i, j, k] = cursorIndex;
+    // 开头也没法删
+    if (!i && !j && !k) {
+      return;
+    }
     const lineBoxList = this.lineBoxList;
     const lineBox = lineBoxList[i];
     const list = lineBox.list;
     const textBox = list[j];
-    const index = textBox.index + k;
-    const c = this._content;
+    const index = textBox ? (textBox.index + k) : (lineBox.index + k);
     this.content = c.slice(0, index - 1) + c.slice(index);
     this.updateCursorByIndex(index - 1);
   }

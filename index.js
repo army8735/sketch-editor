@@ -28618,7 +28618,8 @@
                 const list = lineBox.list;
                 for (let j = 0, len = list.length; j < len; j++) {
                     const textBox = list[j];
-                    if (index >= textBox.index && index < textBox.index + textBox.str.length) {
+                    if (index >= textBox.index &&
+                        index < textBox.index + textBox.str.length) {
                         cursorIndex[0] = i;
                         cursorIndex[1] = j;
                         cursorIndex[2] = index - textBox.index;
@@ -28710,7 +28711,7 @@
                     return;
                 }
                 // 本行空行，或者已经到末尾（只有在下行空行的情况下才会进入）
-                if (!textBox || j === list.length - 1 && k === textBox.str.length) {
+                if (!textBox || (j === list.length - 1 && k === textBox.str.length)) {
                     cursorIndex[0] = ++i;
                     cursorIndex[1] = 0;
                     cursorIndex[2] = 0;
@@ -28797,14 +28798,22 @@
             this.updateCursorByIndex(index + 1);
         }
         delete() {
+            const c = this._content;
+            // 没内容没法删
+            if (!c) {
+                return;
+            }
             const cursorIndex = this.cursorIndex;
             const [i, j, k] = cursorIndex;
+            // 开头也没法删
+            if (!i && !j && !k) {
+                return;
+            }
             const lineBoxList = this.lineBoxList;
             const lineBox = lineBoxList[i];
             const list = lineBox.list;
             const textBox = list[j];
-            const index = textBox.index + k;
-            const c = this._content;
+            const index = textBox ? (textBox.index + k) : (lineBox.index + k);
             this.content = c.slice(0, index - 1) + c.slice(index);
             this.updateCursorByIndex(index - 1);
         }
@@ -28825,7 +28834,7 @@
                             // 只差1个情况看更靠近哪边
                             const w1 = ctx.measureText(str.slice(0, start)).width;
                             const w2 = ctx.measureText(str.slice(0, end)).width;
-                            if (localX - (x + w1) > (x + w2) - localX) {
+                            if (localX - (x + w1) > x + w2 - localX) {
                                 rx = x + w2;
                                 cursorIndex[2] = end;
                             }
