@@ -613,9 +613,6 @@ $overlap.addEventListener('mousedown', function(e) {
             const x = $selection.offsetLeft + offsetX;
             const y = $selection.offsetTop + offsetY;
             const p = selectNode.getCursorByAbsCoord(x, y);
-            if (!p) {
-              throw new Error('Unknown cursor');
-            }
             showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
             // 防止触发click事件失焦
             e.preventDefault();
@@ -641,9 +638,6 @@ $overlap.addEventListener('dblclick', function(e) {
   const y = $selection.offsetTop + offsetY;
   if (selectNode && selectNode instanceof editor.node.Text) {
     const p = selectNode.getCursorByAbsCoord(x, y);
-    if (!p) {
-      throw new Error('Unknown cursor');
-    }
     showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
   }
 });

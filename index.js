@@ -28552,7 +28552,8 @@
             const local = calPoint({ x: x * dpi, y: y * dpi }, im);
             const lineBoxList = this.lineBoxList;
             const cursorIndex = this.cursorIndex;
-            for (let i = 0, len = lineBoxList.length; i < len; i++) {
+            const len = lineBoxList.length;
+            for (let i = 0; i < len; i++) {
                 const lineBox = lineBoxList[i];
                 // 确定y在哪一行后
                 if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
@@ -28567,6 +28568,17 @@
                     };
                 }
             }
+            // 找不到认为是最后一行末尾
+            const lineBox = lineBoxList[len - 1];
+            cursorIndex[0] = len - 1;
+            const res = this.getCursorByLocalX(this.width, lineBox);
+            this.lastCursorX = res.x;
+            const p = calPoint({ x: res.x, y: res.y }, m);
+            return {
+                x: p.x,
+                y: p.y,
+                h: res.h * m[0],
+            };
         }
         /**
          * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
@@ -28824,7 +28836,8 @@
             let rx = 0, ry = lineBox.y, rh = lineBox.lineHeight;
             outer: for (let i = 0, len = list.length; i < len; i++) {
                 const { x, w, str, font } = list[i];
-                if (localX >= x && localX <= x + w) {
+                // x位于哪个textBox上，或者是最后一个
+                if (localX >= x && localX <= x + w || i === len - 1) {
                     cursorIndex[1] = i;
                     const ctx = inject.getFontCanvas().ctx;
                     ctx.font = font;
