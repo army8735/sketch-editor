@@ -473,7 +473,10 @@ class Text extends Node {
       const list = lineBox.list;
       for (let j = 0, len = list.length; j < len; j++) {
         const textBox = list[j];
-        if (index >= textBox.index && index < textBox.index + textBox.str.length) {
+        if (
+          index >= textBox.index &&
+          index < textBox.index + textBox.str.length
+        ) {
           cursorIndex[0] = i;
           cursorIndex[1] = j;
           cursorIndex[2] = index - textBox.index;
@@ -483,7 +486,7 @@ class Text extends Node {
           const w = ctx.measureText(str.slice(0, cursorIndex[2])).width;
           this.lastCursorX = textBox.x + w;
           const m = this.matrixWorld;
-          const p = calPoint({ x : this.lastCursorX, y: textBox.y }, m);
+          const p = calPoint({ x: this.lastCursorX, y: textBox.y }, m);
           this.root?.emit(
             Event.UPDATE_CURSOR,
             p.x,
@@ -559,7 +562,12 @@ class Text extends Node {
         this.cursorIndex[0] = i;
         const res = this.getCursorByLocalX(this.lastCursorX, lineBox);
         const p = calPoint({ x: res.x, y: res.y }, m);
-        this.root?.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
+        this.root?.emit(
+          Event.UPDATE_CURSOR,
+          p.x,
+          p.y,
+          lineBox.lineHeight * m[0],
+        );
         return;
       }
     }
@@ -569,7 +577,7 @@ class Text extends Node {
         return;
       }
       // 本行空行，或者已经到末尾（只有在下行空行的情况下才会进入）
-      if (!textBox || j === list.length - 1 && k === textBox.str.length) {
+      if (!textBox || (j === list.length - 1 && k === textBox.str.length)) {
         cursorIndex[0] = ++i;
         cursorIndex[1] = 0;
         cursorIndex[2] = 0;
@@ -625,7 +633,12 @@ class Text extends Node {
         this.cursorIndex[0] = i;
         const res = this.getCursorByLocalX(this.lastCursorX, lineBox);
         const p = calPoint({ x: res.x, y: res.y }, m);
-        this.root?.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
+        this.root?.emit(
+          Event.UPDATE_CURSOR,
+          p.x,
+          p.y,
+          lineBox.lineHeight * m[0],
+        );
         return;
       }
     }
@@ -639,7 +652,7 @@ class Text extends Node {
     } else {
       this.lastCursorX = 0;
     }
-    const p = calPoint({ x : this.lastCursorX, y: lineBox.y }, m);
+    const p = calPoint({ x: this.lastCursorX, y: lineBox.y }, m);
     this.root?.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
   }
 
@@ -673,43 +686,45 @@ class Text extends Node {
   private getCursorByLocalX(localX: number, lineBox: LineBox) {
     const list = lineBox.list; // 可能为空行，返回行开头坐标0
     const cursorIndex = this.cursorIndex;
-    let rx = 0, ry = lineBox.y, rh = lineBox.lineHeight;
-    outer:
-      for (let i = 0, len = list.length; i < len; i++) {
-        const { x, w, str, font } = list[i];
-        if (localX >= x && localX <= x + w) {
-          cursorIndex[1] = i;
-          const ctx = inject.getFontCanvas().ctx;
-          ctx.font = font;
-          let start = 0, end = str.length;
-          while (start < end) {
-            if (start === end - 1) {
-              // 只差1个情况看更靠近哪边
-              const w1 = ctx.measureText(str.slice(0, start)).width;
-              const w2 = ctx.measureText(str.slice(0, end)).width;
-              if (localX - (x + w1) > (x + w2) - localX) {
-                rx = x + w2;
-                cursorIndex[2] = end;
-              } else {
-                rx = x + w1;
-                cursorIndex[2] = start;
-              }
-              break outer;
-            }
-            const mid = start + ((end - start) >> 1);
-            const w = ctx.measureText(str.slice(0, mid)).width;
-            if (localX > x + w) {
-              start = mid;
-            } else if (localX < x + w) {
-              end = mid;
+    let rx = 0,
+      ry = lineBox.y,
+      rh = lineBox.lineHeight;
+    outer: for (let i = 0, len = list.length; i < len; i++) {
+      const { x, w, str, font } = list[i];
+      if (localX >= x && localX <= x + w) {
+        cursorIndex[1] = i;
+        const ctx = inject.getFontCanvas().ctx;
+        ctx.font = font;
+        let start = 0,
+          end = str.length;
+        while (start < end) {
+          if (start === end - 1) {
+            // 只差1个情况看更靠近哪边
+            const w1 = ctx.measureText(str.slice(0, start)).width;
+            const w2 = ctx.measureText(str.slice(0, end)).width;
+            if (localX - (x + w1) > x + w2 - localX) {
+              rx = x + w2;
+              cursorIndex[2] = end;
             } else {
-              cursorIndex[2] = mid;
-              rx = x + w;
-              break outer;
+              rx = x + w1;
+              cursorIndex[2] = start;
             }
+            break outer;
+          }
+          const mid = start + ((end - start) >> 1);
+          const w = ctx.measureText(str.slice(0, mid)).width;
+          if (localX > x + w) {
+            start = mid;
+          } else if (localX < x + w) {
+            end = mid;
+          } else {
+            cursorIndex[2] = mid;
+            rx = x + w;
+            break outer;
           }
         }
       }
+    }
     return { x: rx, y: ry, h: rh };
   }
 
