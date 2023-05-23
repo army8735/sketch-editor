@@ -612,7 +612,7 @@ $overlap.addEventListener('mousedown', function(e) {
             const { offsetX, offsetY } = e;
             const x = $selection.offsetLeft + offsetX;
             const y = $selection.offsetTop + offsetY;
-            const p = selectNode.getCursorPos(x, y);
+            const p = selectNode.getCursorByAbsCoord(x, y);
             if (!p) {
               throw new Error('Unknown cursor');
             }
@@ -640,7 +640,7 @@ $overlap.addEventListener('dblclick', function(e) {
   const x = $selection.offsetLeft + offsetX;
   const y = $selection.offsetTop + offsetY;
   if (selectNode && selectNode instanceof editor.node.Text) {
-    const p = selectNode.getCursorPos(x, y);
+    const p = selectNode.getCursorByAbsCoord(x, y);
     if (!p) {
       throw new Error('Unknown cursor');
     }
@@ -675,6 +675,8 @@ $inputText.addEventListener('keydown', (e) => {
       selectNode.enter();
     }, 1);
   } else if (keyCode === 8) {
+    e.stopPropagation();
+    selectNode.delete();
   } else if (keyCode >= 37 && keyCode <= 40) {
     selectNode.moveCursor(keyCode);
   }

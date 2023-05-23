@@ -4,12 +4,14 @@ class LineBox {
   y: number;
   w: number;
   h: number;
+  index: number; // 位于整个Text字符串的索引
   list: TextBox[];
 
-  constructor(y: number, h: number) {
+  constructor(y: number, h: number, index: number) {
     this.y = y;
     this.w = 0;
     this.h = h;
+    this.index = index;
     this.list = [];
   }
 

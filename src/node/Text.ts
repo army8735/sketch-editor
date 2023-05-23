@@ -131,7 +131,7 @@ class Text extends Node {
     this._content = props.content;
     this.rich = props.rich;
     this.lineBoxList = [];
-    this.cursorIndex = new Int32Array([-1, -1, -1]);
+    this.cursorIndex = new Int32Array([0, 0, 0]);
     this.lastCursorX = 0;
   }
 
@@ -179,7 +179,7 @@ class Text extends Node {
       baseline = getBaseline(computedStyle);
       ctx.font = setFontStyle(computedStyle);
     }
-    let lineBox = new LineBox(y, lineHeight);
+    let lineBox = new LineBox(y, lineHeight, i);
     lineBoxList.splice(0);
     lineBoxList.push(lineBox);
     // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
@@ -206,7 +206,7 @@ class Text extends Node {
         x = 0;
         y += lineHeight;
         lineBox.verticalAlign();
-        lineBox = new LineBox(y, lineHeight);
+        lineBox = new LineBox(y, lineHeight, i);
         lineBoxList.push(lineBox);
         // const textBox = new TextBox(
         //   x,
@@ -242,7 +242,7 @@ class Text extends Node {
         y += lineBox.lineHeight;
         if (i < length) {
           lineBox.verticalAlign();
-          lineBox = new LineBox(y, lineHeight);
+          lineBox = new LineBox(y, lineHeight, i);
           lineBoxList.push(lineBox);
         }
         continue;
@@ -273,7 +273,7 @@ class Text extends Node {
         // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();
-          lineBox = new LineBox(y, lineHeight);
+          lineBox = new LineBox(y, lineHeight, i);
           lineBoxList.push(lineBox);
         }
       } else {
@@ -398,7 +398,7 @@ class Text extends Node {
   }
 
   // 根据绝对坐标获取光标位置
-  getCursorPos(x: number, y: number) {
+  getCursorByAbsCoord(x: number, y: number) {
     const dpi = this.root!.dpi;
     const m = this.matrixWorld;
     const im = inverse4(m);
@@ -407,46 +407,9 @@ class Text extends Node {
     const cursorIndex = this.cursorIndex;
     for (let i = 0, len = lineBoxList.length; i < len; i++) {
       const lineBox = lineBoxList[i];
+      // 确定y在哪一行后
       if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
         cursorIndex[0] = i;
-        // let rx = 0, ry = lineBox.y, rh = lineBox.lineHeight;
-        // const list = lineBox.list;
-        // outer:
-        //   for (let i = 0, len = list.length; i < len; i++) {
-        //     const { x, w, str, font } = list[i];
-        //     if (local.x >= x && local.x <= x + w) {
-        //       cursorIndex[1] = i;
-        //       const ctx = inject.getFontCanvas().ctx;
-        //       ctx.font = font;
-        //       let start = 0, end = str.length;
-        //       while (start < end) {
-        //         if (start === end - 1) {
-        //           // 只差1个情况看更靠近哪边
-        //           const w1 = ctx.measureText(str.slice(0, start)).width;
-        //           const w2 = ctx.measureText(str.slice(0, end)).width;
-        //           if (local.x - (x + w1) > (x + w2) - local.x) {
-        //             this.lastCursorX = rx = x + w2;
-        //             cursorIndex[2] = end;
-        //           } else {
-        //             this.lastCursorX = rx = x + w1;
-        //             cursorIndex[2] = start;
-        //           }
-        //           break outer;
-        //         }
-        //         const mid = start + ((end - start) >> 1);
-        //         const w = ctx.measureText(str.slice(0, mid)).width;
-        //         if (local.x > x + w) {
-        //           start = mid;
-        //         } else if (local.x < x + w) {
-        //           end = mid;
-        //         } else {
-        //           cursorIndex[2] = mid;
-        //           this.lastCursorX = rx = x + w;
-        //           break outer;
-        //         }
-        //       }
-        //     }
-        //   }
         const res = this.getCursorByLocalX(local.x, lineBox);
         this.lastCursorX = res.x;
         const p = calPoint({ x: res.x, y: res.y }, m);
@@ -457,8 +420,6 @@ class Text extends Node {
         };
       }
     }
-    // 找不到还原清空
-    cursorIndex[0] = cursorIndex[1] = cursorIndex[2] = cursorIndex[3] = -1;
   }
 
   /**
@@ -489,7 +450,6 @@ class Text extends Node {
     const m = textBox.index + k;
     const c = this._content;
     this.content = c.slice(0, m) + s + c.slice(m);
-    const n = m + s.length;
     // 位移还原，无需渲染仅数据即可
     if (isLeft) {
       const width = this.width;
@@ -501,15 +461,22 @@ class Text extends Node {
       computedStyle.left = v;
     }
     // 同步更新光标位置
+    this.updateCursorByIndex(m + s.length);
+  }
+
+  // 根据字符串索引更新光标
+  private updateCursorByIndex(index: number) {
+    const lineBoxList = this.lineBoxList;
+    const cursorIndex = this.cursorIndex;
     for (let i = 0, len = lineBoxList.length; i < len; i++) {
       const lineBox = lineBoxList[i];
       const list = lineBox.list;
       for (let j = 0, len = list.length; j < len; j++) {
         const textBox = list[j];
-        if (n >= textBox.index && n < textBox.index + textBox.str.length) {
+        if (index >= textBox.index && index < textBox.index + textBox.str.length) {
           cursorIndex[0] = i;
           cursorIndex[1] = j;
-          cursorIndex[2] = n - textBox.index;
+          cursorIndex[2] = index - textBox.index;
           const ctx = inject.getFontCanvas().ctx;
           ctx.font = textBox.font;
           const str = textBox.str;
@@ -539,7 +506,7 @@ class Text extends Node {
     let lineBox = lineBoxList[i];
     let list = lineBox.list;
     let textBox = list[j];
-    const pos = textBox.index + k;
+    const pos = textBox ? (textBox.index + k) : (lineBox.index + k); // 空行时k就是0
     // 左
     if (code === 37) {
       if (pos === 0) {
@@ -552,15 +519,26 @@ class Text extends Node {
           cursorIndex[0] = --i;
           lineBox = lineBoxList[i];
           list = lineBox.list;
-          cursorIndex[1] = j = list.length - 1;
+          // 防止上一行是空行
+          if (!list.length) {
+            cursorIndex[1] = j = 0;
+          } else {
+            cursorIndex[1] = j = list.length - 1;
+            // 本行如果是空行，上一行到末尾处，否则往前一个字符
+            const isEmpty = !textBox;
+            textBox = list[j];
+            cursorIndex[2] = textBox.str.length - (isEmpty ? 0 : 1);
+          }
         }
         // 非行开头到上个textBox末尾
         else {
           cursorIndex[1] = --j;
+          textBox = list[j];
+          cursorIndex[2] = textBox.str.length - 1;
         }
-        textBox = list[j];
-        cursorIndex[2] = textBox.str.length - 1;
-      } else {
+      }
+      // textBox内容中
+      else {
         cursorIndex[2] = --k;
       }
     }
@@ -590,22 +568,43 @@ class Text extends Node {
       if (pos === this._content.length) {
         return;
       }
-      // textBox末尾
-      if (k === textBox.str.length) {
-        // 行末尾要到下行开头
+      // 本行空行，或者已经到末尾（只有在下行空行的情况下才会进入）
+      if (!textBox || j === list.length - 1 && k === textBox.str.length) {
+        cursorIndex[0] = ++i;
+        cursorIndex[1] = 0;
+        cursorIndex[2] = 0;
+        lineBox = lineBoxList[i];
+        list = lineBox.list;
+        textBox = list[0];
+      }
+      // textBox即将到末尾（差一个）
+      else if (k === textBox.str.length - 1) {
+        // 行末尾特殊检查要到下行开头，空行也进入
         if (j === list.length - 1) {
-          cursorIndex[0] = ++i;
-          lineBox = lineBoxList[i];
-          list = lineBox.list;
-          cursorIndex[1] = j = 0;
+          const next = lineBoxList[i + 1];
+          // 非enter换行下行有内容，本行不能到末尾处，要到下行开头，除非没有下行了
+          if (next && next.list.length) {
+            cursorIndex[0] = ++i;
+            lineBox = lineBoxList[i];
+            list = lineBox.list;
+            cursorIndex[1] = j = 0;
+            textBox = list[j];
+            cursorIndex[2] = 0;
+          }
+          // enter换行可以到末尾
+          else {
+            cursorIndex[2]++;
+          }
         }
         // 非行末尾到下个textBox开头
         else {
           cursorIndex[1] = ++j;
+          textBox = list[j];
+          cursorIndex[2] = 0;
         }
-        textBox = list[j];
-        cursorIndex[2] = 0;
-      } else {
+      }
+      // textBox非末尾
+      else {
         cursorIndex[2] = ++k;
       }
     }
@@ -618,7 +617,7 @@ class Text extends Node {
       if (i === lineBoxList.length - 1) {
         cursorIndex[1] = j = list.length - 1;
         textBox = list[j];
-        cursorIndex[2] = textBox.str.length;
+        cursorIndex[2] = textBox ? textBox.str.length : 0;
       }
       // 向下一行找最接近的，保持当前的x，直接返回结果
       else {
@@ -631,21 +630,48 @@ class Text extends Node {
       }
     }
     // 左右和特殊情况的上下，前面计算了cursorIndex的位置，据此获取光标位置，并记录x
-    const ctx = inject.getFontCanvas().ctx;
-    ctx.font = textBox.font;
-    const str = textBox.str;
-    const w = ctx.measureText(str.slice(0, cursorIndex[2])).width;
-    this.lastCursorX = textBox.x + w;
-    const p = calPoint({ x : this.lastCursorX, y: textBox.y }, m);
+    if (textBox) {
+      const ctx = inject.getFontCanvas().ctx;
+      ctx.font = textBox.font;
+      const str = textBox.str;
+      const w = ctx.measureText(str.slice(0, cursorIndex[2])).width;
+      this.lastCursorX = textBox.x + w;
+    } else {
+      this.lastCursorX = 0;
+    }
+    const p = calPoint({ x : this.lastCursorX, y: lineBox.y }, m);
     this.root?.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
   }
 
   enter() {
-    console.log(this.cursorIndex)
+    const cursorIndex = this.cursorIndex;
+    const [i, j, k] = cursorIndex;
+    const lineBoxList = this.lineBoxList;
+    const lineBox = lineBoxList[i];
+    const list = lineBox.list;
+    const textBox = list[j];
+    const index = textBox.index + k;
+    const c = this._content;
+    this.content = c.slice(0, index) + '\n' + c.slice(index);
+    this.updateCursorByIndex(index + 1);
   }
 
-  private getCursorByLocalX(localX: number, lineBox: LineBox) {
+  delete() {
+    const cursorIndex = this.cursorIndex;
+    const [i, j, k] = cursorIndex;
+    const lineBoxList = this.lineBoxList;
+    const lineBox = lineBoxList[i];
     const list = lineBox.list;
+    const textBox = list[j];
+    const index = textBox.index + k;
+    const c = this._content;
+    this.content = c.slice(0, index - 1) + c.slice(index);
+    this.updateCursorByIndex(index - 1);
+  }
+
+  // 给定相对x坐标获取光标位置，y已知传入lineBox
+  private getCursorByLocalX(localX: number, lineBox: LineBox) {
+    const list = lineBox.list; // 可能为空行，返回行开头坐标0
     const cursorIndex = this.cursorIndex;
     let rx = 0, ry = lineBox.y, rh = lineBox.lineHeight;
     outer:
