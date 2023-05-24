@@ -86,7 +86,7 @@ class Group extends Container {
         right.v = (computedStyle.right * 100) / gw;
       }
     }
-    this.resetTranslateX(left, width, translateX);
+    this.resetTranslateX(left, right, width, translateX);
     // 类似水平情况
     if (dy || dh) {
       computedStyle.top -= dy;
@@ -102,7 +102,7 @@ class Group extends Container {
         bottom.v = (computedStyle.bottom * 100) / gh;
       }
     }
-    this.resetTranslateY(top, height, translateY);
+    this.resetTranslateY(top, bottom, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     child.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;

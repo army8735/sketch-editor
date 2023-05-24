@@ -17188,19 +17188,16 @@
         // car: 1.1171875, // content-area ratio，(1854+434)/2048
         blr: 0.9052734375,
         // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-        lgr: 0.03271484375,
-        styles: [],
-        postscriptNames: [],
+        lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
     };
-    const KEY = 'LOCAL_FONTS'; // 解析过的存本地缓存，解析时间还是有些成本
+    const KEY_INFO = 'LOCAL_FONTS_INFO'; // 解析过的存本地缓存，解析时间还是有些成本
     const o = {
         info: {
+            // family为key的信息，同一系列共享
             arial,
-            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
-            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
-            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
         },
         data: {
+            // postscriptName为key，和family同引用，方便使用
             arial,
         },
         hasRegister(fontFamily) {
@@ -17208,27 +17205,27 @@
         },
         registerLocalFonts(fonts) {
             return __awaiter(this, void 0, void 0, function* () {
-                const cache = JSON.parse(localStorage.getItem(KEY) || '{}');
+                const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
                 for (let k in fonts) {
                     if (fonts.hasOwnProperty(k)) {
                         const font = fonts[k];
                         const postscriptName = font.postscriptName.toLowerCase();
-                        // localStorage存的是this.data
-                        if (cache.hasOwnProperty(postscriptName)) {
-                            const o = this.data[postscriptName] = cache[postscriptName];
-                            const family = o.family;
-                            if (!this.info.hasOwnProperty(family)) {
-                                this.info[family] = o;
-                            }
-                            continue;
-                        }
                         const family = font.family.toLowerCase();
                         const style = font.style.toLowerCase();
-                        if (!this.info.hasOwnProperty(family)) {
-                            const o = this.info[family] = {
-                                styles: [],
-                                postscriptNames: [],
+                        // localStorage存的是this.info
+                        if (cacheInfo.hasOwnProperty(family)) {
+                            const o = cacheInfo[family];
+                            this.info[family] = this.info[family] || {
+                                name: o.name,
+                                family,
+                                lhr: o.lhr,
+                                blr: o.blr,
+                                lgr: o.lgr,
                             };
+                        }
+                        // 没有cache则用opentype读取
+                        if (!this.info.hasOwnProperty(family)) {
+                            const o = this.info[family] = this.data[family] = {};
                             const blob = yield font.blob();
                             const arrayBuffer = yield blob.arrayBuffer();
                             const f = opentype.parse(arrayBuffer);
@@ -17238,20 +17235,36 @@
                             o.name = o.name || family; // 中文名字
                             o.family = family;
                             let spread = 0;
+                            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+                            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+                            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
                             if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
                                 spread = Math.round((f.ascent + f.descent) * 0.15);
                             }
                             o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
                             o.blr = (f.ascent + spread) / f.emSquare;
                             o.lgr = f.lineGap / f.emSquare;
+                            cacheInfo[family] = {
+                                name: o.name,
+                                lhr: o.lhr,
+                                blr: o.blr,
+                                lgr: o.lgr,
+                            };
                         }
                         const o = this.info[family];
-                        o.styles.push(style);
-                        o.postscriptNames.push(postscriptName);
-                        cache[postscriptName] = this.data[postscriptName] = this.info[family];
+                        o.enable = true;
+                        o.styles = o.styles || [];
+                        if (o.styles.indexOf(style) === -1) {
+                            o.styles.push(style);
+                        }
+                        o.postscriptNames = o.postscriptNames || [];
+                        if (o.postscriptNames.indexOf(postscriptName) === -1) {
+                            o.postscriptNames.push(postscriptName);
+                        }
+                        this.data[family] = this.data[postscriptName] = o; // 同个字体族不同postscriptName指向一个引用
                     }
                 }
-                localStorage.setItem(KEY, JSON.stringify(cache));
+                localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
             });
         },
     };
@@ -25170,7 +25183,7 @@
                 xa = xb;
                 ya = yb;
             }
-            const dx = rect[0], dy = rect[1], dw = (rect[2] - rect[0]) - (old[2] - old[0]), dh = (rect[3] - rect[1]) - (old[3] - old[1]);
+            const dx = rect[0], dy = rect[1], dw = rect[2] - old[2], dh = rect[3] - old[3];
             // 检查真正有变化，位置相对于自己原本位置为原点
             if (dx || dy || dw || dh) {
                 this.adjustPosAndSizeSelf(dx, dy, dw, dh);
@@ -25183,8 +25196,8 @@
             const { width, height } = this;
             const points = this.props.points;
             points.forEach((point) => {
-                point.x = (point.absX + dx) / width;
-                point.y = (point.absY + dy) / height;
+                point.x = (point.absX - dx) / width;
+                point.y = (point.absY - dy) / height;
             });
         }
         toSvg(scale) {
@@ -27497,7 +27510,7 @@
                     right.v = (computedStyle.right * 100) / gw;
                 }
             }
-            this.resetTranslateX(left, width, translateX);
+            this.resetTranslateX(left, right, width, translateX);
             // 类似水平情况
             if (dy || dh) {
                 computedStyle.top -= dy;
@@ -27515,7 +27528,7 @@
                     bottom.v = (computedStyle.bottom * 100) / gh;
                 }
             }
-            this.resetTranslateY(top, height, translateY);
+            this.resetTranslateY(top, bottom, height, translateY);
             // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
             child.refreshLevel |= RefreshLevel.TRANSFORM;
             root.rl |= RefreshLevel.TRANSFORM;

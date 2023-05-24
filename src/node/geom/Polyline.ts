@@ -612,8 +612,8 @@ class Polyline extends Geom {
     }
     const dx = rect[0],
       dy = rect[1],
-      dw = (rect[2] - rect[0]) - (old[2] - old[0]),
-      dh = (rect[3] - rect[1]) - (old[3] - old[1]);
+      dw = rect[2] - old[2],
+      dh = rect[3] - old[3];
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (dx || dy || dw || dh) {
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
@@ -634,8 +634,8 @@ class Polyline extends Geom {
     const { width, height } = this;
     const points = (this.props as PolylineProps).points;
     points.forEach((point) => {
-      point.x = (point.absX! + dx) / width;
-      point.y = (point.absY! + dy) / height;
+      point.x = (point.absX! - dx) / width;
+      point.y = (point.absY! - dy) / height;
     });
   }
 
