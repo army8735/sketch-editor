@@ -17201,9 +17201,10 @@
             arial,
         },
         hasRegister(fontFamily) {
-            return this.info.hasOwnProperty(fontFamily);
+            return this.data.hasOwnProperty(fontFamily);
         },
         registerLocalFonts(fonts) {
+            var _a, _b;
             return __awaiter(this, void 0, void 0, function* () {
                 const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
                 for (let k in fonts) {
@@ -17229,43 +17230,79 @@
                             const blob = yield font.blob();
                             const arrayBuffer = yield blob.arrayBuffer();
                             const f = opentype.parse(arrayBuffer);
-                            if (f && f.name && f.name.fontFamily) {
-                                o.name = f.name.fontFamily.zh;
+                            if (f && f.name) {
+                                o.name = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.zh) || ((_b = f.name.fontFamily) === null || _b === void 0 ? void 0 : _b.zh);
                             }
                             o.name = o.name || family; // 中文名字
                             o.family = family;
-                            let spread = 0;
-                            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
-                            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
-                            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
-                            if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
-                                spread = Math.round((f.ascent + f.descent) * 0.15);
-                            }
-                            o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
-                            o.blr = (f.ascent + spread) / f.emSquare;
-                            o.lgr = f.lineGap / f.emSquare;
+                            const r = this._cal(family, f);
+                            Object.assign(o, r);
                             cacheInfo[family] = {
                                 name: o.name,
-                                lhr: o.lhr,
-                                blr: o.blr,
-                                lgr: o.lgr,
+                                lhr: r.lhr,
+                                blr: r.blr,
+                                lgr: r.lgr,
                             };
                         }
-                        const o = this.info[family];
-                        o.enable = true;
-                        o.styles = o.styles || [];
-                        if (o.styles.indexOf(style) === -1) {
-                            o.styles.push(style);
-                        }
-                        o.postscriptNames = o.postscriptNames || [];
-                        if (o.postscriptNames.indexOf(postscriptName) === -1) {
-                            o.postscriptNames.push(postscriptName);
-                        }
-                        this.data[family] = this.data[postscriptName] = o; // 同个字体族不同postscriptName指向一个引用
+                        this._register(family, style, postscriptName);
                     }
                 }
                 localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
             });
+        },
+        registerAb(ab) {
+            var _a, _b, _c, _d, _e, _f, _g;
+            const o = {};
+            const f = opentype.parse(ab);
+            if (f && f.name) {
+                o.family = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.en) || ((_b = f.name.fontFamily) === null || _b === void 0 ? void 0 : _b.en);
+                o.name = ((_c = f.name.preferredFamily) === null || _c === void 0 ? void 0 : _c.zh) || ((_d = f.name.fontFamily) === null || _d === void 0 ? void 0 : _d.zh) || o.family;
+            }
+            // 没有信息无效
+            let family = o.family;
+            let style = ((_e = f.name.preferredSubfamily) === null || _e === void 0 ? void 0 : _e.en) || ((_f = f.name.fontSubfamily) === null || _f === void 0 ? void 0 : _f.en);
+            let postscriptName = (_g = f.name.postScriptName) === null || _g === void 0 ? void 0 : _g.en;
+            if (!family || !style || !postscriptName) {
+                return;
+            }
+            family = family.toLowerCase();
+            style = style.toLowerCase();
+            postscriptName = postscriptName.toLowerCase();
+            if (!this.info.hasOwnProperty(family)) {
+                this.info[family] = o;
+                const r = this.cal(family, f);
+                Object.assign(o, r);
+            }
+            this._register(family, style, postscriptName);
+        },
+        _cal(family, f) {
+            let spread = 0;
+            // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+            // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+            // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
+            if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
+                spread = Math.round((f.ascent + f.descent) * 0.15);
+            }
+            const lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
+            const blr = (f.ascent + spread) / f.emSquare;
+            const lgr = f.lineGap / f.emSquare;
+            return {
+                lhr,
+                blr,
+                lgr,
+            };
+        },
+        _register(family, style, postscriptName) {
+            const o = this.info[family];
+            o.styles = o.styles || [];
+            if (o.styles.indexOf(style) === -1) {
+                o.styles.push(style);
+            }
+            o.postscriptNames = o.postscriptNames || [];
+            if (o.postscriptNames.indexOf(postscriptName) === -1) {
+                o.postscriptNames.push(postscriptName);
+            }
+            this.data[family] = this.data[postscriptName] = o; // 同个字体族不同postscriptName指向一个引用
         },
     };
 
@@ -25132,7 +25169,6 @@
         }
         // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
         checkPointsChange() {
-            var _a;
             const old = this._rect || this.rect;
             this.buildPoints();
             const points = this.points;
@@ -25189,7 +25225,6 @@
                 this.adjustPosAndSizeSelf(dx, dy, dw, dh);
                 this.adjustPoints(dx, dy);
                 this.checkPosSizeUpward();
-                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
             }
         }
         adjustPoints(dx, dy) {
@@ -30962,10 +30997,10 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
+        const cx = w * 0.5, cy = h * 0.5;
         w *= scale;
         h *= scale;
-        const cx = w * 0.5, cy = h * 0.5;
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
         // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
@@ -31077,17 +31112,17 @@ void main() {
         }
         const programs = root.programs;
         const program = programs.program;
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
+        const cx = w * 0.5, cy = h * 0.5;
         w *= scale;
         h *= scale;
-        const cx = w * 0.5, cy = h * 0.5;
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-        toE(node.tempMatrix);
+        const m = toE(node.tempMatrix);
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
-                matrix: node.tempMatrix,
+                matrix: m,
                 bbox: textureTarget.bbox,
                 texture: textureTarget.texture,
             },
@@ -31157,10 +31192,10 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
+        const cx = w * 0.5, cy = h * 0.5;
         w *= scale;
         h *= scale;
-        const cx = w * 0.5, cy = h * 0.5;
         const summary = createTexture(gl, 0, undefined, w, h);
         const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
         const m = identity();

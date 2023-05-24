@@ -20,7 +20,7 @@ const o: any = {
     arial,
   },
   hasRegister(fontFamily: string) {
-    return this.info.hasOwnProperty(fontFamily);
+    return this.data.hasOwnProperty(fontFamily);
   },
   async registerLocalFonts(fonts: any) {
     const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
@@ -47,44 +47,78 @@ const o: any = {
           const blob = await font.blob();
           const arrayBuffer = await blob.arrayBuffer();
           const f: any = opentype.parse(arrayBuffer);
-          if (f && f.name && f.name.fontFamily) {
-            o.name = f.name.fontFamily.zh;
+          if (f && f.name) {
+            o.name = f.name.preferredFamily?.zh || f.name.fontFamily?.zh;
           }
           o.name = o.name || family; // 中文名字
           o.family = family;
-          let spread = 0;
-          // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
-          // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
-          // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
-          if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
-            spread = Math.round((f.ascent + f.descent) * 0.15);
-          }
-          o.lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
-          o.blr = (f.ascent + spread) / f.emSquare;
-          o.lgr = f.lineGap / f.emSquare;
+          const r = this._cal(family, f);
+          Object.assign(o, r);
           cacheInfo[family] = {
             name: o.name,
-            lhr: o.lhr,
-            blr: o.blr,
-            lgr: o.lgr,
+            lhr: r.lhr,
+            blr: r.blr,
+            lgr: r.lgr,
           };
         }
-        const o = this.info[family];
-        o.enable = true;
-        o.styles = o.styles || [];
-        if (o.styles.indexOf(style) === -1) {
-          o.styles.push(style);
-        }
-        o.postscriptNames = o.postscriptNames || [];
-        if (o.postscriptNames.indexOf(postscriptName) === -1) {
-          o.postscriptNames.push(postscriptName);
-        }
-        this.data[family] = this.data[postscriptName] = o; // 同个字体族不同postscriptName指向一个引用
+        this._register(family, style, postscriptName);
       }
     }
     localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
   },
+  registerAb(ab: ArrayBuffer) {
+    const o: any = {};
+    const f: any = opentype.parse(ab);
+    if (f && f.name) {
+      o.family = f.name.preferredFamily?.en || f.name.fontFamily?.en;
+      o.name = f.name.preferredFamily?.zh || f.name.fontFamily?.zh || o.family;
+    }
+    // 没有信息无效
+    let family = o.family;
+    let style = f.name.preferredSubfamily?.en || f.name.fontSubfamily?.en;
+    let postscriptName = f.name.postScriptName?.en;
+    if (!family || !style || !postscriptName) {
+      return;
+    }
+    family = family.toLowerCase();
+    style = style.toLowerCase();
+    postscriptName = postscriptName.toLowerCase();
+    if (!this.info.hasOwnProperty(family)) {
+      this.info[family] = o;
+      const r = this.cal(family, f);
+      Object.assign(o, r);
+    }
+    this._register(family, style, postscriptName);
+  },
+  _cal(family: string, f: any) {
+    let spread = 0;
+    // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+    // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+    // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
+    if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
+      spread = Math.round((f.ascent + f.descent) * 0.15);
+    }
+    const lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
+    const blr = (f.ascent + spread) / f.emSquare;
+    const lgr = f.lineGap / f.emSquare;
+    return {
+      lhr,
+      blr,
+      lgr,
+    };
+  },
+  _register(family: string, style: string, postscriptName: string) {
+    const o = this.info[family];
+    o.styles = o.styles || [];
+    if (o.styles.indexOf(style) === -1) {
+      o.styles.push(style);
+    }
+    o.postscriptNames = o.postscriptNames || [];
+    if (o.postscriptNames.indexOf(postscriptName) === -1) {
+      o.postscriptNames.push(postscriptName);
+    }
+    this.data[family] = this.data[postscriptName] = o; // 同个字体族不同postscriptName指向一个引用
+  },
 };
-
 
 export default o;

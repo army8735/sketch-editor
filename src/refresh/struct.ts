@@ -54,7 +54,8 @@ type Merge = {
 
 let resTexture: WebGLTexture | undefined;
 let resFrameBuffer: WebGLFramebuffer | undefined;
-let lastW = 0, lastH = 0;
+let lastW = 0,
+  lastH = 0;
 
 export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -674,12 +675,12 @@ function genTotal(
   ) {
     return;
   }
-  const dx = -x * scale,
-    dy = -y * scale;
-  w *= scale;
-  h *= scale;
+  const dx = -x,
+    dy = -y;
   const cx = w * 0.5,
     cy = h * 0.5;
+  w *= scale;
+  h *= scale;
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
   // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
@@ -861,15 +862,15 @@ function genGaussBlur(
   }
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x * scale,
-    dy = -y * scale;
-  w *= scale;
-  h *= scale;
+  const dx = -x,
+    dy = -y;
   const cx = w * 0.5,
     cy = h * 0.5;
+  w *= scale;
+  h *= scale;
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-  toE(node.tempMatrix);
+  const m = toE(node.tempMatrix);
   drawTextureCache(
     gl,
     cx,
@@ -878,7 +879,7 @@ function genGaussBlur(
     [
       {
         opacity: 1,
-        matrix: node.tempMatrix,
+        matrix: m,
         bbox: textureTarget.bbox,
         texture: textureTarget.texture,
       },
@@ -981,12 +982,12 @@ function genMask(
   ) {
     return;
   }
-  const dx = -x * scale,
-    dy = -y * scale;
-  w *= scale;
-  h *= scale;
+  const dx = -x,
+    dy = -y;
   const cx = w * 0.5,
     cy = h * 0.5;
+  w *= scale;
+  h *= scale;
   const summary = createTexture(gl, 0, undefined, w, h);
   const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
   const m = identity();

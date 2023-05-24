@@ -619,14 +619,6 @@ class Polyline extends Geom {
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
       this.adjustPoints(dx, dy);
       this.checkPosSizeUpward();
-      this.root?.addUpdate(
-        this,
-        [],
-        RefreshLevel.REPAINT,
-        false,
-        false,
-        undefined,
-      );
     }
   }
 
