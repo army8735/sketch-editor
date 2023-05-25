@@ -989,4 +989,9 @@ function hideBasic() {
   $basic.querySelectorAll('.num').forEach(item => {
     item.disabled = true;
   });
+  $x.value = '';
+  $y.value = '';
+  $r.value = '';
+  $w.value = '';
+  $h.value = '';
 }

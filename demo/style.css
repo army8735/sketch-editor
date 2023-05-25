@@ -415,7 +415,7 @@ canvas {
 
 .basic .line {
   display: flex;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .basic label {
@@ -441,8 +441,12 @@ canvas {
   background: #ededed;
   border-radius: 5px;
   font-size: 12px;
-  transform: scale(0.9);
+  transform: scale(0.917);
   transform-origin: 0 center;
+}
+
+.basic label .num:disabled {
+  color: #bbb;
 }
 
 .basic label span {
