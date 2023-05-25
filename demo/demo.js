@@ -8,6 +8,13 @@ const $hover = $main.querySelector('#hover');
 const $selection = $main.querySelector('#selection');
 const $inputContainer = $main.querySelector('#input-container');
 const $inputText = $inputContainer.querySelector('input');
+const $side = document.querySelector('#side');
+const $basic = $side.querySelector('#basic');
+const $x = $side.querySelector('#x');
+const $y = $side.querySelector('#y');
+const $r = $side.querySelector('#r');
+const $w = $side.querySelector('#w');
+const $h = $side.querySelector('#h');
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -653,11 +660,13 @@ $overlap.addEventListener('mousedown', function(e) {
             showSelect(node);
             hideHover();
             hideEditText();
+            showBasic();
           }
         }
         else {
           hideSelect();
           hideEditText();
+          hideBasic();
         }
       }
     }
@@ -961,3 +970,23 @@ $main.addEventListener('wheel', function(e) {
   }
   updateSelect();
 });
+
+function showBasic() {
+  $basic.classList.add('show');
+  const info = selectNode.getFrameProps();
+  $basic.querySelectorAll('.num').forEach(item => {
+    item.disabled = false;
+  });
+  $x.value = editor.math.geom.toPrecision(info.x, 2);
+  $y.value = editor.math.geom.toPrecision(info.y, 2);
+  $r.value = editor.math.geom.toPrecision(info.rotation, 2);
+  $w.value = editor.math.geom.toPrecision(info.w, 2);
+  $h.value = editor.math.geom.toPrecision(info.h, 2);
+}
+
+function hideBasic() {
+  $basic.classList.remove('show');
+  $basic.querySelectorAll('.num').forEach(item => {
+    item.disabled = true;
+  });
+}
