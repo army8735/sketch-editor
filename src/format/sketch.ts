@@ -456,16 +456,26 @@ async function convertItem(
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
     const textBehaviour = layer.textBehaviour;
+    // sketch冗余的信息，文本的宽高在自动情况下实时测量获得
     if (textBehaviour === SketchFormat.TextBehaviour.Flexible) {
+      if (left !== 'auto' && right !== 'auto') {
+        right = 'auto';
+      }
+      if (top !== 'auto' && bottom !== 'auto') {
+        bottom = 'auto';
+      }
       width = 'auto';
       height = 'auto';
     } else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
       // 可能width是auto（left+right），也可能是left+width
+      if (top !== 'auto' && bottom !== 'auto') {
+        bottom = 'auto';
+      }
       height = 'auto';
     } else if (
       textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight
     ) {
-      // 啥也不干
+      // 啥也不干，等同普通节点
     }
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
@@ -479,7 +489,7 @@ async function convertItem(
               },
               MSAttributedStringColorAttribute: { red, green, blue, alpha },
               kerning = 0,
-              paragraphStyle: { maximumLineHeight = 0 } = {},
+              paragraphStyle: { maximumLineHeight = 0, paragraphSpacing = 0 } = {},
             },
           } = item;
           const fontFamily = name;
@@ -492,6 +502,7 @@ async function convertItem(
             fontStyle: 'normal',
             letterSpacing: kerning,
             lineHeight: maximumLineHeight,
+            paragraphSpacing,
             color: [
               Math.floor(red * 255),
               Math.floor(green * 255),
@@ -522,6 +533,7 @@ async function convertItem(
     const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
     const letterSpacing =
       layer.style?.textStyle?.encodedAttributes?.kerning || 0;
+    const paragraphSpacing = paragraphStyle?.paragraphSpacing || 0;
     const MSAttributedStringColorAttribute =
       layer.style?.textStyle?.encodedAttributes
         ?.MSAttributedStringColorAttribute;
@@ -560,6 +572,7 @@ async function convertItem(
           textAlign,
           letterSpacing,
           lineHeight,
+          paragraphSpacing,
           mixBlendMode,
           maskMode,
           breakMask,

@@ -148,6 +148,7 @@ class Text extends Node {
     let length = content.length;
     let perW: number;
     let letterSpacing: number;
+    let paragraphSpacing: number;
     let lineHeight;
     let baseline;
     let maxW = 0;
@@ -166,6 +167,7 @@ class Text extends Node {
     if (rich && rich.length) {
       const first = rich[0];
       letterSpacing = first.letterSpacing;
+      paragraphSpacing = first.paragraphSpacing;
       perW = first.fontSize * 0.8 + letterSpacing;
       lineHeight = first.lineHeight;
       baseline = getBaseline(first);
@@ -174,6 +176,7 @@ class Text extends Node {
     // 无富文本则通用
     else {
       letterSpacing = computedStyle.letterSpacing;
+      paragraphSpacing = computedStyle.paragraphSpacing;
       perW = computedStyle.fontWeight * 0.8 + letterSpacing;
       lineHeight = computedStyle.lineHeight;
       baseline = getBaseline(computedStyle);
@@ -195,6 +198,7 @@ class Text extends Node {
       if (i && rich && setFontIndex) {
         const cur = rich[setFontIndex];
         letterSpacing = cur.letterSpacing;
+        paragraphSpacing = cur.paragraphSpacing;
         perW = cur.fontSize * 0.8 + letterSpacing;
         lineHeight = cur.lineHeight;
         baseline = getBaseline(cur);
@@ -204,7 +208,7 @@ class Text extends Node {
       if (content.charAt(i) === '\n') {
         i++;
         x = 0;
-        y += lineHeight;
+        y += lineHeight + paragraphSpacing;
         lineBox.verticalAlign();
         lineBox = new LineBox(y, lineHeight, i);
         lineBoxList.push(lineBox);
@@ -239,7 +243,7 @@ class Text extends Node {
       const min = ctx.measureText(content.charAt(i)).width;
       if (min > W - x + 1e-10 && x) {
         x = 0;
-        y += lineBox.lineHeight;
+        y += lineBox.lineHeight + paragraphSpacing;
         if (i < length) {
           lineBox.verticalAlign();
           lineBox = new LineBox(y, lineHeight, i);
@@ -269,7 +273,7 @@ class Text extends Node {
       // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
       if (newLine) {
         x = 0;
-        y += lineBox.lineHeight;
+        y += lineBox.lineHeight + paragraphSpacing;
         // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();

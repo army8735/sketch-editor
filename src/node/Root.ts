@@ -266,8 +266,7 @@ class Root extends Container implements FrameCallback {
         this.emit(Event.WILL_REMOVE_DOM, node);
       }
     }
-    const res = this.calUpdate(node, lv, addDom, removeDom);
-    // 非动画走这
+    const res = this.calUpdate(node, lv, keys, addDom, removeDom);
     if (res) {
       this.asyncDraw(cb);
     } else {
@@ -281,8 +280,8 @@ class Root extends Container implements FrameCallback {
         } else {
           this.emit(Event.DID_ADD_DOM, node);
         }
-      } else if (keys.indexOf('visible') > -1) {
-        this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible, node);
+      } else if (!removeDom && keys.length) {
+        this.emit(Event.STYLE_CHANGED, node, keys);
       }
     }
   }
@@ -290,6 +289,7 @@ class Root extends Container implements FrameCallback {
   private calUpdate(
     node: Node,
     lv: RefreshLevel,
+    keys: string[],
     addDom: boolean,
     removeDom: boolean,
   ): boolean {
@@ -299,11 +299,11 @@ class Root extends Container implements FrameCallback {
     }
     if (
       lv === RefreshLevel.NONE ||
-      !this.computedStyle.visible ||
       this.isDestroyed
     ) {
       return false;
     }
+    // reflow/repaint/<repaint分级
     const isRf = isReflow(lv);
     if (isRf) {
       // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
@@ -355,6 +355,19 @@ class Root extends Container implements FrameCallback {
     this.rl |= lv;
     if (addDom || removeDom) {
       this.rl |= RefreshLevel.REBUILD;
+    }
+    // 自己不可见且没改变visible无需刷新
+    const visible = node.computedStyle.visible;
+    if (!visible && keys.indexOf('visible') < 0) {
+      return false;
+    }
+    // 父级不可见无需刷新
+    let parent = node.parent;
+    while (parent) {
+      if (!parent.computedStyle.visible) {
+        return false;
+      }
+      parent = parent.parent;
     }
     return true;
   }

@@ -737,7 +737,7 @@ document.addEventListener('mousemove', function(e) {
   if (!curPage) {
     return;
   }
-  e.preventDefault();
+  // e.preventDefault();
   const target = e.target;
   let isOnControl = false;
   if (target === $selection || target.parentElement === $selection || target.parentElement && target.parentElement.parentElement === $selection) {

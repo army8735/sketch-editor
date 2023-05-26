@@ -94,6 +94,7 @@ export type JStyle = {
   strokeLinejoin: 'miter' | 'round' | 'bevel';
   strokeMiterlimit: number;
   letterSpacing: number;
+  paragraphSpacing: number;
   textAlign: string;
   translateX: number;
   translateY: number;
@@ -156,6 +157,7 @@ export function getDefaultStyle(v?: any): JStyle {
       strokeLinejoin: 'miter',
       strokeMiterlimit: 0,
       letterSpacing: 0,
+      paragraphSpacing: 0,
       textAlign: 'left',
       translateX: 0,
       translateY: 0,
@@ -209,6 +211,7 @@ export type Rich = {
   fontStyle: string;
   lineHeight: number;
   letterSpacing: number;
+  paragraphSpacing: number;
   color: string | Array<number>;
 };
 

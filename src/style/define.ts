@@ -174,6 +174,7 @@ export type Style = {
   strokeLinejoin: StyleStrokeLinejoinValue;
   strokeMiterlimit: StyleNumValue;
   letterSpacing: StyleNumValue;
+  paragraphSpacing: StyleNumValue;
   textAlign: StyleTaValue;
   translateX: StyleNumValue;
   translateY: StyleNumValue;
@@ -220,6 +221,7 @@ export type ComputedStyle = {
   strokeLinejoin: STROKE_LINE_JOIN;
   strokeMiterlimit: number;
   letterSpacing: number;
+  paragraphSpacing: number;
   textAlign: TEXT_ALIGN;
   translateX: number;
   translateY: number;

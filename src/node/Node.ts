@@ -326,6 +326,7 @@ class Node extends Event {
       }
     }
     computedStyle.letterSpacing = style.letterSpacing.v;
+    computedStyle.paragraphSpacing = style.paragraphSpacing.v;
     computedStyle.textAlign = style.textAlign.v;
   }
 
@@ -745,25 +746,25 @@ class Node extends Event {
     return this.updateFormatStyleData(formatStyle);
   }
 
-  updateStyleCheck(keys: Array<string>) {
-    if (!keys.length) {
-      return true;
-    }
-    // 自己不可见且没改变visible无需刷新
-    const visible = this.computedStyle.visible;
-    if (!visible && keys.indexOf('visible') < 0) {
-      return true;
-    }
-    // 父级不可见无需刷新
-    let parent = this.parent;
-    while (parent) {
-      if (!parent.computedStyle.visible) {
-        return true;
-      }
-      parent = parent.parent;
-    }
-    return false;
-  }
+  // updateStyleCheck(keys: Array<string>) {
+  //   if (!keys.length) {
+  //     return true;
+  //   }
+  //   // 自己不可见且没改变visible无需刷新
+  //   const visible = this.computedStyle.visible;
+  //   if (!visible && keys.indexOf('visible') < 0) {
+  //     return true;
+  //   }
+  //   // 父级不可见无需刷新
+  //   let parent = this.parent;
+  //   while (parent) {
+  //     if (!parent.computedStyle.visible) {
+  //       return true;
+  //     }
+  //     parent = parent.parent;
+  //   }
+  //   return false;
+  // }
 
   updateStyle(style: any, cb?: (sync: boolean) => void) {
     const formatStyle = normalize(style);
@@ -772,8 +773,8 @@ class Node extends Event {
 
   updateFormatStyle(style: any, cb?: (sync: boolean) => void) {
     const keys = this.updateFormatStyleData(style);
-    // 无变更或不可见
-    if (this.updateStyleCheck(keys)) {
+    // 无变更
+    if (!keys.length) {
       cb && cb(true);
       return keys;
     }

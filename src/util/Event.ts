@@ -109,7 +109,7 @@ class Event {
   static DID_ADD_DOM = 'didAddDom';
   static WILL_REMOVE_DOM = 'willRemoveDom';
   static PAGE_CHANGED = 'pageChanged';
-  static VISIBLE_CHANGED = 'visibleChanged';
+  static STYLE_CHANGED = 'styleChanged';
   static DID_ADD_PAGE = 'didAddPage';
   static WILL_REMOVE_PAGE = 'willRemovePage';
   static UPDATE_CURSOR = 'updateCursor';

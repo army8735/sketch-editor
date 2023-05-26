@@ -287,6 +287,14 @@ export function normalize(style: any): Style {
     }
     res.letterSpacing = n;
   }
+  const paragraphSpacing = style.paragraphSpacing;
+  if (!isNil(paragraphSpacing)) {
+    let n = calUnit(paragraphSpacing || 0);
+    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+      n.u = StyleUnit.PX;
+    }
+    res.paragraphSpacing = n;
+  }
   const textAlign = style.textAlign;
   if (!isNil(textAlign)) {
     let v = TEXT_ALIGN.LEFT;
@@ -671,7 +679,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   }
   const lhr = (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
     .lhr || 1;
-  return Math.ceil(style.fontSize * lhr,);
+  return Math.ceil(style.fontSize * lhr);
 }
 
 /**
@@ -684,12 +692,9 @@ export function getBaseline(style: ComputedStyle | Rich) {
   let fontSize = style.fontSize;
   let ff = calFontFamily(style.fontFamily);
   let normal = calNormalLineHeight(style, ff);
-  return (
-    (style.lineHeight - normal) * 0.5 +
-    fontSize *
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
-      .blr
-  );
+  const blr = (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+    .blr || 1;
+  return (style.lineHeight - normal) * 0.5 + fontSize * blr;
 }
 
 export function calSize(v: StyleNumValue, p: number): number {

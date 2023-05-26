@@ -40,6 +40,7 @@
             strokeLinejoin: 'miter',
             strokeMiterlimit: 0,
             letterSpacing: 0,
+            paragraphSpacing: 0,
             textAlign: 'left',
             translateX: 0,
             translateY: 0,
@@ -17413,7 +17414,7 @@
     Event.DID_ADD_DOM = 'didAddDom';
     Event.WILL_REMOVE_DOM = 'willRemoveDom';
     Event.PAGE_CHANGED = 'pageChanged';
-    Event.VISIBLE_CHANGED = 'visibleChanged';
+    Event.STYLE_CHANGED = 'styleChanged';
     Event.DID_ADD_PAGE = 'didAddPage';
     Event.WILL_REMOVE_PAGE = 'willRemovePage';
     Event.UPDATE_CURSOR = 'updateCursor';
@@ -18042,6 +18043,14 @@
             }
             res.letterSpacing = n;
         }
+        const paragraphSpacing = style.paragraphSpacing;
+        if (!isNil(paragraphSpacing)) {
+            let n = calUnit(paragraphSpacing || 0);
+            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
+                n.u = StyleUnit.PX;
+            }
+            res.paragraphSpacing = n;
+        }
         const textAlign = style.textAlign;
         if (!isNil(textAlign)) {
             let v = TEXT_ALIGN.LEFT;
@@ -18443,10 +18452,9 @@
         let fontSize = style.fontSize;
         let ff = calFontFamily(style.fontFamily);
         let normal = calNormalLineHeight(style, ff);
-        return ((style.lineHeight - normal) * 0.5 +
-            fontSize *
-                (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
-                    .blr);
+        const blr = (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
+            .blr || 1;
+        return (style.lineHeight - normal) * 0.5 + fontSize * blr;
     }
     function calSize(v, p) {
         if (v.u === StyleUnit.PX) {
@@ -18884,19 +18892,29 @@
             }
             if (layer._class === FileFormat.ClassValue.Text) {
                 const textBehaviour = layer.textBehaviour;
+                // sketch冗余的信息，文本的宽高在自动情况下实时测量获得
                 if (textBehaviour === FileFormat.TextBehaviour.Flexible) {
+                    if (left !== 'auto' && right !== 'auto') {
+                        right = 'auto';
+                    }
+                    if (top !== 'auto' && bottom !== 'auto') {
+                        bottom = 'auto';
+                    }
                     width = 'auto';
                     height = 'auto';
                 }
                 else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
                     // 可能width是auto（left+right），也可能是left+width
+                    if (top !== 'auto' && bottom !== 'auto') {
+                        bottom = 'auto';
+                    }
                     height = 'auto';
                 }
                 else if (textBehaviour === FileFormat.TextBehaviour.FixedWidthAndHeight) ;
                 const { string, attributes } = layer.attributedString;
                 const rich = attributes.length
                     ? attributes.map((item) => {
-                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0 } = {}, }, } = item;
+                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0, paragraphSpacing = 0 } = {}, }, } = item;
                         const fontFamily = name;
                         const res = {
                             location,
@@ -18907,6 +18925,7 @@
                             fontStyle: 'normal',
                             letterSpacing: kerning,
                             lineHeight: maximumLineHeight,
+                            paragraphSpacing,
                             color: [
                                 Math.floor(red * 255),
                                 Math.floor(green * 255),
@@ -18933,6 +18952,7 @@
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
                 const letterSpacing = ((_s = (_r = (_q = layer.style) === null || _q === void 0 ? void 0 : _q.textStyle) === null || _r === void 0 ? void 0 : _r.encodedAttributes) === null || _s === void 0 ? void 0 : _s.kerning) || 0;
+                const paragraphSpacing = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.paragraphSpacing) || 0;
                 const MSAttributedStringColorAttribute = (_v = (_u = (_t = layer.style) === null || _t === void 0 ? void 0 : _t.textStyle) === null || _u === void 0 ? void 0 : _u.encodedAttributes) === null || _v === void 0 ? void 0 : _v.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
@@ -18969,6 +18989,7 @@
                             textAlign,
                             letterSpacing,
                             lineHeight,
+                            paragraphSpacing,
                             mixBlendMode,
                             maskMode,
                             breakMask,
@@ -22193,6 +22214,7 @@
                 }
             }
             computedStyle.letterSpacing = style.letterSpacing.v;
+            computedStyle.paragraphSpacing = style.paragraphSpacing.v;
             computedStyle.textAlign = style.textAlign.v;
         }
         calRepaintStyle(lv) {
@@ -22592,25 +22614,25 @@
             const formatStyle = normalize(style);
             return this.updateFormatStyleData(formatStyle);
         }
-        updateStyleCheck(keys) {
-            if (!keys.length) {
-                return true;
-            }
-            // 自己不可见且没改变visible无需刷新
-            const visible = this.computedStyle.visible;
-            if (!visible && keys.indexOf('visible') < 0) {
-                return true;
-            }
-            // 父级不可见无需刷新
-            let parent = this.parent;
-            while (parent) {
-                if (!parent.computedStyle.visible) {
-                    return true;
-                }
-                parent = parent.parent;
-            }
-            return false;
-        }
+        // updateStyleCheck(keys: Array<string>) {
+        //   if (!keys.length) {
+        //     return true;
+        //   }
+        //   // 自己不可见且没改变visible无需刷新
+        //   const visible = this.computedStyle.visible;
+        //   if (!visible && keys.indexOf('visible') < 0) {
+        //     return true;
+        //   }
+        //   // 父级不可见无需刷新
+        //   let parent = this.parent;
+        //   while (parent) {
+        //     if (!parent.computedStyle.visible) {
+        //       return true;
+        //     }
+        //     parent = parent.parent;
+        //   }
+        //   return false;
+        // }
         updateStyle(style, cb) {
             const formatStyle = normalize(style);
             return this.updateFormatStyle(formatStyle, cb);
@@ -22618,8 +22640,8 @@
         updateFormatStyle(style, cb) {
             var _a;
             const keys = this.updateFormatStyleData(style);
-            // 无变更或不可见
-            if (this.updateStyleCheck(keys)) {
+            // 无变更
+            if (!keys.length) {
                 cb && cb(true);
                 return keys;
             }
@@ -28386,6 +28408,7 @@
             let length = content.length;
             let perW;
             let letterSpacing;
+            let paragraphSpacing;
             let lineHeight;
             let baseline;
             let maxW = 0;
@@ -28403,6 +28426,7 @@
             if (rich && rich.length) {
                 const first = rich[0];
                 letterSpacing = first.letterSpacing;
+                paragraphSpacing = first.paragraphSpacing;
                 perW = first.fontSize * 0.8 + letterSpacing;
                 lineHeight = first.lineHeight;
                 baseline = getBaseline(first);
@@ -28411,6 +28435,7 @@
             // 无富文本则通用
             else {
                 letterSpacing = computedStyle.letterSpacing;
+                paragraphSpacing = computedStyle.paragraphSpacing;
                 perW = computedStyle.fontWeight * 0.8 + letterSpacing;
                 lineHeight = computedStyle.lineHeight;
                 baseline = getBaseline(computedStyle);
@@ -28432,6 +28457,7 @@
                 if (i && rich && setFontIndex) {
                     const cur = rich[setFontIndex];
                     letterSpacing = cur.letterSpacing;
+                    paragraphSpacing = cur.paragraphSpacing;
                     perW = cur.fontSize * 0.8 + letterSpacing;
                     lineHeight = cur.lineHeight;
                     baseline = getBaseline(cur);
@@ -28441,7 +28467,7 @@
                 if (content.charAt(i) === '\n') {
                     i++;
                     x = 0;
-                    y += lineHeight;
+                    y += lineHeight + paragraphSpacing;
                     lineBox.verticalAlign();
                     lineBox = new LineBox(y, lineHeight, i);
                     lineBoxList.push(lineBox);
@@ -28476,7 +28502,7 @@
                 const min = ctx.measureText(content.charAt(i)).width;
                 if (min > W - x + 1e-10 && x) {
                     x = 0;
-                    y += lineBox.lineHeight;
+                    y += lineBox.lineHeight + paragraphSpacing;
                     if (i < length) {
                         lineBox.verticalAlign();
                         lineBox = new LineBox(y, lineHeight, i);
@@ -28493,7 +28519,7 @@
                 // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
                 if (newLine) {
                     x = 0;
-                    y += lineBox.lineHeight;
+                    y += lineBox.lineHeight + paragraphSpacing;
                     // 最后一行对齐外面做
                     if (i < length) {
                         lineBox.verticalAlign();
@@ -31707,8 +31733,7 @@ void main() {
                     this.emit(Event.WILL_REMOVE_DOM, node);
                 }
             }
-            const res = this.calUpdate(node, lv, addDom, removeDom);
-            // 非动画走这
+            const res = this.calUpdate(node, lv, keys, addDom, removeDom);
             if (res) {
                 this.asyncDraw(cb);
             }
@@ -31725,21 +31750,21 @@ void main() {
                         this.emit(Event.DID_ADD_DOM, node);
                     }
                 }
-                else if (keys.indexOf('visible') > -1) {
-                    this.emit(Event.VISIBLE_CHANGED, node.computedStyle.visible, node);
+                else if (!removeDom && keys.length) {
+                    this.emit(Event.STYLE_CHANGED, node, keys);
                 }
             }
         }
-        calUpdate(node, lv, addDom, removeDom) {
+        calUpdate(node, lv, keys, addDom, removeDom) {
             // 防御一下
             if (addDom || removeDom) {
                 lv |= RefreshLevel.REFLOW;
             }
             if (lv === RefreshLevel.NONE ||
-                !this.computedStyle.visible ||
                 this.isDestroyed) {
                 return false;
             }
+            // reflow/repaint/<repaint分级
             const isRf = isReflow(lv);
             if (isRf) {
                 // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
@@ -31794,6 +31819,19 @@ void main() {
             this.rl |= lv;
             if (addDom || removeDom) {
                 this.rl |= RefreshLevel.REBUILD;
+            }
+            // 自己不可见且没改变visible无需刷新
+            const visible = node.computedStyle.visible;
+            if (!visible && keys.indexOf('visible') < 0) {
+                return false;
+            }
+            // 父级不可见无需刷新
+            let parent = node.parent;
+            while (parent) {
+                if (!parent.computedStyle.visible) {
+                    return false;
+                }
+                parent = parent.parent;
             }
             return true;
         }
