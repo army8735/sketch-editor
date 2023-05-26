@@ -29,6 +29,7 @@
             color: [0, 0, 0, 1],
             opacity: 1,
             fill: [[0, 0, 0, 1]],
+            fillOpacity: [1],
             fillEnable: [false],
             fillRule: 0,
             stroke: [[0, 0, 0, 1]],
@@ -15794,6 +15795,7 @@
         StyleUnit[StyleUnit["STRING"] = 7] = "STRING";
         StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
         StyleUnit[StyleUnit["BLUR"] = 9] = "BLUR";
+        StyleUnit[StyleUnit["PATTERN"] = 10] = "PATTERN";
     })(StyleUnit || (StyleUnit = {}));
     function calUnit(v) {
         if (v === 'auto') {
@@ -15893,6 +15895,13 @@
         CURVE_MODE[CURVE_MODE["ASYMMETRIC"] = 3] = "ASYMMETRIC";
         CURVE_MODE[CURVE_MODE["DISCONNECTED"] = 4] = "DISCONNECTED";
     })(CURVE_MODE || (CURVE_MODE = {}));
+    var CORNER_STYLE;
+    (function (CORNER_STYLE) {
+        CORNER_STYLE[CORNER_STYLE["ROUNDED"] = 0] = "ROUNDED";
+        CORNER_STYLE[CORNER_STYLE["ROUNDED_INVERTED"] = 1] = "ROUNDED_INVERTED";
+        CORNER_STYLE[CORNER_STYLE["ANGLED"] = 2] = "ANGLED";
+        CORNER_STYLE[CORNER_STYLE["SQUARED"] = 3] = "SQUARED";
+    })(CORNER_STYLE || (CORNER_STYLE = {}));
     var FILL_RULE;
     (function (FILL_RULE) {
         FILL_RULE[FILL_RULE["NON_ZERO"] = 0] = "NON_ZERO";
@@ -15922,6 +15931,13 @@
         STROKE_POSITION[STROKE_POSITION["INSIDE"] = 1] = "INSIDE";
         STROKE_POSITION[STROKE_POSITION["OUTSIDE"] = 2] = "OUTSIDE";
     })(STROKE_POSITION || (STROKE_POSITION = {}));
+    var PATTERN_FILL_TYPE;
+    (function (PATTERN_FILL_TYPE) {
+        PATTERN_FILL_TYPE[PATTERN_FILL_TYPE["TILE"] = 0] = "TILE";
+        PATTERN_FILL_TYPE[PATTERN_FILL_TYPE["FILL"] = 1] = "FILL";
+        PATTERN_FILL_TYPE[PATTERN_FILL_TYPE["STRETCH"] = 2] = "STRETCH";
+        PATTERN_FILL_TYPE[PATTERN_FILL_TYPE["FIT"] = 3] = "FIT";
+    })(PATTERN_FILL_TYPE || (PATTERN_FILL_TYPE = {}));
     var define = {
         StyleUnit,
         calUnit,
@@ -17934,10 +17950,34 @@
         const fill = style.fill;
         if (!isNil(fill)) {
             res.fill = fill.map((item) => {
-                if (isString(item) && isGradient(item)) {
-                    const v = parseGradient(item);
-                    if (v) {
-                        return { v, u: StyleUnit.GRADIENT };
+                if (isString(item)) {
+                    if (isGradient(item)) {
+                        const v = parseGradient(item);
+                        if (v) {
+                            return { v, u: StyleUnit.GRADIENT };
+                        }
+                    }
+                    else if (reg.img.test(item)) {
+                        const v = reg.img.exec(item);
+                        if (v) {
+                            let type = PATTERN_FILL_TYPE.TILE;
+                            const s = item.replace(v[0], '');
+                            if (s.indexOf('fill') > -1) {
+                                type = PATTERN_FILL_TYPE.FILL;
+                            }
+                            else if (s.indexOf('stretch') > -1) {
+                                type = PATTERN_FILL_TYPE.STRETCH;
+                            }
+                            else if (s.indexOf('fit') > -1) {
+                                type = PATTERN_FILL_TYPE.FIT;
+                            }
+                            let scale = 1;
+                            const d = /\b([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\b/.exec(s);
+                            if (d) {
+                                scale = parseFloat(d[1]);
+                            }
+                            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+                        }
                     }
                 }
                 return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
@@ -17947,6 +17987,12 @@
         if (!isNil(fillEnable)) {
             res.fillEnable = fillEnable.map((item) => {
                 return { v: item, u: StyleUnit.BOOLEAN };
+            });
+        }
+        const fillOpacity = style.fillOpacity;
+        if (!isNil(fillOpacity)) {
+            res.fillOpacity = fillOpacity.map((item) => {
+                return { v: Math.max(0, Math.min(1, item)), u: StyleUnit.NUMBER };
             });
         }
         const fillRule = style.fillRule;
@@ -18488,7 +18534,6 @@
         ResizingConstraint[ResizingConstraint["HEIGHT"] = 16] = "HEIGHT";
         ResizingConstraint[ResizingConstraint["TOP"] = 32] = "TOP";
     })(ResizingConstraint || (ResizingConstraint = {}));
-    // const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
     function openAndConvertSketchBuffer(arrayBuffer) {
         return __awaiter(this, void 0, void 0, function* () {
             let zipFile;
@@ -18914,7 +18959,7 @@
                 const { string, attributes } = layer.attributedString;
                 const rich = attributes.length
                     ? attributes.map((item) => {
-                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0, paragraphSpacing = 0 } = {}, }, } = item;
+                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0, paragraphSpacing = 0, } = {}, }, } = item;
                         const fontFamily = name;
                         const res = {
                             location,
@@ -19016,6 +19061,7 @@
                         x: point.x,
                         y: point.y,
                         cornerRadius: item.cornerRadius,
+                        cornerStyle: item.cornerStyle,
                         curveMode: item.curveMode,
                         hasCurveFrom: item.hasCurveFrom,
                         hasCurveTo: item.hasCurveTo,
@@ -19025,7 +19071,7 @@
                         ty: curveTo.y,
                     };
                 });
-                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
+                const { fill, fillEnable, fillOpacity, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = yield geomStyle(layer, opt);
                 return {
                     tagName: TagName.Polyline,
                     props: {
@@ -19045,6 +19091,7 @@
                             opacity,
                             fill,
                             fillEnable,
+                            fillOpacity,
                             fillRule,
                             stroke,
                             strokeEnable,
@@ -19071,7 +19118,7 @@
                 };
             }
             if (layer._class === FileFormat.ClassValue.ShapeGroup) {
-                const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = geomStyle(layer);
+                const { fill, fillEnable, fillOpacity, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = yield geomStyle(layer, opt);
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
@@ -19092,6 +19139,7 @@
                             opacity,
                             fill,
                             fillEnable,
+                            fillOpacity,
                             fillRule,
                             stroke,
                             strokeEnable,
@@ -19121,103 +19169,122 @@
             console.error(layer);
         });
     }
-    function geomStyle(layer) {
-        const { borders, borderOptions, fills, windingRule, miterLimit: strokeMiterlimit, } = layer.style || {};
-        const fill = [], fillEnable = [];
-        if (fills) {
-            fills.forEach((item) => {
-                if (item.fillType === FileFormat.FillType.Gradient) {
-                    const g = item.gradient;
-                    const from = parseStrPoint(g.from);
-                    const to = parseStrPoint(g.to);
-                    const stops = g.stops.map((item) => {
-                        const color = color2hexStr([
+    function geomStyle(layer, opt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { borders, borderOptions, fills, windingRule, miterLimit: strokeMiterlimit, } = layer.style || {};
+            const fill = [], fillEnable = [], fillOpacity = [];
+            if (fills) {
+                for (let i = 0, len = fills.length; i < len; i++) {
+                    const item = fills[i];
+                    if (item.fillType === FileFormat.FillType.Pattern) {
+                        let index = 0;
+                        const image = item.image;
+                        if (image._ref_class === 'MSImageData') {
+                            index = yield readImageFile(image._ref, opt);
+                        }
+                        else if (image._ref_class === 'MSNetworkImage') {
+                            index = yield readNetworkImage(image._ref, opt);
+                        }
+                        const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
+                        const scale = item.patternTileScale;
+                        fill.push(`url(${opt.imgs[index]}) ${type} ${scale}`);
+                    }
+                    else if (item.fillType === FileFormat.FillType.Gradient) {
+                        const g = item.gradient;
+                        const from = parseStrPoint(g.from);
+                        const to = parseStrPoint(g.to);
+                        const stops = g.stops.map((item) => {
+                            const color = color2hexStr([
+                                Math.floor(item.color.red * 255),
+                                Math.floor(item.color.green * 255),
+                                Math.floor(item.color.blue * 255),
+                                item.color.alpha,
+                            ]);
+                            return color + ' ' + item.position * 100 + '%';
+                        });
+                        if (g.gradientType === FileFormat.GradientType.Linear) {
+                            fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+                        }
+                        else if (g.gradientType === FileFormat.GradientType.Radial) {
+                            const ellipseLength = g.elipseLength;
+                            fill.push(`radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`);
+                        }
+                        else if (g.gradientType === FileFormat.GradientType.Angular) {
+                            fill.push(`conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+                        }
+                        else {
+                            throw new Error('Unknown gradient');
+                        }
+                    }
+                    else {
+                        fill.push([
                             Math.floor(item.color.red * 255),
                             Math.floor(item.color.green * 255),
                             Math.floor(item.color.blue * 255),
                             item.color.alpha,
                         ]);
-                        return color + ' ' + item.position * 100 + '%';
-                    });
-                    if (g.gradientType === FileFormat.GradientType.Linear) {
-                        fill.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
                     }
-                    else if (g.gradientType === FileFormat.GradientType.Radial) {
-                        const ellipseLength = g.elipseLength;
-                        fill.push(`radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`);
-                    }
-                    else if (g.gradientType === FileFormat.GradientType.Angular) {
-                        fill.push(`conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
-                    }
-                    else {
-                        throw new Error('Unknown gradient');
-                    }
+                    fillEnable.push(item.isEnabled);
+                    fillOpacity.push(item.contextSettings.opacity || 1);
                 }
-                else {
-                    fill.push([
+            }
+            const stroke = [], strokeEnable = [], strokeWidth = [], strokePosition = [];
+            if (borders) {
+                for (let i = 0, len = borders.length; i < len; i++) {
+                    const item = borders[i];
+                    stroke.push([
                         Math.floor(item.color.red * 255),
                         Math.floor(item.color.green * 255),
                         Math.floor(item.color.blue * 255),
                         item.color.alpha,
                     ]);
+                    strokeEnable.push(item.isEnabled);
+                    strokeWidth.push(item.thickness || 0);
+                    if (item.position === FileFormat.BorderPosition.Inside) {
+                        strokePosition.push('inside');
+                    }
+                    else if (item.position === FileFormat.BorderPosition.Outside) {
+                        strokePosition.push('outside');
+                    }
+                    else {
+                        strokePosition.push('center');
+                    }
                 }
-                fillEnable.push(item.isEnabled);
-            });
-        }
-        const stroke = [], strokeEnable = [], strokeWidth = [], strokePosition = [];
-        if (borders) {
-            borders.forEach((item) => {
-                stroke.push([
-                    Math.floor(item.color.red * 255),
-                    Math.floor(item.color.green * 255),
-                    Math.floor(item.color.blue * 255),
-                    item.color.alpha,
-                ]);
-                strokeEnable.push(item.isEnabled);
-                strokeWidth.push(item.thickness || 0);
-                if (item.position === FileFormat.BorderPosition.Inside) {
-                    strokePosition.push('inside');
+            }
+            const strokeDasharray = [];
+            let strokeLinecap = 'butt', strokeLinejoin = 'miter';
+            if (borderOptions) {
+                borderOptions.dashPattern.forEach((item) => {
+                    strokeDasharray.push(item);
+                });
+                if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Round) {
+                    strokeLinecap = 'round';
                 }
-                else if (item.position === FileFormat.BorderPosition.Outside) {
-                    strokePosition.push('outside');
+                else if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Projecting) {
+                    strokeLinecap = 'square';
                 }
-                else {
-                    strokePosition.push('center');
+                if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Round) {
+                    strokeLinejoin = 'round';
                 }
-            });
-        }
-        const strokeDasharray = [];
-        let strokeLinecap = 'butt', strokeLinejoin = 'miter';
-        if (borderOptions) {
-            borderOptions.dashPattern.forEach((item) => {
-                strokeDasharray.push(item);
-            });
-            if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Round) {
-                strokeLinecap = 'round';
+                else if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Bevel) {
+                    strokeLinejoin = 'bevel';
+                }
             }
-            else if (borderOptions.lineCapStyle === FileFormat.LineCapStyle.Projecting) {
-                strokeLinecap = 'square';
-            }
-            if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Round) {
-                strokeLinejoin = 'round';
-            }
-            else if (borderOptions.lineJoinStyle === FileFormat.LineJoinStyle.Bevel) {
-                strokeLinejoin = 'bevel';
-            }
-        }
-        return {
-            fill,
-            fillEnable,
-            fillRule: windingRule,
-            stroke,
-            strokeEnable,
-            strokeWidth,
-            strokePosition,
-            strokeDasharray,
-            strokeLinecap,
-            strokeLinejoin,
-            strokeMiterlimit,
-        };
+            return {
+                fill,
+                fillEnable,
+                fillOpacity,
+                fillRule: windingRule,
+                stroke,
+                strokeEnable,
+                strokeWidth,
+                strokePosition,
+                strokeDasharray,
+                strokeLinecap,
+                strokeLinejoin,
+                strokeMiterlimit,
+            };
+        });
     }
     function parseStrPoint(s) {
         const res = /{(.+),\s*(.+)}/.exec(s);
@@ -22225,6 +22292,7 @@
             computedStyle.backgroundColor = style.backgroundColor.v;
             computedStyle.fill = style.fill.map((item) => item.v);
             computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
+            computedStyle.fillOpacity = style.fillOpacity.map((item) => item.v);
             computedStyle.fillRule = style.fillRule.v;
             computedStyle.stroke = style.stroke.map((item) => item.v);
             computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
@@ -22683,7 +22751,11 @@
                             return color2hexStr(item);
                         }
                         else {
-                            if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL) {
+                            if (item.url) {
+                                const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
+                                return `url(${item.url}) ${type} ${item.scale}`;
+                            }
+                            else if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL || item.t === GRADIENT.CONIC) {
                                 return `linear-gradient(${item.d.join(' ')}, ${item.stops.map((stop) => {
                                 return (color2hexStr(stop.color.v) +
                                     ' ' +
@@ -22710,6 +22782,7 @@
                 res.fill = res.fill.slice(0);
                 res.stroke = res.stroke.slice(0);
             }
+            res.fillOpacity = res.fillOpacity.slice(0);
             res.fillEnable = res.fillEnable.slice(0);
             res.strokeEnable = res.strokeEnable.slice(0);
             res.strokeWidth = res.strokeWidth.slice(0);
@@ -22811,7 +22884,7 @@
                 }
                 else if (left.u === StyleUnit.PERCENT) {
                     if (right.u === StyleUnit.AUTO) {
-                        left.v = (tx + this.width * 0.5) * 100 / pw;
+                        left.v = ((tx + this.width * 0.5) * 100) / pw;
                     }
                     else {
                         left.v = (tx * 100) / pw;
@@ -22861,7 +22934,7 @@
                 }
                 else if (top.u === StyleUnit.PERCENT) {
                     if (bottom.u === StyleUnit.AUTO) {
-                        top.v = (ty + this.height * 0.5) * 100 / ph;
+                        top.v = ((ty + this.height * 0.5) * 100) / ph;
                     }
                     else {
                         top.v = (ty * 100) / ph;
@@ -22914,7 +22987,7 @@
         // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
         adjustPosAndSizeSelf(dx, dy, dw, dh) {
             const { style, computedStyle, parent, root } = this;
-            if (!parent || !root || !dx && !dy && !dw && !dh) {
+            if (!parent || !root || (!dx && !dy && !dw && !dh)) {
                 return;
             }
             const { width: pw, height: ph } = parent;
@@ -24881,6 +24954,7 @@
                         x: 0,
                         y: 0,
                         cornerRadius: 0,
+                        cornerStyle: 0,
                         curveMode: 0,
                         hasCurveFrom: true,
                         fx: 0,
@@ -24899,6 +24973,7 @@
                         x: 0,
                         y: 0,
                         cornerRadius: 0,
+                        cornerStyle: 0,
                         curveMode: 0,
                         hasCurveFrom: false,
                         fx: 0,
@@ -24977,7 +25052,7 @@
             const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
+            const { fill, fillOpacity, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             if (scale !== 1) {
                 ctx.setLineDash(strokeDasharray.map((i) => i * scale));
             }
@@ -25026,7 +25101,10 @@
                 if (this.isClosed) {
                     ctx.closePath();
                 }
+                // fill有opacity，设置记得还原
+                ctx.globalAlpha = fillOpacity[i];
                 ctx.fill();
+                ctx.globalAlpha = 1;
             }
             // 线帽设置
             if (strokeLinecap === STROKE_LINE_CAP.ROUND) {

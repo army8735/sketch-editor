@@ -172,6 +172,7 @@ class Polyline extends Geom {
           x: 0,
           y: 0,
           cornerRadius: 0,
+          cornerStyle: 0,
           curveMode: 0,
           hasCurveFrom: true,
           fx: 0,
@@ -190,6 +191,7 @@ class Polyline extends Geom {
           x: 0,
           y: 0,
           cornerRadius: 0,
+          cornerStyle: 0,
           curveMode: 0,
           hasCurveFrom: false,
           fx: 0,
@@ -285,6 +287,7 @@ class Polyline extends Geom {
     const ctx = canvasCache.offscreen.ctx;
     const {
       fill,
+      fillOpacity,
       fillEnable,
       stroke,
       strokeEnable,
@@ -367,7 +370,10 @@ class Polyline extends Geom {
       if (this.isClosed) {
         ctx.closePath();
       }
+      // fill有opacity，设置记得还原
+      ctx.globalAlpha = fillOpacity[i];
       ctx.fill();
+      ctx.globalAlpha = 1;
     }
     // 线帽设置
     if (strokeLinecap === STROKE_LINE_CAP.ROUND) {

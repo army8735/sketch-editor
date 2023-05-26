@@ -9,6 +9,7 @@ export enum StyleUnit {
   STRING = 7,
   GRADIENT = 8,
   BLUR = 9,
+  PATTERN = 10,
 }
 
 export function calUnit(v: string | number): StyleNumValue {
@@ -164,6 +165,7 @@ export type Style = {
   opacity: StyleNumValue;
   fill: Array<StyleColorValue | StyleGradientValue>;
   fillEnable: Array<StyleBoolValue>;
+  fillOpacity: Array<StyleNumValue>;
   fillRule: StyleFillRuleValue;
   stroke: Array<StyleColorValue | StyleGradientValue>;
   strokeEnable: Array<StyleBoolValue>;
@@ -206,17 +208,18 @@ export type ComputedStyle = {
   fontStyle: FONT_STYLE;
   visible: boolean;
   overflow: OVERFLOW;
-  backgroundColor: Array<number>;
-  color: Array<number>;
+  backgroundColor: number[];
+  color: number[];
   opacity: number;
-  fill: Array<Array<number> | Gradient>;
-  fillEnable: Array<boolean>;
+  fill: Array<number[] | Gradient>;
+  fillEnable: boolean[];
+  fillOpacity: number[];
   fillRule: FILL_RULE;
-  stroke: Array<Array<number> | Gradient>;
-  strokeEnable: Array<boolean>;
-  strokeWidth: Array<number>;
+  stroke: Array<number[] | Gradient>;
+  strokeEnable: boolean[];
+  strokeWidth: number[];
   strokePosition: Array<STROKE_POSITION>;
-  strokeDasharray: Array<number>;
+  strokeDasharray: number[];
   strokeLinecap: STROKE_LINE_CAP;
   strokeLinejoin: STROKE_LINE_JOIN;
   strokeMiterlimit: number;
@@ -228,7 +231,7 @@ export type ComputedStyle = {
   scaleX: number;
   scaleY: number;
   rotateZ: number;
-  transformOrigin: Array<number>;
+  transformOrigin: number[];
   booleanOperation: BOOLEAN_OPERATION;
   mixBlendMode: MIX_BLEND_MODE;
   pointerEvents: boolean;
@@ -304,6 +307,13 @@ export enum CURVE_MODE {
   DISCONNECTED = 4,
 }
 
+export enum CORNER_STYLE {
+  ROUNDED = 0,
+  ROUNDED_INVERTED = 1,
+  ANGLED = 2,
+  SQUARED = 3,
+}
+
 export enum FILL_RULE {
   NON_ZERO = 0,
   EVEN_ODD = 1,
@@ -331,6 +341,13 @@ export enum STROKE_POSITION {
   CENTER = 0,
   INSIDE = 1,
   OUTSIDE = 2,
+}
+
+export enum PATTERN_FILL_TYPE {
+  TILE = 0,
+  FILL = 1,
+  STRETCH = 2,
+  FIT = 3,
 }
 
 export default {

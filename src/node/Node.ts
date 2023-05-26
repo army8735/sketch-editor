@@ -338,6 +338,7 @@ class Node extends Event {
     computedStyle.backgroundColor = style.backgroundColor.v;
     computedStyle.fill = style.fill.map((item) => item.v);
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
+    computedStyle.fillOpacity = style.fillOpacity.map((item) => item.v);
     computedStyle.fillRule = style.fillRule.v;
     computedStyle.stroke = style.stroke.map((item) => item.v);
     computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
@@ -816,7 +817,10 @@ class Node extends Event {
           if (Array.isArray(item)) {
             return color2hexStr(item);
           } else {
-            if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL) {
+            if (item.url) {
+              const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
+              return `url(${item.url}) ${type} ${item.scale}`;
+            } else if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL || item.t === GRADIENT.CONIC) {
               return `linear-gradient(${item.d.join(' ')}, ${item.stops.map(
                 (stop: ColorStop) => {
                   return (
@@ -841,13 +845,14 @@ class Node extends Event {
       res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
       res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
         res.booleanOperation
-        ];
+      ];
     } else {
       res.color = res.color.slice(0);
       res.backgroundColor = res.backgroundColor.slice(0);
       res.fill = res.fill.slice(0);
       res.stroke = res.stroke.slice(0);
     }
+    res.fillOpacity = res.fillOpacity.slice(0);
     res.fillEnable = res.fillEnable.slice(0);
     res.strokeEnable = res.strokeEnable.slice(0);
     res.strokeWidth = res.strokeWidth.slice(0);
@@ -951,9 +956,8 @@ class Node extends Event {
         left.v = tx;
       } else if (left.u === StyleUnit.PERCENT) {
         if (right.u === StyleUnit.AUTO) {
-          left.v = (tx + this.width * 0.5) * 100 / pw;
-        }
-        else {
+          left.v = ((tx + this.width * 0.5) * 100) / pw;
+        } else {
           left.v = (tx * 100) / pw;
         }
       }
@@ -997,9 +1001,8 @@ class Node extends Event {
         top.v = ty;
       } else if (top.u === StyleUnit.PERCENT) {
         if (bottom.u === StyleUnit.AUTO) {
-          top.v = (ty + this.height * 0.5) * 100 / ph;
-        }
-        else {
+          top.v = ((ty + this.height * 0.5) * 100) / ph;
+        } else {
           top.v = (ty * 100) / ph;
         }
       }
@@ -1047,9 +1050,14 @@ class Node extends Event {
   }
 
   // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
-  protected adjustPosAndSizeSelf(dx: number, dy: number, dw: number, dh: number) {
+  protected adjustPosAndSizeSelf(
+    dx: number,
+    dy: number,
+    dw: number,
+    dh: number,
+  ) {
     const { style, computedStyle, parent, root } = this;
-    if (!parent || !root || !dx && !dy && !dw && !dh) {
+    if (!parent || !root || (!dx && !dy && !dw && !dh)) {
       return;
     }
     const { width: pw, height: ph } = parent;

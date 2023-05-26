@@ -27,8 +27,6 @@ enum ResizingConstraint {
   TOP =    0b100000, // 32
 }
 
-// const subFontFamilyReg = /-(Regular|Medium|Semibold|Bold|Thin|Normal|Light|Lighter)/ig;
-
 export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   let zipFile: JSZip;
   try {
@@ -182,11 +180,11 @@ async function convertItem(
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
       ? [
-          Math.floor(layer.backgroundColor.red * 255),
-          Math.floor(layer.backgroundColor.green * 255),
-          Math.floor(layer.backgroundColor.blue * 255),
-          layer.backgroundColor.alpha,
-        ]
+        Math.floor(layer.backgroundColor.red * 255),
+        Math.floor(layer.backgroundColor.green * 255),
+        Math.floor(layer.backgroundColor.blue * 255),
+        layer.backgroundColor.alpha,
+      ]
       : [255, 255, 255, 1];
     return {
       tagName: TagName.ArtBoard,
@@ -480,42 +478,45 @@ async function convertItem(
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
-          const {
-            location,
-            length,
-            attributes: {
-              MSAttributedStringFontAttribute: {
-                attributes: { name, size: fontSize },
-              },
-              MSAttributedStringColorAttribute: { red, green, blue, alpha },
-              kerning = 0,
-              paragraphStyle: { maximumLineHeight = 0, paragraphSpacing = 0 } = {},
+        const {
+          location,
+          length,
+          attributes: {
+            MSAttributedStringFontAttribute: {
+              attributes: { name, size: fontSize },
             },
-          } = item;
-          const fontFamily = name;
-          const res = {
-            location,
-            length,
-            fontFamily,
-            fontSize,
-            fontWeight: 400,
-            fontStyle: 'normal',
-            letterSpacing: kerning,
-            lineHeight: maximumLineHeight,
-            paragraphSpacing,
-            color: [
-              Math.floor(red * 255),
-              Math.floor(green * 255),
-              Math.floor(blue * 255),
-              alpha,
-            ],
-          } as Rich;
-          // 自动行高
-          if (!maximumLineHeight) {
-            res.lineHeight = calNormalLineHeight(res);
-          }
-          return res;
-        })
+            MSAttributedStringColorAttribute: { red, green, blue, alpha },
+            kerning = 0,
+            paragraphStyle: {
+              maximumLineHeight = 0,
+              paragraphSpacing = 0,
+            } = {},
+          },
+        } = item;
+        const fontFamily = name;
+        const res = {
+          location,
+          length,
+          fontFamily,
+          fontSize,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          letterSpacing: kerning,
+          lineHeight: maximumLineHeight,
+          paragraphSpacing,
+          color: [
+            Math.floor(red * 255),
+            Math.floor(green * 255),
+            Math.floor(blue * 255),
+            alpha,
+          ],
+        } as Rich;
+        // 自动行高
+        if (!maximumLineHeight) {
+          res.lineHeight = calNormalLineHeight(res);
+        }
+        return res;
+      })
       : undefined;
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
@@ -539,11 +540,11 @@ async function convertItem(
         ?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute
       ? [
-          Math.floor(MSAttributedStringColorAttribute.red * 255),
-          Math.floor(MSAttributedStringColorAttribute.green * 255),
-          Math.floor(MSAttributedStringColorAttribute.blue * 255),
-          MSAttributedStringColorAttribute.alpha,
-        ]
+        Math.floor(MSAttributedStringColorAttribute.red * 255),
+        Math.floor(MSAttributedStringColorAttribute.green * 255),
+        Math.floor(MSAttributedStringColorAttribute.blue * 255),
+        MSAttributedStringColorAttribute.alpha,
+      ]
       : [0, 0, 0, 1];
     return {
       tagName: TagName.Text,
@@ -601,6 +602,7 @@ async function convertItem(
         x: point.x,
         y: point.y,
         cornerRadius: item.cornerRadius,
+        cornerStyle: item.cornerStyle,
         curveMode: item.curveMode,
         hasCurveFrom: item.hasCurveFrom,
         hasCurveTo: item.hasCurveTo,
@@ -613,6 +615,7 @@ async function convertItem(
     const {
       fill,
       fillEnable,
+      fillOpacity,
       fillRule,
       stroke,
       strokeEnable,
@@ -621,7 +624,7 @@ async function convertItem(
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
-    } = geomStyle(layer);
+    } = await geomStyle(layer, opt);
     return {
       tagName: TagName.Polyline,
       props: {
@@ -641,6 +644,7 @@ async function convertItem(
           opacity,
           fill,
           fillEnable,
+          fillOpacity,
           fillRule,
           stroke,
           strokeEnable,
@@ -671,6 +675,7 @@ async function convertItem(
     const {
       fill,
       fillEnable,
+      fillOpacity,
       fillRule,
       stroke,
       strokeEnable,
@@ -679,7 +684,7 @@ async function convertItem(
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
-    } = geomStyle(layer);
+    } = await geomStyle(layer, opt);
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
@@ -702,6 +707,7 @@ async function convertItem(
           opacity,
           fill,
           fillEnable,
+          fillOpacity,
           fillRule,
           stroke,
           strokeEnable,
@@ -732,7 +738,7 @@ async function convertItem(
   console.error(layer);
 }
 
-function geomStyle(layer: SketchFormat.AnyLayer) {
+async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
   const {
     borders,
     borderOptions,
@@ -741,10 +747,23 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
     miterLimit: strokeMiterlimit,
   } = layer.style || {};
   const fill: Array<string | Array<number>> = [],
-    fillEnable: Array<boolean> = [];
+    fillEnable: boolean[] = [],
+    fillOpacity: number[] = [];
   if (fills) {
-    fills.forEach((item: SketchFormat.Fill) => {
-      if (item.fillType === SketchFormat.FillType.Gradient) {
+    for (let i = 0, len = fills.length; i < len; i++) {
+      const item = fills[i];
+      if (item.fillType === SketchFormat.FillType.Pattern) {
+        let index = 0;
+        const image = item.image!;
+        if (image._ref_class === 'MSImageData') {
+          index = await readImageFile(image._ref, opt);
+        } else if ((image._ref_class as any) === 'MSNetworkImage') {
+          index = await readNetworkImage(image._ref, opt);
+        }
+        const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
+        const scale = item.patternTileScale;
+        fill.push(`url(${opt.imgs[index]}) ${type} ${scale}`);
+      } else if (item.fillType === SketchFormat.FillType.Gradient) {
         const g = item.gradient;
         const from = parseStrPoint(g.from);
         const to = parseStrPoint(g.to);
@@ -788,14 +807,16 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
         ]);
       }
       fillEnable.push(item.isEnabled);
-    });
+      fillOpacity.push(item.contextSettings.opacity || 1);
+    }
   }
   const stroke: Array<Array<number>> = [],
     strokeEnable: Array<boolean> = [],
     strokeWidth: Array<number> = [],
     strokePosition: Array<string> = [];
   if (borders) {
-    borders.forEach((item: SketchFormat.Border) => {
+    for (let i = 0, len = borders.length; i < len; i++) {
+      const item = borders[i];
       stroke.push([
         Math.floor(item.color.red * 255),
         Math.floor(item.color.green * 255),
@@ -811,7 +832,7 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
       } else {
         strokePosition.push('center');
       }
-    });
+    }
   }
   const strokeDasharray: Array<number> = [];
   let strokeLinecap = 'butt',
@@ -838,6 +859,7 @@ function geomStyle(layer: SketchFormat.AnyLayer) {
   return {
     fill,
     fillEnable,
+    fillOpacity,
     fillRule: windingRule,
     stroke,
     strokeEnable,

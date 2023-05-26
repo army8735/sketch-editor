@@ -9,7 +9,7 @@ import {
   FILL_RULE,
   FONT_STYLE,
   MASK,
-  MIX_BLEND_MODE,
+  MIX_BLEND_MODE, PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -182,10 +182,31 @@ export function normalize(style: any): Style {
   const fill = style.fill;
   if (!isNil(fill)) {
     res.fill = fill.map((item: any) => {
-      if (isString(item) && isGradient(item as string)) {
-        const v = parseGradient(item as string);
-        if (v) {
-          return { v, u: StyleUnit.GRADIENT };
+      if (isString(item)) {
+        if (isGradient(item as string)) {
+          const v = parseGradient(item as string);
+          if (v) {
+            return { v, u: StyleUnit.GRADIENT };
+          }
+        } else if (reg.img.test(item as string)) {
+          const v = reg.img.exec(item as string);
+          if (v) {
+            let type = PATTERN_FILL_TYPE.TILE;
+            const s = item.replace(v[0], '');
+            if (s.indexOf('fill') > -1) {
+              type = PATTERN_FILL_TYPE.FILL;
+            } else if (s.indexOf('stretch') > -1) {
+              type = PATTERN_FILL_TYPE.STRETCH;
+            } else if (s.indexOf('fit') > -1) {
+              type = PATTERN_FILL_TYPE.FIT;
+            }
+            let scale = 1;
+            const d = /\b([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\b/.exec(s);
+            if (d) {
+              scale = parseFloat(d[1]);
+            }
+            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+          }
         }
       }
       return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
@@ -193,9 +214,15 @@ export function normalize(style: any): Style {
   }
   const fillEnable = style.fillEnable;
   if (!isNil(fillEnable)) {
-    res.fillEnable = fillEnable.map((item: any) => {
+    res.fillEnable = fillEnable.map((item: boolean) => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
+  }
+  const fillOpacity = style.fillOpacity;
+  if (!isNil(fillOpacity)) {
+    res.fillOpacity = fillOpacity.map((item: number) => {
+      return { v: Math.max(0, Math.min(1, item)), u: StyleUnit.NUMBER };
+    })
   }
   const fillRule = style.fillRule;
   if (!isNil(fillRule)) {
@@ -216,19 +243,19 @@ export function normalize(style: any): Style {
   }
   const strokeEnable = style.strokeEnable;
   if (!isNil(strokeEnable)) {
-    res.strokeEnable = strokeEnable.map((item: any) => {
+    res.strokeEnable = strokeEnable.map((item: boolean) => {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
   const strokeWidth = style.strokeWidth;
   if (!isNil(strokeWidth)) {
-    res.strokeWidth = strokeWidth.map((item: any) => {
+    res.strokeWidth = strokeWidth.map((item: number) => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
   const strokePosition = style.strokePosition;
   if (!isNil(strokePosition)) {
-    res.strokePosition = strokePosition.map((item: any) => {
+    res.strokePosition = strokePosition.map((item: string) => {
       let v = STROKE_POSITION.CENTER;
       if (item === 'inside') {
         v = STROKE_POSITION.INSIDE;
@@ -240,7 +267,7 @@ export function normalize(style: any): Style {
   }
   const strokeDasharray = style.strokeDasharray;
   if (!isNil(strokeDasharray)) {
-    res.strokeDasharray = strokeDasharray.map((item: any) => {
+    res.strokeDasharray = strokeDasharray.map((item: number) => {
       return { v: Math.max(0, item), u: StyleUnit.PX };
     });
   }
