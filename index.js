@@ -17204,76 +17204,76 @@
             return this.data.hasOwnProperty(fontFamily);
         },
         registerLocalFonts(fonts) {
-            var _a, _b;
+            var _a, _b, _c;
             return __awaiter(this, void 0, void 0, function* () {
                 const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
                 for (let k in fonts) {
                     if (fonts.hasOwnProperty(k)) {
                         const font = fonts[k];
                         const postscriptName = font.postscriptName.toLowerCase();
-                        const family = font.family.toLowerCase();
-                        const style = font.style.toLowerCase();
+                        const family = font.family;
+                        const family2 = family.toLowerCase();
+                        const style = font.style;
                         // localStorage存的是this.info
-                        if (cacheInfo.hasOwnProperty(family)) {
-                            const o = cacheInfo[family];
-                            this.info[family] = this.info[family] || {
+                        if (cacheInfo.hasOwnProperty(family2)) {
+                            const o = cacheInfo[family2];
+                            this.info[family2] = this.info[family2] || {
                                 name: o.name,
-                                family,
+                                family: family,
                                 lhr: o.lhr,
                                 blr: o.blr,
                                 lgr: o.lgr,
                             };
                         }
                         // 没有cache则用opentype读取
-                        if (!this.info.hasOwnProperty(family)) {
-                            const o = this.info[family] = this.data[family] = {};
+                        if (!this.info.hasOwnProperty(family2)) {
+                            const o = (this.info[family2] = this.data[family2] = {});
                             const blob = yield font.blob();
                             const arrayBuffer = yield blob.arrayBuffer();
                             const f = opentype.parse(arrayBuffer);
                             if (f && f.name) {
-                                o.name = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.zh) || ((_b = f.name.fontFamily) === null || _b === void 0 ? void 0 : _b.zh);
+                                o.name = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.zh) || ((_b = f.name.preferredFamily) === null || _b === void 0 ? void 0 : _b.en) || ((_c = f.name.fontFamily) === null || _c === void 0 ? void 0 : _c.zh);
                             }
                             o.name = o.name || family; // 中文名字
                             o.family = family;
-                            const r = this._cal(family, f);
+                            const r = this._cal(family2, f);
                             Object.assign(o, r);
-                            cacheInfo[family] = {
+                            cacheInfo[family2] = {
                                 name: o.name,
                                 lhr: r.lhr,
                                 blr: r.blr,
                                 lgr: r.lgr,
                             };
                         }
-                        this._register(family, style, postscriptName);
+                        this._register(family2, style, postscriptName);
                     }
                 }
                 localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
             });
         },
         registerAb(ab) {
-            var _a, _b, _c, _d, _e, _f, _g;
+            var _a, _b, _c, _d, _e, _f, _g, _h;
             const o = {};
             const f = opentype.parse(ab);
             if (f && f.name) {
                 o.family = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.en) || ((_b = f.name.fontFamily) === null || _b === void 0 ? void 0 : _b.en);
-                o.name = ((_c = f.name.preferredFamily) === null || _c === void 0 ? void 0 : _c.zh) || ((_d = f.name.fontFamily) === null || _d === void 0 ? void 0 : _d.zh) || o.family;
+                o.name = ((_c = f.name.preferredFamily) === null || _c === void 0 ? void 0 : _c.zh) || ((_d = f.name.preferredFamily) === null || _d === void 0 ? void 0 : _d.en) || ((_e = f.name.fontFamily) === null || _e === void 0 ? void 0 : _e.zh) || o.family;
             }
             // 没有信息无效
             let family = o.family;
-            let style = ((_e = f.name.preferredSubfamily) === null || _e === void 0 ? void 0 : _e.en) || ((_f = f.name.fontSubfamily) === null || _f === void 0 ? void 0 : _f.en);
-            let postscriptName = (_g = f.name.postScriptName) === null || _g === void 0 ? void 0 : _g.en;
+            let style = ((_f = f.name.preferredSubfamily) === null || _f === void 0 ? void 0 : _f.en) || ((_g = f.name.fontSubfamily) === null || _g === void 0 ? void 0 : _g.en);
+            let postscriptName = (_h = f.name.postScriptName) === null || _h === void 0 ? void 0 : _h.en;
             if (!family || !style || !postscriptName) {
                 return;
             }
             family = family.toLowerCase();
-            style = style.toLowerCase();
             postscriptName = postscriptName.toLowerCase();
             if (!this.info.hasOwnProperty(family)) {
                 this.info[family] = o;
-                const r = this.cal(family, f);
+                const r = this._cal(family, f);
                 Object.assign(o, r);
             }
-            this._register(family, style, postscriptName);
+            return this._register(family, style, postscriptName);
         },
         _cal(family, f) {
             let spread = 0;
@@ -17293,16 +17293,26 @@
             };
         },
         _register(family, style, postscriptName) {
-            const o = this.info[family];
+            const f = family.toLowerCase();
+            const p = postscriptName.toLowerCase();
+            const o = this.info[f];
             o.styles = o.styles || [];
             if (o.styles.indexOf(style) === -1) {
                 o.styles.push(style);
             }
             o.postscriptNames = o.postscriptNames || [];
-            if (o.postscriptNames.indexOf(postscriptName) === -1) {
-                o.postscriptNames.push(postscriptName);
+            if (o.postscriptNames.indexOf(p) === -1) {
+                o.postscriptNames.push(p);
             }
-            this.data[family] = this.data[postscriptName] = o; // 同个字体族不同postscriptName指向一个引用
+            return this.data[f] = this.data[p] = o; // 同个字体族不同postscriptName指向一个引用
+        },
+        registerData(data) {
+            this.data[data.family] = this.info[data.family] = data;
+            data.postscriptNames.forEach((item, i) => {
+                const k = item.toLowerCase();
+                data.postscriptNames[i] = k;
+                this.data[k] = data;
+            });
         },
     };
 
@@ -18419,9 +18429,9 @@
         if (!ff) {
             ff = calFontFamily(style.fontFamily);
         }
-        return Math.ceil(style.fontSize *
-            (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
-                .lhr);
+        const lhr = (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
+            .lhr || 1;
+        return Math.ceil(style.fontSize * lhr);
     }
     /**
      * https://zhuanlan.zhihu.com/p/25808995

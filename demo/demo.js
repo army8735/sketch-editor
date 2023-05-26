@@ -80,8 +80,8 @@ initFonts();
   'https://mass-office.alipay.com/huamei_koqzbu/afts/file/sBaWS5Vr5D0AAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Regular.ttf',
   'https://mass-office.alipay.com/huamei_koqzbu/afts/file/-UceTp6AhxQAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Light.ttf',
   'https://mass-office.alipay.com/huamei_koqzbu/afts/file/9ZVPTLIO54MAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Bold.ttf',
-].forEach(item => {
-  // editor.util.inject.loadFont(item, item, (cache, ab) => {
+].forEach(url => {
+  // editor.util.inject.loadFont(url, url, (cache, ab) => {
   //   editor.style.font.registerAb(ab);
   // });
 });
