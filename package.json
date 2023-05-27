@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "jszip": "^3.10.1",
+    "pdfjs-dist": "^3.6.172",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

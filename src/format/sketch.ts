@@ -904,7 +904,12 @@ async function readImageFile(filename: string, opt: Opt) {
   let ab = await file.async('arraybuffer');
   const buffer = new Uint8Array(ab);
   const blob = new Blob([buffer.buffer]);
-  const img = await loadImg(blob);
+  let img: HTMLImageElement;
+  if (filename.endsWith('.pdf')) {
+    img = await loadPdf(blob);
+  } else {
+    img = await loadImg(blob);
+  }
   const index = opt.imgs.length;
   opt.imgs.push(img.src);
   return index;
@@ -920,5 +925,34 @@ async function loadImg(blob: Blob): Promise<HTMLImageElement> {
       reject(e);
     };
     img.src = URL.createObjectURL(blob);
+  });
+}
+
+async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
+  // @ts-ignore
+  const pdfjsLib = window.pdfjsLib;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js';
+  const url = URL.createObjectURL(blob);
+  const task = await pdfjsLib.getDocument(url).promise;
+  const page = await task.getPage(1);
+  const viewport = page.getViewport({ scale: 1 });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d');
+  await page.render({
+    viewport,
+    canvasContext: ctx,
+  }).promise;
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(function(blob) {
+      if (blob) {
+        loadImg(blob).then(function(res) {
+          resolve(res);
+        });
+      } else {
+        reject();
+      }
+    });
   });
 }

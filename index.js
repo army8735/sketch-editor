@@ -19319,7 +19319,13 @@
             let ab = yield file.async('arraybuffer');
             const buffer = new Uint8Array(ab);
             const blob = new Blob([buffer.buffer]);
-            const img = yield loadImg(blob);
+            let img;
+            if (filename.endsWith('.pdf')) {
+                img = yield loadPdf(blob);
+            }
+            else {
+                img = yield loadImg(blob);
+            }
             const index = opt.imgs.length;
             opt.imgs.push(img.src);
             return index;
@@ -19336,6 +19342,37 @@
                     reject(e);
                 };
                 img.src = URL.createObjectURL(blob);
+            });
+        });
+    }
+    function loadPdf(blob) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // @ts-ignore
+            const pdfjsLib = window.pdfjsLib;
+            pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js';
+            const url = URL.createObjectURL(blob);
+            const task = yield pdfjsLib.getDocument(url).promise;
+            const page = yield task.getPage(1);
+            const viewport = page.getViewport({ scale: 1 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            yield page.render({
+                viewport,
+                canvasContext: ctx,
+            }).promise;
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(function (blob) {
+                    if (blob) {
+                        loadImg(blob).then(function (res) {
+                            resolve(res);
+                        });
+                    }
+                    else {
+                        reject();
+                    }
+                });
             });
         });
     }
