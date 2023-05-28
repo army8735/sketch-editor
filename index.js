@@ -19362,18 +19362,17 @@
                 viewport,
                 canvasContext: ctx,
             }).promise;
-            return new Promise((resolve, reject) => {
+            const res = yield new Promise((resolve, reject) => {
                 canvas.toBlob(function (blob) {
                     if (blob) {
-                        loadImg(blob).then(function (res) {
-                            resolve(res);
-                        });
+                        resolve(blob);
                     }
                     else {
                         reject();
                     }
                 });
             });
+            return yield loadImg(res);
         });
     }
 

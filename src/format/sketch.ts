@@ -944,15 +944,14 @@ async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
     viewport,
     canvasContext: ctx,
   }).promise;
-  return new Promise((resolve, reject) => {
+  const res: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob(function(blob) {
       if (blob) {
-        loadImg(blob).then(function(res) {
-          resolve(res);
-        });
+        resolve(blob);
       } else {
         reject();
       }
     });
   });
+  return await loadImg(res);
 }
