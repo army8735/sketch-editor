@@ -12,7 +12,7 @@ const $side = document.querySelector('#side');
 const $basic = $side.querySelector('#basic');
 const $x = $side.querySelector('#x');
 const $y = $side.querySelector('#y');
-const $r = $side.querySelector('#r');
+const $rotate = $side.querySelector('#rotate');
 const $w = $side.querySelector('#w');
 const $h = $side.querySelector('#h');
 
@@ -979,7 +979,7 @@ function showBasic() {
   });
   $x.value = editor.math.geom.toPrecision(info.x, 2);
   $y.value = editor.math.geom.toPrecision(info.y, 2);
-  $r.value = editor.math.geom.toPrecision(info.rotation, 2);
+  $rotate.value = editor.math.geom.toPrecision(info.rotation, 2);
   $w.value = editor.math.geom.toPrecision(info.w, 2);
   $h.value = editor.math.geom.toPrecision(info.h, 2);
 }
@@ -991,7 +991,7 @@ function hideBasic() {
   });
   $x.value = '';
   $y.value = '';
-  $r.value = '';
+  $rotate.value = '';
   $w.value = '';
   $h.value = '';
 }

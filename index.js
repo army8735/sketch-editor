@@ -19349,7 +19349,7 @@
         return __awaiter(this, void 0, void 0, function* () {
             // @ts-ignore
             const pdfjsLib = window.pdfjsLib;
-            pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.6.172/build/pdf.worker.min.js';
             const url = URL.createObjectURL(blob);
             const task = yield pdfjsLib.getDocument(url).promise;
             const page = yield task.getPage(1);

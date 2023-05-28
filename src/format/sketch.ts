@@ -931,7 +931,7 @@ async function loadImg(blob: Blob): Promise<HTMLImageElement> {
 async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
   // @ts-ignore
   const pdfjsLib = window.pdfjsLib;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.6.172/build/pdf.worker.min.js';
   const url = URL.createObjectURL(blob);
   const task = await pdfjsLib.getDocument(url).promise;
   const page = await task.getPage(1);
