@@ -18624,6 +18624,10 @@
                 props: {
                     uuid: page.do_objectID,
                     name: page.name,
+                    rule: {
+                        baseX: page.horizontalRulerData.base,
+                        baseY: page.verticalRulerData.base,
+                    },
                     style: {
                         width: W,
                         height: H,
@@ -22842,7 +22846,9 @@
                                 const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
                                 return `url(${item.url}) ${type} ${item.scale}`;
                             }
-                            else if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL || item.t === GRADIENT.CONIC) {
+                            else if (item.t === GRADIENT.LINEAR ||
+                                item.t === GRADIENT.RADIAL ||
+                                item.t === GRADIENT.CONIC) {
                                 return `linear-gradient(${item.d.join(' ')}, ${item.stops.map((stop) => {
                                 return (color2hexStr(stop.color.v) +
                                     ' ' +
@@ -23228,6 +23234,7 @@
             this.props.name = s;
         }
         getFrameProps() {
+            var _a, _b;
             const list = [this];
             const top = this.artBoard || this.page;
             let parent = this.parent;
@@ -23250,9 +23257,16 @@
             const x4 = t.x4;
             const y4 = t.y4;
             const { width, height, computedStyle } = this;
+            let baseX = 0, baseY = 0;
+            if (!this.artBoard) {
+                baseX = ((_a = this.page) === null || _a === void 0 ? void 0 : _a.props).rule.baseX;
+                baseY = ((_b = this.page) === null || _b === void 0 ? void 0 : _b.props).rule.baseY;
+            }
             return {
-                x: Math.min(x1, x2, x3, x4),
-                y: Math.min(y1, y2, y3, y4),
+                baseX,
+                baseY,
+                x: Math.min(x1, x2, x3, x4) - baseX,
+                y: Math.min(y1, y2, y3, y4) - baseY,
                 w: width,
                 h: height,
                 isFlippedHorizontal: computedStyle.scaleX === -1,
@@ -25329,16 +25343,16 @@
             }
             const m = res.matrix;
             points.forEach((item) => {
-                const p = calPoint({ x: item.absX, y: item.absY }, m);
+                const p = calPoint({ x: item.absX - res.baseX, y: item.absY - res.baseY }, m);
                 item.dspX = p.x;
                 item.dspY = p.y;
                 if (item.hasCurveFrom) {
-                    const p = calPoint({ x: item.absFx, y: item.absFy }, m);
+                    const p = calPoint({ x: item.absFx - res.baseX, y: item.absFy - res.baseY }, m);
                     item.dspFx = p.x;
                     item.dspFy = p.y;
                 }
                 if (item.hasCurveTo) {
-                    const p = calPoint({ x: item.absTx, y: item.absTy }, m);
+                    const p = calPoint({ x: item.absTx - res.baseX, y: item.absTy - res.baseY }, m);
                     item.dspTx = p.x;
                     item.dspTy = p.y;
                 }
@@ -25348,7 +25362,7 @@
         }
         // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
         updatePointsBaseOnAP(points, matrix) {
-            var _a;
+            var _a, _b, _c;
             if (!points.length) {
                 return points;
             }
@@ -25356,31 +25370,36 @@
             const { width, height } = this;
             // 逆向还原矩阵和归一化点坐标
             const i = inverse4(matrix);
+            let baseX = 0, baseY = 0;
+            if (!this.artBoard) {
+                baseX = ((_a = this.page) === null || _a === void 0 ? void 0 : _a.props).rule.baseX;
+                baseY = ((_b = this.page) === null || _b === void 0 ? void 0 : _b.props).rule.baseY;
+            }
             points.forEach((point) => {
                 if (list.indexOf(point) === -1) {
                     throw new Error('Can not update non-existent point');
                 }
-                const p = calPoint({ x: point.dspX, y: point.dspY }, i);
+                const p = calPoint({ x: point.dspX + baseX, y: point.dspY + baseY }, i);
                 point.absX = p.x;
                 point.absY = p.y;
                 point.x = p.x / width;
                 point.y = p.y / height;
                 if (point.hasCurveFrom) {
-                    const p = calPoint({ x: point.dspFx, y: point.dspFy }, i);
+                    const p = calPoint({ x: point.dspFx + baseX, y: point.dspFy + baseY }, i);
                     point.absFx = p.x;
                     point.absFy = p.y;
                     point.fx = p.x / width;
                     point.fy = p.y / height;
                 }
                 if (point.hasCurveTo) {
-                    const p = calPoint({ x: point.dspTx, y: point.dspTy }, i);
+                    const p = calPoint({ x: point.dspTx + baseX, y: point.dspTy + baseY }, i);
                     point.absTx = p.x;
                     point.absTy = p.y;
                     point.tx = p.x / width;
                     point.ty = p.y / height;
                 }
             });
-            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            (_c = this.root) === null || _c === void 0 ? void 0 : _c.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
             return points;
         }
         // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
@@ -28676,9 +28695,9 @@
                     // );
                     // lineBox.add(textBox);
                     // 最后一个\n特殊判断
-                    if (i === length) {
-                        lineBoxList.push(lineBox);
-                    }
+                    // if (i === length) {
+                    //   lineBoxList.push(lineBox);
+                    // }
                     continue;
                 }
                 // 富文本需限制最大length，非富普通情况无需

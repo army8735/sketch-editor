@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { getDefaultStyle, Point, Props } from '../format/';
+import { getDefaultStyle, PageProps, Point, Props } from '../format/';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
@@ -820,7 +820,11 @@ class Node extends Event {
             if (item.url) {
               const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
               return `url(${item.url}) ${type} ${item.scale}`;
-            } else if (item.t === GRADIENT.LINEAR || item.t === GRADIENT.RADIAL || item.t === GRADIENT.CONIC) {
+            } else if (
+              item.t === GRADIENT.LINEAR ||
+              item.t === GRADIENT.RADIAL ||
+              item.t === GRADIENT.CONIC
+            ) {
               return `linear-gradient(${item.d.join(' ')}, ${item.stops.map(
                 (stop: ColorStop) => {
                   return (
@@ -845,7 +849,7 @@ class Node extends Event {
       res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
       res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
         res.booleanOperation
-      ];
+        ];
     } else {
       res.color = res.color.slice(0);
       res.backgroundColor = res.backgroundColor.slice(0);
@@ -1247,9 +1251,16 @@ class Node extends Event {
     const x4 = t.x4;
     const y4 = t.y4;
     const { width, height, computedStyle } = this;
+    let baseX = 0, baseY = 0;
+    if (!this.artBoard) {
+      baseX = (this.page?.props as PageProps).rule.baseX;
+      baseY = (this.page?.props as PageProps).rule.baseY;
+    }
     return {
-      x: Math.min(x1, x2, x3, x4),
-      y: Math.min(y1, y2, y3, y4),
+      baseX,
+      baseY,
+      x: Math.min(x1, x2, x3, x4) - baseX,
+      y: Math.min(y1, y2, y3, y4) - baseY,
       w: width,
       h: height,
       isFlippedHorizontal: computedStyle.scaleX === -1,

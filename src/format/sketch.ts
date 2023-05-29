@@ -133,6 +133,10 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
     props: {
       uuid: page.do_objectID,
       name: page.name,
+      rule: {
+        baseX: page.horizontalRulerData.base,
+        baseY: page.verticalRulerData.base,
+      },
       style: {
         width: W,
         height: H,

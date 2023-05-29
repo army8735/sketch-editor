@@ -308,6 +308,7 @@ $tree.addEventListener('click', e => {
     const uuid = li.getAttribute('uuid');
     const node = root.refs[uuid];
     showSelect(node);
+    showBasic();
     selectTree && selectTree.classList.remove('select');
     selectTree = li;
     selectTree && selectTree.classList.add('select');

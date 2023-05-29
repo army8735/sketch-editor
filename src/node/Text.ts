@@ -244,9 +244,9 @@ class Text extends Node {
         // );
         // lineBox.add(textBox);
         // 最后一个\n特殊判断
-        if (i === length) {
-          lineBoxList.push(lineBox);
-        }
+        // if (i === length) {
+        //   lineBoxList.push(lineBox);
+        // }
         continue;
       }
       // 富文本需限制最大length，非富普通情况无需

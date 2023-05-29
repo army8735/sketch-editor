@@ -17,6 +17,7 @@ export type JContainer = JNode & {
 
 export type JPage = JContainer & {
   tagName: TagName.Page;
+  props: PageProps;
 };
 
 export type JArtBoard = JContainer & {
@@ -188,6 +189,13 @@ export type Props = {
   isSelected?: boolean;
 };
 
+export type PageProps = Props & {
+  rule: {
+    baseX: number;
+    baseY: number;
+  };
+};
+
 export type BitmapProps = Props & {
   src: string | undefined;
   onLoad?: () => void;
@@ -232,9 +240,9 @@ export type Point = {
   cornerRadius: number;
   cornerStyle: CORNER_STYLE;
   curveMode: CURVE_MODE;
-  fx: number;
+  fx: number; // from控制点
   fy: number;
-  tx: number;
+  tx: number; // to控制点
   ty: number;
   hasCurveFrom: boolean;
   hasCurveTo: boolean;

@@ -1,4 +1,4 @@
-import { Point, PolylineProps } from '../../format';
+import { PageProps, Point, PolylineProps } from '../../format';
 import bezier from '../../math/bezier';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
@@ -518,16 +518,16 @@ class Polyline extends Geom {
     }
     const m = res.matrix;
     points.forEach((item) => {
-      const p = calPoint({ x: item.absX!, y: item.absY! }, m);
+      const p = calPoint({ x: item.absX! - res.baseX, y: item.absY! - res.baseY }, m);
       item.dspX = p.x;
       item.dspY = p.y;
       if (item.hasCurveFrom) {
-        const p = calPoint({ x: item.absFx!, y: item.absFy! }, m);
+        const p = calPoint({ x: item.absFx! - res.baseX, y: item.absFy! - res.baseY }, m);
         item.dspFx = p.x;
         item.dspFy = p.y;
       }
       if (item.hasCurveTo) {
-        const p = calPoint({ x: item.absTx!, y: item.absTy! }, m);
+        const p = calPoint({ x: item.absTx! - res.baseX, y: item.absTy! - res.baseY }, m);
         item.dspTx = p.x;
         item.dspTy = p.y;
       }
@@ -545,24 +545,29 @@ class Polyline extends Geom {
     const { width, height } = this;
     // 逆向还原矩阵和归一化点坐标
     const i = inverse4(matrix);
+    let baseX = 0, baseY = 0;
+    if (!this.artBoard) {
+      baseX = (this.page?.props as PageProps).rule.baseX;
+      baseY = (this.page?.props as PageProps).rule.baseY;
+    }
     points.forEach((point) => {
       if (list.indexOf(point) === -1) {
         throw new Error('Can not update non-existent point');
       }
-      const p = calPoint({ x: point.dspX!, y: point.dspY! }, i);
+      const p = calPoint({ x: point.dspX! + baseX, y: point.dspY! + baseY }, i);
       point.absX = p.x;
       point.absY = p.y;
       point.x = p.x / width;
       point.y = p.y / height;
       if (point.hasCurveFrom) {
-        const p = calPoint({ x: point.dspFx!, y: point.dspFy! }, i);
+        const p = calPoint({ x: point.dspFx! + baseX, y: point.dspFy! + baseY }, i);
         point.absFx = p.x;
         point.absFy = p.y;
         point.fx = p.x / width;
         point.fy = p.y / height;
       }
       if (point.hasCurveTo) {
-        const p = calPoint({ x: point.dspTx!, y: point.dspTy! }, i);
+        const p = calPoint({ x: point.dspTx! + baseX, y: point.dspTy! + baseY }, i);
         point.absTx = p.x;
         point.absTy = p.y;
         point.tx = p.x / width;
