@@ -37,6 +37,7 @@ import {
   StyleUnit,
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import { equal } from '../util/util';
 import Event from '../util/Event';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
@@ -775,6 +776,39 @@ class Node extends Event {
   updateFormatStyle(style: any, cb?: (sync: boolean) => void) {
     const keys = this.updateFormatStyleData(style);
     // 无变更
+    if (!keys.length) {
+      cb && cb(true);
+      return keys;
+    }
+    this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    return keys;
+  }
+
+  updateProps(props: any, cb?: (sync: boolean) => void) {
+    const keys: Array<string> = [];
+    for (let k in props) {
+      if (props.hasOwnProperty(k)) {
+        // @ts-ignore
+        const v = props[k], v2 = this.props[k];
+        if (!equal(v, v2)) {
+          keys.push(v);
+        }
+      }
+    }
+    if (!keys.length) {
+      cb && cb(true);
+      return keys;
+    }
+    this.root?.addUpdate(this, keys, undefined, false, false, cb);
+  }
+
+  refreshStyle(style: any, cb?: (sync: boolean) => void) {
+    let keys: string[];
+    if (Array.isArray(style)) {
+      keys = style.slice(0);
+    } else {
+      keys = Object.keys(style);
+    }
     if (!keys.length) {
       cb && cb(true);
       return keys;

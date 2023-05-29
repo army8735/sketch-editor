@@ -9,7 +9,8 @@ import {
   FILL_RULE,
   FONT_STYLE,
   MASK,
-  MIX_BLEND_MODE, PATTERN_FILL_TYPE,
+  MIX_BLEND_MODE,
+  PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -201,7 +202,10 @@ export function normalize(style: any): Style {
               type = PATTERN_FILL_TYPE.FIT;
             }
             let scale = 1;
-            const d = /\b([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\b/.exec(s);
+            const d =
+              /\b([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\b/.exec(
+                s,
+              );
             if (d) {
               scale = parseFloat(d[1]);
             }
@@ -222,7 +226,7 @@ export function normalize(style: any): Style {
   if (!isNil(fillOpacity)) {
     res.fillOpacity = fillOpacity.map((item: number) => {
       return { v: Math.max(0, Math.min(1, item)), u: StyleUnit.NUMBER };
-    })
+    });
   }
   const fillRule = style.fillRule;
   if (!isNil(fillRule)) {
@@ -541,6 +545,7 @@ export function equalStyle(k: string, a: Style, b: Style) {
   if (
     k === 'fillEnable' ||
     k === 'fillRule' ||
+    k === 'fillOpacity' ||
     k === 'strokeEnable' ||
     k === 'strokeWidth' ||
     k === 'strokePosition' ||
@@ -704,8 +709,9 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   if (!ff) {
     ff = calFontFamily(style.fontFamily);
   }
-  const lhr = (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
-    .lhr || 1.2;
+  const lhr =
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+      .lhr || 1.2;
   return Math.ceil(style.fontSize * lhr);
 }
 
@@ -719,8 +725,9 @@ export function getBaseline(style: ComputedStyle | Rich) {
   let fontSize = style.fontSize;
   let ff = calFontFamily(style.fontFamily);
   let normal = calNormalLineHeight(style, ff);
-  const blr = (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
-    .blr || 1;
+  const blr =
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+      .blr || 1;
   return (style.lineHeight - normal) * 0.5 + fontSize * blr;
 }
 

@@ -1,4 +1,4 @@
-import { isDate, isNil, isPlainObject } from './type';
+import { isDate, isNil, isPlainObject, isObject } from './type';
 
 export function clone(obj: any) {
   if(isNil(obj) || typeof obj !== 'object') {
@@ -22,4 +22,40 @@ export function mergeBbox(bbox: Float64Array, a: number, b: number, c: number, d
   bbox[1] = Math.min(bbox[1], b);
   bbox[2] = Math.max(bbox[2], c);
   bbox[3] = Math.max(bbox[3], d);
+}
+
+// 深度对比对象
+export function equal(a: any, b: any) {
+  if(a === b) {
+    return true;
+  }
+  if (isObject(a) && isObject(b)) {
+    const hash: any = {};
+    for (let i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+      const k = arr[i];
+      if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+        return false;
+      }
+      hash[k] = true;
+    }
+    // a没有b有则false
+    for (let i = 0, arr = Object.keys(b), len = arr.length; i < len; i++) {
+      const k = arr[i];
+      if (!hash.hasOwnProperty(k)) {
+        return false;
+      }
+    }
+  } else if (isDate(a) && isDate(b)) {
+    return a.getTime() === b.getTime();
+  } else if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) {
+      return false;
+    }
+    for (let i = 0, len = a.length; i < len; i++) {
+      if (!equal(a[i], b[i])) {
+        return false;
+      }
+    }
+  }
+  return a === b;
 }

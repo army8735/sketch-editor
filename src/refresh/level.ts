@@ -31,12 +31,22 @@ export function isRepaint(lv: number): boolean {
   return lv < RefreshLevel.REFLOW;
 }
 
-export function isRepaintKey(k: string): boolean {
+export function isReflowKey(k: string): boolean {
   return (
-    k === 'visible' ||
-    k === 'color' ||
-    k === 'backgroundColor' ||
-    k === 'mixBlendMode'
+    k === 'width' ||
+    k === 'height' ||
+    k === 'letterSpacing' ||
+    k === 'paragraphSpacing' ||
+    k === 'textAlign' ||
+    k === 'fontFamily' ||
+    k === 'fontSize' ||
+    k === 'fontWeight' ||
+    k === 'fontStyle' ||
+    k === 'lineHeight' ||
+    k === 'left' ||
+    k === 'top' ||
+    k === 'right' ||
+    k === 'bottom'
   );
 }
 
@@ -77,15 +87,15 @@ export function getLevel(k: string): RefreshLevel {
   if (k === 'breakMask') {
     return RefreshLevel.BREAK_MASK;
   }
-  if (isRepaintKey(k)) {
-    return RefreshLevel.REPAINT;
+  if (isReflowKey(k)) {
+    return RefreshLevel.REFLOW;
   }
-  return RefreshLevel.REFLOW;
+  return RefreshLevel.REPAINT;
 }
 
 export default {
   RefreshLevel,
   isRepaint,
   isReflow,
-  isRepaintKey,
+  isReflowKey,
 };

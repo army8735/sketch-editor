@@ -28,14 +28,14 @@
             backgroundColor: [0, 0, 0, 0],
             color: [0, 0, 0, 1],
             opacity: 1,
-            fill: [[0, 0, 0, 1]],
-            fillOpacity: [1],
-            fillEnable: [false],
+            fill: [],
+            fillOpacity: [],
+            fillEnable: [],
             fillRule: 0,
-            stroke: [[0, 0, 0, 1]],
-            strokeEnable: [false],
-            strokeWidth: [1],
-            strokePosition: ['center'],
+            stroke: [],
+            strokeEnable: [],
+            strokeWidth: [],
+            strokePosition: [],
             strokeDasharray: [],
             strokeLinecap: 'butt',
             strokeLinejoin: 'miter',
@@ -18336,6 +18336,7 @@
         }
         if (k === 'fillEnable' ||
             k === 'fillRule' ||
+            k === 'fillOpacity' ||
             k === 'strokeEnable' ||
             k === 'strokeWidth' ||
             k === 'strokePosition' ||
@@ -19462,11 +19463,21 @@
     function isRepaint(lv) {
         return lv < RefreshLevel.REFLOW;
     }
-    function isRepaintKey(k) {
-        return (k === 'visible' ||
-            k === 'color' ||
-            k === 'backgroundColor' ||
-            k === 'mixBlendMode');
+    function isReflowKey(k) {
+        return (k === 'width' ||
+            k === 'height' ||
+            k === 'letterSpacing' ||
+            k === 'paragraphSpacing' ||
+            k === 'textAlign' ||
+            k === 'fontFamily' ||
+            k === 'fontSize' ||
+            k === 'fontWeight' ||
+            k === 'fontStyle' ||
+            k === 'lineHeight' ||
+            k === 'left' ||
+            k === 'top' ||
+            k === 'right' ||
+            k === 'bottom');
     }
     function getLevel(k) {
         if (k === 'pointerEvents') {
@@ -19505,16 +19516,16 @@
         if (k === 'breakMask') {
             return RefreshLevel.BREAK_MASK;
         }
-        if (isRepaintKey(k)) {
-            return RefreshLevel.REPAINT;
+        if (isReflowKey(k)) {
+            return RefreshLevel.REFLOW;
         }
-        return RefreshLevel.REFLOW;
+        return RefreshLevel.REPAINT;
     }
     var level = {
         RefreshLevel,
         isRepaint,
         isReflow,
-        isRepaintKey,
+        isReflowKey,
     };
 
     var refresh = {
@@ -22125,6 +22136,50 @@
         }
     }
 
+    function mergeBbox$1(bbox, a, b, c, d) {
+        bbox[0] = Math.min(bbox[0], a);
+        bbox[1] = Math.min(bbox[1], b);
+        bbox[2] = Math.max(bbox[2], c);
+        bbox[3] = Math.max(bbox[3], d);
+    }
+    // 深度对比对象
+    function equal(a, b) {
+        if (a === b) {
+            return true;
+        }
+        if (isObject(a) && isObject(b)) {
+            const hash = {};
+            for (let i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+                const k = arr[i];
+                if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+                    return false;
+                }
+                hash[k] = true;
+            }
+            // a没有b有则false
+            for (let i = 0, arr = Object.keys(b), len = arr.length; i < len; i++) {
+                const k = arr[i];
+                if (!hash.hasOwnProperty(k)) {
+                    return false;
+                }
+            }
+        }
+        else if (isDate(a) && isDate(b)) {
+            return a.getTime() === b.getTime();
+        }
+        else if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) {
+                return false;
+            }
+            for (let i = 0, len = a.length; i < len; i++) {
+                if (!equal(a[i], b[i])) {
+                    return false;
+                }
+            }
+        }
+        return a === b;
+    }
+
     class Node extends Event {
         constructor(props) {
             super();
@@ -22800,6 +22855,40 @@
             var _a;
             const keys = this.updateFormatStyleData(style);
             // 无变更
+            if (!keys.length) {
+                cb && cb(true);
+                return keys;
+            }
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
+            return keys;
+        }
+        updateProps(props, cb) {
+            var _a;
+            const keys = [];
+            for (let k in props) {
+                if (props.hasOwnProperty(k)) {
+                    // @ts-ignore
+                    const v = props[k], v2 = this.props[k];
+                    if (!equal(v, v2)) {
+                        keys.push(v);
+                    }
+                }
+            }
+            if (!keys.length) {
+                cb && cb(true);
+                return keys;
+            }
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
+        }
+        refreshStyle(style, cb) {
+            var _a;
+            let keys;
+            if (Array.isArray(style)) {
+                keys = style.slice(0);
+            }
+            else {
+                keys = Object.keys(style);
+            }
             if (!keys.length) {
                 cb && cb(true);
                 return keys;
@@ -24795,13 +24884,6 @@
             }
         }
         return s;
-    }
-
-    function mergeBbox$1(bbox, a, b, c, d) {
-        bbox[0] = Math.min(bbox[0], a);
-        bbox[1] = Math.min(bbox[1], b);
-        bbox[2] = Math.max(bbox[2], c);
-        bbox[3] = Math.max(bbox[3], d);
     }
 
     class Geom extends Node {
