@@ -67,6 +67,13 @@
         TagName["Text"] = "text";
         TagName["Polyline"] = "$polyline";
     })(TagName || (TagName = {}));
+    var POINTS_RADIUS_BEHAVIOUR;
+    (function (POINTS_RADIUS_BEHAVIOUR) {
+        POINTS_RADIUS_BEHAVIOUR[POINTS_RADIUS_BEHAVIOUR["DISABLED"] = -1] = "DISABLED";
+        POINTS_RADIUS_BEHAVIOUR[POINTS_RADIUS_BEHAVIOUR["LEGACY"] = 0] = "LEGACY";
+        POINTS_RADIUS_BEHAVIOUR[POINTS_RADIUS_BEHAVIOUR["ROUNDED"] = 1] = "ROUNDED";
+        POINTS_RADIUS_BEHAVIOUR[POINTS_RADIUS_BEHAVIOUR["SMOOTH"] = 2] = "SMOOTH";
+    })(POINTS_RADIUS_BEHAVIOUR || (POINTS_RADIUS_BEHAVIOUR = {}));
 
     /******************************************************************************
     Copyright (c) Microsoft Corporation.
@@ -18455,7 +18462,7 @@
         ];
     }
     function setFontStyle(style) {
-        let fontSize = style.fontSize || 0;
+        const fontSize = style.fontSize || 0;
         let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
         if (/\s/.test(fontFamily)) {
             fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
@@ -18471,7 +18478,7 @@
             fontFamily);
     }
     function calFontFamily(fontFamily) {
-        let ff = fontFamily.split(/\s*,\s*/);
+        const ff = fontFamily.split(/\s*,\s*/);
         for (let i = 0, len = ff.length; i < len; i++) {
             let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
             if (o.hasRegister(item) || inject.checkSupportFontFamily(item)) {
@@ -18485,7 +18492,7 @@
             ff = calFontFamily(style.fontFamily);
         }
         const lhr = (o.data[ff] || o.data[inject.defaultFontFamily] || o.data.arial)
-            .lhr || 1;
+            .lhr || 1.2;
         return Math.ceil(style.fontSize * lhr);
     }
     /**
@@ -19072,6 +19079,16 @@
                     };
                 });
                 const { fill, fillEnable, fillOpacity, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, } = yield geomStyle(layer, opt);
+                let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
+                if (layer.pointRadiusBehaviour === FileFormat.PointsRadiusBehaviour.Legacy) {
+                    pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.LEGACY;
+                }
+                else if (layer.pointRadiusBehaviour === FileFormat.PointsRadiusBehaviour.Rounded) {
+                    pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.ROUNDED;
+                }
+                else if (layer.pointRadiusBehaviour === FileFormat.PointsRadiusBehaviour.Smooth) {
+                    pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
+                }
                 return {
                     tagName: TagName.Polyline,
                     props: {
@@ -19080,6 +19097,10 @@
                         constrainProportions,
                         points,
                         isClosed: layer.isClosed,
+                        // @ts-ignore
+                        fixedRadius: layer.fixedRadius || 0,
+                        pointRadiusBehaviour,
+                        isRectangle: layer._class === 'rectangle',
                         style: {
                             left,
                             top,
@@ -24871,7 +24892,6 @@
     class Polyline extends Geom {
         constructor(props) {
             super(props);
-            this.isClosed = props.isClosed;
             this.isPolyline = true;
         }
         buildPoints() {
@@ -25050,7 +25070,7 @@
                 res.push(p);
             }
             // 闭合
-            if (this.isClosed) {
+            if (this.props.isClosed) {
                 const last = temp[len - 1];
                 const p = [
                     toPrecision(first.absX),
@@ -25151,7 +25171,7 @@
                     }
                 }
                 canvasPolygon(ctx, points, scale, dx, dy);
-                if (this.isClosed) {
+                if (this.props.isClosed) {
                     ctx.closePath();
                 }
                 // fill有opacity，设置记得还原
@@ -25236,7 +25256,7 @@
                     ctx.lineWidth = strokeWidth[i] * scale;
                     canvasPolygon(ctx, points, scale, dx, dy);
                 }
-                if (this.isClosed) {
+                if (this.props.isClosed) {
                     if (ctx2) {
                         ctx2.closePath();
                     }
@@ -25400,7 +25420,7 @@
             });
         }
         toSvg(scale) {
-            return super.toSvg(scale, this.isClosed);
+            return super.toSvg(scale, this.props.isClosed);
         }
     }
 
@@ -28528,6 +28548,15 @@
             this.lineBoxList = [];
             this.cursorIndex = new Int32Array([0, 0, 0]);
             this.lastCursorX = 0;
+            this.cursor = {
+                isMulti: false,
+                startLineBox: 0,
+                endLineBox: 0,
+                startTextBox: 0,
+                endTextBox: 0,
+                startString: 0,
+                endString: 0,
+            };
         }
         lay(data) {
             super.lay(data);
@@ -28796,14 +28825,10 @@
                 h: res.h * m[0],
             };
         }
-        /**
-         * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
-         * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
-         * 不会出现仅右百分比的情况
-         */
-        inputContent(s) {
+        // 改变前防止中心对齐导致位移
+        beforeEdit() {
             const { style, computedStyle } = this;
-            const { left, right, width, translateX } = style;
+            const { left, top, right, bottom, width, height, translateX, translateY } = style;
             const isLeft = width.u === StyleUnit.AUTO &&
                 left.u === StyleUnit.PERCENT &&
                 right.u === StyleUnit.AUTO;
@@ -28814,6 +28839,48 @@
                 translateX.v = 0;
                 translateX.u = StyleUnit.PX;
             }
+            const isTop = height.u === StyleUnit.AUTO &&
+                top.u === StyleUnit.PERCENT &&
+                bottom.u === StyleUnit.AUTO;
+            if (isTop) {
+                const { top: top2, height: height2 } = computedStyle;
+                top.v = top2 - height2 * 0.5;
+                top.u = StyleUnit.PX;
+                translateY.v = 0;
+                translateY.u = StyleUnit.PX;
+            }
+            return { isLeft, isTop };
+        }
+        // 改变后如果是中心对齐还原
+        afterEdit(isLeft, isTop) {
+            const { style, computedStyle } = this;
+            const { left, top, translateX, translateY } = style;
+            if (isLeft) {
+                const width = this.width;
+                const v = computedStyle.left + width * 0.5;
+                left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent.width;
+                left.u = StyleUnit.PERCENT;
+                translateX.v = -50;
+                translateX.u = StyleUnit.PERCENT;
+                computedStyle.left = v;
+            }
+            if (isTop) {
+                const height = this.height;
+                const v = computedStyle.top + height * 0.5;
+                top.v = ((computedStyle.top + height * 0.5) * 100) / this.parent.height;
+                top.u = StyleUnit.PERCENT;
+                translateY.v = -50;
+                translateY.u = StyleUnit.PERCENT;
+                computedStyle.top = v;
+            }
+        }
+        /**
+         * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
+         * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
+         * 不会出现仅右百分比的情况，所有改变处理都一样
+         */
+        inputContent(s) {
+            const { isLeft, isTop } = this.beforeEdit();
             const lineBoxList = this.lineBoxList;
             const cursorIndex = this.cursorIndex;
             // 先记录下光标对应字符的索引
@@ -28824,15 +28891,7 @@
             const c = this._content;
             this.content = c.slice(0, m) + s + c.slice(m);
             // 位移还原，无需渲染仅数据即可
-            if (isLeft) {
-                const width = this.width;
-                const v = computedStyle.left + width * 0.5;
-                left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent.width;
-                left.u = StyleUnit.PERCENT;
-                translateX.v = -50;
-                translateX.u = StyleUnit.PERCENT;
-                computedStyle.left = v;
-            }
+            this.afterEdit(isLeft, isTop);
             // 同步更新光标位置
             this.updateCursorByIndex(m + s.length);
         }
@@ -29014,6 +29073,7 @@
             (_c = this.root) === null || _c === void 0 ? void 0 : _c.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
         }
         enter() {
+            const { isLeft, isTop } = this.beforeEdit();
             const cursorIndex = this.cursorIndex;
             const [i, j, k] = cursorIndex;
             const lineBoxList = this.lineBoxList;
@@ -29023,6 +29083,7 @@
             const index = textBox.index + k;
             const c = this._content;
             this.content = c.slice(0, index) + '\n' + c.slice(index);
+            this.afterEdit(isLeft, isTop);
             this.updateCursorByIndex(index + 1);
         }
         delete() {
@@ -29031,6 +29092,7 @@
             if (!c) {
                 return;
             }
+            const { isLeft, isTop } = this.beforeEdit();
             const cursorIndex = this.cursorIndex;
             const [i, j, k] = cursorIndex;
             // 开头也没法删
@@ -29043,6 +29105,7 @@
             const textBox = list[j];
             const index = textBox ? (textBox.index + k) : (lineBox.index + k);
             this.content = c.slice(0, index - 1) + c.slice(index);
+            this.afterEdit(isLeft, isTop);
             this.updateCursorByIndex(index - 1);
         }
         // 给定相对x坐标获取光标位置，y已知传入lineBox
@@ -29090,6 +29153,17 @@
                 }
             }
             return { x: rx, y: ry, h: rh };
+        }
+        updateTextStyle(style, start, end, cb) {
+            const content = this._content;
+            const rich = this.rich;
+            if (start === 0 && end === content.length) {
+                if (rich) {
+                    rich.splice(1);
+                    Object.assign(rich[0], style);
+                }
+                this.updateStyle(style, cb);
+            }
         }
         get content() {
             return this._content;

@@ -119,12 +119,23 @@ function measure(
   return { hypotheticalNum, rw, newLine };
 }
 
+export type Cursor = {
+  isMulti: boolean; // 是否选择了多个文字，还是单个光标
+  startLineBox: number;
+  endLineBox: number;
+  startTextBox: number;
+  endTextBox: number;
+  startString: number; // 位于textBox中字符串的索引
+  endString: number;
+};
+
 class Text extends Node {
   _content: string;
   rich?: Array<Rich>;
   lineBoxList: Array<LineBox>;
   cursorIndex: Int32Array; // 0:LineBox索引，1:TextBox索引，2:字符索引
   lastCursorX: number; // 上一次手动指定的光标x相对坐标
+  cursor: Cursor; // 光标信息
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
@@ -133,6 +144,15 @@ class Text extends Node {
     this.lineBoxList = [];
     this.cursorIndex = new Int32Array([0, 0, 0]);
     this.lastCursorX = 0;
+    this.cursor = {
+      isMulti: false,
+      startLineBox: 0,
+      endLineBox: 0,
+      startTextBox: 0,
+      endTextBox: 0,
+      startString: 0,
+      endString: 0,
+    };
   }
 
   override lay(data: LayoutData) {
@@ -438,14 +458,10 @@ class Text extends Node {
     };
   }
 
-  /**
-   * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
-   * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
-   * 不会出现仅右百分比的情况
-   */
-  inputContent(s: string) {
+  // 改变前防止中心对齐导致位移
+  private beforeEdit() {
     const { style, computedStyle } = this;
-    const { left, right, width, translateX } = style;
+    const { left, top, right, bottom, width, height, translateX, translateY } = style;
     const isLeft =
       width.u === StyleUnit.AUTO &&
       left.u === StyleUnit.PERCENT &&
@@ -457,6 +473,50 @@ class Text extends Node {
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
+    const isTop = height.u === StyleUnit.AUTO &&
+      top.u === StyleUnit.PERCENT &&
+      bottom.u === StyleUnit.AUTO;
+    if (isTop) {
+      const { top: top2, height: height2 } = computedStyle;
+      top.v = top2 - height2 * 0.5;
+      top.u = StyleUnit.PX;
+      translateY.v = 0;
+      translateY.u = StyleUnit.PX;
+    }
+    return { isLeft, isTop };
+  }
+
+  // 改变后如果是中心对齐还原
+  private afterEdit(isLeft: boolean, isTop: boolean) {
+    const { style, computedStyle } = this;
+    const { left, top, translateX, translateY } = style;
+    if (isLeft) {
+      const width = this.width;
+      const v = computedStyle.left + width * 0.5;
+      left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent!.width;
+      left.u = StyleUnit.PERCENT;
+      translateX.v = -50;
+      translateX.u = StyleUnit.PERCENT;
+      computedStyle.left = v;
+    }
+    if (isTop) {
+      const height = this.height;
+      const v = computedStyle.top + height * 0.5;
+      top.v = ((computedStyle.top + height * 0.5) * 100) / this.parent!.height;
+      top.u = StyleUnit.PERCENT;
+      translateY.v = -50;
+      translateY.u = StyleUnit.PERCENT;
+      computedStyle.top = v;
+    }
+  }
+
+  /**
+   * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
+   * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
+   * 不会出现仅右百分比的情况，所有改变处理都一样
+   */
+  inputContent(s: string) {
+    const { isLeft, isTop } = this.beforeEdit();
     const lineBoxList = this.lineBoxList;
     const cursorIndex = this.cursorIndex;
     // 先记录下光标对应字符的索引
@@ -467,15 +527,7 @@ class Text extends Node {
     const c = this._content;
     this.content = c.slice(0, m) + s + c.slice(m);
     // 位移还原，无需渲染仅数据即可
-    if (isLeft) {
-      const width = this.width;
-      const v = computedStyle.left + width * 0.5;
-      left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent!.width;
-      left.u = StyleUnit.PERCENT;
-      translateX.v = -50;
-      translateX.u = StyleUnit.PERCENT;
-      computedStyle.left = v;
-    }
+    this.afterEdit(isLeft, isTop);
     // 同步更新光标位置
     this.updateCursorByIndex(m + s.length);
   }
@@ -673,6 +725,7 @@ class Text extends Node {
   }
 
   enter() {
+    const { isLeft, isTop } = this.beforeEdit();
     const cursorIndex = this.cursorIndex;
     const [i, j, k] = cursorIndex;
     const lineBoxList = this.lineBoxList;
@@ -682,6 +735,7 @@ class Text extends Node {
     const index = textBox.index + k;
     const c = this._content;
     this.content = c.slice(0, index) + '\n' + c.slice(index);
+    this.afterEdit(isLeft, isTop);
     this.updateCursorByIndex(index + 1);
   }
 
@@ -691,6 +745,7 @@ class Text extends Node {
     if (!c) {
       return;
     }
+    const { isLeft, isTop } = this.beforeEdit();
     const cursorIndex = this.cursorIndex;
     const [i, j, k] = cursorIndex;
     // 开头也没法删
@@ -703,6 +758,7 @@ class Text extends Node {
     const textBox = list[j];
     const index = textBox ? (textBox.index + k) : (lineBox.index + k);
     this.content = c.slice(0, index - 1) + c.slice(index);
+    this.afterEdit(isLeft, isTop);
     this.updateCursorByIndex(index - 1);
   }
 
@@ -751,6 +807,18 @@ class Text extends Node {
       }
     }
     return { x: rx, y: ry, h: rh };
+  }
+
+  updateTextStyle(style: any, start: number, end: number, cb?: (sync: boolean) => void) {
+    const content = this._content;
+    const rich = this.rich;
+    if (start === 0 && end === content.length) {
+      if (rich) {
+        rich.splice(1);
+        Object.assign(rich[0], style);
+      }
+      this.updateStyle(style, cb);
+    }
   }
 
   get content() {

@@ -220,6 +220,10 @@ export type Rich = {
 export type PolylineProps = Props & {
   points: Array<Point>;
   isClosed: boolean;
+  constrainProportions: boolean;
+  fixedRadius: number;
+  pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
+  isRectangle: boolean;
 };
 
 export type Point = {
@@ -256,4 +260,11 @@ export enum TagName {
   Bitmap = 'bitmap',
   Text = 'text',
   Polyline = '$polyline',
+}
+
+export enum POINTS_RADIUS_BEHAVIOUR {
+  DISABLED = -1,
+  LEGACY = 0,
+  ROUNDED = 1,
+  SMOOTH = 2,
 }

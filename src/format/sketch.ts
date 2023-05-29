@@ -12,6 +12,7 @@ import {
   JShapeGroup,
   JText,
   Point,
+  POINTS_RADIUS_BEHAVIOUR,
   Rich,
   TagName,
 } from './';
@@ -625,6 +626,14 @@ async function convertItem(
       strokeLinecap,
       strokeLinejoin,
     } = await geomStyle(layer, opt);
+    let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
+    if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy) {
+      pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.LEGACY;
+    } else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded) {
+      pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.ROUNDED;
+    } else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth) {
+      pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
+    }
     return {
       tagName: TagName.Polyline,
       props: {
@@ -633,6 +642,10 @@ async function convertItem(
         constrainProportions,
         points,
         isClosed: layer.isClosed,
+        // @ts-ignore
+        fixedRadius: layer.fixedRadius || 0,
+        pointRadiusBehaviour,
+        isRectangle: layer._class === 'rectangle',
         style: {
           left,
           top,

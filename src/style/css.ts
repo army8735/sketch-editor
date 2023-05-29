@@ -671,7 +671,7 @@ export function color2gl(color: string | Array<number>): Array<number> {
 }
 
 export function setFontStyle(style: ComputedStyle | Rich) {
-  let fontSize = style.fontSize || 0;
+  const fontSize = style.fontSize || 0;
   let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
   if (/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
@@ -690,7 +690,7 @@ export function setFontStyle(style: ComputedStyle | Rich) {
 }
 
 export function calFontFamily(fontFamily: string) {
-  let ff = fontFamily.split(/\s*,\s*/);
+  const ff = fontFamily.split(/\s*,\s*/);
   for (let i = 0, len = ff.length; i < len; i++) {
     let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
     if (font.hasRegister(item) || inject.checkSupportFontFamily(item)) {
@@ -705,7 +705,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
     ff = calFontFamily(style.fontFamily);
   }
   const lhr = (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
-    .lhr || 1;
+    .lhr || 1.2;
   return Math.ceil(style.fontSize * lhr);
 }
 

@@ -24,11 +24,9 @@ function isCornerPoint(point: Point) {
 }
 
 class Polyline extends Geom {
-  isClosed: boolean;
 
   constructor(props: PolylineProps) {
     super(props);
-    this.isClosed = props.isClosed;
     this.isPolyline = true;
   }
 
@@ -233,7 +231,7 @@ class Polyline extends Geom {
       res.push(p);
     }
     // 闭合
-    if (this.isClosed) {
+    if ((this.props as PolylineProps).isClosed) {
       const last = temp[len - 1];
       const p: Array<number> = [
         toPrecision(first.absX!),
@@ -386,7 +384,7 @@ class Polyline extends Geom {
         }
       }
       canvasPolygon(ctx, points, scale, dx, dy);
-      if (this.isClosed) {
+      if ((this.props as PolylineProps).isClosed) {
         ctx.closePath();
       }
       // fill有opacity，设置记得还原
@@ -476,7 +474,7 @@ class Polyline extends Geom {
         ctx.lineWidth = strokeWidth[i] * scale;
         canvasPolygon(ctx, points, scale, dx, dy);
       }
-      if (this.isClosed) {
+      if ((this.props as PolylineProps).isClosed) {
         if (ctx2) {
           ctx2.closePath();
         } else {
@@ -658,7 +656,7 @@ class Polyline extends Geom {
   }
 
   toSvg(scale: number) {
-    return super.toSvg(scale, this.isClosed);
+    return super.toSvg(scale, (this.props as PolylineProps).isClosed);
   }
 }
 
