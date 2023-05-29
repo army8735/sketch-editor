@@ -414,9 +414,12 @@ class Polyline extends Geom {
         continue;
       }
       const s = stroke[i];
+      // 颜色
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
-      } else {
+      }
+      // 或者渐变
+      else {
         if (s.t === GRADIENT.LINEAR) {
           const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
@@ -459,7 +462,7 @@ class Polyline extends Geom {
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
-        canvasPolygon(ctx, points, -x, -y);
+        canvasPolygon(ctx, points, scale, dx, dy);
       } else if (p === STROKE_POSITION.OUTSIDE) {
         os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
         ctx2 = os.ctx;

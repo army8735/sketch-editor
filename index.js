@@ -19253,12 +19253,41 @@
             if (borders) {
                 for (let i = 0, len = borders.length; i < len; i++) {
                     const item = borders[i];
-                    stroke.push([
-                        Math.floor(item.color.red * 255),
-                        Math.floor(item.color.green * 255),
-                        Math.floor(item.color.blue * 255),
-                        item.color.alpha,
-                    ]);
+                    if (item.fillType === FileFormat.FillType.Gradient) {
+                        const g = item.gradient;
+                        const from = parseStrPoint(g.from);
+                        const to = parseStrPoint(g.to);
+                        const stops = g.stops.map((item) => {
+                            const color = color2hexStr([
+                                Math.floor(item.color.red * 255),
+                                Math.floor(item.color.green * 255),
+                                Math.floor(item.color.blue * 255),
+                                item.color.alpha,
+                            ]);
+                            return color + ' ' + item.position * 100 + '%';
+                        });
+                        if (g.gradientType === FileFormat.GradientType.Linear) {
+                            stroke.push(`linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+                        }
+                        else if (g.gradientType === FileFormat.GradientType.Radial) {
+                            const ellipseLength = g.elipseLength;
+                            stroke.push(`radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`);
+                        }
+                        else if (g.gradientType === FileFormat.GradientType.Angular) {
+                            stroke.push(`conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(',')})`);
+                        }
+                        else {
+                            throw new Error('Unknown gradient');
+                        }
+                    }
+                    else {
+                        stroke.push([
+                            Math.floor(item.color.red * 255),
+                            Math.floor(item.color.green * 255),
+                            Math.floor(item.color.blue * 255),
+                            item.color.alpha,
+                        ]);
+                    }
                     strokeEnable.push(item.isEnabled);
                     strokeWidth.push(item.thickness || 0);
                     if (item.position === FileFormat.BorderPosition.Inside) {
@@ -19370,7 +19399,8 @@
         return __awaiter(this, void 0, void 0, function* () {
             // @ts-ignore
             const pdfjsLib = window.pdfjsLib;
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.6.172/build/pdf.worker.min.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.6.172/build/pdf.worker.min.js';
             const url = URL.createObjectURL(blob);
             const task = yield pdfjsLib.getDocument(url).promise;
             const page = yield task.getPage(1);
@@ -25205,9 +25235,11 @@
                     continue;
                 }
                 const s = stroke[i];
+                // 颜色
                 if (Array.isArray(s)) {
                     ctx.strokeStyle = color2rgbaStr(s);
                 }
+                // 或者渐变
                 else {
                     if (s.t === GRADIENT.LINEAR) {
                         const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
@@ -25239,7 +25271,7 @@
                 let os, ctx2;
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
-                    canvasPolygon(ctx, points, -x, -y);
+                    canvasPolygon(ctx, points, scale, dx, dy);
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
                     os = inject.getOffscreenCanvas(w, h, 'outsideStroke');

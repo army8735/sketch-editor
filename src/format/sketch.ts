@@ -627,11 +627,17 @@ async function convertItem(
       strokeLinejoin,
     } = await geomStyle(layer, opt);
     let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
-    if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy) {
+    if (
+      layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy
+    ) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.LEGACY;
-    } else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded) {
+    } else if (
+      layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded
+    ) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.ROUNDED;
-    } else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth) {
+    } else if (
+      layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth
+    ) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
     }
     return {
@@ -823,19 +829,56 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       fillOpacity.push(item.contextSettings.opacity || 1);
     }
   }
-  const stroke: Array<Array<number>> = [],
+  const stroke: Array<string | Array<number>> = [],
     strokeEnable: Array<boolean> = [],
     strokeWidth: Array<number> = [],
     strokePosition: Array<string> = [];
   if (borders) {
     for (let i = 0, len = borders.length; i < len; i++) {
       const item = borders[i];
-      stroke.push([
-        Math.floor(item.color.red * 255),
-        Math.floor(item.color.green * 255),
-        Math.floor(item.color.blue * 255),
-        item.color.alpha,
-      ]);
+      if (item.fillType === SketchFormat.FillType.Gradient) {
+        const g = item.gradient;
+        const from = parseStrPoint(g.from);
+        const to = parseStrPoint(g.to);
+        const stops = g.stops.map((item) => {
+          const color = color2hexStr([
+            Math.floor(item.color.red * 255),
+            Math.floor(item.color.green * 255),
+            Math.floor(item.color.blue * 255),
+            item.color.alpha,
+          ]);
+          return color + ' ' + item.position * 100 + '%';
+        });
+        if (g.gradientType === SketchFormat.GradientType.Linear) {
+          stroke.push(
+            `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+              ',',
+            )})`,
+          );
+        } else if (g.gradientType === SketchFormat.GradientType.Radial) {
+          const ellipseLength = g.elipseLength;
+          stroke.push(
+            `radialGradient(${from.x} ${from.y} ${to.x} ${
+              to.y
+            } ${ellipseLength},${stops.join(',')})`,
+          );
+        } else if (g.gradientType === SketchFormat.GradientType.Angular) {
+          stroke.push(
+            `conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+              ',',
+            )})`,
+          );
+        } else {
+          throw new Error('Unknown gradient');
+        }
+      } else {
+        stroke.push([
+          Math.floor(item.color.red * 255),
+          Math.floor(item.color.green * 255),
+          Math.floor(item.color.blue * 255),
+          item.color.alpha,
+        ]);
+      }
       strokeEnable.push(item.isEnabled);
       strokeWidth.push(item.thickness || 0);
       if (item.position === SketchFormat.BorderPosition.Inside) {
@@ -944,7 +987,8 @@ async function loadImg(blob: Blob): Promise<HTMLImageElement> {
 async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
   // @ts-ignore
   const pdfjsLib = window.pdfjsLib;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.6.172/build/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.6.172/build/pdf.worker.min.js';
   const url = URL.createObjectURL(blob);
   const task = await pdfjsLib.getDocument(url).promise;
   const page = await task.getPage(1);
@@ -958,7 +1002,7 @@ async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
     canvasContext: ctx,
   }).promise;
   const res: Blob = await new Promise((resolve, reject) => {
-    canvas.toBlob(function(blob) {
+    canvas.toBlob(function (blob) {
       if (blob) {
         resolve(blob);
       } else {
