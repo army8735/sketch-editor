@@ -250,6 +250,25 @@ class Polyline extends Geom {
     this.points = res;
   }
 
+  deletePoint(point: Point) {
+    const props = this.props as PolylineProps;
+    const points = props.points;
+    const i = points.indexOf(point);
+    if (i > -1) {
+      points.splice(i, 1);
+      this.points = undefined;
+      this.refresh();
+    }
+  }
+
+  addPoint(point: Point, index: number) {
+    const props = this.props as PolylineProps;
+    const points = props.points;
+    points.splice(index, 0, point);
+    this.points = undefined;
+    this.refresh();
+  }
+
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();
@@ -488,6 +507,7 @@ class Polyline extends Geom {
   override getFrameProps() {
     const res = super.getFrameProps();
     res.isLine = this.isLine();
+    this.buildPoints();
     const points = (this.props as PolylineProps).points;
     if (res.isLine) {
       res.length = Math.sqrt(

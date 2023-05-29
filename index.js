@@ -25066,6 +25066,23 @@
             }
             this.points = res;
         }
+        deletePoint(point) {
+            const props = this.props;
+            const points = props.points;
+            const i = points.indexOf(point);
+            if (i > -1) {
+                points.splice(i, 1);
+                this.points = undefined;
+                this.refresh();
+            }
+        }
+        addPoint(point, index) {
+            const props = this.props;
+            const points = props.points;
+            points.splice(index, 0, point);
+            this.points = undefined;
+            this.refresh();
+        }
         renderCanvas(scale) {
             super.renderCanvas(scale);
             this.buildPoints();
@@ -25252,6 +25269,7 @@
         getFrameProps() {
             const res = super.getFrameProps();
             res.isLine = this.isLine();
+            this.buildPoints();
             const points = this.props.points;
             if (res.isLine) {
                 res.length = Math.sqrt(Math.pow(points[1].absX - points[0].absY, 2) +
