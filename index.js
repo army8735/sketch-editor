@@ -25264,7 +25264,7 @@
             const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillOpacity, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
+            const { fill, fillOpacity, fillRule, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             if (scale !== 1) {
                 ctx.setLineDash(strokeDasharray.map((i) => i * scale));
             }
@@ -25316,7 +25316,7 @@
                 }
                 // fill有opacity，设置记得还原
                 ctx.globalAlpha = fillOpacity[i];
-                ctx.fill();
+                ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
                 ctx.globalAlpha = 1;
             }
             // 线帽设置
@@ -28705,7 +28705,7 @@
                 startString: 0,
                 endString: 0,
             };
-            this.showAreaBg = false;
+            this.showSelectArea = false;
         }
         lay(data) {
             super.lay(data);
@@ -28897,7 +28897,7 @@
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             // 如果处于选择范围状态，渲染背景
-            if (this.showAreaBg) {
+            if (this.showSelectArea) {
                 ctx.fillStyle = '#f4d3c1';
                 const cursor = this.cursor;
                 // 单行多行区分开
@@ -29040,7 +29040,7 @@
                     this.getCursorByLocalX(local.x, lineBox, true);
                     // 变化需要更新渲染
                     if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
-                        this.showAreaBg = true;
+                        this.showSelectArea = true;
                         (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
                     }
                     return;
@@ -29052,13 +29052,13 @@
             this.getCursorByLocalX(this.width, lineBox, true);
             // 变化需要更新渲染
             if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
-                this.showAreaBg = true;
+                this.showSelectArea = true;
                 (_b = this.root) === null || _b === void 0 ? void 0 : _b.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
             }
         }
         hideSelectArea() {
             var _a;
-            this.showAreaBg = false;
+            this.showSelectArea = false;
             (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
         }
         // 改变前防止中心对齐导致位移

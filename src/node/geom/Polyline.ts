@@ -9,7 +9,7 @@ import { RefreshLevel } from '../../refresh/level';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
-  CURVE_MODE,
+  CURVE_MODE, FILL_RULE,
   GRADIENT,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -305,6 +305,7 @@ class Polyline extends Geom {
     const {
       fill,
       fillOpacity,
+      fillRule,
       fillEnable,
       stroke,
       strokeEnable,
@@ -389,7 +390,7 @@ class Polyline extends Geom {
       }
       // fill有opacity，设置记得还原
       ctx.globalAlpha = fillOpacity[i];
-      ctx.fill();
+      ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
       ctx.globalAlpha = 1;
     }
     // 线帽设置

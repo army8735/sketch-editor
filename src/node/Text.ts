@@ -135,7 +135,7 @@ class Text extends Node {
   lineBoxList: Array<LineBox>;
   lastCursorX: number; // 上一次手动指定的光标x相对坐标，上下移动时保持定位
   cursor: Cursor; // 光标信息
-  showAreaBg: boolean;
+  showSelectArea: boolean;
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
@@ -152,7 +152,7 @@ class Text extends Node {
       startString: 0,
       endString: 0,
     };
-    this.showAreaBg = false;
+    this.showSelectArea = false;
   }
 
   override lay(data: LayoutData) {
@@ -372,7 +372,7 @@ class Text extends Node {
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     // 如果处于选择范围状态，渲染背景
-    if (this.showAreaBg) {
+    if (this.showSelectArea) {
       ctx.fillStyle = '#f4d3c1';
       const cursor = this.cursor;
       // 单行多行区分开
@@ -522,7 +522,7 @@ class Text extends Node {
         this.getCursorByLocalX(local.x, lineBox, true);
         // 变化需要更新渲染
         if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
-          this.showAreaBg = true;
+          this.showSelectArea = true;
           this.root?.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
         }
         return;
@@ -534,13 +534,13 @@ class Text extends Node {
     this.getCursorByLocalX(this.width, lineBox, true);
     // 变化需要更新渲染
     if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
-      this.showAreaBg = true;
+      this.showSelectArea = true;
       this.root?.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
     }
   }
 
   hideSelectArea() {
-    this.showAreaBg = false;
+    this.showSelectArea = false;
     this.root?.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
   }
 
