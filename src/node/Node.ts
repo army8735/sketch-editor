@@ -789,8 +789,12 @@ class Node extends Event {
     for (let k in props) {
       if (props.hasOwnProperty(k)) {
         // @ts-ignore
-        const v = props[k], v2 = this.props[k];
+        const v = props[k];
+        // @ts-ignore
+        const v2 = this.props[k];
         if (!equal(v, v2)) {
+          // @ts-ignore
+          this.props[k] = v;
           keys.push(v);
         }
       }
@@ -808,6 +812,10 @@ class Node extends Event {
       keys = style.slice(0);
     } else {
       keys = Object.keys(style);
+      keys.forEach((k) => {
+        // @ts-ignore
+        this.style[k] = style[k];
+      });
     }
     if (!keys.length) {
       cb && cb(true);

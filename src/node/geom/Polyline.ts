@@ -367,7 +367,7 @@ class Polyline extends Geom {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = rg;
-        } else if (f.t === GRADIENT.CONIC) {
+        } else if (f.t === GRADIENT.CONIC) { console.log(f);
           const gd = getConic(
             f.stops,
             f.d,

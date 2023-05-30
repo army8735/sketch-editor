@@ -6,13 +6,17 @@ class LineBox {
   h: number;
   index: number; // 位于整个Text字符串的索引
   list: TextBox[];
+  startEnter: boolean;
+  endEnter: boolean;
 
-  constructor(y: number, h: number, index: number) {
+  constructor(y: number, h: number, index: number, startEnter: boolean) {
     this.y = y;
     this.w = 0;
     this.h = h;
     this.index = index;
     this.list = [];
+    this.startEnter = startEnter;
+    this.endEnter = false;
   }
 
   add(textBox: TextBox) {
@@ -34,7 +38,7 @@ class LineBox {
 
   offsetX(n: number) {
     const list = this.list;
-    for(let i = 0, len = list.length; i < len; i++) {
+    for (let i = 0, len = list.length; i < len; i++) {
       list[i].x += n;
     }
   }
@@ -46,7 +50,7 @@ class LineBox {
   get baseline(): number {
     let n = 0;
     const list = this.list;
-    for(let i = 0, len = list.length; i < len; i++) {
+    for (let i = 0, len = list.length; i < len; i++) {
       n = Math.max(n, list[i].baseline);
     }
     return n;

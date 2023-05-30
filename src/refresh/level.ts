@@ -51,7 +51,12 @@ export function isReflowKey(k: string): boolean {
 }
 
 export function getLevel(k: string): RefreshLevel {
-  if (k === 'pointerEvents') {
+  if (k === 'pointerEvents' ||
+    k === 'constrainProportions' ||
+    k === 'isLocked' ||
+    k === 'isSelected' ||
+    k === 'resizesContent' ||
+    k === 'isRectangle') {
     return RefreshLevel.NONE;
   }
   if (k === 'translateX') {

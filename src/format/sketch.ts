@@ -814,7 +814,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
           );
         } else if (g.gradientType === SketchFormat.GradientType.Angular) {
           fill.push(
-            `conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+            `conicGradient(${0.5} ${0.5} ${0.5} ${0.5},${stops.join(
               ',',
             )})`,
           );
