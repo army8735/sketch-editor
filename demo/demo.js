@@ -175,7 +175,12 @@ $input.onchange = function(e) {
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
         const i = children.indexOf(node);
         const ol = abHash[uuid].querySelector('ol');
-        if (i === children.length - 1) {
+        if (!ol) {
+          const ol = document.createElement('ol');
+          ol.appendChild(li);
+          abHash[uuid].appendChild(ol);
+        }
+        else if (i === children.length - 1) {
           ol.insertBefore(li, ol.children[i - 1]);
         }
         else if (i === 0) {

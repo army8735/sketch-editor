@@ -22349,7 +22349,6 @@
             if (this.isDestroyed) {
                 return;
             }
-            console.log(this);
             this.lay(data);
             // reflow和matrix计算需要x/y/width/height
             this.calRepaintStyle(RefreshLevel.REFLOW);
