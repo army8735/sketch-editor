@@ -42,8 +42,8 @@ class Polyline extends Geom {
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
     for (let i = 0, len = points.length; i < len; i++) {
       const item = points[i];
-      item.absX = item.x * width;
-      item.absY = item.y * height;
+      item.absX = (item.x || 0) * width;
+      item.absY = (item.y || 0) * height;
       if (isCornerPoint(item)) {
         hasCorner = true;
       } else {

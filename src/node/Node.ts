@@ -37,8 +37,8 @@ import {
   StyleUnit,
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
-import { equal } from '../util/util';
 import Event from '../util/Event';
+import { equal } from '../util/util';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
@@ -1293,7 +1293,8 @@ class Node extends Event {
     const x4 = t.x4;
     const y4 = t.y4;
     const { width, height, computedStyle } = this;
-    let baseX = 0, baseY = 0;
+    let baseX = 0,
+      baseY = 0;
     if (!this.artBoard) {
       baseX = (this.page?.props as PageProps).rule.baseX;
       baseY = (this.page?.props as PageProps).rule.baseY;
