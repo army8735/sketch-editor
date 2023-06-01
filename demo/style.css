@@ -464,6 +464,7 @@ canvas {
 }
 
 .text .line {
+  position: relative;
   display: flex;
   margin-bottom: 3px;
 }
@@ -473,10 +474,30 @@ canvas {
   height: 24px;
 }
 
+.text .family2 {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  width: 230px;
+  height: 20px;
+  background: #FFF;
+  line-height: 20px;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.text .family-n {
+  color: #f33 !important;
+  text-shadow: 0 0 2px rgba(80, 40, 0, 30%);
+}
+
 .text .style {
   margin-right:10px;
   width: 190px;
   height: 24px;
+  font-size: 12px;
 }
 
 .text .color {

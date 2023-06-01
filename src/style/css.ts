@@ -746,6 +746,7 @@ export default {
   equalStyle,
   color2rgbaInt,
   color2rgbaStr,
+  color2hexStr,
   color2gl,
   calFontFamily,
   calNormalLineHeight,

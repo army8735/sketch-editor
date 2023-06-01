@@ -195,13 +195,23 @@ class Text extends Node {
                 inject.loadFont(family, item.url, (cache: any) => {
                   item.loaded = true;
                   // 加载成功后再次判断是否是这个字体，防止多次连续变更，rich中可能会很多重复，用异步刷新
-                  if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                  if (
+                    cache.success &&
+                    rich &&
+                    rich[i] &&
+                    rich[i].fontFamily.toLowerCase() === family
+                  ) {
                     if (this.asyncRefresh) {
                       return;
                     }
                     this.asyncRefresh = true;
                     inject.requestAnimationFrame(() => {
-                      if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                      if (
+                        cache.success &&
+                        rich &&
+                        rich[i] &&
+                        rich[i].fontFamily.toLowerCase() === family
+                      ) {
                         this.asyncRefresh = false;
                         this.refresh(RefreshLevel.REFLOW);
                       }
@@ -226,7 +236,11 @@ class Text extends Node {
               inject.loadFont(family, item.url, (cache: any) => {
                 item.loaded = true;
                 // 加载成功后再次判断是否是这个字体，防止多次连续变更
-                if (cache.success && (!rich || !rich?.length) && computedStyle.fontFamily.toLowerCase() === family) {
+                if (
+                  cache.success &&
+                  (!rich || !rich?.length) &&
+                  computedStyle.fontFamily.toLowerCase() === family
+                ) {
                   this.refresh(RefreshLevel.REFLOW);
                 }
               });
@@ -660,8 +674,7 @@ class Text extends Node {
    */
   private beforeEdit() {
     const { style, computedStyle } = this;
-    const { left, top, translateX, translateY } =
-      style;
+    const { left, top, translateX, translateY } = style;
     const isLeft =
       // width.u === StyleUnit.AUTO &&
       left.u === StyleUnit.PERCENT;
@@ -754,6 +767,8 @@ class Text extends Node {
           cursor.startString = index - textBox.index;
           const ctx = inject.getFontCanvas().ctx;
           ctx.font = textBox.font;
+          // @ts-ignore
+          ctx.letterSpacing = textBox.letterSpacing;
           const str = textBox.str;
           const w = ctx.measureText(str.slice(0, cursor.startString)).width;
           this.lastCursorX = textBox.x + w;
@@ -769,6 +784,22 @@ class Text extends Node {
         }
       }
     }
+  }
+
+  // 获取光标当前坐标，无视multi，只取开头
+  getCursorAbsCoord() {
+    const lineBoxList = this.lineBoxList;
+    const cursor = this.cursor;
+    const lineBox = lineBoxList[cursor.startLineBox];
+    if (!lineBox) {
+      return;
+    }
+    const textBox = lineBox.list[cursor.startTextBox];
+    if (!textBox) {
+      return;
+    }
+    const m = this.matrixWorld;
+    return calPoint({ x: this.lastCursorX, y: textBox.y }, m);
   }
 
   // 上下左右按键移动光标，上下保持当前x，左右则更新
@@ -801,13 +832,13 @@ class Text extends Node {
           list = lineBox.list;
           // 防止上一行是空行
           if (!list.length) {
-            cursor.startTextBox = j = 0;
+            cursor.startTextBox = 0;
+            cursor.startString = 0;
           } else {
             cursor.startTextBox = j = list.length - 1;
-            // 本行如果是空行，上一行到末尾处，否则往前一个字符
-            const isEmpty = !textBox;
+            // 看是否是enter，决定是否到末尾
             textBox = list[j];
-            cursor.startString = textBox.str.length - (isEmpty ? 0 : 1);
+            cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
           }
         }
         // 非行开头到上个textBox末尾
@@ -861,11 +892,23 @@ class Text extends Node {
       if (pos === this._content.length) {
         return;
       }
-      // 本行空行，或者已经到行末尾（只有在enter换行的情况下才会进入）
-      if (!textBox || (j === list.length - 1 && k === textBox.str.length)) {
+      // 本行空行，或者已经到行末尾且是enter换行
+      if (
+        !textBox ||
+        (j === list.length - 1 && k === textBox.str.length && lineBox.endEnter)
+      ) {
         cursor.startLineBox = ++i;
         cursor.startTextBox = 0;
         cursor.startString = 0;
+        lineBox = lineBoxList[i];
+        list = lineBox.list;
+        textBox = list[0];
+      }
+      // 已经到行末尾，自动换行用鼠标也能点到末尾，下行一定有内容不可能是enter
+      else if (j === list.length - 1 && k === textBox.str.length) {
+        cursor.startLineBox = ++i;
+        cursor.startTextBox = 0;
+        cursor.startString = 1;
         lineBox = lineBoxList[i];
         list = lineBox.list;
         textBox = list[0];
@@ -945,6 +988,8 @@ class Text extends Node {
     if (textBox) {
       const ctx = inject.getFontCanvas().ctx;
       ctx.font = textBox.font;
+      // @ts-ignore
+      ctx.letterSpacing = textBox.letterSpacing;
       const str = textBox.str;
       const w = ctx.measureText(str.slice(0, cursor.startString)).width;
       this.lastCursorX = textBox.x + w;
@@ -1069,15 +1114,24 @@ class Text extends Node {
     let hasChange = false;
     if (rich) {
       rich.forEach((item) => {
-        if (style.hasOwnProperty('fontFamily') && style.fontFamily !== item.fontFamily) {
+        if (
+          style.hasOwnProperty('fontFamily') &&
+          style.fontFamily !== item.fontFamily
+        ) {
           item.fontFamily = style.fontFamily;
           hasChange = true;
         }
-        if (style.hasOwnProperty('fontWeight') && style.fontWeight !== item.fontWeight) {
+        if (
+          style.hasOwnProperty('fontWeight') &&
+          style.fontWeight !== item.fontWeight
+        ) {
           item.fontWeight = style.fontWeight;
           hasChange = true;
         }
-        if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
+        if (
+          style.hasOwnProperty('fontSize') &&
+          style.fontSize !== item.fontSize
+        ) {
           item.fontSize = style.fontSize;
           hasChange = true;
         }
@@ -1085,15 +1139,24 @@ class Text extends Node {
           item.color = style.color;
           hasChange = true;
         }
-        if (style.hasOwnProperty('letterSpacing') && style.letterSpacing !== item.letterSpacing) {
+        if (
+          style.hasOwnProperty('letterSpacing') &&
+          style.letterSpacing !== item.letterSpacing
+        ) {
           item.letterSpacing = style.letterSpacing;
           hasChange = true;
         }
-        if (style.hasOwnProperty('lineHeight') && style.lineHeight !== item.lineHeight) {
+        if (
+          style.hasOwnProperty('lineHeight') &&
+          style.lineHeight !== item.lineHeight
+        ) {
           item.lineHeight = style.lineHeight;
           hasChange = true;
         }
-        if (style.hasOwnProperty('paragraphSpacing') && style.paragraphSpacing !== item.paragraphSpacing) {
+        if (
+          style.hasOwnProperty('paragraphSpacing') &&
+          style.paragraphSpacing !== item.paragraphSpacing
+        ) {
           item.paragraphSpacing = style.paragraphSpacing;
           hasChange = true;
         }

@@ -16,9 +16,10 @@ const $rotate = $side.querySelector('#rotate');
 const $w = $side.querySelector('#w');
 const $h = $side.querySelector('#h');
 const $text = $side.querySelector('#text');
-const $family = $text.querySelector('#text');
-const $style = $text.querySelector('#text');
-const $color = $text.querySelector('#text');
+const $family = $text.querySelector('#family');
+const $family2 = $text.querySelector('#family2');
+const $style = $text.querySelector('#style');
+const $color = $text.querySelector('#color');
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -549,6 +550,7 @@ function showSelect(node) {
   selectTree = li;
   selectTree.classList.add('select');
   if (node instanceof editor.node.Text) {
+    setFontPanel(node);
     $text.classList.add('show');
   }
 }
@@ -571,6 +573,9 @@ function updateSelect() {
     $selection.style.width = (rect.right - rect.left) / dpi + 'px';
     $selection.style.height = (rect.bottom - rect.top) / dpi + 'px';
     $selection.style.transform = 'none';
+    if (isEditText) {
+      updateEditText();
+    }
   }
 }
 
@@ -831,6 +836,15 @@ function showEditText(x, y, h) {
   style.height = h + 'px';
   style.display = 'block';
   $inputText.focus();
+}
+
+function updateEditText() {
+  if (isEditText) {
+    const { x, y } = selectNode.getCursorAbsCoord();
+    const style = $inputContainer.style;
+    style.left = x / dpi + 'px';
+    style.top = y / dpi + 'px';
+  }
 }
 
 function hideEditText() {
@@ -1137,4 +1151,46 @@ function hideBasic() {
   $rotate.value = '';
   $w.value = '';
   $h.value = '';
+}
+
+function setFontPanel(node) {
+  const { info, data } = editor.style.font;
+  let s = '';
+  for (let i in info) {
+    if (info.hasOwnProperty(i)) {
+      const item = info[i];
+      const list = item.list || [];
+      if (list.length) {
+        s += `<option value="${i}">${item.name}</option>`;
+      }
+    }
+  }
+  const { fontFamily, color } = node.computedStyle;
+  const ff = fontFamily.toLowerCase();
+  if (!data.hasOwnProperty(ff)) {
+    s = `<option value="${ff}">${ff}</option>` + s;
+  }
+  $family.innerHTML = s;
+  if (!data.hasOwnProperty(ff)) {
+    $family.value = ff;
+    $family2.innerHTML = ff;
+    $family2.classList.add('family-n');
+    $style.innerHTML = '<option>Regular</option>';
+    $style.disabled = true;
+  }
+  else {
+    $family.value = data[ff].family.toLowerCase();
+    $family2.innerHTML = data[ff].name;
+    $family2.classList.remove('family-n');
+    const list = data[ff].list;
+    let s = '';
+    for (let i = 0, len = list.length; i < len; i++) {
+      const item = list[i];
+      s += `<option value="${item.postscriptName}">${item.style}</option>`;
+    }
+    $style.innerHTML = s;
+    $style.value = ff;
+    $style.disabled = false;
+  }
+  $color.value = editor.style.css.color2hexStr(color);
 }

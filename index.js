@@ -15423,10 +15423,16 @@
     function offscreenCanvas(width, height, key, contextAttributes) {
         let o;
         if (!key) {
-            o = !config$1.debug && config$1.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+            o =
+                !config$1.debug && config$1.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS
+                    ? new OffscreenCanvas(width, height)
+                    : document.createElement('canvas');
         }
         else if (!CANVAS[key]) {
-            o = CANVAS[key] = !config$1.debug && config$1.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+            o = CANVAS[key] =
+                !config$1.debug && config$1.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS
+                    ? new OffscreenCanvas(width, height)
+                    : document.createElement('canvas');
         }
         else {
             o = CANVAS[key];
@@ -15564,10 +15570,10 @@
             let data = context.getImageData(0, 0, 16, 16).data;
             for (let i = 0, len = data.length; i < len; i++) {
                 if (defaultFontFamilyData[i] !== data[i]) {
-                    return SUPPORT_FONT[ff] = true;
+                    return (SUPPORT_FONT[ff] = true);
                 }
             }
-            return SUPPORT_FONT[ff] = false;
+            return (SUPPORT_FONT[ff] = false);
         },
         FONT,
         loadFont(fontFamily, url, cb) {
@@ -15595,17 +15601,18 @@
             }
             else if (!url || !isString(url)) {
                 inject.error('Load font invalid: ' + url);
-                cb && cb({
-                    state: LOADED,
-                    success: false,
-                    url,
-                });
+                cb &&
+                    cb({
+                        state: LOADED,
+                        success: false,
+                        url,
+                    });
                 return;
             }
-            let cache = FONT[url] = FONT[url] || {
+            let cache = (FONT[url] = FONT[url] || {
                 state: INIT,
                 task: [],
-            };
+            });
             if (cache.state === LOADED) {
                 cb && cb(cache);
             }
@@ -15644,7 +15651,8 @@
                     }
                     function success(ab) {
                         let f = new FontFace(fontFamily, ab);
-                        f.load().then(function () {
+                        f.load()
+                            .then(function () {
                             if (typeof document !== 'undefined') {
                                 document.fonts.add(f);
                             }
@@ -15654,7 +15662,8 @@
                             cache.arrayBuffer = ab;
                             let list = cache.task.splice(0);
                             list.forEach((cb) => cb(cache));
-                        }).catch(error);
+                        })
+                            .catch(error);
                         fontCount++;
                         if (fontQueue.length) {
                             let o = fontQueue.shift();
@@ -15708,17 +15717,18 @@
             }
             else if (!url || !isString(url)) {
                 inject.error('Measure img invalid: ' + url);
-                cb && cb({
-                    state: LOADED,
-                    success: false,
-                    url,
-                });
+                cb &&
+                    cb({
+                        state: LOADED,
+                        success: false,
+                        url,
+                    });
                 return;
             }
-            let cache = IMG[url] = IMG[url] || {
+            let cache = (IMG[url] = IMG[url] || {
                 state: INIT,
                 task: [],
-            };
+            });
             if (cache.state === LOADED) {
                 cb && cb(cache);
             }
@@ -15767,7 +15777,8 @@
                     if (url.substr(0, 5) !== 'data:') {
                         let host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
                         if (host) {
-                            if (typeof location === 'undefined' || location.hostname !== host[1]) {
+                            if (typeof location === 'undefined' ||
+                                location.hostname !== host[1]) {
                                 img.crossOrigin = 'anonymous';
                             }
                         }
@@ -18535,6 +18546,7 @@
         equalStyle,
         color2rgbaInt,
         color2rgbaStr,
+        color2hexStr,
         color2gl,
         calFontFamily,
         calNormalLineHeight,
@@ -28746,13 +28758,19 @@
                                     inject.loadFont(family, item.url, (cache) => {
                                         item.loaded = true;
                                         // 加载成功后再次判断是否是这个字体，防止多次连续变更，rich中可能会很多重复，用异步刷新
-                                        if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                                        if (cache.success &&
+                                            rich &&
+                                            rich[i] &&
+                                            rich[i].fontFamily.toLowerCase() === family) {
                                             if (this.asyncRefresh) {
                                                 return;
                                             }
                                             this.asyncRefresh = true;
                                             inject.requestAnimationFrame(() => {
-                                                if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                                                if (cache.success &&
+                                                    rich &&
+                                                    rich[i] &&
+                                                    rich[i].fontFamily.toLowerCase() === family) {
                                                     this.asyncRefresh = false;
                                                     this.refresh(RefreshLevel.REFLOW);
                                                 }
@@ -28778,7 +28796,9 @@
                                 inject.loadFont(family, item.url, (cache) => {
                                     item.loaded = true;
                                     // 加载成功后再次判断是否是这个字体，防止多次连续变更
-                                    if (cache.success && (!rich || !(rich === null || rich === void 0 ? void 0 : rich.length)) && computedStyle.fontFamily.toLowerCase() === family) {
+                                    if (cache.success &&
+                                        (!rich || !(rich === null || rich === void 0 ? void 0 : rich.length)) &&
+                                        computedStyle.fontFamily.toLowerCase() === family) {
                                         this.refresh(RefreshLevel.REFLOW);
                                     }
                                 });
@@ -29222,6 +29242,8 @@
                         cursor.startString = index - textBox.index;
                         const ctx = inject.getFontCanvas().ctx;
                         ctx.font = textBox.font;
+                        // @ts-ignore
+                        ctx.letterSpacing = textBox.letterSpacing;
                         const str = textBox.str;
                         const w = ctx.measureText(str.slice(0, cursor.startString)).width;
                         this.lastCursorX = textBox.x + w;
@@ -29232,6 +29254,21 @@
                     }
                 }
             }
+        }
+        // 获取光标当前坐标，无视multi，只取开头
+        getCursorAbsCoord() {
+            const lineBoxList = this.lineBoxList;
+            const cursor = this.cursor;
+            const lineBox = lineBoxList[cursor.startLineBox];
+            if (!lineBox) {
+                return;
+            }
+            const textBox = lineBox.list[cursor.startTextBox];
+            if (!textBox) {
+                return;
+            }
+            const m = this.matrixWorld;
+            return calPoint({ x: this.lastCursorX, y: textBox.y }, m);
         }
         // 上下左右按键移动光标，上下保持当前x，左右则更新
         moveCursor(code) {
@@ -29264,14 +29301,14 @@
                         list = lineBox.list;
                         // 防止上一行是空行
                         if (!list.length) {
-                            cursor.startTextBox = j = 0;
+                            cursor.startTextBox = 0;
+                            cursor.startString = 0;
                         }
                         else {
                             cursor.startTextBox = j = list.length - 1;
-                            // 本行如果是空行，上一行到末尾处，否则往前一个字符
-                            const isEmpty = !textBox;
+                            // 看是否是enter，决定是否到末尾
                             textBox = list[j];
-                            cursor.startString = textBox.str.length - (isEmpty ? 0 : 1);
+                            cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
                         }
                     }
                     // 非行开头到上个textBox末尾
@@ -29320,11 +29357,21 @@
                 if (pos === this._content.length) {
                     return;
                 }
-                // 本行空行，或者已经到行末尾（只有在enter换行的情况下才会进入）
-                if (!textBox || (j === list.length - 1 && k === textBox.str.length)) {
+                // 本行空行，或者已经到行末尾且是enter换行
+                if (!textBox ||
+                    (j === list.length - 1 && k === textBox.str.length && lineBox.endEnter)) {
                     cursor.startLineBox = ++i;
                     cursor.startTextBox = 0;
                     cursor.startString = 0;
+                    lineBox = lineBoxList[i];
+                    list = lineBox.list;
+                    textBox = list[0];
+                }
+                // 已经到行末尾，自动换行用鼠标也能点到末尾，下行一定有内容不可能是enter
+                else if (j === list.length - 1 && k === textBox.str.length) {
+                    cursor.startLineBox = ++i;
+                    cursor.startTextBox = 0;
+                    cursor.startString = 1;
                     lineBox = lineBoxList[i];
                     list = lineBox.list;
                     textBox = list[0];
@@ -29400,6 +29447,8 @@
             if (textBox) {
                 const ctx = inject.getFontCanvas().ctx;
                 ctx.font = textBox.font;
+                // @ts-ignore
+                ctx.letterSpacing = textBox.letterSpacing;
                 const str = textBox.str;
                 const w = ctx.measureText(str.slice(0, cursor.startString)).width;
                 this.lastCursorX = textBox.x + w;
@@ -29526,15 +29575,18 @@
             let hasChange = false;
             if (rich) {
                 rich.forEach((item) => {
-                    if (style.hasOwnProperty('fontFamily') && style.fontFamily !== item.fontFamily) {
+                    if (style.hasOwnProperty('fontFamily') &&
+                        style.fontFamily !== item.fontFamily) {
                         item.fontFamily = style.fontFamily;
                         hasChange = true;
                     }
-                    if (style.hasOwnProperty('fontWeight') && style.fontWeight !== item.fontWeight) {
+                    if (style.hasOwnProperty('fontWeight') &&
+                        style.fontWeight !== item.fontWeight) {
                         item.fontWeight = style.fontWeight;
                         hasChange = true;
                     }
-                    if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
+                    if (style.hasOwnProperty('fontSize') &&
+                        style.fontSize !== item.fontSize) {
                         item.fontSize = style.fontSize;
                         hasChange = true;
                     }
@@ -29542,15 +29594,18 @@
                         item.color = style.color;
                         hasChange = true;
                     }
-                    if (style.hasOwnProperty('letterSpacing') && style.letterSpacing !== item.letterSpacing) {
+                    if (style.hasOwnProperty('letterSpacing') &&
+                        style.letterSpacing !== item.letterSpacing) {
                         item.letterSpacing = style.letterSpacing;
                         hasChange = true;
                     }
-                    if (style.hasOwnProperty('lineHeight') && style.lineHeight !== item.lineHeight) {
+                    if (style.hasOwnProperty('lineHeight') &&
+                        style.lineHeight !== item.lineHeight) {
                         item.lineHeight = style.lineHeight;
                         hasChange = true;
                     }
-                    if (style.hasOwnProperty('paragraphSpacing') && style.paragraphSpacing !== item.paragraphSpacing) {
+                    if (style.hasOwnProperty('paragraphSpacing') &&
+                        style.paragraphSpacing !== item.paragraphSpacing) {
                         item.paragraphSpacing = style.paragraphSpacing;
                         hasChange = true;
                     }
