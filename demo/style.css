@@ -454,6 +454,35 @@ canvas {
   transform-origin: 0 center;
 }
 
+.text {
+  display: none;
+  margin-top:10px;
+}
+
+.text.show {
+  display: block;
+}
+
+.text .line {
+  display: flex;
+  margin-bottom: 3px;
+}
+
+.text .family {
+  width: 260px;
+  height: 24px;
+}
+
+.text .style {
+  margin-right:10px;
+  width: 190px;
+  height: 24px;
+}
+
+.text .color {
+  height: 24px;
+}
+
 @keyframes blink {
   0% {
     visibility: visible;

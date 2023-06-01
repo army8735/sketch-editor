@@ -169,7 +169,7 @@ const inject = {
     return SUPPORT_FONT[ff] = false;
   },
   FONT,
-  loadFont(fontFamily: string, url?: string | ((cache:any) => void), cb?: (cache:any) => void) {
+  loadFont(fontFamily: string, url?: string | ((cache:any) => void), cb?: (cache: any) => void) {
     if(isFunction(url)) {
       // @ts-ignore
       cb = url;
@@ -251,8 +251,9 @@ const inject = {
             cache.state = LOADED;
             cache.success = true;
             cache.url = url;
+            cache.arrayBuffer = ab;
             let list = cache.task.splice(0);
-            list.forEach((cb: (cache:any, ab: ArrayBuffer) => void) => cb(cache, ab));
+            list.forEach((cb: (cache:any) => void) => cb(cache));
           }).catch(error);
           fontCount++;
           if(fontQueue.length) {

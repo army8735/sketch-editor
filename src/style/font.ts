@@ -13,11 +13,17 @@ const KEY_INFO = 'LOCAL_FONTS_INFO'; // 解析过的存本地缓存，解析时�
 export type fontData = {
   family: string; // 保持大小写
   name: string; // 优先中文
-  styles: string[]; // 保持大小写
-  postscriptNames: string[]; // 全部小写
   lhr: number;
   blr: number;
   lgr: number;
+  list: [
+    {
+      style: string;
+      postscriptName: string;
+      loaded: boolean;
+      url?: string;
+    }
+  ];
 };
 
 const o: any = {
@@ -39,22 +45,23 @@ const o: any = {
         const font = fonts[k];
         const postscriptName = font.postscriptName.toLowerCase();
         const family = font.family;
-        const family2 = family.toLowerCase();
+        const familyL = family.toLowerCase();
         const style = font.style;
         // localStorage存的是this.info
-        if (cacheInfo.hasOwnProperty(family2)) {
-          const o: any = cacheInfo[family2];
-          this.info[family2] = this.info[family2] || {
+        if (cacheInfo.hasOwnProperty(familyL)) {
+          const o: any = cacheInfo[familyL];
+          this.info[familyL] = this.info[familyL] || {
             name: o.name,
             family: family, // 保持大小写
             lhr: o.lhr,
             blr: o.blr,
             lgr: o.lgr,
+            list: [],
           };
         }
         // 没有cache则用opentype读取
-        if (!this.info.hasOwnProperty(family2)) {
-          const o: any = (this.info[family2] = this.data[family2] = {});
+        if (!this.info.hasOwnProperty(familyL)) {
+          const o: any = (this.info[familyL] = this.data[familyL] = {});
           const blob = await font.blob();
           const arrayBuffer = await blob.arrayBuffer();
           const f: any = opentype.parse(arrayBuffer);
@@ -63,16 +70,16 @@ const o: any = {
           }
           o.name = o.name || family; // 中文名字
           o.family = family;
-          const r = this._cal(family2, f);
+          const r = this._cal(familyL, f);
           Object.assign(o, r);
-          cacheInfo[family2] = {
+          cacheInfo[familyL] = {
             name: o.name,
             lhr: r.lhr,
             blr: r.blr,
             lgr: r.lgr,
           };
         }
-        this._register(family2, style, postscriptName);
+        this._register(familyL, style, postscriptName, true);
       }
     }
     localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
@@ -98,14 +105,14 @@ const o: any = {
       const r = this._cal(family, f);
       Object.assign(o, r);
     }
-    return this._register(family, style, postscriptName);
+    return this._register(family, style, postscriptName, true);
   },
   _cal(family: string, f: any) {
     let spread = 0;
     // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
     // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
     // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
-    if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
+    if (['times', 'helvetica', 'courier'].indexOf(family.toLowerCase()) > -1) {
       spread = Math.round((f.ascent + f.descent) * 0.15);
     }
     const lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
@@ -117,26 +124,35 @@ const o: any = {
       lgr,
     };
   },
-  _register(family: string, style: string, postscriptName: string) {
-    const f = family.toLowerCase();
-    const p = postscriptName.toLowerCase();
-    const o = this.info[f];
-    o.styles = o.styles || [];
-    if (o.styles.indexOf(style) === -1) {
-      o.styles.push(style);
+  _register(family: string, style: string, postscriptName: string, loaded: boolean, url?: string) {
+    const familyL = family.toLowerCase();
+    const psL = postscriptName.toLowerCase();
+    const o = this.info[familyL];
+    const list = o.list = o.list || [];
+    let has = false;
+    for (let i = 0, len = list.length; i < len; i++) {
+      if (list[i].postscriptName === psL) {
+        has = true;
+        break;
+      }
     }
-    o.postscriptNames = o.postscriptNames || [];
-    if (o.postscriptNames.indexOf(p) === -1) {
-      o.postscriptNames.push(p);
+    if (!has) {
+      list.push({
+        style,
+        postscriptName: psL,
+        loaded,
+        url,
+      });
     }
-    return this.data[f] = this.data[p] = o; // 同个字体族不同postscriptName指向一个引用
+    return this.data[familyL] = this.data[psL] = o; // 同个字体族不同postscriptName指向一个引用
   },
   registerData(data: fontData) {
-    this.data[data.family] = this.info[data.family] = data;
-    data.postscriptNames.forEach((item, i) => {
-      const k = item.toLowerCase();
-      data.postscriptNames[i] = k;
-      this.data[k] = data;
+    const familyL = data.family.toLowerCase();
+    if (!this.info.hasOwnProperty(familyL)) {
+      this.info[familyL] = data;
+    }
+    data.list.forEach((item) => {
+      this._register(familyL, item.style, item.postscriptName, item.loaded, item.url);
     });
   },
 };

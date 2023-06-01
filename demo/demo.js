@@ -15,6 +15,10 @@ const $y = $side.querySelector('#y');
 const $rotate = $side.querySelector('#rotate');
 const $w = $side.querySelector('#w');
 const $h = $side.querySelector('#h');
+const $text = $side.querySelector('#text');
+const $family = $text.querySelector('#text');
+const $style = $text.querySelector('#text');
+const $color = $text.querySelector('#text');
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -46,7 +50,7 @@ async function initFonts() {
       return;
     }
     const fonts = await window.queryLocalFonts();
-    editor.style.font.registerLocalFonts(fonts);
+    // editor.style.font.registerLocalFonts(fonts);
   } catch(err) {
     console.error(err.message);
   }
@@ -54,37 +58,155 @@ async function initFonts() {
 
 initFonts();
 
-[
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/uG6lQ6mO0XIAAAAAAAAAABAADnV5AQBr/AlibabaSans-LightItalic.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/nhktTqHzS_cAAAAAAAAAABAADnV5AQBr/AlibabaSans-Italic.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/aQutTLOY8_0AAAAAAAAAABAADnV5AQBr/AlibabaSans-HeavyItalic.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/iDvGRKYxpFMAAAAAAAAAABAADnV5AQBr/AlibabaSans-BoldItalic.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/03abTJZ_ELkAAAAAAAAAABAADnV5AQBr/AlibabaSans-MediumItalic.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/4XI7Tq31Q2MAAAAAAAAAABAADnV5AQBr/AlibabaSans-Bold.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/XQaWS7V598AAAAAAAAAAABAADnV5AQBr/AlibabaSans-Medium.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/5tY6T4gfeAAAAAAAAAAAABAADnV5AQBr/AlibabaSans-Heavy.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/yX9fSK8Vy1wAAAAAAAAAABAADnV5AQBr/AlibabaSans-Light.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/6cr-Ra-6W88AAAAAAAAAABAADnV5AQBr/AlibabaSans-Black.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/QgUFR5-393IAAAAAAAAAABAADnV5AQBr/AlibabaSans-Regular.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/AF6oQZbHeJIAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-35-Thin.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/_qOARr4eO6oAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-45-Light.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/I6y8QKLB2n8AAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-75-SemiBold.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/w19VS7_VQ2UAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-65-Medium.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/dNLASYAWQW8AAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-115-Black.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/MnqHQqrD0YgAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-95-ExtraBold.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/CY_aTqLT-vMAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-55-Regular.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/1UNUTqtQsyAAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-85-Bold.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/rg89T7ajrsYAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-105-Heavy.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/XW9NRY1ChxcAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Medium.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/NM6KQYE2VBwAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Heavy.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/sBaWS5Vr5D0AAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Regular.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/-UceTp6AhxQAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Light.ttf',
-  'https://mass-office.alipay.com/huamei_koqzbu/afts/file/9ZVPTLIO54MAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Bold.ttf',
-].forEach(url => {
-  // editor.util.inject.loadFont(url, url, (cache, ab) => {
-  //   editor.style.font.registerAb(ab);
-  // });
-});
+const defaultFont = {
+  "alibaba sans": {
+  "family": "Alibaba Sans",
+    "name": "Alibaba Sans",
+    "blr": 1.189,
+    "lgr": 0,
+    "lhr": 1.551,
+    "list": [
+    {
+      "style": "Light",
+      "postscriptName": "alibabasans-light",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/yX9fSK8Vy1wAAAAAAAAAABAADnV5AQBr/AlibabaSans-Light.ttf"
+    },
+    {
+      "style": "Regular",
+      "postscriptName": "alibabasans-regular",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/QgUFR5-393IAAAAAAAAAABAADnV5AQBr/AlibabaSans-Regular.ttf"
+    },
+    {
+      "style": "Medium",
+      "postscriptName": "alibabasans-medium",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/XQaWS7V598AAAAAAAAAAABAADnV5AQBr/AlibabaSans-Medium.ttf"
+    },
+    {
+      "style": "Bold",
+      "postscriptName": "alibabasans-bold",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/4XI7Tq31Q2MAAAAAAAAAABAADnV5AQBr/AlibabaSans-Bold.ttf"
+    },
+    {
+      "style": "Heavy",
+      "postscriptName": "alibabasans-heavy",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/5tY6T4gfeAAAAAAAAAAAABAADnV5AQBr/AlibabaSans-Heavy.ttf"
+    },
+    {
+      "style": "Black",
+      "postscriptName": "alibabasans-black",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/6cr-Ra-6W88AAAAAAAAAABAADnV5AQBr/AlibabaSans-Black.ttf"
+    },
+    {
+      "style": "Light Italic",
+      "postscriptName": "alibabasans-lightitalic",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/uG6lQ6mO0XIAAAAAAAAAABAADnV5AQBr/AlibabaSans-LightItalic.ttf"
+    },
+    {
+      "style": "Italic",
+      "postscriptName": "alibabasans-italic",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/nhktTqHzS_cAAAAAAAAAABAADnV5AQBr/AlibabaSans-Italic.ttf"
+    },
+    {
+      "style": "Medium Italic",
+      "postscriptName": "alibabasans-mediumitalic",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/03abTJZ_ELkAAAAAAAAAABAADnV5AQBr/AlibabaSans-MediumItalic.ttf"
+    },
+    {
+      "style": "Bold Italic",
+      "postscriptName": "alibabasans-bolditalic",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/iDvGRKYxpFMAAAAAAAAAABAADnV5AQBr/AlibabaSans-BoldItalic.ttf"
+    }
+  ]
+},
+  "alibaba puhuiti": {
+  "family": "Alibaba PuHuiTi",
+    "name": "阿里巴巴普惠体",
+    "blr": 1.05,
+    "lgr": 0,
+    "lhr": 1.372,
+    "list": [
+    {
+      "style": "Light",
+      "postscriptName": "alibabapuhuiti-light",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/-UceTp6AhxQAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Light.ttf"
+    },
+    {
+      "style": "Regular",
+      "postscriptName": "alibabapuhuiti-regular",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/sBaWS5Vr5D0AAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Regular.ttf"
+    },
+    {
+      "style": "Medium",
+      "postscriptName": "alibabapuhuiti-medium",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/XW9NRY1ChxcAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Medium.ttf"
+    },
+    {
+      "style": "Bold",
+      "postscriptName": "alibabapuhuiti-bold",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/9ZVPTLIO54MAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Bold.ttf"
+    },
+    {
+      "style": "Heavy",
+      "postscriptName": "alibabapuhuiti-heavy",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/NM6KQYE2VBwAAAAAAAAAABAADnV5AQBr/Alibaba-PuHuiTi-Heavy.ttf"
+    }
+  ]
+},
+  "alibaba puhuiti 2.0": {
+  "family": "Alibaba PuHuiTi 2.0",
+    "name": "阿里巴巴普惠体 2.0",
+    "blr": 1.06,
+    "lgr": 0,
+    "lhr": 1.4,
+    "list": [
+    {
+      "style": "35 Thin",
+      "postscriptName": "alibabapuhuiti_2_35_thin",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/AF6oQZbHeJIAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-35-Thin.ttf"
+    },
+    {
+      "style": "45 Light",
+      "postscriptName": "alibabapuhuiti_2_45_light",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/_qOARr4eO6oAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-45-Light.ttf"
+    },
+    {
+      "style": "65 Medium",
+      "postscriptName": "alibabapuhuiti_2_65_medium",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/w19VS7_VQ2UAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-65-Medium.ttf"
+    },
+    {
+      "style": "75 Semibold",
+      "postscriptName": "alibabapuhuiti_2_75_semibold",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/I6y8QKLB2n8AAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-75-SemiBold.ttf"
+    },
+    {
+      "style": "85 Bold",
+      "postscriptName": "alibabapuhuiti_2_85_bold",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/1UNUTqtQsyAAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-85-Bold.ttf"
+    },
+    {
+      "style": "95 Extrabold",
+      "postscriptName": "alibabapuhuiti_2_95_extrabold",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/MnqHQqrD0YgAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-95-ExtraBold.ttf"
+    },
+    {
+      "style": "105 Heavy",
+      "postscriptName": "alibabapuhuiti_2_105_heavy",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/rg89T7ajrsYAAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-105-Heavy.ttf"
+    },
+    {
+      "style": "115 Black",
+      "postscriptName": "alibabapuhuiti_2_115_black",
+      "url": "https://mass-office.alipay.com/huamei_koqzbu/afts/file/dNLASYAWQW8AAAAAAAAAABAADnV5AQBr/AlibabaPuHuiTi-2-115-Black.ttf"
+    }
+  ]
+}
+}
+for (let k in defaultFont) {
+  if (defaultFont.hasOwnProperty(k)) {
+    editor.style.font.registerData(defaultFont[k]);
+  }
+}
 
 $input.onchange = function(e) {
   const file = $input.files[0];
@@ -426,6 +548,9 @@ function showSelect(node) {
   li.scrollIntoView();
   selectTree = li;
   selectTree.classList.add('select');
+  if (node instanceof editor.node.Text) {
+    $text.classList.add('show');
+  }
 }
 
 function hideSelect() {
@@ -434,6 +559,7 @@ function hideSelect() {
     selectTree.classList.remove('select');
     selectNode = null;
     selectTree = null;
+    $text.classList.remove('show');
   }
 }
 

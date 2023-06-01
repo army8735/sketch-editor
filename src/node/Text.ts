@@ -5,6 +5,7 @@ import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
 import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
+import font from '../style/font';
 import Event from '../util/Event';
 import inject from '../util/inject';
 import { LayoutData } from './layout';
@@ -50,7 +51,7 @@ function measure(
       content.slice(start, start + hypotheticalNum),
     ).width;
     if (letterSpacing) {
-      mw += hypotheticalNum * letterSpacing;
+      // mw += hypotheticalNum * letterSpacing;
     }
     if (mw === w) {
       rw = w;
@@ -105,7 +106,7 @@ function measure(
       hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
       rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
       if (letterSpacing) {
-        rw += hypotheticalNum * letterSpacing;
+        // rw += hypotheticalNum * letterSpacing;
       }
       newLine = false;
       hasEnter = true;
@@ -136,6 +137,8 @@ class Text extends Node {
   lastCursorX: number; // 上一次手动指定的光标x相对坐标，上下移动时保持定位
   cursor: Cursor; // 光标信息
   showSelectArea: boolean;
+  asyncRefresh: boolean;
+
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
@@ -153,6 +156,7 @@ class Text extends Node {
       endString: 0,
     };
     this.showSelectArea = false;
+    this.asyncRefresh = false;
   }
 
   override lay(data: LayoutData) {
@@ -180,6 +184,56 @@ class Text extends Node {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
         SET_FONT_INDEX[item.location] = i;
+        const family = item.fontFamily.toLowerCase();
+        const data = font.data[family];
+        if (data) {
+          const list = data.list || [];
+          for (let j = 0, len = list.length; j < len; j++) {
+            const item = list[j];
+            if (item.postscriptName === family) {
+              if (!item.loaded && item.url) {
+                inject.loadFont(family, item.url, (cache: any) => {
+                  item.loaded = true;
+                  // 加载成功后再次判断是否是这个字体，防止多次连续变更，rich中可能会很多重复，用异步刷新
+                  if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                    if (this.asyncRefresh) {
+                      return;
+                    }
+                    this.asyncRefresh = true;
+                    inject.requestAnimationFrame(() => {
+                      if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                        this.asyncRefresh = false;
+                        this.refresh(RefreshLevel.REFLOW);
+                      }
+                    });
+                  }
+                });
+              }
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      const family = computedStyle.fontFamily.toLowerCase();
+      const data = font.data[family];
+      if (data) {
+        const list = data.list || [];
+        for (let i = 0, len = list.length; i < len; i++) {
+          const item = list[i];
+          if (item.postscriptName === family) {
+            if (!item.loaded && item.url) {
+              inject.loadFont(family, item.url, (cache: any) => {
+                item.loaded = true;
+                // 加载成功后再次判断是否是这个字体，防止多次连续变更
+                if (cache.success && (!rich || !rich?.length) && computedStyle.fontFamily.toLowerCase() === family) {
+                  this.refresh(RefreshLevel.REFLOW);
+                }
+              });
+            }
+            break;
+          }
+        }
       }
     }
     const ctx = inject.getFontCanvas().ctx;
@@ -192,6 +246,8 @@ class Text extends Node {
       lineHeight = first.lineHeight;
       baseline = getBaseline(first);
       ctx.font = setFontStyle(first);
+      // @ts-ignore
+      ctx.letterSpacing = letterSpacing + 'px';
     }
     // 无富文本则通用
     else {
@@ -201,6 +257,8 @@ class Text extends Node {
       lineHeight = computedStyle.lineHeight;
       baseline = getBaseline(computedStyle);
       ctx.font = setFontStyle(computedStyle);
+      // @ts-ignore
+      ctx.letterSpacing = letterSpacing + 'px';
     }
     let lineBox = new LineBox(y, lineHeight, i, false);
     lineBoxList.splice(0);
@@ -223,6 +281,8 @@ class Text extends Node {
         lineHeight = cur.lineHeight;
         baseline = getBaseline(cur);
         ctx.font = setFontStyle(cur);
+        // @ts-ignore
+        ctx.letterSpacing = letterSpacing + 'px';
       }
       // \n，行开头会遇到，需跳过
       if (content.charAt(i) === '\n') {
@@ -233,21 +293,6 @@ class Text extends Node {
         lineBox.endEnter = true;
         lineBox = new LineBox(y, lineHeight, i, true);
         lineBoxList.push(lineBox);
-        // const textBox = new TextBox(
-        //   x,
-        //   y,
-        //   0,
-        //   lineHeight,
-        //   baseline,
-        //   i,
-        //   '\n',
-        //   ctx.font,
-        // );
-        // lineBox.add(textBox);
-        // 最后一个\n特殊判断
-        // if (i === length) {
-        //   lineBoxList.push(lineBox);
-        // }
         continue;
       }
       // 富文本需限制最大length，非富普通情况无需
@@ -287,10 +332,12 @@ class Text extends Node {
         i,
         content.slice(i, i + num),
         ctx.font,
+        // @ts-ignore
+        ctx.letterSpacing,
       );
       lineBox.add(textBox);
       i += num;
-      maxW = Math.max(maxW, rw);
+      maxW = Math.max(maxW, rw + x);
       // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
       if (newLine) {
         x = 0;
@@ -382,12 +429,20 @@ class Text extends Node {
         let textBox = list[cursor.startTextBox];
         let x1 = textBox.x * scale;
         ctx.font = textBox.font;
-        x1 += ctx.measureText(textBox.str.slice(0, cursor.startString)).width * scale;
+        x1 +=
+          ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
+          scale;
         textBox = list[cursor.endTextBox];
         let x2 = textBox.x * scale;
         ctx.font = textBox.font;
-        x2 += ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
-        ctx.fillRect(x1, lineBox.y * scale, x2 - x1, lineBox.lineHeight * scale);
+        x2 +=
+          ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
+        ctx.fillRect(
+          x1,
+          lineBox.y * scale,
+          x2 - x1,
+          lineBox.lineHeight * scale,
+        );
       } else {
         // 先首行
         let lineBox = lineBoxList[cursor.startLineBox];
@@ -396,13 +451,29 @@ class Text extends Node {
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
-          x1 += ctx.measureText(textBox.str.slice(0, cursor.startString)).width * scale;
-          ctx.fillRect(x1, lineBox.y * scale, lineBox.w * scale - x1, lineBox.lineHeight * scale);
+          x1 +=
+            ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
+            scale;
+          ctx.fillRect(
+            x1,
+            lineBox.y * scale,
+            lineBox.w * scale - x1,
+            lineBox.lineHeight * scale,
+          );
         }
         // 中间循环
-        for (let i = cursor.startLineBox + 1, len = cursor.endLineBox; i < len; i++) {
+        for (
+          let i = cursor.startLineBox + 1, len = cursor.endLineBox;
+          i < len;
+          i++
+        ) {
           const lineBox = lineBoxList[i];
-          ctx.fillRect(0, lineBox.y * scale, lineBox.w * scale, lineBox.lineHeight * scale);
+          ctx.fillRect(
+            0,
+            lineBox.y * scale,
+            lineBox.w * scale,
+            lineBox.lineHeight * scale,
+          );
         }
         // 最后尾行
         lineBox = lineBoxList[cursor.endLineBox];
@@ -411,7 +482,9 @@ class Text extends Node {
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
-          x1 += ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
+          x1 +=
+            ctx.measureText(textBox.str.slice(0, cursor.endString)).width *
+            scale;
           ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
         }
       }
@@ -453,8 +526,15 @@ class Text extends Node {
             /([\d.e+-]+)px/gi,
             ($0, $1) => $1 * scale + 'px',
           );
+          // @ts-ignore
+          ctx.letterSpacing = textBox.letterSpacing.replace(
+            /([\d.e+-]+)px/gi,
+            ($0, $1) => $1 * scale + 'px',
+          );
         } else {
           ctx.font = textBox.font;
+          // @ts-ignore
+          ctx.letterSpacing = textBox.letterSpacing;
         }
         ctx.fillStyle = color;
         ctx.fillText(
@@ -521,9 +601,20 @@ class Text extends Node {
         cursor.endLineBox = i;
         this.getCursorByLocalX(local.x, lineBox, true);
         // 变化需要更新渲染
-        if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
+        if (
+          cursor.endLineBox !== i ||
+          cursor.endTextBox !== j ||
+          cursor.endString !== k
+        ) {
           this.showSelectArea = true;
-          this.root?.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+          this.root?.addUpdate(
+            this,
+            [],
+            RefreshLevel.REPAINT,
+            false,
+            false,
+            undefined,
+          );
         }
         return;
       }
@@ -533,26 +624,48 @@ class Text extends Node {
     cursor.endLineBox = len - 1;
     this.getCursorByLocalX(this.width, lineBox, true);
     // 变化需要更新渲染
-    if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
+    if (
+      cursor.endLineBox !== i ||
+      cursor.endTextBox !== j ||
+      cursor.endString !== k
+    ) {
       this.showSelectArea = true;
-      this.root?.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+      this.root?.addUpdate(
+        this,
+        [],
+        RefreshLevel.REPAINT,
+        false,
+        false,
+        undefined,
+      );
     }
   }
 
   hideSelectArea() {
     this.showSelectArea = false;
-    this.root?.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+    this.root?.addUpdate(
+      this,
+      [],
+      RefreshLevel.REPAINT,
+      false,
+      false,
+      undefined,
+    );
   }
 
-  // 改变前防止中心对齐导致位移
+  /**
+   * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），
+   * 但是文本是个特殊存在，可以改变是否固定尺寸的模式，因此只考虑left百分比，
+   * 文本不会有left+right百分比，只会有left+right像素
+   */
   private beforeEdit() {
     const { style, computedStyle } = this;
-    const { left, top, right, bottom, width, height, translateX, translateY } =
+    const { left, top, translateX, translateY } =
       style;
     const isLeft =
-      width.u === StyleUnit.AUTO &&
-      left.u === StyleUnit.PERCENT &&
-      right.u === StyleUnit.AUTO;
+      // width.u === StyleUnit.AUTO &&
+      left.u === StyleUnit.PERCENT;
+    // right.u === StyleUnit.AUTO;
     if (isLeft) {
       const { left: left2, width: width2 } = computedStyle;
       left.v = left2 - width2 * 0.5;
@@ -561,9 +674,9 @@ class Text extends Node {
       translateX.u = StyleUnit.PX;
     }
     const isTop =
-      height.u === StyleUnit.AUTO &&
-      top.u === StyleUnit.PERCENT &&
-      bottom.u === StyleUnit.AUTO;
+      // height.u === StyleUnit.AUTO &&
+      top.u === StyleUnit.PERCENT;
+    // bottom.u === StyleUnit.AUTO;
     if (isTop) {
       const { top: top2, height: height2 } = computedStyle;
       top.v = top2 - height2 * 0.5;
@@ -576,6 +689,9 @@ class Text extends Node {
 
   // 改变后如果是中心对齐还原
   private afterEdit(isLeft: boolean, isTop: boolean) {
+    if (!isLeft && !isTop) {
+      return;
+    }
     const { style, computedStyle } = this;
     const { left, top, translateX, translateY } = style;
     if (isLeft) {
@@ -666,7 +782,7 @@ class Text extends Node {
     let lineBox = lineBoxList[i];
     let list = lineBox.list;
     let textBox = list[j];
-    const pos = textBox ? (textBox.index + k) : (lineBox.index + k); // 空行时k就是0
+    const pos = textBox ? textBox.index + k : lineBox.index + k; // 空行时k就是0
     // 左
     if (code === 37) {
       if (cursor.isMulti) {
@@ -872,7 +988,7 @@ class Text extends Node {
     const lineBox = lineBoxList[i];
     const list = lineBox.list;
     const textBox = list[j];
-    const index = textBox ? (textBox.index + k) : (lineBox.index + k);
+    const index = textBox ? textBox.index + k : lineBox.index + k;
     this.content = c.slice(0, index - 1) + c.slice(index);
     this.afterEdit(isLeft, isTop);
     this.updateCursorByIndex(index - 1);
@@ -894,7 +1010,7 @@ class Text extends Node {
     outer: for (let i = 0, len = list.length; i < len; i++) {
       const { x, w, str, font } = list[i];
       // x位于哪个textBox上，或者是最后一个
-      if (localX >= x && localX <= x + w || i === len - 1) {
+      if ((localX >= x && localX <= x + w) || i === len - 1) {
         if (isEnd) {
           cursor.endTextBox = i;
         } else {
@@ -947,21 +1063,48 @@ class Text extends Node {
     return { x: rx, y: ry, h: rh };
   }
 
-  updateTextStyle(
-    style: any,
-    start: number,
-    end: number,
-    cb?: (sync: boolean) => void,
-  ) {
-    const content = this._content;
+  updateTextStyle(style: any, cb?: (sync: boolean) => void) {
+    const { isLeft, isTop } = this.beforeEdit();
     const rich = this.rich;
-    if (start === 0 && end === content.length) {
-      if (rich) {
-        rich.splice(1);
-        Object.assign(rich[0], style);
-      }
-      this.updateStyle(style, cb);
+    let hasChange = false;
+    if (rich) {
+      rich.forEach((item) => {
+        if (style.hasOwnProperty('fontFamily') && style.fontFamily !== item.fontFamily) {
+          item.fontFamily = style.fontFamily;
+          hasChange = true;
+        }
+        if (style.hasOwnProperty('fontWeight') && style.fontWeight !== item.fontWeight) {
+          item.fontWeight = style.fontWeight;
+          hasChange = true;
+        }
+        if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
+          item.fontSize = style.fontSize;
+          hasChange = true;
+        }
+        if (style.hasOwnProperty('color') && style.color !== item.color) {
+          item.color = style.color;
+          hasChange = true;
+        }
+        if (style.hasOwnProperty('letterSpacing') && style.letterSpacing !== item.letterSpacing) {
+          item.letterSpacing = style.letterSpacing;
+          hasChange = true;
+        }
+        if (style.hasOwnProperty('lineHeight') && style.lineHeight !== item.lineHeight) {
+          item.lineHeight = style.lineHeight;
+          hasChange = true;
+        }
+        if (style.hasOwnProperty('paragraphSpacing') && style.paragraphSpacing !== item.paragraphSpacing) {
+          item.paragraphSpacing = style.paragraphSpacing;
+          hasChange = true;
+        }
+      });
     }
+    // 防止rich变更但整体没有变更结果不刷新
+    const keys = this.updateStyle(style, cb);
+    if (hasChange && !keys.length) {
+      this.refresh(RefreshLevel.REFLOW);
+    }
+    this.afterEdit(isLeft, isTop);
   }
 
   get content() {

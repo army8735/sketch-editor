@@ -15651,8 +15651,9 @@
                             cache.state = LOADED;
                             cache.success = true;
                             cache.url = url;
+                            cache.arrayBuffer = ab;
                             let list = cache.task.splice(0);
-                            list.forEach((cb) => cb(cache, ab));
+                            list.forEach((cb) => cb(cache));
                         }).catch(error);
                         fontCount++;
                         if (fontQueue.length) {
@@ -17236,22 +17237,23 @@
                         const font = fonts[k];
                         const postscriptName = font.postscriptName.toLowerCase();
                         const family = font.family;
-                        const family2 = family.toLowerCase();
+                        const familyL = family.toLowerCase();
                         const style = font.style;
                         // localStorage存的是this.info
-                        if (cacheInfo.hasOwnProperty(family2)) {
-                            const o = cacheInfo[family2];
-                            this.info[family2] = this.info[family2] || {
+                        if (cacheInfo.hasOwnProperty(familyL)) {
+                            const o = cacheInfo[familyL];
+                            this.info[familyL] = this.info[familyL] || {
                                 name: o.name,
                                 family: family,
                                 lhr: o.lhr,
                                 blr: o.blr,
                                 lgr: o.lgr,
+                                list: [],
                             };
                         }
                         // 没有cache则用opentype读取
-                        if (!this.info.hasOwnProperty(family2)) {
-                            const o = (this.info[family2] = this.data[family2] = {});
+                        if (!this.info.hasOwnProperty(familyL)) {
+                            const o = (this.info[familyL] = this.data[familyL] = {});
                             const blob = yield font.blob();
                             const arrayBuffer = yield blob.arrayBuffer();
                             const f = opentype.parse(arrayBuffer);
@@ -17260,16 +17262,16 @@
                             }
                             o.name = o.name || family; // 中文名字
                             o.family = family;
-                            const r = this._cal(family2, f);
+                            const r = this._cal(familyL, f);
                             Object.assign(o, r);
-                            cacheInfo[family2] = {
+                            cacheInfo[familyL] = {
                                 name: o.name,
                                 lhr: r.lhr,
                                 blr: r.blr,
                                 lgr: r.lgr,
                             };
                         }
-                        this._register(family2, style, postscriptName);
+                        this._register(familyL, style, postscriptName, true);
                     }
                 }
                 localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
@@ -17297,14 +17299,14 @@
                 const r = this._cal(family, f);
                 Object.assign(o, r);
             }
-            return this._register(family, style, postscriptName);
+            return this._register(family, style, postscriptName, true);
         },
         _cal(family, f) {
             let spread = 0;
             // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
             // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
             // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
-            if (['times', 'helvetica', 'courier'].indexOf(family) > -1) {
+            if (['times', 'helvetica', 'courier'].indexOf(family.toLowerCase()) > -1) {
                 spread = Math.round((f.ascent + f.descent) * 0.15);
             }
             const lhr = (f.ascent + spread + f.descent + f.lineGap) / f.emSquare;
@@ -17316,26 +17318,35 @@
                 lgr,
             };
         },
-        _register(family, style, postscriptName) {
-            const f = family.toLowerCase();
-            const p = postscriptName.toLowerCase();
-            const o = this.info[f];
-            o.styles = o.styles || [];
-            if (o.styles.indexOf(style) === -1) {
-                o.styles.push(style);
+        _register(family, style, postscriptName, loaded, url) {
+            const familyL = family.toLowerCase();
+            const psL = postscriptName.toLowerCase();
+            const o = this.info[familyL];
+            const list = o.list = o.list || [];
+            let has = false;
+            for (let i = 0, len = list.length; i < len; i++) {
+                if (list[i].postscriptName === psL) {
+                    has = true;
+                    break;
+                }
             }
-            o.postscriptNames = o.postscriptNames || [];
-            if (o.postscriptNames.indexOf(p) === -1) {
-                o.postscriptNames.push(p);
+            if (!has) {
+                list.push({
+                    style,
+                    postscriptName: psL,
+                    loaded,
+                    url,
+                });
             }
-            return this.data[f] = this.data[p] = o; // 同个字体族不同postscriptName指向一个引用
+            return this.data[familyL] = this.data[psL] = o; // 同个字体族不同postscriptName指向一个引用
         },
         registerData(data) {
-            this.data[data.family] = this.info[data.family] = data;
-            data.postscriptNames.forEach((item, i) => {
-                const k = item.toLowerCase();
-                data.postscriptNames[i] = k;
-                this.data[k] = data;
+            const familyL = data.family.toLowerCase();
+            if (!this.info.hasOwnProperty(familyL)) {
+                this.info[familyL] = data;
+            }
+            data.list.forEach((item) => {
+                this._register(familyL, item.style, item.postscriptName, item.loaded, item.url);
             });
         },
     };
@@ -18961,7 +18972,7 @@
                     height = 'auto';
                 }
                 else if (textBehaviour === FileFormat.TextBehaviour.Fixed) {
-                    // 可能width是auto（left+right），也可能是left+width
+                    // 可能width是auto（left+right），也可能是left+width，或者right固定+width
                     if (top !== 'auto' && bottom !== 'auto') {
                         bottom = 'auto';
                     }
@@ -25301,7 +25312,6 @@
                         ctx.fillStyle = rg;
                     }
                     else if (f.t === GRADIENT.CONIC) {
-                        console.log(f);
                         const gd = getConic(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                         gd.stop.forEach((item) => {
@@ -28583,7 +28593,7 @@
     }
 
     class TextBox {
-        constructor(x, y, w, lineHeight, baseline, index, str, font) {
+        constructor(x, y, w, lineHeight, baseline, index, str, font, letterSpacing) {
             this.x = x;
             this.y = y;
             this.w = w;
@@ -28592,6 +28602,7 @@
             this.index = index;
             this.str = str;
             this.font = font;
+            this.letterSpacing = letterSpacing;
         }
     }
 
@@ -28619,9 +28630,6 @@
         // 类似2分的一个循环
         while (i < j) {
             let mw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
-            if (letterSpacing) {
-                mw += hypotheticalNum * letterSpacing;
-            }
             if (mw === w) {
                 rw = w;
                 newLine = true;
@@ -28674,9 +28682,6 @@
             if (content.charAt(i) === '\n') {
                 hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
                 rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
-                if (letterSpacing) {
-                    rw += hypotheticalNum * letterSpacing;
-                }
                 newLine = false;
                 hasEnter = true;
                 break;
@@ -28706,6 +28711,7 @@
                 endString: 0,
             };
             this.showSelectArea = false;
+            this.asyncRefresh = false;
         }
         lay(data) {
             super.lay(data);
@@ -28729,6 +28735,57 @@
                 for (let i = 0, len = rich.length; i < len; i++) {
                     const item = rich[i];
                     SET_FONT_INDEX[item.location] = i;
+                    const family = item.fontFamily.toLowerCase();
+                    const data = o.data[family];
+                    if (data) {
+                        const list = data.list || [];
+                        for (let j = 0, len = list.length; j < len; j++) {
+                            const item = list[j];
+                            if (item.postscriptName === family) {
+                                if (!item.loaded && item.url) {
+                                    inject.loadFont(family, item.url, (cache) => {
+                                        item.loaded = true;
+                                        // 加载成功后再次判断是否是这个字体，防止多次连续变更，rich中可能会很多重复，用异步刷新
+                                        if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                                            if (this.asyncRefresh) {
+                                                return;
+                                            }
+                                            this.asyncRefresh = true;
+                                            inject.requestAnimationFrame(() => {
+                                                if (cache.success && rich && rich[i] && rich[i].fontFamily.toLowerCase() === family) {
+                                                    this.asyncRefresh = false;
+                                                    this.refresh(RefreshLevel.REFLOW);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                const family = computedStyle.fontFamily.toLowerCase();
+                const data = o.data[family];
+                if (data) {
+                    const list = data.list || [];
+                    for (let i = 0, len = list.length; i < len; i++) {
+                        const item = list[i];
+                        if (item.postscriptName === family) {
+                            if (!item.loaded && item.url) {
+                                inject.loadFont(family, item.url, (cache) => {
+                                    item.loaded = true;
+                                    // 加载成功后再次判断是否是这个字体，防止多次连续变更
+                                    if (cache.success && (!rich || !(rich === null || rich === void 0 ? void 0 : rich.length)) && computedStyle.fontFamily.toLowerCase() === family) {
+                                        this.refresh(RefreshLevel.REFLOW);
+                                    }
+                                });
+                            }
+                            break;
+                        }
+                    }
                 }
             }
             const ctx = inject.getFontCanvas().ctx;
@@ -28741,6 +28798,8 @@
                 lineHeight = first.lineHeight;
                 baseline = getBaseline(first);
                 ctx.font = setFontStyle(first);
+                // @ts-ignore
+                ctx.letterSpacing = letterSpacing + 'px';
             }
             // 无富文本则通用
             else {
@@ -28750,6 +28809,8 @@
                 lineHeight = computedStyle.lineHeight;
                 baseline = getBaseline(computedStyle);
                 ctx.font = setFontStyle(computedStyle);
+                // @ts-ignore
+                ctx.letterSpacing = letterSpacing + 'px';
             }
             let lineBox = new LineBox(y, lineHeight, i, false);
             lineBoxList.splice(0);
@@ -28772,6 +28833,8 @@
                     lineHeight = cur.lineHeight;
                     baseline = getBaseline(cur);
                     ctx.font = setFontStyle(cur);
+                    // @ts-ignore
+                    ctx.letterSpacing = letterSpacing + 'px';
                 }
                 // \n，行开头会遇到，需跳过
                 if (content.charAt(i) === '\n') {
@@ -28782,21 +28845,6 @@
                     lineBox.endEnter = true;
                     lineBox = new LineBox(y, lineHeight, i, true);
                     lineBoxList.push(lineBox);
-                    // const textBox = new TextBox(
-                    //   x,
-                    //   y,
-                    //   0,
-                    //   lineHeight,
-                    //   baseline,
-                    //   i,
-                    //   '\n',
-                    //   ctx.font,
-                    // );
-                    // lineBox.add(textBox);
-                    // 最后一个\n特殊判断
-                    // if (i === length) {
-                    //   lineBoxList.push(lineBox);
-                    // }
                     continue;
                 }
                 // 富文本需限制最大length，非富普通情况无需
@@ -28822,11 +28870,13 @@
                     continue;
                 }
                 // 预估法获取测量结果
-                const { hypotheticalNum: num, rw, newLine, } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
-                const textBox = new TextBox(x, y, rw, lineHeight, baseline, i, content.slice(i, i + num), ctx.font);
+                const { hypotheticalNum: num, rw, newLine, } = measure(ctx, i, len, content, W - x, perW);
+                const textBox = new TextBox(x, y, rw, lineHeight, baseline, i, content.slice(i, i + num), ctx.font, 
+                // @ts-ignore
+                ctx.letterSpacing);
                 lineBox.add(textBox);
                 i += num;
-                maxW = Math.max(maxW, rw);
+                maxW = Math.max(maxW, rw + x);
                 // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
                 if (newLine) {
                     x = 0;
@@ -28907,11 +28957,14 @@
                     let textBox = list[cursor.startTextBox];
                     let x1 = textBox.x * scale;
                     ctx.font = textBox.font;
-                    x1 += ctx.measureText(textBox.str.slice(0, cursor.startString)).width * scale;
+                    x1 +=
+                        ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
+                            scale;
                     textBox = list[cursor.endTextBox];
                     let x2 = textBox.x * scale;
                     ctx.font = textBox.font;
-                    x2 += ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
+                    x2 +=
+                        ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
                     ctx.fillRect(x1, lineBox.y * scale, x2 - x1, lineBox.lineHeight * scale);
                 }
                 else {
@@ -28922,7 +28975,9 @@
                     if (textBox) {
                         let x1 = textBox.x * scale;
                         ctx.font = textBox.font;
-                        x1 += ctx.measureText(textBox.str.slice(0, cursor.startString)).width * scale;
+                        x1 +=
+                            ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
+                                scale;
                         ctx.fillRect(x1, lineBox.y * scale, lineBox.w * scale - x1, lineBox.lineHeight * scale);
                     }
                     // 中间循环
@@ -28937,7 +28992,9 @@
                     if (textBox) {
                         let x1 = textBox.x * scale;
                         ctx.font = textBox.font;
-                        x1 += ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
+                        x1 +=
+                            ctx.measureText(textBox.str.slice(0, cursor.endString)).width *
+                                scale;
                         ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
                     }
                 }
@@ -28975,9 +29032,13 @@
                     // 缩放影响字号
                     if (scale !== 1) {
                         ctx.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                        // @ts-ignore
+                        ctx.letterSpacing = textBox.letterSpacing.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
                     }
                     else {
                         ctx.font = textBox.font;
+                        // @ts-ignore
+                        ctx.letterSpacing = textBox.letterSpacing;
                     }
                     ctx.fillStyle = color;
                     ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
@@ -29039,7 +29100,9 @@
                     cursor.endLineBox = i;
                     this.getCursorByLocalX(local.x, lineBox, true);
                     // 变化需要更新渲染
-                    if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
+                    if (cursor.endLineBox !== i ||
+                        cursor.endTextBox !== j ||
+                        cursor.endString !== k) {
                         this.showSelectArea = true;
                         (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
                     }
@@ -29051,7 +29114,9 @@
             cursor.endLineBox = len - 1;
             this.getCursorByLocalX(this.width, lineBox, true);
             // 变化需要更新渲染
-            if (cursor.endLineBox !== i || cursor.endTextBox !== j || cursor.endString !== k) {
+            if (cursor.endLineBox !== i ||
+                cursor.endTextBox !== j ||
+                cursor.endString !== k) {
                 this.showSelectArea = true;
                 (_b = this.root) === null || _b === void 0 ? void 0 : _b.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
             }
@@ -29061,13 +29126,18 @@
             this.showSelectArea = false;
             (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
         }
-        // 改变前防止中心对齐导致位移
+        /**
+         * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），
+         * 但是文本是个特殊存在，可以改变是否固定尺寸的模式，因此只考虑left百分比，
+         * 文本不会有left+right百分比，只会有left+right像素
+         */
         beforeEdit() {
             const { style, computedStyle } = this;
-            const { left, top, right, bottom, width, height, translateX, translateY } = style;
-            const isLeft = width.u === StyleUnit.AUTO &&
-                left.u === StyleUnit.PERCENT &&
-                right.u === StyleUnit.AUTO;
+            const { left, top, translateX, translateY } = style;
+            const isLeft = 
+            // width.u === StyleUnit.AUTO &&
+            left.u === StyleUnit.PERCENT;
+            // right.u === StyleUnit.AUTO;
             if (isLeft) {
                 const { left: left2, width: width2 } = computedStyle;
                 left.v = left2 - width2 * 0.5;
@@ -29075,9 +29145,10 @@
                 translateX.v = 0;
                 translateX.u = StyleUnit.PX;
             }
-            const isTop = height.u === StyleUnit.AUTO &&
-                top.u === StyleUnit.PERCENT &&
-                bottom.u === StyleUnit.AUTO;
+            const isTop = 
+            // height.u === StyleUnit.AUTO &&
+            top.u === StyleUnit.PERCENT;
+            // bottom.u === StyleUnit.AUTO;
             if (isTop) {
                 const { top: top2, height: height2 } = computedStyle;
                 top.v = top2 - height2 * 0.5;
@@ -29089,6 +29160,9 @@
         }
         // 改变后如果是中心对齐还原
         afterEdit(isLeft, isTop) {
+            if (!isLeft && !isTop) {
+                return;
+            }
             const { style, computedStyle } = this;
             const { left, top, translateX, translateY } = style;
             if (isLeft) {
@@ -29171,7 +29245,7 @@
             let lineBox = lineBoxList[i];
             let list = lineBox.list;
             let textBox = list[j];
-            const pos = textBox ? (textBox.index + k) : (lineBox.index + k); // 空行时k就是0
+            const pos = textBox ? textBox.index + k : lineBox.index + k; // 空行时k就是0
             // 左
             if (code === 37) {
                 if (cursor.isMulti) {
@@ -29368,7 +29442,7 @@
             const lineBox = lineBoxList[i];
             const list = lineBox.list;
             const textBox = list[j];
-            const index = textBox ? (textBox.index + k) : (lineBox.index + k);
+            const index = textBox ? textBox.index + k : lineBox.index + k;
             this.content = c.slice(0, index - 1) + c.slice(index);
             this.afterEdit(isLeft, isTop);
             this.updateCursorByIndex(index - 1);
@@ -29388,7 +29462,7 @@
             outer: for (let i = 0, len = list.length; i < len; i++) {
                 const { x, w, str, font } = list[i];
                 // x位于哪个textBox上，或者是最后一个
-                if (localX >= x && localX <= x + w || i === len - 1) {
+                if ((localX >= x && localX <= x + w) || i === len - 1) {
                     if (isEnd) {
                         cursor.endTextBox = i;
                     }
@@ -29446,16 +29520,48 @@
             }
             return { x: rx, y: ry, h: rh };
         }
-        updateTextStyle(style, start, end, cb) {
-            const content = this._content;
+        updateTextStyle(style, cb) {
+            const { isLeft, isTop } = this.beforeEdit();
             const rich = this.rich;
-            if (start === 0 && end === content.length) {
-                if (rich) {
-                    rich.splice(1);
-                    Object.assign(rich[0], style);
-                }
-                this.updateStyle(style, cb);
+            let hasChange = false;
+            if (rich) {
+                rich.forEach((item) => {
+                    if (style.hasOwnProperty('fontFamily') && style.fontFamily !== item.fontFamily) {
+                        item.fontFamily = style.fontFamily;
+                        hasChange = true;
+                    }
+                    if (style.hasOwnProperty('fontWeight') && style.fontWeight !== item.fontWeight) {
+                        item.fontWeight = style.fontWeight;
+                        hasChange = true;
+                    }
+                    if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
+                        item.fontSize = style.fontSize;
+                        hasChange = true;
+                    }
+                    if (style.hasOwnProperty('color') && style.color !== item.color) {
+                        item.color = style.color;
+                        hasChange = true;
+                    }
+                    if (style.hasOwnProperty('letterSpacing') && style.letterSpacing !== item.letterSpacing) {
+                        item.letterSpacing = style.letterSpacing;
+                        hasChange = true;
+                    }
+                    if (style.hasOwnProperty('lineHeight') && style.lineHeight !== item.lineHeight) {
+                        item.lineHeight = style.lineHeight;
+                        hasChange = true;
+                    }
+                    if (style.hasOwnProperty('paragraphSpacing') && style.paragraphSpacing !== item.paragraphSpacing) {
+                        item.paragraphSpacing = style.paragraphSpacing;
+                        hasChange = true;
+                    }
+                });
             }
+            // 防止rich变更但整体没有变更结果不刷新
+            const keys = this.updateStyle(style, cb);
+            if (hasChange && !keys.length) {
+                this.refresh(RefreshLevel.REFLOW);
+            }
+            this.afterEdit(isLeft, isTop);
         }
         get content() {
             return this._content;

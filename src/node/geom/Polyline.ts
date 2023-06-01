@@ -9,7 +9,8 @@ import { RefreshLevel } from '../../refresh/level';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
-  CURVE_MODE, FILL_RULE,
+  CURVE_MODE,
+  FILL_RULE,
   GRADIENT,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -24,7 +25,6 @@ function isCornerPoint(point: Point) {
 }
 
 class Polyline extends Geom {
-
   constructor(props: PolylineProps) {
     super(props);
     this.isPolyline = true;
@@ -368,7 +368,7 @@ class Polyline extends Geom {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = rg;
-        } else if (f.t === GRADIENT.CONIC) { console.log(f);
+        } else if (f.t === GRADIENT.CONIC) {
           const gd = getConic(
             f.stops,
             f.d,
@@ -519,16 +519,25 @@ class Polyline extends Geom {
     }
     const m = res.matrix;
     points.forEach((item) => {
-      const p = calPoint({ x: item.absX! - res.baseX, y: item.absY! - res.baseY }, m);
+      const p = calPoint(
+        { x: item.absX! - res.baseX, y: item.absY! - res.baseY },
+        m,
+      );
       item.dspX = p.x;
       item.dspY = p.y;
       if (item.hasCurveFrom) {
-        const p = calPoint({ x: item.absFx! - res.baseX, y: item.absFy! - res.baseY }, m);
+        const p = calPoint(
+          { x: item.absFx! - res.baseX, y: item.absFy! - res.baseY },
+          m,
+        );
         item.dspFx = p.x;
         item.dspFy = p.y;
       }
       if (item.hasCurveTo) {
-        const p = calPoint({ x: item.absTx! - res.baseX, y: item.absTy! - res.baseY }, m);
+        const p = calPoint(
+          { x: item.absTx! - res.baseX, y: item.absTy! - res.baseY },
+          m,
+        );
         item.dspTx = p.x;
         item.dspTy = p.y;
       }
@@ -546,7 +555,8 @@ class Polyline extends Geom {
     const { width, height } = this;
     // 逆向还原矩阵和归一化点坐标
     const i = inverse4(matrix);
-    let baseX = 0, baseY = 0;
+    let baseX = 0,
+      baseY = 0;
     if (!this.artBoard) {
       baseX = (this.page?.props as PageProps).rule.baseX;
       baseY = (this.page?.props as PageProps).rule.baseY;
@@ -561,14 +571,20 @@ class Polyline extends Geom {
       point.x = p.x / width;
       point.y = p.y / height;
       if (point.hasCurveFrom) {
-        const p = calPoint({ x: point.dspFx! + baseX, y: point.dspFy! + baseY }, i);
+        const p = calPoint(
+          { x: point.dspFx! + baseX, y: point.dspFy! + baseY },
+          i,
+        );
         point.absFx = p.x;
         point.absFy = p.y;
         point.fx = p.x / width;
         point.fy = p.y / height;
       }
       if (point.hasCurveTo) {
-        const p = calPoint({ x: point.dspTx! + baseX, y: point.dspTy! + baseY }, i);
+        const p = calPoint(
+          { x: point.dspTx! + baseX, y: point.dspTy! + baseY },
+          i,
+        );
         point.absTx = p.x;
         point.absTy = p.y;
         point.tx = p.x / width;

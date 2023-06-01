@@ -470,7 +470,7 @@ async function convertItem(
       width = 'auto';
       height = 'auto';
     } else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
-      // 可能width是auto（left+right），也可能是left+width
+      // 可能width是auto（left+right），也可能是left+width，或者right固定+width
       if (top !== 'auto' && bottom !== 'auto') {
         bottom = 'auto';
       }
@@ -478,7 +478,7 @@ async function convertItem(
     } else if (
       textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight
     ) {
-      // 啥也不干，等同普通节点
+      // 啥也不干，等同普通节点的固定宽高
     }
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
