@@ -451,6 +451,7 @@ class Text extends Node {
         ctx.font = textBox.font;
         x2 +=
           ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
+        // 反向api自动支持了
         ctx.fillRect(
           x1,
           lineBox.y * scale,
@@ -458,15 +459,20 @@ class Text extends Node {
           lineBox.lineHeight * scale,
         );
       } else {
+        // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
+        let { startLineBox, startTextBox, startString, endLineBox, endTextBox, endString} = cursor;
+        if (startLineBox > endLineBox) {
+          [startLineBox, startTextBox, startString, endLineBox, endTextBox, endString] = [endLineBox, endTextBox, endString, startLineBox, startTextBox, startString]
+        }
         // 先首行
-        let lineBox = lineBoxList[cursor.startLineBox];
+        let lineBox = lineBoxList[startLineBox];
         let list = lineBox.list;
-        let textBox = list[cursor.startTextBox];
+        let textBox = list[startTextBox];
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
           x1 +=
-            ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
+            ctx.measureText(textBox.str.slice(0, startString)).width *
             scale;
           ctx.fillRect(
             x1,
@@ -477,7 +483,7 @@ class Text extends Node {
         }
         // 中间循环
         for (
-          let i = cursor.startLineBox + 1, len = cursor.endLineBox;
+          let i = startLineBox + 1, len = endLineBox;
           i < len;
           i++
         ) {
@@ -490,14 +496,14 @@ class Text extends Node {
           );
         }
         // 最后尾行
-        lineBox = lineBoxList[cursor.endLineBox];
+        lineBox = lineBoxList[endLineBox];
         list = lineBox.list;
-        textBox = list[cursor.endTextBox];
+        textBox = list[endTextBox];
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
           x1 +=
-            ctx.measureText(textBox.str.slice(0, cursor.endString)).width *
+            ctx.measureText(textBox.str.slice(0, endString)).width *
             scale;
           ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
         }
