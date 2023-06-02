@@ -642,22 +642,23 @@ function toHex(n: number) {
 }
 
 export function color2hexStr(color: string | Array<number>): string {
-  if (Array.isArray(color)) {
-    if (color.length === 3 || color.length === 4) {
-      color[0] = Math.floor(Math.max(color[0], 0));
-      color[1] = Math.floor(Math.max(color[1], 0));
-      color[2] = Math.floor(Math.max(color[2], 0));
-      if (color.length === 4 && color[3] < 1) {
-        color[3] = Math.max(color[3], 0);
+  const c = color2rgbaInt(color);
+  if (Array.isArray(c)) {
+    if (c.length === 3 || c.length === 4) {
+      c[0] = Math.floor(Math.max(c[0], 0));
+      c[1] = Math.floor(Math.max(c[1], 0));
+      c[2] = Math.floor(Math.max(c[2], 0));
+      if (c.length === 4 && c[3] < 1) {
+        c[3] = Math.max(c[3], 0);
         return (
           '#' +
-          toHex(color[0]) +
-          toHex(color[1]) +
-          toHex(color[2]) +
-          toHex(Math.floor(color[3] * 255))
+          toHex(c[0]) +
+          toHex(c[1]) +
+          toHex(c[2]) +
+          toHex(Math.floor(c[3] * 255))
         );
       }
-      return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
+      return '#' + toHex(c[0]) + toHex(c[1]) + toHex(c[2]);
     }
   }
   return (color as string) || '#000';

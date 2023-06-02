@@ -1579,18 +1579,18 @@
     	return destroy_1;
     }
 
-    var node$1;
+    var node$2;
     var hasRequiredNode;
 
     function requireNode () {
-    	if (hasRequiredNode) return node$1;
+    	if (hasRequiredNode) return node$2;
     	hasRequiredNode = 1;
     	/**
     	 * For Node.js, simply re-export the core `util.deprecate` function.
     	 */
 
-    	node$1 = require$$1__default["default"].deprecate;
-    	return node$1;
+    	node$2 = require$$1__default["default"].deprecate;
+    	return node$2;
     }
 
     var _stream_writable;
@@ -18455,20 +18455,21 @@
         return r;
     }
     function color2hexStr(color) {
-        if (Array.isArray(color)) {
-            if (color.length === 3 || color.length === 4) {
-                color[0] = Math.floor(Math.max(color[0], 0));
-                color[1] = Math.floor(Math.max(color[1], 0));
-                color[2] = Math.floor(Math.max(color[2], 0));
-                if (color.length === 4 && color[3] < 1) {
-                    color[3] = Math.max(color[3], 0);
+        const c = color2rgbaInt(color);
+        if (Array.isArray(c)) {
+            if (c.length === 3 || c.length === 4) {
+                c[0] = Math.floor(Math.max(c[0], 0));
+                c[1] = Math.floor(Math.max(c[1], 0));
+                c[2] = Math.floor(Math.max(c[2], 0));
+                if (c.length === 4 && c[3] < 1) {
+                    c[3] = Math.max(c[3], 0);
                     return ('#' +
-                        toHex(color[0]) +
-                        toHex(color[1]) +
-                        toHex(color[2]) +
-                        toHex(Math.floor(color[3] * 255)));
+                        toHex(c[0]) +
+                        toHex(c[1]) +
+                        toHex(c[2]) +
+                        toHex(Math.floor(c[3] * 255)));
                 }
-                return '#' + toHex(color[0]) + toHex(color[1]) + toHex(color[2]);
+                return '#' + toHex(c[0]) + toHex(c[1]) + toHex(c[2]);
             }
         }
         return color || '#000';
@@ -27724,6 +27725,33 @@
         POSITION[POSITION["BEFORE"] = 1] = "BEFORE";
         POSITION[POSITION["AFTER"] = 2] = "AFTER";
     })(POSITION || (POSITION = {}));
+    function moveTo(nodes, target, position = POSITION.UNDER) {
+        if (!nodes.length) {
+            return;
+        }
+        if (target.isDestroyed) {
+            throw new Error('Can not moveTo a destroyed Node');
+        }
+        if (nodes.indexOf(target) > -1) {
+            throw new Error('Can not moveTo self');
+        }
+        const parent = target.parent;
+        const zoom = target.getZoom();
+        for (let i = 0, len = nodes.length; i < len; i++) {
+            const item = nodes[i];
+            migrate(parent, zoom, item);
+            if (position === POSITION.BEFORE) {
+                target.insertBefore(item);
+            }
+            else if (position === POSITION.AFTER) {
+                target.insertAfter(item);
+            }
+            // 默认under
+            else if (target instanceof Container) {
+                target.appendChild(item);
+            }
+        }
+    }
     function migrate(parent, zoom, node) {
         const width = parent.width;
         const height = parent.height;
@@ -27834,6 +27862,28 @@
             return a.tempIndex - b.tempIndex;
         });
     }
+    function getWholeBoundingClientRect(nodes, includeBbox = false, excludeRotate = false) {
+        if (!nodes.length) {
+            return;
+        }
+        const rect = nodes[0].getBoundingClientRect(includeBbox, excludeRotate);
+        for (let i = 1, len = nodes.length; i < len; i++) {
+            const r = nodes[i].getBoundingClientRect(includeBbox, excludeRotate);
+            rect.left = Math.min(rect.left, r.left);
+            rect.right = Math.max(rect.right, r.right);
+            rect.top = Math.min(rect.top, r.top);
+            rect.bottom = Math.max(rect.bottom, r.bottom);
+            // points无意义
+        }
+        return rect;
+    }
+    var node$1 = {
+        moveTo,
+        POSITION,
+        migrate,
+        sortTempIndex,
+        getWholeBoundingClientRect,
+    };
 
     class Group extends Container {
         constructor(props, children) {
@@ -28990,10 +29040,7 @@
                 }
                 else {
                     // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
-                    let { startLineBox, startTextBox, startString, endLineBox, endTextBox, endString } = cursor;
-                    if (startLineBox > endLineBox) {
-                        [startLineBox, startTextBox, startString, endLineBox, endTextBox, endString] = [endLineBox, endTextBox, endString, startLineBox, startTextBox, startString];
-                    }
+                    const { startLineBox, startTextBox, startString, endLineBox, endTextBox, endString, } = this.getSortedCursor();
                     // 先首行
                     let lineBox = lineBoxList[startLineBox];
                     let list = lineBox.list;
@@ -29002,8 +29049,7 @@
                         let x1 = textBox.x * scale;
                         ctx.font = textBox.font;
                         x1 +=
-                            ctx.measureText(textBox.str.slice(0, startString)).width *
-                                scale;
+                            ctx.measureText(textBox.str.slice(0, startString)).width * scale;
                         ctx.fillRect(x1, lineBox.y * scale, lineBox.w * scale - x1, lineBox.lineHeight * scale);
                     }
                     // 中间循环
@@ -29018,9 +29064,7 @@
                     if (textBox) {
                         let x1 = textBox.x * scale;
                         ctx.font = textBox.font;
-                        x1 +=
-                            ctx.measureText(textBox.str.slice(0, endString)).width *
-                                scale;
+                        x1 += ctx.measureText(textBox.str.slice(0, endString)).width * scale;
                         ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
                     }
                 }
@@ -29263,17 +29307,22 @@
         }
         // 获取光标当前坐标，无视multi，只取开头
         getCursorAbsCoord() {
+            const m = this.matrixWorld;
             const lineBoxList = this.lineBoxList;
             const cursor = this.cursor;
             const lineBox = lineBoxList[cursor.startLineBox];
             if (!lineBox) {
-                return;
+                throw new Error('Unknown lineBox');
             }
-            const textBox = lineBox.list[cursor.startTextBox];
+            const list = lineBox.list;
+            // 空行
+            if (!list.length) {
+                return calPoint({ x: 0, y: lineBox.y }, m);
+            }
+            const textBox = list[cursor.startTextBox];
             if (!textBox) {
-                return;
+                throw new Error('Unknown textBox');
             }
-            const m = this.matrixWorld;
             return calPoint({ x: this.lastCursorX, y: textBox.y }, m);
         }
         // 上下左右按键移动光标，上下保持当前x，左右则更新
@@ -29314,7 +29363,8 @@
                             cursor.startTextBox = j = list.length - 1;
                             // 看是否是enter，决定是否到末尾
                             textBox = list[j];
-                            cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
+                            cursor.startString =
+                                textBox.str.length - (lineBox.endEnter ? 0 : 1);
                         }
                     }
                     // 非行开头到上个textBox末尾
@@ -29623,6 +29673,136 @@
                 this.refresh(RefreshLevel.REFLOW);
             }
             this.afterEdit(isLeft, isTop);
+        }
+        // 如果end索引大于start，将其对换返回
+        getSortedCursor() {
+            let { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, endString, } = this.cursor;
+            if (isMulti) {
+                // 确保先后顺序，
+                if (startLineBox > endLineBox) {
+                    [
+                        startLineBox,
+                        startTextBox,
+                        startString,
+                        endLineBox,
+                        endTextBox,
+                        endString,
+                    ] = [
+                        endLineBox,
+                        endTextBox,
+                        endString,
+                        startLineBox,
+                        startTextBox,
+                        startString,
+                    ];
+                }
+                else if (startLineBox === endLineBox && startTextBox > endTextBox) {
+                    [
+                        startTextBox,
+                        startString,
+                        endTextBox,
+                        endString,
+                    ] = [
+                        endTextBox,
+                        endString,
+                        startTextBox,
+                        startString,
+                    ];
+                }
+                else if (startLineBox === endLineBox && startTextBox === endTextBox && startString > endString) {
+                    [
+                        startString,
+                        endString,
+                    ] = [
+                        endString,
+                        startString,
+                    ];
+                }
+            }
+            return {
+                isMulti,
+                startLineBox,
+                startTextBox,
+                startString,
+                endLineBox,
+                endTextBox,
+                endString,
+            };
+        }
+        // 返回光标所在的Rich数据列表
+        getCursorRich() {
+            const { rich, lineBoxList } = this;
+            if (!rich) {
+                return;
+            }
+            if (rich.length === 1) {
+                return [rich[0]];
+            }
+            const res = [];
+            // 字符索引对应的rich快速查找
+            const RICH_INDEX = [];
+            for (let i = 0, len = rich.length; i < len; i++) {
+                const item = rich[i];
+                const { location, length } = item;
+                for (let i = location, len = location + length; i < len; i++) {
+                    RICH_INDEX[i] = item;
+                }
+            }
+            const { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, } = this.getSortedCursor();
+            if (isMulti) {
+                let start = 0;
+                let end = 0;
+                // 获取开头结尾的字符串索引
+                let lineBox = lineBoxList[startLineBox];
+                let list = lineBox.list;
+                if (!list) {
+                    start = lineBox.index;
+                }
+                else {
+                    const textBox = list[startTextBox];
+                    start = textBox.index;
+                }
+                lineBox = lineBoxList[endLineBox];
+                list = lineBox.list;
+                if (!list) {
+                    end = lineBox.index;
+                }
+                else {
+                    const textBox = list[endTextBox];
+                    end = textBox.index;
+                }
+                // 从start到end（不含）的rich存入
+                for (let i = 0, len = rich.length; i < len; i++) {
+                    const r = rich[i];
+                    if (r.location > end) {
+                        break;
+                    }
+                    if (r.location >= start) {
+                        res.push(r);
+                    }
+                }
+            }
+            else {
+                const lineBox = lineBoxList[startLineBox];
+                const list = lineBox.list;
+                // 空行
+                if (!list.length) {
+                    const r = RICH_INDEX[lineBox.index];
+                    if (res.indexOf(r) === -1) {
+                        res.push(r);
+                    }
+                }
+                else {
+                    // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首
+                    const i = startString === 0 && startTextBox > 0 ? (startTextBox - 1) : startTextBox;
+                    const textBox = list[i];
+                    const r = RICH_INDEX[textBox.index];
+                    if (res.indexOf(r) === -1) {
+                        res.push(r);
+                    }
+                }
+            }
+            return res;
         }
         get content() {
             return this._content;
@@ -32639,6 +32819,213 @@ void main() {
         reflow,
     };
 
+    function useAsMask(nodes, props) {
+        if (!nodes.length) {
+            return;
+        }
+        let res;
+        if (nodes.length > 1) {
+            res = Group.group(nodes, props);
+        }
+        nodes[0].updateStyle({
+            mask: true,
+        });
+        return res;
+    }
+    var mask = {
+        useAsMask,
+    };
+
+    var TEXT_BEHAVIOUR;
+    (function (TEXT_BEHAVIOUR) {
+        TEXT_BEHAVIOUR[TEXT_BEHAVIOUR["AUTO"] = 0] = "AUTO";
+        TEXT_BEHAVIOUR[TEXT_BEHAVIOUR["FIXED_W"] = 1] = "FIXED_W";
+        TEXT_BEHAVIOUR[TEXT_BEHAVIOUR["FIXED_W_H"] = 2] = "FIXED_W_H";
+    })(TEXT_BEHAVIOUR || (TEXT_BEHAVIOUR = {}));
+    const SIZE_LIST = [
+        6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 21, 24, 36, 48, 60, 72,
+    ];
+    function putData(width, height, lh, fontFamily, name, color, fontSize, letterSpacing, lineHeight, paragraphSpacing, textAlign, textBehaviour, obj) {
+        let autoLineHeight = false;
+        let valid = false;
+        const { fontFamily: ff, color: c, fontSize: fs, letterSpacing: ls, lineHeight: lh2, paragraphSpacing: ps, textAlign: ta, } = obj;
+        const ff2 = ff.toLowerCase();
+        const o$1 = o.data[ff2];
+        if (o$1) {
+            if (fontFamily.indexOf(ff2) === -1) {
+                fontFamily.push(ff2);
+                name.push(o$1.name);
+            }
+            valid = true;
+        }
+        else {
+            if (fontFamily.indexOf(ff2) === -1) {
+                fontFamily.push(ff2);
+                name.push(ff2);
+            }
+        }
+        color.push(color2rgbaStr(c));
+        if (fontSize.indexOf(fs) === -1) {
+            fontSize.push(fs);
+        }
+        if (letterSpacing.indexOf(ls) === -1) {
+            letterSpacing.push(ls);
+        }
+        if (lh.u === StyleUnit.AUTO) {
+            autoLineHeight = true;
+        }
+        if (lineHeight.indexOf(lh2) === -1) {
+            lineHeight.push(lh2);
+        }
+        if (paragraphSpacing.indexOf(ps) === -1) {
+            paragraphSpacing.push(ps);
+        }
+        if (textAlign.indexOf(ta) === -1) {
+            textAlign.push(ta);
+        }
+        let tb = TEXT_BEHAVIOUR.AUTO;
+        if (width.u !== StyleUnit.AUTO) {
+            if (height.u !== StyleUnit.AUTO) {
+                tb = TEXT_BEHAVIOUR.FIXED_W_H;
+            }
+            else {
+                tb = TEXT_BEHAVIOUR.FIXED_W;
+            }
+        }
+        if (textBehaviour.indexOf(tb) === -1) {
+            textBehaviour.push(tb);
+        }
+        return { autoLineHeight, valid };
+    }
+    function getData(nodes) {
+        if (!nodes.length) {
+            return;
+        }
+        const fontFamily = [];
+        const name = [];
+        const color = [];
+        const fontSize = [];
+        const letterSpacing = [];
+        const lineHeight = [];
+        const paragraphSpacing = [];
+        const textAlign = [];
+        const textBehaviour = [];
+        let autoLineHeight = false;
+        let valid = false;
+        for (let i = 0, len = nodes.length; i < len; i++) {
+            const { rich, style, computedStyle } = nodes[i];
+            const { width, height, lineHeight: lh } = style;
+            if (rich && rich.length) {
+                for (let i = 0, len = rich.length; i < len; i++) {
+                    const res = putData(width, height, lh, fontFamily, name, color, fontSize, letterSpacing, lineHeight, paragraphSpacing, textAlign, textBehaviour, rich[i]);
+                    autoLineHeight = res.autoLineHeight || autoLineHeight;
+                    valid = res.valid || valid;
+                }
+                continue;
+            }
+            const res = putData(width, height, lh, fontFamily, name, color, fontSize, letterSpacing, lineHeight, paragraphSpacing, textAlign, textBehaviour, computedStyle);
+            autoLineHeight = res.autoLineHeight || autoLineHeight;
+            valid = res.valid || valid;
+        }
+        const { fontWeight, fontWeightList } = getWeight(valid, fontFamily);
+        return {
+            fontFamily,
+            name,
+            valid,
+            fontWeight,
+            fontWeightList,
+            color,
+            fontSize,
+            autoLineHeight,
+            lineHeight,
+            letterSpacing,
+            paragraphSpacing,
+            textAlign,
+            textBehaviour,
+        };
+    }
+    function getWeight(valid, fontFamily) {
+        let fontWeight = 'Regular'; // 不支持的字体默认Regular
+        const fontWeightList = [];
+        if (valid && fontFamily.length === 1) {
+            const list = o.data[fontFamily[0].toLowerCase()].list;
+            for (let i = 0, len = list.length; i < len; i++) {
+                const item = list[i];
+                fontWeightList.push({ label: item.style, value: item.postscriptName });
+                if (item.postscriptName === fontFamily[0].toLowerCase()) {
+                    fontWeight = item.style;
+                }
+            }
+        }
+        else if (fontFamily.length > 1) {
+            fontWeight = '多种字重';
+        }
+        return { fontWeight, fontWeightList };
+    }
+    function getBehaviour(n) {
+        if (n === TEXT_BEHAVIOUR.FIXED_W) {
+            return '自动高度';
+        }
+        if (n === TEXT_BEHAVIOUR.FIXED_W_H) {
+            return '固定尺寸';
+        }
+        return '自动宽度';
+    }
+    function getEditData(node) {
+        const { rich, style } = node;
+        // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
+        if (!rich || rich.length <= 1) {
+            return getData([node]);
+        }
+        const fontFamily = [];
+        const name = [];
+        const color = [];
+        const fontSize = [];
+        const letterSpacing = [];
+        const lineHeight = [];
+        const paragraphSpacing = [];
+        const textAlign = [];
+        const textBehaviour = [];
+        let autoLineHeight = false;
+        let valid = false;
+        const richList = node.getCursorRich();
+        const { width, height, lineHeight: lh } = style;
+        for (let i = 0, len = richList.length; i < len; i++) {
+            const res = putData(width, height, lh, fontFamily, name, color, fontSize, letterSpacing, lineHeight, paragraphSpacing, textAlign, textBehaviour, richList[i]);
+            autoLineHeight = res.autoLineHeight || autoLineHeight;
+            valid = res.valid || valid;
+        }
+        const { fontWeight, fontWeightList } = getWeight(valid, fontFamily);
+        return {
+            fontFamily,
+            name,
+            valid,
+            fontWeight,
+            fontWeightList,
+            color,
+            fontSize,
+            autoLineHeight,
+            lineHeight,
+            letterSpacing,
+            paragraphSpacing,
+            textAlign,
+            textBehaviour,
+        };
+    }
+    var text = {
+        TEXT_BEHAVIOUR,
+        SIZE_LIST,
+        getData,
+        getEditData,
+        getBehaviour,
+    };
+
+    var tools = {
+        mask,
+        node: node$1,
+        text,
+    };
+
     function apply(json, imgs) {
         if (!json) {
             return;
@@ -32682,6 +33069,7 @@ void main() {
         math,
         util,
         animation,
+        tools,
         config: config$1,
     };
 

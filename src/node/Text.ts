@@ -460,10 +460,14 @@ class Text extends Node {
         );
       } else {
         // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
-        let { startLineBox, startTextBox, startString, endLineBox, endTextBox, endString} = cursor;
-        if (startLineBox > endLineBox) {
-          [startLineBox, startTextBox, startString, endLineBox, endTextBox, endString] = [endLineBox, endTextBox, endString, startLineBox, startTextBox, startString]
-        }
+        const {
+          startLineBox,
+          startTextBox,
+          startString,
+          endLineBox,
+          endTextBox,
+          endString,
+        } = this.getSortedCursor();
         // 先首行
         let lineBox = lineBoxList[startLineBox];
         let list = lineBox.list;
@@ -472,8 +476,7 @@ class Text extends Node {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
           x1 +=
-            ctx.measureText(textBox.str.slice(0, startString)).width *
-            scale;
+            ctx.measureText(textBox.str.slice(0, startString)).width * scale;
           ctx.fillRect(
             x1,
             lineBox.y * scale,
@@ -482,11 +485,7 @@ class Text extends Node {
           );
         }
         // 中间循环
-        for (
-          let i = startLineBox + 1, len = endLineBox;
-          i < len;
-          i++
-        ) {
+        for (let i = startLineBox + 1, len = endLineBox; i < len; i++) {
           const lineBox = lineBoxList[i];
           ctx.fillRect(
             0,
@@ -502,9 +501,7 @@ class Text extends Node {
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
-          x1 +=
-            ctx.measureText(textBox.str.slice(0, endString)).width *
-            scale;
+          x1 += ctx.measureText(textBox.str.slice(0, endString)).width * scale;
           ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
         }
       }
@@ -794,17 +791,22 @@ class Text extends Node {
 
   // 获取光标当前坐标，无视multi，只取开头
   getCursorAbsCoord() {
+    const m = this.matrixWorld;
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
     const lineBox = lineBoxList[cursor.startLineBox];
     if (!lineBox) {
-      return;
+      throw new Error('Unknown lineBox');
     }
-    const textBox = lineBox.list[cursor.startTextBox];
+    const list = lineBox.list;
+    // 空行
+    if (!list.length) {
+      return calPoint({ x: 0, y: lineBox.y }, m);
+    }
+    const textBox = list[cursor.startTextBox];
     if (!textBox) {
-      return;
+      throw new Error('Unknown textBox');
     }
-    const m = this.matrixWorld;
     return calPoint({ x: this.lastCursorX, y: textBox.y }, m);
   }
 
@@ -844,7 +846,8 @@ class Text extends Node {
             cursor.startTextBox = j = list.length - 1;
             // 看是否是enter，决定是否到末尾
             textBox = list[j];
-            cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
+            cursor.startString =
+              textBox.str.length - (lineBox.endEnter ? 0 : 1);
           }
         }
         // 非行开头到上个textBox末尾
@@ -1174,6 +1177,147 @@ class Text extends Node {
       this.refresh(RefreshLevel.REFLOW);
     }
     this.afterEdit(isLeft, isTop);
+  }
+
+  // 如果end索引大于start，将其对换返回
+  getSortedCursor() {
+    let {
+      isMulti,
+      startLineBox,
+      startTextBox,
+      startString,
+      endLineBox,
+      endTextBox,
+      endString,
+    } = this.cursor;
+    if (isMulti) {
+      // 确保先后顺序，
+      if (startLineBox > endLineBox) {
+        [
+          startLineBox,
+          startTextBox,
+          startString,
+          endLineBox,
+          endTextBox,
+          endString,
+        ] = [
+          endLineBox,
+          endTextBox,
+          endString,
+          startLineBox,
+          startTextBox,
+          startString,
+        ];
+      } else if (startLineBox === endLineBox && startTextBox > endTextBox) {
+        [
+          startTextBox,
+          startString,
+          endTextBox,
+          endString,
+        ] = [
+          endTextBox,
+          endString,
+          startTextBox,
+          startString,
+        ];
+      } else if (startLineBox === endLineBox && startTextBox === endTextBox && startString > endString) {
+        [
+          startString,
+          endString,
+        ] = [
+          endString,
+          startString,
+        ];
+      }
+    }
+    return {
+      isMulti,
+      startLineBox,
+      startTextBox,
+      startString,
+      endLineBox,
+      endTextBox,
+      endString,
+    };
+  }
+
+  // 返回光标所在的Rich数据列表
+  getCursorRich() {
+    const { rich, lineBoxList } = this;
+    if (!rich) {
+      return;
+    }
+    if (rich.length === 1) {
+      return [rich[0]];
+    }
+    const res: Array<Rich> = [];
+    // 字符索引对应的rich快速查找
+    const RICH_INDEX: Array<Rich> = [];
+    for (let i = 0, len = rich.length; i < len; i++) {
+      const item = rich[i];
+      const { location, length } = item;
+      for (let i = location, len = location + length; i < len; i++) {
+        RICH_INDEX[i] = item;
+      }
+    }
+    const {
+      isMulti,
+      startLineBox,
+      startTextBox,
+      startString,
+      endLineBox,
+      endTextBox,
+    } = this.getSortedCursor();
+    if (isMulti) {
+      let start = 0;
+      let end = 0;
+      // 获取开头结尾的字符串索引
+      let lineBox = lineBoxList[startLineBox];
+      let list = lineBox.list;
+      if (!list) {
+        start = lineBox.index;
+      } else {
+        const textBox = list[startTextBox];
+        start = textBox.index;
+      }
+      lineBox = lineBoxList[endLineBox];
+      list = lineBox.list;
+      if (!list) {
+        end = lineBox.index;
+      } else {
+        const textBox = list[endTextBox];
+        end = textBox.index;
+      }
+      // 从start到end（不含）的rich存入
+      for (let i = 0, len = rich.length; i < len; i++) {
+        const r = rich[i];
+        if (r.location > end) {
+          break;
+        }
+        if (r.location >= start) {
+          res.push(r);
+        }
+      }
+    } else {
+      const lineBox = lineBoxList[startLineBox];
+      const list = lineBox.list;
+      // 空行
+      if (!list.length) {
+        const r = RICH_INDEX[lineBox.index];
+        if (res.indexOf(r) === -1) {
+          res.push(r);
+        }
+      } else {
+        // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首
+        const i = startString === 0 && startTextBox > 0 ? (startTextBox - 1) : startTextBox;
+        const textBox = list[i];
+        const r = RICH_INDEX[textBox.index];
+        if (res.indexOf(r) === -1) {
+          res.push(r);
+        }
+      }
+    }
+    return res;
   }
 
   get content() {

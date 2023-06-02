@@ -469,6 +469,10 @@ canvas {
   margin-bottom: 3px;
 }
 
+.text .line2 {
+  position: relative;
+}
+
 .text .family {
   width: 260px;
   height: 24px;
@@ -500,8 +504,42 @@ canvas {
   font-size: 12px;
 }
 
+.text .style-n {
+  color: #f33 !important;
+  text-shadow: 0 0 2px rgba(80, 40, 0, 30%);
+}
+
+.text .style2 {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  width: 170px;
+  height: 20px;
+  background: #FFF;
+  line-height: 20px;
+  font-size: 12px;
+  pointer-events: none;
+}
+
 .text .color {
   height: 24px;
+}
+
+.text .color2 {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  width: 46px;
+  height: 20px;
+  background: #FFF;
+  line-height: 20px;
+  font-size: 12px;
+  pointer-events: none;
+  text-align: center;
 }
 
 @keyframes blink {
