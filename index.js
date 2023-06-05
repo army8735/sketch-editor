@@ -22853,6 +22853,7 @@
             }
             return keys;
         }
+        // 只更新样式不触发刷新
         updateStyleData(style) {
             const formatStyle = normalize(style);
             return this.updateFormatStyleData(formatStyle);
@@ -29115,8 +29116,8 @@
                 }
             }
         }
-        // 根据绝对坐标获取光标位置
-        getCursorByAbsCoord(x, y) {
+        // 根据绝对坐标获取光标位置，同时设置开始光标位置
+        setCursorStartByAbsCoord(x, y) {
             const dpi = this.root.dpi;
             const m = this.matrixWorld;
             const im = inverse4(m);
@@ -29152,6 +29153,7 @@
                 h: res.h * m[0],
             };
         }
+        // 设置结束光标位置
         setCursorEndByAbsCoord(x, y) {
             var _a, _b;
             const dpi = this.root.dpi;
@@ -29305,7 +29307,7 @@
                 }
             }
         }
-        // 获取光标当前坐标，无视multi，只取开头
+        // 获取光标当前坐标，无视multi，只取开头，没有高度，一般在滚动画布时更新获取新位置
         getCursorAbsCoord() {
             const m = this.matrixWorld;
             const lineBoxList = this.lineBoxList;
@@ -29323,7 +29325,13 @@
             if (!textBox) {
                 throw new Error('Unknown textBox');
             }
-            return calPoint({ x: this.lastCursorX, y: textBox.y }, m);
+            const ctx = inject.getFontCanvas().ctx;
+            ctx.font = textBox.font;
+            // @ts-ignore
+            ctx.letterSpacing = textBox.letterSpacing;
+            const str = textBox.str;
+            const w = ctx.measureText(str.slice(0, cursor.startString)).width;
+            return calPoint({ x: textBox.x + w, y: textBox.y }, m);
         }
         // 上下左右按键移动光标，上下保持当前x，左右则更新
         moveCursor(code) {
@@ -29332,7 +29340,6 @@
             // 先求得当前光标位置在字符串的索引
             const cursor = this.cursor;
             let { startLineBox: i, startTextBox: j, startString: k } = cursor;
-            // console.warn(i, j, k);
             let lineBoxList = this.lineBoxList;
             let lineBox = lineBoxList[i];
             let list = lineBox.list;
@@ -29512,7 +29519,6 @@
             else {
                 this.lastCursorX = 0;
             }
-            // console.log(this.cursor.startLineBox, this.cursor.startTextBox, this.cursor.startString)
             const p = calPoint({ x: this.lastCursorX, y: lineBox.y }, m);
             (_c = this.root) === null || _c === void 0 ? void 0 : _c.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
         }
@@ -29566,8 +29572,8 @@
             }
             outer: for (let i = 0, len = list.length; i < len; i++) {
                 const { x, w, str, font } = list[i];
-                // x位于哪个textBox上，或者是最后一个
-                if ((localX >= x && localX <= x + w) || i === len - 1) {
+                // x位于哪个textBox上，注意开头结尾
+                if ((!i && localX <= x + w) || (localX >= x && localX <= x + w) || i === len - 1) {
                     if (isEnd) {
                         cursor.endTextBox = i;
                     }
@@ -29626,6 +29632,7 @@
             return { x: rx, y: ry, h: rh };
         }
         updateTextStyle(style, cb) {
+            var _a;
             const { isLeft, isTop } = this.beforeEdit();
             const rich = this.rich;
             let hasChange = false;
@@ -29668,11 +29675,35 @@
                 });
             }
             // 防止rich变更但整体没有变更结果不刷新
-            const keys = this.updateStyle(style, cb);
-            if (hasChange && !keys.length) {
-                this.refresh(RefreshLevel.REFLOW);
+            const keys = this.updateStyleData(style);
+            if (keys.length) {
+                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
+            }
+            else if (hasChange) {
+                this.refresh(RefreshLevel.REFLOW, cb);
             }
             this.afterEdit(isLeft, isTop);
+        }
+        updateTextRangeStyle(style, start, end, cb) {
+            const { cursor, rich } = this;
+            // 正常情况不会出现顺序颠倒或者光标单选
+            if (end <= start || !cursor.isMulti || !rich || !rich.length) {
+                return;
+            }
+            console.log(start, end);
+            for (let i = 0, len = rich.length; i < len; i++) {
+                const item = rich[i];
+                if (item.location >= start) {
+                    for (let j = i; j < len; j++) {
+                        const item2 = rich[j];
+                        if (item2.location + item2.length < end) {
+                            console.log(i, j);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
         }
         // 如果end索引大于start，将其对换返回
         getSortedCursor() {

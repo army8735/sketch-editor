@@ -325,7 +325,6 @@ $input.onchange = function(e) {
       root.on(editor.util.Event.UPDATE_CURSOR, function(x, y, h) {
         showEditText(x / dpi, y / dpi, h / dpi);
         setFontPanel(selectNode);
-        updateSelect();
       });
 
       root.setPageIndex(0);
@@ -799,7 +798,7 @@ $overlap.addEventListener('mousedown', function(e) {
             const { offsetX, offsetY } = e;
             const x = $selection.offsetLeft + offsetX;
             const y = $selection.offsetTop + offsetY;
-            const p = selectNode.getCursorByAbsCoord(x, y);
+            const p = selectNode.setCursorStartByAbsCoord(x, y);
             showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
             setFontPanel(node);
             // 防止触发click事件失焦
@@ -827,7 +826,7 @@ $overlap.addEventListener('dblclick', function(e) {
   const x = $selection.offsetLeft + offsetX;
   const y = $selection.offsetTop + offsetY;
   if (selectNode && selectNode instanceof editor.node.Text) {
-    const p = selectNode.getCursorByAbsCoord(x, y);
+    const p = selectNode.setCursorStartByAbsCoord(x, y);
     showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
     setFontPanel(selectNode);
   }
@@ -1223,17 +1222,30 @@ function setFontPanel(node) {
 
 $family.addEventListener('change', function() {
   const list = editor.style.font.data[$family.value.toLowerCase()].list;
-  const fontFamily = list[0].postscriptName;
-  selectNode.updateTextStyle({ fontFamily });
+  const fontFamily = list[0].postscriptName; console.log(isEditText);
+  if (isEditText) {
+    if (selectNode.cursor.isMulti) {} else {}
+  } else {
+    selectNode.updateTextStyle({ fontFamily });
+  }
   setFontPanel(selectNode);
 });
 
 $style.addEventListener('change', function() {
   $style2.innerHTML = $style.selectedOptions[0].innerHTML;
   const fontFamily = $style.value;
-  selectNode.updateTextStyle({ fontFamily });
+  if (isEditText) {
+    if (selectNode.cursor.isMulti) {} else {}
+  } else {
+    selectNode.updateTextStyle({ fontFamily });
+  }
 });
 
 $color.addEventListener('input', function() {
-  console.log($color.value);
+  const color = $color.value;
+  if (isEditText) {
+    if (selectNode.cursor.isMulti) {} else {}
+  } else {
+    selectNode.updateTextStyle({ color });
+  }
 });

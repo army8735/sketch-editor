@@ -743,6 +743,7 @@ class Node extends Event {
     return keys;
   }
 
+  // 只更新样式不触发刷新
   updateStyleData(style: any) {
     const formatStyle = normalize(style);
     return this.updateFormatStyleData(formatStyle);
