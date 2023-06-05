@@ -848,6 +848,7 @@ function updateEditText() {
     const style = $inputContainer.style;
     style.left = x / dpi + 'px';
     style.top = y / dpi + 'px';
+    style.display = 'block';
   }
 }
 
@@ -922,6 +923,11 @@ document.addEventListener('mouseup', function(e) {
         // 发生了拖动位置变化，结束时需转换过程中translate为布局约束（如有）
         selectNode.checkPosChange();
         if (isEditText) {
+          // 可能选区为空，展示光标
+          const multi = selectNode.checkCursorMulti();
+          if (!multi) {
+            updateEditText();
+          }
           setFontPanel(selectNode);
         }
       }

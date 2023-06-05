@@ -29307,6 +29307,19 @@
                 }
             }
         }
+        // 选区结束后，可能选择的范围为空，此时要重置光标multi不是多选状态
+        checkCursorMulti() {
+            const cursor = this.cursor;
+            if (cursor.isMulti) {
+                if (cursor.startLineBox === cursor.endLineBox &&
+                    cursor.startTextBox === cursor.endTextBox &&
+                    cursor.startString === cursor.endString) {
+                    cursor.isMulti = false;
+                    this.showSelectArea = false;
+                }
+            }
+            return cursor.isMulti;
+        }
         // 获取光标当前坐标，无视multi，只取开头，没有高度，一般在滚动画布时更新获取新位置
         getCursorAbsCoord() {
             const m = this.matrixWorld;
