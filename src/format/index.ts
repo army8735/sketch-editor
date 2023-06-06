@@ -126,6 +126,8 @@ export type JStyle = {
   maskMode: 'none' | 'outline' | 'alpha';
   breakMask: boolean;
   blur: string;
+  shadow: string[];
+  shadowEnable: boolean[];
 };
 
 export function getDefaultStyle(v?: any): JStyle {
@@ -174,6 +176,8 @@ export function getDefaultStyle(v?: any): JStyle {
       maskMode: 'none',
       breakMask: false,
       blur: 'none',
+      shadow: [],
+      shadowEnable: [],
     },
     v,
   );

@@ -57,11 +57,7 @@ export function normalize(style: any): Style {
     if (isNil(v)) {
       return;
     }
-    const n = calUnit((v as string | number) || 0);
-    // 无单位视为px
-    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-      n.u = StyleUnit.PX;
-    }
+    const n = calUnit((v as string | number) || 0, true);
     // 限定正数
     if (k === 'width' || k === 'height') {
       if (n.v < 0) {
@@ -78,14 +74,12 @@ export function normalize(style: any): Style {
         u: StyleUnit.AUTO,
       };
     } else {
-      let n = calUnit(lineHeight || 0);
+      let n = calUnit(lineHeight || 0, true);
       if (n.v <= 0) {
         n = {
           v: 0,
           u: StyleUnit.AUTO,
         };
-      } else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
-        n.u = StyleUnit.PX;
       }
       res.lineHeight = n;
     }
@@ -111,14 +105,9 @@ export function normalize(style: any): Style {
   }
   const fontSize = style.fontSize;
   if (!isNil(fontSize)) {
-    let n = calUnit(fontSize || 16);
+    let n = calUnit(fontSize || 16, true);
     if (n.v <= 0) {
       n.v = 16;
-    }
-    // 防止小数
-    // n.v = Math.floor(n.v);
-    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-      n.u = StyleUnit.PX;
     }
     res.fontSize = n;
   }
@@ -305,25 +294,19 @@ export function normalize(style: any): Style {
     if (isNil(v)) {
       return;
     }
-    const n = calUnit(v as string | number);
+    const n = calUnit(v as string | number, false);
     // 没有单位或默认值处理单位
     compatibleTransform(k, n);
     res[k] = n;
   });
   const letterSpacing = style.letterSpacing;
   if (!isNil(letterSpacing)) {
-    let n = calUnit(letterSpacing || 0);
-    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-      n.u = StyleUnit.PX;
-    }
+    let n = calUnit(letterSpacing || 0, true);
     res.letterSpacing = n;
   }
   const paragraphSpacing = style.paragraphSpacing;
   if (!isNil(paragraphSpacing)) {
-    let n = calUnit(paragraphSpacing || 0);
-    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-      n.u = StyleUnit.PX;
-    }
+    let n = calUnit(paragraphSpacing || 0, true);
     res.paragraphSpacing = n;
   }
   const textAlign = style.textAlign;
@@ -353,10 +336,7 @@ export function normalize(style: any): Style {
     for (let i = 0; i < 2; i++) {
       let item = o[i];
       if (/^[-+]?[\d.]/.test(item as string)) {
-        let n = calUnit(item);
-        if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-          n.u = StyleUnit.PX;
-        }
+        let n = calUnit(item, true);
         arr.push(n);
       } else {
         arr.push({
@@ -461,6 +441,43 @@ export function normalize(style: any): Style {
     } else {
       res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
     }
+  }
+  const shadow = style.shadow;
+  if (!isNil(shadow)) {
+    res.shadow = shadow.map((item: string) => {
+      const color = reg.color.exec(item);
+      let s = item;
+      if (color) {
+        s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
+      }
+      const d = s.match(reg.number);
+      const x = calUnit(d ? d[0] : '0px', true);
+      const y = calUnit(d ? d[1] : '0px', true);
+      const blur = calUnit(d ? d[2] : '0px', true);
+      // blur和spread一定非负
+      blur.v = Math.max(0, blur.v);
+      const spread = calUnit(d ? d[3] : '0px', true);
+      spread.v = Math.max(0, spread.v);
+      return {
+        v: {
+          x,
+          y,
+          blur,
+          spread,
+          color: {
+            v: color2rgbaInt(color ? color[0] : '#000'),
+            u: StyleUnit.RGBA,
+          },
+        },
+        u: StyleUnit.SHADOW,
+      };
+    });
+  }
+  const shadowEnable = style.shadowEnable;
+  if (!isNil(shadowEnable)) {
+    res.shadowEnable = shadowEnable.map((item: boolean) => {
+      return { v: item, u: StyleUnit.BOOLEAN };
+    });
   }
   return res;
 }

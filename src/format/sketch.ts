@@ -373,15 +373,28 @@ async function convertItem(
   } else if (blend === SketchFormat.BlendMode.Luminosity) {
     mixBlendMode = 'luminosity';
   } else if (blend === SketchFormat.BlendMode.PlusDarker) {
-    // mixBlendMode = 'plus-darker'; TODO 暂无
+    // mixBlendMode = 'plus-darker';
   } else if (blend === SketchFormat.BlendMode.PlusLighter) {
     // mixBlendMode = 'plus-lighter';
   }
   // 阴影
-  // const shadow: string[] = [];
-  // const shadowEnable: boolean[] = [];
+  const shadow: string[] = [];
+  const shadowEnable: boolean[] = [];
   // const innerShadow: string[] = [];
   // const innerShadowEnable: boolean[] = [];
+  const shadows = layer.style?.shadows;
+  if (shadows) {
+    shadows.forEach((item) => {
+      const color = [
+        Math.floor(item.color.red * 255),
+        Math.floor(item.color.green * 255),
+        Math.floor(item.color.blue * 255),
+        item.color.alpha,
+      ];
+      shadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
+      shadowEnable.push(item.isEnabled);
+    });
+  }
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
@@ -412,6 +425,8 @@ async function convertItem(
           maskMode,
           breakMask,
           blur,
+          shadow,
+          shadowEnable,
         },
         isLocked,
         isExpanded,
@@ -450,6 +465,8 @@ async function convertItem(
           maskMode,
           breakMask,
           blur,
+          shadow,
+          shadowEnable,
         },
         isLocked,
         isExpanded,
@@ -583,6 +600,8 @@ async function convertItem(
           maskMode,
           breakMask,
           blur,
+          shadow,
+          shadowEnable,
         },
         isLocked,
         isExpanded,
@@ -688,6 +707,8 @@ async function convertItem(
           maskMode,
           breakMask,
           blur,
+          shadow,
+          shadowEnable,
         },
         isLocked,
         isExpanded,

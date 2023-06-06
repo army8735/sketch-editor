@@ -190,18 +190,7 @@ export function drawTextureCache(
   for (let i = 0, len = list.length; i < len; i++) {
     const { opacity, matrix, bbox, texture } = list[i];
     bindTexture(gl, texture, 0);
-    const t = calRectPoint(
-      bbox[0] + dx,
-      bbox[1] + dy,
-      bbox[2] + dx,
-      bbox[3] + dy,
-      matrix,
-    );
-    const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-    const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
-    const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
-    const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
-    const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
+    const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
     let k = i * 12;
     vtPoint[k] = t1.x;
     vtPoint[k + 1] = t1.y;
@@ -470,4 +459,28 @@ export function convertCoords2Gl(
     }
   }
   return { x, y };
+}
+
+export function bbox2Coords(
+  bbox: Float64Array,
+  cx: number,
+  cy: number,
+  dx = 0,
+  dy = 0,
+  flipY = true,
+  matrix?: Float64Array,
+) {
+  const t = calRectPoint(
+    bbox[0] + dx,
+    bbox[1] + dy,
+    bbox[2] + dx,
+    bbox[3] + dy,
+    matrix,
+  );
+  const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
+  const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
+  const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
+  const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
+  const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
+  return { t1, t2, t3, t4 };
 }

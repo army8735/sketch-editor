@@ -18,8 +18,9 @@ export enum RefreshLevel {
   BREAK_MASK =       0b000100000000000, // 2048
   REPAINT =          0b001000000000000, // 4096
   REFLOW =           0b010000000000000, // 8192
-  REFLOW_TRANSFORM = 0b010000010000000, // 8318
-  REFLOW_OPACITY =   0b010000000000000, // 8320
+  REFLOW_TRANSFORM = 0b010000011111110, // 8318
+  REFLOW_OPACITY =   0b010000010000000, // 8320
+  REFLOW_FILTER =    0b010000100000000, //
   REBUILD =          0b100000000000000, // 16384
 }
 
@@ -80,7 +81,7 @@ export function getLevel(k: string): RefreshLevel {
   if (k === 'opacity') {
     return RefreshLevel.OPACITY;
   }
-  if (k === 'blur') {
+  if (k === 'blur' || k === 'shadow' || k === 'innerShadow') {
     return RefreshLevel.FILTER;
   }
   if (k === 'mixBlendMode') {

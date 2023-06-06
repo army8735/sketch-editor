@@ -27,6 +27,8 @@ import {
   simpleFrag,
   simpleVert,
   softLightFrag,
+  dropShadowVert,
+  dropShadowFrag,
 } from '../gl/glsl';
 import { initShaders } from '../gl/webgl';
 import config from '../refresh/config';
@@ -161,6 +163,7 @@ class Root extends Container implements FrameCallback {
     this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
     this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
     this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
+    this.programs.dropShadowProgram = initShaders(gl, dropShadowVert, dropShadowFrag);
     gl.useProgram(program);
   }
 

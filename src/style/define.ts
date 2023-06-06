@@ -10,9 +10,10 @@ export enum StyleUnit {
   GRADIENT = 8,
   BLUR = 9,
   PATTERN = 10,
+  SHADOW = 11,
 }
 
-export function calUnit(v: string | number): StyleNumValue {
+export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumValue {
   if (v === 'auto') {
     return {
       v: 0,
@@ -33,12 +34,12 @@ export function calUnit(v: string | number): StyleNumValue {
   } else if (/deg$/i.test(v as string)) {
     return {
       v: n,
-      u: StyleUnit.DEG,
+      u: degOrNumber2Px ? StyleUnit.PX : StyleUnit.DEG,
     };
   }
   return {
     v: n,
-    u: StyleUnit.NUMBER,
+    u: degOrNumber2Px ? StyleUnit.PX : StyleUnit.NUMBER,
   };
 }
 
@@ -97,10 +98,21 @@ export type ColorStop = {
   offset?: StyleNumValue;
 };
 
+export type ComputedColorStop = {
+  color: number[];
+  offset?: number;
+};
+
 export type Gradient = {
   t: GRADIENT;
-  d: Array<number>;
+  d: number[];
   stops: Array<ColorStop>;
+};
+
+export type ComputedGradient = {
+  t: GRADIENT;
+  d: number[];
+  stops: Array<ComputedColorStop>;
 };
 
 export type StyleGradientValue = {
@@ -144,6 +156,27 @@ export type Blur = {
 export type StyleBlurValue = {
   v: Blur;
   u: StyleUnit.BLUR;
+};
+
+export type Shadow = {
+  x: StyleNumValue;
+  y: StyleNumValue;
+  blur: StyleNumValue;
+  spread: StyleNumValue;
+  color: StyleColorValue;
+};
+
+export type StyleShadowValue = {
+  v: Shadow;
+  u: StyleUnit.SHADOW;
+};
+
+export type ComputedShadow = {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: number[];
 };
 
 export type Style = {
@@ -190,6 +223,8 @@ export type Style = {
   maskMode: StyleMaskValue;
   breakMask: StyleBoolValue;
   blur: StyleBlurValue;
+  shadow: Array<StyleShadowValue>;
+  shadowEnable: Array<StyleBoolValue>;
 };
 
 export type ComputedStyle = {
@@ -238,6 +273,8 @@ export type ComputedStyle = {
   maskMode: MASK;
   breakMask: boolean;
   blur: Blur;
+  shadow: Array<ComputedShadow>;
+  shadowEnable: boolean[];
 };
 
 export enum TEXT_ALIGN {

@@ -55,6 +55,8 @@
             maskMode: 'none',
             breakMask: false,
             blur: 'none',
+            shadow: [],
+            shadowEnable: [],
         }, v);
     }
     var TagName;
@@ -15815,8 +15817,9 @@
         StyleUnit[StyleUnit["GRADIENT"] = 8] = "GRADIENT";
         StyleUnit[StyleUnit["BLUR"] = 9] = "BLUR";
         StyleUnit[StyleUnit["PATTERN"] = 10] = "PATTERN";
+        StyleUnit[StyleUnit["SHADOW"] = 11] = "SHADOW";
     })(StyleUnit || (StyleUnit = {}));
-    function calUnit(v) {
+    function calUnit(v, degOrNumber2Px = false) {
         if (v === 'auto') {
             return {
                 v: 0,
@@ -15839,12 +15842,12 @@
         else if (/deg$/i.test(v)) {
             return {
                 v: n,
-                u: StyleUnit.DEG,
+                u: degOrNumber2Px ? StyleUnit.PX : StyleUnit.DEG,
             };
         }
         return {
             v: n,
-            u: StyleUnit.NUMBER,
+            u: degOrNumber2Px ? StyleUnit.PX : StyleUnit.NUMBER,
         };
     }
     var TEXT_ALIGN;
@@ -17557,6 +17560,8 @@
         gradient: /\b(\w+)-?gradient\s*\((.+)\)/i,
         img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
         blur: /(\w+)\s*\((.+)\)/i,
+        color: /(?:#[a-f\d]{3,8})|(?:rgba?\s*\(.+?\))/i,
+        number: /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)[pxremvwhina%]*/ig,
     };
 
     // 获取color-stop区间范围，去除无用值
@@ -17906,11 +17911,7 @@
             if (isNil(v)) {
                 return;
             }
-            const n = calUnit(v || 0);
-            // 无单位视为px
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
-            }
+            const n = calUnit(v || 0, true);
             // 限定正数
             if (k === 'width' || k === 'height') {
                 if (n.v < 0) {
@@ -17928,15 +17929,12 @@
                 };
             }
             else {
-                let n = calUnit(lineHeight || 0);
+                let n = calUnit(lineHeight || 0, true);
                 if (n.v <= 0) {
                     n = {
                         v: 0,
                         u: StyleUnit.AUTO,
                     };
-                }
-                else if ([StyleUnit.DEG, StyleUnit.NUMBER].indexOf(n.u) > -1) {
-                    n.u = StyleUnit.PX;
                 }
                 res.lineHeight = n;
             }
@@ -17962,14 +17960,9 @@
         }
         const fontSize = style.fontSize;
         if (!isNil(fontSize)) {
-            let n = calUnit(fontSize || 16);
+            let n = calUnit(fontSize || 16, true);
             if (n.v <= 0) {
                 n.v = 16;
-            }
-            // 防止小数
-            // n.v = Math.floor(n.v);
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
             }
             res.fontSize = n;
         }
@@ -18170,25 +18163,19 @@
             if (isNil(v)) {
                 return;
             }
-            const n = calUnit(v);
+            const n = calUnit(v, false);
             // 没有单位或默认值处理单位
             compatibleTransform(k, n);
             res[k] = n;
         });
         const letterSpacing = style.letterSpacing;
         if (!isNil(letterSpacing)) {
-            let n = calUnit(letterSpacing || 0);
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
-            }
+            let n = calUnit(letterSpacing || 0, true);
             res.letterSpacing = n;
         }
         const paragraphSpacing = style.paragraphSpacing;
         if (!isNil(paragraphSpacing)) {
-            let n = calUnit(paragraphSpacing || 0);
-            if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                n.u = StyleUnit.PX;
-            }
+            let n = calUnit(paragraphSpacing || 0, true);
             res.paragraphSpacing = n;
         }
         const textAlign = style.textAlign;
@@ -18221,10 +18208,7 @@
             for (let i = 0; i < 2; i++) {
                 let item = o[i];
                 if (/^[-+]?[\d.]/.test(item)) {
-                    let n = calUnit(item);
-                    if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(n.u) > -1) {
-                        n.u = StyleUnit.PX;
-                    }
+                    let n = calUnit(item, true);
                     arr.push(n);
                 }
                 else {
@@ -18350,6 +18334,43 @@
             else {
                 res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
             }
+        }
+        const shadow = style.shadow;
+        if (!isNil(shadow)) {
+            res.shadow = shadow.map((item) => {
+                const color = reg.color.exec(item);
+                let s = item;
+                if (color) {
+                    s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
+                }
+                const d = s.match(reg.number);
+                const x = calUnit(d ? d[0] : '0px', true);
+                const y = calUnit(d ? d[1] : '0px', true);
+                const blur = calUnit(d ? d[2] : '0px', true);
+                // blur和spread一定非负
+                blur.v = Math.max(0, blur.v);
+                const spread = calUnit(d ? d[3] : '0px', true);
+                spread.v = Math.max(0, spread.v);
+                return {
+                    v: {
+                        x,
+                        y,
+                        blur,
+                        spread,
+                        color: {
+                            v: color2rgbaInt(color ? color[0] : '#000'),
+                            u: StyleUnit.RGBA,
+                        },
+                    },
+                    u: StyleUnit.SHADOW,
+                };
+            });
+        }
+        const shadowEnable = style.shadowEnable;
+        if (!isNil(shadowEnable)) {
+            res.shadowEnable = shadowEnable.map((item) => {
+                return { v: item, u: StyleUnit.BOOLEAN };
+            });
         }
         return res;
     }
@@ -18737,7 +18758,7 @@
         });
     }
     function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
@@ -18958,10 +18979,23 @@
             else if (blend === FileFormat.BlendMode.PlusDarker) ;
             else if (blend === FileFormat.BlendMode.PlusLighter) ;
             // 阴影
-            // const shadow: string[] = [];
-            // const shadowEnable: boolean[] = [];
+            const shadow = [];
+            const shadowEnable = [];
             // const innerShadow: string[] = [];
             // const innerShadowEnable: boolean[] = [];
+            const shadows = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.shadows;
+            if (shadows) {
+                shadows.forEach((item) => {
+                    const color = [
+                        Math.floor(item.color.red * 255),
+                        Math.floor(item.color.green * 255),
+                        Math.floor(item.color.blue * 255),
+                        item.color.alpha,
+                    ];
+                    shadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
+                    shadowEnable.push(item.isEnabled);
+                });
+            }
             if (layer._class === FileFormat.ClassValue.Group) {
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
@@ -18990,6 +19024,8 @@
                             maskMode,
                             breakMask,
                             blur,
+                            shadow,
+                            shadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -19029,6 +19065,8 @@
                             maskMode,
                             breakMask,
                             blur,
+                            shadow,
+                            shadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -19086,20 +19124,20 @@
                         return res;
                     })
                     : undefined;
-                const MSAttributedStringFontAttribute = (_l = (_k = (_j = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.textStyle) === null || _j === void 0 ? void 0 : _j.encodedAttributes) === null || _k === void 0 ? void 0 : _k.MSAttributedStringFontAttribute) === null || _l === void 0 ? void 0 : _l.attributes;
+                const MSAttributedStringFontAttribute = (_m = (_l = (_k = (_j = layer.style) === null || _j === void 0 ? void 0 : _j.textStyle) === null || _k === void 0 ? void 0 : _k.encodedAttributes) === null || _l === void 0 ? void 0 : _l.MSAttributedStringFontAttribute) === null || _m === void 0 ? void 0 : _m.attributes;
                 const fontSize = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.size
                     : 16;
                 const fontFamily = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.name
                     : 'arial';
-                const paragraphStyle = (_p = (_o = (_m = layer.style) === null || _m === void 0 ? void 0 : _m.textStyle) === null || _o === void 0 ? void 0 : _o.encodedAttributes) === null || _p === void 0 ? void 0 : _p.paragraphStyle;
+                const paragraphStyle = (_q = (_p = (_o = layer.style) === null || _o === void 0 ? void 0 : _o.textStyle) === null || _p === void 0 ? void 0 : _p.encodedAttributes) === null || _q === void 0 ? void 0 : _q.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_s = (_r = (_q = layer.style) === null || _q === void 0 ? void 0 : _q.textStyle) === null || _r === void 0 ? void 0 : _r.encodedAttributes) === null || _s === void 0 ? void 0 : _s.kerning) || 0;
+                const letterSpacing = ((_t = (_s = (_r = layer.style) === null || _r === void 0 ? void 0 : _r.textStyle) === null || _s === void 0 ? void 0 : _s.encodedAttributes) === null || _t === void 0 ? void 0 : _t.kerning) || 0;
                 const paragraphSpacing = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.paragraphSpacing) || 0;
-                const MSAttributedStringColorAttribute = (_v = (_u = (_t = layer.style) === null || _t === void 0 ? void 0 : _t.textStyle) === null || _u === void 0 ? void 0 : _u.encodedAttributes) === null || _v === void 0 ? void 0 : _v.MSAttributedStringColorAttribute;
+                const MSAttributedStringColorAttribute = (_w = (_v = (_u = layer.style) === null || _u === void 0 ? void 0 : _u.textStyle) === null || _v === void 0 ? void 0 : _v.encodedAttributes) === null || _w === void 0 ? void 0 : _w.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
                         Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -19140,6 +19178,8 @@
                             maskMode,
                             breakMask,
                             blur,
+                            shadow,
+                            shadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -19226,6 +19266,8 @@
                             maskMode,
                             breakMask,
                             blur,
+                            shadow,
+                            shadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -19542,8 +19584,9 @@
         RefreshLevel[RefreshLevel["BREAK_MASK"] = 2048] = "BREAK_MASK";
         RefreshLevel[RefreshLevel["REPAINT"] = 4096] = "REPAINT";
         RefreshLevel[RefreshLevel["REFLOW"] = 8192] = "REFLOW";
-        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 8320] = "REFLOW_TRANSFORM";
-        RefreshLevel[RefreshLevel["REFLOW_OPACITY"] = 8192] = "REFLOW_OPACITY";
+        RefreshLevel[RefreshLevel["REFLOW_TRANSFORM"] = 8446] = "REFLOW_TRANSFORM";
+        RefreshLevel[RefreshLevel["REFLOW_OPACITY"] = 8320] = "REFLOW_OPACITY";
+        RefreshLevel[RefreshLevel["REFLOW_FILTER"] = 8448] = "REFLOW_FILTER";
         RefreshLevel[RefreshLevel["REBUILD"] = 16384] = "REBUILD";
     })(RefreshLevel || (RefreshLevel = {}));
     function isReflow(lv) {
@@ -19598,7 +19641,7 @@
         if (k === 'opacity') {
             return RefreshLevel.OPACITY;
         }
-        if (k === 'blur') {
+        if (k === 'blur' || k === 'shadow' || k === 'innerShadow') {
             return RefreshLevel.FILTER;
         }
         if (k === 'mixBlendMode') {
@@ -21748,12 +21791,7 @@
         for (let i = 0, len = list.length; i < len; i++) {
             const { opacity, matrix, bbox, texture } = list[i];
             bindTexture(gl, texture, 0);
-            const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix);
-            const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-            const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
-            const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
-            const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
-            const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
+            const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
             let k = i * 12;
             vtPoint[k] = t1.x;
             vtPoint[k + 1] = t1.y;
@@ -21993,6 +22031,15 @@
             }
         }
         return { x, y };
+    }
+    function bbox2Coords(bbox, cx, cy, dx = 0, dy = 0, flipY = true, matrix) {
+        const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix);
+        const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
+        const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
+        const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
+        const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
+        const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
+        return { t1, t2, t3, t4 };
     }
 
     const HASH$1 = {};
@@ -22395,9 +22442,8 @@
                 return;
             }
             this.lay(data);
-            // reflow和matrix计算需要x/y/width/height
+            // repaint和matrix计算需要x/y/width/height
             this.calRepaintStyle(RefreshLevel.REFLOW);
-            this.clearCache(true);
             // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
             (_a = this.textureOutline) === null || _a === void 0 ? void 0 : _a.release();
             this._rect = undefined;
@@ -22502,7 +22548,6 @@
             computedStyle.pointerEvents = style.pointerEvents.v;
             computedStyle.maskMode = style.maskMode.v;
             computedStyle.breakMask = style.breakMask.v;
-            computedStyle.blur = style.blur.v;
             // 只有重布局或者改transform才影响，普通repaint不变
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
@@ -22511,10 +22556,28 @@
             if (lv & RefreshLevel.REFLOW_OPACITY) {
                 this.calOpacity();
             }
+            if (lv & RefreshLevel.REFLOW_FILTER) {
+                this.calFilterStyle();
+            }
             this.clearCache(true);
             this._bbox = undefined;
             this._filterBbox = undefined;
             this.tempBbox = undefined;
+        }
+        calFilterStyle() {
+            const { style, computedStyle } = this;
+            computedStyle.blur = style.blur.v;
+            computedStyle.shadow = style.shadow.map((item) => {
+                const v = item.v;
+                return {
+                    x: v.x.v,
+                    y: v.y.v,
+                    blur: v.blur.v,
+                    spread: v.spread.v,
+                    color: v.color.v,
+                };
+            });
+            computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
         }
         calMatrix(lv) {
             const { style, computedStyle, matrix, transform } = this;
@@ -22688,10 +22751,10 @@
             }
         }
         clearCache(includeSelf = false) {
+            this.textureTarget.splice(0);
             if (includeSelf) {
                 this.refreshLevel |= RefreshLevel.REPAINT;
                 this.textureCache.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
-                this.textureTarget.splice(0);
             }
             else {
                 this.textureCache.forEach((item, i) => {
@@ -22700,6 +22763,7 @@
                     }
                 });
             }
+            // 可能total就是cache自身，前面includeSelf已经判断过，无论哪种情况都可以不关心
             this.textureTotal.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
             this.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
@@ -23579,7 +23643,28 @@
             if (!res) {
                 const bbox = this._bbox || this.bbox;
                 res = this._filterBbox = bbox.slice(0);
-                const { blur } = this.computedStyle;
+                // shadow是个特殊存在，有多个，取最大值影响扩展
+                const { shadow, shadowEnable, blur } = this.computedStyle;
+                const sb = [0, 0, 0, 0];
+                for (let i = 0, len = shadow.length; i < len; i++) {
+                    if (shadowEnable[i]) {
+                        const item = shadow[i];
+                        if (item.color[3] > 0) {
+                            const d = kernelSize(item.blur);
+                            const spread = outerSizeByD(d);
+                            if (item.x || item.y || spread) {
+                                sb[0] = Math.min(sb[0], item.x - spread);
+                                sb[1] = Math.min(sb[1], item.y - spread);
+                                sb[2] = Math.max(sb[2], item.x + spread);
+                                sb[3] = Math.max(sb[3], item.y + spread);
+                            }
+                        }
+                    }
+                }
+                res[0] += sb[0];
+                res[1] += sb[1];
+                res[2] += sb[2];
+                res[3] += sb[3];
                 if (blur.t === BLUR.GAUSSIAN) {
                     const r = blur.radius;
                     if (r > 0) {
@@ -29623,7 +29708,9 @@
             outer: for (let i = 0, len = list.length; i < len; i++) {
                 const { x, w, str, font } = list[i];
                 // x位于哪个textBox上，注意开头结尾
-                if ((!i && localX <= x + w) || (localX >= x && localX <= x + w) || i === len - 1) {
+                if ((!i && localX <= x + w) ||
+                    (localX >= x && localX <= x + w) ||
+                    i === len - 1) {
                     if (isEnd) {
                         cursor.endTextBox = i;
                     }
@@ -29708,7 +29795,7 @@
                 return false;
             }
             const { isLeft, isTop } = this.beforeEdit();
-            const { isReversed, start, end, } = this.getSortedCursor();
+            const { isReversed, start, end } = this.getSortedCursor();
             let hasChange = false;
             // 找到所处的rich开始结束范围
             for (let i = 0, len = rich.length; i < len; i++) {
@@ -29720,7 +29807,8 @@
                             // 同一个rich拆分为2段或者3段或者不拆分，在中间就是3段，索引靠近首尾一侧拆2段，全相等不拆分
                             if (i === j) {
                                 // 整个rich恰好被选中
-                                if (item.location === start && item.location + item.length === end) {
+                                if (item.location === start &&
+                                    item.location + item.length === end) {
                                     hasChange = this.updateRich(item, style);
                                 }
                                 // 选区开头是start则更新，后面新生成一段
@@ -29823,8 +29911,7 @@
                 item.fontFamily = style.fontFamily;
                 hasChange = true;
             }
-            if (style.hasOwnProperty('fontSize') &&
-                style.fontSize !== item.fontSize) {
+            if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
                 item.fontSize = style.fontSize;
                 hasChange = true;
             }
@@ -29897,12 +29984,7 @@
                     isReversed = true;
                 }
                 else if (startLineBox === endLineBox && startTextBox > endTextBox) {
-                    [
-                        startTextBox,
-                        startString,
-                        endTextBox,
-                        endString,
-                    ] = [
+                    [startTextBox, startString, endTextBox, endString] = [
                         endTextBox,
                         endString,
                         startTextBox,
@@ -29910,14 +29992,10 @@
                     ];
                     isReversed = true;
                 }
-                else if (startLineBox === endLineBox && startTextBox === endTextBox && startString > endString) {
-                    [
-                        startString,
-                        endString,
-                    ] = [
-                        endString,
-                        startString,
-                    ];
+                else if (startLineBox === endLineBox &&
+                    startTextBox === endTextBox &&
+                    startString > endString) {
+                    [startString, endString] = [endString, startString];
                     isReversed = true;
                 }
             }
@@ -30022,7 +30100,9 @@
                 }
                 else {
                     // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首
-                    const i = startString === 0 && startTextBox > 0 ? (startTextBox - 1) : startTextBox;
+                    const i = startString === 0 && startTextBox > 0
+                        ? startTextBox - 1
+                        : startTextBox;
                     const textBox = list[i];
                     const r = RICH_INDEX[textBox.index];
                     if (res.indexOf(r) === -1) {
@@ -30044,7 +30124,14 @@
         }
     }
     function equalRich(a, b) {
-        const keys = ['fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'paragraphSpacing', 'color'];
+        const keys = [
+            'fontFamily',
+            'fontSize',
+            'lineHeight',
+            'letterSpacing',
+            'paragraphSpacing',
+            'color',
+        ];
         for (let i = 0, len = keys.length; i < len; i++) {
             const k = keys[i];
             // @ts-ignore
@@ -30052,7 +30139,10 @@
             // @ts-ignore
             const ob = b[k];
             if (k === 'color') {
-                if (oa[0] !== ob[0] || oa[1] !== ob[1] || oa[2] !== ob[2] || oa[3] !== ob[3]) {
+                if (oa[0] !== ob[0] ||
+                    oa[1] !== ob[1] ||
+                    oa[2] !== ob[2] ||
+                    oa[3] !== ob[3]) {
                     return false;
                 }
             }
@@ -31667,6 +31757,31 @@ void main() {
     );
   }
 }`;
+    const dropShadowVert = `#version 100
+
+attribute vec2 a_position;
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+    gl_Position = vec4(a_position, 0, 1);
+    v_texCoords = a_texCoords;
+}`;
+    const dropShadowFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture;
+uniform float u_color[4];
+
+void main() {
+    vec4 c = texture2D(u_texture, v_texCoords);
+    gl_FragColor = vec4(u_color[0] * c.a, u_color[1] * c.a, u_color[2] * c.a, u_color[3] * c.a);
+}`;
 
     let resTexture;
     let resFrameBuffer;
@@ -31718,20 +31833,27 @@ void main() {
                     node.calContent();
                 }
             }
-            const { maskMode, opacity, blur, mixBlendMode } = computedStyle;
+            const { maskMode, opacity, shadow, shadowEnable, blur, mixBlendMode } = computedStyle;
             // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
             const needTotal = ((opacity > 0 && opacity < 1) ||
                 mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
                 total > 0 &&
                 !node.isShapeGroup &&
                 (!textureTotal[scaleIndex] || !textureTotal[scaleIndex].available);
+            let needShadow = false;
+            for (let i = 0, len = shadow.length; i < len; i++) {
+                if (shadowEnable[i] && shadow[i].color[3] > 0) {
+                    needShadow = true;
+                    break;
+                }
+            }
             const needBlur = blur.t !== BLUR.NONE &&
                 (!textureFilter[scaleIndex] || !((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
             const needMask = maskMode > 0 &&
                 !!node.next &&
                 (!textureMask[scaleIndex] || !((_b = textureMask[scaleIndex]) === null || _b === void 0 ? void 0 : _b.available));
             // 记录汇总的同时以下标为k记录个类hash
-            if (needTotal || needBlur || needMask) {
+            if (needTotal || needShadow || needBlur || needMask) {
                 const t = {
                     i,
                     lv,
@@ -31799,16 +31921,15 @@ void main() {
                 }
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
                 node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
-                const { blur, maskMode } = computedStyle;
-                // 生成filter
-                if (blur.t !== BLUR.NONE) {
-                    // 可能超过尺寸没有total汇总，暂时防御下
-                    if (node.textureTarget[scaleIndex]) {
-                        node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] =
-                            genFilter(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
+                // 生成filter，这里直接进去，如果没有filter会返回空
+                if (node.textureTarget[scaleIndex]) {
+                    const t = genFilter(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
+                    if (t) {
+                        node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] = t;
                     }
                 }
                 // 生成mask
+                const { maskMode } = computedStyle;
                 if (maskMode && node.next) {
                     // 可能超过尺寸没有total汇总，暂时防御下
                     if (node.textureTarget[scaleIndex]) {
@@ -32105,7 +32226,7 @@ void main() {
         // 单个叶子节点也不需要，就是本身节点的内容
         if (!total) {
             let target = node.textureCache[scaleIndex];
-            if (!target && node.hasContent) {
+            if ((!target || !target.available) && node.hasContent) {
                 node.genTexture(gl, scale, scaleIndex);
                 target = node.textureCache[scaleIndex];
             }
@@ -32200,9 +32321,18 @@ void main() {
             return node.textureFilter[scaleIndex];
         }
         let res;
-        const { blur } = node.computedStyle;
+        const { shadow, shadowEnable, blur } = node.computedStyle;
+        const sd = [];
+        shadow.forEach((item, i) => {
+            if (shadowEnable[i] && item.color[3] > 0) {
+                sd.push(item);
+            }
+        });
+        if (sd.length) {
+            res = genShadow(gl, root, node.textureTarget[scaleIndex], sd, structs, index, lv, total, W, H, scale);
+        }
         if (blur.t === BLUR.GAUSSIAN && blur.radius) {
-            res = genGaussBlur(gl, root, node, blur.radius, structs, index, lv, total, W, H, scale, scaleIndex);
+            res = genGaussBlur(gl, root, res || node.textureTarget[scaleIndex], blur.radius, structs, index, lv, total, W, H, scale);
         }
         return res;
     }
@@ -32213,14 +32343,13 @@ void main() {
      * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
      * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
      */
-    function genGaussBlur(gl, root, node, sigma, structs, index, lv, total, W, H, scale, scaleIndex) {
+    function genGaussBlur(gl, root, textureTarget, sigma, structs, index, lv, total, W, H, scale) {
         let d = kernelSize(sigma);
         const max = config.MAX_VARYING_VECTORS;
         while (d > max) {
             d -= 2;
         }
         const spread = outerSizeByD(d);
-        const textureTarget = node.textureTarget[scaleIndex];
         const bbox = textureTarget.bbox.slice(0);
         bbox[0] -= spread;
         bbox[1] -= spread;
@@ -32248,11 +32377,9 @@ void main() {
         h *= scale;
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-        const m = toE(node.tempMatrix);
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
-                matrix: m,
                 bbox: textureTarget.bbox,
                 texture: textureTarget.texture,
             },
@@ -32292,6 +32419,145 @@ void main() {
         vert = gaussVert.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
         frag = gaussFrag.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
         return (programs[key] = initShaders(gl, vert, frag));
+    }
+    function genShadow(gl, root, textureTarget, shadow, structs, index, lv, total, W, H, scale) {
+        const bbox = textureTarget.bbox.slice(0);
+        const sb = [0, 0, 0, 0];
+        for (let i = 0, len = shadow.length; i < len; i++) {
+            const item = shadow[i];
+            let d = kernelSize(item.blur);
+            const max = config.MAX_VARYING_VECTORS;
+            while (d > max) {
+                d -= 2;
+            }
+            const spread = outerSizeByD(d);
+            if (item.x || item.y || spread) {
+                sb[0] = Math.min(sb[0], item.x - spread);
+                sb[1] = Math.min(sb[1], item.y - spread);
+                sb[2] = Math.max(sb[2], item.x + spread);
+                sb[3] = Math.max(sb[3], item.y + spread);
+            }
+        }
+        bbox[0] += sb[0];
+        bbox[1] += sb[1];
+        bbox[2] += sb[2];
+        bbox[3] += sb[3];
+        // 写到一个扩展好尺寸的tex中方便后续处理
+        const x = bbox[0], y = bbox[1];
+        let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        const programs = root.programs;
+        const program = programs.program;
+        const dx = -x, dy = -y;
+        const cx = w * 0.5, cy = h * 0.5;
+        w *= scale;
+        h *= scale;
+        // 扩展好尺寸的原节点纹理
+        const target = TextureCache.getEmptyInstance(gl, bbox, scale);
+        const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+        drawTextureCache(gl, cx, cy, program, [
+            {
+                opacity: 1,
+                bbox: textureTarget.bbox,
+                texture: textureTarget.texture,
+            },
+        ], dx, dy, false);
+        // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
+        const dropShadowProgram = programs.dropShadowProgram;
+        const vtPoint = new Float32Array(8);
+        const vtTex = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
+        const list = shadow.map((item) => {
+            gl.useProgram(dropShadowProgram);
+            // 先生成无blur的
+            const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
+            // 这里顶点计算需要考虑shadow本身的偏移，将其加到dx/dy上即可
+            const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx + item.x, dy + item.y, false, undefined);
+            vtPoint[0] = t1.x;
+            vtPoint[1] = t1.y;
+            vtPoint[2] = t4.x;
+            vtPoint[3] = t4.y;
+            vtPoint[4] = t2.x;
+            vtPoint[5] = t2.y;
+            vtPoint[6] = t3.x;
+            vtPoint[7] = t3.y;
+            // 顶点buffer
+            const pointBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+            const a_position = gl.getAttribLocation(dropShadowProgram, 'a_position');
+            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_position);
+            // 纹理buffer
+            const texBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+            let a_texCoords = gl.getAttribLocation(dropShadowProgram, 'a_texCoords');
+            gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_texCoords);
+            // 纹理单元
+            bindTexture(gl, target.texture, 0);
+            const u_texture = gl.getUniformLocation(dropShadowProgram, 'u_texture');
+            gl.uniform1i(u_texture, 0);
+            // shadow颜色
+            const u_color = gl.getUniformLocation(dropShadowProgram, 'u_color');
+            gl.uniform1fv(u_color, color2gl(item.color));
+            // 渲染并销毁
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            gl.deleteBuffer(pointBuffer);
+            gl.deleteBuffer(texBuffer);
+            gl.disableVertexAttribArray(a_position);
+            gl.disableVertexAttribArray(a_texCoords);
+            // 有blur再生成
+            if (item.blur > 0) {
+                let d = kernelSize(item.blur);
+                const max = config.MAX_VARYING_VECTORS;
+                while (d > max) {
+                    d -= 2;
+                }
+                const programGauss = genBlurShader(gl, programs, item.blur, d);
+                gl.useProgram(programGauss);
+                const res = drawGauss(gl, programGauss, temp.texture, w, h);
+                temp.release();
+                return res;
+            }
+            return temp.texture;
+        });
+        // 将生成的shadow纹理和节点原本的纹理进行混合
+        gl.useProgram(program);
+        const target2 = TextureCache.getEmptyInstance(gl, bbox, scale);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target2.texture, 0);
+        list.forEach((item) => {
+            drawTextureCache(gl, cx, cy, program, [
+                {
+                    opacity: 1,
+                    bbox: bbox,
+                    texture: item,
+                },
+            ], dx, dy, false);
+            gl.deleteTexture(item);
+        });
+        drawTextureCache(gl, cx, cy, program, [
+            {
+                opacity: 1,
+                bbox: target.bbox,
+                texture: target.texture,
+            },
+        ], dx, dy, false);
+        target.release();
+        // 删除fbo恢复
+        releaseFrameBuffer(gl, frameBuffer, W, H);
+        return target2;
     }
     function genMask(gl, root, node, maskMode, structs, index, lv, total, W, H, scale, scaleIndex) {
         var _a;
@@ -32736,6 +33002,7 @@ void main() {
             this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
             this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
             this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
+            this.programs.dropShadowProgram = initShaders(gl, dropShadowVert, dropShadowFrag);
             gl.useProgram(program);
         }
         checkRoot() {

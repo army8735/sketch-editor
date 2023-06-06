@@ -243,9 +243,8 @@ class Node extends Event {
       return;
     }
     this.lay(data);
-    // reflow和matrix计算需要x/y/width/height
+    // repaint和matrix计算需要x/y/width/height
     this.calRepaintStyle(RefreshLevel.REFLOW);
-    this.clearCache(true);
     // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
     this.textureOutline?.release();
     this._rect = undefined;
@@ -353,7 +352,6 @@ class Node extends Event {
     computedStyle.pointerEvents = style.pointerEvents.v;
     computedStyle.maskMode = style.maskMode.v;
     computedStyle.breakMask = style.breakMask.v;
-    computedStyle.blur = style.blur.v;
     // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
@@ -362,10 +360,29 @@ class Node extends Event {
     if (lv & RefreshLevel.REFLOW_OPACITY) {
       this.calOpacity();
     }
+    if (lv & RefreshLevel.REFLOW_FILTER) {
+      this.calFilterStyle();
+    }
     this.clearCache(true);
     this._bbox = undefined;
     this._filterBbox = undefined;
     this.tempBbox = undefined;
+  }
+
+  calFilterStyle() {
+    const { style, computedStyle } = this;
+    computedStyle.blur = style.blur.v;
+    computedStyle.shadow = style.shadow.map((item) => {
+      const v = item.v;
+      return {
+        x: v.x.v,
+        y: v.y.v,
+        blur: v.blur.v,
+        spread: v.spread.v,
+        color: v.color.v,
+      };
+    });
+    computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
   }
 
   calMatrix(lv: RefreshLevel): Float64Array {
@@ -552,10 +569,10 @@ class Node extends Event {
   }
 
   clearCache(includeSelf = false) {
+    this.textureTarget.splice(0);
     if (includeSelf) {
       this.refreshLevel |= RefreshLevel.REPAINT;
       this.textureCache.forEach((item) => item?.release());
-      this.textureTarget.splice(0);
     } else {
       this.textureCache.forEach((item, i) => {
         if (item && item.available) {
@@ -563,6 +580,7 @@ class Node extends Event {
         }
       });
     }
+    // 可能total就是cache自身，前面includeSelf已经判断过，无论哪种情况都可以不关心
     this.textureTotal.forEach((item) => item?.release());
     this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
@@ -1474,7 +1492,28 @@ class Node extends Event {
     if (!res) {
       const bbox = this._bbox || this.bbox;
       res = this._filterBbox = bbox.slice(0);
-      const { blur } = this.computedStyle;
+      // shadow是个特殊存在，有多个，取最大值影响扩展
+      const { shadow, shadowEnable, blur } = this.computedStyle;
+      const sb = [0, 0, 0, 0];
+      for (let i = 0, len = shadow.length; i < len; i++) {
+        if (shadowEnable[i]) {
+          const item = shadow[i];
+          if (item.color[3] > 0) {
+            const d = kernelSize(item.blur);
+            const spread = outerSizeByD(d);
+            if (item.x || item.y || spread) {
+              sb[0] = Math.min(sb[0], item.x - spread);
+              sb[1] = Math.min(sb[1], item.y - spread);
+              sb[2] = Math.max(sb[2], item.x + spread);
+              sb[3] = Math.max(sb[3], item.y + spread);
+            }
+          }
+        }
+      }
+      res[0] += sb[0];
+      res[1] += sb[1];
+      res[2] += sb[2];
+      res[3] += sb[3];
       if (blur.t === BLUR.GAUSSIAN) {
         const r = blur.radius!;
         if (r > 0) {

@@ -3,4 +3,6 @@ export default {
   gradient: /\b(\w+)-?gradient\s*\((.+)\)/i,
   img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
   blur: /(\w+)\s*\((.+)\)/i,
+  color: /(?:#[a-f\d]{3,8})|(?:rgba?\s*\(.+?\))/i,
+  number: /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)[pxremvwhina%]*/ig,
 };
