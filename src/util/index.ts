@@ -2,6 +2,7 @@ import Event from './Event';
 import inject from './inject';
 import opentype from './opentype';
 import type, { isDate, isNil, isPlainObject } from './type';
+import util from './util';
 
 export function extend(target: any, source: any, keys?: Array<string>) {
   if (source === null || typeof source !== 'object') {
@@ -42,4 +43,5 @@ export default {
   Event,
   inject,
   opentype,
+  util,
 };

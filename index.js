@@ -1211,12 +1211,12 @@
     	return _safeBuffer_5_1_2_safeBufferExports;
     }
 
-    var util$1 = {};
+    var util$2 = {};
 
     var hasRequiredUtil;
 
     function requireUtil () {
-    	if (hasRequiredUtil) return util$1;
+    	if (hasRequiredUtil) return util$2;
     	hasRequiredUtil = 1;
     	// Copyright Joyent, Inc. and other Node contributors.
     	//
@@ -1248,67 +1248,67 @@
     	  }
     	  return objectToString(arg) === '[object Array]';
     	}
-    	util$1.isArray = isArray;
+    	util$2.isArray = isArray;
 
     	function isBoolean(arg) {
     	  return typeof arg === 'boolean';
     	}
-    	util$1.isBoolean = isBoolean;
+    	util$2.isBoolean = isBoolean;
 
     	function isNull(arg) {
     	  return arg === null;
     	}
-    	util$1.isNull = isNull;
+    	util$2.isNull = isNull;
 
     	function isNullOrUndefined(arg) {
     	  return arg == null;
     	}
-    	util$1.isNullOrUndefined = isNullOrUndefined;
+    	util$2.isNullOrUndefined = isNullOrUndefined;
 
     	function isNumber(arg) {
     	  return typeof arg === 'number';
     	}
-    	util$1.isNumber = isNumber;
+    	util$2.isNumber = isNumber;
 
     	function isString(arg) {
     	  return typeof arg === 'string';
     	}
-    	util$1.isString = isString;
+    	util$2.isString = isString;
 
     	function isSymbol(arg) {
     	  return typeof arg === 'symbol';
     	}
-    	util$1.isSymbol = isSymbol;
+    	util$2.isSymbol = isSymbol;
 
     	function isUndefined(arg) {
     	  return arg === void 0;
     	}
-    	util$1.isUndefined = isUndefined;
+    	util$2.isUndefined = isUndefined;
 
     	function isRegExp(re) {
     	  return objectToString(re) === '[object RegExp]';
     	}
-    	util$1.isRegExp = isRegExp;
+    	util$2.isRegExp = isRegExp;
 
     	function isObject(arg) {
     	  return typeof arg === 'object' && arg !== null;
     	}
-    	util$1.isObject = isObject;
+    	util$2.isObject = isObject;
 
     	function isDate(d) {
     	  return objectToString(d) === '[object Date]';
     	}
-    	util$1.isDate = isDate;
+    	util$2.isDate = isDate;
 
     	function isError(e) {
     	  return (objectToString(e) === '[object Error]' || e instanceof Error);
     	}
-    	util$1.isError = isError;
+    	util$2.isError = isError;
 
     	function isFunction(arg) {
     	  return typeof arg === 'function';
     	}
-    	util$1.isFunction = isFunction;
+    	util$2.isFunction = isFunction;
 
     	function isPrimitive(arg) {
     	  return arg === null ||
@@ -1318,14 +1318,14 @@
     	         typeof arg === 'symbol' ||  // ES6 symbol
     	         typeof arg === 'undefined';
     	}
-    	util$1.isPrimitive = isPrimitive;
+    	util$2.isPrimitive = isPrimitive;
 
-    	util$1.isBuffer = require$$0__default$1["default"].Buffer.isBuffer;
+    	util$2.isBuffer = require$$0__default$1["default"].Buffer.isBuffer;
 
     	function objectToString(o) {
     	  return Object.prototype.toString.call(o);
     	}
-    	return util$1;
+    	return util$2;
     }
 
     var inheritsExports = {};
@@ -17464,6 +17464,70 @@
     Event.WILL_REMOVE_PAGE = 'willRemovePage';
     Event.UPDATE_CURSOR = 'updateCursor';
 
+    function clone$1(obj) {
+        if (isNil(obj) || typeof obj !== 'object') {
+            return obj;
+        }
+        if (isDate(obj)) {
+            return new Date(obj);
+        }
+        if (!isPlainObject(obj) && !Array.isArray(obj)) {
+            return obj;
+        }
+        let n = Array.isArray(obj) ? [] : {};
+        Object.keys(obj).forEach((i) => {
+            n[i] = clone$1(obj[i]);
+        });
+        return n;
+    }
+    function mergeBbox$1(bbox, a, b, c, d) {
+        bbox[0] = Math.min(bbox[0], a);
+        bbox[1] = Math.min(bbox[1], b);
+        bbox[2] = Math.max(bbox[2], c);
+        bbox[3] = Math.max(bbox[3], d);
+    }
+    // 深度对比对象
+    function equal(a, b) {
+        if (a === b) {
+            return true;
+        }
+        if (isObject(a) && isObject(b)) {
+            const hash = {};
+            for (let i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+                const k = arr[i];
+                if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+                    return false;
+                }
+                hash[k] = true;
+            }
+            // a没有b有则false
+            for (let i = 0, arr = Object.keys(b), len = arr.length; i < len; i++) {
+                const k = arr[i];
+                if (!hash.hasOwnProperty(k)) {
+                    return false;
+                }
+            }
+        }
+        else if (isDate(a) && isDate(b)) {
+            return a.getTime() === b.getTime();
+        }
+        else if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) {
+                return false;
+            }
+            for (let i = 0, len = a.length; i < len; i++) {
+                if (!equal(a[i], b[i])) {
+                    return false;
+                }
+            }
+        }
+        return a === b;
+    }
+    var util$1 = {
+        equal,
+        clone: clone$1,
+    };
+
     function clone(obj) {
         if (isNil(obj) || typeof obj !== 'object') {
             return obj;
@@ -17485,6 +17549,7 @@
         Event,
         inject,
         opentype,
+        util: util$1,
     };
 
     var reg = {
@@ -22163,50 +22228,6 @@
         static getTextureInstance(gl, texture, bbox) {
             return new TextureCache(gl, texture, bbox);
         }
-    }
-
-    function mergeBbox$1(bbox, a, b, c, d) {
-        bbox[0] = Math.min(bbox[0], a);
-        bbox[1] = Math.min(bbox[1], b);
-        bbox[2] = Math.max(bbox[2], c);
-        bbox[3] = Math.max(bbox[3], d);
-    }
-    // 深度对比对象
-    function equal(a, b) {
-        if (a === b) {
-            return true;
-        }
-        if (isObject(a) && isObject(b)) {
-            const hash = {};
-            for (let i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
-                const k = arr[i];
-                if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
-                    return false;
-                }
-                hash[k] = true;
-            }
-            // a没有b有则false
-            for (let i = 0, arr = Object.keys(b), len = arr.length; i < len; i++) {
-                const k = arr[i];
-                if (!hash.hasOwnProperty(k)) {
-                    return false;
-                }
-            }
-        }
-        else if (isDate(a) && isDate(b)) {
-            return a.getTime() === b.getTime();
-        }
-        else if (Array.isArray(a) && Array.isArray(b)) {
-            if (a.length !== b.length) {
-                return false;
-            }
-            for (let i = 0, len = a.length; i < len; i++) {
-                if (!equal(a[i], b[i])) {
-                    return false;
-                }
-            }
-        }
-        return a === b;
     }
 
     class Node extends Event {
@@ -29071,12 +29092,15 @@
                 }
             }
             // 富文本每串不同的需要设置字体颜色
-            const SET_FONT_INDEX = [0];
+            const SET_COLOR_INDEX = [];
             let color;
             if (rich && rich.length) {
                 for (let i = 0, len = rich.length; i < len; i++) {
                     const item = rich[i];
-                    SET_FONT_INDEX[item.location] = i;
+                    SET_COLOR_INDEX.push({
+                        index: item.location,
+                        color: color2rgbaStr(item.color),
+                    });
                 }
                 const first = rich[0];
                 color = color2rgbaStr(first.color);
@@ -29091,13 +29115,14 @@
                 if (lineBox.y >= h) {
                     break;
                 }
-                const list = lineBox.list, len = list.length;
+                const list = lineBox.list;
+                const len = list.length;
                 for (let i = 0; i < len; i++) {
                     const textBox = list[i];
                     // textBox的分隔一定是按rich的，用字符索引来获取颜色
-                    const setFontIndex = SET_FONT_INDEX[textBox.index];
-                    if (rich && rich.length && setFontIndex) {
-                        const cur = rich[setFontIndex];
+                    const index = textBox.index;
+                    if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
+                        const cur = SET_COLOR_INDEX.shift();
                         color = color2rgbaStr(cur.color);
                     }
                     // 缩放影响字号
@@ -29175,7 +29200,12 @@
                     if (cursor.endLineBox !== i ||
                         cursor.endTextBox !== j ||
                         cursor.endString !== k) {
-                        this.showSelectArea = true;
+                        // 还要检查首尾，相同时不是多选
+                        const isMulti = cursor.startLineBox !== cursor.endLineBox ||
+                            cursor.startTextBox !== cursor.endTextBox ||
+                            cursor.startString !== cursor.endString;
+                        cursor.isMulti = isMulti;
+                        this.showSelectArea = isMulti;
                         (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
                     }
                     return;
@@ -29280,6 +29310,22 @@
         // 根据字符串索引更新光标
         updateCursorByIndex(index) {
             var _a;
+            const textBox = this.setCursorByIndex(index, false);
+            if (textBox) {
+                const { cursor, lineBoxList } = this;
+                const ctx = inject.getFontCanvas().ctx;
+                ctx.font = textBox.font;
+                // @ts-ignore
+                ctx.letterSpacing = textBox.letterSpacing;
+                const str = textBox.str;
+                const w = ctx.measureText(str.slice(0, cursor.startString)).width;
+                this.lastCursorX = textBox.x + w;
+                const m = this.matrixWorld;
+                const p = calPoint({ x: this.lastCursorX, y: textBox.y }, m);
+                (_a = this.root) === null || _a === void 0 ? void 0 : _a.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBoxList[cursor.startLineBox].lineHeight * m[0]);
+            }
+        }
+        setCursorByIndex(index, isEnd = false) {
             const lineBoxList = this.lineBoxList;
             const cursor = this.cursor;
             for (let i = 0, len = lineBoxList.length; i < len; i++) {
@@ -29289,20 +29335,17 @@
                     const textBox = list[j];
                     if (index >= textBox.index &&
                         index < textBox.index + textBox.str.length) {
-                        cursor.startLineBox = i;
-                        cursor.startTextBox = j;
-                        cursor.startString = index - textBox.index;
-                        const ctx = inject.getFontCanvas().ctx;
-                        ctx.font = textBox.font;
-                        // @ts-ignore
-                        ctx.letterSpacing = textBox.letterSpacing;
-                        const str = textBox.str;
-                        const w = ctx.measureText(str.slice(0, cursor.startString)).width;
-                        this.lastCursorX = textBox.x + w;
-                        const m = this.matrixWorld;
-                        const p = calPoint({ x: this.lastCursorX, y: textBox.y }, m);
-                        (_a = this.root) === null || _a === void 0 ? void 0 : _a.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
-                        return;
+                        if (isEnd) {
+                            cursor.endLineBox = i;
+                            cursor.endTextBox = j;
+                            cursor.endString = index - textBox.index;
+                        }
+                        else {
+                            cursor.startLineBox = i;
+                            cursor.startTextBox = j;
+                            cursor.startString = index - textBox.index;
+                        }
+                        return textBox;
                     }
                 }
             }
@@ -29326,18 +29369,12 @@
             const lineBoxList = this.lineBoxList;
             const cursor = this.cursor;
             const lineBox = lineBoxList[cursor.startLineBox];
-            if (!lineBox) {
-                throw new Error('Unknown lineBox');
-            }
             const list = lineBox.list;
             // 空行
             if (!list.length) {
                 return calPoint({ x: 0, y: lineBox.y }, m);
             }
             const textBox = list[cursor.startTextBox];
-            if (!textBox) {
-                throw new Error('Unknown textBox');
-            }
             const ctx = inject.getFontCanvas().ctx;
             ctx.font = textBox.font;
             // @ts-ignore
@@ -29651,40 +29688,7 @@
             let hasChange = false;
             if (rich) {
                 rich.forEach((item) => {
-                    if (style.hasOwnProperty('fontFamily') &&
-                        style.fontFamily !== item.fontFamily) {
-                        item.fontFamily = style.fontFamily;
-                        hasChange = true;
-                    }
-                    if (style.hasOwnProperty('fontWeight') &&
-                        style.fontWeight !== item.fontWeight) {
-                        item.fontWeight = style.fontWeight;
-                        hasChange = true;
-                    }
-                    if (style.hasOwnProperty('fontSize') &&
-                        style.fontSize !== item.fontSize) {
-                        item.fontSize = style.fontSize;
-                        hasChange = true;
-                    }
-                    if (style.hasOwnProperty('color') && style.color !== item.color) {
-                        item.color = style.color;
-                        hasChange = true;
-                    }
-                    if (style.hasOwnProperty('letterSpacing') &&
-                        style.letterSpacing !== item.letterSpacing) {
-                        item.letterSpacing = style.letterSpacing;
-                        hasChange = true;
-                    }
-                    if (style.hasOwnProperty('lineHeight') &&
-                        style.lineHeight !== item.lineHeight) {
-                        item.lineHeight = style.lineHeight;
-                        hasChange = true;
-                    }
-                    if (style.hasOwnProperty('paragraphSpacing') &&
-                        style.paragraphSpacing !== item.paragraphSpacing) {
-                        item.paragraphSpacing = style.paragraphSpacing;
-                        hasChange = true;
-                    }
+                    hasChange = this.updateRich(item, style) || hasChange;
                 });
             }
             // 防止rich变更但整体没有变更结果不刷新
@@ -29697,30 +29701,181 @@
             }
             this.afterEdit(isLeft, isTop);
         }
-        updateTextRangeStyle(style, start, end, cb) {
+        updateTextRangeStyle(style, cb) {
             const { cursor, rich } = this;
-            // 正常情况不会出现顺序颠倒或者光标单选
-            if (end <= start || !cursor.isMulti || !rich || !rich.length) {
-                return;
+            // 正常情况不会出现光标单选
+            if (!cursor.isMulti || !rich || !rich.length) {
+                return false;
             }
-            console.log(start, end);
+            const { isLeft, isTop } = this.beforeEdit();
+            const { isReversed, start, end, } = this.getSortedCursor();
+            let hasChange = false;
+            // 找到所处的rich开始结束范围
             for (let i = 0, len = rich.length; i < len; i++) {
                 const item = rich[i];
-                if (item.location >= start) {
-                    for (let j = i; j < len; j++) {
+                if (item.location + item.length > start) {
+                    for (let j = len - 1; j >= i; j--) {
                         const item2 = rich[j];
-                        if (item2.location + item2.length < end) {
-                            console.log(i, j);
+                        if (item2.location < end) {
+                            // 同一个rich拆分为2段或者3段或者不拆分，在中间就是3段，索引靠近首尾一侧拆2段，全相等不拆分
+                            if (i === j) {
+                                // 整个rich恰好被选中
+                                if (item.location === start && item.location + item.length === end) {
+                                    hasChange = this.updateRich(item, style);
+                                }
+                                // 选区开头是start则更新，后面新生成一段
+                                else if (item.location === start) {
+                                    const n = Object.assign({}, item);
+                                    hasChange = this.updateRich(item, style);
+                                    if (hasChange) {
+                                        const length = item.length;
+                                        item.length = end - start;
+                                        n.location = end;
+                                        n.length = length - item.length;
+                                        rich.splice(i + 1, 0, n);
+                                    }
+                                }
+                                // 选取结尾是end则更新，前面插入一段
+                                else if (item.location + item.length === end) {
+                                    const n = Object.assign({}, item);
+                                    hasChange = this.updateRich(n, style);
+                                    if (hasChange) {
+                                        item.length = start - item.location;
+                                        n.location = start;
+                                        n.length = end - start;
+                                        rich.splice(i + 1, 0, n);
+                                    }
+                                }
+                                // 选了中间一段，原有的部分作为开头，后面拆入2段新的
+                                else {
+                                    const n = Object.assign({}, item);
+                                    hasChange = this.updateRich(n, style);
+                                    if (hasChange) {
+                                        const length = item.length;
+                                        item.length = start - item.location;
+                                        n.location = start;
+                                        n.length = end - start;
+                                        rich.splice(i + 1, 0, n);
+                                        const n2 = Object.assign({}, item);
+                                        n2.location = end;
+                                        n2.length = length - item.length - n.length;
+                                        rich.splice(i + 2, 0, n2);
+                                    }
+                                }
+                            }
+                            // 跨rich段，开头结尾的rich除了检测更新样式外，还要看是否造成了分割，中间部分的只需检查更新即可
+                            else {
+                                const first = Object.assign({}, item);
+                                const item3 = rich[j];
+                                const last = Object.assign({}, item3);
+                                // 倒序进行，先从后面更新
+                                if (this.updateRich(item3, style)) {
+                                    hasChange = true;
+                                    if (end < item3.location + item3.length) {
+                                        last.location = end;
+                                        last.length = item3.location + item3.length - end;
+                                        item3.length = end - item3.location;
+                                        rich.splice(j + 1, 0, last);
+                                    }
+                                }
+                                for (let k = i + 1; k < j - 1; k++) {
+                                    hasChange = this.updateRich(rich[k], style) || hasChange;
+                                }
+                                if (this.updateRich(first, style)) {
+                                    hasChange = true;
+                                    if (start > item.location) {
+                                        first.location = start;
+                                        first.length = item.location + item.length - start;
+                                        item.length = start - item.location;
+                                        rich.splice(i + 1, 0, first);
+                                    }
+                                }
+                            }
                             break;
                         }
                     }
                     break;
                 }
             }
+            if (hasChange) {
+                // 合并相同的rich段，更新光标位置
+                this.mergeRich();
+                const parent = this.parent;
+                // 手动重新布局，因为要重新生成lineBox和textBox，然后设置光标再刷新
+                this.layout({
+                    x: 0,
+                    y: 0,
+                    w: parent.width,
+                    h: parent.height,
+                });
+                this.clearCacheUpward(false);
+                this.setCursorByIndex(isReversed ? end : start, false);
+                this.setCursorByIndex(isReversed ? start : end, true);
+                this.refresh(RefreshLevel.REPAINT, cb);
+            }
+            this.afterEdit(isLeft, isTop);
+            return hasChange;
+        }
+        updateRich(item, style) {
+            let hasChange = false;
+            if (style.hasOwnProperty('fontFamily') &&
+                style.fontFamily !== item.fontFamily) {
+                item.fontFamily = style.fontFamily;
+                hasChange = true;
+            }
+            if (style.hasOwnProperty('fontSize') &&
+                style.fontSize !== item.fontSize) {
+                item.fontSize = style.fontSize;
+                hasChange = true;
+            }
+            if (style.hasOwnProperty('color')) {
+                const c = color2rgbaInt(style.color);
+                if (item.color[0] !== c[0] ||
+                    item.color[1] !== c[1] ||
+                    item.color[2] !== c[2] ||
+                    item.color[3] !== c[3]) {
+                    item.color = c;
+                    hasChange = true;
+                }
+            }
+            if (style.hasOwnProperty('letterSpacing') &&
+                style.letterSpacing !== item.letterSpacing) {
+                item.letterSpacing = style.letterSpacing;
+                hasChange = true;
+            }
+            if (style.hasOwnProperty('lineHeight') &&
+                style.lineHeight !== item.lineHeight) {
+                item.lineHeight = style.lineHeight;
+                hasChange = true;
+            }
+            if (style.hasOwnProperty('paragraphSpacing') &&
+                style.paragraphSpacing !== item.paragraphSpacing) {
+                item.paragraphSpacing = style.paragraphSpacing;
+                hasChange = true;
+            }
+            return hasChange;
+        }
+        mergeRich() {
+            const rich = this.rich;
+            if (!rich || !rich.length) {
+                return false;
+            }
+            let hasChange = false;
+            for (let i = rich.length - 2; i >= 0; i--) {
+                const a = rich[i];
+                const b = rich[i + 1];
+                if (equalRich(a, b)) {
+                    a.length += b.length;
+                    rich.splice(i + 1, 1);
+                    hasChange = true;
+                }
+            }
+            return hasChange;
         }
         // 如果end索引大于start，将其对换返回
         getSortedCursor() {
             let { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, endString, } = this.cursor;
+            let isReversed = false;
             if (isMulti) {
                 // 确保先后顺序，
                 if (startLineBox > endLineBox) {
@@ -29739,6 +29894,7 @@
                         startTextBox,
                         startString,
                     ];
+                    isReversed = true;
                 }
                 else if (startLineBox === endLineBox && startTextBox > endTextBox) {
                     [
@@ -29752,6 +29908,7 @@
                         startTextBox,
                         startString,
                     ];
+                    isReversed = true;
                 }
                 else if (startLineBox === endLineBox && startTextBox === endTextBox && startString > endString) {
                     [
@@ -29761,7 +29918,29 @@
                         endString,
                         startString,
                     ];
+                    isReversed = true;
                 }
+            }
+            const lineBoxList = this.lineBoxList;
+            let start = 0;
+            let lineBox = lineBoxList[startLineBox];
+            let list = lineBox.list;
+            if (!list.length) {
+                start = lineBox.index;
+            }
+            else {
+                const textBox = list[startTextBox];
+                start = textBox.index + startString;
+            }
+            let end = 0;
+            lineBox = lineBoxList[endLineBox];
+            list = lineBox.list;
+            if (!list.length) {
+                end = lineBox.index;
+            }
+            else {
+                const textBox = list[endTextBox];
+                end = textBox.index + endString;
             }
             return {
                 isMulti,
@@ -29771,6 +29950,9 @@
                 endLineBox,
                 endTextBox,
                 endString,
+                start,
+                end,
+                isReversed,
             };
         }
         // 返回光标所在的Rich数据列表
@@ -29792,7 +29974,8 @@
                     RICH_INDEX[i] = item;
                 }
             }
-            const { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, } = this.getSortedCursor();
+            const { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, endString, } = this.getSortedCursor();
+            // 多选区域
             if (isMulti) {
                 let start = 0;
                 let end = 0;
@@ -29804,7 +29987,7 @@
                 }
                 else {
                     const textBox = list[startTextBox];
-                    start = textBox.index;
+                    start = textBox.index + startString;
                 }
                 lineBox = lineBoxList[endLineBox];
                 list = lineBox.list;
@@ -29813,19 +29996,20 @@
                 }
                 else {
                     const textBox = list[endTextBox];
-                    end = textBox.index;
+                    end = textBox.index + endString;
                 }
                 // 从start到end（不含）的rich存入
                 for (let i = 0, len = rich.length; i < len; i++) {
                     const r = rich[i];
-                    if (r.location > end) {
+                    if (r.location >= end) {
                         break;
                     }
-                    if (r.location >= start) {
+                    if (r.location + r.length > start) {
                         res.push(r);
                     }
                 }
             }
+            // 单光标位置
             else {
                 const lineBox = lineBoxList[startLineBox];
                 const list = lineBox.list;
@@ -29858,6 +30042,27 @@
                 (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REFLOW, false, false, undefined);
             }
         }
+    }
+    function equalRich(a, b) {
+        const keys = ['fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'paragraphSpacing', 'color'];
+        for (let i = 0, len = keys.length; i < len; i++) {
+            const k = keys[i];
+            // @ts-ignore
+            const oa = a[k];
+            // @ts-ignore
+            const ob = b[k];
+            if (k === 'color') {
+                if (oa[0] !== ob[0] || oa[1] !== ob[1] || oa[2] !== ob[2] || oa[3] !== ob[3]) {
+                    return false;
+                }
+            }
+            else {
+                if (oa !== ob) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     function parse(json) {
@@ -33033,6 +33238,10 @@ void main() {
         let autoLineHeight = false;
         let valid = false;
         const richList = node.getCursorRich();
+        // 除非异常否则不会进入
+        if (!richList || !richList.length) {
+            return getData([node]);
+        }
         const { width, height, lineHeight: lh } = style;
         for (let i = 0, len = richList.length; i < len; i++) {
             const res = putData(width, height, lh, fontFamily, name, color, fontSize, letterSpacing, lineHeight, paragraphSpacing, textAlign, textBehaviour, richList[i]);

@@ -65,3 +65,8 @@ export function equal(a: any, b: any) {
   }
   return a === b;
 }
+
+export default {
+  equal,
+  clone,
+};

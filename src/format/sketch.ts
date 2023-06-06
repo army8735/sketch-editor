@@ -504,8 +504,8 @@ async function convertItem(
           length,
           fontFamily,
           fontSize,
-          fontWeight: 400,
-          fontStyle: 'normal',
+          fontWeight: 400, // 无用写死
+          fontStyle: 'normal', // 同
           letterSpacing: kerning,
           lineHeight: maximumLineHeight,
           paragraphSpacing,

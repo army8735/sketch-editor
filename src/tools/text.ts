@@ -207,7 +207,11 @@ export function getEditData(node: Text) {
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   let autoLineHeight = false;
   let valid = false;
-  const richList = node.getCursorRich()!;
+  const richList = node.getCursorRich();
+  // 除非异常否则不会进入
+  if (!richList || !richList.length) {
+    return getData([node]);
+  }
   const { width, height, lineHeight: lh } = style;
   for (let i = 0, len = richList.length; i < len; i++) {
     const res = putData(

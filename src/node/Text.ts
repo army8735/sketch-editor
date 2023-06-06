@@ -3,7 +3,7 @@ import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
-import { color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
+import { color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
@@ -507,12 +507,15 @@ class Text extends Node {
       }
     }
     // 富文本每串不同的需要设置字体颜色
-    const SET_FONT_INDEX: Array<number> = [0];
+    const SET_COLOR_INDEX: Array<{ index: number, color: string }> = [];
     let color: string;
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
-        SET_FONT_INDEX[item.location] = i;
+        SET_COLOR_INDEX.push({
+          index: item.location,
+          color: color2rgbaStr(item.color),
+        });
       }
       const first = rich[0];
       color = color2rgbaStr(first.color);
@@ -527,14 +530,14 @@ class Text extends Node {
       if (lineBox.y >= h) {
         break;
       }
-      const list = lineBox.list,
-        len = list.length;
+      const list = lineBox.list;
+      const len = list.length;
       for (let i = 0; i < len; i++) {
         const textBox = list[i];
         // textBox的分隔一定是按rich的，用字符索引来获取颜色
-        const setFontIndex = SET_FONT_INDEX[textBox.index];
-        if (rich && rich.length && setFontIndex) {
-          const cur = rich[setFontIndex];
+        const index = textBox.index;
+        if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
+          const cur = SET_COLOR_INDEX.shift()!;
           color = color2rgbaStr(cur.color);
         }
         // 缩放影响字号
@@ -624,7 +627,13 @@ class Text extends Node {
           cursor.endTextBox !== j ||
           cursor.endString !== k
         ) {
-          this.showSelectArea = true;
+          // 还要检查首尾，相同时不是多选
+          const isMulti =
+            cursor.startLineBox !== cursor.endLineBox ||
+            cursor.startTextBox !== cursor.endTextBox ||
+            cursor.startString !== cursor.endString;
+          cursor.isMulti = isMulti;
+          this.showSelectArea = isMulti;
           this.root?.addUpdate(
             this,
             [],
@@ -755,6 +764,28 @@ class Text extends Node {
 
   // 根据字符串索引更新光标
   private updateCursorByIndex(index: number) {
+    const textBox = this.setCursorByIndex(index, false);
+    if (textBox) {
+      const { cursor, lineBoxList } = this;
+      const ctx = inject.getFontCanvas().ctx;
+      ctx.font = textBox.font;
+      // @ts-ignore
+      ctx.letterSpacing = textBox.letterSpacing;
+      const str = textBox.str;
+      const w = ctx.measureText(str.slice(0, cursor.startString)).width;
+      this.lastCursorX = textBox.x + w;
+      const m = this.matrixWorld;
+      const p = calPoint({ x: this.lastCursorX, y: textBox.y }, m);
+      this.root?.emit(
+        Event.UPDATE_CURSOR,
+        p.x,
+        p.y,
+        lineBoxList[cursor.startLineBox].lineHeight * m[0],
+      );
+    }
+  }
+
+  private setCursorByIndex(index: number, isEnd = false) {
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
     for (let i = 0, len = lineBoxList.length; i < len; i++) {
@@ -766,25 +797,16 @@ class Text extends Node {
           index >= textBox.index &&
           index < textBox.index + textBox.str.length
         ) {
-          cursor.startLineBox = i;
-          cursor.startTextBox = j;
-          cursor.startString = index - textBox.index;
-          const ctx = inject.getFontCanvas().ctx;
-          ctx.font = textBox.font;
-          // @ts-ignore
-          ctx.letterSpacing = textBox.letterSpacing;
-          const str = textBox.str;
-          const w = ctx.measureText(str.slice(0, cursor.startString)).width;
-          this.lastCursorX = textBox.x + w;
-          const m = this.matrixWorld;
-          const p = calPoint({ x: this.lastCursorX, y: textBox.y }, m);
-          this.root?.emit(
-            Event.UPDATE_CURSOR,
-            p.x,
-            p.y,
-            lineBox.lineHeight * m[0],
-          );
-          return;
+          if (isEnd) {
+            cursor.endLineBox = i;
+            cursor.endTextBox = j;
+            cursor.endString = index - textBox.index;
+          } else {
+            cursor.startLineBox = i;
+            cursor.startTextBox = j;
+            cursor.startString = index - textBox.index;
+          }
+          return textBox;
         }
       }
     }
@@ -810,18 +832,12 @@ class Text extends Node {
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
     const lineBox = lineBoxList[cursor.startLineBox];
-    if (!lineBox) {
-      throw new Error('Unknown lineBox');
-    }
     const list = lineBox.list;
     // 空行
     if (!list.length) {
       return calPoint({ x: 0, y: lineBox.y }, m);
     }
     const textBox = list[cursor.startTextBox];
-    if (!textBox) {
-      throw new Error('Unknown textBox');
-    }
     const ctx = inject.getFontCanvas().ctx;
     ctx.font = textBox.font;
     // @ts-ignore
@@ -1142,52 +1158,7 @@ class Text extends Node {
     let hasChange = false;
     if (rich) {
       rich.forEach((item) => {
-        if (
-          style.hasOwnProperty('fontFamily') &&
-          style.fontFamily !== item.fontFamily
-        ) {
-          item.fontFamily = style.fontFamily;
-          hasChange = true;
-        }
-        if (
-          style.hasOwnProperty('fontWeight') &&
-          style.fontWeight !== item.fontWeight
-        ) {
-          item.fontWeight = style.fontWeight;
-          hasChange = true;
-        }
-        if (
-          style.hasOwnProperty('fontSize') &&
-          style.fontSize !== item.fontSize
-        ) {
-          item.fontSize = style.fontSize;
-          hasChange = true;
-        }
-        if (style.hasOwnProperty('color') && style.color !== item.color) {
-          item.color = style.color;
-          hasChange = true;
-        }
-        if (
-          style.hasOwnProperty('letterSpacing') &&
-          style.letterSpacing !== item.letterSpacing
-        ) {
-          item.letterSpacing = style.letterSpacing;
-          hasChange = true;
-        }
-        if (
-          style.hasOwnProperty('lineHeight') &&
-          style.lineHeight !== item.lineHeight
-        ) {
-          item.lineHeight = style.lineHeight;
-          hasChange = true;
-        }
-        if (
-          style.hasOwnProperty('paragraphSpacing') &&
-          style.paragraphSpacing !== item.paragraphSpacing
-        ) {
-          item.paragraphSpacing = style.paragraphSpacing;
-          hasChange = true;
-        }
+        hasChange = this.updateRich(item, style) || hasChange;
       });
     }
     // 防止rich变更但整体没有变更结果不刷新
@@ -1200,25 +1171,192 @@ class Text extends Node {
     this.afterEdit(isLeft, isTop);
   }
 
-  updateTextRangeStyle(style: any, start: number, end: number, cb?: (sync: boolean) => void) {
+  updateTextRangeStyle(style: any, cb?: (sync: boolean) => void) {
     const { cursor, rich } = this;
-    // 正常情况不会出现顺序颠倒或者光标单选
-    if (end <= start || !cursor.isMulti || !rich || !rich.length) {
-      return;
-    }console.log(start, end);
+    // 正常情况不会出现光标单选
+    if (!cursor.isMulti || !rich || !rich.length) {
+      return false;
+    }
+    const { isLeft, isTop } = this.beforeEdit();
+    const {
+      isReversed,
+      start,
+      end,
+    } = this.getSortedCursor();
+    let hasChange = false;
+    // 找到所处的rich开始结束范围
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
-      if (item.location >= start) {
-        for (let j = i; j < len; j++) {
+      if (item.location + item.length > start) {
+        for (let j = len - 1; j >= i; j--) {
           const item2 = rich[j];
-          if (item2.location + item2.length < end) {
-            console.log(i,j);
+          if (item2.location < end) {
+            // 同一个rich拆分为2段或者3段或者不拆分，在中间就是3段，索引靠近首尾一侧拆2段，全相等不拆分
+            if (i === j) {
+              // 整个rich恰好被选中
+              if (item.location === start && item.location + item.length === end) {
+                hasChange = this.updateRich(item, style);
+              }
+              // 选区开头是start则更新，后面新生成一段
+              else if (item.location === start) {
+                const n = Object.assign({}, item);
+                hasChange = this.updateRich(item, style);
+                if (hasChange) {
+                  const length = item.length;
+                  item.length = end - start;
+                  n.location = end;
+                  n.length = length - item.length;
+                  rich.splice(i + 1, 0, n);
+                }
+              }
+              // 选取结尾是end则更新，前面插入一段
+              else if (item.location + item.length === end) {
+                const n = Object.assign({}, item);
+                hasChange = this.updateRich(n, style);
+                if (hasChange) {
+                  item.length = start - item.location;
+                  n.location = start;
+                  n.length = end - start;
+                  rich.splice(i + 1, 0, n);
+                }
+              }
+              // 选了中间一段，原有的部分作为开头，后面拆入2段新的
+              else {
+                const n = Object.assign({}, item);
+                hasChange = this.updateRich(n, style);
+                if (hasChange) {
+                  const length = item.length;
+                  item.length = start - item.location;
+                  n.location = start;
+                  n.length = end - start;
+                  rich.splice(i + 1, 0, n);
+                  const n2 = Object.assign({}, item);
+                  n2.location = end;
+                  n2.length = length - item.length - n.length;
+                  rich.splice(i + 2, 0, n2);
+                }
+              }
+            }
+            // 跨rich段，开头结尾的rich除了检测更新样式外，还要看是否造成了分割，中间部分的只需检查更新即可
+            else {
+              const first = Object.assign({}, item);
+              const item3 = rich[j];
+              const last = Object.assign({}, item3);
+              // 倒序进行，先从后面更新
+              if (this.updateRich(item3, style)) {
+                hasChange = true;
+                if (end < item3.location + item3.length) {
+                  last.location = end;
+                  last.length = item3.location + item3.length - end;
+                  item3.length = end - item3.location;
+                  rich.splice(j + 1, 0, last);
+                }
+              }
+              for (let k = i + 1; k < j - 1; k++) {
+                hasChange = this.updateRich(rich[k], style) || hasChange;
+              }
+              if (this.updateRich(first, style)) {
+                hasChange = true;
+                if (start > item.location) {
+                  first.location = start;
+                  first.length = item.location + item.length - start;
+                  item.length = start - item.location;
+                  rich.splice(i + 1, 0, first);
+                }
+              }
+            }
             break;
           }
         }
         break;
       }
     }
+    if (hasChange) {
+      // 合并相同的rich段，更新光标位置
+      this.mergeRich();
+      const parent = this.parent!;
+      // 手动重新布局，因为要重新生成lineBox和textBox，然后设置光标再刷新
+      this.layout({
+        x: 0,
+        y: 0,
+        w: parent.width,
+        h: parent.height,
+      });
+      this.clearCacheUpward(false);
+      this.setCursorByIndex(isReversed ? end : start, false);
+      this.setCursorByIndex(isReversed ? start : end, true);
+      this.refresh(RefreshLevel.REPAINT, cb);
+    }
+    this.afterEdit(isLeft, isTop);
+    return hasChange;
+  }
+
+  private updateRich(item: Rich, style: any) {
+    let hasChange = false;
+    if (
+      style.hasOwnProperty('fontFamily') &&
+      style.fontFamily !== item.fontFamily
+    ) {
+      item.fontFamily = style.fontFamily;
+      hasChange = true;
+    }
+    if (
+      style.hasOwnProperty('fontSize') &&
+      style.fontSize !== item.fontSize
+    ) {
+      item.fontSize = style.fontSize;
+      hasChange = true;
+    }
+    if (style.hasOwnProperty('color')) {
+      const c = color2rgbaInt(style.color);
+      if (item.color[0] !== c[0] ||
+        item.color[1] !== c[1] ||
+        item.color[2] !== c[2] ||
+        item.color[3] !== c[3]) {
+        item.color = c;
+        hasChange = true;
+      }
+    }
+    if (
+      style.hasOwnProperty('letterSpacing') &&
+      style.letterSpacing !== item.letterSpacing
+    ) {
+      item.letterSpacing = style.letterSpacing;
+      hasChange = true;
+    }
+    if (
+      style.hasOwnProperty('lineHeight') &&
+      style.lineHeight !== item.lineHeight
+    ) {
+      item.lineHeight = style.lineHeight;
+      hasChange = true;
+    }
+    if (
+      style.hasOwnProperty('paragraphSpacing') &&
+      style.paragraphSpacing !== item.paragraphSpacing
+    ) {
+      item.paragraphSpacing = style.paragraphSpacing;
+      hasChange = true;
+    }
+    return hasChange;
+  }
+
+  private mergeRich() {
+    const rich = this.rich;
+    if (!rich || !rich.length) {
+      return false;
+    }
+    let hasChange = false;
+    for (let i = rich.length - 2; i >= 0; i--) {
+      const a = rich[i];
+      const b = rich[i + 1];
+      if (equalRich(a, b)) {
+        a.length += b.length;
+        rich.splice(i + 1, 1);
+        hasChange = true;
+      }
+    }
+    return hasChange;
   }
 
   // 如果end索引大于start，将其对换返回
@@ -1232,6 +1370,7 @@ class Text extends Node {
       endTextBox,
       endString,
     } = this.cursor;
+    let isReversed = false;
     if (isMulti) {
       // 确保先后顺序，
       if (startLineBox > endLineBox) {
@@ -1250,6 +1389,7 @@ class Text extends Node {
           startTextBox,
           startString,
         ];
+        isReversed = true;
       } else if (startLineBox === endLineBox && startTextBox > endTextBox) {
         [
           startTextBox,
@@ -1262,6 +1402,7 @@ class Text extends Node {
           startTextBox,
           startString,
         ];
+        isReversed = true;
       } else if (startLineBox === endLineBox && startTextBox === endTextBox && startString > endString) {
         [
           startString,
@@ -1270,7 +1411,27 @@ class Text extends Node {
           endString,
           startString,
         ];
+        isReversed = true;
       }
+    }
+    const lineBoxList = this.lineBoxList;
+    let start = 0;
+    let lineBox = lineBoxList[startLineBox];
+    let list = lineBox.list;
+    if (!list.length) {
+      start = lineBox.index;
+    } else {
+      const textBox = list[startTextBox];
+      start = textBox.index + startString;
+    }
+    let end = 0;
+    lineBox = lineBoxList[endLineBox];
+    list = lineBox.list;
+    if (!list.length) {
+      end = lineBox.index;
+    } else {
+      const textBox = list[endTextBox];
+      end = textBox.index + endString;
     }
     return {
       isMulti,
@@ -1280,6 +1441,9 @@ class Text extends Node {
       endLineBox,
       endTextBox,
       endString,
+      start,
+      end,
+      isReversed,
     };
   }
 
@@ -1309,7 +1473,9 @@ class Text extends Node {
       startString,
       endLineBox,
       endTextBox,
+      endString,
     } = this.getSortedCursor();
+    // 多选区域
     if (isMulti) {
       let start = 0;
       let end = 0;
@@ -1320,7 +1486,7 @@ class Text extends Node {
         start = lineBox.index;
       } else {
         const textBox = list[startTextBox];
-        start = textBox.index;
+        start = textBox.index + startString;
       }
       lineBox = lineBoxList[endLineBox];
       list = lineBox.list;
@@ -1328,19 +1494,21 @@ class Text extends Node {
         end = lineBox.index;
       } else {
         const textBox = list[endTextBox];
-        end = textBox.index;
+        end = textBox.index + endString;
       }
       // 从start到end（不含）的rich存入
       for (let i = 0, len = rich.length; i < len; i++) {
         const r = rich[i];
-        if (r.location > end) {
+        if (r.location >= end) {
           break;
         }
-        if (r.location >= start) {
+        if (r.location + r.length > start) {
           res.push(r);
         }
       }
-    } else {
+    }
+    // 单光标位置
+    else {
       const lineBox = lineBoxList[startLineBox];
       const list = lineBox.list;
       // 空行
@@ -1379,6 +1547,27 @@ class Text extends Node {
       );
     }
   }
+}
+
+function equalRich(a: Rich, b: Rich) {
+  const keys = ['fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'paragraphSpacing', 'color'];
+  for (let i = 0, len = keys.length; i < len; i++) {
+    const k = keys[i];
+    // @ts-ignore
+    const oa = a[k];
+    // @ts-ignore
+    const ob = b[k];
+    if (k === 'color') {
+      if (oa[0] !== ob[0] || oa[1] !== ob[1] || oa[2] !== ob[2] || oa[3] !== ob[3]) {
+        return false;
+      }
+    } else {
+      if (oa !== ob) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 export default Text;

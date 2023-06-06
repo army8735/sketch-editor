@@ -1228,9 +1228,11 @@ function setFontPanel(node) {
 
 $family.addEventListener('change', function() {
   const list = editor.style.font.data[$family.value.toLowerCase()].list;
-  const fontFamily = list[0].postscriptName; console.log(isEditText);
+  const fontFamily = list[0].postscriptName;
   if (isEditText) {
-    if (selectNode.cursor.isMulti) {} else {}
+    if (selectNode.cursor.isMulti) {
+      selectNode.updateTextRangeStyle({ fontFamily });
+    } else {}
   } else {
     selectNode.updateTextStyle({ fontFamily });
   }
@@ -1241,7 +1243,9 @@ $style.addEventListener('change', function() {
   $style2.innerHTML = $style.selectedOptions[0].innerHTML;
   const fontFamily = $style.value;
   if (isEditText) {
-    if (selectNode.cursor.isMulti) {} else {}
+    if (selectNode.cursor.isMulti) {
+      selectNode.updateTextRangeStyle({ fontFamily });
+    } else {}
   } else {
     selectNode.updateTextStyle({ fontFamily });
   }
@@ -1250,7 +1254,9 @@ $style.addEventListener('change', function() {
 $color.addEventListener('input', function() {
   const color = $color.value;
   if (isEditText) {
-    if (selectNode.cursor.isMulti) {} else {}
+    if (selectNode.cursor.isMulti) {
+      selectNode.updateTextRangeStyle({ color });
+    } else {}
   } else {
     selectNode.updateTextStyle({ color });
   }

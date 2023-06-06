@@ -217,8 +217,8 @@ export type Rich = {
   length: number;
   fontFamily: string;
   fontSize: number;
-  fontWeight: number;
-  fontStyle: string;
+  fontWeight: number; // 用不到，只会改postscriptName
+  fontStyle: string; // 同
   lineHeight: number;
   letterSpacing: number;
   paragraphSpacing: number;
