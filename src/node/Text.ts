@@ -3,7 +3,12 @@ import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
-import { color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle } from '../style/css';
+import {
+  color2rgbaInt,
+  color2rgbaStr,
+  getBaseline,
+  setFontStyle,
+} from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
@@ -507,7 +512,7 @@ class Text extends Node {
       }
     }
     // 富文本每串不同的需要设置字体颜色
-    const SET_COLOR_INDEX: Array<{ index: number, color: string }> = [];
+    const SET_COLOR_INDEX: Array<{ index: number; color: string }> = [];
     let color: string;
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
@@ -816,9 +821,11 @@ class Text extends Node {
   checkCursorMulti() {
     const cursor = this.cursor;
     if (cursor.isMulti) {
-      if (cursor.startLineBox === cursor.endLineBox &&
+      if (
+        cursor.startLineBox === cursor.endLineBox &&
         cursor.startTextBox === cursor.endTextBox &&
-        cursor.startString === cursor.endString) {
+        cursor.startString === cursor.endString
+      ) {
         cursor.isMulti = false;
         this.showSelectArea = false;
       }
@@ -1099,7 +1106,11 @@ class Text extends Node {
     outer: for (let i = 0, len = list.length; i < len; i++) {
       const { x, w, str, font } = list[i];
       // x位于哪个textBox上，注意开头结尾
-      if ((!i && localX <= x + w) || (localX >= x && localX <= x + w) || i === len - 1) {
+      if (
+        (!i && localX <= x + w) ||
+        (localX >= x && localX <= x + w) ||
+        i === len - 1
+      ) {
         if (isEnd) {
           cursor.endTextBox = i;
         } else {
@@ -1178,11 +1189,7 @@ class Text extends Node {
       return false;
     }
     const { isLeft, isTop } = this.beforeEdit();
-    const {
-      isReversed,
-      start,
-      end,
-    } = this.getSortedCursor();
+    const { isReversed, start, end } = this.getSortedCursor();
     let hasChange = false;
     // 找到所处的rich开始结束范围
     for (let i = 0, len = rich.length; i < len; i++) {
@@ -1194,7 +1201,10 @@ class Text extends Node {
             // 同一个rich拆分为2段或者3段或者不拆分，在中间就是3段，索引靠近首尾一侧拆2段，全相等不拆分
             if (i === j) {
               // 整个rich恰好被选中
-              if (item.location === start && item.location + item.length === end) {
+              if (
+                item.location === start &&
+                item.location + item.length === end
+              ) {
                 hasChange = this.updateRich(item, style);
               }
               // 选区开头是start则更新，后面新生成一段
@@ -1300,19 +1310,18 @@ class Text extends Node {
       item.fontFamily = style.fontFamily;
       hasChange = true;
     }
-    if (
-      style.hasOwnProperty('fontSize') &&
-      style.fontSize !== item.fontSize
-    ) {
+    if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
       item.fontSize = style.fontSize;
       hasChange = true;
     }
     if (style.hasOwnProperty('color')) {
       const c = color2rgbaInt(style.color);
-      if (item.color[0] !== c[0] ||
+      if (
+        item.color[0] !== c[0] ||
         item.color[1] !== c[1] ||
         item.color[2] !== c[2] ||
-        item.color[3] !== c[3]) {
+        item.color[3] !== c[3]
+      ) {
         item.color = c;
         hasChange = true;
       }
@@ -1391,26 +1400,19 @@ class Text extends Node {
         ];
         isReversed = true;
       } else if (startLineBox === endLineBox && startTextBox > endTextBox) {
-        [
-          startTextBox,
-          startString,
-          endTextBox,
-          endString,
-        ] = [
+        [startTextBox, startString, endTextBox, endString] = [
           endTextBox,
           endString,
           startTextBox,
           startString,
         ];
         isReversed = true;
-      } else if (startLineBox === endLineBox && startTextBox === endTextBox && startString > endString) {
-        [
-          startString,
-          endString,
-        ] = [
-          endString,
-          startString,
-        ];
+      } else if (
+        startLineBox === endLineBox &&
+        startTextBox === endTextBox &&
+        startString > endString
+      ) {
+        [startString, endString] = [endString, startString];
         isReversed = true;
       }
     }
@@ -1519,7 +1521,10 @@ class Text extends Node {
         }
       } else {
         // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首
-        const i = startString === 0 && startTextBox > 0 ? (startTextBox - 1) : startTextBox;
+        const i =
+          startString === 0 && startTextBox > 0
+            ? startTextBox - 1
+            : startTextBox;
         const textBox = list[i];
         const r = RICH_INDEX[textBox.index];
         if (res.indexOf(r) === -1) {
@@ -1550,7 +1555,14 @@ class Text extends Node {
 }
 
 function equalRich(a: Rich, b: Rich) {
-  const keys = ['fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'paragraphSpacing', 'color'];
+  const keys = [
+    'fontFamily',
+    'fontSize',
+    'lineHeight',
+    'letterSpacing',
+    'paragraphSpacing',
+    'color',
+  ];
   for (let i = 0, len = keys.length; i < len; i++) {
     const k = keys[i];
     // @ts-ignore
@@ -1558,7 +1570,12 @@ function equalRich(a: Rich, b: Rich) {
     // @ts-ignore
     const ob = b[k];
     if (k === 'color') {
-      if (oa[0] !== ob[0] || oa[1] !== ob[1] || oa[2] !== ob[2] || oa[3] !== ob[3]) {
+      if (
+        oa[0] !== ob[0] ||
+        oa[1] !== ob[1] ||
+        oa[2] !== ob[2] ||
+        oa[3] !== ob[3]
+      ) {
         return false;
       }
     } else {
