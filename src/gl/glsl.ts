@@ -20,7 +20,6 @@ precision mediump float;
 
 varying vec2 v_texCoords;
 varying float v_opacity;
-
 uniform sampler2D u_texture;
 
 void main() {
@@ -118,14 +117,12 @@ void main() {
 export const gaussVert = `#version 100
 
 attribute vec4 a_position;
-
 attribute vec2 a_texCoords;
-varying vec2 v_texCoordsBlur[3];
-
-uniform vec2 u_direction;
+varying vec2 v_texCoords;
 
 void main() {
   gl_Position = a_position;
+  v_texCoords = a_texCoords;
 }`;
 
 export const gaussFrag = `#version 100
@@ -134,12 +131,13 @@ export const gaussFrag = `#version 100
 precision mediump float;
 #endif
 
-varying vec2 v_texCoordsBlur[3];
-
+varying vec2 v_texCoords;
 uniform sampler2D u_texture;
+uniform vec2 u_direction;
 
 void main() {
   gl_FragColor = vec4(0.0);
+  \${placeholder}
 }`;
 
 export const mbmVert = maskVert;

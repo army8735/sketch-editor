@@ -23650,7 +23650,8 @@
                     if (shadowEnable[i]) {
                         const item = shadow[i];
                         if (item.color[3] > 0) {
-                            const d = kernelSize(item.blur);
+                            // shadow的卷积核在sketch中需要乘以0.5
+                            const d = kernelSize(item.blur * 0.5);
                             const spread = outerSizeByD(d);
                             if (item.x || item.y || spread) {
                                 sb[0] = Math.min(sb[0], item.x - spread);
@@ -30372,7 +30373,6 @@ precision mediump float;
 
 varying vec2 v_texCoords;
 varying float v_opacity;
-
 uniform sampler2D u_texture;
 
 void main() {
@@ -30463,14 +30463,12 @@ void main() {
     const gaussVert = `#version 100
 
 attribute vec4 a_position;
-
 attribute vec2 a_texCoords;
-varying vec2 v_texCoordsBlur[3];
-
-uniform vec2 u_direction;
+varying vec2 v_texCoords;
 
 void main() {
   gl_Position = a_position;
+  v_texCoords = a_texCoords;
 }`;
     const gaussFrag = `#version 100
 
@@ -30478,12 +30476,13 @@ void main() {
 precision mediump float;
 #endif
 
-varying vec2 v_texCoordsBlur[3];
-
+varying vec2 v_texCoords;
 uniform sampler2D u_texture;
+uniform vec2 u_direction;
 
 void main() {
   gl_FragColor = vec4(0.0);
+  \${placeholder}
 }`;
     const mbmVert = maskVert;
     const multiplyFrag = `#version 100
@@ -32344,11 +32343,7 @@ void main() {
      * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
      */
     function genGaussBlur(gl, root, textureTarget, sigma, structs, index, lv, total, W, H, scale) {
-        let d = kernelSize(sigma);
-        const max = config.MAX_VARYING_VECTORS;
-        while (d > max) {
-            d -= 2;
-        }
+        const d = kernelSize(sigma * scale);
         const spread = outerSizeByD(d);
         const bbox = textureTarget.bbox.slice(0);
         bbox[0] -= spread;
@@ -32385,7 +32380,7 @@ void main() {
             },
         ], dx, dy, false);
         // 再建一个空白尺寸纹理，2个纹理互相写入对方，循环3次模糊，水平垂直分开
-        const programGauss = genBlurShader(gl, programs, sigma, d);
+        const programGauss = genBlurShader(gl, programs, sigma * scale, d);
         gl.useProgram(programGauss);
         const res = drawGauss(gl, programGauss, target.texture, w, h);
         gl.deleteTexture(target.texture);
@@ -32401,35 +32396,24 @@ void main() {
             return programs[key];
         }
         const weights = gaussianWeight(sigma, d);
-        let vert = '';
         let frag = '';
         const r = Math.floor(d * 0.5);
         for (let i = 0; i < r; i++) {
+            // u_direction传入基数为100，因此相邻的像素点间隔百分之一
             let c = (r - i) * 0.01;
-            vert += `v_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;\n`;
-            frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};\n`;
+            frag += `gl_FragColor += texture2D(u_texture, v_texCoords + vec2(-${c}, -${c}) * u_direction) * ${weights[i]};
+      gl_FragColor += texture2D(u_texture, v_texCoords + vec2(${c}, ${c}) * u_direction) * ${weights[i]};\n`;
         }
-        vert += `v_texCoordsBlur[${r}] = a_texCoords;\n`;
-        frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};\n`;
-        for (let i = 0; i < r; i++) {
-            let c = (i + 1) * 0.01;
-            vert += `v_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;\n`;
-            frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};\n`;
-        }
-        vert = gaussVert.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
-        frag = gaussFrag.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-        return (programs[key] = initShaders(gl, vert, frag));
+        frag += `gl_FragColor += texture2D(u_texture, v_texCoords) * ${weights[r]};`;
+        frag = gaussFrag.replace('${placeholder}', frag);
+        return (programs[key] = initShaders(gl, gaussVert, frag));
     }
     function genShadow(gl, root, textureTarget, shadow, structs, index, lv, total, W, H, scale) {
         const bbox = textureTarget.bbox.slice(0);
         const sb = [0, 0, 0, 0];
         for (let i = 0, len = shadow.length; i < len; i++) {
             const item = shadow[i];
-            let d = kernelSize(item.blur);
-            const max = config.MAX_VARYING_VECTORS;
-            while (d > max) {
-                d -= 2;
-            }
+            const d = kernelSize(item.blur * scale * 0.5);
             const spread = outerSizeByD(d);
             if (item.x || item.y || spread) {
                 sb[0] = Math.min(sb[0], item.x - spread);
@@ -32520,12 +32504,8 @@ void main() {
             gl.disableVertexAttribArray(a_texCoords);
             // 有blur再生成
             if (item.blur > 0) {
-                let d = kernelSize(item.blur);
-                const max = config.MAX_VARYING_VECTORS;
-                while (d > max) {
-                    d -= 2;
-                }
-                const programGauss = genBlurShader(gl, programs, item.blur, d);
+                const d = kernelSize(item.blur * scale * 0.5);
+                const programGauss = genBlurShader(gl, programs, item.blur * scale * 0.5, d);
                 gl.useProgram(programGauss);
                 const res = drawGauss(gl, programGauss, temp.texture, w, h);
                 temp.release();

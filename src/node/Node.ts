@@ -1499,7 +1499,8 @@ class Node extends Event {
         if (shadowEnable[i]) {
           const item = shadow[i];
           if (item.color[3] > 0) {
-            const d = kernelSize(item.blur);
+            // shadow的卷积核在sketch中需要乘以0.5
+            const d = kernelSize(item.blur * 0.5);
             const spread = outerSizeByD(d);
             if (item.x || item.y || spread) {
               sb[0] = Math.min(sb[0], item.x - spread);
