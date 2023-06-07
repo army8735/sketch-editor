@@ -326,7 +326,7 @@ class Polyline extends Geom {
       if (!fillEnable[i]) {
         continue;
       }
-      const f = fill[i];
+      const f = fill[i]; console.log(f);
       if (Array.isArray(f)) {
         if (!f[3]) {
           continue;
@@ -384,6 +384,7 @@ class Polyline extends Geom {
           ctx.fillStyle = cg;
         }
       }
+      ctx.beginPath();
       canvasPolygon(ctx, points, scale, dx, dy);
       if ((this.props as PolylineProps).isClosed) {
         ctx.closePath();
@@ -461,6 +462,7 @@ class Polyline extends Geom {
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
       const p = strokePosition[i];
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
+      ctx.beginPath();
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
         canvasPolygon(ctx, points, scale, dx, dy);

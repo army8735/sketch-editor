@@ -25409,6 +25409,7 @@
                     continue;
                 }
                 const f = fill[i];
+                console.log(f);
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -25441,6 +25442,7 @@
                         ctx.fillStyle = cg;
                     }
                 }
+                ctx.beginPath();
                 canvasPolygon(ctx, points, scale, dx, dy);
                 if (this.props.isClosed) {
                     ctx.closePath();
@@ -25510,6 +25512,7 @@
                 // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
                 const p = strokePosition[i];
                 let os, ctx2;
+                ctx.beginPath();
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
                     canvasPolygon(ctx, points, scale, dx, dy);
