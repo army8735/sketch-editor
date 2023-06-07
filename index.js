@@ -25512,9 +25512,9 @@
                 // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
                 const p = strokePosition[i];
                 let os, ctx2;
-                ctx.beginPath();
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
+                    ctx.beginPath();
                     canvasPolygon(ctx, points, scale, dx, dy);
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
@@ -25526,10 +25526,12 @@
                     ctx2.miterLimit = ctx.miterLimit * scale;
                     ctx2.strokeStyle = ctx.strokeStyle;
                     ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                    ctx2.beginPath();
                     canvasPolygon(ctx2, points, scale, dx, dy);
                 }
                 else {
                     ctx.lineWidth = strokeWidth[i] * scale;
+                    ctx.beginPath();
                     canvasPolygon(ctx, points, scale, dx, dy);
                 }
                 if (this.props.isClosed) {
