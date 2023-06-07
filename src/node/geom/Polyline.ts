@@ -326,7 +326,7 @@ class Polyline extends Geom {
       if (!fillEnable[i]) {
         continue;
       }
-      const f = fill[i]; console.log(f);
+      const f = fill[i];
       if (Array.isArray(f)) {
         if (!f[3]) {
           continue;
@@ -384,10 +384,13 @@ class Polyline extends Geom {
           ctx.fillStyle = cg;
         }
       }
-      ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx, dy);
-      if ((this.props as PolylineProps).isClosed) {
-        ctx.closePath();
+      // 多个fill只需一次画轮廓，后续直接fill即可
+      if (!i) {
+        ctx.beginPath();
+        canvasPolygon(ctx, points, scale, dx, dy);
+        if ((this.props as PolylineProps).isClosed) {
+          ctx.closePath();
+        }
       }
       // fill有opacity，设置记得还原
       ctx.globalAlpha = fillOpacity[i];

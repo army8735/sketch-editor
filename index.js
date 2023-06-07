@@ -25409,7 +25409,6 @@
                     continue;
                 }
                 const f = fill[i];
-                console.log(f);
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -25442,10 +25441,13 @@
                         ctx.fillStyle = cg;
                     }
                 }
-                ctx.beginPath();
-                canvasPolygon(ctx, points, scale, dx, dy);
-                if (this.props.isClosed) {
-                    ctx.closePath();
+                // 多个fill只需一次画轮廓，后续直接fill即可
+                if (!i) {
+                    ctx.beginPath();
+                    canvasPolygon(ctx, points, scale, dx, dy);
+                    if (this.props.isClosed) {
+                        ctx.closePath();
+                    }
                 }
                 // fill有opacity，设置记得还原
                 ctx.globalAlpha = fillOpacity[i];
