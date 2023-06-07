@@ -17223,6 +17223,7 @@
     };
 
     const arial = {
+        name: 'Arial',
         lhr: 1.14990234375,
         // car: 1.1171875, // content-area ratio，(1854+434)/2048
         blr: 0.9052734375,
@@ -17272,7 +17273,10 @@
                             const arrayBuffer = yield blob.arrayBuffer();
                             const f = opentype.parse(arrayBuffer);
                             if (f && f.name) {
-                                o.name = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.zh) || ((_b = f.name.preferredFamily) === null || _b === void 0 ? void 0 : _b.en) || ((_c = f.name.fontFamily) === null || _c === void 0 ? void 0 : _c.zh);
+                                o.name =
+                                    ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.zh) ||
+                                        ((_b = f.name.preferredFamily) === null || _b === void 0 ? void 0 : _b.en) ||
+                                        ((_c = f.name.fontFamily) === null || _c === void 0 ? void 0 : _c.zh);
                             }
                             o.name = o.name || family; // 中文名字
                             o.family = family;
@@ -17297,7 +17301,11 @@
             const f = opentype.parse(ab);
             if (f && f.name) {
                 o.family = ((_a = f.name.preferredFamily) === null || _a === void 0 ? void 0 : _a.en) || ((_b = f.name.fontFamily) === null || _b === void 0 ? void 0 : _b.en);
-                o.name = ((_c = f.name.preferredFamily) === null || _c === void 0 ? void 0 : _c.zh) || ((_d = f.name.preferredFamily) === null || _d === void 0 ? void 0 : _d.en) || ((_e = f.name.fontFamily) === null || _e === void 0 ? void 0 : _e.zh) || o.family;
+                o.name =
+                    ((_c = f.name.preferredFamily) === null || _c === void 0 ? void 0 : _c.zh) ||
+                        ((_d = f.name.preferredFamily) === null || _d === void 0 ? void 0 : _d.en) ||
+                        ((_e = f.name.fontFamily) === null || _e === void 0 ? void 0 : _e.zh) ||
+                        o.family;
             }
             // 没有信息无效
             let family = o.family;
@@ -17336,11 +17344,15 @@
             const familyL = family.toLowerCase();
             const psL = postscriptName.toLowerCase();
             const o = this.info[familyL];
-            const list = o.list = o.list || [];
+            const list = (o.list = o.list || []);
             let has = false;
             for (let i = 0, len = list.length; i < len; i++) {
-                if (list[i].postscriptName === psL) {
+                const item = list[i];
+                if (item.postscriptName === psL) {
                     has = true;
+                    if (loaded) {
+                        item.loaded = true;
+                    }
                     break;
                 }
             }
@@ -17352,7 +17364,7 @@
                     url,
                 });
             }
-            return this.data[familyL] = this.data[psL] = o; // 同个字体族不同postscriptName指向一个引用
+            return (this.data[familyL] = this.data[psL] = o); // 同个字体族不同postscriptName指向一个引用
         },
         registerData(data) {
             const familyL = data.family.toLowerCase();
@@ -23019,6 +23031,26 @@
             (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
             return keys;
         }
+        refreshProps(props, cb) {
+            var _a;
+            let keys;
+            if (Array.isArray(props)) {
+                keys = props.slice(0);
+            }
+            else {
+                keys = Object.keys(props);
+                keys.forEach((k) => {
+                    // @ts-ignore
+                    this.props[k] = props[k];
+                });
+            }
+            if (!keys.length) {
+                cb && cb(true);
+                return keys;
+            }
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, keys, undefined, false, false, cb);
+            return keys;
+        }
         refresh(lv = RefreshLevel.REPAINT, cb) {
             var _a;
             (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], lv, false, false, cb);
@@ -25572,8 +25604,8 @@
             this.buildPoints();
             const points = this.props.points;
             if (res.isLine) {
-                res.length = Math.sqrt(Math.pow(points[1].absX - points[0].absY, 2) +
-                    Math.pow(points[1].absX - points[0].absY, 2));
+                res.length = Math.sqrt(Math.pow(points[1].absX - points[0].absX, 2) +
+                    Math.pow(points[1].absY - points[0].absY, 2));
             }
             const m = res.matrix;
             points.forEach((item) => {
@@ -28877,7 +28909,8 @@
             this._content = props.content;
             this.rich = props.rich;
             this.lineBoxList = [];
-            this.lastCursorX = 0;
+            this.tempCursorX = 0;
+            this.currentCursorX = 0;
             this.cursor = {
                 isMulti: false,
                 startLineBox: 0,
@@ -29250,7 +29283,7 @@
                 if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
                     cursor.startLineBox = i;
                     const res = this.getCursorByLocalX(local.x, lineBox, false);
-                    this.lastCursorX = res.x;
+                    this.tempCursorX = this.currentCursorX = res.x;
                     const p = calPoint({ x: res.x, y: res.y }, m);
                     return {
                         x: p.x,
@@ -29263,7 +29296,7 @@
             const lineBox = lineBoxList[len - 1];
             cursor.startLineBox = len - 1;
             const res = this.getCursorByLocalX(this.width, lineBox, false);
-            this.lastCursorX = res.x;
+            this.tempCursorX = this.currentCursorX = res.x;
             const p = calPoint({ x: res.x, y: res.y }, m);
             return {
                 x: p.x,
@@ -29329,10 +29362,7 @@
         beforeEdit() {
             const { style, computedStyle } = this;
             const { left, top, translateX, translateY } = style;
-            const isLeft = 
-            // width.u === StyleUnit.AUTO &&
-            left.u === StyleUnit.PERCENT;
-            // right.u === StyleUnit.AUTO;
+            const isLeft = left.u === StyleUnit.PERCENT;
             if (isLeft) {
                 const { left: left2, width: width2 } = computedStyle;
                 left.v = left2 - width2 * 0.5;
@@ -29340,10 +29370,7 @@
                 translateX.v = 0;
                 translateX.u = StyleUnit.PX;
             }
-            const isTop = 
-            // height.u === StyleUnit.AUTO &&
-            top.u === StyleUnit.PERCENT;
-            // bottom.u === StyleUnit.AUTO;
+            const isTop = top.u === StyleUnit.PERCENT;
             if (isTop) {
                 const { top: top2, height: height2 } = computedStyle;
                 top.v = top2 - height2 * 0.5;
@@ -29379,44 +29406,26 @@
                 computedStyle.top = v;
             }
         }
-        /**
-         * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
-         * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
-         * 不会出现仅右百分比的情况，所有改变处理都一样
-         */
-        inputContent(s) {
-            const { isLeft, isTop } = this.beforeEdit();
-            const lineBoxList = this.lineBoxList;
-            // 先记录下光标对应字符的索引
-            const cursor = this.cursor;
-            const { startLineBox: i, startTextBox: j, startString: k } = cursor;
-            const lineBox = lineBoxList[i];
-            const textBox = lineBox.list[j];
-            const m = textBox.index + k;
-            const c = this._content;
-            this.content = c.slice(0, m) + s + c.slice(m);
-            // 位移还原，无需渲染仅数据即可
-            this.afterEdit(isLeft, isTop);
-            // 同步更新光标位置
-            this.updateCursorByIndex(m + s.length);
-        }
         // 根据字符串索引更新光标
         updateCursorByIndex(index) {
             var _a;
-            const textBox = this.setCursorByIndex(index, false);
+            const { lineBox, textBox } = this.setCursorByIndex(index, false);
+            const { cursor, matrixWorld } = this;
+            // 是否空行
             if (textBox) {
-                const { cursor, lineBoxList } = this;
                 const ctx = inject.getFontCanvas().ctx;
                 ctx.font = textBox.font;
                 // @ts-ignore
                 ctx.letterSpacing = textBox.letterSpacing;
                 const str = textBox.str;
                 const w = ctx.measureText(str.slice(0, cursor.startString)).width;
-                this.lastCursorX = textBox.x + w;
-                const m = this.matrixWorld;
-                const p = calPoint({ x: this.lastCursorX, y: textBox.y }, m);
-                (_a = this.root) === null || _a === void 0 ? void 0 : _a.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBoxList[cursor.startLineBox].lineHeight * m[0]);
+                this.tempCursorX = this.currentCursorX = textBox.x + w;
             }
+            else {
+                this.tempCursorX = this.currentCursorX = 0;
+            }
+            const p = calPoint({ x: this.tempCursorX, y: lineBox.y }, matrixWorld);
+            (_a = this.root) === null || _a === void 0 ? void 0 : _a.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * matrixWorld[0]);
         }
         setCursorByIndex(index, isEnd = false) {
             const lineBoxList = this.lineBoxList;
@@ -29424,6 +29433,9 @@
             for (let i = 0, len = lineBoxList.length; i < len; i++) {
                 const lineBox = lineBoxList[i];
                 const list = lineBox.list;
+                if (!list.length && lineBox.index === index) {
+                    return { lineBox, textBox: undefined };
+                }
                 for (let j = 0, len = list.length; j < len; j++) {
                     const textBox = list[j];
                     if (index >= textBox.index &&
@@ -29438,10 +29450,42 @@
                             cursor.startTextBox = j;
                             cursor.startString = index - textBox.index;
                         }
-                        return textBox;
+                        return { lineBox, textBox };
                     }
                 }
             }
+            // 找不到强制末尾
+            const i = lineBoxList.length - 1;
+            const lineBox = lineBoxList[i];
+            const list = lineBox.list;
+            if (isEnd) {
+                cursor.endLineBox = i;
+            }
+            else {
+                cursor.startLineBox = i;
+            }
+            if (!list) {
+                if (isEnd) {
+                    cursor.endTextBox = 0;
+                    cursor.endString = 0;
+                }
+                else {
+                    cursor.startTextBox = 0;
+                    cursor.startString = 0;
+                }
+                return { lineBox, textBox: undefined };
+            }
+            const j = list.length - 1;
+            const textBox = list[j];
+            if (isEnd) {
+                cursor.endTextBox = j;
+                cursor.endString = textBox.str.length;
+            }
+            else {
+                cursor.startTextBox = j;
+                cursor.startString = textBox.str.length;
+            }
+            return { lineBox, textBox };
         }
         // 选区结束后，可能选择的范围为空，此时要重置光标multi不是多选状态
         checkCursorMulti() {
@@ -29467,14 +29511,7 @@
             if (!list.length) {
                 return calPoint({ x: 0, y: lineBox.y }, m);
             }
-            const textBox = list[cursor.startTextBox];
-            const ctx = inject.getFontCanvas().ctx;
-            ctx.font = textBox.font;
-            // @ts-ignore
-            ctx.letterSpacing = textBox.letterSpacing;
-            const str = textBox.str;
-            const w = ctx.measureText(str.slice(0, cursor.startString)).width;
-            return calPoint({ x: textBox.x + w, y: textBox.y }, m);
+            return calPoint({ x: this.currentCursorX, y: lineBox.y }, m);
         }
         // 上下左右按键移动光标，上下保持当前x，左右则更新
         moveCursor(code) {
@@ -29492,6 +29529,9 @@
             if (code === 37) {
                 if (cursor.isMulti) {
                     cursor.isMulti = false;
+                    this.showSelectArea = false;
+                    this.refresh();
+                    this.updateCursorByIndex(pos);
                     return;
                 }
                 if (pos === 0) {
@@ -29531,9 +29571,19 @@
             }
             // 上
             else if (code === 38) {
-                cursor.isMulti = false;
                 if (pos === 0) {
+                    if (cursor.isMulti) {
+                        cursor.isMulti = false;
+                        this.showSelectArea = false;
+                        this.refresh();
+                        this.updateCursorByIndex(pos);
+                    }
                     return;
+                }
+                if (cursor.isMulti) {
+                    cursor.isMulti = false;
+                    this.showSelectArea = false;
+                    this.refresh();
                 }
                 // 第一行到开头
                 if (i === 0) {
@@ -29545,7 +29595,7 @@
                 else {
                     lineBox = lineBoxList[--i];
                     cursor.startLineBox = i;
-                    const res = this.getCursorByLocalX(this.lastCursorX, lineBox, false);
+                    const res = this.getCursorByLocalX(this.tempCursorX, lineBox, false);
                     const p = calPoint({ x: res.x, y: res.y }, m);
                     (_a = this.root) === null || _a === void 0 ? void 0 : _a.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
                     return;
@@ -29555,9 +29605,18 @@
             else if (code === 39) {
                 if (cursor.isMulti) {
                     cursor.isMulti = false;
+                    this.showSelectArea = false;
                     cursor.startLineBox = cursor.endLineBox;
                     cursor.startTextBox = cursor.endTextBox;
                     cursor.startString = cursor.endString;
+                    this.refresh();
+                    lineBox = lineBoxList[cursor.startLineBox];
+                    list = lineBox.list;
+                    textBox = list[cursor.startTextBox];
+                    const p = textBox
+                        ? textBox.index + cursor.startString
+                        : lineBox.index + cursor.startString;
+                    this.updateCursorByIndex(p);
                     return;
                 }
                 if (pos === this._content.length) {
@@ -29629,9 +29688,19 @@
             }
             // 下
             else if (code === 40) {
-                cursor.isMulti = false;
                 if (pos === this._content.length) {
+                    if (cursor.isMulti) {
+                        cursor.isMulti = false;
+                        this.showSelectArea = false;
+                        this.refresh();
+                        this.updateCursorByIndex(pos);
+                    }
                     return;
+                }
+                if (cursor.isMulti) {
+                    cursor.isMulti = false;
+                    this.showSelectArea = false;
+                    this.refresh();
                 }
                 // 最后一行到末尾
                 if (i === lineBoxList.length - 1) {
@@ -29643,7 +29712,7 @@
                 else {
                     lineBox = lineBoxList[++i];
                     cursor.startLineBox = i;
-                    const res = this.getCursorByLocalX(this.lastCursorX, lineBox, false);
+                    const res = this.getCursorByLocalX(this.tempCursorX, lineBox, false);
                     const p = calPoint({ x: res.x, y: res.y }, m);
                     (_b = this.root) === null || _b === void 0 ? void 0 : _b.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
                     return;
@@ -29657,49 +29726,88 @@
                 ctx.letterSpacing = textBox.letterSpacing;
                 const str = textBox.str;
                 const w = ctx.measureText(str.slice(0, cursor.startString)).width;
-                this.lastCursorX = textBox.x + w;
+                this.tempCursorX = this.currentCursorX = textBox.x + w;
             }
             else {
-                this.lastCursorX = 0;
+                this.tempCursorX = this.currentCursorX = 0;
             }
-            const p = calPoint({ x: this.lastCursorX, y: lineBox.y }, m);
+            const p = calPoint({ x: this.tempCursorX, y: lineBox.y }, m);
             (_c = this.root) === null || _c === void 0 ? void 0 : _c.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
+        }
+        /**
+         * 在左百分比+宽度自动的情况，输入后要保持原本的位置，因为是中心点百分比对齐父级，
+         * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
+         * 不会出现仅右百分比的情况，所有改变处理都一样
+         */
+        inputContent(s) {
+            const { isLeft, isTop } = this.beforeEdit();
+            const { isMulti, start, end } = this.getSortedCursor();
+            // 选择区域特殊情况，先删除掉这一段文字
+            if (isMulti) {
+                this.cursor.isMulti = false;
+                this.showSelectArea = false;
+                // 肯定小于，多加一层防守
+                if (start < end) {
+                    this.cutRichByDelContent(start, end);
+                    const c = this._content;
+                    this._content = c.slice(0, start) + c.slice(end);
+                }
+            }
+            this.expandRichByInputContent(start, s.length);
+            const c = this._content;
+            this.content = c.slice(0, start) + s + c.slice(start);
+            this.afterEdit(isLeft, isTop);
+            this.updateCursorByIndex(start + s.length);
         }
         enter() {
             const { isLeft, isTop } = this.beforeEdit();
-            const cursor = this.cursor;
-            const { startLineBox: i, startTextBox: j, startString: k } = cursor;
-            const lineBoxList = this.lineBoxList;
-            const lineBox = lineBoxList[i];
-            const list = lineBox.list;
-            const textBox = list[j];
-            const index = textBox.index + k;
+            const { isMulti, start, end } = this.getSortedCursor();
+            // 选择区域特殊情况，先删除掉这一段文字
+            if (isMulti) {
+                this.cursor.isMulti = false;
+                this.showSelectArea = false;
+                // 肯定小于，多加一层防守
+                if (start < end) {
+                    this.cutRichByDelContent(start, end);
+                    const c = this._content;
+                    this._content = c.slice(0, start) + c.slice(end);
+                }
+            }
+            this.expandRichByInputContent(start, 1);
             const c = this._content;
-            this.content = c.slice(0, index) + '\n' + c.slice(index);
+            this.content = c.slice(0, start) + '\n' + c.slice(start);
             this.afterEdit(isLeft, isTop);
-            this.updateCursorByIndex(index + 1);
+            this.updateCursorByIndex(start + 1);
         }
+        // 按下delete键触发
         delete() {
             const c = this._content;
             // 没内容没法删
             if (!c) {
                 return;
             }
-            const { isLeft, isTop } = this.beforeEdit();
-            const cursor = this.cursor;
-            const { startLineBox: i, startTextBox: j, startString: k } = cursor;
+            const { isMulti, start, end } = this.getSortedCursor();
             // 开头也没法删
-            if (!i && !j && !k) {
+            if (!start) {
                 return;
             }
-            const lineBoxList = this.lineBoxList;
-            const lineBox = lineBoxList[i];
-            const list = lineBox.list;
-            const textBox = list[j];
-            const index = textBox ? textBox.index + k : lineBox.index + k;
-            this.content = c.slice(0, index - 1) + c.slice(index);
+            this.showSelectArea = false;
+            const { isLeft, isTop } = this.beforeEdit();
+            if (isMulti) {
+                this.cursor.isMulti = false;
+                // 肯定小于，多加一层防守
+                if (start < end) {
+                    this.cutRichByDelContent(start, end);
+                    this.content = c.slice(0, start) + c.slice(end);
+                    this.updateCursorByIndex(start);
+                }
+            }
+            else {
+                this.cutRichByDelContent(start - 1, start);
+                this.content = c.slice(0, start - 1) + c.slice(start);
+                this.updateCursorByIndex(start - 1);
+            }
             this.afterEdit(isLeft, isTop);
-            this.updateCursorByIndex(index - 1);
         }
         // 给定相对x坐标获取光标位置，y已知传入lineBox
         getCursorByLocalX(localX, lineBox, isEnd = false) {
@@ -29714,7 +29822,7 @@
                 cursor.startString = 0;
             }
             outer: for (let i = 0, len = list.length; i < len; i++) {
-                const { x, w, str, font } = list[i];
+                const { x, w, str, font, letterSpacing } = list[i];
                 // x位于哪个textBox上，注意开头结尾
                 if ((!i && localX <= x + w) ||
                     (localX >= x && localX <= x + w) ||
@@ -29727,6 +29835,8 @@
                     }
                     const ctx = inject.getFontCanvas().ctx;
                     ctx.font = font;
+                    // @ts-ignore
+                    ctx.letterSpacing = letterSpacing;
                     let start = 0, end = str.length;
                     while (start < end) {
                         if (start === end - 1) {
@@ -29950,6 +30060,70 @@
             }
             return hasChange;
         }
+        // 删除一段文字内容并修改移除对应的rich，一般是选区删除时引发的
+        cutRichByDelContent(start, end) {
+            const rich = this.rich;
+            if (!rich || !rich.length) {
+                return;
+            }
+            const count = end - start;
+            for (let i = 0, len = rich.length; i < len; i++) {
+                const item = rich[i];
+                if (item.location <= start && item.location + item.length > start) {
+                    // 可能选区就在这个rich范围内
+                    if (item.location + item.length >= end) {
+                        item.length -= count;
+                        // 后续的偏移
+                        for (let k = i + 1; k < len; k++) {
+                            rich[k].location -= count;
+                        }
+                        if (!item.length) {
+                            rich.splice(i, 1);
+                        }
+                    }
+                    // 跨多个选区
+                    else {
+                        item.length = start - item.location;
+                        for (let j = i + 1; j < len; j++) {
+                            const item2 = rich[j];
+                            if (item2.location <= end && item2.location + item2.length > end) {
+                                item2.length = end - item2.location;
+                                item2.location = item.location + item.length;
+                                // 开始和结束的rich中间有的话删除
+                                if (i < j - 1) {
+                                    rich.splice(i + 1, j - i + 1);
+                                }
+                                // 后续的偏移
+                                for (let k = j + 1; k < len; k++) {
+                                    rich[k].location -= count;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            this.mergeRich();
+        }
+        // 输入文字后扩展所在位置的rich
+        expandRichByInputContent(start, length) {
+            const rich = this.rich;
+            if (!rich || !rich.length) {
+                return;
+            }
+            for (let i = 0, len = rich.length; i < len; i++) {
+                const item = rich[i];
+                if (item.location <= start && item.location + item.length > start) {
+                    item.length += length;
+                    for (let j = i + 1; j < len; j++) {
+                        rich[j].location += length;
+                    }
+                    break;
+                }
+            }
+        }
+        // 合并相同的rich
         mergeRich() {
             const rich = this.rich;
             if (!rich || !rich.length) {
@@ -30113,7 +30287,7 @@
                         : startTextBox;
                     const textBox = list[i];
                     const r = RICH_INDEX[textBox.index];
-                    if (res.indexOf(r) === -1) {
+                    if (r && res.indexOf(r) === -1) {
                         res.push(r);
                     }
                 }

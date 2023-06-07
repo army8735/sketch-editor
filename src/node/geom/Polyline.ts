@@ -520,8 +520,8 @@ class Polyline extends Geom {
     const points = (this.props as PolylineProps).points;
     if (res.isLine) {
       res.length = Math.sqrt(
-        Math.pow(points[1].absX! - points[0].absY!, 2) +
-        Math.pow(points[1].absX! - points[0].absY!, 2),
+        Math.pow(points[1].absX! - points[0].absX!, 2) +
+        Math.pow(points[1].absY! - points[0].absY!, 2),
       );
     }
     const m = res.matrix;

@@ -1,6 +1,7 @@
 import opentype from '../util/opentype.js';
 
 const arial = {
+  name: 'Arial',
   lhr: 1.14990234375, // 默认line-height ratio，(67+1854+434)/2048
   // car: 1.1171875, // content-area ratio，(1854+434)/2048
   blr: 0.9052734375, // base-line ratio，1854/2048
@@ -22,7 +23,7 @@ export type fontData = {
       postscriptName: string;
       loaded: boolean;
       url?: string;
-    }
+    },
   ];
 };
 
@@ -66,7 +67,10 @@ const o: any = {
           const arrayBuffer = await blob.arrayBuffer();
           const f: any = opentype.parse(arrayBuffer);
           if (f && f.name) {
-            o.name = f.name.preferredFamily?.zh || f.name.preferredFamily?.en || f.name.fontFamily?.zh;
+            o.name =
+              f.name.preferredFamily?.zh ||
+              f.name.preferredFamily?.en ||
+              f.name.fontFamily?.zh;
           }
           o.name = o.name || family; // 中文名字
           o.family = family;
@@ -89,7 +93,11 @@ const o: any = {
     const f: any = opentype.parse(ab);
     if (f && f.name) {
       o.family = f.name.preferredFamily?.en || f.name.fontFamily?.en;
-      o.name = f.name.preferredFamily?.zh || f.name.preferredFamily?.en || f.name.fontFamily?.zh || o.family;
+      o.name =
+        f.name.preferredFamily?.zh ||
+        f.name.preferredFamily?.en ||
+        f.name.fontFamily?.zh ||
+        o.family;
     }
     // 没有信息无效
     let family = o.family;
@@ -124,15 +132,25 @@ const o: any = {
       lgr,
     };
   },
-  _register(family: string, style: string, postscriptName: string, loaded: boolean, url?: string) {
+  _register(
+    family: string,
+    style: string,
+    postscriptName: string,
+    loaded: boolean,
+    url?: string,
+  ) {
     const familyL = family.toLowerCase();
     const psL = postscriptName.toLowerCase();
     const o = this.info[familyL];
-    const list = o.list = o.list || [];
+    const list = (o.list = o.list || []);
     let has = false;
     for (let i = 0, len = list.length; i < len; i++) {
-      if (list[i].postscriptName === psL) {
+      const item = list[i];
+      if (item.postscriptName === psL) {
         has = true;
+        if (loaded) {
+          item.loaded = true;
+        }
         break;
       }
     }
@@ -144,7 +162,7 @@ const o: any = {
         url,
       });
     }
-    return this.data[familyL] = this.data[psL] = o; // 同个字体族不同postscriptName指向一个引用
+    return (this.data[familyL] = this.data[psL] = o); // 同个字体族不同postscriptName指向一个引用
   },
   registerData(data: fontData) {
     const familyL = data.family.toLowerCase();
@@ -152,7 +170,13 @@ const o: any = {
       this.info[familyL] = data;
     }
     data.list.forEach((item) => {
-      this._register(familyL, item.style, item.postscriptName, item.loaded, item.url);
+      this._register(
+        familyL,
+        item.style,
+        item.postscriptName,
+        item.loaded,
+        item.url,
+      );
     });
   },
 };

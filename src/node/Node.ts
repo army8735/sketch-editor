@@ -844,6 +844,25 @@ class Node extends Event {
     return keys;
   }
 
+  refreshProps(props: any, cb?: (sync: boolean) => void) {
+    let keys: string[];
+    if (Array.isArray(props)) {
+      keys = props.slice(0);
+    } else {
+      keys = Object.keys(props);
+      keys.forEach((k) => {
+        // @ts-ignore
+        this.props[k] = props[k];
+      });
+    }
+    if (!keys.length) {
+      cb && cb(true);
+      return keys;
+    }
+    this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    return keys;
+  }
+
   refresh(lv = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
     this.root?.addUpdate(this, [], lv, false, false, cb);
   }

@@ -53,7 +53,7 @@ async function initFonts() {
       return;
     }
     const fonts = await window.queryLocalFonts();
-    // editor.style.font.registerLocalFonts(fonts);
+    editor.style.font.registerLocalFonts(fonts);
   } catch(err) {
     console.error(err.message);
   }
@@ -839,6 +839,7 @@ function showEditText(x, y, h) {
   style.top = y + 'px';
   style.height = h + 'px';
   style.display = 'block';
+  style.opacity = 1;
   $inputText.focus();
 }
 
@@ -849,6 +850,7 @@ function updateEditText() {
     style.left = x / dpi + 'px';
     style.top = y / dpi + 'px';
     style.display = 'block';
+    style.opacity = 1;
   }
 }
 
@@ -928,6 +930,11 @@ document.addEventListener('mouseup', function(e) {
           if (!multi) {
             updateEditText();
           }
+          else {
+            $inputContainer.style.display = 'block';
+            $inputContainer.style.opacity = 0;
+          }
+          $inputText.focus();
           setFontPanel(selectNode);
         }
       }
@@ -1217,7 +1224,7 @@ function setFontPanel(node) {
     $style2.classList.remove('style-n');
     $style.disabled = !res.fontWeightList.length || res.fontFamily.length > 1;
   }
-  $color.value = editor.style.css.color2hexStr(res.color[0]);
+  $color.value = editor.style.css.color2hexStr(res.color[0]).slice(0, 7);
   if (res.color.length > 1) {
     $color2.style.display = 'block';
   }
