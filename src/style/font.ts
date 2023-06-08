@@ -2,6 +2,7 @@ import opentype from '../util/opentype.js';
 
 const arial = {
   name: 'Arial',
+  family: 'Arial',
   lhr: 1.14990234375, // 默认line-height ratio，(67+1854+434)/2048
   // car: 1.1171875, // content-area ratio，(1854+434)/2048
   blr: 0.9052734375, // base-line ratio，1854/2048

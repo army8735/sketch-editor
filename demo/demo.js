@@ -883,7 +883,7 @@ $inputText.addEventListener('keydown', (e) => {
 $inputText.addEventListener('input', (e) => {
   if (!isIme) {
     const s = e.data;
-    selectNode.inputContent(s);
+    selectNode.input(s);
     $inputText.value = '';
   }
 });
@@ -893,7 +893,7 @@ $inputText.addEventListener('compositionstart', (e) => {
 $inputText.addEventListener('compositionend', (e) => {
   isIme = false;
   const s = e.data;
-  selectNode.inputContent(s);
+  selectNode.input(s);
   $inputText.value = '';
 });
 

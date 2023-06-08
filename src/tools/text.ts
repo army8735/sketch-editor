@@ -193,7 +193,7 @@ export function getBehaviour(n: number): string {
 export function getEditData(node: Text) {
   const { rich, style } = node;
   // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
-  if (!rich || rich.length <= 1) {
+  if (!rich.length) {
     return getData([node]);
   }
   const fontFamily: string[] = [];
@@ -208,10 +208,6 @@ export function getEditData(node: Text) {
   let autoLineHeight = false;
   let valid = false;
   const richList = node.getCursorRich();
-  // 除非异常否则不会进入
-  if (!richList || !richList.length) {
-    return getData([node]);
-  }
   const { width, height, lineHeight: lh } = style;
   for (let i = 0, len = richList.length; i < len; i++) {
     const res = putData(

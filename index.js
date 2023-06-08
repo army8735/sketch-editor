@@ -17224,6 +17224,7 @@
 
     const arial = {
         name: 'Arial',
+        family: 'Arial',
         lhr: 1.14990234375,
         // car: 1.1171875, // content-area ratio，(1854+434)/2048
         blr: 0.9052734375,
@@ -28907,7 +28908,7 @@
             super(props);
             this.isText = true;
             this._content = props.content;
-            this.rich = props.rich;
+            this.rich = props.rich || [];
             this.lineBoxList = [];
             this.tempCursorX = 0;
             this.currentCursorX = 0;
@@ -28941,7 +28942,7 @@
             let x = 0, y = 0;
             // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
             const SET_FONT_INDEX = [];
-            if (rich && rich.length) {
+            if (rich.length) {
                 for (let i = 0, len = rich.length; i < len; i++) {
                     const item = rich[i];
                     SET_FONT_INDEX[item.location] = i;
@@ -28995,7 +28996,7 @@
                                     item.loaded = true;
                                     // 加载成功后再次判断是否是这个字体，防止多次连续变更
                                     if (cache.success &&
-                                        (!rich || !(rich === null || rich === void 0 ? void 0 : rich.length)) &&
+                                        !rich.length &&
                                         computedStyle.fontFamily.toLowerCase() === family) {
                                         this.refresh(RefreshLevel.REFLOW);
                                     }
@@ -29008,7 +29009,7 @@
             }
             const ctx = inject.getFontCanvas().ctx;
             // 第一个肯定要设置测量font
-            if (rich && rich.length) {
+            if (rich.length) {
                 const first = rich[0];
                 letterSpacing = first.letterSpacing;
                 paragraphSpacing = first.paragraphSpacing;
@@ -29043,7 +29044,7 @@
                 }
                 const setFontIndex = SET_FONT_INDEX[i];
                 // 每串富文本重置font测量
-                if (i && rich && setFontIndex) {
+                if (i && setFontIndex) {
                     const cur = rich[setFontIndex];
                     letterSpacing = cur.letterSpacing;
                     paragraphSpacing = cur.paragraphSpacing;
@@ -29067,7 +29068,7 @@
                 }
                 // 富文本需限制最大length，非富普通情况无需
                 let len = length;
-                if (rich && rich.length) {
+                if (rich.length) {
                     for (let j = i + 1; j < len; j++) {
                         if (SET_FONT_INDEX[j]) {
                             len = j;
@@ -29220,7 +29221,7 @@
             // 富文本每串不同的需要设置字体颜色
             const SET_COLOR_INDEX = [];
             let color;
-            if (rich && rich.length) {
+            if (rich.length) {
                 for (let i = 0, len = rich.length; i < len; i++) {
                     const item = rich[i];
                     SET_COLOR_INDEX.push({
@@ -29739,7 +29740,7 @@
          * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
          * 不会出现仅右百分比的情况，所有改变处理都一样
          */
-        inputContent(s) {
+        input(s, style) {
             const { isLeft, isTop } = this.beforeEdit();
             const { isMulti, start, end } = this.getSortedCursor();
             // 选择区域特殊情况，先删除掉这一段文字
@@ -29748,12 +29749,19 @@
                 this.showSelectArea = false;
                 // 肯定小于，多加一层防守
                 if (start < end) {
-                    this.cutRichByDelContent(start, end);
+                    this.cutRich(start, end);
                     const c = this._content;
                     this._content = c.slice(0, start) + c.slice(end);
                 }
             }
-            this.expandRichByInputContent(start, s.length);
+            // 传入style说明是插入一段新Rich
+            if (style) {
+                this.insertRich(style, start, s.length);
+            }
+            // 否则是在当前Rich上增加内容
+            else {
+                this.expandRich(start, s.length);
+            }
             const c = this._content;
             this.content = c.slice(0, start) + s + c.slice(start);
             this.afterEdit(isLeft, isTop);
@@ -29768,12 +29776,12 @@
                 this.showSelectArea = false;
                 // 肯定小于，多加一层防守
                 if (start < end) {
-                    this.cutRichByDelContent(start, end);
+                    this.cutRich(start, end);
                     const c = this._content;
                     this._content = c.slice(0, start) + c.slice(end);
                 }
             }
-            this.expandRichByInputContent(start, 1);
+            this.expandRich(start, 1);
             const c = this._content;
             this.content = c.slice(0, start) + '\n' + c.slice(start);
             this.afterEdit(isLeft, isTop);
@@ -29797,13 +29805,13 @@
                 this.cursor.isMulti = false;
                 // 肯定小于，多加一层防守
                 if (start < end) {
-                    this.cutRichByDelContent(start, end);
+                    this.cutRich(start, end);
                     this.content = c.slice(0, start) + c.slice(end);
                     this.updateCursorByIndex(start);
                 }
             }
             else {
-                this.cutRichByDelContent(start - 1, start);
+                this.cutRich(start - 1, start);
                 this.content = c.slice(0, start - 1) + c.slice(start);
                 this.updateCursorByIndex(start - 1);
             }
@@ -29891,7 +29899,7 @@
             const { isLeft, isTop } = this.beforeEdit();
             const rich = this.rich;
             let hasChange = false;
-            if (rich) {
+            if (rich.length) {
                 rich.forEach((item) => {
                     hasChange = this.updateRich(item, style) || hasChange;
                 });
@@ -29909,7 +29917,7 @@
         updateTextRangeStyle(style, cb) {
             const { cursor, rich } = this;
             // 正常情况不会出现光标单选
-            if (!cursor.isMulti || !rich || !rich.length) {
+            if (!cursor.isMulti || !rich.length) {
                 return false;
             }
             const { isLeft, isTop } = this.beforeEdit();
@@ -30061,9 +30069,9 @@
             return hasChange;
         }
         // 删除一段文字内容并修改移除对应的rich，一般是选区删除时引发的
-        cutRichByDelContent(start, end) {
+        cutRich(start, end) {
             const rich = this.rich;
-            if (!rich || !rich.length) {
+            if (!rich.length) {
                 return;
             }
             const count = end - start;
@@ -30107,9 +30115,9 @@
             this.mergeRich();
         }
         // 输入文字后扩展所在位置的rich
-        expandRichByInputContent(start, length) {
+        expandRich(start, length) {
             const rich = this.rich;
-            if (!rich || !rich.length) {
+            if (!rich.length) {
                 return;
             }
             for (let i = 0, len = rich.length; i < len; i++) {
@@ -30123,10 +30131,60 @@
                 }
             }
         }
+        insertRich(style, start, length) {
+            const st = Object.assign({
+                location: start,
+                length,
+                fontFamily: 'arial',
+                fontSize: 16,
+                fontWeight: 400,
+                fontStyle: 'normal',
+                letterSpacing: 0,
+                lineHeight: 0,
+                paragraphSpacing: 0,
+                color: '#000',
+            }, style);
+            st.color = color2rgbaInt(st.color);
+            // 防止被style中脏数据覆盖
+            st.location = start;
+            st.length = length;
+            const rich = this.rich;
+            if (!rich.length) {
+                rich.push(st);
+                return;
+            }
+            for (let i = 0, len = rich.length; i < len; i++) {
+                const item = rich[i];
+                if (item.location <= start && item.location + item.length > start) {
+                    // 后续偏移
+                    for (let j = i + 1; j < len; j++) {
+                        rich[j].location += length;
+                    }
+                    // 看是否处在一个Rich的中间，决定是否切割这个Rich
+                    if (item.location === start) {
+                        rich.splice(i, 0, st);
+                        item.location += length;
+                    }
+                    else {
+                        const copy = util$1.clone(item);
+                        item.length = start - item.location;
+                        copy.location = start + length;
+                        copy.length -= item.length;
+                        rich.splice(i + 1, 0, st);
+                        rich.splice(i + 2, 0, copy);
+                    }
+                    this.mergeRich();
+                    return;
+                }
+            }
+            // 结束也没找到，只有可能是在末尾输入
+            rich.push(st);
+            this.mergeRich();
+        }
         // 合并相同的rich
         mergeRich() {
             const rich = this.rich;
-            if (!rich || !rich.length) {
+            if (!rich.length) {
                 return false;
             }
             let hasChange = false;
@@ -30218,8 +30276,8 @@
         // 返回光标所在的Rich数据列表
         getCursorRich() {
             const { rich, lineBoxList } = this;
-            if (!rich) {
-                return;
+            if (!rich.length) {
+                return [];
             }
             if (rich.length === 1) {
                 return [rich[0]];
@@ -33651,7 +33709,7 @@ void main() {
     function getEditData(node) {
         const { rich, style } = node;
         // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
-        if (!rich || rich.length <= 1) {
+        if (!rich.length) {
             return getData([node]);
         }
         const fontFamily = [];
@@ -33666,10 +33724,6 @@ void main() {
         let autoLineHeight = false;
         let valid = false;
         const richList = node.getCursorRich();
-        // 除非异常否则不会进入
-        if (!richList || !richList.length) {
-            return getData([node]);
-        }
         const { width, height, lineHeight: lh } = style;
         for (let i = 0, len = richList.length; i < len; i++) {
             const res = putData(width, height, lh, fontFamily, name, color, fontSize, letterSpacing, lineHeight, paragraphSpacing, textAlign, textBehaviour, richList[i]);
