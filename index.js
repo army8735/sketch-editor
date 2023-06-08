@@ -30687,11 +30687,9 @@ varying vec2 v_texCoords;
 uniform sampler2D u_texture1;
 uniform sampler2D u_texture2;
 
-uniform int mode;
-
 void main() {
-  vec4 color1 = texture2D(u_texture1, v_texCoords);
-  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  vec4 color1 = texture2D(u_texture1, v_texCoords); // 遮罩层
+  vec4 color2 = texture2D(u_texture2, v_texCoords); // 被遮罩对象
   float a = color1.a * color2.a;
   if (a <= 0.0) {
     discard;
