@@ -111,7 +111,7 @@ void main() {
     discard;
   }
   a = clamp(a, 0.0, 1.0);
-  gl_FragColor = vec4(color2.rgb, a);
+  gl_FragColor = vec4(color2.rgb * color1.a, a);
 }`;
 
 export const gaussVert = `#version 100

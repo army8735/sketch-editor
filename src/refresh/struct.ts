@@ -1,5 +1,6 @@
 import { gaussFrag, gaussVert } from '../gl/glsl';
 import {
+  bbox2Coords,
   bindTexture,
   createTexture,
   drawGauss,
@@ -7,7 +8,6 @@ import {
   drawMbm,
   drawTextureCache,
   initShaders,
-  bbox2Coords,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { isRectsOverlap } from '../math/geom';
@@ -28,13 +28,19 @@ import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { BLUR, ComputedShadow, FILL_RULE, MASK, MIX_BLEND_MODE } from '../style/define';
+import { color2gl } from '../style/css';
+import {
+  BLUR,
+  ComputedShadow,
+  FILL_RULE,
+  MASK,
+  MIX_BLEND_MODE,
+} from '../style/define';
 import inject from '../util/inject';
 import config from './config';
 import { RefreshLevel } from './level';
 import { canvasPolygon } from './paint';
 import TextureCache from './TextureCache';
-import { color2gl } from '../style/css';
 
 export type Struct = {
   node: Node;
@@ -109,7 +115,8 @@ export function renderWebgl(
         node.calContent();
       }
     }
-    const { maskMode, opacity, shadow, shadowEnable, blur, mixBlendMode } = computedStyle;
+    const { maskMode, opacity, shadow, shadowEnable, blur, mixBlendMode } =
+      computedStyle;
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
       ((opacity > 0 && opacity < 1) ||
@@ -683,12 +690,12 @@ function genTotal(
   ) {
     return;
   }
-  const dx = -x,
-    dy = -y;
-  const cx = w * 0.5,
-    cy = h * 0.5;
+  const dx = -x * scale,
+    dy = -y * scale;
   w *= scale;
   h *= scale;
+  const cx = w * 0.5,
+    cy = h * 0.5;
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
   // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
@@ -884,12 +891,12 @@ function genGaussBlur(
   }
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x,
-    dy = -y;
-  const cx = w * 0.5,
-    cy = h * 0.5;
+  const dx = -x * scale,
+    dy = -y * scale;
   w *= scale;
   h *= scale;
+  const cx = w * 0.5,
+    cy = h * 0.5;
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
   drawTextureCache(
@@ -996,12 +1003,12 @@ function genShadow(
   }
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x,
-    dy = -y;
-  const cx = w * 0.5,
-    cy = h * 0.5;
+  const dx = -x * scale,
+    dy = -y * scale;
   w *= scale;
   h *= scale;
+  const cx = w * 0.5,
+    cy = h * 0.5;
   // 扩展好尺寸的原节点纹理
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
@@ -1037,7 +1044,15 @@ function genShadow(
       0,
     );
     // 这里顶点计算需要考虑shadow本身的偏移，将其加到dx/dy上即可
-    const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx + item.x, dy + item.y, false, undefined);
+    const { t1, t2, t3, t4 } = bbox2Coords(
+      bbox,
+      cx,
+      cy,
+      dx + item.x,
+      dy + item.y,
+      false,
+      undefined,
+    );
     vtPoint[0] = t1.x;
     vtPoint[1] = t1.y;
     vtPoint[2] = t4.x;
@@ -1075,8 +1090,13 @@ function genShadow(
     gl.disableVertexAttribArray(a_texCoords);
     // 有blur再生成
     if (item.blur > 0) {
-      const d = kernelSize(item.blur * scale* 0.5);
-      const programGauss = genBlurShader(gl, programs, item.blur * scale* 0.5, d);
+      const d = kernelSize(item.blur * scale * 0.5);
+      const programGauss = genBlurShader(
+        gl,
+        programs,
+        item.blur * scale * 0.5,
+        d,
+      );
       gl.useProgram(programGauss);
       const res = drawGauss(gl, programGauss, temp.texture, w, h);
       temp.release();
@@ -1182,12 +1202,12 @@ function genMask(
   ) {
     return;
   }
-  const dx = -x,
-    dy = -y;
-  const cx = w * 0.5,
-    cy = h * 0.5;
+  const dx = -x * scale,
+    dy = -y * scale;
   w *= scale;
   h *= scale;
+  const cx = w * 0.5,
+    cy = h * 0.5;
   const summary = createTexture(gl, 0, undefined, w, h);
   const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
   const m = identity();
@@ -1208,7 +1228,7 @@ function genMask(
       node.struct.next = i - index - total - 1;
       break;
     } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
-      node.struct.next = i - index - total + total2 + next2;
+      node.struct.next = i - index - total - 1;
       break;
     }
     // 需要保存引用，当更改时取消mask节点的缓存重新生成

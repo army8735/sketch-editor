@@ -30697,7 +30697,7 @@ void main() {
     discard;
   }
   a = clamp(a, 0.0, 1.0);
-  gl_FragColor = vec4(color2.rgb, a);
+  gl_FragColor = vec4(color2.rgb * color1.a, a);
 }`;
     const gaussVert = `#version 100
 
@@ -32486,10 +32486,10 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
-        const dx = -x, dy = -y;
-        const cx = w * 0.5, cy = h * 0.5;
+        const dx = -x * scale, dy = -y * scale;
         w *= scale;
         h *= scale;
+        const cx = w * 0.5, cy = h * 0.5;
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
         // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
@@ -32605,10 +32605,10 @@ void main() {
         }
         const programs = root.programs;
         const program = programs.program;
-        const dx = -x, dy = -y;
-        const cx = w * 0.5, cy = h * 0.5;
+        const dx = -x * scale, dy = -y * scale;
         w *= scale;
         h *= scale;
+        const cx = w * 0.5, cy = h * 0.5;
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
         drawTextureCache(gl, cx, cy, program, [
@@ -32681,10 +32681,10 @@ void main() {
         }
         const programs = root.programs;
         const program = programs.program;
-        const dx = -x, dy = -y;
-        const cx = w * 0.5, cy = h * 0.5;
+        const dx = -x * scale, dy = -y * scale;
         w *= scale;
         h *= scale;
+        const cx = w * 0.5, cy = h * 0.5;
         // 扩展好尺寸的原节点纹理
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
@@ -32807,10 +32807,10 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
-        const dx = -x, dy = -y;
-        const cx = w * 0.5, cy = h * 0.5;
+        const dx = -x * scale, dy = -y * scale;
         w *= scale;
         h *= scale;
+        const cx = w * 0.5, cy = h * 0.5;
         const summary = createTexture(gl, 0, undefined, w, h);
         const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
         const m = identity();
@@ -32832,7 +32832,7 @@ void main() {
                 break;
             }
             else if (i === len || (computedStyle.breakMask && lv === lv2)) {
-                node.struct.next = i - index - total + total2 + next2;
+                node.struct.next = i - index - total - 1;
                 break;
             }
             // 需要保存引用，当更改时取消mask节点的缓存重新生成
