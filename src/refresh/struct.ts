@@ -690,8 +690,8 @@ function genTotal(
   ) {
     return;
   }
-  const dx = -x * scale,
-    dy = -y * scale;
+  const dx = -x,
+    dy = -y;
   w *= scale;
   h *= scale;
   const cx = w * 0.5,
@@ -891,8 +891,8 @@ function genGaussBlur(
   }
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x * scale,
-    dy = -y * scale;
+  const dx = -x,
+    dy = -y;
   w *= scale;
   h *= scale;
   const cx = w * 0.5,
@@ -1003,8 +1003,8 @@ function genShadow(
   }
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x * scale,
-    dy = -y * scale;
+  const dx = -x,
+    dy = -y;
   w *= scale;
   h *= scale;
   const cx = w * 0.5,
@@ -1202,8 +1202,8 @@ function genMask(
   ) {
     return;
   }
-  const dx = -x * scale,
-    dy = -y * scale;
+  const dx = -x,
+    dy = -y;
   w *= scale;
   h *= scale;
   const cx = w * 0.5,

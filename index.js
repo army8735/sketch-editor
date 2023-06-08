@@ -32486,7 +32486,7 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
         w *= scale;
         h *= scale;
         const cx = w * 0.5, cy = h * 0.5;
@@ -32605,7 +32605,7 @@ void main() {
         }
         const programs = root.programs;
         const program = programs.program;
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
         w *= scale;
         h *= scale;
         const cx = w * 0.5, cy = h * 0.5;
@@ -32681,7 +32681,7 @@ void main() {
         }
         const programs = root.programs;
         const program = programs.program;
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
         w *= scale;
         h *= scale;
         const cx = w * 0.5, cy = h * 0.5;
@@ -32807,7 +32807,7 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
-        const dx = -x * scale, dy = -y * scale;
+        const dx = -x, dy = -y;
         w *= scale;
         h *= scale;
         const cx = w * 0.5, cy = h * 0.5;
