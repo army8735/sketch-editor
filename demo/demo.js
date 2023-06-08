@@ -872,10 +872,12 @@ $inputText.addEventListener('keydown', (e) => {
     // 回车等候一下让input先触发，输入法状态不会触发
     setTimeout(() => {
       selectNode.enter();
+      updateSelect();
     }, 1);
   } else if (keyCode === 8) {
     e.stopPropagation();
     selectNode.delete();
+    updateSelect();
   } else if (keyCode >= 37 && keyCode <= 40) {
     selectNode.moveCursor(keyCode);
   }
@@ -884,6 +886,7 @@ $inputText.addEventListener('input', (e) => {
   if (!isIme) {
     const s = e.data;
     selectNode.input(s);
+    updateSelect();
     $inputText.value = '';
   }
 });
@@ -894,6 +897,7 @@ $inputText.addEventListener('compositionend', (e) => {
   isIme = false;
   const s = e.data;
   selectNode.input(s);
+  updateSelect();
   $inputText.value = '';
 });
 
@@ -931,6 +935,7 @@ document.addEventListener('mouseup', function(e) {
             updateEditText();
           }
           else {
+            // 选区需要聚焦但不展示光标
             $inputContainer.style.display = 'block';
             $inputContainer.style.opacity = 0;
           }
