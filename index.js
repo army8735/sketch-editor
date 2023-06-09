@@ -17352,6 +17352,1800 @@
         },
     };
 
+    // 向量点乘积
+    function dotProduct(x1, y1, x2, y2) {
+        return x1 * x2 + y1 * y2;
+    }
+    function dotProduct3$1(x1, y1, z1, x2, y2, z2) {
+        return x1 * x2 + y1 * y2 + z1 * z2;
+    }
+    // 向量叉乘积
+    function crossProduct(x1, y1, x2, y2) {
+        return x1 * y2 - x2 * y1;
+    }
+    function crossProduct3$1(x1, y1, z1, x2, y2, z2) {
+        return {
+            x: y1 * z2 - y2 * z1,
+            y: z1 * x2 - z2 * x1,
+            z: x1 * y2 - x2 * y1,
+        };
+    }
+    // 向量长度
+    function length(x, y) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    }
+    function length3$1(x, y, z) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+    }
+    // 归一化
+    function unitize(x, y) {
+        let n = length(x, y);
+        return {
+            x: x / n,
+            y: y / n,
+        };
+    }
+    function unitize3$1(x, y, z) {
+        let n = length3$1(x, y, z);
+        return {
+            x: x / n,
+            y: y / n,
+            z: z / n,
+        };
+    }
+    // 是否平行
+    function isParallel$1(x1, y1, x2, y2) {
+        if (isZero(x1, y1, x2, y2)) {
+            return true;
+        }
+        let ag = angle(x1, y1, x2, y2);
+        if (Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        if (Math.PI - Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        return false;
+    }
+    function isParallel3$1(x1, y1, z1, x2, y2, z2) {
+        if (isZero3(x1, y1, z1, x2, y2, z2)) {
+            return true;
+        }
+        let ag = angle3(x1, y1, z1, x2, y2, z2);
+        if (Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        if (Math.PI - Math.abs(ag) < 1e-9) {
+            return true;
+        }
+        return false;
+    }
+    // 是否是零，考虑误差
+    function isZero(x1, y1, x2, y2) {
+        return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9
+            && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9;
+    }
+    function isZero3(x1, y1, z1, x2, y2, z2) {
+        return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9 && Math.abs(z1) < 1e-9
+            && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9 && Math.abs(z2) < 1e-9;
+    }
+    // 向量夹角
+    function angle(x1, y1, x2, y2) {
+        let cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
+        if (cos < -1) {
+            cos = -1;
+        }
+        else if (cos > 1) {
+            cos = 1;
+        }
+        return Math.acos(cos);
+    }
+    function angle3(x1, y1, z1, x2, y2, z2) {
+        let cos = dotProduct3$1(x1, y1, z1, x2, y2, z2) / (length3$1(x1, y1, z1) * length3$1(x2, y2, z2));
+        if (cos < -1) {
+            cos = -1;
+        }
+        else if (cos > 1) {
+            cos = 1;
+        }
+        return Math.acos(cos);
+    }
+    var vector = {
+        dotProduct,
+        dotProduct3: dotProduct3$1,
+        crossProduct,
+        crossProduct3: crossProduct3$1,
+        length,
+        length3: length3$1,
+        unitize,
+        unitize3: unitize3$1,
+        angle,
+        angle3,
+        isParallel: isParallel$1,
+        isParallel3: isParallel3$1,
+        isZero,
+        isZero3,
+    };
+
+    function identity() {
+        return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    }
+    // 16位单位矩阵判断，空也认为是
+    function isE(m) {
+        if (!m || !m.length) {
+            return true;
+        }
+        return (m[0] === 1 &&
+            m[1] === 0 &&
+            m[2] === 0 &&
+            m[3] === 0 &&
+            m[4] === 0 &&
+            m[5] === 1 &&
+            m[6] === 0 &&
+            m[7] === 0 &&
+            m[8] === 0 &&
+            m[9] === 0 &&
+            m[10] === 1 &&
+            m[11] === 0 &&
+            m[12] === 0 &&
+            m[13] === 0 &&
+            m[14] === 0 &&
+            m[15] === 1);
+    }
+    // 矩阵a*b，固定两个matrix都是长度16
+    function multiply(a, b) {
+        if (isE(a)) {
+            return new Float64Array(b);
+        }
+        if (isE(b)) {
+            return new Float64Array(a);
+        }
+        let c = identity();
+        for (let i = 0; i < 4; i++) {
+            let a0 = a[i];
+            let a1 = a[i + 4];
+            let a2 = a[i + 8];
+            let a3 = a[i + 12];
+            c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+            c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+            c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+            c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
+        }
+        return c;
+    }
+    // 同引用更改b数据
+    function multiplyRef(a, b) {
+        if (isE(a)) {
+            return b;
+        }
+        if (isE(b)) {
+            assignMatrix(b, a);
+            return b;
+        }
+        const b0 = b[0];
+        const b1 = b[1];
+        const b2 = b[2];
+        const b3 = b[3];
+        const b4 = b[4];
+        const b5 = b[5];
+        const b6 = b[6];
+        const b7 = b[7];
+        const b8 = b[8];
+        const b9 = b[9];
+        const b10 = b[10];
+        const b11 = b[11];
+        const b12 = b[12];
+        const b13 = b[13];
+        const b14 = b[14];
+        const b15 = b[15];
+        for (let i = 0; i < 4; i++) {
+            let a0 = a[i];
+            let a1 = a[i + 4];
+            let a2 = a[i + 8];
+            let a3 = a[i + 12];
+            b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
+            b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
+            b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
+            b[i + 12] = a0 * b12 + a1 * b13 + a2 * b14 + a3 * b15;
+        }
+        return b;
+    }
+    function toE(m) {
+        m[0] = 1;
+        m[1] = 0;
+        m[2] = 0;
+        m[3] = 0;
+        m[4] = 0;
+        m[5] = 1;
+        m[6] = 0;
+        m[7] = 0;
+        m[8] = 0;
+        m[9] = 0;
+        m[10] = 1;
+        m[11] = 0;
+        m[12] = 0;
+        m[13] = 0;
+        m[14] = 0;
+        m[15] = 1;
+        return m;
+    }
+    /**
+     * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
+     * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
+     * 参见: https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d()
+     * 对应：
+     * [
+     *   a1,a2,a3,a4,
+     *   b1,b2,b3,b4,
+     *   c1,c2,c3,c4,
+     *   d1,d2,d3,d4,
+     * ]
+     *
+     * 根据公式 A* = |A|A^-1 来计算
+     * A* 表示矩阵 A 的伴随矩阵，A^-1 表示矩阵 A 的逆矩阵，|A| 表示行列式的值
+     *
+     * @returns {number[]}
+     */
+    function inverse4(m) {
+        if (isE(m)) {
+            return identity();
+        }
+        const inv = new Float64Array(16);
+        inv[0] =
+            m[5] * m[10] * m[15] -
+                m[5] * m[11] * m[14] -
+                m[9] * m[6] * m[15] +
+                m[9] * m[7] * m[14] +
+                m[13] * m[6] * m[11] -
+                m[13] * m[7] * m[10];
+        inv[4] =
+            -m[4] * m[10] * m[15] +
+                m[4] * m[11] * m[14] +
+                m[8] * m[6] * m[15] -
+                m[8] * m[7] * m[14] -
+                m[12] * m[6] * m[11] +
+                m[12] * m[7] * m[10];
+        inv[8] =
+            m[4] * m[9] * m[15] -
+                m[4] * m[11] * m[13] -
+                m[8] * m[5] * m[15] +
+                m[8] * m[7] * m[13] +
+                m[12] * m[5] * m[11] -
+                m[12] * m[7] * m[9];
+        inv[12] =
+            -m[4] * m[9] * m[14] +
+                m[4] * m[10] * m[13] +
+                m[8] * m[5] * m[14] -
+                m[8] * m[6] * m[13] -
+                m[12] * m[5] * m[10] +
+                m[12] * m[6] * m[9];
+        inv[1] =
+            -m[1] * m[10] * m[15] +
+                m[1] * m[11] * m[14] +
+                m[9] * m[2] * m[15] -
+                m[9] * m[3] * m[14] -
+                m[13] * m[2] * m[11] +
+                m[13] * m[3] * m[10];
+        inv[5] =
+            m[0] * m[10] * m[15] -
+                m[0] * m[11] * m[14] -
+                m[8] * m[2] * m[15] +
+                m[8] * m[3] * m[14] +
+                m[12] * m[2] * m[11] -
+                m[12] * m[3] * m[10];
+        inv[9] =
+            -m[0] * m[9] * m[15] +
+                m[0] * m[11] * m[13] +
+                m[8] * m[1] * m[15] -
+                m[8] * m[3] * m[13] -
+                m[12] * m[1] * m[11] +
+                m[12] * m[3] * m[9];
+        inv[13] =
+            m[0] * m[9] * m[14] -
+                m[0] * m[10] * m[13] -
+                m[8] * m[1] * m[14] +
+                m[8] * m[2] * m[13] +
+                m[12] * m[1] * m[10] -
+                m[12] * m[2] * m[9];
+        inv[2] =
+            m[1] * m[6] * m[15] -
+                m[1] * m[7] * m[14] -
+                m[5] * m[2] * m[15] +
+                m[5] * m[3] * m[14] +
+                m[13] * m[2] * m[7] -
+                m[13] * m[3] * m[6];
+        inv[6] =
+            -m[0] * m[6] * m[15] +
+                m[0] * m[7] * m[14] +
+                m[4] * m[2] * m[15] -
+                m[4] * m[3] * m[14] -
+                m[12] * m[2] * m[7] +
+                m[12] * m[3] * m[6];
+        inv[10] =
+            m[0] * m[5] * m[15] -
+                m[0] * m[7] * m[13] -
+                m[4] * m[1] * m[15] +
+                m[4] * m[3] * m[13] +
+                m[12] * m[1] * m[7] -
+                m[12] * m[3] * m[5];
+        inv[14] =
+            -m[0] * m[5] * m[14] +
+                m[0] * m[6] * m[13] +
+                m[4] * m[1] * m[14] -
+                m[4] * m[2] * m[13] -
+                m[12] * m[1] * m[6] +
+                m[12] * m[2] * m[5];
+        inv[3] =
+            -m[1] * m[6] * m[11] +
+                m[1] * m[7] * m[10] +
+                m[5] * m[2] * m[11] -
+                m[5] * m[3] * m[10] -
+                m[9] * m[2] * m[7] +
+                m[9] * m[3] * m[6];
+        inv[7] =
+            m[0] * m[6] * m[11] -
+                m[0] * m[7] * m[10] -
+                m[4] * m[2] * m[11] +
+                m[4] * m[3] * m[10] +
+                m[8] * m[2] * m[7] -
+                m[8] * m[3] * m[6];
+        inv[11] =
+            -m[0] * m[5] * m[11] +
+                m[0] * m[7] * m[9] +
+                m[4] * m[1] * m[11] -
+                m[4] * m[3] * m[9] -
+                m[8] * m[1] * m[7] +
+                m[8] * m[3] * m[5];
+        inv[15] =
+            m[0] * m[5] * m[10] -
+                m[0] * m[6] * m[9] -
+                m[4] * m[1] * m[10] +
+                m[4] * m[2] * m[9] +
+                m[8] * m[1] * m[6] -
+                m[8] * m[2] * m[5];
+        let det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+        if (det === 0) {
+            return identity();
+        }
+        det = 1 / det;
+        const d = new Float64Array(16);
+        for (let i = 0; i < 16; i++) {
+            d[i] = inv[i] * det;
+        }
+        return d;
+    }
+    function assignMatrix(t, v) {
+        if (t && v) {
+            t[0] = v[0];
+            t[1] = v[1];
+            t[2] = v[2];
+            t[3] = v[3];
+            t[4] = v[4];
+            t[5] = v[5];
+            t[6] = v[6];
+            t[7] = v[7];
+            t[8] = v[8];
+            t[9] = v[9];
+            t[10] = v[10];
+            t[11] = v[11];
+            t[12] = v[12];
+            t[13] = v[13];
+            t[14] = v[14];
+            t[15] = v[15];
+        }
+        return t;
+    }
+    function multiplyTfo(m, x, y) {
+        if (!x && !y) {
+            return m;
+        }
+        m[12] += m[0] * x + m[4] * y;
+        m[13] += m[1] * x + m[5] * y;
+        m[14] += m[2] * x + m[6] * y;
+        m[15] += m[3] * x + m[7] * y;
+        return m;
+    }
+    function tfoMultiply(x, y, m) {
+        if (!x && !y) {
+            return m;
+        }
+        let d = m[3], h = m[7], l = m[11], p = m[15];
+        m[0] += d * x;
+        m[1] += d * y;
+        m[4] += h * x;
+        m[5] += h * y;
+        m[8] += l * x;
+        m[9] += l * y;
+        m[12] += p * x;
+        m[13] += p * y;
+        return m;
+    }
+    function multiplyRotateZ(m, v) {
+        if (!v) {
+            return m;
+        }
+        let sin = Math.sin(v);
+        let cos = Math.cos(v);
+        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7];
+        m[0] = a * cos + e * sin;
+        m[1] = b * cos + f * sin;
+        m[2] = c * cos + g * sin;
+        m[3] = d * cos + h * sin;
+        m[4] = a * -sin + e * cos;
+        m[5] = b * -sin + f * cos;
+        m[6] = c * -sin + g * cos;
+        m[7] = d * -sin + h * cos;
+        return m;
+    }
+    function multiplyScaleX(m, v) {
+        if (v === 1) {
+            return m;
+        }
+        m[0] *= v;
+        m[1] *= v;
+        m[2] *= v;
+        m[3] *= v;
+        return m;
+    }
+    function multiplyScaleY(m, v) {
+        if (v === 1) {
+            return m;
+        }
+        m[4] *= v;
+        m[5] *= v;
+        m[6] *= v;
+        m[7] *= v;
+        return m;
+    }
+    function multiplyScale(m, v) {
+        if (v === 1) {
+            return m;
+        }
+        m[0] *= v;
+        m[1] *= v;
+        m[2] *= v;
+        m[3] *= v;
+        m[4] *= v;
+        m[5] *= v;
+        m[6] *= v;
+        m[7] *= v;
+        return m;
+    }
+    function calPoint(point, m) {
+        if (m && !isE(m)) {
+            let { x, y } = point;
+            let a1 = m[0], b1 = m[1];
+            let a2 = m[4], b2 = m[5];
+            let a4 = m[12], b4 = m[13];
+            return {
+                x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
+                y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
+            };
+        }
+        return point;
+    }
+    /**
+     * 初等行变换求3*3特定css的matrix方阵，一维6长度
+     * https://blog.csdn.net/iloveas2014/article/details/82930946
+     */
+    function inverse(m) {
+        if (m.length === 16) {
+            return inverse4(m);
+        }
+        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
+        if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
+            return m;
+        }
+        let divisor = a * d - b * c;
+        if (divisor === 0) {
+            return m;
+        }
+        return new Float64Array([
+            d / divisor,
+            -b / divisor,
+            -c / divisor,
+            a / divisor,
+            (c * f - d * e) / divisor,
+            (b * e - a * f) / divisor,
+        ]);
+    }
+    function calRectPoint(xa, ya, xb, yb, matrix) {
+        let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
+        let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
+        let x2, y2, x4, y4;
+        // 无旋转的时候可以少算2个点
+        if (!matrix ||
+            !matrix.length ||
+            (!matrix[1] &&
+                !matrix[2] &&
+                !matrix[4] &&
+                !matrix[6] &&
+                !matrix[7] &&
+                !matrix[8])) {
+            x2 = x3;
+            y2 = y1;
+            x4 = x1;
+            y4 = y3;
+        }
+        else {
+            let t = calPoint({ x: xb, y: ya }, matrix);
+            x2 = t.x;
+            y2 = t.y;
+            t = calPoint({ x: xa, y: yb }, matrix);
+            x4 = t.x;
+            y4 = t.y;
+        }
+        return { x1, y1, x2, y2, x3, y3, x4, y4 };
+    }
+    var matrix = {
+        identity,
+        isE,
+        toE,
+        assignMatrix,
+        inverse,
+        calPoint,
+        calRectPoint,
+        tfoMultiply,
+        multiplyTfo,
+        multiply,
+        multiplyRef,
+    };
+
+    const TOLERANCE$1 = 1e-6;
+    /**
+     * 计算线性方程的根
+     * y = ax + b
+     * root = -b / a
+     * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
+     */
+    function getLinearRoot(coefs) {
+        let result = [];
+        let a = coefs[1];
+        if (a !== 0) {
+            result.push(-coefs[0] / a);
+        }
+        return result;
+    }
+    /**
+     * 计算二次方程的根，一元二次方程求根公式
+     * y = ax^2 + bx + c
+     * root = (-b ± sqrt(b^2 - 4ac)) / 2a
+     * @param {Array<Number>} coefs 系数，系数 [c, b, a]
+     */
+    function getQuadraticRoots(coefs) {
+        let results = [];
+        let a = coefs[2];
+        let b = coefs[1] / a;
+        let c = coefs[0] / a;
+        let d = b * b - 4 * c;
+        if (d > 0) {
+            let e = Math.sqrt(d);
+            results.push(0.5 * (-b + e));
+            results.push(0.5 * (-b - e));
+        }
+        else if (d === 0) {
+            // 两个相同的根，只要返回一个
+            results.push(0.5 * -b);
+        }
+        return results;
+    }
+    /**
+     * 计算一元三次方程的根
+     * y = ax^3 + bx^2 + cx + d
+     * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+     * @param {Array<Number>} coefs 系数
+     */
+    function getCubicRoots(coefs) {
+        let results = [];
+        let c3 = coefs[3];
+        let c2 = coefs[2] / c3;
+        let c1 = coefs[1] / c3;
+        let c0 = coefs[0] / c3;
+        let a = (3 * c1 - c2 * c2) / 3;
+        let b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
+        let offset = c2 / 3;
+        let discrim = b * b / 4 + a * a * a / 27;
+        let halfB = b / 2;
+        if (Math.abs(discrim) <= TOLERANCE$1) {
+            discrim = 0;
+        }
+        if (discrim > 0) {
+            let e = Math.sqrt(discrim);
+            let tmp;
+            let root;
+            tmp = -halfB + e;
+            if (tmp >= 0)
+                root = Math.pow(tmp, 1 / 3);
+            else
+                root = -Math.pow(-tmp, 1 / 3);
+            tmp = -halfB - e;
+            if (tmp >= 0)
+                root += Math.pow(tmp, 1 / 3);
+            else
+                root -= Math.pow(-tmp, 1 / 3);
+            results.push(root - offset);
+        }
+        else if (discrim < 0) {
+            let distance = Math.sqrt(-a / 3);
+            let angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
+            let cos = Math.cos(angle);
+            let sin = Math.sin(angle);
+            let sqrt3 = Math.sqrt(3);
+            results.push(2 * distance * cos - offset);
+            results.push(-distance * (cos + sqrt3 * sin) - offset);
+            results.push(-distance * (cos - sqrt3 * sin) - offset);
+        }
+        else {
+            let tmp;
+            if (halfB >= 0)
+                tmp = -Math.pow(halfB, 1 / 3);
+            else
+                tmp = Math.pow(-halfB, 1 / 3);
+            results.push(2 * tmp - offset);
+            // really should return next root twice, but we return only one
+            results.push(-tmp - offset);
+        }
+        return results;
+    }
+    /**
+     * 计算一元四次方程的根
+     * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+     * @param {Array<Number>} coefs 系数
+     */
+    function getQuarticRoots(coefs) {
+        let results = [];
+        let c4 = coefs[4];
+        let c3 = coefs[3] / c4;
+        let c2 = coefs[2] / c4;
+        let c1 = coefs[1] / c4;
+        let c0 = coefs[0] / c4;
+        let resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
+        let y = resolveRoots[0];
+        let discrim = c3 * c3 / 4 - c2 + y;
+        if (Math.abs(discrim) <= TOLERANCE$1)
+            discrim = 0;
+        if (discrim > 0) {
+            let e = Math.sqrt(discrim);
+            let t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
+            let t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
+            let plus = t1 + t2;
+            let minus = t1 - t2;
+            if (Math.abs(plus) <= TOLERANCE$1)
+                plus = 0;
+            if (Math.abs(minus) <= TOLERANCE$1)
+                minus = 0;
+            if (plus >= 0) {
+                let f = Math.sqrt(plus);
+                results.push(-c3 / 4 + (e + f) / 2);
+                results.push(-c3 / 4 + (e - f) / 2);
+            }
+            if (minus >= 0) {
+                let f = Math.sqrt(minus);
+                results.push(-c3 / 4 + (f - e) / 2);
+                results.push(-c3 / 4 - (f + e) / 2);
+            }
+        }
+        else if (discrim < 0) ;
+        else {
+            let t2 = y * y - 4 * c0;
+            if (t2 >= -TOLERANCE$1) {
+                if (t2 < 0)
+                    t2 = 0;
+                t2 = 2 * Math.sqrt(t2);
+                let t1 = 3 * c3 * c3 / 4 - 2 * c2;
+                if (t1 + t2 >= TOLERANCE$1) {
+                    let d = Math.sqrt(t1 + t2);
+                    results.push(-c3 / 4 + d / 2);
+                    results.push(-c3 / 4 - d / 2);
+                }
+                if (t1 - t2 >= TOLERANCE$1) {
+                    let d = Math.sqrt(t1 - t2);
+                    results.push(-c3 / 4 + d / 2);
+                    results.push(-c3 / 4 - d / 2);
+                }
+            }
+        }
+        return results;
+    }
+    /**
+     * 计算方程的根
+     * @param {Array<Number>} coefs 系数按幂次方倒序
+     */
+    function getRoots$1(coefs) {
+        let degree = coefs.length - 1;
+        for (let i = degree; i >= 0; i--) {
+            if (Math.abs(coefs[i]) < 1e-12) {
+                degree--;
+            }
+            else {
+                break;
+            }
+        }
+        let result = [];
+        switch (degree) {
+            case 1:
+                result = getLinearRoot(coefs);
+                break;
+            case 2:
+                result = getQuadraticRoots(coefs);
+                break;
+            case 3:
+                result = getCubicRoots(coefs);
+                break;
+            case 4:
+                result = getQuarticRoots(coefs);
+        }
+        return result;
+    }
+    var equation = {
+        getRoots: getRoots$1,
+    };
+
+    const getRoots = equation.getRoots;
+    const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
+    // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
+    // 两个三次方程组无法解析表示，只能数值计算
+    // 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
+    const TOLERANCE = 1e-6;
+    const ACCURACY = 6;
+    /**
+     * 获取求导之后的系数
+     * @param coefs
+     */
+    function getDerivativeCoefs(coefs) {
+        const derivative = [];
+        for (let i = 1; i < coefs.length; i++) {
+            derivative.push(i * coefs[i]);
+        }
+        return derivative;
+    }
+    /**
+     * 评估函数
+     * @param x
+     * @param coefs
+     * @return {number}
+     */
+    function evaluate(x, coefs) {
+        let result = 0;
+        for (let i = coefs.length - 1; i >= 0; i--) {
+            result = result * x + coefs[i];
+        }
+        return result;
+    }
+    function bisection(min, max, coefs) {
+        let minValue = evaluate(min, coefs);
+        let maxValue = evaluate(max, coefs);
+        let result;
+        if (Math.abs(minValue) <= TOLERANCE) {
+            result = min;
+        }
+        else if (Math.abs(maxValue) <= TOLERANCE) {
+            result = max;
+        }
+        else if (minValue * maxValue <= 0) {
+            const tmp1 = Math.log(max - min);
+            const tmp2 = Math.LN10 * ACCURACY;
+            const iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
+            for (let i = 0; i < iters; i++) {
+                result = 0.5 * (min + max);
+                const value = evaluate(result, coefs);
+                if (Math.abs(value) <= TOLERANCE) {
+                    break;
+                }
+                if (value * minValue < 0) {
+                    max = result;
+                    maxValue = value;
+                }
+                else {
+                    min = result;
+                    minValue = value;
+                }
+            }
+        }
+        return result;
+    }
+    function getRootsInInterval(min, max, coefs) {
+        // console.log('getRootsInInterval', coefs);
+        const roots = [];
+        let root;
+        const degree = coefs.length - 1;
+        if (degree === 1) {
+            root = bisection(min, max, coefs);
+            if (root !== undefined) {
+                roots.push(root);
+            }
+        }
+        else {
+            const derivativeCoefs = getDerivativeCoefs(coefs);
+            const droots = getRootsInInterval(min, max, derivativeCoefs);
+            if (droots.length > 0) {
+                // find root on [min, droots[0]]
+                root = bisection(min, droots[0], coefs);
+                if (root !== undefined) {
+                    roots.push(root);
+                }
+                // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
+                for (let i = 0; i <= droots.length - 2; i++) {
+                    root = bisection(droots[i], droots[i + 1], coefs);
+                    if (root !== undefined) {
+                        roots.push(root);
+                    }
+                }
+                // find root on [droots[count-1],xmax]
+                root = bisection(droots[droots.length - 1], max, coefs);
+                if (root !== undefined) {
+                    roots.push(root);
+                }
+            }
+            else {
+                // polynomial is monotone on [min,max], has at most one root
+                root = bisection(min, max, coefs);
+                if (root !== undefined) {
+                    roots.push(root);
+                }
+            }
+        }
+        return roots;
+    }
+    /**
+     * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
+     * @return {[]}
+     */
+    function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
+        let c12, c11, c10;
+        let c22, c21, c20;
+        const result = [];
+        c12 = {
+            x: ax1 - 2 * ax2 + ax3,
+            y: ay1 - 2 * ay2 + ay3,
+        };
+        c11 = {
+            x: 2 * ax2 - 2 * ax1,
+            y: 2 * ay2 - 2 * ay1,
+        };
+        c10 = { x: ax1, y: ay1 };
+        c22 = {
+            x: bx1 - 2 * bx2 + bx3,
+            y: by1 - 2 * by2 + by3,
+        };
+        c21 = {
+            x: 2 * bx2 - 2 * bx1,
+            y: 2 * by2 - 2 * by1,
+        };
+        c20 = { x: bx1, y: by1 };
+        let coefs;
+        if (c12.y === 0) {
+            const v0 = c12.x * (c10.y - c20.y);
+            const v1 = v0 - c11.x * c11.y;
+            // let v2 = v0 + v1;
+            const v3 = c11.y * c11.y;
+            coefs = [
+                c12.x * c22.y * c22.y,
+                2 * c12.x * c21.y * c22.y,
+                c12.x * c21.y * c21.y - c22.x * v3 - c22.y * v0 - c22.y * v1,
+                -c21.x * v3 - c21.y * v0 - c21.y * v1,
+                (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1
+            ].reverse();
+        }
+        else {
+            const v0 = c12.x * c22.y - c12.y * c22.x;
+            const v1 = c12.x * c21.y - c21.x * c12.y;
+            const v2 = c11.x * c12.y - c11.y * c12.x;
+            const v3 = c10.y - c20.y;
+            const v4 = c12.y * (c10.x - c20.x) - c12.x * v3;
+            const v5 = -c11.y * v2 + c12.y * v4;
+            const v6 = v2 * v2;
+            coefs = [
+                v0 * v0,
+                2 * v0 * v1,
+                (-c22.y * v6 + c12.y * v1 * v1 + c12.y * v0 * v4 + v0 * v5) / c12.y,
+                (-c21.y * v6 + c12.y * v1 * v4 + v1 * v5) / c12.y,
+                (v3 * v6 + v4 * v5) / c12.y
+            ].reverse();
+        }
+        const roots = getRoots(coefs);
+        for (let i = 0; i < roots.length; i++) {
+            const s = roots[i];
+            if (0 <= s && s <= 1) {
+                const xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
+                const yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
+                if (xRoots.length > 0 && yRoots.length > 0) {
+                    const TOLERANCE = 1e-4;
+                    checkRoots: for (let j = 0; j < xRoots.length; j++) {
+                        const xRoot = xRoots[j];
+                        if (0 <= xRoot && xRoot <= 1) {
+                            for (let k = 0; k < yRoots.length; k++) {
+                                if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+                                    const x = c22.x * s * s + c21.x * s + c20.x;
+                                    const y = c22.y * s * s + c21.y * s + c20.y;
+                                    result.push({ x, y, t: xRoot });
+                                    // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
+                                    break checkRoots;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+        let c13, c12, c11, c10; // 三阶系数
+        let c23, c22, c21, c20;
+        const result = [];
+        c13 = {
+            x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
+            y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
+        };
+        c12 = {
+            x: 3 * ax1 - 6 * ax2 + 3 * ax3,
+            y: 3 * ay1 - 6 * ay2 + 3 * ay3,
+        };
+        c11 = {
+            x: -3 * ax1 + 3 * ax2,
+            y: -3 * ay1 + 3 * ay2,
+        };
+        c10 = { x: ax1, y: ay1 };
+        c23 = {
+            x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
+            y: -by1 + 3 * by2 - 3 * by3 + by4,
+        };
+        c22 = {
+            x: 3 * bx1 - 6 * bx2 + 3 * bx3,
+            y: 3 * by1 - 6 * by2 + 3 * by3,
+        };
+        c21 = {
+            x: -3 * bx1 + 3 * bx2,
+            y: -3 * by1 + 3 * by2,
+        };
+        c20 = { x: bx1, y: by1 };
+        const c10x2 = c10.x * c10.x;
+        const c10x3 = c10.x * c10.x * c10.x;
+        const c10y2 = c10.y * c10.y;
+        const c10y3 = c10.y * c10.y * c10.y;
+        const c11x2 = c11.x * c11.x;
+        const c11x3 = c11.x * c11.x * c11.x;
+        const c11y2 = c11.y * c11.y;
+        const c11y3 = c11.y * c11.y * c11.y;
+        const c12x2 = c12.x * c12.x;
+        const c12x3 = c12.x * c12.x * c12.x;
+        const c12y2 = c12.y * c12.y;
+        const c12y3 = c12.y * c12.y * c12.y;
+        const c13x2 = c13.x * c13.x;
+        const c13x3 = c13.x * c13.x * c13.x;
+        const c13y2 = c13.y * c13.y;
+        const c13y3 = c13.y * c13.y * c13.y;
+        const c20x2 = c20.x * c20.x;
+        const c20x3 = c20.x * c20.x * c20.x;
+        const c20y2 = c20.y * c20.y;
+        const c20y3 = c20.y * c20.y * c20.y;
+        const c21x2 = c21.x * c21.x;
+        const c21x3 = c21.x * c21.x * c21.x;
+        const c21y2 = c21.y * c21.y;
+        const c22x2 = c22.x * c22.x;
+        const c22x3 = c22.x * c22.x * c22.x;
+        const c22y2 = c22.y * c22.y;
+        const c23x2 = c23.x * c23.x;
+        const c23x3 = c23.x * c23.x * c23.x;
+        const c23y2 = c23.y * c23.y;
+        const c23y3 = c23.y * c23.y * c23.y;
+        const coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y +
+                3 * c13x2 * c13.y * c23.x * c23y2,
+            -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 -
+                3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2,
+            -6 * c21.x * c13.x * c13y2 * c23.x * c23.y - 6 * c13.x * c22.x * c13y2 * c22.y * c23.x + 6 * c13x2 * c22.x * c13.y * c22.y * c23.y +
+                3 * c21.x * c13y3 * c23x2 + 3 * c22x2 * c13y3 * c23.x + 3 * c21.x * c13x2 * c13.y * c23y2 - 3 * c13.x * c21.y * c13y2 * c23x2 -
+                3 * c13.x * c22x2 * c13y2 * c23.y + c13x2 * c13.y * c23.x * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-c21.y * c23y2 -
+                2 * c22y2 * c23.y - c23.y * (2 * c21.y * c23.y + c22y2)),
+            c11.x * c12.y * c13.x * c13.y * c23.x * c23.y - c11.y * c12.x * c13.x * c13.y * c23.x * c23.y + 6 * c21.x * c22.x * c13y3 * c23.x +
+                3 * c11.x * c12.x * c13.x * c13.y * c23y2 + 6 * c10.x * c13.x * c13y2 * c23.x * c23.y - 3 * c11.x * c12.x * c13y2 * c23.x * c23.y -
+                3 * c11.y * c12.y * c13.x * c13.y * c23x2 - 6 * c10.y * c13x2 * c13.y * c23.x * c23.y - 6 * c20.x * c13.x * c13y2 * c23.x * c23.y +
+                3 * c11.y * c12.y * c13x2 * c23.x * c23.y - 2 * c12.x * c12y2 * c13.x * c23.x * c23.y - 6 * c21.x * c13.x * c22.x * c13y2 * c23.y -
+                6 * c21.x * c13.x * c13y2 * c22.y * c23.x - 6 * c13.x * c21.y * c22.x * c13y2 * c23.x + 6 * c21.x * c13x2 * c13.y * c22.y * c23.y +
+                2 * c12x2 * c12.y * c13.y * c23.x * c23.y + c22x3 * c13y3 - 3 * c10.x * c13y3 * c23x2 + 3 * c10.y * c13x3 * c23y2 +
+                3 * c20.x * c13y3 * c23x2 + c12y3 * c13.x * c23x2 - c12x3 * c13.y * c23y2 - 3 * c10.x * c13x2 * c13.y * c23y2 +
+                3 * c10.y * c13.x * c13y2 * c23x2 - 2 * c11.x * c12.y * c13x2 * c23y2 + c11.x * c12.y * c13y2 * c23x2 - c11.y * c12.x * c13x2 * c23y2 +
+                2 * c11.y * c12.x * c13y2 * c23x2 + 3 * c20.x * c13x2 * c13.y * c23y2 - c12.x * c12y2 * c13.y * c23x2 -
+                3 * c20.y * c13.x * c13y2 * c23x2 + c12x2 * c12.y * c13.x * c23y2 - 3 * c13.x * c22x2 * c13y2 * c22.y +
+                c13x2 * c13.y * c23.x * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c22.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
+                c13x3 * (-2 * c21.y * c22.y * c23.y - c20.y * c23y2 - c22.y * (2 * c21.y * c23.y + c22y2) - c23.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            6 * c11.x * c12.x * c13.x * c13.y * c22.y * c23.y + c11.x * c12.y * c13.x * c22.x * c13.y * c23.y + c11.x * c12.y * c13.x * c13.y * c22.y * c23.x -
+                c11.y * c12.x * c13.x * c22.x * c13.y * c23.y - c11.y * c12.x * c13.x * c13.y * c22.y * c23.x - 6 * c11.y * c12.y * c13.x * c22.x * c13.y * c23.x -
+                6 * c10.x * c22.x * c13y3 * c23.x + 6 * c20.x * c22.x * c13y3 * c23.x + 6 * c10.y * c13x3 * c22.y * c23.y + 2 * c12y3 * c13.x * c22.x * c23.x -
+                2 * c12x3 * c13.y * c22.y * c23.y + 6 * c10.x * c13.x * c22.x * c13y2 * c23.y + 6 * c10.x * c13.x * c13y2 * c22.y * c23.x +
+                6 * c10.y * c13.x * c22.x * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c23.y - 3 * c11.x * c12.x * c13y2 * c22.y * c23.x +
+                2 * c11.x * c12.y * c22.x * c13y2 * c23.x + 4 * c11.y * c12.x * c22.x * c13y2 * c23.x - 6 * c10.x * c13x2 * c13.y * c22.y * c23.y -
+                6 * c10.y * c13x2 * c22.x * c13.y * c23.y - 6 * c10.y * c13x2 * c13.y * c22.y * c23.x - 4 * c11.x * c12.y * c13x2 * c22.y * c23.y -
+                6 * c20.x * c13.x * c22.x * c13y2 * c23.y - 6 * c20.x * c13.x * c13y2 * c22.y * c23.x - 2 * c11.y * c12.x * c13x2 * c22.y * c23.y +
+                3 * c11.y * c12.y * c13x2 * c22.x * c23.y + 3 * c11.y * c12.y * c13x2 * c22.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c23.y -
+                2 * c12.x * c12y2 * c13.x * c22.y * c23.x - 2 * c12.x * c12y2 * c22.x * c13.y * c23.x - 6 * c20.y * c13.x * c22.x * c13y2 * c23.x -
+                6 * c21.x * c13.x * c21.y * c13y2 * c23.x - 6 * c21.x * c13.x * c22.x * c13y2 * c22.y + 6 * c20.x * c13x2 * c13.y * c22.y * c23.y +
+                2 * c12x2 * c12.y * c13.x * c22.y * c23.y + 2 * c12x2 * c12.y * c22.x * c13.y * c23.y + 2 * c12x2 * c12.y * c13.y * c22.y * c23.x +
+                3 * c21.x * c22x2 * c13y3 + 3 * c21x2 * c13y3 * c23.x - 3 * c13.x * c21.y * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c23.y +
+                c13x2 * c22.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c13.y * c23.x * (6 * c20.y * c22.y + 3 * c21y2) +
+                c21.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c22.y * c23.y - c23.y * (2 * c20.y * c22.y + c21y2) -
+                c21.y * (2 * c21.y * c23.y + c22y2) - c22.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            c11.x * c21.x * c12.y * c13.x * c13.y * c23.y + c11.x * c12.y * c13.x * c21.y * c13.y * c23.x + c11.x * c12.y * c13.x * c22.x * c13.y * c22.y -
+                c11.y * c12.x * c21.x * c13.x * c13.y * c23.y - c11.y * c12.x * c13.x * c21.y * c13.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c22.y -
+                6 * c11.y * c21.x * c12.y * c13.x * c13.y * c23.x - 6 * c10.x * c21.x * c13y3 * c23.x + 6 * c20.x * c21.x * c13y3 * c23.x +
+                2 * c21.x * c12y3 * c13.x * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c23.y + 6 * c10.x * c13.x * c21.y * c13y2 * c23.x +
+                6 * c10.x * c13.x * c22.x * c13y2 * c22.y + 6 * c10.y * c21.x * c13.x * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c23.y -
+                3 * c11.x * c12.x * c21.y * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c22.y + 2 * c11.x * c21.x * c12.y * c13y2 * c23.x +
+                4 * c11.y * c12.x * c21.x * c13y2 * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c23.y - 6 * c10.y * c13x2 * c21.y * c13.y * c23.x -
+                6 * c10.y * c13x2 * c22.x * c13.y * c22.y - 6 * c20.x * c21.x * c13.x * c13y2 * c23.y - 6 * c20.x * c13.x * c21.y * c13y2 * c23.x -
+                6 * c20.x * c13.x * c22.x * c13y2 * c22.y + 3 * c11.y * c21.x * c12.y * c13x2 * c23.y - 3 * c11.y * c12.y * c13.x * c22x2 * c13.y +
+                3 * c11.y * c12.y * c13x2 * c21.y * c23.x + 3 * c11.y * c12.y * c13x2 * c22.x * c22.y - 2 * c12.x * c21.x * c12y2 * c13.x * c23.y -
+                2 * c12.x * c21.x * c12y2 * c13.y * c23.x - 2 * c12.x * c12y2 * c13.x * c21.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c22.y -
+                6 * c20.y * c21.x * c13.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c22.x * c13y2 + 6 * c20.y * c13x2 * c21.y * c13.y * c23.x +
+                2 * c12x2 * c21.x * c12.y * c13.y * c23.y + 2 * c12x2 * c12.y * c21.y * c13.y * c23.x + 2 * c12x2 * c12.y * c22.x * c13.y * c22.y -
+                3 * c10.x * c22x2 * c13y3 + 3 * c20.x * c22x2 * c13y3 + 3 * c21x2 * c22.x * c13y3 + c12y3 * c13.x * c22x2 +
+                3 * c10.y * c13.x * c22x2 * c13y2 + c11.x * c12.y * c22x2 * c13y2 + 2 * c11.y * c12.x * c22x2 * c13y2 -
+                c12.x * c12y2 * c22x2 * c13.y - 3 * c20.y * c13.x * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c22.y +
+                c12x2 * c12.y * c13.x * (2 * c21.y * c23.y + c22y2) + c11.x * c12.x * c13.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
+                c21.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c21.y * c23.y - c22y2) +
+                c10.y * c13x3 * (6 * c21.y * c23.y + 3 * c22y2) + c11.y * c12.x * c13x2 * (-2 * c21.y * c23.y - c22y2) +
+                c11.x * c12.y * c13x2 * (-4 * c21.y * c23.y - 2 * c22y2) + c10.x * c13x2 * c13.y * (-6 * c21.y * c23.y - 3 * c22y2) +
+                c13x2 * c22.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
+                c13x3 * (-2 * c20.y * c21.y * c23.y - c22.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c21.y * c23.y + c22y2) -
+                    c21.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            -c10.x * c11.x * c12.y * c13.x * c13.y * c23.y + c10.x * c11.y * c12.x * c13.x * c13.y * c23.y + 6 * c10.x * c11.y * c12.y * c13.x * c13.y * c23.x -
+                6 * c10.y * c11.x * c12.x * c13.x * c13.y * c23.y - c10.y * c11.x * c12.y * c13.x * c13.y * c23.x + c10.y * c11.y * c12.x * c13.x * c13.y * c23.x +
+                c11.x * c11.y * c12.x * c12.y * c13.x * c23.y - c11.x * c11.y * c12.x * c12.y * c13.y * c23.x + c11.x * c20.x * c12.y * c13.x * c13.y * c23.y +
+                c11.x * c20.y * c12.y * c13.x * c13.y * c23.x + c11.x * c21.x * c12.y * c13.x * c13.y * c22.y + c11.x * c12.y * c13.x * c21.y * c22.x * c13.y -
+                c20.x * c11.y * c12.x * c13.x * c13.y * c23.y - 6 * c20.x * c11.y * c12.y * c13.x * c13.y * c23.x - c11.y * c12.x * c20.y * c13.x * c13.y * c23.x -
+                c11.y * c12.x * c21.x * c13.x * c13.y * c22.y - c11.y * c12.x * c13.x * c21.y * c22.x * c13.y - 6 * c11.y * c21.x * c12.y * c13.x * c22.x * c13.y -
+                6 * c10.x * c20.x * c13y3 * c23.x - 6 * c10.x * c21.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c23.x + 6 * c20.x * c21.x * c22.x * c13y3 +
+                2 * c20.x * c12y3 * c13.x * c23.x + 2 * c21.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c23.y - 6 * c10.x * c10.y * c13.x * c13y2 * c23.x +
+                3 * c10.x * c11.x * c12.x * c13y2 * c23.y - 2 * c10.x * c11.x * c12.y * c13y2 * c23.x - 4 * c10.x * c11.y * c12.x * c13y2 * c23.x +
+                3 * c10.y * c11.x * c12.x * c13y2 * c23.x + 6 * c10.x * c10.y * c13x2 * c13.y * c23.y + 6 * c10.x * c20.x * c13.x * c13y2 * c23.y -
+                3 * c10.x * c11.y * c12.y * c13x2 * c23.y + 2 * c10.x * c12.x * c12y2 * c13.x * c23.y + 2 * c10.x * c12.x * c12y2 * c13.y * c23.x +
+                6 * c10.x * c20.y * c13.x * c13y2 * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c22.y + 6 * c10.x * c13.x * c21.y * c22.x * c13y2 +
+                4 * c10.y * c11.x * c12.y * c13x2 * c23.y + 6 * c10.y * c20.x * c13.x * c13y2 * c23.x + 2 * c10.y * c11.y * c12.x * c13x2 * c23.y -
+                3 * c10.y * c11.y * c12.y * c13x2 * c23.x + 2 * c10.y * c12.x * c12y2 * c13.x * c23.x + 6 * c10.y * c21.x * c13.x * c22.x * c13y2 -
+                3 * c11.x * c20.x * c12.x * c13y2 * c23.y + 2 * c11.x * c20.x * c12.y * c13y2 * c23.x + c11.x * c11.y * c12y2 * c13.x * c23.x -
+                3 * c11.x * c12.x * c20.y * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c22.y - 3 * c11.x * c12.x * c21.y * c22.x * c13y2 +
+                2 * c11.x * c21.x * c12.y * c22.x * c13y2 + 4 * c20.x * c11.y * c12.x * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c22.x * c13y2 -
+                2 * c10.x * c12x2 * c12.y * c13.y * c23.y - 6 * c10.y * c20.x * c13x2 * c13.y * c23.y - 6 * c10.y * c20.y * c13x2 * c13.y * c23.x -
+                6 * c10.y * c21.x * c13x2 * c13.y * c22.y - 2 * c10.y * c12x2 * c12.y * c13.x * c23.y - 2 * c10.y * c12x2 * c12.y * c13.y * c23.x -
+                6 * c10.y * c13x2 * c21.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c23.y - 2 * c11.x * c11y2 * c13.x * c13.y * c23.x +
+                3 * c20.x * c11.y * c12.y * c13x2 * c23.y - 2 * c20.x * c12.x * c12y2 * c13.x * c23.y - 2 * c20.x * c12.x * c12y2 * c13.y * c23.x -
+                6 * c20.x * c20.y * c13.x * c13y2 * c23.x - 6 * c20.x * c21.x * c13.x * c13y2 * c22.y - 6 * c20.x * c13.x * c21.y * c22.x * c13y2 +
+                3 * c11.y * c20.y * c12.y * c13x2 * c23.x + 3 * c11.y * c21.x * c12.y * c13x2 * c22.y + 3 * c11.y * c12.y * c13x2 * c21.y * c22.x -
+                2 * c12.x * c20.y * c12y2 * c13.x * c23.x - 2 * c12.x * c21.x * c12y2 * c13.x * c22.y - 2 * c12.x * c21.x * c12y2 * c22.x * c13.y -
+                2 * c12.x * c12y2 * c13.x * c21.y * c22.x - 6 * c20.y * c21.x * c13.x * c22.x * c13y2 - c11y2 * c12.x * c12.y * c13.x * c23.x +
+                2 * c20.x * c12x2 * c12.y * c13.y * c23.y + 6 * c20.y * c13x2 * c21.y * c22.x * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c23.y +
+                c11x2 * c12.x * c12.y * c13.y * c23.y + 2 * c12x2 * c20.y * c12.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c22.y +
+                2 * c12x2 * c12.y * c21.y * c22.x * c13.y + c21x3 * c13y3 + 3 * c10x2 * c13y3 * c23.x - 3 * c10y2 * c13x3 * c23.y +
+                3 * c20x2 * c13y3 * c23.x + c11y3 * c13x2 * c23.x - c11x3 * c13y2 * c23.y - c11.x * c11y2 * c13x2 * c23.y +
+                c11x2 * c11.y * c13y2 * c23.x - 3 * c10x2 * c13.x * c13y2 * c23.y + 3 * c10y2 * c13x2 * c13.y * c23.x - c11x2 * c12y2 * c13.x * c23.y +
+                c11y2 * c12x2 * c13.y * c23.x - 3 * c21x2 * c13.x * c21.y * c13y2 - 3 * c20x2 * c13.x * c13y2 * c23.y + 3 * c20y2 * c13x2 * c13.y * c23.x +
+                c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
+                c10.y * c13x3 * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c11.y * c12.x * c13x2 * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
+                c12x2 * c12.y * c13.x * (2 * c20.y * c23.y + 2 * c21.y * c22.y) + c11.x * c12.y * c13x2 * (-4 * c20.y * c23.y - 4 * c21.y * c22.y) +
+                c10.x * c13x2 * c13.y * (-6 * c20.y * c23.y - 6 * c21.y * c22.y) + c20.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) +
+                c21.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21.y * c22.y - c20y2 * c23.y -
+                c21.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
+            -c10.x * c11.x * c12.y * c13.x * c13.y * c22.y + c10.x * c11.y * c12.x * c13.x * c13.y * c22.y + 6 * c10.x * c11.y * c12.y * c13.x * c22.x * c13.y -
+                6 * c10.y * c11.x * c12.x * c13.x * c13.y * c22.y - c10.y * c11.x * c12.y * c13.x * c22.x * c13.y + c10.y * c11.y * c12.x * c13.x * c22.x * c13.y +
+                c11.x * c11.y * c12.x * c12.y * c13.x * c22.y - c11.x * c11.y * c12.x * c12.y * c22.x * c13.y + c11.x * c20.x * c12.y * c13.x * c13.y * c22.y +
+                c11.x * c20.y * c12.y * c13.x * c22.x * c13.y + c11.x * c21.x * c12.y * c13.x * c21.y * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c22.y -
+                6 * c20.x * c11.y * c12.y * c13.x * c22.x * c13.y - c11.y * c12.x * c20.y * c13.x * c22.x * c13.y - c11.y * c12.x * c21.x * c13.x * c21.y * c13.y -
+                6 * c10.x * c20.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c22.x + 2 * c20.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c22.y -
+                6 * c10.x * c10.y * c13.x * c22.x * c13y2 + 3 * c10.x * c11.x * c12.x * c13y2 * c22.y - 2 * c10.x * c11.x * c12.y * c22.x * c13y2 -
+                4 * c10.x * c11.y * c12.x * c22.x * c13y2 + 3 * c10.y * c11.x * c12.x * c22.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c13.y * c22.y +
+                6 * c10.x * c20.x * c13.x * c13y2 * c22.y - 3 * c10.x * c11.y * c12.y * c13x2 * c22.y + 2 * c10.x * c12.x * c12y2 * c13.x * c22.y +
+                2 * c10.x * c12.x * c12y2 * c22.x * c13.y + 6 * c10.x * c20.y * c13.x * c22.x * c13y2 + 6 * c10.x * c21.x * c13.x * c21.y * c13y2 +
+                4 * c10.y * c11.x * c12.y * c13x2 * c22.y + 6 * c10.y * c20.x * c13.x * c22.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c22.y -
+                3 * c10.y * c11.y * c12.y * c13x2 * c22.x + 2 * c10.y * c12.x * c12y2 * c13.x * c22.x - 3 * c11.x * c20.x * c12.x * c13y2 * c22.y +
+                2 * c11.x * c20.x * c12.y * c22.x * c13y2 + c11.x * c11.y * c12y2 * c13.x * c22.x - 3 * c11.x * c12.x * c20.y * c22.x * c13y2 -
+                3 * c11.x * c12.x * c21.x * c21.y * c13y2 + 4 * c20.x * c11.y * c12.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c22.y -
+                6 * c10.y * c20.x * c13x2 * c13.y * c22.y - 6 * c10.y * c20.y * c13x2 * c22.x * c13.y - 6 * c10.y * c21.x * c13x2 * c21.y * c13.y -
+                2 * c10.y * c12x2 * c12.y * c13.x * c22.y - 2 * c10.y * c12x2 * c12.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c22.y -
+                2 * c11.x * c11y2 * c13.x * c22.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c22.y - 2 * c20.x * c12.x * c12y2 * c13.x * c22.y -
+                2 * c20.x * c12.x * c12y2 * c22.x * c13.y - 6 * c20.x * c20.y * c13.x * c22.x * c13y2 - 6 * c20.x * c21.x * c13.x * c21.y * c13y2 +
+                3 * c11.y * c20.y * c12.y * c13x2 * c22.x + 3 * c11.y * c21.x * c12.y * c13x2 * c21.y - 2 * c12.x * c20.y * c12y2 * c13.x * c22.x -
+                2 * c12.x * c21.x * c12y2 * c13.x * c21.y - c11y2 * c12.x * c12.y * c13.x * c22.x + 2 * c20.x * c12x2 * c12.y * c13.y * c22.y -
+                3 * c11.y * c21x2 * c12.y * c13.x * c13.y + 6 * c20.y * c21.x * c13x2 * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c22.y +
+                c11x2 * c12.x * c12.y * c13.y * c22.y + 2 * c12x2 * c20.y * c12.y * c22.x * c13.y + 2 * c12x2 * c21.x * c12.y * c21.y * c13.y -
+                3 * c10.x * c21x2 * c13y3 + 3 * c20.x * c21x2 * c13y3 + 3 * c10x2 * c22.x * c13y3 - 3 * c10y2 * c13x3 * c22.y + 3 * c20x2 * c22.x * c13y3 +
+                c21x2 * c12y3 * c13.x + c11y3 * c13x2 * c22.x - c11x3 * c13y2 * c22.y + 3 * c10.y * c21x2 * c13.x * c13y2 -
+                c11.x * c11y2 * c13x2 * c22.y + c11.x * c21x2 * c12.y * c13y2 + 2 * c11.y * c12.x * c21x2 * c13y2 + c11x2 * c11.y * c22.x * c13y2 -
+                c12.x * c21x2 * c12y2 * c13.y - 3 * c20.y * c21x2 * c13.x * c13y2 - 3 * c10x2 * c13.x * c13y2 * c22.y + 3 * c10y2 * c13x2 * c22.x * c13.y -
+                c11x2 * c12y2 * c13.x * c22.y + c11y2 * c12x2 * c22.x * c13.y - 3 * c20x2 * c13.x * c13y2 * c22.y + 3 * c20y2 * c13x2 * c22.x * c13.y +
+                c12x2 * c12.y * c13.x * (2 * c20.y * c22.y + c21y2) + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
+                c12x3 * c13.y * (-2 * c20.y * c22.y - c21y2) + c10.y * c13x3 * (6 * c20.y * c22.y + 3 * c21y2) +
+                c11.y * c12.x * c13x2 * (-2 * c20.y * c22.y - c21y2) + c11.x * c12.y * c13x2 * (-4 * c20.y * c22.y - 2 * c21y2) +
+                c10.x * c13x2 * c13.y * (-6 * c20.y * c22.y - 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
+                c13x3 * (-2 * c20.y * c21y2 - c20y2 * c22.y - c20.y * (2 * c20.y * c22.y + c21y2)),
+            -c10.x * c11.x * c12.y * c13.x * c21.y * c13.y + c10.x * c11.y * c12.x * c13.x * c21.y * c13.y + 6 * c10.x * c11.y * c21.x * c12.y * c13.x * c13.y -
+                6 * c10.y * c11.x * c12.x * c13.x * c21.y * c13.y - c10.y * c11.x * c21.x * c12.y * c13.x * c13.y + c10.y * c11.y * c12.x * c21.x * c13.x * c13.y -
+                c11.x * c11.y * c12.x * c21.x * c12.y * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c21.y + c11.x * c20.x * c12.y * c13.x * c21.y * c13.y +
+                6 * c11.x * c12.x * c20.y * c13.x * c21.y * c13.y + c11.x * c20.y * c21.x * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c13.x * c21.y * c13.y -
+                6 * c20.x * c11.y * c21.x * c12.y * c13.x * c13.y - c11.y * c12.x * c20.y * c21.x * c13.x * c13.y - 6 * c10.x * c20.x * c21.x * c13y3 -
+                2 * c10.x * c21.x * c12y3 * c13.x + 6 * c10.y * c20.y * c13x3 * c21.y + 2 * c20.x * c21.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c21.y * c13.y -
+                2 * c12x3 * c20.y * c21.y * c13.y - 6 * c10.x * c10.y * c21.x * c13.x * c13y2 + 3 * c10.x * c11.x * c12.x * c21.y * c13y2 -
+                2 * c10.x * c11.x * c21.x * c12.y * c13y2 - 4 * c10.x * c11.y * c12.x * c21.x * c13y2 + 3 * c10.y * c11.x * c12.x * c21.x * c13y2 +
+                6 * c10.x * c10.y * c13x2 * c21.y * c13.y + 6 * c10.x * c20.x * c13.x * c21.y * c13y2 - 3 * c10.x * c11.y * c12.y * c13x2 * c21.y +
+                2 * c10.x * c12.x * c21.x * c12y2 * c13.y + 2 * c10.x * c12.x * c12y2 * c13.x * c21.y + 6 * c10.x * c20.y * c21.x * c13.x * c13y2 +
+                4 * c10.y * c11.x * c12.y * c13x2 * c21.y + 6 * c10.y * c20.x * c21.x * c13.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c21.y -
+                3 * c10.y * c11.y * c21.x * c12.y * c13x2 + 2 * c10.y * c12.x * c21.x * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c21.y * c13y2 +
+                2 * c11.x * c20.x * c21.x * c12.y * c13y2 + c11.x * c11.y * c21.x * c12y2 * c13.x - 3 * c11.x * c12.x * c20.y * c21.x * c13y2 +
+                4 * c20.x * c11.y * c12.x * c21.x * c13y2 - 6 * c10.x * c20.y * c13x2 * c21.y * c13.y - 2 * c10.x * c12x2 * c12.y * c21.y * c13.y -
+                6 * c10.y * c20.x * c13x2 * c21.y * c13.y - 6 * c10.y * c20.y * c21.x * c13x2 * c13.y - 2 * c10.y * c12x2 * c21.x * c12.y * c13.y -
+                2 * c10.y * c12x2 * c12.y * c13.x * c21.y - c11.x * c11.y * c12x2 * c21.y * c13.y - 4 * c11.x * c20.y * c12.y * c13x2 * c21.y -
+                2 * c11.x * c11y2 * c21.x * c13.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c21.y - 2 * c20.x * c12.x * c21.x * c12y2 * c13.y -
+                2 * c20.x * c12.x * c12y2 * c13.x * c21.y - 6 * c20.x * c20.y * c21.x * c13.x * c13y2 - 2 * c11.y * c12.x * c20.y * c13x2 * c21.y +
+                3 * c11.y * c20.y * c21.x * c12.y * c13x2 - 2 * c12.x * c20.y * c21.x * c12y2 * c13.x - c11y2 * c12.x * c21.x * c12.y * c13.x +
+                6 * c20.x * c20.y * c13x2 * c21.y * c13.y + 2 * c20.x * c12x2 * c12.y * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c21.y * c13.y +
+                c11x2 * c12.x * c12.y * c21.y * c13.y + 2 * c12x2 * c20.y * c21.x * c12.y * c13.y + 2 * c12x2 * c20.y * c12.y * c13.x * c21.y +
+                3 * c10x2 * c21.x * c13y3 - 3 * c10y2 * c13x3 * c21.y + 3 * c20x2 * c21.x * c13y3 + c11y3 * c21.x * c13x2 - c11x3 * c21.y * c13y2 -
+                3 * c20y2 * c13x3 * c21.y - c11.x * c11y2 * c13x2 * c21.y + c11x2 * c11.y * c21.x * c13y2 - 3 * c10x2 * c13.x * c21.y * c13y2 +
+                3 * c10y2 * c21.x * c13x2 * c13.y - c11x2 * c12y2 * c13.x * c21.y + c11y2 * c12x2 * c21.x * c13.y - 3 * c20x2 * c13.x * c21.y * c13y2 +
+                3 * c20y2 * c21.x * c13x2 * c13.y,
+            c10.x * c10.y * c11.x * c12.y * c13.x * c13.y - c10.x * c10.y * c11.y * c12.x * c13.x * c13.y + c10.x * c11.x * c11.y * c12.x * c12.y * c13.y -
+                c10.y * c11.x * c11.y * c12.x * c12.y * c13.x - c10.x * c11.x * c20.y * c12.y * c13.x * c13.y + 6 * c10.x * c20.x * c11.y * c12.y * c13.x * c13.y +
+                c10.x * c11.y * c12.x * c20.y * c13.x * c13.y - c10.y * c11.x * c20.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c20.y * c13.x * c13.y +
+                c10.y * c20.x * c11.y * c12.x * c13.x * c13.y - c11.x * c20.x * c11.y * c12.x * c12.y * c13.y + c11.x * c11.y * c12.x * c20.y * c12.y * c13.x +
+                c11.x * c20.x * c20.y * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c20.y * c13.x * c13.y - 2 * c10.x * c20.x * c12y3 * c13.x +
+                2 * c10.y * c12x3 * c20.y * c13.y - 3 * c10.x * c10.y * c11.x * c12.x * c13y2 - 6 * c10.x * c10.y * c20.x * c13.x * c13y2 +
+                3 * c10.x * c10.y * c11.y * c12.y * c13x2 - 2 * c10.x * c10.y * c12.x * c12y2 * c13.x - 2 * c10.x * c11.x * c20.x * c12.y * c13y2 -
+                c10.x * c11.x * c11.y * c12y2 * c13.x + 3 * c10.x * c11.x * c12.x * c20.y * c13y2 - 4 * c10.x * c20.x * c11.y * c12.x * c13y2 +
+                3 * c10.y * c11.x * c20.x * c12.x * c13y2 + 6 * c10.x * c10.y * c20.y * c13x2 * c13.y + 2 * c10.x * c10.y * c12x2 * c12.y * c13.y +
+                2 * c10.x * c11.x * c11y2 * c13.x * c13.y + 2 * c10.x * c20.x * c12.x * c12y2 * c13.y + 6 * c10.x * c20.x * c20.y * c13.x * c13y2 -
+                3 * c10.x * c11.y * c20.y * c12.y * c13x2 + 2 * c10.x * c12.x * c20.y * c12y2 * c13.x + c10.x * c11y2 * c12.x * c12.y * c13.x +
+                c10.y * c11.x * c11.y * c12x2 * c13.y + 4 * c10.y * c11.x * c20.y * c12.y * c13x2 - 3 * c10.y * c20.x * c11.y * c12.y * c13x2 +
+                2 * c10.y * c20.x * c12.x * c12y2 * c13.x + 2 * c10.y * c11.y * c12.x * c20.y * c13x2 + c11.x * c20.x * c11.y * c12y2 * c13.x -
+                3 * c11.x * c20.x * c12.x * c20.y * c13y2 - 2 * c10.x * c12x2 * c20.y * c12.y * c13.y - 6 * c10.y * c20.x * c20.y * c13x2 * c13.y -
+                2 * c10.y * c20.x * c12x2 * c12.y * c13.y - 2 * c10.y * c11x2 * c11.y * c13.x * c13.y - c10.y * c11x2 * c12.x * c12.y * c13.y -
+                2 * c10.y * c12x2 * c20.y * c12.y * c13.x - 2 * c11.x * c20.x * c11y2 * c13.x * c13.y - c11.x * c11.y * c12x2 * c20.y * c13.y +
+                3 * c20.x * c11.y * c20.y * c12.y * c13x2 - 2 * c20.x * c12.x * c20.y * c12y2 * c13.x - c20.x * c11y2 * c12.x * c12.y * c13.x +
+                3 * c10y2 * c11.x * c12.x * c13.x * c13.y + 3 * c11.x * c12.x * c20y2 * c13.x * c13.y + 2 * c20.x * c12x2 * c20.y * c12.y * c13.y -
+                3 * c10x2 * c11.y * c12.y * c13.x * c13.y + 2 * c11x2 * c11.y * c20.y * c13.x * c13.y + c11x2 * c12.x * c20.y * c12.y * c13.y -
+                3 * c20x2 * c11.y * c12.y * c13.x * c13.y - c10x3 * c13y3 + c10y3 * c13x3 + c20x3 * c13y3 - c20y3 * c13x3 -
+                3 * c10.x * c20x2 * c13y3 - c10.x * c11y3 * c13x2 + 3 * c10x2 * c20.x * c13y3 + c10.y * c11x3 * c13y2 +
+                3 * c10.y * c20y2 * c13x3 + c20.x * c11y3 * c13x2 + c10x2 * c12y3 * c13.x - 3 * c10y2 * c20.y * c13x3 - c10y2 * c12x3 * c13.y +
+                c20x2 * c12y3 * c13.x - c11x3 * c20.y * c13y2 - c12x3 * c20y2 * c13.y - c10.x * c11x2 * c11.y * c13y2 +
+                c10.y * c11.x * c11y2 * c13x2 - 3 * c10.x * c10y2 * c13x2 * c13.y - c10.x * c11y2 * c12x2 * c13.y + c10.y * c11x2 * c12y2 * c13.x -
+                c11.x * c11y2 * c20.y * c13x2 + 3 * c10x2 * c10.y * c13.x * c13y2 + c10x2 * c11.x * c12.y * c13y2 +
+                2 * c10x2 * c11.y * c12.x * c13y2 - 2 * c10y2 * c11.x * c12.y * c13x2 - c10y2 * c11.y * c12.x * c13x2 + c11x2 * c20.x * c11.y * c13y2 -
+                3 * c10.x * c20y2 * c13x2 * c13.y + 3 * c10.y * c20x2 * c13.x * c13y2 + c11.x * c20x2 * c12.y * c13y2 - 2 * c11.x * c20y2 * c12.y * c13x2 +
+                c20.x * c11y2 * c12x2 * c13.y - c11.y * c12.x * c20y2 * c13x2 - c10x2 * c12.x * c12y2 * c13.y - 3 * c10x2 * c20.y * c13.x * c13y2 +
+                3 * c10y2 * c20.x * c13x2 * c13.y + c10y2 * c12x2 * c12.y * c13.x - c11x2 * c20.y * c12y2 * c13.x + 2 * c20x2 * c11.y * c12.x * c13y2 +
+                3 * c20.x * c20y2 * c13x2 * c13.y - c20x2 * c12.x * c12y2 * c13.y - 3 * c20x2 * c20.y * c13.x * c13y2 + c12x2 * c20y2 * c12.y * c13.x
+        ].reverse();
+        const roots = getRootsInInterval(0, 1, coefs);
+        for (let i = 0; i < roots.length; i++) {
+            const s = roots[i];
+            const xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+            const yRoots = getRoots([c13.y,
+                c12.y,
+                c11.y,
+                c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
+            if (xRoots.length > 0 && yRoots.length > 0) {
+                const TOLERANCE = 1e-4;
+                checkRoots: for (let j = 0; j < xRoots.length; j++) {
+                    const xRoot = xRoots[j];
+                    if (0 <= xRoot && xRoot <= 1) {
+                        for (let k = 0; k < yRoots.length; k++) {
+                            if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+                                const x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
+                                const y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
+                                result.push({ x, y, t: xRoot });
+                                break checkRoots;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+        let c12, c11, c10;
+        let c23, c22, c21, c20;
+        const result = [];
+        c12 = {
+            x: ax1 - 2 * ax2 + ax3,
+            y: ay1 - 2 * ay2 + ay3,
+        };
+        c11 = {
+            x: 2 * ax2 - 2 * ax1,
+            y: 2 * ay2 - 2 * ay1,
+        };
+        c10 = { x: ax1, y: ay1 };
+        c23 = {
+            x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
+            y: -by1 + 3 * by2 - 3 * by3 + by4,
+        };
+        c22 = {
+            x: 3 * bx1 - 6 * bx2 + 3 * bx3,
+            y: 3 * by1 - 6 * by2 + 3 * by3,
+        };
+        c21 = {
+            x: -3 * bx1 + 3 * bx2,
+            y: -3 * by1 + 3 * by2,
+        };
+        c20 = { x: bx1, y: by1 };
+        const c10x2 = c10.x * c10.x;
+        const c10y2 = c10.y * c10.y;
+        const c11x2 = c11.x * c11.x;
+        const c11y2 = c11.y * c11.y;
+        const c12x2 = c12.x * c12.x;
+        const c12y2 = c12.y * c12.y;
+        const c20x2 = c20.x * c20.x;
+        const c20y2 = c20.y * c20.y;
+        const c21x2 = c21.x * c21.x;
+        const c21y2 = c21.y * c21.y;
+        const c22x2 = c22.x * c22.x;
+        const c22y2 = c22.y * c22.y;
+        const c23x2 = c23.x * c23.x;
+        const c23y2 = c23.y * c23.y;
+        const coefs = [
+            -2 * c12.x * c12.y * c23.x * c23.y + c12x2 * c23y2 + c12y2 * c23x2,
+            -2 * c12.x * c12.y * c22.x * c23.y - 2 * c12.x * c12.y * c22.y * c23.x + 2 * c12y2 * c22.x * c23.x +
+                2 * c12x2 * c22.y * c23.y,
+            -2 * c12.x * c21.x * c12.y * c23.y - 2 * c12.x * c12.y * c21.y * c23.x - 2 * c12.x * c12.y * c22.x * c22.y +
+                2 * c21.x * c12y2 * c23.x + c12y2 * c22x2 + c12x2 * (2 * c21.y * c23.y + c22y2),
+            2 * c10.x * c12.x * c12.y * c23.y + 2 * c10.y * c12.x * c12.y * c23.x + c11.x * c11.y * c12.x * c23.y +
+                c11.x * c11.y * c12.y * c23.x - 2 * c20.x * c12.x * c12.y * c23.y - 2 * c12.x * c20.y * c12.y * c23.x -
+                2 * c12.x * c21.x * c12.y * c22.y - 2 * c12.x * c12.y * c21.y * c22.x - 2 * c10.x * c12y2 * c23.x -
+                2 * c10.y * c12x2 * c23.y + 2 * c20.x * c12y2 * c23.x + 2 * c21.x * c12y2 * c22.x -
+                c11y2 * c12.x * c23.x - c11x2 * c12.y * c23.y + c12x2 * (2 * c20.y * c23.y + 2 * c21.y * c22.y),
+            2 * c10.x * c12.x * c12.y * c22.y + 2 * c10.y * c12.x * c12.y * c22.x + c11.x * c11.y * c12.x * c22.y +
+                c11.x * c11.y * c12.y * c22.x - 2 * c20.x * c12.x * c12.y * c22.y - 2 * c12.x * c20.y * c12.y * c22.x -
+                2 * c12.x * c21.x * c12.y * c21.y - 2 * c10.x * c12y2 * c22.x - 2 * c10.y * c12x2 * c22.y +
+                2 * c20.x * c12y2 * c22.x - c11y2 * c12.x * c22.x - c11x2 * c12.y * c22.y + c21x2 * c12y2 +
+                c12x2 * (2 * c20.y * c22.y + c21y2),
+            2 * c10.x * c12.x * c12.y * c21.y + 2 * c10.y * c12.x * c21.x * c12.y + c11.x * c11.y * c12.x * c21.y +
+                c11.x * c11.y * c21.x * c12.y - 2 * c20.x * c12.x * c12.y * c21.y - 2 * c12.x * c20.y * c21.x * c12.y -
+                2 * c10.x * c21.x * c12y2 - 2 * c10.y * c12x2 * c21.y + 2 * c20.x * c21.x * c12y2 -
+                c11y2 * c12.x * c21.x - c11x2 * c12.y * c21.y + 2 * c12x2 * c20.y * c21.y,
+            -2 * c10.x * c10.y * c12.x * c12.y - c10.x * c11.x * c11.y * c12.y - c10.y * c11.x * c11.y * c12.x +
+                2 * c10.x * c12.x * c20.y * c12.y + 2 * c10.y * c20.x * c12.x * c12.y + c11.x * c20.x * c11.y * c12.y +
+                c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 +
+                c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y -
+                c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 +
+                c20x2 * c12y2 + c12x2 * c20y2
+        ].reverse();
+        const roots = getRootsInInterval(0, 1, coefs);
+        // console.log(roots);
+        for (let i = 0; i < roots.length; i++) {
+            const s = roots[i];
+            const xRoots = getRoots([c12.x,
+                c11.x,
+                c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+            const yRoots = getRoots([c12.y,
+                c11.y,
+                c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
+            //
+            // console.log('xRoots', xRoots);
+            //
+            // console.log('yRoots', yRoots);
+            if (xRoots.length > 0 && yRoots.length > 0) {
+                const TOLERANCE = 1e-4;
+                checkRoots: for (let j = 0; j < xRoots.length; j++) {
+                    const xRoot = xRoots[j];
+                    if (0 <= xRoot && xRoot <= 1) {
+                        for (let k = 0; k < yRoots.length; k++) {
+                            if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+                                const x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
+                                const y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
+                                result.push({ x, y, t: xRoot });
+                                break checkRoots;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function intersectLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
+        const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+        if (d !== 0) {
+            const toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
+            const toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d;
+            if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1) {
+                let ox = ax1 + toSource * (ax2 - ax1);
+                let oy = ay1 + toSource * (ay2 - ay1);
+                return {
+                    x: ox,
+                    y: oy,
+                    toSource,
+                    toClip,
+                };
+            }
+        }
+    }
+    function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
+        let c2, c1, c0;
+        let cl, n;
+        const isV = bx1 === bx2;
+        const isH = by1 === by2;
+        let result = [];
+        const minbx = Math.min(bx1, bx2);
+        const minby = Math.min(by1, by2);
+        const maxbx = Math.max(bx1, bx2);
+        const maxby = Math.max(by1, by2);
+        const dot = (a, b) => a.x * b.x + a.y * b.y;
+        const lerp = (a, b, t) => ({
+            x: a.x - (a.x - b.x) * t,
+            y: a.y - (a.y - b.y) * t,
+            t,
+        });
+        c2 = {
+            x: ax1 - 2 * ax2 + ax3,
+            y: ay1 - 2 * ay2 + ay3,
+        };
+        c1 = {
+            x: -2 * ax1 + 2 * ax2,
+            y: -2 * ay1 + 2 * ay2,
+        };
+        c0 = { x: ax1, y: ay1 };
+        n = { x: by1 - by2, y: bx2 - bx1 };
+        cl = bx1 * by2 - bx2 * by1;
+        // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
+        const coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse();
+        // console.log('intersectBezier2Line coefs', coefs);
+        const roots = getRoots(coefs);
+        // console.log('intersectBezier2Line roots', roots);
+        for (let i = 0; i < roots.length; i++) {
+            const t = roots[i];
+            if (0 <= t && t <= 1) {
+                const p4 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
+                const p5 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
+                const p6 = lerp(p4, p5, t);
+                // console.log('p4, p5, p6', p4, p5, p6);
+                if (bx1 === bx2) {
+                    if (minby <= p6.y && p6.y <= maxby) {
+                        result.push(p6);
+                    }
+                }
+                else if (by1 === by2) {
+                    if (minbx <= p6.x && p6.x <= maxbx) {
+                        result.push(p6);
+                    }
+                }
+                else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
+                    result.push(p6);
+                }
+            }
+        }
+        if (isH || isV) {
+            result.forEach(item => {
+                if (isV) {
+                    if (item.x < minbx) {
+                        item.x = minbx;
+                    }
+                    else if (item.x > maxbx) {
+                        item.x = maxbx;
+                    }
+                }
+                else {
+                    if (item.y < minby) {
+                        item.y = minby;
+                    }
+                    else if (item.y > maxby) {
+                        item.y = maxby;
+                    }
+                }
+            });
+        }
+        return result;
+    }
+    /**
+     *
+     *    (-P1+3P2-3P3+P4)t^3 + (3P1-6P2+3P3)t^2 + (-3P1+3P2)t + P1
+     *        /\                     /\                /\        /\
+     *        ||                     ||                ||        ||
+     *        c3                     c2                c1        c0
+     */
+    function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
+        let c3, c2, c1, c0;
+        let cl, n;
+        const isV = bx1 === bx2;
+        const isH = by1 === by2;
+        const result = [];
+        const minbx = Math.min(bx1, bx2);
+        const minby = Math.min(by1, by2);
+        const maxbx = Math.max(bx1, bx2);
+        const maxby = Math.max(by1, by2);
+        const dot = (a, b) => a.x * b.x + a.y * b.y;
+        const lerp = (a, b, t) => ({
+            x: a.x - (a.x - b.x) * t,
+            y: a.y - (a.y - b.y) * t,
+            t,
+        });
+        c3 = {
+            x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
+            y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
+        };
+        c2 = {
+            x: 3 * ax1 - 6 * ax2 + 3 * ax3,
+            y: 3 * ay1 - 6 * ay2 + 3 * ay3,
+        };
+        c1 = {
+            x: -3 * ax1 + 3 * ax2,
+            y: -3 * ay1 + 3 * ay2,
+        };
+        c0 = { x: ax1, y: ay1 };
+        n = { x: by1 - by2, y: bx2 - bx1 };
+        cl = bx1 * by2 - bx2 * by1;
+        const coefs = [
+            cl + dot(n, c0),
+            dot(n, c1),
+            dot(n, c2),
+            dot(n, c3),
+        ];
+        const roots = getRoots(coefs);
+        for (let i = 0; i < roots.length; i++) {
+            const t = roots[i];
+            if (0 <= t && t <= 1) {
+                const p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
+                const p6 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
+                const p7 = lerp({ x: ax3, y: ay3 }, { x: ax4, y: ay4 }, t);
+                const p8 = lerp(p5, p6, t);
+                const p9 = lerp(p6, p7, t);
+                const p10 = lerp(p8, p9, t);
+                if (bx1 === bx2) {
+                    if (minby <= p10.y && p10.y <= maxby) {
+                        result.push(p10);
+                    }
+                }
+                else if (by1 === by2) {
+                    if (minbx <= p10.x && p10.x <= maxbx) {
+                        result.push(p10);
+                    }
+                }
+                else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
+                    result.push(p10);
+                }
+            }
+        }
+        if (isH || isV) {
+            result.forEach(item => {
+                if (isV) {
+                    if (item.x < minbx) {
+                        item.x = minbx;
+                    }
+                    else if (item.x > maxbx) {
+                        item.x = maxbx;
+                    }
+                }
+                else {
+                    if (item.y < minby) {
+                        item.y = minby;
+                    }
+                    else if (item.y > maxby) {
+                        item.y = maxby;
+                    }
+                }
+            });
+        }
+        return result;
+    }
+    /**
+     * 3d直线交点，允许误差，传入4个顶点坐标
+     * limitToFiniteSegment可传0、1、2、3，默认0是不考虑点是否在传入的顶点组成的线段上
+     * 1为限制在p1/p2线段，2为限制在p3/p4线段，3为都限制
+     */
+    function intersectLineLine3(p1, p2, p3, p4, limitToFiniteSegment = 0, tolerance = 1e-9) {
+        const p13 = subtractPoint(p1, p3);
+        const p43 = subtractPoint(p4, p3);
+        const p21 = subtractPoint(p2, p1);
+        const d1343 = p13.x * p43.x + p13.y * p43.y + p13.z * p43.z;
+        const d4321 = p43.x * p21.x + p43.y * p21.y + p43.z * p21.z;
+        const d1321 = p13.x * p21.x + p13.y * p21.y + p13.z * p21.z;
+        const d4343 = p43.x * p43.x + p43.y * p43.y + p43.z * p43.z;
+        const d2121 = p21.x * p21.x + p21.y * p21.y + p21.z * p21.z;
+        const denom = d2121 * d4343 - d4321 * d4321;
+        if (Math.abs(denom) < tolerance) {
+            return;
+        }
+        const numer = d1343 * d4321 - d1321 * d4343;
+        const mua = numer / denom;
+        const mub = (d1343 + d4321 * mua) / d4343;
+        const pa = {
+            x: p1.x + mua * p21.x,
+            y: p1.y + mua * p21.y,
+            z: p1.z + mua * p21.z,
+        };
+        const pb = {
+            x: p3.x + mub * p43.x,
+            y: p3.y + mub * p43.y,
+            z: p3.z + mub * p43.z,
+        };
+        const distance = distanceTo(pa, pb);
+        if (distance > tolerance) {
+            return;
+        }
+        const intersectPt = divide(addPoint(pa, pb), 2);
+        if (!limitToFiniteSegment) {
+            return intersectPt;
+        }
+        let paramA = closestParam(intersectPt, p1, p2);
+        let paramB = closestParam(intersectPt, p3, p4);
+        if (paramA < 0 && Math.abs(paramA) < 1e-9) {
+            paramA = 0;
+        }
+        else if (paramA > 1 && paramA - 1 < 1e-9) {
+            paramA = 1;
+        }
+        if (paramB < 0 && Math.abs(paramB) < 1e-9) {
+            paramB = 0;
+        }
+        else if (paramB > 1 && paramB - 1 < 1e-9) {
+            paramB = 1;
+        }
+        intersectPt.pa = paramA;
+        intersectPt.pb = paramB;
+        if (limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
+            return intersectPt;
+        }
+        if (limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
+            return intersectPt;
+        }
+        if (limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
+            return intersectPt;
+        }
+    }
+    function subtractPoint(p1, p2) {
+        return {
+            x: p1.x - p2.x,
+            y: p1.y - p2.y,
+            z: p1.z - p2.z,
+        };
+    }
+    function distanceTo(a, b) {
+        return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2));
+    }
+    function addPoint(a, b) {
+        return {
+            x: a.x + b.x,
+            y: a.y + b.y,
+            z: a.z + b.z,
+        };
+    }
+    function divide(p, t) {
+        const n = 1 / t;
+        return {
+            x: p.x * n,
+            y: p.y * n,
+            z: p.z * n,
+        };
+    }
+    function closestParam(p, from, to) {
+        const startToP = subtractPoint(p, from);
+        const startToEnd = subtractPoint(to, from);
+        const startEnd2 = dotProduct3(startToEnd.x, startToEnd.y, startToEnd.z, startToEnd.x, startToEnd.y, startToEnd.z);
+        const startEnd_startP = dotProduct3(startToEnd.x, startToEnd.y, startToEnd.z, startToP.x, startToP.y, startToP.z);
+        return startEnd_startP / startEnd2;
+    }
+    /**
+     * 平面相交线，传入2个平面的各3个顶点，返回2点式
+     */
+    function intersectPlanePlane(p1, p2, p3, p4, p5, p6) {
+        const v1 = unitize3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z), v2 = unitize3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z), v4 = unitize3(p5.x - p4.x, p5.y - p4.y, p5.z - p4.z), v5 = unitize3(p6.x - p4.x, p6.y - p4.y, p6.z - p4.z);
+        const t1 = crossProduct3(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+        const v3 = unitize3(t1.x, t1.y, t1.z);
+        const t2 = crossProduct3(v4.x, v4.y, v4.z, v5.x, v5.y, v5.z);
+        const v6 = unitize3(t2.x, t2.y, t2.z);
+        if (isParallel3(v3.x, v3.y, v3.z, v6.x, v6.y, v6.z)) {
+            return null;
+        }
+        const normal = crossProduct3(v6.x, v6.y, v6.z, v3.x, v3.y, v3.z);
+        const p7 = addPoint(v1, v4);
+        // planeC
+        const v9 = unitize3(normal.x, normal.y, normal.z);
+        // 3平面相交
+        const a1 = v3.x, b1 = v3.y, c1 = v3.z, d1 = -a1 * p1.x - b1 * p1.y - c1 * p1.z;
+        const a2 = v6.x, b2 = v6.y, c2 = v6.z, d2 = -a2 * p4.x - b2 * p4.y - c2 * p4.z;
+        const a3 = v9.x, b3 = v9.y, c3 = v9.z, d3 = -a3 * p7.x - b3 * p7.y - c3 * p7.z;
+        const mb = [-d1, -d2, -d3];
+        const det = a1 * (b2 * c3 - c2 * b3) - b1 * (a2 * c3 - c2 * a3) + c1 * (a2 * b3 - b2 * a3);
+        if (Math.abs(det) < 1e-9) {
+            return null;
+        }
+        const invDet = 1 / det;
+        const v11 = invDet * (b2 * c3 - c2 * b3);
+        const v12 = invDet * (c1 * b3 - b1 * c3);
+        const v13 = invDet * (b1 * c2 - c1 * b2);
+        const v21 = invDet * (c2 * a3 - a2 * c3);
+        const v22 = invDet * (a1 * c3 - c1 * a3);
+        const v23 = invDet * (c1 * a2 - a1 * c2);
+        const v31 = invDet * (a2 * b3 - b2 * a3);
+        const v32 = invDet * (b1 * a3 - a1 * b3);
+        const v33 = invDet * (a1 * b2 - b1 * a2);
+        const x = v11 * mb[0] + v12 * mb[1] + v13 * mb[2];
+        const y = v21 * mb[0] + v22 * mb[1] + v23 * mb[2];
+        const z = v31 * mb[0] + v32 * mb[1] + v33 * mb[2];
+        const point = { x, y, z };
+        return [
+            point,
+            addPoint(point, v9),
+        ];
+    }
+    // 点是否在线段上，注意误差
+    function pointOnLine3(p, p1, p2) {
+        const v1x = p1.x - p.x, v1y = p1.y - p.y, v1z = p1.z - p.z;
+        const v2x = p2.x - p.x, v2y = p2.y - p.y, v2z = p2.z - p.z;
+        const c = crossProduct3(v1x, v1y, v1z, v2x, v2y, v2z);
+        return length3(c.x, c.y, c.z) < 1e-9;
+    }
+    var isec = {
+        intersectLineLine,
+        intersectBezier2Line,
+        intersectBezier3Line,
+        intersectBezier2Bezier2,
+        intersectBezier3Bezier3,
+        intersectBezier2Bezier3,
+        intersectLineLine3,
+        intersectPlanePlane,
+        pointOnLine3,
+    };
+
+    function d2r(n) {
+        return n * Math.PI / 180;
+    }
+    function r2d(n) {
+        return n * 180 / Math.PI;
+    }
+    /**
+     * 判断点是否在多边形内
+     * @param x 点坐标
+     * @param y
+     * @param vertexes 多边形顶点坐标
+     * @param includeIntersect 是否包含刚好相交，点在边上
+     * @returns {boolean}
+     */
+    function pointInConvexPolygon(x, y, vertexes, includeIntersect = false) {
+        // 先取最大最小值得一个外围矩形，在外边可快速判断false
+        let { x: xmax, y: ymax } = vertexes[0];
+        let { x: xmin, y: ymin } = vertexes[0];
+        let len = vertexes.length;
+        for (let i = 1; i < len; i++) {
+            let { x, y } = vertexes[i];
+            xmax = Math.max(xmax, x);
+            ymax = Math.max(ymax, y);
+            xmin = Math.min(xmin, x);
+            ymin = Math.min(ymin, y);
+        }
+        if (x < xmin || y < ymin || x > xmax || y > ymax) {
+            return false;
+        }
+        if (x <= xmin || y <= ymin || x >= xmax || y >= ymax) {
+            if (!includeIntersect) {
+                return false;
+            }
+        }
+        let first;
+        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
+        for (let i = 0, len = vertexes.length; i < len; i++) {
+            let { x: x1, y: y1 } = vertexes[i];
+            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
+            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+            if (n !== 0) {
+                n = n > 0 ? 1 : 0;
+                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+                if (first === undefined) {
+                    first = n;
+                }
+                else if (first ^ n) {
+                    return false;
+                }
+            }
+            else if (!includeIntersect) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // 判断点是否在一个矩形，比如事件发生是否在节点上
+    function pointInRect(x, y, x1, y1, x2, y2, matrix, includeIntersect = false) {
+        if (matrix && !isE(matrix)) {
+            let t1 = calPoint({ x: x1, y: y1 }, matrix);
+            let xa = t1.x, ya = t1.y;
+            let t2 = calPoint({ x: x2, y: y1 }, matrix);
+            let xb = t2.x, yb = t2.y;
+            let t3 = calPoint({ x: x2, y: y2 }, matrix);
+            let xc = t3.x, yc = t3.y;
+            let t4 = calPoint({ x: x1, y: y2 }, matrix);
+            let xd = t4.x, yd = t4.y;
+            return pointInConvexPolygon(x, y, [
+                { x: xa, y: ya },
+                { x: xb, y: yb },
+                { x: xc, y: yc },
+                { x: xd, y: yd },
+            ]);
+        }
+        else if (includeIntersect) {
+            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
+        }
+        else {
+            return x > x1 && y > y1 && x < x2 && y < y2;
+        }
+    }
+    // 两点距离
+    function pointsDistance(x1, y1, x2, y2) {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+    // 余弦定理3边长求夹角，返回a边对应的角
+    function angleBySides(a, b, c) {
+        // Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB))
+        let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
+        return Math.acos(theta);
+    }
+    const H = 4 * (Math.sqrt(2) - 1) / 3;
+    // 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
+    function h(deg) {
+        deg *= 0.5;
+        return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
+    }
+    // 两个矩形是否相交重叠，无旋转，因此各自只需2个坐标：左上和右下
+    function isRectsOverlap$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, includeIntersect) {
+        if (includeIntersect) {
+            if (ax1 > bx2 || ay1 > by2 || bx1 > ax2 || by1 > ay2) {
+                return false;
+            }
+        }
+        else if (ax1 >= bx2 || ay1 >= by2 || bx1 >= ax2 || by1 >= ay2) {
+            return false;
+        }
+        return true;
+    }
+    // 2个矩形是否包含，a包含b
+    function isRectsInside(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, includeIntersect) {
+        if (includeIntersect) {
+            if (ax1 <= bx1 && ay1 <= by1 && ax2 >= bx2 && ay2 >= by2) {
+                return true;
+            }
+        }
+        else if (ax1 < bx1 && ay1 < by1 && ax2 > bx2 && ay2 > by2) {
+            return true;
+        }
+        return false;
+    }
+    // 两个直线多边形是否相交重叠
+    function isConvexPolygonOverlap(a, b, includeIntersect) {
+        for (let i = 0, len = a.length; i < len - 1; i++) {
+            const { x: x1, y: y1 } = a[i];
+            const { x: x2, y: y2 } = a[i + 1];
+            for (let j = 0, len = b.length; j < len - 1; j++) {
+                const { x: x3, y: y3 } = b[j];
+                const { x: x4, y: y4 } = b[j + 1];
+                const res = intersectLineLine(x1, y1, x2, y2, x3, y3, x4, y4);
+                if (res) {
+                    if (includeIntersect) {
+                        return true;
+                    }
+                    return res.toSource > 0 && res.toSource < 1 && res.toClip > 0 && res.toClip < 1;
+                }
+            }
+        }
+        return false;
+    }
+    function toPrecision(num, p = 4) {
+        const t = Math.pow(10, p);
+        return Math.round(num * t) / t;
+    }
+    var geom = {
+        d2r,
+        r2d,
+        // 贝塞尔曲线模拟1/4圆弧比例
+        H,
+        // <90任意角度贝塞尔曲线拟合圆弧的比例公式
+        h,
+        pointInConvexPolygon,
+        pointInRect,
+        pointsDistance,
+        angleBySides,
+        isRectsOverlap: isRectsOverlap$1,
+        isRectsInside,
+        isConvexPolygonOverlap,
+        toPrecision,
+    };
+
     class Event {
         constructor() {
             this.__eHash = {};
@@ -17549,6 +19343,62 @@
         blur: /(\w+)\s*\((.+)\)/i,
         color: /(?:#[a-f\d]{3,8})|(?:rgba?\s*\(.+?\))/i,
         number: /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)[pxremvwhina%]*/ig,
+    };
+
+    function calRotateZ(t, v) {
+        v = d2r(v);
+        let sin = Math.sin(v);
+        let cos = Math.cos(v);
+        t[0] = t[5] = cos;
+        t[1] = sin;
+        t[4] = -sin;
+        return t;
+    }
+    // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
+    function calMatrixByOrigin(m, ox, oy) {
+        let res = m.slice(0);
+        if (ox === 0 && oy === 0 || isE(m)) {
+            return res;
+        }
+        res = tfoMultiply(ox, oy, res);
+        res = multiplyTfo(res, -ox, -oy);
+        return res;
+    }
+    function calMatrix(style, width = 0, height = 0) {
+        const transform = identity();
+        transform[12] = style.translateX ? calSize(style.translateX, width) : 0;
+        transform[13] = style.translateY ? calSize(style.translateY, height) : 0;
+        const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
+        const scaleX = style.scaleX ? style.scaleX.v : 1;
+        const scaleY = style.scaleY ? style.scaleY.v : 1;
+        if (isE(transform)) {
+            calRotateZ(transform, rotateZ);
+        }
+        else if (rotateZ) {
+            multiplyRotateZ(transform, d2r(rotateZ));
+        }
+        if (scaleX !== 1) {
+            if (isE(transform)) {
+                transform[0] = scaleX;
+            }
+            else {
+                multiplyScaleX(transform, scaleX);
+            }
+        }
+        if (scaleY !== 1) {
+            if (isE(transform)) {
+                transform[5] = scaleY;
+            }
+            else {
+                multiplyScaleY(transform, scaleY);
+            }
+        }
+        return transform;
+    }
+    var transform = {
+        calRotateZ,
+        calMatrix,
+        calMatrixByOrigin,
     };
 
     // 获取color-stop区间范围，去除无用值
@@ -17819,20 +19669,43 @@
             stop,
         };
     }
-    function getRadial(stops, d, ox, oy, w, h) {
-        const x1 = ox + d[0] * w;
-        const y1 = oy + d[1] * h;
-        const x2 = ox + d[2] * w;
-        const y2 = oy + d[3] * h;
-        const ellipseLength = d[4];
+    function getRadial(stops, d, dx, dy, w, h) {
+        const x1 = dx + d[0] * w; // 中心点
+        const y1 = dy + d[1] * h;
+        const x2 = dx + d[2] * w; // 目标轴的端点，默认水平右方向
+        const y2 = dy + d[3] * h;
+        const ellipseLength = d[4]; // 缩放比，另一轴和目标轴垂直
         const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
         const stop = getColorStop(stops, total, false);
+        let matrix;
+        // 以目标轴为基准视作圆，缩放另一轴和旋转
+        if (ellipseLength !== 1) {
+            matrix = identity();
+            if (y2 !== y1) {
+                // 90 / 720
+                if (x2 === x1) {
+                    if (y2 >= y1) {
+                        multiplyRotateZ(matrix, d2r(90));
+                    }
+                    else {
+                        multiplyRotateZ(matrix, d2r(270));
+                    }
+                }
+                else {
+                    const tan = Math.atan((y2 - y1) / (x2 - x1));
+                    multiplyRotateZ(matrix, tan);
+                }
+            }
+            multiplyScaleY(matrix, ellipseLength);
+            matrix = calMatrixByOrigin(matrix, dx + x1, dy + y1);
+        }
         return {
             cx: x1,
             cy: y1,
-            tx: x2,
-            ty: y2,
+            tx: x1,
+            ty: y1,
             ellipseLength,
+            matrix,
             total,
             stop,
         };
@@ -19654,1856 +21527,6 @@
 
     var refresh = {
         level,
-    };
-
-    // 向量点乘积
-    function dotProduct(x1, y1, x2, y2) {
-        return x1 * x2 + y1 * y2;
-    }
-    function dotProduct3$1(x1, y1, z1, x2, y2, z2) {
-        return x1 * x2 + y1 * y2 + z1 * z2;
-    }
-    // 向量叉乘积
-    function crossProduct(x1, y1, x2, y2) {
-        return x1 * y2 - x2 * y1;
-    }
-    function crossProduct3$1(x1, y1, z1, x2, y2, z2) {
-        return {
-            x: y1 * z2 - y2 * z1,
-            y: z1 * x2 - z2 * x1,
-            z: x1 * y2 - x2 * y1,
-        };
-    }
-    // 向量长度
-    function length(x, y) {
-        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
-    }
-    function length3$1(x, y, z) {
-        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
-    }
-    // 归一化
-    function unitize(x, y) {
-        let n = length(x, y);
-        return {
-            x: x / n,
-            y: y / n,
-        };
-    }
-    function unitize3$1(x, y, z) {
-        let n = length3$1(x, y, z);
-        return {
-            x: x / n,
-            y: y / n,
-            z: z / n,
-        };
-    }
-    // 是否平行
-    function isParallel$1(x1, y1, x2, y2) {
-        if (isZero(x1, y1, x2, y2)) {
-            return true;
-        }
-        let ag = angle(x1, y1, x2, y2);
-        if (Math.abs(ag) < 1e-9) {
-            return true;
-        }
-        if (Math.PI - Math.abs(ag) < 1e-9) {
-            return true;
-        }
-        return false;
-    }
-    function isParallel3$1(x1, y1, z1, x2, y2, z2) {
-        if (isZero3(x1, y1, z1, x2, y2, z2)) {
-            return true;
-        }
-        let ag = angle3(x1, y1, z1, x2, y2, z2);
-        if (Math.abs(ag) < 1e-9) {
-            return true;
-        }
-        if (Math.PI - Math.abs(ag) < 1e-9) {
-            return true;
-        }
-        return false;
-    }
-    // 是否是零，考虑误差
-    function isZero(x1, y1, x2, y2) {
-        return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9
-            && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9;
-    }
-    function isZero3(x1, y1, z1, x2, y2, z2) {
-        return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9 && Math.abs(z1) < 1e-9
-            && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9 && Math.abs(z2) < 1e-9;
-    }
-    // 向量夹角
-    function angle(x1, y1, x2, y2) {
-        let cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
-        if (cos < -1) {
-            cos = -1;
-        }
-        else if (cos > 1) {
-            cos = 1;
-        }
-        return Math.acos(cos);
-    }
-    function angle3(x1, y1, z1, x2, y2, z2) {
-        let cos = dotProduct3$1(x1, y1, z1, x2, y2, z2) / (length3$1(x1, y1, z1) * length3$1(x2, y2, z2));
-        if (cos < -1) {
-            cos = -1;
-        }
-        else if (cos > 1) {
-            cos = 1;
-        }
-        return Math.acos(cos);
-    }
-    var vector = {
-        dotProduct,
-        dotProduct3: dotProduct3$1,
-        crossProduct,
-        crossProduct3: crossProduct3$1,
-        length,
-        length3: length3$1,
-        unitize,
-        unitize3: unitize3$1,
-        angle,
-        angle3,
-        isParallel: isParallel$1,
-        isParallel3: isParallel3$1,
-        isZero,
-        isZero3,
-    };
-
-    function identity() {
-        return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    }
-    // 16位单位矩阵判断，空也认为是
-    function isE(m) {
-        if (!m || !m.length) {
-            return true;
-        }
-        return (m[0] === 1 &&
-            m[1] === 0 &&
-            m[2] === 0 &&
-            m[3] === 0 &&
-            m[4] === 0 &&
-            m[5] === 1 &&
-            m[6] === 0 &&
-            m[7] === 0 &&
-            m[8] === 0 &&
-            m[9] === 0 &&
-            m[10] === 1 &&
-            m[11] === 0 &&
-            m[12] === 0 &&
-            m[13] === 0 &&
-            m[14] === 0 &&
-            m[15] === 1);
-    }
-    // 矩阵a*b，固定两个matrix都是长度16
-    function multiply(a, b) {
-        if (isE(a)) {
-            return new Float64Array(b);
-        }
-        if (isE(b)) {
-            return new Float64Array(a);
-        }
-        let c = identity();
-        for (let i = 0; i < 4; i++) {
-            let a0 = a[i];
-            let a1 = a[i + 4];
-            let a2 = a[i + 8];
-            let a3 = a[i + 12];
-            c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
-            c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
-            c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
-            c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
-        }
-        return c;
-    }
-    // 同引用更改b数据
-    function multiplyRef(a, b) {
-        if (isE(a)) {
-            return b;
-        }
-        if (isE(b)) {
-            assignMatrix(b, a);
-            return b;
-        }
-        const b0 = b[0];
-        const b1 = b[1];
-        const b2 = b[2];
-        const b3 = b[3];
-        const b4 = b[4];
-        const b5 = b[5];
-        const b6 = b[6];
-        const b7 = b[7];
-        const b8 = b[8];
-        const b9 = b[9];
-        const b10 = b[10];
-        const b11 = b[11];
-        const b12 = b[12];
-        const b13 = b[13];
-        const b14 = b[14];
-        const b15 = b[15];
-        for (let i = 0; i < 4; i++) {
-            let a0 = a[i];
-            let a1 = a[i + 4];
-            let a2 = a[i + 8];
-            let a3 = a[i + 12];
-            b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
-            b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
-            b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
-            b[i + 12] = a0 * b12 + a1 * b13 + a2 * b14 + a3 * b15;
-        }
-        return b;
-    }
-    function toE(m) {
-        m[0] = 1;
-        m[1] = 0;
-        m[2] = 0;
-        m[3] = 0;
-        m[4] = 0;
-        m[5] = 1;
-        m[6] = 0;
-        m[7] = 0;
-        m[8] = 0;
-        m[9] = 0;
-        m[10] = 1;
-        m[11] = 0;
-        m[12] = 0;
-        m[13] = 0;
-        m[14] = 0;
-        m[15] = 1;
-        return m;
-    }
-    /**
-     * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
-     * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
-     * 参见: https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d()
-     * 对应：
-     * [
-     *   a1,a2,a3,a4,
-     *   b1,b2,b3,b4,
-     *   c1,c2,c3,c4,
-     *   d1,d2,d3,d4,
-     * ]
-     *
-     * 根据公式 A* = |A|A^-1 来计算
-     * A* 表示矩阵 A 的伴随矩阵，A^-1 表示矩阵 A 的逆矩阵，|A| 表示行列式的值
-     *
-     * @returns {number[]}
-     */
-    function inverse4(m) {
-        if (isE(m)) {
-            return identity();
-        }
-        const inv = new Float64Array(16);
-        inv[0] =
-            m[5] * m[10] * m[15] -
-                m[5] * m[11] * m[14] -
-                m[9] * m[6] * m[15] +
-                m[9] * m[7] * m[14] +
-                m[13] * m[6] * m[11] -
-                m[13] * m[7] * m[10];
-        inv[4] =
-            -m[4] * m[10] * m[15] +
-                m[4] * m[11] * m[14] +
-                m[8] * m[6] * m[15] -
-                m[8] * m[7] * m[14] -
-                m[12] * m[6] * m[11] +
-                m[12] * m[7] * m[10];
-        inv[8] =
-            m[4] * m[9] * m[15] -
-                m[4] * m[11] * m[13] -
-                m[8] * m[5] * m[15] +
-                m[8] * m[7] * m[13] +
-                m[12] * m[5] * m[11] -
-                m[12] * m[7] * m[9];
-        inv[12] =
-            -m[4] * m[9] * m[14] +
-                m[4] * m[10] * m[13] +
-                m[8] * m[5] * m[14] -
-                m[8] * m[6] * m[13] -
-                m[12] * m[5] * m[10] +
-                m[12] * m[6] * m[9];
-        inv[1] =
-            -m[1] * m[10] * m[15] +
-                m[1] * m[11] * m[14] +
-                m[9] * m[2] * m[15] -
-                m[9] * m[3] * m[14] -
-                m[13] * m[2] * m[11] +
-                m[13] * m[3] * m[10];
-        inv[5] =
-            m[0] * m[10] * m[15] -
-                m[0] * m[11] * m[14] -
-                m[8] * m[2] * m[15] +
-                m[8] * m[3] * m[14] +
-                m[12] * m[2] * m[11] -
-                m[12] * m[3] * m[10];
-        inv[9] =
-            -m[0] * m[9] * m[15] +
-                m[0] * m[11] * m[13] +
-                m[8] * m[1] * m[15] -
-                m[8] * m[3] * m[13] -
-                m[12] * m[1] * m[11] +
-                m[12] * m[3] * m[9];
-        inv[13] =
-            m[0] * m[9] * m[14] -
-                m[0] * m[10] * m[13] -
-                m[8] * m[1] * m[14] +
-                m[8] * m[2] * m[13] +
-                m[12] * m[1] * m[10] -
-                m[12] * m[2] * m[9];
-        inv[2] =
-            m[1] * m[6] * m[15] -
-                m[1] * m[7] * m[14] -
-                m[5] * m[2] * m[15] +
-                m[5] * m[3] * m[14] +
-                m[13] * m[2] * m[7] -
-                m[13] * m[3] * m[6];
-        inv[6] =
-            -m[0] * m[6] * m[15] +
-                m[0] * m[7] * m[14] +
-                m[4] * m[2] * m[15] -
-                m[4] * m[3] * m[14] -
-                m[12] * m[2] * m[7] +
-                m[12] * m[3] * m[6];
-        inv[10] =
-            m[0] * m[5] * m[15] -
-                m[0] * m[7] * m[13] -
-                m[4] * m[1] * m[15] +
-                m[4] * m[3] * m[13] +
-                m[12] * m[1] * m[7] -
-                m[12] * m[3] * m[5];
-        inv[14] =
-            -m[0] * m[5] * m[14] +
-                m[0] * m[6] * m[13] +
-                m[4] * m[1] * m[14] -
-                m[4] * m[2] * m[13] -
-                m[12] * m[1] * m[6] +
-                m[12] * m[2] * m[5];
-        inv[3] =
-            -m[1] * m[6] * m[11] +
-                m[1] * m[7] * m[10] +
-                m[5] * m[2] * m[11] -
-                m[5] * m[3] * m[10] -
-                m[9] * m[2] * m[7] +
-                m[9] * m[3] * m[6];
-        inv[7] =
-            m[0] * m[6] * m[11] -
-                m[0] * m[7] * m[10] -
-                m[4] * m[2] * m[11] +
-                m[4] * m[3] * m[10] +
-                m[8] * m[2] * m[7] -
-                m[8] * m[3] * m[6];
-        inv[11] =
-            -m[0] * m[5] * m[11] +
-                m[0] * m[7] * m[9] +
-                m[4] * m[1] * m[11] -
-                m[4] * m[3] * m[9] -
-                m[8] * m[1] * m[7] +
-                m[8] * m[3] * m[5];
-        inv[15] =
-            m[0] * m[5] * m[10] -
-                m[0] * m[6] * m[9] -
-                m[4] * m[1] * m[10] +
-                m[4] * m[2] * m[9] +
-                m[8] * m[1] * m[6] -
-                m[8] * m[2] * m[5];
-        let det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
-        if (det === 0) {
-            return identity();
-        }
-        det = 1 / det;
-        const d = new Float64Array(16);
-        for (let i = 0; i < 16; i++) {
-            d[i] = inv[i] * det;
-        }
-        return d;
-    }
-    function assignMatrix(t, v) {
-        if (t && v) {
-            t[0] = v[0];
-            t[1] = v[1];
-            t[2] = v[2];
-            t[3] = v[3];
-            t[4] = v[4];
-            t[5] = v[5];
-            t[6] = v[6];
-            t[7] = v[7];
-            t[8] = v[8];
-            t[9] = v[9];
-            t[10] = v[10];
-            t[11] = v[11];
-            t[12] = v[12];
-            t[13] = v[13];
-            t[14] = v[14];
-            t[15] = v[15];
-        }
-        return t;
-    }
-    function multiplyTfo(m, x, y) {
-        if (!x && !y) {
-            return m;
-        }
-        m[12] += m[0] * x + m[4] * y;
-        m[13] += m[1] * x + m[5] * y;
-        m[14] += m[2] * x + m[6] * y;
-        m[15] += m[3] * x + m[7] * y;
-        return m;
-    }
-    function tfoMultiply(x, y, m) {
-        if (!x && !y) {
-            return m;
-        }
-        let d = m[3], h = m[7], l = m[11], p = m[15];
-        m[0] += d * x;
-        m[1] += d * y;
-        m[4] += h * x;
-        m[5] += h * y;
-        m[8] += l * x;
-        m[9] += l * y;
-        m[12] += p * x;
-        m[13] += p * y;
-        return m;
-    }
-    function multiplyRotateZ(m, v) {
-        if (!v) {
-            return m;
-        }
-        let sin = Math.sin(v);
-        let cos = Math.cos(v);
-        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7];
-        m[0] = a * cos + e * sin;
-        m[1] = b * cos + f * sin;
-        m[2] = c * cos + g * sin;
-        m[3] = d * cos + h * sin;
-        m[4] = a * -sin + e * cos;
-        m[5] = b * -sin + f * cos;
-        m[6] = c * -sin + g * cos;
-        m[7] = d * -sin + h * cos;
-        return m;
-    }
-    function multiplyScaleX(m, v) {
-        if (v === 1) {
-            return m;
-        }
-        m[0] *= v;
-        m[1] *= v;
-        m[2] *= v;
-        m[3] *= v;
-        return m;
-    }
-    function multiplyScaleY(m, v) {
-        if (v === 1) {
-            return m;
-        }
-        m[4] *= v;
-        m[5] *= v;
-        m[6] *= v;
-        m[7] *= v;
-        return m;
-    }
-    function multiplyScale(m, v) {
-        if (v === 1) {
-            return m;
-        }
-        m[0] *= v;
-        m[1] *= v;
-        m[2] *= v;
-        m[3] *= v;
-        m[4] *= v;
-        m[5] *= v;
-        m[6] *= v;
-        m[7] *= v;
-        return m;
-    }
-    function calPoint(point, m) {
-        if (m && !isE(m)) {
-            let { x, y } = point;
-            let a1 = m[0], b1 = m[1];
-            let a2 = m[4], b2 = m[5];
-            let a4 = m[12], b4 = m[13];
-            return {
-                x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
-                y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
-            };
-        }
-        return point;
-    }
-    /**
-     * 初等行变换求3*3特定css的matrix方阵，一维6长度
-     * https://blog.csdn.net/iloveas2014/article/details/82930946
-     */
-    function inverse(m) {
-        if (m.length === 16) {
-            return inverse4(m);
-        }
-        let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
-        if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
-            return m;
-        }
-        let divisor = a * d - b * c;
-        if (divisor === 0) {
-            return m;
-        }
-        return new Float64Array([
-            d / divisor,
-            -b / divisor,
-            -c / divisor,
-            a / divisor,
-            (c * f - d * e) / divisor,
-            (b * e - a * f) / divisor,
-        ]);
-    }
-    function calRectPoint(xa, ya, xb, yb, matrix) {
-        let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
-        let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
-        let x2, y2, x4, y4;
-        // 无旋转的时候可以少算2个点
-        if (!matrix ||
-            !matrix.length ||
-            (!matrix[1] &&
-                !matrix[2] &&
-                !matrix[4] &&
-                !matrix[6] &&
-                !matrix[7] &&
-                !matrix[8])) {
-            x2 = x3;
-            y2 = y1;
-            x4 = x1;
-            y4 = y3;
-        }
-        else {
-            let t = calPoint({ x: xb, y: ya }, matrix);
-            x2 = t.x;
-            y2 = t.y;
-            t = calPoint({ x: xa, y: yb }, matrix);
-            x4 = t.x;
-            y4 = t.y;
-        }
-        return { x1, y1, x2, y2, x3, y3, x4, y4 };
-    }
-    var matrix = {
-        identity,
-        isE,
-        toE,
-        assignMatrix,
-        inverse,
-        calPoint,
-        calRectPoint,
-        tfoMultiply,
-        multiplyTfo,
-        multiply,
-        multiplyRef,
-    };
-
-    const TOLERANCE$1 = 1e-6;
-    /**
-     * 计算线性方程的根
-     * y = ax + b
-     * root = -b / a
-     * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
-     */
-    function getLinearRoot(coefs) {
-        let result = [];
-        let a = coefs[1];
-        if (a !== 0) {
-            result.push(-coefs[0] / a);
-        }
-        return result;
-    }
-    /**
-     * 计算二次方程的根，一元二次方程求根公式
-     * y = ax^2 + bx + c
-     * root = (-b ± sqrt(b^2 - 4ac)) / 2a
-     * @param {Array<Number>} coefs 系数，系数 [c, b, a]
-     */
-    function getQuadraticRoots(coefs) {
-        let results = [];
-        let a = coefs[2];
-        let b = coefs[1] / a;
-        let c = coefs[0] / a;
-        let d = b * b - 4 * c;
-        if (d > 0) {
-            let e = Math.sqrt(d);
-            results.push(0.5 * (-b + e));
-            results.push(0.5 * (-b - e));
-        }
-        else if (d === 0) {
-            // 两个相同的根，只要返回一个
-            results.push(0.5 * -b);
-        }
-        return results;
-    }
-    /**
-     * 计算一元三次方程的根
-     * y = ax^3 + bx^2 + cx + d
-     * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
-     * @param {Array<Number>} coefs 系数
-     */
-    function getCubicRoots(coefs) {
-        let results = [];
-        let c3 = coefs[3];
-        let c2 = coefs[2] / c3;
-        let c1 = coefs[1] / c3;
-        let c0 = coefs[0] / c3;
-        let a = (3 * c1 - c2 * c2) / 3;
-        let b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
-        let offset = c2 / 3;
-        let discrim = b * b / 4 + a * a * a / 27;
-        let halfB = b / 2;
-        if (Math.abs(discrim) <= TOLERANCE$1) {
-            discrim = 0;
-        }
-        if (discrim > 0) {
-            let e = Math.sqrt(discrim);
-            let tmp;
-            let root;
-            tmp = -halfB + e;
-            if (tmp >= 0)
-                root = Math.pow(tmp, 1 / 3);
-            else
-                root = -Math.pow(-tmp, 1 / 3);
-            tmp = -halfB - e;
-            if (tmp >= 0)
-                root += Math.pow(tmp, 1 / 3);
-            else
-                root -= Math.pow(-tmp, 1 / 3);
-            results.push(root - offset);
-        }
-        else if (discrim < 0) {
-            let distance = Math.sqrt(-a / 3);
-            let angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
-            let cos = Math.cos(angle);
-            let sin = Math.sin(angle);
-            let sqrt3 = Math.sqrt(3);
-            results.push(2 * distance * cos - offset);
-            results.push(-distance * (cos + sqrt3 * sin) - offset);
-            results.push(-distance * (cos - sqrt3 * sin) - offset);
-        }
-        else {
-            let tmp;
-            if (halfB >= 0)
-                tmp = -Math.pow(halfB, 1 / 3);
-            else
-                tmp = Math.pow(-halfB, 1 / 3);
-            results.push(2 * tmp - offset);
-            // really should return next root twice, but we return only one
-            results.push(-tmp - offset);
-        }
-        return results;
-    }
-    /**
-     * 计算一元四次方程的根
-     * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
-     * @param {Array<Number>} coefs 系数
-     */
-    function getQuarticRoots(coefs) {
-        let results = [];
-        let c4 = coefs[4];
-        let c3 = coefs[3] / c4;
-        let c2 = coefs[2] / c4;
-        let c1 = coefs[1] / c4;
-        let c0 = coefs[0] / c4;
-        let resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
-        let y = resolveRoots[0];
-        let discrim = c3 * c3 / 4 - c2 + y;
-        if (Math.abs(discrim) <= TOLERANCE$1)
-            discrim = 0;
-        if (discrim > 0) {
-            let e = Math.sqrt(discrim);
-            let t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
-            let t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
-            let plus = t1 + t2;
-            let minus = t1 - t2;
-            if (Math.abs(plus) <= TOLERANCE$1)
-                plus = 0;
-            if (Math.abs(minus) <= TOLERANCE$1)
-                minus = 0;
-            if (plus >= 0) {
-                let f = Math.sqrt(plus);
-                results.push(-c3 / 4 + (e + f) / 2);
-                results.push(-c3 / 4 + (e - f) / 2);
-            }
-            if (minus >= 0) {
-                let f = Math.sqrt(minus);
-                results.push(-c3 / 4 + (f - e) / 2);
-                results.push(-c3 / 4 - (f + e) / 2);
-            }
-        }
-        else if (discrim < 0) ;
-        else {
-            let t2 = y * y - 4 * c0;
-            if (t2 >= -TOLERANCE$1) {
-                if (t2 < 0)
-                    t2 = 0;
-                t2 = 2 * Math.sqrt(t2);
-                let t1 = 3 * c3 * c3 / 4 - 2 * c2;
-                if (t1 + t2 >= TOLERANCE$1) {
-                    let d = Math.sqrt(t1 + t2);
-                    results.push(-c3 / 4 + d / 2);
-                    results.push(-c3 / 4 - d / 2);
-                }
-                if (t1 - t2 >= TOLERANCE$1) {
-                    let d = Math.sqrt(t1 - t2);
-                    results.push(-c3 / 4 + d / 2);
-                    results.push(-c3 / 4 - d / 2);
-                }
-            }
-        }
-        return results;
-    }
-    /**
-     * 计算方程的根
-     * @param {Array<Number>} coefs 系数按幂次方倒序
-     */
-    function getRoots$1(coefs) {
-        let degree = coefs.length - 1;
-        for (let i = degree; i >= 0; i--) {
-            if (Math.abs(coefs[i]) < 1e-12) {
-                degree--;
-            }
-            else {
-                break;
-            }
-        }
-        let result = [];
-        switch (degree) {
-            case 1:
-                result = getLinearRoot(coefs);
-                break;
-            case 2:
-                result = getQuadraticRoots(coefs);
-                break;
-            case 3:
-                result = getCubicRoots(coefs);
-                break;
-            case 4:
-                result = getQuarticRoots(coefs);
-        }
-        return result;
-    }
-    var equation = {
-        getRoots: getRoots$1,
-    };
-
-    const getRoots = equation.getRoots;
-    const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
-    // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
-    // 两个三次方程组无法解析表示，只能数值计算
-    // 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
-    const TOLERANCE = 1e-6;
-    const ACCURACY = 6;
-    /**
-     * 获取求导之后的系数
-     * @param coefs
-     */
-    function getDerivativeCoefs(coefs) {
-        const derivative = [];
-        for (let i = 1; i < coefs.length; i++) {
-            derivative.push(i * coefs[i]);
-        }
-        return derivative;
-    }
-    /**
-     * 评估函数
-     * @param x
-     * @param coefs
-     * @return {number}
-     */
-    function evaluate(x, coefs) {
-        let result = 0;
-        for (let i = coefs.length - 1; i >= 0; i--) {
-            result = result * x + coefs[i];
-        }
-        return result;
-    }
-    function bisection(min, max, coefs) {
-        let minValue = evaluate(min, coefs);
-        let maxValue = evaluate(max, coefs);
-        let result;
-        if (Math.abs(minValue) <= TOLERANCE) {
-            result = min;
-        }
-        else if (Math.abs(maxValue) <= TOLERANCE) {
-            result = max;
-        }
-        else if (minValue * maxValue <= 0) {
-            const tmp1 = Math.log(max - min);
-            const tmp2 = Math.LN10 * ACCURACY;
-            const iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
-            for (let i = 0; i < iters; i++) {
-                result = 0.5 * (min + max);
-                const value = evaluate(result, coefs);
-                if (Math.abs(value) <= TOLERANCE) {
-                    break;
-                }
-                if (value * minValue < 0) {
-                    max = result;
-                    maxValue = value;
-                }
-                else {
-                    min = result;
-                    minValue = value;
-                }
-            }
-        }
-        return result;
-    }
-    function getRootsInInterval(min, max, coefs) {
-        // console.log('getRootsInInterval', coefs);
-        const roots = [];
-        let root;
-        const degree = coefs.length - 1;
-        if (degree === 1) {
-            root = bisection(min, max, coefs);
-            if (root !== undefined) {
-                roots.push(root);
-            }
-        }
-        else {
-            const derivativeCoefs = getDerivativeCoefs(coefs);
-            const droots = getRootsInInterval(min, max, derivativeCoefs);
-            if (droots.length > 0) {
-                // find root on [min, droots[0]]
-                root = bisection(min, droots[0], coefs);
-                if (root !== undefined) {
-                    roots.push(root);
-                }
-                // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
-                for (let i = 0; i <= droots.length - 2; i++) {
-                    root = bisection(droots[i], droots[i + 1], coefs);
-                    if (root !== undefined) {
-                        roots.push(root);
-                    }
-                }
-                // find root on [droots[count-1],xmax]
-                root = bisection(droots[droots.length - 1], max, coefs);
-                if (root !== undefined) {
-                    roots.push(root);
-                }
-            }
-            else {
-                // polynomial is monotone on [min,max], has at most one root
-                root = bisection(min, max, coefs);
-                if (root !== undefined) {
-                    roots.push(root);
-                }
-            }
-        }
-        return roots;
-    }
-    /**
-     * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
-     * @return {[]}
-     */
-    function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
-        let c12, c11, c10;
-        let c22, c21, c20;
-        const result = [];
-        c12 = {
-            x: ax1 - 2 * ax2 + ax3,
-            y: ay1 - 2 * ay2 + ay3,
-        };
-        c11 = {
-            x: 2 * ax2 - 2 * ax1,
-            y: 2 * ay2 - 2 * ay1,
-        };
-        c10 = { x: ax1, y: ay1 };
-        c22 = {
-            x: bx1 - 2 * bx2 + bx3,
-            y: by1 - 2 * by2 + by3,
-        };
-        c21 = {
-            x: 2 * bx2 - 2 * bx1,
-            y: 2 * by2 - 2 * by1,
-        };
-        c20 = { x: bx1, y: by1 };
-        let coefs;
-        if (c12.y === 0) {
-            const v0 = c12.x * (c10.y - c20.y);
-            const v1 = v0 - c11.x * c11.y;
-            // let v2 = v0 + v1;
-            const v3 = c11.y * c11.y;
-            coefs = [
-                c12.x * c22.y * c22.y,
-                2 * c12.x * c21.y * c22.y,
-                c12.x * c21.y * c21.y - c22.x * v3 - c22.y * v0 - c22.y * v1,
-                -c21.x * v3 - c21.y * v0 - c21.y * v1,
-                (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1
-            ].reverse();
-        }
-        else {
-            const v0 = c12.x * c22.y - c12.y * c22.x;
-            const v1 = c12.x * c21.y - c21.x * c12.y;
-            const v2 = c11.x * c12.y - c11.y * c12.x;
-            const v3 = c10.y - c20.y;
-            const v4 = c12.y * (c10.x - c20.x) - c12.x * v3;
-            const v5 = -c11.y * v2 + c12.y * v4;
-            const v6 = v2 * v2;
-            coefs = [
-                v0 * v0,
-                2 * v0 * v1,
-                (-c22.y * v6 + c12.y * v1 * v1 + c12.y * v0 * v4 + v0 * v5) / c12.y,
-                (-c21.y * v6 + c12.y * v1 * v4 + v1 * v5) / c12.y,
-                (v3 * v6 + v4 * v5) / c12.y
-            ].reverse();
-        }
-        const roots = getRoots(coefs);
-        for (let i = 0; i < roots.length; i++) {
-            const s = roots[i];
-            if (0 <= s && s <= 1) {
-                const xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
-                const yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
-                if (xRoots.length > 0 && yRoots.length > 0) {
-                    const TOLERANCE = 1e-4;
-                    checkRoots: for (let j = 0; j < xRoots.length; j++) {
-                        const xRoot = xRoots[j];
-                        if (0 <= xRoot && xRoot <= 1) {
-                            for (let k = 0; k < yRoots.length; k++) {
-                                if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
-                                    const x = c22.x * s * s + c21.x * s + c20.x;
-                                    const y = c22.y * s * s + c21.y * s + c20.y;
-                                    result.push({ x, y, t: xRoot });
-                                    // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
-                                    break checkRoots;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-    function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
-        let c13, c12, c11, c10; // 三阶系数
-        let c23, c22, c21, c20;
-        const result = [];
-        c13 = {
-            x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-            y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
-        };
-        c12 = {
-            x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-            y: 3 * ay1 - 6 * ay2 + 3 * ay3,
-        };
-        c11 = {
-            x: -3 * ax1 + 3 * ax2,
-            y: -3 * ay1 + 3 * ay2,
-        };
-        c10 = { x: ax1, y: ay1 };
-        c23 = {
-            x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
-            y: -by1 + 3 * by2 - 3 * by3 + by4,
-        };
-        c22 = {
-            x: 3 * bx1 - 6 * bx2 + 3 * bx3,
-            y: 3 * by1 - 6 * by2 + 3 * by3,
-        };
-        c21 = {
-            x: -3 * bx1 + 3 * bx2,
-            y: -3 * by1 + 3 * by2,
-        };
-        c20 = { x: bx1, y: by1 };
-        const c10x2 = c10.x * c10.x;
-        const c10x3 = c10.x * c10.x * c10.x;
-        const c10y2 = c10.y * c10.y;
-        const c10y3 = c10.y * c10.y * c10.y;
-        const c11x2 = c11.x * c11.x;
-        const c11x3 = c11.x * c11.x * c11.x;
-        const c11y2 = c11.y * c11.y;
-        const c11y3 = c11.y * c11.y * c11.y;
-        const c12x2 = c12.x * c12.x;
-        const c12x3 = c12.x * c12.x * c12.x;
-        const c12y2 = c12.y * c12.y;
-        const c12y3 = c12.y * c12.y * c12.y;
-        const c13x2 = c13.x * c13.x;
-        const c13x3 = c13.x * c13.x * c13.x;
-        const c13y2 = c13.y * c13.y;
-        const c13y3 = c13.y * c13.y * c13.y;
-        const c20x2 = c20.x * c20.x;
-        const c20x3 = c20.x * c20.x * c20.x;
-        const c20y2 = c20.y * c20.y;
-        const c20y3 = c20.y * c20.y * c20.y;
-        const c21x2 = c21.x * c21.x;
-        const c21x3 = c21.x * c21.x * c21.x;
-        const c21y2 = c21.y * c21.y;
-        const c22x2 = c22.x * c22.x;
-        const c22x3 = c22.x * c22.x * c22.x;
-        const c22y2 = c22.y * c22.y;
-        const c23x2 = c23.x * c23.x;
-        const c23x3 = c23.x * c23.x * c23.x;
-        const c23y2 = c23.y * c23.y;
-        const c23y3 = c23.y * c23.y * c23.y;
-        const coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y +
-                3 * c13x2 * c13.y * c23.x * c23y2,
-            -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 -
-                3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2,
-            -6 * c21.x * c13.x * c13y2 * c23.x * c23.y - 6 * c13.x * c22.x * c13y2 * c22.y * c23.x + 6 * c13x2 * c22.x * c13.y * c22.y * c23.y +
-                3 * c21.x * c13y3 * c23x2 + 3 * c22x2 * c13y3 * c23.x + 3 * c21.x * c13x2 * c13.y * c23y2 - 3 * c13.x * c21.y * c13y2 * c23x2 -
-                3 * c13.x * c22x2 * c13y2 * c23.y + c13x2 * c13.y * c23.x * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-c21.y * c23y2 -
-                2 * c22y2 * c23.y - c23.y * (2 * c21.y * c23.y + c22y2)),
-            c11.x * c12.y * c13.x * c13.y * c23.x * c23.y - c11.y * c12.x * c13.x * c13.y * c23.x * c23.y + 6 * c21.x * c22.x * c13y3 * c23.x +
-                3 * c11.x * c12.x * c13.x * c13.y * c23y2 + 6 * c10.x * c13.x * c13y2 * c23.x * c23.y - 3 * c11.x * c12.x * c13y2 * c23.x * c23.y -
-                3 * c11.y * c12.y * c13.x * c13.y * c23x2 - 6 * c10.y * c13x2 * c13.y * c23.x * c23.y - 6 * c20.x * c13.x * c13y2 * c23.x * c23.y +
-                3 * c11.y * c12.y * c13x2 * c23.x * c23.y - 2 * c12.x * c12y2 * c13.x * c23.x * c23.y - 6 * c21.x * c13.x * c22.x * c13y2 * c23.y -
-                6 * c21.x * c13.x * c13y2 * c22.y * c23.x - 6 * c13.x * c21.y * c22.x * c13y2 * c23.x + 6 * c21.x * c13x2 * c13.y * c22.y * c23.y +
-                2 * c12x2 * c12.y * c13.y * c23.x * c23.y + c22x3 * c13y3 - 3 * c10.x * c13y3 * c23x2 + 3 * c10.y * c13x3 * c23y2 +
-                3 * c20.x * c13y3 * c23x2 + c12y3 * c13.x * c23x2 - c12x3 * c13.y * c23y2 - 3 * c10.x * c13x2 * c13.y * c23y2 +
-                3 * c10.y * c13.x * c13y2 * c23x2 - 2 * c11.x * c12.y * c13x2 * c23y2 + c11.x * c12.y * c13y2 * c23x2 - c11.y * c12.x * c13x2 * c23y2 +
-                2 * c11.y * c12.x * c13y2 * c23x2 + 3 * c20.x * c13x2 * c13.y * c23y2 - c12.x * c12y2 * c13.y * c23x2 -
-                3 * c20.y * c13.x * c13y2 * c23x2 + c12x2 * c12.y * c13.x * c23y2 - 3 * c13.x * c22x2 * c13y2 * c22.y +
-                c13x2 * c13.y * c23.x * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c22.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
-                c13x3 * (-2 * c21.y * c22.y * c23.y - c20.y * c23y2 - c22.y * (2 * c21.y * c23.y + c22y2) - c23.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-            6 * c11.x * c12.x * c13.x * c13.y * c22.y * c23.y + c11.x * c12.y * c13.x * c22.x * c13.y * c23.y + c11.x * c12.y * c13.x * c13.y * c22.y * c23.x -
-                c11.y * c12.x * c13.x * c22.x * c13.y * c23.y - c11.y * c12.x * c13.x * c13.y * c22.y * c23.x - 6 * c11.y * c12.y * c13.x * c22.x * c13.y * c23.x -
-                6 * c10.x * c22.x * c13y3 * c23.x + 6 * c20.x * c22.x * c13y3 * c23.x + 6 * c10.y * c13x3 * c22.y * c23.y + 2 * c12y3 * c13.x * c22.x * c23.x -
-                2 * c12x3 * c13.y * c22.y * c23.y + 6 * c10.x * c13.x * c22.x * c13y2 * c23.y + 6 * c10.x * c13.x * c13y2 * c22.y * c23.x +
-                6 * c10.y * c13.x * c22.x * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c23.y - 3 * c11.x * c12.x * c13y2 * c22.y * c23.x +
-                2 * c11.x * c12.y * c22.x * c13y2 * c23.x + 4 * c11.y * c12.x * c22.x * c13y2 * c23.x - 6 * c10.x * c13x2 * c13.y * c22.y * c23.y -
-                6 * c10.y * c13x2 * c22.x * c13.y * c23.y - 6 * c10.y * c13x2 * c13.y * c22.y * c23.x - 4 * c11.x * c12.y * c13x2 * c22.y * c23.y -
-                6 * c20.x * c13.x * c22.x * c13y2 * c23.y - 6 * c20.x * c13.x * c13y2 * c22.y * c23.x - 2 * c11.y * c12.x * c13x2 * c22.y * c23.y +
-                3 * c11.y * c12.y * c13x2 * c22.x * c23.y + 3 * c11.y * c12.y * c13x2 * c22.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c23.y -
-                2 * c12.x * c12y2 * c13.x * c22.y * c23.x - 2 * c12.x * c12y2 * c22.x * c13.y * c23.x - 6 * c20.y * c13.x * c22.x * c13y2 * c23.x -
-                6 * c21.x * c13.x * c21.y * c13y2 * c23.x - 6 * c21.x * c13.x * c22.x * c13y2 * c22.y + 6 * c20.x * c13x2 * c13.y * c22.y * c23.y +
-                2 * c12x2 * c12.y * c13.x * c22.y * c23.y + 2 * c12x2 * c12.y * c22.x * c13.y * c23.y + 2 * c12x2 * c12.y * c13.y * c22.y * c23.x +
-                3 * c21.x * c22x2 * c13y3 + 3 * c21x2 * c13y3 * c23.x - 3 * c13.x * c21.y * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c23.y +
-                c13x2 * c22.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c13.y * c23.x * (6 * c20.y * c22.y + 3 * c21y2) +
-                c21.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c22.y * c23.y - c23.y * (2 * c20.y * c22.y + c21y2) -
-                c21.y * (2 * c21.y * c23.y + c22y2) - c22.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-            c11.x * c21.x * c12.y * c13.x * c13.y * c23.y + c11.x * c12.y * c13.x * c21.y * c13.y * c23.x + c11.x * c12.y * c13.x * c22.x * c13.y * c22.y -
-                c11.y * c12.x * c21.x * c13.x * c13.y * c23.y - c11.y * c12.x * c13.x * c21.y * c13.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c22.y -
-                6 * c11.y * c21.x * c12.y * c13.x * c13.y * c23.x - 6 * c10.x * c21.x * c13y3 * c23.x + 6 * c20.x * c21.x * c13y3 * c23.x +
-                2 * c21.x * c12y3 * c13.x * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c23.y + 6 * c10.x * c13.x * c21.y * c13y2 * c23.x +
-                6 * c10.x * c13.x * c22.x * c13y2 * c22.y + 6 * c10.y * c21.x * c13.x * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c23.y -
-                3 * c11.x * c12.x * c21.y * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c22.y + 2 * c11.x * c21.x * c12.y * c13y2 * c23.x +
-                4 * c11.y * c12.x * c21.x * c13y2 * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c23.y - 6 * c10.y * c13x2 * c21.y * c13.y * c23.x -
-                6 * c10.y * c13x2 * c22.x * c13.y * c22.y - 6 * c20.x * c21.x * c13.x * c13y2 * c23.y - 6 * c20.x * c13.x * c21.y * c13y2 * c23.x -
-                6 * c20.x * c13.x * c22.x * c13y2 * c22.y + 3 * c11.y * c21.x * c12.y * c13x2 * c23.y - 3 * c11.y * c12.y * c13.x * c22x2 * c13.y +
-                3 * c11.y * c12.y * c13x2 * c21.y * c23.x + 3 * c11.y * c12.y * c13x2 * c22.x * c22.y - 2 * c12.x * c21.x * c12y2 * c13.x * c23.y -
-                2 * c12.x * c21.x * c12y2 * c13.y * c23.x - 2 * c12.x * c12y2 * c13.x * c21.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c22.y -
-                6 * c20.y * c21.x * c13.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c22.x * c13y2 + 6 * c20.y * c13x2 * c21.y * c13.y * c23.x +
-                2 * c12x2 * c21.x * c12.y * c13.y * c23.y + 2 * c12x2 * c12.y * c21.y * c13.y * c23.x + 2 * c12x2 * c12.y * c22.x * c13.y * c22.y -
-                3 * c10.x * c22x2 * c13y3 + 3 * c20.x * c22x2 * c13y3 + 3 * c21x2 * c22.x * c13y3 + c12y3 * c13.x * c22x2 +
-                3 * c10.y * c13.x * c22x2 * c13y2 + c11.x * c12.y * c22x2 * c13y2 + 2 * c11.y * c12.x * c22x2 * c13y2 -
-                c12.x * c12y2 * c22x2 * c13.y - 3 * c20.y * c13.x * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c22.y +
-                c12x2 * c12.y * c13.x * (2 * c21.y * c23.y + c22y2) + c11.x * c12.x * c13.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
-                c21.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c21.y * c23.y - c22y2) +
-                c10.y * c13x3 * (6 * c21.y * c23.y + 3 * c22y2) + c11.y * c12.x * c13x2 * (-2 * c21.y * c23.y - c22y2) +
-                c11.x * c12.y * c13x2 * (-4 * c21.y * c23.y - 2 * c22y2) + c10.x * c13x2 * c13.y * (-6 * c21.y * c23.y - 3 * c22y2) +
-                c13x2 * c22.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
-                c13x3 * (-2 * c20.y * c21.y * c23.y - c22.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c21.y * c23.y + c22y2) -
-                    c21.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-            -c10.x * c11.x * c12.y * c13.x * c13.y * c23.y + c10.x * c11.y * c12.x * c13.x * c13.y * c23.y + 6 * c10.x * c11.y * c12.y * c13.x * c13.y * c23.x -
-                6 * c10.y * c11.x * c12.x * c13.x * c13.y * c23.y - c10.y * c11.x * c12.y * c13.x * c13.y * c23.x + c10.y * c11.y * c12.x * c13.x * c13.y * c23.x +
-                c11.x * c11.y * c12.x * c12.y * c13.x * c23.y - c11.x * c11.y * c12.x * c12.y * c13.y * c23.x + c11.x * c20.x * c12.y * c13.x * c13.y * c23.y +
-                c11.x * c20.y * c12.y * c13.x * c13.y * c23.x + c11.x * c21.x * c12.y * c13.x * c13.y * c22.y + c11.x * c12.y * c13.x * c21.y * c22.x * c13.y -
-                c20.x * c11.y * c12.x * c13.x * c13.y * c23.y - 6 * c20.x * c11.y * c12.y * c13.x * c13.y * c23.x - c11.y * c12.x * c20.y * c13.x * c13.y * c23.x -
-                c11.y * c12.x * c21.x * c13.x * c13.y * c22.y - c11.y * c12.x * c13.x * c21.y * c22.x * c13.y - 6 * c11.y * c21.x * c12.y * c13.x * c22.x * c13.y -
-                6 * c10.x * c20.x * c13y3 * c23.x - 6 * c10.x * c21.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c23.x + 6 * c20.x * c21.x * c22.x * c13y3 +
-                2 * c20.x * c12y3 * c13.x * c23.x + 2 * c21.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c23.y - 6 * c10.x * c10.y * c13.x * c13y2 * c23.x +
-                3 * c10.x * c11.x * c12.x * c13y2 * c23.y - 2 * c10.x * c11.x * c12.y * c13y2 * c23.x - 4 * c10.x * c11.y * c12.x * c13y2 * c23.x +
-                3 * c10.y * c11.x * c12.x * c13y2 * c23.x + 6 * c10.x * c10.y * c13x2 * c13.y * c23.y + 6 * c10.x * c20.x * c13.x * c13y2 * c23.y -
-                3 * c10.x * c11.y * c12.y * c13x2 * c23.y + 2 * c10.x * c12.x * c12y2 * c13.x * c23.y + 2 * c10.x * c12.x * c12y2 * c13.y * c23.x +
-                6 * c10.x * c20.y * c13.x * c13y2 * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c22.y + 6 * c10.x * c13.x * c21.y * c22.x * c13y2 +
-                4 * c10.y * c11.x * c12.y * c13x2 * c23.y + 6 * c10.y * c20.x * c13.x * c13y2 * c23.x + 2 * c10.y * c11.y * c12.x * c13x2 * c23.y -
-                3 * c10.y * c11.y * c12.y * c13x2 * c23.x + 2 * c10.y * c12.x * c12y2 * c13.x * c23.x + 6 * c10.y * c21.x * c13.x * c22.x * c13y2 -
-                3 * c11.x * c20.x * c12.x * c13y2 * c23.y + 2 * c11.x * c20.x * c12.y * c13y2 * c23.x + c11.x * c11.y * c12y2 * c13.x * c23.x -
-                3 * c11.x * c12.x * c20.y * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c22.y - 3 * c11.x * c12.x * c21.y * c22.x * c13y2 +
-                2 * c11.x * c21.x * c12.y * c22.x * c13y2 + 4 * c20.x * c11.y * c12.x * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c22.x * c13y2 -
-                2 * c10.x * c12x2 * c12.y * c13.y * c23.y - 6 * c10.y * c20.x * c13x2 * c13.y * c23.y - 6 * c10.y * c20.y * c13x2 * c13.y * c23.x -
-                6 * c10.y * c21.x * c13x2 * c13.y * c22.y - 2 * c10.y * c12x2 * c12.y * c13.x * c23.y - 2 * c10.y * c12x2 * c12.y * c13.y * c23.x -
-                6 * c10.y * c13x2 * c21.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c23.y - 2 * c11.x * c11y2 * c13.x * c13.y * c23.x +
-                3 * c20.x * c11.y * c12.y * c13x2 * c23.y - 2 * c20.x * c12.x * c12y2 * c13.x * c23.y - 2 * c20.x * c12.x * c12y2 * c13.y * c23.x -
-                6 * c20.x * c20.y * c13.x * c13y2 * c23.x - 6 * c20.x * c21.x * c13.x * c13y2 * c22.y - 6 * c20.x * c13.x * c21.y * c22.x * c13y2 +
-                3 * c11.y * c20.y * c12.y * c13x2 * c23.x + 3 * c11.y * c21.x * c12.y * c13x2 * c22.y + 3 * c11.y * c12.y * c13x2 * c21.y * c22.x -
-                2 * c12.x * c20.y * c12y2 * c13.x * c23.x - 2 * c12.x * c21.x * c12y2 * c13.x * c22.y - 2 * c12.x * c21.x * c12y2 * c22.x * c13.y -
-                2 * c12.x * c12y2 * c13.x * c21.y * c22.x - 6 * c20.y * c21.x * c13.x * c22.x * c13y2 - c11y2 * c12.x * c12.y * c13.x * c23.x +
-                2 * c20.x * c12x2 * c12.y * c13.y * c23.y + 6 * c20.y * c13x2 * c21.y * c22.x * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c23.y +
-                c11x2 * c12.x * c12.y * c13.y * c23.y + 2 * c12x2 * c20.y * c12.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c22.y +
-                2 * c12x2 * c12.y * c21.y * c22.x * c13.y + c21x3 * c13y3 + 3 * c10x2 * c13y3 * c23.x - 3 * c10y2 * c13x3 * c23.y +
-                3 * c20x2 * c13y3 * c23.x + c11y3 * c13x2 * c23.x - c11x3 * c13y2 * c23.y - c11.x * c11y2 * c13x2 * c23.y +
-                c11x2 * c11.y * c13y2 * c23.x - 3 * c10x2 * c13.x * c13y2 * c23.y + 3 * c10y2 * c13x2 * c13.y * c23.x - c11x2 * c12y2 * c13.x * c23.y +
-                c11y2 * c12x2 * c13.y * c23.x - 3 * c21x2 * c13.x * c21.y * c13y2 - 3 * c20x2 * c13.x * c13y2 * c23.y + 3 * c20y2 * c13x2 * c13.y * c23.x +
-                c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
-                c10.y * c13x3 * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c11.y * c12.x * c13x2 * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
-                c12x2 * c12.y * c13.x * (2 * c20.y * c23.y + 2 * c21.y * c22.y) + c11.x * c12.y * c13x2 * (-4 * c20.y * c23.y - 4 * c21.y * c22.y) +
-                c10.x * c13x2 * c13.y * (-6 * c20.y * c23.y - 6 * c21.y * c22.y) + c20.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) +
-                c21.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21.y * c22.y - c20y2 * c23.y -
-                c21.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-            -c10.x * c11.x * c12.y * c13.x * c13.y * c22.y + c10.x * c11.y * c12.x * c13.x * c13.y * c22.y + 6 * c10.x * c11.y * c12.y * c13.x * c22.x * c13.y -
-                6 * c10.y * c11.x * c12.x * c13.x * c13.y * c22.y - c10.y * c11.x * c12.y * c13.x * c22.x * c13.y + c10.y * c11.y * c12.x * c13.x * c22.x * c13.y +
-                c11.x * c11.y * c12.x * c12.y * c13.x * c22.y - c11.x * c11.y * c12.x * c12.y * c22.x * c13.y + c11.x * c20.x * c12.y * c13.x * c13.y * c22.y +
-                c11.x * c20.y * c12.y * c13.x * c22.x * c13.y + c11.x * c21.x * c12.y * c13.x * c21.y * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c22.y -
-                6 * c20.x * c11.y * c12.y * c13.x * c22.x * c13.y - c11.y * c12.x * c20.y * c13.x * c22.x * c13.y - c11.y * c12.x * c21.x * c13.x * c21.y * c13.y -
-                6 * c10.x * c20.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c22.x + 2 * c20.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c22.y -
-                6 * c10.x * c10.y * c13.x * c22.x * c13y2 + 3 * c10.x * c11.x * c12.x * c13y2 * c22.y - 2 * c10.x * c11.x * c12.y * c22.x * c13y2 -
-                4 * c10.x * c11.y * c12.x * c22.x * c13y2 + 3 * c10.y * c11.x * c12.x * c22.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c13.y * c22.y +
-                6 * c10.x * c20.x * c13.x * c13y2 * c22.y - 3 * c10.x * c11.y * c12.y * c13x2 * c22.y + 2 * c10.x * c12.x * c12y2 * c13.x * c22.y +
-                2 * c10.x * c12.x * c12y2 * c22.x * c13.y + 6 * c10.x * c20.y * c13.x * c22.x * c13y2 + 6 * c10.x * c21.x * c13.x * c21.y * c13y2 +
-                4 * c10.y * c11.x * c12.y * c13x2 * c22.y + 6 * c10.y * c20.x * c13.x * c22.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c22.y -
-                3 * c10.y * c11.y * c12.y * c13x2 * c22.x + 2 * c10.y * c12.x * c12y2 * c13.x * c22.x - 3 * c11.x * c20.x * c12.x * c13y2 * c22.y +
-                2 * c11.x * c20.x * c12.y * c22.x * c13y2 + c11.x * c11.y * c12y2 * c13.x * c22.x - 3 * c11.x * c12.x * c20.y * c22.x * c13y2 -
-                3 * c11.x * c12.x * c21.x * c21.y * c13y2 + 4 * c20.x * c11.y * c12.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c22.y -
-                6 * c10.y * c20.x * c13x2 * c13.y * c22.y - 6 * c10.y * c20.y * c13x2 * c22.x * c13.y - 6 * c10.y * c21.x * c13x2 * c21.y * c13.y -
-                2 * c10.y * c12x2 * c12.y * c13.x * c22.y - 2 * c10.y * c12x2 * c12.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c22.y -
-                2 * c11.x * c11y2 * c13.x * c22.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c22.y - 2 * c20.x * c12.x * c12y2 * c13.x * c22.y -
-                2 * c20.x * c12.x * c12y2 * c22.x * c13.y - 6 * c20.x * c20.y * c13.x * c22.x * c13y2 - 6 * c20.x * c21.x * c13.x * c21.y * c13y2 +
-                3 * c11.y * c20.y * c12.y * c13x2 * c22.x + 3 * c11.y * c21.x * c12.y * c13x2 * c21.y - 2 * c12.x * c20.y * c12y2 * c13.x * c22.x -
-                2 * c12.x * c21.x * c12y2 * c13.x * c21.y - c11y2 * c12.x * c12.y * c13.x * c22.x + 2 * c20.x * c12x2 * c12.y * c13.y * c22.y -
-                3 * c11.y * c21x2 * c12.y * c13.x * c13.y + 6 * c20.y * c21.x * c13x2 * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c22.y +
-                c11x2 * c12.x * c12.y * c13.y * c22.y + 2 * c12x2 * c20.y * c12.y * c22.x * c13.y + 2 * c12x2 * c21.x * c12.y * c21.y * c13.y -
-                3 * c10.x * c21x2 * c13y3 + 3 * c20.x * c21x2 * c13y3 + 3 * c10x2 * c22.x * c13y3 - 3 * c10y2 * c13x3 * c22.y + 3 * c20x2 * c22.x * c13y3 +
-                c21x2 * c12y3 * c13.x + c11y3 * c13x2 * c22.x - c11x3 * c13y2 * c22.y + 3 * c10.y * c21x2 * c13.x * c13y2 -
-                c11.x * c11y2 * c13x2 * c22.y + c11.x * c21x2 * c12.y * c13y2 + 2 * c11.y * c12.x * c21x2 * c13y2 + c11x2 * c11.y * c22.x * c13y2 -
-                c12.x * c21x2 * c12y2 * c13.y - 3 * c20.y * c21x2 * c13.x * c13y2 - 3 * c10x2 * c13.x * c13y2 * c22.y + 3 * c10y2 * c13x2 * c22.x * c13.y -
-                c11x2 * c12y2 * c13.x * c22.y + c11y2 * c12x2 * c22.x * c13.y - 3 * c20x2 * c13.x * c13y2 * c22.y + 3 * c20y2 * c13x2 * c22.x * c13.y +
-                c12x2 * c12.y * c13.x * (2 * c20.y * c22.y + c21y2) + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
-                c12x3 * c13.y * (-2 * c20.y * c22.y - c21y2) + c10.y * c13x3 * (6 * c20.y * c22.y + 3 * c21y2) +
-                c11.y * c12.x * c13x2 * (-2 * c20.y * c22.y - c21y2) + c11.x * c12.y * c13x2 * (-4 * c20.y * c22.y - 2 * c21y2) +
-                c10.x * c13x2 * c13.y * (-6 * c20.y * c22.y - 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
-                c13x3 * (-2 * c20.y * c21y2 - c20y2 * c22.y - c20.y * (2 * c20.y * c22.y + c21y2)),
-            -c10.x * c11.x * c12.y * c13.x * c21.y * c13.y + c10.x * c11.y * c12.x * c13.x * c21.y * c13.y + 6 * c10.x * c11.y * c21.x * c12.y * c13.x * c13.y -
-                6 * c10.y * c11.x * c12.x * c13.x * c21.y * c13.y - c10.y * c11.x * c21.x * c12.y * c13.x * c13.y + c10.y * c11.y * c12.x * c21.x * c13.x * c13.y -
-                c11.x * c11.y * c12.x * c21.x * c12.y * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c21.y + c11.x * c20.x * c12.y * c13.x * c21.y * c13.y +
-                6 * c11.x * c12.x * c20.y * c13.x * c21.y * c13.y + c11.x * c20.y * c21.x * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c13.x * c21.y * c13.y -
-                6 * c20.x * c11.y * c21.x * c12.y * c13.x * c13.y - c11.y * c12.x * c20.y * c21.x * c13.x * c13.y - 6 * c10.x * c20.x * c21.x * c13y3 -
-                2 * c10.x * c21.x * c12y3 * c13.x + 6 * c10.y * c20.y * c13x3 * c21.y + 2 * c20.x * c21.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c21.y * c13.y -
-                2 * c12x3 * c20.y * c21.y * c13.y - 6 * c10.x * c10.y * c21.x * c13.x * c13y2 + 3 * c10.x * c11.x * c12.x * c21.y * c13y2 -
-                2 * c10.x * c11.x * c21.x * c12.y * c13y2 - 4 * c10.x * c11.y * c12.x * c21.x * c13y2 + 3 * c10.y * c11.x * c12.x * c21.x * c13y2 +
-                6 * c10.x * c10.y * c13x2 * c21.y * c13.y + 6 * c10.x * c20.x * c13.x * c21.y * c13y2 - 3 * c10.x * c11.y * c12.y * c13x2 * c21.y +
-                2 * c10.x * c12.x * c21.x * c12y2 * c13.y + 2 * c10.x * c12.x * c12y2 * c13.x * c21.y + 6 * c10.x * c20.y * c21.x * c13.x * c13y2 +
-                4 * c10.y * c11.x * c12.y * c13x2 * c21.y + 6 * c10.y * c20.x * c21.x * c13.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c21.y -
-                3 * c10.y * c11.y * c21.x * c12.y * c13x2 + 2 * c10.y * c12.x * c21.x * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c21.y * c13y2 +
-                2 * c11.x * c20.x * c21.x * c12.y * c13y2 + c11.x * c11.y * c21.x * c12y2 * c13.x - 3 * c11.x * c12.x * c20.y * c21.x * c13y2 +
-                4 * c20.x * c11.y * c12.x * c21.x * c13y2 - 6 * c10.x * c20.y * c13x2 * c21.y * c13.y - 2 * c10.x * c12x2 * c12.y * c21.y * c13.y -
-                6 * c10.y * c20.x * c13x2 * c21.y * c13.y - 6 * c10.y * c20.y * c21.x * c13x2 * c13.y - 2 * c10.y * c12x2 * c21.x * c12.y * c13.y -
-                2 * c10.y * c12x2 * c12.y * c13.x * c21.y - c11.x * c11.y * c12x2 * c21.y * c13.y - 4 * c11.x * c20.y * c12.y * c13x2 * c21.y -
-                2 * c11.x * c11y2 * c21.x * c13.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c21.y - 2 * c20.x * c12.x * c21.x * c12y2 * c13.y -
-                2 * c20.x * c12.x * c12y2 * c13.x * c21.y - 6 * c20.x * c20.y * c21.x * c13.x * c13y2 - 2 * c11.y * c12.x * c20.y * c13x2 * c21.y +
-                3 * c11.y * c20.y * c21.x * c12.y * c13x2 - 2 * c12.x * c20.y * c21.x * c12y2 * c13.x - c11y2 * c12.x * c21.x * c12.y * c13.x +
-                6 * c20.x * c20.y * c13x2 * c21.y * c13.y + 2 * c20.x * c12x2 * c12.y * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c21.y * c13.y +
-                c11x2 * c12.x * c12.y * c21.y * c13.y + 2 * c12x2 * c20.y * c21.x * c12.y * c13.y + 2 * c12x2 * c20.y * c12.y * c13.x * c21.y +
-                3 * c10x2 * c21.x * c13y3 - 3 * c10y2 * c13x3 * c21.y + 3 * c20x2 * c21.x * c13y3 + c11y3 * c21.x * c13x2 - c11x3 * c21.y * c13y2 -
-                3 * c20y2 * c13x3 * c21.y - c11.x * c11y2 * c13x2 * c21.y + c11x2 * c11.y * c21.x * c13y2 - 3 * c10x2 * c13.x * c21.y * c13y2 +
-                3 * c10y2 * c21.x * c13x2 * c13.y - c11x2 * c12y2 * c13.x * c21.y + c11y2 * c12x2 * c21.x * c13.y - 3 * c20x2 * c13.x * c21.y * c13y2 +
-                3 * c20y2 * c21.x * c13x2 * c13.y,
-            c10.x * c10.y * c11.x * c12.y * c13.x * c13.y - c10.x * c10.y * c11.y * c12.x * c13.x * c13.y + c10.x * c11.x * c11.y * c12.x * c12.y * c13.y -
-                c10.y * c11.x * c11.y * c12.x * c12.y * c13.x - c10.x * c11.x * c20.y * c12.y * c13.x * c13.y + 6 * c10.x * c20.x * c11.y * c12.y * c13.x * c13.y +
-                c10.x * c11.y * c12.x * c20.y * c13.x * c13.y - c10.y * c11.x * c20.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c20.y * c13.x * c13.y +
-                c10.y * c20.x * c11.y * c12.x * c13.x * c13.y - c11.x * c20.x * c11.y * c12.x * c12.y * c13.y + c11.x * c11.y * c12.x * c20.y * c12.y * c13.x +
-                c11.x * c20.x * c20.y * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c20.y * c13.x * c13.y - 2 * c10.x * c20.x * c12y3 * c13.x +
-                2 * c10.y * c12x3 * c20.y * c13.y - 3 * c10.x * c10.y * c11.x * c12.x * c13y2 - 6 * c10.x * c10.y * c20.x * c13.x * c13y2 +
-                3 * c10.x * c10.y * c11.y * c12.y * c13x2 - 2 * c10.x * c10.y * c12.x * c12y2 * c13.x - 2 * c10.x * c11.x * c20.x * c12.y * c13y2 -
-                c10.x * c11.x * c11.y * c12y2 * c13.x + 3 * c10.x * c11.x * c12.x * c20.y * c13y2 - 4 * c10.x * c20.x * c11.y * c12.x * c13y2 +
-                3 * c10.y * c11.x * c20.x * c12.x * c13y2 + 6 * c10.x * c10.y * c20.y * c13x2 * c13.y + 2 * c10.x * c10.y * c12x2 * c12.y * c13.y +
-                2 * c10.x * c11.x * c11y2 * c13.x * c13.y + 2 * c10.x * c20.x * c12.x * c12y2 * c13.y + 6 * c10.x * c20.x * c20.y * c13.x * c13y2 -
-                3 * c10.x * c11.y * c20.y * c12.y * c13x2 + 2 * c10.x * c12.x * c20.y * c12y2 * c13.x + c10.x * c11y2 * c12.x * c12.y * c13.x +
-                c10.y * c11.x * c11.y * c12x2 * c13.y + 4 * c10.y * c11.x * c20.y * c12.y * c13x2 - 3 * c10.y * c20.x * c11.y * c12.y * c13x2 +
-                2 * c10.y * c20.x * c12.x * c12y2 * c13.x + 2 * c10.y * c11.y * c12.x * c20.y * c13x2 + c11.x * c20.x * c11.y * c12y2 * c13.x -
-                3 * c11.x * c20.x * c12.x * c20.y * c13y2 - 2 * c10.x * c12x2 * c20.y * c12.y * c13.y - 6 * c10.y * c20.x * c20.y * c13x2 * c13.y -
-                2 * c10.y * c20.x * c12x2 * c12.y * c13.y - 2 * c10.y * c11x2 * c11.y * c13.x * c13.y - c10.y * c11x2 * c12.x * c12.y * c13.y -
-                2 * c10.y * c12x2 * c20.y * c12.y * c13.x - 2 * c11.x * c20.x * c11y2 * c13.x * c13.y - c11.x * c11.y * c12x2 * c20.y * c13.y +
-                3 * c20.x * c11.y * c20.y * c12.y * c13x2 - 2 * c20.x * c12.x * c20.y * c12y2 * c13.x - c20.x * c11y2 * c12.x * c12.y * c13.x +
-                3 * c10y2 * c11.x * c12.x * c13.x * c13.y + 3 * c11.x * c12.x * c20y2 * c13.x * c13.y + 2 * c20.x * c12x2 * c20.y * c12.y * c13.y -
-                3 * c10x2 * c11.y * c12.y * c13.x * c13.y + 2 * c11x2 * c11.y * c20.y * c13.x * c13.y + c11x2 * c12.x * c20.y * c12.y * c13.y -
-                3 * c20x2 * c11.y * c12.y * c13.x * c13.y - c10x3 * c13y3 + c10y3 * c13x3 + c20x3 * c13y3 - c20y3 * c13x3 -
-                3 * c10.x * c20x2 * c13y3 - c10.x * c11y3 * c13x2 + 3 * c10x2 * c20.x * c13y3 + c10.y * c11x3 * c13y2 +
-                3 * c10.y * c20y2 * c13x3 + c20.x * c11y3 * c13x2 + c10x2 * c12y3 * c13.x - 3 * c10y2 * c20.y * c13x3 - c10y2 * c12x3 * c13.y +
-                c20x2 * c12y3 * c13.x - c11x3 * c20.y * c13y2 - c12x3 * c20y2 * c13.y - c10.x * c11x2 * c11.y * c13y2 +
-                c10.y * c11.x * c11y2 * c13x2 - 3 * c10.x * c10y2 * c13x2 * c13.y - c10.x * c11y2 * c12x2 * c13.y + c10.y * c11x2 * c12y2 * c13.x -
-                c11.x * c11y2 * c20.y * c13x2 + 3 * c10x2 * c10.y * c13.x * c13y2 + c10x2 * c11.x * c12.y * c13y2 +
-                2 * c10x2 * c11.y * c12.x * c13y2 - 2 * c10y2 * c11.x * c12.y * c13x2 - c10y2 * c11.y * c12.x * c13x2 + c11x2 * c20.x * c11.y * c13y2 -
-                3 * c10.x * c20y2 * c13x2 * c13.y + 3 * c10.y * c20x2 * c13.x * c13y2 + c11.x * c20x2 * c12.y * c13y2 - 2 * c11.x * c20y2 * c12.y * c13x2 +
-                c20.x * c11y2 * c12x2 * c13.y - c11.y * c12.x * c20y2 * c13x2 - c10x2 * c12.x * c12y2 * c13.y - 3 * c10x2 * c20.y * c13.x * c13y2 +
-                3 * c10y2 * c20.x * c13x2 * c13.y + c10y2 * c12x2 * c12.y * c13.x - c11x2 * c20.y * c12y2 * c13.x + 2 * c20x2 * c11.y * c12.x * c13y2 +
-                3 * c20.x * c20y2 * c13x2 * c13.y - c20x2 * c12.x * c12y2 * c13.y - 3 * c20x2 * c20.y * c13.x * c13y2 + c12x2 * c20y2 * c12.y * c13.x
-        ].reverse();
-        const roots = getRootsInInterval(0, 1, coefs);
-        for (let i = 0; i < roots.length; i++) {
-            const s = roots[i];
-            const xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-            const yRoots = getRoots([c13.y,
-                c12.y,
-                c11.y,
-                c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
-            if (xRoots.length > 0 && yRoots.length > 0) {
-                const TOLERANCE = 1e-4;
-                checkRoots: for (let j = 0; j < xRoots.length; j++) {
-                    const xRoot = xRoots[j];
-                    if (0 <= xRoot && xRoot <= 1) {
-                        for (let k = 0; k < yRoots.length; k++) {
-                            if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
-                                const x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
-                                const y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                                result.push({ x, y, t: xRoot });
-                                break checkRoots;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-    function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
-        let c12, c11, c10;
-        let c23, c22, c21, c20;
-        const result = [];
-        c12 = {
-            x: ax1 - 2 * ax2 + ax3,
-            y: ay1 - 2 * ay2 + ay3,
-        };
-        c11 = {
-            x: 2 * ax2 - 2 * ax1,
-            y: 2 * ay2 - 2 * ay1,
-        };
-        c10 = { x: ax1, y: ay1 };
-        c23 = {
-            x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
-            y: -by1 + 3 * by2 - 3 * by3 + by4,
-        };
-        c22 = {
-            x: 3 * bx1 - 6 * bx2 + 3 * bx3,
-            y: 3 * by1 - 6 * by2 + 3 * by3,
-        };
-        c21 = {
-            x: -3 * bx1 + 3 * bx2,
-            y: -3 * by1 + 3 * by2,
-        };
-        c20 = { x: bx1, y: by1 };
-        const c10x2 = c10.x * c10.x;
-        const c10y2 = c10.y * c10.y;
-        const c11x2 = c11.x * c11.x;
-        const c11y2 = c11.y * c11.y;
-        const c12x2 = c12.x * c12.x;
-        const c12y2 = c12.y * c12.y;
-        const c20x2 = c20.x * c20.x;
-        const c20y2 = c20.y * c20.y;
-        const c21x2 = c21.x * c21.x;
-        const c21y2 = c21.y * c21.y;
-        const c22x2 = c22.x * c22.x;
-        const c22y2 = c22.y * c22.y;
-        const c23x2 = c23.x * c23.x;
-        const c23y2 = c23.y * c23.y;
-        const coefs = [
-            -2 * c12.x * c12.y * c23.x * c23.y + c12x2 * c23y2 + c12y2 * c23x2,
-            -2 * c12.x * c12.y * c22.x * c23.y - 2 * c12.x * c12.y * c22.y * c23.x + 2 * c12y2 * c22.x * c23.x +
-                2 * c12x2 * c22.y * c23.y,
-            -2 * c12.x * c21.x * c12.y * c23.y - 2 * c12.x * c12.y * c21.y * c23.x - 2 * c12.x * c12.y * c22.x * c22.y +
-                2 * c21.x * c12y2 * c23.x + c12y2 * c22x2 + c12x2 * (2 * c21.y * c23.y + c22y2),
-            2 * c10.x * c12.x * c12.y * c23.y + 2 * c10.y * c12.x * c12.y * c23.x + c11.x * c11.y * c12.x * c23.y +
-                c11.x * c11.y * c12.y * c23.x - 2 * c20.x * c12.x * c12.y * c23.y - 2 * c12.x * c20.y * c12.y * c23.x -
-                2 * c12.x * c21.x * c12.y * c22.y - 2 * c12.x * c12.y * c21.y * c22.x - 2 * c10.x * c12y2 * c23.x -
-                2 * c10.y * c12x2 * c23.y + 2 * c20.x * c12y2 * c23.x + 2 * c21.x * c12y2 * c22.x -
-                c11y2 * c12.x * c23.x - c11x2 * c12.y * c23.y + c12x2 * (2 * c20.y * c23.y + 2 * c21.y * c22.y),
-            2 * c10.x * c12.x * c12.y * c22.y + 2 * c10.y * c12.x * c12.y * c22.x + c11.x * c11.y * c12.x * c22.y +
-                c11.x * c11.y * c12.y * c22.x - 2 * c20.x * c12.x * c12.y * c22.y - 2 * c12.x * c20.y * c12.y * c22.x -
-                2 * c12.x * c21.x * c12.y * c21.y - 2 * c10.x * c12y2 * c22.x - 2 * c10.y * c12x2 * c22.y +
-                2 * c20.x * c12y2 * c22.x - c11y2 * c12.x * c22.x - c11x2 * c12.y * c22.y + c21x2 * c12y2 +
-                c12x2 * (2 * c20.y * c22.y + c21y2),
-            2 * c10.x * c12.x * c12.y * c21.y + 2 * c10.y * c12.x * c21.x * c12.y + c11.x * c11.y * c12.x * c21.y +
-                c11.x * c11.y * c21.x * c12.y - 2 * c20.x * c12.x * c12.y * c21.y - 2 * c12.x * c20.y * c21.x * c12.y -
-                2 * c10.x * c21.x * c12y2 - 2 * c10.y * c12x2 * c21.y + 2 * c20.x * c21.x * c12y2 -
-                c11y2 * c12.x * c21.x - c11x2 * c12.y * c21.y + 2 * c12x2 * c20.y * c21.y,
-            -2 * c10.x * c10.y * c12.x * c12.y - c10.x * c11.x * c11.y * c12.y - c10.y * c11.x * c11.y * c12.x +
-                2 * c10.x * c12.x * c20.y * c12.y + 2 * c10.y * c20.x * c12.x * c12.y + c11.x * c20.x * c11.y * c12.y +
-                c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 +
-                c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y -
-                c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 +
-                c20x2 * c12y2 + c12x2 * c20y2
-        ].reverse();
-        const roots = getRootsInInterval(0, 1, coefs);
-        // console.log(roots);
-        for (let i = 0; i < roots.length; i++) {
-            const s = roots[i];
-            const xRoots = getRoots([c12.x,
-                c11.x,
-                c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-            const yRoots = getRoots([c12.y,
-                c11.y,
-                c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
-            //
-            // console.log('xRoots', xRoots);
-            //
-            // console.log('yRoots', yRoots);
-            if (xRoots.length > 0 && yRoots.length > 0) {
-                const TOLERANCE = 1e-4;
-                checkRoots: for (let j = 0; j < xRoots.length; j++) {
-                    const xRoot = xRoots[j];
-                    if (0 <= xRoot && xRoot <= 1) {
-                        for (let k = 0; k < yRoots.length; k++) {
-                            if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
-                                const x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
-                                const y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                                result.push({ x, y, t: xRoot });
-                                break checkRoots;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-    function intersectLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
-        const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
-        if (d !== 0) {
-            const toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
-            const toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d;
-            if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1) {
-                let ox = ax1 + toSource * (ax2 - ax1);
-                let oy = ay1 + toSource * (ay2 - ay1);
-                return {
-                    x: ox,
-                    y: oy,
-                    toSource,
-                    toClip,
-                };
-            }
-        }
-    }
-    function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
-        let c2, c1, c0;
-        let cl, n;
-        const isV = bx1 === bx2;
-        const isH = by1 === by2;
-        let result = [];
-        const minbx = Math.min(bx1, bx2);
-        const minby = Math.min(by1, by2);
-        const maxbx = Math.max(bx1, bx2);
-        const maxby = Math.max(by1, by2);
-        const dot = (a, b) => a.x * b.x + a.y * b.y;
-        const lerp = (a, b, t) => ({
-            x: a.x - (a.x - b.x) * t,
-            y: a.y - (a.y - b.y) * t,
-            t,
-        });
-        c2 = {
-            x: ax1 - 2 * ax2 + ax3,
-            y: ay1 - 2 * ay2 + ay3,
-        };
-        c1 = {
-            x: -2 * ax1 + 2 * ax2,
-            y: -2 * ay1 + 2 * ay2,
-        };
-        c0 = { x: ax1, y: ay1 };
-        n = { x: by1 - by2, y: bx2 - bx1 };
-        cl = bx1 * by2 - bx2 * by1;
-        // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
-        const coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse();
-        // console.log('intersectBezier2Line coefs', coefs);
-        const roots = getRoots(coefs);
-        // console.log('intersectBezier2Line roots', roots);
-        for (let i = 0; i < roots.length; i++) {
-            const t = roots[i];
-            if (0 <= t && t <= 1) {
-                const p4 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
-                const p5 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
-                const p6 = lerp(p4, p5, t);
-                // console.log('p4, p5, p6', p4, p5, p6);
-                if (bx1 === bx2) {
-                    if (minby <= p6.y && p6.y <= maxby) {
-                        result.push(p6);
-                    }
-                }
-                else if (by1 === by2) {
-                    if (minbx <= p6.x && p6.x <= maxbx) {
-                        result.push(p6);
-                    }
-                }
-                else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
-                    result.push(p6);
-                }
-            }
-        }
-        if (isH || isV) {
-            result.forEach(item => {
-                if (isV) {
-                    if (item.x < minbx) {
-                        item.x = minbx;
-                    }
-                    else if (item.x > maxbx) {
-                        item.x = maxbx;
-                    }
-                }
-                else {
-                    if (item.y < minby) {
-                        item.y = minby;
-                    }
-                    else if (item.y > maxby) {
-                        item.y = maxby;
-                    }
-                }
-            });
-        }
-        return result;
-    }
-    /**
-     *
-     *    (-P1+3P2-3P3+P4)t^3 + (3P1-6P2+3P3)t^2 + (-3P1+3P2)t + P1
-     *        /\                     /\                /\        /\
-     *        ||                     ||                ||        ||
-     *        c3                     c2                c1        c0
-     */
-    function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
-        let c3, c2, c1, c0;
-        let cl, n;
-        const isV = bx1 === bx2;
-        const isH = by1 === by2;
-        const result = [];
-        const minbx = Math.min(bx1, bx2);
-        const minby = Math.min(by1, by2);
-        const maxbx = Math.max(bx1, bx2);
-        const maxby = Math.max(by1, by2);
-        const dot = (a, b) => a.x * b.x + a.y * b.y;
-        const lerp = (a, b, t) => ({
-            x: a.x - (a.x - b.x) * t,
-            y: a.y - (a.y - b.y) * t,
-            t,
-        });
-        c3 = {
-            x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-            y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
-        };
-        c2 = {
-            x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-            y: 3 * ay1 - 6 * ay2 + 3 * ay3,
-        };
-        c1 = {
-            x: -3 * ax1 + 3 * ax2,
-            y: -3 * ay1 + 3 * ay2,
-        };
-        c0 = { x: ax1, y: ay1 };
-        n = { x: by1 - by2, y: bx2 - bx1 };
-        cl = bx1 * by2 - bx2 * by1;
-        const coefs = [
-            cl + dot(n, c0),
-            dot(n, c1),
-            dot(n, c2),
-            dot(n, c3),
-        ];
-        const roots = getRoots(coefs);
-        for (let i = 0; i < roots.length; i++) {
-            const t = roots[i];
-            if (0 <= t && t <= 1) {
-                const p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
-                const p6 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
-                const p7 = lerp({ x: ax3, y: ay3 }, { x: ax4, y: ay4 }, t);
-                const p8 = lerp(p5, p6, t);
-                const p9 = lerp(p6, p7, t);
-                const p10 = lerp(p8, p9, t);
-                if (bx1 === bx2) {
-                    if (minby <= p10.y && p10.y <= maxby) {
-                        result.push(p10);
-                    }
-                }
-                else if (by1 === by2) {
-                    if (minbx <= p10.x && p10.x <= maxbx) {
-                        result.push(p10);
-                    }
-                }
-                else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
-                    result.push(p10);
-                }
-            }
-        }
-        if (isH || isV) {
-            result.forEach(item => {
-                if (isV) {
-                    if (item.x < minbx) {
-                        item.x = minbx;
-                    }
-                    else if (item.x > maxbx) {
-                        item.x = maxbx;
-                    }
-                }
-                else {
-                    if (item.y < minby) {
-                        item.y = minby;
-                    }
-                    else if (item.y > maxby) {
-                        item.y = maxby;
-                    }
-                }
-            });
-        }
-        return result;
-    }
-    /**
-     * 3d直线交点，允许误差，传入4个顶点坐标
-     * limitToFiniteSegment可传0、1、2、3，默认0是不考虑点是否在传入的顶点组成的线段上
-     * 1为限制在p1/p2线段，2为限制在p3/p4线段，3为都限制
-     */
-    function intersectLineLine3(p1, p2, p3, p4, limitToFiniteSegment = 0, tolerance = 1e-9) {
-        const p13 = subtractPoint(p1, p3);
-        const p43 = subtractPoint(p4, p3);
-        const p21 = subtractPoint(p2, p1);
-        const d1343 = p13.x * p43.x + p13.y * p43.y + p13.z * p43.z;
-        const d4321 = p43.x * p21.x + p43.y * p21.y + p43.z * p21.z;
-        const d1321 = p13.x * p21.x + p13.y * p21.y + p13.z * p21.z;
-        const d4343 = p43.x * p43.x + p43.y * p43.y + p43.z * p43.z;
-        const d2121 = p21.x * p21.x + p21.y * p21.y + p21.z * p21.z;
-        const denom = d2121 * d4343 - d4321 * d4321;
-        if (Math.abs(denom) < tolerance) {
-            return;
-        }
-        const numer = d1343 * d4321 - d1321 * d4343;
-        const mua = numer / denom;
-        const mub = (d1343 + d4321 * mua) / d4343;
-        const pa = {
-            x: p1.x + mua * p21.x,
-            y: p1.y + mua * p21.y,
-            z: p1.z + mua * p21.z,
-        };
-        const pb = {
-            x: p3.x + mub * p43.x,
-            y: p3.y + mub * p43.y,
-            z: p3.z + mub * p43.z,
-        };
-        const distance = distanceTo(pa, pb);
-        if (distance > tolerance) {
-            return;
-        }
-        const intersectPt = divide(addPoint(pa, pb), 2);
-        if (!limitToFiniteSegment) {
-            return intersectPt;
-        }
-        let paramA = closestParam(intersectPt, p1, p2);
-        let paramB = closestParam(intersectPt, p3, p4);
-        if (paramA < 0 && Math.abs(paramA) < 1e-9) {
-            paramA = 0;
-        }
-        else if (paramA > 1 && paramA - 1 < 1e-9) {
-            paramA = 1;
-        }
-        if (paramB < 0 && Math.abs(paramB) < 1e-9) {
-            paramB = 0;
-        }
-        else if (paramB > 1 && paramB - 1 < 1e-9) {
-            paramB = 1;
-        }
-        intersectPt.pa = paramA;
-        intersectPt.pb = paramB;
-        if (limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
-            return intersectPt;
-        }
-        if (limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
-            return intersectPt;
-        }
-        if (limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
-            return intersectPt;
-        }
-    }
-    function subtractPoint(p1, p2) {
-        return {
-            x: p1.x - p2.x,
-            y: p1.y - p2.y,
-            z: p1.z - p2.z,
-        };
-    }
-    function distanceTo(a, b) {
-        return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2));
-    }
-    function addPoint(a, b) {
-        return {
-            x: a.x + b.x,
-            y: a.y + b.y,
-            z: a.z + b.z,
-        };
-    }
-    function divide(p, t) {
-        const n = 1 / t;
-        return {
-            x: p.x * n,
-            y: p.y * n,
-            z: p.z * n,
-        };
-    }
-    function closestParam(p, from, to) {
-        const startToP = subtractPoint(p, from);
-        const startToEnd = subtractPoint(to, from);
-        const startEnd2 = dotProduct3(startToEnd.x, startToEnd.y, startToEnd.z, startToEnd.x, startToEnd.y, startToEnd.z);
-        const startEnd_startP = dotProduct3(startToEnd.x, startToEnd.y, startToEnd.z, startToP.x, startToP.y, startToP.z);
-        return startEnd_startP / startEnd2;
-    }
-    /**
-     * 平面相交线，传入2个平面的各3个顶点，返回2点式
-     */
-    function intersectPlanePlane(p1, p2, p3, p4, p5, p6) {
-        const v1 = unitize3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z), v2 = unitize3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z), v4 = unitize3(p5.x - p4.x, p5.y - p4.y, p5.z - p4.z), v5 = unitize3(p6.x - p4.x, p6.y - p4.y, p6.z - p4.z);
-        const t1 = crossProduct3(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
-        const v3 = unitize3(t1.x, t1.y, t1.z);
-        const t2 = crossProduct3(v4.x, v4.y, v4.z, v5.x, v5.y, v5.z);
-        const v6 = unitize3(t2.x, t2.y, t2.z);
-        if (isParallel3(v3.x, v3.y, v3.z, v6.x, v6.y, v6.z)) {
-            return null;
-        }
-        const normal = crossProduct3(v6.x, v6.y, v6.z, v3.x, v3.y, v3.z);
-        const p7 = addPoint(v1, v4);
-        // planeC
-        const v9 = unitize3(normal.x, normal.y, normal.z);
-        // 3平面相交
-        const a1 = v3.x, b1 = v3.y, c1 = v3.z, d1 = -a1 * p1.x - b1 * p1.y - c1 * p1.z;
-        const a2 = v6.x, b2 = v6.y, c2 = v6.z, d2 = -a2 * p4.x - b2 * p4.y - c2 * p4.z;
-        const a3 = v9.x, b3 = v9.y, c3 = v9.z, d3 = -a3 * p7.x - b3 * p7.y - c3 * p7.z;
-        const mb = [-d1, -d2, -d3];
-        const det = a1 * (b2 * c3 - c2 * b3) - b1 * (a2 * c3 - c2 * a3) + c1 * (a2 * b3 - b2 * a3);
-        if (Math.abs(det) < 1e-9) {
-            return null;
-        }
-        const invDet = 1 / det;
-        const v11 = invDet * (b2 * c3 - c2 * b3);
-        const v12 = invDet * (c1 * b3 - b1 * c3);
-        const v13 = invDet * (b1 * c2 - c1 * b2);
-        const v21 = invDet * (c2 * a3 - a2 * c3);
-        const v22 = invDet * (a1 * c3 - c1 * a3);
-        const v23 = invDet * (c1 * a2 - a1 * c2);
-        const v31 = invDet * (a2 * b3 - b2 * a3);
-        const v32 = invDet * (b1 * a3 - a1 * b3);
-        const v33 = invDet * (a1 * b2 - b1 * a2);
-        const x = v11 * mb[0] + v12 * mb[1] + v13 * mb[2];
-        const y = v21 * mb[0] + v22 * mb[1] + v23 * mb[2];
-        const z = v31 * mb[0] + v32 * mb[1] + v33 * mb[2];
-        const point = { x, y, z };
-        return [
-            point,
-            addPoint(point, v9),
-        ];
-    }
-    // 点是否在线段上，注意误差
-    function pointOnLine3(p, p1, p2) {
-        const v1x = p1.x - p.x, v1y = p1.y - p.y, v1z = p1.z - p.z;
-        const v2x = p2.x - p.x, v2y = p2.y - p.y, v2z = p2.z - p.z;
-        const c = crossProduct3(v1x, v1y, v1z, v2x, v2y, v2z);
-        return length3(c.x, c.y, c.z) < 1e-9;
-    }
-    var isec = {
-        intersectLineLine,
-        intersectBezier2Line,
-        intersectBezier3Line,
-        intersectBezier2Bezier2,
-        intersectBezier3Bezier3,
-        intersectBezier2Bezier3,
-        intersectLineLine3,
-        intersectPlanePlane,
-        pointOnLine3,
-    };
-
-    function d2r(n) {
-        return n * Math.PI / 180;
-    }
-    function r2d(n) {
-        return n * 180 / Math.PI;
-    }
-    /**
-     * 判断点是否在多边形内
-     * @param x 点坐标
-     * @param y
-     * @param vertexes 多边形顶点坐标
-     * @param includeIntersect 是否包含刚好相交，点在边上
-     * @returns {boolean}
-     */
-    function pointInConvexPolygon(x, y, vertexes, includeIntersect = false) {
-        // 先取最大最小值得一个外围矩形，在外边可快速判断false
-        let { x: xmax, y: ymax } = vertexes[0];
-        let { x: xmin, y: ymin } = vertexes[0];
-        let len = vertexes.length;
-        for (let i = 1; i < len; i++) {
-            let { x, y } = vertexes[i];
-            xmax = Math.max(xmax, x);
-            ymax = Math.max(ymax, y);
-            xmin = Math.min(xmin, x);
-            ymin = Math.min(ymin, y);
-        }
-        if (x < xmin || y < ymin || x > xmax || y > ymax) {
-            return false;
-        }
-        if (x <= xmin || y <= ymin || x >= xmax || y >= ymax) {
-            if (!includeIntersect) {
-                return false;
-            }
-        }
-        let first;
-        // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
-        for (let i = 0, len = vertexes.length; i < len; i++) {
-            let { x: x1, y: y1 } = vertexes[i];
-            let { x: x2, y: y2 } = vertexes[(i + 1) % len];
-            let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
-            if (n !== 0) {
-                n = n > 0 ? 1 : 0;
-                // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
-                if (first === undefined) {
-                    first = n;
-                }
-                else if (first ^ n) {
-                    return false;
-                }
-            }
-            else if (!includeIntersect) {
-                return false;
-            }
-        }
-        return true;
-    }
-    // 判断点是否在一个矩形，比如事件发生是否在节点上
-    function pointInRect(x, y, x1, y1, x2, y2, matrix, includeIntersect = false) {
-        if (matrix && !isE(matrix)) {
-            let t1 = calPoint({ x: x1, y: y1 }, matrix);
-            let xa = t1.x, ya = t1.y;
-            let t2 = calPoint({ x: x2, y: y1 }, matrix);
-            let xb = t2.x, yb = t2.y;
-            let t3 = calPoint({ x: x2, y: y2 }, matrix);
-            let xc = t3.x, yc = t3.y;
-            let t4 = calPoint({ x: x1, y: y2 }, matrix);
-            let xd = t4.x, yd = t4.y;
-            return pointInConvexPolygon(x, y, [
-                { x: xa, y: ya },
-                { x: xb, y: yb },
-                { x: xc, y: yc },
-                { x: xd, y: yd },
-            ]);
-        }
-        else if (includeIntersect) {
-            return x >= x1 && y >= y1 && x <= x2 && y <= y2;
-        }
-        else {
-            return x > x1 && y > y1 && x < x2 && y < y2;
-        }
-    }
-    // 两点距离
-    function pointsDistance(x1, y1, x2, y2) {
-        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    }
-    // 余弦定理3边长求夹角，返回a边对应的角
-    function angleBySides(a, b, c) {
-        // Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB))
-        let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
-        return Math.acos(theta);
-    }
-    const H = 4 * (Math.sqrt(2) - 1) / 3;
-    // 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
-    function h(deg) {
-        deg *= 0.5;
-        return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
-    }
-    // 两个矩形是否相交重叠，无旋转，因此各自只需2个坐标：左上和右下
-    function isRectsOverlap$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, includeIntersect) {
-        if (includeIntersect) {
-            if (ax1 > bx2 || ay1 > by2 || bx1 > ax2 || by1 > ay2) {
-                return false;
-            }
-        }
-        else if (ax1 >= bx2 || ay1 >= by2 || bx1 >= ax2 || by1 >= ay2) {
-            return false;
-        }
-        return true;
-    }
-    // 2个矩形是否包含，a包含b
-    function isRectsInside(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, includeIntersect) {
-        if (includeIntersect) {
-            if (ax1 <= bx1 && ay1 <= by1 && ax2 >= bx2 && ay2 >= by2) {
-                return true;
-            }
-        }
-        else if (ax1 < bx1 && ay1 < by1 && ax2 > bx2 && ay2 > by2) {
-            return true;
-        }
-        return false;
-    }
-    // 两个直线多边形是否相交重叠
-    function isConvexPolygonOverlap(a, b, includeIntersect) {
-        for (let i = 0, len = a.length; i < len - 1; i++) {
-            const { x: x1, y: y1 } = a[i];
-            const { x: x2, y: y2 } = a[i + 1];
-            for (let j = 0, len = b.length; j < len - 1; j++) {
-                const { x: x3, y: y3 } = b[j];
-                const { x: x4, y: y4 } = b[j + 1];
-                const res = intersectLineLine(x1, y1, x2, y2, x3, y3, x4, y4);
-                if (res) {
-                    if (includeIntersect) {
-                        return true;
-                    }
-                    return res.toSource > 0 && res.toSource < 1 && res.toClip > 0 && res.toClip < 1;
-                }
-            }
-        }
-        return false;
-    }
-    function toPrecision(num, p = 4) {
-        const t = Math.pow(10, p);
-        return Math.round(num * t) / t;
-    }
-    var geom = {
-        d2r,
-        r2d,
-        // 贝塞尔曲线模拟1/4圆弧比例
-        H,
-        // <90任意角度贝塞尔曲线拟合圆弧的比例公式
-        h,
-        pointInConvexPolygon,
-        pointInRect,
-        pointsDistance,
-        angleBySides,
-        isRectsOverlap: isRectsOverlap$1,
-        isRectsInside,
-        isConvexPolygonOverlap,
-        toPrecision,
-    };
-
-    function calRotateZ(t, v) {
-        v = d2r(v);
-        let sin = Math.sin(v);
-        let cos = Math.cos(v);
-        t[0] = t[5] = cos;
-        t[1] = sin;
-        t[4] = -sin;
-        return t;
-    }
-    // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
-    function calMatrixByOrigin(m, ox, oy) {
-        let res = m.slice(0);
-        if (ox === 0 && oy === 0 || isE(m)) {
-            return res;
-        }
-        res = tfoMultiply(ox, oy, res);
-        res = multiplyTfo(res, -ox, -oy);
-        return res;
-    }
-    function calMatrix(style, width = 0, height = 0) {
-        const transform = identity();
-        transform[12] = style.translateX ? calSize(style.translateX, width) : 0;
-        transform[13] = style.translateY ? calSize(style.translateY, height) : 0;
-        const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
-        const scaleX = style.scaleX ? style.scaleX.v : 1;
-        const scaleY = style.scaleY ? style.scaleY.v : 1;
-        if (isE(transform)) {
-            calRotateZ(transform, rotateZ);
-        }
-        else if (rotateZ) {
-            multiplyRotateZ(transform, d2r(rotateZ));
-        }
-        if (scaleX !== 1) {
-            if (isE(transform)) {
-                transform[0] = scaleX;
-            }
-            else {
-                multiplyScaleX(transform, scaleX);
-            }
-        }
-        if (scaleY !== 1) {
-            if (isE(transform)) {
-                transform[5] = scaleY;
-            }
-            else {
-                multiplyScaleY(transform, scaleY);
-            }
-        }
-        return transform;
-    }
-    var transform = {
-        calRotateZ,
-        calMatrix,
-        calMatrixByOrigin,
     };
 
     var style = {
@@ -25170,6 +25193,7 @@
     class Polyline extends Geom {
         constructor(props) {
             super(props);
+            this.props = props;
             this.isPolyline = true;
         }
         buildPoints() {
@@ -25367,6 +25391,12 @@
         deletePoint(point) {
             const props = this.props;
             const points = props.points;
+            if (typeof point === 'number') {
+                points.splice(point, 1);
+                this.points = undefined;
+                this.refresh();
+                return;
+            }
             const i = points.indexOf(point);
             if (i > -1) {
                 points.splice(i, 1);
@@ -25419,6 +25449,8 @@
                     continue;
                 }
                 const f = fill[i];
+                // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+                let ellipse;
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -25426,7 +25458,6 @@
                     ctx.fillStyle = color2rgbaStr(f);
                 }
                 else {
-                    // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
                     if (f.t === GRADIENT.LINEAR) {
                         const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
@@ -25437,13 +25468,24 @@
                     }
                     else if (f.t === GRADIENT.RADIAL) {
                         const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
-                        console.log(gd);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
-                        if (gd.ellipseLength !== 1) {
-                            ctx.fillStyle = '#FFF';
+                        // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+                        const m = gd.matrix;
+                        if (m) {
+                            ellipse = inject.getOffscreenCanvas(w, h);
+                            const ctx2 = ellipse.ctx;
+                            ctx2.beginPath();
+                            canvasPolygon(ctx2, points, scale, dx, dy);
+                            if (this.props.isClosed) {
+                                ctx2.closePath();
+                            }
+                            ctx2.clip();
+                            ctx2.fillStyle = rg;
+                            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                            ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
                         }
                         else {
                             ctx.fillStyle = rg;
@@ -25468,7 +25510,12 @@
                 }
                 // fill有opacity，设置记得还原
                 ctx.globalAlpha = fillOpacity[i];
-                ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                if (ellipse) {
+                    ctx.drawImage(ellipse.canvas, 0, 0);
+                }
+                else {
+                    ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                }
                 ctx.globalAlpha = 1;
             }
             // 线帽设置
@@ -25513,7 +25560,7 @@
                     }
                     else if (s.t === GRADIENT.RADIAL) {
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
@@ -25723,6 +25770,106 @@
         }
         toSvg(scale) {
             return super.toSvg(scale, this.props.isClosed);
+        }
+        // 一个形状由N个贝塞尔曲线围城，这个获取第几条贝塞尔曲线对应的4个控制点
+        getBezierCurveByIndex(index) {
+            const result = [];
+            const props = this.getFrameProps();
+            const w = this.width;
+            const h = this.height;
+            const points = props.points;
+            if (index < points.length - 1) {
+                result.push({
+                    x: points[index].x * w,
+                    y: points[index].y * h,
+                }, {
+                    x: w *
+                        (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+                    y: h *
+                        (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+                }, {
+                    x: w *
+                        (points[index + 1].hasCurveFrom
+                            ? points[index + 1].tx
+                            : points[index + 1].x),
+                    y: h *
+                        (points[index + 1].hasCurveFrom
+                            ? points[index + 1].ty
+                            : points[index + 1].y),
+                }, {
+                    x: w * points[index + 1].x,
+                    y: h * points[index + 1].y,
+                });
+            }
+            else if (this.props.isClosed) {
+                // 闭合曲线才有最后一条边
+                result.push({
+                    x: points[index].x * w,
+                    y: points[index].y * h,
+                }, {
+                    x: w *
+                        (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+                    y: h *
+                        (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+                }, {
+                    x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
+                    y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
+                }, {
+                    x: w * points[0].x,
+                    y: h * points[0].y,
+                });
+            }
+            return result;
+        }
+        getAllBezierCurves() {
+            const result = [];
+            const points = this.getFrameProps().points;
+            const w = this.width;
+            const h = this.height;
+            // 非闭合
+            for (let i = 0; i < points.length - 1; i++) {
+                const curve = [];
+                result.push(curve);
+                curve.push({
+                    x: w * points[i].x,
+                    y: h * points[i].y,
+                }, {
+                    x: w * (points[i].hasCurveFrom ? points[i].fx : points[i].x),
+                    y: h * (points[i].hasCurveFrom ? points[i].fy : points[i].y),
+                }, {
+                    x: w *
+                        (points[i + 1].hasCurveFrom ? points[i + 1].tx : points[i + 1].x),
+                    y: h *
+                        (points[i + 1].hasCurveFrom ? points[i + 1].ty : points[i + 1].y),
+                }, {
+                    x: w * points[i + 1].x,
+                    y: h * points[i + 1].y,
+                });
+            }
+            if (this.props.isClosed) {
+                const index = points.length - 1;
+                result.push([
+                    {
+                        x: w * points[index].x,
+                        y: h * points[index].y,
+                    },
+                    {
+                        x: w *
+                            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+                        y: h *
+                            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+                    },
+                    {
+                        x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
+                        y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
+                    },
+                    {
+                        x: w * points[0].x,
+                        y: h * points[0].y,
+                    },
+                ]);
+            }
+            return result;
         }
     }
 

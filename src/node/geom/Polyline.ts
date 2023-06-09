@@ -25,8 +25,10 @@ function isCornerPoint(point: Point) {
 }
 
 class Polyline extends Geom {
+  props: PolylineProps;
   constructor(props: PolylineProps) {
     super(props);
+    this.props = props;
     this.isPolyline = true;
   }
 
@@ -35,7 +37,7 @@ class Polyline extends Geom {
       return;
     }
     this.textureOutline?.release();
-    const props = this.props as PolylineProps;
+    const props = this.props;
     const { width, height } = this;
     const points = props.points;
     let hasCorner = false;
@@ -231,7 +233,7 @@ class Polyline extends Geom {
       res.push(p);
     }
     // 闭合
-    if ((this.props as PolylineProps).isClosed) {
+    if (this.props.isClosed) {
       const last = temp[len - 1];
       const p: Array<number> = [
         toPrecision(first.absX!),
@@ -248,9 +250,15 @@ class Polyline extends Geom {
     this.points = res;
   }
 
-  deletePoint(point: Point) {
-    const props = this.props as PolylineProps;
+  deletePoint(point: Point | number) {
+    const props = this.props;
     const points = props.points;
+    if (typeof point === 'number') {
+      points.splice(point, 1);
+      this.points = undefined;
+      this.refresh();
+      return;
+    }
     const i = points.indexOf(point);
     if (i > -1) {
       points.splice(i, 1);
@@ -260,7 +268,7 @@ class Polyline extends Geom {
   }
 
   addPoint(point: Point, index: number) {
-    const props = this.props as PolylineProps;
+    const props = this.props;
     const points = props.points;
     points.splice(index, 0, point);
     this.points = undefined;
@@ -329,13 +337,14 @@ class Polyline extends Geom {
         continue;
       }
       const f = fill[i];
+      // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+      let ellipse: OffScreen | undefined;
       if (Array.isArray(f)) {
         if (!f[3]) {
           continue;
         }
         ctx.fillStyle = color2rgbaStr(f);
       } else {
-        // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
         if (f.t === GRADIENT.LINEAR) {
           const gd = getLinear(
             f.stops,
@@ -358,20 +367,32 @@ class Polyline extends Geom {
             dy,
             this.width * scale,
             this.height * scale,
-          ); console.log(gd);
+          );
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
             0,
-            gd.cx,
-            gd.cy,
+            gd.tx,
+            gd.ty,
             gd.total,
           );
           gd.stop.forEach((item) => {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
-          if (gd.ellipseLength !== 1) {
-            ctx.fillStyle = '#FFF';
+          // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+          const m = gd.matrix;
+          if (m) {
+            ellipse = inject.getOffscreenCanvas(w, h);
+            const ctx2 = ellipse.ctx;
+            ctx2.beginPath();
+            canvasPolygon(ctx2, points, scale, dx, dy);
+            if (this.props.isClosed) {
+              ctx2.closePath();
+            }
+            ctx2.clip();
+            ctx2.fillStyle = rg;
+            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
           } else {
             ctx.fillStyle = rg;
           }
@@ -395,13 +416,17 @@ class Polyline extends Geom {
       if (!i) {
         ctx.beginPath();
         canvasPolygon(ctx, points, scale, dx, dy);
-        if ((this.props as PolylineProps).isClosed) {
+        if (this.props.isClosed) {
           ctx.closePath();
         }
       }
       // fill有opacity，设置记得还原
       ctx.globalAlpha = fillOpacity[i];
-      ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+      if (ellipse) {
+        ctx.drawImage(ellipse.canvas, 0, 0);
+      } else {
+        ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+      }
       ctx.globalAlpha = 1;
     }
     // 线帽设置
@@ -445,8 +470,8 @@ class Polyline extends Geom {
             gd.cx,
             gd.cy,
             0,
-            gd.cx,
-            gd.cy,
+            gd.tx,
+            gd.ty,
             gd.total,
           );
           gd.stop.forEach((item) => {
@@ -492,7 +517,7 @@ class Polyline extends Geom {
         ctx.beginPath();
         canvasPolygon(ctx, points, scale, dx, dy);
       }
-      if ((this.props as PolylineProps).isClosed) {
+      if (this.props.isClosed) {
         if (ctx2) {
           ctx2.closePath();
         } else {
@@ -524,7 +549,7 @@ class Polyline extends Geom {
     const res = super.getFrameProps();
     res.isLine = this.isLine();
     this.buildPoints();
-    const points = (this.props as PolylineProps).points;
+    const points = this.props.points;
     if (res.isLine) {
       res.length = Math.sqrt(
         Math.pow(points[1].absX! - points[0].absX!, 2) +
@@ -565,7 +590,7 @@ class Polyline extends Geom {
     if (!points.length) {
       return points;
     }
-    const list = (this.props as PolylineProps).points;
+    const list = this.props.points;
     const { width, height } = this;
     // 逆向还原矩阵和归一化点坐标
     const i = inverse4(matrix);
@@ -687,7 +712,7 @@ class Polyline extends Geom {
 
   private adjustPoints(dx: number, dy: number) {
     const { width, height } = this;
-    const points = (this.props as PolylineProps).points;
+    const points = this.props.points;
     points.forEach((point) => {
       point.x = (point.absX! - dx) / width;
       point.y = (point.absY! - dy) / height;
@@ -695,7 +720,137 @@ class Polyline extends Geom {
   }
 
   toSvg(scale: number) {
-    return super.toSvg(scale, (this.props as PolylineProps).isClosed);
+    return super.toSvg(scale, this.props.isClosed);
+  }
+
+  // 一个形状由N个贝塞尔曲线围城，这个获取第几条贝塞尔曲线对应的4个控制点
+  getBezierCurveByIndex(index: number): Array<{ x: number; y: number }> {
+    const result: Array<{ x: number; y: number }> = [];
+    const props = this.getFrameProps();
+    const w = this.width;
+    const h = this.height;
+    const points = props.points;
+
+    if (index < points.length - 1) {
+      result.push(
+        {
+          x: points[index].x * w,
+          y: points[index].y * h,
+        },
+        {
+          x:
+            w *
+            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+          y:
+            h *
+            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+        },
+        {
+          x:
+            w *
+            (points[index + 1].hasCurveFrom
+              ? points[index + 1].tx
+              : points[index + 1].x),
+          y:
+            h *
+            (points[index + 1].hasCurveFrom
+              ? points[index + 1].ty
+              : points[index + 1].y),
+        },
+        {
+          x: w * points[index + 1].x,
+          y: h * points[index + 1].y,
+        },
+      );
+    } else if (this.props.isClosed) {
+      // 闭合曲线才有最后一条边
+      result.push(
+        {
+          x: points[index].x * w,
+          y: points[index].y * h,
+        },
+        {
+          x:
+            w *
+            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+          y:
+            h *
+            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+        },
+        {
+          x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
+          y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
+        },
+        {
+          x: w * points[0].x,
+          y: h * points[0].y,
+        },
+      );
+    }
+
+    return result;
+  }
+
+  getAllBezierCurves(): Array<{ x: number; y: number }>[] {
+    const result: Array<{ x: number; y: number }>[] = [];
+    const points = this.getFrameProps().points;
+    const w = this.width;
+    const h = this.height;
+    // 非闭合
+    for (let i = 0; i < points.length - 1; i++) {
+      const curve: Array<{ x: number; y: number }> = [];
+      result.push(curve);
+      curve.push(
+        {
+          x: w * points[i].x,
+          y: h * points[i].y,
+        },
+        {
+          x: w * (points[i].hasCurveFrom ? points[i].fx : points[i].x),
+          y: h * (points[i].hasCurveFrom ? points[i].fy : points[i].y),
+        },
+        {
+          x:
+            w *
+            (points[i + 1].hasCurveFrom ? points[i + 1].tx : points[i + 1].x),
+          y:
+            h *
+            (points[i + 1].hasCurveFrom ? points[i + 1].ty : points[i + 1].y),
+        },
+        {
+          x: w * points[i + 1].x,
+          y: h * points[i + 1].y,
+        },
+      );
+    }
+
+    if (this.props.isClosed) {
+      const index = points.length - 1;
+      result.push([
+        {
+          x: w * points[index].x,
+          y: h * points[index].y,
+        },
+        {
+          x:
+            w *
+            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+          y:
+            h *
+            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+        },
+        {
+          x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
+          y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
+        },
+        {
+          x: w * points[0].x,
+          y: h * points[0].y,
+        },
+      ]);
+    }
+
+    return result;
   }
 }
 

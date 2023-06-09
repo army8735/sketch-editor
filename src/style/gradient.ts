@@ -1,7 +1,10 @@
+import { d2r } from '../math/geom';
+import { identity, multiplyRotateZ, multiplyScaleY } from '../math/matrix';
 import { clone } from '../util';
 import { color2rgbaInt } from './css';
 import { calUnit, ColorStop, GRADIENT, StyleUnit } from './define';
 import reg from './reg';
+import { calMatrixByOrigin } from './transform';
 
 // 获取color-stop区间范围，去除无用值
 export function getColorStop(
@@ -309,6 +312,7 @@ export type Radial = {
   tx: number;
   ty: number;
   ellipseLength: number;
+  matrix?: Float64Array;
   total: number;
   stop: { color: number[]; offset?: number }[];
 };
@@ -316,28 +320,56 @@ export type Radial = {
 export function getRadial(
   stops: Array<ColorStop>,
   d: Array<number>,
-  ox: number,
-  oy: number,
+  dx: number,
+  dy: number,
   w: number,
   h: number,
 ): Radial {
-  const x1 = ox + d[0] * w;
-  const y1 = oy + d[1] * h;
-  const x2 = ox + d[2] * w;
-  const y2 = oy + d[3] * h;
-  const ellipseLength = d[4];
+  const x1 = dx + d[0] * w; // 中心点
+  const y1 = dy + d[1] * h;
+  const x2 = dx + d[2] * w; // 目标轴的端点，默认水平右方向
+  const y2 = dy + d[3] * h;
+  const ellipseLength = d[4]; // 缩放比，另一轴和目标轴垂直
   const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   const stop = getColorStop(stops, total, false);
+  let matrix: Float64Array | undefined;
+  // 以目标轴为基准视作圆，缩放另一轴和旋转
+  if (ellipseLength !== 1) {
+    matrix = identity();
+    if (y2 !== y1) {
+      // 90 / 720
+      if (x2 === x1) {
+        if (y2 >= y1) {
+          multiplyRotateZ(matrix, d2r(90));
+        } else {
+          multiplyRotateZ(matrix, d2r(270));
+        }
+      } else {
+        const tan = Math.atan((y2 - y1) / (x2 - x1));
+        multiplyRotateZ(matrix, tan);
+      }
+    }
+    multiplyScaleY(matrix, ellipseLength);
+    matrix = calMatrixByOrigin(matrix, dx + x1, dy + y1);
+  }
   return {
     cx: x1,
     cy: y1,
-    tx: x2,
-    ty: y2,
+    tx: x1,
+    ty: y1,
     ellipseLength,
+    matrix,
     total,
     stop,
   };
 }
+
+export type Conic = {
+  angle: number;
+  cx: number;
+  cy: number;
+  stop: { color: number[]; offset?: number }[];
+};
 
 export function getConic(
   stops: Array<ColorStop>,
@@ -346,7 +378,7 @@ export function getConic(
   oy: number,
   w: number,
   h: number,
-) {
+): Conic {
   const x1 = ox + d[0] * w;
   const y1 = oy + d[1] * h;
   const x2 = ox + d[2] * w;
