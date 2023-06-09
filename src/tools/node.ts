@@ -1,6 +1,7 @@
 import Container from '../node/Container';
 import Node from '../node/Node';
 import { StyleUnit } from '../style/define';
+import { calPoint, identity, multiply } from '../math/matrix';
 
 export enum POSITION {
   UNDER = 0,
@@ -19,10 +20,9 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
     throw new Error('Can not moveTo self');
   }
   const parent = target.parent!;
-  const zoom = target.getZoom();
   for (let i = 0, len = nodes.length; i < len; i++) {
     const item = nodes[i];
-    migrate(parent, zoom, item);
+    migrate(parent, item);
     if (position === POSITION.BEFORE) {
       target.insertBefore(item);
     } else if (position === POSITION.AFTER) {
@@ -35,16 +35,42 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
   }
 }
 
-export function migrate(parent: Node, zoom: number, node: Node) {
+// 获取节点相对于其所在Page的坐标，左上角原点不考虑旋转，Page本身返回0,0
+export function getPosOnPage(node: Node) {
+  if (!node.page) {
+    throw new Error('Node not on a Page');
+  }
+  if (node.isPage) {
+    return { x: 0, y: 0 };
+  }
+  const page = node.page;
+  let p = node.parent;
+  const list: Node[] = [];
+  while (p && p !== page) {
+    list.push(p);
+    p = p.parent;
+  }
+  let m = identity();
+  while (list.length) {
+    m = multiply(m, list.pop()!.matrix);
+  }
+  const matrix = node.matrix;
+  const i = identity();
+  i[12] = matrix[12];
+  i[13] = matrix[13];
+  m = multiply(m, i);
+  return calPoint({ x: 0, y: 0 }, m);
+}
+
+/**
+ * 将node迁移到parent下的尺寸和位置，并不是真正移动dom，移动权和最终位置交给外部控制
+ * 先记录下node当前的绝对坐标和尺寸和旋转，然后转换style到以parent为新父元素下并保持单位不变
+ */
+export function migrate(parent: Node, node: Node) {
   const width = parent.width;
   const height = parent.height;
-  const rect = parent.getBoundingClientRect(false, true);
-  const x = rect.left / zoom;
-  const y = rect.top / zoom;
-  const r = node.getBoundingClientRect(false, true);
-  const x1 = r.left / zoom;
-  const y1 = r.top / zoom;
-  node.remove();
+  const { x, y } = getPosOnPage(parent);
+  const { x: x1, y: y1 } = getPosOnPage(node);
   const style = node.style;
   // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
   const leftConstraint = style.left.u === StyleUnit.PX;

@@ -33,14 +33,14 @@ class Group extends Container {
 
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
   private getChildrenRect() {
-    const { width: gw, height: gh, children } = this;
+    const { children } = this;
     let rect = children.length
       ? this.getChildRect(children[0])
       : {
         minX: 0,
         minY: 0,
-        maxX: gw,
-        maxY: gh,
+        maxX: 0,
+        maxY: 0,
       };
     for (let i = 1, len = children.length; i < len; i++) {
       const child = children[i];
@@ -163,17 +163,17 @@ class Group extends Container {
     if (this.isDestroyed) {
       throw new Error('Can not unGroup a destroyed Node');
     }
-    const prev = this.prev;
+    let prev = this.prev;
     const next = this.next;
-    const zoom = this.getZoom();
     const parent = this.parent!;
     const children = this.children.slice(0);
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
-      migrate(parent, zoom, item);
+      migrate(parent, item);
       // 插入到group的原本位置，有prev/next优先使用定位
       if (prev) {
         prev.insertAfter(item);
+        prev = item;
       } else if (next) {
         next.insertBefore(item);
       }
@@ -200,12 +200,12 @@ class Group extends Container {
     while (next && nodes.indexOf(next) > -1) {
       next = next.next;
     }
-    const zoom = first.getZoom();
     const parent = first.parent!;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
-      migrate(parent, zoom, item);
+      migrate(parent, item);
     }
+    // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
     const p = Object.assign(
       {
         uuid: uuid.v4(),
@@ -219,7 +219,7 @@ class Group extends Container {
       },
       props,
     );
-    const group = new Group(p, nodes);
+    const group = new Group(p, []);
     // 插入到first的原本位置，有prev/next优先使用定位
     if (prev) {
       prev.insertAfter(group);
@@ -229,6 +229,10 @@ class Group extends Container {
     // 没有prev/next则parent原本只有一个节点
     else {
       parent.appendChild(group);
+    }
+    // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
+    for (let i = 0, len = nodes.length; i < len; i++) {
+      group.appendChild(nodes[i]);
     }
     group.checkSizeChange();
     return group;

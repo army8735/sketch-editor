@@ -305,11 +305,11 @@ $input.onchange = function(e) {
           ol.appendChild(li);
           abHash[uuid].appendChild(ol);
         }
-        else if (i === children.length - 1) {
-          ol.insertBefore(li, ol.children[i - 1]);
+        else if (children.length === 0) {
+          ol.appendChild(li);
         }
         else if (i === 0) {
-          ol.appendChild(li);
+          ol.insertBefore(li, ol.children[0]);
         }
         else {
           ol.insertBefore(li, ol.children[ol.children.length - i]);

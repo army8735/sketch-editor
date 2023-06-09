@@ -28015,10 +28015,9 @@
             throw new Error('Can not moveTo self');
         }
         const parent = target.parent;
-        const zoom = target.getZoom();
         for (let i = 0, len = nodes.length; i < len; i++) {
             const item = nodes[i];
-            migrate(parent, zoom, item);
+            migrate(parent, item);
             if (position === POSITION.BEFORE) {
                 target.insertBefore(item);
             }
@@ -28031,16 +28030,41 @@
             }
         }
     }
-    function migrate(parent, zoom, node) {
+    // 获取节点相对于其所在Page的坐标，左上角原点不考虑旋转，Page本身返回0,0
+    function getPosOnPage(node) {
+        if (!node.page) {
+            throw new Error('Node not on a Page');
+        }
+        if (node.isPage) {
+            return { x: 0, y: 0 };
+        }
+        const page = node.page;
+        let p = node.parent;
+        const list = [];
+        while (p && p !== page) {
+            list.push(p);
+            p = p.parent;
+        }
+        let m = identity();
+        while (list.length) {
+            m = multiply(m, list.pop().matrix);
+        }
+        const matrix = node.matrix;
+        const i = identity();
+        i[12] = matrix[12];
+        i[13] = matrix[13];
+        m = multiply(m, i);
+        return calPoint({ x: 0, y: 0 }, m);
+    }
+    /**
+     * 将node迁移到parent下的尺寸和位置，并不是真正移动dom，移动权和最终位置交给外部控制
+     * 先记录下node当前的绝对坐标和尺寸和旋转，然后转换style到以parent为新父元素下并保持单位不变
+     */
+    function migrate(parent, node) {
         const width = parent.width;
         const height = parent.height;
-        const rect = parent.getBoundingClientRect(false, true);
-        const x = rect.left / zoom;
-        const y = rect.top / zoom;
-        const r = node.getBoundingClientRect(false, true);
-        const x1 = r.left / zoom;
-        const y1 = r.top / zoom;
-        node.remove();
+        const { x, y } = getPosOnPage(parent);
+        const { x: x1, y: y1 } = getPosOnPage(node);
         const style = node.style;
         // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
         const leftConstraint = style.left.u === StyleUnit.PX;
@@ -28182,14 +28206,14 @@
         }
         // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
         getChildrenRect() {
-            const { width: gw, height: gh, children } = this;
+            const { children } = this;
             let rect = children.length
                 ? this.getChildRect(children[0])
                 : {
                     minX: 0,
                     minY: 0,
-                    maxX: gw,
-                    maxY: gh,
+                    maxX: 0,
+                    maxY: 0,
                 };
             for (let i = 1, len = children.length; i < len; i++) {
                 const child = children[i];
@@ -28299,17 +28323,17 @@
             if (this.isDestroyed) {
                 throw new Error('Can not unGroup a destroyed Node');
             }
-            const prev = this.prev;
+            let prev = this.prev;
             const next = this.next;
-            const zoom = this.getZoom();
             const parent = this.parent;
             const children = this.children.slice(0);
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
-                migrate(parent, zoom, item);
+                migrate(parent, item);
                 // 插入到group的原本位置，有prev/next优先使用定位
                 if (prev) {
                     prev.insertAfter(item);
+                    prev = item;
                 }
                 else if (next) {
                     next.insertBefore(item);
@@ -28336,12 +28360,12 @@
             while (next && nodes.indexOf(next) > -1) {
                 next = next.next;
             }
-            const zoom = first.getZoom();
             const parent = first.parent;
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
-                migrate(parent, zoom, item);
+                migrate(parent, item);
             }
+            // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
             const p = Object.assign({
                 uuid: v4(),
                 name: '编组',
@@ -28352,7 +28376,7 @@
                     bottom: '0%',
                 },
             }, props);
-            const group = new Group(p, nodes);
+            const group = new Group(p, []);
             // 插入到first的原本位置，有prev/next优先使用定位
             if (prev) {
                 prev.insertAfter(group);
@@ -28363,6 +28387,10 @@
             // 没有prev/next则parent原本只有一个节点
             else {
                 parent.appendChild(group);
+            }
+            // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                group.appendChild(nodes[i]);
             }
             group.checkSizeChange();
             return group;
@@ -28823,7 +28851,7 @@
             const parent = first.parent;
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
-                migrate(parent, zoom, item);
+                migrate(parent, zoom);
                 if (i) {
                     item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
                 }
