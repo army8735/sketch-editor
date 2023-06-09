@@ -583,7 +583,7 @@ export function equalStyle(k: string, a: Style, b: Style) {
   return av.v === bv.v && av.u === bv.u;
 }
 
-export function color2rgbaInt(color: string | Array<number>): Array<number> {
+export function color2rgbaInt(color: string | number[]): number[] {
   if (Array.isArray(color)) {
     return color;
   }
@@ -633,7 +633,7 @@ export function color2rgbaInt(color: string | Array<number>): Array<number> {
   return res;
 }
 
-export function color2rgbaStr(color: string | Array<number>): string {
+export function color2rgbaStr(color: string | number[]): string {
   const c = color2rgbaInt(color);
   if (Array.isArray(c)) {
     c[0] = Math.floor(Math.max(c[0], 0));
@@ -658,7 +658,7 @@ function toHex(n: number) {
   return r;
 }
 
-export function color2hexStr(color: string | Array<number>): string {
+export function color2hexStr(color: string | number[]): string {
   const c = color2rgbaInt(color);
   if (Array.isArray(c)) {
     if (c.length === 3 || c.length === 4) {
@@ -681,7 +681,7 @@ export function color2hexStr(color: string | Array<number>): string {
   return (color as string) || '#000';
 }
 
-export function color2gl(color: string | Array<number>): Array<number> {
+export function color2gl(color: string | number[]): number[] {
   if (!Array.isArray(color)) {
     color = color2rgbaInt(color);
   }

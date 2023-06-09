@@ -97,14 +97,14 @@ export type JStyle = {
   strokeMiterlimit: number;
   letterSpacing: number;
   paragraphSpacing: number;
-  textAlign: string;
+  textAlign: 'left' | 'center' | 'right' | 'justify';
   translateX: number;
   translateY: number;
   scaleX: number;
   scaleY: number;
   rotateZ: number;
-  transformOrigin: Array<number | string> | string;
-  booleanOperation: string;
+  transformOrigin: Array<number | 'left' | 'right' | 'top' | 'bottom' | 'center'> | string;
+  booleanOperation: 'none' | 'union' | 'subtract' | 'intersect' | 'xor';
   mixBlendMode:
     | 'normal'
     | 'multiply'
@@ -130,7 +130,7 @@ export type JStyle = {
   shadowEnable: boolean[];
 };
 
-export function getDefaultStyle(v?: any): JStyle {
+export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
   return Object.assign(
     {
       left: 0,
@@ -226,7 +226,7 @@ export type Rich = {
   lineHeight: number;
   letterSpacing: number;
   paragraphSpacing: number;
-  color: string | Array<number>;
+  color: string | number[];
 };
 
 export type PolylineProps = Props & {

@@ -1091,7 +1091,7 @@ class Text extends Node {
    * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
    * 不会出现仅右百分比的情况，所有改变处理都一样
    */
-  input(s: string, style?: any) {
+  input(s: string, style?: Partial<Rich>) {
     const { isLeft, isTop } = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
@@ -1497,7 +1497,7 @@ class Text extends Node {
     }
   }
 
-  private insertRich(style: any, start: number, length: number) {
+  private insertRich(style: Partial<Rich>, start: number, length: number) {
     const st = Object.assign({
       location: start,
       length,
@@ -1508,7 +1508,7 @@ class Text extends Node {
       letterSpacing: 0,
       lineHeight: 0,
       paragraphSpacing: 0,
-      color: '#000',
+      color: [0, 0, 0, 1],
     },  style);
     st.color = color2rgbaInt(st.color);
     // 防止被style中脏数据覆盖

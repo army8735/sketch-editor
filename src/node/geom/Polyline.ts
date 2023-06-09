@@ -273,8 +273,8 @@ class Polyline extends Geom {
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
     const x = bbox[0],
-      y = bbox[1],
-      w = bbox[2] - x,
+      y = bbox[1];
+    let w = bbox[2] - x,
       h = bbox[3] - y;
     // 暂时这样防止超限，TODO 超大尺寸
     while (
@@ -294,9 +294,11 @@ class Polyline extends Geom {
     }
     const dx = -x * scale,
       dy = -y * scale;
+    w *= scale;
+    h *= scale;
     const canvasCache = (this.canvasCache = CanvasCache.getInstance(
-      w * scale,
-      h * scale,
+      w,
+      h,
       dx,
       dy,
     ));
@@ -333,6 +335,7 @@ class Polyline extends Geom {
         }
         ctx.fillStyle = color2rgbaStr(f);
       } else {
+        // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
         if (f.t === GRADIENT.LINEAR) {
           const gd = getLinear(
             f.stops,
@@ -355,7 +358,7 @@ class Polyline extends Geom {
             dy,
             this.width * scale,
             this.height * scale,
-          );
+          ); console.log(gd);
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -367,7 +370,11 @@ class Polyline extends Geom {
           gd.stop.forEach((item) => {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
-          ctx.fillStyle = rg;
+          if (gd.ellipseLength !== 1) {
+            ctx.fillStyle = '#FFF';
+          } else {
+            ctx.fillStyle = rg;
+          }
         } else if (f.t === GRADIENT.CONIC) {
           const gd = getConic(
             f.stops,

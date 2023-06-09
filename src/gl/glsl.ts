@@ -102,14 +102,9 @@ uniform sampler2D u_texture1;
 uniform sampler2D u_texture2;
 
 void main() {
-  vec4 color1 = texture2D(u_texture1, v_texCoords); // 遮罩层
-  vec4 color2 = texture2D(u_texture2, v_texCoords); // 被遮罩对象
-  float a = color1.a * color2.a;
-  if (a <= 0.0) {
-    discard;
-  }
-  a = clamp(a, 0.0, 1.0);
-  gl_FragColor = vec4(color2.rgb * color1.a, a);
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  gl_FragColor = color2 * color1.a;
 }`;
 
 export const gaussVert = `#version 100

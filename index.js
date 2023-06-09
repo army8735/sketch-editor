@@ -546,28 +546,24 @@
 
     var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
+    function getDefaultExportFromCjs (x) {
+    	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+    }
+
     var utf8$5 = {};
 
     var utils$q = {};
 
     var support$4 = {};
 
-    var readableExports = {};
-    var readable = {
-      get exports(){ return readableExports; },
-      set exports(v){ readableExports = v; },
-    };
+    var readable = {exports: {}};
 
-    var _processNextickArgs_2_0_1_processNextickArgsExports = {};
-    var _processNextickArgs_2_0_1_processNextickArgs = {
-      get exports(){ return _processNextickArgs_2_0_1_processNextickArgsExports; },
-      set exports(v){ _processNextickArgs_2_0_1_processNextickArgsExports = v; },
-    };
+    var _processNextickArgs_2_0_1_processNextickArgs = {exports: {}};
 
     var hasRequired_processNextickArgs_2_0_1_processNextickArgs;
 
     function require_processNextickArgs_2_0_1_processNextickArgs () {
-    	if (hasRequired_processNextickArgs_2_0_1_processNextickArgs) return _processNextickArgs_2_0_1_processNextickArgsExports;
+    	if (hasRequired_processNextickArgs_2_0_1_processNextickArgs) return _processNextickArgs_2_0_1_processNextickArgs.exports;
     	hasRequired_processNextickArgs_2_0_1_processNextickArgs = 1;
 
     	if (typeof process === 'undefined' ||
@@ -612,7 +608,7 @@
     	    });
     	  }
     	}
-    	return _processNextickArgs_2_0_1_processNextickArgsExports;
+    	return _processNextickArgs_2_0_1_processNextickArgs.exports;
     }
 
     var _isarray_1_0_0_isarray;
@@ -629,16 +625,12 @@
     	return _isarray_1_0_0_isarray;
     }
 
-    var eventsExports = {};
-    var events = {
-      get exports(){ return eventsExports; },
-      set exports(v){ eventsExports = v; },
-    };
+    var events = {exports: {}};
 
     var hasRequiredEvents;
 
     function requireEvents () {
-    	if (hasRequiredEvents) return eventsExports;
+    	if (hasRequiredEvents) return events.exports;
     	hasRequiredEvents = 1;
 
     	var R = typeof Reflect === 'object' ? Reflect : null;
@@ -674,7 +666,7 @@
     	  EventEmitter.init.call(this);
     	}
     	events.exports = EventEmitter;
-    	eventsExports.once = once;
+    	events.exports.once = once;
 
     	// Backwards-compat with node 0.10.x
     	EventEmitter.EventEmitter = EventEmitter;
@@ -1114,38 +1106,28 @@
     	    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
     	  }
     	}
-    	return eventsExports;
+    	return events.exports;
     }
 
-    var streamExports = {};
-    var stream = {
-      get exports(){ return streamExports; },
-      set exports(v){ streamExports = v; },
-    };
-
+    var stream;
     var hasRequiredStream;
 
     function requireStream () {
-    	if (hasRequiredStream) return streamExports;
+    	if (hasRequiredStream) return stream;
     	hasRequiredStream = 1;
-    	(function (module) {
-    		module.exports = require$$0__default["default"];
-    } (stream));
-    	return streamExports;
+    	stream = require$$0__default["default"];
+    	return stream;
     }
 
-    var _safeBuffer_5_1_2_safeBufferExports = {};
-    var _safeBuffer_5_1_2_safeBuffer = {
-      get exports(){ return _safeBuffer_5_1_2_safeBufferExports; },
-      set exports(v){ _safeBuffer_5_1_2_safeBufferExports = v; },
-    };
+    var _safeBuffer_5_1_2_safeBuffer = {exports: {}};
 
     /* eslint-disable node/no-deprecated-api */
+    _safeBuffer_5_1_2_safeBuffer.exports;
 
     var hasRequired_safeBuffer_5_1_2_safeBuffer;
 
     function require_safeBuffer_5_1_2_safeBuffer () {
-    	if (hasRequired_safeBuffer_5_1_2_safeBuffer) return _safeBuffer_5_1_2_safeBufferExports;
+    	if (hasRequired_safeBuffer_5_1_2_safeBuffer) return _safeBuffer_5_1_2_safeBuffer.exports;
     	hasRequired_safeBuffer_5_1_2_safeBuffer = 1;
     	(function (module, exports) {
     		var buffer = require$$0__default$1["default"];
@@ -1208,9 +1190,9 @@
     		    throw new TypeError('Argument must be a number')
     		  }
     		  return buffer.SlowBuffer(size)
-    		};
-    } (_safeBuffer_5_1_2_safeBuffer, _safeBuffer_5_1_2_safeBufferExports));
-    	return _safeBuffer_5_1_2_safeBufferExports;
+    		}; 
+    	} (_safeBuffer_5_1_2_safeBuffer, _safeBuffer_5_1_2_safeBuffer.exports));
+    	return _safeBuffer_5_1_2_safeBuffer.exports;
     }
 
     var util$2 = {};
@@ -1330,22 +1312,14 @@
     	return util$2;
     }
 
-    var inheritsExports = {};
-    var inherits = {
-      get exports(){ return inheritsExports; },
-      set exports(v){ inheritsExports = v; },
-    };
+    var inherits = {exports: {}};
 
-    var inherits_browserExports = {};
-    var inherits_browser = {
-      get exports(){ return inherits_browserExports; },
-      set exports(v){ inherits_browserExports = v; },
-    };
+    var inherits_browser = {exports: {}};
 
     var hasRequiredInherits_browser;
 
     function requireInherits_browser () {
-    	if (hasRequiredInherits_browser) return inherits_browserExports;
+    	if (hasRequiredInherits_browser) return inherits_browser.exports;
     	hasRequiredInherits_browser = 1;
     	if (typeof Object.create === 'function') {
     	  // implementation from standard node.js 'util' module
@@ -1374,38 +1348,34 @@
     	    }
     	  };
     	}
-    	return inherits_browserExports;
+    	return inherits_browser.exports;
     }
 
     var hasRequiredInherits;
 
     function requireInherits () {
-    	if (hasRequiredInherits) return inheritsExports;
+    	if (hasRequiredInherits) return inherits.exports;
     	hasRequiredInherits = 1;
-    	(function (module) {
-    		try {
-    		  var util = require('util');
-    		  /* istanbul ignore next */
-    		  if (typeof util.inherits !== 'function') throw '';
-    		  module.exports = util.inherits;
-    		} catch (e) {
-    		  /* istanbul ignore next */
-    		  module.exports = requireInherits_browser();
-    		}
-    } (inherits));
-    	return inheritsExports;
+    	try {
+    	  var util = require('util');
+    	  /* istanbul ignore next */
+    	  if (typeof util.inherits !== 'function') throw '';
+    	  inherits.exports = util.inherits;
+    	} catch (e) {
+    	  /* istanbul ignore next */
+    	  inherits.exports = requireInherits_browser();
+    	}
+    	return inherits.exports;
     }
 
-    var BufferListExports = {};
-    var BufferList = {
-      get exports(){ return BufferListExports; },
-      set exports(v){ BufferListExports = v; },
-    };
+    var BufferList = {exports: {}};
+
+    BufferList.exports;
 
     var hasRequiredBufferList;
 
     function requireBufferList () {
-    	if (hasRequiredBufferList) return BufferListExports;
+    	if (hasRequiredBufferList) return BufferList.exports;
     	hasRequiredBufferList = 1;
     	(function (module) {
 
@@ -1484,9 +1454,9 @@
     		    var obj = util.inspect({ length: this.length });
     		    return this.constructor.name + ' ' + obj;
     		  };
-    		}
-    } (BufferList));
-    	return BufferListExports;
+    		} 
+    	} (BufferList));
+    	return BufferList.exports;
     }
 
     var destroy_1;
@@ -3846,10 +3816,12 @@
     	return _stream_passthrough;
     }
 
+    readable.exports;
+
     var hasRequiredReadable;
 
     function requireReadable () {
-    	if (hasRequiredReadable) return readableExports;
+    	if (hasRequiredReadable) return readable.exports;
     	hasRequiredReadable = 1;
     	(function (module, exports) {
     		var Stream = require$$0__default["default"];
@@ -3870,9 +3842,9 @@
     		  exports.Duplex = require_stream_duplex();
     		  exports.Transform = require_stream_transform();
     		  exports.PassThrough = require_stream_passthrough();
-    		}
-    } (readable, readableExports));
-    	return readableExports;
+    		} 
+    	} (readable, readable.exports));
+    	return readable.exports;
     }
 
     var nodestream;
@@ -5181,8 +5153,8 @@
     		        }
     		        return data;
     		    });
-    		};
-    } (utils$q));
+    		}; 
+    	} (utils$q));
     	return utils$q;
     }
 
@@ -5722,7 +5694,7 @@
     	        meta : chunk.meta
     	    });
     	};
-    	exports.Utf8EncodeWorker = Utf8EncodeWorker;
+    	exports.Utf8EncodeWorker = Utf8EncodeWorker; 
     } (utf8$5));
 
     var GenericWorker$a = GenericWorker_1;
@@ -6584,7 +6556,7 @@
     	  }
     	};
 
-    	exports.setTyped(TYPED_OK);
+    	exports.setTyped(TYPED_OK); 
     } (common));
 
     var deflate$4 = {};
@@ -15362,6 +15334,8 @@
     JSZip.external = external$3;
     var lib = JSZip;
 
+    var JSZip$1 = /*@__PURE__*/getDefaultExportFromCjs(lib);
+
     var config$1 = {
         debug: false,
         offscreenCanvas: true,
@@ -18669,7 +18643,7 @@
         return __awaiter(this, void 0, void 0, function* () {
             let zipFile;
             try {
-                zipFile = yield lib.loadAsync(arrayBuffer);
+                zipFile = yield JSZip$1.loadAsync(arrayBuffer);
             }
             catch (err) {
                 alert('Sorry!\nThis is not a zip file. It may be created by an old version sketch app.');
@@ -25412,7 +25386,8 @@
             this.buildPoints();
             const points = this.points;
             const bbox = this._bbox || this.bbox;
-            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            const x = bbox[0], y = bbox[1];
+            let w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
             while (w * scale > config.MAX_TEXTURE_SIZE ||
                 h * scale > config.MAX_TEXTURE_SIZE) {
@@ -25426,7 +25401,9 @@
                 return;
             }
             const dx = -x * scale, dy = -y * scale;
-            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
+            w *= scale;
+            h *= scale;
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             const { fill, fillOpacity, fillRule, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
@@ -25449,6 +25426,7 @@
                     ctx.fillStyle = color2rgbaStr(f);
                 }
                 else {
+                    // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
                     if (f.t === GRADIENT.LINEAR) {
                         const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
@@ -25459,11 +25437,17 @@
                     }
                     else if (f.t === GRADIENT.RADIAL) {
                         const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        console.log(gd);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
-                        ctx.fillStyle = rg;
+                        if (gd.ellipseLength !== 1) {
+                            ctx.fillStyle = '#FFF';
+                        }
+                        else {
+                            ctx.fillStyle = rg;
+                        }
                     }
                     else if (f.t === GRADIENT.CONIC) {
                         const gd = getConic(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
@@ -30142,7 +30126,7 @@
                 letterSpacing: 0,
                 lineHeight: 0,
                 paragraphSpacing: 0,
-                color: '#000',
+                color: [0, 0, 0, 1],
             }, style);
             st.color = color2rgbaInt(st.color);
             // 防止被style中脏数据覆盖
@@ -30688,14 +30672,9 @@ uniform sampler2D u_texture1;
 uniform sampler2D u_texture2;
 
 void main() {
-  vec4 color1 = texture2D(u_texture1, v_texCoords); // 遮罩层
-  vec4 color2 = texture2D(u_texture2, v_texCoords); // 被遮罩对象
-  float a = color1.a * color2.a;
-  if (a <= 0.0) {
-    discard;
-  }
-  a = clamp(a, 0.0, 1.0);
-  gl_FragColor = vec4(color2.rgb * color1.a, a);
+  vec4 color1 = texture2D(u_texture1, v_texCoords);
+  vec4 color2 = texture2D(u_texture2, v_texCoords);
+  gl_FragColor = color2 * color1.a;
 }`;
     const gaussVert = `#version 100
 
@@ -33552,7 +33531,7 @@ void main() {
         reflow,
     };
 
-    function useAsMask(nodes, props) {
+    function useAsMask(nodes, isOutline = false, props) {
         if (!nodes.length) {
             return;
         }
@@ -33561,7 +33540,7 @@ void main() {
             res = Group.group(nodes, props);
         }
         nodes[0].updateStyle({
-            mask: true,
+            maskMode: isOutline ? 'outline' : 'alpha',
         });
         return res;
     }

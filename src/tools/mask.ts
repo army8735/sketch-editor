@@ -2,7 +2,7 @@ import Node from '../node/Node';
 import Group from '../node/Group';
 import { Props } from '../format';
 
-export function useAsMask(nodes: Node[], props?: Props) {
+export function useAsMask(nodes: Node[], isOutline = false, props?: Props) {
   if (!nodes.length) {
     return;
   }
@@ -11,7 +11,7 @@ export function useAsMask(nodes: Node[], props?: Props) {
     res = Group.group(nodes, props);
   }
   nodes[0].updateStyle({
-    mask: true,
+    maskMode: isOutline ? 'outline' : 'alpha',
   });
   return res;
 }

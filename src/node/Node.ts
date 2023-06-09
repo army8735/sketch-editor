@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { getDefaultStyle, PageProps, Point, Props } from '../format/';
+import { getDefaultStyle, JStyle, PageProps, Point, Props } from '../format/';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
@@ -787,12 +787,12 @@ class Node extends Event {
   //   return false;
   // }
 
-  updateStyle(style: any, cb?: (sync: boolean) => void) {
+  updateStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
     const formatStyle = normalize(style);
     return this.updateFormatStyle(formatStyle, cb);
   }
 
-  updateFormatStyle(style: any, cb?: (sync: boolean) => void) {
+  updateFormatStyle(style: Partial<Style>, cb?: (sync: boolean) => void) {
     const keys = this.updateFormatStyleData(style);
     // 无变更
     if (!keys.length) {
