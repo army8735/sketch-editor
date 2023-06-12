@@ -30,7 +30,7 @@ class Container extends Node {
   }
 
   // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，一口气创建/移动一颗子树时需要
-  didMount() {
+  override didMount() {
     super.didMount();
     const { children } = this;
     const len = children.length;

@@ -23095,7 +23095,14 @@
                             else if (item.t === GRADIENT.LINEAR ||
                                 item.t === GRADIENT.RADIAL ||
                                 item.t === GRADIENT.CONIC) {
-                                return `linear-gradient(${item.d.join(' ')}, ${item.stops.map((stop) => {
+                                let s = 'linear-gradient';
+                                if (item.t === GRADIENT.RADIAL) {
+                                    s = 'radial-gradient';
+                                }
+                                else if (item.t === GRADIENT.CONIC) {
+                                    s = 'conic-gradient';
+                                }
+                                return `${s}(${item.d.join(' ')}, ${item.stops.map((stop) => {
                                 return (color2hexStr(stop.color.v) +
                                     ' ' +
                                     stop.offset.v * 100 +
@@ -28206,6 +28213,11 @@
             super(props, children);
             this.isGroup = true;
         }
+        // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
+        layout(data) {
+            super.layout(data);
+            this.adjustPosAndSize();
+        }
         // 获取单个孩子相对于本父元素的盒子尺寸
         getChildRect(child) {
             const { width, height, matrix } = child;
@@ -28220,17 +28232,27 @@
         // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
         getChildrenRect() {
             const { children } = this;
-            let rect = children.length
-                ? this.getChildRect(children[0])
-                : {
-                    minX: 0,
-                    minY: 0,
-                    maxX: 0,
-                    maxY: 0,
-                };
-            for (let i = 1, len = children.length; i < len; i++) {
+            const rect = {
+                minX: 0,
+                minY: 0,
+                maxX: 0,
+                maxY: 0,
+            };
+            let isMask = false;
+            // 注意要考虑mask和breakMask，被遮罩的都忽略
+            for (let i = 0, len = children.length; i < len; i++) {
                 const child = children[i];
+                const computedStyle = child.computedStyle;
                 const { minX, minY, maxX, maxY } = this.getChildRect(child);
+                if (isMask && !computedStyle.breakMask) {
+                    continue;
+                }
+                if (computedStyle.maskMode) {
+                    isMask = true;
+                }
+                else if (computedStyle.breakMask) {
+                    isMask = false;
+                }
                 rect.minX = Math.min(rect.minX, minX);
                 rect.minY = Math.min(rect.minY, minY);
                 rect.maxX = Math.max(rect.maxX, maxX);
@@ -28901,7 +28923,7 @@
                     strokeMiterlimit: style.strokeMiterlimit,
                 },
             }, props);
-            const shapeGroup = new ShapeGroup(p, nodes);
+            const shapeGroup = new ShapeGroup(p, []);
             // 插入到first的原本位置，有prev/next优先使用定位
             if (prev) {
                 prev.insertAfter(shapeGroup);
@@ -28912,6 +28934,10 @@
             // 没有prev/next则parent原本只有一个节点
             else {
                 parent.appendChild(shapeGroup);
+            }
+            // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
+            for (let i = 0, len = nodes.length; i < len; i++) {
+                shapeGroup.appendChild(nodes[i]);
             }
             shapeGroup.checkSizeChange();
             return shapeGroup;

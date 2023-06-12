@@ -618,7 +618,7 @@ class ShapeGroup extends Group {
       },
       props,
     );
-    const shapeGroup = new ShapeGroup(p, nodes);
+    const shapeGroup = new ShapeGroup(p, []);
     // 插入到first的原本位置，有prev/next优先使用定位
     if (prev) {
       prev.insertAfter(shapeGroup);
@@ -628,6 +628,10 @@ class ShapeGroup extends Group {
     // 没有prev/next则parent原本只有一个节点
     else {
       parent.appendChild(shapeGroup);
+    }
+    // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
+    for (let i = 0, len = nodes.length; i < len; i++) {
+      shapeGroup.appendChild(nodes[i]);
     }
     shapeGroup.checkSizeChange();
     return shapeGroup;

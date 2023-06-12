@@ -905,7 +905,13 @@ class Node extends Event {
               item.t === GRADIENT.RADIAL ||
               item.t === GRADIENT.CONIC
             ) {
-              return `linear-gradient(${item.d.join(' ')}, ${item.stops.map(
+              let s = 'linear-gradient';
+              if (item.t === GRADIENT.RADIAL) {
+                s = 'radial-gradient';
+              } else if (item.t === GRADIENT.CONIC) {
+                s = 'conic-gradient';
+              }
+              return `${s}(${item.d.join(' ')}, ${item.stops.map(
                 (stop: ColorStop) => {
                   return (
                     color2hexStr(stop.color.v) +

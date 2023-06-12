@@ -1,6 +1,7 @@
 import * as uuid from 'uuid';
 import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
+import { LayoutData } from './layout';
 import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
@@ -11,6 +12,12 @@ class Group extends Container {
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.isGroup = true;
+  }
+
+  // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
+  override layout(data: LayoutData) {
+    super.layout(data);
+    this.adjustPosAndSize();
   }
 
   // 获取单个孩子相对于本父元素的盒子尺寸
@@ -34,17 +41,26 @@ class Group extends Container {
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
   private getChildrenRect() {
     const { children } = this;
-    let rect = children.length
-      ? this.getChildRect(children[0])
-      : {
-        minX: 0,
-        minY: 0,
-        maxX: 0,
-        maxY: 0,
-      };
-    for (let i = 1, len = children.length; i < len; i++) {
+    const rect = {
+      minX: 0,
+      minY: 0,
+      maxX: 0,
+      maxY: 0,
+    };
+    let isMask = false;
+    // 注意要考虑mask和breakMask，被遮罩的都忽略
+    for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
+      const computedStyle = child.computedStyle;
       const { minX, minY, maxX, maxY } = this.getChildRect(child);
+      if (isMask && !computedStyle.breakMask) {
+        continue;
+      }
+      if (computedStyle.maskMode) {
+        isMask = true;
+      } else if (computedStyle.breakMask) {
+        isMask = false;
+      }
       rect.minX = Math.min(rect.minX, minX);
       rect.minY = Math.min(rect.minY, minY);
       rect.maxX = Math.max(rect.maxX, maxX);
