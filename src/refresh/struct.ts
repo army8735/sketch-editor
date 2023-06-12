@@ -1008,7 +1008,7 @@ function genShadow(
   w *= scale;
   h *= scale;
   const cx = w * 0.5,
-    cy = h * 0.5;
+    cy = h * 0.5; console.log(w, h, scale);
   // 扩展好尺寸的原节点纹理
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
@@ -1028,6 +1028,8 @@ function genShadow(
     dy,
     false,
   );
+  releaseFrameBuffer(gl, frameBuffer, W, H);
+  return target;
   // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
   const dropShadowProgram = programs.dropShadowProgram;
   const vtPoint = new Float32Array(8);

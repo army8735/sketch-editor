@@ -257,6 +257,7 @@ class Polyline extends Geom {
       points.splice(point, 1);
       this.points = undefined;
       this.refresh();
+      this.checkPointsChange();
       return;
     }
     const i = points.indexOf(point);
@@ -264,6 +265,7 @@ class Polyline extends Geom {
       points.splice(i, 1);
       this.points = undefined;
       this.refresh();
+      this.checkPointsChange();
     }
   }
 
@@ -273,6 +275,13 @@ class Polyline extends Geom {
     points.splice(index, 0, point);
     this.points = undefined;
     this.refresh();
+    this.checkPointsChange();
+  }
+
+  modifyPoint() {
+    this.points = undefined;
+    this.refresh();
+    this.checkPointsChange();
   }
 
   override renderCanvas(scale: number) {
@@ -717,6 +726,7 @@ class Polyline extends Geom {
       point.x = (point.absX! - dx) / width;
       point.y = (point.absY! - dy) / height;
     });
+    this.points = undefined;
   }
 
   toSvg(scale: number) {
