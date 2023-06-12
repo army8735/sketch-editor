@@ -574,11 +574,10 @@ class ShapeGroup extends Group {
     while (next && nodes.indexOf(next) > -1) {
       next = next.next;
     }
-    const zoom = first.getZoom();
     const parent = first.parent!;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
-      migrate(parent, zoom, item);
+      migrate(parent, item);
       if (i) {
         item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
       }

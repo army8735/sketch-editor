@@ -461,6 +461,10 @@ export function convertCoords2Gl(
   return { x, y };
 }
 
+/**
+ * 这里的换算非常绕，bbox是节点本身不包含缩放画布的scale的，dx/dy同样，参与和bbox的偏移计算，
+ * matrix是最终世界matrix，包含了画布缩放的scale（PageContainer上），因此坐标是bbox乘matrix
+ */
 export function bbox2Coords(
   bbox: Float64Array,
   cx: number,

@@ -569,7 +569,6 @@ export function renderWebgl(
     [
       {
         opacity: 1,
-        matrix: undefined,
         bbox: new Float64Array([0, 0, W, H]),
         texture: resTexture!,
       },
@@ -623,7 +622,7 @@ function genBboxTotal(
 }
 
 function mergeBbox(bbox: Float64Array, t: Float64Array, matrix: Float64Array) {
-  let [x1, y1, x2, y2] = bbox;
+  let [x1, y1, x2, y2] = t;
   if (!isE(matrix)) {
     const t1 = calPoint({ x: x1, y: y1 }, matrix);
     const t2 = calPoint({ x: x1, y: y2 }, matrix);
@@ -899,6 +898,8 @@ function genGaussBlur(
     cy = h * 0.5;
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+  const matrix = multiplyScale(identity(), scale);
+  // 原本内容绘入扩展好的
   drawTextureCache(
     gl,
     cx,
@@ -907,6 +908,7 @@ function genGaussBlur(
     [
       {
         opacity: 1,
+        matrix,
         bbox: textureTarget.bbox,
         texture: textureTarget.texture,
       },
@@ -1008,10 +1010,11 @@ function genShadow(
   w *= scale;
   h *= scale;
   const cx = w * 0.5,
-    cy = h * 0.5; console.log(w, h, scale);
+    cy = h * 0.5;
   // 扩展好尺寸的原节点纹理
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
   const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+  const matrix = multiplyScale(identity(), scale);
   drawTextureCache(
     gl,
     cx,
@@ -1020,6 +1023,7 @@ function genShadow(
     [
       {
         opacity: 1,
+        matrix,
         bbox: textureTarget.bbox,
         texture: textureTarget.texture,
       },
@@ -1028,8 +1032,6 @@ function genShadow(
     dy,
     false,
   );
-  releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target;
   // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
   const dropShadowProgram = programs.dropShadowProgram;
   const vtPoint = new Float32Array(8);
@@ -1053,7 +1055,7 @@ function genShadow(
       dx + item.x,
       dy + item.y,
       false,
-      undefined,
+      matrix,
     );
     vtPoint[0] = t1.x;
     vtPoint[1] = t1.y;
@@ -1125,6 +1127,7 @@ function genShadow(
       [
         {
           opacity: 1,
+          matrix,
           bbox: bbox,
           texture: item,
         },
@@ -1135,6 +1138,7 @@ function genShadow(
     );
     gl.deleteTexture(item);
   });
+  // TODO 本身内容不考虑透明度覆盖，透明就是白色
   drawTextureCache(
     gl,
     cx,
@@ -1143,6 +1147,7 @@ function genShadow(
     [
       {
         opacity: 1,
+        matrix,
         bbox: target.bbox,
         texture: target.texture,
       },
@@ -1152,6 +1157,7 @@ function genShadow(
     false,
   );
   target.release();
+  gl.useProgram(program);
   // 删除fbo恢复
   releaseFrameBuffer(gl, frameBuffer, W, H);
   return target2;
@@ -1473,6 +1479,7 @@ function genOutline(
   ) {
     return;
   }
+  // canvas模式特殊的dx和matrix
   const dx = -x * scale,
     dy = -y * scale;
   const os = inject.getOffscreenCanvas(w * scale, h * scale, 'maskOutline');

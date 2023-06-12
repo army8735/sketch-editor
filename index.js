@@ -22042,6 +22042,10 @@
         }
         return { x, y };
     }
+    /**
+     * 这里的换算非常绕，bbox是节点本身不包含缩放画布的scale的，dx/dy同样，参与和bbox的偏移计算，
+     * matrix是最终世界matrix，包含了画布缩放的scale（PageContainer上），因此坐标是bbox乘matrix
+     */
     function bbox2Coords(bbox, cx, cy, dx = 0, dy = 0, flipY = true, matrix) {
         const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix);
         const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
@@ -25395,6 +25399,7 @@
                 points.splice(point, 1);
                 this.points = undefined;
                 this.refresh();
+                this.checkPointsChange();
                 return;
             }
             const i = points.indexOf(point);
@@ -25402,6 +25407,7 @@
                 points.splice(i, 1);
                 this.points = undefined;
                 this.refresh();
+                this.checkPointsChange();
             }
         }
         addPoint(point, index) {
@@ -25410,6 +25416,12 @@
             points.splice(index, 0, point);
             this.points = undefined;
             this.refresh();
+            this.checkPointsChange();
+        }
+        modifyPoint() {
+            this.points = undefined;
+            this.refresh();
+            this.checkPointsChange();
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);
@@ -25767,6 +25779,7 @@
                 point.x = (point.absX - dx) / width;
                 point.y = (point.absY - dy) / height;
             });
+            this.points = undefined;
         }
         toSvg(scale) {
             return super.toSvg(scale, this.props.isClosed);
@@ -28847,11 +28860,10 @@
             while (next && nodes.indexOf(next) > -1) {
                 next = next.next;
             }
-            const zoom = first.getZoom();
             const parent = first.parent;
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
-                migrate(parent, zoom);
+                migrate(parent, item);
                 if (i) {
                     item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
                 }
@@ -32552,7 +32564,6 @@ void main() {
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
-                matrix: undefined,
                 bbox: new Float64Array([0, 0, W, H]),
                 texture: resTexture,
             },
@@ -32589,7 +32600,7 @@ void main() {
         return res;
     }
     function mergeBbox(bbox, t, matrix) {
-        let [x1, y1, x2, y2] = bbox;
+        let [x1, y1, x2, y2] = t;
         if (!isE(matrix)) {
             const t1 = calPoint({ x: x1, y: y1 }, matrix);
             const t2 = calPoint({ x: x1, y: y2 }, matrix);
@@ -32763,9 +32774,12 @@ void main() {
         const cx = w * 0.5, cy = h * 0.5;
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+        const matrix = multiplyScale(identity(), scale);
+        // 原本内容绘入扩展好的
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
+                matrix,
                 bbox: textureTarget.bbox,
                 texture: textureTarget.texture,
             },
@@ -32840,9 +32854,11 @@ void main() {
         // 扩展好尺寸的原节点纹理
         const target = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+        const matrix = multiplyScale(identity(), scale);
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
+                matrix,
                 bbox: textureTarget.bbox,
                 texture: textureTarget.texture,
             },
@@ -32857,7 +32873,7 @@ void main() {
             const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
             // 这里顶点计算需要考虑shadow本身的偏移，将其加到dx/dy上即可
-            const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx + item.x, dy + item.y, false, undefined);
+            const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx + item.x, dy + item.y, false, matrix);
             vtPoint[0] = t1.x;
             vtPoint[1] = t1.y;
             vtPoint[2] = t4.x;
@@ -32912,20 +32928,24 @@ void main() {
             drawTextureCache(gl, cx, cy, program, [
                 {
                     opacity: 1,
+                    matrix,
                     bbox: bbox,
                     texture: item,
                 },
             ], dx, dy, false);
             gl.deleteTexture(item);
         });
+        // TODO 本身内容不考虑透明度覆盖，透明就是白色
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
+                matrix,
                 bbox: target.bbox,
                 texture: target.texture,
             },
         ], dx, dy, false);
         target.release();
+        gl.useProgram(program);
         // 删除fbo恢复
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return target2;
@@ -33150,6 +33170,7 @@ void main() {
             h * scale > config.MAX_TEXTURE_SIZE) {
             return;
         }
+        // canvas模式特殊的dx和matrix
         const dx = -x * scale, dy = -y * scale;
         const os = inject.getOffscreenCanvas(w * scale, h * scale, 'maskOutline');
         const ctx = os.ctx;
