@@ -72,7 +72,7 @@ export function renderWebgl(
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(),
     scaleIndex = 0;
-  if (scale < 1.2) {
+  if (scale < 1.1) {
     scale = 1;
   } else {
     let n = 2;
@@ -82,8 +82,8 @@ export function renderWebgl(
       scaleIndex++;
     }
     if (n > 2) {
-      const m = (n >> 1) * 1.2;
-      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.2分界线），就用那个放大数
+      const m = (n >> 1) * 1.1;
+      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.1分界线），就用那个放大数
       if (scale >= m) {
         scale = n;
       } else {

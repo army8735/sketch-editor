@@ -262,6 +262,9 @@ class Node extends Event {
     }
     node.parent = parent;
     node.prev = this;
+    if (this.next) {
+      this.next.prev = node;
+    }
     node.next = this.next;
     this.next = node;
     node.root = root;
@@ -286,6 +289,9 @@ class Node extends Event {
     }
     node.parent = parent;
     node.prev = this.prev;
+    if (this.prev) {
+      this.prev.next = node;
+    }
     node.next = this;
     this.prev = node;
     node.root = root;
@@ -1555,6 +1561,19 @@ class Node extends Event {
       }
     }
     return res;
+  }
+
+  toSketchJson() {
+    const { props, width, height, computedStyle } = this;
+    return {
+      booleanOperation: computedStyle.booleanOperation - 1,
+      do_objectID: props.uuid,
+      frame: {
+        _class: 'rect',
+        width,
+        height,
+      },
+    };
   }
 }
 

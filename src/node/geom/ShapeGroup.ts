@@ -619,6 +619,7 @@ class ShapeGroup extends Group {
       props,
     );
     const shapeGroup = new ShapeGroup(p, []);
+    shapeGroup.fixdPosAndSize = true;
     // 插入到first的原本位置，有prev/next优先使用定位
     if (prev) {
       prev.insertAfter(shapeGroup);
@@ -633,6 +634,7 @@ class ShapeGroup extends Group {
     for (let i = 0, len = nodes.length; i < len; i++) {
       shapeGroup.appendChild(nodes[i]);
     }
+    shapeGroup.fixdPosAndSize = false;
     shapeGroup.checkSizeChange();
     return shapeGroup;
   }

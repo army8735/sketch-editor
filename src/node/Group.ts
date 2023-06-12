@@ -1,17 +1,19 @@
 import * as uuid from 'uuid';
 import { Props } from '../format';
 import { calRectPoint } from '../math/matrix';
-import { LayoutData } from './layout';
 import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
+import { LayoutData } from './layout';
 import Node from './Node';
 
 class Group extends Container {
+  fixdPosAndSize: boolean;
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.isGroup = true;
+    this.fixdPosAndSize = false;
   }
 
   // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
@@ -44,8 +46,8 @@ class Group extends Container {
     const rect = {
       minX: 0,
       minY: 0,
-      maxX: 0,
-      maxY: 0,
+      maxX: 0.5,
+      maxY: 0.5,
     };
     let isMask = false;
     // 注意要考虑mask和breakMask，被遮罩的都忽略
@@ -61,10 +63,17 @@ class Group extends Container {
       } else if (computedStyle.breakMask) {
         isMask = false;
       }
-      rect.minX = Math.min(rect.minX, minX);
-      rect.minY = Math.min(rect.minY, minY);
-      rect.maxX = Math.max(rect.maxX, maxX);
-      rect.maxY = Math.max(rect.maxY, maxY);
+      if (i) {
+        rect.minX = Math.min(rect.minX, minX);
+        rect.minY = Math.min(rect.minY, minY);
+        rect.maxX = Math.max(rect.maxX, maxX);
+        rect.maxY = Math.max(rect.maxY, maxY);
+      } else {
+        rect.minX = minX;
+        rect.minY = minY;
+        rect.maxX = Math.max(0.5, maxX);
+        rect.maxY = Math.max(0.5, maxY);
+      }
     }
     return rect;
   }
@@ -132,6 +141,9 @@ class Group extends Container {
 
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
   override adjustPosAndSize() {
+    if (this.fixdPosAndSize) {
+      return false;
+    }
     const { children, width: gw, height: gh } = this;
     const rect = this.getChildrenRect();
     const dx = rect.minX,
@@ -182,6 +194,9 @@ class Group extends Container {
     let prev = this.prev;
     const next = this.next;
     const parent = this.parent!;
+    if (parent instanceof Group) {
+      parent.fixdPosAndSize = true;
+    }
     const children = this.children.slice(0);
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
@@ -198,6 +213,9 @@ class Group extends Container {
         parent.appendChild(item);
       }
     }
+    if (parent instanceof Group) {
+      parent.fixdPosAndSize = false;
+    }
     this.remove();
   }
 
@@ -208,14 +226,8 @@ class Group extends Container {
     }
     sortTempIndex(nodes);
     const first = nodes[0];
-    let prev = first.prev;
-    while (prev && nodes.indexOf(prev) > -1) {
-      prev = prev.prev;
-    }
-    let next = first.next;
-    while (next && nodes.indexOf(next) > -1) {
-      next = next.next;
-    }
+    const prev = first.prev;
+    const next = first.next;
     const parent = first.parent!;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
@@ -236,6 +248,7 @@ class Group extends Container {
       props,
     );
     const group = new Group(p, []);
+    group.fixdPosAndSize = true;
     // 插入到first的原本位置，有prev/next优先使用定位
     if (prev) {
       prev.insertAfter(group);
@@ -250,6 +263,7 @@ class Group extends Container {
     for (let i = 0, len = nodes.length; i < len; i++) {
       group.appendChild(nodes[i]);
     }
+    group.fixdPosAndSize = false;
     group.checkSizeChange();
     return group;
   }

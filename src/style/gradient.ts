@@ -355,8 +355,8 @@ export function getRadial(
   return {
     cx: x1,
     cy: y1,
-    tx: x1,
-    ty: y1,
+    tx: x2,
+    ty: y2,
     ellipseLength,
     matrix,
     total,

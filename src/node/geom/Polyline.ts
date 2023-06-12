@@ -381,8 +381,8 @@ class Polyline extends Geom {
             gd.cx,
             gd.cy,
             0,
-            gd.tx,
-            gd.ty,
+            gd.cx,
+            gd.cy,
             gd.total,
           );
           gd.stop.forEach((item) => {
@@ -479,8 +479,8 @@ class Polyline extends Geom {
             gd.cx,
             gd.cy,
             0,
-            gd.tx,
-            gd.ty,
+            gd.cx,
+            gd.cx,
             gd.total,
           );
           gd.stop.forEach((item) => {

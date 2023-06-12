@@ -19702,8 +19702,8 @@
         return {
             cx: x1,
             cy: y1,
-            tx: x1,
-            ty: y1,
+            tx: x2,
+            ty: y2,
             ellipseLength,
             matrix,
             total,
@@ -22474,6 +22474,9 @@
             }
             node.parent = parent;
             node.prev = this;
+            if (this.next) {
+                this.next.prev = node;
+            }
             node.next = this.next;
             this.next = node;
             node.root = root;
@@ -22497,6 +22500,9 @@
             }
             node.parent = parent;
             node.prev = this.prev;
+            if (this.prev) {
+                this.prev.next = node;
+            }
             node.next = this;
             this.prev = node;
             node.root = root;
@@ -23722,6 +23728,18 @@
                 }
             }
             return res;
+        }
+        toSketchJson() {
+            const { props, width, height, computedStyle } = this;
+            return {
+                booleanOperation: computedStyle.booleanOperation - 1,
+                do_objectID: props.uuid,
+                frame: {
+                    _class: 'rect',
+                    width,
+                    height,
+                },
+            };
         }
     }
 
@@ -25487,7 +25505,7 @@
                     }
                     else if (f.t === GRADIENT.RADIAL) {
                         const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.total);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
@@ -25579,7 +25597,7 @@
                     }
                     else if (s.t === GRADIENT.RADIAL) {
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.total);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cx, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
@@ -28212,6 +28230,7 @@
         constructor(props, children) {
             super(props, children);
             this.isGroup = true;
+            this.fixdPosAndSize = false;
         }
         // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
         layout(data) {
@@ -28235,8 +28254,8 @@
             const rect = {
                 minX: 0,
                 minY: 0,
-                maxX: 0,
-                maxY: 0,
+                maxX: 0.5,
+                maxY: 0.5,
             };
             let isMask = false;
             // 注意要考虑mask和breakMask，被遮罩的都忽略
@@ -28253,10 +28272,18 @@
                 else if (computedStyle.breakMask) {
                     isMask = false;
                 }
-                rect.minX = Math.min(rect.minX, minX);
-                rect.minY = Math.min(rect.minY, minY);
-                rect.maxX = Math.max(rect.maxX, maxX);
-                rect.maxY = Math.max(rect.maxY, maxY);
+                if (i) {
+                    rect.minX = Math.min(rect.minX, minX);
+                    rect.minY = Math.min(rect.minY, minY);
+                    rect.maxX = Math.max(rect.maxX, maxX);
+                    rect.maxY = Math.max(rect.maxY, maxY);
+                }
+                else {
+                    rect.minX = minX;
+                    rect.minY = minY;
+                    rect.maxX = Math.max(0.5, maxX);
+                    rect.maxY = Math.max(0.5, maxY);
+                }
             }
             return rect;
         }
@@ -28317,6 +28344,9 @@
         }
         // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
         adjustPosAndSize() {
+            if (this.fixdPosAndSize) {
+                return false;
+            }
             const { children, width: gw, height: gh } = this;
             const rect = this.getChildrenRect();
             const dx = rect.minX, dy = rect.minY, dw = rect.maxX - gw, dh = rect.maxY - gh;
@@ -28361,6 +28391,9 @@
             let prev = this.prev;
             const next = this.next;
             const parent = this.parent;
+            if (parent instanceof Group) {
+                parent.fixdPosAndSize = true;
+            }
             const children = this.children.slice(0);
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
@@ -28378,6 +28411,9 @@
                     parent.appendChild(item);
                 }
             }
+            if (parent instanceof Group) {
+                parent.fixdPosAndSize = false;
+            }
             this.remove();
         }
         // 至少1个node进行编组，以第0个位置为基准
@@ -28387,14 +28423,8 @@
             }
             sortTempIndex(nodes);
             const first = nodes[0];
-            let prev = first.prev;
-            while (prev && nodes.indexOf(prev) > -1) {
-                prev = prev.prev;
-            }
-            let next = first.next;
-            while (next && nodes.indexOf(next) > -1) {
-                next = next.next;
-            }
+            const prev = first.prev;
+            const next = first.next;
             const parent = first.parent;
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
@@ -28412,6 +28442,7 @@
                 },
             }, props);
             const group = new Group(p, []);
+            group.fixdPosAndSize = true;
             // 插入到first的原本位置，有prev/next优先使用定位
             if (prev) {
                 prev.insertAfter(group);
@@ -28427,6 +28458,7 @@
             for (let i = 0, len = nodes.length; i < len; i++) {
                 group.appendChild(nodes[i]);
             }
+            group.fixdPosAndSize = false;
             group.checkSizeChange();
             return group;
         }
@@ -28924,6 +28956,7 @@
                 },
             }, props);
             const shapeGroup = new ShapeGroup(p, []);
+            shapeGroup.fixdPosAndSize = true;
             // 插入到first的原本位置，有prev/next优先使用定位
             if (prev) {
                 prev.insertAfter(shapeGroup);
@@ -28939,6 +28972,7 @@
             for (let i = 0, len = nodes.length; i < len; i++) {
                 shapeGroup.appendChild(nodes[i]);
             }
+            shapeGroup.fixdPosAndSize = false;
             shapeGroup.checkSizeChange();
             return shapeGroup;
         }
@@ -32218,7 +32252,7 @@ void main() {
         var _a, _b;
         // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
         let scale = root.getCurPageZoom(), scaleIndex = 0;
-        if (scale < 1.2) {
+        if (scale < 1.1) {
             scale = 1;
         }
         else {
@@ -32229,8 +32263,8 @@ void main() {
                 scaleIndex++;
             }
             if (n > 2) {
-                const m = (n >> 1) * 1.2;
-                // 看0.5n和n之间scale更靠近哪一方（0.5n*1.2分界线），就用那个放大数
+                const m = (n >> 1) * 1.1;
+                // 看0.5n和n之间scale更靠近哪一方（0.5n*1.1分界线），就用那个放大数
                 if (scale >= m) {
                     scale = n;
                 }
