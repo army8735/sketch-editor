@@ -259,7 +259,12 @@ class Container extends Node {
         }
         // 指定lv判断lv是否相等，超过不再递归下去
         else {
-          if (struct.lv === lv) {
+          let n = struct.lv;
+          // 特殊，page的直接孩子不是画板而是具体节点时，无法命中，因为少了一层
+          if (!child.isArtBoard && child.parent === child.page) {
+            n++;
+          }
+          if (n === lv) {
             return this.getNodeCheck(
               child,
               computedStyle,
@@ -268,7 +273,7 @@ class Container extends Node {
             );
           }
           // 父级且是container继续深入寻找
-          else if (struct.lv < lv && child instanceof Container) {
+          else if (n < lv && child instanceof Container) {
             const res = child.getNodeByPointAndLv(
               x,
               y,

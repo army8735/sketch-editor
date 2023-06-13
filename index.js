@@ -22578,14 +22578,14 @@
                 this.calOpacity();
             }
             if (lv & RefreshLevel.REFLOW_FILTER) {
-                this.calFilterStyle();
+                this.calFilterStyle(lv);
             }
             this.clearCache(true);
             this._bbox = undefined;
             this._filterBbox = undefined;
             this.tempBbox = undefined;
         }
-        calFilterStyle() {
+        calFilterStyle(lv) {
             var _a;
             const { style, computedStyle } = this;
             computedStyle.blur = {
@@ -22603,6 +22603,13 @@
                 };
             });
             computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
+            // repaint已经做了
+            if (lv < RefreshLevel.REPAINT) {
+                this._filterBbox = undefined;
+                this.tempBbox = undefined;
+                this.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
+                this.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
+            }
         }
         calMatrix(lv) {
             const { style, computedStyle, matrix, transform } = this;
@@ -24043,11 +24050,16 @@
                     }
                     // 指定lv判断lv是否相等，超过不再递归下去
                     else {
-                        if (struct.lv === lv) {
+                        let n = struct.lv;
+                        // 特殊，page的直接孩子不是画板而是具体节点时，无法命中，因为少了一层
+                        if (!child.isArtBoard && child.parent === child.page) {
+                            n++;
+                        }
+                        if (n === lv) {
                             return this.getNodeCheck(child, computedStyle, includeGroup, includeArtBoard);
                         }
                         // 父级且是container继续深入寻找
-                        else if (struct.lv < lv && child instanceof Container) {
+                        else if (n < lv && child instanceof Container) {
                             const res = child.getNodeByPointAndLv(x, y, includeGroup, includeArtBoard, lv);
                             if (res) {
                                 return res;
@@ -33665,11 +33677,7 @@ void main() {
                         node.calOpacity();
                     }
                     if (lv & RefreshLevel.FILTER) {
-                        computedStyle.blur = style.blur.v;
-                        node._filterBbox = undefined;
-                        node.tempBbox = undefined;
-                        node.textureFilter.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
-                        node.textureMask.forEach((item) => item === null || item === void 0 ? void 0 : item.release());
+                        node.calFilterStyle(lv);
                     }
                     if (lv & RefreshLevel.MIX_BLEND_MODE) {
                         computedStyle.mixBlendMode = style.mixBlendMode.v;

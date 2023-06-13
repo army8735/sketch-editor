@@ -716,7 +716,7 @@ function onMove(e, isOnControl) {
     }
     // metaKey按下可以选择最深叶子节点，但排除Group，有选择节点时也排除group
     else {
-      let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, false, (metaKey || selectNode) ? undefined : 1);
+      let node = root.getNodeFromCurPage(nx * dpi, ny * dpi, !metaKey, metaKey, (metaKey || selectNode) ? undefined : 1);
       node = getActiveNodeWhenSelected(node);
       if(node) {
         showHover(node);
