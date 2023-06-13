@@ -214,7 +214,7 @@ class Polyline extends Geom {
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
     const first = temp[0];
-    const p: Array<number> = [first.absX!, first.absY!];
+    const p: Array<number> = [toPrecision(first.absX!), toPrecision(first.absY!)];
     const res: Array<Array<number>> = [p],
       len = temp.length;
     for (let i = 1; i < len; i++) {
@@ -480,7 +480,7 @@ class Polyline extends Geom {
             gd.cy,
             0,
             gd.cx,
-            gd.cx,
+            gd.cy,
             gd.total,
           );
           gd.stop.forEach((item) => {

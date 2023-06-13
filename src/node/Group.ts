@@ -191,27 +191,18 @@ class Group extends Container {
     if (this.isDestroyed) {
       throw new Error('Can not unGroup a destroyed Node');
     }
-    let prev = this.prev;
-    const next = this.next;
     const parent = this.parent!;
     if (parent instanceof Group) {
       parent.fixdPosAndSize = true;
     }
+    let target = this as Node;
     const children = this.children.slice(0);
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
       migrate(parent, item);
-      // 插入到group的原本位置，有prev/next优先使用定位
-      if (prev) {
-        prev.insertAfter(item);
-        prev = item;
-      } else if (next) {
-        next.insertBefore(item);
-      }
-      // 没有prev/next则parent原本只有一个节点
-      else {
-        parent.appendChild(item);
-      }
+      // 插入到group的后面
+      target.insertAfter(item);
+      target = item;
     }
     if (parent instanceof Group) {
       parent.fixdPosAndSize = false;
@@ -224,11 +215,13 @@ class Group extends Container {
     if (!nodes.length) {
       return;
     }
-    sortTempIndex(nodes);
+    sortTempIndex(nodes); console.clear();
     const first = nodes[0];
-    const prev = first.prev;
-    const next = first.next;
     const parent = first.parent!;
+    // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
+    if (parent instanceof Group) {
+      parent.fixdPosAndSize = true;
+    }
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
       migrate(parent, item);
@@ -249,21 +242,16 @@ class Group extends Container {
     );
     const group = new Group(p, []);
     group.fixdPosAndSize = true;
-    // 插入到first的原本位置，有prev/next优先使用定位
-    if (prev) {
-      prev.insertAfter(group);
-    } else if (next) {
-      next.insertBefore(group);
-    }
-    // 没有prev/next则parent原本只有一个节点
-    else {
-      parent.appendChild(group);
-    }
+    // 插入到first的后面
+    first.insertAfter(group);
     // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
     for (let i = 0, len = nodes.length; i < len; i++) {
       group.appendChild(nodes[i]);
     }
     group.fixdPosAndSize = false;
+    if (parent instanceof Group) {
+      parent.fixdPosAndSize = false;
+    }
     group.checkSizeChange();
     return group;
   }

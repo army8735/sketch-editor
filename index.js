@@ -20183,7 +20183,7 @@
                 const t = v[1].toLowerCase();
                 if (t === 'gauss') {
                     res.blur = {
-                        v: { t: BLUR.GAUSSIAN, radius: parseFloat(v[2]) || 0 },
+                        v: { t: BLUR.GAUSSIAN, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX } },
                         u: StyleUnit.BLUR,
                     };
                 }
@@ -20595,6 +20595,7 @@
                 props: {
                     uuid: page.do_objectID,
                     name: page.name,
+                    constrainProportions: page.frame.constrainProportions,
                     rule: {
                         baseX: page.horizontalRulerData.base,
                         baseY: page.verticalRulerData.base,
@@ -22585,8 +22586,12 @@
             this.tempBbox = undefined;
         }
         calFilterStyle() {
+            var _a;
             const { style, computedStyle } = this;
-            computedStyle.blur = style.blur.v;
+            computedStyle.blur = {
+                t: style.blur.v.t,
+                radius: (_a = style.blur.v.radius) === null || _a === void 0 ? void 0 : _a.v,
+            };
             computedStyle.shadow = style.shadow.map((item) => {
                 const v = item.v;
                 return {
@@ -23124,15 +23129,24 @@
                 res.strokePosition = res.strokePosition.map((item) => {
                     return ['center', 'inside', 'outside'][item];
                 });
-                res.mask = ['none', 'outline', 'alpha'][res.mask];
+                res.maskMode = ['none', 'outline', 'alpha'][res.maskMode];
                 res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
                 res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][res.booleanOperation];
+                res.blur =
+                    ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
+                        '(' +
+                        res.blur.v +
+                        ')';
+                res.shadow = res.shadow.map((item) => {
+                    return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
+                });
             }
             else {
                 res.color = res.color.slice(0);
                 res.backgroundColor = res.backgroundColor.slice(0);
                 res.fill = res.fill.slice(0);
                 res.stroke = res.stroke.slice(0);
+                res.shadow = res.shadow.slice(0);
             }
             res.fillOpacity = res.fillOpacity.slice(0);
             res.fillEnable = res.fillEnable.slice(0);
@@ -23140,6 +23154,7 @@
             res.strokeWidth = res.strokeWidth.slice(0);
             res.transformOrigin = res.transformOrigin.slice(0);
             res.strokeDasharray = res.strokeDasharray.slice(0);
+            res.shadowEnable = res.shadowEnable.slice(0);
             return res;
         }
         getBoundingClientRect(includeBbox = false, excludeRotate = false) {
@@ -23730,15 +23745,86 @@
             return res;
         }
         toSketchJson() {
-            const { props, width, height, computedStyle } = this;
+            const { props, width, height, style, computedStyle } = this;
+            let resizingConstraint = 0;
+            if (style.left.v === StyleUnit.PX) {
+                resizingConstraint |= ResizingConstraint.LEFT;
+            }
+            if (style.right.v === StyleUnit.PX) {
+                resizingConstraint |= ResizingConstraint.RIGHT;
+            }
+            if (style.top.v === StyleUnit.PX) {
+                resizingConstraint |= ResizingConstraint.TOP;
+            }
+            if (style.bottom.v === StyleUnit.PX) {
+                resizingConstraint |= ResizingConstraint.BOTTOM;
+            }
+            if (style.width.v === StyleUnit.PX) {
+                resizingConstraint |= ResizingConstraint.WIDTH;
+            }
+            if (style.height.v === StyleUnit.PX) {
+                resizingConstraint |= ResizingConstraint.HEIGHT;
+            }
+            resizingConstraint ^= ResizingConstraint.UNSET;
             return {
-                booleanOperation: computedStyle.booleanOperation - 1,
-                do_objectID: props.uuid,
-                frame: {
-                    _class: 'rect',
-                    width,
-                    height,
+                backgroundColor: {
+                    alpha: computedStyle.backgroundColor[3],
+                    blue: computedStyle.backgroundColor[2] / 255,
+                    green: computedStyle.backgroundColor[1] / 255,
+                    red: computedStyle.backgroundColor[0] / 255,
+                    _class: 'color',
                 },
+                booleanOperation: computedStyle.booleanOperation - 1,
+                clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
+                do_objectID: props.uuid,
+                exportOptions: {
+                    exportFormats: [],
+                    includedLayerIds: [],
+                    layerOptions: 0,
+                    shouldTrim: false,
+                    _class: 'exportOptions',
+                },
+                frame: {
+                    constrainProportions: props.constrainProportions || false,
+                    height,
+                    width,
+                    x: computedStyle.left,
+                    y: computedStyle.top,
+                    _class: 'rect',
+                },
+                hasBackgroundColor: false,
+                hasClickThrough: true,
+                hasClippingMask: computedStyle.maskMode !== MASK.NONE,
+                horizontalRulerData: {
+                    base: 0,
+                    guides: [],
+                    _class: 'rulerData',
+                },
+                includeBackgroundColorInExport: false,
+                isFixedToViewport: false,
+                isFlippedHorizontal: false,
+                isFlippedVertical: false,
+                isFlowHome: false,
+                isLocked: props.isLocked || false,
+                isTemplate: false,
+                isVisible: computedStyle.visible,
+                layerListExpandedType: props.isExpanded
+                    ? FileFormat.LayerListExpanded.Expanded
+                    : FileFormat.LayerListExpanded.Collapsed,
+                layers: [],
+                name: props.name || '',
+                nameIsFixed: false,
+                resizesContent: false,
+                resizingConstraint,
+                resizingType: 0,
+                rotation: -computedStyle.rotateZ,
+                shouldBreakMaskChain: computedStyle.breakMask,
+                verticalRulerData: {
+                    base: 0,
+                    guides: [],
+                    _class: 'rulerData',
+                },
+                _class: 'artboard',
             };
         }
     }
@@ -25383,7 +25469,7 @@
             }
             // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
             const first = temp[0];
-            const p = [first.absX, first.absY];
+            const p = [toPrecision(first.absX), toPrecision(first.absY)];
             const res = [p], len = temp.length;
             for (let i = 1; i < len; i++) {
                 const item = temp[i];
@@ -25597,7 +25683,7 @@
                     }
                     else if (s.t === GRADIENT.RADIAL) {
                         const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cx, gd.total);
+                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
@@ -28388,28 +28474,18 @@
             if (this.isDestroyed) {
                 throw new Error('Can not unGroup a destroyed Node');
             }
-            let prev = this.prev;
-            const next = this.next;
             const parent = this.parent;
             if (parent instanceof Group) {
                 parent.fixdPosAndSize = true;
             }
+            let target = this;
             const children = this.children.slice(0);
             for (let i = 0, len = children.length; i < len; i++) {
                 const item = children[i];
                 migrate(parent, item);
-                // 插入到group的原本位置，有prev/next优先使用定位
-                if (prev) {
-                    prev.insertAfter(item);
-                    prev = item;
-                }
-                else if (next) {
-                    next.insertBefore(item);
-                }
-                // 没有prev/next则parent原本只有一个节点
-                else {
-                    parent.appendChild(item);
-                }
+                // 插入到group的后面
+                target.insertAfter(item);
+                target = item;
             }
             if (parent instanceof Group) {
                 parent.fixdPosAndSize = false;
@@ -28422,10 +28498,13 @@
                 return;
             }
             sortTempIndex(nodes);
+            console.clear();
             const first = nodes[0];
-            const prev = first.prev;
-            const next = first.next;
             const parent = first.parent;
+            // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
+            if (parent instanceof Group) {
+                parent.fixdPosAndSize = true;
+            }
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
                 migrate(parent, item);
@@ -28443,22 +28522,16 @@
             }, props);
             const group = new Group(p, []);
             group.fixdPosAndSize = true;
-            // 插入到first的原本位置，有prev/next优先使用定位
-            if (prev) {
-                prev.insertAfter(group);
-            }
-            else if (next) {
-                next.insertBefore(group);
-            }
-            // 没有prev/next则parent原本只有一个节点
-            else {
-                parent.appendChild(group);
-            }
+            // 插入到first的后面
+            first.insertAfter(group);
             // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
             for (let i = 0, len = nodes.length; i < len; i++) {
                 group.appendChild(nodes[i]);
             }
             group.fixdPosAndSize = false;
+            if (parent instanceof Group) {
+                parent.fixdPosAndSize = false;
+            }
             group.checkSizeChange();
             return group;
         }
@@ -28906,15 +28979,11 @@
             }
             sortTempIndex(nodes);
             const first = nodes[0];
-            let prev = first.prev;
-            while (prev && nodes.indexOf(prev) > -1) {
-                prev = prev.prev;
-            }
-            let next = first.next;
-            while (next && nodes.indexOf(next) > -1) {
-                next = next.next;
-            }
             const parent = first.parent;
+            // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
+            if (parent instanceof Group) {
+                parent.fixdPosAndSize = true;
+            }
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
                 migrate(parent, item);
@@ -28957,22 +29026,16 @@
             }, props);
             const shapeGroup = new ShapeGroup(p, []);
             shapeGroup.fixdPosAndSize = true;
-            // 插入到first的原本位置，有prev/next优先使用定位
-            if (prev) {
-                prev.insertAfter(shapeGroup);
-            }
-            else if (next) {
-                next.insertBefore(shapeGroup);
-            }
-            // 没有prev/next则parent原本只有一个节点
-            else {
-                parent.appendChild(shapeGroup);
-            }
+            // 插入到first的后面
+            first.insertAfter(shapeGroup);
             // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
             for (let i = 0, len = nodes.length; i < len; i++) {
                 shapeGroup.appendChild(nodes[i]);
             }
             shapeGroup.fixdPosAndSize = false;
+            if (parent instanceof Group) {
+                parent.fixdPosAndSize = false;
+            }
             shapeGroup.checkSizeChange();
             return shapeGroup;
         }

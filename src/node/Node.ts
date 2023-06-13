@@ -1,5 +1,7 @@
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import * as uuid from 'uuid';
 import { getDefaultStyle, JStyle, PageProps, Point, Props } from '../format/';
+import { ResizingConstraint } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
@@ -29,8 +31,10 @@ import {
 import {
   BLUR,
   ColorStop,
+  ComputedShadow,
   ComputedStyle,
   GRADIENT,
+  MASK,
   STROKE_POSITION,
   Style,
   StyleNumValue,
@@ -377,7 +381,10 @@ class Node extends Event {
 
   calFilterStyle() {
     const { style, computedStyle } = this;
-    computedStyle.blur = style.blur.v;
+    computedStyle.blur = {
+      t: style.blur.v.t,
+      radius: style.blur.v.radius?.v,
+    };
     computedStyle.shadow = style.shadow.map((item) => {
       const v = item.v;
       return {
@@ -937,16 +944,27 @@ class Node extends Event {
       res.strokePosition = res.strokePosition.map((item: STROKE_POSITION) => {
         return ['center', 'inside', 'outside'][item];
       });
-      res.mask = ['none', 'outline', 'alpha'][res.mask];
+      res.maskMode = ['none', 'outline', 'alpha'][res.maskMode];
       res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
       res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
         res.booleanOperation
         ];
+      res.blur =
+        ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
+        '(' +
+        res.blur.v +
+        ')';
+      res.shadow = res.shadow.map((item: ComputedShadow) => {
+        return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${
+          item.spread
+        }`;
+      });
     } else {
       res.color = res.color.slice(0);
       res.backgroundColor = res.backgroundColor.slice(0);
       res.fill = res.fill.slice(0);
       res.stroke = res.stroke.slice(0);
+      res.shadow = res.shadow.slice(0);
     }
     res.fillOpacity = res.fillOpacity.slice(0);
     res.fillEnable = res.fillEnable.slice(0);
@@ -954,6 +972,7 @@ class Node extends Event {
     res.strokeWidth = res.strokeWidth.slice(0);
     res.transformOrigin = res.transformOrigin.slice(0);
     res.strokeDasharray = res.strokeDasharray.slice(0);
+    res.shadowEnable = res.shadowEnable.slice(0);
     return res;
   }
 
@@ -1563,16 +1582,87 @@ class Node extends Event {
     return res;
   }
 
-  toSketchJson() {
-    const { props, width, height, computedStyle } = this;
+  toSketchJson(): SketchFormat.AnyLayer {
+    const { props, width, height, style, computedStyle } = this;
+    let resizingConstraint = 0;
+    if (style.left.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.LEFT;
+    }
+    if (style.right.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.RIGHT;
+    }
+    if (style.top.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.TOP;
+    }
+    if (style.bottom.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.BOTTOM;
+    }
+    if (style.width.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.WIDTH;
+    }
+    if (style.height.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.HEIGHT;
+    }
+    resizingConstraint ^= ResizingConstraint.UNSET;
     return {
-      booleanOperation: computedStyle.booleanOperation - 1,
-      do_objectID: props.uuid,
-      frame: {
-        _class: 'rect',
-        width,
-        height,
+      backgroundColor: {
+        alpha: computedStyle.backgroundColor[3],
+        blue: computedStyle.backgroundColor[2] / 255,
+        green: computedStyle.backgroundColor[1] / 255,
+        red: computedStyle.backgroundColor[0] / 255,
+        _class: 'color',
       },
+      booleanOperation: computedStyle.booleanOperation - 1,
+      clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
+      do_objectID: props.uuid!,
+      exportOptions: {
+        exportFormats: [],
+        includedLayerIds: [],
+        layerOptions: 0,
+        shouldTrim: false,
+        _class: 'exportOptions',
+      },
+      frame: {
+        constrainProportions: props.constrainProportions || false,
+        height,
+        width,
+        x: computedStyle.left,
+        y: computedStyle.top,
+        _class: 'rect',
+      },
+      hasBackgroundColor: false,
+      hasClickThrough: true,
+      hasClippingMask: computedStyle.maskMode !== MASK.NONE,
+      horizontalRulerData: {
+        base: 0,
+        guides: [],
+        _class: 'rulerData',
+      },
+      includeBackgroundColorInExport: false,
+      isFixedToViewport: false,
+      isFlippedHorizontal: false,
+      isFlippedVertical: false,
+      isFlowHome: false,
+      isLocked: props.isLocked || false,
+      isTemplate: false,
+      isVisible: computedStyle.visible,
+      layerListExpandedType: props.isExpanded
+        ? SketchFormat.LayerListExpanded.Expanded
+        : SketchFormat.LayerListExpanded.Collapsed,
+      layers: [],
+      name: props.name || '',
+      nameIsFixed: false,
+      resizesContent: false,
+      resizingConstraint,
+      resizingType: 0,
+      rotation: -computedStyle.rotateZ,
+      shouldBreakMaskChain: computedStyle.breakMask,
+      verticalRulerData: {
+        base: 0,
+        guides: [],
+        _class: 'rulerData',
+      },
+      _class: 'artboard',
     };
   }
 }

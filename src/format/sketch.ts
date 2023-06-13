@@ -18,7 +18,7 @@ import {
 } from './';
 
 // prettier-ignore
-enum ResizingConstraint {
+export enum ResizingConstraint {
   UNSET =  0b111111,
   RIGHT =  0b000001, // 1
   WIDTH =  0b000010, // 2
@@ -133,6 +133,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
     props: {
       uuid: page.do_objectID,
       name: page.name,
+      constrainProportions: page.frame.constrainProportions,
       rule: {
         baseX: page.horizontalRulerData.base,
         baseY: page.verticalRulerData.base,
