@@ -701,8 +701,16 @@ class Node extends Event {
     const parent = this.parent;
     if (parent) {
       const computedStyle = this.computedStyle;
-      // 只能调左/右，不能同时左右
-      if (style.hasOwnProperty('left')) {
+      /**
+       * 拖拽拉伸只会有left或者right之一，同时有是修改x输入框时left+right同时平移等量距离
+       * 文本是个特殊，自动尺寸时left和right只有一方且width是auto
+       * 因此修改left时如果同时修改right可以不校验（x输入框触发，后续会改成translate），
+       * 而如果right是auto则说明是自适应/固定尺寸的文本，也要忽略
+       * 如果要更精细地区分，需要看left/right/width的值和修改值，暂时省略
+       */
+      if (style.hasOwnProperty('left') &&
+        !style.hasOwnProperty('right') &&
+        this.style.right.u !== StyleUnit.AUTO) {
         const left = calSize(style.left, parent.width);
         const w = parent.width - computedStyle.right - left;
         if (w < this.minWidth) {
@@ -720,7 +728,9 @@ class Node extends Event {
             }
           }
         }
-      } else if (style.hasOwnProperty('right')) {
+      } else if (style.hasOwnProperty('right') &&
+        !style.hasOwnProperty('left') &&
+        this.style.left.u !== StyleUnit.AUTO) {
         const right = calSize(style.right, parent.width);
         const w = parent.width - computedStyle.left - right;
         if (w < this.minWidth) {
@@ -740,7 +750,9 @@ class Node extends Event {
         }
       }
       // 上下也一样
-      if (style.hasOwnProperty('top')) {
+      if (style.hasOwnProperty('top') &&
+        !style.hasOwnProperty('bottom') &&
+        this.style.bottom.u !== StyleUnit.AUTO) {
         const top = calSize(style.top, parent.height);
         const h = parent.height - computedStyle.bottom - top;
         if (h < this.minHeight) {
@@ -758,7 +770,9 @@ class Node extends Event {
             }
           }
         }
-      } else if (style.hasOwnProperty('bottom')) {
+      } else if (style.hasOwnProperty('bottom') &&
+        !style.hasOwnProperty('top') &&
+        this.style.top.u !== StyleUnit.AUTO) {
         const bottom = calSize(style.bottom, parent.height);
         const h = parent.height - computedStyle.top - bottom;
         if (h < this.minHeight) {

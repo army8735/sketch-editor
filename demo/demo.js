@@ -1,3 +1,5 @@
+const { StyleUnit } = editor.style.define;
+
 const $input = document.querySelector('#file');
 const $page = document.querySelector('#page');
 const $tree = document.querySelector('#tree');
@@ -22,6 +24,7 @@ const $style = $text.querySelector('#style');
 const $style2 = $text.querySelector('#style2');
 const $color = $text.querySelector('#color');
 const $color2 = $text.querySelector('#color2');
+let frameProps;
 
 matchMedia(
   `(resolution: ${window.devicePixelRatio}dppx)`
@@ -629,7 +632,7 @@ function onMove(e, isOnControl) {
       else if (controlType === 'br') {}
       else if (controlType === 'bl') {}
       else if (controlType === 't') {
-        if (style.width.u === editor.style.define.StyleUnit.AUTO) {
+        if (style.width.u === StyleUnit.AUTO) {
           const top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
           selectNode.updateStyle({
             top,
@@ -645,7 +648,7 @@ function onMove(e, isOnControl) {
         }
       }
       else if (controlType === 'r') {
-        if (style.width.u === editor.style.define.StyleUnit.AUTO) {
+        if (style.width.u === StyleUnit.AUTO) {
           const right = (computedStyle.right - dx2) * 100 / selectNode.parent.width + '%';
           selectNode.updateStyle({
             right,
@@ -659,7 +662,7 @@ function onMove(e, isOnControl) {
         }
       }
       else if (controlType === 'b') {
-        if (style.height.u === editor.style.define.StyleUnit.AUTO) {
+        if (style.height.u === StyleUnit.AUTO) {
           const bottom = (computedStyle.bottom - dy2) * 100 / selectNode.parent.height + '%';
           selectNode.updateStyle({
             bottom,
@@ -673,7 +676,7 @@ function onMove(e, isOnControl) {
         }
       }
       else if (controlType === 'l') {
-        if (style.width.u === editor.style.define.StyleUnit.AUTO) {
+        if (style.width.u === StyleUnit.AUTO) {
           const left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
           selectNode.updateStyle({
             left,
@@ -974,9 +977,11 @@ document.addEventListener('keydown', function(e) {
     // onMove(lastX, lastY);
   }
   if (e.keyCode === 8) {
-    selectNode && selectNode.remove();
-    updateHover();
-    hideSelect();
+    if (e.target && e.target.tagName !== 'INPUT') {
+      selectNode && selectNode.remove();
+      updateHover();
+      hideSelect();
+    }
   }
   else if (e.keyCode === 32) {
     spaceKey = true;
@@ -1155,15 +1160,15 @@ $main.addEventListener('wheel', function(e) {
 
 function showBasic() {
   $basic.classList.add('show');
-  const info = selectNode.getFrameProps();
+  frameProps = selectNode.getFrameProps();
   $basic.querySelectorAll('.num').forEach(item => {
     item.disabled = false;
   });
-  $x.value = editor.math.geom.toPrecision(info.x, 2);
-  $y.value = editor.math.geom.toPrecision(info.y, 2);
-  $rotate.value = editor.math.geom.toPrecision(info.rotation, 2);
-  $w.value = editor.math.geom.toPrecision(info.w, 2);
-  $h.value = editor.math.geom.toPrecision(info.h, 2);
+  $x.value = editor.math.geom.toPrecision(frameProps.x, 2);
+  $y.value = editor.math.geom.toPrecision(frameProps.y, 2);
+  $rotate.value = editor.math.geom.toPrecision(frameProps.rotation, 2);
+  $w.value = editor.math.geom.toPrecision(frameProps.w, 2);
+  $h.value = editor.math.geom.toPrecision(frameProps.h, 2);
 }
 
 function hideBasic() {
@@ -1177,6 +1182,26 @@ function hideBasic() {
   $w.value = '';
   $h.value = '';
 }
+
+$x.addEventListener('change', function() {
+  const nv = parseFloat($x.value);
+  const delta = nv - frameProps.x;
+  selectNode.updateStyle({
+    translateX: selectNode.computedStyle.translateX + delta,
+  });
+  selectNode.checkPosChange();
+  frameProps.x += delta;
+});
+
+$y.addEventListener('change', function() {
+  const nv = parseFloat($y.value);
+  const delta = nv - frameProps.y;
+  selectNode.updateStyle({
+    translateY: selectNode.computedStyle.translateY + delta,
+  });
+  selectNode.checkPosChange();
+  frameProps.y += delta;
+});
 
 function setFontPanel(node) {
   const { info, data } = editor.style.font;

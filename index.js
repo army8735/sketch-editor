@@ -19679,7 +19679,7 @@
         const stop = getColorStop(stops, total, false);
         let matrix;
         // 以目标轴为基准视作圆，缩放另一轴和旋转
-        if (ellipseLength !== 1) {
+        if (ellipseLength && ellipseLength !== 1) {
             matrix = identity();
             if (y2 !== y1) {
                 // 90 / 720
@@ -22889,8 +22889,16 @@
             const parent = this.parent;
             if (parent) {
                 const computedStyle = this.computedStyle;
-                // 只能调左/右，不能同时左右
-                if (style.hasOwnProperty('left')) {
+                /**
+                 * 拖拽拉伸只会有left或者right之一，同时有是修改x输入框时left+right同时平移等量距离
+                 * 文本是个特殊，自动尺寸时left和right只有一方且width是auto
+                 * 因此修改left时如果同时修改right可以不校验（x输入框触发，后续会改成translate），
+                 * 而如果right是auto则说明是自适应/固定尺寸的文本，也要忽略
+                 * 如果要更精细地区分，需要看left/right/width的值和修改值，暂时省略
+                 */
+                if (style.hasOwnProperty('left') &&
+                    !style.hasOwnProperty('right') &&
+                    this.style.right.u !== StyleUnit.AUTO) {
                     const left = calSize(style.left, parent.width);
                     const w = parent.width - computedStyle.right - left;
                     if (w < this.minWidth) {
@@ -22909,7 +22917,9 @@
                         }
                     }
                 }
-                else if (style.hasOwnProperty('right')) {
+                else if (style.hasOwnProperty('right') &&
+                    !style.hasOwnProperty('left') &&
+                    this.style.left.u !== StyleUnit.AUTO) {
                     const right = calSize(style.right, parent.width);
                     const w = parent.width - computedStyle.left - right;
                     if (w < this.minWidth) {
@@ -22929,7 +22939,9 @@
                     }
                 }
                 // 上下也一样
-                if (style.hasOwnProperty('top')) {
+                if (style.hasOwnProperty('top') &&
+                    !style.hasOwnProperty('bottom') &&
+                    this.style.bottom.u !== StyleUnit.AUTO) {
                     const top = calSize(style.top, parent.height);
                     const h = parent.height - computedStyle.bottom - top;
                     if (h < this.minHeight) {
@@ -22948,7 +22960,9 @@
                         }
                     }
                 }
-                else if (style.hasOwnProperty('bottom')) {
+                else if (style.hasOwnProperty('bottom') &&
+                    !style.hasOwnProperty('top') &&
+                    this.style.top.u !== StyleUnit.AUTO) {
                     const bottom = calSize(style.bottom, parent.height);
                     const h = parent.height - computedStyle.top - bottom;
                     if (h < this.minHeight) {
@@ -25578,6 +25592,7 @@
             else {
                 ctx.setLineDash(strokeDasharray);
             }
+            let isFirst = true;
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {
@@ -25636,7 +25651,8 @@
                     }
                 }
                 // 多个fill只需一次画轮廓，后续直接fill即可
-                if (!i) {
+                if (isFirst) {
+                    isFirst = false;
                     ctx.beginPath();
                     canvasPolygon(ctx, points, scale, dx, dy);
                     if (this.props.isClosed) {

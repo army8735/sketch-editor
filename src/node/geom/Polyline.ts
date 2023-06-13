@@ -340,6 +340,7 @@ class Polyline extends Geom {
     } else {
       ctx.setLineDash(strokeDasharray);
     }
+    let isFirst = true;
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
@@ -422,7 +423,8 @@ class Polyline extends Geom {
         }
       }
       // 多个fill只需一次画轮廓，后续直接fill即可
-      if (!i) {
+      if (isFirst) {
+        isFirst = false;
         ctx.beginPath();
         canvasPolygon(ctx, points, scale, dx, dy);
         if (this.props.isClosed) {

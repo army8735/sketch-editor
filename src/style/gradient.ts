@@ -334,7 +334,7 @@ export function getRadial(
   const stop = getColorStop(stops, total, false);
   let matrix: Float64Array | undefined;
   // 以目标轴为基准视作圆，缩放另一轴和旋转
-  if (ellipseLength !== 1) {
+  if (ellipseLength && ellipseLength !== 1) {
     matrix = identity();
     if (y2 !== y1) {
       // 90 / 720
