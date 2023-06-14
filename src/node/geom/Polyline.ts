@@ -1,11 +1,9 @@
 import { PageProps, Point, PolylineProps } from '../../format';
-import bezier from '../../math/bezier';
 import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
-import { RefreshLevel } from '../../refresh/level';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
@@ -214,7 +212,10 @@ class Polyline extends Geom {
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
     const first = temp[0];
-    const p: Array<number> = [toPrecision(first.absX!), toPrecision(first.absY!)];
+    const p: Array<number> = [
+      toPrecision(first.absX!),
+      toPrecision(first.absY!),
+    ];
     const res: Array<Array<number>> = [p],
       len = temp.length;
     for (let i = 1; i < len; i++) {
@@ -253,35 +254,38 @@ class Polyline extends Geom {
   deletePoint(point: Point | number) {
     const props = this.props;
     const points = props.points;
+    const rect = (this._rect || this.rect).slice(0);
     if (typeof point === 'number') {
       points.splice(point, 1);
       this.points = undefined;
+      this.checkPointsChange(rect);
       this.refresh();
-      this.checkPointsChange();
       return;
     }
     const i = points.indexOf(point);
     if (i > -1) {
       points.splice(i, 1);
       this.points = undefined;
+      this.checkPointsChange(rect);
       this.refresh();
-      this.checkPointsChange();
     }
   }
 
   addPoint(point: Point, index: number) {
     const props = this.props;
+    const rect = (this._rect || this.rect).slice(0);
     const points = props.points;
     points.splice(index, 0, point);
     this.points = undefined;
+    this.checkPointsChange(rect);
     this.refresh();
-    this.checkPointsChange();
   }
 
   modifyPoint() {
+    const rect = (this._rect || this.rect).slice(0);
     this.points = undefined;
+    this.checkPointsChange(rect);
     this.refresh();
-    this.checkPointsChange();
   }
 
   override renderCanvas(scale: number) {
@@ -629,74 +633,14 @@ class Polyline extends Geom {
         point.ty = p.y / height;
       }
     });
-    this.root?.addUpdate(
-      this,
-      [],
-      RefreshLevel.REPAINT,
-      false,
-      false,
-      undefined,
-    );
+    this.refresh();
     return points;
   }
 
-  // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
-  checkPointsChange() {
-    const old = this._rect || this.rect;
-    this.buildPoints();
-    const points = this.points!;
-    const first = points[0];
-    let xa: number, ya: number;
-    if (first.length === 4) {
-      xa = first[2];
-      ya = first[3];
-    } else if (first.length === 6) {
-      xa = first[4];
-      ya = first[5];
-    } else {
-      xa = first[0];
-      ya = first[1];
-    }
-    const rect = new Float64Array([xa, ya, xa, ya]);
-    for (let i = 1, len = points.length; i < len; i++) {
-      const item = points[i];
-      let xb: number, yb: number;
-      if (item.length === 4) {
-        xb = item[2];
-        yb = item[3];
-        const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-        rect[0] = Math.min(rect[0], b[0]);
-        rect[1] = Math.min(rect[1], b[1]);
-        rect[2] = Math.max(rect[2], b[2]);
-        rect[3] = Math.max(rect[3], b[3]);
-      } else if (item.length === 6) {
-        xb = item[4];
-        yb = item[5];
-        const b = bezier.bboxBezier(
-          xa,
-          ya,
-          item[0],
-          item[1],
-          item[2],
-          item[3],
-          xb,
-          yb,
-        );
-        rect[0] = Math.min(rect[0], b[0]);
-        rect[1] = Math.min(rect[1], b[1]);
-        rect[2] = Math.max(rect[2], b[2]);
-        rect[3] = Math.max(rect[3], b[3]);
-      } else {
-        xb = item[0];
-        yb = item[1];
-        rect[0] = Math.min(rect[0], xb);
-        rect[1] = Math.min(rect[1], yb);
-        rect[2] = Math.max(rect[2], xb);
-        rect[3] = Math.max(rect[3], yb);
-      }
-      xa = xb!;
-      ya = yb!;
-    }
+  // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
+  checkPointsChange(old: Float64Array) {
+    this._rect = undefined;
+    const rect = this.rect;
     const dx = rect[0],
       dy = rect[1],
       dw = rect[2] - old[2],

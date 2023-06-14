@@ -576,10 +576,9 @@ class Text extends Node {
 
   // 根据绝对坐标获取光标位置，同时设置开始光标位置
   setCursorStartByAbsCoord(x: number, y: number) {
-    const dpi = this.root!.dpi;
     const m = this.matrixWorld;
     const im = inverse4(m);
-    const local = calPoint({ x: x * dpi, y: y * dpi }, im);
+    const local = calPoint({ x: x, y: y }, im);
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
     cursor.isMulti = false;
@@ -614,10 +613,9 @@ class Text extends Node {
 
   // 设置结束光标位置
   setCursorEndByAbsCoord(x: number, y: number) {
-    const dpi = this.root!.dpi;
     const m = this.matrixWorld;
     const im = inverse4(m);
-    const local = calPoint({ x: x * dpi, y: y * dpi }, im);
+    const local = calPoint({ x: x, y: y }, im);
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
     const { endLineBox: i, endTextBox: j, endString: k } = cursor;
@@ -677,15 +675,17 @@ class Text extends Node {
   }
 
   hideSelectArea() {
-    this.showSelectArea = false;
-    this.root?.addUpdate(
-      this,
-      [],
-      RefreshLevel.REPAINT,
-      false,
-      false,
-      undefined,
-    );
+    if (this.showSelectArea) {
+      this.showSelectArea = false;
+      this.root?.addUpdate(
+        this,
+        [],
+        RefreshLevel.REPAINT,
+        false,
+        false,
+        undefined,
+      );
+    }
   }
 
   /**
@@ -1498,18 +1498,21 @@ class Text extends Node {
   }
 
   private insertRich(style: Partial<Rich>, start: number, length: number) {
-    const st = Object.assign({
-      location: start,
-      length,
-      fontFamily: 'arial',
-      fontSize: 16,
-      fontWeight: 400,
-      fontStyle: 'normal',
-      letterSpacing: 0,
-      lineHeight: 0,
-      paragraphSpacing: 0,
-      color: [0, 0, 0, 1],
-    },  style);
+    const st = Object.assign(
+      {
+        location: start,
+        length,
+        fontFamily: 'arial',
+        fontSize: 16,
+        fontWeight: 400,
+        fontStyle: 'normal',
+        letterSpacing: 0,
+        lineHeight: 0,
+        paragraphSpacing: 0,
+        color: [0, 0, 0, 1],
+      },
+      style,
+    );
     st.color = color2rgbaInt(st.color);
     // 防止被style中脏数据覆盖
     st.location = start;

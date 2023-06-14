@@ -92,8 +92,17 @@ class ShapeGroup extends Group {
 
   override clearPoints() {
     this.points = undefined;
+    this._rect = undefined;
     this._bbox = undefined;
     this.clearCache(true);
+  }
+
+  override checkShapeChange() {
+    let parent = this.parent;
+    while (parent && parent.isShapeGroup) {
+      parent.clearPoints();
+      parent = parent.parent;
+    }
   }
 
   override calContent(): boolean {

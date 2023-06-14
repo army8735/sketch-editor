@@ -22989,25 +22989,6 @@
             const formatStyle = normalize(style);
             return this.updateFormatStyleData(formatStyle);
         }
-        // updateStyleCheck(keys: Array<string>) {
-        //   if (!keys.length) {
-        //     return true;
-        //   }
-        //   // 自己不可见且没改变visible无需刷新
-        //   const visible = this.computedStyle.visible;
-        //   if (!visible && keys.indexOf('visible') < 0) {
-        //     return true;
-        //   }
-        //   // 父级不可见无需刷新
-        //   let parent = this.parent;
-        //   while (parent) {
-        //     if (!parent.computedStyle.visible) {
-        //       return true;
-        //     }
-        //     parent = parent.parent;
-        //   }
-        //   return false;
-        // }
         updateStyle(style, cb) {
             const formatStyle = normalize(style);
             return this.updateFormatStyle(formatStyle, cb);
@@ -23369,8 +23350,11 @@
             // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
             this.checkPosSizeUpward();
         }
-        checkChangeAsShape() {
-            // 空实现，Geom覆盖
+        checkShapeChange() {
+            // 空实现，Geom/ShapeGroup覆盖
+        }
+        clearPoints() {
+            // 空实现，ShapeGroup覆盖
         }
         // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
         adjustPosAndSizeSelf(dx, dy, dw, dh) {
@@ -23474,9 +23458,6 @@
         // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
         adjustPosAndSize() {
             return false;
-        }
-        clearPoints() {
-            // 空实现，ShapeGroup覆盖
         }
         /**
          * 自身不再计算，叶子节点调整过程中就是在reflow，自己本身数据已经及时更新。
@@ -25237,7 +25218,7 @@
             const points = this.points || [];
             return (points.length === 2 && points[0].length === 2 && points[1].length === 2);
         }
-        checkChangeAsShape() {
+        checkShapeChange() {
             let parent = this.parent;
             while (parent && parent.isShapeGroup) {
                 parent.clearPoints();
@@ -25511,7 +25492,10 @@
             }
             // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
             const first = temp[0];
-            const p = [toPrecision(first.absX), toPrecision(first.absY)];
+            const p = [
+                toPrecision(first.absX),
+                toPrecision(first.absY),
+            ];
             const res = [p], len = temp.length;
             for (let i = 1; i < len; i++) {
                 const item = temp[i];
@@ -25548,33 +25532,36 @@
         deletePoint(point) {
             const props = this.props;
             const points = props.points;
+            const rect = (this._rect || this.rect).slice(0);
             if (typeof point === 'number') {
                 points.splice(point, 1);
                 this.points = undefined;
+                this.checkPointsChange(rect);
                 this.refresh();
-                this.checkPointsChange();
                 return;
             }
             const i = points.indexOf(point);
             if (i > -1) {
                 points.splice(i, 1);
                 this.points = undefined;
+                this.checkPointsChange(rect);
                 this.refresh();
-                this.checkPointsChange();
             }
         }
         addPoint(point, index) {
             const props = this.props;
+            const rect = (this._rect || this.rect).slice(0);
             const points = props.points;
             points.splice(index, 0, point);
             this.points = undefined;
+            this.checkPointsChange(rect);
             this.refresh();
-            this.checkPointsChange();
         }
         modifyPoint() {
+            const rect = (this._rect || this.rect).slice(0);
             this.points = undefined;
+            this.checkPointsChange(rect);
             this.refresh();
-            this.checkPointsChange();
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);
@@ -25814,7 +25801,7 @@
         }
         // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
         updatePointsBaseOnAP(points, matrix) {
-            var _a, _b, _c;
+            var _a, _b;
             if (!points.length) {
                 return points;
             }
@@ -25851,61 +25838,13 @@
                     point.ty = p.y / height;
                 }
             });
-            (_c = this.root) === null || _c === void 0 ? void 0 : _c.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            this.refresh();
             return points;
         }
-        // updatePointBaseOnAP()改变点坐标后，归一化处理和影响位置尺寸
-        checkPointsChange() {
-            const old = this._rect || this.rect;
-            this.buildPoints();
-            const points = this.points;
-            const first = points[0];
-            let xa, ya;
-            if (first.length === 4) {
-                xa = first[2];
-                ya = first[3];
-            }
-            else if (first.length === 6) {
-                xa = first[4];
-                ya = first[5];
-            }
-            else {
-                xa = first[0];
-                ya = first[1];
-            }
-            const rect = new Float64Array([xa, ya, xa, ya]);
-            for (let i = 1, len = points.length; i < len; i++) {
-                const item = points[i];
-                let xb, yb;
-                if (item.length === 4) {
-                    xb = item[2];
-                    yb = item[3];
-                    const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-                    rect[0] = Math.min(rect[0], b[0]);
-                    rect[1] = Math.min(rect[1], b[1]);
-                    rect[2] = Math.max(rect[2], b[2]);
-                    rect[3] = Math.max(rect[3], b[3]);
-                }
-                else if (item.length === 6) {
-                    xb = item[4];
-                    yb = item[5];
-                    const b = bezier.bboxBezier(xa, ya, item[0], item[1], item[2], item[3], xb, yb);
-                    rect[0] = Math.min(rect[0], b[0]);
-                    rect[1] = Math.min(rect[1], b[1]);
-                    rect[2] = Math.max(rect[2], b[2]);
-                    rect[3] = Math.max(rect[3], b[3]);
-                }
-                else {
-                    xb = item[0];
-                    yb = item[1];
-                    rect[0] = Math.min(rect[0], xb);
-                    rect[1] = Math.min(rect[1], yb);
-                    rect[2] = Math.max(rect[2], xb);
-                    rect[3] = Math.max(rect[3], yb);
-                }
-                xa = xb;
-                ya = yb;
-            }
+        // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
+        checkPointsChange(old) {
+            this._rect = undefined;
+            const rect = this.rect;
             const dx = rect[0], dy = rect[1], dw = rect[2] - old[2], dh = rect[3] - old[3];
             // 检查真正有变化，位置相对于自己原本位置为原点
             if (dx || dy || dw || dh) {
@@ -26139,7 +26078,7 @@
     }
 
     const EPS$1 = 1e-4;
-    const EPS2$1 = 1 - (1e-4);
+    const EPS2$1 = 1 - 1e-4;
     function isParallel(k1, k2) {
         if (k1 === Infinity && k2 === Infinity) {
             return true;
@@ -26161,21 +26100,27 @@
         const toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
         const toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d;
         // 非顶点相交才是真相交，先判断在范围内防止超过[0, 1]，再考虑精度
-        if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1 && (toSource > EPS$1 && toSource < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1)) {
+        if (toSource >= 0 &&
+            toSource <= 1 &&
+            toClip >= 0 &&
+            toClip <= 1 &&
+            ((toSource > EPS$1 && toSource < EPS2$1) || (toClip > EPS$1 && toClip < EPS2$1))) {
             let ox = toPrecision(ax1 + toSource * (ax2 - ax1));
             let oy = toPrecision(ay1 + toSource * (ay2 - ay1));
-            return [{
+            return [
+                {
                     point: new Point(ox, oy),
                     toSource,
                     toClip,
-                }];
+                },
+            ];
         }
     }
     function getIntersectionBezier2Line$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
         const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
         if (res.length) {
             const t = [];
-            res.forEach(item => {
+            res.forEach((item) => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 let toClip;
@@ -26186,14 +26131,17 @@
                 else {
                     toClip = Math.abs((item.y - by1) / (by2 - by1));
                 }
-                if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
+                if ((item.t > EPS$1 && item.t < EPS2$1) || (toClip > EPS$1 && toClip < EPS2$1)) {
                     // 还要判断斜率，相等也忽略（小于一定误差）
                     let k1 = bezier.bezierSlope([
                         { x: ax1, y: ay1 },
                         { x: ax2, y: ay2 },
                         { x: ax3, y: ay3 },
                     ], item.t);
-                    let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
+                    let k2 = bezier.bezierSlope([
+                        { x: bx1, y: by1 },
+                        { x: bx2, y: by2 },
+                    ]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
                     if (isParallel(k1, k2)) {
                         return;
@@ -26214,7 +26162,7 @@
         const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
         if (res.length) {
             const t = [];
-            res.forEach(item => {
+            res.forEach((item) => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -26226,7 +26174,7 @@
                 // 防止误差无值
                 if (toClip.length) {
                     const tc = toClip[0];
-                    if (item.t > EPS$1 && item.t < EPS2$1 || tc > EPS$1 && tc < EPS2$1) {
+                    if ((item.t > EPS$1 && item.t < EPS2$1) || (tc > EPS$1 && tc < EPS2$1)) {
                         // 还要判断斜率，相等也忽略（小于一定误差）
                         let k1 = bezier.bezierSlope([
                             { x: ax1, y: ay1 },
@@ -26259,7 +26207,7 @@
         const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
             const t = [];
-            res.forEach(item => {
+            res.forEach((item) => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -26272,7 +26220,7 @@
                 // 防止误差无值
                 if (toClip.length) {
                     const tc = toClip[0];
-                    if (item.t > EPS$1 && item.t < EPS2$1 || tc > EPS$1 && tc < EPS2$1) {
+                    if ((item.t > EPS$1 && item.t < EPS2$1) || (tc > EPS$1 && tc < EPS2$1)) {
                         // 还要判断斜率，相等也忽略（小于一定误差）
                         let k1 = bezier.bezierSlope([
                             { x: ax1, y: ay1 },
@@ -26306,7 +26254,7 @@
         const res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
         if (res.length) {
             const t = [];
-            res.forEach(item => {
+            res.forEach((item) => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
@@ -26317,7 +26265,7 @@
                 else {
                     toClip = Math.abs((item.y - by1) / (by2 - by1));
                 }
-                if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
+                if ((item.t > EPS$1 && item.t < EPS2$1) || (toClip > EPS$1 && toClip < EPS2$1)) {
                     // 还要判断斜率，相等也忽略（小于一定误差）
                     let k1 = bezier.bezierSlope([
                         { x: ax1, y: ay1 },
@@ -26349,7 +26297,7 @@
         const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
             const t = [];
-            res.forEach(item => {
+            res.forEach((item) => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -26362,7 +26310,7 @@
                 // 防止误差无值
                 if (toClip.length) {
                     const tc = toClip[0];
-                    if (item.t > EPS$1 && item.t < EPS2$1 || tc > EPS$1 && tc < EPS2$1) {
+                    if ((item.t > EPS$1 && item.t < EPS2$1) || (tc > EPS$1 && tc < EPS2$1)) {
                         // 还要判断斜率，相等也忽略（小于一定误差）
                         let k1 = bezier.bezierSlope([
                             { x: ax1, y: ay1 },
@@ -26395,17 +26343,20 @@
     }
     // 两条线可能多个交点，将交点按原本线段的方向顺序排序
     function sortIntersection$1(res, isSource) {
-        return res.sort(function (a, b) {
+        return res
+            .sort(function (a, b) {
             if (isSource) {
                 return a.toSource - b.toSource;
             }
             return a.toClip - b.toClip;
-        }).map(item => {
+        })
+            .map((item) => {
             return {
                 point: item.point,
                 t: isSource ? item.toSource : item.toClip,
             };
-        }).filter(item => item.t > EPS$1 && item.t < EPS2$1);
+        })
+            .filter((item) => item.t > EPS$1 && item.t < EPS2$1);
     }
     var intersect$1 = {
         getIntersectionLineLine: getIntersectionLineLine$1,
@@ -28110,9 +28061,7 @@
         const [source, clip] = trivial(polygonA, polygonB);
         let list = filter(source.segments.concat(clip.segments), SUBTRACT);
         // 暂时这样解决反向的问题
-        if (!list.length) {
-            list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
-        }
+        if (!list.length) ;
         if (intermediate) {
             source.segments = list;
             return source;
@@ -28620,8 +28569,16 @@
         }
         clearPoints() {
             this.points = undefined;
+            this._rect = undefined;
             this._bbox = undefined;
             this.clearCache(true);
+        }
+        checkShapeChange() {
+            let parent = this.parent;
+            while (parent && parent.isShapeGroup) {
+                parent.clearPoints();
+                parent = parent.parent;
+            }
         }
         calContent() {
             this.buildPoints();
@@ -29636,10 +29593,9 @@
         }
         // 根据绝对坐标获取光标位置，同时设置开始光标位置
         setCursorStartByAbsCoord(x, y) {
-            const dpi = this.root.dpi;
             const m = this.matrixWorld;
             const im = inverse4(m);
-            const local = calPoint({ x: x * dpi, y: y * dpi }, im);
+            const local = calPoint({ x: x, y: y }, im);
             const lineBoxList = this.lineBoxList;
             const cursor = this.cursor;
             cursor.isMulti = false;
@@ -29674,10 +29630,9 @@
         // 设置结束光标位置
         setCursorEndByAbsCoord(x, y) {
             var _a, _b;
-            const dpi = this.root.dpi;
             const m = this.matrixWorld;
             const im = inverse4(m);
-            const local = calPoint({ x: x * dpi, y: y * dpi }, im);
+            const local = calPoint({ x: x, y: y }, im);
             const lineBoxList = this.lineBoxList;
             const cursor = this.cursor;
             const { endLineBox: i, endTextBox: j, endString: k } = cursor;
@@ -29718,8 +29673,10 @@
         }
         hideSelectArea() {
             var _a;
-            this.showSelectArea = false;
-            (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            if (this.showSelectArea) {
+                this.showSelectArea = false;
+                (_a = this.root) === null || _a === void 0 ? void 0 : _a.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            }
         }
         /**
          * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），

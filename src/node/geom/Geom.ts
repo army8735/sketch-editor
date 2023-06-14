@@ -50,7 +50,7 @@ class Geom extends Node {
     );
   }
 
-  override checkChangeAsShape() {
+  override checkShapeChange() {
     let parent = this.parent;
     while (parent && parent.isShapeGroup) {
       parent.clearPoints();

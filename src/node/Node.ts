@@ -801,26 +801,6 @@ class Node extends Event {
     return this.updateFormatStyleData(formatStyle);
   }
 
-  // updateStyleCheck(keys: Array<string>) {
-  //   if (!keys.length) {
-  //     return true;
-  //   }
-  //   // 自己不可见且没改变visible无需刷新
-  //   const visible = this.computedStyle.visible;
-  //   if (!visible && keys.indexOf('visible') < 0) {
-  //     return true;
-  //   }
-  //   // 父级不可见无需刷新
-  //   let parent = this.parent;
-  //   while (parent) {
-  //     if (!parent.computedStyle.visible) {
-  //       return true;
-  //     }
-  //     parent = parent.parent;
-  //   }
-  //   return false;
-  // }
-
   updateStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
     const formatStyle = normalize(style);
     return this.updateFormatStyle(formatStyle, cb);
@@ -1181,8 +1161,12 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
-  checkChangeAsShape() {
-    // 空实现，Geom覆盖
+  checkShapeChange() {
+    // 空实现，Geom/ShapeGroup覆盖
+  }
+
+  clearPoints() {
+    // 空实现，ShapeGroup覆盖
   }
 
   // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
@@ -1299,10 +1283,6 @@ class Node extends Event {
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
   adjustPosAndSize() {
     return false;
-  }
-
-  clearPoints() {
-    // 空实现，ShapeGroup覆盖
   }
 
   /**

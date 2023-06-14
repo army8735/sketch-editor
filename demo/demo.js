@@ -695,7 +695,7 @@ function onMove(e, isOnControl) {
           });
         }
       }
-      selectNode.checkChangeAsShape();
+      selectNode.checkShapeChange();
       updateSelect();
     }
     // 拖拽节点本身
@@ -704,7 +704,7 @@ function onMove(e, isOnControl) {
       if(selectNode) {
         // 处于编辑状态时，隐藏光标显示区域
         if(isEditText && selectNode instanceof editor.node.Text) {
-          selectNode.setCursorEndByAbsCoord(nx, ny);
+          selectNode.setCursorEndByAbsCoord(nx * dpi, ny * dpi);
           $inputContainer.style.display = 'none';
         }
         // 不变也要更新，并不知道节点的约束类型（size是否auto）
@@ -713,7 +713,7 @@ function onMove(e, isOnControl) {
             translateX: computedStyle.translateX + dx2,
             translateY: computedStyle.translateY + dy2,
           });
-          selectNode.checkChangeAsShape();
+          selectNode.checkShapeChange();
           updateSelect();
         }
       }
@@ -805,7 +805,7 @@ $overlap.addEventListener('mousedown', function(e) {
             const { offsetX, offsetY } = e;
             const x = $selection.offsetLeft + offsetX;
             const y = $selection.offsetTop + offsetY;
-            const p = selectNode.setCursorStartByAbsCoord(x, y);
+            const p = selectNode.setCursorStartByAbsCoord(x * dpi, y * dpi);
             showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
             setFontPanel(node);
             // 防止触发click事件失焦
@@ -833,7 +833,7 @@ $overlap.addEventListener('dblclick', function(e) {
   const x = $selection.offsetLeft + offsetX;
   const y = $selection.offsetTop + offsetY;
   if (selectNode && selectNode instanceof editor.node.Text) {
-    const p = selectNode.setCursorStartByAbsCoord(x, y);
+    const p = selectNode.setCursorStartByAbsCoord(x * dpi, y * dpi);
     showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
     setFontPanel(selectNode);
   }
@@ -1194,7 +1194,9 @@ $x.addEventListener('change', function() {
     translateX: selectNode.computedStyle.translateX + delta,
   });
   selectNode.checkPosChange();
+  selectNode.checkShapeChange();
   frameProps.x += delta;
+  updateSelect();
 });
 
 $y.addEventListener('change', function() {
@@ -1204,7 +1206,9 @@ $y.addEventListener('change', function() {
     translateY: selectNode.computedStyle.translateY + delta,
   });
   selectNode.checkPosChange();
+  selectNode.checkShapeChange();
   frameProps.y += delta;
+  updateSelect();
 });
 
 function setFontPanel(node) {
