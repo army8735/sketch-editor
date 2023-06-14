@@ -23180,7 +23180,7 @@
         }
         getBoundingClientRect(includeBbox = false, excludeRotate = false) {
             const bbox = includeBbox
-                ? this._filterBbox || this.filterBbox
+                ? this._bbox || this.bbox
                 : this._rect || this.rect;
             let t;
             // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
@@ -23716,8 +23716,8 @@
         get bbox() {
             let res = this._bbox;
             if (!res) {
-                const bbox = this._rect || this.rect;
-                res = this._bbox = bbox.slice(0);
+                const rect = this._rect || this.rect;
+                res = this._bbox = rect.slice(0);
             }
             return res;
         }
@@ -25262,26 +25262,13 @@
             });
             return s + '></path></svg>';
         }
-        get bbox() {
-            if (!this._bbox) {
-                const bbox = (this._bbox = super.bbox);
+        get rect() {
+            let res = this._rect;
+            if (!res) {
+                res = this._rect = new Float64Array(4);
                 // 可能不存在
                 this.buildPoints();
-                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-                // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
-                let border = 0;
-                strokeWidth.forEach((item, i) => {
-                    if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5 * 4);
-                        }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
-                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-                            border = Math.max(border, item * 4);
-                        }
-                    }
-                });
-                // 可能矢量编辑过程中超过原本尺寸范围
+                // 可能矢量编辑过程中超过或不足原本尺寸范围
                 const points = this.points;
                 if (points && points.length) {
                     const first = points[0];
@@ -25298,7 +25285,10 @@
                         xa = first[0];
                         ya = first[1];
                     }
-                    mergeBbox$1(bbox, xa - border, ya - border, xa + border, ya + border);
+                    res[0] = xa;
+                    res[1] = ya;
+                    res[2] = xa;
+                    res[3] = ya;
                     for (let i = 1, len = points.length; i < len; i++) {
                         const item = points[i];
                         let xb, yb;
@@ -25306,25 +25296,51 @@
                             xb = item[2];
                             yb = item[3];
                             const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-                            mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                            mergeBbox$1(res, b[0], b[1], b[2], b[3]);
                         }
                         else if (item.length === 6) {
                             xb = item[4];
                             yb = item[5];
                             const b = bezier.bboxBezier(xa, ya, item[0], item[1], item[2], item[3], xb, yb);
-                            mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                            mergeBbox$1(res, b[0], b[1], b[2], b[3]);
                         }
                         else {
                             xb = item[0];
                             yb = item[1];
-                            mergeBbox$1(bbox, xb - border, yb - border, xb + border, yb + border);
+                            mergeBbox$1(res, xb, yb, xb, yb);
                         }
                         xa = xb;
                         ya = yb;
                     }
                 }
             }
-            return this._bbox;
+            return res;
+        }
+        get bbox() {
+            let res = this._bbox;
+            if (!res) {
+                const rect = this._rect || this.rect;
+                res = this._bbox = rect.slice(0);
+                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+                // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+                let border = 0;
+                strokeWidth.forEach((item, i) => {
+                    if (strokeEnable[i]) {
+                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                            border = Math.max(border, item * 0.5 * 4);
+                        }
+                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                            border = Math.max(border, item * 4);
+                        }
+                    }
+                });
+                res[0] -= border;
+                res[1] -= border;
+                res[2] += border;
+                res[3] += border;
+            }
+            return res;
         }
     }
 
@@ -25731,8 +25747,6 @@
                 let os, ctx2;
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
-                    ctx.beginPath();
-                    canvasPolygon(ctx, points, scale, dx, dy);
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
                     os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
@@ -25748,15 +25762,10 @@
                 }
                 else {
                     ctx.lineWidth = strokeWidth[i] * scale;
-                    ctx.beginPath();
-                    canvasPolygon(ctx, points, scale, dx, dy);
                 }
                 if (this.props.isClosed) {
                     if (ctx2) {
                         ctx2.closePath();
-                    }
-                    else {
-                        ctx.closePath();
                     }
                 }
                 if (p === STROKE_POSITION.INSIDE) {
@@ -25767,12 +25776,6 @@
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
                     ctx2.stroke();
-                    ctx2.save();
-                    ctx2.clip();
-                    ctx2.globalCompositeOperation = 'destination-out';
-                    ctx2.strokeStyle = '#FFF';
-                    ctx2.stroke();
-                    ctx2.restore();
                     ctx.drawImage(os.canvas, 0, 0);
                     os.release();
                 }
@@ -26171,7 +26174,8 @@
     function getIntersectionBezier2Line$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
         const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
         if (res.length) {
-            const t = res.map(item => {
+            const t = [];
+            res.forEach(item => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 let toClip;
@@ -26192,16 +26196,15 @@
                     let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
                     if (isParallel(k1, k2)) {
-                        return null;
+                        return;
                     }
-                    return {
+                    t.push({
                         point: new Point(item.x, item.y),
                         toSource: item.t,
                         toClip,
-                    };
+                    });
                 }
-                return null;
-            }).filter(i => i);
+            });
             if (t.length) {
                 return t;
             }
@@ -26210,7 +26213,8 @@
     function getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
         const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
         if (res.length) {
-            const t = res.map(item => {
+            const t = [];
+            res.forEach(item => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -26236,17 +26240,16 @@
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
                         if (isParallel(k1, k2)) {
-                            return null;
+                            return;
                         }
-                        return {
+                        t.push({
                             point: new Point(item.x, item.y),
                             toSource: item.t,
                             toClip: tc,
-                        };
+                        });
                     }
                 }
-                return null;
-            }).filter(i => i);
+            });
             if (t.length) {
                 return t;
             }
@@ -26255,7 +26258,8 @@
     function getIntersectionBezier2Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
         const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
-            const t = res.map(item => {
+            const t = [];
+            res.forEach(item => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -26283,17 +26287,16 @@
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
                         if (isParallel(k1, k2)) {
-                            return null;
+                            return;
                         }
-                        return {
+                        t.push({
                             point: new Point(item.x, item.y),
                             toSource: item.t,
                             toClip: tc,
-                        };
+                        });
                     }
                 }
-                return null;
-            }).filter(i => i);
+            });
             if (t.length) {
                 return t;
             }
@@ -26302,7 +26305,8 @@
     function getIntersectionBezier3Line$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
         const res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
         if (res.length) {
-            const t = res.map(item => {
+            const t = [];
+            res.forEach(item => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
@@ -26327,16 +26331,15 @@
                     ]);
                     // 忽略方向，180°也是平行，Infinity相减为NaN
                     if (isParallel(k1, k2)) {
-                        return null;
+                        return;
                     }
-                    return {
+                    t.push({
                         point: new Point(item.x, item.y),
                         toSource: item.t,
                         toClip,
-                    };
+                    });
                 }
-                return null;
-            }).filter(i => i);
+            });
             if (t.length) {
                 return t;
             }
@@ -26345,7 +26348,8 @@
     function getIntersectionBezier3Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
         const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
         if (res.length) {
-            const t = res.map(item => {
+            const t = [];
+            res.forEach(item => {
                 item.x = toPrecision(item.x);
                 item.y = toPrecision(item.y);
                 // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -26374,17 +26378,16 @@
                         ], tc);
                         // 忽略方向，180°也是平行，Infinity相减为NaN
                         if (isParallel(k1, k2)) {
-                            return null;
+                            return;
                         }
-                        return {
+                        t.push({
                             point: new Point(item.x, item.y),
                             toSource: item.t,
                             toClip: tc,
-                        };
+                        });
                     }
                 }
-                return null;
-            }).filter(i => i);
+            });
             if (t.length) {
                 return t;
             }
@@ -28707,7 +28710,8 @@
             this.buildPoints();
             const points = this.points;
             const bbox = this._bbox || this.bbox;
-            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            const x = bbox[0], y = bbox[1];
+            let w = bbox[2] - x, h = bbox[3] - y;
             // 暂时这样防止超限，TODO 超大尺寸
             while (w * scale > config.MAX_TEXTURE_SIZE ||
                 h * scale > config.MAX_TEXTURE_SIZE) {
@@ -28721,10 +28725,12 @@
                 return;
             }
             const dx = -x * scale, dy = -y * scale;
-            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale, dx, dy));
+            w *= scale;
+            h *= scale;
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
-            const { fill, fillEnable, fillRule, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
+            const { fill, fillOpacity, fillRule, fillEnable, stroke, strokeEnable, strokeWidth, strokePosition, strokeDasharray, strokeLinecap, strokeLinejoin, strokeMiterlimit, } = this.computedStyle;
             if (scale !== 1) {
                 ctx.setLineDash(strokeDasharray.map((i) => i * scale));
             }
@@ -28732,12 +28738,15 @@
                 ctx.setLineDash(strokeDasharray);
             }
             ctx.setLineDash(strokeDasharray);
+            let isFirst = true;
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {
                     continue;
                 }
                 const f = fill[i];
+                // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+                let ellipse;
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -28759,7 +28768,24 @@
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
-                        ctx.fillStyle = rg;
+                        // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+                        const m = gd.matrix;
+                        if (m) {
+                            ellipse = inject.getOffscreenCanvas(w, h);
+                            const ctx2 = ellipse.ctx;
+                            ctx2.beginPath();
+                            points.forEach((item) => {
+                                canvasPolygon(ctx2, item, scale, dx, dy);
+                            });
+                            ctx2.closePath();
+                            ctx2.clip();
+                            ctx2.fillStyle = rg;
+                            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                            ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                        }
+                        else {
+                            ctx.fillStyle = rg;
+                        }
                     }
                     else if (f.t === GRADIENT.CONIC) {
                         const gd = getConic(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
@@ -28770,11 +28796,24 @@
                         ctx.fillStyle = cg;
                     }
                 }
-                points.forEach((item) => {
-                    canvasPolygon(ctx, item, scale, dx, dy);
+                // 多个fill只需一次画轮廓，后续直接fill即可
+                if (isFirst) {
+                    isFirst = false;
+                    ctx.beginPath();
+                    points.forEach((item) => {
+                        canvasPolygon(ctx, item, scale, dx, dy);
+                    });
                     ctx.closePath();
-                });
-                ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                }
+                // fill有opacity，设置记得还原
+                ctx.globalAlpha = fillOpacity[i];
+                if (ellipse) {
+                    ctx.drawImage(ellipse.canvas, 0, 0);
+                }
+                else {
+                    ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                }
+                ctx.globalAlpha = 1;
             }
             // 线帽设置
             if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
@@ -28837,10 +28876,6 @@
                 let os, ctx2;
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
-                    points.forEach((item) => {
-                        canvasPolygon(ctx, item, scale, dx, dy);
-                        ctx.closePath();
-                    });
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
                     os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
@@ -28851,23 +28886,16 @@
                     ctx2.miterLimit = ctx.miterLimit * scale;
                     ctx2.strokeStyle = ctx.strokeStyle;
                     ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                    ctx2.beginPath();
                     points.forEach((item) => {
                         canvasPolygon(ctx2, item, scale, dx, dy);
-                        ctx2.closePath();
                     });
                 }
                 else {
                     ctx.lineWidth = strokeWidth[i] * scale;
-                    points.forEach((item) => {
-                        canvasPolygon(ctx, item, scale, dx, dy);
-                        ctx.closePath();
-                    });
                 }
                 if (ctx2) {
                     ctx2.closePath();
-                }
-                else {
-                    ctx.closePath();
                 }
                 if (p === STROKE_POSITION.INSIDE) {
                     ctx.save();
@@ -28913,25 +28941,12 @@
             });
             return s + '</svg>';
         }
-        get bbox() {
-            if (!this._bbox) {
-                const bbox = (this._bbox = super.bbox);
+        get rect() {
+            let res = this._rect;
+            if (!res) {
+                res = this._rect = new Float64Array(4);
                 // 可能不存在
                 this.buildPoints();
-                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-                // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
-                let border = 0;
-                strokeWidth.forEach((item, i) => {
-                    if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5 * 4);
-                        }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
-                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-                            border = Math.max(border, item * 4);
-                        }
-                    }
-                });
                 // 子元素可能因为编辑模式临时超过范围
                 const points = this.points;
                 if (points && points.length) {
@@ -28949,7 +28964,10 @@
                         xa = first[0];
                         ya = first[1];
                     }
-                    mergeBbox$1(bbox, xa - border, ya - border, xa + border, ya + border);
+                    res[0] = xa;
+                    res[1] = ya;
+                    res[2] = xa;
+                    res[3] = ya;
                     for (let i = 0, len = points.length; i < len; i++) {
                         const item = points[i];
                         for (let j = 0, len = item.length; j < len; j++) {
@@ -28972,7 +28990,7 @@
                                     xa = item2[0];
                                     ya = item2[1];
                                 }
-                                mergeBbox$1(bbox, xa - border, ya - border, xa + border, ya + border);
+                                mergeBbox$1(res, xa, ya, xa, ya);
                                 continue;
                             }
                             let xb, yb;
@@ -28980,18 +28998,18 @@
                                 xb = item2[2];
                                 yb = item2[3];
                                 const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
-                                mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                                mergeBbox$1(res, b[0], b[1], b[2], b[3]);
                             }
                             else if (item2.length === 6) {
                                 xb = item2[4];
                                 yb = item2[5];
                                 const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], item2[2], item2[3], xb, yb);
-                                mergeBbox$1(bbox, b[0] - border, b[1] - border, b[2] + border, b[3] + border);
+                                mergeBbox$1(res, b[0], b[1], b[2], b[3]);
                             }
                             else {
                                 xb = item2[0];
                                 yb = item2[1];
-                                mergeBbox$1(bbox, xb - border, yb - border, xb + border, yb + border);
+                                mergeBbox$1(res, xb, yb, xb, yb);
                             }
                             xa = xb;
                             ya = yb;
@@ -28999,7 +29017,33 @@
                     }
                 }
             }
-            return this._bbox;
+            return res;
+        }
+        get bbox() {
+            let res = this._bbox;
+            if (!res) {
+                const rect = this._rect || this.rect;
+                res = this._bbox = rect.slice(0);
+                const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+                // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+                let border = 0;
+                strokeWidth.forEach((item, i) => {
+                    if (strokeEnable[i]) {
+                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
+                            border = Math.max(border, item * 0.5 * 4);
+                        }
+                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+                            border = Math.max(border, item * 4);
+                        }
+                    }
+                });
+                res[0] -= border;
+                res[1] -= border;
+                res[2] += border;
+                res[3] += border;
+            }
+            return res;
         }
         static groupAsShape(nodes, bo = BOOLEAN_OPERATION.NONE, props) {
             if (!nodes.length) {

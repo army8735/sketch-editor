@@ -49,7 +49,8 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
   const res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
     bx1, by1, bx2, by2);
   if (res.length) {
-    const t = res.map(item => {
+    const t: Array<{ point: Point, toSource: number, toClip: number}> = [];
+    res.forEach(item => {
       item.x = toPrecision(item.x);
       item.y = toPrecision(item.y);
       let toClip;
@@ -70,16 +71,15 @@ function getIntersectionBezier2Line(ax1: number, ay1: number, ax2: number, ay2: 
         let k2 = bezier.bezierSlope([{ x: bx1, y: by1 }, { x: bx2, y: by2 }]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
         if (isParallel(k1, k2)) {
-          return null;
+          return;
         }
-        return {
+        t.push({
           point: new Point(item.x, item.y),
           toSource: item.t, // source是曲线直接用t
           toClip,
-        };
+        });
       }
-      return null;
-    }).filter(i => i);
+    });
     if (t.length) {
       return t;
     }
@@ -91,7 +91,8 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
   const res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
     bx1, by1, bx2, by2, bx3, by3);
   if (res.length) {
-    const t = res.map(item => {
+    const t: Array<{ point: Point, toSource: number, toClip: number}> = [];
+    res.forEach(item => {
       item.x = toPrecision(item.x);
       item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -117,17 +118,16 @@ function getIntersectionBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
           if (isParallel(k1, k2)) {
-            return null;
+            return;
           }
-          return {
+          t.push({
             point: new Point(item.x, item.y),
             toSource: item.t, // source是曲线直接用t
             toClip: tc,
-          };
+          });
         }
       }
-      return null;
-    }).filter(i => i);
+    });
     if (t.length) {
       return t;
     }
@@ -140,7 +140,8 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
   const res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
     bx1, by1, bx2, by2, bx3, by3, bx4, by4);
   if (res.length) {
-    const t = res.map(item => {
+    const t: Array<{ point: Point, toSource: number, toClip: number}> = [];
+    res.forEach(item => {
       item.x = toPrecision(item.x);
       item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -168,17 +169,16 @@ function getIntersectionBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
           if (isParallel(k1, k2)) {
-            return null;
+            return;
           }
-          return {
+          t.push({
             point: new Point(item.x, item.y),
             toSource: item.t, // source是曲线直接用t
             toClip: tc,
-          };
+          });
         }
       }
-      return null;
-    }).filter(i => i);
+    });
     if (t.length) {
       return t;
     }
@@ -190,7 +190,8 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
   const res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
     bx1, by1, bx2, by2);
   if (res.length) {
-    const t = res.map(item => {
+    const t: Array<{ point: Point, toSource: number, toClip: number}> = [];
+    res.forEach(item => {
       item.x = toPrecision(item.x);
       item.y = toPrecision(item.y);
       // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
@@ -215,16 +216,15 @@ function getIntersectionBezier3Line(ax1: number, ay1: number, ax2: number, ay2: 
         ]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
         if (isParallel(k1, k2)) {
-          return null;
+          return;
         }
-        return {
+        t.push({
           point: new Point(item.x, item.y),
           toSource: item.t, // source是曲线直接用t
           toClip,
-        };
+        });
       }
-      return null;
-    }).filter(i => i);
+    });
     if (t.length) {
       return t;
     }
@@ -236,7 +236,8 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
   const res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
     bx1, by1, bx2, by2, bx3, by3, bx4, by4);
   if (res.length) {
-    const t = res.map(item => {
+    const t: Array<{ point: Point, toSource: number, toClip: number}> = [];
+    res.forEach(item => {
       item.x = toPrecision(item.x);
       item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
@@ -265,17 +266,16 @@ function getIntersectionBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay
           ], tc);
           // 忽略方向，180°也是平行，Infinity相减为NaN
           if (isParallel(k1, k2)) {
-            return null;
+            return;
           }
-          return {
+          t.push({
             point: new Point(item.x, item.y),
             toSource: item.t, // source是曲线直接用t
             toClip: tc,
-          };
+          });
         }
       }
-      return null;
-    }).filter(i => i);
+    });
     if (t.length) {
       return t;
     }

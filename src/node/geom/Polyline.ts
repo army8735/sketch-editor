@@ -510,8 +510,6 @@ class Polyline extends Geom {
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
-        ctx.beginPath();
-        canvasPolygon(ctx, points, scale, dx, dy);
       } else if (p === STROKE_POSITION.OUTSIDE) {
         os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
         ctx2 = os.ctx;
@@ -525,14 +523,10 @@ class Polyline extends Geom {
         canvasPolygon(ctx2, points, scale, dx, dy);
       } else {
         ctx.lineWidth = strokeWidth[i] * scale;
-        ctx.beginPath();
-        canvasPolygon(ctx, points, scale, dx, dy);
       }
       if (this.props.isClosed) {
         if (ctx2) {
           ctx2.closePath();
-        } else {
-          ctx.closePath();
         }
       }
       if (p === STROKE_POSITION.INSIDE) {
@@ -542,12 +536,6 @@ class Polyline extends Geom {
         ctx.restore();
       } else if (p === STROKE_POSITION.OUTSIDE) {
         ctx2!.stroke();
-        ctx2!.save();
-        ctx2!.clip();
-        ctx2!.globalCompositeOperation = 'destination-out';
-        ctx2!.strokeStyle = '#FFF';
-        ctx2!.stroke();
-        ctx2!.restore();
         ctx.drawImage(os!.canvas, 0, 0);
         os!.release();
       } else {

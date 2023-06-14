@@ -78,26 +78,13 @@ class Geom extends Node {
     return s + '></path></svg>';
   }
 
-  override get bbox(): Float64Array {
-    if (!this._bbox) {
-      const bbox = (this._bbox = super.bbox);
+  override get rect(): Float64Array {
+    let res = this._rect;
+    if (!res) {
+      res = this._rect = new Float64Array(4);
       // 可能不存在
       this.buildPoints();
-      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
-      let border = 0;
-      strokeWidth.forEach((item, i) => {
-        if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.CENTER) {
-            border = Math.max(border, item * 0.5 * 4);
-          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-            // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item * 4);
-          }
-        }
-      });
-      // 可能矢量编辑过程中超过原本尺寸范围
+      // 可能矢量编辑过程中超过或不足原本尺寸范围
       const points = this.points!;
       if (points && points.length) {
         const first = points[0];
@@ -112,7 +99,10 @@ class Geom extends Node {
           xa = first[0];
           ya = first[1];
         }
-        mergeBbox(bbox, xa - border, ya - border, xa + border, ya + border);
+        res[0] = xa;
+        res[1] = ya;
+        res[2] = xa;
+        res[3] = ya;
         for (let i = 1, len = points.length; i < len; i++) {
           const item = points[i];
           let xb: number, yb: number;
@@ -121,11 +111,11 @@ class Geom extends Node {
             yb = item[3];
             const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
             mergeBbox(
-              bbox,
-              b[0] - border,
-              b[1] - border,
-              b[2] + border,
-              b[3] + border,
+              res,
+              b[0],
+              b[1],
+              b[2],
+              b[3],
             );
           } else if (item.length === 6) {
             xb = item[4];
@@ -141,23 +131,50 @@ class Geom extends Node {
               yb,
             );
             mergeBbox(
-              bbox,
-              b[0] - border,
-              b[1] - border,
-              b[2] + border,
-              b[3] + border,
+              res,
+              b[0],
+              b[1],
+              b[2],
+              b[3],
             );
           } else {
             xb = item[0];
             yb = item[1];
-            mergeBbox(bbox, xb - border, yb - border, xb + border, yb + border);
+            mergeBbox(res, xb, yb, xb, yb);
           }
           xa = xb;
           ya = yb;
         }
       }
     }
-    return this._bbox;
+    return res;
+  }
+
+  override get bbox(): Float64Array {
+    let res = this._bbox;
+    if (!res) {
+      const rect = this._rect || this.rect;
+      res = this._bbox = rect.slice(0);
+      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+      let border = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5 * 4);
+          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          }
+        }
+      });
+      res[0] -= border;
+      res[1] -= border;
+      res[2] += border;
+      res[3] += border;
+    }
+    return res;
   }
 }
 

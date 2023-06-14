@@ -338,7 +338,9 @@ $input.onchange = function(e) {
 function genNodeTree(node, abHash) {
   let type = getNodeType(node);
   if (node instanceof editor.node.Geom || node instanceof editor.node.ShapeGroup) {
-    const { width, height } = node;
+    const rect = node.rect;
+    const width = rect[2] - rect[0];
+    const height = rect[3] - rect[1];
     let scale, x = 0, y = 0;
     if (width >= height) {
       scale = 14 / width;
@@ -348,6 +350,8 @@ function genNodeTree(node, abHash) {
       scale = 14 / height;
       x = (14 - width * scale) * 0.5;
     }
+    x -= rect[0] * scale;
+    y -= rect[1] * scale;
     type = `<b style="transform:translate(${x}px, ${y}px) scale(${scale})">` + node.toSvg(scale) + '</b>';
   }
   const li = document.createElement('li');

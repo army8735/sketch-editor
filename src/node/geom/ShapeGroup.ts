@@ -181,8 +181,8 @@ class ShapeGroup extends Group {
     const points = this.points!;
     const bbox = this._bbox || this.bbox;
     const x = bbox[0],
-      y = bbox[1],
-      w = bbox[2] - x,
+      y = bbox[1];
+    let w = bbox[2] - x,
       h = bbox[3] - y;
     // 暂时这样防止超限，TODO 超大尺寸
     while (
@@ -202,9 +202,11 @@ class ShapeGroup extends Group {
     }
     const dx = -x * scale,
       dy = -y * scale;
+    w *= scale;
+    h *= scale;
     const canvasCache = (this.canvasCache = CanvasCache.getInstance(
-      w * scale,
-      h * scale,
+      w,
+      h,
       dx,
       dy,
     ));
@@ -212,8 +214,9 @@ class ShapeGroup extends Group {
     const ctx = canvasCache.offscreen.ctx;
     const {
       fill,
-      fillEnable,
+      fillOpacity,
       fillRule,
+      fillEnable,
       stroke,
       strokeEnable,
       strokeWidth,
@@ -229,12 +232,15 @@ class ShapeGroup extends Group {
       ctx.setLineDash(strokeDasharray);
     }
     ctx.setLineDash(strokeDasharray);
+    let isFirst = true;
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
         continue;
       }
       const f = fill[i];
+      // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+      let ellipse: OffScreen | undefined;
       if (Array.isArray(f)) {
         if (!f[3]) {
           continue;
@@ -275,7 +281,23 @@ class ShapeGroup extends Group {
           gd.stop.forEach((item) => {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
-          ctx.fillStyle = rg;
+          // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+          const m = gd.matrix;
+          if (m) {
+            ellipse = inject.getOffscreenCanvas(w, h);
+            const ctx2 = ellipse.ctx;
+            ctx2.beginPath();
+            points.forEach((item) => {
+              canvasPolygon(ctx2, item, scale, dx, dy);
+            });
+            ctx2.closePath();
+            ctx2.clip();
+            ctx2.fillStyle = rg;
+            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+          } else {
+            ctx.fillStyle = rg;
+          }
         } else if (f.t === GRADIENT.CONIC) {
           const gd = getConic(
             f.stops,
@@ -292,11 +314,23 @@ class ShapeGroup extends Group {
           ctx.fillStyle = cg;
         }
       }
-      points.forEach((item) => {
-        canvasPolygon(ctx, item, scale, dx, dy);
+      // 多个fill只需一次画轮廓，后续直接fill即可
+      if (isFirst) {
+        isFirst = false;
+        ctx.beginPath();
+        points.forEach((item) => {
+          canvasPolygon(ctx, item, scale, dx, dy);
+        });
         ctx.closePath();
-      });
-      ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+      }
+      // fill有opacity，设置记得还原
+      ctx.globalAlpha = fillOpacity[i];
+      if (ellipse) {
+        ctx.drawImage(ellipse.canvas, 0, 0);
+      } else {
+        ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+      }
+      ctx.globalAlpha = 1;
     }
     // 线帽设置
     if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
@@ -366,10 +400,6 @@ class ShapeGroup extends Group {
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
-        points.forEach((item) => {
-          canvasPolygon(ctx, item, scale, dx, dy);
-          ctx.closePath();
-        });
       } else if (p === STROKE_POSITION.OUTSIDE) {
         os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
         ctx2 = os.ctx;
@@ -379,21 +409,15 @@ class ShapeGroup extends Group {
         ctx2.miterLimit = ctx.miterLimit * scale;
         ctx2.strokeStyle = ctx.strokeStyle;
         ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+        ctx2.beginPath();
         points.forEach((item) => {
           canvasPolygon(ctx2!, item, scale, dx, dy);
-          ctx2!.closePath();
         });
       } else {
         ctx.lineWidth = strokeWidth[i] * scale;
-        points.forEach((item) => {
-          canvasPolygon(ctx, item, scale, dx, dy);
-          ctx.closePath();
-        });
       }
       if (ctx2) {
         ctx2.closePath();
-      } else {
-        ctx.closePath();
       }
       if (p === STROKE_POSITION.INSIDE) {
         ctx.save();
@@ -440,25 +464,12 @@ class ShapeGroup extends Group {
     return s + '</svg>';
   }
 
-  override get bbox(): Float64Array {
-    if (!this._bbox) {
-      const bbox = (this._bbox = super.bbox);
+  override get rect(): Float64Array {
+    let res = this._rect;
+    if (!res) {
+      res = this._rect = new Float64Array(4);
       // 可能不存在
       this.buildPoints();
-      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
-      let border = 0;
-      strokeWidth.forEach((item, i) => {
-        if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.CENTER) {
-            border = Math.max(border, item * 0.5 * 4);
-          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-            // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item * 4);
-          }
-        }
-      });
       // 子元素可能因为编辑模式临时超过范围
       const points = this.points;
       if (points && points.length) {
@@ -474,7 +485,10 @@ class ShapeGroup extends Group {
           xa = first[0];
           ya = first[1];
         }
-        mergeBbox(bbox, xa - border, ya - border, xa + border, ya + border);
+        res[0] = xa;
+        res[1] = ya;
+        res[2] = xa;
+        res[3] = ya;
         for (let i = 0, len = points.length; i < len; i++) {
           const item = points[i];
           for (let j = 0, len = item.length; j < len; j++) {
@@ -496,11 +510,11 @@ class ShapeGroup extends Group {
                 ya = item2[1];
               }
               mergeBbox(
-                bbox,
-                xa - border,
-                ya - border,
-                xa + border,
-                ya + border,
+                res,
+                xa,
+                ya,
+                xa,
+                ya,
               );
               continue;
             }
@@ -510,11 +524,11 @@ class ShapeGroup extends Group {
               yb = item2[3];
               const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
               mergeBbox(
-                bbox,
-                b[0] - border,
-                b[1] - border,
-                b[2] + border,
-                b[3] + border,
+                res,
+                b[0],
+                b[1],
+                b[2],
+                b[3],
               );
             } else if (item2.length === 6) {
               xb = item2[4];
@@ -530,21 +544,21 @@ class ShapeGroup extends Group {
                 yb,
               );
               mergeBbox(
-                bbox,
-                b[0] - border,
-                b[1] - border,
-                b[2] + border,
-                b[3] + border,
+                res,
+                b[0],
+                b[1],
+                b[2],
+                b[3],
               );
             } else {
               xb = item2[0];
               yb = item2[1];
               mergeBbox(
-                bbox,
-                xb - border,
-                yb - border,
-                xb + border,
-                yb + border,
+                res,
+                xb,
+                yb,
+                xb,
+                yb,
               );
             }
             xa = xb;
@@ -553,7 +567,34 @@ class ShapeGroup extends Group {
         }
       }
     }
-    return this._bbox;
+    return res;
+  }
+
+  override get bbox(): Float64Array {
+    let res = this._bbox;
+    if (!res) {
+      const rect = this._rect || this.rect;
+      res = this._bbox = rect.slice(0);
+      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+      let border = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5 * 4);
+          } else if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          }
+        }
+      });
+      res[0] -= border;
+      res[1] -= border;
+      res[2] += border;
+      res[3] += border;
+    }
+    return res;
   }
 
   static groupAsShape(

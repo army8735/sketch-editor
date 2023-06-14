@@ -999,7 +999,7 @@ class Node extends Event {
 
   getBoundingClientRect(includeBbox: boolean = false, excludeRotate = false) {
     const bbox = includeBbox
-      ? this._filterBbox || this.filterBbox
+      ? this._bbox || this.bbox
       : this._rect || this.rect;
     let t;
     // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
@@ -1552,8 +1552,8 @@ class Node extends Event {
   get bbox(): Float64Array {
     let res = this._bbox;
     if (!res) {
-      const bbox = this._rect || this.rect;
-      res = this._bbox = bbox.slice(0);
+      const rect = this._rect || this.rect;
+      res = this._bbox = rect.slice(0);
     }
     return res;
   }
