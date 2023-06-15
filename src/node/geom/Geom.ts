@@ -27,6 +27,8 @@ class Geom extends Node {
   override calRepaintStyle(lv: RefreshLevel) {
     super.calRepaintStyle(lv);
     this.points = undefined;
+    this._rect = undefined;
+    this._bbox = undefined;
   }
 
   buildPoints() {
@@ -110,13 +112,7 @@ class Geom extends Node {
             xb = item[2];
             yb = item[3];
             const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-            mergeBbox(
-              res,
-              b[0],
-              b[1],
-              b[2],
-              b[3],
-            );
+            mergeBbox(res, b[0], b[1], b[2], b[3]);
           } else if (item.length === 6) {
             xb = item[4];
             yb = item[5];
@@ -130,13 +126,7 @@ class Geom extends Node {
               xb,
               yb,
             );
-            mergeBbox(
-              res,
-              b[0],
-              b[1],
-              b[2],
-              b[3],
-            );
+            mergeBbox(res, b[0], b[1], b[2], b[3]);
           } else {
             xb = item[0];
             yb = item[1];

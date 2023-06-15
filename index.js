@@ -25201,6 +25201,8 @@
         calRepaintStyle(lv) {
             super.calRepaintStyle(lv);
             this.points = undefined;
+            this._rect = undefined;
+            this._bbox = undefined;
         }
         buildPoints() {
             var _a;
@@ -25533,11 +25535,10 @@
         deletePoint(point) {
             const props = this.props;
             const points = props.points;
-            const rect = (this._rect || this.rect).slice(0);
             if (typeof point === 'number') {
                 points.splice(point, 1);
                 this.points = undefined;
-                this.checkPointsChange(rect);
+                this.checkPointsChange();
                 this.refresh();
                 return;
             }
@@ -25545,23 +25546,21 @@
             if (i > -1) {
                 points.splice(i, 1);
                 this.points = undefined;
-                this.checkPointsChange(rect);
+                this.checkPointsChange();
                 this.refresh();
             }
         }
         addPoint(point, index) {
             const props = this.props;
-            const rect = (this._rect || this.rect).slice(0);
             const points = props.points;
             points.splice(index, 0, point);
             this.points = undefined;
-            this.checkPointsChange(rect);
+            this.checkPointsChange();
             this.refresh();
         }
         modifyPoint() {
-            const rect = (this._rect || this.rect).slice(0);
             this.points = undefined;
-            this.checkPointsChange(rect);
+            this.checkPointsChange();
             this.refresh();
         }
         renderCanvas(scale) {
@@ -25615,7 +25614,7 @@
                 }
                 else {
                     if (f.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getLinear(f.stops, f.d, dx, dy, w, h);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
                             lg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -25623,7 +25622,7 @@
                         ctx.fillStyle = lg;
                     }
                     else if (f.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getRadial(f.stops, f.d, dx, dy, w, h);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -25648,7 +25647,7 @@
                         }
                     }
                     else if (f.t === GRADIENT.CONIC) {
-                        const gd = getConic(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getConic(f.stops, f.d, dx, dy, w, h);
                         const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                         gd.stop.forEach((item) => {
                             cg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -25699,7 +25698,7 @@
                 // 或者渐变
                 else {
                     if (s.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+                        const gd = getLinear(s.stops, s.d, -x, -y, w, h);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
                             lg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -25707,7 +25706,7 @@
                         ctx.strokeStyle = lg;
                     }
                     else if (s.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+                        const gd = getRadial(s.stops, s.d, -x, -y, w, h);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -25715,7 +25714,7 @@
                         ctx.strokeStyle = rg;
                     }
                     else if (s.t === GRADIENT.CONIC) {
-                        const gd = getConic(s.stops, s.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getConic(s.stops, s.d, dx, dy, w, h);
                         const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                         gd.stop.forEach((item) => {
                             cg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -25849,10 +25848,11 @@
             return points;
         }
         // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
-        checkPointsChange(old) {
+        checkPointsChange() {
             this._rect = undefined;
+            this._bbox = undefined;
             const rect = this.rect;
-            const dx = rect[0], dy = rect[1], dw = rect[2] - old[2], dh = rect[3] - old[3];
+            const dx = rect[0], dy = rect[1], dw = rect[2] - this.width, dh = rect[3] - this.height;
             // 检查真正有变化，位置相对于自己原本位置为原点
             if (dx || dy || dw || dh) {
                 this.adjustPosAndSizeSelf(dx, dy, dw, dh);
@@ -28724,7 +28724,7 @@
                 }
                 else {
                     if (f.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getLinear(f.stops, f.d, dx, dy, w, h);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
                             lg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -28732,7 +28732,7 @@
                         ctx.fillStyle = lg;
                     }
                     else if (f.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getRadial(f.stops, f.d, dx, dy, w, h);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -28757,7 +28757,7 @@
                         }
                     }
                     else if (f.t === GRADIENT.CONIC) {
-                        const gd = getConic(f.stops, f.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getConic(f.stops, f.d, dx, dy, w, h);
                         const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                         gd.stop.forEach((item) => {
                             cg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -28807,7 +28807,7 @@
                 }
                 else {
                     if (s.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+                        const gd = getLinear(s.stops, s.d, -x, -y, w, h);
                         const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                         gd.stop.forEach((item) => {
                             lg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -28815,7 +28815,7 @@
                         ctx.strokeStyle = lg;
                     }
                     else if (s.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+                        const gd = getRadial(s.stops, s.d, -x, -y, w, h);
                         const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
                         gd.stop.forEach((item) => {
                             rg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -28823,7 +28823,7 @@
                         ctx.strokeStyle = rg;
                     }
                     else if (s.t === GRADIENT.CONIC) {
-                        const gd = getConic(s.stops, s.d, dx, dy, this.width * scale, this.height * scale);
+                        const gd = getConic(s.stops, s.d, dx, dy, w, h);
                         const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                         gd.stop.forEach((item) => {
                             cg.addColorStop(item.offset, color2rgbaStr(item.color));

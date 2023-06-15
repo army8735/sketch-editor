@@ -259,11 +259,10 @@ class Polyline extends Geom {
   deletePoint(point: Point | number) {
     const props = this.props;
     const points = props.points;
-    const rect = (this._rect || this.rect).slice(0);
     if (typeof point === 'number') {
       points.splice(point, 1);
       this.points = undefined;
-      this.checkPointsChange(rect);
+      this.checkPointsChange();
       this.refresh();
       return;
     }
@@ -271,25 +270,23 @@ class Polyline extends Geom {
     if (i > -1) {
       points.splice(i, 1);
       this.points = undefined;
-      this.checkPointsChange(rect);
+      this.checkPointsChange();
       this.refresh();
     }
   }
 
   addPoint(point: Point, index: number) {
     const props = this.props;
-    const rect = (this._rect || this.rect).slice(0);
     const points = props.points;
     points.splice(index, 0, point);
     this.points = undefined;
-    this.checkPointsChange(rect);
+    this.checkPointsChange();
     this.refresh();
   }
 
   modifyPoint() {
-    const rect = (this._rect || this.rect).slice(0);
     this.points = undefined;
-    this.checkPointsChange(rect);
+    this.checkPointsChange();
     this.refresh();
   }
 
@@ -372,8 +369,8 @@ class Polyline extends Geom {
             f.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
@@ -386,8 +383,8 @@ class Polyline extends Geom {
             f.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const rg = ctx.createRadialGradient(
             gd.cx,
@@ -423,8 +420,8 @@ class Polyline extends Geom {
             f.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
@@ -471,14 +468,14 @@ class Polyline extends Geom {
       // 或者渐变
       else {
         if (s.t === GRADIENT.LINEAR) {
-          const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+          const gd = getLinear(s.stops, s.d, -x, -y, w, h);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.strokeStyle = lg;
         } else if (s.t === GRADIENT.RADIAL) {
-          const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+          const gd = getRadial(s.stops, s.d, -x, -y, w, h);
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -497,8 +494,8 @@ class Polyline extends Geom {
             s.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
@@ -647,13 +644,14 @@ class Polyline extends Geom {
   }
 
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
-  checkPointsChange(old: Float64Array) {
+  checkPointsChange() {
     this._rect = undefined;
+    this._bbox = undefined;
     const rect = this.rect;
     const dx = rect[0],
       dy = rect[1],
-      dw = rect[2] - old[2],
-      dh = rect[3] - old[3];
+      dw = rect[2] - this.width,
+      dh = rect[3] - this.height;
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (dx || dy || dw || dh) {
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);

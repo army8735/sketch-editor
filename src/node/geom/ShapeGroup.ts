@@ -266,8 +266,8 @@ class ShapeGroup extends Group {
             f.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
@@ -280,8 +280,8 @@ class ShapeGroup extends Group {
             f.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const rg = ctx.createRadialGradient(
             gd.cx,
@@ -317,8 +317,8 @@ class ShapeGroup extends Group {
             f.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
@@ -363,14 +363,14 @@ class ShapeGroup extends Group {
         ctx.lineWidth = strokeWidth[i];
       } else {
         if (s.t === GRADIENT.LINEAR) {
-          const gd = getLinear(s.stops, s.d, -x, -y, this.width, this.height);
+          const gd = getLinear(s.stops, s.d, -x, -y, w, h);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.strokeStyle = lg;
         } else if (s.t === GRADIENT.RADIAL) {
-          const gd = getRadial(s.stops, s.d, -x, -y, this.width, this.height);
+          const gd = getRadial(s.stops, s.d, -x, -y, w, h);
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -389,8 +389,8 @@ class ShapeGroup extends Group {
             s.d,
             dx,
             dy,
-            this.width * scale,
-            this.height * scale,
+            w,
+            h,
           );
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
