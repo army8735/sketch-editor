@@ -1,6 +1,6 @@
 import { ArtBoardProps, Props } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
-import { calRectPoint } from '../math/matrix';
+import { calRectPoints } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { color2rgbaStr } from '../style/css';
@@ -77,19 +77,19 @@ class ArtBoard extends Container {
     }
 
     // 先boxShadow部分
-    const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
+    const tl = calRectPoints(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
     const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy, false);
     const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy, false);
     const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy, false);
     const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy, false);
 
-    const tr = calRectPoint(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
+    const tr = calRectPoints(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
     const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy, false);
     const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy, false);
     const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy, false);
     const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy, false);
 
-    const br = calRectPoint(
+    const br = calRectPoints(
       width,
       height,
       width + 4 / zoom,
@@ -101,7 +101,7 @@ class ArtBoard extends Container {
     const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy, false);
     const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy, false);
 
-    const bl = calRectPoint(
+    const bl = calRectPoints(
       -4 / zoom,
       height,
       0,
@@ -338,7 +338,7 @@ class ArtBoard extends Container {
     const bgColorProgram = programs.bgColorProgram;
     gl.useProgram(bgColorProgram);
     // 矩形固定2个三角形
-    const t = calRectPoint(0, 0, width, height, matrixWorld);
+    const t = calRectPoints(0, 0, width, height, matrixWorld);
     const vtPoint = new Float32Array(8);
     const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, true);
     const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, true);

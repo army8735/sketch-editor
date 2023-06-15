@@ -1,4 +1,4 @@
-const TOLERANCE = 1e-6;
+const TOLERANCE = 1e-9;
 
 /**
  * 计算线性方程的根

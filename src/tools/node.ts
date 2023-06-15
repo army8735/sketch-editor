@@ -54,10 +54,10 @@ export function getPosOnPage(node: Node) {
   while (list.length) {
     m = multiply(m, list.pop()!.matrix);
   }
-  const matrix = node.matrix;
+  // 自己节点只考虑translate影响，忽略rotate，而本身又没有scale，迁移到别的父节点只需关注x/y变化
   const i = identity();
-  i[12] = matrix[12];
-  i[13] = matrix[13];
+  i[12] = node.computedStyle.translateX;
+  i[13] = node.computedStyle.translateY;
   m = multiply(m, i);
   return calPoint({ x: 0, y: 0 }, m);
 }

@@ -17849,7 +17849,7 @@
             (b * e - a * f) / divisor,
         ]);
     }
-    function calRectPoint(xa, ya, xb, yb, matrix) {
+    function calRectPoints(xa, ya, xb, yb, matrix) {
         let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
         let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);
         let x2, y2, x4, y4;
@@ -17884,14 +17884,14 @@
         assignMatrix,
         inverse,
         calPoint,
-        calRectPoint,
+        calRectPoints,
         tfoMultiply,
         multiplyTfo,
         multiply,
         multiplyRef,
     };
 
-    const TOLERANCE$1 = 1e-6;
+    const TOLERANCE$1 = 1e-9;
     /**
      * 计算线性方程的根
      * y = ax + b
@@ -22048,7 +22048,7 @@
      * matrix是最终世界matrix，包含了画布缩放的scale（PageContainer上），因此坐标是bbox乘matrix
      */
     function bbox2Coords(bbox, cx, cy, dx = 0, dy = 0, flipY = true, matrix) {
-        const t = calRectPoint(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix);
+        const t = calRectPoints(bbox[0] + dx, bbox[1] + dy, bbox[2] + dx, bbox[3] + dy, matrix);
         const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
         const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
         const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
@@ -23172,10 +23172,10 @@
                 i[12] = matrix[12];
                 i[13] = matrix[13];
                 const m = multiply(parent.matrixWorld, i);
-                t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+                t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
             }
             else {
-                t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
+                t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
             }
             const x1 = t.x1;
             const y1 = t.y1;
@@ -23523,7 +23523,7 @@
                 m = multiply(m, list[i].matrix);
             }
             const bbox = this._rect || this.rect;
-            const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+            const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
             const x1 = t.x1;
             const y1 = t.y1;
             const x2 = t.x2;
@@ -24130,22 +24130,22 @@
                 zoom = Math.sqrt(zoom);
             }
             // 先boxShadow部分
-            const tl = calRectPoint(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
+            const tl = calRectPoints(-4 / zoom, -4 / zoom, 0, 0, matrixWorld);
             const t1 = convertCoords2Gl(tl.x1, tl.y1, cx, cy, false);
             const t2 = convertCoords2Gl(tl.x2, tl.y2, cx, cy, false);
             const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy, false);
             const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy, false);
-            const tr = calRectPoint(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
+            const tr = calRectPoints(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
             const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy, false);
             const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy, false);
             const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy, false);
             const t8 = convertCoords2Gl(tr.x4, tr.y4, cx, cy, false);
-            const br = calRectPoint(width, height, width + 4 / zoom, height + 4 / zoom, matrixWorld);
+            const br = calRectPoints(width, height, width + 4 / zoom, height + 4 / zoom, matrixWorld);
             const t9 = convertCoords2Gl(br.x1, br.y1, cx, cy, false);
             const t10 = convertCoords2Gl(br.x2, br.y2, cx, cy, false);
             const t11 = convertCoords2Gl(br.x3, br.y3, cx, cy, false);
             const t12 = convertCoords2Gl(br.x4, br.y4, cx, cy, false);
-            const bl = calRectPoint(-4 / zoom, height, 0, height + 4 / zoom, matrixWorld);
+            const bl = calRectPoints(-4 / zoom, height, 0, height + 4 / zoom, matrixWorld);
             const t13 = convertCoords2Gl(bl.x1, bl.y1, cx, cy, false);
             const t14 = convertCoords2Gl(bl.x2, bl.y2, cx, cy, false);
             const t15 = convertCoords2Gl(bl.x3, bl.y3, cx, cy, false);
@@ -24355,7 +24355,7 @@
             const bgColorProgram = programs.bgColorProgram;
             gl.useProgram(bgColorProgram);
             // 矩形固定2个三角形
-            const t = calRectPoint(0, 0, width, height, matrixWorld);
+            const t = calRectPoints(0, 0, width, height, matrixWorld);
             const vtPoint = new Float32Array(8);
             const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, true);
             const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, true);
@@ -27984,6 +27984,7 @@
             clip = new Polygon(prefix(polygonB), 1);
             clip.selfIntersect();
         }
+        // console.log(clip.toString());
         // 两个多边形之间再次互相判断相交
         Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
         Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
@@ -28160,10 +28161,10 @@
         while (list.length) {
             m = multiply(m, list.pop().matrix);
         }
-        const matrix = node.matrix;
+        // 自己节点只考虑translate影响，忽略rotate，而本身又没有scale，迁移到别的父节点只需关注x/y变化
         const i = identity();
-        i[12] = matrix[12];
-        i[13] = matrix[13];
+        i[12] = node.computedStyle.translateX;
+        i[13] = node.computedStyle.translateY;
         m = multiply(m, i);
         return calPoint({ x: 0, y: 0 }, m);
     }
@@ -28313,7 +28314,7 @@
         // 获取单个孩子相对于本父元素的盒子尺寸
         getChildRect(child) {
             const { width, height, matrix } = child;
-            let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(0, 0, width, height, matrix);
+            let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(0, 0, width, height, matrix);
             return {
                 minX: Math.min(x1, x2, x3, x4),
                 minY: Math.min(y1, y2, y3, y4),
@@ -33383,7 +33384,7 @@ void main() {
         gl.viewport(0, 0, width, height);
     }
     function checkInScreen(bbox, matrix, width, height) {
-        const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+        const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
         const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
         // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
         const xa = Math.min(x1, x2, x3, x4);

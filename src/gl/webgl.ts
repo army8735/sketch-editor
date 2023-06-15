@@ -1,4 +1,4 @@
-import { calRectPoint } from '../math/matrix';
+import { calRectPoints } from '../math/matrix';
 
 export function initShaders(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -474,7 +474,7 @@ export function bbox2Coords(
   flipY = true,
   matrix?: Float64Array,
 ) {
-  const t = calRectPoint(
+  const t = calRectPoints(
     bbox[0] + dx,
     bbox[1] + dy,
     bbox[2] + dx,

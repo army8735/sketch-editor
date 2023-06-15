@@ -116,7 +116,7 @@ class ShapeGroup extends Group {
     }
     this.textureOutline?.release();
     const { children } = this;
-    let res: Array<Array<Array<number>>> = [];
+    let res: number[][][] = [];
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
       let points;
@@ -137,7 +137,7 @@ class ShapeGroup extends Group {
       const { matrix } = item;
       if (points && points.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
-        let p: Array<Array<Array<number>>>;
+        let p: number[][][];
         if (item instanceof ShapeGroup) {
           p = points.map((item) =>
             applyMatrixPoints(item as number[][], matrix),
@@ -155,8 +155,8 @@ class ShapeGroup extends Group {
             res = t || [];
           } else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
-            const pp: Array<Array<Array<number>>> = [],
-              pl: Array<Array<Array<number>>> = [];
+            const pp: number[][][] = [],
+              pl: number[][][] = [];
             p.forEach((item) => {
               if (item.length <= 2) {
                 pl.push(item);

@@ -14,7 +14,7 @@ import { isRectsOverlap } from '../math/geom';
 import {
   assignMatrix,
   calPoint,
-  calRectPoint,
+  calRectPoints,
   identity,
   inverse,
   isE,
@@ -1575,7 +1575,7 @@ function checkInScreen(
   width: number,
   height: number,
 ) {
-  const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+  const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
   const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
   // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
   const xa = Math.min(x1, x2, x3, x4);

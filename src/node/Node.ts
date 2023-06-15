@@ -6,7 +6,7 @@ import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
   assignMatrix,
-  calRectPoint,
+  calRectPoints,
   identity,
   isE,
   multiply,
@@ -998,9 +998,9 @@ class Node extends Event {
       i[12] = matrix[12];
       i[13] = matrix[13];
       const m = multiply(parent.matrixWorld, i);
-      t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+      t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
     } else {
-      t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
+      t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
     }
     const x1 = t.x1;
     const y1 = t.y1;
@@ -1361,7 +1361,7 @@ class Node extends Event {
       m = multiply(m, list[i].matrix);
     }
     const bbox = this._rect || this.rect;
-    const t = calRectPoint(bbox[0], bbox[1], bbox[2], bbox[3], m);
+    const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
     const x1 = t.x1;
     const y1 = t.y1;
     const x2 = t.x2;

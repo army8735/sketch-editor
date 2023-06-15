@@ -445,7 +445,7 @@ export function inverse(m: Float64Array) {
   ]);
 }
 
-export function calRectPoint(
+export function calRectPoints(
   xa: number,
   ya: number,
   xb: number,
@@ -488,7 +488,7 @@ export default {
   assignMatrix,
   inverse,
   calPoint,
-  calRectPoint,
+  calRectPoints,
   tfoMultiply,
   multiplyTfo,
   multiply,

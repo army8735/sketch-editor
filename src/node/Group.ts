@@ -1,6 +1,6 @@
 import * as uuid from 'uuid';
 import { Props } from '../format';
-import { calRectPoint } from '../math/matrix';
+import { calRectPoints } from '../math/matrix';
 import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
@@ -25,7 +25,7 @@ class Group extends Container {
   // 获取单个孩子相对于本父元素的盒子尺寸
   private getChildRect(child: Node) {
     const { width, height, matrix } = child;
-    let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoint(
+    let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(
       0,
       0,
       width,
