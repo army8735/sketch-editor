@@ -595,9 +595,7 @@ class ShapeGroup extends Group {
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
       migrate(parent, item);
-      if (i) {
-        item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
-      }
+      item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
     }
     // 取第一个矢量图形的描绘属性
     let style;

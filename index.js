@@ -25597,7 +25597,9 @@
             }
             ctx.beginPath();
             canvasPolygon(ctx, points, scale, dx, dy);
-            ctx.closePath();
+            if (this.props.isClosed) {
+                ctx.closePath();
+            }
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {
@@ -29019,9 +29021,7 @@
             for (let i = 0, len = nodes.length; i < len; i++) {
                 const item = nodes[i];
                 migrate(parent, item);
-                if (i) {
-                    item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
-                }
+                item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
             }
             // 取第一个矢量图形的描绘属性
             let style;

@@ -348,7 +348,9 @@ class Polyline extends Geom {
     }
     ctx.beginPath();
     canvasPolygon(ctx, points, scale, dx, dy);
-    ctx.closePath();
+    if (this.props.isClosed) {
+      ctx.closePath();
+    }
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
