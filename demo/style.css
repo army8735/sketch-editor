@@ -373,9 +373,10 @@ canvas {
   position: absolute;
   left: 0;
   top: 0;
-  display: none;
+  /*display: none;*/
   z-index: 10;
   pointer-events: none;
+  opacity: 0;
 }
 
 .input-container .cursor {

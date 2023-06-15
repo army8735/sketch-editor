@@ -705,7 +705,8 @@ function onMove(e, isOnControl) {
         // 处于编辑状态时，隐藏光标显示区域
         if(isEditText && selectNode instanceof editor.node.Text) {
           selectNode.setCursorEndByAbsCoord(nx * dpi, ny * dpi);
-          $inputContainer.style.display = 'none';
+          // $inputContainer.style.display = 'none';
+          $inputContainer.style.opacity = 0;
         }
         // 不变也要更新，并不知道节点的约束类型（size是否auto）
         else {
@@ -845,7 +846,7 @@ function showEditText(x, y, h) {
   style.left = x + 'px';
   style.top = y + 'px';
   style.height = h + 'px';
-  style.display = 'block';
+  // style.display = 'block';
   style.opacity = 1;
   $inputText.focus();
 }
@@ -856,7 +857,7 @@ function updateEditText() {
     const style = $inputContainer.style;
     style.left = x / dpi + 'px';
     style.top = y / dpi + 'px';
-    style.display = 'block';
+    // style.display = 'block';
     style.opacity = 1;
   }
 }
@@ -867,7 +868,8 @@ function hideEditText() {
       selectNode.hideSelectArea();
     }
     isEditText = false;
-    $inputContainer.style.display = 'none';
+    // $inputContainer.style.display = 'none';
+    $inputContainer.style.opacity = 0;
     $inputText.blur();
   }
 }
@@ -943,7 +945,7 @@ document.addEventListener('mouseup', function(e) {
           }
           else {
             // 选区需要聚焦但不展示光标
-            $inputContainer.style.display = 'block';
+            // $inputContainer.style.display = 'block';
             $inputContainer.style.opacity = 0;
           }
           $inputText.focus();
