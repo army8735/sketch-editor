@@ -1,5 +1,10 @@
 import { PageProps, Point, PolylineProps } from '../../format';
-import { angleBySides, pointsDistance, toPrecision } from '../../math/geom';
+import {
+  angleBySides,
+  pointsDistance,
+  r2d,
+  toPrecision,
+} from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
@@ -344,7 +349,9 @@ class Polyline extends Geom {
     } else {
       ctx.setLineDash(strokeDasharray);
     }
-    let isFirst = true;
+    ctx.beginPath();
+    canvasPolygon(ctx, points, scale, dx, dy);
+    ctx.closePath();
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
@@ -424,15 +431,6 @@ class Polyline extends Geom {
             cg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = cg;
-        }
-      }
-      // 多个fill只需一次画轮廓，后续直接fill即可
-      if (isFirst) {
-        isFirst = false;
-        ctx.beginPath();
-        canvasPolygon(ctx, points, scale, dx, dy);
-        if (this.props.isClosed) {
-          ctx.closePath();
         }
       }
       // fill有opacity，设置记得还原
@@ -558,6 +556,17 @@ class Polyline extends Geom {
         Math.pow(points[1].absX! - points[0].absX!, 2) +
         Math.pow(points[1].absY! - points[0].absY!, 2),
       );
+      const dx = points[1].absX! - points[0].absX!;
+      if (dx === 0) {
+        if (points[1].absY! >= points[0].absY!) {
+          res.angle = 90;
+        } else {
+          res.angle = -90;
+        }
+      } else {
+        const tan = (points[1].absY! - points[0].absY!) / dx;
+        res.angle = r2d(Math.atan(tan));
+      }
     }
     const m = res.matrix;
     points.forEach((item) => {

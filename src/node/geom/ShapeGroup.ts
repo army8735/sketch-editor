@@ -241,7 +241,11 @@ class ShapeGroup extends Group {
       ctx.setLineDash(strokeDasharray);
     }
     ctx.setLineDash(strokeDasharray);
-    let isFirst = true;
+    ctx.beginPath();
+    points.forEach((item) => {
+      canvasPolygon(ctx, item, scale, dx, dy);
+    });
+    ctx.closePath();
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
       if (!fillEnable[i]) {
@@ -322,15 +326,6 @@ class ShapeGroup extends Group {
           });
           ctx.fillStyle = cg;
         }
-      }
-      // 多个fill只需一次画轮廓，后续直接fill即可
-      if (isFirst) {
-        isFirst = false;
-        ctx.beginPath();
-        points.forEach((item) => {
-          canvasPolygon(ctx, item, scale, dx, dy);
-        });
-        ctx.closePath();
       }
       // fill有opacity，设置记得还原
       ctx.globalAlpha = fillOpacity[i];
@@ -518,13 +513,7 @@ class ShapeGroup extends Group {
                 xa = item2[0];
                 ya = item2[1];
               }
-              mergeBbox(
-                res,
-                xa,
-                ya,
-                xa,
-                ya,
-              );
+              mergeBbox(res, xa, ya, xa, ya);
               continue;
             }
             let xb: number, yb: number;
@@ -532,13 +521,7 @@ class ShapeGroup extends Group {
               xb = item2[2];
               yb = item2[3];
               const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
-              mergeBbox(
-                res,
-                b[0],
-                b[1],
-                b[2],
-                b[3],
-              );
+              mergeBbox(res, b[0], b[1], b[2], b[3]);
             } else if (item2.length === 6) {
               xb = item2[4];
               yb = item2[5];
@@ -552,23 +535,11 @@ class ShapeGroup extends Group {
                 xb,
                 yb,
               );
-              mergeBbox(
-                res,
-                b[0],
-                b[1],
-                b[2],
-                b[3],
-              );
+              mergeBbox(res, b[0], b[1], b[2], b[3]);
             } else {
               xb = item2[0];
               yb = item2[1];
-              mergeBbox(
-                res,
-                xb,
-                yb,
-                xb,
-                yb,
-              );
+              mergeBbox(res, xb, yb, xb, yb);
             }
             xa = xb;
             ya = yb;

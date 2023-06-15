@@ -23555,6 +23555,7 @@
                 isLine: false,
                 points: [],
                 length: 0,
+                angle: 0,
             };
         }
         get opacity() {
@@ -25595,7 +25596,9 @@
             else {
                 ctx.setLineDash(strokeDasharray);
             }
-            let isFirst = true;
+            ctx.beginPath();
+            canvasPolygon(ctx, points, scale, dx, dy);
+            ctx.closePath();
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {
@@ -25651,15 +25654,6 @@
                             cg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
                         ctx.fillStyle = cg;
-                    }
-                }
-                // 多个fill只需一次画轮廓，后续直接fill即可
-                if (isFirst) {
-                    isFirst = false;
-                    ctx.beginPath();
-                    canvasPolygon(ctx, points, scale, dx, dy);
-                    if (this.props.isClosed) {
-                        ctx.closePath();
                     }
                 }
                 // fill有opacity，设置记得还原
@@ -25779,6 +25773,19 @@
             if (res.isLine) {
                 res.length = Math.sqrt(Math.pow(points[1].absX - points[0].absX, 2) +
                     Math.pow(points[1].absY - points[0].absY, 2));
+                const dx = points[1].absX - points[0].absX;
+                if (dx === 0) {
+                    if (points[1].absY >= points[0].absY) {
+                        res.angle = 90;
+                    }
+                    else {
+                        res.angle = -90;
+                    }
+                }
+                else {
+                    const tan = (points[1].absY - points[0].absY) / dx;
+                    res.angle = r2d(Math.atan(tan));
+                }
             }
             const m = res.matrix;
             points.forEach((item) => {
@@ -28695,7 +28702,11 @@
                 ctx.setLineDash(strokeDasharray);
             }
             ctx.setLineDash(strokeDasharray);
-            let isFirst = true;
+            ctx.beginPath();
+            points.forEach((item) => {
+                canvasPolygon(ctx, item, scale, dx, dy);
+            });
+            ctx.closePath();
             // 先下层的fill
             for (let i = 0, len = fill.length; i < len; i++) {
                 if (!fillEnable[i]) {
@@ -28752,15 +28763,6 @@
                         });
                         ctx.fillStyle = cg;
                     }
-                }
-                // 多个fill只需一次画轮廓，后续直接fill即可
-                if (isFirst) {
-                    isFirst = false;
-                    ctx.beginPath();
-                    points.forEach((item) => {
-                        canvasPolygon(ctx, item, scale, dx, dy);
-                    });
-                    ctx.closePath();
                 }
                 // fill有opacity，设置记得还原
                 ctx.globalAlpha = fillOpacity[i];
