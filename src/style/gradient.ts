@@ -350,7 +350,7 @@ export function getRadial(
       }
     }
     multiplyScaleY(matrix, ellipseLength);
-    matrix = calMatrixByOrigin(matrix, dx + x1, dy + y1);
+    matrix = calMatrixByOrigin(matrix, x1, y1);
   }
   return {
     cx: x1,
