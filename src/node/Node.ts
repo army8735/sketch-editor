@@ -1037,8 +1037,8 @@ class Node extends Event {
   }
 
   /**
-   * 拖拽开始变更尺寸前预校验，如果是固定尺寸+百分比对齐，是以自身中心点为基准，需要改成普通模式，
-   * 即left百分比调整到以左侧为基准，translateX不再-50%，垂直方向同理，改为top上侧基准，translateY不再-50%。
+   * 拖拽开始变更尺寸前预校验，如果是以自身中心点为基准，需要改成普通模式，
+   * 即left百分比调整到以左侧为基准，translateX不再-50%，垂直方向同理，
    * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回自身中心基准数据。
    */
   startSizeChange() {
@@ -1046,17 +1046,36 @@ class Node extends Event {
     if (this.isDestroyed) {
       throw new Error('Can not resize a destroyed Node');
     }
-    const { top, left, width, height, translateX, translateY } = style;
-    // 不可能有固定尺寸+right百分比这种情况，right要么auto要么px
-    if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
-      const v = (computedStyle.left -= width.v * 0.5);
-      left.v = (v * 100) / parent!.width;
+    const { top, bottom, left, right, width, height, translateX, translateY } = style;
+    const { width: w, height: h } = this;
+    /**
+     * 有很多种情况，修改种类也不尽相同，以水平为例：
+     * left%+right%，锚点在中心，只需将锚点改为原点即可
+     * left%+widthPx，锚点在中心，除了锚点改原点，left需偏移半宽
+     * 没有right%+widthPX
+     * 文本特殊left%+widthAuto+rightAuto，同上
+     * leftPx不用管（无视width/right值）
+     * rightPx不用管（无视width/left值）
+     */
+    if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
+      if (width.u === StyleUnit.PX || width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+        const v = (computedStyle.left -= w * 0.5);
+        left.v = (v * 100) / parent!.width;
+      }
+      if (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+        computedStyle.right += w * 0.5;
+      }
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
-    if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
-      const v = (computedStyle.top -= height.v * 0.5);
-      top.v = (v * 100) / parent!.height;
+    if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
+      if (height.u === StyleUnit.PX || height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+        const v = (computedStyle.top -= h * 0.5);
+        top.v = (v * 100) / parent!.height;
+      }
+      if (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+        computedStyle.bottom += h * 0.5;
+      }
       translateY.v = 0;
       translateY.u = StyleUnit.PX;
     }
@@ -1074,34 +1093,35 @@ class Node extends Event {
     const { translateX: tx, translateY: ty } = computedStyle;
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent;
-    // 宽度自动，left一定有值，right一般有值（Text自适应宽度除外），translateX单位是px
+    const { width: w, height: h } = this;
+    // 宽度自动，left一定有值，right一般有值（Text自适应宽度除外）
     if (width.u === StyleUnit.AUTO) {
       if (left.u === StyleUnit.PX) {
         left.v = tx;
       } else if (left.u === StyleUnit.PERCENT) {
-        if (right.u === StyleUnit.AUTO) {
-          left.v = ((tx + this.width * 0.5) * 100) / pw;
+        if (right.u === StyleUnit.AUTO) { // 文本自动宽情况无right
+          left.v = ((tx + w * 0.5) * 100) / pw;
         } else {
           left.v = (tx * 100) / pw;
         }
       }
       if (right.u === StyleUnit.PX) {
-        right.v = pw - tx - this.width;
+        right.v = pw - tx - w;
       } else if (right.u === StyleUnit.PERCENT) {
-        right.v = ((pw - tx - this.width) * 100) / pw;
+        right.v = ((pw - tx - w) * 100) / pw;
       }
     }
-    // 固定宽度，发生过变更单位会变成px（节点可能只上下移动，看实现，这里多预防下），left/right至少有一个固定值，translateX需要重置为-50%
-    else if (translateX.u === StyleUnit.PX) {
+    // 固定宽度，left/right至少有一个固定值，translateX需要重置为-50%
+    else {
       if (left.u === StyleUnit.PX) {
-        left.v = tx + this.width * 0.5;
+        left.v = tx;
       } else if (left.u === StyleUnit.PERCENT) {
-        left.v = ((tx + this.width * 0.5) * 100) / pw;
+        left.v = ((tx + w * 0.5) * 100) / pw;
       }
       if (right.u === StyleUnit.PX) {
-        right.v = pw - tx - this.width * 1.5;
+        right.v = pw - tx - w;
       } else if (right.u === StyleUnit.PERCENT) {
-        right.v = ((pw - tx - this.width * 1.5) * 100) / pw;
+        right.v = ((pw - tx - w) * 100) / pw;
       }
     }
     this.resetTranslateX(left, right, width, translateX);
@@ -1114,10 +1134,10 @@ class Node extends Event {
     }
     // auto依赖left/right处理完
     if (left.u === StyleUnit.AUTO) {
-      computedStyle.left = pw - computedStyle.right - this.width;
+      computedStyle.left = pw - computedStyle.right - w;
     }
     if (right.u === StyleUnit.AUTO) {
-      computedStyle.right = pw - computedStyle.left - this.width;
+      computedStyle.right = pw - computedStyle.left - w;
     }
     // 自动高度，和自动宽度一样
     if (height.u === StyleUnit.AUTO) {
@@ -1125,28 +1145,28 @@ class Node extends Event {
         top.v = ty;
       } else if (top.u === StyleUnit.PERCENT) {
         if (bottom.u === StyleUnit.AUTO) {
-          top.v = ((ty + this.height * 0.5) * 100) / ph;
+          top.v = ((ty + h * 0.5) * 100) / ph;
         } else {
           top.v = (ty * 100) / ph;
         }
       }
       if (bottom.u === StyleUnit.PX) {
-        bottom.v = ph - ty - this.height;
+        bottom.v = ph - ty - h;
       } else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = ((ph - ty - this.height) * 100) / ph;
+        bottom.v = ((ph - ty - h) * 100) / ph;
       }
     }
     // 固定高度，和固定宽度一样
-    else if (translateY.u === StyleUnit.PX) {
+    else {
       if (top.u === StyleUnit.PX) {
-        top.v = ty + this.height * 0.5;
+        top.v = ty;
       } else if (top.u === StyleUnit.PERCENT) {
-        top.v = ((ty + this.height * 0.5) * 100) / ph;
+        top.v = ((ty + h * 0.5) * 100) / ph;
       }
       if (bottom.u === StyleUnit.PX) {
-        bottom.v = ph - ty - this.height * 1.5;
+        bottom.v = ph - ty - h;
       } else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = ((ph - ty - this.height * 1.5) * 100) / ph;
+        bottom.v = ((ph - ty - h) * 100) / ph;
       }
     }
     this.resetTranslateY(top, bottom, height, translateY);
@@ -1159,10 +1179,10 @@ class Node extends Event {
     }
     // auto依赖top/bottom处理完
     if (top.u === StyleUnit.AUTO) {
-      computedStyle.top = ph - computedStyle.bottom - this.height;
+      computedStyle.top = ph - computedStyle.bottom - h;
     }
     if (bottom.u === StyleUnit.AUTO) {
-      computedStyle.bottom = ph - computedStyle.top - this.height;
+      computedStyle.bottom = ph - computedStyle.top - h;
     }
     // matrix并无变化，移动过程中一直在更新translate，并触发了matrix变更
     // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
@@ -1306,21 +1326,33 @@ class Node extends Event {
     this.checkPosSizeUpward();
   }
 
+  // 参考startSizeChange，反向进行
   protected checkTranslateHalf() {
     const { style, computedStyle, parent } = this;
     if (!parent) {
       return;
     }
-    const { top, left, width, height, translateX, translateY } = style;
-    if (width.u === StyleUnit.PX && left.u === StyleUnit.PERCENT) {
-      const v = (computedStyle.left += width.v * 0.5);
-      left.v = (v * 100) / parent.width;
+    const { top, bottom, left, right, width, height, translateX, translateY } = style;
+    const { width: w, height: h } = this;
+    if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
+      if (width.u === StyleUnit.PX || width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+        const v = (computedStyle.left += w * 0.5);
+        left.v = (v * 100) / parent!.width;
+      }
+      if (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+        computedStyle.right -= w * 0.5;
+      }
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
     }
-    if (height.u === StyleUnit.PX && top.u === StyleUnit.PERCENT) {
-      const v = (computedStyle.top += height.v * 0.5);
-      top.v = (v * 100) / parent.height;
+    if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
+      if (height.u === StyleUnit.PX || height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+        const v = (computedStyle.top += h * 0.5);
+        top.v = (v * 100) / parent!.width;
+      }
+      if (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+        computedStyle.bottom -= h * 0.5;
+      }
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }

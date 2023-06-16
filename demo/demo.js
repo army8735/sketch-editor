@@ -636,64 +636,76 @@ function onMove(e, isOnControl) {
       else if (controlType === 'br') {}
       else if (controlType === 'bl') {}
       else if (controlType === 't') {
-        if (style.width.u === StyleUnit.AUTO) {
-          const top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
-          selectNode.updateStyle({
-            top,
-          });
+        const o = {};
+        if (style.top.u === StyleUnit.PX) {
+          o.top = computedStyle.top + dy2;
+          if (style.height.u === StyleUnit.PX || style.bottom.u === StyleUnit.AUTO) {
+            o.height = computedStyle.height - dy2;
+          }
+        }
+        else if (style.height.u === StyleUnit.AUTO) {
+          o.top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
+          if (style.height.u === StyleUnit.PX || style.bottom.u === StyleUnit.AUTO) {
+            o.height = computedStyle.height - dy2;
+          }
         }
         else {
-          const top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
-          const height = computedStyle.height;
-          selectNode.updateStyle({
-            top,
-            height: height - dy2,
-          });
+          o.top = (computedStyle.top + dy2) * 100 / selectNode.parent.height + '%';
+          o.height = computedStyle.height - dy2;
         }
+        selectNode.updateStyle(o);
       }
       else if (controlType === 'r') {
-        if (style.width.u === StyleUnit.AUTO) {
-          const right = (computedStyle.right - dx2) * 100 / selectNode.parent.width + '%';
-          selectNode.updateStyle({
-            right,
-          });
+        const o = {};
+        if (style.right.u === StyleUnit.PX) {
+          o.right = computedStyle.right - dx2;
+          if (style.width.u === StyleUnit.PX || style.left.u === StyleUnit.AUTO) {
+            o.width = computedStyle.width + dx2;
+          }
+        }
+        else if (style.width.u === StyleUnit.AUTO) {
+          o.right = (computedStyle.right - dx2) * 100 / selectNode.parent.width + '%';
         }
         else {
-          const width = computedStyle.width + dx2;
-          selectNode.updateStyle({
-            width,
-          });
+          o.width = computedStyle.width + dx2;
         }
+        selectNode.updateStyle(o);
       }
       else if (controlType === 'b') {
-        if (style.height.u === StyleUnit.AUTO) {
-          const bottom = (computedStyle.bottom - dy2) * 100 / selectNode.parent.height + '%';
-          selectNode.updateStyle({
-            bottom,
-          });
+        const o = {};
+        if (style.bottom.u === StyleUnit.PX) {
+          o.bottom = computedStyle.bottom - dy2;
+          if (style.height.u === StyleUnit.PX || style.top.u === StyleUnit.AUTO) {
+            o.height = computedStyle.height + dy2;
+          }
+        }
+        else if (style.height.u === StyleUnit.AUTO) {
+          o.bottom = (computedStyle.bottom - dy2) * 100 / selectNode.parent.height + '%';
         }
         else {
-          const height = computedStyle.height + dy2;
-          selectNode.updateStyle({
-            height,
-          });
+          o.height = computedStyle.height + dy2;
         }
+        selectNode.updateStyle(o);
       }
       else if (controlType === 'l') {
-        if (style.width.u === StyleUnit.AUTO) {
-          const left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
-          selectNode.updateStyle({
-            left,
-          });
+        const o = {};
+        if (style.left.u === StyleUnit.PX) {
+          o.left = computedStyle.left + dx2;
+          if (style.width.u === StyleUnit.PX || style.right.u === StyleUnit.AUTO) {
+            o.width = computedStyle.width - dx2;
+          }
+        }
+        else if (style.width.u === StyleUnit.AUTO) {
+          o.left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
+          if (style.width.u === StyleUnit.PX || style.right.u === StyleUnit.AUTO) {
+            o.width = computedStyle.width - dx2;
+          }
         }
         else {
-          const left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
-          const width = computedStyle.width;
-          selectNode.updateStyle({
-            left,
-            width: width - dx2,
-          });
+          o.left = (computedStyle.left + dx2) * 100 / selectNode.parent.width + '%';
+          o.width = computedStyle.width - dx2;
         }
+        selectNode.updateStyle(o);
       }
       selectNode.checkShapeChange();
       updateSelect();

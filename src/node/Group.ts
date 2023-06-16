@@ -9,11 +9,11 @@ import { LayoutData } from './layout';
 import Node from './Node';
 
 class Group extends Container {
-  fixdPosAndSize: boolean;
+  fixedPosAndSize: boolean;
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.isGroup = true;
-    this.fixdPosAndSize = false;
+    this.fixedPosAndSize = false;
   }
 
   // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
@@ -141,7 +141,7 @@ class Group extends Container {
 
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
   override adjustPosAndSize() {
-    if (this.fixdPosAndSize) {
+    if (this.fixedPosAndSize) {
       return false;
     }
     const { children, width: gw, height: gh } = this;
@@ -193,7 +193,7 @@ class Group extends Container {
     }
     const parent = this.parent!;
     if (parent instanceof Group) {
-      parent.fixdPosAndSize = true;
+      parent.fixedPosAndSize = true;
     }
     let target = this as Node;
     const children = this.children.slice(0);
@@ -205,7 +205,7 @@ class Group extends Container {
       target = item;
     }
     if (parent instanceof Group) {
-      parent.fixdPosAndSize = false;
+      parent.fixedPosAndSize = false;
     }
     this.remove();
   }
@@ -215,12 +215,12 @@ class Group extends Container {
     if (!nodes.length) {
       return;
     }
-    sortTempIndex(nodes); console.clear();
+    sortTempIndex(nodes);
     const first = nodes[0];
     const parent = first.parent!;
     // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
     if (parent instanceof Group) {
-      parent.fixdPosAndSize = true;
+      parent.fixedPosAndSize = true;
     }
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
@@ -241,16 +241,16 @@ class Group extends Container {
       props,
     );
     const group = new Group(p, []);
-    group.fixdPosAndSize = true;
+    group.fixedPosAndSize = true;
     // 插入到first的后面
     first.insertAfter(group);
     // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
     for (let i = 0, len = nodes.length; i < len; i++) {
       group.appendChild(nodes[i]);
     }
-    group.fixdPosAndSize = false;
+    group.fixedPosAndSize = false;
     if (parent instanceof Group) {
-      parent.fixdPosAndSize = false;
+      parent.fixedPosAndSize = false;
     }
     group.checkSizeChange();
     return group;

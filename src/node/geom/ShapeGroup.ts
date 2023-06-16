@@ -562,7 +562,7 @@ class ShapeGroup extends Group {
     const parent = first.parent!;
     // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
     if (parent instanceof Group) {
-      parent.fixdPosAndSize = true;
+      parent.fixedPosAndSize = true;
     }
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
@@ -606,16 +606,16 @@ class ShapeGroup extends Group {
       props,
     );
     const shapeGroup = new ShapeGroup(p, []);
-    shapeGroup.fixdPosAndSize = true;
+    shapeGroup.fixedPosAndSize = true;
     // 插入到first的后面
     first.insertAfter(shapeGroup);
     // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
     for (let i = 0, len = nodes.length; i < len; i++) {
       shapeGroup.appendChild(nodes[i]);
     }
-    shapeGroup.fixdPosAndSize = false;
+    shapeGroup.fixedPosAndSize = false;
     if (parent instanceof Group) {
-      parent.fixdPosAndSize = false;
+      parent.fixedPosAndSize = false;
     }
     shapeGroup.checkSizeChange();
     return shapeGroup;

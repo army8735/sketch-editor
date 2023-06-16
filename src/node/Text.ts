@@ -3,12 +3,7 @@ import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
-import {
-  color2rgbaInt,
-  color2rgbaStr,
-  getBaseline,
-  setFontStyle,
-} from '../style/css';
+import { color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle, } from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
@@ -175,7 +170,7 @@ class Text extends Node {
       (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
     const autoH =
       style.height.u === StyleUnit.AUTO &&
-      (style.top.u !== StyleUnit.AUTO || style.bottom.u !== StyleUnit.AUTO);
+      (style.top.u === StyleUnit.AUTO || style.bottom.u === StyleUnit.AUTO);
     let i = 0;
     let length = content.length;
     let perW: number;
@@ -381,6 +376,21 @@ class Text extends Node {
     }
     if (autoH) {
       this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
+    }
+    // 覆盖，文本很特殊，尺寸有auto情况
+    let fixedLeft = style.left.u !== StyleUnit.AUTO;
+    let fixedTop = style.top.u !== StyleUnit.AUTO;
+    let fixedRight = style.right.u !== StyleUnit.AUTO;
+    let fixedBottom = style.bottom.u !== StyleUnit.AUTO;
+    if (fixedLeft && fixedRight) {} else if (fixedLeft) {
+      computedStyle.right = data.w - computedStyle.left - this.width;
+    } else if (fixedRight) {
+      computedStyle.left = data.w - computedStyle.right - this.width;
+    }
+    if (fixedTop && fixedBottom) {} else if (fixedTop) {
+      computedStyle.bottom = data.h - computedStyle.top - this.height;
+    } else if (fixedBottom) {
+      computedStyle.top = data.h - computedStyle.bottom - this.height;
     }
     // 最后一行对齐
     lineBox.verticalAlign();
