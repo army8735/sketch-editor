@@ -10,6 +10,8 @@ import {
   colorFrag,
   darkenFrag,
   differenceFrag,
+  dropShadowFrag,
+  dropShadowVert,
   exclusionFrag,
   hardLightFrag,
   hueFrag,
@@ -27,8 +29,6 @@ import {
   simpleFrag,
   simpleVert,
   softLightFrag,
-  dropShadowVert,
-  dropShadowFrag,
 } from '../gl/glsl';
 import { initShaders } from '../gl/webgl';
 import config from '../refresh/config';
@@ -64,6 +64,7 @@ class Root extends Container implements FrameCallback {
   task: Array<((sync: boolean) => void) | undefined>; // 刷新任务回调
   taskClone: Array<((sync: boolean) => void) | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
+  artBoardShadowTexture: WebGLTexture | undefined;
 
   constructor(props: RootProps, children: Array<Node> = []) {
     super(props, children);
@@ -163,7 +164,11 @@ class Root extends Container implements FrameCallback {
     this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
     this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
     this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
-    this.programs.dropShadowProgram = initShaders(gl, dropShadowVert, dropShadowFrag);
+    this.programs.dropShadowProgram = initShaders(
+      gl,
+      dropShadowVert,
+      dropShadowFrag,
+    );
     gl.useProgram(program);
   }
 
@@ -300,10 +305,7 @@ class Root extends Container implements FrameCallback {
     if (addDom || removeDom) {
       lv |= RefreshLevel.REFLOW;
     }
-    if (
-      lv === RefreshLevel.NONE ||
-      this.isDestroyed
-    ) {
+    if (lv === RefreshLevel.NONE || this.isDestroyed) {
       return false;
     }
     // reflow/repaint/<repaint分级

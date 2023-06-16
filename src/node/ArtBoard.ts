@@ -83,7 +83,13 @@ class ArtBoard extends Container {
     const t3 = convertCoords2Gl(tl.x3, tl.y3, cx, cy, false);
     const t4 = convertCoords2Gl(tl.x4, tl.y4, cx, cy, false);
 
-    const tr = calRectPoints(width, -4 / zoom, width + 4 / zoom, 0, matrixWorld);
+    const tr = calRectPoints(
+      width,
+      -4 / zoom,
+      width + 4 / zoom,
+      0,
+      matrixWorld,
+    );
     const t5 = convertCoords2Gl(tr.x1, tr.y1, cx, cy, false);
     const t6 = convertCoords2Gl(tr.x2, tr.y2, cx, cy, false);
     const t7 = convertCoords2Gl(tr.x3, tr.y3, cx, cy, false);
@@ -371,7 +377,6 @@ class ArtBoard extends Container {
 
   static BOX_SHADOW =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDkuMC1jMDAwIDc5LjE3MWMyN2ZhYiwgMjAyMi8wOC8xNi0yMjozNTo0MSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6Q0YxOEMzRkFDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6Q0YxOEMzRjlDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCRDFFMUYwM0M0QTExMUVEOTIxOUREMjgyNjUzODRENSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCRDFFMUYwNEM0QTExMUVEOTIxOUREMjgyNjUzODRENSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PrnWkg0AAACjSURBVHja7JXhCsIwDISTLsr2/i8rbjZueMGjbJhJ/+nBQSj0o224VOUllbe4zsi5VgIUWE9AHa6wGMEMHuCMHvAC1xY4rr4CqInTbbD76luc0uiKA2AT4BnggnoOjlEj4qrb2iUJFNqn/Ibc4XD5AKx7DSzSWX/gLwDtIOwR+Mxg8D2gN0GXE9GLfR5Ab4IuXwyHADrHrMv46j5gtfcX8BRgAOX7OzJVtOaeAAAAAElFTkSuQmCC';
-  static BOX_SHADOW_TEXTURE: WebGLTexture | null = null;
 }
 
 export default ArtBoard;

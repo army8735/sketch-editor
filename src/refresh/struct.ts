@@ -60,11 +60,6 @@ type Merge = {
   isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可是范围外有tempBbox
 };
 
-let resTexture: WebGLTexture | undefined;
-let resFrameBuffer: WebGLFramebuffer | undefined;
-let lastW = 0,
-  lastH = 0;
-
 export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
@@ -286,27 +281,8 @@ export function renderWebgl(
     }
   }
   // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode
-  if (!resTexture || lastW !== W || lastH !== H) {
-    if (resTexture) {
-      gl.deleteTexture(resTexture);
-    }
-    resTexture = createTexture(gl, 0, undefined, W, H);
-    lastW = W;
-    lastH = H;
-  }
-  // 复用
-  if (resFrameBuffer) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer!);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      resTexture,
-      0,
-    );
-  } else {
-    resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
-  }
+  let resTexture = createTexture(gl, 0, undefined, W, H);
+  const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
@@ -480,7 +456,7 @@ export function renderWebgl(
     const children = page.children,
       len = children.length;
     // boxShadow用统一纹理
-    if (ArtBoard.BOX_SHADOW_TEXTURE) {
+    if (root.artBoardShadowTexture) {
       let count = 0;
       for (let i = 0; i < len; i++) {
         const artBoard = children[i];
@@ -516,7 +492,7 @@ export function renderWebgl(
       // 纹理单元
       let u_texture = gl.getUniformLocation(simpleProgram, 'u_texture');
       gl.uniform1i(u_texture, 0);
-      bindTexture(gl, ArtBoard.BOX_SHADOW_TEXTURE, 0);
+      bindTexture(gl, root.artBoardShadowTexture, 0);
       // 渲染并销毁
       gl.drawArrays(gl.TRIANGLES, 0, count * 48);
       gl.deleteBuffer(pointBuffer);
@@ -528,7 +504,7 @@ export function renderWebgl(
       const img = inject.IMG[ArtBoard.BOX_SHADOW];
       // 一般首次不可能有缓存，太特殊的base64了
       if (img && img.source) {
-        ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, img.source);
+        root.artBoardShadowTexture = createTexture(gl, 0, img.source);
         root.addUpdate(
           overlay,
           [],
@@ -539,7 +515,7 @@ export function renderWebgl(
         );
       } else {
         inject.measureImg(ArtBoard.BOX_SHADOW, (res: any) => {
-          ArtBoard.BOX_SHADOW_TEXTURE = createTexture(gl, 0, res.source);
+          root.artBoardShadowTexture = createTexture(gl, 0, res.source);
           root.addUpdate(
             overlay,
             [],
@@ -552,15 +528,8 @@ export function renderWebgl(
       }
     }
   }
-  // 最后将离屏离屏frameBuffer绘入画布，不删除缓存，复用
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    null,
-    0,
-  );
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // 最后将离屏离屏frameBuffer绘入画布
+  releaseFrameBuffer(gl, resFrameBuffer, W, H);
   drawTextureCache(
     gl,
     cx,
