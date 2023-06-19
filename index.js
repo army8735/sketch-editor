@@ -57,6 +57,8 @@
             blur: 'none',
             shadow: [],
             shadowEnable: [],
+            innerShadow: [],
+            innerShadowEnable: [],
         }, v);
     }
     var TagName;
@@ -20232,6 +20234,43 @@
                 return { v: item, u: StyleUnit.BOOLEAN };
             });
         }
+        const innerShadow = style.innerShadow;
+        if (!isNil(innerShadow)) {
+            res.innerShadow = innerShadow.map((item) => {
+                const color = reg.color.exec(item);
+                let s = item;
+                if (color) {
+                    s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
+                }
+                const d = s.match(reg.number);
+                const x = calUnit(d ? d[0] : '0px', true);
+                const y = calUnit(d ? d[1] : '0px', true);
+                const blur = calUnit(d ? d[2] : '0px', true);
+                // blur和spread一定非负
+                blur.v = Math.max(0, blur.v);
+                const spread = calUnit(d ? d[3] : '0px', true);
+                spread.v = Math.max(0, spread.v);
+                return {
+                    v: {
+                        x,
+                        y,
+                        blur,
+                        spread,
+                        color: {
+                            v: color2rgbaInt(color ? color[0] : '#000'),
+                            u: StyleUnit.RGBA,
+                        },
+                    },
+                    u: StyleUnit.SHADOW,
+                };
+            });
+        }
+        const innerShadowEnable = style.innerShadowEnable;
+        if (!isNil(innerShadowEnable)) {
+            res.innerShadowEnable = innerShadowEnable.map((item) => {
+                return { v: item, u: StyleUnit.BOOLEAN };
+            });
+        }
         return res;
     }
     function equalStyle(k, a, b) {
@@ -20547,6 +20586,7 @@
         });
     }
     function convertSketch(json, zipFile) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             console.log('sketch', json);
             const imgs = [], imgHash = {};
@@ -20563,6 +20603,7 @@
             }));
             return {
                 pages,
+                currentPageIndex: ((_a = json.document) === null || _a === void 0 ? void 0 : _a.currentPageIndex) || 0,
                 imgs,
                 fonts: [],
             };
@@ -20619,7 +20660,7 @@
         });
     }
     function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
@@ -20842,8 +20883,8 @@
             // 阴影
             const shadow = [];
             const shadowEnable = [];
-            // const innerShadow: string[] = [];
-            // const innerShadowEnable: boolean[] = [];
+            const innerShadow = [];
+            const innerShadowEnable = [];
             const shadows = (_h = layer.style) === null || _h === void 0 ? void 0 : _h.shadows;
             if (shadows) {
                 shadows.forEach((item) => {
@@ -20855,6 +20896,19 @@
                     ];
                     shadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
                     shadowEnable.push(item.isEnabled);
+                });
+            }
+            const innerShadows = (_j = layer.style) === null || _j === void 0 ? void 0 : _j.innerShadows;
+            if (innerShadows) {
+                innerShadows.forEach((item) => {
+                    const color = [
+                        Math.floor(item.color.red * 255),
+                        Math.floor(item.color.green * 255),
+                        Math.floor(item.color.blue * 255),
+                        item.color.alpha,
+                    ];
+                    innerShadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
+                    innerShadowEnable.push(item.isEnabled);
                 });
             }
             if (layer._class === FileFormat.ClassValue.Group) {
@@ -20887,6 +20941,8 @@
                             blur,
                             shadow,
                             shadowEnable,
+                            innerShadow,
+                            innerShadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -20928,6 +20984,8 @@
                             blur,
                             shadow,
                             shadowEnable,
+                            innerShadow,
+                            innerShadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -20985,20 +21043,20 @@
                         return res;
                     })
                     : undefined;
-                const MSAttributedStringFontAttribute = (_m = (_l = (_k = (_j = layer.style) === null || _j === void 0 ? void 0 : _j.textStyle) === null || _k === void 0 ? void 0 : _k.encodedAttributes) === null || _l === void 0 ? void 0 : _l.MSAttributedStringFontAttribute) === null || _m === void 0 ? void 0 : _m.attributes;
+                const MSAttributedStringFontAttribute = (_o = (_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.MSAttributedStringFontAttribute) === null || _o === void 0 ? void 0 : _o.attributes;
                 const fontSize = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.size
                     : 16;
                 const fontFamily = MSAttributedStringFontAttribute
                     ? MSAttributedStringFontAttribute.name
                     : 'arial';
-                const paragraphStyle = (_q = (_p = (_o = layer.style) === null || _o === void 0 ? void 0 : _o.textStyle) === null || _p === void 0 ? void 0 : _p.encodedAttributes) === null || _q === void 0 ? void 0 : _q.paragraphStyle;
+                const paragraphStyle = (_r = (_q = (_p = layer.style) === null || _p === void 0 ? void 0 : _p.textStyle) === null || _q === void 0 ? void 0 : _q.encodedAttributes) === null || _r === void 0 ? void 0 : _r.paragraphStyle;
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_t = (_s = (_r = layer.style) === null || _r === void 0 ? void 0 : _r.textStyle) === null || _s === void 0 ? void 0 : _s.encodedAttributes) === null || _t === void 0 ? void 0 : _t.kerning) || 0;
+                const letterSpacing = ((_u = (_t = (_s = layer.style) === null || _s === void 0 ? void 0 : _s.textStyle) === null || _t === void 0 ? void 0 : _t.encodedAttributes) === null || _u === void 0 ? void 0 : _u.kerning) || 0;
                 const paragraphSpacing = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.paragraphSpacing) || 0;
-                const MSAttributedStringColorAttribute = (_w = (_v = (_u = layer.style) === null || _u === void 0 ? void 0 : _u.textStyle) === null || _v === void 0 ? void 0 : _v.encodedAttributes) === null || _w === void 0 ? void 0 : _w.MSAttributedStringColorAttribute;
+                const MSAttributedStringColorAttribute = (_x = (_w = (_v = layer.style) === null || _v === void 0 ? void 0 : _v.textStyle) === null || _w === void 0 ? void 0 : _w.encodedAttributes) === null || _x === void 0 ? void 0 : _x.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
                         Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -21041,6 +21099,8 @@
                             blur,
                             shadow,
                             shadowEnable,
+                            innerShadow,
+                            innerShadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -21129,6 +21189,8 @@
                             blur,
                             shadow,
                             shadowEnable,
+                            innerShadow,
+                            innerShadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -21177,6 +21239,10 @@
                             maskMode,
                             breakMask,
                             blur,
+                            shadow,
+                            shadowEnable,
+                            innerShadow,
+                            innerShadowEnable,
                         },
                         isLocked,
                         isExpanded,
@@ -21942,23 +22008,7 @@
      * 3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
      */
     function drawGauss(gl, program, texture, width, height) {
-        const vtPoint = new Float32Array(8), vtTex = new Float32Array(8);
-        vtPoint[0] = -1;
-        vtPoint[1] = -1;
-        vtPoint[2] = -1;
-        vtPoint[3] = 1;
-        vtPoint[4] = 1;
-        vtPoint[5] = -1;
-        vtPoint[6] = 1;
-        vtPoint[7] = 1;
-        vtTex[0] = 0;
-        vtTex[1] = 0;
-        vtTex[2] = 0;
-        vtTex[3] = 1;
-        vtTex[4] = 1;
-        vtTex[5] = 0;
-        vtTex[6] = 1;
-        vtTex[7] = 1;
+        const { vtPoint, vtTex } = getSingleCoords();
         // 顶点buffer
         const pointBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -22603,6 +22653,17 @@
                 };
             });
             computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
+            computedStyle.innerShadow = style.innerShadow.map((item) => {
+                const v = item.v;
+                return {
+                    x: v.x.v,
+                    y: v.y.v,
+                    blur: v.blur.v,
+                    spread: v.spread.v,
+                    color: v.color.v,
+                };
+            });
+            computedStyle.innerShadowEnable = style.innerShadowEnable.map((item) => item.v);
             // repaint已经做了
             if (lv < RefreshLevel.REPAINT) {
                 this._filterBbox = undefined;
@@ -31087,6 +31148,13 @@ varying vec2 v_texCoords;
 uniform sampler2D u_texture;
 uniform vec2 u_direction;
 
+vec4 limit(vec2 coords, float weight) {
+  if(coords[0] <= 0.0 || coords[1] <= 0.0 || coords[0] >= 1.0 || coords[1] >= 1.0) {
+    //return vec4(0.0, 0.0, 0.0, 0.0);
+  }
+  return texture2D(u_texture, coords) * weight;
+}
+
 void main() {
   gl_FragColor = vec4(0.0);
   \${placeholder}
@@ -32363,16 +32431,6 @@ void main() {
     );
   }
 }`;
-    const dropShadowVert = `#version 100
-
-attribute vec2 a_position;
-attribute vec2 a_texCoords;
-varying vec2 v_texCoords;
-
-void main() {
-    gl_Position = vec4(a_position, 0, 1);
-    v_texCoords = a_texCoords;
-}`;
     const dropShadowFrag = `#version 100
 
 #ifdef GL_ES
@@ -32382,15 +32440,51 @@ precision mediump float;
 varying vec2 v_texCoords;
 
 uniform sampler2D u_texture;
-uniform float u_color[4];
+uniform vec4 u_color;
 
 void main() {
-    vec4 c = texture2D(u_texture, v_texCoords);
-    gl_FragColor = vec4(u_color[0] * c.a, u_color[1] * c.a, u_color[2] * c.a, u_color[3] * c.a);
+  vec4 c = texture2D(u_texture, v_texCoords);
+  gl_FragColor = u_color * c.a;
+}`;
+    const innerShadowFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture;
+uniform vec4 u_color;
+
+void main() {
+  vec4 c = texture2D(u_texture, v_texCoords);
+  if (c.a > 0.0) {
+    discard;
+  }
+  gl_FragColor = u_color;
+}`;
+    const innerShadowFragR = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture1;
+uniform sampler2D u_texture2;
+
+void main() {
+  vec4 c = texture2D(u_texture1, v_texCoords);
+  if (c.a <= 0.0) {
+    discard;
+  }
+  gl_FragColor = texture2D(u_texture2, v_texCoords);
 }`;
 
     function renderWebgl(gl, root) {
-        var _a, _b;
+        var _a, _b, _c;
         // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
         let scale = root.getCurPageZoom(), scaleIndex = 0;
         if (scale < 1.1) {
@@ -32436,7 +32530,7 @@ void main() {
                     node.calContent();
                 }
             }
-            const { maskMode, opacity, shadow, shadowEnable, blur, mixBlendMode } = computedStyle;
+            const { maskMode, opacity, shadow, shadowEnable, innerShadow, innerShadowEnable, blur, mixBlendMode } = computedStyle;
             // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
             const needTotal = ((opacity > 0 && opacity < 1) ||
                 mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
@@ -32450,11 +32544,20 @@ void main() {
                     break;
                 }
             }
+            for (let i = 0, len = innerShadow.length; i < len; i++) {
+                if (innerShadowEnable[i] && innerShadow[i].color[3] > 0) {
+                    needShadow = true;
+                    break;
+                }
+            }
+            if (needShadow && ((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available)) {
+                needShadow = false;
+            }
             const needBlur = blur.t !== BLUR.NONE &&
-                (!textureFilter[scaleIndex] || !((_a = textureFilter[scaleIndex]) === null || _a === void 0 ? void 0 : _a.available));
+                (!textureFilter[scaleIndex] || !((_b = textureFilter[scaleIndex]) === null || _b === void 0 ? void 0 : _b.available));
             const needMask = maskMode > 0 &&
                 !!node.next &&
-                (!textureMask[scaleIndex] || !((_b = textureMask[scaleIndex]) === null || _b === void 0 ? void 0 : _b.available));
+                (!textureMask[scaleIndex] || !((_c = textureMask[scaleIndex]) === null || _c === void 0 ? void 0 : _c.available));
             // 记录汇总的同时以下标为k记录个类hash
             if (needTotal || needShadow || needBlur || needMask) {
                 const t = {
@@ -32908,18 +33011,66 @@ void main() {
             return node.textureFilter[scaleIndex];
         }
         let res;
-        const { shadow, shadowEnable, blur } = node.computedStyle;
+        const { shadow, shadowEnable, innerShadow, innerShadowEnable, blur } = node.computedStyle;
         const sd = [];
         shadow.forEach((item, i) => {
             if (shadowEnable[i] && item.color[3] > 0) {
                 sd.push(item);
             }
         });
-        if (sd.length) {
-            res = genShadow(gl, root, node.textureTarget[scaleIndex], sd, structs, index, lv, total, W, H, scale);
+        const isd = [];
+        innerShadow.forEach((item, i) => {
+            if (innerShadowEnable[i] && item.color[3] > 0) {
+                isd.push(item);
+            }
+        });
+        // 2种阴影不能互相干扰，因此都以原本图像为基准生成，最后统一绘入原图
+        const source = node.textureTarget[scaleIndex];
+        if (sd.length || isd.length) {
+            if (sd.length) {
+                res = genShadow(gl, root, source, sd, structs, index, lv, total, W, H, scale);
+            }
+            res = res || source;
+            if (isd.length) {
+                const temp = genInnerShadow(gl, root, source, isd, structs, index, lv, total, W, H, scale);
+                if (temp) {
+                    const programs = root.programs;
+                    const program = programs.program;
+                    const bbox = res.bbox;
+                    const x = bbox[0], y = bbox[1];
+                    let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+                    const dx = -x, dy = -y;
+                    w *= scale;
+                    h *= scale;
+                    const cx = w * 0.5, cy = h * 0.5;
+                    const target = TextureCache.getEmptyInstance(gl, bbox, scale);
+                    const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+                    const matrix = multiplyScale(identity(), scale);
+                    drawTextureCache(gl, cx, cy, program, [
+                        {
+                            opacity: 1,
+                            matrix,
+                            bbox,
+                            texture: res.texture,
+                        },
+                    ], dx, dy, false);
+                    drawTextureCache(gl, cx, cy, program, [
+                        {
+                            opacity: 1,
+                            matrix,
+                            bbox: temp.bbox,
+                            texture: temp.texture,
+                        },
+                    ], dx, dy, false);
+                    res = target;
+                    temp.release();
+                    // 删除fbo恢复
+                    releaseFrameBuffer(gl, frameBuffer, W, H);
+                }
+            }
         }
         if (blur.t === BLUR.GAUSSIAN && blur.radius) {
-            res = genGaussBlur(gl, root, res || node.textureTarget[scaleIndex], blur.radius, structs, index, lv, total, W, H, scale);
+            res = genGaussBlur(gl, root, res || source, blur.radius, structs, index, lv, total, W, H, scale);
         }
         return res;
     }
@@ -32992,10 +33143,10 @@ void main() {
         for (let i = 0; i < r; i++) {
             // u_direction传入基数为100，因此相邻的像素点间隔百分之一
             let c = (r - i) * 0.01;
-            frag += `gl_FragColor += texture2D(u_texture, v_texCoords + vec2(-${c}, -${c}) * u_direction) * ${weights[i]};
-      gl_FragColor += texture2D(u_texture, v_texCoords + vec2(${c}, ${c}) * u_direction) * ${weights[i]};\n`;
+            frag += `gl_FragColor += limit(v_texCoords + vec2(-${c}, -${c}) * u_direction, ${weights[i]});
+      gl_FragColor += limit(v_texCoords + vec2(${c}, ${c}) * u_direction, ${weights[i]});\n`;
         }
-        frag += `gl_FragColor += texture2D(u_texture, v_texCoords) * ${weights[r]};`;
+        frag += `gl_FragColor += limit(v_texCoords, ${weights[r]});`;
         frag = gaussFrag.replace('${placeholder}', frag);
         return (programs[key] = initShaders(gl, gaussVert, frag));
     }
@@ -33088,7 +33239,8 @@ void main() {
             gl.uniform1i(u_texture, 0);
             // shadow颜色
             const u_color = gl.getUniformLocation(dropShadowProgram, 'u_color');
-            gl.uniform1fv(u_color, color2gl(item.color));
+            const color = color2gl(item.color);
+            gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
             // 渲染并销毁
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             gl.deleteBuffer(pointBuffer);
@@ -33115,13 +33267,12 @@ void main() {
                 {
                     opacity: 1,
                     matrix,
-                    bbox: bbox,
+                    bbox,
                     texture: item,
                 },
             ], dx, dy, false);
             gl.deleteTexture(item);
         });
-        // TODO 本身内容不考虑透明度覆盖，透明就是白色
         drawTextureCache(gl, cx, cy, program, [
             {
                 opacity: 1,
@@ -33130,6 +33281,188 @@ void main() {
                 texture: target.texture,
             },
         ], dx, dy, false);
+        target.release();
+        gl.useProgram(program);
+        // 删除fbo恢复
+        releaseFrameBuffer(gl, frameBuffer, W, H);
+        return target2;
+    }
+    function genInnerShadow(gl, root, textureTarget, shadow, structs, index, lv, total, W, H, scale) {
+        const bbox = textureTarget.bbox.slice(0);
+        const sb = [0, 0, 0, 0];
+        for (let i = 0, len = shadow.length; i < len; i++) {
+            const item = shadow[i];
+            const d = kernelSize(item.blur * scale * 0.5);
+            const spread = outerSizeByD(d);
+            if (spread) {
+                sb[0] = Math.min(sb[0], -spread);
+                sb[1] = Math.min(sb[1], -spread);
+                sb[2] = Math.max(sb[2], spread);
+                sb[3] = Math.max(sb[3], spread);
+            }
+        }
+        bbox[0] += sb[0];
+        bbox[1] += sb[1];
+        bbox[2] += sb[2];
+        bbox[3] += sb[3];
+        // 写到一个扩展好尺寸的tex中方便后续处理
+        const x = bbox[0], y = bbox[1];
+        let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        const programs = root.programs;
+        const program = programs.program;
+        const dx = -x, dy = -y;
+        w *= scale;
+        h *= scale;
+        const cx = w * 0.5, cy = h * 0.5;
+        // 扩展好尺寸的原节点纹理
+        const target = TextureCache.getEmptyInstance(gl, bbox, scale);
+        const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+        const matrix = multiplyScale(identity(), scale);
+        drawTextureCache(gl, cx, cy, program, [
+            {
+                opacity: 1,
+                matrix,
+                bbox: textureTarget.bbox,
+                texture: textureTarget.texture,
+            },
+        ], dx, dy, false);
+        // 反向渲染，即原图以外的部分才有shadow，且透明度不跟随原图alpha
+        const innerShadowProgram = programs.innerShadowProgram;
+        const innerShadowRProgram = programs.innerShadowRProgram;
+        const vtPoint = new Float32Array(8);
+        const vtTex = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
+        const list = shadow.map((item) => {
+            gl.useProgram(innerShadowProgram); // 先生成无blur的
+            const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
+            // 这里顶点计算需要考虑shadow本身的偏移，将其加到dx/dy上即可
+            const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx + item.x, dy + item.y, false, matrix);
+            vtPoint[0] = t1.x;
+            vtPoint[1] = t1.y;
+            vtPoint[2] = t4.x;
+            vtPoint[3] = t4.y;
+            vtPoint[4] = t2.x;
+            vtPoint[5] = t2.y;
+            vtPoint[6] = t3.x;
+            vtPoint[7] = t3.y;
+            // 顶点buffer
+            const pointBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+            const a_position = gl.getAttribLocation(innerShadowProgram, 'a_position');
+            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_position);
+            // 纹理buffer
+            const texBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+            let a_texCoords = gl.getAttribLocation(innerShadowProgram, 'a_texCoords');
+            gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_texCoords);
+            // 纹理单元
+            bindTexture(gl, target.texture, 0);
+            const u_texture = gl.getUniformLocation(innerShadowProgram, 'u_texture');
+            gl.uniform1i(u_texture, 0);
+            // shadow颜色
+            const u_color = gl.getUniformLocation(innerShadowProgram, 'u_color');
+            const color = color2gl(item.color);
+            gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
+            // 渲染并销毁
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            gl.deleteBuffer(pointBuffer);
+            gl.deleteBuffer(texBuffer);
+            gl.disableVertexAttribArray(a_position);
+            gl.disableVertexAttribArray(a_texCoords);
+            // 有blur再生成
+            if (item.blur > 0) {
+                const d = kernelSize(item.blur * scale * 0.5);
+                const programGauss = genBlurShader(gl, programs, item.blur * scale * 0.5, d);
+                gl.useProgram(programGauss);
+                const res = drawGauss(gl, programGauss, temp.texture, w, h);
+                temp.release();
+                temp.texture = res;
+                temp.available = true;
+            }
+            // 再次反向裁剪，和原图重合的部分保留
+            gl.useProgram(innerShadowRProgram);
+            const temp2 = TextureCache.getEmptyInstance(gl, bbox, scale);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp2.texture, 0);
+            {
+                // 顶点buffer
+                const { vtPoint, vtTex } = getSingleCoords();
+                const pointBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+                const a_position = gl.getAttribLocation(innerShadowRProgram, 'a_position');
+                gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(a_position);
+                // 纹理buffer
+                const texBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+                let a_texCoords = gl.getAttribLocation(innerShadowRProgram, 'a_texCoords');
+                gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(a_texCoords);
+                // 纹理单元
+                bindTexture(gl, target.texture, 0);
+                bindTexture(gl, temp.texture, 1);
+                const u_texture1 = gl.getUniformLocation(innerShadowRProgram, 'u_texture1');
+                gl.uniform1i(u_texture1, 0);
+                const u_texture2 = gl.getUniformLocation(innerShadowRProgram, 'u_texture2');
+                gl.uniform1i(u_texture2, 1);
+                // 渲染并销毁
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                gl.deleteBuffer(pointBuffer);
+                gl.deleteBuffer(texBuffer);
+                gl.disableVertexAttribArray(a_position);
+                gl.disableVertexAttribArray(a_texCoords);
+            }
+            temp.release();
+            return temp2.texture;
+        });
+        // 将生成的shadow纹理和节点原本的纹理进行混合
+        gl.useProgram(program);
+        const target2 = TextureCache.getEmptyInstance(gl, textureTarget.bbox, scale);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target2.texture, 0);
+        // drawTextureCache(
+        //   gl,
+        //   cx,
+        //   cy,
+        //   program,
+        //   [
+        //     {
+        //       opacity: 1,
+        //       matrix,
+        //       bbox: target.bbox,
+        //       texture: target.texture,
+        //     },
+        //   ],
+        //   dx,
+        //   dy,
+        //   false,
+        // );
+        list.forEach((item) => {
+            drawTextureCache(gl, cx, cy, program, [
+                {
+                    opacity: 1,
+                    matrix,
+                    bbox,
+                    texture: item,
+                },
+            ], 0, 0, false);
+            gl.deleteTexture(item);
+        });
         target.release();
         gl.useProgram(program);
         // 删除fbo恢复
@@ -33404,7 +33737,9 @@ void main() {
     function genFrameBufferWithTexture(gl, texture, width, height) {
         const frameBuffer = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        if (texture) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        }
         gl.viewport(0, 0, width, height);
         return frameBuffer;
     }
@@ -33580,7 +33915,9 @@ void main() {
             this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
             this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
             this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
-            this.programs.dropShadowProgram = initShaders(gl, dropShadowVert, dropShadowFrag);
+            this.programs.dropShadowProgram = initShaders(gl, simpleVert, dropShadowFrag);
+            this.programs.innerShadowProgram = initShaders(gl, simpleVert, innerShadowFrag);
+            this.programs.innerShadowRProgram = initShaders(gl, simpleVert, innerShadowFragR);
             gl.useProgram(program);
         }
         checkRoot() {

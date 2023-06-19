@@ -11,10 +11,11 @@ import {
   darkenFrag,
   differenceFrag,
   dropShadowFrag,
-  dropShadowVert,
   exclusionFrag,
   hardLightFrag,
   hueFrag,
+  innerShadowFrag,
+  innerShadowFragR,
   lightenFrag,
   luminosityFrag,
   mainFrag,
@@ -166,8 +167,18 @@ class Root extends Container implements FrameCallback {
     this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
     this.programs.dropShadowProgram = initShaders(
       gl,
-      dropShadowVert,
+      simpleVert,
       dropShadowFrag,
+    );
+    this.programs.innerShadowProgram = initShaders(
+      gl,
+      simpleVert,
+      innerShadowFrag,
+    );
+    this.programs.innerShadowRProgram = initShaders(
+      gl,
+      simpleVert,
+      innerShadowFragR,
     );
     gl.useProgram(program);
   }

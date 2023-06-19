@@ -230,6 +230,8 @@ export type Style = {
   blur: StyleBlurValue;
   shadow: Array<StyleShadowValue>;
   shadowEnable: Array<StyleBoolValue>;
+  innerShadow: Array<StyleShadowValue>;
+  innerShadowEnable: Array<StyleBoolValue>;
 };
 
 export type ComputedStyle = {
@@ -280,6 +282,8 @@ export type ComputedStyle = {
   blur: ComputedBlur;
   shadow: Array<ComputedShadow>;
   shadowEnable: boolean[];
+  innerShadow: Array<ComputedShadow>;
+  innerShadowEnable: boolean[];
 };
 
 export enum TEXT_ALIGN {

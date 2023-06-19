@@ -330,7 +330,7 @@ $input.onchange = function(e) {
         setFontPanel(selectNode);
       });
 
-      root.setPageIndex(0);
+      root.setPageIndex(json.currentPageIndex || 0);
     });
   }
 }

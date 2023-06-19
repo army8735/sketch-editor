@@ -270,7 +270,7 @@ export function drawTextureCache(
   gl.disableVertexAttribArray(a_opacity);
 }
 
-function getSingleCoords() {
+export function getSingleCoords() {
   const vtPoint = new Float32Array(8),
     vtTex = new Float32Array(8);
   vtPoint[0] = -1;
@@ -343,24 +343,7 @@ export function drawGauss(
   width: number,
   height: number,
 ) {
-  const vtPoint = new Float32Array(8),
-    vtTex = new Float32Array(8);
-  vtPoint[0] = -1;
-  vtPoint[1] = -1;
-  vtPoint[2] = -1;
-  vtPoint[3] = 1;
-  vtPoint[4] = 1;
-  vtPoint[5] = -1;
-  vtPoint[6] = 1;
-  vtPoint[7] = 1;
-  vtTex[0] = 0;
-  vtTex[1] = 0;
-  vtTex[2] = 0;
-  vtTex[3] = 1;
-  vtTex[4] = 1;
-  vtTex[5] = 0;
-  vtTex[6] = 1;
-  vtTex[7] = 1;
+  const { vtPoint, vtTex } = getSingleCoords();
   // 顶点buffer
   const pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);

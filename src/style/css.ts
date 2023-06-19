@@ -479,6 +479,43 @@ export function normalize(style: any): Style {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
+  const innerShadow = style.innerShadow;
+  if (!isNil(innerShadow)) {
+    res.innerShadow = innerShadow.map((item: string) => {
+      const color = reg.color.exec(item);
+      let s = item;
+      if (color) {
+        s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
+      }
+      const d = s.match(reg.number);
+      const x = calUnit(d ? d[0] : '0px', true);
+      const y = calUnit(d ? d[1] : '0px', true);
+      const blur = calUnit(d ? d[2] : '0px', true);
+      // blur和spread一定非负
+      blur.v = Math.max(0, blur.v);
+      const spread = calUnit(d ? d[3] : '0px', true);
+      spread.v = Math.max(0, spread.v);
+      return {
+        v: {
+          x,
+          y,
+          blur,
+          spread,
+          color: {
+            v: color2rgbaInt(color ? color[0] : '#000'),
+            u: StyleUnit.RGBA,
+          },
+        },
+        u: StyleUnit.SHADOW,
+      };
+    });
+  }
+  const innerShadowEnable = style.innerShadowEnable;
+  if (!isNil(innerShadowEnable)) {
+    res.innerShadowEnable = innerShadowEnable.map((item: boolean) => {
+      return { v: item, u: StyleUnit.BOOLEAN };
+    });
+  }
   return res;
 }
 

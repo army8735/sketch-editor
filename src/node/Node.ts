@@ -396,6 +396,17 @@ class Node extends Event {
       };
     });
     computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
+    computedStyle.innerShadow = style.innerShadow.map((item) => {
+      const v = item.v;
+      return {
+        x: v.x.v,
+        y: v.y.v,
+        blur: v.blur.v,
+        spread: v.spread.v,
+        color: v.color.v,
+      };
+    });
+    computedStyle.innerShadowEnable = style.innerShadowEnable.map((item) => item.v);
     // repaint已经做了
     if (lv < RefreshLevel.REPAINT) {
       this._filterBbox = undefined;

@@ -97,6 +97,7 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   );
   return {
     pages,
+    currentPageIndex: json.document?.currentPageIndex || 0,
     imgs,
     fonts: [],
   };
@@ -381,8 +382,8 @@ async function convertItem(
   // 阴影
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
-  // const innerShadow: string[] = [];
-  // const innerShadowEnable: boolean[] = [];
+  const innerShadow: string[] = [];
+  const innerShadowEnable: boolean[] = [];
   const shadows = layer.style?.shadows;
   if (shadows) {
     shadows.forEach((item) => {
@@ -394,6 +395,19 @@ async function convertItem(
       ];
       shadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
       shadowEnable.push(item.isEnabled);
+    });
+  }
+  const innerShadows = layer.style?.innerShadows;
+  if (innerShadows) {
+    innerShadows.forEach((item) => {
+      const color = [
+        Math.floor(item.color.red * 255),
+        Math.floor(item.color.green * 255),
+        Math.floor(item.color.blue * 255),
+        item.color.alpha,
+      ];
+      innerShadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
+      innerShadowEnable.push(item.isEnabled);
     });
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
@@ -428,6 +442,8 @@ async function convertItem(
           blur,
           shadow,
           shadowEnable,
+          innerShadow,
+          innerShadowEnable,
         },
         isLocked,
         isExpanded,
@@ -468,6 +484,8 @@ async function convertItem(
           blur,
           shadow,
           shadowEnable,
+          innerShadow,
+          innerShadowEnable,
         },
         isLocked,
         isExpanded,
@@ -603,6 +621,8 @@ async function convertItem(
           blur,
           shadow,
           shadowEnable,
+          innerShadow,
+          innerShadowEnable,
         },
         isLocked,
         isExpanded,
@@ -710,6 +730,8 @@ async function convertItem(
           blur,
           shadow,
           shadowEnable,
+          innerShadow,
+          innerShadowEnable,
         },
         isLocked,
         isExpanded,
@@ -773,6 +795,10 @@ async function convertItem(
           maskMode,
           breakMask,
           blur,
+          shadow,
+          shadowEnable,
+          innerShadow,
+          innerShadowEnable,
         },
         isLocked,
         isExpanded,

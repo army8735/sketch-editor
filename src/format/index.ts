@@ -2,6 +2,7 @@ import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 
 export type JFile = {
   pages: JPage[];
+  currentPageIndex: number;
   imgs: Array<string>;
   fonts: Array<{ fontFamily: string; url: string }>;
 };
@@ -128,6 +129,8 @@ export type JStyle = {
   blur: string;
   shadow: string[];
   shadowEnable: boolean[];
+  innerShadow: string[];
+  innerShadowEnable: boolean[];
 };
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
@@ -178,6 +181,8 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       blur: 'none',
       shadow: [],
       shadowEnable: [],
+      innerShadow: [],
+      innerShadowEnable: [],
     },
     v,
   );
