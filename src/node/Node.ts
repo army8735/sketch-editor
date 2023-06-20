@@ -1319,6 +1319,12 @@ class Node extends Event {
     }
   }
 
+  checkPosSizeSelf() {
+    if (this.adjustPosAndSize()) {
+      this.checkPosSizeUpward();
+    }
+  }
+
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
   adjustPosAndSize() {
     return false;

@@ -1,7 +1,8 @@
+import { calPoint, identity, multiply } from '../math/matrix';
 import Container from '../node/Container';
 import Node from '../node/Node';
+import Group from '../node/Group';
 import { StyleUnit } from '../style/define';
-import { calPoint, identity, multiply } from '../math/matrix';
 
 export enum POSITION {
   UNDER = 0,
@@ -20,6 +21,10 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
     throw new Error('Can not moveTo self');
   }
   const parent = target.parent!;
+  // 可能移动的parent就是本来的parent，只是children顺序变更，防止迁移后remove造成尺寸变化，计算失效
+  if (parent instanceof Group) {
+    parent.fixedPosAndSize = true;
+  }
   for (let i = 0, len = nodes.length; i < len; i++) {
     const item = nodes[i];
     migrate(parent, item);
@@ -32,6 +37,11 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
     else if (target instanceof Container) {
       (target as Container).appendChild(item);
     }
+  }
+  if (parent instanceof Group) {
+    parent.fixedPosAndSize = false;
+    // 手动检查尺寸变化
+    parent.checkPosSizeSelf();
   }
 }
 

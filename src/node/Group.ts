@@ -46,8 +46,8 @@ class Group extends Container {
     const rect = {
       minX: 0,
       minY: 0,
-      maxX: 0.5,
-      maxY: 0.5,
+      maxX: 0,
+      maxY: 0,
     };
     let isMask = false;
     // 注意要考虑mask和breakMask，被遮罩的都忽略
@@ -71,8 +71,8 @@ class Group extends Container {
       } else {
         rect.minX = minX;
         rect.minY = minY;
-        rect.maxX = Math.max(0.5, maxX);
-        rect.maxY = Math.max(0.5, maxY);
+        rect.maxX = maxX;
+        rect.maxY = maxY;
       }
     }
     return rect;
@@ -172,8 +172,9 @@ class Group extends Container {
    */
   override checkSizeChange() {
     this.checkTranslateHalf();
-    this.checkPosSizeDownward();
-    this.checkPosSizeUpward();
+    if (this.checkPosSizeDownward()) {
+      this.checkPosSizeUpward();
+    }
   }
 
   private checkPosSizeDownward() {
@@ -252,7 +253,7 @@ class Group extends Container {
     if (parent instanceof Group) {
       parent.fixedPosAndSize = false;
     }
-    group.checkSizeChange();
+    group.checkPosSizeSelf();
     return group;
   }
 }
