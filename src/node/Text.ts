@@ -3,7 +3,12 @@ import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
-import { color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle, } from '../style/css';
+import {
+  color2rgbaInt,
+  color2rgbaStr,
+  getBaseline,
+  setFontStyle,
+} from '../style/css';
 import { StyleUnit, TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
@@ -382,12 +387,14 @@ class Text extends Node {
     let fixedTop = style.top.u !== StyleUnit.AUTO;
     let fixedRight = style.right.u !== StyleUnit.AUTO;
     let fixedBottom = style.bottom.u !== StyleUnit.AUTO;
-    if (fixedLeft && fixedRight) {} else if (fixedLeft) {
+    if (fixedLeft && fixedRight) {
+    } else if (fixedLeft) {
       computedStyle.right = data.w - computedStyle.left - this.width;
     } else if (fixedRight) {
       computedStyle.left = data.w - computedStyle.right - this.width;
     }
-    if (fixedTop && fixedBottom) {} else if (fixedTop) {
+    if (fixedTop && fixedBottom) {
+    } else if (fixedTop) {
       computedStyle.bottom = data.h - computedStyle.top - this.height;
     } else if (fixedBottom) {
       computedStyle.top = data.h - computedStyle.bottom - this.height;
@@ -1264,6 +1271,7 @@ class Text extends Node {
         hasChange = this.updateRich(item, style) || hasChange;
       });
     }
+    this.mergeRich();
     // 防止rich变更但整体没有变更结果不刷新
     const keys = this.updateStyleData(style);
     if (keys.length) {

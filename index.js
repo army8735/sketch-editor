@@ -30355,6 +30355,7 @@
                     hasChange = this.updateRich(item, style) || hasChange;
                 });
             }
+            this.mergeRich();
             // 防止rich变更但整体没有变更结果不刷新
             const keys = this.updateStyleData(style);
             if (keys.length) {
@@ -34306,7 +34307,10 @@ void main() {
                 name.push(ff2);
             }
         }
-        color.push(color2rgbaStr(c));
+        const cl = color2rgbaStr(c);
+        if (color.indexOf(cl) === -1) {
+            color.push(cl);
+        }
         if (fontSize.indexOf(fs) === -1) {
             fontSize.push(fs);
         }

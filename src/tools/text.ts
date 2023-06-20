@@ -53,7 +53,10 @@ function putData(
       name.push(ff2);
     }
   }
-  color.push(color2rgbaStr(c));
+  const cl = color2rgbaStr(c);
+  if (color.indexOf(cl) === -1) {
+    color.push(cl);
+  }
   if (fontSize.indexOf(fs) === -1) {
     fontSize.push(fs);
   }
