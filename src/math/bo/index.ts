@@ -38,6 +38,8 @@ function trivial(polygonA: any, polygonB: any) {
   // 两个多边形之间再次互相判断相交
   Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
   Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
+  // console.log(source.toString());
+  // console.log(clip.toString());
   return [source, clip];
 }
 

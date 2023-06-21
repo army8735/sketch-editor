@@ -518,8 +518,10 @@ function findIntersection(list: any, compareBelong: boolean, isIntermediateA: bo
                       }
                     }
                     else {
-                      const b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
-                      const b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                      const k1 = (ax2 - ax1) / (ay2 - ay1);
+                      const k2 = (bx2 - bx1) / (by2 - by1);
+                      const b1 = ay1 - k1 * ax1;
+                      const b2 = by1 - k2 * bx1;
                       if (b1 === b2) {
                         overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg,
                           bx1, by1, bx2, by2, item, false);

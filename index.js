@@ -26085,7 +26085,7 @@
         equal(o) {
             return this === o || (this.x === o.x && this.y === o.y);
         }
-        equalEps(o, eps = 1e-4) {
+        equalEps(o, eps = 1e-2) {
             return (this === o ||
                 (Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps));
         }
@@ -26960,8 +26960,10 @@
                                                 }
                                             }
                                             else {
-                                                const b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
-                                                const b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                                                const k1 = (ax2 - ax1) / (ay2 - ay1);
+                                                const k2 = (bx2 - bx1) / (by2 - by1);
+                                                const b1 = ay1 - k1 * ax1;
+                                                const b2 = by1 - k2 * bx1;
                                                 if (b1 === b2) {
                                                     overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg, bx1, by1, bx2, by2, item, false);
                                                 }
@@ -28087,6 +28089,8 @@
         // 两个多边形之间再次互相判断相交
         Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
         Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
+        // console.log(source.toString());
+        // console.log(clip.toString());
         return [source, clip];
     }
     const INTERSECT = [

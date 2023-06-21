@@ -15,7 +15,7 @@ class Point {
     return this === o || (this.x === o.x && this.y === o.y);
   }
 
-  equalEps(o: Point, eps = 1e-4) {
+  equalEps(o: Point, eps = 1e-2) {
     return (
       this === o ||
       (Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps)
