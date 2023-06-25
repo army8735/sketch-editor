@@ -1,16 +1,25 @@
 import geom from '../geom';
-import Segment from './Segment';
 import Point from './Point';
+import Segment from './Segment';
 
 // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
-function join(res: Array<Array<Segment>>, chains: Array<Array<Segment>>, chain: Array<Segment>, index: number, pt: Point, isHead: boolean) {
+function join(
+  res: Array<Array<Segment>>,
+  chains: Array<Array<Segment>>,
+  chain: Array<Segment>,
+  index: number,
+  pt: Point,
+  isHead: boolean,
+) {
   for (let i = 0, len = chains.length; i < len; i++) {
     let item = chains[i];
     if (item !== chain) {
       let l = item.length;
-      let head = item[0], tail = item[l - 1];
+      let head = item[0],
+        tail = item[l - 1];
       let ptHead = head.coords[0];
-      let coords = tail.coords, l2 = coords.length;
+      let coords = tail.coords,
+        l2 = coords.length;
       let ptTail = coords[l2 - 1];
       if (pt.equal(ptHead)) {
         if (isHead) {
@@ -18,22 +27,19 @@ function join(res: Array<Array<Segment>>, chains: Array<Array<Segment>>, chain: 
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
-        }
-        else {
+        } else {
           item = chain.concat(item);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
         }
-      }
-      else if (pt.equal(ptTail)) {
+      } else if (pt.equal(ptTail)) {
         if (isHead) {
           item = item.concat(chain);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
-        }
-        else {
+        } else {
           item = item.concat(reverse(chain));
           chains[i] = item;
           chains.splice(index, 1);
@@ -46,13 +52,40 @@ function join(res: Array<Array<Segment>>, chains: Array<Array<Segment>>, chain: 
   close(res, chains, chain, index);
 }
 
-function close(res: Array<Array<Segment>>, chains: Array<Array<Segment>>, chain: Array<Segment>, index: number) {
+function close(
+  res: Array<Array<Segment>>,
+  chains: Array<Array<Segment>>,
+  chain: Array<Segment>,
+  index: number,
+) {
   let l = chain.length;
-  let head = chain[0], tail = chain[l - 1];
+  let head = chain[0],
+    tail = chain[l - 1];
   let ptHead = head.coords[0];
-  let coords2 = tail.coords, l2 = coords2.length;
+  let coords2 = tail.coords,
+    l2 = coords2.length;
   let ptTail = coords2[l2 - 1];
-  if (ptHead.equal(ptTail) || ptHead.equalEps(ptTail)) {
+  if (ptHead.equal(ptTail)) {
+    chains.splice(index, 1);
+    res.push(chain);
+  }
+}
+
+function closeEps(
+  res: Array<Array<Segment>>,
+  chains: Array<Array<Segment>>,
+  chain: Array<Segment>,
+  index: number,
+) {
+  let l = chain.length;
+  let head = chain[0],
+    tail = chain[l - 1];
+  let ptHead = head.coords[0];
+  let coords2 = tail.coords,
+    l2 = coords2.length;
+  let ptTail = coords2[l2 - 1];
+  if (ptHead.equalEps(ptTail)) {
+    coords2[l2 - 1] = ptHead;
     chains.splice(index, 1);
     res.push(chain);
   }
@@ -60,12 +93,13 @@ function close(res: Array<Array<Segment>>, chains: Array<Array<Segment>>, chain:
 
 // 整条链颠倒，包含每个线段自身颠倒
 function reverse(chain: Array<Segment>) {
-  chain.forEach(item => item.reverse());
+  chain.forEach((item) => item.reverse());
   return chain.reverse();
 }
 
 export default function (list: Array<Segment>) {
-  let chains: Array<Array<Segment>> = [], res: Array<Array<Segment>> = [];
+  let chains: Array<Array<Segment>> = [],
+    res: Array<Array<Segment>> = [];
   // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
   list.sort(function (a: Segment, b: Segment) {
     if (b.otherFill[0] && b.otherFill[1]) {
@@ -73,92 +107,98 @@ export default function (list: Array<Segment>) {
     }
     return -1;
   });
-  outer:
-    while (list.length) {
-      let seg = list.shift()!, coords = seg.coords, len = coords.length;
-      let start = coords[0], end = coords[len - 1];
-      let temp;
-      // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
-      for (let i = 0, len = chains.length; i < len; i++) {
-        let chain = chains[i], l = chain.length;
-        let head = chain[0], tail = chain[l - 1];
-        let ptHead = head.coords[0];
-        let coords2 = tail.coords, l2 = coords2.length;
-        let ptTail = coords2[l2 - 1];
-        if (start.equal(ptTail)) {
-          if (seg.belong !== tail.belong) {
-            chain.push(seg);
-            join(res, chains, chain, i, end, false);
-            continue outer;
-          }
-          else if (!temp) {
-            temp = { i, t: 0 };
-          }
+  outer: while (list.length) {
+    let seg = list.shift()!,
+      coords = seg.coords,
+      len = coords.length;
+    let start = coords[0],
+      end = coords[len - 1];
+    let temp;
+    // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
+    for (let i = 0, len = chains.length; i < len; i++) {
+      let chain = chains[i],
+        l = chain.length;
+      let head = chain[0],
+        tail = chain[l - 1];
+      let ptHead = head.coords[0];
+      let coords2 = tail.coords,
+        l2 = coords2.length;
+      let ptTail = coords2[l2 - 1];
+      if (start.equal(ptTail)) {
+        if (seg.belong !== tail.belong) {
+          chain.push(seg);
+          join(res, chains, chain, i, end, false);
+          continue outer;
+        } else if (!temp) {
+          temp = { i, t: 0 };
         }
-        else if (start.equal(ptHead)) {
-          if (seg.belong !== tail.belong) {
-            seg.reverse();
-            chain.unshift(seg);
-            join(res, chains, chain, i, end, true);
-            continue outer;
-          }
-          else if (!temp) {
-            temp = { i, t: 1 };
-          }
-        }
-        else if (end.equal(ptTail)) {
-          if (seg.belong !== tail.belong) {
-            seg.reverse();
-            chain.push(seg);
-            join(res, chains, chain, i, start, false);
-            continue outer;
-          }
-          else if (!temp) {
-            temp = { i, t: 2 };
-          }
-        }
-        else if (end.equal(ptHead)) {
-          if (seg.belong !== tail.belong) {
-            chain.unshift(seg);
-            join(res, chains, chain, i, start, true);
-            continue outer;
-          }
-          else if (!temp) {
-            temp = { i, t: 3 };
-          }
-        }
-      }
-      // 如果没有优先添加对方的线段形成包含，则到这里检查是否有己方的进行链接
-      if (temp) {
-        if (temp.t === 0) {
-          chains[temp.i].push(seg);
-          join(res, chains, chains[temp.i], temp.i, end, false);
-        }
-        else if (temp.t === 1) {
+      } else if (start.equal(ptHead)) {
+        if (seg.belong !== tail.belong) {
           seg.reverse();
-          chains[temp.i].unshift(seg);
-          join(res, chains, chains[temp.i], temp.i, end, true);
+          chain.unshift(seg);
+          join(res, chains, chain, i, end, true);
+          continue outer;
+        } else if (!temp) {
+          temp = { i, t: 1 };
         }
-        else if (temp.t === 2) {
+      } else if (end.equal(ptTail)) {
+        if (seg.belong !== tail.belong) {
           seg.reverse();
-          chains[temp.i].push(seg);
-          join(res, chains, chains[temp.i], temp.i, start, false);
+          chain.push(seg);
+          join(res, chains, chain, i, start, false);
+          continue outer;
+        } else if (!temp) {
+          temp = { i, t: 2 };
         }
-        else if (temp.t === 3) {
-          chains[temp.i].unshift(seg);
-          join(res, chains, chains[temp.i], temp.i, start, true);
+      } else if (end.equal(ptHead)) {
+        if (seg.belong !== tail.belong) {
+          chain.unshift(seg);
+          join(res, chains, chain, i, start, true);
+          continue outer;
+        } else if (!temp) {
+          temp = { i, t: 3 };
         }
-      }
-      // 找不到则生成新链
-      else {
-        chains.push([seg]);
       }
     }
+    // 如果没有优先添加对方的线段形成包含，则到这里检查是否有己方的进行链接
+    if (temp) {
+      if (temp.t === 0) {
+        chains[temp.i].push(seg);
+        join(res, chains, chains[temp.i], temp.i, end, false);
+      } else if (temp.t === 1) {
+        seg.reverse();
+        chains[temp.i].unshift(seg);
+        join(res, chains, chains[temp.i], temp.i, end, true);
+      } else if (temp.t === 2) {
+        seg.reverse();
+        chains[temp.i].push(seg);
+        join(res, chains, chains[temp.i], temp.i, start, false);
+      } else if (temp.t === 3) {
+        chains[temp.i].unshift(seg);
+        join(res, chains, chains[temp.i], temp.i, start, true);
+      }
+    }
+    // 找不到则生成新链
+    else {
+      chains.push([seg]);
+    }
+  }
+  for (let i = chains.length - 1; i >= 0; i--) {
+    closeEps(res, chains, chains[i], i);
+  }
+  // console.log(chains);
+  // console.log(res);
   // 鞋带公式求得每个多边形的时钟序  https://zhuanlan.zhihu.com/p/401010594
-  let v = res.map(item => {
+  let v = res.map((item) => {
     // let isInner = true, isOuter = true;
     let clockwise = true;
-    let s = 0, lastX = 0, lastY = 0, minX = 0, minY = 0, maxX = 0, maxY = 0;
+    let s = 0,
+      lastX = 0,
+      lastY = 0,
+      minX = 0,
+      minY = 0,
+      maxX = 0,
+      maxY = 0;
     item.forEach((seg: Segment, i: number) => {
       // 内部是指边的两侧都是对方填充说明在内部
       // if(!seg.otherFill[0] || !seg.otherFill[1]) {
@@ -169,14 +209,15 @@ export default function (list: Array<Segment>) {
       // else {
       //   isOuter = false;
       // }
-      let coords = seg.coords, len = coords.length, bbox = seg.bbox;
+      let coords = seg.coords,
+        len = coords.length,
+        bbox = seg.bbox;
       if (i) {
         minX = Math.min(minX, bbox[0]);
         minY = Math.min(minY, bbox[1]);
         maxX = Math.max(maxX, bbox[2]);
         maxY = Math.max(maxY, bbox[3]);
-      }
-      else {
+      } else {
         minX = bbox[0];
         minY = bbox[1];
         maxX = bbox[2];
@@ -185,28 +226,23 @@ export default function (list: Array<Segment>) {
       if (len === 2) {
         if (i) {
           s += lastX * coords[1].y - lastY * coords[1].x;
-        }
-        else {
+        } else {
           s += coords[0].x * coords[1].y - coords[0].y * coords[1].x;
         }
         lastX = coords[1].x;
         lastY = coords[1].y;
-      }
-      else if (len === 3) {
+      } else if (len === 3) {
         if (i) {
           s += lastX * coords[2].y - lastY * coords[2].x;
-        }
-        else {
+        } else {
           s += coords[0].x * coords[1].y - coords[0].y * coords[2].x;
         }
         lastX = coords[2].x;
         lastY = coords[2].y;
-      }
-      else if (len === 4) {
+      } else if (len === 4) {
         if (i) {
           s += lastX * coords[3].y - lastY * coords[3].x;
-        }
-        else {
+        } else {
           s += coords[0].x * coords[3].y - coords[0].y * coords[3].x;
         }
         lastX = coords[3].x;
@@ -214,7 +250,8 @@ export default function (list: Array<Segment>) {
       }
     });
     // 首个顶点重合
-    let first = item[0], coords = first.coords;
+    let first = item[0],
+      coords = first.coords;
     s += lastX * coords[0].y - lastY * coords[0].x;
     if (s < 0) {
       clockwise = false;
@@ -229,7 +266,7 @@ export default function (list: Array<Segment>) {
       area: (maxX - minX) * (maxY - minY),
     };
   });
-  v.forEach(item => {
+  v.forEach((item) => {
     if (item.checked) {
       return;
     }
@@ -240,8 +277,30 @@ export default function (list: Array<Segment>) {
       if (item2 !== item) {
         const b = item2.bbox;
         // 互相包含则存入列表
-        if (geom.isRectsInside(bbox[0], bbox[1], bbox[2], bbox[3], b[0], b[1], b[2], b[3], true)
-          || geom.isRectsInside(b[0], b[1], b[2], b[3], bbox[0], bbox[1], bbox[2], bbox[3], true)) {
+        if (
+          geom.isRectsInside(
+            bbox[0],
+            bbox[1],
+            bbox[2],
+            bbox[3],
+            b[0],
+            b[1],
+            b[2],
+            b[3],
+            true,
+          ) ||
+          geom.isRectsInside(
+            b[0],
+            b[1],
+            b[2],
+            b[3],
+            bbox[0],
+            bbox[1],
+            bbox[2],
+            bbox[3],
+            true,
+          )
+        ) {
           list.push(item2);
         }
       }
@@ -292,21 +351,28 @@ export default function (list: Array<Segment>) {
       }
     }
   });
-  return v.map(item => {
+  return v.map((item) => {
     let list = item.list.map((seg: Segment) => {
-      let coords = seg.coords, len = coords.length;
+      let coords = seg.coords,
+        len = coords.length;
       if (len === 3) {
         return [coords[1].x, coords[1].y, coords[2].x, coords[2].y];
-      }
-      else if (len === 4) {
-        return [coords[1].x, coords[1].y, coords[2].x, coords[2].y, coords[3].x, coords[3].y];
-      }
-      else {
+      } else if (len === 4) {
+        return [
+          coords[1].x,
+          coords[1].y,
+          coords[2].x,
+          coords[2].y,
+          coords[3].x,
+          coords[3].y,
+        ];
+      } else {
         return [coords[1].x, coords[1].y];
       }
     });
     // 首个顶点重合
-    let first = item.list[0], coords = first.coords;
+    let first = item.list[0],
+      coords = first.coords;
     list.unshift([coords[0].x, coords[0].y]);
     return list;
   });

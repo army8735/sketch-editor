@@ -17,8 +17,7 @@ class Point {
 
   equalEps(o: Point, eps = 1e-2) {
     return (
-      this === o ||
-      (Math.abs(this.x - o.x) < eps && Math.abs(this.y - o.y) < eps)
+      (Math.abs(this.x * 100 - o.x * 100) <= eps * 100 && Math.abs(this.y * 100 - o.y * 100) <= eps * 100)
     );
   }
 
