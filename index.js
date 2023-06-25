@@ -25407,12 +25407,13 @@
                 let border = 0;
                 strokeWidth.forEach((item, i) => {
                     if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5 * 4);
-                        }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
                         else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
                             border = Math.max(border, item * 4);
+                        }
+                        else {
+                            // 默认中间
+                            border = Math.max(border, item * 0.5 * 4);
                         }
                     }
                 });
@@ -29199,12 +29200,13 @@
                 let border = 0;
                 strokeWidth.forEach((item, i) => {
                     if (strokeEnable[i]) {
-                        if (strokePosition[i] === STROKE_POSITION.CENTER) {
-                            border = Math.max(border, item * 0.5 * 4);
-                        }
-                        else if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
+                        if (strokePosition[i] === STROKE_POSITION.INSIDE) ;
                         else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
                             border = Math.max(border, item * 4);
+                        }
+                        else {
+                            // 默认中间
+                            border = Math.max(border, item * 0.5 * 4);
                         }
                     }
                 });
