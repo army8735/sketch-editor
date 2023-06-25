@@ -366,14 +366,14 @@ class Polyline extends Geom {
         ctx.fillStyle = color2rgbaStr(f);
       } else {
         if (f.t === GRADIENT.LINEAR) {
-          const gd = getLinear(f.stops, f.d, 0, 0, w, h);
+          const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.fillStyle = lg;
         } else if (f.t === GRADIENT.RADIAL) {
-          const gd = getRadial(f.stops, f.d, 0, 0, w, h);
+          const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -403,7 +403,7 @@ class Polyline extends Geom {
             ctx.fillStyle = rg;
           }
         } else if (f.t === GRADIENT.CONIC) {
-          const gd = getConic(f.stops, f.d, 0, 0, w, h);
+          const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
             cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -442,6 +442,7 @@ class Polyline extends Geom {
         continue;
       }
       const s = stroke[i];
+      const p = strokePosition[i];
       // 颜色
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
@@ -449,14 +450,14 @@ class Polyline extends Geom {
       // 或者渐变
       else {
         if (s.t === GRADIENT.LINEAR) {
-          const gd = getLinear(s.stops, s.d, 0, 0, w, h);
+          const gd = getLinear(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
           const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach((item) => {
             lg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
           ctx.strokeStyle = lg;
         } else if (s.t === GRADIENT.RADIAL) {
-          const gd = getRadial(s.stops, s.d, 0, 0, w, h);
+          const gd = getRadial(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
           const rg = ctx.createRadialGradient(
             gd.cx,
             gd.cy,
@@ -468,9 +469,52 @@ class Polyline extends Geom {
           gd.stop.forEach((item) => {
             rg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
-          ctx.strokeStyle = rg;
+          // 椭圆渐变，由于有缩放，先离屏绘制白色stroke记a，再绘制变换的结果整屏fill记b，b混合到a上用source-in即可只显示重合的b
+          const m = gd.matrix;
+          if (m) {
+            const ellipse = inject.getOffscreenCanvas(w, h);
+            const ctx2 = ellipse.ctx;
+            ctx2.setLineDash(strokeDasharray);
+            ctx2.lineCap = ctx.lineCap;
+            ctx2.lineJoin = ctx.lineJoin;
+            ctx2.miterLimit = ctx.miterLimit * scale;
+            ctx2.lineWidth = strokeWidth[i] * scale;
+            ctx2.strokeStyle = '#F00';
+            ctx2.beginPath();
+            canvasPolygon(ctx2, points, scale, dx, dy);
+            if (this.props.isClosed) {
+              ctx2.closePath();
+            }
+            if (p === STROKE_POSITION.INSIDE) {
+              ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+              ctx2.save();
+              ctx2.clip();
+              ctx2.stroke();
+              ctx2.restore();
+            } else if (p === STROKE_POSITION.OUTSIDE) {
+              ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+              ctx2.stroke();
+              ctx2.save();
+              ctx2.clip();
+              ctx2.globalCompositeOperation = 'destination-out';
+              ctx2.strokeStyle = '#FFF';
+              ctx2.stroke();
+              ctx2.restore();
+            } else {
+              ctx2.stroke();
+            }
+            ctx2.fillStyle = rg;
+            ctx2.globalCompositeOperation = 'source-in';
+            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            ctx2.fillRect(0, 0, w, h);
+            ctx.drawImage(ellipse.canvas, 0, 0);
+            ellipse.release();
+            continue;
+          } else {
+            ctx.strokeStyle = rg;
+          }
         } else if (s.t === GRADIENT.CONIC) {
-          const gd = getConic(s.stops, s.d, 0, 0, w, h);
+          const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
             cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -479,7 +523,6 @@ class Polyline extends Geom {
         }
       }
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
-      const p = strokePosition[i];
       let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
@@ -509,6 +552,12 @@ class Polyline extends Geom {
         ctx.restore();
       } else if (p === STROKE_POSITION.OUTSIDE) {
         ctx2!.stroke();
+        ctx2!.save();
+        ctx2!.clip();
+        ctx2!.globalCompositeOperation = 'destination-out';
+        ctx2!.strokeStyle = '#FFF';
+        ctx2!.stroke();
+        ctx2!.restore();
         ctx.drawImage(os!.canvas, 0, 0);
         os!.release();
       } else {
