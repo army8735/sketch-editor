@@ -1,10 +1,9 @@
-import { JNode, JPage, TagName } from '../format';
+import { JNode, JPage, PageProps, TagName } from '../format';
 import {
   ArtBoardProps,
   BitmapProps,
   JContainer,
   PolylineProps,
-  Props,
   TextProps,
 } from '../format/';
 import { calPoint, inverse4 } from '../math/matrix';
@@ -60,7 +59,7 @@ function parse(json: JNode): Node | undefined {
 
 class Page extends Container {
   json?: JPage;
-  constructor(props: Props, children: Array<Node>) {
+  constructor(props: PageProps, children: Array<Node>) {
     super(props, children);
     this.isPage = true;
     this.page = this;

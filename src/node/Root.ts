@@ -243,6 +243,10 @@ class Root extends Container implements FrameCallback {
             transformOrigin: [0, 0],
             pointerEvents: false,
           },
+          rule: {
+            baseX: 0,
+            baseY: 0,
+          },
           isLocked: false,
           isExpanded: false,
         },
