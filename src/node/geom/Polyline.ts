@@ -5,6 +5,7 @@ import {
   r2d,
   toPrecision,
 } from '../../math/geom';
+import { drawConicGradient, genConicGradientImageData } from '../../math/gradient';
 import { calPoint, inverse4 } from '../../math/matrix';
 import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
@@ -358,6 +359,7 @@ class Polyline extends Geom {
       }
       const f = fill[i];
       // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+      // conicGradient为了兼容性及各浏览器实现角度不一致，统一自己也用离屏实现
       let ellipse: OffScreen | undefined;
       if (Array.isArray(f)) {
         if (!f[3]) {
@@ -403,18 +405,32 @@ class Polyline extends Geom {
             ctx.fillStyle = rg;
           }
         } else if (f.t === GRADIENT.CONIC) {
+          ellipse = inject.getOffscreenCanvas(w, h);
+          const ctx2 = ellipse.ctx;
           const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-          gd.stop.forEach((item) => {
-            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-          });
-          ctx.fillStyle = cg;
+          const imageData = ctx2.getImageData(0, 0, w, h);
+          genConicGradientImageData(gd.cx, gd.cy, w, h, gd.stop, imageData.data);
+          ctx2.putImageData(imageData, 0, 0);
+          ctx2.beginPath();
+          canvasPolygon(ctx2, points, scale, dx, dy);
+          if (this.props.isClosed) {
+            ctx2.closePath();
+          }
+          ctx2.fillStyle = '#FFF';
+          ctx2.globalCompositeOperation = 'destination-in';
+          ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+          // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          // gd.stop.forEach((item) => {
+          //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          // });
+          // ctx.fillStyle = cg;
         }
       }
       // fill有opacity，设置记得还原
       ctx.globalAlpha = fillOpacity[i];
       if (ellipse) {
         ctx.drawImage(ellipse.canvas, 0, 0);
+        ellipse.release();
       } else {
         ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
       }
@@ -514,12 +530,52 @@ class Polyline extends Geom {
             ctx.strokeStyle = rg;
           }
         } else if (s.t === GRADIENT.CONIC) {
+          // 先画好边框离屏
+          const ellipse = inject.getOffscreenCanvas(w, h);
+          const ctx2 = ellipse.ctx;
+          ctx2.setLineDash(strokeDasharray);
+          ctx2.lineCap = ctx.lineCap;
+          ctx2.lineJoin = ctx.lineJoin;
+          ctx2.miterLimit = ctx.miterLimit * scale;
+          ctx2.lineWidth = strokeWidth[i] * scale;
+          ctx2.strokeStyle = '#F00';
+          ctx2.beginPath();
+          canvasPolygon(ctx2, points, scale, dx, dy);
+          if (this.props.isClosed) {
+            ctx2.closePath();
+          }
+          if (p === STROKE_POSITION.INSIDE) {
+            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+            ctx2.save();
+            ctx2.clip();
+            ctx2.stroke();
+            ctx2.restore();
+          } else if (p === STROKE_POSITION.OUTSIDE) {
+            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+            ctx2.stroke();
+            ctx2.save();
+            ctx2.clip();
+            ctx2.globalCompositeOperation = 'destination-out';
+            ctx2.strokeStyle = '#FFF';
+            ctx2.stroke();
+            ctx2.restore();
+          } else {
+            ctx2.stroke();
+          }
+          // 另外一个渐变离屏
           const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-          gd.stop.forEach((item) => {
-            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-          });
-          ctx.strokeStyle = cg;
+          const os = drawConicGradient(gd.cx, gd.cy, w, h, gd.stop);
+          os.ctx.globalCompositeOperation = 'destination-in';
+          os.ctx.drawImage(ellipse.canvas, 0, 0);
+          ctx.drawImage(os.canvas, 0, 0);
+          ellipse.release();
+          os.release();
+          continue;
+          // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          // gd.stop.forEach((item) => {
+          //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          // });
+          // ctx.strokeStyle = cg;
         }
       }
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除

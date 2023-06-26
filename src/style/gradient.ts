@@ -11,7 +11,7 @@ export function getColorStop(
   stops: Array<ColorStop>,
   length: number,
   isConic = false,
-) {
+): { color: number[], offset: number }[] {
   const list: Array<{ color: Array<number>; offset?: number }> = [];
   const firstColor = stops[0].color.v;
   // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
@@ -185,6 +185,7 @@ export function getColorStop(
       }
     }
   }
+  // @ts-ignore
   return list;
 }
 
@@ -270,7 +271,7 @@ export type Linear = {
   x2: number;
   y2: number;
   total: number;
-  stop: { color: number[]; offset?: number }[];
+  stop: { color: number[]; offset: number }[];
 };
 
 /**
@@ -314,7 +315,7 @@ export type Radial = {
   ellipseLength: number;
   matrix?: Float64Array;
   total: number;
-  stop: { color: number[]; offset?: number }[];
+  stop: { color: number[]; offset: number }[];
 };
 
 export function getRadial(
@@ -368,7 +369,7 @@ export type Conic = {
   angle: number;
   cx: number;
   cy: number;
-  stop: { color: number[]; offset?: number }[];
+  stop: { color: number[]; offset: number }[];
 };
 
 export function getConic(
