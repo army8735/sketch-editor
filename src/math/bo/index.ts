@@ -71,6 +71,7 @@ const INTERSECT = [
 ];
 
 function filter(segments: Array<Segment>, matrix: Array<number>) {
+  // console.log(segments.map(item => item.toString()))
   const res: Array<Segment> = [], hash: any = {};
   segments.forEach(seg => {
     const { belong, myFill, otherFill, otherCoincide } = seg;
@@ -119,6 +120,7 @@ export function union(polygonA: any, polygonB: any, intermediate = false) {
     source.segments = list;
     return source;
   }
+  // console.warn(list.map(item => item.toString()))
   return chains(list);
 }
 

@@ -1191,7 +1191,10 @@ function segAboveCompare(segA: Segment, segB: Segment) {
   }
   // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
   if (la === 2 && a1.x === ca[1].x) {
-    return b1.x >= a1.x;
+    if (b1.x !== a1.x) {
+      return b1.x > a1.x;
+    }
+    return cb[lb - 1].x >= a1.x;
   }
   // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
   const x1 = Math.max(a1.x, b1.x),
@@ -1216,6 +1219,7 @@ function segAboveCompare(segA: Segment, segB: Segment) {
   if (y1 !== y2) {
     return y1 > y2;
   }
+  return false;
 }
 
 // 获取曲线单调性t值，有结果才返回

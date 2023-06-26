@@ -26622,6 +26622,26 @@
     class Segment {
         constructor(coords, belong) {
             this.uuid = uuid++;
+            // 截取过程中曲线可能分成很小一截的水平/垂直直线，这里去除一下
+            if (coords.length > 2) {
+                const first = coords[0];
+                let equalX = true, equalY = true;
+                for (let i = 1, len = coords.length; i < len; i++) {
+                    const item = coords[i];
+                    if (item.x !== first.x) {
+                        equalX = false;
+                    }
+                    if (item.y !== first.y) {
+                        equalY = false;
+                    }
+                    if (!equalX && !equalY) {
+                        break;
+                    }
+                }
+                if (equalX || equalY) {
+                    coords.splice(1, coords.length - 2);
+                }
+            }
             this.coords = coords;
             this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
             this.bbox = this.calBbox();
@@ -27577,7 +27597,10 @@
         }
         // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
         if (la === 2 && a1.x === ca[1].x) {
-            return b1.x >= a1.x;
+            if (b1.x !== a1.x) {
+                return b1.x > a1.x;
+            }
+            return cb[lb - 1].x >= a1.x;
         }
         // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
         const x1 = Math.max(a1.x, b1.x), x3 = Math.min(ca[la - 1].x, cb[lb - 1].x), x2 = x1 + (x3 - x1) * 0.5;
@@ -27597,6 +27620,7 @@
         if (y1 !== y2) {
             return y1 > y2;
         }
+        return false;
     }
     // 获取曲线单调性t值，有结果才返回
     function getBezierMonotonicity(coords, isX) {
@@ -28238,6 +28262,7 @@
         0, 1, 1, 0,
     ];
     function filter(segments, matrix) {
+        // console.log(segments.map(item => item.toString()))
         const res = [], hash = {};
         segments.forEach(seg => {
             const { belong, myFill, otherFill, otherCoincide } = seg;
@@ -28284,6 +28309,7 @@
             source.segments = list;
             return source;
         }
+        // console.warn(list.map(item => item.toString()))
         return chains(list);
     }
     function subtract(polygonA, polygonB, intermediate = false) {
