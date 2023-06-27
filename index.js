@@ -19714,10 +19714,17 @@
         };
     }
     function getConic(stops, d, ox, oy, w, h) {
-        const x1 = ox + d[0] * w;
-        const y1 = oy + d[1] * h;
-        const x2 = ox + d[2] * w;
-        const y2 = oy + d[3] * h;
+        let x1 = Math.floor(ox + d[0] * w);
+        let y1 = Math.floor(oy + d[1] * h);
+        // chrome的bug，偶数会有竖线
+        if (x1 % 2 === 0) {
+            x1++;
+        }
+        if (y1 % 2 === 0) {
+            y1++;
+        }
+        const x2 = Math.floor(ox + d[2] * w);
+        const y2 = Math.floor(oy + d[3] * h);
         const x = x2 - x1;
         const y = y2 - y1;
         let angle = 0;
@@ -19726,11 +19733,15 @@
                 angle = 0;
             }
             else {
-                angle = 180;
+                angle = Math.PI;
             }
         }
         else {
             angle = Math.atan(y / x);
+        }
+        // safari的bug，不是水平右位0而是垂直上，角度需增加90
+        if (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
+            angle += Math.PI * 0.5;
         }
         const total = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
         const stop = getColorStop(stops, total, true);
@@ -25427,102 +25438,6 @@
         }
     }
 
-    function genConicGradientImageData(originX, originY, width, height, stop, data) {
-        if (stop.length < 2) {
-            throw new Error('Conic gradient should receive at least 2 gradient statements (start and end).');
-        }
-        width = Math.floor(width);
-        height = Math.floor(height);
-        /**
-         * 根据坐标获取角度
-         * @param {number} x - x坐标，左上角为原点
-         * @param {number} y - y坐标，左上角为原点
-         * @returns {number} angle - 角度，0～2 * Math.PI，(originX, originY) 为原点，垂直向上为0
-         */
-        const getAngle = (x, y) => {
-            // 此函数注释内的x、y轴基于 (originX, originY)
-            // 计算相对 (originX, originY) 的坐标(dx, dy)
-            const dx = x - originX;
-            const dy = originY - y;
-            // 在y轴上
-            if (dx === 0) {
-                return dy < 0
-                    ? // y轴负半轴，
-                        Math.PI
-                    : // y轴正半轴，因此，(originX, originY) 的angle视作0
-                        0;
-            }
-            // 在x轴上
-            if (dy === 0) {
-                return dx < 0
-                    ? // x轴负半轴
-                        1.5 * Math.PI
-                    : // x轴正半轴
-                        0.5 * Math.PI;
-            }
-            const atan = Math.atan(dy / dx);
-            /**
-             *  2   |  1
-             * -----|-----
-             *  3   |  4
-             */
-            // 第一象限，atan > 0
-            // 第四象限，atan < 0
-            if (dx > 0) {
-                return 0.5 * Math.PI - atan;
-            }
-            // 第二象限，atan < 0
-            // 第三象限，atan > 0
-            if (dx < 0) {
-                return 1.5 * Math.PI - atan;
-            }
-            return 0;
-        };
-        const increasingList = stop.map(item => ({
-            color: item.color,
-            angle: item.offset * Math.PI * 2,
-        }));
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                // step 1. 找到当前点坐标相对 (originX, originY) 的角度
-                let angle = getAngle(x, y);
-                // 转换为向右为0°
-                angle -= Math.PI * 0.5;
-                if (angle < 0) {
-                    angle += Math.PI * 2;
-                }
-                // step 2. 找到当前点坐标对应的渐变区间
-                let j;
-                for (j = 0; j < increasingList.length && increasingList[j].angle <= angle; j++) {
-                }
-                const start = increasingList[j - 1];
-                const end = increasingList[j];
-                if (!(start && end)) {
-                    // step 2-1. 不在渐变区间里
-                    continue;
-                }
-                // step 3. 计算色值并填充
-                const factor = (angle - start.angle) / (end.angle - start.angle);
-                const color = end.color.map((v, idx) => factor * (v - start.color[idx]) + start.color[idx]);
-                const i = (x + y * width) * 4;
-                data[i] = color[0];
-                data[i + 1] = color[1];
-                data[i + 2] = color[2];
-                data[i + 3] = Math.min(255, color[3] * 255);
-            }
-        }
-        return data;
-    }
-    function drawConicGradient(originX, originY, width, height, stop) {
-        width = Math.ceil(width);
-        height = Math.ceil(height);
-        const offscreen = inject.getOffscreenCanvas(width, height);
-        const imageData = offscreen.ctx.getImageData(0, 0, width, height);
-        genConicGradientImageData(originX, originY, width, height, stop, imageData.data);
-        offscreen.ctx.putImageData(imageData, 0, 0);
-        return offscreen;
-    }
-
     function isCornerPoint(point) {
         return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
     }
@@ -25845,25 +25760,12 @@
                         }
                     }
                     else if (f.t === GRADIENT.CONIC) {
-                        ellipse = inject.getOffscreenCanvas(w, h);
-                        const ctx2 = ellipse.ctx;
                         const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const imageData = ctx2.getImageData(0, 0, w, h);
-                        genConicGradientImageData(gd.cx, gd.cy, w, h, gd.stop, imageData.data);
-                        ctx2.putImageData(imageData, 0, 0);
-                        ctx2.beginPath();
-                        canvasPolygon(ctx2, points, scale, dx, dy);
-                        if (this.props.isClosed) {
-                            ctx2.closePath();
-                        }
-                        ctx2.fillStyle = '#FFF';
-                        ctx2.globalCompositeOperation = 'destination-in';
-                        ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
-                        // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-                        // gd.stop.forEach((item) => {
-                        //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-                        // });
-                        // ctx.fillStyle = cg;
+                        const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                        gd.stop.forEach((item) => {
+                            cg.addColorStop(item.offset, color2rgbaStr(item.color));
+                        });
+                        ctx.fillStyle = cg;
                     }
                 }
                 // fill有opacity，设置记得还原
@@ -25974,53 +25876,51 @@
                     }
                     else if (s.t === GRADIENT.CONIC) {
                         // 先画好边框离屏
-                        const ellipse = inject.getOffscreenCanvas(w, h);
-                        const ctx2 = ellipse.ctx;
-                        ctx2.setLineDash(strokeDasharray);
-                        ctx2.lineCap = ctx.lineCap;
-                        ctx2.lineJoin = ctx.lineJoin;
-                        ctx2.miterLimit = ctx.miterLimit * scale;
-                        ctx2.lineWidth = strokeWidth[i] * scale;
-                        ctx2.strokeStyle = '#F00';
-                        ctx2.beginPath();
-                        canvasPolygon(ctx2, points, scale, dx, dy);
-                        if (this.props.isClosed) {
-                            ctx2.closePath();
-                        }
-                        if (p === STROKE_POSITION.INSIDE) {
-                            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-                            ctx2.save();
-                            ctx2.clip();
-                            ctx2.stroke();
-                            ctx2.restore();
-                        }
-                        else if (p === STROKE_POSITION.OUTSIDE) {
-                            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-                            ctx2.stroke();
-                            ctx2.save();
-                            ctx2.clip();
-                            ctx2.globalCompositeOperation = 'destination-out';
-                            ctx2.strokeStyle = '#FFF';
-                            ctx2.stroke();
-                            ctx2.restore();
-                        }
-                        else {
-                            ctx2.stroke();
-                        }
-                        // 另外一个渐变离屏
+                        // const ellipse = inject.getOffscreenCanvas(w, h);
+                        // const ctx2 = ellipse.ctx;
+                        // ctx2.setLineDash(strokeDasharray);
+                        // ctx2.lineCap = ctx.lineCap;
+                        // ctx2.lineJoin = ctx.lineJoin;
+                        // ctx2.miterLimit = ctx.miterLimit * scale;
+                        // ctx2.lineWidth = strokeWidth[i] * scale;
+                        // ctx2.strokeStyle = '#F00';
+                        // ctx2.beginPath();
+                        // canvasPolygon(ctx2, points, scale, dx, dy);
+                        // if (this.props.isClosed) {
+                        //   ctx2.closePath();
+                        // }
+                        // if (p === STROKE_POSITION.INSIDE) {
+                        //   ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                        //   ctx2.save();
+                        //   ctx2.clip();
+                        //   ctx2.stroke();
+                        //   ctx2.restore();
+                        // } else if (p === STROKE_POSITION.OUTSIDE) {
+                        //   ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                        //   ctx2.stroke();
+                        //   ctx2.save();
+                        //   ctx2.clip();
+                        //   ctx2.globalCompositeOperation = 'destination-out';
+                        //   ctx2.strokeStyle = '#FFF';
+                        //   ctx2.stroke();
+                        //   ctx2.restore();
+                        // } else {
+                        //   ctx2.stroke();
+                        // }
+                        // // 另外一个渐变离屏
                         const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const os = drawConicGradient(gd.cx, gd.cy, w, h, gd.stop);
-                        os.ctx.globalCompositeOperation = 'destination-in';
-                        os.ctx.drawImage(ellipse.canvas, 0, 0);
-                        ctx.drawImage(os.canvas, 0, 0);
-                        ellipse.release();
-                        os.release();
-                        continue;
-                        // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-                        // gd.stop.forEach((item) => {
-                        //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-                        // });
-                        // ctx.strokeStyle = cg;
+                        // const os = drawConicGradient(gd.cx, gd.cy, w, h, gd.stop);
+                        // os.ctx.globalCompositeOperation = 'destination-in';
+                        // os.ctx.drawImage(ellipse.canvas, 0, 0);
+                        // ctx.drawImage(os.canvas, 0, 0);
+                        // ellipse.release();
+                        // os.release();
+                        // continue;
+                        const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                        gd.stop.forEach((item) => {
+                            cg.addColorStop(item.offset, color2rgbaStr(item.color));
+                        });
+                        ctx.strokeStyle = cg;
                     }
                 }
                 // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
@@ -29013,24 +28913,12 @@
                         }
                     }
                     else if (f.t === GRADIENT.CONIC) {
-                        ellipse = inject.getOffscreenCanvas(w, h);
-                        const ctx2 = ellipse.ctx;
                         const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const imageData = ctx2.getImageData(0, 0, w, h);
-                        genConicGradientImageData(gd.cx, gd.cy, w, h, gd.stop, imageData.data);
-                        ctx2.putImageData(imageData, 0, 0);
-                        ctx2.beginPath();
-                        points.forEach((item) => {
-                            canvasPolygon(ctx2, item, scale, dx, dy);
+                        const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                        gd.stop.forEach((item) => {
+                            cg.addColorStop(item.offset, color2rgbaStr(item.color));
                         });
-                        ctx2.fillStyle = '#FFF';
-                        ctx2.globalCompositeOperation = 'destination-in';
-                        ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
-                        // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-                        // gd.stop.forEach((item) => {
-                        //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-                        // });
-                        // ctx.fillStyle = cg;
+                        ctx.fillStyle = cg;
                     }
                 }
                 // fill有opacity，设置记得还原
@@ -29139,53 +29027,12 @@
                         }
                     }
                     else if (s.t === GRADIENT.CONIC) {
-                        const ellipse = inject.getOffscreenCanvas(w, h);
-                        const ctx2 = ellipse.ctx;
-                        ctx2.setLineDash(strokeDasharray);
-                        ctx2.lineCap = ctx.lineCap;
-                        ctx2.lineJoin = ctx.lineJoin;
-                        ctx2.miterLimit = ctx.miterLimit * scale;
-                        ctx2.lineWidth = strokeWidth[i] * scale;
-                        ctx2.strokeStyle = '#F00';
-                        ctx2.beginPath();
-                        points.forEach((item) => {
-                            canvasPolygon(ctx2, item, scale, dx, dy);
-                        });
-                        ctx2.closePath();
-                        if (p === STROKE_POSITION.INSIDE) {
-                            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-                            ctx2.save();
-                            ctx2.clip();
-                            ctx2.stroke();
-                            ctx2.restore();
-                        }
-                        else if (p === STROKE_POSITION.OUTSIDE) {
-                            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-                            ctx2.stroke();
-                            ctx2.save();
-                            ctx2.clip();
-                            ctx2.globalCompositeOperation = 'destination-out';
-                            ctx2.strokeStyle = '#FFF';
-                            ctx2.stroke();
-                            ctx2.restore();
-                        }
-                        else {
-                            ctx2.stroke();
-                        }
-                        // 另外一个渐变离屏
                         const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const os = drawConicGradient(gd.cx, gd.cy, w, h, gd.stop);
-                        os.ctx.globalCompositeOperation = 'destination-in';
-                        os.ctx.drawImage(ellipse.canvas, 0, 0);
-                        ctx.drawImage(os.canvas, 0, 0);
-                        ellipse.release();
-                        os.release();
-                        continue;
-                        // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-                        // gd.stop.forEach((item) => {
-                        //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-                        // });
-                        // ctx.strokeStyle = cg;
+                        const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                        gd.stop.forEach((item) => {
+                            cg.addColorStop(item.offset, color2rgbaStr(item.color));
+                        });
+                        ctx.strokeStyle = cg;
                     }
                 }
                 // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除

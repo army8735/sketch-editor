@@ -380,10 +380,17 @@ export function getConic(
   w: number,
   h: number,
 ): Conic {
-  const x1 = ox + d[0] * w;
-  const y1 = oy + d[1] * h;
-  const x2 = ox + d[2] * w;
-  const y2 = oy + d[3] * h;
+  let x1 = Math.floor(ox + d[0] * w);
+  let y1 = Math.floor(oy + d[1] * h);
+  // chrome的bug，偶数会有竖线
+  if (x1 % 2 === 0) {
+    x1++;
+  }
+  if (y1 % 2 === 0) {
+    y1++;
+  }
+  const x2 = Math.floor(ox + d[2] * w);
+  const y2 = Math.floor(oy + d[3] * h);
   const x = x2 - x1;
   const y = y2 - y1;
   let angle = 0;
@@ -391,10 +398,14 @@ export function getConic(
     if (y >= 0) {
       angle = 0;
     } else {
-      angle = 180;
+      angle = Math.PI;
     }
   } else {
     angle = Math.atan(y / x);
+  }
+  // safari的bug，不是水平右位0而是垂直上，角度需增加90
+  if (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
+    angle += Math.PI * 0.5;
   }
   const total = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
   const stop = getColorStop(stops, total, true);

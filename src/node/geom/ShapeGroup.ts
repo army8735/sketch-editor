@@ -25,7 +25,6 @@ import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
-import { drawConicGradient, genConicGradientImageData } from '../../math/gradient';
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -299,24 +298,12 @@ class ShapeGroup extends Group {
             ctx.fillStyle = rg;
           }
         } else if (f.t === GRADIENT.CONIC) {
-          ellipse = inject.getOffscreenCanvas(w, h);
-          const ctx2 = ellipse.ctx;
           const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-          const imageData = ctx2.getImageData(0, 0, w, h);
-          genConicGradientImageData(gd.cx, gd.cy, w, h, gd.stop, imageData.data);
-          ctx2.putImageData(imageData, 0, 0);
-          ctx2.beginPath();
-          points.forEach((item) => {
-            canvasPolygon(ctx2, item, scale, dx, dy);
+          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          gd.stop.forEach((item) => {
+            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
           });
-          ctx2.fillStyle = '#FFF';
-          ctx2.globalCompositeOperation = 'destination-in';
-          ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
-          // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-          // gd.stop.forEach((item) => {
-          //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-          // });
-          // ctx.fillStyle = cg;
+          ctx.fillStyle = cg;
         }
       }
       // fill有opacity，设置记得还原
@@ -421,51 +408,12 @@ class ShapeGroup extends Group {
             ctx.strokeStyle = rg;
           }
         } else if (s.t === GRADIENT.CONIC) {
-          const ellipse = inject.getOffscreenCanvas(w, h);
-          const ctx2 = ellipse.ctx;
-          ctx2.setLineDash(strokeDasharray);
-          ctx2.lineCap = ctx.lineCap;
-          ctx2.lineJoin = ctx.lineJoin;
-          ctx2.miterLimit = ctx.miterLimit * scale;
-          ctx2.lineWidth = strokeWidth[i] * scale;
-          ctx2.strokeStyle = '#F00';
-          ctx2.beginPath();
-          points.forEach((item) => {
-            canvasPolygon(ctx2, item, scale, dx, dy);
-          });
-          ctx2.closePath();
-          if (p === STROKE_POSITION.INSIDE) {
-            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-            ctx2.save();
-            ctx2.clip();
-            ctx2.stroke();
-            ctx2.restore();
-          } else if (p === STROKE_POSITION.OUTSIDE) {
-            ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-            ctx2.stroke();
-            ctx2.save();
-            ctx2.clip();
-            ctx2.globalCompositeOperation = 'destination-out';
-            ctx2.strokeStyle = '#FFF';
-            ctx2.stroke();
-            ctx2.restore();
-          } else {
-            ctx2.stroke();
-          }
-          // 另外一个渐变离屏
           const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-          const os = drawConicGradient(gd.cx, gd.cy, w, h, gd.stop);
-          os.ctx.globalCompositeOperation = 'destination-in';
-          os.ctx.drawImage(ellipse.canvas, 0, 0);
-          ctx.drawImage(os.canvas, 0, 0);
-          ellipse.release();
-          os.release();
-          continue;
-          // const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-          // gd.stop.forEach((item) => {
-          //   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-          // });
-          // ctx.strokeStyle = cg;
+          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          gd.stop.forEach((item) => {
+            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          });
+          ctx.strokeStyle = cg;
         }
       }
       // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
