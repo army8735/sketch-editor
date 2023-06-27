@@ -13,8 +13,8 @@ export function genConicGradientImageData(
       'Conic gradient should receive at least 2 gradient statements (start and end).'
     );
   }
-  width = Math.ceil(width);
-  height = Math.ceil(height);
+  width = Math.floor(width);
+  height = Math.floor(height);
 
   /**
    * 根据坐标获取角度

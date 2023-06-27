@@ -377,6 +377,7 @@ canvas {
   z-index: 10;
   pointer-events: none;
   opacity: 0;
+  transform: translateZ(0);
 }
 
 .input-container .cursor {
@@ -393,8 +394,13 @@ canvas {
   position: absolute;
   left: 0;
   top: 0;
+  width: 10px;
+  height: 100%;
   opacity: 0;
+  box-sizing: content-box;
+  border: none;
   pointer-events: none;
+  transform: translateZ(0);
 }
 
 .side {
