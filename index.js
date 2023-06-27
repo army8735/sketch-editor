@@ -30123,7 +30123,16 @@
                 this.tempCursorX = this.currentCursorX = textBox.x + w;
             }
             else {
-                this.tempCursorX = this.currentCursorX = 0;
+                const textAlign = this.computedStyle.textAlign;
+                if (textAlign === TEXT_ALIGN.CENTER) {
+                    this.tempCursorX = this.currentCursorX = this.width * 0.5;
+                }
+                else if (textAlign === TEXT_ALIGN.RIGHT) {
+                    this.tempCursorX = this.currentCursorX = this.width;
+                }
+                else {
+                    this.tempCursorX = this.currentCursorX = 0;
+                }
             }
             const p = calPoint({ x: this.tempCursorX, y: lineBox.y }, matrixWorld);
             (_a = this.root) === null || _a === void 0 ? void 0 : _a.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * matrixWorld[0]);
@@ -30135,12 +30144,18 @@
                 const lineBox = lineBoxList[i];
                 const list = lineBox.list;
                 if (!list.length && lineBox.index === index) {
+                    cursor.startLineBox = i;
+                    cursor.startTextBox = 0;
+                    cursor.startString = 0;
                     return { lineBox, textBox: undefined };
                 }
                 for (let j = 0, len = list.length; j < len; j++) {
                     const textBox = list[j];
                     if (index >= textBox.index &&
-                        index < textBox.index + textBox.str.length) {
+                        (index < textBox.index + textBox.str.length ||
+                            j === len - 1 &&
+                                lineBox.endEnter &&
+                                index <= textBox.index + textBox.str.length)) {
                         if (isEnd) {
                             cursor.endLineBox = i;
                             cursor.endTextBox = j;
@@ -30165,7 +30180,7 @@
             else {
                 cursor.startLineBox = i;
             }
-            if (!list) {
+            if (!list || !list.length) {
                 if (isEnd) {
                     cursor.endTextBox = 0;
                     cursor.endString = 0;
@@ -30210,7 +30225,15 @@
             const list = lineBox.list;
             // 空行
             if (!list.length) {
-                return calPoint({ x: 0, y: lineBox.y }, m);
+                const textAlign = this.computedStyle.textAlign;
+                let x = 0;
+                if (textAlign === TEXT_ALIGN.CENTER) {
+                    x = this.width * 0.5;
+                }
+                else if (textAlign === TEXT_ALIGN.RIGHT) {
+                    x = this.width;
+                }
+                return calPoint({ x, y: lineBox.y }, m);
             }
             return calPoint({ x: this.currentCursorX, y: lineBox.y }, m);
         }
@@ -30430,7 +30453,16 @@
                 this.tempCursorX = this.currentCursorX = textBox.x + w;
             }
             else {
-                this.tempCursorX = this.currentCursorX = 0;
+                const textAlign = this.computedStyle.textAlign;
+                if (textAlign === TEXT_ALIGN.CENTER) {
+                    this.tempCursorX = this.currentCursorX = this.width * 0.5;
+                }
+                else if (textAlign === TEXT_ALIGN.RIGHT) {
+                    this.tempCursorX = this.currentCursorX = this.width;
+                }
+                else {
+                    this.tempCursorX = this.currentCursorX = 0;
+                }
             }
             const p = calPoint({ x: this.tempCursorX, y: lineBox.y }, m);
             (_c = this.root) === null || _c === void 0 ? void 0 : _c.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
@@ -30590,6 +30622,16 @@
                             break outer;
                         }
                     }
+                }
+            }
+            // 空行特殊判断对齐方式
+            if (!list.length) {
+                const textAlign = this.computedStyle.textAlign;
+                if (textAlign === TEXT_ALIGN.CENTER) {
+                    rx = this.width * 0.5;
+                }
+                else if (textAlign === TEXT_ALIGN.RIGHT) {
+                    rx = this.width;
                 }
             }
             return { x: rx, y: ry, h: rh };
