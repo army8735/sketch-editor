@@ -380,8 +380,12 @@ export function getConic(
   w: number,
   h: number,
 ): Conic {
-  let x1 = Math.floor(ox + d[0] * w);
-  let y1 = Math.floor(oy + d[1] * h);
+  let x1 = Math.floor(ox + 0.5 * w);
+  let y1 = Math.floor(oy + 0.5 * h);
+  const x2 = Math.floor(ox + 0.5 * w);
+  const y2 = Math.floor(oy + 0.5 * h);
+  const x = x2 - x1;
+  const y = y2 - y1;
   // chrome的bug，偶数会有竖线
   if (x1 % 2 === 0) {
     x1++;
@@ -389,10 +393,6 @@ export function getConic(
   if (y1 % 2 === 0) {
     y1++;
   }
-  const x2 = Math.floor(ox + d[2] * w);
-  const y2 = Math.floor(oy + d[3] * h);
-  const x = x2 - x1;
-  const y = y2 - y1;
   let angle = 0;
   if (x === 0) {
     if (y >= 0) {

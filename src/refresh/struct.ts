@@ -1432,23 +1432,6 @@ function genInnerShadow(
     target2.texture,
     0,
   );
-  // drawTextureCache(
-  //   gl,
-  //   cx,
-  //   cy,
-  //   program,
-  //   [
-  //     {
-  //       opacity: 1,
-  //       matrix,
-  //       bbox: target.bbox,
-  //       texture: target.texture,
-  //     },
-  //   ],
-  //   dx,
-  //   dy,
-  //   false,
-  // );
   list.forEach((item) => {
     drawTextureCache(
       gl,

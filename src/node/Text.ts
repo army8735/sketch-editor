@@ -512,12 +512,14 @@ class Text extends Node {
         // 中间循环
         for (let i = startLineBox + 1, len = endLineBox; i < len; i++) {
           const lineBox = lineBoxList[i];
-          ctx.fillRect(
-            0,
-            lineBox.y * scale,
-            lineBox.w * scale,
-            lineBox.lineHeight * scale,
-          );
+          if (lineBox.list.length) {
+            ctx.fillRect(
+              lineBox.list[0].x * scale,
+              lineBox.y * scale,
+              lineBox.w * scale,
+              lineBox.lineHeight * scale,
+            );
+          }
         }
         // 最后尾行
         lineBox = lineBoxList[endLineBox];
@@ -526,8 +528,8 @@ class Text extends Node {
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
-          x1 += ctx.measureText(textBox.str.slice(0, endString)).width * scale;
-          ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
+          let x2 = ctx.measureText(textBox.str.slice(0, endString)).width * scale;
+          ctx.fillRect(x1, lineBox.y * scale, x2, lineBox.lineHeight * scale);
         }
       }
     }
@@ -638,11 +640,11 @@ class Text extends Node {
     const { endLineBox: i, endTextBox: j, endString: k } = cursor;
     cursor.isMulti = true;
     const len = lineBoxList.length;
-    for (let i = 0; i < len; i++) {
-      const lineBox = lineBoxList[i];
+    for (let m = 0; m < len; m++) {
+      const lineBox = lineBoxList[m];
       // 确定y在哪一行后
       if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
-        cursor.endLineBox = i;
+        cursor.endLineBox = m;
         this.getCursorByLocalX(local.x, lineBox, true);
         // 变化需要更新渲染
         if (

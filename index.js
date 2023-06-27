@@ -19714,8 +19714,12 @@
         };
     }
     function getConic(stops, d, ox, oy, w, h) {
-        let x1 = Math.floor(ox + d[0] * w);
-        let y1 = Math.floor(oy + d[1] * h);
+        let x1 = Math.floor(ox + 0.5 * w);
+        let y1 = Math.floor(oy + 0.5 * h);
+        const x2 = Math.floor(ox + 0.5 * w);
+        const y2 = Math.floor(oy + 0.5 * h);
+        const x = x2 - x1;
+        const y = y2 - y1;
         // chrome的bug，偶数会有竖线
         if (x1 % 2 === 0) {
             x1++;
@@ -19723,10 +19727,6 @@
         if (y1 % 2 === 0) {
             y1++;
         }
-        const x2 = Math.floor(ox + d[2] * w);
-        const y2 = Math.floor(oy + d[3] * h);
-        const x = x2 - x1;
-        const y = y2 - y1;
         let angle = 0;
         if (x === 0) {
             if (y >= 0) {
@@ -29751,7 +29751,9 @@
                     // 中间循环
                     for (let i = startLineBox + 1, len = endLineBox; i < len; i++) {
                         const lineBox = lineBoxList[i];
-                        ctx.fillRect(0, lineBox.y * scale, lineBox.w * scale, lineBox.lineHeight * scale);
+                        if (lineBox.list.length) {
+                            ctx.fillRect(lineBox.list[0].x * scale, lineBox.y * scale, lineBox.w * scale, lineBox.lineHeight * scale);
+                        }
                     }
                     // 最后尾行
                     lineBox = lineBoxList[endLineBox];
@@ -29760,8 +29762,8 @@
                     if (textBox) {
                         let x1 = textBox.x * scale;
                         ctx.font = textBox.font;
-                        x1 += ctx.measureText(textBox.str.slice(0, endString)).width * scale;
-                        ctx.fillRect(0, lineBox.y * scale, x1, lineBox.lineHeight * scale);
+                        let x2 = ctx.measureText(textBox.str.slice(0, endString)).width * scale;
+                        ctx.fillRect(x1, lineBox.y * scale, x2, lineBox.lineHeight * scale);
                     }
                 }
             }
@@ -29862,11 +29864,11 @@
             const { endLineBox: i, endTextBox: j, endString: k } = cursor;
             cursor.isMulti = true;
             const len = lineBoxList.length;
-            for (let i = 0; i < len; i++) {
-                const lineBox = lineBoxList[i];
+            for (let m = 0; m < len; m++) {
+                const lineBox = lineBoxList[m];
                 // 确定y在哪一行后
                 if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
-                    cursor.endLineBox = i;
+                    cursor.endLineBox = m;
                     this.getCursorByLocalX(local.x, lineBox, true);
                     // 变化需要更新渲染
                     if (cursor.endLineBox !== i ||
@@ -33590,23 +33592,6 @@ void main() {
         gl.useProgram(program);
         const target2 = TextureCache.getEmptyInstance(gl, textureTarget.bbox, scale);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target2.texture, 0);
-        // drawTextureCache(
-        //   gl,
-        //   cx,
-        //   cy,
-        //   program,
-        //   [
-        //     {
-        //       opacity: 1,
-        //       matrix,
-        //       bbox: target.bbox,
-        //       texture: target.texture,
-        //     },
-        //   ],
-        //   dx,
-        //   dy,
-        //   false,
-        // );
         list.forEach((item) => {
             drawTextureCache(gl, cx, cy, program, [
                 {
