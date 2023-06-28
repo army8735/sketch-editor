@@ -644,6 +644,14 @@ class Node extends Event {
       next.resetMask();
       next = next.next;
     }
+    // mask切换影响父级组的bbox
+    let p = this.parent;
+    while (p && p !== this.root) {
+      p._rect = undefined;
+      p._bbox = undefined;
+      p._filterBbox = undefined;
+      p = p.parent;
+    }
   }
 
   remove(cb?: (sync: boolean) => void) {

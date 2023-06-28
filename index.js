@@ -22898,6 +22898,14 @@
                 next.resetMask();
                 next = next.next;
             }
+            // mask切换影响父级组的bbox
+            let p = this.parent;
+            while (p && p !== this.root) {
+                p._rect = undefined;
+                p._bbox = undefined;
+                p._filterBbox = undefined;
+                p = p.parent;
+            }
         }
         remove(cb) {
             const { root, parent } = this;
@@ -28263,11 +28271,6 @@
             this.isGroup = true;
             this.fixedPosAndSize = false;
         }
-        // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
-        layout(data) {
-            super.layout(data);
-            this.adjustPosAndSize();
-        }
         // 获取单个孩子相对于本父元素的盒子尺寸
         getChildRect(child) {
             const { width, height, matrix } = child;
@@ -28280,7 +28283,7 @@
             };
         }
         // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
-        getChildrenRect() {
+        getChildrenRect(excludeMask = false) {
             const { children } = this;
             const rect = {
                 minX: 0,
@@ -28294,7 +28297,7 @@
                 const child = children[i];
                 const computedStyle = child.computedStyle;
                 const { minX, minY, maxX, maxY } = this.getChildRect(child);
-                if (isMask && !computedStyle.breakMask) {
+                if (isMask && !computedStyle.breakMask && excludeMask) {
                     continue;
                 }
                 if (computedStyle.maskMode) {
@@ -28379,7 +28382,7 @@
                 return false;
             }
             const { children, width: gw, height: gh } = this;
-            const rect = this.getChildrenRect();
+            const rect = this.getChildrenRect(false);
             const dx = rect.minX, dy = rect.minY, dw = rect.maxX - gw, dh = rect.maxY - gh;
             // 检查真正有变化，位置相对于自己原本位置为原点
             if (dx || dy || dw || dh) {
@@ -28437,6 +28440,18 @@
                 parent.fixedPosAndSize = false;
             }
             this.remove();
+        }
+        get rect() {
+            let res = this._rect;
+            if (!res) {
+                res = this._rect = new Float64Array(4);
+                const rect = this.getChildrenRect(true);
+                res[0] = rect.minX;
+                res[1] = rect.minY;
+                res[2] = rect.maxX;
+                res[3] = rect.maxY;
+            }
+            return res;
         }
         // 至少1个node进行编组，以第0个位置为基准
         static group(nodes, props) {
@@ -34219,6 +34234,10 @@ void main() {
                     }
                     if (lv & RefreshLevel.BREAK_MASK) {
                         computedStyle.breakMask = style.breakMask.v;
+                    }
+                    // mask的任何变更都要清空重绘
+                    if (computedStyle.maskMode && !(lv & RefreshLevel.MASK)) {
+                        node.clearMask();
                     }
                 }
                 node.clearCacheUpward(false);

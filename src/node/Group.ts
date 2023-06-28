@@ -5,7 +5,6 @@ import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
-import { LayoutData } from './layout';
 import Node from './Node';
 
 class Group extends Container {
@@ -14,12 +13,6 @@ class Group extends Container {
     super(props, children);
     this.isGroup = true;
     this.fixedPosAndSize = false;
-  }
-
-  // 组的特殊处理，sketch中会出现组的尺寸数据问题，和children的bbox集合对不上，需更正
-  override layout(data: LayoutData) {
-    super.layout(data);
-    this.adjustPosAndSize();
   }
 
   // 获取单个孩子相对于本父元素的盒子尺寸
@@ -41,7 +34,7 @@ class Group extends Container {
   }
 
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
-  private getChildrenRect() {
+  private getChildrenRect(excludeMask = false) {
     const { children } = this;
     const rect = {
       minX: 0,
@@ -55,7 +48,7 @@ class Group extends Container {
       const child = children[i];
       const computedStyle = child.computedStyle;
       const { minX, minY, maxX, maxY } = this.getChildRect(child);
-      if (isMask && !computedStyle.breakMask) {
+      if (isMask && !computedStyle.breakMask && excludeMask) {
         continue;
       }
       if (computedStyle.maskMode) {
@@ -145,7 +138,7 @@ class Group extends Container {
       return false;
     }
     const { children, width: gw, height: gh } = this;
-    const rect = this.getChildrenRect();
+    const rect = this.getChildrenRect(false);
     const dx = rect.minX,
       dy = rect.minY,
       dw = rect.maxX - gw,
@@ -209,6 +202,19 @@ class Group extends Container {
       parent.fixedPosAndSize = false;
     }
     this.remove();
+  }
+
+  override get rect() {
+    let res = this._rect;
+    if (!res) {
+      res = this._rect = new Float64Array(4);
+      const rect = this.getChildrenRect(true);
+      res[0] = rect.minX;
+      res[1] = rect.minY;
+      res[2] = rect.maxX;
+      res[3] = rect.maxY;
+    }
+    return res;
   }
 
   // 至少1个node进行编组，以第0个位置为基准

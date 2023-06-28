@@ -357,6 +357,10 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
         }
+        // mask的任何变更都要清空重绘
+        if (computedStyle.maskMode && !(lv & RefreshLevel.MASK)) {
+          node.clearMask();
+        }
       }
       node.clearCacheUpward(false);
     }
