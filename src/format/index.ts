@@ -241,6 +241,7 @@ export type PolylineProps = Props & {
   fixedRadius: number;
   pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
   isRectangle: boolean;
+  isOval: boolean;
 };
 
 export type Point = {

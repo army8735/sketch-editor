@@ -696,6 +696,7 @@ async function convertItem(
         fixedRadius: layer.fixedRadius || 0,
         pointRadiusBehaviour,
         isRectangle: layer._class === 'rectangle',
+        isOval: layer._class === 'oval',
         style: {
           left,
           top,

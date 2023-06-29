@@ -180,7 +180,8 @@ export function createStar(x: number, y: number, w: number, h: number) {
 
 export function createOval(x: number, y: number, w: number, h: number) {
   const t = 0.2238576251,
-    f = 0.7761423749;
+    f = 0.7761423749,
+    polyType = 'oval';
   const top: Point = {
     x: 0.5,
     y: 0,
@@ -234,7 +235,15 @@ export function createOval(x: number, y: number, w: number, h: number) {
     hasCurveTo: true,
   };
 
-  return createPolyline(x, y, w, h, '椭圆形', [top, left, bottom, right]);
+  return createPolyline(
+    x,
+    y,
+    w,
+    h,
+    '椭圆形',
+    [top, left, bottom, right],
+    polyType,
+  );
 }
 
 export function createTriangle(x: number, y: number, w: number, h: number) {
@@ -247,7 +256,7 @@ export function createTriangle(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
@@ -260,7 +269,7 @@ export function createTriangle(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
@@ -273,12 +282,16 @@ export function createTriangle(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
 
-  return createPolyline(x, y, w, h, '三角形', [topLeft, bottomLeft, bottomRight]);
+  return createPolyline(x, y, w, h, '三角形', [
+    topLeft,
+    bottomLeft,
+    bottomRight,
+  ]);
 }
 
 export function createRect(x: number, y: number, w: number, h: number) {
@@ -292,7 +305,7 @@ export function createRect(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
@@ -305,7 +318,7 @@ export function createRect(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
@@ -318,7 +331,7 @@ export function createRect(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
@@ -331,15 +344,28 @@ export function createRect(x: number, y: number, w: number, h: number) {
     ty: 0,
     cornerRadius: 0,
     cornerStyle: CORNER_STYLE.ROUNDED,
-    curveMode: CURVE_MODE.NONE,
+    curveMode: CURVE_MODE.STRAIGHT,
     hasCurveFrom: false,
     hasCurveTo: false,
   };
 
-  return createPolyline(x, y, w, h, '矩形', [topLeft, bottomLeft, bottomRight, topRight]);
+  return createPolyline(x, y, w, h, '矩形', [
+    topLeft,
+    bottomLeft,
+    bottomRight,
+    topRight,
+  ]);
 }
 
-function createPolyline(x: number, y: number, w: number, h: number, name: string, points: Point[]) {
+function createPolyline(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  name: string,
+  points: Point[],
+  polyType?: string,
+) {
   return new Polyline({
     uuid: uuid.v4(),
     name,
@@ -348,9 +374,13 @@ function createPolyline(x: number, y: number, w: number, h: number, name: string
       top: y,
       width: w,
       height: h,
+      fill: ['#d8d8d8'],
+      fillEnable: [true],
+      fillOpacity: [1],
       strokeEnable: [true],
       stroke: ['#979797'],
       strokeWidth: [1],
+      strokePosition: ['center'],
     },
     points,
     isClosed: true,
@@ -360,5 +390,6 @@ function createPolyline(x: number, y: number, w: number, h: number, name: string
     isRectangle: false,
     isLocked: false,
     isExpanded: false,
+    isOval: polyType === 'oval',
   });
 }

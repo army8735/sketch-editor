@@ -1,7 +1,7 @@
 import { calPoint, identity, multiply } from '../math/matrix';
 import Container from '../node/Container';
-import Node from '../node/Node';
 import Group from '../node/Group';
+import Node from '../node/Node';
 import { StyleUnit } from '../style/define';
 
 export enum POSITION {
@@ -120,9 +120,12 @@ export function migrate(parent: Node, node: Node) {
   // 左右都不固定
   else {
     const left = x1 - x;
-    // 仅固定宽度，以中心点占left的百分比
-    if (widthConstraint) {
-      style.left.v = ((left + style.width.v * 0.5) * 100) / width;
+    // 仅固定宽度，以中心点占left的百分比，或者文字只有left百分比无right
+    if (
+      widthConstraint ||
+      (style.left.u === StyleUnit.PERCENT && style.right.u === StyleUnit.AUTO)
+    ) {
+      style.left.v = ((left + node.width * 0.5) * 100) / width;
     }
     // 左右皆为百分比
     else {
@@ -161,9 +164,12 @@ export function migrate(parent: Node, node: Node) {
   // 上下都不固定
   else {
     const top = y1 - y;
-    // 仅固定宽度，以中心点占top的百分比
-    if (heightConstraint) {
-      style.top.v = ((top + style.height.v * 0.5) * 100) / height;
+    // 仅固定宽度，以中心点占top的百分比，或者文字只有top百分比无bottom
+    if (
+      heightConstraint ||
+      (style.top.u === StyleUnit.PERCENT && style.bottom.u === StyleUnit.AUTO)
+    ) {
+      style.top.v = ((top + node.height * 0.5) * 100) / height;
     }
     // 左右皆为百分比
     else {
