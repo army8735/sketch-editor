@@ -375,7 +375,7 @@ function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: numbe
       let y = ty[j];
       let diff = Math.abs(x - y);
       // 必须小于一定误差
-      if (diff < 1e-10) {
+      if (diff <= 1e-2) {
         t.push({
           x,
           y,
@@ -401,7 +401,7 @@ function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: numbe
       + 2 * points[1].y * t * (1 - t)
       + points[2].y * t * t;
     // 计算误差忽略
-    if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+    if (Math.abs(xt - x) <= 1e-2 && Math.abs(yt - y) <= 1e-2) {
       res.push(t);
     }
   });
@@ -429,7 +429,7 @@ function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: numbe
       let y = ty[j];
       let diff = Math.abs(x - y);
       // 必须小于一定误差
-      if (diff < 1e-10) {
+      if (diff <= 1e-2) {
         t.push({
           x,
           y,
@@ -457,7 +457,7 @@ function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: numbe
       + 3 * points[2].y * t * t * (1 - t)
       + points[3].y * Math.pow(t, 3);
     // 计算误差忽略
-    if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+    if (Math.abs(xt - x) <= 1e-2 && Math.abs(yt - y) <= 1e-2) {
       res.push(t);
     }
   });
