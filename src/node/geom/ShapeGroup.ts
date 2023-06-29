@@ -316,6 +316,52 @@ class ShapeGroup extends Group {
       }
       ctx.globalAlpha = 1;
     }
+    // 内阴影使用canvas的能力
+    const { innerShadow } = this.computedStyle;
+    if (innerShadow && innerShadow.length) {
+      // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
+      let n = 0;
+      innerShadow.forEach((item) => {
+        const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+        n = Math.max(n, m + item.blur * scale);
+      });
+      // 限制在图形内clip
+      ctx.save();
+      ctx.beginPath();
+      points.forEach((item) => {
+        canvasPolygon(ctx, item, scale, dx, dy);
+      });
+      ctx.closePath();
+      ctx.clip();
+      ctx.fillStyle = '#FFF';
+      // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+      ctx.beginPath();
+      points.forEach((item) => {
+        canvasPolygon(ctx, item, scale, dx, dy);
+      });
+      canvasPolygon(ctx, [
+        [-n, -n],
+        [w + n, -n],
+        [w + n, h + n],
+        [-n, h + n],
+        [-n, -n],
+      ], 1, 0, 0);
+      ctx.closePath();
+      innerShadow.forEach((item) => {
+        ctx.shadowOffsetX = item.x * scale;
+        ctx.shadowOffsetY = item.y * scale;
+        ctx.shadowColor = color2rgbaStr(item.color);
+        ctx.shadowBlur = item.blur * scale;
+        ctx.fill('evenodd');
+      });
+      ctx.restore();
+      // 还原给stroke用
+      ctx.beginPath();
+      points.forEach((item) => {
+        canvasPolygon(ctx, item, scale, dx, dy);
+      });
+      ctx.closePath();
+    }
     // 线帽设置
     if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
       ctx.lineCap = 'round';
@@ -421,7 +467,7 @@ class ShapeGroup extends Group {
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
       } else if (p === STROKE_POSITION.OUTSIDE) {
-        os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+        os = inject.getOffscreenCanvas(w, h);
         ctx2 = os.ctx;
         ctx2.setLineDash(strokeDasharray);
         ctx2.lineCap = ctx.lineCap;

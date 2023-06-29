@@ -15516,8 +15516,8 @@
             }
         },
         defaultFontFamily: 'arial',
-        getFontCanvas(contextAttributes) {
-            return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', contextAttributes);
+        getFontCanvas() {
+            return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', { willReadFrequently: true });
         },
         checkSupportFontFamily(ff) {
             ff = ff.toLowerCase();
@@ -15528,7 +15528,7 @@
             if (SUPPORT_FONT.hasOwnProperty(ff)) {
                 return SUPPORT_FONT[ff];
             }
-            let canvas = inject.getFontCanvas({ willReadFrequently: true });
+            let canvas = inject.getFontCanvas();
             let context = canvas.ctx;
             context.textAlign = 'center';
             context.fillStyle = '#000';
@@ -21580,7 +21580,7 @@
         if (k === 'opacity') {
             return RefreshLevel.OPACITY;
         }
-        if (k === 'blur' || k === 'shadow' || k === 'innerShadow') {
+        if (k === 'blur' || k === 'shadow') {
             return RefreshLevel.FILTER;
         }
         if (k === 'mixBlendMode') {
@@ -23482,6 +23482,9 @@
                 else if (right.u === StyleUnit.PERCENT) {
                     right.v -= (dw * 100) / pw;
                 }
+                else if (width.u === StyleUnit.PX) {
+                    width.v = dw + this.width - dx;
+                }
                 computedStyle.right -= dw;
             }
             this.width = computedStyle.width =
@@ -23504,6 +23507,9 @@
                 }
                 else if (bottom.u === StyleUnit.PERCENT) {
                     bottom.v -= (dh * 100) / ph;
+                }
+                else if (height.u === StyleUnit.PX) {
+                    height.v = dh + this.height - dy;
                 }
                 computedStyle.bottom -= dh;
             }
@@ -24506,6 +24512,94 @@
     }
     ArtBoard.BOX_SHADOW = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDkuMC1jMDAwIDc5LjE3MWMyN2ZhYiwgMjAyMi8wOC8xNi0yMjozNTo0MSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6Q0YxOEMzRkFDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6Q0YxOEMzRjlDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCRDFFMUYwM0M0QTExMUVEOTIxOUREMjgyNjUzODRENSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCRDFFMUYwNEM0QTExMUVEOTIxOUREMjgyNjUzODRENSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PrnWkg0AAACjSURBVHja7JXhCsIwDISTLsr2/i8rbjZueMGjbJhJ/+nBQSj0o224VOUllbe4zsi5VgIUWE9AHa6wGMEMHuCMHvAC1xY4rr4CqInTbbD76luc0uiKA2AT4BnggnoOjlEj4qrb2iUJFNqn/Ibc4XD5AKx7DSzSWX/gLwDtIOwR+Mxg8D2gN0GXE9GLfR5Ab4IuXwyHADrHrMv46j5gtfcX8BRgAOX7OzJVtOaeAAAAAElFTkSuQmCC';
 
+    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return;
+        }
+        // 防止空值开始
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return;
+        }
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
+        }
+        else if (first.length === 6) {
+            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
+        }
+        else {
+            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
+            }
+            else if (item.length === 4) {
+                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
+            }
+            else if (item.length === 6) {
+                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
+            }
+        }
+    }
+    function svgPolygon(list, dx = 0, dy = 0) {
+        if (!list || !list.length) {
+            return '';
+        }
+        let start = -1;
+        for (let i = 0, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (Array.isArray(item) && item.length) {
+                start = i;
+                break;
+            }
+        }
+        if (start === -1) {
+            return '';
+        }
+        let s;
+        let first = list[start];
+        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+        if (first.length === 4) {
+            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
+        }
+        else if (first.length === 6) {
+            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
+        }
+        else {
+            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
+        }
+        for (let i = start + 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            if (!Array.isArray(item)) {
+                continue;
+            }
+            if (item.length === 2) {
+                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
+            }
+            else if (item.length === 4) {
+                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
+            }
+            else if (item.length === 6) {
+                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
+            }
+        }
+        return s;
+    }
+
     class Bitmap extends Node {
         constructor(props) {
             super(props);
@@ -24637,9 +24731,56 @@
                 }
                 const canvasCache = (this.canvasCache = CanvasCache.getImgInstance(w, h, this.src));
                 canvasCache.available = true;
+                const ctx = canvasCache.offscreen.ctx;
                 // 第一张图像才绘制，图片解码到canvas上
                 if (canvasCache.getCount(this._src) === 1) {
-                    canvasCache.offscreen.ctx.drawImage(loader.source, 0, 0);
+                    ctx.drawImage(loader.source, 0, 0);
+                }
+                const { innerShadow } = this.computedStyle;
+                if (innerShadow && innerShadow.length) {
+                    // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
+                    let n = 0;
+                    innerShadow.forEach((item) => {
+                        const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+                        n = Math.max(n, m + item.blur * scale);
+                    });
+                    ctx.save();
+                    ctx.beginPath();
+                    canvasPolygon(ctx, [
+                        [0, 0],
+                        [w, 0],
+                        [w, h],
+                        [0, h],
+                        [0, 0],
+                    ], 1, 0, 0);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.fillStyle = '#FFF';
+                    // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+                    ctx.beginPath();
+                    canvasPolygon(ctx, [
+                        [0, 0],
+                        [w, 0],
+                        [w, h],
+                        [0, h],
+                        [0, 0],
+                    ], 1, 0, 0);
+                    canvasPolygon(ctx, [
+                        [-n, -n],
+                        [w + n, -n],
+                        [w + n, h + n],
+                        [-n, h + n],
+                        [-n, -n],
+                    ], 1, 0, 0);
+                    ctx.closePath();
+                    innerShadow.forEach((item) => {
+                        ctx.shadowOffsetX = item.x * scale;
+                        ctx.shadowOffsetY = item.y * scale;
+                        ctx.shadowColor = color2rgbaStr(item.color);
+                        ctx.shadowBlur = item.blur * scale;
+                        ctx.fill('evenodd');
+                    });
+                    ctx.restore();
                 }
             }
             else {
@@ -25073,7 +25214,7 @@
                 let y = ty[j];
                 let diff = Math.abs(x - y);
                 // 必须小于一定误差
-                if (diff < 1e-10) {
+                if (diff <= 1e-2) {
                     t.push({
                         x,
                         y,
@@ -25099,7 +25240,7 @@
                 + 2 * points[1].y * t * (1 - t)
                 + points[2].y * t * t;
             // 计算误差忽略
-            if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+            if (Math.abs(xt - x) <= 1e-2 && Math.abs(yt - y) <= 1e-2) {
                 res.push(t);
             }
         });
@@ -25126,7 +25267,7 @@
                 let y = ty[j];
                 let diff = Math.abs(x - y);
                 // 必须小于一定误差
-                if (diff < 1e-10) {
+                if (diff <= 1e-2) {
                     t.push({
                         x,
                         y,
@@ -25154,7 +25295,7 @@
                 + 3 * points[2].y * t * t * (1 - t)
                 + points[3].y * Math.pow(t, 3);
             // 计算误差忽略
-            if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+            if (Math.abs(xt - x) <= 1e-2 && Math.abs(yt - y) <= 1e-2) {
                 res.push(t);
             }
         });
@@ -25212,94 +25353,6 @@
         getPointT,
         bezierSlope,
     };
-
-    function canvasPolygon(ctx, list, scale, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return;
-        }
-        // 防止空值开始
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return;
-        }
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            ctx.moveTo(first[2] * scale + dx, first[3] * scale + dy);
-        }
-        else if (first.length === 6) {
-            ctx.moveTo(first[4] * scale + dx, first[5] * scale + dy);
-        }
-        else {
-            ctx.moveTo(first[0] * scale + dx, first[1] * scale + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                ctx.lineTo(item[0] * scale + dx, item[1] * scale + dy);
-            }
-            else if (item.length === 4) {
-                ctx.quadraticCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy);
-            }
-            else if (item.length === 6) {
-                ctx.bezierCurveTo(item[0] * scale + dx, item[1] * scale + dy, item[2] * scale + dx, item[3] * scale + dy, item[4] * scale + dx, item[5] * scale + dy);
-            }
-        }
-    }
-    function svgPolygon(list, dx = 0, dy = 0) {
-        if (!list || !list.length) {
-            return '';
-        }
-        let start = -1;
-        for (let i = 0, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (Array.isArray(item) && item.length) {
-                start = i;
-                break;
-            }
-        }
-        if (start === -1) {
-            return '';
-        }
-        let s;
-        let first = list[start];
-        // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-        if (first.length === 4) {
-            s = 'M' + (first[2] + dx) + ',' + (first[3] + dy);
-        }
-        else if (first.length === 6) {
-            s = 'M' + (first[4] + dx) + ',' + (first[5] + dy);
-        }
-        else {
-            s = 'M' + (first[0] + dx) + ',' + (first[1] + dy);
-        }
-        for (let i = start + 1, len = list.length; i < len; i++) {
-            let item = list[i];
-            if (!Array.isArray(item)) {
-                continue;
-            }
-            if (item.length === 2) {
-                s += 'L' + (item[0] + dx) + ',' + (item[1] + dy);
-            }
-            else if (item.length === 4) {
-                s += 'Q' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy);
-            }
-            else if (item.length === 6) {
-                s += 'C' + (item[0] + dx) + ',' + (item[1] + dy) + ' ' + (item[2] + dx) + ',' + (item[3] + dy) + ' ' + (item[4] + dx) + ',' + (item[5] + dy);
-            }
-        }
-        return s;
-    }
 
     class Geom extends Node {
         static isLine(node) {
@@ -25725,7 +25778,6 @@
                 }
                 const f = fill[i];
                 // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
-                // conicGradient为了兼容性及各浏览器实现角度不一致，统一自己也用离屏实现
                 let ellipse;
                 if (Array.isArray(f)) {
                     if (!f[3]) {
@@ -25786,6 +25838,50 @@
                     ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
                 }
                 ctx.globalAlpha = 1;
+            }
+            // 内阴影使用canvas的能力
+            const { innerShadow } = this.computedStyle;
+            if (innerShadow && innerShadow.length) {
+                // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
+                let n = 0;
+                innerShadow.forEach((item) => {
+                    const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+                    n = Math.max(n, m + item.blur * scale);
+                });
+                // 限制在图形内clip
+                ctx.save();
+                ctx.beginPath();
+                canvasPolygon(ctx, points, scale, dx, dy);
+                if (this.props.isClosed) {
+                    ctx.closePath();
+                }
+                ctx.clip();
+                ctx.fillStyle = '#FFF';
+                // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+                ctx.beginPath();
+                canvasPolygon(ctx, points, scale, dx, dy);
+                canvasPolygon(ctx, [
+                    [-n, -n],
+                    [w + n, -n],
+                    [w + n, h + n],
+                    [-n, h + n],
+                    [-n, -n],
+                ], 1, 0, 0);
+                ctx.closePath();
+                innerShadow.forEach((item) => {
+                    ctx.shadowOffsetX = item.x * scale;
+                    ctx.shadowOffsetY = item.y * scale;
+                    ctx.shadowColor = color2rgbaStr(item.color);
+                    ctx.shadowBlur = item.blur * scale;
+                    ctx.fill('evenodd');
+                });
+                ctx.restore();
+                // 还原给stroke用
+                ctx.beginPath();
+                canvasPolygon(ctx, points, scale, dx, dy);
+                if (this.props.isClosed) {
+                    ctx.closePath();
+                }
             }
             // 线帽设置
             if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
@@ -25937,7 +26033,7 @@
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
-                    os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+                    os = inject.getOffscreenCanvas(w, h);
                     ctx2 = os.ctx;
                     ctx2.setLineDash(strokeDasharray);
                     ctx2.lineCap = ctx.lineCap;
@@ -26080,6 +26176,14 @@
             points.forEach((point) => {
                 point.x = (point.absX - dx) / width;
                 point.y = (point.absY - dy) / height;
+                if (point.hasCurveFrom) {
+                    point.fx = (point.absFx - dx) / width;
+                    point.fy = (point.absFy - dy) / height;
+                }
+                if (point.hasCurveTo) {
+                    point.tx = (point.absTx - dx) / width;
+                    point.ty = (point.absTy - dy) / height;
+                }
             });
             this.points = undefined;
         }
@@ -28947,6 +29051,52 @@
                 }
                 ctx.globalAlpha = 1;
             }
+            // 内阴影使用canvas的能力
+            const { innerShadow } = this.computedStyle;
+            if (innerShadow && innerShadow.length) {
+                // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
+                let n = 0;
+                innerShadow.forEach((item) => {
+                    const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+                    n = Math.max(n, m + item.blur * scale);
+                });
+                // 限制在图形内clip
+                ctx.save();
+                ctx.beginPath();
+                points.forEach((item) => {
+                    canvasPolygon(ctx, item, scale, dx, dy);
+                });
+                ctx.closePath();
+                ctx.clip();
+                ctx.fillStyle = '#FFF';
+                // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+                ctx.beginPath();
+                points.forEach((item) => {
+                    canvasPolygon(ctx, item, scale, dx, dy);
+                });
+                canvasPolygon(ctx, [
+                    [-n, -n],
+                    [w + n, -n],
+                    [w + n, h + n],
+                    [-n, h + n],
+                    [-n, -n],
+                ], 1, 0, 0);
+                ctx.closePath();
+                innerShadow.forEach((item) => {
+                    ctx.shadowOffsetX = item.x * scale;
+                    ctx.shadowOffsetY = item.y * scale;
+                    ctx.shadowColor = color2rgbaStr(item.color);
+                    ctx.shadowBlur = item.blur * scale;
+                    ctx.fill('evenodd');
+                });
+                ctx.restore();
+                // 还原给stroke用
+                ctx.beginPath();
+                points.forEach((item) => {
+                    canvasPolygon(ctx, item, scale, dx, dy);
+                });
+                ctx.closePath();
+            }
             // 线帽设置
             if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
                 ctx.lineCap = 'round';
@@ -29056,7 +29206,7 @@
                     ctx.lineWidth = strokeWidth[i] * 2 * scale;
                 }
                 else if (p === STROKE_POSITION.OUTSIDE) {
-                    os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+                    os = inject.getOffscreenCanvas(w, h);
                     ctx2 = os.ctx;
                     ctx2.setLineDash(strokeDasharray);
                     ctx2.lineCap = ctx.lineCap;
@@ -29710,7 +29860,8 @@
         renderCanvas(scale) {
             super.renderCanvas(scale);
             const bbox = this._bbox || this.bbox;
-            const x = bbox[0], y = bbox[1], w = bbox[2] - x, h = bbox[3] - y;
+            const x = bbox[0], y = bbox[1];
+            let w = bbox[2] - x, h = bbox[3] - y;
             while (w * scale > config.MAX_TEXTURE_SIZE ||
                 h * scale > config.MAX_TEXTURE_SIZE) {
                 if (scale <= 1) {
@@ -29723,8 +29874,10 @@
                 return;
             }
             const dx = -x * scale, dy = -y * scale;
+            w *= scale;
+            h *= scale;
             const { rich, computedStyle, lineBoxList } = this;
-            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w * scale, h * scale));
+            const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h));
             canvasCache.available = true;
             const ctx = canvasCache.offscreen.ctx;
             // 如果处于选择范围状态，渲染背景
@@ -29830,6 +29983,62 @@
                     ctx.fillStyle = color;
                     ctx.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
                 }
+            }
+            // 利用canvas的能力绘制shadow
+            const { innerShadow } = this.computedStyle;
+            if (innerShadow && innerShadow.length) {
+                const os2 = inject.getOffscreenCanvas(w, h, '222');
+                const ctx2 = os2.ctx;
+                ctx2.fillStyle = '#000';
+                let n = 0;
+                innerShadow.forEach((item) => {
+                    const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+                    n = Math.max(n, m + item.blur * scale);
+                });
+                // 类似普通绘制文字的循环，只是颜色统一
+                for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                    const lineBox = lineBoxList[i];
+                    // 固定尺寸超过则overflow: hidden
+                    if (lineBox.y >= h) {
+                        break;
+                    }
+                    const list = lineBox.list;
+                    const len = list.length;
+                    for (let i = 0; i < len; i++) {
+                        const textBox = list[i];
+                        // 缩放影响字号
+                        if (scale !== 1) {
+                            ctx2.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                            // @ts-ignore
+                            ctx2.letterSpacing = textBox.letterSpacing.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                        }
+                        else {
+                            ctx2.font = textBox.font;
+                            // @ts-ignore
+                            ctx2.letterSpacing = textBox.letterSpacing;
+                        }
+                        ctx2.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
+                    }
+                }
+                // 反向，即文字部分才是透明，形成一张位图
+                ctx2.globalCompositeOperation = 'source-out';
+                ctx2.fillRect(-n, -n, w + n, h + n);
+                // 将这个位图设置shadow绘制到另外一个位图上
+                const os3 = inject.getOffscreenCanvas(w, h);
+                const ctx3 = os3.ctx;
+                innerShadow.forEach((item) => {
+                    ctx3.shadowOffsetX = item.x * scale;
+                    ctx3.shadowOffsetY = item.y * scale;
+                    ctx3.shadowColor = color2rgbaStr(item.color);
+                    ctx3.shadowBlur = item.blur * scale;
+                    ctx3.drawImage(os2.canvas, 0, 0);
+                });
+                // 再次利用混合模式把shadow返回，注意只保留文字重合部分
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.drawImage(os3.canvas, 0, 0);
+                ctx.globalCompositeOperation = 'source-over';
+                os2.release();
+                os3.release();
             }
         }
         // 根据绝对坐标获取光标位置，同时设置开始光标位置
@@ -33183,63 +33392,17 @@ void main() {
             return node.textureFilter[scaleIndex];
         }
         let res;
-        const { shadow, shadowEnable, innerShadow, innerShadowEnable, blur } = node.computedStyle;
+        const { shadow, shadowEnable, blur } = node.computedStyle;
         const sd = [];
         shadow.forEach((item, i) => {
             if (shadowEnable[i] && item.color[3] > 0) {
                 sd.push(item);
             }
         });
-        const isd = [];
-        innerShadow.forEach((item, i) => {
-            if (innerShadowEnable[i] && item.color[3] > 0) {
-                isd.push(item);
-            }
-        });
         // 2种阴影不能互相干扰，因此都以原本图像为基准生成，最后统一绘入原图
         const source = node.textureTarget[scaleIndex];
-        if (sd.length || isd.length) {
-            if (sd.length) {
-                res = genShadow(gl, root, source, sd, structs, index, lv, total, W, H, scale);
-            }
-            res = res || source;
-            if (isd.length) {
-                const temp = genInnerShadow(gl, root, source, isd, structs, index, lv, total, W, H, scale);
-                if (temp) {
-                    const programs = root.programs;
-                    const program = programs.program;
-                    const bbox = res.bbox;
-                    const x = bbox[0], y = bbox[1];
-                    let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
-                    const dx = -x, dy = -y;
-                    w *= scale;
-                    h *= scale;
-                    const cx = w * 0.5, cy = h * 0.5;
-                    const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-                    const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-                    const matrix = multiplyScale(identity(), scale);
-                    drawTextureCache(gl, cx, cy, program, [
-                        {
-                            opacity: 1,
-                            matrix,
-                            bbox,
-                            texture: res.texture,
-                        },
-                    ], dx, dy, false);
-                    drawTextureCache(gl, cx, cy, program, [
-                        {
-                            opacity: 1,
-                            matrix,
-                            bbox: temp.bbox,
-                            texture: temp.texture,
-                        },
-                    ], dx, dy, false);
-                    res = target;
-                    temp.release();
-                    // 删除fbo恢复
-                    releaseFrameBuffer(gl, frameBuffer, W, H);
-                }
-            }
+        if (sd.length) {
+            res = genShadow(gl, root, source, sd, structs, index, lv, total, W, H, scale);
         }
         if (blur.t === BLUR.GAUSSIAN && blur.radius) {
             res = genGaussBlur(gl, root, res || source, blur.radius, structs, index, lv, total, W, H, scale);
@@ -33329,6 +33492,7 @@ void main() {
             const item = shadow[i];
             const d = kernelSize(item.blur * scale * 0.5);
             const spread = outerSizeByD(d);
+            // 除了模糊增量还需考虑偏移增量
             if (item.x || item.y || spread) {
                 sb[0] = Math.min(sb[0], item.x - spread);
                 sb[1] = Math.min(sb[1], item.y - spread);
@@ -33453,171 +33617,6 @@ void main() {
                 texture: target.texture,
             },
         ], dx, dy, false);
-        target.release();
-        gl.useProgram(program);
-        // 删除fbo恢复
-        releaseFrameBuffer(gl, frameBuffer, W, H);
-        return target2;
-    }
-    function genInnerShadow(gl, root, textureTarget, shadow, structs, index, lv, total, W, H, scale) {
-        const bbox = textureTarget.bbox.slice(0);
-        const sb = [0, 0, 0, 0];
-        for (let i = 0, len = shadow.length; i < len; i++) {
-            const item = shadow[i];
-            const d = kernelSize(item.blur * scale * 0.5);
-            const spread = outerSizeByD(d);
-            if (spread) {
-                sb[0] = Math.min(sb[0], -spread);
-                sb[1] = Math.min(sb[1], -spread);
-                sb[2] = Math.max(sb[2], spread);
-                sb[3] = Math.max(sb[3], spread);
-            }
-        }
-        bbox[0] += sb[0];
-        bbox[1] += sb[1];
-        bbox[2] += sb[2];
-        bbox[3] += sb[3];
-        // 写到一个扩展好尺寸的tex中方便后续处理
-        const x = bbox[0], y = bbox[1];
-        let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
-        while (w * scale > config.MAX_TEXTURE_SIZE ||
-            h * scale > config.MAX_TEXTURE_SIZE) {
-            if (scale <= 1) {
-                break;
-            }
-            scale = scale >> 1;
-        }
-        if (w * scale > config.MAX_TEXTURE_SIZE ||
-            h * scale > config.MAX_TEXTURE_SIZE) {
-            return;
-        }
-        const programs = root.programs;
-        const program = programs.program;
-        const dx = -x, dy = -y;
-        w *= scale;
-        h *= scale;
-        const cx = w * 0.5, cy = h * 0.5;
-        // 扩展好尺寸的原节点纹理
-        const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-        const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-        const matrix = multiplyScale(identity(), scale);
-        drawTextureCache(gl, cx, cy, program, [
-            {
-                opacity: 1,
-                matrix,
-                bbox: textureTarget.bbox,
-                texture: textureTarget.texture,
-            },
-        ], dx, dy, false);
-        // 反向渲染，即原图以外的部分才有shadow，且透明度不跟随原图alpha
-        const innerShadowProgram = programs.innerShadowProgram;
-        const innerShadowRProgram = programs.innerShadowRProgram;
-        const vtPoint = new Float32Array(8);
-        const vtTex = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
-        const list = shadow.map((item) => {
-            gl.useProgram(innerShadowProgram); // 先生成无blur的
-            const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.texture, 0);
-            // 这里顶点计算需要考虑shadow本身的偏移，将其加到dx/dy上即可
-            const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx + item.x, dy + item.y, false, matrix);
-            vtPoint[0] = t1.x;
-            vtPoint[1] = t1.y;
-            vtPoint[2] = t4.x;
-            vtPoint[3] = t4.y;
-            vtPoint[4] = t2.x;
-            vtPoint[5] = t2.y;
-            vtPoint[6] = t3.x;
-            vtPoint[7] = t3.y;
-            // 顶点buffer
-            const pointBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-            const a_position = gl.getAttribLocation(innerShadowProgram, 'a_position');
-            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(a_position);
-            // 纹理buffer
-            const texBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-            let a_texCoords = gl.getAttribLocation(innerShadowProgram, 'a_texCoords');
-            gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(a_texCoords);
-            // 纹理单元
-            bindTexture(gl, target.texture, 0);
-            const u_texture = gl.getUniformLocation(innerShadowProgram, 'u_texture');
-            gl.uniform1i(u_texture, 0);
-            // shadow颜色
-            const u_color = gl.getUniformLocation(innerShadowProgram, 'u_color');
-            const color = color2gl(item.color);
-            gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
-            // 渲染并销毁
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-            gl.deleteBuffer(pointBuffer);
-            gl.deleteBuffer(texBuffer);
-            gl.disableVertexAttribArray(a_position);
-            gl.disableVertexAttribArray(a_texCoords);
-            // 有blur再生成
-            if (item.blur > 0) {
-                const d = kernelSize(item.blur * scale * 0.5);
-                const programGauss = genBlurShader(gl, programs, item.blur * scale * 0.5, d);
-                gl.useProgram(programGauss);
-                const res = drawGauss(gl, programGauss, temp.texture, w, h);
-                temp.release();
-                temp.texture = res;
-                temp.available = true;
-            }
-            // 再次反向裁剪，和原图重合的部分保留
-            gl.useProgram(innerShadowRProgram);
-            const temp2 = TextureCache.getEmptyInstance(gl, bbox, scale);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp2.texture, 0);
-            {
-                // 顶点buffer
-                const { vtPoint, vtTex } = getSingleCoords();
-                const pointBuffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-                const a_position = gl.getAttribLocation(innerShadowRProgram, 'a_position');
-                gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(a_position);
-                // 纹理buffer
-                const texBuffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-                let a_texCoords = gl.getAttribLocation(innerShadowRProgram, 'a_texCoords');
-                gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(a_texCoords);
-                // 纹理单元
-                bindTexture(gl, target.texture, 0);
-                bindTexture(gl, temp.texture, 1);
-                const u_texture1 = gl.getUniformLocation(innerShadowRProgram, 'u_texture1');
-                gl.uniform1i(u_texture1, 0);
-                const u_texture2 = gl.getUniformLocation(innerShadowRProgram, 'u_texture2');
-                gl.uniform1i(u_texture2, 1);
-                // 渲染并销毁
-                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-                gl.deleteBuffer(pointBuffer);
-                gl.deleteBuffer(texBuffer);
-                gl.disableVertexAttribArray(a_position);
-                gl.disableVertexAttribArray(a_texCoords);
-            }
-            temp.release();
-            return temp2.texture;
-        });
-        // 将生成的shadow纹理和节点原本的纹理进行混合
-        gl.useProgram(program);
-        const target2 = TextureCache.getEmptyInstance(gl, textureTarget.bbox, scale);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target2.texture, 0);
-        list.forEach((item) => {
-            drawTextureCache(gl, cx, cy, program, [
-                {
-                    opacity: 1,
-                    matrix,
-                    bbox,
-                    texture: item,
-                },
-            ], 0, 0, false);
-            gl.deleteTexture(item);
-        });
         target.release();
         gl.useProgram(program);
         // 删除fbo恢复
@@ -33846,7 +33845,7 @@ void main() {
         }
         // canvas模式特殊的dx和matrix
         const dx = -x * scale, dy = -y * scale;
-        const os = inject.getOffscreenCanvas(w * scale, h * scale, 'maskOutline');
+        const os = inject.getOffscreenCanvas(w * scale, h * scale);
         const ctx = os.ctx;
         ctx.fillStyle = '#FFF';
         // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域

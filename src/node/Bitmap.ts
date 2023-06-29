@@ -7,6 +7,8 @@ import inject from '../util/inject';
 import { isFunction } from '../util/type';
 import { LayoutData } from './layout';
 import Node from './Node';
+import { canvasPolygon } from '../refresh/paint';
+import { color2rgbaStr } from '../style/css';
 
 type Loader = {
   error: boolean;
@@ -174,9 +176,56 @@ class Bitmap extends Node {
         this.src,
       ));
       canvasCache.available = true;
+      const ctx = canvasCache.offscreen.ctx;
       // 第一张图像才绘制，图片解码到canvas上
       if (canvasCache.getCount(this._src) === 1) {
-        canvasCache.offscreen.ctx.drawImage(loader.source!, 0, 0);
+        ctx.drawImage(loader.source!, 0, 0);
+      }
+      const { innerShadow } = this.computedStyle;
+      if (innerShadow && innerShadow.length) {
+        // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
+        let n = 0;
+        innerShadow.forEach((item) => {
+          const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+          n = Math.max(n, m + item.blur * scale);
+        });
+        ctx.save();
+        ctx.beginPath();
+        canvasPolygon(ctx, [
+          [0, 0],
+          [w, 0],
+          [w, h],
+          [0, h],
+          [0, 0],
+        ], 1, 0, 0);
+        ctx.closePath();
+        ctx.clip();
+        ctx.fillStyle = '#FFF';
+        // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+        ctx.beginPath();
+        canvasPolygon(ctx, [
+          [0, 0],
+          [w, 0],
+          [w, h],
+          [0, h],
+          [0, 0],
+        ], 1, 0, 0);
+        canvasPolygon(ctx, [
+          [-n, -n],
+          [w + n, -n],
+          [w + n, h + n],
+          [-n, h + n],
+          [-n, -n],
+        ], 1, 0, 0);
+        ctx.closePath();
+        innerShadow.forEach((item) => {
+          ctx.shadowOffsetX = item.x * scale;
+          ctx.shadowOffsetY = item.y * scale;
+          ctx.shadowColor = color2rgbaStr(item.color);
+          ctx.shadowBlur = item.blur * scale;
+          ctx.fill('evenodd');
+        });
+        ctx.restore();
       }
     } else {
       super.renderCanvas(scale);

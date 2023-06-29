@@ -358,7 +358,6 @@ class Polyline extends Geom {
       }
       const f = fill[i];
       // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
-      // conicGradient为了兼容性及各浏览器实现角度不一致，统一自己也用离屏实现
       let ellipse: OffScreen | undefined;
       if (Array.isArray(f)) {
         if (!f[3]) {
@@ -421,6 +420,50 @@ class Polyline extends Geom {
         ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
       }
       ctx.globalAlpha = 1;
+    }
+    // 内阴影使用canvas的能力
+    const { innerShadow } = this.computedStyle;
+    if (innerShadow && innerShadow.length) {
+      // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
+      let n = 0;
+      innerShadow.forEach((item) => {
+        const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+        n = Math.max(n, m + item.blur * scale);
+      });
+      // 限制在图形内clip
+      ctx.save();
+      ctx.beginPath();
+      canvasPolygon(ctx, points, scale, dx, dy);
+      if (this.props.isClosed) {
+        ctx.closePath();
+      }
+      ctx.clip();
+      ctx.fillStyle = '#FFF';
+      // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+      ctx.beginPath();
+      canvasPolygon(ctx, points, scale, dx, dy);
+      canvasPolygon(ctx, [
+        [-n, -n],
+        [w + n, -n],
+        [w + n, h + n],
+        [-n, h + n],
+        [-n, -n],
+      ], 1, 0, 0);
+      ctx.closePath();
+      innerShadow.forEach((item) => {
+        ctx.shadowOffsetX = item.x * scale;
+        ctx.shadowOffsetY = item.y * scale;
+        ctx.shadowColor = color2rgbaStr(item.color);
+        ctx.shadowBlur = item.blur * scale;
+        ctx.fill('evenodd');
+      });
+      ctx.restore();
+      // 还原给stroke用
+      ctx.beginPath();
+      canvasPolygon(ctx, points, scale, dx, dy);
+      if (this.props.isClosed) {
+        ctx.closePath();
+      }
     }
     // 线帽设置
     if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
@@ -569,7 +612,7 @@ class Polyline extends Geom {
       if (p === STROKE_POSITION.INSIDE) {
         ctx.lineWidth = strokeWidth[i] * 2 * scale;
       } else if (p === STROKE_POSITION.OUTSIDE) {
-        os = inject.getOffscreenCanvas(w, h, 'outsideStroke');
+        os = inject.getOffscreenCanvas(w, h);
         ctx2 = os.ctx;
         ctx2.setLineDash(strokeDasharray);
         ctx2.lineCap = ctx.lineCap;
@@ -731,6 +774,14 @@ class Polyline extends Geom {
     points.forEach((point) => {
       point.x = (point.absX! - dx) / width;
       point.y = (point.absY! - dy) / height;
+      if (point.hasCurveFrom) {
+        point.fx = (point.absFx! - dx) / width;
+        point.fy = (point.absFy! - dy) / height;
+      }
+      if (point.hasCurveTo) {
+        point.tx = (point.absTx! - dx) / width;
+        point.ty = (point.absTy! - dy) / height;
+      }
     });
     this.points = undefined;
   }

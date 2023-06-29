@@ -144,12 +144,12 @@ const inject = {
     }
   },
   defaultFontFamily: 'arial',
-  getFontCanvas(contextAttributes?: CanvasRenderingContext2DSettings) {
+  getFontCanvas() {
     return inject.getOffscreenCanvas(
       16,
       16,
       '__$$CHECK_SUPPORT_FONT_FAMILY$$__',
-      contextAttributes,
+      { willReadFrequently: true },
     );
   },
   checkSupportFontFamily(ff: string) {
@@ -161,7 +161,7 @@ const inject = {
     if (SUPPORT_FONT.hasOwnProperty(ff)) {
       return SUPPORT_FONT[ff];
     }
-    let canvas = inject.getFontCanvas({ willReadFrequently: true });
+    let canvas = inject.getFontCanvas();
     let context = canvas.ctx;
     context.textAlign = 'center';
     context.fillStyle = '#000';

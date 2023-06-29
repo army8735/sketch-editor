@@ -1244,6 +1244,8 @@ class Node extends Event {
         right.v -= dw;
       } else if (right.u === StyleUnit.PERCENT) {
         right.v -= (dw * 100) / pw;
+      } else if (width.u === StyleUnit.PX) {
+        width.v = dw + this.width - dx;
       }
       computedStyle.right -= dw;
     }
@@ -1265,6 +1267,8 @@ class Node extends Event {
         bottom.v -= dh;
       } else if (bottom.u === StyleUnit.PERCENT) {
         bottom.v -= (dh * 100) / ph;
+      } else if (height.u === StyleUnit.PX) {
+        height.v = dh + this.height - dy;
       }
       computedStyle.bottom -= dh;
     }
