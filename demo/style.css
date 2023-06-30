@@ -223,6 +223,12 @@ canvas {
   transform: translate(-1px, -1px);
 }
 
+.overlap .actual {
+  position: absolute;
+  visibility: hidden;
+  border: 1px dashed rgba(0, 0, 0, 0.5);
+}
+
 .overlap .selection {
   position: absolute;
   visibility: hidden;

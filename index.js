@@ -21168,6 +21168,7 @@
                         fixedRadius: layer.fixedRadius || 0,
                         pointRadiusBehaviour,
                         isRectangle: layer._class === 'rectangle',
+                        isOval: layer._class === 'oval',
                         style: {
                             left,
                             top,
@@ -23258,6 +23259,42 @@
             else {
                 t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
             }
+            const x1 = t.x1;
+            const y1 = t.y1;
+            const x2 = t.x2;
+            const y2 = t.y2;
+            const x3 = t.x3;
+            const y3 = t.y3;
+            const x4 = t.x4;
+            const y4 = t.y4;
+            return {
+                left: Math.min(x1, x2, x3, x4),
+                top: Math.min(y1, y2, y3, y4),
+                right: Math.max(x1, x2, x3, x4),
+                bottom: Math.max(y1, y2, y3, y4),
+                points: [
+                    {
+                        x: x1,
+                        y: y1,
+                    },
+                    {
+                        x: x2,
+                        y: y2,
+                    },
+                    {
+                        x: x3,
+                        y: y3,
+                    },
+                    {
+                        x: x4,
+                        y: y4,
+                    },
+                ],
+            };
+        }
+        getActualRect() {
+            const bbox = [0, 0, this.width, this.height];
+            const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
             const x1 = t.x1;
             const y1 = t.y1;
             const x2 = t.x2;
@@ -28712,9 +28749,10 @@
         // 左右都不固定
         else {
             const left = x1 - x;
-            // 仅固定宽度，以中心点占left的百分比
-            if (widthConstraint) {
-                style.left.v = ((left + style.width.v * 0.5) * 100) / width;
+            // 仅固定宽度，以中心点占left的百分比，或者文字只有left百分比无right
+            if (widthConstraint ||
+                (style.left.u === StyleUnit.PERCENT && style.right.u === StyleUnit.AUTO)) {
+                style.left.v = ((left + node.width * 0.5) * 100) / width;
             }
             // 左右皆为百分比
             else {
@@ -28749,9 +28787,10 @@
         // 上下都不固定
         else {
             const top = y1 - y;
-            // 仅固定宽度，以中心点占top的百分比
-            if (heightConstraint) {
-                style.top.v = ((top + style.height.v * 0.5) * 100) / height;
+            // 仅固定宽度，以中心点占top的百分比，或者文字只有top百分比无bottom
+            if (heightConstraint ||
+                (style.top.u === StyleUnit.PERCENT && style.bottom.u === StyleUnit.AUTO)) {
+                style.top.v = ((top + node.height * 0.5) * 100) / height;
             }
             // 左右皆为百分比
             else {

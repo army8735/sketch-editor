@@ -1055,6 +1055,43 @@ class Node extends Event {
     };
   }
 
+  getActualRect() {
+    const bbox = [0, 0, this.width, this.height];
+    const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
+    const x1 = t.x1;
+    const y1 = t.y1;
+    const x2 = t.x2;
+    const y2 = t.y2;
+    const x3 = t.x3;
+    const y3 = t.y3;
+    const x4 = t.x4;
+    const y4 = t.y4;
+    return {
+      left: Math.min(x1, x2, x3, x4),
+      top: Math.min(y1, y2, y3, y4),
+      right: Math.max(x1, x2, x3, x4),
+      bottom: Math.max(y1, y2, y3, y4),
+      points: [
+        {
+          x: x1,
+          y: y1,
+        },
+        {
+          x: x2,
+          y: y2,
+        },
+        {
+          x: x3,
+          y: y3,
+        },
+        {
+          x: x4,
+          y: y4,
+        },
+      ],
+    };
+  }
+
   /**
    * 拖拽开始变更尺寸前预校验，如果是以自身中心点为基准，需要改成普通模式，
    * 即left百分比调整到以左侧为基准，translateX不再-50%，垂直方向同理，
