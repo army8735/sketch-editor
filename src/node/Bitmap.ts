@@ -186,8 +186,8 @@ class Bitmap extends Node {
         // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
         let n = 0;
         innerShadow.forEach((item) => {
-          const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
-          n = Math.max(n, m + item.blur * scale);
+          const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread);
+          n = Math.max(n, m + item.blur);
         });
         ctx.save();
         ctx.beginPath();
@@ -219,10 +219,10 @@ class Bitmap extends Node {
         ], 1, 0, 0);
         ctx.closePath();
         innerShadow.forEach((item) => {
-          ctx.shadowOffsetX = item.x * scale;
-          ctx.shadowOffsetY = item.y * scale;
+          ctx.shadowOffsetX = item.x;
+          ctx.shadowOffsetY = item.y;
           ctx.shadowColor = color2rgbaStr(item.color);
-          ctx.shadowBlur = item.blur * scale;
+          ctx.shadowBlur = item.blur;
           ctx.fill('evenodd');
         });
         ctx.restore();

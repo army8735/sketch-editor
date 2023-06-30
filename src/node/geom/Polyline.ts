@@ -427,7 +427,7 @@ class Polyline extends Geom {
       // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
       let n = 0;
       innerShadow.forEach((item) => {
-        const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+        const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
         n = Math.max(n, m + item.blur * scale);
       });
       // 限制在图形内clip

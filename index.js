@@ -24778,8 +24778,8 @@
                     // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
                     let n = 0;
                     innerShadow.forEach((item) => {
-                        const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
-                        n = Math.max(n, m + item.blur * scale);
+                        const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread);
+                        n = Math.max(n, m + item.blur);
                     });
                     ctx.save();
                     ctx.beginPath();
@@ -24811,10 +24811,10 @@
                     ], 1, 0, 0);
                     ctx.closePath();
                     innerShadow.forEach((item) => {
-                        ctx.shadowOffsetX = item.x * scale;
-                        ctx.shadowOffsetY = item.y * scale;
+                        ctx.shadowOffsetX = item.x;
+                        ctx.shadowOffsetY = item.y;
                         ctx.shadowColor = color2rgbaStr(item.color);
-                        ctx.shadowBlur = item.blur * scale;
+                        ctx.shadowBlur = item.blur;
                         ctx.fill('evenodd');
                     });
                     ctx.restore();
@@ -25882,7 +25882,7 @@
                 // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
                 let n = 0;
                 innerShadow.forEach((item) => {
-                    const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+                    const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
                     n = Math.max(n, m + item.blur * scale);
                 });
                 // 限制在图形内clip
@@ -30026,12 +30026,12 @@
             // 利用canvas的能力绘制shadow
             const { innerShadow } = this.computedStyle;
             if (innerShadow && innerShadow.length) {
-                const os2 = inject.getOffscreenCanvas(w, h, '222');
+                const os2 = inject.getOffscreenCanvas(w, h);
                 const ctx2 = os2.ctx;
                 ctx2.fillStyle = '#000';
                 let n = 0;
                 innerShadow.forEach((item) => {
-                    const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+                    const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
                     n = Math.max(n, m + item.blur * scale);
                 });
                 // 类似普通绘制文字的循环，只是颜色统一

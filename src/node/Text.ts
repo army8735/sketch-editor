@@ -596,12 +596,12 @@ class Text extends Node {
     // 利用canvas的能力绘制shadow
     const { innerShadow } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
-      const os2 = inject.getOffscreenCanvas(w, h, '222');
+      const os2 = inject.getOffscreenCanvas(w, h);
       const ctx2 = os2.ctx;
       ctx2.fillStyle = '#000';
       let n = 0;
       innerShadow.forEach((item) => {
-        const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
+        const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
         n = Math.max(n, m + item.blur * scale);
       });
       // 类似普通绘制文字的循环，只是颜色统一
