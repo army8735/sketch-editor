@@ -21029,7 +21029,7 @@
                 const { string, attributes } = layer.attributedString;
                 const rich = attributes.length
                     ? attributes.map((item) => {
-                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { maximumLineHeight = 0, paragraphSpacing = 0, } = {}, }, } = item;
+                        const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { alignment = 0, maximumLineHeight = 0, paragraphSpacing = 0, } = {}, }, } = item;
                         const fontFamily = name;
                         const res = {
                             location,
@@ -21039,6 +21039,7 @@
                             fontWeight: 400,
                             fontStyle: 'normal',
                             letterSpacing: kerning,
+                            textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
                             lineHeight: maximumLineHeight,
                             paragraphSpacing,
                             color: [
@@ -21048,10 +21049,6 @@
                                 alpha,
                             ],
                         };
-                        // 自动行高
-                        if (!maximumLineHeight) {
-                            res.lineHeight = calNormalLineHeight(res);
-                        }
                         return res;
                     })
                     : undefined;
@@ -21581,7 +21578,7 @@
         if (k === 'opacity') {
             return RefreshLevel.OPACITY;
         }
-        if (k === 'blur' || k === 'shadow') {
+        if (k === 'blur' || k === 'shadow' || k === 'shadowEnable') {
             return RefreshLevel.FILTER;
         }
         if (k === 'mixBlendMode') {
@@ -29769,6 +29766,10 @@
                 perW = first.fontSize * 0.8 + letterSpacing;
                 lineHeight = first.lineHeight;
                 baseline = getBaseline(first);
+                if (!lineHeight) {
+                    lineHeight = calNormalLineHeight(first);
+                    baseline += lineHeight * 0.5;
+                }
                 ctx.font = setFontStyle(first);
                 // @ts-ignore
                 ctx.letterSpacing = letterSpacing + 'px';
@@ -29804,6 +29805,10 @@
                     perW = cur.fontSize * 0.8 + letterSpacing;
                     lineHeight = cur.lineHeight;
                     baseline = getBaseline(cur);
+                    if (!lineHeight) {
+                        lineHeight = calNormalLineHeight(cur);
+                        baseline += lineHeight * 0.5;
+                    }
                     ctx.font = setFontStyle(cur);
                     // @ts-ignore
                     ctx.letterSpacing = letterSpacing + 'px';
@@ -30200,13 +30205,12 @@
         }
         /**
          * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），
-         * 但是文本是个特殊存在，可以改变是否固定尺寸的模式，因此只考虑left百分比，
-         * 文本不会有left+right百分比，只会有left+right像素
+         * 将left移至最左侧，translateX取消-50%
          */
         beforeEdit() {
             const { style, computedStyle } = this;
             const { left, top, translateX, translateY } = style;
-            const isLeft = left.u === StyleUnit.PERCENT;
+            const isLeft = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT;
             if (isLeft) {
                 const { left: left2, width: width2 } = computedStyle;
                 left.v = left2 - width2 * 0.5;
@@ -30214,7 +30218,7 @@
                 translateX.v = 0;
                 translateX.u = StyleUnit.PX;
             }
-            const isTop = top.u === StyleUnit.PERCENT;
+            const isTop = top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
             if (isTop) {
                 const { top: top2, height: height2 } = computedStyle;
                 top.v = top2 - height2 * 0.5;
@@ -31026,6 +31030,7 @@
                 fontWeight: 400,
                 fontStyle: 'normal',
                 letterSpacing: 0,
+                textAlign: TEXT_ALIGN.LEFT,
                 lineHeight: 0,
                 paragraphSpacing: 0,
                 color: [0, 0, 0, 1],

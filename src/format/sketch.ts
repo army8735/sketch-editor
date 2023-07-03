@@ -1,6 +1,6 @@
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import JSZip from 'jszip';
-import { calNormalLineHeight, color2hexStr } from '../style/css';
+import { color2hexStr } from '../style/css';
 import {
   JArtBoard,
   JBitmap,
@@ -16,6 +16,7 @@ import {
   Rich,
   TagName,
 } from './';
+import { TEXT_ALIGN } from '../style/define';
 
 // prettier-ignore
 export enum ResizingConstraint {
@@ -529,6 +530,7 @@ async function convertItem(
             MSAttributedStringColorAttribute: { red, green, blue, alpha },
             kerning = 0,
             paragraphStyle: {
+              alignment = 0,
               maximumLineHeight = 0,
               paragraphSpacing = 0,
             } = {},
@@ -543,6 +545,7 @@ async function convertItem(
           fontWeight: 400, // 无用写死
           fontStyle: 'normal', // 同
           letterSpacing: kerning,
+          textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
           lineHeight: maximumLineHeight,
           paragraphSpacing,
           color: [
@@ -552,10 +555,6 @@ async function convertItem(
             alpha,
           ],
         } as Rich;
-        // 自动行高
-        if (!maximumLineHeight) {
-          res.lineHeight = calNormalLineHeight(res);
-        }
         return res;
       })
       : undefined;

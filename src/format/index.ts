@@ -1,4 +1,4 @@
-import { CORNER_STYLE, CURVE_MODE } from '../style/define';
+import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN } from '../style/define';
 
 export type JFile = {
   pages: JPage[];
@@ -229,6 +229,7 @@ export type Rich = {
   fontWeight: number; // 用不到，只会改postscriptName
   fontStyle: string; // 同
   lineHeight: number;
+  textAlign: TEXT_ALIGN;
   letterSpacing: number;
   paragraphSpacing: number;
   color: string | number[];
