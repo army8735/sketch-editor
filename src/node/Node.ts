@@ -362,6 +362,19 @@ class Node extends Event {
     computedStyle.pointerEvents = style.pointerEvents.v;
     computedStyle.maskMode = style.maskMode.v;
     computedStyle.breakMask = style.breakMask.v;
+    computedStyle.innerShadow = style.innerShadow.map((item) => {
+      const v = item.v;
+      return {
+        x: v.x.v,
+        y: v.y.v,
+        blur: v.blur.v,
+        spread: v.spread.v,
+        color: v.color.v,
+      };
+    });
+    computedStyle.innerShadowEnable = style.innerShadowEnable.map(
+      (item) => item.v,
+    );
     // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
@@ -396,17 +409,6 @@ class Node extends Event {
       };
     });
     computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
-    computedStyle.innerShadow = style.innerShadow.map((item) => {
-      const v = item.v;
-      return {
-        x: v.x.v,
-        y: v.y.v,
-        blur: v.blur.v,
-        spread: v.spread.v,
-        color: v.color.v,
-      };
-    });
-    computedStyle.innerShadowEnable = style.innerShadowEnable.map((item) => item.v);
     // repaint已经做了
     if (lv < RefreshLevel.REPAINT) {
       this._filterBbox = undefined;
@@ -1102,7 +1104,8 @@ class Node extends Event {
     if (this.isDestroyed) {
       throw new Error('Can not resize a destroyed Node');
     }
-    const { top, bottom, left, right, width, height, translateX, translateY } = style;
+    const { top, bottom, left, right, width, height, translateX, translateY } =
+      style;
     const { width: w, height: h } = this;
     /**
      * 有很多种情况，修改种类也不尽相同，以水平为例：
@@ -1114,7 +1117,10 @@ class Node extends Event {
      * rightPx不用管（无视width/left值）
      */
     if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
-      if (width.u === StyleUnit.PX || width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+      if (
+        width.u === StyleUnit.PX ||
+        (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO)
+      ) {
         const v = (computedStyle.left -= w * 0.5);
         left.v = (v * 100) / parent!.width;
       }
@@ -1125,7 +1131,10 @@ class Node extends Event {
       translateX.u = StyleUnit.PX;
     }
     if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
-      if (height.u === StyleUnit.PX || height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+      if (
+        height.u === StyleUnit.PX ||
+        (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO)
+      ) {
         const v = (computedStyle.top -= h * 0.5);
         top.v = (v * 100) / parent!.height;
       }
@@ -1155,7 +1164,8 @@ class Node extends Event {
       if (left.u === StyleUnit.PX) {
         left.v = tx;
       } else if (left.u === StyleUnit.PERCENT) {
-        if (right.u === StyleUnit.AUTO) { // 文本自动宽情况无right
+        if (right.u === StyleUnit.AUTO) {
+          // 文本自动宽情况无right
           left.v = ((tx + w * 0.5) * 100) / pw;
         } else {
           left.v = (tx * 100) / pw;
@@ -1398,10 +1408,14 @@ class Node extends Event {
     if (!parent) {
       return;
     }
-    const { top, bottom, left, right, width, height, translateX, translateY } = style;
+    const { top, bottom, left, right, width, height, translateX, translateY } =
+      style;
     const { width: w, height: h } = this;
     if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
-      if (width.u === StyleUnit.PX || width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+      if (
+        width.u === StyleUnit.PX ||
+        (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO)
+      ) {
         const v = (computedStyle.left += w * 0.5);
         left.v = (v * 100) / parent!.width;
       }
@@ -1412,7 +1426,10 @@ class Node extends Event {
       translateX.u = StyleUnit.PERCENT;
     }
     if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
-      if (height.u === StyleUnit.PX || height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+      if (
+        height.u === StyleUnit.PX ||
+        (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO)
+      ) {
         const v = (computedStyle.top += h * 0.5);
         top.v = (v * 100) / parent!.width;
       }
@@ -1472,8 +1489,8 @@ class Node extends Event {
     let baseX = 0,
       baseY = 0;
     if (!this.artBoard) {
-      baseX = (this.page?.props as PageProps).rule.baseX;
-      baseY = (this.page?.props as PageProps).rule.baseY;
+      baseX = (this.page?.props as PageProps).rule?.baseX || 0;
+      baseY = (this.page?.props as PageProps).rule?.baseY || 0;
     }
     return {
       baseX,
