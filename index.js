@@ -22632,6 +22632,17 @@
             computedStyle.pointerEvents = style.pointerEvents.v;
             computedStyle.maskMode = style.maskMode.v;
             computedStyle.breakMask = style.breakMask.v;
+            computedStyle.innerShadow = style.innerShadow.map((item) => {
+                const v = item.v;
+                return {
+                    x: v.x.v,
+                    y: v.y.v,
+                    blur: v.blur.v,
+                    spread: v.spread.v,
+                    color: v.color.v,
+                };
+            });
+            computedStyle.innerShadowEnable = style.innerShadowEnable.map((item) => item.v);
             // 只有重布局或者改transform才影响，普通repaint不变
             if (lv & RefreshLevel.REFLOW_TRANSFORM) {
                 this.calMatrix(lv);
@@ -22666,17 +22677,6 @@
                 };
             });
             computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
-            computedStyle.innerShadow = style.innerShadow.map((item) => {
-                const v = item.v;
-                return {
-                    x: v.x.v,
-                    y: v.y.v,
-                    blur: v.blur.v,
-                    spread: v.spread.v,
-                    color: v.color.v,
-                };
-            });
-            computedStyle.innerShadowEnable = style.innerShadowEnable.map((item) => item.v);
             // repaint已经做了
             if (lv < RefreshLevel.REPAINT) {
                 this._filterBbox = undefined;
@@ -23350,7 +23350,8 @@
              * rightPx不用管（无视width/left值）
              */
             if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
-                if (width.u === StyleUnit.PX || width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+                if (width.u === StyleUnit.PX ||
+                    (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO)) {
                     const v = (computedStyle.left -= w * 0.5);
                     left.v = (v * 100) / parent.width;
                 }
@@ -23361,7 +23362,8 @@
                 translateX.u = StyleUnit.PX;
             }
             if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
-                if (height.u === StyleUnit.PX || height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+                if (height.u === StyleUnit.PX ||
+                    (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO)) {
                     const v = (computedStyle.top -= h * 0.5);
                     top.v = (v * 100) / parent.height;
                 }
@@ -23390,7 +23392,8 @@
                     left.v = tx;
                 }
                 else if (left.u === StyleUnit.PERCENT) {
-                    if (right.u === StyleUnit.AUTO) { // 文本自动宽情况无right
+                    if (right.u === StyleUnit.AUTO) {
+                        // 文本自动宽情况无right
                         left.v = ((tx + w * 0.5) * 100) / pw;
                     }
                     else {
@@ -23629,7 +23632,8 @@
             const { top, bottom, left, right, width, height, translateX, translateY } = style;
             const { width: w, height: h } = this;
             if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
-                if (width.u === StyleUnit.PX || width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
+                if (width.u === StyleUnit.PX ||
+                    (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO)) {
                     const v = (computedStyle.left += w * 0.5);
                     left.v = (v * 100) / parent.width;
                 }
@@ -23640,7 +23644,8 @@
                 translateX.u = StyleUnit.PERCENT;
             }
             if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
-                if (height.u === StyleUnit.PX || height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
+                if (height.u === StyleUnit.PX ||
+                    (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO)) {
                     const v = (computedStyle.top += h * 0.5);
                     top.v = (v * 100) / parent.width;
                 }
@@ -23671,7 +23676,7 @@
             this.props.name = s;
         }
         getFrameProps() {
-            var _a, _b;
+            var _a, _b, _c, _d;
             const list = [this];
             const top = this.artBoard || this.page;
             let parent = this.parent;
@@ -23696,8 +23701,8 @@
             const { width, height, computedStyle } = this;
             let baseX = 0, baseY = 0;
             if (!this.artBoard) {
-                baseX = ((_a = this.page) === null || _a === void 0 ? void 0 : _a.props).rule.baseX;
-                baseY = ((_b = this.page) === null || _b === void 0 ? void 0 : _b.props).rule.baseY;
+                baseX = ((_b = ((_a = this.page) === null || _a === void 0 ? void 0 : _a.props).rule) === null || _b === void 0 ? void 0 : _b.baseX) || 0;
+                baseY = ((_d = ((_c = this.page) === null || _c === void 0 ? void 0 : _c.props).rule) === null || _d === void 0 ? void 0 : _d.baseY) || 0;
             }
             return {
                 baseX,
@@ -24773,12 +24778,15 @@
                 if (canvasCache.getCount(this._src) === 1) {
                     ctx.drawImage(loader.source, 0, 0);
                 }
-                const { innerShadow } = this.computedStyle;
+                const { innerShadow, innerShadowEnable } = this.computedStyle;
                 if (innerShadow && innerShadow.length) {
                     // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
                     let n = 0;
-                    innerShadow.forEach((item) => {
-                        const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread);
+                    innerShadow.forEach((item, i) => {
+                        if (!innerShadowEnable[i]) {
+                            return;
+                        }
+                        const m = Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread;
                         n = Math.max(n, m + item.blur);
                     });
                     ctx.save();
@@ -24810,7 +24818,10 @@
                         [-n, -n],
                     ], 1, 0, 0);
                     ctx.closePath();
-                    innerShadow.forEach((item) => {
+                    innerShadow.forEach((item, i) => {
+                        if (!innerShadowEnable[i]) {
+                            return;
+                        }
                         ctx.shadowOffsetX = item.x;
                         ctx.shadowOffsetY = item.y;
                         ctx.shadowColor = color2rgbaStr(item.color);
@@ -25877,47 +25888,57 @@
                 ctx.globalAlpha = 1;
             }
             // 内阴影使用canvas的能力
-            const { innerShadow } = this.computedStyle;
+            const { innerShadow, innerShadowEnable } = this.computedStyle;
             if (innerShadow && innerShadow.length) {
+                let hasInnerShadow = false;
                 // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
                 let n = 0;
-                innerShadow.forEach((item) => {
+                innerShadow.forEach((item, i) => {
+                    if (!innerShadowEnable[i]) {
+                        return;
+                    }
+                    hasInnerShadow = true;
                     const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
                     n = Math.max(n, m + item.blur * scale);
                 });
-                // 限制在图形内clip
-                ctx.save();
-                ctx.beginPath();
-                canvasPolygon(ctx, points, scale, dx, dy);
-                if (this.props.isClosed) {
+                if (hasInnerShadow) {
+                    // 限制在图形内clip
+                    ctx.save();
+                    ctx.beginPath();
+                    canvasPolygon(ctx, points, scale, dx, dy);
+                    if (this.props.isClosed) {
+                        ctx.closePath();
+                    }
+                    ctx.clip();
+                    ctx.fillStyle = '#FFF';
+                    // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+                    ctx.beginPath();
+                    canvasPolygon(ctx, points, scale, dx, dy);
+                    canvasPolygon(ctx, [
+                        [-n, -n],
+                        [w + n, -n],
+                        [w + n, h + n],
+                        [-n, h + n],
+                        [-n, -n],
+                    ], 1, 0, 0);
                     ctx.closePath();
-                }
-                ctx.clip();
-                ctx.fillStyle = '#FFF';
-                // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
-                ctx.beginPath();
-                canvasPolygon(ctx, points, scale, dx, dy);
-                canvasPolygon(ctx, [
-                    [-n, -n],
-                    [w + n, -n],
-                    [w + n, h + n],
-                    [-n, h + n],
-                    [-n, -n],
-                ], 1, 0, 0);
-                ctx.closePath();
-                innerShadow.forEach((item) => {
-                    ctx.shadowOffsetX = item.x * scale;
-                    ctx.shadowOffsetY = item.y * scale;
-                    ctx.shadowColor = color2rgbaStr(item.color);
-                    ctx.shadowBlur = item.blur * scale;
-                    ctx.fill('evenodd');
-                });
-                ctx.restore();
-                // 还原给stroke用
-                ctx.beginPath();
-                canvasPolygon(ctx, points, scale, dx, dy);
-                if (this.props.isClosed) {
-                    ctx.closePath();
+                    innerShadow.forEach((item, i) => {
+                        if (!innerShadowEnable[i]) {
+                            return;
+                        }
+                        ctx.shadowOffsetX = item.x * scale;
+                        ctx.shadowOffsetY = item.y * scale;
+                        ctx.shadowColor = color2rgbaStr(item.color);
+                        ctx.shadowBlur = item.blur * scale;
+                        ctx.fill('evenodd');
+                    });
+                    ctx.restore();
+                    // 还原给stroke用
+                    ctx.beginPath();
+                    canvasPolygon(ctx, points, scale, dx, dy);
+                    if (this.props.isClosed) {
+                        ctx.closePath();
+                    }
                 }
             }
             // 线帽设置
@@ -30024,60 +30045,70 @@
                 }
             }
             // 利用canvas的能力绘制shadow
-            const { innerShadow } = this.computedStyle;
+            const { innerShadow, innerShadowEnable } = this.computedStyle;
             if (innerShadow && innerShadow.length) {
+                let hasInnerShadow = false;
                 const os2 = inject.getOffscreenCanvas(w, h);
                 const ctx2 = os2.ctx;
                 ctx2.fillStyle = '#000';
                 let n = 0;
-                innerShadow.forEach((item) => {
+                innerShadow.forEach((item, i) => {
+                    if (!innerShadowEnable[i]) {
+                        return;
+                    }
+                    hasInnerShadow = true;
                     const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
                     n = Math.max(n, m + item.blur * scale);
                 });
-                // 类似普通绘制文字的循环，只是颜色统一
-                for (let i = 0, len = lineBoxList.length; i < len; i++) {
-                    const lineBox = lineBoxList[i];
-                    // 固定尺寸超过则overflow: hidden
-                    if (lineBox.y >= h) {
-                        break;
-                    }
-                    const list = lineBox.list;
-                    const len = list.length;
-                    for (let i = 0; i < len; i++) {
-                        const textBox = list[i];
-                        // 缩放影响字号
-                        if (scale !== 1) {
-                            ctx2.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
-                            // @ts-ignore
-                            ctx2.letterSpacing = textBox.letterSpacing.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                if (hasInnerShadow) {
+                    // 类似普通绘制文字的循环，只是颜色统一
+                    for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                        const lineBox = lineBoxList[i];
+                        // 固定尺寸超过则overflow: hidden
+                        if (lineBox.y >= h) {
+                            break;
                         }
-                        else {
-                            ctx2.font = textBox.font;
-                            // @ts-ignore
-                            ctx2.letterSpacing = textBox.letterSpacing;
+                        const list = lineBox.list;
+                        const len = list.length;
+                        for (let i = 0; i < len; i++) {
+                            const textBox = list[i];
+                            // 缩放影响字号
+                            if (scale !== 1) {
+                                ctx2.font = textBox.font.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                                // @ts-ignore
+                                ctx2.letterSpacing = textBox.letterSpacing.replace(/([\d.e+-]+)px/gi, ($0, $1) => $1 * scale + 'px');
+                            }
+                            else {
+                                ctx2.font = textBox.font;
+                                // @ts-ignore
+                                ctx2.letterSpacing = textBox.letterSpacing;
+                            }
+                            ctx2.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
                         }
-                        ctx2.fillText(textBox.str, textBox.x * scale + dx, (textBox.y + textBox.baseline) * scale + dy);
                     }
+                    // 反向，即文字部分才是透明，形成一张位图
+                    ctx2.globalCompositeOperation = 'source-out';
+                    ctx2.fillRect(-n, -n, w + n, h + n);
+                    // 将这个位图设置shadow绘制到另外一个位图上
+                    const os3 = inject.getOffscreenCanvas(w, h);
+                    const ctx3 = os3.ctx;
+                    innerShadow.forEach((item, i) => {
+                        if (!innerShadowEnable[i]) {
+                            return;
+                        }
+                        ctx3.shadowOffsetX = item.x * scale;
+                        ctx3.shadowOffsetY = item.y * scale;
+                        ctx3.shadowColor = color2rgbaStr(item.color);
+                        ctx3.shadowBlur = item.blur * scale;
+                        ctx3.drawImage(os2.canvas, 0, 0);
+                    });
+                    // 再次利用混合模式把shadow返回，注意只保留文字重合部分
+                    ctx.globalCompositeOperation = 'source-atop';
+                    ctx.drawImage(os3.canvas, 0, 0);
+                    ctx.globalCompositeOperation = 'source-over';
+                    os2.release();
+                    os3.release();
                 }
-                // 反向，即文字部分才是透明，形成一张位图
-                ctx2.globalCompositeOperation = 'source-out';
-                ctx2.fillRect(-n, -n, w + n, h + n);
-                // 将这个位图设置shadow绘制到另外一个位图上
-                const os3 = inject.getOffscreenCanvas(w, h);
-                const ctx3 = os3.ctx;
-                innerShadow.forEach((item) => {
-                    ctx3.shadowOffsetX = item.x * scale;
-                    ctx3.shadowOffsetY = item.y * scale;
-                    ctx3.shadowColor = color2rgbaStr(item.color);
-                    ctx3.shadowBlur = item.blur * scale;
-                    ctx3.drawImage(os2.canvas, 0, 0);
-                });
-                // 再次利用混合模式把shadow返回，注意只保留文字重合部分
-                ctx.globalCompositeOperation = 'source-atop';
-                ctx.drawImage(os3.canvas, 0, 0);
-                ctx.globalCompositeOperation = 'source-over';
-                os2.release();
-                os3.release();
             }
         }
         // 根据绝对坐标获取光标位置，同时设置开始光标位置
@@ -30265,9 +30296,9 @@
                     const textBox = list[j];
                     if (index >= textBox.index &&
                         (index < textBox.index + textBox.str.length ||
-                            j === len - 1 &&
+                            (j === len - 1 &&
                                 lineBox.endEnter &&
-                                index <= textBox.index + textBox.str.length)) {
+                                index <= textBox.index + textBox.str.length))) {
                         if (isEnd) {
                             cursor.endLineBox = i;
                             cursor.endTextBox = j;

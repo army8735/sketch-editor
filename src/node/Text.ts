@@ -453,10 +453,7 @@ class Text extends Node {
     w *= scale;
     h *= scale;
     const { rich, computedStyle, lineBoxList } = this;
-    const canvasCache = (this.canvasCache = CanvasCache.getInstance(
-      w,
-      h,
-    ));
+    const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h));
     canvasCache.available = true;
     const ctx = canvasCache.offscreen.ctx;
     // 如果处于选择范围状态，渲染背景
@@ -530,7 +527,8 @@ class Text extends Node {
         if (textBox) {
           let x1 = textBox.x * scale;
           ctx.font = textBox.font;
-          let x2 = ctx.measureText(textBox.str.slice(0, endString)).width * scale;
+          let x2 =
+            ctx.measureText(textBox.str.slice(0, endString)).width * scale;
           ctx.fillRect(x1, lineBox.y * scale, x2, lineBox.lineHeight * scale);
         }
       }
@@ -594,69 +592,81 @@ class Text extends Node {
       }
     }
     // 利用canvas的能力绘制shadow
-    const { innerShadow } = this.computedStyle;
+    const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
+      let hasInnerShadow = false;
       const os2 = inject.getOffscreenCanvas(w, h);
       const ctx2 = os2.ctx;
       ctx2.fillStyle = '#000';
       let n = 0;
-      innerShadow.forEach((item) => {
-        const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
+      innerShadow.forEach((item, i) => {
+        if (!innerShadowEnable[i]) {
+          return;
+        }
+        hasInnerShadow = true;
+        const m =
+          (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
         n = Math.max(n, m + item.blur * scale);
       });
-      // 类似普通绘制文字的循环，只是颜色统一
-      for (let i = 0, len = lineBoxList.length; i < len; i++) {
-        const lineBox = lineBoxList[i];
-        // 固定尺寸超过则overflow: hidden
-        if (lineBox.y >= h) {
-          break;
-        }
-        const list = lineBox.list;
-        const len = list.length;
-        for (let i = 0; i < len; i++) {
-          const textBox = list[i];
-          // 缩放影响字号
-          if (scale !== 1) {
-            ctx2.font = textBox.font.replace(
-              /([\d.e+-]+)px/gi,
-              ($0, $1) => $1 * scale + 'px',
-            );
-            // @ts-ignore
-            ctx2.letterSpacing = textBox.letterSpacing.replace(
-              /([\d.e+-]+)px/gi,
-              ($0, $1) => $1 * scale + 'px',
-            );
-          } else {
-            ctx2.font = textBox.font;
-            // @ts-ignore
-            ctx2.letterSpacing = textBox.letterSpacing;
+      if (hasInnerShadow) {
+        // 类似普通绘制文字的循环，只是颜色统一
+        for (let i = 0, len = lineBoxList.length; i < len; i++) {
+          const lineBox = lineBoxList[i];
+          // 固定尺寸超过则overflow: hidden
+          if (lineBox.y >= h) {
+            break;
           }
-          ctx2.fillText(
-            textBox.str,
-            textBox.x * scale + dx,
-            (textBox.y + textBox.baseline) * scale + dy,
-          );
+          const list = lineBox.list;
+          const len = list.length;
+          for (let i = 0; i < len; i++) {
+            const textBox = list[i];
+            // 缩放影响字号
+            if (scale !== 1) {
+              ctx2.font = textBox.font.replace(
+                /([\d.e+-]+)px/gi,
+                ($0, $1) => $1 * scale + 'px',
+              );
+              // @ts-ignore
+              ctx2.letterSpacing = textBox.letterSpacing.replace(
+                /([\d.e+-]+)px/gi,
+                ($0, $1) => $1 * scale + 'px',
+              );
+            }
+            else {
+              ctx2.font = textBox.font;
+              // @ts-ignore
+              ctx2.letterSpacing = textBox.letterSpacing;
+            }
+            ctx2.fillText(
+              textBox.str,
+              textBox.x * scale + dx,
+              (textBox.y + textBox.baseline) * scale + dy,
+            );
+          }
         }
+        // 反向，即文字部分才是透明，形成一张位图
+        ctx2.globalCompositeOperation = 'source-out';
+        ctx2.fillRect(-n, -n, w + n, h + n);
+        // 将这个位图设置shadow绘制到另外一个位图上
+        const os3 = inject.getOffscreenCanvas(w, h);
+        const ctx3 = os3.ctx;
+        innerShadow.forEach((item, i) => {
+          if (!innerShadowEnable[i]) {
+            return;
+          }
+          ctx3.shadowOffsetX = item.x * scale;
+          ctx3.shadowOffsetY = item.y * scale;
+          ctx3.shadowColor = color2rgbaStr(item.color);
+          ctx3.shadowBlur = item.blur * scale;
+          ctx3.drawImage(os2.canvas, 0, 0);
+        });
+        // 再次利用混合模式把shadow返回，注意只保留文字重合部分
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.drawImage(os3.canvas, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        os2.release();
+        os3.release();
       }
-      // 反向，即文字部分才是透明，形成一张位图
-      ctx2.globalCompositeOperation = 'source-out';
-      ctx2.fillRect(-n, -n, w + n, h + n);
-      // 将这个位图设置shadow绘制到另外一个位图上
-      const os3 = inject.getOffscreenCanvas(w, h);
-      const ctx3 = os3.ctx;
-      innerShadow.forEach((item) => {
-        ctx3.shadowOffsetX = item.x * scale;
-        ctx3.shadowOffsetY = item.y * scale;
-        ctx3.shadowColor = color2rgbaStr(item.color);
-        ctx3.shadowBlur = item.blur * scale;
-        ctx3.drawImage(os2.canvas, 0, 0);
-      });
-      // 再次利用混合模式把shadow返回，注意只保留文字重合部分
-      ctx.globalCompositeOperation = 'source-atop';
-      ctx.drawImage(os3.canvas, 0, 0);
-      ctx.globalCompositeOperation = 'source-over';
-      os2.release();
-      os3.release();
     }
   }
 
@@ -877,10 +887,9 @@ class Text extends Node {
         if (
           index >= textBox.index &&
           (index < textBox.index + textBox.str.length ||
-            j === len - 1 &&
-            lineBox.endEnter &&
-            index <= textBox.index + textBox.str.length
-          )
+            (j === len - 1 &&
+              lineBox.endEnter &&
+              index <= textBox.index + textBox.str.length))
         ) {
           if (isEnd) {
             cursor.endLineBox = i;

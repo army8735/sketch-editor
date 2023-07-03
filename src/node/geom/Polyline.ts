@@ -422,47 +422,64 @@ class Polyline extends Geom {
       ctx.globalAlpha = 1;
     }
     // 内阴影使用canvas的能力
-    const { innerShadow } = this.computedStyle;
+    const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
+      let hasInnerShadow = false;
       // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
       let n = 0;
-      innerShadow.forEach((item) => {
-        const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
+      innerShadow.forEach((item, i) => {
+        if (!innerShadowEnable[i]) {
+          return;
+        }
+        hasInnerShadow = true;
+        const m =
+          (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
         n = Math.max(n, m + item.blur * scale);
       });
-      // 限制在图形内clip
-      ctx.save();
-      ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx, dy);
-      if (this.props.isClosed) {
+      if (hasInnerShadow) {
+        // 限制在图形内clip
+        ctx.save();
+        ctx.beginPath();
+        canvasPolygon(ctx, points, scale, dx, dy);
+        if (this.props.isClosed) {
+          ctx.closePath();
+        }
+        ctx.clip();
+        ctx.fillStyle = '#FFF';
+        // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+        ctx.beginPath();
+        canvasPolygon(ctx, points, scale, dx, dy);
+        canvasPolygon(
+          ctx,
+          [
+            [-n, -n],
+            [w + n, -n],
+            [w + n, h + n],
+            [-n, h + n],
+            [-n, -n],
+          ],
+          1,
+          0,
+          0,
+        );
         ctx.closePath();
-      }
-      ctx.clip();
-      ctx.fillStyle = '#FFF';
-      // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
-      ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx, dy);
-      canvasPolygon(ctx, [
-        [-n, -n],
-        [w + n, -n],
-        [w + n, h + n],
-        [-n, h + n],
-        [-n, -n],
-      ], 1, 0, 0);
-      ctx.closePath();
-      innerShadow.forEach((item) => {
-        ctx.shadowOffsetX = item.x * scale;
-        ctx.shadowOffsetY = item.y * scale;
-        ctx.shadowColor = color2rgbaStr(item.color);
-        ctx.shadowBlur = item.blur * scale;
-        ctx.fill('evenodd');
-      });
-      ctx.restore();
-      // 还原给stroke用
-      ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx, dy);
-      if (this.props.isClosed) {
-        ctx.closePath();
+        innerShadow.forEach((item, i) => {
+          if (!innerShadowEnable[i]) {
+            return;
+          }
+          ctx.shadowOffsetX = item.x * scale;
+          ctx.shadowOffsetY = item.y * scale;
+          ctx.shadowColor = color2rgbaStr(item.color);
+          ctx.shadowBlur = item.blur * scale;
+          ctx.fill('evenodd');
+        });
+        ctx.restore();
+        // 还原给stroke用
+        ctx.beginPath();
+        canvasPolygon(ctx, points, scale, dx, dy);
+        if (this.props.isClosed) {
+          ctx.closePath();
+        }
       }
     }
     // 线帽设置

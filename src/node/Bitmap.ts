@@ -2,13 +2,13 @@ import { BitmapProps } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
+import { canvasPolygon } from '../refresh/paint';
 import TextureCache from '../refresh/TextureCache';
+import { color2rgbaStr } from '../style/css';
 import inject from '../util/inject';
 import { isFunction } from '../util/type';
 import { LayoutData } from './layout';
 import Node from './Node';
-import { canvasPolygon } from '../refresh/paint';
-import { color2rgbaStr } from '../style/css';
 
 type Loader = {
   error: boolean;
@@ -181,44 +181,68 @@ class Bitmap extends Node {
       if (canvasCache.getCount(this._src) === 1) {
         ctx.drawImage(loader.source!, 0, 0);
       }
-      const { innerShadow } = this.computedStyle;
+      const { innerShadow, innerShadowEnable } = this.computedStyle;
       if (innerShadow && innerShadow.length) {
         // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
         let n = 0;
-        innerShadow.forEach((item) => {
-          const m = (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread);
+        innerShadow.forEach((item, i) => {
+          if (!innerShadowEnable[i]) {
+            return;
+          }
+          const m = Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread;
           n = Math.max(n, m + item.blur);
         });
         ctx.save();
         ctx.beginPath();
-        canvasPolygon(ctx, [
-          [0, 0],
-          [w, 0],
-          [w, h],
-          [0, h],
-          [0, 0],
-        ], 1, 0, 0);
+        canvasPolygon(
+          ctx,
+          [
+            [0, 0],
+            [w, 0],
+            [w, h],
+            [0, h],
+            [0, 0],
+          ],
+          1,
+          0,
+          0,
+        );
         ctx.closePath();
         ctx.clip();
         ctx.fillStyle = '#FFF';
         // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
         ctx.beginPath();
-        canvasPolygon(ctx, [
-          [0, 0],
-          [w, 0],
-          [w, h],
-          [0, h],
-          [0, 0],
-        ], 1, 0, 0);
-        canvasPolygon(ctx, [
-          [-n, -n],
-          [w + n, -n],
-          [w + n, h + n],
-          [-n, h + n],
-          [-n, -n],
-        ], 1, 0, 0);
+        canvasPolygon(
+          ctx,
+          [
+            [0, 0],
+            [w, 0],
+            [w, h],
+            [0, h],
+            [0, 0],
+          ],
+          1,
+          0,
+          0,
+        );
+        canvasPolygon(
+          ctx,
+          [
+            [-n, -n],
+            [w + n, -n],
+            [w + n, h + n],
+            [-n, h + n],
+            [-n, -n],
+          ],
+          1,
+          0,
+          0,
+        );
         ctx.closePath();
-        innerShadow.forEach((item) => {
+        innerShadow.forEach((item, i) => {
+          if (!innerShadowEnable[i]) {
+            return;
+          }
           ctx.shadowOffsetX = item.x;
           ctx.shadowOffsetY = item.y;
           ctx.shadowColor = color2rgbaStr(item.color);
