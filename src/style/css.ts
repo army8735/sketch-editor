@@ -625,10 +625,10 @@ export function color2rgbaInt(color: string | number[]): number[] {
     return color;
   }
   let res = [];
-  if (!color || color === 'transparent') {
+  if (!color || /transparent/i.test(color)) {
     res = [0, 0, 0, 0];
-  } else if (color.charAt(0) === '#') {
-    color = color.slice(1);
+  } else if (/^#?[a-f\d]{3,8}$/i.test(color)) {
+    color = color.replace('#', '');
     if (color.length === 3 || color.length === 4) {
       res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
       res.push(parseInt(color.charAt(1) + color.charAt(1), 16));

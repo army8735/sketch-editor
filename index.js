@@ -19090,6 +19090,17 @@
             if (ax1 > bx2 || ay1 > by2 || bx1 > ax2 || by1 > ay2) {
                 return false;
             }
+            // 边重合情况
+            if (ax2 === bx1 || ax1 === bx2) {
+                if (ay2 < by1 || ay1 > by2) {
+                    return false;
+                }
+            }
+            if (ay2 === ay1 || ay1 === ay2) {
+                if (ax2 < bx1 || ax1 > bx2) {
+                    return false;
+                }
+            }
         }
         else if (ax1 >= bx2 || ay1 >= by2 || bx1 >= ax2 || by1 >= ay2) {
             return false;
@@ -20378,11 +20389,11 @@
             return color;
         }
         let res = [];
-        if (!color || color === 'transparent') {
+        if (!color || /transparent/i.test(color)) {
             res = [0, 0, 0, 0];
         }
-        else if (color.charAt(0) === '#') {
-            color = color.slice(1);
+        else if (/^#?[a-f\d]{3,8}$/i.test(color)) {
+            color = color.replace('#', '');
             if (color.length === 3 || color.length === 4) {
                 res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
                 res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
