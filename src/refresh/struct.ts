@@ -57,7 +57,7 @@ type Merge = {
   node: Node;
   valid: boolean;
   subList: Array<Merge>; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
-  isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可是范围外有tempBbox
+  isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可视范围外有tempBbox
 };
 
 export function renderWebgl(

@@ -20689,6 +20689,21 @@
             let height = layer.frame.height;
             let translateX = layer.frame.x;
             let translateY = layer.frame.y;
+            // sketch不会出现非正数，但人工可能修改，sketch对此做了兼容转换
+            if (width < 0) {
+                translateX += width;
+                width = Math.abs(width);
+            }
+            else if (width === 0) {
+                width = 1;
+            }
+            if (height < 0) {
+                translateY += height;
+                height = Math.abs(height);
+            }
+            else if (height === 0) {
+                height = 1;
+            }
             const visible = layer.isVisible;
             const opacity = (_c = (_b = (_a = layer.style) === null || _a === void 0 ? void 0 : _a.contextSettings) === null || _b === void 0 ? void 0 : _b.opacity) !== null && _c !== void 0 ? _c : 1;
             const rotateZ = -layer.rotation;
@@ -20701,7 +20716,7 @@
             // artBoard也是固定尺寸和page一样，但x/y用translate代替
             if (layer._class === FileFormat.ClassValue.Artboard) {
                 const children = yield Promise.all(layer.layers.map((child) => {
-                    return convertItem(child, opt, layer.frame.width, layer.frame.height);
+                    return convertItem(child, opt, width, height);
                 }));
                 const hasBackgroundColor = layer.hasBackgroundColor;
                 const backgroundColor = hasBackgroundColor

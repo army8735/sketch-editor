@@ -168,6 +168,21 @@ async function convertItem(
   let height: number | string = layer.frame.height;
   let translateX: number | string = layer.frame.x;
   let translateY: number | string = layer.frame.y;
+  // sketch不会出现非正数，但人工可能修改，sketch对此做了兼容转换
+  if (width < 0) {
+    translateX += width;
+    width = Math.abs(width);
+  }
+  else if (width === 0) {
+    width = 1;
+  }
+  if (height < 0) {
+    translateY += height;
+    height = Math.abs(height);
+  }
+  else if (height === 0) {
+    height = 1;
+  }
   const visible = layer.isVisible;
   const opacity = layer.style?.contextSettings?.opacity ?? 1;
   const rotateZ = -layer.rotation;
@@ -182,7 +197,7 @@ async function convertItem(
   if (layer._class === SketchFormat.ClassValue.Artboard) {
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
-        return convertItem(child, opt, layer.frame.width, layer.frame.height);
+        return convertItem(child, opt, width as number, height as number);
       }),
     );
     const hasBackgroundColor = layer.hasBackgroundColor;
