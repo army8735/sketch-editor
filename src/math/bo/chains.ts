@@ -71,25 +71,25 @@ function close(
   }
 }
 
-function closeEps(
-  res: Array<Array<Segment>>,
-  chains: Array<Array<Segment>>,
-  chain: Array<Segment>,
-  index: number,
-) {
-  let l = chain.length;
-  let head = chain[0],
-    tail = chain[l - 1];
-  let ptHead = head.coords[0];
-  let coords2 = tail.coords,
-    l2 = coords2.length;
-  let ptTail = coords2[l2 - 1];
-  if (ptHead.equalEps(ptTail)) {
-    coords2[l2 - 1] = ptHead;
-    chains.splice(index, 1);
-    res.push(chain);
-  }
-}
+// function closeEps(
+//   res: Array<Array<Segment>>,
+//   chains: Array<Array<Segment>>,
+//   chain: Array<Segment>,
+//   index: number,
+// ) {
+//   let l = chain.length;
+//   let head = chain[0],
+//     tail = chain[l - 1];
+//   let ptHead = head.coords[0];
+//   let coords2 = tail.coords,
+//     l2 = coords2.length;
+//   let ptTail = coords2[l2 - 1];
+//   if (ptHead.equalEps(ptTail)) {
+//     coords2[l2 - 1] = ptHead;
+//     chains.splice(index, 1);
+//     res.push(chain);
+//   }
+// }
 
 // 整条链颠倒，包含每个线段自身颠倒
 function reverse(chain: Array<Segment>) {
@@ -183,9 +183,9 @@ export default function (list: Array<Segment>) {
       chains.push([seg]);
     }
   }
-  for (let i = chains.length - 1; i >= 0; i--) {
-    closeEps(res, chains, chains[i], i);
-  }
+  // for (let i = chains.length - 1; i >= 0; i--) {
+  //   closeEps(res, chains, chains[i], i);
+  // }
   // console.log(chains);
   // console.log(res);
   // 鞋带公式求得每个多边形的时钟序  https://zhuanlan.zhihu.com/p/401010594
