@@ -765,6 +765,7 @@ function findIntersection(
               }
               // 有重合的，重合线段已经求好，直接使用
               if (overs) {
+                // console.log('overs', i, overs, seg.toString(), item.toString())
                 activeNewSeg(segments, list, ael, x, overs.ra);
                 activeNewSeg(segments, list, ael, x, overs.rb);
                 seg.isDeleted = item.isDeleted = true;
@@ -792,7 +793,7 @@ function findIntersection(
                       : coordsB[coordsB.length - 1];
                   }
                 }
-                // console.log('inters', i, inters);
+                // console.log('inters', i, inters, inters[0].point, seg.toString(), item.toString());
                 const pa = sortIntersection(inters!, !isSourceReverted);
                 // console.log(pa);
                 const pb = sortIntersection(inters!, isSourceReverted);

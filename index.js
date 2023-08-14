@@ -21643,6 +21643,7 @@
         geom,
         matrix,
         vector,
+        isec,
     };
 
     let isPause;
@@ -27326,6 +27327,7 @@
                                 }
                                 // 有重合的，重合线段已经求好，直接使用
                                 if (overs) {
+                                    // console.log('overs', i, overs, seg.toString(), item.toString())
                                     activeNewSeg(segments, list, ael, x, overs.ra);
                                     activeNewSeg(segments, list, ael, x, overs.rb);
                                     seg.isDeleted = item.isDeleted = true;
@@ -27356,7 +27358,7 @@
                                                 : coordsB[coordsB.length - 1];
                                         }
                                     }
-                                    // console.log('inters', i, inters);
+                                    // console.log('inters', i, inters, inters[0].point, seg.toString(), item.toString());
                                     const pa = sortIntersection(inters, !isSourceReverted);
                                     // console.log(pa);
                                     const pb = sortIntersection(inters, isSourceReverted);
@@ -28013,18 +28015,25 @@
             res.push(chain);
         }
     }
-    function closeEps(res, chains, chain, index) {
-        let l = chain.length;
-        let head = chain[0], tail = chain[l - 1];
-        let ptHead = head.coords[0];
-        let coords2 = tail.coords, l2 = coords2.length;
-        let ptTail = coords2[l2 - 1];
-        if (ptHead.equalEps(ptTail)) {
-            coords2[l2 - 1] = ptHead;
-            chains.splice(index, 1);
-            res.push(chain);
-        }
-    }
+    // function closeEps(
+    //   res: Array<Array<Segment>>,
+    //   chains: Array<Array<Segment>>,
+    //   chain: Array<Segment>,
+    //   index: number,
+    // ) {
+    //   let l = chain.length;
+    //   let head = chain[0],
+    //     tail = chain[l - 1];
+    //   let ptHead = head.coords[0];
+    //   let coords2 = tail.coords,
+    //     l2 = coords2.length;
+    //   let ptTail = coords2[l2 - 1];
+    //   if (ptHead.equalEps(ptTail)) {
+    //     coords2[l2 - 1] = ptHead;
+    //     chains.splice(index, 1);
+    //     res.push(chain);
+    //   }
+    // }
     // 整条链颠倒，包含每个线段自身颠倒
     function reverse(chain) {
         chain.forEach((item) => item.reverse());
@@ -28119,9 +28128,9 @@
                 chains.push([seg]);
             }
         }
-        for (let i = chains.length - 1; i >= 0; i--) {
-            closeEps(res, chains, chains[i], i);
-        }
+        // for (let i = chains.length - 1; i >= 0; i--) {
+        //   closeEps(res, chains, chains[i], i);
+        // }
         // console.log(chains);
         // console.log(res);
         // 鞋带公式求得每个多边形的时钟序  https://zhuanlan.zhihu.com/p/401010594
