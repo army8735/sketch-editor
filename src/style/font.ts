@@ -1,4 +1,4 @@
-import opentype from '../util/opentype.js';
+import opentype from '../util/opentype';
 
 const arial = {
   name: 'Arial',

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import inject from './inject';
 
 const inflate = (function() {

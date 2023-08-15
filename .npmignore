@@ -5,8 +5,7 @@ Makefile
 .npmignore
 .spmignore
 .babelrc
-rollup.config.js
-rollup.*.js
+rollup.*
 gulpfile.js
 nightwatch.json
 nightwatch.conf.js
