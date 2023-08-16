@@ -116,9 +116,13 @@ class ShapeGroup extends Group {
     }
     this.textureOutline?.release();
     const { children } = this;
-    let res: number[][][] = [];
+    let res: number[][][] = [], first = true;
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
+      // 不可见的无效
+      if (!item.computedStyle.visible) {
+        continue;
+      }
       let points;
       // shapeGroup可以包含任意内容，非矢量视作矩形，TODO 文本矢量
       if (item instanceof Polyline || item instanceof ShapeGroup) {
@@ -146,8 +150,9 @@ class ShapeGroup extends Group {
           p = [applyMatrixPoints(points as number[][], matrix)];
         }
         const booleanOperation = item.computedStyle.booleanOperation;
-        if (i === 0 || !booleanOperation) {
+        if (first || !booleanOperation) {
           res = res.concat(p);
+          first = false;
         } else {
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
@@ -317,50 +322,59 @@ class ShapeGroup extends Group {
       ctx.globalAlpha = 1;
     }
     // 内阴影使用canvas的能力
-    const { innerShadow } = this.computedStyle;
+    const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
       // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
-      let n = 0;
-      innerShadow.forEach((item) => {
+      let n = 0, hasInnerShadow = false;
+      innerShadow.forEach((item, i) => {
+        if (!innerShadowEnable[i]) {
+          return;
+        }
+        hasInnerShadow = true;
         const m = (Math.max(Math.abs(item.x), Math.abs(item.x)) + item.spread) * scale;
         n = Math.max(n, m + item.blur * scale);
       });
       // 限制在图形内clip
-      ctx.save();
-      ctx.beginPath();
-      points.forEach((item) => {
-        canvasPolygon(ctx, item, scale, dx, dy);
-      });
-      ctx.closePath();
-      ctx.clip();
-      ctx.fillStyle = '#FFF';
-      // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
-      ctx.beginPath();
-      points.forEach((item) => {
-        canvasPolygon(ctx, item, scale, dx, dy);
-      });
-      canvasPolygon(ctx, [
-        [-n, -n],
-        [w + n, -n],
-        [w + n, h + n],
-        [-n, h + n],
-        [-n, -n],
-      ], 1, 0, 0);
-      ctx.closePath();
-      innerShadow.forEach((item) => {
-        ctx.shadowOffsetX = item.x * scale;
-        ctx.shadowOffsetY = item.y * scale;
-        ctx.shadowColor = color2rgbaStr(item.color);
-        ctx.shadowBlur = item.blur * scale;
-        ctx.fill('evenodd');
-      });
-      ctx.restore();
-      // 还原给stroke用
-      ctx.beginPath();
-      points.forEach((item) => {
-        canvasPolygon(ctx, item, scale, dx, dy);
-      });
-      ctx.closePath();
+      if (hasInnerShadow) {
+        ctx.save();
+        ctx.beginPath();
+        points.forEach((item) => {
+          canvasPolygon(ctx, item, scale, dx, dy);
+        });
+        ctx.closePath();
+        ctx.clip();
+        ctx.fillStyle = '#FFF';
+        // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
+        ctx.beginPath();
+        points.forEach((item) => {
+          canvasPolygon(ctx, item, scale, dx, dy);
+        });
+        canvasPolygon(ctx, [
+          [-n, -n],
+          [w + n, -n],
+          [w + n, h + n],
+          [-n, h + n],
+          [-n, -n],
+        ], 1, 0, 0);
+        ctx.closePath();
+        innerShadow.forEach((item, i) => {
+          if (!innerShadowEnable[i]) {
+            return;
+          }
+          ctx.shadowOffsetX = item.x * scale;
+          ctx.shadowOffsetY = item.y * scale;
+          ctx.shadowColor = color2rgbaStr(item.color);
+          ctx.shadowBlur = item.blur * scale;
+          ctx.fill('evenodd');
+        });
+        ctx.restore();
+        // 还原给stroke用
+        ctx.beginPath();
+        points.forEach((item) => {
+          canvasPolygon(ctx, item, scale, dx, dy);
+        });
+        ctx.closePath();
+      }
     }
     // 线帽设置
     if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
@@ -512,21 +526,40 @@ class ShapeGroup extends Group {
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     let s = `<svg width="${this.width}" height="${this.height}">`;
-    this.points!.forEach((item) => {
-      const d = svgPolygon(item) + 'Z';
+    const points = this.points!;
+    if (points.length) {
       const props = [
-        ['d', d],
+        ['d', ''],
         ['fill', '#D8D8D8'],
         ['fill-rule', fillRule],
         ['stroke', '#979797'],
         ['stroke-width', (1 / scale).toString()],
       ];
+      points.forEach(item => {
+        const d = svgPolygon(item) + 'Z';
+        props[0][1] += d;
+      });
       s += '<path';
       props.forEach((item) => {
         s += ' ' + item[0] + '="' + item[1] + '"';
       });
       s += '></path>';
-    });
+    }
+    // this.points!.forEach((item) => {
+    //   const d = svgPolygon(item) + 'Z';
+    //   const props = [
+    //     ['d', d],
+    //     ['fill', '#D8D8D8'],
+    //     ['fill-rule', fillRule],
+    //     ['stroke', '#979797'],
+    //     ['stroke-width', (1 / scale).toString()],
+    //   ];
+    //   s += '<path';
+    //   props.forEach((item) => {
+    //     s += ' ' + item[0] + '="' + item[1] + '"';
+    //   });
+    //   s += '></path>';
+    // });
     return s + '</svg>';
   }
 

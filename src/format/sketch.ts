@@ -769,6 +769,10 @@ async function convertItem(
     } = await geomStyle(layer, opt);
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
+        if (child._class === SketchFormat.ClassValue.Group) {
+          // @ts-ignore sketch矢量组中会有普通组，转为矢量组，figma中直接忽略子树，mastergo是删去这一层
+          child._class = SketchFormat.ClassValue.ShapeGroup;
+        }
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
       }),
     );
