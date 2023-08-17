@@ -131,6 +131,7 @@ export function subtract(polygonA: any, polygonB: any, intermediate = false) {
   if (!list.length) {
     // list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
   }
+  // console.warn(list.map(item => item.toString()))
   if (intermediate) {
     source.segments = list;
     return source;

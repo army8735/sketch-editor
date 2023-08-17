@@ -385,7 +385,6 @@ class Polygon {
             }
             ael.push(seg);
           } else if (len === 1) {
-            // inside = false;
             ael.unshift(seg);
           } else {
             for (let i = len - 2; i >= 0; i--) {
@@ -402,8 +401,9 @@ class Polygon {
                 }
                 ael.splice(i + 1, 0, seg);
                 break;
-              } else if (i === 0) {
-                // inside = false;
+              }
+              // 比最下方的还要下，说明自己是新的最下方的线
+              else if (i === 0) {
                 ael.unshift(seg);
               }
             }
@@ -793,7 +793,7 @@ function findIntersection(
                       : coordsB[coordsB.length - 1];
                   }
                 }
-                // console.log('inters', i, inters, inters[0].point, seg.toString(), item.toString());
+                // console.log('inters', i, inters, seg.toString(), item.toString());
                 const pa = sortIntersection(inters!, !isSourceReverted);
                 // console.log(pa);
                 const pb = sortIntersection(inters!, isSourceReverted);
@@ -1190,12 +1190,24 @@ function segAboveCompare(segA: Segment, segB: Segment) {
       return pointAboveOrOnLine(a1, b1, b2);
     }
   }
-  // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
+  // a是竖线的话，另外一条（一定是曲线）如果相连，特殊判断看在左在右，注意相连不可能出现a首b尾的情况
   if (la === 2 && a1.x === ca[1].x) {
-    if (b1.x !== a1.x) {
-      return b1.x > a1.x;
+    if (a1 === b1) {
+      // b只可能首相连，尾的会end优先出栈进不来
+      return true;
     }
-    return cb[lb - 1].x >= a1.x;
+    else if (ca[la - 1] === b1) {
+      return true;
+    }
+    else if (ca[la - 1] === cb[lb - 1]) {
+      return false;
+    }
+  }
+  // b是竖线同上，但只可能a和b首相连
+  if (lb === 2 && b1.x === cb[1].x) {
+    if (a1 === b1) {
+      return false;
+    }
   }
   // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
   const x1 = Math.max(a1.x, b1.x),

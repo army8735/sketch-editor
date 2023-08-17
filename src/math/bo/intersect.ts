@@ -6,19 +6,19 @@ import Point from './Point';
 const EPS = 1e-4;
 const EPS2 = 1 - 1e-4;
 
-function isParallel(k1: number, k2: number) {
-  if (k1 === Infinity && k2 === Infinity) {
-    return true;
-  } else if (k1 === Infinity && k2 === -Infinity) {
-    return true;
-  } else if (k1 === -Infinity && k2 === -Infinity) {
-    return true;
-  } else if (k1 === -Infinity && k2 === Infinity) {
-    return true;
-  } else {
-    return Math.abs(k1 - k2) < EPS;
-  }
-}
+// function isParallel(k1: number, k2: number) {
+//   if (k1 === Infinity && k2 === Infinity) {
+//     return true;
+//   } else if (k1 === Infinity && k2 === -Infinity) {
+//     return true;
+//   } else if (k1 === -Infinity && k2 === -Infinity) {
+//     return true;
+//   } else if (k1 === -Infinity && k2 === Infinity) {
+//     return true;
+//   } else {
+//     return Math.abs(k1 - k2) < EPS;
+//   }
+// }
 
 function getIntersectionLineLine(
   ax1: number,
@@ -91,22 +91,22 @@ function getIntersectionBezier2Line(
       }
       if ((item.t > EPS && item.t < EPS2) || (toClip > EPS && toClip < EPS2)) {
         // 还要判断斜率，相等也忽略（小于一定误差）
-        let k1 = bezier.bezierSlope(
-          [
-            { x: ax1, y: ay1 },
-            { x: ax2, y: ay2 },
-            { x: ax3, y: ay3 },
-          ],
-          item.t,
-        );
-        let k2 = bezier.bezierSlope([
-          { x: bx1, y: by1 },
-          { x: bx2, y: by2 },
-        ]);
-        // 忽略方向，180°也是平行，Infinity相减为NaN
-        if (isParallel(k1, k2)) {
-          return;
-        }
+        // let k1 = bezier.bezierSlope(
+        //   [
+        //     { x: ax1, y: ay1 },
+        //     { x: ax2, y: ay2 },
+        //     { x: ax3, y: ay3 },
+        //   ],
+        //   item.t,
+        // );
+        // let k2 = bezier.bezierSlope([
+        //   { x: bx1, y: by1 },
+        //   { x: bx2, y: by2 },
+        // ]);
+        // // 忽略方向，180°也是平行，Infinity相减为NaN
+        // if (isParallel(k1, k2)) {
+        //   return;
+        // }
         t.push({
           point: new Point(item.x, item.y),
           toSource: item.t, // source是曲线直接用t
@@ -168,26 +168,26 @@ function getIntersectionBezier2Bezier2(
         const tc = toClip[0];
         if ((item.t > EPS && item.t < EPS2) || (tc > EPS && tc < EPS2)) {
           // 还要判断斜率，相等也忽略（小于一定误差）
-          let k1 = bezier.bezierSlope(
-            [
-              { x: ax1, y: ay1 },
-              { x: ax2, y: ay2 },
-              { x: ax3, y: ay3 },
-            ],
-            item.t,
-          );
-          let k2 = bezier.bezierSlope(
-            [
-              { x: bx1, y: by1 },
-              { x: bx2, y: by2 },
-              { x: bx3, y: by3 },
-            ],
-            tc,
-          );
-          // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (isParallel(k1, k2)) {
-            return;
-          }
+          // let k1 = bezier.bezierSlope(
+          //   [
+          //     { x: ax1, y: ay1 },
+          //     { x: ax2, y: ay2 },
+          //     { x: ax3, y: ay3 },
+          //   ],
+          //   item.t,
+          // );
+          // let k2 = bezier.bezierSlope(
+          //   [
+          //     { x: bx1, y: by1 },
+          //     { x: bx2, y: by2 },
+          //     { x: bx3, y: by3 },
+          //   ],
+          //   tc,
+          // );
+          // // 忽略方向，180°也是平行，Infinity相减为NaN
+          // if (isParallel(k1, k2)) {
+          //   return;
+          // }
           t.push({
             point: new Point(item.x, item.y),
             toSource: item.t, // source是曲线直接用t
@@ -255,27 +255,27 @@ function getIntersectionBezier2Bezier3(
         const tc = toClip[0];
         if ((item.t > EPS && item.t < EPS2) || (tc > EPS && tc < EPS2)) {
           // 还要判断斜率，相等也忽略（小于一定误差）
-          let k1 = bezier.bezierSlope(
-            [
-              { x: ax1, y: ay1 },
-              { x: ax2, y: ay2 },
-              { x: ax3, y: ay3 },
-            ],
-            item.t,
-          );
-          let k2 = bezier.bezierSlope(
-            [
-              { x: bx1, y: by1 },
-              { x: bx2, y: by2 },
-              { x: bx3, y: by3 },
-              { x: bx4, y: by4 },
-            ],
-            tc,
-          );
-          // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (isParallel(k1, k2)) {
-            return;
-          }
+          // let k1 = bezier.bezierSlope(
+          //   [
+          //     { x: ax1, y: ay1 },
+          //     { x: ax2, y: ay2 },
+          //     { x: ax3, y: ay3 },
+          //   ],
+          //   item.t,
+          // );
+          // let k2 = bezier.bezierSlope(
+          //   [
+          //     { x: bx1, y: by1 },
+          //     { x: bx2, y: by2 },
+          //     { x: bx3, y: by3 },
+          //     { x: bx4, y: by4 },
+          //   ],
+          //   tc,
+          // );
+          // // 忽略方向，180°也是平行，Infinity相减为NaN
+          // if (isParallel(k1, k2)) {
+          //   return;
+          // }
           t.push({
             point: new Point(item.x, item.y),
             toSource: item.t, // source是曲线直接用t
@@ -332,23 +332,23 @@ function getIntersectionBezier3Line(
       }
       if ((item.t > EPS && item.t < EPS2) || (toClip > EPS && toClip < EPS2)) {
         // 还要判断斜率，相等也忽略（小于一定误差）
-        let k1 = bezier.bezierSlope(
-          [
-            { x: ax1, y: ay1 },
-            { x: ax2, y: ay2 },
-            { x: ax3, y: ay3 },
-            { x: ax4, y: ay4 },
-          ],
-          item.t,
-        );
-        let k2 = bezier.bezierSlope([
-          { x: bx1, y: by1 },
-          { x: bx2, y: by2 },
-        ]);
-        // 忽略方向，180°也是平行，Infinity相减为NaN
-        if (isParallel(k1, k2)) {
-          return;
-        }
+        // let k1 = bezier.bezierSlope(
+        //   [
+        //     { x: ax1, y: ay1 },
+        //     { x: ax2, y: ay2 },
+        //     { x: ax3, y: ay3 },
+        //     { x: ax4, y: ay4 },
+        //   ],
+        //   item.t,
+        // );
+        // let k2 = bezier.bezierSlope([
+        //   { x: bx1, y: by1 },
+        //   { x: bx2, y: by2 },
+        // ]);
+        // // 忽略方向，180°也是平行，Infinity相减为NaN
+        // if (isParallel(k1, k2)) {
+        //   return;
+        // }
         t.push({
           point: new Point(item.x, item.y),
           toSource: item.t, // source是曲线直接用t
@@ -419,28 +419,28 @@ function getIntersectionBezier3Bezier3(
         const tc = toClip[0];
         if ((item.t > EPS && item.t < EPS2) || (tc > EPS && tc < EPS2)) {
           // 还要判断斜率，相等也忽略（小于一定误差）
-          let k1 = bezier.bezierSlope(
-            [
-              { x: ax1, y: ay1 },
-              { x: ax2, y: ay2 },
-              { x: ax3, y: ay3 },
-              { x: ax4, y: ay4 },
-            ],
-            item.t,
-          );
-          let k2 = bezier.bezierSlope(
-            [
-              { x: bx1, y: by1 },
-              { x: bx2, y: by2 },
-              { x: bx3, y: by3 },
-              { x: bx4, y: by4 },
-            ],
-            tc,
-          );
-          // 忽略方向，180°也是平行，Infinity相减为NaN
-          if (isParallel(k1, k2)) {
-            return;
-          }
+          // let k1 = bezier.bezierSlope(
+          //   [
+          //     { x: ax1, y: ay1 },
+          //     { x: ax2, y: ay2 },
+          //     { x: ax3, y: ay3 },
+          //     { x: ax4, y: ay4 },
+          //   ],
+          //   item.t,
+          // );
+          // let k2 = bezier.bezierSlope(
+          //   [
+          //     { x: bx1, y: by1 },
+          //     { x: bx2, y: by2 },
+          //     { x: bx3, y: by3 },
+          //     { x: bx4, y: by4 },
+          //   ],
+          //   tc,
+          // );
+          // // 忽略方向，180°也是平行，Infinity相减为NaN
+          // if (isParallel(k1, k2)) {
+          //   return;
+          // }
           t.push({
             point: new Point(item.x, item.y),
             toSource: item.t, // source是曲线直接用t

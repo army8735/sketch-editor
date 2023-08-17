@@ -94,6 +94,7 @@ class Segment {
 
   toString() {
     return this.toHash()
+      + ' ' + this.uuid
       + ' ' + this.belong
       + ' ' + this.myCoincide
       + '' + this.otherCoincide
