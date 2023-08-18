@@ -800,11 +800,7 @@ function findIntersection(
                 // console.log(pb);
                 let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                 // console.log(ra.map(item => item.toString()));
-                let rb = sliceSegment(
-                  item,
-                  pb,
-                  isIntermediateB && belong === 1,
-                );
+                let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));
                 // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                 activeNewSeg(segments, list, ael, x, ra);
@@ -993,9 +989,13 @@ function activeNewSeg(
   ns: Array<Segment>,
 ) {
   ns.forEach((seg) => {
-    const bbox = seg.bbox,
-      x1 = bbox[0],
-      x2 = bbox[2];
+    const coords = seg.coords;
+    const p1 = coords[0];
+    const p2 = coords[coords.length - 1];
+    let x1 = p1.x, x2 = p2.x;
+    if (x1 > x2) {
+      [x1, x2] = [x2, x1];
+    }
     // console.log(seg.toString(), x1, x2, x);
     // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
     if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
@@ -1051,9 +1051,13 @@ function activeNewSeg(
 function genHashXList(segments: Array<Segment>) {
   const hashX: any = {};
   segments.forEach((seg) => {
-    const bbox = seg.bbox,
-      min = bbox[0],
-      max = bbox[2];
+    const coords = seg.coords;
+    const p1 = coords[0];
+    const p2 = coords[coords.length - 1];
+    let min = p1.x, max = p2.x;
+    if (min > max) {
+      [min, max] = [max, min];
+    }
     putHashX(hashX, min, seg);
     putHashX(hashX, max, seg);
   });
