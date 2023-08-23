@@ -1224,17 +1224,18 @@ function segAboveCompare(segA: Segment, segB: Segment) {
       return y1 > y2;
     }
   }
+  const y1 = getYByX(ca, x2)!,
+    y2 = getYByX(cb, x2)!;
+  if (y1 !== y2) {
+    return y1 > y2;
+  }
+  // 一般开始点和中间点就不会相同了，否则就是重合或相交，这里末尾点再判断下兜个底，曲线曾经出现过一个特例，末尾点判断的上下性反了，所以放在最后
   if (ca[la - 1] !== cb[lb - 1]) {
     const y1 = getYByX(ca, x3)!,
       y2 = getYByX(cb, x3)!;
     if (y1 !== y2) {
       return y1 > y2;
     }
-  }
-  const y1 = getYByX(ca, x2)!,
-    y2 = getYByX(cb, x2)!;
-  if (y1 !== y2) {
-    return y1 > y2;
   }
   return false;
 }
