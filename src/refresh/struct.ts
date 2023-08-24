@@ -206,16 +206,16 @@ export function renderWebgl(
     // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
     for (let j = 0, len = mergeList.length; j < len; j++) {
       const { i, lv, total, node, valid, isNew } = mergeList[j];
+      const { maskMode, visible, opacity } = node.computedStyle;
       // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
       if (!valid) {
-        if (isNew && node.computedStyle.maskMode) {
+        if (isNew && maskMode) {
           genNextCount(node, structs, i, lv, total);
         }
         continue;
       }
-      // 不可见的
-      const computedStyle = node.computedStyle;
-      if (!computedStyle.visible || computedStyle.opacity <= 0) {
+      // 不可见的，注意蒙版不可见时也生效
+      if ((!visible || opacity <= 0) && !maskMode) {
         continue;
       }
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
@@ -252,7 +252,6 @@ export function renderWebgl(
         }
       }
       // 生成mask
-      const { maskMode } = computedStyle;
       if (maskMode && node.next) {
         // 可能超过尺寸没有total汇总，暂时防御下
         if (node.textureTarget[scaleIndex]) {
@@ -312,7 +311,7 @@ export function renderWebgl(
     }
     // 不可见的但要排除mask
     const computedStyle = node.computedStyle;
-    if (!computedStyle.visible || computedStyle.opacity <= 0) {
+    if ((!computedStyle.visible || computedStyle.opacity <= 0) && !computedStyle.maskMode) {
       i += total + next;
       continue;
     }
