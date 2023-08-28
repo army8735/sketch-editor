@@ -18664,7 +18664,13 @@
         ];
         const roots = getRoots(coefs);
         for (let i = 0; i < roots.length; i++) {
-            const t = roots[i];
+            let t = roots[i];
+            if (t < 0 && t > -1e-9) {
+                t = 0;
+            }
+            else if (t > 1 && t < 1.000000001) {
+                t = 1;
+            }
             if (0 <= t && t <= 1) {
                 const p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
                 const p6 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
@@ -26753,9 +26759,19 @@
                                 [curr[0], curr[1]],
                                 [endPoint.x, endPoint.y],
                             ];
-                            const curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
-                            const curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1);
-                            const p1 = new Point(toPrecision(curve1[1].x), toPrecision(curve1[1].y)), p2 = new Point(toPrecision(curve1[2].x), toPrecision(curve1[2].y)), p3 = new Point(toPrecision(curve2[1].x), toPrecision(curve2[1].y));
+                            const curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]).map(item => {
+                                return {
+                                    x: Math.round(item.x),
+                                    y: Math.round(item.y),
+                                };
+                            });
+                            const curve2 = bezier.sliceBezier2Both(Point.toPoints(points), t[0], 1).map(item => {
+                                return {
+                                    x: Math.round(item.x),
+                                    y: Math.round(item.y),
+                                };
+                            });
+                            const p1 = new Point(curve1[1].x, curve1[1].y), p2 = new Point(curve1[2].x, curve1[2].y), p3 = new Point(curve2[1].x, curve2[1].y);
                             let coords = Point.compare(startPoint, p2)
                                 ? [p2, p1, startPoint]
                                 : [startPoint, p1, p2];
@@ -26799,8 +26815,13 @@
                             ];
                             let lastPoint = startPoint, lastT = 0;
                             t.forEach((t) => {
-                                const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t);
-                                const p1 = new Point(toPrecision(curve[1].x), toPrecision(curve[1].y)), p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y)), p3 = new Point(toPrecision(curve[3].x), toPrecision(curve[3].y));
+                                const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, t).map(item => {
+                                    return {
+                                        x: Math.round(item.x),
+                                        y: Math.round(item.y),
+                                    };
+                                });
+                                const p1 = new Point(curve[1].x, curve[1].y), p2 = new Point(curve[2].x, curve[2].y), p3 = new Point(curve[3].x, curve[3].y);
                                 const coords = Point.compare(lastPoint, p3)
                                     ? [p3, p2, p1, lastPoint]
                                     : [lastPoint, p1, p2, p3];
@@ -26808,8 +26829,13 @@
                                 lastT = t;
                                 lastPoint = p3;
                             });
-                            const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1);
-                            const p1 = new Point(toPrecision(curve[1].x), toPrecision(curve[1].y)), p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y));
+                            const curve = bezier.sliceBezier2Both(Point.toPoints(points), lastT, 1).map(item => {
+                                return {
+                                    x: Math.round(item.x),
+                                    y: Math.round(item.y),
+                                };
+                            });
+                            const p1 = new Point(curve[1].x, curve[1].y), p2 = new Point(curve[2].x, curve[2].y);
                             const coords = Point.compare(lastPoint, endPoint)
                                 ? [endPoint, p2, p1, lastPoint]
                                 : [lastPoint, p1, p2, endPoint];
@@ -26977,6 +27003,7 @@
                 const { isStart, seg } = item;
                 const belong = seg.belong;
                 if (isStart) {
+                    if (seg.uuid === 6) ;
                     // 自重合或者它重合统一只保留第一条线
                     if (seg.myCoincide || seg.otherCoincide) {
                         const hc = seg.toHash();
@@ -27242,6 +27269,10 @@
                                 }
                                 // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
                                 else if (inters && inters.length) {
+                                    inters.forEach(item => {
+                                        item.point.x = Math.round(item.point.x);
+                                        item.point.y = Math.round(item.point.y);
+                                    });
                                     // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
                                     // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
                                     for (let i = 0, len = inters.length; i < len; i++) {
@@ -27331,37 +27362,47 @@
                 }
             }
             else if (len === 3) {
-                const c = bezier.sliceBezier2Both(coords, lastT, t);
+                const c = bezier.sliceBezier2Both(coords, lastT, t).map(item => {
+                    return {
+                        x: Math.round(item.x),
+                        y: Math.round(item.y),
+                    };
+                });
                 if (Point.compare(startPoint, point)) {
                     ns = new Segment([
                         point,
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+                        new Point(c[1].x, c[1].y),
                         startPoint,
                     ], belong);
                 }
                 else {
                     ns = new Segment([
                         startPoint,
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+                        new Point(c[1].x, c[1].y),
                         point,
                     ], belong);
                 }
             }
             else if (len === 4) {
-                const c = bezier.sliceBezier2Both(coords, lastT, t);
+                const c = bezier.sliceBezier2Both(coords, lastT, t).map(item => {
+                    return {
+                        x: Math.round(item.x),
+                        y: Math.round(item.y),
+                    };
+                });
                 if (Point.compare(startPoint, point)) {
                     ns = new Segment([
                         point,
-                        new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+                        new Point(c[2].x, c[2].y),
+                        new Point(c[1].x, c[1].y),
                         startPoint,
                     ], belong);
                 }
                 else {
                     ns = new Segment([
                         startPoint,
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
-                        new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+                        new Point(c[1].x, c[1].y),
+                        new Point(c[2].x, c[2].y),
                         point,
                     ], belong);
                 }
@@ -27387,37 +27428,47 @@
                 }
             }
             else if (len === 3) {
-                const c = bezier.sliceBezier2Both(coords, lastT, 1);
+                const c = bezier.sliceBezier2Both(coords, lastT, 1).map(item => {
+                    return {
+                        x: Math.round(item.x),
+                        y: Math.round(item.y),
+                    };
+                });
                 if (Point.compare(startPoint, coords[2])) {
                     ns = new Segment([
                         coords[2],
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+                        new Point(c[1].x, c[1].y),
                         startPoint,
                     ], belong);
                 }
                 else {
                     ns = new Segment([
                         startPoint,
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+                        new Point(c[1].x, c[1].y),
                         coords[2],
                     ], belong);
                 }
             }
             else if (len === 4) {
-                const c = bezier.sliceBezier2Both(coords, lastT, 1);
+                const c = bezier.sliceBezier2Both(coords, lastT, 1).map(item => {
+                    return {
+                        x: Math.round(item.x),
+                        y: Math.round(item.y),
+                    };
+                });
                 if (Point.compare(startPoint, coords[3])) {
                     ns = new Segment([
                         coords[3],
-                        new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+                        new Point(c[2].x, c[2].y),
+                        new Point(c[1].x, c[1].y),
                         startPoint,
                     ], belong);
                 }
                 else {
                     ns = new Segment([
                         startPoint,
-                        new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
-                        new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+                        new Point(c[1].x, c[1].y),
+                        new Point(c[2].x, c[2].y),
                         coords[3],
                     ], belong);
                 }
@@ -28824,6 +28875,16 @@
         getWholeBoundingClientRect,
     };
 
+    function scaleUp(points) {
+        return points.map(point => {
+            return point.map(item => Math.round(item * 100));
+        });
+    }
+    function scaleDown(points) {
+        return points.map(point => {
+            return point.map(item => item * 0.01);
+        });
+    }
     function applyMatrixPoints(points, m) {
         if (m && !isE(m)) {
             const a1 = m[0], b1 = m[1];
@@ -28839,23 +28900,30 @@
                         const c5 = (a1 === 1 ? item[4] : item[4] * a1) + (a2 ? item[5] * a2 : 0) + a4;
                         const c6 = (b1 === 1 ? item[4] : item[4] * b1) + (b2 ? item[5] * b2 : 0) + b4;
                         return [
-                            toPrecision(c1),
-                            toPrecision(c2),
-                            toPrecision(c3),
-                            toPrecision(c4),
-                            toPrecision(c5),
-                            toPrecision(c6),
+                            c1, c2, c3, c4, c5, c6,
                         ];
+                        // return [
+                        //   toPrecision(c1),
+                        //   toPrecision(c2),
+                        //   toPrecision(c3),
+                        //   toPrecision(c4),
+                        //   toPrecision(c5),
+                        //   toPrecision(c6),
+                        // ];
                     }
                     return [
-                        toPrecision(c1),
-                        toPrecision(c2),
-                        toPrecision(c3),
-                        toPrecision(c4),
+                        c1, c2, c3, c4,
                     ];
+                    // return [
+                    //   toPrecision(c1),
+                    //   toPrecision(c2),
+                    //   toPrecision(c3),
+                    //   toPrecision(c4),
+                    // ];
                 }
                 else {
-                    return [toPrecision(c1), toPrecision(c2)];
+                    return [c1, c2];
+                    // return [toPrecision(c1), toPrecision(c2)];
                 }
             });
         }
@@ -28926,10 +28994,10 @@
                     // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
                     let p;
                     if (item instanceof ShapeGroup) {
-                        p = points.map((item) => applyMatrixPoints(item, matrix));
+                        p = points.map((item) => scaleUp(applyMatrixPoints(item, matrix)));
                     }
                     else {
-                        p = [applyMatrixPoints(points, matrix)];
+                        p = [scaleUp(applyMatrixPoints(points, matrix))];
                     }
                     const booleanOperation = item.computedStyle.booleanOperation;
                     if (first || !booleanOperation) {
@@ -28972,7 +29040,7 @@
                     }
                 }
             }
-            this.points = res;
+            this.points = res.map(o => scaleDown(o));
         }
         renderCanvas(scale) {
             super.renderCanvas(scale);

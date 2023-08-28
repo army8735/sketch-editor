@@ -1,6 +1,6 @@
 import bezier from '../bezier';
 import equation from '../equation';
-import geom, { toPrecision } from '../geom';
+import geom from '../geom';
 import vector from '../vector';
 import intersect from './intersect';
 import Point from './Point';
@@ -74,23 +74,35 @@ class Polygon {
               [curr[0], curr[1]],
               [endPoint.x, endPoint.y],
             ];
-            const curve1 = bezier.sliceBezier(Point.toPoints(points), t[0]);
+            const curve1 = bezier.sliceBezier(
+              Point.toPoints(points), t[0]
+            ).map(item => {
+              return {
+                x: Math.round(item.x),
+                y: Math.round(item.y),
+              };
+            });
             const curve2 = bezier.sliceBezier2Both(
               Point.toPoints(points),
               t[0],
               1,
-            );
+            ).map(item => {
+              return {
+                x: Math.round(item.x),
+                y: Math.round(item.y),
+              };
+            });
             const p1 = new Point(
-                toPrecision(curve1[1].x),
-                toPrecision(curve1[1].y),
+                curve1[1].x,
+                curve1[1].y,
               ),
               p2 = new Point(
-                toPrecision(curve1[2].x),
-                toPrecision(curve1[2].y),
+                curve1[2].x,
+                curve1[2].y,
               ),
               p3 = new Point(
-                toPrecision(curve2[1].x),
-                toPrecision(curve2[1].y),
+                curve2[1].x,
+                curve2[1].y,
               );
             let coords = Point.compare(startPoint, p2)
               ? [p2, p1, startPoint]
@@ -145,18 +157,23 @@ class Polygon {
                 Point.toPoints(points),
                 lastT,
                 t,
-              );
+              ).map(item => {
+                return {
+                  x: Math.round(item.x),
+                  y: Math.round(item.y),
+                };
+              });
               const p1 = new Point(
-                  toPrecision(curve[1].x),
-                  toPrecision(curve[1].y),
+                  curve[1].x,
+                  curve[1].y,
                 ),
                 p2 = new Point(
-                  toPrecision(curve[2].x),
-                  toPrecision(curve[2].y),
+                  curve[2].x,
+                  curve[2].y,
                 ),
                 p3 = new Point(
-                  toPrecision(curve[3].x),
-                  toPrecision(curve[3].y),
+                  curve[3].x,
+                  curve[3].y,
                 );
               const coords = Point.compare(lastPoint, p3)
                 ? [p3, p2, p1, lastPoint]
@@ -169,12 +186,17 @@ class Polygon {
               Point.toPoints(points),
               lastT,
               1,
-            );
+            ).map(item => {
+              return {
+                x: Math.round(item.x),
+                y: Math.round(item.y),
+              };
+            });
             const p1 = new Point(
-                toPrecision(curve[1].x),
-                toPrecision(curve[1].y),
+                curve[1].x,
+                curve[1].y,
               ),
-              p2 = new Point(toPrecision(curve[2].x), toPrecision(curve[2].y));
+              p2 = new Point(curve[2].x, curve[2].y);
             const coords = Point.compare(lastPoint, endPoint)
               ? [endPoint, p2, p1, lastPoint]
               : [lastPoint, p1, p2, endPoint];
@@ -361,6 +383,9 @@ class Polygon {
       const { isStart, seg } = item;
       const belong = seg.belong;
       if (isStart) {
+        if (seg.uuid === 6) {
+          // debugger;
+        }
         // 自重合或者它重合统一只保留第一条线
         if (seg.myCoincide || seg.otherCoincide) {
           const hc = seg.toHash();
@@ -774,6 +799,10 @@ function findIntersection(
               }
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
               else if (inters && inters.length) {
+                inters.forEach(item => {
+                  item.point.x = Math.round(item.point.x);
+                  item.point.y = Math.round(item.point.y);
+                });
                 // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
                 // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
                 for (let i = 0, len = inters.length; i < len; i++) {
@@ -862,12 +891,17 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
         ns = new Segment([startPoint, point], belong);
       }
     } else if (len === 3) {
-      const c = bezier.sliceBezier2Both(coords, lastT, t);
+      const c = bezier.sliceBezier2Both(coords, lastT, t).map(item => {
+        return {
+          x: Math.round(item.x),
+          y: Math.round(item.y),
+        };
+      });
       if (Point.compare(startPoint, point)) {
         ns = new Segment(
           [
             point,
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+            new Point(c[1].x, c[1].y),
             startPoint,
           ],
           belong,
@@ -876,20 +910,25 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
         ns = new Segment(
           [
             startPoint,
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+            new Point(c[1].x, c[1].y),
             point,
           ],
           belong,
         );
       }
     } else if (len === 4) {
-      const c = bezier.sliceBezier2Both(coords, lastT, t);
+      const c = bezier.sliceBezier2Both(coords, lastT, t).map(item => {
+        return {
+          x: Math.round(item.x),
+          y: Math.round(item.y),
+        };
+      });
       if (Point.compare(startPoint, point)) {
         ns = new Segment(
           [
             point,
-            new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+            new Point(c[2].x, c[2].y),
+            new Point(c[1].x, c[1].y),
             startPoint,
           ],
           belong,
@@ -898,8 +937,8 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
         ns = new Segment(
           [
             startPoint,
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
-            new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+            new Point(c[1].x, c[1].y),
+            new Point(c[2].x, c[2].y),
             point,
           ],
           belong,
@@ -925,12 +964,17 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
         ns = new Segment([startPoint, coords[1]], belong);
       }
     } else if (len === 3) {
-      const c = bezier.sliceBezier2Both(coords, lastT, 1);
+      const c = bezier.sliceBezier2Both(coords, lastT, 1).map(item => {
+        return {
+          x: Math.round(item.x),
+          y: Math.round(item.y),
+        };
+      });
       if (Point.compare(startPoint, coords[2])) {
         ns = new Segment(
           [
             coords[2],
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+            new Point(c[1].x, c[1].y),
             startPoint,
           ],
           belong,
@@ -939,20 +983,25 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
         ns = new Segment(
           [
             startPoint,
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+            new Point(c[1].x, c[1].y),
             coords[2],
           ],
           belong,
         );
       }
     } else if (len === 4) {
-      const c = bezier.sliceBezier2Both(coords, lastT, 1);
+      const c = bezier.sliceBezier2Both(coords, lastT, 1).map(item => {
+        return {
+          x: Math.round(item.x),
+          y: Math.round(item.y),
+        };
+      });
       if (Point.compare(startPoint, coords[3])) {
         ns = new Segment(
           [
             coords[3],
-            new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
+            new Point(c[2].x, c[2].y),
+            new Point(c[1].x, c[1].y),
             startPoint,
           ],
           belong,
@@ -961,8 +1010,8 @@ function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
         ns = new Segment(
           [
             startPoint,
-            new Point(toPrecision(c[1].x), toPrecision(c[1].y)),
-            new Point(toPrecision(c[2].x), toPrecision(c[2].y)),
+            new Point(c[1].x, c[1].y),
+            new Point(c[2].x, c[2].y),
             coords[3],
           ],
           belong,

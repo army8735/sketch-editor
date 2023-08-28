@@ -803,7 +803,13 @@ function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number
   const roots = getRoots(coefs);
 
   for (let i = 0; i < roots.length; i++) {
-    const t = roots[i];
+    let t = roots[i];
+    if (t < 0 && t > -1e-9) {
+      t = 0;
+    }
+    else if (t > 1 && t < 1.000000001) {
+      t = 1;
+    }
 
     if (0 <= t && t <= 1) {
       const p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);

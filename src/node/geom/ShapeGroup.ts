@@ -2,7 +2,7 @@ import * as uuid from 'uuid';
 import { getDefaultStyle, Props } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
-import { toPrecision } from '../../math/geom';
+// import { toPrecision } from '../../math/geom';
 import { isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
@@ -25,6 +25,18 @@ import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
+
+function scaleUp(points: Array<Array<number>>) {
+  return points.map(point => {
+    return point.map(item => Math.round(item * 100));
+  });
+}
+
+function scaleDown(points: Array<Array<number>>) {
+  return points.map(point => {
+    return point.map(item => item * 0.01);
+  });
+}
 
 function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
   if (m && !isE(m)) {
@@ -50,22 +62,29 @@ function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
           const c6 =
             (b1 === 1 ? item[4] : item[4] * b1) + (b2 ? item[5] * b2 : 0) + b4;
           return [
-            toPrecision(c1),
-            toPrecision(c2),
-            toPrecision(c3),
-            toPrecision(c4),
-            toPrecision(c5),
-            toPrecision(c6),
+            c1, c2, c3, c4, c5, c6,
           ];
+          // return [
+          //   toPrecision(c1),
+          //   toPrecision(c2),
+          //   toPrecision(c3),
+          //   toPrecision(c4),
+          //   toPrecision(c5),
+          //   toPrecision(c6),
+          // ];
         }
         return [
-          toPrecision(c1),
-          toPrecision(c2),
-          toPrecision(c3),
-          toPrecision(c4),
+          c1, c2, c3, c4,
         ];
+        // return [
+        //   toPrecision(c1),
+        //   toPrecision(c2),
+        //   toPrecision(c3),
+        //   toPrecision(c4),
+        // ];
       } else {
-        return [toPrecision(c1), toPrecision(c2)];
+        return [c1, c2];
+        // return [toPrecision(c1), toPrecision(c2)];
       }
     });
   }
@@ -144,10 +163,10 @@ class ShapeGroup extends Group {
         let p: number[][][];
         if (item instanceof ShapeGroup) {
           p = points.map((item) =>
-            applyMatrixPoints(item as number[][], matrix),
+            scaleUp(applyMatrixPoints(item as number[][], matrix)),
           );
         } else {
-          p = [applyMatrixPoints(points as number[][], matrix)];
+          p = [scaleUp(applyMatrixPoints(points as number[][], matrix))];
         }
         const booleanOperation = item.computedStyle.booleanOperation;
         if (first || !booleanOperation) {
@@ -186,7 +205,7 @@ class ShapeGroup extends Group {
         }
       }
     }
-    this.points = res;
+    this.points = res.map(o => scaleDown(o));
   }
 
   override renderCanvas(scale: number) {
