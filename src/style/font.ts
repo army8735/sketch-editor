@@ -163,7 +163,13 @@ const o: any = {
         url,
       });
     }
-    return (this.data[familyL] = this.data[psL] = o); // 同个字体族不同postscriptName指向一个引用
+    return {
+      family: family,
+      familyL: familyL,
+      postscriptName: postscriptName,
+      postscriptNameL: psL,
+      data: (this.data[familyL] = this.data[psL] = o),
+    }; // 同个字体族不同postscriptName指向一个引用
   },
   registerData(data: fontData) {
     const familyL = data.family.toLowerCase();

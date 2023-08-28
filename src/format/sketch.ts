@@ -17,6 +17,8 @@ import {
   TagName,
 } from './';
 import { TEXT_ALIGN } from '../style/define';
+import font from '../style/font';
+import inject from '../util/inject';
 
 // prettier-ignore
 export enum ResizingConstraint {
@@ -45,9 +47,9 @@ export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   );
   const pages: SketchFormat.Page[] = [];
   await Promise.all(
-    document.pages.map((page: { _ref: string }) => {
+    document.pages.map((page: { _ref: string }, i: number) => {
       return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
-        pages.push(pageJson);
+        pages[i] = pageJson;
       });
     }),
   );
@@ -66,14 +68,17 @@ export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
 
 async function readJsonFile(zipFile: JSZip, filename: string) {
   const docStr = await zipFile.file(filename)?.async('string');
-  return JSON.parse(docStr!);
+  if (!docStr) {
+    return {};
+  }
+  return JSON.parse(docStr);
 }
 
 type Opt = {
   imgs: Array<string>;
   imgHash: any;
-  fonts: Array<{ fontFamily: string; url: string }>;
-  fontHash: any;
+  // fonts: Array<{ fontFamily: string; url: string }>;
+  // fontHash: any;
   zipFile: JSZip;
   user: any;
 };
@@ -82,15 +87,34 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   console.log('sketch', json);
   const imgs: Array<string> = [],
     imgHash: any = {};
-  const fonts: Array<{ fontFamily: string; url: string }> = [],
-    fontHash: any = {};
+  // sketch自带的字体，有fontData的才算，有可能这个字体本地已经有了，可以跳过
+  const fontReferences = (json.document.fontReferences || []).filter((item: SketchFormat.FontRef) => {
+    if (!item.fontData || !item.fontData._ref) {
+      return false;
+    }
+    const fontFamilyName = item.fontFamilyName;
+    if (font.hasRegister(fontFamilyName)) {
+      return false;
+    }
+    const postscriptName = item.postscriptNames[0];
+    return !!postscriptName;
+  });
+  if (fontReferences.length) {
+    await Promise.all(
+      fontReferences.map((item: SketchFormat.FontRef) => {
+        return readFontFile(item.fontData._ref, zipFile);
+      })
+    );
+  }
+  // const fonts: Array<{ fontFamily: string; url: string }> = [],
+  //   fontHash: any = {};
   const pages = await Promise.all(
     json.pages.map((page: SketchFormat.Page) => {
       return convertPage(page, {
         imgs,
         imgHash,
-        fonts,
-        fontHash,
+        // fonts,
+        // fontHash,
         zipFile,
         user: json.user,
       });
@@ -1028,7 +1052,7 @@ async function readImageFile(filename: string, opt: Opt) {
     console.error(`image not exist: >>>${filename}<<<`);
     return -1;
   }
-  let ab = await file.async('arraybuffer');
+  const ab = await file.async('arraybuffer');
   const buffer = new Uint8Array(ab);
   const blob = new Blob([buffer.buffer]);
   let img: HTMLImageElement;
@@ -1082,4 +1106,25 @@ async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
     });
   });
   return await loadImg(res);
+}
+
+async function readFontFile(filename: string, zipFile: JSZip) {
+  const file = zipFile.file(filename);
+  if (!file) {
+    console.error(`font not exist: >>>${filename}<<<`);
+    return;
+  }
+  const ab = await file.async('arraybuffer');
+  const data = font.registerAb(ab);
+  const buffer = new Uint8Array(ab);
+  const blob = new Blob([buffer.buffer]);
+  return new Promise((resolve, reject) => {
+    inject.loadFont(data.postscriptNameL, URL.createObjectURL(blob), (res) => {
+      if (res.success) {
+        resolve(data.data);
+      } else {
+        reject(data.data);
+      }
+    });
+  });
 }

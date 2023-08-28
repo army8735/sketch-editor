@@ -17223,7 +17223,13 @@
                     url,
                 });
             }
-            return (this.data[familyL] = this.data[psL] = o); // 同个字体族不同postscriptName指向一个引用
+            return {
+                family: family,
+                familyL: familyL,
+                postscriptName: postscriptName,
+                postscriptNameL: psL,
+                data: (this.data[familyL] = this.data[psL] = o),
+            }; // 同个字体族不同postscriptName指向一个引用
         },
         registerData(data) {
             const familyL = data.family.toLowerCase();
@@ -20474,9 +20480,9 @@
             }
             const document = yield readJsonFile(zipFile, 'document.json');
             const pages = [];
-            yield Promise.all(document.pages.map((page) => {
+            yield Promise.all(document.pages.map((page, i) => {
                 return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
-                    pages.push(pageJson);
+                    pages[i] = pageJson;
                 });
             }));
             const meta = yield readJsonFile(zipFile, 'meta.json');
@@ -20493,6 +20499,9 @@
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const docStr = yield ((_a = zipFile.file(filename)) === null || _a === void 0 ? void 0 : _a.async('string'));
+            if (!docStr) {
+                return {};
+            }
             return JSON.parse(docStr);
         });
     }
@@ -20501,13 +20510,31 @@
         return __awaiter(this, void 0, void 0, function* () {
             console.log('sketch', json);
             const imgs = [], imgHash = {};
-            const fonts = [], fontHash = {};
+            // sketch自带的字体，有fontData的才算，有可能这个字体本地已经有了，可以跳过
+            const fontReferences = (json.document.fontReferences || []).filter((item) => {
+                if (!item.fontData || !item.fontData._ref) {
+                    return false;
+                }
+                const fontFamilyName = item.fontFamilyName;
+                if (o.hasRegister(fontFamilyName)) {
+                    return false;
+                }
+                const postscriptName = item.postscriptNames[0];
+                return !!postscriptName;
+            });
+            if (fontReferences.length) {
+                yield Promise.all(fontReferences.map((item) => {
+                    return readFontFile(item.fontData._ref, zipFile);
+                }));
+            }
+            // const fonts: Array<{ fontFamily: string; url: string }> = [],
+            //   fontHash: any = {};
             const pages = yield Promise.all(json.pages.map((page) => {
                 return convertPage(page, {
                     imgs,
                     imgHash,
-                    fonts,
-                    fontHash,
+                    // fonts,
+                    // fontHash,
                     zipFile,
                     user: json.user,
                 });
@@ -21357,7 +21384,7 @@
                 console.error(`image not exist: >>>${filename}<<<`);
                 return -1;
             }
-            let ab = yield file.async('arraybuffer');
+            const ab = yield file.async('arraybuffer');
             const buffer = new Uint8Array(ab);
             const blob = new Blob([buffer.buffer]);
             let img;
@@ -21415,6 +21442,29 @@
                 });
             });
             return yield loadImg(res);
+        });
+    }
+    function readFontFile(filename, zipFile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const file = zipFile.file(filename);
+            if (!file) {
+                console.error(`font not exist: >>>${filename}<<<`);
+                return;
+            }
+            const ab = yield file.async('arraybuffer');
+            const data = o.registerAb(ab);
+            const buffer = new Uint8Array(ab);
+            const blob = new Blob([buffer.buffer]);
+            return new Promise((resolve, reject) => {
+                inject.loadFont(data.postscriptNameL, URL.createObjectURL(blob), (res) => {
+                    if (res.success) {
+                        resolve(data.data);
+                    }
+                    else {
+                        reject(data.data);
+                    }
+                });
+            });
         });
     }
 
