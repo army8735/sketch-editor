@@ -21453,17 +21453,15 @@
             }
             const ab = yield file.async('arraybuffer');
             const data = o.registerAb(ab);
-            const buffer = new Uint8Array(ab);
-            const blob = new Blob([buffer.buffer]);
             return new Promise((resolve, reject) => {
-                inject.loadFont(data.postscriptNameL, URL.createObjectURL(blob), (res) => {
-                    if (res.success) {
-                        resolve(data.data);
-                    }
-                    else {
-                        reject(data.data);
-                    }
-                });
+                if (typeof document !== 'undefined') {
+                    const f = new FontFace(data.postscriptName, ab);
+                    document.fonts.add(f);
+                    resolve(data.data);
+                }
+                else {
+                    reject(data.data);
+                }
             });
         });
     }

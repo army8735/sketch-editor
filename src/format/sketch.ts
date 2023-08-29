@@ -18,7 +18,6 @@ import {
 } from './';
 import { TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
-import inject from '../util/inject';
 
 // prettier-ignore
 export enum ResizingConstraint {
@@ -1116,15 +1115,13 @@ async function readFontFile(filename: string, zipFile: JSZip) {
   }
   const ab = await file.async('arraybuffer');
   const data = font.registerAb(ab);
-  const buffer = new Uint8Array(ab);
-  const blob = new Blob([buffer.buffer]);
   return new Promise((resolve, reject) => {
-    inject.loadFont(data.postscriptNameL, URL.createObjectURL(blob), (res) => {
-      if (res.success) {
-        resolve(data.data);
-      } else {
-        reject(data.data);
-      }
-    });
+    if (typeof document !== 'undefined') {
+      const f = new FontFace(data.postscriptName, ab);
+      document.fonts.add(f);
+      resolve(data.data);
+    } else {
+      reject(data.data);
+    }
   });
 }
