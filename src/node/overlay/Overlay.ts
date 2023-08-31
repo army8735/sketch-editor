@@ -3,6 +3,7 @@ import { RefreshLevel } from '../../refresh/level';
 import ArtBoard from '../ArtBoard';
 import Container from '../Container';
 import Node from '../Node';
+import SymbolMaster from '../SymbolMaster';
 import Text from '../Text';
 
 class Overlay extends Container {
@@ -31,11 +32,12 @@ class Overlay extends Container {
     for (let i = 0, len = list.length; i < len; i++) {
       const artBoard = list[i];
       const name = 'overlay-' + (artBoard.props.name || '画板');
+      const color = artBoard instanceof SymbolMaster ? '#b6e' : '#777';
       const text = new Text({
         name,
         style: {
           fontSize: 24,
-          color: '#777',
+          color,
         },
         content: artBoard.props.name || '画板',
       });

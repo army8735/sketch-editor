@@ -76,8 +76,6 @@ async function readJsonFile(zipFile: JSZip, filename: string) {
 type Opt = {
   imgs: Array<string>;
   imgHash: any;
-  // fonts: Array<{ fontFamily: string; url: string }>;
-  // fontHash: any;
   zipFile: JSZip;
   user: any;
 };
@@ -86,7 +84,7 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   console.log('sketch', json);
   const imgs: Array<string> = [],
     imgHash: any = {};
-  // sketch自带的字体，有fontData的才算，有可能这个字体本地已经有了，可以跳过
+  // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
   const fontReferences = (json.document.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
       return false;
@@ -105,15 +103,14 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
       })
     );
   }
-  // const fonts: Array<{ fontFamily: string; url: string }> = [],
-  //   fontHash: any = {};
+  // 外部控件
+  // const foreignSymbols = json.document.foreignSymbols || [];
+  // console.log(foreignSymbols)
   const pages = await Promise.all(
     json.pages.map((page: SketchFormat.Page) => {
       return convertPage(page, {
         imgs,
         imgHash,
-        // fonts,
-        // fontHash,
         zipFile,
         user: json.user,
       });
@@ -123,7 +120,6 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
     pages,
     currentPageIndex: json.document?.currentPageIndex || 0,
     imgs,
-    fonts: [],
   };
 }
 
@@ -216,8 +212,9 @@ async function convertItem(
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   const constrainProportions = layer.frame.constrainProportions;
-  // artBoard也是固定尺寸和page一样，但x/y用translate代替
-  if (layer._class === SketchFormat.ClassValue.Artboard) {
+  // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似s
+  if (layer._class === SketchFormat.ClassValue.Artboard
+    || layer._class === SketchFormat.ClassValue.SymbolMaster) {
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
         return convertItem(child, opt, width as number, height as number);
@@ -232,8 +229,9 @@ async function convertItem(
         layer.backgroundColor.alpha,
       ]
       : [255, 255, 255, 1];
+    const tagName = layer._class === SketchFormat.ClassValue.Artboard ? TagName.ArtBoard : TagName.SymbolMaster;
     return {
-      tagName: TagName.ArtBoard,
+      tagName,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -455,6 +453,11 @@ async function convertItem(
         return convertItem(child, opt, layer.frame.width, layer.frame.height);
       }),
     );
+    const {
+      fill,
+      fillEnable,
+      fillOpacity,
+    } = await geomStyle(layer, opt);
     return {
       tagName: TagName.Group,
       props: {
@@ -470,6 +473,9 @@ async function convertItem(
           height,
           visible,
           opacity,
+          fill,
+          fillEnable,
+          fillOpacity,
           translateX,
           translateY,
           scaleX,

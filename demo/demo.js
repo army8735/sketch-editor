@@ -363,12 +363,14 @@ function genNodeTree(node, abHash) {
     }
   }
   const li = document.createElement('li');
+  const classNames = ['layer'];
   if (node.computedStyle.maskMode) {
-    li.className = 'layer mask';
+    classNames.push('mask');
   }
-  else {
-    li.className = 'layer';
+  if (node instanceof editor.node.SymbolMaster) {
+    classNames.push('symbol-master');
   }
+  li.className = classNames.join(' ');
   li.setAttribute('uuid', node.props.uuid);
   abHash[node.props.uuid] = li;
   let s = `<div>

@@ -4,7 +4,6 @@ export type JFile = {
   pages: JPage[];
   currentPageIndex: number;
   imgs: Array<string>;
-  fonts: Array<{ fontFamily: string; url: string }>;
 };
 
 export type JNode = {
@@ -274,6 +273,7 @@ export type Point = {
 export enum TagName {
   Page = 'page',
   ArtBoard = 'artBoard',
+  SymbolMaster = 'symbolMaster',
   Group = 'group',
   ShapeGroup = '$shapeGroup',
   Bitmap = 'bitmap',

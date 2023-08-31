@@ -9,6 +9,7 @@ import Node from './Node';
 import Page from './Page';
 import reflow from './reflow';
 import Root from './Root';
+import SymbolMaster from './SymbolMaster';
 import Text from './Text';
 
 export default {
@@ -19,6 +20,7 @@ export default {
   Node,
   Page,
   Root,
+  SymbolMaster,
   Text,
   Geom,
   Polyline,

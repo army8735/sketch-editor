@@ -59,6 +59,7 @@
     (function (TagName) {
         TagName["Page"] = "page";
         TagName["ArtBoard"] = "artBoard";
+        TagName["SymbolMaster"] = "symbolMaster";
         TagName["Group"] = "group";
         TagName["ShapeGroup"] = "$shapeGroup";
         TagName["Bitmap"] = "bitmap";
@@ -20510,7 +20511,7 @@
         return __awaiter(this, void 0, void 0, function* () {
             console.log('sketch', json);
             const imgs = [], imgHash = {};
-            // sketch自带的字体，有fontData的才算，有可能这个字体本地已经有了，可以跳过
+            // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
             const fontReferences = (json.document.fontReferences || []).filter((item) => {
                 if (!item.fontData || !item.fontData._ref) {
                     return false;
@@ -20527,14 +20528,13 @@
                     return readFontFile(item.fontData._ref, zipFile);
                 }));
             }
-            // const fonts: Array<{ fontFamily: string; url: string }> = [],
-            //   fontHash: any = {};
+            // 外部控件
+            // const foreignSymbols = json.document.foreignSymbols || [];
+            // console.log(foreignSymbols)
             const pages = yield Promise.all(json.pages.map((page) => {
                 return convertPage(page, {
                     imgs,
                     imgHash,
-                    // fonts,
-                    // fontHash,
                     zipFile,
                     user: json.user,
                 });
@@ -20543,7 +20543,6 @@
                 pages,
                 currentPageIndex: ((_a = json.document) === null || _a === void 0 ? void 0 : _a.currentPageIndex) || 0,
                 imgs,
-                fonts: [],
             };
         });
     }
@@ -20628,8 +20627,9 @@
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             const constrainProportions = layer.frame.constrainProportions;
-            // artBoard也是固定尺寸和page一样，但x/y用translate代替
-            if (layer._class === FileFormat.ClassValue.Artboard) {
+            // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似s
+            if (layer._class === FileFormat.ClassValue.Artboard
+                || layer._class === FileFormat.ClassValue.SymbolMaster) {
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, width, height);
                 }));
@@ -20642,8 +20642,9 @@
                         layer.backgroundColor.alpha,
                     ]
                     : [255, 255, 255, 1];
+                const tagName = layer._class === FileFormat.ClassValue.Artboard ? TagName.ArtBoard : TagName.SymbolMaster;
                 return {
-                    tagName: TagName.ArtBoard,
+                    tagName,
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,
@@ -20868,6 +20869,7 @@
                 const children = yield Promise.all(layer.layers.map((child) => {
                     return convertItem(child, opt, layer.frame.width, layer.frame.height);
                 }));
+                const { fill, fillEnable, fillOpacity, } = yield geomStyle(layer, opt);
                 return {
                     tagName: TagName.Group,
                     props: {
@@ -20883,6 +20885,9 @@
                             height,
                             visible,
                             opacity,
+                            fill,
+                            fillEnable,
+                            fillOpacity,
                             translateX,
                             translateY,
                             scaleX,
@@ -22548,6 +22553,35 @@
         return tex1;
     }
     const drawMbm = drawMask;
+    function drawTint(gl, program, texture, tint) {
+        const { vtPoint, vtTex } = getSingleCoords();
+        // 顶点buffer
+        const pointBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+        const a_position = gl.getAttribLocation(program, 'a_position');
+        gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_position);
+        // 纹理buffer
+        const texBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+        let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+        gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_texCoords);
+        // 纹理单元
+        bindTexture(gl, texture, 0);
+        const u_texture = gl.getUniformLocation(program, 'u_texture');
+        gl.uniform1i(u_texture, 0);
+        const u_tint = gl.getUniformLocation(program, 'u_tint');
+        gl.uniform4f(u_tint, tint[0], tint[1], tint[2], tint[3]);
+        // 渲染并销毁
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.deleteBuffer(pointBuffer);
+        gl.deleteBuffer(texBuffer);
+        gl.disableVertexAttribArray(a_position);
+        gl.disableVertexAttribArray(a_texCoords);
+    }
     function convertCoords2Gl(x, y, cx, cy, flipY = false) {
         if (x === cx) {
             x = 0;
@@ -22822,6 +22856,7 @@
             super();
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
             this.isArtBoard = false;
+            this.isSymbolMaster = false;
             this.isPage = false;
             this.isText = false;
             this.isPolyline = false;
@@ -29613,6 +29648,13 @@
         }
     }
 
+    class SymbolMaster extends ArtBoard {
+        constructor(props, children) {
+            super(props, children);
+            this.isSymbolMaster = true;
+        }
+    }
+
     class LineBox {
         constructor(y, h, index, startEnter) {
             this.y = y;
@@ -31403,13 +31445,16 @@
     }
 
     function parse(json) {
-        if (json.tagName === TagName.ArtBoard) {
+        if (json.tagName === TagName.ArtBoard || json.tagName === TagName.SymbolMaster) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
                 if (res) {
                     children.push(res);
                 }
+            }
+            if (json.tagName === TagName.SymbolMaster) {
+                return new SymbolMaster(json.props, children);
             }
             return new ArtBoard(json.props, children);
         }
@@ -33054,6 +33099,34 @@ void main() {
   }
   gl_FragColor = texture2D(u_texture2, v_texCoords);
 }`;
+    const tintVert = `#version 100
+
+attribute vec2 a_position;
+attribute vec2 a_texCoords;
+varying vec2 v_texCoords;
+
+void main() {
+  gl_Position = vec4(a_position, 0, 1);
+  v_texCoords = a_texCoords;
+}`;
+    const tintFrag = `#version 100
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec2 v_texCoords;
+
+uniform sampler2D u_texture;
+uniform vec4 u_tint;
+
+void main() {
+  vec4 color = texture2D(u_texture, v_texCoords);
+  if (color.a <= 0.0) {
+    discard;
+  }
+  gl_FragColor = u_tint * color.a;
+}`;
 
     function renderWebgl(gl, root) {
         var _a, _b, _c;
@@ -33102,10 +33175,19 @@ void main() {
                     node.calContent();
                 }
             }
-            const { maskMode, opacity, shadow, shadowEnable, innerShadow, innerShadowEnable, blur, mixBlendMode } = computedStyle;
+            const { maskMode, opacity, shadow, shadowEnable, innerShadow, innerShadowEnable, blur, mixBlendMode, fill, fillEnable, } = computedStyle;
+            // 特殊的group可以指定唯一的fill用作tint色调功能
+            const isGroup = node.isGroup;
+            let isGroupTint = false;
+            if (isGroup) {
+                if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
+                    isGroupTint = true;
+                }
+            }
             // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
             const needTotal = ((opacity > 0 && opacity < 1) ||
-                mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
+                mixBlendMode !== MIX_BLEND_MODE.NORMAL ||
+                isGroupTint) &&
                 total > 0 &&
                 !node.isShapeGroup &&
                 (!textureTotal[scaleIndex] || !textureTotal[scaleIndex].available);
@@ -33199,7 +33281,7 @@ void main() {
                 }
                 // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
                 node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
-                // 生成filter，这里直接进去，如果没有filter会返回空
+                // 生成filter，这里直接进去，如果没有filter会返回空，group的tint也视作一种filter
                 if (node.textureTarget[scaleIndex]) {
                     const t = genFilter(gl, root, node, structs, i, lv, total, W, H, scale, scaleIndex);
                     if (t) {
@@ -33582,7 +33664,14 @@ void main() {
             return node.textureFilter[scaleIndex];
         }
         let res;
-        const { shadow, shadowEnable, blur } = node.computedStyle;
+        const { shadow, shadowEnable, blur, fill, fillEnable } = node.computedStyle;
+        const source = node.textureTarget[scaleIndex];
+        // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素
+        if (node.isGroup) {
+            if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
+                res = genTint(gl, root, source, fill[0], W, H, scale);
+            }
+        }
         const sd = [];
         shadow.forEach((item, i) => {
             if (shadowEnable[i] && item.color[3] > 0) {
@@ -33590,10 +33679,10 @@ void main() {
             }
         });
         // 2种阴影不能互相干扰，因此都以原本图像为基准生成，最后统一绘入原图
-        const source = node.textureTarget[scaleIndex];
         if (sd.length) {
-            res = genShadow(gl, root, source, sd, structs, index, lv, total, W, H, scale);
+            res = genShadow(gl, root, res || source, sd, W, H, scale);
         }
+        // 高斯模糊
         if (blur.t === BLUR.GAUSSIAN && blur.radius) {
             res = genGaussBlur(gl, root, res || source, blur.radius, structs, index, lv, total, W, H, scale);
         }
@@ -33675,7 +33764,34 @@ void main() {
         frag = gaussFrag.replace('${placeholder}', frag);
         return (programs[key] = initShaders(gl, gaussVert, frag));
     }
-    function genShadow(gl, root, textureTarget, shadow, structs, index, lv, total, W, H, scale) {
+    function genTint(gl, root, textureTarget, tint, W, H, scale) {
+        const bbox = textureTarget.bbox.slice(0);
+        let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+        while (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            if (scale <= 1) {
+                break;
+            }
+            scale = scale >> 1;
+        }
+        if (w * scale > config.MAX_TEXTURE_SIZE ||
+            h * scale > config.MAX_TEXTURE_SIZE) {
+            return;
+        }
+        w *= scale;
+        h *= scale;
+        const programs = root.programs;
+        const tintProgram = programs.tintProgram;
+        gl.useProgram(tintProgram);
+        const res = TextureCache.getEmptyInstance(gl, bbox, scale);
+        const frameBuffer = genFrameBufferWithTexture(gl, res.texture, w, h);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, res.texture, 0);
+        drawTint(gl, tintProgram, textureTarget.texture, tint);
+        gl.useProgram(programs.program);
+        releaseFrameBuffer(gl, frameBuffer, W, H);
+        return res;
+    }
+    function genShadow(gl, root, textureTarget, shadow, W, H, scale) {
         const bbox = textureTarget.bbox.slice(0);
         const sb = [0, 0, 0, 0];
         for (let i = 0, len = shadow.length; i < len; i++) {
@@ -34138,11 +34254,12 @@ void main() {
             for (let i = 0, len = list.length; i < len; i++) {
                 const artBoard = list[i];
                 const name = 'overlay-' + (artBoard.props.name || '画板');
+                const color = artBoard instanceof SymbolMaster ? '#b6e' : '#777';
                 const text = new Text({
                     name,
                     style: {
                         fontSize: 24,
-                        color: '#777',
+                        color,
                     },
                     content: artBoard.props.name || '画板',
                 });
@@ -34262,6 +34379,7 @@ void main() {
             this.programs.dropShadowProgram = initShaders(gl, simpleVert, dropShadowFrag);
             this.programs.innerShadowProgram = initShaders(gl, simpleVert, innerShadowFrag);
             this.programs.innerShadowRProgram = initShaders(gl, simpleVert, innerShadowFragR);
+            this.programs.tintProgram = initShaders(gl, tintVert, tintFrag);
             gl.useProgram(program);
         }
         checkRoot() {
@@ -34590,6 +34708,7 @@ void main() {
         Node,
         Page,
         Root,
+        SymbolMaster,
         Text,
         Geom,
         Polyline,

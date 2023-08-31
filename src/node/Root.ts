@@ -30,6 +30,8 @@ import {
   simpleFrag,
   simpleVert,
   softLightFrag,
+  tintVert,
+  tintFrag,
 } from '../gl/glsl';
 import { initShaders } from '../gl/webgl';
 import config from '../refresh/config';
@@ -180,6 +182,7 @@ class Root extends Container implements FrameCallback {
       simpleVert,
       innerShadowFragR,
     );
+    this.programs.tintProgram = initShaders(gl, tintVert, tintFrag);
     gl.useProgram(program);
   }
 

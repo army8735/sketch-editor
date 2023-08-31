@@ -16,16 +16,20 @@ import Polyline from './geom/Polyline';
 import ShapeGroup from './geom/ShapeGroup';
 import Group from './Group';
 import Node from './Node';
+import SymbolMaster from './SymbolMaster';
 import Text from './Text';
 
 function parse(json: JNode): Node | undefined {
-  if (json.tagName === TagName.ArtBoard) {
+  if (json.tagName === TagName.ArtBoard || json.tagName === TagName.SymbolMaster) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
       if (res) {
         children.push(res);
       }
+    }
+    if (json.tagName === TagName.SymbolMaster) {
+      return new SymbolMaster(json.props as ArtBoardProps, children);
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
   } else if (json.tagName === TagName.Group) {

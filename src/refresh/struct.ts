@@ -7,6 +7,7 @@ import {
   drawMask,
   drawMbm,
   drawTextureCache,
+  drawTint,
   initShaders,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
@@ -110,12 +111,31 @@ export function renderWebgl(
         node.calContent();
       }
     }
-    const { maskMode, opacity, shadow, shadowEnable, innerShadow, innerShadowEnable, blur, mixBlendMode } =
-      computedStyle;
+    const {
+      maskMode,
+      opacity,
+      shadow,
+      shadowEnable,
+      innerShadow,
+      innerShadowEnable,
+      blur,
+      mixBlendMode,
+      fill,
+      fillEnable,
+    } = computedStyle;
+    // 特殊的group可以指定唯一的fill用作tint色调功能
+    const isGroup = node.isGroup;
+    let isGroupTint = false;
+    if (isGroup) {
+      if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
+        isGroupTint = true;
+      }
+    }
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
       ((opacity > 0 && opacity < 1) ||
-        mixBlendMode !== MIX_BLEND_MODE.NORMAL) &&
+        mixBlendMode !== MIX_BLEND_MODE.NORMAL ||
+        isGroupTint) &&
       total > 0 &&
       !node.isShapeGroup &&
       (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
@@ -232,7 +252,7 @@ export function renderWebgl(
         scale,
         scaleIndex,
       );
-      // 生成filter，这里直接进去，如果没有filter会返回空
+      // 生成filter，这里直接进去，如果没有filter会返回空，group的tint也视作一种filter
       if (node.textureTarget[scaleIndex]) {
         const t = genFilter(
           gl,
@@ -778,7 +798,22 @@ function genFilter(
     return node.textureFilter[scaleIndex];
   }
   let res;
-  const { shadow, shadowEnable, blur } = node.computedStyle;
+  const { shadow, shadowEnable, blur, fill, fillEnable } = node.computedStyle;
+  const source = node.textureTarget[scaleIndex]!;
+  // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素
+  if (node.isGroup) {
+    if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
+      res = genTint(
+        gl,
+        root,
+        source,
+        fill[0] as number[],
+        W,
+        H,
+        scale,
+      );
+    }
+  }
   const sd: ComputedShadow[] = [];
   shadow.forEach((item, i) => {
     if (shadowEnable[i] && item.color[3] > 0) {
@@ -786,22 +821,18 @@ function genFilter(
     }
   });
   // 2种阴影不能互相干扰，因此都以原本图像为基准生成，最后统一绘入原图
-  const source = node.textureTarget[scaleIndex]!;
   if (sd.length) {
     res = genShadow(
       gl,
       root,
-      source,
+      res || source,
       sd,
-      structs,
-      index,
-      lv,
-      total,
       W,
       H,
       scale,
     );
   }
+  // 高斯模糊
   if (blur.t === BLUR.GAUSSIAN && blur.radius) {
     res = genGaussBlur(
       gl,
@@ -932,15 +963,58 @@ function genBlurShader(
   return (programs[key] = initShaders(gl, gaussVert, frag));
 }
 
+function genTint(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  textureTarget: TextureCache,
+  tint: number[],
+  W: number,
+  H: number,
+  scale: number,
+) {
+  const bbox = textureTarget.bbox.slice(0);
+  let w = bbox[2] - bbox[0],
+    h = bbox[3] - bbox[1];
+  while (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+    ) {
+    if (scale <= 1) {
+      break;
+    }
+    scale = scale >> 1;
+  }
+  if (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+  ) {
+    return;
+  }
+  w *= scale;
+  h *= scale;
+  const programs = root.programs;
+  const tintProgram = programs.tintProgram;
+  gl.useProgram(tintProgram);
+  const res = TextureCache.getEmptyInstance(gl, bbox, scale);
+  const frameBuffer = genFrameBufferWithTexture(gl, res.texture, w, h);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    res.texture,
+    0,
+  );
+  drawTint(gl, tintProgram, textureTarget.texture, tint);
+  gl.useProgram(programs.program);
+  releaseFrameBuffer(gl, frameBuffer, W, H);
+  return res;
+}
+
 function genShadow(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
   textureTarget: TextureCache,
   shadow: ComputedShadow[],
-  structs: Array<Struct>,
-  index: number,
-  lv: number,
-  total: number,
   W: number,
   H: number,
   scale: number,

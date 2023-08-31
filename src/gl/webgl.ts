@@ -420,6 +420,41 @@ export function drawGauss(
 
 export const drawMbm = drawMask;
 
+export function drawTint(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: any,
+  texture: WebGLTexture,
+  tint: number[],
+) {
+  const { vtPoint, vtTex } = getSingleCoords();
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  const texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  bindTexture(gl, texture, 0);
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
+  gl.uniform1i(u_texture, 0);
+  const u_tint = gl.getUniformLocation(program, 'u_tint');
+  gl.uniform4f(u_tint, tint[0], tint[1], tint[2], tint[3]);
+  // 渲染并销毁
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
 export function convertCoords2Gl(
   x: number,
   y: number,
