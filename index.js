@@ -34933,7 +34933,10 @@ void main() {
             return;
         }
         if (Array.isArray(json)) {
-            return json.map(item => apply(item, imgs));
+            for (let i = 0, len = json.length; i < len; i++) {
+                apply(json[i], imgs);
+            }
+            return;
         }
         const { tagName, props = {}, children = [] } = json;
         if (tagName === TagName.Bitmap) {
@@ -34943,14 +34946,13 @@ void main() {
             }
         }
         if (children.length) {
-            json.children = apply(children, imgs);
+            apply(children, imgs);
         }
-        return json;
     }
     var index = {
         parse(json, canvas, dpi = 1) {
             // json中的imgs下标替换
-            json.pages = apply(json.pages, json.imgs);
+            apply(json.pages, json.imgs);
             const { width, height } = canvas;
             const root = new node.Root({
                 dpi,
