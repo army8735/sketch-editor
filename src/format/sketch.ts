@@ -10,6 +10,7 @@ import {
   JPage,
   JPolyline,
   JShapeGroup,
+  JSymbolMaster,
   JText,
   Point,
   POINTS_RADIUS_BEHAVIOUR,
@@ -18,6 +19,9 @@ import {
 } from './';
 import { TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
+
+// sketch的Page没有尺寸，固定100
+const W = 100, H = 100;
 
 // prettier-ignore
 export enum ResizingConstraint {
@@ -103,30 +107,32 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
       })
     );
   }
+  const opt: Opt = {
+    imgs,
+    imgHash,
+    zipFile,
+    user: json.user,
+  };
   // 外部控件
-  // const foreignSymbols = json.document.foreignSymbols || [];
-  // console.log(foreignSymbols)
+  const symbolMasters = await Promise.all(
+    (json.document.foreignSymbols || []).map((item: SketchFormat.ForeignSymbol) => {
+      return convertItem(item.symbolMaster, opt, W, H);
+    })
+  );
   const pages = await Promise.all(
     json.pages.map((page: SketchFormat.Page) => {
-      return convertPage(page, {
-        imgs,
-        imgHash,
-        zipFile,
-        user: json.user,
-      });
+      return convertPage(page, opt);
     }),
   );
   return {
     pages,
     currentPageIndex: json.document?.currentPageIndex || 0,
     imgs,
+    symbolMasters,
   };
 }
 
 async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
-  // sketch的Page没有尺寸，固定100
-  const W = 100,
-    H = 100;
   const children = await Promise.all(
     page.layers.map((layer: SketchFormat.AnyLayer) => {
       return convertItem(layer, opt, W, H);
@@ -212,7 +218,7 @@ async function convertItem(
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   const constrainProportions = layer.frame.constrainProportions;
-  // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似s
+  // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
   if (layer._class === SketchFormat.ClassValue.Artboard
     || layer._class === SketchFormat.ClassValue.SymbolMaster) {
     const children = await Promise.all(
@@ -229,9 +235,36 @@ async function convertItem(
         layer.backgroundColor.alpha,
       ]
       : [255, 255, 255, 1];
-    const tagName = layer._class === SketchFormat.ClassValue.Artboard ? TagName.ArtBoard : TagName.SymbolMaster;
+    if (layer._class === SketchFormat.ClassValue.SymbolMaster) {
+      const symbolId = layer.symbolID;
+      return {
+        tagName: TagName.SymbolMaster,
+        props: {
+          uuid: layer.do_objectID,
+          name: layer.name,
+          constrainProportions,
+          hasBackgroundColor,
+          resizesContent: layer.resizesContent,
+          symbolId,
+          style: {
+            width, // 画板始终相对于page的原点，没有百分比单位
+            height,
+            visible,
+            opacity,
+            translateX,
+            translateY,
+            rotateZ,
+            overflow: 'hidden',
+            backgroundColor,
+          },
+          isLocked,
+          isExpanded,
+        },
+        children: children.filter((item) => item),
+      } as JSymbolMaster;
+    }
     return {
-      tagName,
+      tagName: TagName.ArtBoard,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,

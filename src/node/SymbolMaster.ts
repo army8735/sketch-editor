@@ -1,9 +1,9 @@
-import { ArtBoardProps } from '../format';
+import { SymbolMasterProps } from '../format';
 import ArtBoard from './ArtBoard';
 import Node from './Node';
 
 class SymbolMaster extends ArtBoard {
-  constructor(props: ArtBoardProps, children: Array<Node>) {
+  constructor(props: SymbolMasterProps, children: Array<Node>) {
     super(props, children);
     this.isSymbolMaster = true;
   }

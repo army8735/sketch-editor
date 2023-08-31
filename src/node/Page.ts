@@ -1,4 +1,4 @@
-import { JNode, JPage, PageProps, TagName } from '../format';
+import { JNode, JPage, PageProps, SymbolMasterProps, TagName } from '../format';
 import {
   ArtBoardProps,
   BitmapProps,
@@ -29,7 +29,7 @@ function parse(json: JNode): Node | undefined {
       }
     }
     if (json.tagName === TagName.SymbolMaster) {
-      return new SymbolMaster(json.props as ArtBoardProps, children);
+      return new SymbolMaster(json.props as SymbolMasterProps, children);
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
   } else if (json.tagName === TagName.Group) {

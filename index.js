@@ -18973,7 +18973,7 @@
         let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
         return Math.acos(theta);
     }
-    const H = 4 * (Math.sqrt(2) - 1) / 3;
+    const H$1 = 4 * (Math.sqrt(2) - 1) / 3;
     // 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
     function h(deg) {
         deg *= 0.5;
@@ -19041,7 +19041,7 @@
         d2r,
         r2d,
         // 贝塞尔曲线模拟1/4圆弧比例
-        H,
+        H: H$1,
         // <90任意角度贝塞尔曲线拟合圆弧的比例公式
         h,
         pointInConvexPolygon,
@@ -20458,6 +20458,8 @@
         calSize,
     };
 
+    // sketch的Page没有尺寸，固定100
+    const W = 100, H = 100;
     // prettier-ignore
     var ResizingConstraint;
     (function (ResizingConstraint) {
@@ -20528,28 +20530,29 @@
                     return readFontFile(item.fontData._ref, zipFile);
                 }));
             }
+            const opt = {
+                imgs,
+                imgHash,
+                zipFile,
+                user: json.user,
+            };
             // 外部控件
-            // const foreignSymbols = json.document.foreignSymbols || [];
-            // console.log(foreignSymbols)
+            const symbolMasters = yield Promise.all((json.document.foreignSymbols || []).map((item) => {
+                return convertItem(item.symbolMaster, opt, W, H);
+            }));
             const pages = yield Promise.all(json.pages.map((page) => {
-                return convertPage(page, {
-                    imgs,
-                    imgHash,
-                    zipFile,
-                    user: json.user,
-                });
+                return convertPage(page, opt);
             }));
             return {
                 pages,
                 currentPageIndex: ((_a = json.document) === null || _a === void 0 ? void 0 : _a.currentPageIndex) || 0,
                 imgs,
+                symbolMasters,
             };
         });
     }
     function convertPage(page, opt) {
         return __awaiter(this, void 0, void 0, function* () {
-            // sketch的Page没有尺寸，固定100
-            const W = 100, H = 100;
             const children = yield Promise.all(page.layers.map((layer) => {
                 return convertItem(layer, opt, W, H);
             }));
@@ -20627,7 +20630,7 @@
             const isLocked = layer.isLocked;
             const isExpanded = layer.layerListExpandedType === FileFormat.LayerListExpanded.Expanded;
             const constrainProportions = layer.frame.constrainProportions;
-            // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似s
+            // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
             if (layer._class === FileFormat.ClassValue.Artboard
                 || layer._class === FileFormat.ClassValue.SymbolMaster) {
                 const children = yield Promise.all(layer.layers.map((child) => {
@@ -20642,9 +20645,36 @@
                         layer.backgroundColor.alpha,
                     ]
                     : [255, 255, 255, 1];
-                const tagName = layer._class === FileFormat.ClassValue.Artboard ? TagName.ArtBoard : TagName.SymbolMaster;
+                if (layer._class === FileFormat.ClassValue.SymbolMaster) {
+                    const symbolId = layer.symbolID;
+                    return {
+                        tagName: TagName.SymbolMaster,
+                        props: {
+                            uuid: layer.do_objectID,
+                            name: layer.name,
+                            constrainProportions,
+                            hasBackgroundColor,
+                            resizesContent: layer.resizesContent,
+                            symbolId,
+                            style: {
+                                width,
+                                height,
+                                visible,
+                                opacity,
+                                translateX,
+                                translateY,
+                                rotateZ,
+                                overflow: 'hidden',
+                                backgroundColor,
+                            },
+                            isLocked,
+                            isExpanded,
+                        },
+                        children: children.filter((item) => item),
+                    };
+                }
                 return {
-                    tagName,
+                    tagName: TagName.ArtBoard,
                     props: {
                         uuid: layer.do_objectID,
                         name: layer.name,

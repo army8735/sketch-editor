@@ -3,7 +3,8 @@ import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN } from '../style/define';
 export type JFile = {
   pages: JPage[];
   currentPageIndex: number;
-  imgs: Array<string>;
+  imgs: string[];
+  symbolMasters: JSymbolMaster[];
 };
 
 export type JNode = {
@@ -23,6 +24,11 @@ export type JPage = JContainer & {
 export type JArtBoard = JContainer & {
   tagName: TagName.ArtBoard;
   props: ArtBoardProps;
+};
+
+export type JSymbolMaster = JContainer & {
+  tagName: TagName.SymbolMaster;
+  props: SymbolMasterProps;
 };
 
 export type JGroup = JContainer & {
@@ -213,6 +219,10 @@ export type BitmapProps = Props & {
 export type ArtBoardProps = Props & {
   hasBackgroundColor: boolean;
   resizesContent: boolean;
+};
+
+export type SymbolMasterProps = ArtBoardProps & {
+  symbolId: string;
 };
 
 export type TextProps = Props & {
