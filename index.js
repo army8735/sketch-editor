@@ -21214,6 +21214,7 @@
         });
     }
     function geomStyle(layer, opt) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const { borders, borderOptions, fills, windingRule, miterLimit: strokeMiterlimit, } = layer.style || {};
             const fill = [], fillEnable = [], fillOpacity = [];
@@ -21269,7 +21270,7 @@
                         ]);
                     }
                     fillEnable.push(item.isEnabled);
-                    fillOpacity.push(item.contextSettings.opacity || 1);
+                    fillOpacity.push((_a = item.contextSettings.opacity) !== null && _a !== void 0 ? _a : 1);
                 }
             }
             const stroke = [], strokeEnable = [], strokeWidth = [], strokePosition = [];
@@ -22553,7 +22554,7 @@
         return tex1;
     }
     const drawMbm = drawMask;
-    function drawTint(gl, program, texture, tint) {
+    function drawTint(gl, program, texture, tint, opacity) {
         const { vtPoint, vtTex } = getSingleCoords();
         // 顶点buffer
         const pointBuffer = gl.createBuffer();
@@ -22574,7 +22575,8 @@
         const u_texture = gl.getUniformLocation(program, 'u_texture');
         gl.uniform1i(u_texture, 0);
         const u_tint = gl.getUniformLocation(program, 'u_tint');
-        gl.uniform4f(u_tint, tint[0], tint[1], tint[2], tint[3]);
+        const color = color2gl(tint);
+        gl.uniform4f(u_tint, color[0], color[1], color[2], color[3] * opacity);
         // 渲染并销毁
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.deleteBuffer(pointBuffer);
@@ -33664,12 +33666,12 @@ void main() {
             return node.textureFilter[scaleIndex];
         }
         let res;
-        const { shadow, shadowEnable, blur, fill, fillEnable } = node.computedStyle;
+        const { shadow, shadowEnable, blur, fill, fillEnable, fillOpacity, } = node.computedStyle;
         const source = node.textureTarget[scaleIndex];
         // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素
         if (node.isGroup) {
             if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
-                res = genTint(gl, root, source, fill[0], W, H, scale);
+                res = genTint(gl, root, source, fill[0], fillOpacity[0], W, H, scale);
             }
         }
         const sd = [];
@@ -33764,7 +33766,7 @@ void main() {
         frag = gaussFrag.replace('${placeholder}', frag);
         return (programs[key] = initShaders(gl, gaussVert, frag));
     }
-    function genTint(gl, root, textureTarget, tint, W, H, scale) {
+    function genTint(gl, root, textureTarget, tint, opacity, W, H, scale) {
         const bbox = textureTarget.bbox.slice(0);
         let w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
         while (w * scale > config.MAX_TEXTURE_SIZE ||
@@ -33786,7 +33788,7 @@ void main() {
         const res = TextureCache.getEmptyInstance(gl, bbox, scale);
         const frameBuffer = genFrameBufferWithTexture(gl, res.texture, w, h);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, res.texture, 0);
-        drawTint(gl, tintProgram, textureTarget.texture, tint);
+        drawTint(gl, tintProgram, textureTarget.texture, tint, opacity);
         gl.useProgram(programs.program);
         releaseFrameBuffer(gl, frameBuffer, W, H);
         return res;

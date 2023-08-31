@@ -926,7 +926,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         ]);
       }
       fillEnable.push(item.isEnabled);
-      fillOpacity.push(item.contextSettings.opacity || 1);
+      fillOpacity.push(item.contextSettings.opacity ?? 1);
     }
   }
   const stroke: Array<string | Array<number>> = [],

@@ -797,8 +797,15 @@ function genFilter(
   if (node.textureFilter[scaleIndex]?.available) {
     return node.textureFilter[scaleIndex];
   }
-  let res;
-  const { shadow, shadowEnable, blur, fill, fillEnable } = node.computedStyle;
+  let res: TextureCache | undefined;
+  const {
+    shadow,
+    shadowEnable,
+    blur,
+    fill,
+    fillEnable,
+    fillOpacity,
+  } = node.computedStyle;
   const source = node.textureTarget[scaleIndex]!;
   // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素
   if (node.isGroup) {
@@ -808,6 +815,7 @@ function genFilter(
         root,
         source,
         fill[0] as number[],
+        fillOpacity[0],
         W,
         H,
         scale,
@@ -968,6 +976,7 @@ function genTint(
   root: Root,
   textureTarget: TextureCache,
   tint: number[],
+  opacity: number,
   W: number,
   H: number,
   scale: number,
@@ -1004,7 +1013,7 @@ function genTint(
     res.texture,
     0,
   );
-  drawTint(gl, tintProgram, textureTarget.texture, tint);
+  drawTint(gl, tintProgram, textureTarget.texture, tint, opacity);
   gl.useProgram(programs.program);
   releaseFrameBuffer(gl, frameBuffer, W, H);
   return res;

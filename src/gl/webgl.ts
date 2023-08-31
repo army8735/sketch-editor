@@ -1,4 +1,5 @@
 import { calRectPoints } from '../math/matrix';
+import { color2gl } from '../style/css';
 
 export function initShaders(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -425,6 +426,7 @@ export function drawTint(
   program: any,
   texture: WebGLTexture,
   tint: number[],
+  opacity: number,
 ) {
   const { vtPoint, vtTex } = getSingleCoords();
   // 顶点buffer
@@ -446,7 +448,8 @@ export function drawTint(
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, 0);
   const u_tint = gl.getUniformLocation(program, 'u_tint');
-  gl.uniform4f(u_tint, tint[0], tint[1], tint[2], tint[3]);
+  const color = color2gl(tint);
+  gl.uniform4f(u_tint, color[0], color[1], color[2], color[3] * opacity);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);
