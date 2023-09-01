@@ -39,18 +39,4 @@ export default [
       json(),
     ],
   },
-  {
-    input: 'src/page/index.tsx',
-    output: [
-      {
-        name: 'page',
-        file: 'page.js',
-        format: 'umd',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      typescript(),
-    ],
-  },
 ];
