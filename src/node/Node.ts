@@ -93,6 +93,7 @@ class Node extends Event {
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
   isSymbolMaster = false;
+  isSymbolInstance = false;
   isPage = false;
   isText = false;
   isPolyline = false;

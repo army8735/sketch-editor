@@ -58,7 +58,7 @@ class Root extends Container implements FrameCallback {
   isWebgl2?: boolean;
   programs: any;
   refs: Record<string, Node>;
-  symbolMasters: Record<string, Node>;
+  symbolMasters: Record<string, SymbolMaster>;
   lastPage: Page | undefined; // 上一个显示的Page对象
   pageContainer: Container | undefined; // 存Page显示对象列表的容器
   overlay: Overlay | undefined; // 不跟随Page缩放的选框标尺等容器
@@ -554,22 +554,6 @@ class Root extends Container implements FrameCallback {
 
   zoomFit() {
     this.lastPage?.zoomFit();
-  }
-
-  hasSymbolMaster(id: string) {
-    return this.symbolMasters.hasOwnProperty(id);
-  }
-
-  getSymbolMaster(id: string) {
-    return this.symbolMasters[id];
-  }
-
-  setSymbolMaster(id: string, node: SymbolMaster) {
-    this.symbolMasters[id] = node;
-  }
-
-  deleteSymbolMaster(id: string) {
-    return delete this.symbolMasters[id];
   }
 }
 

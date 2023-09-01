@@ -22932,6 +22932,7 @@
             this.isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
             this.isArtBoard = false;
             this.isSymbolMaster = false;
+            this.isSymbolInstance = false;
             this.isPage = false;
             this.isText = false;
             this.isPolyline = false;
@@ -29727,6 +29728,18 @@
         constructor(props, children) {
             super(props, children);
             this.isSymbolMaster = true;
+            this.symbolInstances = [];
+        }
+        addSymbolInstance(item) {
+            if (this.symbolInstances.indexOf(item) === -1) {
+                this.symbolInstances.push(item);
+            }
+        }
+        removeSymbolInstance(item) {
+            const i = this.symbolInstances.indexOf(item);
+            if (i > -1) {
+                this.symbolInstances.splice(i, 1);
+            }
         }
     }
 
@@ -31522,6 +31535,15 @@
     class SymbolInstance extends Node {
         constructor(props) {
             super(props);
+            this.isSymbolInstance = true;
+        }
+        didMount() {
+            var _a;
+            super.didMount();
+            const symbolMaster = this.symbolMaster = (_a = this.root) === null || _a === void 0 ? void 0 : _a.symbolMasters[this.props.symbolId];
+            if (symbolMaster) {
+                symbolMaster.addSymbolInstance(this);
+            }
         }
     }
 
@@ -34787,18 +34809,6 @@ void main() {
             var _a;
             (_a = this.lastPage) === null || _a === void 0 ? void 0 : _a.zoomFit();
         }
-        hasSymbolMaster(id) {
-            return this.symbolMasters.hasOwnProperty(id);
-        }
-        getSymbolMaster(id) {
-            return this.symbolMasters[id];
-        }
-        setSymbolMaster(id, node) {
-            this.symbolMasters[id] = node;
-        }
-        deleteSymbolMaster(id) {
-            return delete this.symbolMasters[id];
-        }
     }
 
     var node = {
@@ -35067,15 +35077,13 @@ void main() {
                 const children = item.children;
                 children.forEach(child => {
                     if (child.tagName === TagName.SymbolMaster) {
-                        const symbolMaster = Page.parse(child);
-                        root.setSymbolMaster(child.props.symbolId, symbolMaster);
+                        root.symbolMasters[child.props.symbolId] = Page.parse(child);
                     }
                 });
             });
             // 外部symbolMaster
             json.symbolMasters.forEach(child => {
-                const symbolMaster = Page.parse(child);
-                root.setSymbolMaster(child.props.symbolId, symbolMaster);
+                root.symbolMasters[child.props.symbolId] = Page.parse(child);
             });
             root.setJPages(json.pages);
             return root;

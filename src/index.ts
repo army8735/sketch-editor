@@ -53,15 +53,13 @@ export default {
       const children = item.children;
       children.forEach(child => {
         if (child.tagName === TagName.SymbolMaster) {
-          const symbolMaster = Page.parse(child) as SymbolMaster;
-          root.setSymbolMaster((child as JSymbolMaster).props.symbolId, symbolMaster);
+          root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child) as SymbolMaster;
         }
       });
     });
     // 外部symbolMaster
     json.symbolMasters.forEach(child => {
-      const symbolMaster = Page.parse(child) as SymbolMaster;
-      root.setSymbolMaster((child as JSymbolMaster).props.symbolId, symbolMaster);
+      root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child) as SymbolMaster;
     });
 
     root.setJPages(json.pages);
