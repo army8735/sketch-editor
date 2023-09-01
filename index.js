@@ -24297,6 +24297,11 @@
                 angle: 0,
             };
         }
+        clone() {
+            const props = clone$1(this.props);
+            props.uuid = v4();
+            return new Node(props);
+        }
         get opacity() {
             var _a;
             const root = this.root;
@@ -24820,6 +24825,11 @@
             const struct = this.struct;
             const i = structs.indexOf(struct);
             return structs.slice(i, i + struct.total + 1);
+        }
+        clone() {
+            const props = clone$1(this.props);
+            props.uuid = v4();
+            return new Container(props, this.children.map(item => item.clone()));
         }
     }
 
@@ -26322,6 +26332,11 @@
         }
         toSvg(scale) {
             return super.toSvg(scale, this.props.isClosed);
+        }
+        clone() {
+            const props = clone$1(this.props);
+            props.uuid = v4();
+            return new Polyline(props);
         }
         // 一个形状由N个贝塞尔曲线围城，这个获取第几条贝塞尔曲线对应的4个控制点
         getBezierCurveByIndex(index) {
@@ -28777,6 +28792,11 @@
             }
             this.remove();
         }
+        clone() {
+            const props = clone$1(this.props);
+            props.uuid = v4();
+            return new Group(props, this.children.map(item => item.clone()));
+        }
         get rect() {
             let res = this._rect;
             if (!res) {
@@ -29536,22 +29556,12 @@
                 });
                 s += '></path>';
             }
-            // this.points!.forEach((item) => {
-            //   const d = svgPolygon(item) + 'Z';
-            //   const props = [
-            //     ['d', d],
-            //     ['fill', '#D8D8D8'],
-            //     ['fill-rule', fillRule],
-            //     ['stroke', '#979797'],
-            //     ['stroke-width', (1 / scale).toString()],
-            //   ];
-            //   s += '<path';
-            //   props.forEach((item) => {
-            //     s += ' ' + item[0] + '="' + item[1] + '"';
-            //   });
-            //   s += '></path>';
-            // });
             return s + '</svg>';
+        }
+        clone() {
+            const props = clone$1(this.props);
+            props.uuid = v4();
+            return new ShapeGroup(props, this.children.map(item => item.clone()));
         }
         get rect() {
             let res = this._rect;
@@ -31532,43 +31542,48 @@
         return true;
     }
 
-    class SymbolInstance extends Node {
-        constructor(props) {
-            super(props);
+    class SymbolInstance extends Group {
+        constructor(props, symbolMaster) {
+            super(props, symbolMaster.children.map(item => item.clone()));
             this.isSymbolInstance = true;
-        }
-        didMount() {
-            var _a;
-            super.didMount();
-            const symbolMaster = this.symbolMaster = (_a = this.root) === null || _a === void 0 ? void 0 : _a.symbolMasters[this.props.symbolId];
-            if (symbolMaster) {
-                symbolMaster.addSymbolInstance(this);
-            }
+            this.symbolMaster = symbolMaster;
+            symbolMaster.addSymbolInstance(this);
         }
     }
 
-    function parse(json) {
+    function parse(json, root) {
         const tagName = json.tagName;
         if (tagName === TagName.ArtBoard || tagName === TagName.SymbolMaster) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
-                const res = parse(json.children[i]);
+                const res = parse(json.children[i], root);
                 if (res) {
                     children.push(res);
                 }
             }
             if (tagName === TagName.SymbolMaster) {
-                return new SymbolMaster(json.props, children);
+                const props = json.props;
+                const symbolId = props.symbolId;
+                /**
+                 * 初始化前会先生成所有SymbolMaster的实例，包含内部和外部的，并存到root的symbolMasters下
+                 * 后续进入控件页面时，页面是延迟初始化的，从json生成Node实例时，直接取缓存即可
+                 */
+                return root.symbolMasters[symbolId] || new SymbolMaster(props, children);
             }
             return new ArtBoard(json.props, children);
         }
         else if (tagName === TagName.SymbolInstance) {
-            return new SymbolInstance(json.props);
+            const props = json.props;
+            const symbolId = props.symbolId;
+            const sm = root.symbolMasters[symbolId];
+            if (sm) {
+                return new SymbolInstance(props, sm);
+            }
         }
         else if (tagName === TagName.Group) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
-                const res = parse(json.children[i]);
+                const res = parse(json.children[i], root);
                 if (res) {
                     children.push(res);
                 }
@@ -31587,7 +31602,7 @@
         else if (tagName === TagName.ShapeGroup) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
-                const res = parse(json.children[i]);
+                const res = parse(json.children[i], root);
                 if (res) {
                     children.push(res);
                 }
@@ -31604,7 +31619,7 @@
         initIfNot() {
             if (this.json) {
                 for (let i = 0, len = this.json.children.length; i < len; i++) {
-                    const res = parse(this.json.children[i]);
+                    const res = parse(this.json.children[i], this.root);
                     if (res) {
                         this.appendChild(res);
                     }
@@ -31717,8 +31732,8 @@
                 });
             }
         }
-        static parse(json) {
-            return parse(json);
+        static parse(json, root) {
+            return parse(json, root);
         }
     }
 
@@ -35072,18 +35087,18 @@ void main() {
                 },
             });
             root.appendTo(canvas);
-            // symbolMaster优先初始化，其存在于控件页面的直接子节点
+            // symbolMaster优先初始化，其存在于控件页面的直接子节点，后续控件页面初始化的时候，遇到记得取缓存
             json.pages.forEach(item => {
                 const children = item.children;
                 children.forEach(child => {
                     if (child.tagName === TagName.SymbolMaster) {
-                        root.symbolMasters[child.props.symbolId] = Page.parse(child);
+                        root.symbolMasters[child.props.symbolId] = Page.parse(child, root);
                     }
                 });
             });
-            // 外部symbolMaster
+            // 外部symbolMaster，sketch中是不展示出来的，masterGo专门有个外部控件页面
             json.symbolMasters.forEach(child => {
-                root.symbolMasters[child.props.symbolId] = Page.parse(child);
+                root.symbolMasters[child.props.symbolId] = Page.parse(child, root);
             });
             root.setJPages(json.pages);
             return root;

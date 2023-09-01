@@ -6,6 +6,7 @@ import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
+import { clone } from '../util/util';
 
 class Group extends Container {
   fixedPosAndSize: boolean;
@@ -202,6 +203,12 @@ class Group extends Container {
       parent.fixedPosAndSize = false;
     }
     this.remove();
+  }
+
+  override clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    return new Group(props, this.children.map(item => item.clone()));
   }
 
   override get rect() {

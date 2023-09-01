@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import { Props } from '../format';
 import { pointInRect } from '../math/geom';
 import Node from '../node/Node';
@@ -5,6 +6,7 @@ import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import { ComputedStyle } from '../style/define';
 import inject from '../util/inject';
+import { clone } from '../util/util';
 import { LayoutData } from './layout';
 
 class Container extends Node {
@@ -314,6 +316,12 @@ class Container extends Node {
     const struct = this.struct;
     const i = structs.indexOf(struct);
     return structs.slice(i, i + struct.total + 1);
+  }
+
+  clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    return new Container(props, this.children.map(item => item.clone()));
   }
 }
 

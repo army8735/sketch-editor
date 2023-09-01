@@ -2,7 +2,6 @@ import * as uuid from 'uuid';
 import { getDefaultStyle, Props } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
-// import { toPrecision } from '../../math/geom';
 import { isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
@@ -20,7 +19,7 @@ import {
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
-import { mergeBbox } from '../../util/util';
+import { mergeBbox, clone } from '../../util/util';
 import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
@@ -564,22 +563,13 @@ class ShapeGroup extends Group {
       });
       s += '></path>';
     }
-    // this.points!.forEach((item) => {
-    //   const d = svgPolygon(item) + 'Z';
-    //   const props = [
-    //     ['d', d],
-    //     ['fill', '#D8D8D8'],
-    //     ['fill-rule', fillRule],
-    //     ['stroke', '#979797'],
-    //     ['stroke-width', (1 / scale).toString()],
-    //   ];
-    //   s += '<path';
-    //   props.forEach((item) => {
-    //     s += ' ' + item[0] + '="' + item[1] + '"';
-    //   });
-    //   s += '></path>';
-    // });
     return s + '</svg>';
+  }
+
+  override clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    return new ShapeGroup(props, this.children.map(item => item.clone()));
   }
 
   override get rect(): Float64Array {

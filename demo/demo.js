@@ -396,7 +396,10 @@ function genNodeTree(node, abHash) {
 
 function getNodeType(node) {
   let type = '';
-  if (node instanceof editor.node.ArtBoard) {
+  if (node instanceof editor.node.SymbolInstance) {
+    type = '🔷';
+  }
+  else if (node instanceof editor.node.ArtBoard) {
     type = '🎨';
   }
   else if (node instanceof editor.node.Group) {
@@ -413,9 +416,6 @@ function getNodeType(node) {
   }
   else if (node instanceof editor.node.ShapeGroup) {
     type = '📐';
-  }
-  else if (node instanceof editor.node.SymbolInstance) {
-    type = '🔷';
   }
   else {
     type = '❓';

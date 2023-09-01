@@ -24,27 +24,39 @@ import Node from './Node';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
 import SymbolInstance from './SymbolInstance';
+import Root from './Root';
 
-function parse(json: JNode): Node | undefined {
+function parse(json: JNode, root: Root): Node | undefined {
   const tagName = json.tagName;
   if (tagName === TagName.ArtBoard || tagName === TagName.SymbolMaster) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i]);
+      const res = parse((json as JContainer).children[i], root);
       if (res) {
         children.push(res);
       }
     }
     if (tagName === TagName.SymbolMaster) {
-      return new SymbolMaster(json.props as SymbolMasterProps, children);
+      const props = json.props as SymbolMasterProps;
+      const symbolId = props.symbolId;
+      /**
+       * 初始化前会先生成所有SymbolMaster的实例，包含内部和外部的，并存到root的symbolMasters下
+       * 后续进入控件页面时，页面是延迟初始化的，从json生成Node实例时，直接取缓存即可
+       */
+      return root.symbolMasters[symbolId] || new SymbolMaster(props, children);
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
   } else if (tagName === TagName.SymbolInstance) {
-    return new SymbolInstance(json.props as SymbolInstanceProps);
+    const props = json.props as SymbolInstanceProps;
+    const symbolId = props.symbolId;
+    const sm = root.symbolMasters[symbolId];
+    if (sm) {
+      return new SymbolInstance(props, sm);
+    }
   } else if (tagName === TagName.Group) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i]);
+      const res = parse((json as JContainer).children[i], root);
       if (res) {
         children.push(res);
       }
@@ -59,9 +71,7 @@ function parse(json: JNode): Node | undefined {
   } else if (tagName === TagName.ShapeGroup) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i]) as
-        | Polyline
-        | ShapeGroup;
+      const res = parse((json as JContainer).children[i], root);
       if (res) {
         children.push(res);
       }
@@ -81,7 +91,7 @@ class Page extends Container {
   initIfNot() {
     if (this.json) {
       for (let i = 0, len = this.json.children.length; i < len; i++) {
-        const res = parse(this.json.children[i]);
+        const res = parse(this.json.children[i], this.root!);
         if (res) {
           this.appendChild(res);
         }
@@ -196,8 +206,8 @@ class Page extends Container {
     }
   }
 
-  static parse(json: JNode) {
-    return parse(json);
+  static parse(json: JNode, root: Root) {
+    return parse(json, root);
   }
 }
 

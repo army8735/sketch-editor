@@ -1,20 +1,14 @@
-import Node from './Node';
 import { SymbolInstanceProps } from '../format';
 import SymbolMaster from './SymbolMaster';
+import Group from './Group';
 
-class SymbolInstance extends Node {
+class SymbolInstance extends Group {
   symbolMaster?: SymbolMaster;
-  constructor(props: SymbolInstanceProps) {
-    super(props);
+  constructor(props: SymbolInstanceProps, symbolMaster: SymbolMaster) {
+    super(props, symbolMaster.children.map(item => item.clone()));
     this.isSymbolInstance = true;
-  }
-
-  override didMount() {
-    super.didMount();
-    const symbolMaster = this.symbolMaster = this.root?.symbolMasters[(this.props as SymbolInstanceProps).symbolId];
-    if (symbolMaster) {
-      symbolMaster.addSymbolInstance(this);
-    }
+    this.symbolMaster = symbolMaster;
+    symbolMaster.addSymbolInstance(this);
   }
 }
 

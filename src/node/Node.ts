@@ -42,7 +42,7 @@ import {
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
 import Event from '../util/Event';
-import { equal } from '../util/util';
+import { equal, clone } from '../util/util';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
@@ -1513,6 +1513,12 @@ class Node extends Event {
       length: 0,
       angle: 0,
     };
+  }
+
+  clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    return new Node(props);
   }
 
   get opacity() {

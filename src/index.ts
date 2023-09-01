@@ -48,18 +48,18 @@ export default {
     });
     root.appendTo(canvas);
 
-    // symbolMaster优先初始化，其存在于控件页面的直接子节点
+    // symbolMaster优先初始化，其存在于控件页面的直接子节点，后续控件页面初始化的时候，遇到记得取缓存
     json.pages.forEach(item => {
       const children = item.children;
       children.forEach(child => {
         if (child.tagName === TagName.SymbolMaster) {
-          root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child) as SymbolMaster;
+          root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child, root) as SymbolMaster;
         }
       });
     });
-    // 外部symbolMaster
+    // 外部symbolMaster，sketch中是不展示出来的，masterGo专门有个外部控件页面
     json.symbolMasters.forEach(child => {
-      root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child) as SymbolMaster;
+      root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child, root) as SymbolMaster;
     });
 
     root.setJPages(json.pages);

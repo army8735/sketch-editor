@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import { PageProps, Point, PolylineProps } from '../../format';
 import {
   angleBySides,
@@ -21,6 +22,7 @@ import {
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
+import { clone } from '../../util/util';
 import Geom from './Geom';
 
 function isCornerPoint(point: Point) {
@@ -805,6 +807,12 @@ class Polyline extends Geom {
 
   toSvg(scale: number) {
     return super.toSvg(scale, this.props.isClosed);
+  }
+
+  clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    return new Polyline(props);
   }
 
   // 一个形状由N个贝塞尔曲线围城，这个获取第几条贝塞尔曲线对应的4个控制点
