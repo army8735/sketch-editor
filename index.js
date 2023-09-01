@@ -60,6 +60,7 @@
         TagName["Page"] = "page";
         TagName["ArtBoard"] = "artBoard";
         TagName["SymbolMaster"] = "symbolMaster";
+        TagName["SymbolInstance"] = "symbolInstance";
         TagName["Group"] = "group";
         TagName["ShapeGroup"] = "$shapeGroup";
         TagName["Bitmap"] = "bitmap";
@@ -20647,6 +20648,7 @@
                     : [255, 255, 255, 1];
                 if (layer._class === FileFormat.ClassValue.SymbolMaster) {
                     const symbolId = layer.symbolID;
+                    const includeBackgroundColorInInstance = layer.includeBackgroundColorInInstance;
                     return {
                         tagName: TagName.SymbolMaster,
                         props: {
@@ -20656,6 +20658,7 @@
                             hasBackgroundColor,
                             resizesContent: layer.resizesContent,
                             symbolId,
+                            includeBackgroundColorInInstance,
                             style: {
                                 width,
                                 height,
@@ -20894,6 +20897,46 @@
                     innerShadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
                     innerShadowEnable.push(item.isEnabled);
                 });
+            }
+            if (layer._class === FileFormat.ClassValue.SymbolInstance) {
+                const { fill, fillEnable, fillOpacity, } = yield geomStyle(layer, opt);
+                return {
+                    tagName: TagName.SymbolInstance,
+                    props: {
+                        uuid: layer.do_objectID,
+                        name: layer.name,
+                        constrainProportions,
+                        symbolId: layer.symbolID,
+                        style: {
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            width,
+                            height,
+                            visible,
+                            opacity,
+                            fill,
+                            fillEnable,
+                            fillOpacity,
+                            translateX,
+                            translateY,
+                            scaleX,
+                            scaleY,
+                            rotateZ,
+                            mixBlendMode,
+                            maskMode,
+                            breakMask,
+                            blur,
+                            shadow,
+                            shadowEnable,
+                            innerShadow,
+                            innerShadowEnable,
+                        },
+                        isLocked,
+                        isExpanded,
+                    },
+                };
             }
             if (layer._class === FileFormat.ClassValue.Group) {
                 const children = yield Promise.all(layer.layers.map((child) => {
@@ -31476,8 +31519,15 @@
         return true;
     }
 
+    class SymbolInstance extends Node {
+        constructor(props) {
+            super(props);
+        }
+    }
+
     function parse(json) {
-        if (json.tagName === TagName.ArtBoard || json.tagName === TagName.SymbolMaster) {
+        const tagName = json.tagName;
+        if (tagName === TagName.ArtBoard || tagName === TagName.SymbolMaster) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -31485,12 +31535,15 @@
                     children.push(res);
                 }
             }
-            if (json.tagName === TagName.SymbolMaster) {
+            if (tagName === TagName.SymbolMaster) {
                 return new SymbolMaster(json.props, children);
             }
             return new ArtBoard(json.props, children);
         }
-        else if (json.tagName === TagName.Group) {
+        else if (tagName === TagName.SymbolInstance) {
+            return new SymbolInstance(json.props);
+        }
+        else if (tagName === TagName.Group) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -31500,16 +31553,16 @@
             }
             return new Group(json.props, children);
         }
-        else if (json.tagName === TagName.Bitmap) {
+        else if (tagName === TagName.Bitmap) {
             return new Bitmap(json.props);
         }
-        else if (json.tagName === TagName.Text) {
+        else if (tagName === TagName.Text) {
             return new Text(json.props);
         }
-        else if (json.tagName === TagName.Polyline) {
+        else if (tagName === TagName.Polyline) {
             return new Polyline(json.props);
         }
-        else if (json.tagName === TagName.ShapeGroup) {
+        else if (tagName === TagName.ShapeGroup) {
             const children = [];
             for (let i = 0, len = json.children.length; i < len; i++) {
                 const res = parse(json.children[i]);
@@ -31641,6 +31694,9 @@
                     scaleY: sx,
                 });
             }
+        }
+        static parse(json) {
+            return parse(json);
         }
     }
 
@@ -34335,6 +34391,7 @@ void main() {
             this.dpi = props.dpi;
             this.root = this;
             this.refs = {};
+            this.symbolMasters = {};
             this.structs = this.structure(0);
             this.isAsyncDraw = false;
             this.task = [];
@@ -34730,6 +34787,18 @@ void main() {
             var _a;
             (_a = this.lastPage) === null || _a === void 0 ? void 0 : _a.zoomFit();
         }
+        hasSymbolMaster(id) {
+            return this.symbolMasters.hasOwnProperty(id);
+        }
+        getSymbolMaster(id) {
+            return this.symbolMasters[id];
+        }
+        setSymbolMaster(id, node) {
+            this.symbolMasters[id] = node;
+        }
+        deleteSymbolMaster(id) {
+            return delete this.symbolMasters[id];
+        }
     }
 
     var node = {
@@ -34740,6 +34809,7 @@ void main() {
         Node,
         Page,
         Root,
+        SymbolInstance,
         SymbolMaster,
         Text,
         Geom,
@@ -34992,6 +35062,21 @@ void main() {
                 },
             });
             root.appendTo(canvas);
+            // symbolMaster优先初始化，其存在于控件页面的直接子节点
+            json.pages.forEach(item => {
+                const children = item.children;
+                children.forEach(child => {
+                    if (child.tagName === TagName.SymbolMaster) {
+                        const symbolMaster = Page.parse(child);
+                        root.setSymbolMaster(child.props.symbolId, symbolMaster);
+                    }
+                });
+            });
+            // 外部symbolMaster
+            json.symbolMasters.forEach(child => {
+                const symbolMaster = Page.parse(child);
+                root.setSymbolMaster(child.props.symbolId, symbolMaster);
+            });
             root.setJPages(json.pages);
             return root;
         },

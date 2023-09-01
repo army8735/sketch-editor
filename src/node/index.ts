@@ -9,6 +9,7 @@ import Node from './Node';
 import Page from './Page';
 import reflow from './reflow';
 import Root from './Root';
+import SymbolInstance from './SymbolInstance';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
 
@@ -20,6 +21,7 @@ export default {
   Node,
   Page,
   Root,
+  SymbolInstance,
   SymbolMaster,
   Text,
   Geom,

@@ -1,5 +1,10 @@
-import { JNode, JPage, PageProps, SymbolMasterProps, TagName } from '../format';
 import {
+  JNode,
+  JPage,
+  PageProps,
+  SymbolMasterProps,
+  SymbolInstanceProps,
+  TagName,
   ArtBoardProps,
   BitmapProps,
   JContainer,
@@ -18,9 +23,11 @@ import Group from './Group';
 import Node from './Node';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
+import SymbolInstance from './SymbolInstance';
 
 function parse(json: JNode): Node | undefined {
-  if (json.tagName === TagName.ArtBoard || json.tagName === TagName.SymbolMaster) {
+  const tagName = json.tagName;
+  if (tagName === TagName.ArtBoard || tagName === TagName.SymbolMaster) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
@@ -28,11 +35,13 @@ function parse(json: JNode): Node | undefined {
         children.push(res);
       }
     }
-    if (json.tagName === TagName.SymbolMaster) {
+    if (tagName === TagName.SymbolMaster) {
       return new SymbolMaster(json.props as SymbolMasterProps, children);
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
-  } else if (json.tagName === TagName.Group) {
+  } else if (tagName === TagName.SymbolInstance) {
+    return new SymbolInstance(json.props as SymbolInstanceProps);
+  } else if (tagName === TagName.Group) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]);
@@ -41,13 +50,13 @@ function parse(json: JNode): Node | undefined {
       }
     }
     return new Group(json.props, children);
-  } else if (json.tagName === TagName.Bitmap) {
+  } else if (tagName === TagName.Bitmap) {
     return new Bitmap(json.props as BitmapProps);
-  } else if (json.tagName === TagName.Text) {
+  } else if (tagName === TagName.Text) {
     return new Text(json.props as TextProps);
-  } else if (json.tagName === TagName.Polyline) {
+  } else if (tagName === TagName.Polyline) {
     return new Polyline(json.props as PolylineProps);
-  } else if (json.tagName === TagName.ShapeGroup) {
+  } else if (tagName === TagName.ShapeGroup) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i]) as
@@ -185,6 +194,10 @@ class Page extends Container {
         scaleY: sx,
       });
     }
+  }
+
+  static parse(json: JNode) {
+    return parse(json);
   }
 }
 

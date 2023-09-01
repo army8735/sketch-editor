@@ -414,6 +414,9 @@ function getNodeType(node) {
   else if (node instanceof editor.node.ShapeGroup) {
     type = '📐';
   }
+  else if (node instanceof editor.node.SymbolInstance) {
+    type = '🔷';
+  }
   else {
     type = '❓';
   }

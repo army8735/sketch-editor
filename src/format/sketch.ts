@@ -10,6 +10,7 @@ import {
   JPage,
   JPolyline,
   JShapeGroup,
+  JSymbolInstance,
   JSymbolMaster,
   JText,
   Point,
@@ -237,6 +238,7 @@ async function convertItem(
       : [255, 255, 255, 1];
     if (layer._class === SketchFormat.ClassValue.SymbolMaster) {
       const symbolId = layer.symbolID;
+      const includeBackgroundColorInInstance = layer.includeBackgroundColorInInstance;
       return {
         tagName: TagName.SymbolMaster,
         props: {
@@ -246,6 +248,7 @@ async function convertItem(
           hasBackgroundColor,
           resizesContent: layer.resizesContent,
           symbolId,
+          includeBackgroundColorInInstance,
           style: {
             width, // 画板始终相对于page的原点，没有百分比单位
             height,
@@ -479,6 +482,50 @@ async function convertItem(
       innerShadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
       innerShadowEnable.push(item.isEnabled);
     });
+  }
+  if (layer._class === SketchFormat.ClassValue.SymbolInstance) {
+    const {
+      fill,
+      fillEnable,
+      fillOpacity,
+    } = await geomStyle(layer, opt);
+    return {
+      tagName: TagName.SymbolInstance,
+      props: {
+        uuid: layer.do_objectID,
+        name: layer.name,
+        constrainProportions,
+        symbolId: layer.symbolID,
+        style: {
+          left,
+          top,
+          right,
+          bottom,
+          width,
+          height,
+          visible,
+          opacity,
+          fill,
+          fillEnable,
+          fillOpacity,
+          translateX,
+          translateY,
+          scaleX,
+          scaleY,
+          rotateZ,
+          mixBlendMode,
+          maskMode,
+          breakMask,
+          blur,
+          shadow,
+          shadowEnable,
+          innerShadow,
+          innerShadowEnable,
+        },
+        isLocked,
+        isExpanded,
+      },
+    } as JSymbolInstance;
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children = await Promise.all(

@@ -1,4 +1,4 @@
-import { TagName, JFile } from './format';
+import { TagName, JFile, JSymbolMaster } from './format';
 import { openAndConvertSketchBuffer, convertSketch } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -8,6 +8,8 @@ import config from './util/config';
 import animation from './animation';
 import node from './node';
 import tools from './tools';
+import Page from './node/Page';
+import SymbolMaster from './node/SymbolMaster';
 
 function apply(json: any, imgs: Array<string>): any {
   if (!json) {
@@ -45,6 +47,23 @@ export default {
       },
     });
     root.appendTo(canvas);
+
+    // symbolMaster优先初始化，其存在于控件页面的直接子节点
+    json.pages.forEach(item => {
+      const children = item.children;
+      children.forEach(child => {
+        if (child.tagName === TagName.SymbolMaster) {
+          const symbolMaster = Page.parse(child) as SymbolMaster;
+          root.setSymbolMaster((child as JSymbolMaster).props.symbolId, symbolMaster);
+        }
+      });
+    });
+    // 外部symbolMaster
+    json.symbolMasters.forEach(child => {
+      const symbolMaster = Page.parse(child) as SymbolMaster;
+      root.setSymbolMaster((child as JSymbolMaster).props.symbolId, symbolMaster);
+    });
+
     root.setJPages(json.pages);
     return root;
   },

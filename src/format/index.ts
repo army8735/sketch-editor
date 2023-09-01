@@ -31,6 +31,11 @@ export type JSymbolMaster = JContainer & {
   props: SymbolMasterProps;
 };
 
+export type JSymbolInstance = JNode & {
+  tagName: TagName.SymbolInstance;
+  props: SymbolInstanceProps;
+};
+
 export type JGroup = JContainer & {
   tagName: TagName.Group;
 };
@@ -223,6 +228,11 @@ export type ArtBoardProps = Props & {
 
 export type SymbolMasterProps = ArtBoardProps & {
   symbolId: string;
+  includeBackgroundColorInInstance: boolean;
+};
+
+export type SymbolInstanceProps = Props & {
+  symbolId: string;
 };
 
 export type TextProps = Props & {
@@ -284,6 +294,7 @@ export enum TagName {
   Page = 'page',
   ArtBoard = 'artBoard',
   SymbolMaster = 'symbolMaster',
+  SymbolInstance = 'symbolInstance',
   Group = 'group',
   ShapeGroup = '$shapeGroup',
   Bitmap = 'bitmap',
