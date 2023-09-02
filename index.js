@@ -29182,6 +29182,7 @@
         constructor(props, children) {
             super(props, children);
             this.isShapeGroup = true;
+            this.loaders = [];
         }
         lay(data) {
             super.lay(data);
@@ -29334,9 +29335,10 @@
                 if (!fillEnable[i]) {
                     continue;
                 }
-                const f = fill[i];
+                let f = fill[i];
                 // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
                 let ellipse;
+                ctx.globalAlpha = fillOpacity[i];
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -29344,50 +29346,125 @@
                     ctx.fillStyle = color2rgbaStr(f);
                 }
                 else {
-                    if (f.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                        gd.stop.forEach((item) => {
-                            lg.addColorStop(item.offset, color2rgbaStr(item.color));
-                        });
-                        ctx.fillStyle = lg;
-                    }
-                    else if (f.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-                        gd.stop.forEach((item) => {
-                            rg.addColorStop(item.offset, color2rgbaStr(item.color));
-                        });
-                        // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
-                        const m = gd.matrix;
-                        if (m) {
-                            ellipse = inject.getOffscreenCanvas(w, h);
-                            const ctx2 = ellipse.ctx;
-                            ctx2.beginPath();
-                            points.forEach((item) => {
-                                canvasPolygon(ctx2, item, scale, dx, dy);
-                            });
-                            ctx2.closePath();
-                            ctx2.clip();
-                            ctx2.fillStyle = rg;
-                            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-                            ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                    if (f.url) {
+                        f = f;
+                        const url = f.url;
+                        let loader = this.loaders[i];
+                        if (loader) {
+                            if (!loader.error && url === fill[i].url) {
+                                const width = this.width;
+                                const height = this.height;
+                                const wc = width * scale;
+                                const hc = height * scale;
+                                // 裁剪到范围内，不包含边框，即矢量本身的内容范围
+                                ctx.save();
+                                ctx.clip();
+                                if (f.type === PATTERN_FILL_TYPE.TILE) {
+                                    for (let i = 0, len = Math.ceil(width / loader.width); i < len; i++) {
+                                        for (let j = 0, len = Math.ceil(height / loader.height); j < len; j++) {
+                                            ctx.drawImage(loader.source, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
+                                        }
+                                    }
+                                }
+                                else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                                    const sx = wc / loader.width;
+                                    const sy = hc / loader.height;
+                                    const sc = Math.max(sx, sy);
+                                    const x = (loader.width * sc - wc) * -0.5;
+                                    const y = (loader.height * sc - hc) * -0.5;
+                                    ctx.drawImage(loader.source, 0, 0, loader.width, loader.height, x + dx, y + dy, loader.width * sc, loader.height * sc);
+                                }
+                                else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                                    ctx.drawImage(loader.source, dx, dy, wc, hc);
+                                }
+                                else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                                    const sx = wc / loader.width;
+                                    const sy = hc / loader.height;
+                                    const sc = Math.min(sx, sy);
+                                    const x = (loader.width * sc - wc) * -0.5;
+                                    const y = (loader.height * sc - hc) * -0.5;
+                                    ctx.drawImage(loader.source, 0, 0, loader.width, loader.height, x + dx, y + dy, loader.width * sc, loader.height * sc);
+                                }
+                                // 记得还原
+                                ctx.restore();
+                            }
                         }
                         else {
-                            ctx.fillStyle = rg;
+                            loader = this.loaders[i] = this.loaders[i] || {
+                                error: false,
+                                loading: false,
+                                width: 0,
+                                height: 0,
+                            };
+                            loader.error = false;
+                            loader.source = undefined;
+                            loader.loading = true;
+                            inject.measureImg(url, (data) => {
+                                // 可能会变更，所以加载完后对比下是不是当前最新的
+                                if (url === fill[i].url) {
+                                    loader.loading = false;
+                                    if (data.success) {
+                                        loader.error = false;
+                                        loader.source = data.source;
+                                        loader.width = data.width;
+                                        loader.height = data.height;
+                                        if (!this.isDestroyed) {
+                                            this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+                                        }
+                                    }
+                                    else {
+                                        loader.error = true;
+                                    }
+                                }
+                            });
+                        }
+                        continue;
+                    }
+                    else {
+                        f = f;
+                        if (f.t === GRADIENT.LINEAR) {
+                            const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                            const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                            gd.stop.forEach((item) => {
+                                lg.addColorStop(item.offset, color2rgbaStr(item.color));
+                            });
+                            ctx.fillStyle = lg;
+                        }
+                        else if (f.t === GRADIENT.RADIAL) {
+                            const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                            const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                            gd.stop.forEach((item) => {
+                                rg.addColorStop(item.offset, color2rgbaStr(item.color));
+                            });
+                            // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+                            const m = gd.matrix;
+                            if (m) {
+                                ellipse = inject.getOffscreenCanvas(w, h);
+                                const ctx2 = ellipse.ctx;
+                                ctx2.beginPath();
+                                points.forEach((item) => {
+                                    canvasPolygon(ctx2, item, scale, dx, dy);
+                                });
+                                ctx2.closePath();
+                                ctx2.clip();
+                                ctx2.fillStyle = rg;
+                                ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                                ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                            }
+                            else {
+                                ctx.fillStyle = rg;
+                            }
+                        }
+                        else if (f.t === GRADIENT.CONIC) {
+                            const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                            const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                            gd.stop.forEach((item) => {
+                                cg.addColorStop(item.offset, color2rgbaStr(item.color));
+                            });
+                            ctx.fillStyle = cg;
                         }
                     }
-                    else if (f.t === GRADIENT.CONIC) {
-                        const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-                        gd.stop.forEach((item) => {
-                            cg.addColorStop(item.offset, color2rgbaStr(item.color));
-                        });
-                        ctx.fillStyle = cg;
-                    }
                 }
-                // fill有opacity，设置记得还原
-                ctx.globalAlpha = fillOpacity[i];
                 if (ellipse) {
                     ctx.drawImage(ellipse.canvas, 0, 0);
                     ellipse.release();
@@ -29395,8 +29472,9 @@
                 else {
                     ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
                 }
-                ctx.globalAlpha = 1;
             }
+            // fill有opacity，设置记得还原
+            ctx.globalAlpha = 1;
             // 内阴影使用canvas的能力
             const { innerShadow, innerShadowEnable } = this.computedStyle;
             if (innerShadow && innerShadow.length) {
