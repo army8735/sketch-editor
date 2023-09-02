@@ -109,6 +109,11 @@ export type Gradient = {
   stops: Array<ColorStop>;
 };
 
+export type Pattern = {
+  url: string;
+  type: PATTERN_FILL_TYPE;
+};
+
 export type ComputedGradient = {
   t: GRADIENT;
   d: number[];
@@ -118,6 +123,11 @@ export type ComputedGradient = {
 export type StyleGradientValue = {
   v: Gradient;
   u: StyleUnit.GRADIENT;
+};
+
+export type StylePatternValue = {
+  v: Pattern;
+  u: StyleUnit.PATTERN;
 };
 
 export type StyleFillRuleValue = {
@@ -201,7 +211,7 @@ export type Style = {
   backgroundColor: StyleColorValue;
   color: StyleColorValue;
   opacity: StyleNumValue;
-  fill: Array<StyleColorValue | StyleGradientValue>;
+  fill: Array<StyleColorValue | StyleGradientValue | StylePatternValue>;
   fillEnable: Array<StyleBoolValue>;
   fillOpacity: Array<StyleNumValue>;
   fillRule: StyleFillRuleValue;
@@ -253,7 +263,7 @@ export type ComputedStyle = {
   backgroundColor: number[];
   color: number[];
   opacity: number;
-  fill: Array<number[] | Gradient>;
+  fill: Array<number[] | Gradient | Pattern>;
   fillEnable: boolean[];
   fillOpacity: number[];
   fillRule: FILL_RULE;

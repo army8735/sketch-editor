@@ -3,7 +3,7 @@ import { isFunction, isString } from './type';
 
 const SPF = 1000 / 60;
 
-const CANVAS: any = {};
+const CANVAS: Record<string, OffscreenCanvas | HTMLCanvasElement> = {};
 const SUPPORT_OFFSCREEN_CANVAS =
   typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 

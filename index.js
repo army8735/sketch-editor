@@ -19839,12 +19839,7 @@
                             else if (s.indexOf('fit') > -1) {
                                 type = PATTERN_FILL_TYPE.FIT;
                             }
-                            let scale = 1;
-                            const d = /\b([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\b/.exec(s);
-                            if (d) {
-                                scale = parseFloat(d[1]);
-                            }
-                            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+                            return { v: { url: v[2], type }, u: StyleUnit.PATTERN };
                         }
                     }
                 }
@@ -21304,8 +21299,8 @@
                             index = yield readNetworkImage(image._ref, opt);
                         }
                         const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
-                        const scale = item.patternTileScale;
-                        fill.push(`url(${opt.imgs[index]}) ${type} ${scale}`);
+                        // const scale = item.patternTileScale;
+                        fill.push(`url(${index}) ${type}`);
                     }
                     else if (item.fillType === FileFormat.FillType.Gradient) {
                         const g = item.gradient;
@@ -22994,6 +22989,12 @@
             if (!this.isArtBoard) {
                 this.artBoard = parent.artBoard;
             }
+            if (!this.isSymbolMaster) {
+                this.symbolMaster = parent.symbolMaster;
+            }
+            if (!this.isSymbolInstance) {
+                this.symbolInstance = parent.symbolInstance;
+            }
             const uuid = this.props.uuid;
             if (uuid) {
                 root.refs[uuid] = this;
@@ -23505,6 +23506,12 @@
             }
             if (!this.isArtBoard) {
                 this.artBoard = undefined;
+            }
+            if (!this.isSymbolMaster) {
+                this.symbolMaster = undefined;
+            }
+            if (!this.isSymbolInstance) {
+                this.symbolInstance = undefined;
             }
             // 未添加到dom时
             if (this.isDestroyed) {
@@ -25233,7 +25240,6 @@
             this.loader = {
                 error: false,
                 loading: false,
-                src,
                 width: 0,
                 height: 0,
                 onlyImg: true,
@@ -25246,7 +25252,7 @@
                 if (!cache) {
                     inject.measureImg(src, (res) => {
                         // 可能会变更，所以加载完后对比下是不是当前最新的
-                        if (src === this.loader.src) {
+                        if (src === this._src) {
                             if (res.success) {
                                 if (isFunction(props.onLoad)) {
                                     props.onLoad();
@@ -25274,16 +25280,17 @@
         }
         lay(data) {
             super.lay(data);
-            const src = this.loader.src;
+            const src = this._src;
+            const loader = this.loader;
             if (src) {
                 const cache = inject.IMG[src];
                 if (!cache || cache.state === inject.LOADING) {
-                    if (!this.loader.loading) {
+                    if (!loader.loading) {
                         this.loadAndRefresh();
                     }
                 }
                 else if (cache && cache.state === inject.LOADED) {
-                    this.loader.loading = false;
+                    loader.loading = false;
                     if (cache.success) {
                         this.loader.source = cache.source;
                         this.loader.width = cache.width;
@@ -25300,24 +25307,29 @@
             const loader = this.loader;
             loader.source = undefined;
             loader.error = false;
-            loader.loading = true;
-            inject.measureImg(loader.src, (data) => {
-                // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-                if (data.url === loader.src) {
-                    loader.loading = false;
-                    if (data.success) {
-                        loader.source = data.source;
-                        loader.width = data.width;
-                        loader.height = data.height;
-                        if (!this.isDestroyed) {
-                            this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+            if (!this.isDestroyed) {
+                // 先置空图片
+                this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+                loader.loading = true;
+                inject.measureImg(this._src, (data) => {
+                    // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+                    if (data.url === this._src) {
+                        loader.loading = false;
+                        if (data.success) {
+                            loader.error = false;
+                            loader.source = data.source;
+                            loader.width = data.width;
+                            loader.height = data.height;
+                            if (!this.isDestroyed) {
+                                this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+                            }
+                        }
+                        else {
+                            loader.error = true;
                         }
                     }
-                    else {
-                        loader.error = true;
-                    }
-                }
-            });
+                });
+            }
         }
         calContent() {
             let res = super.calContent();
@@ -25353,7 +25365,7 @@
                         w = h = config.MAX_TEXTURE_SIZE;
                     }
                 }
-                const canvasCache = (this.canvasCache = CanvasCache.getImgInstance(w, h, this.src));
+                const canvasCache = (this.canvasCache = CanvasCache.getImgInstance(w, h, this._src));
                 canvasCache.available = true;
                 const ctx = canvasCache.offscreen.ctx;
                 // 第一张图像才绘制，图片解码到canvas上
@@ -25459,30 +25471,10 @@
             return this._src;
         }
         set src(v) {
-            this.src = v;
-            const loader = this.loader;
-            if (v === loader.src || this.isDestroyed || (!v && loader.error)) {
-                if (v && v !== loader.src) {
-                    loader.src = v;
-                    inject.measureImg(v, (res) => {
-                        if (loader.src === v) {
-                            const { onLoad, onError } = this.props;
-                            if (res.success) {
-                                if (onLoad && isFunction(onLoad)) {
-                                    onLoad();
-                                }
-                            }
-                            else {
-                                if (onError && isFunction(onError)) {
-                                    onError();
-                                }
-                            }
-                        }
-                    });
-                }
+            if (this._src === v) {
                 return;
             }
-            loader.src = v;
+            this._src = v;
             this.loadAndRefresh();
         }
     }
@@ -25640,6 +25632,7 @@
             super(props);
             this.props = props;
             this.isPolyline = true;
+            this.loaders = [];
         }
         buildPoints() {
             var _a;
@@ -25909,9 +25902,10 @@
                 if (!fillEnable[i]) {
                     continue;
                 }
-                const f = fill[i];
+                let f = fill[i];
                 // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
                 let ellipse;
+                ctx.globalAlpha = fillOpacity[i];
                 if (Array.isArray(f)) {
                     if (!f[3]) {
                         continue;
@@ -25919,50 +25913,142 @@
                     ctx.fillStyle = color2rgbaStr(f);
                 }
                 else {
-                    if (f.t === GRADIENT.LINEAR) {
-                        const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-                        gd.stop.forEach((item) => {
-                            lg.addColorStop(item.offset, color2rgbaStr(item.color));
-                        });
-                        ctx.fillStyle = lg;
-                    }
-                    else if (f.t === GRADIENT.RADIAL) {
-                        const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
-                        gd.stop.forEach((item) => {
-                            rg.addColorStop(item.offset, color2rgbaStr(item.color));
-                        });
-                        // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
-                        const m = gd.matrix;
-                        if (m) {
-                            ellipse = inject.getOffscreenCanvas(w, h);
-                            const ctx2 = ellipse.ctx;
-                            ctx2.beginPath();
-                            canvasPolygon(ctx2, points, scale, dx, dy);
-                            if (this.props.isClosed) {
-                                ctx2.closePath();
+                    if (f.url) {
+                        f = f;
+                        const url = f.url;
+                        let loader = this.loaders[i];
+                        if (loader) {
+                            if (!loader.error && url === fill[i].url) {
+                                const width = this.width;
+                                const height = this.height;
+                                const wc = width * scale;
+                                const hc = height * scale;
+                                if (f.type === PATTERN_FILL_TYPE.TILE) {
+                                    // 超出部分裁剪
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.moveTo(dx, dy);
+                                    ctx.lineTo(dx + wc, dy);
+                                    ctx.lineTo(dx + wc, dy + hc);
+                                    ctx.lineTo(dx, dy + hc);
+                                    ctx.lineTo(dx, dy);
+                                    ctx.closePath();
+                                    ctx.clip();
+                                    for (let i = 0, len = Math.ceil(width / loader.width); i < len; i++) {
+                                        for (let j = 0, len = Math.ceil(height / loader.height); j < len; j++) {
+                                            ctx.drawImage(loader.source, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
+                                        }
+                                    }
+                                    ctx.restore();
+                                }
+                                else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                                    const sx = wc / loader.width;
+                                    const sy = hc / loader.height;
+                                    const sc = Math.max(sx, sy);
+                                    const x = (loader.width * sc - wc) * -0.5;
+                                    const y = (loader.height * sc - hc) * -0.5;
+                                    // 超出部分裁剪
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.moveTo(dx, dy);
+                                    ctx.lineTo(dx + wc, dy);
+                                    ctx.lineTo(dx + wc, dy + hc);
+                                    ctx.lineTo(dx, dy + hc);
+                                    ctx.lineTo(dx, dy);
+                                    ctx.closePath();
+                                    ctx.clip();
+                                    ctx.drawImage(loader.source, 0, 0, loader.width, loader.height, x + dx, y + dy, loader.width * sc, loader.height * sc);
+                                    ctx.restore();
+                                }
+                                else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                                    ctx.drawImage(loader.source, dx, dy, wc, hc);
+                                }
+                                else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                                    const sx = wc / loader.width;
+                                    const sy = hc / loader.height;
+                                    const sc = Math.min(sx, sy);
+                                    const x = (loader.width * sc - wc) * -0.5;
+                                    const y = (loader.height * sc - hc) * -0.5;
+                                    ctx.drawImage(loader.source, 0, 0, loader.width, loader.height, x + dx, y + dy, loader.width * sc, loader.height * sc);
+                                }
                             }
-                            ctx2.clip();
-                            ctx2.fillStyle = rg;
-                            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-                            ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
                         }
                         else {
-                            ctx.fillStyle = rg;
+                            loader = this.loaders[i] = this.loaders[i] || {
+                                error: false,
+                                loading: false,
+                                width: 0,
+                                height: 0,
+                            };
+                            loader.error = false;
+                            loader.source = undefined;
+                            loader.loading = true;
+                            inject.measureImg(url, (data) => {
+                                // 可能会变更，所以加载完后对比下是不是当前最新的
+                                if (url === fill[i].url) {
+                                    loader.loading = false;
+                                    if (data.success) {
+                                        loader.error = false;
+                                        loader.source = data.source;
+                                        loader.width = data.width;
+                                        loader.height = data.height;
+                                        if (!this.isDestroyed) {
+                                            this.root.addUpdate(this, [], RefreshLevel.REPAINT, false, false, undefined);
+                                        }
+                                    }
+                                    else {
+                                        loader.error = true;
+                                    }
+                                }
+                            });
+                        }
+                        continue;
+                    }
+                    else {
+                        f = f;
+                        if (f.t === GRADIENT.LINEAR) {
+                            const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                            const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                            gd.stop.forEach((item) => {
+                                lg.addColorStop(item.offset, color2rgbaStr(item.color));
+                            });
+                            ctx.fillStyle = lg;
+                        }
+                        else if (f.t === GRADIENT.RADIAL) {
+                            const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                            const rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.total);
+                            gd.stop.forEach((item) => {
+                                rg.addColorStop(item.offset, color2rgbaStr(item.color));
+                            });
+                            // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+                            const m = gd.matrix;
+                            if (m) {
+                                ellipse = inject.getOffscreenCanvas(w, h);
+                                const ctx2 = ellipse.ctx;
+                                ctx2.beginPath();
+                                canvasPolygon(ctx2, points, scale, dx, dy);
+                                if (this.props.isClosed) {
+                                    ctx2.closePath();
+                                }
+                                ctx2.clip();
+                                ctx2.fillStyle = rg;
+                                ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                                ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+                            }
+                            else {
+                                ctx.fillStyle = rg;
+                            }
+                        }
+                        else if (f.t === GRADIENT.CONIC) {
+                            const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                            const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                            gd.stop.forEach((item) => {
+                                cg.addColorStop(item.offset, color2rgbaStr(item.color));
+                            });
+                            ctx.fillStyle = cg;
                         }
                     }
-                    else if (f.t === GRADIENT.CONIC) {
-                        const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-                        const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-                        gd.stop.forEach((item) => {
-                            cg.addColorStop(item.offset, color2rgbaStr(item.color));
-                        });
-                        ctx.fillStyle = cg;
-                    }
                 }
-                // fill有opacity，设置记得还原
-                ctx.globalAlpha = fillOpacity[i];
                 if (ellipse) {
                     ctx.drawImage(ellipse.canvas, 0, 0);
                     ellipse.release();
@@ -25970,8 +26056,9 @@
                 else {
                     ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
                 }
-                ctx.globalAlpha = 1;
             }
+            // fill有opacity，设置记得还原
+            ctx.globalAlpha = 1;
             // 内阴影使用canvas的能力
             const { innerShadow, innerShadowEnable } = this.computedStyle;
             if (innerShadow && innerShadow.length) {
@@ -29738,6 +29825,7 @@
         constructor(props, children) {
             super(props, children);
             this.isSymbolMaster = true;
+            this.symbolMaster = this;
             this.symbolInstances = [];
         }
         addSymbolInstance(item) {
@@ -31547,6 +31635,7 @@
             super(props, symbolMaster.children.map(item => item.clone()));
             this.isSymbolInstance = true;
             this.symbolMaster = symbolMaster;
+            this.symbolInstance = this;
             symbolMaster.addSymbolInstance(this);
         }
     }
@@ -35068,6 +35157,17 @@ void main() {
             const src = props.src;
             if (util.type.isNumber(src)) {
                 props.src = imgs[src];
+            }
+        }
+        else if (tagName === TagName.Polyline) {
+            const fill = props.style.fill;
+            for (let i = 0, len = fill.length; i < len; i++) {
+                const item = fill[i];
+                if (/^url\(\d+\)/.test(item)) {
+                    fill[i] = item.replace(/^url\((\d+)\)/, function ($0, $1) {
+                        return 'url(' + imgs[parseInt($1)] + ')';
+                    });
+                }
             }
         }
         if (children.length) {

@@ -10,7 +10,7 @@ import { clone } from '../util/util';
 
 class Group extends Container {
   fixedPosAndSize: boolean;
-  constructor(props: Props, children: Array<Node>) {
+  constructor(props: Props, children: Node[]) {
     super(props, children);
     this.isGroup = true;
     this.fixedPosAndSize = false;

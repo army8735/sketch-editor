@@ -46,6 +46,8 @@ import { equal, clone } from '../util/util';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
+import SymbolMaster from './SymbolMaster';
+import SymbolInstance from './SymbolInstance';
 
 class Node extends Event {
   width: number;
@@ -58,6 +60,8 @@ class Node extends Event {
   root: Root | undefined;
   page: Page | undefined;
   artBoard: ArtBoard | undefined;
+  symbolMaster: SymbolMaster | undefined;
+  symbolInstance: SymbolInstance | undefined;
   prev: Node | undefined;
   next: Node | undefined;
   mask: Node | undefined; // 如果被mask遮罩，指向对方引用
@@ -158,6 +162,12 @@ class Node extends Event {
     }
     if (!this.isArtBoard) {
       this.artBoard = parent.artBoard;
+    }
+    if (!this.isSymbolMaster) {
+      this.symbolMaster = parent.symbolMaster;
+    }
+    if (!this.isSymbolInstance) {
+      this.symbolInstance = parent.symbolInstance;
     }
     const uuid = this.props.uuid;
     if (uuid) {
@@ -682,6 +692,12 @@ class Node extends Event {
     }
     if (!this.isArtBoard) {
       this.artBoard = undefined;
+    }
+    if (!this.isSymbolMaster) {
+      this.symbolMaster = undefined;
+    }
+    if (!this.isSymbolInstance) {
+      this.symbolInstance = undefined;
     }
     // 未添加到dom时
     if (this.isDestroyed) {

@@ -190,15 +190,7 @@ export function normalize(style: any): Style {
             } else if (s.indexOf('fit') > -1) {
               type = PATTERN_FILL_TYPE.FIT;
             }
-            let scale = 1;
-            const d =
-              /\b([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\b/.exec(
-                s,
-              );
-            if (d) {
-              scale = parseFloat(d[1]);
-            }
-            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+            return { v: { url: v[2], type }, u: StyleUnit.PATTERN };
           }
         }
       }

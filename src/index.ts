@@ -28,6 +28,17 @@ function apply(json: any, imgs: Array<string>): any {
       props.src = imgs[src];
     }
   }
+  else if (tagName === TagName.Polyline) {
+    const fill = props.style.fill;
+    for (let i = 0, len = fill.length; i < len; i++) {
+      const item = fill[i];
+      if (/^url\(\d+\)/.test(item)) {
+        fill[i] = item.replace(/^url\((\d+)\)/, function($0: string, $1: string) {
+          return 'url(' + imgs[parseInt($1)] + ')';
+        });
+      }
+    }
+  }
   if (children.length) {
     apply(children, imgs);
   }

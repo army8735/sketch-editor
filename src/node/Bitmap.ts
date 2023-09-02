@@ -13,7 +13,6 @@ import Node from './Node';
 type Loader = {
   error: boolean;
   loading: boolean;
-  src?: string;
   source?: HTMLImageElement;
   width: number;
   height: number;
@@ -31,7 +30,6 @@ class Bitmap extends Node {
     this.loader = {
       error: false,
       loading: false,
-      src,
       width: 0,
       height: 0,
       onlyImg: true,
@@ -61,7 +59,7 @@ class Bitmap extends Node {
       if (!cache) {
         inject.measureImg(src, (res: any) => {
           // 可能会变更，所以加载完后对比下是不是当前最新的
-          if (src === this.loader.src) {
+          if (src === this._src) {
             if (res.success) {
               if (isFunction(props.onLoad)) {
                 props.onLoad!();
@@ -87,15 +85,16 @@ class Bitmap extends Node {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const src = this.loader.src;
+    const src = this._src;
+    const loader = this.loader;
     if (src) {
       const cache = inject.IMG[src];
       if (!cache || cache.state === inject.LOADING) {
-        if (!this.loader.loading) {
+        if (!loader.loading) {
           this.loadAndRefresh();
         }
       } else if (cache && cache.state === inject.LOADED) {
-        this.loader.loading = false;
+        loader.loading = false;
         if (cache.success) {
           this.loader.source = cache.source;
           this.loader.width = cache.width;
@@ -112,30 +111,42 @@ class Bitmap extends Node {
     const loader = this.loader;
     loader.source = undefined;
     loader.error = false;
-    loader.loading = true;
-    inject.measureImg(loader.src, (data: any) => {
-      // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-      if (data.url === loader.src) {
-        loader.loading = false;
-        if (data.success) {
-          loader.source = data.source;
-          loader.width = data.width;
-          loader.height = data.height;
-          if (!this.isDestroyed) {
-            this.root!.addUpdate(
-              this,
-              [],
-              RefreshLevel.REPAINT,
-              false,
-              false,
-              undefined,
-            );
+    if (!this.isDestroyed) {
+      // 先置空图片
+      this.root!.addUpdate(
+        this,
+        [],
+        RefreshLevel.REPAINT,
+        false,
+        false,
+        undefined,
+      );
+      loader.loading = true;
+      inject.measureImg(this._src, (data: any) => {
+        // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+        if (data.url === this._src) {
+          loader.loading = false;
+          if (data.success) {
+            loader.error = false;
+            loader.source = data.source;
+            loader.width = data.width;
+            loader.height = data.height;
+            if (!this.isDestroyed) {
+              this.root!.addUpdate(
+                this,
+                [],
+                RefreshLevel.REPAINT,
+                false,
+                false,
+                undefined,
+              );
+            }
+          } else {
+            loader.error = true;
           }
-        } else {
-          loader.error = true;
         }
-      }
-    });
+      });
+    }
   }
 
   override calContent(): boolean {
@@ -173,7 +184,7 @@ class Bitmap extends Node {
       const canvasCache = (this.canvasCache = CanvasCache.getImgInstance(
         w,
         h,
-        this.src,
+        this._src,
       ));
       canvasCache.available = true;
       const ctx = canvasCache.offscreen.ctx;
@@ -308,29 +319,10 @@ class Bitmap extends Node {
   }
 
   set src(v: string) {
-    this.src = v;
-    const loader = this.loader;
-    if (v === loader.src || this.isDestroyed || (!v && loader.error)) {
-      if (v && v !== loader.src) {
-        loader.src = v;
-        inject.measureImg(v, (res: any) => {
-          if (loader.src === v) {
-            const { onLoad, onError } = this.props as BitmapProps;
-            if (res.success) {
-              if (onLoad && isFunction(onLoad)) {
-                onLoad();
-              }
-            } else {
-              if (onError && isFunction(onError)) {
-                onError();
-              }
-            }
-          }
-        });
-      }
+    if (this._src === v) {
       return;
     }
-    loader.src = v;
+    this._src = v;
     this.loadAndRefresh();
   }
 }
