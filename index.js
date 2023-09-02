@@ -25923,23 +25923,15 @@
                                 const height = this.height;
                                 const wc = width * scale;
                                 const hc = height * scale;
+                                // 裁剪到范围内，不包含边框，即矢量本身的内容范围
+                                ctx.save();
+                                ctx.clip();
                                 if (f.type === PATTERN_FILL_TYPE.TILE) {
-                                    // 超出部分裁剪
-                                    ctx.save();
-                                    ctx.beginPath();
-                                    ctx.moveTo(dx, dy);
-                                    ctx.lineTo(dx + wc, dy);
-                                    ctx.lineTo(dx + wc, dy + hc);
-                                    ctx.lineTo(dx, dy + hc);
-                                    ctx.lineTo(dx, dy);
-                                    ctx.closePath();
-                                    ctx.clip();
                                     for (let i = 0, len = Math.ceil(width / loader.width); i < len; i++) {
                                         for (let j = 0, len = Math.ceil(height / loader.height); j < len; j++) {
                                             ctx.drawImage(loader.source, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
                                         }
                                     }
-                                    ctx.restore();
                                 }
                                 else if (f.type === PATTERN_FILL_TYPE.FILL) {
                                     const sx = wc / loader.width;
@@ -25947,18 +25939,7 @@
                                     const sc = Math.max(sx, sy);
                                     const x = (loader.width * sc - wc) * -0.5;
                                     const y = (loader.height * sc - hc) * -0.5;
-                                    // 超出部分裁剪
-                                    ctx.save();
-                                    ctx.beginPath();
-                                    ctx.moveTo(dx, dy);
-                                    ctx.lineTo(dx + wc, dy);
-                                    ctx.lineTo(dx + wc, dy + hc);
-                                    ctx.lineTo(dx, dy + hc);
-                                    ctx.lineTo(dx, dy);
-                                    ctx.closePath();
-                                    ctx.clip();
                                     ctx.drawImage(loader.source, 0, 0, loader.width, loader.height, x + dx, y + dy, loader.width * sc, loader.height * sc);
-                                    ctx.restore();
                                 }
                                 else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
                                     ctx.drawImage(loader.source, dx, dy, wc, hc);
@@ -25971,6 +25952,8 @@
                                     const y = (loader.height * sc - hc) * -0.5;
                                     ctx.drawImage(loader.source, 0, 0, loader.width, loader.height, x + dx, y + dy, loader.width * sc, loader.height * sc);
                                 }
+                                // 记得还原
+                                ctx.restore();
                             }
                         }
                         else {
