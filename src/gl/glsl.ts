@@ -129,9 +129,6 @@ uniform sampler2D u_texture;
 uniform vec2 u_direction;
 
 vec4 limit(vec2 coords, float weight) {
-  if(coords[0] <= 0.0 || coords[1] <= 0.0 || coords[0] >= 1.0 || coords[1] >= 1.0) {
-    //return vec4(0.0, 0.0, 0.0, 0.0);
-  }
   return texture2D(u_texture, coords) * weight;
 }
 
