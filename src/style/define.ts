@@ -93,6 +93,11 @@ export type StyleTaValue = {
   u: StyleUnit.NUMBER;
 };
 
+export type StyleTvaValue = {
+  v: TEXT_VERTICAL_ALIGN;
+  u: StyleUnit.NUMBER;
+};
+
 export type ColorStop = {
   color: StyleColorValue;
   offset?: StyleNumValue;
@@ -226,6 +231,7 @@ export type Style = {
   letterSpacing: StyleNumValue;
   paragraphSpacing: StyleNumValue;
   textAlign: StyleTaValue;
+  textVerticalAlign: StyleTvaValue;
   translateX: StyleNumValue;
   translateY: StyleNumValue;
   scaleX: StyleNumValue;
@@ -278,6 +284,7 @@ export type ComputedStyle = {
   letterSpacing: number;
   paragraphSpacing: number;
   textAlign: TEXT_ALIGN;
+  textVerticalAlign: TEXT_VERTICAL_ALIGN;
   translateX: number;
   translateY: number;
   scaleX: number;
@@ -301,6 +308,12 @@ export enum TEXT_ALIGN {
   CENTER = 1,
   RIGHT = 2,
   JUSTIFY = 3,
+}
+
+export enum TEXT_VERTICAL_ALIGN {
+  TOP = 0,
+  MIDDLE = 1,
+  BOTTOM = 2,
 }
 
 export enum MIX_BLEND_MODE {

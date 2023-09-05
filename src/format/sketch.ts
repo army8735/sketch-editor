@@ -660,11 +660,10 @@ async function convertItem(
             } = {},
           },
         } = item;
-        const fontFamily = name;
-        const res = {
+        return {
           location,
           length,
-          fontFamily,
+          fontFamily: name,
           fontSize,
           fontWeight: 400, // 无用写死
           fontStyle: 'normal', // 同
@@ -679,7 +678,6 @@ async function convertItem(
             alpha,
           ],
         } as Rich;
-        return res;
       })
       : undefined;
     const MSAttributedStringFontAttribute =
@@ -696,6 +694,8 @@ async function convertItem(
     const alignment = paragraphStyle?.alignment;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
+    const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
+    const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
     const letterSpacing =
       layer.style?.textStyle?.encodedAttributes?.kerning || 0;
     const paragraphSpacing = paragraphStyle?.paragraphSpacing || 0;
@@ -735,6 +735,7 @@ async function convertItem(
           fontFamily,
           color,
           textAlign,
+          textVerticalAlign,
           letterSpacing,
           lineHeight,
           paragraphSpacing,

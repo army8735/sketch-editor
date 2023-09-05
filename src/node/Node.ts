@@ -350,6 +350,7 @@ class Node extends Event {
     computedStyle.letterSpacing = style.letterSpacing.v;
     computedStyle.paragraphSpacing = style.paragraphSpacing.v;
     computedStyle.textAlign = style.textAlign.v;
+    computedStyle.textVerticalAlign = style.textVerticalAlign.v;
   }
 
   calRepaintStyle(lv: RefreshLevel) {
@@ -935,6 +936,7 @@ class Node extends Event {
       res.backgroundColor = color2hexStr(res.backgroundColor);
       res.fontSize = ['normal', 'italic', 'oblique'][res.fontSize];
       res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
+      res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
       res.mixBlendMode = [
         'normal',
         'multiply',

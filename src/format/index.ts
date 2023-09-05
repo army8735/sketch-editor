@@ -109,6 +109,7 @@ export type JStyle = {
   letterSpacing: number;
   paragraphSpacing: number;
   textAlign: 'left' | 'center' | 'right' | 'justify';
+  textVerticalAlign: 'top' | 'middle' | 'bottom',
   translateX: number;
   translateY: number;
   scaleX: number;
@@ -177,6 +178,7 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       letterSpacing: 0,
       paragraphSpacing: 0,
       textAlign: 'left',
+      textVerticalAlign: 'top',
       translateX: 0,
       translateY: 0,
       scaleX: 1,

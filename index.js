@@ -37,6 +37,7 @@
             letterSpacing: 0,
             paragraphSpacing: 0,
             textAlign: 'left',
+            textVerticalAlign: 'top',
             translateX: 0,
             translateY: 0,
             scaleX: 1,
@@ -15831,6 +15832,12 @@
         TEXT_ALIGN[TEXT_ALIGN["RIGHT"] = 2] = "RIGHT";
         TEXT_ALIGN[TEXT_ALIGN["JUSTIFY"] = 3] = "JUSTIFY";
     })(TEXT_ALIGN || (TEXT_ALIGN = {}));
+    var TEXT_VERTICAL_ALIGN;
+    (function (TEXT_VERTICAL_ALIGN) {
+        TEXT_VERTICAL_ALIGN[TEXT_VERTICAL_ALIGN["TOP"] = 0] = "TOP";
+        TEXT_VERTICAL_ALIGN[TEXT_VERTICAL_ALIGN["MIDDLE"] = 1] = "MIDDLE";
+        TEXT_VERTICAL_ALIGN[TEXT_VERTICAL_ALIGN["BOTTOM"] = 2] = "BOTTOM";
+    })(TEXT_VERTICAL_ALIGN || (TEXT_VERTICAL_ALIGN = {}));
     var MIX_BLEND_MODE;
     (function (MIX_BLEND_MODE) {
         MIX_BLEND_MODE[MIX_BLEND_MODE["NORMAL"] = 0] = "NORMAL";
@@ -19966,7 +19973,18 @@
             else if (textAlign === 'justify') {
                 v = TEXT_ALIGN.JUSTIFY;
             }
-            res.textAlign = { v, u: StyleUnit.STRING };
+            res.textAlign = { v, u: StyleUnit.NUMBER };
+        }
+        const textVerticalAlign = style.textVerticalAlign;
+        if (!isNil(textVerticalAlign)) {
+            let v = TEXT_VERTICAL_ALIGN.TOP;
+            if (textVerticalAlign === 'middle') {
+                v = TEXT_VERTICAL_ALIGN.MIDDLE;
+            }
+            else if (textVerticalAlign === 'bottom') {
+                v = TEXT_VERTICAL_ALIGN.BOTTOM;
+            }
+            res.textVerticalAlign = { v, u: StyleUnit.NUMBER };
         }
         const transformOrigin = style.transformOrigin;
         if (!isNil(transformOrigin)) {
@@ -20596,7 +20614,7 @@
         });
     }
     function convertItem(layer, opt, w, h) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z;
         return __awaiter(this, void 0, void 0, function* () {
             let width = layer.frame.width;
             let height = layer.frame.height;
@@ -21044,11 +21062,10 @@
                 const rich = attributes.length
                     ? attributes.map((item) => {
                         const { location, length, attributes: { MSAttributedStringFontAttribute: { attributes: { name, size: fontSize }, }, MSAttributedStringColorAttribute: { red, green, blue, alpha }, kerning = 0, paragraphStyle: { alignment = 0, maximumLineHeight = 0, paragraphSpacing = 0, } = {}, }, } = item;
-                        const fontFamily = name;
-                        const res = {
+                        return {
                             location,
                             length,
-                            fontFamily,
+                            fontFamily: name,
                             fontSize,
                             fontWeight: 400,
                             fontStyle: 'normal',
@@ -21063,7 +21080,6 @@
                                 alpha,
                             ],
                         };
-                        return res;
                     })
                     : undefined;
                 const MSAttributedStringFontAttribute = (_o = (_m = (_l = (_k = layer.style) === null || _k === void 0 ? void 0 : _k.textStyle) === null || _l === void 0 ? void 0 : _l.encodedAttributes) === null || _m === void 0 ? void 0 : _m.MSAttributedStringFontAttribute) === null || _o === void 0 ? void 0 : _o.attributes;
@@ -21077,9 +21093,11 @@
                 const alignment = paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.alignment;
                 const lineHeight = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.maximumLineHeight) || 'normal';
                 const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
-                const letterSpacing = ((_u = (_t = (_s = layer.style) === null || _s === void 0 ? void 0 : _s.textStyle) === null || _t === void 0 ? void 0 : _t.encodedAttributes) === null || _u === void 0 ? void 0 : _u.kerning) || 0;
+                const verticalAlignment = (_t = (_s = layer.style) === null || _s === void 0 ? void 0 : _s.textStyle) === null || _t === void 0 ? void 0 : _t.verticalAlignment;
+                const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
+                const letterSpacing = ((_w = (_v = (_u = layer.style) === null || _u === void 0 ? void 0 : _u.textStyle) === null || _v === void 0 ? void 0 : _v.encodedAttributes) === null || _w === void 0 ? void 0 : _w.kerning) || 0;
                 const paragraphSpacing = (paragraphStyle === null || paragraphStyle === void 0 ? void 0 : paragraphStyle.paragraphSpacing) || 0;
-                const MSAttributedStringColorAttribute = (_x = (_w = (_v = layer.style) === null || _v === void 0 ? void 0 : _v.textStyle) === null || _w === void 0 ? void 0 : _w.encodedAttributes) === null || _x === void 0 ? void 0 : _x.MSAttributedStringColorAttribute;
+                const MSAttributedStringColorAttribute = (_z = (_y = (_x = layer.style) === null || _x === void 0 ? void 0 : _x.textStyle) === null || _y === void 0 ? void 0 : _y.encodedAttributes) === null || _z === void 0 ? void 0 : _z.MSAttributedStringColorAttribute;
                 const color = MSAttributedStringColorAttribute
                     ? [
                         Math.floor(MSAttributedStringColorAttribute.red * 255),
@@ -21113,6 +21131,7 @@
                             fontFamily,
                             color,
                             textAlign,
+                            textVerticalAlign,
                             letterSpacing,
                             lineHeight,
                             paragraphSpacing,
@@ -23183,6 +23202,7 @@
             computedStyle.letterSpacing = style.letterSpacing.v;
             computedStyle.paragraphSpacing = style.paragraphSpacing.v;
             computedStyle.textAlign = style.textAlign.v;
+            computedStyle.textVerticalAlign = style.textVerticalAlign.v;
         }
         calRepaintStyle(lv) {
             const { style, computedStyle } = this;
@@ -23739,6 +23759,7 @@
                 res.backgroundColor = color2hexStr(res.backgroundColor);
                 res.fontSize = ['normal', 'italic', 'oblique'][res.fontSize];
                 res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
+                res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
                 res.mixBlendMode = [
                     'normal',
                     'multiply',

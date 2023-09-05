@@ -18,6 +18,7 @@ import {
   StyleNumValue,
   StyleUnit,
   TEXT_ALIGN,
+  TEXT_VERTICAL_ALIGN,
 } from './define';
 import font from './font';
 import { parseGradient } from './gradient';
@@ -311,7 +312,18 @@ export function normalize(style: any): Style {
     } else if (textAlign === 'justify') {
       v = TEXT_ALIGN.JUSTIFY;
     }
-    res.textAlign = { v, u: StyleUnit.STRING };
+    res.textAlign = { v, u: StyleUnit.NUMBER };
+  }
+  const textVerticalAlign = style.textVerticalAlign;
+  if (!isNil(textVerticalAlign)) {
+    let v = TEXT_VERTICAL_ALIGN.TOP;
+    if (textVerticalAlign === 'middle') {
+      v = TEXT_VERTICAL_ALIGN.MIDDLE;
+    }
+    else if (textVerticalAlign === 'bottom') {
+      v = TEXT_VERTICAL_ALIGN.BOTTOM;
+    }
+    res.textVerticalAlign = { v, u: StyleUnit.NUMBER };
   }
   const transformOrigin = style.transformOrigin;
   if (!isNil(transformOrigin)) {
