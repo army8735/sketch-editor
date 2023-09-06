@@ -3,14 +3,8 @@ import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
-import {
-  calNormalLineHeight,
-  color2rgbaInt,
-  color2rgbaStr,
-  getBaseline,
-  setFontStyle,
-} from '../style/css';
-import { StyleUnit, TEXT_ALIGN } from '../style/define';
+import { calNormalLineHeight, color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle, } from '../style/css';
+import { StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
 import inject from '../util/inject';
@@ -426,6 +420,23 @@ class Text extends Node {
         const d = this.width - lineBox.w;
         if (d) {
           lineBox.offsetX(d);
+        }
+      }
+    }
+    // 垂直对齐偏移
+    const dh = this.height - lineBox.y - lineBox.lineHeight;
+    if (dh) {
+      const textVerticalAlign = computedStyle.textVerticalAlign;
+      if (textVerticalAlign === TEXT_VERTICAL_ALIGN.MIDDLE) {
+        for (let i = 0, len = lineBoxList.length; i < len; i++) {
+          const lineBox = lineBoxList[i];
+          lineBox.offsetY(dh * 0.5);
+        }
+      }
+      else if (textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
+        for (let i = 0, len = lineBoxList.length; i < len; i++) {
+          const lineBox = lineBoxList[i];
+          lineBox.offsetY(dh);
         }
       }
     }

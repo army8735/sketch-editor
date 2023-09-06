@@ -1,6 +1,7 @@
 import TextBox from './TextBox';
 
 class LineBox {
+  x: number;
   y: number;
   w: number;
   h: number;
@@ -10,6 +11,7 @@ class LineBox {
   endEnter: boolean;
 
   constructor(y: number, h: number, index: number, startEnter: boolean) {
+    this.x = 0;
     this.y = y;
     this.w = 0;
     this.h = h;
@@ -37,9 +39,18 @@ class LineBox {
   }
 
   offsetX(n: number) {
+    this.x += n;
     const list = this.list;
     for (let i = 0, len = list.length; i < len; i++) {
       list[i].x += n;
+    }
+  }
+
+  offsetY(n: number) {
+    this.y += n;
+    const list = this.list;
+    for (let i = 0, len = list.length; i < len; i++) {
+      list[i].y += n;
     }
   }
 

@@ -29925,6 +29925,7 @@
 
     class LineBox {
         constructor(y, h, index, startEnter) {
+            this.x = 0;
             this.y = y;
             this.w = 0;
             this.h = h;
@@ -29949,9 +29950,17 @@
             }
         }
         offsetX(n) {
+            this.x += n;
             const list = this.list;
             for (let i = 0, len = list.length; i < len; i++) {
                 list[i].x += n;
+            }
+        }
+        offsetY(n) {
+            this.y += n;
+            const list = this.list;
+            for (let i = 0, len = list.length; i < len; i++) {
+                list[i].y += n;
             }
         }
         get size() {
@@ -30341,6 +30350,23 @@
                     const d = this.width - lineBox.w;
                     if (d) {
                         lineBox.offsetX(d);
+                    }
+                }
+            }
+            // 垂直对齐偏移
+            const dh = this.height - lineBox.y - lineBox.lineHeight;
+            if (dh) {
+                const textVerticalAlign = computedStyle.textVerticalAlign;
+                if (textVerticalAlign === TEXT_VERTICAL_ALIGN.MIDDLE) {
+                    for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                        const lineBox = lineBoxList[i];
+                        lineBox.offsetY(dh * 0.5);
+                    }
+                }
+                else if (textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
+                    for (let i = 0, len = lineBoxList.length; i < len; i++) {
+                        const lineBox = lineBoxList[i];
+                        lineBox.offsetY(dh);
                     }
                 }
             }
