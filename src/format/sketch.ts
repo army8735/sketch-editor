@@ -410,8 +410,11 @@ async function convertItem(
   if (layer.style?.blur?.isEnabled) {
     const b = layer.style.blur;
     const type = b.type;
-    if (type === SketchFormat.BlurType.Gaussian && b.radius && b.radius > 0) {
+    if (type === SketchFormat.BlurType.Gaussian) {
       blur = `gauss(${b.radius}px)`;
+    }
+    else if (type === SketchFormat.BlurType.Background) {
+      blur = `background(${b.radius}px) saturation(${(b.saturation || 0) * 100}%)`;
     }
   }
   // 混合模式

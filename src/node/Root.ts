@@ -21,8 +21,6 @@ import {
   mainFrag,
   mainVert,
   maskFrag,
-  maskVert,
-  mbmVert,
   multiplyFrag,
   overlayFrag,
   saturationFrag,
@@ -30,7 +28,6 @@ import {
   simpleFrag,
   simpleVert,
   softLightFrag,
-  tintVert,
   tintFrag,
 } from '../gl/glsl';
 import { initShaders } from '../gl/webgl';
@@ -154,22 +151,22 @@ class Root extends Container implements FrameCallback {
     ));
     this.programs.bgColorProgram = initShaders(gl, bgColorVert, bgColorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
-    this.programs.maskProgram = initShaders(gl, maskVert, maskFrag);
-    this.programs.multiplyProgram = initShaders(gl, mbmVert, multiplyFrag);
-    this.programs.screenProgram = initShaders(gl, mbmVert, screenFrag);
-    this.programs.overlayProgram = initShaders(gl, mbmVert, overlayFrag);
-    this.programs.darkenProgram = initShaders(gl, mbmVert, darkenFrag);
-    this.programs.lightenProgram = initShaders(gl, mbmVert, lightenFrag);
-    this.programs.colorDodgeProgram = initShaders(gl, mbmVert, colorDodgeFrag);
-    this.programs.colorBurnProgram = initShaders(gl, mbmVert, colorBurnFrag);
-    this.programs.hardLightProgram = initShaders(gl, mbmVert, hardLightFrag);
-    this.programs.softLightProgram = initShaders(gl, mbmVert, softLightFrag);
-    this.programs.differenceProgram = initShaders(gl, mbmVert, differenceFrag);
-    this.programs.exclusionProgram = initShaders(gl, mbmVert, exclusionFrag);
-    this.programs.hueProgram = initShaders(gl, mbmVert, hueFrag);
-    this.programs.saturationProgram = initShaders(gl, mbmVert, saturationFrag);
-    this.programs.colorProgram = initShaders(gl, mbmVert, colorFrag);
-    this.programs.luminosityProgram = initShaders(gl, mbmVert, luminosityFrag);
+    this.programs.maskProgram = initShaders(gl, simpleVert, maskFrag);
+    this.programs.multiplyProgram = initShaders(gl, simpleVert, multiplyFrag);
+    this.programs.screenProgram = initShaders(gl, simpleVert, screenFrag);
+    this.programs.overlayProgram = initShaders(gl, simpleVert, overlayFrag);
+    this.programs.darkenProgram = initShaders(gl, simpleVert, darkenFrag);
+    this.programs.lightenProgram = initShaders(gl, simpleVert, lightenFrag);
+    this.programs.colorDodgeProgram = initShaders(gl, simpleVert, colorDodgeFrag);
+    this.programs.colorBurnProgram = initShaders(gl, simpleVert, colorBurnFrag);
+    this.programs.hardLightProgram = initShaders(gl, simpleVert, hardLightFrag);
+    this.programs.softLightProgram = initShaders(gl, simpleVert, softLightFrag);
+    this.programs.differenceProgram = initShaders(gl, simpleVert, differenceFrag);
+    this.programs.exclusionProgram = initShaders(gl, simpleVert, exclusionFrag);
+    this.programs.hueProgram = initShaders(gl, simpleVert, hueFrag);
+    this.programs.saturationProgram = initShaders(gl, simpleVert, saturationFrag);
+    this.programs.colorProgram = initShaders(gl, simpleVert, colorFrag);
+    this.programs.luminosityProgram = initShaders(gl, simpleVert, luminosityFrag);
     this.programs.dropShadowProgram = initShaders(
       gl,
       simpleVert,
@@ -185,7 +182,7 @@ class Root extends Container implements FrameCallback {
       simpleVert,
       innerShadowFragR,
     );
-    this.programs.tintProgram = initShaders(gl, tintVert, tintFrag);
+    this.programs.tintProgram = initShaders(gl, simpleVert, tintFrag);
     gl.useProgram(program);
   }
 

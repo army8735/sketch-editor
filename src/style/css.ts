@@ -439,6 +439,20 @@ export function normalize(style: any): Style {
           v: { t: BLUR.GAUSSIAN, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX } },
           u: StyleUnit.BLUR,
         };
+      } else if (t === 'background') {
+        const match = /saturation\s*\((.+)\)/i.exec(blur);
+        let saturation = 0;
+        if (match) {
+          saturation = parseInt(match[1]) || 0;
+        }
+        res.blur = {
+          v: {
+            t: BLUR.BACKGROUND,
+            radius: { v: parseInt(v[2]) || 0, u: StyleUnit.PX },
+            saturation: { v: saturation, u: StyleUnit.PERCENT },
+          },
+          u: StyleUnit.BLUR,
+        };
       } else {
         res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
       }

@@ -162,15 +162,14 @@ export type StyleStrokePositionValue = {
 
 export type Blur = {
   t: BLUR;
-  // center?: [number, number];
-  // saturation?: number;
-  // angle?: number;
-  radius?: StyleNumValue;
+  radius: StyleNumValue;
+  saturation?: number;
 };
 
 export type ComputedBlur = {
   t: BLUR;
-  radius?: number;
+  radius: number;
+  saturation?: number;
 };
 
 export type StyleBlurValue = {

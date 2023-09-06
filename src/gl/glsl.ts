@@ -78,18 +78,6 @@ void main() {
   gl_FragColor = color;
 }`;
 
-export const maskVert = `#version 100
-
-attribute vec4 a_position;
-
-attribute vec2 a_texCoords;
-varying vec2 v_texCoords;
-
-void main() {
-  gl_Position = a_position;
-  v_texCoords = a_texCoords;
-}`;
-
 export const maskFrag = `#version 100
 
 #ifdef GL_ES
@@ -136,8 +124,6 @@ void main() {
   gl_FragColor = vec4(0.0);
   \${placeholder}
 }`;
-
-export const mbmVert = maskVert;
 
 export const multiplyFrag = `#version 100
 
@@ -1438,6 +1424,9 @@ uniform vec4 u_color;
 
 void main() {
   vec4 c = texture2D(u_texture, v_texCoords);
+  if (c.a <= 0.0) {
+    discard;
+  }
   gl_FragColor = u_color * c.a;
 }`;
 
@@ -1477,17 +1466,6 @@ void main() {
     discard;
   }
   gl_FragColor = texture2D(u_texture2, v_texCoords);
-}`;
-
-export const tintVert = `#version 100
-
-attribute vec2 a_position;
-attribute vec2 a_texCoords;
-varying vec2 v_texCoords;
-
-void main() {
-  gl_Position = vec4(a_position, 0, 1);
-  v_texCoords = a_texCoords;
 }`;
 
 export const tintFrag = `#version 100

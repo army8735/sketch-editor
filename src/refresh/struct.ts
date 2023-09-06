@@ -308,7 +308,7 @@ export function renderWebgl(
       }
     }
   }
-  // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode
+  // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode/backgroundBlur
   let resTexture = createTexture(gl, 0, undefined, W, H);
   const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
@@ -1172,7 +1172,7 @@ function genShadow(
     }
     return temp.texture;
   });
-  // 将生成的shadow纹理和节点原本的纹理进行混合
+  // 将生成的shadow纹理和节点源纹理进行混合
   gl.useProgram(program);
   const target2 = TextureCache.getEmptyInstance(gl, bbox, scale);
   gl.framebufferTexture2D(
