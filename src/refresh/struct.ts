@@ -2,7 +2,7 @@ import { gaussFrag, gaussVert } from '../gl/glsl';
 import {
   bbox2Coords,
   bindTexture,
-  createTexture,
+  createTexture, drawBgBlur,
   drawGauss,
   drawMask,
   drawMbm,
@@ -30,13 +30,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { color2gl } from '../style/css';
-import {
-  BLUR,
-  ComputedShadow,
-  FILL_RULE,
-  MASK,
-  MIX_BLEND_MODE,
-} from '../style/define';
+import { BLUR, ComputedBlur, ComputedShadow, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
 import inject from '../util/inject';
 import config from './config';
 import { RefreshLevel } from './level';
@@ -425,7 +419,30 @@ export function renderWebgl(
         }
       }
       if (isInScreen && target) {
-        const mixBlendMode = computedStyle.mixBlendMode;
+        const { mixBlendMode, blur } = computedStyle;
+        // 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，再进行模糊/饱和度调整，再替换回主画布区域
+        if (blur.t === BLUR.BACKGROUND && blur.radius > 0) {
+          resTexture = genBgBlur(
+            gl,
+            resTexture,
+            node,
+            target,
+            blur,
+            programs,
+            scale,
+            cx,
+            cy,
+            W,
+            H,
+          );
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            resTexture,
+            0,
+          );
+        }
         let tex: WebGLTexture | undefined;
         // 有mbm先将本节点内容绘制到和root同尺寸纹理上
         if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
@@ -460,7 +477,6 @@ export function renderWebgl(
         if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
           resTexture = genMbm(
             gl,
-            resFrameBuffer!,
             resTexture!,
             tex!,
             mixBlendMode,
@@ -757,7 +773,6 @@ function genTotal(
       if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
         target.texture = genMbm(
           gl,
-          frameBuffer,
           target.texture,
           tex!,
           mixBlendMode,
@@ -847,10 +862,6 @@ function genFilter(
       root,
       res || source,
       blur.radius,
-      structs,
-      index,
-      lv,
-      total,
       W,
       H,
       scale,
@@ -871,10 +882,6 @@ function genGaussBlur(
   root: Root,
   textureTarget: TextureCache,
   sigma: number,
-  structs: Array<Struct>,
-  index: number,
-  lv: number,
-  total: number,
   W: number,
   H: number,
   scale: number,
@@ -1369,7 +1376,6 @@ function genMask(
   else if (maskMode === MASK.OUTLINE) {
     node.textureOutline = genOutline(
       gl,
-      root,
       node,
       structs,
       index,
@@ -1449,9 +1455,9 @@ function genMask(
   return target;
 }
 
+// 创建一个和画布一样大的纹理，将画布和即将mbm混合的节点作为输入，结果重新赋值给画布
 function genMbm(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  frameBuffer: WebGLFramebuffer,
   tex1: WebGLTexture,
   tex2: WebGLTexture,
   mixBlendMode: MIX_BLEND_MODE,
@@ -1509,9 +1515,74 @@ function genMbm(
   return res;
 }
 
+// 创建一个和画布一样大的纹理，线将画布和节点进行mask操作，保留重合的部分，再进行blur，再和节点进行mask保留重合的部分
+function genBgBlur(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  tex: WebGLTexture,
+  node: Node,
+  target: TextureCache,
+  blur: ComputedBlur,
+  programs: any,
+  scale: number,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+) {
+  // 将节点绘制到一张空画布
+  const mask = createTexture(gl, 0, undefined, w, h);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    mask,
+    0,
+  );
+  const program = programs.program;
+  drawTextureCache(
+    gl,
+    cx,
+    cy,
+    program,
+    [
+      {
+        opacity: node._opacity,
+        matrix: node._matrixWorld,
+        bbox: target.bbox,
+        texture: target.texture,
+      },
+    ],
+    0,
+    0,
+    false,
+  );
+  // 画布内容进行blur
+  const sigma = blur.radius * scale;
+  const d = kernelSize(sigma);
+  const programGauss = genBlurShader(gl, programs, sigma, d);
+  gl.useProgram(programGauss);
+  const blurContent = drawGauss(gl, programGauss, tex, w, h);
+  // 将节点视作特殊mask，重合部分使用blur内容，非重合部分使用原本tex内容
+  const bgBlurProgram = programs.bgBlurProgram;
+  gl.useProgram(bgBlurProgram);
+  const res = createTexture(gl, 0, undefined, w, h);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    res,
+    0,
+  );
+  drawBgBlur(gl, bgBlurProgram, mask, tex, blurContent);
+  gl.deleteTexture(mask);
+  gl.deleteTexture(blurContent);
+  gl.deleteTexture(tex);
+  gl.useProgram(program);
+  return res;
+}
+
 function genOutline(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  root: Root,
   node: Node,
   structs: Array<Struct>,
   index: number,
@@ -1574,15 +1645,17 @@ function genOutline(
     // 矢量很特殊
     if (node instanceof Polyline) {
       const points = node.points!;
+      ctx.beginPath();
       canvasPolygon(ctx, points, scale, dx, dy);
       ctx.closePath();
       ctx.fill(fillRule);
     } else if (node instanceof ShapeGroup) {
       const points = node.points!;
+      ctx.beginPath();
       points.forEach((item) => {
         canvasPolygon(ctx, item, scale, dx, dy);
-        ctx.closePath();
       });
+      ctx.closePath();
       ctx.fill(fillRule);
     }
     // 普通节点就是个矩形

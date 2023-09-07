@@ -410,6 +410,7 @@ class Node extends Event {
     computedStyle.blur = {
       t: style.blur.v.t,
       radius: style.blur.v.radius?.v,
+      saturation: style.blur.v.saturation?.v,
     };
     computedStyle.shadow = style.shadow.map((item) => {
       const v = item.v;

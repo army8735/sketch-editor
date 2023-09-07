@@ -163,7 +163,7 @@ export type StyleStrokePositionValue = {
 export type Blur = {
   t: BLUR;
   radius: StyleNumValue;
-  saturation?: number;
+  saturation?: StyleNumValue;
 };
 
 export type ComputedBlur = {

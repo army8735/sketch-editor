@@ -21,6 +21,7 @@ import {
   mainFrag,
   mainVert,
   maskFrag,
+  bgBlurFrag,
   multiplyFrag,
   overlayFrag,
   saturationFrag,
@@ -152,6 +153,7 @@ class Root extends Container implements FrameCallback {
     this.programs.bgColorProgram = initShaders(gl, bgColorVert, bgColorFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     this.programs.maskProgram = initShaders(gl, simpleVert, maskFrag);
+    this.programs.bgBlurProgram = initShaders(gl, simpleVert, bgBlurFrag);
     this.programs.multiplyProgram = initShaders(gl, simpleVert, multiplyFrag);
     this.programs.screenProgram = initShaders(gl, simpleVert, screenFrag);
     this.programs.overlayProgram = initShaders(gl, simpleVert, overlayFrag);

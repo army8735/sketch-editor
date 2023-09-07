@@ -248,7 +248,7 @@ export function drawTextureCache(
   const texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // opacity buffer
@@ -311,7 +311,7 @@ export function drawMask(
   const texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // 纹理单元
@@ -356,7 +356,7 @@ export function drawGauss(
   const texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   /**
@@ -415,7 +415,12 @@ export function drawGauss(
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  recycle.forEach((item) => gl.deleteTexture(item));
+  recycle.forEach((item) => {
+    // 传入的原始不回收，交由外部控制
+    if (item !== texture) {
+      gl.deleteTexture(item);
+    }
+  });
   return tex1;
 }
 
@@ -440,7 +445,7 @@ export function drawTint(
   const texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // 纹理单元
@@ -450,6 +455,46 @@ export function drawTint(
   const u_tint = gl.getUniformLocation(program, 'u_tint');
   const color = color2gl(tint);
   gl.uniform4f(u_tint, color[0], color[1], color[2], color[3] * opacity);
+  // 渲染并销毁
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+}
+
+export function drawBgBlur(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: any,
+  texMask: WebGLTexture,
+  texBg: WebGLTexture,
+  texBlur: WebGLTexture,
+) {
+  const { vtPoint, vtTex } = getSingleCoords();
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  const texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  bindTexture(gl, texMask, 0);
+  const u_textureMask = gl.getUniformLocation(program, 'u_textureMask');
+  gl.uniform1i(u_textureMask, 0);
+  bindTexture(gl, texBg, 1);
+  const u_textureBg = gl.getUniformLocation(program, 'u_textureBg');
+  gl.uniform1i(u_textureBg, 1);
+  bindTexture(gl, texBlur, 2);
+  const u_textureBlur = gl.getUniformLocation(program, 'u_textureBlur');
+  gl.uniform1i(u_textureBlur, 2);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);
