@@ -299,6 +299,7 @@ class Polygon {
       const ael: Array<Segment> = belong === 0 ? aelA : aelB,
         hash = belong === 0 ? hashA : hashB;
       if (isStart) {
+        // console.log(seg.toString());
         // 自己重合的线段只考虑第一条，其它剔除
         if (seg.myCoincide) {
           const hc = seg.toHash();
@@ -366,7 +367,7 @@ class Polygon {
             }
           }
         }
-        // console.warn(seg.toString())
+        // console.warn(seg.toString());
       } else {
         const i = ael.indexOf(seg);
         // 一般肯定有，重合线段会剔除不进ael
@@ -383,9 +384,7 @@ class Polygon {
       const { isStart, seg } = item;
       const belong = seg.belong;
       if (isStart) {
-        if (seg.uuid === 6) {
-          // debugger;
-        }
+        // console.log(seg.toString());
         // 自重合或者它重合统一只保留第一条线
         if (seg.myCoincide || seg.otherCoincide) {
           const hc = seg.toHash();
@@ -439,6 +438,7 @@ class Polygon {
           seg.otherFill[0] = inside;
           seg.otherFill[1] = inside;
         }
+        // console.warn(seg.toString());
       } else {
         const i = ael.indexOf(seg);
         if (i > -1) {
@@ -1343,7 +1343,7 @@ function getYByX(coords: Array<Point>, x: number) {
         coords[2].x + coords[0].x - 2 * coords[1].x,
       ])
       .filter((i) => i >= 0 && i <= 1);
-    return bezier.pointByT(coords, t[0])!.x;
+    return bezier.pointByT(coords, t[0])!.y;
   } else if (len === 4) {
     const t = equation
       .getRoots([
