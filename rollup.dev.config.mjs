@@ -2,6 +2,7 @@ import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
+import glslify from 'rollup-plugin-glslify';
 
 export default [
   {
@@ -15,6 +16,7 @@ export default [
     plugins: [
       nodeResolve({ preferBuiltins: false }),
       commonjs(),
+      glslify(),
       typescript(),
       json(),
     ],

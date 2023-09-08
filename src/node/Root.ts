@@ -3,8 +3,6 @@ import { frame, FrameCallback } from '../animation/frame';
 import { JPage, Props } from '../format';
 import ca from '../gl/ca';
 import {
-  bgColorFrag,
-  bgColorVert,
   colorBurnFrag,
   colorDodgeFrag,
   colorFrag,
@@ -14,23 +12,24 @@ import {
   exclusionFrag,
   hardLightFrag,
   hueFrag,
-  innerShadowFrag,
-  innerShadowFragR,
   lightenFrag,
   luminosityFrag,
-  mainFrag,
-  mainVert,
-  maskFrag,
-  bgBlurFrag,
   multiplyFrag,
   overlayFrag,
   saturationFrag,
   screenFrag,
-  simpleFrag,
-  simpleVert,
   softLightFrag,
-  tintFrag,
 } from '../gl/glsl';
+import bgBlurFrag from '../gl/bgBlur.frag';
+import bgColorVert from '../gl/bgColor.vert';
+import bgColorFrag from '../gl/bgColor.frag';
+import innerShadowFrag from '../gl/innerShadow.frag';
+import mainVert from '../gl/main.vert';
+import mainFrag from '../gl/main.frag';
+import maskFrag from '../gl/mask.frag';
+import simpleVert from '../gl/simple.vert';
+import simpleFrag from '../gl/simple.frag';
+import tintFrag from '../gl/tint.frag';
 import { initShaders } from '../gl/webgl';
 import config from '../refresh/config';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
@@ -178,11 +177,6 @@ class Root extends Container implements FrameCallback {
       gl,
       simpleVert,
       innerShadowFrag,
-    );
-    this.programs.innerShadowRProgram = initShaders(
-      gl,
-      simpleVert,
-      innerShadowFragR,
     );
     this.programs.tintProgram = initShaders(gl, simpleVert, tintFrag);
     gl.useProgram(program);

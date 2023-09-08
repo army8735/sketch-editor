@@ -1,4 +1,5 @@
-import { gaussFrag, gaussVert } from '../gl/glsl';
+import simpleVert from '../gl/simple.vert';
+import gaussFrag from '../gl/gauss.frag';
 import {
   bbox2Coords,
   bindTexture,
@@ -974,8 +975,8 @@ function genBlurShader(
       gl_FragColor += limit(v_texCoords + vec2(${c}, ${c}) * u_direction, ${weights[i]});\n`;
   }
   frag += `gl_FragColor += limit(v_texCoords, ${weights[r]});`;
-  frag = gaussFrag.replace('${placeholder}', frag);
-  return (programs[key] = initShaders(gl, gaussVert, frag));
+  frag = gaussFrag.replace('placeholder;', frag);
+  return (programs[key] = initShaders(gl, simpleVert, frag));
 }
 
 function genTint(
