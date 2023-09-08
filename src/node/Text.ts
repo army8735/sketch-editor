@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import { Rich, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
@@ -8,7 +9,7 @@ import { StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
 import inject from '../util/inject';
-import util from '../util/util';
+import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
 import Node from './Node';
@@ -1687,7 +1688,7 @@ class Text extends Node {
           rich.splice(i, 0, st);
           item.location += length;
         } else {
-          const copy = util.clone(item);
+          const copy = clone(item);
           item.length = start - item.location;
           copy.location = start + length;
           copy.length -= item.length;
@@ -1886,6 +1887,16 @@ class Text extends Node {
         }
       }
     }
+    return res;
+  }
+
+  override clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    props.rich = clone(this.rich);
+    props.content = this._content;
+    const res = new Text(props);
+    res.style = clone(this.style);
     return res;
   }
 
