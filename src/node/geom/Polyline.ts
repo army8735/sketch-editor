@@ -901,10 +901,12 @@ class Polyline extends Geom {
     return super.toSvg(scale, this.props.isClosed);
   }
 
-  clone() {
+  override clone() {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    return new Polyline(props);
+    const res = new Polyline(props);
+    res.style = clone(this.style);
+    return res;
   }
 
   // 一个形状由N个贝塞尔曲线围城，这个获取第几条贝塞尔曲线对应的4个控制点

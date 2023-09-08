@@ -1537,7 +1537,9 @@ class Node extends Event {
   clone() {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    return new Node(props);
+    const res = new Node(props);
+    res.style = clone(this.style);
+    return res;
   }
 
   get opacity() {

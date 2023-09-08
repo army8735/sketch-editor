@@ -318,10 +318,12 @@ class Container extends Node {
     return structs.slice(i, i + struct.total + 1);
   }
 
-  clone() {
+  override clone() {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    return new Container(props, this.children.map(item => item.clone()));
+    const res = new Container(props, this.children.map(item => item.clone()));
+    res.style = clone(this.style);
+    return res;
   }
 }
 

@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import { BitmapProps } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
@@ -7,6 +8,7 @@ import TextureCache from '../refresh/TextureCache';
 import { color2rgbaStr } from '../style/css';
 import inject from '../util/inject';
 import { isFunction } from '../util/type';
+import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import Node from './Node';
 
@@ -312,6 +314,15 @@ class Bitmap extends Node {
     } else {
       super.clearCache(includeSelf);
     }
+  }
+
+  override clone() {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    props.src = this._src;
+    const res = new Bitmap(props);
+    res.style = clone(this.style);
+    return res;
   }
 
   get src() {

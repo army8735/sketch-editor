@@ -664,7 +664,9 @@ class ShapeGroup extends Group {
   override clone() {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    return new ShapeGroup(props, this.children.map(item => item.clone()));
+    const res = new ShapeGroup(props, this.children.map(item => item.clone()));
+    res.style = clone(this.style);
+    return res;
   }
 
   override get rect(): Float64Array {
