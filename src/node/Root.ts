@@ -2,27 +2,25 @@ import * as uuid from 'uuid';
 import { frame, FrameCallback } from '../animation/frame';
 import { JPage, Props } from '../format';
 import ca from '../gl/ca';
-import {
-  colorBurnFrag,
-  colorDodgeFrag,
-  colorFrag,
-  darkenFrag,
-  differenceFrag,
-  dropShadowFrag,
-  exclusionFrag,
-  hardLightFrag,
-  hueFrag,
-  lightenFrag,
-  luminosityFrag,
-  multiplyFrag,
-  overlayFrag,
-  saturationFrag,
-  screenFrag,
-  softLightFrag,
-} from '../gl/glsl';
+import colorFrag from '../gl/mbm/color.frag';
+import colorBurnFrag from '../gl/mbm/colorBurn.frag';
+import colorDodgeFrag from '../gl/mbm/colorDodge.frag';
+import darkenFrag from '../gl/mbm/darken.frag';
+import differenceFrag from '../gl/mbm/difference.frag';
+import exclusionFrag from '../gl/mbm/exclusion.frag';
+import hardLightFrag from '../gl/mbm/hardLight.frag';
+import hueFrag from '../gl/mbm/hue.frag';
+import lightenFrag from '../gl/mbm/lighten.frag';
+import luminosityFrag from '../gl/mbm/luminosity.frag';
+import multiplyFrag from '../gl/mbm/multiply.frag';
+import overlayFrag from '../gl/mbm/overlay.frag';
+import saturationFrag from '../gl/mbm/saturation.frag';
+import screenFrag from '../gl/mbm/screen.frag';
+import softLightFrag from '../gl/mbm/softLight.frag';
 import bgBlurFrag from '../gl/bgBlur.frag';
 import bgColorVert from '../gl/bgColor.vert';
 import bgColorFrag from '../gl/bgColor.frag';
+import dropShadowFrag from '../gl/dropShadow.frag';
 import innerShadowFrag from '../gl/innerShadow.frag';
 import mainVert from '../gl/main.vert';
 import mainFrag from '../gl/main.frag';
