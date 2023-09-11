@@ -3,7 +3,8 @@ import gaussFrag from '../gl/gauss.frag';
 import {
   bbox2Coords,
   bindTexture,
-  createTexture, drawBgBlur,
+  createTexture,
+  drawBgBlur,
   drawGauss,
   drawMask,
   drawMbm,
@@ -25,11 +26,12 @@ import {
   toE,
 } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
-import Bitmap from '../node/Bitmap';
 import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Node from '../node/Node';
 import Root from '../node/Root';
+import Text from '../node/Text';
+import Group from '../node/Group';
 import { color2gl } from '../style/css';
 import { BLUR, ComputedBlur, ComputedShadow, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
 import inject from '../util/inject';
@@ -37,6 +39,8 @@ import config from './config';
 import { RefreshLevel } from './level';
 import { canvasPolygon } from './paint';
 import TextureCache from './TextureCache';
+import Geom from '../node/geom/Geom';
+import Bitmap from '../node/Bitmap';
 
 export type Struct = {
   node: Node;
@@ -308,7 +312,7 @@ export function renderWebgl(
   const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
-  // 一般都存在，除非root改逻辑在只有自己的时候进行渲染
+  // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
   const overlay = root.overlay!;
   let isOverlay = false;
   const program = programs.program;
@@ -324,9 +328,20 @@ export function renderWebgl(
       overlay.update();
       isOverlay = true;
     }
-    // 不可见的但要排除mask
+    // 不可见和透明的跳过，但要排除mask，有背景模糊的合法节点如果是透明也不能跳过，mask和背景模糊互斥，优先mask
     const computedStyle = node.computedStyle;
-    if ((!computedStyle.visible || computedStyle.opacity <= 0) && !computedStyle.maskMode) {
+    const { mixBlendMode, blur } = computedStyle;
+    const isBgBlur = blur.t === BLUR.BACKGROUND &&
+      (blur.radius > 0 || blur.saturation !== 100) &&
+      (node instanceof ShapeGroup || node instanceof Geom || node instanceof Bitmap || node instanceof Text);
+    let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
+    if (shouldIgnore && computedStyle.maskMode) {
+      shouldIgnore = false;
+    }
+    if (shouldIgnore && isBgBlur && computedStyle.visible) {
+      shouldIgnore = false;
+    }
+    if (shouldIgnore) {
       i += total + next;
       continue;
     }
@@ -420,14 +435,27 @@ export function renderWebgl(
         }
       }
       if (isInScreen && target) {
-        const { mixBlendMode, blur } = computedStyle;
-        // 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，再进行模糊/饱和度调整，再替换回主画布区域
-        if (blur.t === BLUR.BACKGROUND && blur.radius > 0) {
+        /**
+         * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
+         * 先进行模糊/饱和度调整，再替换回主画布区域。
+         * sketch中group无法设置，只能对单个节点（包括ShapeGroup）的轮廓进行类似轮廓蒙版的重合裁剪，
+         * 并且它的text也无法设置，这里考虑增加text的支持，因为轮廓比较容易实现
+         */
+        if (isBgBlur) {
+          const outline = node.textureOutline = genOutline(
+            gl,
+            node,
+            structs,
+            i,
+            total,
+            target.bbox,
+            scale,
+          );
           resTexture = genBgBlur(
             gl,
             resTexture,
             node,
-            target,
+            outline!,
             blur,
             programs,
             scale,
@@ -1375,7 +1403,7 @@ function genMask(
   }
   // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
   else if (maskMode === MASK.OUTLINE) {
-    node.textureOutline = genOutline(
+    const outline = node.textureOutline = genOutline(
       gl,
       node,
       structs,
@@ -1392,7 +1420,7 @@ function genMask(
       temp.texture,
       0,
     );
-    drawMask(gl, maskProgram, node.textureOutline!.texture, summary);
+    drawMask(gl, maskProgram, outline!.texture, summary);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -1547,7 +1575,7 @@ function genBgBlur(
     program,
     [
       {
-        opacity: node._opacity,
+        opacity: 1,
         matrix: node._matrixWorld,
         bbox: target.bbox,
         texture: target.texture,
@@ -1622,7 +1650,7 @@ function genOutline(
   ctx.fillStyle = '#FFF';
   // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
   for (let i = index, len = index + total + 1; i < len; i++) {
-    const { node } = structs[i];
+    const { node, total, next } = structs[i];
     let matrix;
     if (i === index) {
       matrix = toE(node.tempMatrix);
@@ -1650,7 +1678,9 @@ function genOutline(
       canvasPolygon(ctx, points, scale, dx, dy);
       ctx.closePath();
       ctx.fill(fillRule);
-    } else if (node instanceof ShapeGroup) {
+    }
+    // 忽略子节点
+    else if (node instanceof ShapeGroup) {
       const points = node.points!;
       ctx.beginPath();
       points.forEach((item) => {
@@ -1658,10 +1688,18 @@ function genOutline(
       });
       ctx.closePath();
       ctx.fill(fillRule);
+      i += total + next;
     }
-    // 普通节点就是个矩形
-    else if (node instanceof Bitmap) {
+    // 文本忽略透明度渲染
+    else if (node instanceof Text) {
+      // TODO
+    }
+    // 普通节点就是个矩形，组要跳过子节点
+    else {
       ctx.fillRect(dx, dy, node.width * scale, node.height * scale);
+      if (node instanceof Group) {
+        i += total + next;
+      }
     }
   }
   const target = TextureCache.getInstance(gl, os.canvas, bbox);
