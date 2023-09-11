@@ -33,7 +33,7 @@ import Root from '../node/Root';
 import Text from '../node/Text';
 import Group from '../node/Group';
 import { color2gl } from '../style/css';
-import { BLUR, ComputedBlur, ComputedShadow, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
+import { BLUR, ComputedBlur, ComputedShadow, ComputedStyle, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
 import inject from '../util/inject';
 import config from './config';
 import { RefreshLevel } from './level';
@@ -330,17 +330,7 @@ export function renderWebgl(
     }
     // 不可见和透明的跳过，但要排除mask，有背景模糊的合法节点如果是透明也不能跳过，mask和背景模糊互斥，优先mask
     const computedStyle = node.computedStyle;
-    const { mixBlendMode, blur } = computedStyle;
-    const isBgBlur = blur.t === BLUR.BACKGROUND &&
-      (blur.radius > 0 || blur.saturation !== 100) &&
-      (node instanceof ShapeGroup || node instanceof Geom || node instanceof Bitmap || node instanceof Text);
-    let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
-    if (shouldIgnore && computedStyle.maskMode) {
-      shouldIgnore = false;
-    }
-    if (shouldIgnore && isBgBlur && computedStyle.visible) {
-      shouldIgnore = false;
-    }
+    const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(node, computedStyle);
     if (shouldIgnore) {
       i += total + next;
       continue;
@@ -435,6 +425,7 @@ export function renderWebgl(
         }
       }
       if (isInScreen && target) {
+        const { mixBlendMode, blur } = computedStyle;
         /**
          * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
          * 先进行模糊/饱和度调整，再替换回主画布区域。
@@ -1328,7 +1319,9 @@ function genMask(
   for (let i = index + total + 1, len = structs.length; i < len; i++) {
     const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
-    if (!computedStyle.visible || computedStyle.opacity <= 0) {
+    // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
+    const { shouldIgnore } = shouldIgnoreAndIsBgBlur(node, computedStyle);
+    if (shouldIgnore) {
       i += total2 + next2;
       continue;
     }
@@ -1764,6 +1757,7 @@ function checkInScreen(
   return isRectsOverlap(xa, ya, xb, yb, 0, 0, width, height, true);
 }
 
+// 统计mask节点后续关联跳过的数量
 function genNextCount(
   node: Node,
   structs: Array<Struct>,
@@ -1782,4 +1776,20 @@ function genNextCount(
       break;
     }
   }
+}
+
+// 不可见和透明的跳过，但要排除mask，有背景模糊的合法节点如果是透明也不能跳过，mask和背景模糊互斥，优先mask
+function shouldIgnoreAndIsBgBlur(node: Node, computedStyle: ComputedStyle) {
+  const blur = computedStyle.blur;
+  const isBgBlur = blur.t === BLUR.BACKGROUND &&
+    (blur.radius > 0 || blur.saturation !== 100) &&
+    (node instanceof ShapeGroup || node instanceof Geom || node instanceof Bitmap || node instanceof Text);
+  let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
+  if (shouldIgnore && computedStyle.maskMode) {
+    shouldIgnore = false;
+  }
+  if (shouldIgnore && isBgBlur && computedStyle.visible) {
+    shouldIgnore = false;
+  }
+  return { shouldIgnore, isBgBlur };
 }
