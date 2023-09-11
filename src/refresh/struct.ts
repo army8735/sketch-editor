@@ -1185,7 +1185,8 @@ function genShadow(
     // shadow颜色
     const u_color = gl.getUniformLocation(dropShadowProgram, 'u_color');
     const color = color2gl(item.color);
-    gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
+    const a = color[3];
+    gl.uniform4f(u_color, color[0] * a, color[1] * a, color[2] * a, a);
     // 渲染并销毁
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer);
@@ -1194,11 +1195,12 @@ function genShadow(
     gl.disableVertexAttribArray(a_texCoords);
     // 有blur再生成
     if (item.blur > 0) {
-      const d = kernelSize(item.blur * scale * 0.5);
+      const sigma = item.blur * scale * 0.5;
+      const d = kernelSize(sigma);
       const programGauss = genBlurShader(
         gl,
         programs,
-        item.blur * scale * 0.5,
+        sigma,
         d,
       );
       gl.useProgram(programGauss);
