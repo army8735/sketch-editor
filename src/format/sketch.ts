@@ -713,6 +713,18 @@ async function convertItem(
         MSAttributedStringColorAttribute.alpha,
       ]
       : [0, 0, 0, 1];
+    const {
+      fill,
+      fillEnable,
+      fillOpacity,
+      stroke,
+      strokeEnable,
+      strokeWidth,
+      strokePosition,
+      strokeDasharray,
+      strokeLinecap,
+      strokeLinejoin,
+    } = await geomStyle(layer, opt);
     return {
       tagName: TagName.Text,
       props: {
@@ -728,6 +740,16 @@ async function convertItem(
           height,
           visible,
           opacity,
+          fill,
+          fillEnable,
+          fillOpacity,
+          stroke,
+          strokeEnable,
+          strokeWidth,
+          strokePosition,
+          strokeDasharray,
+          strokeLinecap,
+          strokeLinejoin,
           translateX,
           translateY,
           scaleX,

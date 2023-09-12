@@ -5,15 +5,26 @@ import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
 import { calNormalLineHeight, color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle, } from '../style/css';
-import { StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
+import {
+  GRADIENT,
+  Gradient,
+  Pattern,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN,
+  STROKE_POSITION,
+  StyleUnit,
+  TEXT_ALIGN,
+  TEXT_VERTICAL_ALIGN
+} from '../style/define';
 import font from '../style/font';
 import Event from '../util/Event';
-import inject from '../util/inject';
+import inject, { OffScreen } from '../util/inject';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
 import Node from './Node';
 import TextBox from './TextBox';
+import { getConic, getLinear, getRadial } from '../style/gradient';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -557,68 +568,183 @@ class Text extends Node {
     // 富文本每串不同的需要设置字体颜色
     const SET_COLOR_INDEX: Array<{ index: number; color: string }> = [];
     let color: string;
-    if (rich.length) {
-      for (let i = 0, len = rich.length; i < len; i++) {
-        const item = rich[i];
-        SET_COLOR_INDEX.push({
-          index: item.location,
-          color: color2rgbaStr(item.color),
-        });
+    // 如果有fill，原本的颜色失效，sketch多个fill还将忽略颜色的alpha，这里都忽略
+    let hasFill = false;
+    const {
+      fill,
+      fillOpacity,
+      fillEnable,
+      stroke,
+      strokeEnable,
+      strokeWidth,
+      strokePosition,
+      strokeDasharray,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+    } = computedStyle;
+    for (let i = 0, len = fill.length; i < len; i++) {
+      if (fillEnable[i]) {
+        hasFill = true;
       }
-      const first = rich[0];
-      color = color2rgbaStr(first.color);
     }
-    // 非富默认颜色
-    else {
-      color = color2rgbaStr(computedStyle.color);
-    }
-    for (let i = 0, len = lineBoxList.length; i < len; i++) {
-      const lineBox = lineBoxList[i];
-      // 固定尺寸超过则overflow: hidden
-      if (lineBox.y >= h) {
-        break;
-      }
-      const list = lineBox.list;
-      const len = list.length;
-      for (let i = 0; i < len; i++) {
-        const textBox = list[i];
-        // textBox的分隔一定是按rich的，用字符索引来获取颜色
-        const index = textBox.index;
-        if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
-          const cur = SET_COLOR_INDEX.shift()!;
-          color = color2rgbaStr(cur.color);
+    // fill/stroke复用
+    function draw(ctx: CanvasRenderingContext2D, isFillOrStroke = true) {
+      for (let i = 0, len = lineBoxList.length; i < len; i++) {
+        const lineBox = lineBoxList[i];
+        // 固定尺寸超过则overflow: hidden
+        if (lineBox.y >= h) {
+          break;
         }
-        // 缩放影响字号
-        if (scale !== 1) {
-          ctx.font = textBox.font.replace(
-            /([\d.e+-]+)px/gi,
-            ($0, $1) => $1 * scale + 'px',
-          );
-          // @ts-ignore
-          ctx.letterSpacing = textBox.letterSpacing.replace(
-            /([\d.e+-]+)px/gi,
-            ($0, $1) => $1 * scale + 'px',
-          );
+        const list = lineBox.list;
+        const len = list.length;
+        for (let i = 0; i < len; i++) {
+          const textBox = list[i];
+          setFontAndLetterSpacing(ctx, textBox, scale);
+          if (isFillOrStroke) {
+            ctx.fillText(
+              textBox.str,
+              textBox.x * scale + dx,
+              (textBox.y + textBox.baseline) * scale + dy,
+            );
+          } else {
+            ctx.strokeText(
+              textBox.str,
+              textBox.x * scale + dx,
+              (textBox.y + textBox.baseline) * scale + dy,
+            );
+          }
+        }
+      }
+    }
+    // fill就用普通颜色绘制，每个fill都需绘制一遍
+    if (hasFill) {
+      for (let i = 0, len = fill.length; i < len; i++) {
+        if (!fillEnable[i]) {
+          continue;
+        }
+        let f = fill[i];
+        // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+        let ellipse: OffScreen | undefined;
+        ctx.globalAlpha = fillOpacity[i];
+        if (Array.isArray(f)) {
+          if (!f[3]) {
+            continue;
+          }
+          ctx.fillStyle = color2rgbaStr(f);
         } else {
-          ctx.font = textBox.font;
-          // @ts-ignore
-          ctx.letterSpacing = textBox.letterSpacing;
+          // 图像填充
+          if ((f as Pattern).url) {
+            f = f as Pattern;
+          }
+          // 渐变
+          else {
+            f = f as Gradient;
+            if (f.t === GRADIENT.LINEAR) {
+              const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+              gd.stop.forEach((item) => {
+                lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              });
+              ctx.fillStyle = lg;
+            } else if (f.t === GRADIENT.RADIAL) {
+              const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const rg = ctx.createRadialGradient(
+                gd.cx,
+                gd.cy,
+                0,
+                gd.cx,
+                gd.cy,
+                gd.total,
+              );
+              gd.stop.forEach((item) => {
+                rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              });
+              // 椭圆渐变，由于有缩放，用混合模式确定绘制范围，然后缩放长短轴绘制椭圆
+              const m = gd.matrix;
+              if (m) {
+                ellipse = inject.getOffscreenCanvas(w, h);
+                const ctx2 = ellipse.ctx;
+                ctx2.fillStyle = '#FFF';
+                draw(ctx2, true);
+                ctx2.globalCompositeOperation = 'source-in';
+                ctx2.fillStyle = rg;
+                ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                ctx2.fillRect(0, 0, w, h);
+              } else {
+                ctx.fillStyle = rg;
+              }
+            } else if (f.t === GRADIENT.CONIC) {
+              const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+              gd.stop.forEach((item) => {
+                cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              });
+              ctx.fillStyle = cg;
+            }
+          }
         }
-        ctx.fillStyle = color;
-        ctx.fillText(
-          textBox.str,
-          textBox.x * scale + dx,
-          (textBox.y + textBox.baseline) * scale + dy,
-        );
+        if (ellipse) {
+          ctx.drawImage(ellipse.canvas, 0, 0);
+          ellipse.release();
+        } else {
+          draw(ctx, true);
+        }
       }
     }
+    else {
+      // 富文本记录索引开始对应的颜色
+      if (rich.length) {
+        for (let i = 0, len = rich.length; i < len; i++) {
+          const item = rich[i];
+          SET_COLOR_INDEX.push({
+            index: item.location,
+            color: color2rgbaStr(item.color),
+          });
+        }
+        const first = rich[0];
+        color = color2rgbaStr(first.color);
+      }
+      // 非富默认颜色
+      else {
+        color = color2rgbaStr(computedStyle.color);
+        ctx.fillStyle = color;
+      }
+      for (let i = 0, len = lineBoxList.length; i < len; i++) {
+        const lineBox = lineBoxList[i];
+        // 固定尺寸超过则overflow: hidden
+        if (lineBox.y >= h) {
+          break;
+        }
+        const list = lineBox.list;
+        const len = list.length;
+        for (let i = 0; i < len; i++) {
+          const textBox = list[i];
+          // textBox的分隔一定是按rich的，用字符索引来获取颜色
+          const index = textBox.index;
+          if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
+            const cur = SET_COLOR_INDEX.shift()!;
+            color = color2rgbaStr(cur.color);
+            ctx.fillStyle = color;
+          }
+          setFontAndLetterSpacing(ctx, textBox, scale);
+          ctx.fillText(
+            textBox.str,
+            textBox.x * scale + dx,
+            (textBox.y + textBox.baseline) * scale + dy,
+          );
+        }
+      }
+    }
+    // reset防止fillOpacity影响
+    ctx.globalAlpha = 1;
     // 利用canvas的能力绘制shadow
     const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
       let hasInnerShadow = false;
       const os2 = inject.getOffscreenCanvas(w, h);
       const ctx2 = os2.ctx;
-      ctx2.fillStyle = '#000';
+      ctx2.fillStyle = '#FFF';
       let n = 0;
       innerShadow.forEach((item, i) => {
         if (!innerShadowEnable[i]) {
@@ -641,23 +767,7 @@ class Text extends Node {
           const len = list.length;
           for (let i = 0; i < len; i++) {
             const textBox = list[i];
-            // 缩放影响字号
-            if (scale !== 1) {
-              ctx2.font = textBox.font.replace(
-                /([\d.e+-]+)px/gi,
-                ($0, $1) => $1 * scale + 'px',
-              );
-              // @ts-ignore
-              ctx2.letterSpacing = textBox.letterSpacing.replace(
-                /([\d.e+-]+)px/gi,
-                ($0, $1) => $1 * scale + 'px',
-              );
-            }
-            else {
-              ctx2.font = textBox.font;
-              // @ts-ignore
-              ctx2.letterSpacing = textBox.letterSpacing;
-            }
+            setFontAndLetterSpacing(ctx2, textBox, scale);
             ctx2.fillText(
               textBox.str,
               textBox.x * scale + dx,
@@ -689,13 +799,139 @@ class Text extends Node {
         os3.release();
       }
     }
+    // stroke文字，fill设置透明即可，但位置需要用到裁剪
+    if (scale !== 1) {
+      ctx.setLineDash(strokeDasharray.map((i) => i * scale));
+    } else {
+      ctx.setLineDash(strokeDasharray);
+    }
+    if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
+      ctx.lineCap = 'round';
+    } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+      ctx.lineCap = 'square';
+    } else {
+      ctx.lineCap = 'butt';
+    }
+    if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
+      ctx.lineJoin = 'round';
+    } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+      ctx.lineJoin = 'bevel';
+    } else {
+      ctx.lineJoin = 'miter';
+    }
+    ctx.miterLimit = strokeMiterlimit * scale;
+    ctx.fillStyle = 'transparent';
+    for (let i = 0, len = stroke.length; i < len; i++) {
+      if (!strokeEnable[i] || !strokeWidth[i]) {
+        continue;
+      }
+      const s = stroke[i];
+      const p = strokePosition[i];
+      // 颜色
+      if (Array.isArray(s)) {
+        ctx.strokeStyle = color2rgbaStr(s);
+      }
+      // 或者渐变
+      else {
+        if (s.t === GRADIENT.LINEAR) {
+          const gd = getLinear(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+          const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+          gd.stop.forEach((item) => {
+            lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          });
+          ctx.strokeStyle = lg;
+        } else if (s.t === GRADIENT.RADIAL) {
+          const gd = getRadial(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+          const rg = ctx.createRadialGradient(
+            gd.cx,
+            gd.cy,
+            0,
+            gd.cx,
+            gd.cy,
+            gd.total,
+          );
+          gd.stop.forEach((item) => {
+            rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          });
+          const m = gd.matrix;
+          if (m) {
+            const ellipse = inject.getOffscreenCanvas(w, h);
+            const ctx2 = ellipse.ctx;
+            ctx2.setLineDash(ctx.getLineDash());
+            ctx2.lineCap = ctx.lineCap;
+            ctx2.lineJoin = ctx.lineJoin;
+            ctx2.miterLimit = ctx.miterLimit * scale;
+            ctx2.lineWidth = strokeWidth[i] * scale;
+            if (p === STROKE_POSITION.INSIDE || p === STROKE_POSITION.OUTSIDE) {
+              ctx2.fillStyle = '#FFF';
+              draw(ctx2, true);
+              ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+              ctx2.strokeStyle = '#FFF';
+              if (p === STROKE_POSITION.INSIDE) {
+                ctx2.globalCompositeOperation = 'source-in';
+              } else {
+                ctx2.globalCompositeOperation = 'source-out';
+              }
+              draw(ctx2, false);
+            } else {
+              ctx2.lineWidth = strokeWidth[i] * scale;
+              ctx2.strokeStyle = '#FFF';
+              draw(ctx2, false);
+            }
+            ctx2.globalCompositeOperation = 'source-in';
+            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            ctx2.fillStyle = rg;
+            ctx2.fillRect(0, 0, w, h);
+            ctx.drawImage(ellipse.canvas, 0, 0);
+            ellipse.release();
+            continue;
+          } else {
+            ctx.strokeStyle = rg;
+          }
+        } else if (s.t === GRADIENT.CONIC) {
+          const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+          gd.stop.forEach((item) => {
+            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          });
+          ctx.strokeStyle = cg;
+        }
+      }
+      // 注意canvas只有居中描边，内部外部需离屏擦除
+      let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
+      if (p === STROKE_POSITION.INSIDE || p === STROKE_POSITION.OUTSIDE) {
+        os = inject.getOffscreenCanvas(w, h);
+        ctx2 = os.ctx;
+        ctx2.setLineDash(ctx.getLineDash());
+        ctx2.lineCap = ctx.lineCap;
+        ctx2.lineJoin = ctx.lineJoin;
+        ctx2.miterLimit = ctx.miterLimit * scale;
+        ctx2.strokeStyle = ctx.strokeStyle;
+        ctx2.lineWidth = strokeWidth[i] * 2 * scale;ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+        ctx2.fillStyle = '#FFF';
+        draw(ctx2, true);
+        if (p === STROKE_POSITION.INSIDE) {
+          ctx2.globalCompositeOperation = 'source-in';
+        } else {
+          ctx2.globalCompositeOperation = 'source-out';
+        }
+        draw(ctx2, false);
+      } else {
+        ctx.lineWidth = strokeWidth[i] * scale;
+        draw(ctx, false);
+      }
+      if (os) {
+        ctx.drawImage(os.canvas, 0, 0);
+        os.release();
+      }
+    }
   }
 
   // 根据绝对坐标获取光标位置，同时设置开始光标位置
   setCursorStartByAbsCoord(x: number, y: number) {
     const m = this.matrixWorld;
     const im = inverse4(m);
-    const local = calPoint({ x: x, y: y }, im);
+    const local = calPoint({ x, y }, im);
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
     cursor.isMulti = false;
@@ -1917,6 +2153,34 @@ class Text extends Node {
       );
     }
   }
+
+  override get bbox(): Float64Array {
+    let res = this._bbox;
+    if (!res) {
+      const rect = this._rect || this.rect;
+      res = this._bbox = rect.slice(0);
+      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+      let border = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          } else {
+            // 默认中间
+            border = Math.max(border, item * 0.5 * 4);
+          }
+        }
+      });
+      res[0] -= border;
+      res[1] -= border;
+      res[2] += border;
+      res[3] += border;
+    }
+    return res;
+  }
 }
 
 function equalRich(a: Rich, b: Rich) {
@@ -1950,6 +2214,26 @@ function equalRich(a: Rich, b: Rich) {
     }
   }
   return true;
+}
+
+function setFontAndLetterSpacing(ctx: CanvasRenderingContext2D, textBox: TextBox, scale: number) {
+  // 缩放影响字号
+  if (scale !== 1) {
+    ctx.font = textBox.font.replace(
+      /([\d.e+-]+)px/gi,
+      ($0, $1) => $1 * scale + 'px',
+    );
+    // @ts-ignore
+    ctx.letterSpacing = textBox.letterSpacing.replace(
+      /([\d.e+-]+)px/gi,
+      ($0, $1) => $1 * scale + 'px',
+    );
+  }
+  else {
+    ctx.font = textBox.font;
+    // @ts-ignore
+    ctx.letterSpacing = textBox.letterSpacing;
+  }
 }
 
 export default Text;

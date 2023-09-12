@@ -378,6 +378,7 @@ class Polyline extends Geom {
         }
         ctx.fillStyle = color2rgbaStr(f);
       } else {
+        // 图像填充
         if ((f as Pattern).url) {
           f = f as Pattern;
           const url = f.url;
@@ -457,6 +458,7 @@ class Polyline extends Geom {
           }
           continue;
         }
+        // 渐变
         else {
           f = f as Gradient;
           if (f.t === GRADIENT.LINEAR) {
@@ -630,12 +632,12 @@ class Polyline extends Geom {
           if (m) {
             const ellipse = inject.getOffscreenCanvas(w, h);
             const ctx2 = ellipse.ctx;
-            ctx2.setLineDash(strokeDasharray);
+            ctx2.setLineDash(ctx.getLineDash());
             ctx2.lineCap = ctx.lineCap;
             ctx2.lineJoin = ctx.lineJoin;
             ctx2.miterLimit = ctx.miterLimit * scale;
             ctx2.lineWidth = strokeWidth[i] * scale;
-            ctx2.strokeStyle = '#F00';
+            ctx2.strokeStyle = '#FFF';
             ctx2.beginPath();
             canvasPolygon(ctx2, points, scale, dx, dy);
             if (this.props.isClosed) {
@@ -670,47 +672,7 @@ class Polyline extends Geom {
             ctx.strokeStyle = rg;
           }
         } else if (s.t === GRADIENT.CONIC) {
-          // 先画好边框离屏
-          // const ellipse = inject.getOffscreenCanvas(w, h);
-          // const ctx2 = ellipse.ctx;
-          // ctx2.setLineDash(strokeDasharray);
-          // ctx2.lineCap = ctx.lineCap;
-          // ctx2.lineJoin = ctx.lineJoin;
-          // ctx2.miterLimit = ctx.miterLimit * scale;
-          // ctx2.lineWidth = strokeWidth[i] * scale;
-          // ctx2.strokeStyle = '#F00';
-          // ctx2.beginPath();
-          // canvasPolygon(ctx2, points, scale, dx, dy);
-          // if (this.props.isClosed) {
-          //   ctx2.closePath();
-          // }
-          // if (p === STROKE_POSITION.INSIDE) {
-          //   ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-          //   ctx2.save();
-          //   ctx2.clip();
-          //   ctx2.stroke();
-          //   ctx2.restore();
-          // } else if (p === STROKE_POSITION.OUTSIDE) {
-          //   ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-          //   ctx2.stroke();
-          //   ctx2.save();
-          //   ctx2.clip();
-          //   ctx2.globalCompositeOperation = 'destination-out';
-          //   ctx2.strokeStyle = '#FFF';
-          //   ctx2.stroke();
-          //   ctx2.restore();
-          // } else {
-          //   ctx2.stroke();
-          // }
-          // // 另外一个渐变离屏
           const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-          // const os = drawConicGradient(gd.cx, gd.cy, w, h, gd.stop);
-          // os.ctx.globalCompositeOperation = 'destination-in';
-          // os.ctx.drawImage(ellipse.canvas, 0, 0);
-          // ctx.drawImage(os.canvas, 0, 0);
-          // ellipse.release();
-          // os.release();
-          // continue;
           const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
           gd.stop.forEach((item) => {
             cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -725,7 +687,7 @@ class Polyline extends Geom {
       } else if (p === STROKE_POSITION.OUTSIDE) {
         os = inject.getOffscreenCanvas(w, h);
         ctx2 = os.ctx;
-        ctx2.setLineDash(strokeDasharray);
+        ctx2.setLineDash(ctx.getLineDash());
         ctx2.lineCap = ctx.lineCap;
         ctx2.lineJoin = ctx.lineJoin;
         ctx2.miterLimit = ctx.miterLimit * scale;
