@@ -633,7 +633,7 @@ class Text extends Node {
           }
           ctx.fillStyle = color2rgbaStr(f);
         } else {
-          // 图像填充
+          // 图像填充 TODO
           if ((f as Pattern).url) {
             f = f as Pattern;
           }

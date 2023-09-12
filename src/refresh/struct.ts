@@ -159,7 +159,7 @@ export function renderWebgl(
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
     const needMask =
       maskMode > 0 &&
-      !!node.next &&
+      node.next &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
     // 记录汇总的同时以下标为k记录个类hash
     if (needTotal || needShadow || needBlur || needMask) {
@@ -1785,7 +1785,7 @@ function shouldIgnoreAndIsBgBlur(node: Node, computedStyle: ComputedStyle) {
     (blur.radius > 0 || blur.saturation !== 100) &&
     (node instanceof ShapeGroup || node instanceof Geom || node instanceof Bitmap || node instanceof Text);
   let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
-  if (shouldIgnore && computedStyle.maskMode) {
+  if (shouldIgnore && computedStyle.maskMode && node.next) {
     shouldIgnore = false;
   }
   if (shouldIgnore && isBgBlur && computedStyle.visible) {
