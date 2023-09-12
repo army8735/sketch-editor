@@ -142,6 +142,10 @@ export type JStyle = {
   shadowEnable: boolean[];
   innerShadow: string[];
   innerShadowEnable: boolean[];
+  hueRotate: number;
+  saturate: number;
+  brightness: number;
+  contrast: number;
 };
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
@@ -195,6 +199,10 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       shadowEnable: [],
       innerShadow: [],
       innerShadowEnable: [],
+      hueRotate: 0,
+      saturate: 1,
+      brightness: 1,
+      contrast: 1,
     },
     v,
   );

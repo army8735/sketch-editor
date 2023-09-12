@@ -397,7 +397,7 @@ class Node extends Event {
       this.calOpacity();
     }
     if (lv & RefreshLevel.REFLOW_FILTER) {
-      this.calFilterStyle(lv);
+      this.calFilter(lv);
     }
     this.clearCache(true);
     this._bbox = undefined;
@@ -405,7 +405,7 @@ class Node extends Event {
     this.tempBbox = undefined;
   }
 
-  calFilterStyle(lv: RefreshLevel) {
+  calFilter(lv: RefreshLevel) {
     const { style, computedStyle } = this;
     computedStyle.blur = {
       t: style.blur.v.t,
@@ -423,6 +423,10 @@ class Node extends Event {
       };
     });
     computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
+    computedStyle.hueRotate = style.hueRotate.v;
+    computedStyle.saturate = style.saturate.v;
+    computedStyle.brightness = style.brightness.v;
+    computedStyle.contrast = style.contrast.v;
     // repaint已经做了
     if (lv < RefreshLevel.REPAINT) {
       this._filterBbox = undefined;

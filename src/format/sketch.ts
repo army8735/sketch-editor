@@ -417,6 +417,22 @@ async function convertItem(
       blur = `background(${b.radius}px) saturation(${(b.saturation || 0) * 100}%)`;
     }
   }
+  // 颜色调整
+  let hueRotate = 0;
+  let saturate = 1;
+  let brightness = 1;
+  let contrast = 1;
+  const colorControls = layer.style?.colorControls;
+  if (colorControls && colorControls.isEnabled) {
+    if (colorControls.hue) {
+      hueRotate = colorControls.hue / Math.PI;
+    }
+    saturate = colorControls.saturation;
+    if (colorControls.brightness) {
+      brightness = colorControls.brightness + 1;
+    }
+    contrast = colorControls.contrast;
+  }
   // 混合模式
   let mixBlendMode = 'normal';
   const blend = layer.style?.contextSettings?.blendMode;
@@ -614,6 +630,10 @@ async function convertItem(
           shadowEnable,
           innerShadow,
           innerShadowEnable,
+          hueRotate,
+          saturate,
+          brightness,
+          contrast,
         },
         isLocked,
         isExpanded,

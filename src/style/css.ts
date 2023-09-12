@@ -534,6 +534,17 @@ export function normalize(style: any): Style {
       return { v: item, u: StyleUnit.BOOLEAN };
     });
   }
+  ['hueRotate', 'saturate', 'brightness', 'contrast'].forEach(k => {
+    const v = style[k];
+    if (!isNil(v)) {
+      const n = calUnit(v);
+      if (n.u !== StyleUnit.PERCENT) {
+        n.v *= 100;
+        n.u = StyleUnit.PERCENT;
+      }
+      res[k] = n;
+    }
+  });
   return res;
 }
 

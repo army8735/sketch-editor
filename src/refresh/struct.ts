@@ -121,6 +121,10 @@ export function renderWebgl(
       mixBlendMode,
       fill,
       fillEnable,
+      hueRotate,
+      saturate,
+      brightness,
+      contrast,
     } = computedStyle;
     // 特殊的group可以指定唯一的fill用作tint色调功能
     const isGroup = node.isGroup;
@@ -159,10 +163,11 @@ export function renderWebgl(
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
     const needMask =
       maskMode > 0 &&
-      node.next &&
+      !!node.next &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
+    const needColor = hueRotate || saturate !== 100 || brightness !== 100 || contrast !== 100;
     // 记录汇总的同时以下标为k记录个类hash
-    if (needTotal || needShadow || needBlur || needMask) {
+    if (needTotal || needShadow || needBlur || needMask || needColor) {
       const t: Merge = {
         i,
         lv,

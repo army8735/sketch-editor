@@ -247,6 +247,10 @@ export type Style = {
   shadowEnable: Array<StyleBoolValue>;
   innerShadow: Array<StyleShadowValue>;
   innerShadowEnable: Array<StyleBoolValue>;
+  hueRotate: StyleNumValue;
+  saturate: StyleNumValue;
+  brightness: StyleNumValue;
+  contrast: StyleNumValue;
 };
 
 export type ComputedStyle = {
@@ -300,6 +304,10 @@ export type ComputedStyle = {
   shadowEnable: boolean[];
   innerShadow: Array<ComputedShadow>;
   innerShadowEnable: boolean[];
+  hueRotate: number;
+  saturate: number;
+  brightness: number;
+  contrast: number;
 };
 
 export enum TEXT_ALIGN {
