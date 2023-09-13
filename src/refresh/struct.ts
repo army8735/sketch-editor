@@ -5,6 +5,7 @@ import {
   bindTexture,
   createTexture,
   drawBgBlur,
+  drawColorMatrix,
   drawGauss,
   drawMask,
   drawMbm,
@@ -13,7 +14,7 @@ import {
   initShaders,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
-import { isRectsOverlap } from '../math/geom';
+import { d2r, isRectsOverlap } from '../math/geom';
 import {
   assignMatrix,
   calPoint,
@@ -165,7 +166,7 @@ export function renderWebgl(
       maskMode > 0 &&
       !!node.next &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
-    const needColor = hueRotate || saturate !== 100 || brightness !== 100 || contrast !== 100;
+    const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
     // 记录汇总的同时以下标为k记录个类hash
     if (needTotal || needShadow || needBlur || needMask || needColor) {
       const t: Merge = {
@@ -845,6 +846,10 @@ function genFilter(
     fill,
     fillEnable,
     fillOpacity,
+    hueRotate,
+    saturate,
+    brightness,
+    contrast,
   } = node.computedStyle;
   const source = node.textureTarget[scaleIndex]!;
   // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素
@@ -887,6 +892,21 @@ function genFilter(
       root,
       res || source,
       blur.radius,
+      W,
+      H,
+      scale,
+    );
+  }
+  // 颜色调整
+  if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
+    res = genColorMatrix(
+      gl,
+      root,
+      res || source,
+      hueRotate,
+      saturate,
+      brightness,
+      contrast,
       W,
       H,
       scale,
@@ -1001,6 +1021,136 @@ function genBlurShader(
   frag += `gl_FragColor += limit(v_texCoords, ${weights[r]});`;
   frag = gaussFrag.replace('placeholder;', frag);
   return (programs[key] = initShaders(gl, simpleVert, frag));
+}
+
+function genColorMatrix(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  textureTarget: TextureCache,
+  hueRotate: number,
+  saturate: number,
+  brightness: number,
+  contrast: number,
+  W: number,
+  H: number,
+  scale: number,
+) {
+  const bbox = textureTarget.bbox.slice(0);
+  let w = bbox[2] - bbox[0],
+    h = bbox[3] - bbox[1];
+  while (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+    ) {
+    if (scale <= 1) {
+      break;
+    }
+    scale = scale >> 1;
+  }
+  if (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+  ) {
+    return;
+  }
+  w *= scale;
+  h *= scale;
+  const programs = root.programs;
+  const cmProgram = programs.cmProgram;
+  gl.useProgram(cmProgram);
+  let res: TextureCache = textureTarget;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  if (hueRotate) {
+    const rotation = d2r(hueRotate % 360);
+    const cosR = Math.cos(rotation);
+    const sinR = Math.sin(rotation);
+    const m = [
+      0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0,
+      0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
+      0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+    const old = res;
+    res = TextureCache.getEmptyInstance(gl, bbox, scale);
+    frameBuffer = frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      res.texture,
+      0,
+    );
+    drawColorMatrix(gl, cmProgram, old.texture, m);
+    old.release();
+  }
+  if (saturate !== 1) {
+    const m = [
+      0.213 + 0.787 * saturate,  0.715 - 0.715 * saturate, 0.072 - 0.072 * saturate, 0, 0,
+      0.213 - 0.213 * saturate,  0.715 + 0.285 * saturate, 0.072 - 0.072 * saturate, 0, 0,
+      0.213 - 0.213 * saturate,  0.715 - 0.715 * saturate, 0.072 + 0.928 * saturate, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+    const old = res;
+    res = TextureCache.getEmptyInstance(gl, bbox, scale);
+    frameBuffer = frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      res.texture,
+      0,
+    );
+    drawColorMatrix(gl, cmProgram, old.texture, m);
+    old.release();
+  } console.log(hueRotate, saturate, brightness, contrast)
+  if (brightness !== 1) {
+    const b = brightness;
+    const m = [
+      b, 0, 0, 0, 0,
+      0, b, 0, 0, 0,
+      0, 0, b, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+    const old = res;
+    res = TextureCache.getEmptyInstance(gl, bbox, scale);
+    frameBuffer = frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      res.texture,
+      0,
+    );
+    drawColorMatrix(gl, cmProgram, old.texture, m);
+    old.release();
+  }
+  if (contrast !== 1) {
+    const a = contrast;
+    const o = -0.5 * a + 0.5;
+    const m = [
+      a, 0, 0, 0, o,
+      0, a, 0, 0, o,
+      0, 0, a, 0, o,
+      0, 0, 0, 1, 0,
+    ];
+    const old = res;
+    res = TextureCache.getEmptyInstance(gl, bbox, scale);
+    frameBuffer = frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      res.texture,
+      0,
+    );
+    drawColorMatrix(gl, cmProgram, old.texture, m);
+    old.release();
+  }
+  gl.useProgram(programs.program);
+  if (frameBuffer) {
+    releaseFrameBuffer(gl, frameBuffer, W, H);
+  }
+  return res;
 }
 
 function genTint(

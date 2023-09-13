@@ -424,9 +424,9 @@ class Node extends Event {
     });
     computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
     computedStyle.hueRotate = style.hueRotate.v;
-    computedStyle.saturate = style.saturate.v;
-    computedStyle.brightness = style.brightness.v;
-    computedStyle.contrast = style.contrast.v;
+    computedStyle.saturate = style.saturate.v * 0.01;
+    computedStyle.brightness = style.brightness.v * 0.01;
+    computedStyle.contrast = style.contrast.v * 0.01;
     // repaint已经做了
     if (lv < RefreshLevel.REPAINT) {
       this._filterBbox = undefined;

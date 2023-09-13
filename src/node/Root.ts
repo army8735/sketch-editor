@@ -20,6 +20,7 @@ import softLightFrag from '../gl/mbm/softLight.frag';
 import bgBlurFrag from '../gl/bgBlur.frag';
 import bgColorVert from '../gl/bgColor.vert';
 import bgColorFrag from '../gl/bgColor.frag';
+import cmFrag from '../gl/cm.frag';
 import dropShadowFrag from '../gl/dropShadow.frag';
 import innerShadowFrag from '../gl/innerShadow.frag';
 import mainVert from '../gl/main.vert';
@@ -177,6 +178,7 @@ class Root extends Container implements FrameCallback {
       innerShadowFrag,
     );
     this.programs.tintProgram = initShaders(gl, simpleVert, tintFrag);
+    this.programs.cmProgram = initShaders(gl, simpleVert, cmFrag);
     gl.useProgram(program);
   }
 

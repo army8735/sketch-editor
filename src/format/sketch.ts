@@ -20,6 +20,7 @@ import {
 } from './';
 import { TEXT_ALIGN } from '../style/define';
 import font from '../style/font';
+import { r2d } from '../math/geom';
 
 // sketch的Page没有尺寸，固定100
 const W = 100, H = 100;
@@ -425,13 +426,13 @@ async function convertItem(
   const colorControls = layer.style?.colorControls;
   if (colorControls && colorControls.isEnabled) {
     if (colorControls.hue) {
-      hueRotate = colorControls.hue / Math.PI;
+      hueRotate = r2d(colorControls.hue);
     }
     saturate = colorControls.saturation;
     if (colorControls.brightness) {
       brightness = colorControls.brightness + 1;
     }
-    contrast = colorControls.contrast;
+    contrast = colorControls.contrast;console.log(contrast)
   }
   // 混合模式
   let mixBlendMode = 'normal';

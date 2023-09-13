@@ -538,9 +538,17 @@ export function normalize(style: any): Style {
     const v = style[k];
     if (!isNil(v)) {
       const n = calUnit(v);
-      if (n.u !== StyleUnit.PERCENT) {
-        n.v *= 100;
-        n.u = StyleUnit.PERCENT;
+      // hue是角度，其它都是百分比
+      if (k === 'hueRotate') {
+        if (n.u !== StyleUnit.DEG) {
+          n.u = StyleUnit.DEG;
+        }
+      }
+      if (k !== 'hueRotate') {
+        if (n.u !== StyleUnit.PERCENT) {
+          n.v *= 100;
+          n.u = StyleUnit.PERCENT;
+        }
       }
       res[k] = n;
     }
