@@ -249,6 +249,8 @@ $input.onchange = function(e) {
         $page.innerHTML = '';
         root = null;
         $canvasC.innerHTML = '';
+        hideHover();
+        hideSelect();
       }
       $canvasC.appendChild(canvas);
       root = editor.parse(json, canvas, dpi);
@@ -295,6 +297,8 @@ $input.onchange = function(e) {
           ol.appendChild(genNodeTree(children[i], abHash));
         }
         $tree.appendChild(ol);
+        hideHover();
+        hideSelect();
       });
 
       root.on(editor.util.Event.DID_ADD_PAGE, function(newPage) {
