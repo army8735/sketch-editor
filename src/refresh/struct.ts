@@ -1081,6 +1081,9 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
+    if (old !== textureTarget) {
+      old.release();
+    }
   }
   if (saturate !== 1) {
     const m = [
@@ -1100,6 +1103,9 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
+    if (old !== textureTarget) {
+      old.release();
+    }
   }
   if (brightness !== 1) {
     const b = brightness;
@@ -1120,6 +1126,9 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
+    if (old !== textureTarget) {
+      old.release();
+    }
   }
   if (contrast !== 1) {
     const a = contrast;
@@ -1141,6 +1150,9 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
+    if (old !== textureTarget) {
+      old.release();
+    }
   }
   gl.useProgram(programs.program);
   if (frameBuffer) {
