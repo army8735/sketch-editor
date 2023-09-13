@@ -432,7 +432,7 @@ async function convertItem(
     if (colorControls.brightness) {
       brightness = colorControls.brightness + 1;
     }
-    contrast = colorControls.contrast;console.log(contrast)
+    contrast = colorControls.contrast;
   }
   // 混合模式
   let mixBlendMode = 'normal';

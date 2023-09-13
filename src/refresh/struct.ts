@@ -1081,7 +1081,6 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
-    old.release();
   }
   if (saturate !== 1) {
     const m = [
@@ -1101,8 +1100,7 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
-    old.release();
-  } console.log(hueRotate, saturate, brightness, contrast)
+  }
   if (brightness !== 1) {
     const b = brightness;
     const m = [
@@ -1122,7 +1120,6 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
-    old.release();
   }
   if (contrast !== 1) {
     const a = contrast;
@@ -1144,7 +1141,6 @@ function genColorMatrix(
       0,
     );
     drawColorMatrix(gl, cmProgram, old.texture, m);
-    old.release();
   }
   gl.useProgram(programs.program);
   if (frameBuffer) {
