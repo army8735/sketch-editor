@@ -496,7 +496,7 @@ function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: num
       c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
 
     if (xRoots.length > 0 && yRoots.length > 0) {
-      const TOLERANCE = 1e-4;
+      const TOLERANCE = 1.5e-4;
 
       checkRoots:
         for (let j = 0; j < xRoots.length; j++) {

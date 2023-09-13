@@ -823,22 +823,30 @@ function findIntersection(
                   }
                 }
                 // console.log('inters', i, inters, seg.toString(), item.toString());
-                const pa = sortIntersection(inters!, !isSourceReverted);
-                // console.log(pa);
-                const pb = sortIntersection(inters!, isSourceReverted);
-                // console.log(pb);
-                let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
-                // console.log(ra.map(item => item.toString()));
-                let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
-                // console.log(rb.map(item => item.toString()));
-                // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
-                activeNewSeg(segments, list, ael, x, ra);
-                activeNewSeg(segments, list, ael, x, rb);
-                // 老的线段被删除无效了，踢出ael，防止seg没被分割
-                if (rb.length) {
-                  ael.splice(i, 1);
+                // 可能精度问题导致交点就在两条线段的共同顶点上（只有可能是开始点），忽略
+                inters = inters.filter(item2 => {
+                  const point = item2.point;
+                  return !point.equal(seg.coords[0]) || !point.equal(item.coords[0]);
+                });
+                if (inters.length) {
+                  // console.log('inters2', inters, seg.toString(), item.toString());
+                  const pa = sortIntersection(inters!, !isSourceReverted);
+                  // console.log(pa);
+                  const pb = sortIntersection(inters!, isSourceReverted);
+                  // console.log(pb);
+                  let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
+                  // console.log(ra.map(item => item.toString()));
+                  let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
+                  // console.log(rb.map(item => item.toString()));
+                  // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
+                  activeNewSeg(segments, list, ael, x, ra);
+                  activeNewSeg(segments, list, ael, x, rb);
+                  // 老的线段被删除无效了，踢出ael，防止seg没被分割
+                  if (rb.length) {
+                    ael.splice(i, 1);
+                  }
+                  break;
                 }
-                break;
               }
             }
           }

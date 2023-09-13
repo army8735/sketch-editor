@@ -1,6 +1,6 @@
 import * as uuid from 'uuid';
 import { PageProps, Point, PolylineProps } from '../../format';
-import { angleBySides, pointsDistance, r2d, toPrecision, } from '../../math/geom';
+import { angleBySides, pointsDistance, r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
@@ -230,8 +230,8 @@ class Polyline extends Geom {
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
     const first = temp[0];
     const p: Array<number> = [
-      toPrecision(first.absX!),
-      toPrecision(first.absY!),
+      first.absX!,
+      first.absY!,
     ];
     const res: Array<Array<number>> = [p],
       len = temp.length;
@@ -239,14 +239,14 @@ class Polyline extends Geom {
       const item = temp[i];
       const prev = temp[i - 1];
       const p: Array<number> = [
-        toPrecision(item.absX!),
-        toPrecision(item.absY!),
+        item.absX!,
+        item.absY!,
       ];
       if (item.hasCurveTo) {
-        p.unshift(toPrecision(item.absTx!), toPrecision(item.absTy!));
+        p.unshift(item.absTx!, item.absTy!);
       }
       if (prev.hasCurveFrom) {
-        p.unshift(toPrecision(prev.absFx!), toPrecision(prev.absFy!));
+        p.unshift(prev.absFx!, prev.absFy!);
       }
       res.push(p);
     }
@@ -254,14 +254,14 @@ class Polyline extends Geom {
     if (this.props.isClosed) {
       const last = temp[len - 1];
       const p: Array<number> = [
-        toPrecision(first.absX!),
-        toPrecision(first.absY!),
+        first.absX!,
+        first.absY!,
       ];
       if (first.hasCurveTo) {
-        p.unshift(toPrecision(first.absTx!), toPrecision(first.absTy!));
+        p.unshift(first.absTx!, first.absTy!);
       }
       if (last.hasCurveFrom) {
-        p.unshift(toPrecision(last.absFx!), toPrecision(last.absFy!));
+        p.unshift(last.absFx!, last.absFy!);
       }
       res.push(p);
     }

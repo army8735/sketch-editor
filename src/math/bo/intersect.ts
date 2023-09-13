@@ -1,5 +1,4 @@
 import bezier from '../bezier';
-import { toPrecision } from '../geom';
 import isec from '../isec';
 import Point from './Point';
 
@@ -41,8 +40,8 @@ function getIntersectionLineLine(
     toClip <= 1 &&
     ((toSource > EPS && toSource < EPS2) || (toClip > EPS && toClip < EPS2))
   ) {
-    let ox = toPrecision(ax1 + toSource * (ax2 - ax1));
-    let oy = toPrecision(ay1 + toSource * (ay2 - ay1));
+    let ox = ax1 + toSource * (ax2 - ax1);
+    let oy = ay1 + toSource * (ay2 - ay1);
     return [
       {
         point: new Point(ox, oy),
@@ -80,8 +79,6 @@ function getIntersectionBezier2Line(
   if (res.length) {
     const t: Array<{ point: Point; toSource: number; toClip: number }> = [];
     res.forEach((item) => {
-      item.x = toPrecision(item.x);
-      item.y = toPrecision(item.y);
       let toClip;
       // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
       if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -151,8 +148,6 @@ function getIntersectionBezier2Bezier2(
   if (res.length) {
     const t: Array<{ point: Point; toSource: number; toClip: number }> = [];
     res.forEach((item) => {
-      item.x = toPrecision(item.x);
-      item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
       const toClip = bezier.getPointT(
         [
@@ -237,8 +232,6 @@ function getIntersectionBezier2Bezier3(
   if (res.length) {
     const t: Array<{ point: Point; toSource: number; toClip: number }> = [];
     res.forEach((item) => {
-      item.x = toPrecision(item.x);
-      item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
       let toClip = bezier.getPointT(
         [
@@ -321,8 +314,6 @@ function getIntersectionBezier3Line(
   if (res.length) {
     const t: Array<{ point: Point; toSource: number; toClip: number }> = [];
     res.forEach((item) => {
-      item.x = toPrecision(item.x);
-      item.y = toPrecision(item.y);
       // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
       let toClip;
       if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
@@ -401,8 +392,6 @@ function getIntersectionBezier3Bezier3(
   if (res.length) {
     const t: Array<{ point: Point; toSource: number; toClip: number }> = [];
     res.forEach((item) => {
-      item.x = toPrecision(item.x);
-      item.y = toPrecision(item.y);
       // toClip是另一条曲线的距离，需根据交点和曲线方程求t
       let toClip = bezier.getPointT(
         [

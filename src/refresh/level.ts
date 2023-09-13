@@ -81,7 +81,13 @@ export function getLevel(k: string): RefreshLevel {
   if (k === 'opacity') {
     return RefreshLevel.OPACITY;
   }
-  if (k === 'blur' || k === 'shadow' || k === 'shadowEnable') {
+  if (k === 'blur' ||
+    k === 'shadow' ||
+    k === 'shadowEnable' ||
+    k === 'hueRotate' ||
+    k === 'saturate' ||
+    k === 'brightness' ||
+    k === 'contrast') {
     return RefreshLevel.FILTER;
   }
   if (k === 'mixBlendMode') {
