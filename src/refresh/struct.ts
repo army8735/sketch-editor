@@ -1126,9 +1126,9 @@ function genColorMatrix(
   if (brightness !== 1) {
     const b = brightness;
     const m = [
-      b, 0, 0, 0, 0,
-      0, b, 0, 0, 0,
-      0, 0, b, 0, 0,
+      1, 0, 0, 0, b - 1,
+      0, 1, 0, 0, b - 1,
+      0, 0, 1, 0, b - 1,
       0, 0, 0, 1, 0,
     ];
     const old = res;
@@ -1701,7 +1701,8 @@ function genMbm(
   } else if (mixBlendMode === MIX_BLEND_MODE.LUMINOSITY) {
     program = programs.luminosityProgram;
   } else {
-    throw new Error('Unknown mixBlendMode');
+    inject.error('Unknown mixBlendMode: ' + mixBlendMode);
+    program = programs.program;
   }
   gl.useProgram(program);
   const res = createTexture(gl, 0, undefined, w, h);
