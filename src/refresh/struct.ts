@@ -162,8 +162,8 @@ export function renderWebgl(
       needShadow = false;
     }
     const needBlur =
-      (blur.t === BLUR.GAUSSIAN && blur.radius ||
-      blur.t === BLUR.BACKGROUND && (blur.radius || blur.saturation)) &&
+      (blur.t === BLUR.GAUSSIAN && blur.radius > 0 ||
+      blur.t === BLUR.BACKGROUND && (blur.radius > 0 || blur.saturation !== 0)) &&
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
     const needMask =
       maskMode > 0 &&
@@ -1498,12 +1498,6 @@ function genMask(
   for (let i = index + total + 1, len = structs.length; i < len; i++) {
     const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
-    // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
-    const { shouldIgnore } = shouldIgnoreAndIsBgBlur(node, computedStyle);
-    if (shouldIgnore) {
-      i += total2 + next2;
-      continue;
-    }
     // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
     if (lv > lv2) {
       node.struct.next = i - index - total - 1;
@@ -1514,6 +1508,12 @@ function genMask(
     }
     // 需要保存引用，当更改时取消mask节点的缓存重新生成
     node2.mask = node;
+    // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
+    const { shouldIgnore } = shouldIgnoreAndIsBgBlur(node, computedStyle);
+    if (shouldIgnore) {
+      i += total2 + next2;
+      continue;
+    }
     let opacity, matrix;
     // 同层级的next作为特殊的局部根节点，注意dx/dy偏移对transformOrigin的影响
     if (lv === lv2) {
@@ -2010,7 +2010,7 @@ function genNextCount(
 function shouldIgnoreAndIsBgBlur(node: Node, computedStyle: ComputedStyle) {
   const blur = computedStyle.blur;
   const isBgBlur = blur.t === BLUR.BACKGROUND &&
-    (blur.radius > 0 || blur.saturation !== 100) &&
+    (blur.radius > 0 || blur.saturation !== 0) &&
     (node instanceof ShapeGroup || node instanceof Geom || node instanceof Bitmap || node instanceof Text);
   let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
   if (shouldIgnore && computedStyle.maskMode && node.next) {

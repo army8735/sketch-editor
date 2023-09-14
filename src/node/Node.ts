@@ -404,10 +404,11 @@ class Node extends Event {
 
   calFilter(lv: RefreshLevel) {
     const { style, computedStyle } = this;
+    const blur = style.blur.v;
     computedStyle.blur = {
-      t: style.blur.v.t,
-      radius: style.blur.v.radius?.v,
-      saturation: style.blur.v.saturation?.v,
+      t: blur.t,
+      radius: blur.radius?.v,
+      saturation: (blur.saturation?.v ?? 0) * 0.01,
     };
     computedStyle.shadow = style.shadow.map((item) => {
       const v = item.v;
@@ -637,37 +638,43 @@ class Node extends Event {
 
   clearCacheUpward(includeSelf = false) {
     let parent = this.parent;
+    let first = true;
     while (parent) {
       parent.tempBbox = undefined;
       parent.clearCache(includeSelf);
+      let mask = parent.mask;
+      while (mask) {
+        mask.clearMask(first);
+        mask = mask.mask;
+        first = false; // 避免每次向上递归清除时，内部再递归清除一次
+      }
       parent = parent.parent;
     }
   }
 
-  resetMask() {
-    this.mask = undefined;
-  }
-
-  clearMask() {
+  clearMask(upwards = true) {
     this.textureMask.forEach((item) => item?.release());
     this.resetTextureTarget();
     this.struct.next = 0;
     // 原本指向mask的引用也需清除
     let next = this.next;
     while (next) {
-      if (next.computedStyle.breakMask) {
+      if (next.computedStyle.breakMask || next.computedStyle.maskMode) {
         break;
       }
-      next.resetMask();
+      next.mask = undefined;
       next = next.next;
     }
     // mask切换影响父级组的bbox
-    let p = this.parent;
-    while (p && p !== this.root) {
-      p._rect = undefined;
-      p._bbox = undefined;
-      p._filterBbox = undefined;
-      p = p.parent;
+    if (upwards) {
+      let p = this.parent;
+      while (p && p !== this.root) {
+        p._rect = undefined;
+        p._bbox = undefined;
+        p._filterBbox = undefined;
+        p.tempBbox = undefined;
+        p = p.parent;
+      }
     }
   }
 
