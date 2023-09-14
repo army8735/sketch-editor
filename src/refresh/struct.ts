@@ -812,11 +812,11 @@ function genTotal(
         false,
       );
       // 这里才是真正生成mbm
-      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
         target.texture = genMbm(
           gl,
           target.texture,
-          tex!,
+          tex,
           mixBlendMode,
           programs,
           w,
@@ -1487,7 +1487,7 @@ function genMask(
   h *= scale;
   const cx = w * 0.5,
     cy = h * 0.5;
-  const summary = createTexture(gl, 0, undefined, w, h);
+  let summary = createTexture(gl, 0, undefined, w, h);
   const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
   const m = identity();
   assignMatrix(m, matrix);
@@ -1515,16 +1515,31 @@ function genMask(
     // 需要保存引用，当更改时取消mask节点的缓存重新生成
     node2.mask = node;
     let opacity, matrix;
-    // 同层级的next作为特殊的局部根节点
+    // 同层级的next作为特殊的局部根节点，注意dx/dy偏移对transformOrigin的影响
     if (lv === lv2) {
       opacity = node2.tempOpacity = computedStyle.opacity;
-      matrix = multiply(im, node2.matrix);
+      if (dx || dy) {
+        const transform = node2.transform;
+        const tfo = computedStyle.transformOrigin;
+        const t = calMatrixByOrigin(transform, tfo[0] + dx, tfo[1] + dy);
+        matrix = multiply(im, t);
+      } else {
+        matrix = multiply(im, node2.matrix);
+      }
       assignMatrix(node2.tempMatrix, matrix);
     } else {
       const parent = node2.parent!;
       opacity = computedStyle.opacity * parent.tempOpacity;
       node2.tempOpacity = opacity;
-      matrix = multiply(parent.tempMatrix, node2.matrix);
+      if (dx || dy) {
+        const transform = node2.transform;
+        const tfo = computedStyle.transformOrigin;
+        const t = calMatrixByOrigin(transform, tfo[0] + dx, tfo[1] + dy);
+        matrix = multiply(parent.tempMatrix, t);
+      }
+      else {
+        matrix = multiply(parent.tempMatrix, node2.matrix);
+      }
       assignMatrix(node2.tempMatrix, matrix);
     }
     let target2 = node2.textureTarget[scaleIndex];
@@ -1534,6 +1549,20 @@ function genMask(
       target2 = node2.textureTarget[scaleIndex];
     }
     if (target2) {
+      const mixBlendMode = computedStyle.mixBlendMode;
+      let tex: WebGLTexture | undefined;
+      // 有mbm先将本节点内容绘制到同尺寸纹理上
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index + 1) {
+        tex = createTexture(gl, 0, undefined, w, h);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+      }
+      // 有无mbm都复用这段逻辑
       drawTextureCache(
         gl,
         cx,
@@ -1551,6 +1580,25 @@ function genMask(
         dy,
         false,
       );
+      // 这里才是真正生成mbm
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
+        summary = genMbm(
+          gl,
+          summary,
+          tex,
+          mixBlendMode,
+          programs,
+          w,
+          h,
+        );
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          summary,
+          0,
+        );
+      }
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
