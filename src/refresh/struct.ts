@@ -42,6 +42,7 @@ import { canvasPolygon } from './paint';
 import TextureCache from './TextureCache';
 import Geom from '../node/geom/Geom';
 import Bitmap from '../node/Bitmap';
+import { calMatrixByOrigin } from '../style/transform';
 
 export type Struct = {
   node: Node;
@@ -59,6 +60,7 @@ type Merge = {
   valid: boolean;
   subList: Array<Merge>; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
   isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可视范围外有tempBbox
+  isTop: boolean; // 是否是最上层，当嵌套时子Merge不是顶层
 };
 
 export function renderWebgl(
@@ -160,7 +162,8 @@ export function renderWebgl(
       needShadow = false;
     }
     const needBlur =
-      blur.t !== BLUR.NONE &&
+      (blur.t === BLUR.GAUSSIAN && blur.radius ||
+      blur.t === BLUR.BACKGROUND && (blur.radius || blur.saturation)) &&
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
     const needMask =
       maskMode > 0 &&
@@ -177,6 +180,7 @@ export function renderWebgl(
         valid: false,
         subList: [],
         isNew: false,
+        isTop: true, // 后续遍历检查时子的置false
       };
       mergeList.push(t);
       mergeHash[i] = t;
@@ -211,9 +215,8 @@ export function renderWebgl(
     // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
     for (let j = 0, len = mergeList.length; j < len; j++) {
       const item = mergeList[j];
-      const { subList, node } = item;
-      // 没有嵌套的都是最上层merge
-      if (!item.subList.length) {
+      const { subList, node, isTop } = item;
+      if (isTop) {
         if (checkInScreen(node.tempBbox!, node.matrixWorld, W, H)) {
           item.valid = true;
           // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
@@ -618,7 +621,10 @@ export function renderWebgl(
   );
 }
 
-// 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
+/**
+ * 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
+ * 由于根节点视作E且其rect的原点一定是0，因此子节点可以直接使用matrix预乘父节点，不会产生transformOrigin偏移
+ */
 function genBboxTotal(
   structs: Array<Struct>,
   node: Node,
@@ -651,9 +657,10 @@ function genBboxTotal(
     ) {
       i += total2 + next2;
     }
-    // 收集子节点中的嵌套关系
+    // 收集子节点中的嵌套关系，子的不是顶层isTop
     const mg = mergeHash[i];
     if (mg) {
+      mg.isTop = false;
       merge.subList.push(mg);
     }
   }
@@ -745,16 +752,25 @@ function genTotal(
       continue;
     }
     let opacity, matrix;
-    // 首个节点即局部根节点
+    // 首个节点即局部根节点，需要考虑scale放大
     if (i === index) {
       opacity = node2.tempOpacity = 1;
       toE(node2.tempMatrix);
       matrix = multiplyScale(node2.tempMatrix, scale);
-    } else {
+    }
+    // 子节点的matrix计算比较复杂，可能dx/dy不是0原点，造成transformOrigin偏移需重算matrix
+    else {
       const parent = node2.parent!;
       opacity = computedStyle.opacity * parent.tempOpacity;
       node2.tempOpacity = opacity;
-      matrix = multiply(parent.tempMatrix, node2.matrix);
+      if (dx || dy) {
+        const transform = node2.transform;
+        const tfo = computedStyle.transformOrigin;
+        const t = calMatrixByOrigin(transform, tfo[0] + dx, tfo[1] + dy);
+        matrix = multiply(parent.tempMatrix, t);
+      } else {
+        matrix = multiply(parent.tempMatrix, node2.matrix);
+      }
       assignMatrix(node2.tempMatrix, matrix);
     }
     let target2 = node2.textureTarget[scaleIndex];
@@ -786,7 +802,7 @@ function genTotal(
         [
           {
             opacity,
-            matrix: node2.tempMatrix,
+            matrix,
             bbox: target2.bbox,
             texture: target2.texture,
           },

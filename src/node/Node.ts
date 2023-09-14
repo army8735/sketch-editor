@@ -264,9 +264,6 @@ class Node extends Event {
     // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
     this.textureOutline?.release();
     this._rect = undefined;
-    this._bbox = undefined;
-    this._filterBbox = undefined;
-    this.tempBbox = undefined;
   }
 
   // 插入node到自己后面
