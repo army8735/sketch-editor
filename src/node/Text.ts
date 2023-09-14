@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Rich, TextProps } from '../format';
+import { Override, Rich, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
@@ -2126,8 +2126,15 @@ class Text extends Node {
     return res;
   }
 
-  override clone() {
+  override clone(override: Record<string, Override>) {
     const props = clone(this.props);
+    const oldUUid = props.uuid;
+    if (override.hasOwnProperty(oldUUid)) {
+      const { property, value } = override[oldUUid];
+      if (property === 'stringValue') {
+        this._content = value;
+      }
+    }
     props.uuid = uuid.v4();
     props.rich = clone(this.rich);
     props.content = this._content;

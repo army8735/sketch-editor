@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { BitmapProps } from '../format';
+import { BitmapProps, Override } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
@@ -316,7 +316,7 @@ class Bitmap extends Node {
     }
   }
 
-  override clone() {
+  override clone(override: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     props.src = this._src;

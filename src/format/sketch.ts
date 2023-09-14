@@ -516,6 +516,12 @@ async function convertItem(
         name: layer.name,
         constrainProportions,
         symbolId: layer.symbolID,
+        overrideValues: layer.overrideValues.map(item => {
+          return {
+            name: item.overrideName as string,
+            value: item.value as string,
+          };
+        }),
         style: {
           left,
           top,

@@ -243,6 +243,7 @@ export type SymbolMasterProps = ArtBoardProps & {
 
 export type SymbolInstanceProps = Props & {
   symbolId: string;
+  overrideValues: Array<{ name: string, value: string }>;
 };
 
 export type TextProps = Props & {
@@ -318,3 +319,8 @@ export enum POINTS_RADIUS_BEHAVIOUR {
   ROUNDED = 1,
   SMOOTH = 2,
 }
+
+export type Override = {
+  property: string,
+  value: string,
+};

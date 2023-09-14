@@ -1,6 +1,6 @@
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import * as uuid from 'uuid';
-import { getDefaultStyle, JStyle, PageProps, Point, Props } from '../format/';
+import { getDefaultStyle, JStyle, Override, PageProps, Point, Props } from '../format/';
 import { ResizingConstraint } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -1535,7 +1535,7 @@ class Node extends Event {
     };
   }
 
-  clone() {
+  clone(override: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new Node(props);

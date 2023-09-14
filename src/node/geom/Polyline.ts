@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { PageProps, Point, PolylineProps } from '../../format';
+import { Override, PageProps, Point, PolylineProps } from '../../format';
 import { angleBySides, pointsDistance, r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import { unitize } from '../../math/vector';
@@ -863,7 +863,7 @@ class Polyline extends Geom {
     return super.toSvg(scale, this.props.isClosed);
   }
 
-  override clone() {
+  override clone(override: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new Polyline(props);

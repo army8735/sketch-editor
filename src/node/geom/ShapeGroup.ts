@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { getDefaultStyle, Props } from '../../format';
+import { getDefaultStyle, Override, Props } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
@@ -661,10 +661,10 @@ class ShapeGroup extends Group {
     return s + '</svg>';
   }
 
-  override clone() {
+  override clone(override: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    const res = new ShapeGroup(props, this.children.map(item => item.clone()));
+    const res = new ShapeGroup(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
     return res;
   }
