@@ -185,6 +185,10 @@ export function renderWebgl(
       mergeList.push(t);
       mergeHash[i] = t;
     }
+    // shapeGroup需跳过子节点，忽略子矢量的一切
+    if (node instanceof ShapeGroup) {
+      i += total;
+    }
   }
   // console.warn(mergeList);
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，即从叶子节点开始后根遍历
@@ -247,7 +251,7 @@ export function renderWebgl(
         continue;
       }
       // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-      node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = genTotal(
+      const t = genTotal(
         gl,
         root,
         node,
@@ -260,6 +264,9 @@ export function renderWebgl(
         scale,
         scaleIndex,
       );
+      if (t) {
+        node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = t;
+      }
       // 生成filter，这里直接进去，如果没有filter会返回空，group的tint也视作一种filter
       if (node.textureTarget[scaleIndex]) {
         const t = genFilter(
@@ -731,7 +738,9 @@ function genTotal(
   }
   if (
     w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
+    h * scale > config.MAX_TEXTURE_SIZE ||
+    !w ||
+    !h
   ) {
     return;
   }
