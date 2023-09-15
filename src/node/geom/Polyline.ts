@@ -399,13 +399,20 @@ class Polyline extends Geom {
               const height = this.height;
               const wc = width * scale;
               const hc = height * scale;
-              // 裁剪到范围内，不包含边框，即矢量本身的内容范围
-              ctx.save();
-              ctx.clip();
+              // 裁剪到范围内，不包含边框，即矢量本身的内容范围，本来直接在原画布即可，但chrome下clip+mbm有问题，不得已用离屏
+              const os = inject.getOffscreenCanvas(w, h);
+              const ctx2 = os.ctx;
+              ctx2.beginPath();
+              canvasPolygon(ctx2, points, scale, dx, dy);
+              if (this.props.isClosed) {
+                ctx2.closePath();
+              }
+              ctx2.save();
+              ctx2.clip();
               if (f.type === PATTERN_FILL_TYPE.TILE) {
                 for (let i = 0, len = Math.ceil(width / loader.width); i < len; i++) {
                   for (let j = 0, len = Math.ceil(height / loader.height); j < len; j++) {
-                    ctx.drawImage(loader.source!, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
+                    ctx2.drawImage(loader.source!, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
                   }
                 }
               } else if (f.type === PATTERN_FILL_TYPE.FILL) {
@@ -414,21 +421,23 @@ class Polyline extends Geom {
                 const sc = Math.max(sx, sy);
                 const x = (loader.width * sc - wc) * -0.5;
                 const y = (loader.height * sc - hc) * -0.5;
-                ctx.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
                   x + dx, y + dy, loader.width * sc, loader.height * sc);
               } else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                ctx.drawImage(loader.source!, dx, dy, wc, hc);
+                ctx2.drawImage(loader.source!, dx, dy, wc, hc);
               } else if (f.type === PATTERN_FILL_TYPE.FIT) {
                 const sx = wc / loader.width;
                 const sy = hc / loader.height;
                 const sc = Math.min(sx, sy);
                 const x = (loader.width * sc - wc) * -0.5;
                 const y = (loader.height * sc - hc) * -0.5;
-                ctx.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
                   x + dx, y + dy, loader.width * sc, loader.height * sc);
               }
               // 记得还原
-              ctx.restore();
+              ctx2.restore();
+              ctx.drawImage(os.canvas, 0, 0);
+              os.release();
             }
           }
           else {
