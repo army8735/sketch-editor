@@ -117,6 +117,13 @@ export type Gradient = {
 export type Pattern = {
   url: string;
   type: PATTERN_FILL_TYPE;
+  scale?: StyleNumValue;
+};
+
+export type ComputedPattern = {
+  url: string;
+  type: PATTERN_FILL_TYPE;
+  scale: number;
 };
 
 export type ComputedGradient = {
@@ -273,7 +280,7 @@ export type ComputedStyle = {
   backgroundColor: number[];
   color: number[];
   opacity: number;
-  fill: Array<number[] | Gradient | Pattern>;
+  fill: Array<number[] | Gradient | ComputedPattern>;
   fillEnable: boolean[];
   fillOpacity: number[];
   fillMode: MIX_BLEND_MODE[];

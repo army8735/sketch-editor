@@ -31,10 +31,13 @@ import {
 import {
   BLUR,
   ColorStop,
+  ComputedPattern,
   ComputedShadow,
   ComputedStyle,
+  Gradient,
   GRADIENT,
   MASK,
+  Pattern,
   STROKE_POSITION,
   Style,
   StyleNumValue,
@@ -356,7 +359,20 @@ class Node extends Event {
     computedStyle.overflow = style.overflow.v;
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
-    computedStyle.fill = style.fill.map((item) => item.v);
+    computedStyle.fill = style.fill.map((item) => {
+      if (Array.isArray(item.v)) {
+        return item.v.slice(0);
+      }
+      const p = item.v as Pattern;
+      if (p && p.url) {
+        return {
+          url: p.url,
+          type: p.type,
+          scale: (p.scale?.v ?? 100) * 0.01,
+        } as ComputedPattern;
+      }
+      return item.v as Gradient;
+    });
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
     computedStyle.fillOpacity = style.fillOpacity.map((item) => item.v);
     computedStyle.fillMode = style.fillMode.map((item) => item.v);

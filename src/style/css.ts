@@ -191,7 +191,15 @@ export function normalize(style: any): Style {
             } else if (s.indexOf('fit') > -1) {
               type = PATTERN_FILL_TYPE.FIT;
             }
-            return { v: { url: v[2], type }, u: StyleUnit.PATTERN };
+            let scale;
+            const v2 = /([\d.]+)%/.exec(s);
+            if (v2) {
+              scale = {
+                v: parseFloat(v2[1]),
+                u: StyleUnit.PERCENT,
+              };
+            }
+            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
           }
         }
       }

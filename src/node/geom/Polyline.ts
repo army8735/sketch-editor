@@ -8,12 +8,12 @@ import config from '../../refresh/config';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
+  ComputedPattern,
   CURVE_MODE,
   FILL_RULE,
   Gradient,
   GRADIENT,
   MIX_BLEND_MODE,
-  Pattern,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -389,12 +389,12 @@ class Polyline extends Geom {
       // 非纯色
       else {
         // 图像填充
-        if ((f as Pattern).url) {
-          f = f as Pattern;
+        if ((f as ComputedPattern).url) {
+          f = f as ComputedPattern;
           const url = f.url;
           let loader = this.loaders[i];
           if (loader) {
-            if (!loader.error && url === (fill[i] as Pattern).url) {
+            if (!loader.error && url === (f as ComputedPattern).url) {
               const width = this.width;
               const height = this.height;
               const wc = width * scale;
@@ -410,9 +410,16 @@ class Polyline extends Geom {
               ctx2.save();
               ctx2.clip();
               if (f.type === PATTERN_FILL_TYPE.TILE) {
-                for (let i = 0, len = Math.ceil(width / loader.width); i < len; i++) {
-                  for (let j = 0, len = Math.ceil(height / loader.height); j < len; j++) {
-                    ctx2.drawImage(loader.source!, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
+                const ratio = f.scale ?? 1;
+                for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
+                  for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
+                    ctx2.drawImage(
+                      loader.source!,
+                      dx + i * loader.width * scale * ratio,
+                      dy + j * loader.height * scale * ratio,
+                      loader.width * scale * ratio,
+                      loader.height * scale * ratio,
+                    );
                   }
                 }
               } else if (f.type === PATTERN_FILL_TYPE.FILL) {
@@ -452,7 +459,7 @@ class Polyline extends Geom {
             loader.loading = true;
             inject.measureImg(url, (data:any) => {
               // 可能会变更，所以加载完后对比下是不是当前最新的
-              if (url === (fill[i] as Pattern).url) {
+              if (url === (fill[i] as ComputedPattern).url) {
                 loader.loading = false;
                 if (data.success) {
                   loader.error = false;

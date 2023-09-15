@@ -1007,8 +1007,8 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
           index = await readNetworkImage(image._ref, opt);
         }
         const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
-        // const scale = item.patternTileScale;
-        fill.push(`url(${index}) ${type}`);
+        const scale = item.patternTileScale;
+        fill.push(`url(${index}) ${type} ${scale * 100}%`);
       } else if (item.fillType === SketchFormat.FillType.Gradient) {
         const g = item.gradient;
         const from = parseStrPoint(g.from);
