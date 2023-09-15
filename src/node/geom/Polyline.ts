@@ -12,6 +12,7 @@ import {
   FILL_RULE,
   Gradient,
   GRADIENT,
+  MIX_BLEND_MODE,
   Pattern,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
@@ -23,6 +24,7 @@ import inject, { OffScreen } from '../../util/inject';
 import { clone } from '../../util/util';
 import Geom from './Geom';
 import { RefreshLevel } from '../../refresh/level';
+import { getCanvasGCO } from '../../style/mbm';
 
 function isCornerPoint(point: Point) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
@@ -344,6 +346,7 @@ class Polyline extends Geom {
       fillOpacity,
       fillRule,
       fillEnable,
+      fillMode,
       stroke,
       strokeEnable,
       strokeWidth,
@@ -371,9 +374,14 @@ class Polyline extends Geom {
       let f = fill[i];
       // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
       let ellipse: OffScreen | undefined;
+      const mode = fillMode[i];
+      if (mode !== MIX_BLEND_MODE.NORMAL) {
+        ctx.globalCompositeOperation = getCanvasGCO(mode);
+      }
       ctx.globalAlpha = fillOpacity[i];
       if (Array.isArray(f)) {
         if (!f[3]) {
+          ctx.globalCompositeOperation = 'source-over';
           continue;
         }
         ctx.fillStyle = color2rgbaStr(f);
@@ -458,6 +466,9 @@ class Polyline extends Geom {
               }
             });
           }
+          if (mode !== MIX_BLEND_MODE.NORMAL) {
+            ctx.globalCompositeOperation = 'source-over';
+          }
           continue;
         }
         // 渐变
@@ -515,6 +526,9 @@ class Polyline extends Geom {
         ellipse.release();
       } else {
         ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
+      }
+      if (mode !== MIX_BLEND_MODE.NORMAL) {
+        ctx.globalCompositeOperation = 'source-over';
       }
     }
     // fill有opacity，设置记得还原

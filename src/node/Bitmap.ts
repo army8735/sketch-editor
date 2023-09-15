@@ -420,7 +420,7 @@ class Bitmap extends Node {
           }
         }
       }
-      // fill设置记得还原
+      // fill有opacity，设置记得还原，图像的混合液比较特殊需还原
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
       // 内阴影使用canvas的能力
