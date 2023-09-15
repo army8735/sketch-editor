@@ -6,11 +6,13 @@ import { RefreshLevel } from '../refresh/level';
 import { canvasPolygon } from '../refresh/paint';
 import TextureCache from '../refresh/TextureCache';
 import { color2rgbaStr } from '../style/css';
-import inject from '../util/inject';
+import inject, { OffScreen } from '../util/inject';
 import { isFunction } from '../util/type';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import Node from './Node';
+import { GRADIENT, Gradient, Pattern, STROKE_LINE_CAP, STROKE_LINE_JOIN } from '../style/define';
+import { getConic, getLinear, getRadial } from '../style/gradient';
 
 type Loader = {
   error: boolean;
@@ -18,23 +20,23 @@ type Loader = {
   source?: HTMLImageElement;
   width: number;
   height: number;
-  onlyImg: boolean;
 };
 
 class Bitmap extends Node {
   _src: string;
   loader: Loader;
+  onlyImg: boolean;
 
   constructor(props: BitmapProps) {
     super(props);
     this.isBitmap = true;
+    this.onlyImg = true;
     const src = (this._src = props.src || '');
     this.loader = {
       error: false,
       loading: false,
       width: 0,
       height: 0,
-      onlyImg: true,
     };
     if (!src) {
       this.loader.error = true;
@@ -152,22 +154,49 @@ class Bitmap extends Node {
   }
 
   override calContent(): boolean {
-    let res = super.calContent();
-    const { loader } = this;
-    if (res) {
-      loader.onlyImg = false;
-    } else {
-      loader.onlyImg = true;
-      if (loader.source) {
-        res = true;
+    const {
+      fill,
+      fillOpacity,
+      fillEnable,
+      stroke,
+      strokeEnable,
+      strokeWidth,
+      innerShadow,
+      innerShadowEnable,
+    } = this.computedStyle;
+    this.onlyImg = true;
+    for (let i = 0, len = fill.length; i < len; i++) {
+      if (!fillEnable[i] || !fillOpacity[i]) {
+        continue;
+      }
+      this.onlyImg = false;
+      break;
+    }
+    if (this.onlyImg) {
+      for (let i = 0, len = stroke.length; i < len; i++) {
+        if (!strokeEnable[i] || !strokeWidth[i]) {
+          continue;
+        }
+        this.onlyImg = false;
+        break;
       }
     }
-    return (this.hasContent = res);
+    if (this.onlyImg) {
+      for (let i = 0, len = innerShadow.length; i < len; i++) {
+        if (!innerShadowEnable[i]) {
+          continue;
+        }
+        this.onlyImg = false;
+        break;
+      }
+    }
+    return (this.hasContent = !!this.loader.source);
   }
 
   override renderCanvas(scale: number) {
-    const { loader } = this;
-    if (loader.onlyImg) {
+    const { loader, computedStyle } = this;
+    // 纯图片共用一个canvas的cache
+    if (this.onlyImg) {
       this.canvasCache?.releaseImg(this._src);
       // 尺寸使用图片原始尺寸
       let w = loader.width,
@@ -194,7 +223,152 @@ class Bitmap extends Node {
       if (canvasCache.getCount(this._src) === 1) {
         ctx.drawImage(loader.source!, 0, 0);
       }
-      const { innerShadow, innerShadowEnable } = this.computedStyle;
+    }
+    // 带fill/stroke/innerShadow的则不能共用一个canvas的cache
+    else {
+      super.renderCanvas(scale);
+      const bbox = this._bbox || this.bbox;
+      const x = bbox[0],
+        y = bbox[1];
+      let w = bbox[2] - x,
+        h = bbox[3] - y;
+      while (
+        w * scale > config.MAX_TEXTURE_SIZE ||
+        h * scale > config.MAX_TEXTURE_SIZE
+        ) {
+        if (scale <= 1) {
+          break;
+        }
+        scale = scale >> 1;
+      }
+      if (
+        w * scale > config.MAX_TEXTURE_SIZE ||
+        h * scale > config.MAX_TEXTURE_SIZE
+      ) {
+        return;
+      }
+      const dx = -x * scale,
+        dy = -y * scale;
+      w *= scale;
+      h *= scale;
+      const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h));
+      canvasCache.available = true;
+      const ctx = canvasCache.offscreen.ctx;
+      ctx.drawImage(loader.source!, 0, 0, w, h);
+      const {
+        fill,
+        fillOpacity,
+        fillEnable,
+        stroke,
+        strokeEnable,
+        strokeWidth,
+        strokePosition,
+        strokeDasharray,
+        strokeLinecap,
+        strokeLinejoin,
+        strokeMiterlimit,
+        innerShadow,
+        innerShadowEnable,
+      } = computedStyle;
+      if (scale !== 1) {
+        ctx.setLineDash(strokeDasharray.map((i) => i * scale));
+      } else {
+        ctx.setLineDash(strokeDasharray);
+      }
+      ctx.beginPath();
+      canvasPolygon(ctx, [
+        [0, 0],
+        [w, 0],
+        [w, h],
+        [0, h],
+        [0, 0],
+      ], scale, dx, dy);
+      ctx.closePath();
+      // 先下层的fill
+      for (let i = 0, len = fill.length; i < len; i++) {
+        if (!fillEnable[i] || !fillOpacity[i]) {
+          continue;
+        }
+        // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+        let ellipse: OffScreen | undefined;
+        let f = fill[i]; console.log(f)
+        ctx.globalAlpha = fillOpacity[i];
+        if (Array.isArray(f)) {
+          if (!f[3]) {
+            continue;
+          }
+          ctx.fillStyle = color2rgbaStr(f);
+        }
+        // 非纯色
+        else {
+          // 图像填充 TODO
+          if ((f as Pattern).url) {}
+          // 渐变
+          else {
+            f = f as Gradient;
+            if (f.t === GRADIENT.LINEAR) {
+              const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+              gd.stop.forEach((item) => {
+                lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              });
+              ctx.fillStyle = lg;
+            } else if (f.t === GRADIENT.RADIAL) {
+              const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const rg = ctx.createRadialGradient(
+                gd.cx,
+                gd.cy,
+                0,
+                gd.cx,
+                gd.cy,
+                gd.total,
+              );
+              gd.stop.forEach((item) => {
+                rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              });
+              // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
+              const m = gd.matrix;
+              if (m) {
+                ellipse = inject.getOffscreenCanvas(w, h);
+                const ctx2 = ellipse.ctx;
+                ctx2.beginPath();
+                canvasPolygon(ctx2, [
+                  [0, 0],
+                  [w, 0],
+                  [w, h],
+                  [0, h],
+                  [0, 0],
+                ], scale, dx, dy);
+                ctx2.closePath();
+                ctx2.clip();
+                ctx2.fillStyle = rg;
+                ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                ctx2.fill();
+              } else {
+                ctx.fillStyle = rg;
+              }
+            } else if (f.t === GRADIENT.CONIC) {
+              const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+              gd.stop.forEach((item) => {
+                cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              });
+              ctx.fillStyle = cg;
+            }
+          }
+        }
+        if (ellipse) {
+          ctx.drawImage(ellipse.canvas, 0, 0);
+          ellipse.release();
+        }
+        // 矩形区域无需考虑fillRule
+        else {
+          ctx.fill();
+        }
+      }
+      // fill有opacity，设置记得还原
+      ctx.globalAlpha = 1;
+      // 内阴影使用canvas的能力
       if (innerShadow && innerShadow.length) {
         // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
         let n = 0;
@@ -264,8 +438,36 @@ class Bitmap extends Node {
         });
         ctx.restore();
       }
-    } else {
-      super.renderCanvas(scale);
+      // 线帽设置
+      if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
+        ctx.lineCap = 'round';
+      } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+        ctx.lineCap = 'square';
+      } else {
+        ctx.lineCap = 'butt';
+      }
+      if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
+        ctx.lineJoin = 'round';
+      } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+        ctx.lineJoin = 'bevel';
+      } else {
+        ctx.lineJoin = 'miter';
+      }
+      ctx.miterLimit = strokeMiterlimit * scale;
+      // 再上层的stroke
+      for (let i = 0, len = stroke.length; i < len; i++) {
+        if (!strokeEnable[i] || !strokeWidth[i]) {
+          continue;
+        }
+        const s = stroke[i];
+        const p = strokePosition[i];
+        // 颜色
+        if (Array.isArray(s)) {
+          ctx.strokeStyle = color2rgbaStr(s);
+        }
+        // 或者渐变
+        else {}
+      }
     }
   }
 
@@ -274,8 +476,10 @@ class Bitmap extends Node {
     scale: number,
     scaleIndex: number,
   ) {
-    const { loader } = this;
-    if (loader.onlyImg) {
+    if (!this.loader.source) {
+      return;
+    }
+    if (this.onlyImg) {
       // 注意图片共享一个实例
       const target = this.textureCache[0];
       if (target && target.available) {
@@ -302,8 +506,7 @@ class Bitmap extends Node {
   }
 
   override clearCache(includeSelf = false) {
-    const { loader } = this;
-    if (loader.onlyImg) {
+    if (this.onlyImg) {
       if (includeSelf) {
         this.textureCache.forEach((item) => item?.releaseImg(this._src));
       }

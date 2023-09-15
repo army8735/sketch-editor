@@ -584,7 +584,7 @@ class Text extends Node {
       strokeMiterlimit,
     } = computedStyle;
     for (let i = 0, len = fill.length; i < len; i++) {
-      if (fillEnable[i]) {
+      if (fillEnable[i] && fillOpacity[i]) {
         hasFill = true;
       }
     }
@@ -620,7 +620,7 @@ class Text extends Node {
     // fill就用普通颜色绘制，每个fill都需绘制一遍
     if (hasFill) {
       for (let i = 0, len = fill.length; i < len; i++) {
-        if (!fillEnable[i]) {
+        if (!fillEnable[i] || !fillOpacity[i]) {
           continue;
         }
         let f = fill[i];
@@ -632,7 +632,9 @@ class Text extends Node {
             continue;
           }
           ctx.fillStyle = color2rgbaStr(f);
-        } else {
+        }
+        // 非纯色
+        else {
           // 图像填充 TODO
           if ((f as Pattern).url) {
             f = f as Pattern;

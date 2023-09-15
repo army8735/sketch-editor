@@ -365,7 +365,7 @@ class Polyline extends Geom {
     }
     // 先下层的fill
     for (let i = 0, len = fill.length; i < len; i++) {
-      if (!fillEnable[i]) {
+      if (!fillEnable[i] || !fillOpacity[i]) {
         continue;
       }
       let f = fill[i];
@@ -377,7 +377,9 @@ class Polyline extends Geom {
           continue;
         }
         ctx.fillStyle = color2rgbaStr(f);
-      } else {
+      }
+      // 非纯色
+      else {
         // 图像填充
         if ((f as Pattern).url) {
           f = f as Pattern;

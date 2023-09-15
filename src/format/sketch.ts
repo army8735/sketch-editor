@@ -609,6 +609,18 @@ async function convertItem(
     } else if ((layer.image._ref_class as any) === 'MSNetworkImage') {
       index = await readNetworkImage(layer.image._ref, opt);
     }
+    const {
+      fill,
+      fillEnable,
+      fillOpacity,
+      stroke,
+      strokeEnable,
+      strokeWidth,
+      strokePosition,
+      strokeDasharray,
+      strokeLinecap,
+      strokeLinejoin,
+    } = await geomStyle(layer, opt);
     return {
       tagName: TagName.Bitmap,
       props: {
@@ -624,6 +636,16 @@ async function convertItem(
           height,
           visible,
           opacity,
+          fill,
+          fillEnable,
+          fillOpacity,
+          stroke,
+          strokeEnable,
+          strokeWidth,
+          strokePosition,
+          strokeDasharray,
+          strokeLinecap,
+          strokeLinejoin,
           translateX,
           translateY,
           scaleX,
