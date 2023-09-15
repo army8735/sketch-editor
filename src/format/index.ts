@@ -97,7 +97,8 @@ export type JStyle = {
   fill: Array<string | Array<number>>;
   fillOpacity: number[];
   fillEnable: boolean[];
-  fillRule: number;
+  fillMode: string[];
+  fillRule: 'nonzero' | 'evenodd';
   stroke: Array<string | Array<number>>;
   strokeEnable: boolean[];
   strokeWidth: number[];
@@ -170,7 +171,8 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       fill: [],
       fillOpacity: [],
       fillEnable: [],
-      fillRule: 0,
+      fillMode: [],
+      fillRule: 'nonzero',
       stroke: [],
       strokeEnable: [],
       strokeWidth: [],

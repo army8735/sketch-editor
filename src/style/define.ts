@@ -64,7 +64,7 @@ export type StyleBoolValue = {
 };
 
 export type StyleColorValue = {
-  v: Array<number>;
+  v: number[];
   u: StyleUnit.RGBA;
 };
 
@@ -111,7 +111,7 @@ export type ComputedColorStop = {
 export type Gradient = {
   t: GRADIENT;
   d: number[];
-  stops: Array<ColorStop>;
+  stops: ColorStop[];
 };
 
 export type Pattern = {
@@ -122,7 +122,7 @@ export type Pattern = {
 export type ComputedGradient = {
   t: GRADIENT;
   d: number[];
-  stops: Array<ComputedColorStop>;
+  stops: ComputedColorStop[];
 };
 
 export type StyleGradientValue = {
@@ -216,14 +216,15 @@ export type Style = {
   color: StyleColorValue;
   opacity: StyleNumValue;
   fill: Array<StyleColorValue | StyleGradientValue | StylePatternValue>;
-  fillEnable: Array<StyleBoolValue>;
-  fillOpacity: Array<StyleNumValue>;
+  fillEnable: StyleBoolValue[];
+  fillOpacity: StyleNumValue[];
+  fillMode: StyleMbmValue[];
   fillRule: StyleFillRuleValue;
   stroke: Array<StyleColorValue | StyleGradientValue>;
-  strokeEnable: Array<StyleBoolValue>;
-  strokeWidth: Array<StyleNumValue>;
-  strokePosition: Array<StyleStrokePositionValue>;
-  strokeDasharray: Array<StyleNumValue>;
+  strokeEnable: StyleBoolValue[];
+  strokeWidth: StyleNumValue[];
+  strokePosition: StyleStrokePositionValue[];
+  strokeDasharray: StyleNumValue[];
   strokeLinecap: StyleStrokeLinecapValue;
   strokeLinejoin: StyleStrokeLinejoinValue;
   strokeMiterlimit: StyleNumValue;
@@ -243,10 +244,10 @@ export type Style = {
   maskMode: StyleMaskValue;
   breakMask: StyleBoolValue;
   blur: StyleBlurValue;
-  shadow: Array<StyleShadowValue>;
-  shadowEnable: Array<StyleBoolValue>;
-  innerShadow: Array<StyleShadowValue>;
-  innerShadowEnable: Array<StyleBoolValue>;
+  shadow: StyleShadowValue[];
+  shadowEnable: StyleBoolValue[];
+  innerShadow: StyleShadowValue[];
+  innerShadowEnable: StyleBoolValue[];
   hueRotate: StyleNumValue;
   saturate: StyleNumValue;
   brightness: StyleNumValue;
@@ -275,11 +276,12 @@ export type ComputedStyle = {
   fill: Array<number[] | Gradient | Pattern>;
   fillEnable: boolean[];
   fillOpacity: number[];
+  fillMode: MIX_BLEND_MODE[];
   fillRule: FILL_RULE;
   stroke: Array<number[] | Gradient>;
   strokeEnable: boolean[];
   strokeWidth: number[];
-  strokePosition: Array<STROKE_POSITION>;
+  strokePosition: STROKE_POSITION[];
   strokeDasharray: number[];
   strokeLinecap: STROKE_LINE_CAP;
   strokeLinejoin: STROKE_LINE_JOIN;
@@ -300,9 +302,9 @@ export type ComputedStyle = {
   maskMode: MASK;
   breakMask: boolean;
   blur: ComputedBlur;
-  shadow: Array<ComputedShadow>;
+  shadow: ComputedShadow[];
   shadowEnable: boolean[];
-  innerShadow: Array<ComputedShadow>;
+  innerShadow: ComputedShadow[];
   innerShadowEnable: boolean[];
   hueRotate: number;
   saturate: number;

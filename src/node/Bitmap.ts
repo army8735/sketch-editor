@@ -11,8 +11,9 @@ import { isFunction } from '../util/type';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import Node from './Node';
-import { GRADIENT, Gradient, Pattern, STROKE_LINE_CAP, STROKE_LINE_JOIN } from '../style/define';
+import { GRADIENT, Gradient, MIX_BLEND_MODE, Pattern, STROKE_LINE_CAP, STROKE_LINE_JOIN } from '../style/define';
 import { getConic, getLinear, getRadial } from '../style/gradient';
+import { getCanvasGCO } from '../style/mbm';
 
 type Loader = {
   error: boolean;
@@ -259,6 +260,7 @@ class Bitmap extends Node {
         fill,
         fillOpacity,
         fillEnable,
+        fillMode,
         stroke,
         strokeEnable,
         strokeWidth,
@@ -284,6 +286,13 @@ class Bitmap extends Node {
         [0, 0],
       ], scale, dx, dy);
       ctx.closePath();
+      /**
+       * 图像的fill很特殊，填充和原始图片呈混合，类似mask的效果，这时用source-atop，
+       * fill便能只显示和底层位图重合的地方；
+       * 如果再算上fillMode，会同时出现2个混合，需借助离屏来完成，离屏先绘制fill，
+       * 再用destination-atop画底层位图，主画布修改gco为fillMode即可
+       */
+      ctx.globalCompositeOperation = 'source-atop';
       // 先下层的fill
       for (let i = 0, len = fill.length; i < len; i++) {
         if (!fillEnable[i] || !fillOpacity[i]) {
@@ -291,7 +300,13 @@ class Bitmap extends Node {
         }
         // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
         let ellipse: OffScreen | undefined;
-        let f = fill[i]; console.log(f)
+        let f = fill[i];
+        // fill的blend需用特殊离屏，因为canvas的gco只能设置单一，位图的fill需同时和底层做混合
+        let blend: OffScreen | undefined;
+        const mode = fillMode[i];
+        if (mode !== MIX_BLEND_MODE.NORMAL) {
+          blend = inject.getOffscreenCanvas(w, h);
+        }
         ctx.globalAlpha = fillOpacity[i];
         if (Array.isArray(f)) {
           if (!f[3]) {
@@ -358,15 +373,55 @@ class Bitmap extends Node {
           }
         }
         if (ellipse) {
-          ctx.drawImage(ellipse.canvas, 0, 0);
+          if (blend) {
+            const ctx2 = blend.ctx;
+            ctx2.drawImage(ellipse.canvas, 0, 0);
+            // 类似mask的混合保留和位图重合的地方
+            ctx2.globalCompositeOperation = 'destination-atop';
+            ctx2.drawImage(canvasCache.offscreen.canvas, 0, 0);
+            // 主画布应用fillMode
+            ctx.globalCompositeOperation = getCanvasGCO(mode);
+            ctx.drawImage(blend.canvas, 0, 0);
+            // 还原
+            ctx.globalCompositeOperation = 'source-atop';
+            blend.release();
+          } else {
+            ctx.drawImage(ellipse.canvas, 0, 0);
+          }
           ellipse.release();
         }
         // 矩形区域无需考虑fillRule
         else {
-          ctx.fill();
+          if (blend) {
+            const ctx2 = blend.ctx;
+            ctx2.fillStyle = ctx.fillStyle;
+            // 画出满屏fill
+            ctx2.beginPath();
+            canvasPolygon(ctx2, [
+              [0, 0],
+              [w, 0],
+              [w, h],
+              [0, h],
+              [0, 0],
+            ], scale, dx, dy);
+            ctx2.closePath();
+            ctx2.fill();
+            // 类似mask的混合保留和位图重合的地方
+            ctx2.globalCompositeOperation = 'destination-atop';
+            ctx2.drawImage(canvasCache.offscreen.canvas, 0, 0);
+            // 主画布应用fillMode
+            ctx.globalCompositeOperation = getCanvasGCO(mode);
+            ctx.drawImage(blend.canvas, 0, 0);
+            // 还原
+            ctx.globalCompositeOperation = 'source-atop';
+            blend.release();
+          } else {
+            ctx.fill();
+          }
         }
       }
-      // fill有opacity，设置记得还原
+      // fill设置记得还原
+      ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
       // 内阴影使用canvas的能力
       if (innerShadow && innerShadow.length) {

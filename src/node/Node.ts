@@ -359,6 +359,7 @@ class Node extends Event {
     computedStyle.fill = style.fill.map((item) => item.v);
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
     computedStyle.fillOpacity = style.fillOpacity.map((item) => item.v);
+    computedStyle.fillMode = style.fillMode.map((item) => item.v);
     computedStyle.fillRule = style.fillRule.v;
     computedStyle.stroke = style.stroke.map((item) => item.v);
     computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
@@ -1027,6 +1028,7 @@ class Node extends Event {
     }
     res.fillOpacity = res.fillOpacity.slice(0);
     res.fillEnable = res.fillEnable.slice(0);
+    res.fillMode = res.fillMode.slice(0);
     res.strokeEnable = res.strokeEnable.slice(0);
     res.strokeWidth = res.strokeWidth.slice(0);
     res.transformOrigin = res.transformOrigin.slice(0);

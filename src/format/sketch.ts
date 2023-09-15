@@ -435,43 +435,8 @@ async function convertItem(
     contrast = colorControls.contrast;
   }
   // 混合模式
-  let mixBlendMode = 'normal';
   const blend = layer.style?.contextSettings?.blendMode;
-  if (blend === SketchFormat.BlendMode.Darken) {
-    mixBlendMode = 'darken';
-  } else if (blend === SketchFormat.BlendMode.Multiply) {
-    mixBlendMode = 'multiply';
-  } else if (blend === SketchFormat.BlendMode.ColorBurn) {
-    mixBlendMode = 'color-burn';
-  } else if (blend === SketchFormat.BlendMode.Lighten) {
-    mixBlendMode = 'lighten';
-  } else if (blend === SketchFormat.BlendMode.Screen) {
-    mixBlendMode = 'screen';
-  } else if (blend === SketchFormat.BlendMode.ColorDodge) {
-    mixBlendMode = 'color-dodge';
-  } else if (blend === SketchFormat.BlendMode.Overlay) {
-    mixBlendMode = 'overlay';
-  } else if (blend === SketchFormat.BlendMode.SoftLight) {
-    mixBlendMode = 'soft-light';
-  } else if (blend === SketchFormat.BlendMode.HardLight) {
-    mixBlendMode = 'hard-light';
-  } else if (blend === SketchFormat.BlendMode.Difference) {
-    mixBlendMode = 'difference';
-  } else if (blend === SketchFormat.BlendMode.Exclusion) {
-    mixBlendMode = 'exclusion';
-  } else if (blend === SketchFormat.BlendMode.Hue) {
-    mixBlendMode = 'hue';
-  } else if (blend === SketchFormat.BlendMode.Saturation) {
-    mixBlendMode = 'saturation';
-  } else if (blend === SketchFormat.BlendMode.Color) {
-    mixBlendMode = 'color';
-  } else if (blend === SketchFormat.BlendMode.Luminosity) {
-    mixBlendMode = 'luminosity';
-  } else if (blend === SketchFormat.BlendMode.PlusDarker) {
-    // mixBlendMode = 'plus-darker';
-  } else if (blend === SketchFormat.BlendMode.PlusLighter) {
-    // mixBlendMode = 'plus-lighter';
-  }
+  const mixBlendMode = getBlendMode(blend);
   // 阴影
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
@@ -613,6 +578,7 @@ async function convertItem(
       fill,
       fillEnable,
       fillOpacity,
+      fillMode,
       stroke,
       strokeEnable,
       strokeWidth,
@@ -639,6 +605,7 @@ async function convertItem(
           fill,
           fillEnable,
           fillOpacity,
+          fillMode,
           stroke,
           strokeEnable,
           strokeWidth,
@@ -1022,7 +989,8 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
   } = layer.style || {};
   const fill: Array<string | Array<number>> = [],
     fillEnable: boolean[] = [],
-    fillOpacity: number[] = [];
+    fillOpacity: number[] = [],
+    fillMode: string[] = [];
   if (fills) {
     for (let i = 0, len = fills.length; i < len; i++) {
       const item = fills[i];
@@ -1082,6 +1050,8 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       }
       fillEnable.push(item.isEnabled);
       fillOpacity.push(item.contextSettings.opacity ?? 1);
+      const blend = item.contextSettings.blendMode;
+      fillMode.push(getBlendMode(blend));
     }
   }
   const stroke: Array<string | Array<number>> = [],
@@ -1171,7 +1141,8 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     fill,
     fillEnable,
     fillOpacity,
-    fillRule: windingRule,
+    fillMode,
+    fillRule: windingRule === SketchFormat.WindingRule.EvenOdd ? 'evenodd' : 'nonzero',
     stroke,
     strokeEnable,
     strokeWidth,
@@ -1285,4 +1256,44 @@ async function readFontFile(filename: string, zipFile: JSZip) {
       reject(data.data);
     }
   });
+}
+
+function getBlendMode(blend: SketchFormat.BlendMode = SketchFormat.BlendMode.Normal) {
+  let blendMode = 'normal';
+  if (blend === SketchFormat.BlendMode.Darken) {
+    blendMode = 'darken';
+  } else if (blend === SketchFormat.BlendMode.Multiply) {
+    blendMode = 'multiply';
+  } else if (blend === SketchFormat.BlendMode.ColorBurn) {
+    blendMode = 'color-burn';
+  } else if (blend === SketchFormat.BlendMode.Lighten) {
+    blendMode = 'lighten';
+  } else if (blend === SketchFormat.BlendMode.Screen) {
+    blendMode = 'screen';
+  } else if (blend === SketchFormat.BlendMode.ColorDodge) {
+    blendMode = 'color-dodge';
+  } else if (blend === SketchFormat.BlendMode.Overlay) {
+    blendMode = 'overlay';
+  } else if (blend === SketchFormat.BlendMode.SoftLight) {
+    blendMode = 'soft-light';
+  } else if (blend === SketchFormat.BlendMode.HardLight) {
+    blendMode = 'hard-light';
+  } else if (blend === SketchFormat.BlendMode.Difference) {
+    blendMode = 'difference';
+  } else if (blend === SketchFormat.BlendMode.Exclusion) {
+    blendMode = 'exclusion';
+  } else if (blend === SketchFormat.BlendMode.Hue) {
+    blendMode = 'hue';
+  } else if (blend === SketchFormat.BlendMode.Saturation) {
+    blendMode = 'saturation';
+  } else if (blend === SketchFormat.BlendMode.Color) {
+    blendMode = 'color';
+  } else if (blend === SketchFormat.BlendMode.Luminosity) {
+    blendMode = 'luminosity';
+  } else if (blend === SketchFormat.BlendMode.PlusDarker) {
+    // blendMode = 'plus-darker';
+  } else if (blend === SketchFormat.BlendMode.PlusLighter) {
+    // blendMode = 'plus-lighter';
+  }
+  return blendMode;
 }

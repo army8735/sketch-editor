@@ -210,10 +210,16 @@ export function normalize(style: any): Style {
       return { v: Math.max(0, Math.min(1, item)), u: StyleUnit.NUMBER };
     });
   }
+  const fillMode = style.fillMode;
+  if (!isNil(fillMode)) {
+    res.fillMode = fillMode.map((item: string) => {
+      return { v: getBlendMode(item), u: StyleUnit.NUMBER };
+    });
+  }
   const fillRule = style.fillRule;
   if (!isNil(fillRule)) {
     res.fillRule = {
-      v: fillRule === 1 ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO,
+      v: fillRule === 'evenodd' ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO,
       u: StyleUnit.NUMBER,
     };
   }
@@ -377,39 +383,7 @@ export function normalize(style: any): Style {
   }
   const mixBlendMode = style.mixBlendMode;
   if (!isNil(mixBlendMode)) {
-    let v = MIX_BLEND_MODE.NORMAL;
-    if (/multiply/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.MULTIPLY;
-    } else if (/screen/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.SCREEN;
-    } else if (/overlay/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.OVERLAY;
-    } else if (/darken/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.DARKEN;
-    } else if (/lighten/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.LIGHTEN;
-    } else if (/color-dodge/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.COLOR_DODGE;
-    } else if (/color-burn/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.COLOR_BURN;
-    } else if (/hard-light/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.HARD_LIGHT;
-    } else if (/soft-light/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.SOFT_LIGHT;
-    } else if (/difference/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.DIFFERENCE;
-    } else if (/exclusion/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.EXCLUSION;
-    } else if (/hue/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.HUE;
-    } else if (/saturation/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.SATURATION;
-    } else if (/color/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.COLOR;
-    } else if (/luminosity/i.test(mixBlendMode)) {
-      v = MIX_BLEND_MODE.LUMINOSITY;
-    }
-    res.mixBlendMode = { v, u: StyleUnit.NUMBER };
+    res.mixBlendMode = { v: getBlendMode(mixBlendMode), u: StyleUnit.NUMBER };
   }
   const pointerEvents = style.pointerEvents;
   if (!isNil(pointerEvents)) {
@@ -554,6 +528,42 @@ export function normalize(style: any): Style {
     }
   });
   return res;
+}
+
+function getBlendMode(blend: string) {
+  let v = MIX_BLEND_MODE.NORMAL;
+  if (/multiply/i.test(blend)) {
+    v = MIX_BLEND_MODE.MULTIPLY;
+  } else if (/screen/i.test(blend)) {
+    v = MIX_BLEND_MODE.SCREEN;
+  } else if (/overlay/i.test(blend)) {
+    v = MIX_BLEND_MODE.OVERLAY;
+  } else if (/darken/i.test(blend)) {
+    v = MIX_BLEND_MODE.DARKEN;
+  } else if (/lighten/i.test(blend)) {
+    v = MIX_BLEND_MODE.LIGHTEN;
+  } else if (/color-dodge/i.test(blend)) {
+    v = MIX_BLEND_MODE.COLOR_DODGE;
+  } else if (/color-burn/i.test(blend)) {
+    v = MIX_BLEND_MODE.COLOR_BURN;
+  } else if (/hard-light/i.test(blend)) {
+    v = MIX_BLEND_MODE.HARD_LIGHT;
+  } else if (/soft-light/i.test(blend)) {
+    v = MIX_BLEND_MODE.SOFT_LIGHT;
+  } else if (/difference/i.test(blend)) {
+    v = MIX_BLEND_MODE.DIFFERENCE;
+  } else if (/exclusion/i.test(blend)) {
+    v = MIX_BLEND_MODE.EXCLUSION;
+  } else if (/hue/i.test(blend)) {
+    v = MIX_BLEND_MODE.HUE;
+  } else if (/saturation/i.test(blend)) {
+    v = MIX_BLEND_MODE.SATURATION;
+  } else if (/color/i.test(blend)) {
+    v = MIX_BLEND_MODE.COLOR;
+  } else if (/luminosity/i.test(blend)) {
+    v = MIX_BLEND_MODE.LUMINOSITY;
+  }
+  return v;
 }
 
 export function equalStyle(k: string, a: Style, b: Style) {
@@ -774,7 +784,7 @@ export function setFontStyle(style: ComputedStyle | Rich) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
   return (
-    (style.fontStyle || 'normal') +
+    (style.fontStyle || '') +
     ' ' +
     (style.fontWeight || '400') +
     ' ' +
