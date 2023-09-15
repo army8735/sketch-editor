@@ -9,8 +9,11 @@ import { canvasPolygon, svgPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
   BOOLEAN_OPERATION,
-  FILL_RULE, Gradient,
-  GRADIENT, Pattern, PATTERN_FILL_TYPE,
+  ComputedPattern,
+  FILL_RULE,
+  Gradient,
+  GRADIENT,
+  PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -295,12 +298,12 @@ class ShapeGroup extends Group {
         }
         ctx.fillStyle = color2rgbaStr(f);
       } else {
-        if ((f as Pattern).url) {
-          f = f as Pattern;
+        if ((f as ComputedPattern).url) {
+          f = f as ComputedPattern;
           const url = f.url;
           let loader = this.loaders[i];
           if (loader) {
-            if (!loader.error && url === (fill[i] as Pattern).url) {
+            if (!loader.error && url === (fill[i] as ComputedPattern).url) {
               const width = this.width;
               const height = this.height;
               const wc = width * scale;
@@ -349,7 +352,7 @@ class ShapeGroup extends Group {
             loader.loading = true;
             inject.measureImg(url, (data:any) => {
               // 可能会变更，所以加载完后对比下是不是当前最新的
-              if (url === (fill[i] as Pattern).url) {
+              if (url === (fill[i] as ComputedPattern).url) {
                 loader.loading = false;
                 if (data.success) {
                   loader.error = false;

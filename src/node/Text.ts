@@ -6,9 +6,9 @@ import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
 import { calNormalLineHeight, color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle, } from '../style/css';
 import {
+  ComputedPattern,
   GRADIENT,
   Gradient,
-  Pattern,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -636,8 +636,8 @@ class Text extends Node {
         // 非纯色
         else {
           // 图像填充 TODO
-          if ((f as Pattern).url) {
-            f = f as Pattern;
+          if ((f as ComputedPattern).url) {
+            f = f as ComputedPattern;
           }
           // 渐变
           else {

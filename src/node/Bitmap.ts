@@ -11,7 +11,14 @@ import { isFunction } from '../util/type';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import Node from './Node';
-import { GRADIENT, Gradient, MIX_BLEND_MODE, Pattern, STROKE_LINE_CAP, STROKE_LINE_JOIN } from '../style/define';
+import {
+  ComputedPattern,
+  GRADIENT,
+  Gradient,
+  MIX_BLEND_MODE,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN
+} from '../style/define';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
 
@@ -317,7 +324,7 @@ class Bitmap extends Node {
         // 非纯色
         else {
           // 图像填充 TODO
-          if ((f as Pattern).url) {}
+          if ((f as ComputedPattern).url) {}
           // 渐变
           else {
             f = f as Gradient;
