@@ -17,7 +17,8 @@ import {
   Gradient,
   MIX_BLEND_MODE,
   STROKE_LINE_CAP,
-  STROKE_LINE_JOIN
+  STROKE_LINE_JOIN,
+  STROKE_POSITION,
 } from '../style/define';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
@@ -240,6 +241,9 @@ class Bitmap extends Node {
         y = bbox[1];
       let w = bbox[2] - x,
         h = bbox[3] - y;
+      const rect = this._rect || this.rect;
+      let iw = rect[2] - rect[0],
+        ih = rect[3] - rect[1];
       while (
         w * scale > config.MAX_TEXTURE_SIZE ||
         h * scale > config.MAX_TEXTURE_SIZE
@@ -259,10 +263,12 @@ class Bitmap extends Node {
         dy = -y * scale;
       w *= scale;
       h *= scale;
+      iw *= scale;
+      ih *= scale;
       const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h));
       canvasCache.available = true;
       const ctx = canvasCache.offscreen.ctx;
-      ctx.drawImage(loader.source!, 0, 0, w, h);
+      ctx.drawImage(loader.source!, dx, dy, iw, ih);
       const {
         fill,
         fillOpacity,
@@ -284,14 +290,15 @@ class Bitmap extends Node {
       } else {
         ctx.setLineDash(strokeDasharray);
       }
+      const points = [
+        [0, 0],
+        [iw / scale, 0],
+        [iw / scale, ih / scale],
+        [0, ih / scale],
+        [0, 0],
+      ];
       ctx.beginPath();
-      canvasPolygon(ctx, [
-        [0, 0],
-        [w, 0],
-        [w, h],
-        [0, h],
-        [0, 0],
-      ], scale, dx, dy);
+      canvasPolygon(ctx, points, scale, dx, dy);
       ctx.closePath();
       /**
        * 图像的fill很特殊，填充和原始图片呈混合，类似mask的效果，这时用source-atop，
@@ -354,13 +361,7 @@ class Bitmap extends Node {
                 ellipse = inject.getOffscreenCanvas(w, h);
                 const ctx2 = ellipse.ctx;
                 ctx2.beginPath();
-                canvasPolygon(ctx2, [
-                  [0, 0],
-                  [w, 0],
-                  [w, h],
-                  [0, h],
-                  [0, 0],
-                ], scale, dx, dy);
+                canvasPolygon(ctx2, points, scale, dx, dy);
                 ctx2.closePath();
                 ctx2.clip();
                 ctx2.fillStyle = rg;
@@ -404,13 +405,7 @@ class Bitmap extends Node {
             ctx2.fillStyle = ctx.fillStyle;
             // 画出满屏fill
             ctx2.beginPath();
-            canvasPolygon(ctx2, [
-              [0, 0],
-              [w, 0],
-              [w, h],
-              [0, h],
-              [0, 0],
-            ], scale, dx, dy);
+            canvasPolygon(ctx2, points, scale, dx, dy);
             ctx2.closePath();
             ctx2.fill();
             // 类似mask的混合保留和位图重合的地方
@@ -443,37 +438,13 @@ class Bitmap extends Node {
         });
         ctx.save();
         ctx.beginPath();
-        canvasPolygon(
-          ctx,
-          [
-            [0, 0],
-            [w, 0],
-            [w, h],
-            [0, h],
-            [0, 0],
-          ],
-          1,
-          0,
-          0,
-        );
+        canvasPolygon(ctx, points, 1, 0, 0);
         ctx.closePath();
         ctx.clip();
         ctx.fillStyle = '#FFF';
         // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
         ctx.beginPath();
-        canvasPolygon(
-          ctx,
-          [
-            [0, 0],
-            [w, 0],
-            [w, h],
-            [0, h],
-            [0, 0],
-          ],
-          1,
-          0,
-          0,
-        );
+        canvasPolygon(ctx, points, 1, 0, 0);
         canvasPolygon(
           ctx,
           [
@@ -528,7 +499,117 @@ class Bitmap extends Node {
           ctx.strokeStyle = color2rgbaStr(s);
         }
         // 或者渐变
-        else {}
+        else {
+          if (s.t === GRADIENT.LINEAR) {
+            const gd = getLinear(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+            gd.stop.forEach((item) => {
+              lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+            });
+            ctx.strokeStyle = lg;
+          } else if (s.t === GRADIENT.RADIAL) {
+            const gd = getRadial(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const rg = ctx.createRadialGradient(
+              gd.cx,
+              gd.cy,
+              0,
+              gd.cx,
+              gd.cy,
+              gd.total,
+            );
+            gd.stop.forEach((item) => {
+              rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+            });
+            // 椭圆渐变，由于有缩放，先离屏绘制白色stroke记a，再绘制变换的结果整屏fill记b，b混合到a上用source-in即可只显示重合的b
+            const m = gd.matrix;
+            if (m) {
+              const ellipse = inject.getOffscreenCanvas(w, h);
+              const ctx2 = ellipse.ctx;
+              ctx2.setLineDash(ctx.getLineDash());
+              ctx2.lineCap = ctx.lineCap;
+              ctx2.lineJoin = ctx.lineJoin;
+              ctx2.miterLimit = ctx.miterLimit * scale;
+              ctx2.lineWidth = strokeWidth[i] * scale;
+              ctx2.strokeStyle = '#FFF';
+              ctx2.beginPath();
+              canvasPolygon(ctx2, points, scale, dx, dy);
+              ctx2.closePath();
+              if (p === STROKE_POSITION.INSIDE) {
+                ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                ctx2.save();
+                ctx2.clip();
+                ctx2.stroke();
+                ctx2.restore();
+              } else if (p === STROKE_POSITION.OUTSIDE) {
+                ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                ctx2.stroke();
+                ctx2.save();
+                ctx2.clip();
+                ctx2.globalCompositeOperation = 'destination-out';
+                ctx2.strokeStyle = '#FFF';
+                ctx2.stroke();
+                ctx2.restore();
+              } else {
+                ctx2.stroke();
+              }
+              ctx2.fillStyle = rg;
+              ctx2.globalCompositeOperation = 'source-in';
+              ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              ctx2.fillRect(0, 0, w, h);
+              ctx.drawImage(ellipse.canvas, 0, 0);
+              ellipse.release();
+              continue;
+            } else {
+              ctx.strokeStyle = rg;
+            }
+          } else if (s.t === GRADIENT.CONIC) {
+            const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+            gd.stop.forEach((item) => {
+              cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+            });
+            ctx.strokeStyle = cg;
+          }
+        }
+        // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
+        let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
+        if (p === STROKE_POSITION.INSIDE) {
+          ctx.lineWidth = strokeWidth[i] * 2 * scale;
+        } else if (p === STROKE_POSITION.OUTSIDE) {
+          os = inject.getOffscreenCanvas(w, h);
+          ctx2 = os.ctx;
+          ctx2.setLineDash(ctx.getLineDash());
+          ctx2.lineCap = ctx.lineCap;
+          ctx2.lineJoin = ctx.lineJoin;
+          ctx2.miterLimit = ctx.miterLimit * scale;
+          ctx2.strokeStyle = ctx.strokeStyle;
+          ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+          ctx2.beginPath();
+          canvasPolygon(ctx2, points, scale, dx, dy);
+        } else {
+          ctx.lineWidth = strokeWidth[i] * scale;
+        }
+        if (ctx2) {
+          ctx2.closePath();
+        }
+        if (p === STROKE_POSITION.INSIDE) {
+          ctx.save();
+          ctx.clip();
+          ctx.stroke();
+          ctx.restore();
+        } else if (p === STROKE_POSITION.OUTSIDE) {
+          ctx2!.stroke();
+          ctx2!.save();
+          ctx2!.clip();
+          ctx2!.globalCompositeOperation = 'destination-out';
+          ctx2!.strokeStyle = '#FFF';
+          ctx2!.stroke();
+          ctx2!.restore();
+          ctx.drawImage(os!.canvas, 0, 0);
+          os!.release();
+        } else {
+          ctx.stroke();
+        }
       }
     }
   }

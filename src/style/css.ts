@@ -265,6 +265,12 @@ export function normalize(style: any): Style {
       return { v, u: StyleUnit.NUMBER };
     });
   }
+  const strokeMode = style.strokeMode;
+  if (!isNil(strokeMode)) {
+    res.strokeMode = strokeMode.map((item: string) => {
+      return { v: getBlendMode(item), u: StyleUnit.NUMBER };
+    });
+  }
   const strokeDasharray = style.strokeDasharray;
   if (!isNil(strokeDasharray)) {
     res.strokeDasharray = strokeDasharray.map((item: number) => {

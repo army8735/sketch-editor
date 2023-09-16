@@ -231,6 +231,7 @@ export type Style = {
   strokeEnable: StyleBoolValue[];
   strokeWidth: StyleNumValue[];
   strokePosition: StyleStrokePositionValue[];
+  strokeMode: StyleMbmValue[];
   strokeDasharray: StyleNumValue[];
   strokeLinecap: StyleStrokeLinecapValue;
   strokeLinejoin: StyleStrokeLinejoinValue;
@@ -289,6 +290,7 @@ export type ComputedStyle = {
   strokeEnable: boolean[];
   strokeWidth: number[];
   strokePosition: STROKE_POSITION[];
+  strokeMode: MIX_BLEND_MODE[];
   strokeDasharray: number[];
   strokeLinecap: STROKE_LINE_CAP;
   strokeLinejoin: STROKE_LINE_JOIN;

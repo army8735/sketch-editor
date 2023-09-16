@@ -103,6 +103,7 @@ export type JStyle = {
   strokeEnable: boolean[];
   strokeWidth: number[];
   strokePosition: Array<'center' | 'inside' | 'outside'>;
+  strokeMode: string[];
   strokeDasharray: number[];
   strokeLinecap: 'butt' | 'round' | 'square';
   strokeLinejoin: 'miter' | 'round' | 'bevel';
@@ -177,6 +178,7 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       strokeEnable: [],
       strokeWidth: [],
       strokePosition: [],
+      strokeMode: [],
       strokeDasharray: [],
       strokeLinecap: 'butt',
       strokeLinejoin: 'miter',

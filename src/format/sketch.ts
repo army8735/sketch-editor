@@ -583,6 +583,7 @@ async function convertItem(
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -610,6 +611,7 @@ async function convertItem(
           strokeEnable,
           strokeWidth,
           strokePosition,
+          strokeMode,
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
@@ -738,6 +740,7 @@ async function convertItem(
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -765,6 +768,7 @@ async function convertItem(
           strokeEnable,
           strokeWidth,
           strokePosition,
+          strokeMode,
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
@@ -834,6 +838,7 @@ async function convertItem(
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -883,6 +888,7 @@ async function convertItem(
           strokeEnable,
           strokeWidth,
           strokePosition,
+          strokeMode,
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
@@ -913,11 +919,13 @@ async function convertItem(
       fill,
       fillEnable,
       fillOpacity,
+      fillMode,
       fillRule,
       stroke,
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -949,11 +957,13 @@ async function convertItem(
           fill,
           fillEnable,
           fillOpacity,
+          fillMode,
           fillRule,
           stroke,
           strokeEnable,
           strokeWidth,
           strokePosition,
+          strokeMode,
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
@@ -991,7 +1001,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     windingRule,
     miterLimit: strokeMiterlimit,
   } = layer.style || {};
-  const fill: Array<string | Array<number>> = [],
+  const fill: Array<string | number[]> = [],
     fillEnable: boolean[] = [],
     fillOpacity: number[] = [],
     fillMode: string[] = [];
@@ -1058,10 +1068,11 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       fillMode.push(getBlendMode(blend));
     }
   }
-  const stroke: Array<string | Array<number>> = [],
-    strokeEnable: Array<boolean> = [],
-    strokeWidth: Array<number> = [],
-    strokePosition: Array<string> = [];
+  const stroke: Array<string | number[]> = [],
+    strokeEnable: boolean[] = [],
+    strokeWidth: number[] = [],
+    strokePosition: string[] = [],
+    strokeMode: string[] = [];
   if (borders) {
     for (let i = 0, len = borders.length; i < len; i++) {
       const item = borders[i];
@@ -1117,9 +1128,11 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       } else {
         strokePosition.push('center');
       }
+      const blend = item.contextSettings.blendMode;
+      strokeMode.push(getBlendMode(blend));
     }
   }
-  const strokeDasharray: Array<number> = [];
+  const strokeDasharray: number[] = [];
   let strokeLinecap = 'butt',
     strokeLinejoin = 'miter';
   if (borderOptions) {
@@ -1151,6 +1164,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     strokeEnable,
     strokeWidth,
     strokePosition,
+    strokeMode,
     strokeDasharray,
     strokeLinecap,
     strokeLinejoin,
