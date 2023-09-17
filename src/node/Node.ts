@@ -381,6 +381,7 @@ class Node extends Event {
     computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map((item) => item.v);
     computedStyle.strokePosition = style.strokePosition.map((item) => item.v);
+    computedStyle.strokeMode = style.strokeMode.map((item) => item.v);
     computedStyle.strokeDasharray = style.strokeDasharray.map((item) => item.v);
     computedStyle.strokeLinecap = style.strokeLinecap.v;
     computedStyle.strokeLinejoin = style.strokeLinejoin.v;

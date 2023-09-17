@@ -128,7 +128,7 @@ html, body {
 }
 
 .tree .name {
-  flex: 1;
+  flex: 1 0 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -145,10 +145,12 @@ html, body {
 }
 
 .tree .visible {
+  margin-left: 2px;
   font-size: 12px;
   color: #999;
   cursor: default;
   user-select: none;
+  white-space: nowrap;
 }
 
 .tree .visible:hover {
@@ -171,7 +173,7 @@ html, body {
 .canvas-c {
   width: 100%;
   height: 100%;
-  background: #F3F3F3;
+  background: #FFF;
 }
 
 canvas {

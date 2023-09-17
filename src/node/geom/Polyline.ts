@@ -351,6 +351,7 @@ class Polyline extends Geom {
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -375,13 +376,9 @@ class Polyline extends Geom {
       // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
       let ellipse: OffScreen | undefined;
       const mode = fillMode[i];
-      if (mode !== MIX_BLEND_MODE.NORMAL) {
-        ctx.globalCompositeOperation = getCanvasGCO(mode);
-      }
       ctx.globalAlpha = fillOpacity[i];
       if (Array.isArray(f)) {
         if (!f[3]) {
-          ctx.globalCompositeOperation = 'source-over';
           continue;
         }
         ctx.fillStyle = color2rgbaStr(f);
@@ -443,7 +440,13 @@ class Polyline extends Geom {
               }
               // 记得还原
               ctx2.restore();
+              if (mode !== MIX_BLEND_MODE.NORMAL) {
+                ctx.globalCompositeOperation = getCanvasGCO(mode);
+              }
               ctx.drawImage(os.canvas, 0, 0);
+              if (mode !== MIX_BLEND_MODE.NORMAL) {
+                ctx.globalCompositeOperation = 'source-over';
+              }
               os.release();
             }
           }
@@ -457,9 +460,9 @@ class Polyline extends Geom {
             loader.error = false;
             loader.source = undefined;
             loader.loading = true;
-            inject.measureImg(url, (data:any) => {
+            inject.measureImg(url, (data: any) => {
               // 可能会变更，所以加载完后对比下是不是当前最新的
-              if (url === (fill[i] as ComputedPattern).url) {
+              if (url === (fill[i] as ComputedPattern)?.url) {
                 loader.loading = false;
                 if (data.success) {
                   loader.error = false;
@@ -481,9 +484,6 @@ class Polyline extends Geom {
                 }
               }
             });
-          }
-          if (mode !== MIX_BLEND_MODE.NORMAL) {
-            ctx.globalCompositeOperation = 'source-over';
           }
           continue;
         }
@@ -537,6 +537,9 @@ class Polyline extends Geom {
           }
         }
       }
+      if (mode !== MIX_BLEND_MODE.NORMAL) {
+        ctx.globalCompositeOperation = getCanvasGCO(mode);
+      }
       if (ellipse) {
         ctx.drawImage(ellipse.canvas, 0, 0);
         ellipse.release();
@@ -547,8 +550,9 @@ class Polyline extends Geom {
         ctx.globalCompositeOperation = 'source-over';
       }
     }
-    // fill有opacity，设置记得还原
+    // fill有opacity和mode，设置记得还原
     ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
     // 内阴影使用canvas的能力
     const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
@@ -633,6 +637,7 @@ class Polyline extends Geom {
       }
       const s = stroke[i];
       const p = strokePosition[i];
+      ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
       // 颜色
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
@@ -754,6 +759,8 @@ class Polyline extends Geom {
         ctx.stroke();
       }
     }
+    // 还原
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   override getFrameProps() {

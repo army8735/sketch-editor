@@ -16,6 +16,7 @@ import {
   GRADIENT,
   Gradient,
   MIX_BLEND_MODE,
+  PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -278,6 +279,7 @@ class Bitmap extends Node {
         strokeEnable,
         strokeWidth,
         strokePosition,
+        strokeMode,
         strokeDasharray,
         strokeLinecap,
         strokeLinejoin,
@@ -306,7 +308,6 @@ class Bitmap extends Node {
        * 如果再算上fillMode，会同时出现2个混合，需借助离屏来完成，离屏先绘制fill，
        * 再用destination-atop画底层位图，主画布修改gco为fillMode即可
        */
-      ctx.globalCompositeOperation = 'source-atop';
       // 先下层的fill
       for (let i = 0, len = fill.length; i < len; i++) {
         if (!fillEnable[i] || !fillOpacity[i]) {
@@ -330,8 +331,80 @@ class Bitmap extends Node {
         }
         // 非纯色
         else {
-          // 图像填充 TODO
-          if ((f as ComputedPattern).url) {}
+          // 图像填充
+          if ((f as ComputedPattern).url) {
+            f = f as ComputedPattern;
+            const url = f.url;
+            const img = inject.IMG[url];
+            if (img && img.source) {
+              // 离屏绘出fill图片，然后先在离屏上应用混合原始图像mask，再主画布应用mode
+              const os = blend || inject.getOffscreenCanvas(w, h);
+              const ctx2 = os.ctx;
+              if (f.type === PATTERN_FILL_TYPE.TILE) {
+                const ratio = f.scale ?? 1;
+                for (let i = 0, len = Math.ceil(iw / scale / ratio / loader.width); i < len; i++) {
+                  for (let j = 0, len = Math.ceil(ih / scale / ratio / loader.height); j < len; j++) {
+                    ctx2.drawImage(
+                      img.source!,
+                      dx + i * img.width * scale * ratio,
+                      dy + j * img.height * scale * ratio,
+                      img.width * scale * ratio,
+                      img.height * scale * ratio,
+                    );
+                  }
+                }
+              } else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                const sx = iw / img.width;
+                const sy = ih / img.height;
+                const sc = Math.max(sx, sy);
+                const x = (img.width * sc - iw) * -0.5;
+                const y = (img.height * sc - ih) * -0.5;
+                ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
+                  x + dx, y + dy, img.width * sc, img.height * sc);
+              } else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                ctx2.drawImage(img.source!, dx, dy, iw, ih);
+              } else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                const sx = iw / img.width;
+                const sy = ih / img.height;
+                const sc = Math.min(sx, sy);
+                const x = (img.width * sc - iw) * -0.5;
+                const y = (img.height * sc - ih) * -0.5;
+                ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
+                  x + dx, y + dy, img.width * sc, img.height * sc);
+              }
+              // 离屏上以主画布作为mask保留相同部分
+              ctx2.globalCompositeOperation = 'destination-atop';
+              ctx2.drawImage(canvasCache.offscreen.canvas, 0, 0);
+              // 记得还原
+              if (mode !== MIX_BLEND_MODE.NORMAL) {
+                ctx.globalCompositeOperation = getCanvasGCO(mode);
+              }
+              ctx.drawImage(os.canvas, 0, 0);
+              if (mode !== MIX_BLEND_MODE.NORMAL) {
+                ctx.globalCompositeOperation = 'source-atop';
+              }
+              os.release();
+            }
+            // 只需加载刷新
+            else {
+              inject.measureImg(url, (data: any) => {
+                // 可能会变或者删除，判断一致
+                if (url === (fill[i] as ComputedPattern)?.url) {
+                  if (data.success && !this.isDestroyed) {
+                    this.root!.addUpdate(
+                      this,
+                      [],
+                      RefreshLevel.REPAINT,
+                      false,
+                      false,
+                      undefined,
+                    );
+                  }
+                }
+              });
+            }
+            continue;
+          }
           // 渐变
           else {
             f = f as Gradient;
@@ -390,10 +463,9 @@ class Bitmap extends Node {
             // 主画布应用fillMode
             ctx.globalCompositeOperation = getCanvasGCO(mode);
             ctx.drawImage(blend.canvas, 0, 0);
-            // 还原
-            ctx.globalCompositeOperation = 'source-atop';
             blend.release();
           } else {
+            ctx.globalCompositeOperation = 'source-atop';
             ctx.drawImage(ellipse.canvas, 0, 0);
           }
           ellipse.release();
@@ -414,17 +486,16 @@ class Bitmap extends Node {
             // 主画布应用fillMode
             ctx.globalCompositeOperation = getCanvasGCO(mode);
             ctx.drawImage(blend.canvas, 0, 0);
-            // 还原
-            ctx.globalCompositeOperation = 'source-atop';
             blend.release();
           } else {
+            ctx.globalCompositeOperation = 'source-atop';
             ctx.fill();
           }
         }
       }
-      // fill有opacity，设置记得还原，图像的混合液比较特殊需还原
-      ctx.globalCompositeOperation = 'source-over';
+      // fill有opacity和mode，设置记得还原
       ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-atop';
       // 内阴影使用canvas的能力
       if (innerShadow && innerShadow.length) {
         // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
@@ -494,6 +565,7 @@ class Bitmap extends Node {
         }
         const s = stroke[i];
         const p = strokePosition[i];
+        ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
         // 颜色
         if (Array.isArray(s)) {
           ctx.strokeStyle = color2rgbaStr(s);
@@ -611,6 +683,8 @@ class Bitmap extends Node {
           ctx.stroke();
         }
       }
+      // 还原
+      ctx.globalCompositeOperation = 'source-over';
     }
   }
 

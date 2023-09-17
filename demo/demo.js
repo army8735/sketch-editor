@@ -344,8 +344,8 @@ $input.onchange = function(e) {
       });
 
       setTimeout(function() {
-      root.setPageIndex(json.currentPageIndex || 0);
-      }, 0)
+        root.setPageIndex(json.currentPageIndex || 0);
+      }, 1);
     });
   }
 }
