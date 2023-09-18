@@ -9,6 +9,8 @@ import {
   ComputedPattern,
   GRADIENT,
   Gradient,
+  MIX_BLEND_MODE,
+  PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
@@ -25,6 +27,7 @@ import LineBox from './LineBox';
 import Node from './Node';
 import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
+import { getCanvasGCO } from '../style/mbm';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -143,6 +146,14 @@ export type Cursor = {
   endString: number;
 };
 
+type Loader = {
+  error: boolean;
+  loading: boolean;
+  source?: HTMLImageElement;
+  width: number;
+  height: number;
+};
+
 class Text extends Node {
   _content: string;
   rich: Array<Rich>;
@@ -152,6 +163,7 @@ class Text extends Node {
   cursor: Cursor; // 光标信息
   showSelectArea: boolean;
   asyncRefresh: boolean;
+  loaders: Loader[];
 
   constructor(props: TextProps) {
     super(props);
@@ -172,6 +184,7 @@ class Text extends Node {
     };
     this.showSelectArea = false;
     this.asyncRefresh = false;
+    this.loaders = [];
   }
 
   override lay(data: LayoutData) {
@@ -574,10 +587,12 @@ class Text extends Node {
       fill,
       fillOpacity,
       fillEnable,
+      fillMode,
       stroke,
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -586,6 +601,7 @@ class Text extends Node {
     for (let i = 0, len = fill.length; i < len; i++) {
       if (fillEnable[i] && fillOpacity[i]) {
         hasFill = true;
+        break;
       }
     }
     // fill/stroke复用
@@ -626,6 +642,7 @@ class Text extends Node {
         let f = fill[i];
         // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
         let ellipse: OffScreen | undefined;
+        const mode = fillMode[i];
         ctx.globalAlpha = fillOpacity[i];
         if (Array.isArray(f)) {
           if (!f[3]) {
@@ -638,6 +655,100 @@ class Text extends Node {
           // 图像填充 TODO
           if ((f as ComputedPattern).url) {
             f = f as ComputedPattern;
+            const url = f.url;
+            let loader = this.loaders[i];
+            if (loader) {
+              if (!loader.error && url === (f as ComputedPattern).url) {
+                const width = this.width;
+                const height = this.height;
+                const wc = width * scale;
+                const hc = height * scale;
+                // 裁剪到范围内，text没有points概念，使用混合模拟mask来代替
+                const os = inject.getOffscreenCanvas(w, h);
+                const ctx2 = os.ctx;
+                if (f.type === PATTERN_FILL_TYPE.TILE) {
+                  const ratio = f.scale ?? 1;
+                  for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
+                    for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
+                      ctx2.drawImage(
+                        loader.source!,
+                        dx + i * loader.width * scale * ratio,
+                        dy + j * loader.height * scale * ratio,
+                        loader.width * scale * ratio,
+                        loader.height * scale * ratio,
+                      );
+                    }
+                  }
+                } else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                  const sx = wc / loader.width;
+                  const sy = hc / loader.height;
+                  const sc = Math.max(sx, sy);
+                  const x = (loader.width * sc - wc) * -0.5;
+                  const y = (loader.height * sc - hc) * -0.5;
+                  ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                    x + dx, y + dy, loader.width * sc, loader.height * sc);
+                } else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                  ctx2.drawImage(loader.source!, dx, dy, wc, hc);
+                } else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                  const sx = wc / loader.width;
+                  const sy = hc / loader.height;
+                  const sc = Math.min(sx, sy);
+                  const x = (loader.width * sc - wc) * -0.5;
+                  const y = (loader.height * sc - hc) * -0.5;
+                  ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                    x + dx, y + dy, loader.width * sc, loader.height * sc);
+                }
+                // 先离屏混合只展示text部分
+                ctx2.fillStyle = '#FFF';
+                ctx2.globalCompositeOperation = 'destination-in';
+                draw(ctx2, true);
+                ctx2.globalCompositeOperation = 'source-over';
+                if (mode !== MIX_BLEND_MODE.NORMAL) {
+                  ctx.globalCompositeOperation = getCanvasGCO(mode);
+                }
+                ctx.drawImage(os.canvas, 0, 0);
+                if (mode !== MIX_BLEND_MODE.NORMAL) {
+                  ctx.globalCompositeOperation = 'source-over';
+                }
+                os.release();
+              }
+            }
+            else {
+              loader = this.loaders[i] = this.loaders[i] || {
+                error: false,
+                loading: false,
+                width: 0,
+                height: 0,
+              };
+              loader.error = false;
+              loader.source = undefined;
+              loader.loading = true;
+              inject.measureImg(url, (data: any) => {
+                // 可能会变更，所以加载完后对比下是不是当前最新的
+                if (url === (fill[i] as ComputedPattern)?.url) {
+                  loader.loading = false;
+                  if (data.success) {
+                    loader.error = false;
+                    loader.source = data.source;
+                    loader.width = data.width;
+                    loader.height = data.height;
+                    if (!this.isDestroyed) {
+                      this.root!.addUpdate(
+                        this,
+                        [],
+                        RefreshLevel.REPAINT,
+                        false,
+                        false,
+                        undefined,
+                      );
+                    }
+                  } else {
+                    loader.error = true;
+                  }
+                }
+              });
+            }
+            continue;
           }
           // 渐变
           else {
@@ -686,11 +797,17 @@ class Text extends Node {
             }
           }
         }
+        if (mode !== MIX_BLEND_MODE.NORMAL) {
+          ctx.globalCompositeOperation = getCanvasGCO(mode);
+        }
         if (ellipse) {
           ctx.drawImage(ellipse.canvas, 0, 0);
           ellipse.release();
         } else {
           draw(ctx, true);
+        }
+        if (mode !== MIX_BLEND_MODE.NORMAL) {
+          ctx.globalCompositeOperation = 'source-over';
         }
       }
     }
@@ -738,8 +855,9 @@ class Text extends Node {
         }
       }
     }
-    // reset防止fillOpacity影响
+    // fill有opacity和mode，设置记得还原
     ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
     // 利用canvas的能力绘制shadow
     const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
@@ -829,6 +947,7 @@ class Text extends Node {
       }
       const s = stroke[i];
       const p = strokePosition[i];
+      ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
       // 颜色
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
@@ -926,6 +1045,8 @@ class Text extends Node {
         ctx.drawImage(os.canvas, 0, 0);
         os.release();
       }
+      // 还原
+      ctx.globalCompositeOperation = 'source-over';
     }
   }
 
