@@ -1924,7 +1924,24 @@ function genOutline(
     }
     // 文本忽略透明度渲染
     else if (node instanceof Text) {
-      // TODO
+      const lineBoxList = node.lineBoxList;
+      for (let i = 0, len = lineBoxList.length; i < len; i++) {
+        const lineBox = lineBoxList[i];
+        if (lineBox.y >= h) {
+          break;
+        }
+        const list = lineBox.list;
+        const len = list.length;
+        for (let i = 0; i < len; i++) {
+          const textBox = list[i];
+          Text.setFontAndLetterSpacing(ctx, textBox, scale);
+          ctx.fillText(
+            textBox.str,
+            textBox.x * scale + dx,
+            (textBox.y + textBox.baseline) * scale + dy,
+          );
+        }
+      }
     }
     // 普通节点就是个矩形，组要跳过子节点
     else {

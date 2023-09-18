@@ -652,7 +652,7 @@ class Text extends Node {
         }
         // 非纯色
         else {
-          // 图像填充 TODO
+          // 图像填充
           if ((f as ComputedPattern).url) {
             f = f as ComputedPattern;
             const url = f.url;
@@ -2283,6 +2283,8 @@ class Text extends Node {
       );
     }
   }
+
+  static setFontAndLetterSpacing = setFontAndLetterSpacing;
 }
 
 function equalRich(a: Rich, b: Rich) {
