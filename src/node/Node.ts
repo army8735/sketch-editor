@@ -1561,7 +1561,7 @@ class Node extends Event {
     };
   }
 
-  clone(override: Record<string, Override>) {
+  clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new Node(props);

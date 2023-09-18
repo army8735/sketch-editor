@@ -902,7 +902,7 @@ class Polyline extends Geom {
     return super.toSvg(scale, this.props.isClosed);
   }
 
-  override clone(override: Record<string, Override>) {
+  override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new Polyline(props);

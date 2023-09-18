@@ -205,7 +205,7 @@ class Group extends Container {
     this.remove();
   }
 
-  override clone(override: Record<string, Override>) {
+  override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new Group(props, this.children.map(item => item.clone(override)));

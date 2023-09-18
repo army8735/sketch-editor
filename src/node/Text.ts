@@ -2128,10 +2128,10 @@ class Text extends Node {
     return res;
   }
 
-  override clone(override: Record<string, Override>) {
+  override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     const oldUUid = props.uuid;
-    if (override.hasOwnProperty(oldUUid)) {
+    if (override && override.hasOwnProperty(oldUUid)) {
       const { property, value } = override[oldUUid];
       if (property === 'stringValue') {
         this._content = value;

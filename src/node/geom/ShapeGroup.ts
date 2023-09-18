@@ -13,6 +13,7 @@ import {
   FILL_RULE,
   Gradient,
   GRADIENT,
+  MIX_BLEND_MODE,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -28,6 +29,7 @@ import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
 import { RefreshLevel } from '../../refresh/level';
+import { getCanvasGCO } from '../../style/mbm';
 
 function scaleUp(points: Array<Array<number>>) {
   return points.map(point => {
@@ -263,10 +265,12 @@ class ShapeGroup extends Group {
       fillOpacity,
       fillRule,
       fillEnable,
+      fillMode,
       stroke,
       strokeEnable,
       strokeWidth,
       strokePosition,
+      strokeMode,
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
@@ -291,6 +295,7 @@ class ShapeGroup extends Group {
       let f = fill[i];
       // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
       let ellipse: OffScreen | undefined;
+      const mode = fillMode[i];
       ctx.globalAlpha = fillOpacity[i];
       if (Array.isArray(f)) {
         if (!f[3]) {
@@ -308,13 +313,27 @@ class ShapeGroup extends Group {
               const height = this.height;
               const wc = width * scale;
               const hc = height * scale;
-              // 裁剪到范围内，不包含边框，即矢量本身的内容范围
-              ctx.save();
-              ctx.clip();
+              // 裁剪到范围内，不包含边框，即矢量本身的内容范围，本来直接在原画布即可，但chrome下clip+mbm有问题，不得已用离屏
+              const os = inject.getOffscreenCanvas(w, h);
+              const ctx2 = os.ctx;
+              ctx2.beginPath();
+              points.forEach((item) => {
+                canvasPolygon(ctx, item, scale, dx, dy);
+              });
+              ctx2.closePath();
+              ctx2.save();
+              ctx2.clip();
               if (f.type === PATTERN_FILL_TYPE.TILE) {
-                for (let i = 0, len = Math.ceil(width / loader.width); i < len; i++) {
-                  for (let j = 0, len = Math.ceil(height / loader.height); j < len; j++) {
-                    ctx.drawImage(loader.source!, dx + i * loader.width * scale, dy + j * loader.height * scale, loader.width * scale, loader.height * scale);
+                const ratio = f.scale ?? 1;
+                for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
+                  for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
+                    ctx2.drawImage(
+                      loader.source!,
+                      dx + i * loader.width * scale * ratio,
+                      dy + j * loader.height * scale * ratio,
+                      loader.width * scale * ratio,
+                      loader.height * scale * ratio,
+                    );
                   }
                 }
               } else if (f.type === PATTERN_FILL_TYPE.FILL) {
@@ -323,21 +342,28 @@ class ShapeGroup extends Group {
                 const sc = Math.max(sx, sy);
                 const x = (loader.width * sc - wc) * -0.5;
                 const y = (loader.height * sc - hc) * -0.5;
-                ctx.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
                   x + dx, y + dy, loader.width * sc, loader.height * sc);
               } else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                ctx.drawImage(loader.source!, dx, dy, wc, hc);
+                ctx2.drawImage(loader.source!, dx, dy, wc, hc);
               } else if (f.type === PATTERN_FILL_TYPE.FIT) {
                 const sx = wc / loader.width;
                 const sy = hc / loader.height;
                 const sc = Math.min(sx, sy);
                 const x = (loader.width * sc - wc) * -0.5;
                 const y = (loader.height * sc - hc) * -0.5;
-                ctx.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
                   x + dx, y + dy, loader.width * sc, loader.height * sc);
               }
               // 记得还原
-              ctx.restore();
+              if (mode !== MIX_BLEND_MODE.NORMAL) {
+                ctx.globalCompositeOperation = getCanvasGCO(mode);
+              }
+              ctx.drawImage(os.canvas, 0, 0);
+              if (mode !== MIX_BLEND_MODE.NORMAL) {
+                ctx.globalCompositeOperation = 'source-over';
+              }
+              os.release();
             }
           }
           else {
@@ -428,15 +454,22 @@ class ShapeGroup extends Group {
           }
         }
       }
+      if (mode !== MIX_BLEND_MODE.NORMAL) {
+        ctx.globalCompositeOperation = getCanvasGCO(mode);
+      }
       if (ellipse) {
         ctx.drawImage(ellipse.canvas, 0, 0);
         ellipse.release();
       } else {
         ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
       }
+      if (mode !== MIX_BLEND_MODE.NORMAL) {
+        ctx.globalCompositeOperation = 'source-over';
+      }
     }
     // fill有opacity，设置记得还原
     ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
     // 内阴影使用canvas的能力
     const { innerShadow, innerShadowEnable } = this.computedStyle;
     if (innerShadow && innerShadow.length) {
@@ -515,6 +548,7 @@ class ShapeGroup extends Group {
       }
       const s = stroke[i];
       const p = strokePosition[i];
+      ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
       if (Array.isArray(s)) {
         ctx.strokeStyle = color2rgbaStr(s);
         ctx.lineWidth = strokeWidth[i];
@@ -634,6 +668,8 @@ class ShapeGroup extends Group {
         ctx.stroke();
       }
     }
+    // 还原
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   toSvg(scale: number) {
@@ -664,7 +700,7 @@ class ShapeGroup extends Group {
     return s + '</svg>';
   }
 
-  override clone(override: Record<string, Override>) {
+  override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new ShapeGroup(props, this.children.map(item => item.clone(override)));

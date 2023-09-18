@@ -306,7 +306,7 @@ class Container extends Node {
     return structs.slice(i, i + struct.total + 1);
   }
 
-  override clone(override: Record<string, Override>) {
+  override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     const res = new Container(props, this.children.map(item => item.clone(override)));
