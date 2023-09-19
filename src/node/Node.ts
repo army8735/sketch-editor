@@ -30,7 +30,7 @@ import {
 } from '../style/css';
 import {
   BLUR,
-  ColorStop,
+  ColorStop, ComputedGradient,
   ComputedPattern,
   ComputedShadow,
   ComputedStyle,
@@ -356,7 +356,6 @@ class Node extends Event {
   calRepaintStyle(lv: RefreshLevel) {
     const { style, computedStyle } = this;
     computedStyle.visible = style.visible.v;
-    computedStyle.overflow = style.overflow.v;
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
     computedStyle.fill = style.fill.map((item) => {
@@ -371,13 +370,40 @@ class Node extends Event {
           scale: (p.scale?.v ?? 100) * 0.01,
         } as ComputedPattern;
       }
-      return item.v as Gradient;
+      const v = item.v as Gradient;
+      return {
+        t: v.t,
+        d: v.d.slice(0),
+        stops: v.stops.map(item => {
+          const offset = item.offset ? item.offset.v * 0.01 : undefined;
+          return {
+            color: item.color.v.slice(0),
+            offset,
+          };
+        }),
+      } as ComputedGradient;
     });
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
     computedStyle.fillOpacity = style.fillOpacity.map((item) => item.v);
     computedStyle.fillMode = style.fillMode.map((item) => item.v);
     computedStyle.fillRule = style.fillRule.v;
-    computedStyle.stroke = style.stroke.map((item) => item.v);
+    computedStyle.stroke = style.stroke.map((item) => {
+      if (Array.isArray(item.v)) {
+        return item.v.slice(0);
+      }
+      const v = item.v as Gradient;
+      return {
+        t: v.t,
+        d: v.d.slice(0),
+        stops: v.stops.map(item => {
+          const offset = item.offset ? item.offset.v * 0.01 : undefined;
+          return {
+            color: item.color.v.slice(0),
+            offset,
+          };
+        }),
+      } as ComputedGradient;
+    });
     computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map((item) => item.v);
     computedStyle.strokePosition = style.strokePosition.map((item) => item.v);

@@ -2,40 +2,21 @@ import { d2r } from '../math/geom';
 import { identity, multiplyRotateZ, multiplyScaleY } from '../math/matrix';
 import { clone } from '../util';
 import { color2rgbaInt } from './css';
-import { calUnit, ColorStop, GRADIENT, StyleUnit } from './define';
+import { calUnit, ColorStop, ComputedColorStop, GRADIENT, StyleUnit } from './define';
 import reg from './reg';
 import { calMatrixByOrigin } from './transform';
 
 // 获取color-stop区间范围，去除无用值
 export function getColorStop(
-  stops: Array<ColorStop>,
-  length: number,
+  stops: Array<ComputedColorStop>,
+  total: number,
   isConic = false,
 ): { color: number[], offset: number }[] {
   const list: Array<{ color: Array<number>; offset?: number }> = [];
-  const firstColor = stops[0].color.v;
-  // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
+  const firstColor = stops[0].color;
+  // offset是[0,1]的百分比形式，可能未声明缺省
   for (let i = 0, len = stops.length; i < len; i++) {
-    const item = stops[i];
-    const offset = item.offset;
-    // 考虑是否声明了位置
-    if (offset) {
-      if (offset.u === StyleUnit.PERCENT) {
-        list.push({
-          color: item.color.v,
-          offset: offset.v * 0.01,
-        });
-      } else {
-        list.push({
-          color: item.color.v,
-          offset: offset.v / length,
-        });
-      }
-    } else {
-      list.push({
-        color: item.color.v,
-      });
-    }
+    list.push(stops[i]);
   }
   if (list.length === 1) {
     list.push(clone(list[0]));
@@ -244,8 +225,9 @@ export function parseGradient(s: string) {
       let offset;
       if (percent) {
         const v = calUnit(percent[0]);
-        if ([StyleUnit.NUMBER, StyleUnit.DEG].indexOf(v.u) > -1) {
-          v.u = StyleUnit.PX;
+        if (v.u !== StyleUnit.PERCENT) {
+          v.v *= 100;
+          v.u = StyleUnit.PERCENT;
         }
         offset = v;
       }
@@ -284,7 +266,7 @@ export type Linear = {
  * @param h
  */
 export function getLinear(
-  stops: Array<ColorStop>,
+  stops: Array<ComputedColorStop>,
   d: Array<number>,
   ox: number,
   oy: number,
@@ -319,7 +301,7 @@ export type Radial = {
 };
 
 export function getRadial(
-  stops: Array<ColorStop>,
+  stops: Array<ComputedColorStop>,
   d: Array<number>,
   dx: number,
   dy: number,
@@ -373,7 +355,7 @@ export type Conic = {
 };
 
 export function getConic(
-  stops: Array<ColorStop>,
+  stops: Array<ComputedColorStop>,
   d: Array<number>,
   ox: number,
   oy: number,

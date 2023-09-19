@@ -9,9 +9,9 @@ import { canvasPolygon, svgPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
   BOOLEAN_OPERATION,
+  ComputedGradient,
   ComputedPattern,
   FILL_RULE,
-  Gradient,
   GRADIENT,
   MIX_BLEND_MODE,
   PATTERN_FILL_TYPE,
@@ -403,7 +403,7 @@ class ShapeGroup extends Group {
           }
           continue;
         } else {
-          f = f as Gradient;
+          f = f as ComputedGradient;
           if (f.t === GRADIENT.LINEAR) {
             const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
             const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);

@@ -162,10 +162,6 @@ export function normalize(style: any): Style {
       u: StyleUnit.RGBA,
     };
   }
-  const overflow = style.overflow;
-  if (!isNil(overflow)) {
-    res.overflow = { v: overflow, u: StyleUnit.STRING };
-  }
   const opacity = style.opacity;
   if (!isNil(opacity)) {
     res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };

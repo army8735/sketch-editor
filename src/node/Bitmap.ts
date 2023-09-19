@@ -12,9 +12,9 @@ import { clone } from '../util/util';
 import { LayoutData } from './layout';
 import Node from './Node';
 import {
+  ComputedGradient,
   ComputedPattern,
   GRADIENT,
-  Gradient,
   MIX_BLEND_MODE,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
@@ -407,7 +407,7 @@ class Bitmap extends Node {
           }
           // 渐变
           else {
-            f = f as Gradient;
+            f = f as ComputedGradient;
             if (f.t === GRADIENT.LINEAR) {
               const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
               const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);

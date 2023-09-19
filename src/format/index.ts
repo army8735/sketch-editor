@@ -90,7 +90,6 @@ export type JStyle = {
     | 'extraBold'
     | 'black';
   fontStyle: 'normal' | 'italic' | 'oblique';
-  overflow: 'visible' | 'hidden';
   backgroundColor: string | Array<number>;
   color: string | Array<number>;
   opacity: number;
@@ -165,7 +164,6 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       fontWeight: 400,
       fontStyle: 'normal',
       visible: true,
-      overflow: 'visible',
       backgroundColor: [0, 0, 0, 0],
       color: [0, 0, 0, 1],
       opacity: 1,

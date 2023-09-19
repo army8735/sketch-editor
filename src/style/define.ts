@@ -73,11 +73,6 @@ export type StyleFontStyleValue = {
   u: StyleUnit.STRING;
 };
 
-export type StyleOverflowValue = {
-  v: OVERFLOW;
-  u: StyleUnit.NUMBER;
-};
-
 export type StyleBooleanOperationValue = {
   v: BOOLEAN_OPERATION;
   u: StyleUnit.NUMBER;
@@ -218,7 +213,6 @@ export type Style = {
   fontWeight: StyleNumValue;
   fontStyle: StyleFontStyleValue;
   visible: StyleBoolValue;
-  overflow: StyleOverflowValue;
   backgroundColor: StyleColorValue;
   color: StyleColorValue;
   opacity: StyleNumValue;
@@ -277,16 +271,15 @@ export type ComputedStyle = {
   fontWeight: number;
   fontStyle: FONT_STYLE;
   visible: boolean;
-  overflow: OVERFLOW;
   backgroundColor: number[];
   color: number[];
   opacity: number;
-  fill: Array<number[] | Gradient | ComputedPattern>;
+  fill: Array<number[] | ComputedGradient | ComputedPattern>;
   fillEnable: boolean[];
   fillOpacity: number[];
   fillMode: MIX_BLEND_MODE[];
   fillRule: FILL_RULE;
-  stroke: Array<number[] | Gradient>;
+  stroke: Array<number[] | ComputedGradient>;
   strokeEnable: boolean[];
   strokeWidth: number[];
   strokePosition: STROKE_POSITION[];
@@ -351,11 +344,6 @@ export enum MIX_BLEND_MODE {
   SATURATION = 13,
   COLOR = 14,
   LUMINOSITY = 15,
-}
-
-export enum OVERFLOW {
-  VISIBLE = 0,
-  HIDDEN = 1,
 }
 
 export enum FONT_STYLE {
