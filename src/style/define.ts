@@ -425,6 +425,12 @@ export enum PATTERN_FILL_TYPE {
   FIT = 3,
 }
 
+export enum TEXT_BEHAVIOUR {
+  FLEXIBLE = 0,
+  FIXED_WIDTH = 1,
+  FIXED_SIZE = 2,
+}
+
 export default {
   StyleUnit,
   calUnit,

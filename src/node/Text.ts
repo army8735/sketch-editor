@@ -16,6 +16,7 @@ import {
   STROKE_POSITION,
   StyleUnit,
   TEXT_ALIGN,
+  TEXT_BEHAVIOUR,
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
 import font from '../style/font';
@@ -164,12 +165,14 @@ class Text extends Node {
   showSelectArea: boolean;
   asyncRefresh: boolean;
   loaders: Loader[];
+  textBehaviour: TEXT_BEHAVIOUR;
 
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
     this._content = props.content;
     this.rich = props.rich || [];
+    this.textBehaviour = props.textBehaviour;
     this.lineBoxList = [];
     this.tempCursorX = 0;
     this.currentCursorX = 0;
@@ -189,13 +192,9 @@ class Text extends Node {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const { rich, style, computedStyle, _content: content, lineBoxList } = this;
-    const autoW =
-      style.width.u === StyleUnit.AUTO &&
-      (style.left.u === StyleUnit.AUTO || style.right.u === StyleUnit.AUTO);
-    const autoH =
-      style.height.u === StyleUnit.AUTO &&
-      (style.top.u === StyleUnit.AUTO || style.bottom.u === StyleUnit.AUTO);
+    const { rich, textBehaviour, style, computedStyle, _content: content, lineBoxList } = this;
+    const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
+    const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
     let i = 0;
     let length = content.length;
     let perW: number;
@@ -402,34 +401,74 @@ class Text extends Node {
         x += rw;
       }
     }
-    // 最后一行循环里没算要再算一次
+    // 最后一行对齐，以及最后一行循环里没算要再算一次
+    lineBox.verticalAlign();
     maxW = Math.max(maxW, lineBox.w);
+    /**
+     * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
+     * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
+     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到方向末尾。
+     * 另外编辑文字修改内容后，新的尺寸肯定和老的rect不一致，差值修正的逻辑正好被复用做修改后重排版。
+     */
     if (autoW) {
-      this.width = computedStyle.width = maxW;
+      const dw = maxW - this.width;
+      if (dw) {
+        this.width = computedStyle.width = maxW;
+        // 不可能左右都固定，只需考虑%修正，px固定修改尺寸不影响，右固定只有可能是px不可能%
+        const { left, width } = style;
+        if (left.u === StyleUnit.PERCENT) {
+          const half = dw * 0.5;
+          left.v += half / data.w;
+          computedStyle.left += half;
+          computedStyle.right += half;
+        }
+        if (width.u === StyleUnit.PX) {
+          width.v += dw;
+        }
+        else if (width.u === StyleUnit.PERCENT) {
+          width.v += dw * 0.5;
+        }
+      }
     }
     if (autoH) {
-      this.height = computedStyle.height = lineBox.y + lineBox.lineHeight;
+      const h = lineBox.y + lineBox.lineHeight;
+      const dh = h - this.height;
+      if (dh) {
+        this.height = computedStyle.height = h;
+        // 不可能上下都固定，只需考虑%修正，px固定修改尺寸不影响，底固定只有可能是px不可能%
+        const { top, height } = style;
+        if (top.u === StyleUnit.PERCENT) {
+          const half = dh * 0.5;
+          top.v += half / data.h;
+          computedStyle.top += half;
+          computedStyle.bottom += half;
+        }
+        if (height.u === StyleUnit.PX) {
+          height.v += dh;
+        }
+        else if (height.u === StyleUnit.PERCENT) {
+          height.v += dh * 0.5;
+        }
+      }
     }
     // 覆盖，文本很特殊，尺寸有auto情况
-    let fixedLeft = style.left.u !== StyleUnit.AUTO;
-    let fixedTop = style.top.u !== StyleUnit.AUTO;
-    let fixedRight = style.right.u !== StyleUnit.AUTO;
-    let fixedBottom = style.bottom.u !== StyleUnit.AUTO;
-    if (fixedLeft && fixedRight) {
-    } else if (fixedLeft) {
-      computedStyle.right = data.w - computedStyle.left - this.width;
-    } else if (fixedRight) {
-      computedStyle.left = data.w - computedStyle.right - this.width;
-    }
-    if (fixedTop && fixedBottom) {
-    } else if (fixedTop) {
-      computedStyle.bottom = data.h - computedStyle.top - this.height;
-    } else if (fixedBottom) {
-      computedStyle.top = data.h - computedStyle.bottom - this.height;
-    }
-    // 最后一行对齐
-    lineBox.verticalAlign();
-    // 非左对齐偏移
+    // const fixedLeft = style.left.u !== StyleUnit.AUTO;
+    // const fixedTop = style.top.u !== StyleUnit.AUTO;
+    // const fixedRight = style.right.u !== StyleUnit.AUTO;
+    // const fixedBottom = style.bottom.u !== StyleUnit.AUTO;
+    // if (fixedLeft && fixedRight) {
+    // } else if (fixedLeft) {
+    //   computedStyle.right = data.w - computedStyle.left - this.width;
+    // } else if (fixedRight) {
+    //   computedStyle.left = data.w - computedStyle.right - this.width;
+    // }
+    // if (fixedTop && fixedBottom) {
+    // } else if (fixedTop) {
+    //   computedStyle.bottom = data.h - computedStyle.top - this.height;
+    // } else if (fixedBottom) {
+    //   computedStyle.top = data.h - computedStyle.bottom - this.height;
+    // }
+    // 水平非左对齐偏移
     const textAlign = computedStyle.textAlign;
     if (textAlign === TEXT_ALIGN.CENTER) {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {

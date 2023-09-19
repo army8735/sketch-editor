@@ -1,4 +1,4 @@
-import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN } from '../style/define';
+import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
 
 export type JFile = {
   pages: JPage[];
@@ -251,6 +251,7 @@ export type SymbolInstanceProps = Props & {
 export type TextProps = Props & {
   content: string;
   rich?: Array<Rich>;
+  textBehaviour: TEXT_BEHAVIOUR;
 };
 
 export type Rich = {

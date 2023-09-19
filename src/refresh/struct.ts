@@ -344,7 +344,6 @@ export function renderWebgl(
       gl.disableVertexAttribArray(a_position);
     }
   }
-  // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode/backgroundBlur
   /**
    * Page的孩子可能是直接的渲染对象，也可能是画板，画板需要实现overflow:hidden的效果，如果用画板本身尺寸离屏绘制，
    * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。可以用和画布同尺寸的一个FBO，

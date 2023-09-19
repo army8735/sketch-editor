@@ -18,7 +18,7 @@ import {
   Rich,
   TagName,
 } from './';
-import { TEXT_ALIGN } from '../style/define';
+import { TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 
@@ -638,28 +638,28 @@ async function convertItem(
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
-    const textBehaviour = layer.textBehaviour;
+    // const textBehaviour = layer.textBehaviour;
     // sketch冗余的信息，文本的宽高在自动情况下实时测量获得
-    if (textBehaviour === SketchFormat.TextBehaviour.Flexible) {
-      if (left !== 'auto' && right !== 'auto') {
-        right = 'auto';
-      }
-      if (top !== 'auto' && bottom !== 'auto') {
-        bottom = 'auto';
-      }
-      width = 'auto';
-      height = 'auto';
-    } else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
-      // 可能width是auto（left+right），也可能是left+width，或者right固定+width
-      if (top !== 'auto' && bottom !== 'auto') {
-        bottom = 'auto';
-      }
-      height = 'auto';
-    } else if (
-      textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight
-    ) {
-      // 啥也不干，等同普通节点的固定宽高
-    }
+    // if (textBehaviour === SketchFormat.TextBehaviour.Flexible) {
+    //   if (left !== 'auto' && right !== 'auto') {
+    //     right = 'auto';
+    //   }
+    //   if (top !== 'auto' && bottom !== 'auto') {
+    //     bottom = 'auto';
+    //   }
+    //   width = 'auto';
+    //   height = 'auto';
+    // } else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
+    //   // 可能width是auto（left+right），也可能是left+width，或者right固定+width
+    //   if (top !== 'auto' && bottom !== 'auto') {
+    //     bottom = 'auto';
+    //   }
+    //   height = 'auto';
+    // } else if (
+    //   textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight
+    // ) {
+    //   // 啥也不干，等同普通节点的固定宽高
+    // }
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
@@ -743,12 +743,19 @@ async function convertItem(
       strokeLinecap,
       strokeLinejoin,
     } = await geomStyle(layer, opt);
+    let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
+    if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
+      textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
+    } else if (layer.textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
+      textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
+    }
     return {
       tagName: TagName.Text,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
         constrainProportions,
+        textBehaviour,
         style: {
           left,
           top,
