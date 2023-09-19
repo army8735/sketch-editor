@@ -1,9 +1,7 @@
 import { ArtBoardProps, Props } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoints } from '../math/matrix';
-import CanvasCache from '../refresh/CanvasCache';
-import config from '../refresh/config';
-import { color2rgbaStr } from '../style/css';
+import { color2gl } from '../style/css';
 import Container from './Container';
 import Node from './Node';
 
@@ -19,43 +17,6 @@ class ArtBoard extends Container {
   // 画板有自定义背景色时有内容
   override calContent(): boolean {
     return (this.hasContent = this.hasBackgroundColor);
-  }
-
-  override renderCanvas(scale: number) {
-    super.renderCanvas(scale);
-    const bbox = this._rect || this.rect;
-    const x = bbox[0],
-      y = bbox[1],
-      w = bbox[2] - x,
-      h = bbox[3] - y;
-    while (
-      w * scale > config.MAX_TEXTURE_SIZE ||
-      h * scale > config.MAX_TEXTURE_SIZE
-      ) {
-      if (scale <= 1) {
-        break;
-      }
-      scale = scale >> 1;
-    }
-    if (
-      w * scale > config.MAX_TEXTURE_SIZE ||
-      h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-      return;
-    }
-    const dx = -x * scale,
-      dy = -y * scale;
-    // TODO 纯色背景可以优化为小尺寸
-    const canvasCache = (this.canvasCache = CanvasCache.getInstance(
-      w * scale,
-      h * scale,
-      dx,
-      dy,
-    ));
-    canvasCache.available = true;
-    const ctx = canvasCache.offscreen.ctx;
-    ctx.fillStyle = color2rgbaStr(this.computedStyle.backgroundColor);
-    ctx.fillRect(0, 0, w * scale, h * scale);
   }
 
   override rename(s: string) {
@@ -329,15 +290,13 @@ class ArtBoard extends Container {
     bsTex[j + 95] = 0.7;
   }
 
-  // 在没有背景色的情况下渲染默认白色背景
+  // 在没有背景色的情况下渲染默认白色背景，有则渲染颜色
   renderBgc(
     gl: WebGL2RenderingContext | WebGLRenderingContext,
     cx: number,
     cy: number,
+    color?: number[], // 传入则指定color替代backgroundColor
   ) {
-    if (this.hasBackgroundColor) {
-      return;
-    }
     const programs = this.root!.programs;
     const { width, height, matrixWorld } = this;
     // 白色背景
@@ -346,10 +305,10 @@ class ArtBoard extends Container {
     // 矩形固定2个三角形
     const t = calRectPoints(0, 0, width, height, matrixWorld);
     const vtPoint = new Float32Array(8);
-    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, true);
-    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, true);
-    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, true);
-    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, true);
+    const t1 = convertCoords2Gl(t.x1, t.y1, cx, cy, false);
+    const t2 = convertCoords2Gl(t.x2, t.y2, cx, cy, false);
+    const t3 = convertCoords2Gl(t.x3, t.y3, cx, cy, false);
+    const t4 = convertCoords2Gl(t.x4, t.y4, cx, cy, false);
     vtPoint[0] = t1.x;
     vtPoint[1] = t1.y;
     vtPoint[2] = t4.x;
@@ -367,8 +326,12 @@ class ArtBoard extends Container {
     gl.enableVertexAttribArray(a_position);
     // color
     let u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
-    // const color = color2gl(computedStyle.backgroundColor);
-    gl.uniform4f(u_color, 1.0, 1.0, 1.0, 1.0);
+    if (color) {
+      gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
+    } else {
+      const color = color2gl(this.computedStyle.backgroundColor);
+      gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
+    }
     // 渲染并销毁
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer);

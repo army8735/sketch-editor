@@ -310,21 +310,54 @@ export function renderWebgl(
     }
   }
   const programs = root.programs;
-  // 先渲染artBoard的默认背景色即白色到底层，非默认则是自定义按照普通内容渲染不走这里
+  const bgColorProgram = programs.bgColorProgram;
+  // 先渲染Page的背景色，默认透明显示外部css白色，当没有Artboard时，Page渲染为浅灰色
   const page = root.lastPage;
   if (page) {
     const children = page.children,
       len = children.length;
+    let hasArtboard = false;
     // 背景色分开来
     for (let i = 0; i < len; i++) {
       const artBoard = children[i];
       if (artBoard instanceof ArtBoard) {
-        artBoard.renderBgc(gl, cx, cy);
+        hasArtboard = true;
+        break;
       }
+    }
+    if (hasArtboard) {
+      gl.useProgram(bgColorProgram);
+      const vtPoint = new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]);
+      // 顶点buffer
+      const pointBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+      const a_position = gl.getAttribLocation(bgColorProgram, 'a_position');
+      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position);
+      // color
+      let u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
+      gl.uniform4f(u_color, 0.95, 0.95, 0.95, 1.0);
+      // 渲染并销毁
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.deleteBuffer(pointBuffer);
+      gl.disableVertexAttribArray(a_position);
     }
   }
   // 所有内容都渲染到离屏frameBuffer上，最后再绘入主画布，因为中间可能出现需要临时混合运算的mixBlendMode/backgroundBlur
-  let resTexture = createTexture(gl, 0, undefined, W, H);
+  /**
+   * Page的孩子可能是直接的渲染对象，也可能是画板，画板需要实现overflow:hidden的效果，如果用画板本身尺寸离屏绘制，
+   * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。可以用和画布同尺寸的一个FBO，
+   * 所有的内容依旧照常绘入（可视范围外还可以跳过节省资源），最后再用mask功能裁剪掉画布范围外的即可。
+   * 另外，Page的非画布孩子无需mask逻辑，只要判断是否在可视范围外即可。
+   * mixBlendMode/backgroundBlur需要离屏混入，画布本身就已经离屏无需再申请，因此Page的非画布孩子绘入一个相同离屏即可。
+   * sketch里，一个渲染对象只要和画布重叠相交，就一定在画布内，所以无需关心Page的非画布孩子和画布的zIndex问题。
+   * 在遍历渲染过程中，记录一个索引hash，当画板开始时切换到画板FBO，结束时切换到PageFBO。
+   */
+  const artBoardIndex: ArtBoard[] = [];
+  let pageTexture = createTexture(gl, 0, undefined, W, H);
+  let artBoardTexture: WebGLTexture | undefined;
+  let resTexture = pageTexture;
   const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -340,7 +373,7 @@ export function renderWebgl(
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];
     // 特殊的工具覆盖层，如画板名称，同步更新translate直接跟着画板位置刷新
-    if (overlay && overlay === node) {
+    if (overlay === node) {
       overlay.update();
       isOverlay = true;
     }
@@ -427,17 +460,34 @@ export function renderWebgl(
       }
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
       else {
-        if (node.hasContent) {
-          isInScreen = checkInScreen(
-            node._filterBbox || node.filterBbox,
-            matrix,
-            W,
-            H,
+        isInScreen = checkInScreen(
+          node._filterBbox || node.filterBbox,
+          matrix,
+          W,
+          H,
+        );
+        if (isInScreen && node.hasContent) {
+          node.genTexture(gl, scale, scaleIndex);
+          target = textureTarget[scaleIndex];
+        }
+      }
+      // 画布和Page的FBO切换检测
+      if (isInScreen) {
+        // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，注意空画布无效需跳过
+        if (node.isArtBoard && node instanceof ArtBoard && total) {
+          pageTexture = resTexture; // 防止mbm导致新生成纹理，需赋值回去给page
+          artBoardIndex[i + total] = node;
+          artBoardTexture = createTexture(gl, 0, undefined, W, H);
+          resTexture = artBoardTexture;
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            resTexture,
+            0,
           );
-          if (isInScreen) {
-            node.genTexture(gl, scale, scaleIndex);
-            target = textureTarget[scaleIndex];
-          }
+          node.renderBgc(gl, cx, cy);
+          gl.useProgram(program);
         }
       }
       if (isInScreen && target) {
@@ -529,6 +579,82 @@ export function renderWebgl(
       ) {
         i += total + next;
       }
+      // 在end处切回Page，需要先把画布的FBO实现overflow:hidden，再绘制回Page
+      if (artBoardIndex[i]) {
+        resTexture = pageTexture;
+        // 可能画板内没有超出的子节点，先判断下，节省绘制
+        let needMask = false;
+        const ab = artBoardIndex[i];
+        const children = ab.children;
+        const rect = ab._rect || ab.rect;
+        const matrixWorld = ab._matrixWorld || ab.matrixWorld;
+        const abRect = getScreenBbox(rect, matrixWorld);
+        for (let i = 0, len = children.length; i < len; i++) {
+          const child = children[i];
+          const bbox = child._filterBbox || child.filterBbox;
+          const matrix = child._matrixWorld || child.matrixWorld;
+          const childRect = getScreenBbox(bbox, matrix);
+          if (childRect.left < abRect.left ||
+            childRect.top < abRect.top ||
+            childRect.right > abRect.right ||
+            childRect.bottom > abRect.bottom) {
+            needMask = true;
+            break;
+          }
+        }
+        // 先画出类似背景色的遮罩，再绘入Page
+        if (needMask) {
+          const tex = createTexture(gl, 0, undefined, W, H);
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tex,
+            0,
+          );
+          ab.renderBgc(gl, cx, cy, [1.0, 1.0, 1.0, 1.0]);
+          const tex2 = createTexture(gl, 0, undefined, W, H);
+          const maskProgram = programs.maskProgram;
+          gl.useProgram(maskProgram);
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tex2,
+            0,
+          );
+          drawMask(gl, maskProgram, tex, artBoardTexture!);
+          gl.deleteTexture(tex);
+          gl.deleteTexture(artBoardTexture!);
+          artBoardTexture = tex2;
+          gl.useProgram(program);
+        }
+        // 无超出的直接绘制回Page即可，mask也复用这段逻辑
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          resTexture,
+          0,
+        );
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, W, H]),
+              texture: artBoardTexture!,
+            },
+          ],
+          0,
+          0,
+          false,
+        );
+        gl.deleteTexture(artBoardTexture!);
+      }
     }
   }
   // 再覆盖渲染artBoard的阴影和标题
@@ -619,7 +745,7 @@ export function renderWebgl(
       {
         opacity: 1,
         bbox: new Float64Array([0, 0, W, H]),
-        texture: resTexture!,
+        texture: pageTexture,
       },
     ],
     0,
@@ -1995,20 +2121,30 @@ function releaseFrameBuffer(
   gl.viewport(0, 0, width, height);
 }
 
+function getScreenBbox(bbox: Float64Array, matrix: Float64Array) {
+  const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+  const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
+  // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
+  const left = Math.min(x1, x2, x3, x4);
+  const top = Math.min(y1, y2, y3, y4);
+  const right = Math.max(x1, x2, x3, x4);
+  const bottom = Math.max(y1, y2, y3, y4);
+  return {
+    left,
+    top,
+    right,
+    bottom,
+  };
+}
+
 function checkInScreen(
   bbox: Float64Array,
   matrix: Float64Array,
   width: number,
   height: number,
 ) {
-  const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
-  const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-  // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
-  const xa = Math.min(x1, x2, x3, x4);
-  const ya = Math.min(y1, y2, y3, y4);
-  const xb = Math.max(x1, x2, x3, x4);
-  const yb = Math.max(y1, y2, y3, y4);
-  return isRectsOverlap(xa, ya, xb, yb, 0, 0, width, height, true);
+  const o = getScreenBbox(bbox, matrix);
+  return isRectsOverlap(o.left, o.top, o.right, o.bottom, 0, 0, width, height, true);
 }
 
 // 统计mask节点后续关联跳过的数量
