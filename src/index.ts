@@ -7,9 +7,9 @@ import util from './util';
 import config from './util/config';
 import animation from './animation';
 import node from './node';
-import tools from './tools';
 import Page from './node/Page';
 import SymbolMaster from './node/SymbolMaster';
+import tools from './tools';
 
 function apply(json: any, imgs: Array<string>): any {
   if (!json) {

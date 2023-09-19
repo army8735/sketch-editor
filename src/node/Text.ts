@@ -172,7 +172,7 @@ class Text extends Node {
     this.isText = true;
     this._content = props.content;
     this.rich = props.rich || [];
-    this.textBehaviour = props.textBehaviour;
+    this.textBehaviour = props.textBehaviour ?? TEXT_BEHAVIOUR.FLEXIBLE;
     this.lineBoxList = [];
     this.tempCursorX = 0;
     this.currentCursorX = 0;
