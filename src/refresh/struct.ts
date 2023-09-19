@@ -352,7 +352,8 @@ export function renderWebgl(
    * 另外，Page的非画布孩子无需mask逻辑，只要判断是否在可视范围外即可。
    * mixBlendMode/backgroundBlur需要离屏混入，画布本身就已经离屏无需再申请，因此Page的非画布孩子绘入一个相同离屏即可。
    * sketch里，一个渲染对象只要和画布重叠相交，就一定在画布内，所以无需关心Page的非画布孩子和画布的zIndex问题。
-   * 在遍历渲染过程中，记录一个索引hash，当画板开始时切换到画板FBO，结束时切换到PageFBO。
+   * 在遍历渲染过程中，记录一个索引hash，当画板开始时切换到画板FBO，结束时切换到PageFBO，
+   * 每进入画板则生成画板FBO，退出将结果汇入Page，删除FBO且置undefined。
    */
   const artBoardIndex: ArtBoard[] = [];
   let pageTexture = createTexture(gl, 0, undefined, W, H);
@@ -528,6 +529,11 @@ export function renderWebgl(
             resTexture,
             0,
           );
+          if (artBoardTexture) {
+            artBoardTexture = resTexture;
+          } else {
+            pageTexture = resTexture;
+          }
         }
         let tex: WebGLTexture | undefined;
         // 有mbm先将本节点内容绘制到和root同尺寸纹理上
@@ -570,6 +576,11 @@ export function renderWebgl(
             W,
             H,
           );
+          if (artBoardTexture) {
+            artBoardTexture = resTexture;
+          } else {
+            pageTexture = resTexture;
+          }
         }
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
@@ -653,7 +664,9 @@ export function renderWebgl(
           0,
           false,
         );
+        // 退出画板删除且置空标明回到Page上
         gl.deleteTexture(artBoardTexture!);
+        artBoardTexture = undefined;
       }
     }
   }
@@ -1898,6 +1911,7 @@ function genMbm(
   );
   drawMbm(gl, program, tex1, tex2);
   gl.deleteTexture(tex1);
+  gl.deleteTexture(tex2);
   gl.useProgram(programs.program);
   return res;
 }
@@ -2172,7 +2186,7 @@ function genNextCount(
 function shouldIgnoreAndIsBgBlur(node: Node, computedStyle: ComputedStyle) {
   const blur = computedStyle.blur;
   const isBgBlur = blur.t === BLUR.BACKGROUND &&
-    (blur.radius > 0 || blur.saturation !== 0) &&
+    (blur.radius > 0 || blur.saturation !== 1) &&
     (node instanceof ShapeGroup || node instanceof Geom || node instanceof Bitmap || node instanceof Text);
   let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
   if (shouldIgnore && computedStyle.maskMode && node.next) {
