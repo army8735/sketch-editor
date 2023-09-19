@@ -446,6 +446,46 @@ class Root extends Container implements FrameCallback {
   override destroy() {
     super.destroy();
     frame.removeRoot(this);
+    const { ctx: gl, programs } = this;
+    if (gl) {
+      [
+        'program',
+        'bgColorProgram',
+        'simpleProgram',
+        'maskProgram',
+        'bgBlurProgram',
+        'multiplyProgram',
+        'screenProgram',
+        'overlayProgram',
+        'darkenProgram',
+        'lightenProgram',
+        'colorDodgeProgram',
+        'colorBurnProgram',
+        'hardLightProgram',
+        'softLightProgram',
+        'differenceProgram',
+        'exclusionProgram',
+        'hueProgram',
+        'saturationProgram',
+        'colorProgram',
+        'luminosityProgram',
+        'dropShadowProgram',
+        'innerShadowProgram',
+        'tintProgram',
+        'cmProgram',
+      ].forEach(k => {
+        const p = programs[k];
+        gl.deleteProgram(p);
+      });
+      for (let k in gl) {
+        if(k.indexOf('programGauss,') === 0) {
+          const p = programs[k];
+          gl.deleteProgram(p);
+        }
+      }
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
   }
 
   /**
