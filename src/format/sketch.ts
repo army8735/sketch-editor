@@ -91,7 +91,7 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   const imgs: Array<string> = [],
     imgHash: any = {};
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
-  const fontReferences = (json.document.fontReferences || []).filter((item: SketchFormat.FontRef) => {
+  const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
       return false;
     }
@@ -117,7 +117,7 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   };
   // 外部控件
   const symbolMasters = await Promise.all(
-    (json.document.foreignSymbols || []).map((item: SketchFormat.ForeignSymbol) => {
+    (json.document?.foreignSymbols || []).map((item: SketchFormat.ForeignSymbol) => {
       return convertItem(item.symbolMaster, opt, W, H);
     })
   );
