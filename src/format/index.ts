@@ -3,7 +3,6 @@ import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/d
 export type JFile = {
   pages: JPage[];
   currentPageIndex: number;
-  imgs: string[];
   symbolMasters: JSymbolMaster[];
 };
 

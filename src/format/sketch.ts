@@ -80,16 +80,12 @@ async function readJsonFile(zipFile: JSZip, filename: string) {
 }
 
 type Opt = {
-  imgs: Array<string>;
-  imgHash: any;
   zipFile: JSZip;
   user: any;
 };
 
 export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   console.log('sketch', json);
-  const imgs: Array<string> = [],
-    imgHash: any = {};
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
@@ -105,13 +101,15 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   if (fontReferences.length) {
     await Promise.all(
       fontReferences.map((item: SketchFormat.FontRef) => {
-        return readFontFile(item.fontData._ref, zipFile);
+        if (item.fontData._ref_class === 'MSFontData') {
+          return readFontFile(item.fontData._ref, zipFile);
+        } else if ((item.fontData._ref_class as string) === 'MSNetFontData') {
+          return readNetFont(item.fontData._ref, item.postscriptNames[0]);
+        }
       })
     );
   }
   const opt: Opt = {
-    imgs,
-    imgHash,
     zipFile,
     user: json.user,
   };
@@ -129,7 +127,6 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
   return {
     pages,
     currentPageIndex: json.document?.currentPageIndex || 0,
-    imgs,
     symbolMasters,
   };
 }
@@ -566,11 +563,11 @@ async function convertItem(
     } as JGroup;
   }
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
-    let index;
+    let src = '';
     if (layer.image._ref_class === 'MSImageData') {
-      index = await readImageFile(layer.image._ref, opt);
+      src = await readImageFile(layer.image._ref, opt);
     } else if ((layer.image._ref_class as any) === 'MSNetworkImage') {
-      index = await readNetworkImage(layer.image._ref, opt);
+      src = layer.image._ref;
     }
     const {
       fill,
@@ -633,7 +630,7 @@ async function convertItem(
         },
         isLocked,
         isExpanded,
-        src: index,
+        src,
       },
     } as JBitmap;
   }
@@ -1013,16 +1010,16 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     for (let i = 0, len = fills.length; i < len; i++) {
       const item = fills[i];
       if (item.fillType === SketchFormat.FillType.Pattern) {
-        let index = 0;
+        let url = '';
         const image = item.image!;
         if (image._ref_class === 'MSImageData') {
-          index = await readImageFile(image._ref, opt);
-        } else if ((image._ref_class as any) === 'MSNetworkImage') {
-          index = await readNetworkImage(image._ref, opt);
+          url = await readImageFile(image._ref, opt);
+        } else if ((image._ref_class as string) === 'MSNetworkImage') {
+          url = image._ref;
         }
         const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
         const scale = item.patternTileScale;
-        fill.push(`url(${index}) ${type} ${scale * 100}%`);
+        fill.push(`url(${url}) ${type} ${scale * 100}%`);
       } else if (item.fillType === SketchFormat.FillType.Gradient) {
         const g = item.gradient;
         const from = parseStrPoint(g.from);
@@ -1184,26 +1181,14 @@ function parseStrPoint(s: string) {
   return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
 }
 
-async function readNetworkImage(src: string, opt: Opt) {
-  if (opt.imgHash.hasOwnProperty(src)) {
-    return opt.imgHash[src];
-  }
-  const index = opt.imgs.length;
-  opt.imgs.push(src);
-  return index;
-}
-
 async function readImageFile(filename: string, opt: Opt) {
   if (!/\.\w+$/.test(filename)) {
     filename = `${filename}.png`;
   }
-  if (opt.imgHash.hasOwnProperty(filename)) {
-    return opt.imgHash[filename];
-  }
   const file = opt.zipFile.file(filename);
   if (!file) {
     console.error(`image not exist: >>>${filename}<<<`);
-    return -1;
+    return '';
   }
   const ab = await file.async('arraybuffer');
   const buffer = new Uint8Array(ab);
@@ -1214,9 +1199,7 @@ async function readImageFile(filename: string, opt: Opt) {
   } else {
     img = await loadImg(blob);
   }
-  const index = opt.imgs.length;
-  opt.imgs.push(img.src);
-  return index;
+  return img.src;
 }
 
 async function loadImg(blob: Blob): Promise<HTMLImageElement> {
@@ -1278,6 +1261,24 @@ async function readFontFile(filename: string, zipFile: JSZip) {
     } else {
       reject(data.data);
     }
+  });
+}
+
+async function readNetFont(url: string, postscriptName: string) {
+  if (font.hasRegister(postscriptName)) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    fetch(url).then((res) => res.arrayBuffer()).then(ab => {
+      const data = font.registerAb(ab);
+      if (typeof document !== 'undefined') {
+        const f = new FontFace(postscriptName, ab);
+        document.fonts.add(f);
+        resolve(data.data);
+      } else {
+        reject(data.data);
+      }
+    });
   });
 }
 

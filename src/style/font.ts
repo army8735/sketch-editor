@@ -34,7 +34,7 @@ const o: any = {
     arial,
   },
   data: {
-    // postscriptName为key，和family同引用，方便使用
+    // postscriptName/family为key，和info同引用，方便使用
     arial,
   },
   hasRegister(fontFamily: string) {
@@ -63,7 +63,7 @@ const o: any = {
         }
         // 没有cache则用opentype读取
         if (!this.info.hasOwnProperty(familyL)) {
-          const o: any = (this.info[familyL] = this.data[familyL] = {});
+          const o: any = (this.info[familyL] = {});
           const blob = await font.blob();
           const arrayBuffer = await blob.arrayBuffer();
           const f: any = opentype.parse(arrayBuffer);
