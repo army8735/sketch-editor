@@ -402,7 +402,7 @@ class Polyline extends Geom {
             };
           }
           if (loader) {
-            if (!loader.error && url === (f as ComputedPattern).url) {
+            if (!loader.error && !loader.loading) {
               const width = this.width;
               const height = this.height;
               const wc = width * scale;
@@ -464,13 +464,11 @@ class Polyline extends Geom {
           else {
             loader = this.loaders[i] = this.loaders[i] || {
               error: false,
-              loading: false,
+              loading: true,
               width: 0,
               height: 0,
+              source: undefined,
             };
-            loader.error = false;
-            loader.source = undefined;
-            loader.loading = true;
             inject.measureImg(url, (data: any) => {
               // 可能会变更，所以加载完后对比下是不是当前最新的
               if (url === (fill[i] as ComputedPattern)?.url) {

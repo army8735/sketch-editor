@@ -307,8 +307,19 @@ class ShapeGroup extends Group {
           f = f as ComputedPattern;
           const url = f.url;
           let loader = this.loaders[i];
+          const cache = inject.IMG[url];
+          // 已有的图像同步直接用
+          if (!loader && cache) {
+            loader = this.loaders[i] = {
+              error: false,
+              loading: false,
+              width: cache.width,
+              height: cache.height,
+              source: cache.source,
+            };
+          }
           if (loader) {
-            if (!loader.error && url === (fill[i] as ComputedPattern).url) {
+            if (!loader.error && !loader.loading) {
               const width = this.width;
               const height = this.height;
               const wc = width * scale;
@@ -369,13 +380,11 @@ class ShapeGroup extends Group {
           else {
             loader = this.loaders[i] = this.loaders[i] || {
               error: false,
-              loading: false,
+              loading: true,
               width: 0,
               height: 0,
+              source: undefined,
             };
-            loader.error = false;
-            loader.source = undefined;
-            loader.loading = true;
             inject.measureImg(url, (data:any) => {
               // 可能会变更，所以加载完后对比下是不是当前最新的
               if (url === (fill[i] as ComputedPattern).url) {

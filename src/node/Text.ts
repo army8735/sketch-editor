@@ -200,8 +200,11 @@ class Text extends Node {
     let perW: number;
     let letterSpacing: number;
     let paragraphSpacing: number;
-    let lineHeight;
-    let baseline;
+    let lineHeight: number;
+    let baseline: number;
+    let fontFamily: string;
+    let fontSize: number;
+    let color: string;
     let maxW = 0;
     let x = 0,
       y = 0;
@@ -251,7 +254,8 @@ class Text extends Node {
           }
         }
       }
-    } else {
+    }
+    else {
       const family = computedStyle.fontFamily.toLowerCase();
       const data = font.data[family];
       if (data) {
@@ -286,6 +290,9 @@ class Text extends Node {
       perW = first.fontSize * 0.8 + letterSpacing;
       lineHeight = first.lineHeight;
       baseline = getBaseline(first);
+      fontFamily = first.fontFamily;
+      fontSize = first.fontSize;
+      color = color2rgbaStr(first.color);
       if (!lineHeight) {
         lineHeight = calNormalLineHeight(first);
         baseline += lineHeight * 0.5;
@@ -301,6 +308,9 @@ class Text extends Node {
       perW = computedStyle.fontWeight * 0.8 + letterSpacing;
       lineHeight = computedStyle.lineHeight;
       baseline = getBaseline(computedStyle);
+      fontFamily = computedStyle.fontFamily;
+      fontSize = computedStyle.fontSize;
+      color = color2rgbaStr(computedStyle.color);
       ctx.font = setFontStyle(computedStyle);
       // @ts-ignore
       ctx.letterSpacing = letterSpacing + 'px';
@@ -325,6 +335,9 @@ class Text extends Node {
         perW = cur.fontSize * 0.8 + letterSpacing;
         lineHeight = cur.lineHeight;
         baseline = getBaseline(cur);
+        fontFamily = cur.fontFamily;
+        fontSize = cur.fontSize;
+        color = color2rgbaStr(cur.color);
         if (!lineHeight) {
           lineHeight = calNormalLineHeight(cur);
           baseline += lineHeight * 0.5;
@@ -381,8 +394,10 @@ class Text extends Node {
         i,
         content.slice(i, i + num),
         ctx.font,
-        // @ts-ignore
-        ctx.letterSpacing,
+        fontFamily,
+        fontSize,
+        color,
+        letterSpacing,
       );
       lineBox.add(textBox);
       i += num;
@@ -696,8 +711,19 @@ class Text extends Node {
             f = f as ComputedPattern;
             const url = f.url;
             let loader = this.loaders[i];
+            const cache = inject.IMG[url];
+            // 已有的图像同步直接用
+            if (!loader && cache) {
+              loader = this.loaders[i] = {
+                error: false,
+                loading: false,
+                width: cache.width,
+                height: cache.height,
+                source: cache.source,
+              };
+            }
             if (loader) {
-              if (!loader.error && url === (f as ComputedPattern).url) {
+              if (!loader.error && !loader.loading) {
                 const width = this.width;
                 const height = this.height;
                 const wc = width * scale;
@@ -755,13 +781,11 @@ class Text extends Node {
             else {
               loader = this.loaders[i] = this.loaders[i] || {
                 error: false,
-                loading: false,
+                loading: true,
                 width: 0,
                 height: 0,
+                source: undefined,
               };
-              loader.error = false;
-              loader.source = undefined;
-              loader.loading = true;
               inject.measureImg(url, (data: any) => {
                 // 可能会变更，所以加载完后对比下是不是当前最新的
                 if (url === (fill[i] as ComputedPattern)?.url) {
@@ -2367,15 +2391,12 @@ function setFontAndLetterSpacing(ctx: CanvasRenderingContext2D, textBox: TextBox
       ($0, $1) => $1 * scale + 'px',
     );
     // @ts-ignore
-    ctx.letterSpacing = textBox.letterSpacing.replace(
-      /([\d.e+-]+)px/gi,
-      ($0, $1) => $1 * scale + 'px',
-    );
+    ctx.letterSpacing = textBox.letterSpacing * scale + 'px';
   }
   else {
     ctx.font = textBox.font;
     // @ts-ignore
-    ctx.letterSpacing = textBox.letterSpacing;
+    ctx.letterSpacing = textBox.letterSpacing + 'px';
   }
 }
 
