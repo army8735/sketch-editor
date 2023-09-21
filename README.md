@@ -1,4 +1,5 @@
 # sketch-editor
+A sketch Render&Editor on Canvas/WebGL.
 
 ## Dev
 ```
