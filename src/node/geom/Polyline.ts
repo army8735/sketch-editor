@@ -390,6 +390,17 @@ class Polyline extends Geom {
           f = f as ComputedPattern;
           const url = f.url;
           let loader = this.loaders[i];
+          const cache = inject.IMG[url];
+          // 已有的图像同步直接用
+          if (!loader && cache) {
+            loader = this.loaders[i] = {
+              error: false,
+              loading: false,
+              width: cache.width,
+              height: cache.height,
+              source: cache.source,
+            };
+          }
           if (loader) {
             if (!loader.error && url === (f as ComputedPattern).url) {
               const width = this.width;

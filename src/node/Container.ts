@@ -296,9 +296,9 @@ class Container extends Node {
     }
   }
 
-  getStructs() {
+  override getStructs() {
     if (!this.root) {
-      return;
+      return [];
     }
     const structs = this.root.structs;
     const struct = this.struct;

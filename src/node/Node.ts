@@ -1587,6 +1587,13 @@ class Node extends Event {
     };
   }
 
+  getStructs() {
+    if (!this.root) {
+      return [];
+    }
+    return [this.struct];
+  }
+
   clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
