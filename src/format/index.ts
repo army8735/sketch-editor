@@ -16,45 +16,45 @@ export type JContainer = JNode & {
 };
 
 export type JPage = JContainer & {
-  tagName: TagName.Page;
+  tagName: TAG_NAME.PAGE;
   props: PageProps;
 };
 
 export type JArtBoard = JContainer & {
-  tagName: TagName.ArtBoard;
+  tagName: TAG_NAME.ART_BOARD;
   props: ArtBoardProps;
 };
 
 export type JSymbolMaster = JContainer & {
-  tagName: TagName.SymbolMaster;
+  tagName: TAG_NAME.SYMBOL_MASTER;
   props: SymbolMasterProps;
 };
 
 export type JSymbolInstance = JNode & {
-  tagName: TagName.SymbolInstance;
+  tagName: TAG_NAME.SYMBOL_INSTANCE;
   props: SymbolInstanceProps;
 };
 
 export type JGroup = JContainer & {
-  tagName: TagName.Group;
+  tagName: TAG_NAME.GROUP;
 };
 
 export type JShapeGroup = JContainer & {
-  tagName: TagName.ShapeGroup;
+  tagName: TAG_NAME.SHAPE_GROUP;
 };
 
 export type JBitmap = JContainer & {
-  tagName: TagName.Bitmap;
+  tagName: TAG_NAME.BITMAP;
   props: BitmapProps;
 };
 
 export type JText = JNode & {
-  tagName: TagName.Text;
+  tagName: TAG_NAME.TEXT;
   props: TextProps;
 };
 
 export type JPolyline = JNode & {
-  tagName: TagName.Polyline;
+  tagName: TAG_NAME.POLYLINE;
   props: PolylineProps;
 };
 
@@ -303,16 +303,17 @@ export type Point = {
   dspTy?: number;
 };
 
-export enum TagName {
-  Page = 'page',
-  ArtBoard = 'artBoard',
-  SymbolMaster = 'symbolMaster',
-  SymbolInstance = 'symbolInstance',
-  Group = 'group',
-  ShapeGroup = '$shapeGroup',
-  Bitmap = 'bitmap',
-  Text = 'text',
-  Polyline = '$polyline',
+export enum TAG_NAME {
+  PAGE = 'page',
+  ART_BOARD = 'artBoard',
+  SYMBOL_MASTER = 'symbolMaster',
+  SYMBOL_INSTANCE = 'symbolInstance',
+  GROUP = 'group',
+  BITMAP = 'bitmap',
+  TEXT = 'text',
+  SLICE = 'slice',
+  SHAPE_GROUP = '$shapeGroup',
+  POLYLINE = '$polyline',
 }
 
 export enum POINTS_RADIUS_BEHAVIOUR {

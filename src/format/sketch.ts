@@ -16,7 +16,7 @@ import {
   Point,
   POINTS_RADIUS_BEHAVIOUR,
   Rich,
-  TagName,
+  TAG_NAME,
 } from './';
 import { TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
@@ -155,7 +155,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
     }
   }
   return {
-    tagName: TagName.Page,
+    tagName: TAG_NAME.PAGE,
     props: {
       uuid: page.do_objectID,
       name: page.name,
@@ -238,7 +238,7 @@ async function convertItem(
       const symbolId = layer.symbolID;
       const includeBackgroundColorInInstance = layer.includeBackgroundColorInInstance;
       return {
-        tagName: TagName.SymbolMaster,
+        tagName: TAG_NAME.SYMBOL_MASTER,
         props: {
           uuid: layer.do_objectID,
           name: layer.name,
@@ -264,7 +264,7 @@ async function convertItem(
       } as JSymbolMaster;
     }
     return {
-      tagName: TagName.ArtBoard,
+      tagName: TAG_NAME.ART_BOARD,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -470,7 +470,7 @@ async function convertItem(
       fillOpacity,
     } = await geomStyle(layer, opt);
     return {
-      tagName: TagName.SymbolInstance,
+      tagName: TAG_NAME.SYMBOL_INSTANCE,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -525,7 +525,7 @@ async function convertItem(
       fillOpacity,
     } = await geomStyle(layer, opt);
     return {
-      tagName: TagName.Group,
+      tagName: TAG_NAME.GROUP,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -584,7 +584,7 @@ async function convertItem(
       strokeLinejoin,
     } = await geomStyle(layer, opt);
     return {
-      tagName: TagName.Bitmap,
+      tagName: TAG_NAME.BITMAP,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -747,7 +747,7 @@ async function convertItem(
       textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
     }
     return {
-      tagName: TagName.Text,
+      tagName: TAG_NAME.TEXT,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -859,7 +859,7 @@ async function convertItem(
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
     }
     return {
-      tagName: TagName.Polyline,
+      tagName: TAG_NAME.POLYLINE,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -941,7 +941,7 @@ async function convertItem(
       }),
     );
     return {
-      tagName: TagName.ShapeGroup,
+      tagName: TAG_NAME.SHAPE_GROUP,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
@@ -990,6 +990,33 @@ async function convertItem(
       },
       children,
     } as JShapeGroup;
+  }
+  if (layer._class === SketchFormat.ClassValue.Slice) {
+    return {
+      tagName: TAG_NAME.SLICE,
+      props: {
+        uuid: layer.do_objectID,
+        name: layer.name,
+        constrainProportions,
+        style: {
+          left,
+          top,
+          right,
+          bottom,
+          width,
+          height,
+          visible,
+          opacity,
+          translateX,
+          translateY,
+          scaleX,
+          scaleY,
+          rotateZ,
+          breakMask,
+        },
+        isLocked,
+      },
+    };
   }
   console.error(layer);
 }

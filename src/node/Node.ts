@@ -107,6 +107,7 @@ class Node extends Event {
   isBitmap = false;
   isShapeGroup = false;
   isContainer = false;
+  isSlice = false;
 
   constructor(props: Props) {
     super();

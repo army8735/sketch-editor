@@ -1,4 +1,4 @@
-import { TagName, JFile, JSymbolMaster } from './format';
+import { TAG_NAME, JFile, JSymbolMaster } from './format';
 import { openAndConvertSketchBuffer, convertSketch } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -27,7 +27,7 @@ export default {
     (json.pages || []).forEach(item => {
       const children = item.children;
       children.forEach(child => {
-        if (child.tagName === TagName.SymbolMaster) {
+        if (child.tagName === TAG_NAME.SYMBOL_MASTER) {
           root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child, root) as SymbolMaster;
         }
       });
