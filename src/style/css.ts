@@ -437,6 +437,33 @@ export function normalize(style: any): Style {
           },
           u: StyleUnit.BLUR,
         };
+      } else if (t === 'radial') {
+        const match = /center\s*\((.+)\)/i.exec(blur);
+        let center = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }];
+        if (match) {
+          const m = match[1].match(reg.number);
+          if (m) {
+            center[0] = {
+              u: parseFloat(m[0]),
+              v: StyleUnit.PERCENT,
+            };
+            center[1] = {
+              u: parseFloat(m[1]),
+              v: StyleUnit.PERCENT,
+            };
+          }
+        }
+        res.blur = { v: { t: BLUR.RADIAL, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, center }, u: StyleUnit.BLUR };
+      } else if (t === 'motion') {
+        const match = /angle\s*\((.+)\)/i.exec(blur);
+        let angle = {
+          v: 0,
+          u: StyleUnit.DEG,
+        };
+        if (match) {
+          angle.v = parseFloat(match[1]);
+        }
+        res.blur = { v: { t: BLUR.MOTION, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, angle }, u: StyleUnit.BLUR };
       } else {
         res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
       }

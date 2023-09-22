@@ -162,8 +162,9 @@ export function renderWebgl(
       needShadow = false;
     }
     const needBlur =
-      (blur.t === BLUR.GAUSSIAN && blur.radius > 0 ||
-      blur.t === BLUR.BACKGROUND && (blur.radius > 0 || blur.saturation !== 0)) &&
+      (blur.t === BLUR.GAUSSIAN && blur.radius >= 1 ||
+      blur.t === BLUR.BACKGROUND && (blur.radius >= 1 || blur.saturation !== 0) ||
+      blur.t === BLUR.RADIAL && blur.radius >= 1) &&
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
     const needMask =
       maskMode > 0 &&
@@ -1049,7 +1050,7 @@ function genFilter(
     );
   }
   // 高斯模糊
-  if (blur.t === BLUR.GAUSSIAN && blur.radius) {
+  if (blur.t === BLUR.GAUSSIAN && blur.radius >= 1) {
     res = genGaussBlur(
       gl,
       root,
@@ -1059,6 +1060,32 @@ function genFilter(
       H,
       scale,
     );
+  }
+  // 径向模糊/缩放模糊
+  else if (blur.t === BLUR.RADIAL && blur.radius >= 1) {
+    // res = genRadialBlur(
+    //   gl,
+    //   root,
+    //   res || source,
+    //   blur.radius,
+    //   blur.center!,
+    //   W,
+    //   H,
+    //   scale,
+    // );
+  }
+  // 运动模糊/方向模糊
+  else if (blur.t === BLUR.MOTION && blur.radius >= 1) {
+    // res = genMotionBlur(
+    //   gl,
+    //   root,
+    //   res || source,
+    //   blur.radius,
+    //   blur.angle!,
+    //   W,
+    //   H,
+    //   scale,
+    // );
   }
   // 颜色调整
   if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
@@ -1151,7 +1178,7 @@ function genGaussBlur(
     false,
   );
   // 再建一个空白尺寸纹理，2个纹理互相写入对方，循环3次模糊，水平垂直分开
-  const programGauss = genBlurShader(gl, programs, sigma * scale, d);
+  const programGauss = genGaussShader(gl, programs, sigma * scale, d);
   gl.useProgram(programGauss);
   const res = drawGauss(gl, programGauss, target.texture, w, h);
   gl.deleteTexture(target.texture);
@@ -1162,7 +1189,7 @@ function genGaussBlur(
   return target;
 }
 
-function genBlurShader(
+function genGaussShader(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   programs: any,
   sigma: number,
@@ -1514,7 +1541,7 @@ function genShadow(
     if (item.blur > 0) {
       const sigma = item.blur * scale * 0.5;
       const d = kernelSize(sigma);
-      const programGauss = genBlurShader(
+      const programGauss = genGaussShader(
         gl,
         programs,
         sigma,
@@ -1959,7 +1986,7 @@ function genBgBlur(
   // 画布内容进行blur
   const sigma = blur.radius * scale;
   const d = kernelSize(sigma);
-  const programGauss = genBlurShader(gl, programs, sigma, d);
+  const programGauss = genGaussShader(gl, programs, sigma, d);
   gl.useProgram(programGauss);
   const blurContent = drawGauss(gl, programGauss, tex, w, h);
   // 将节点视作特殊mask，重合部分使用blur内容，非重合部分使用原本tex内容

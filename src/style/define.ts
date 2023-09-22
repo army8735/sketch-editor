@@ -165,13 +165,17 @@ export type StyleStrokePositionValue = {
 export type Blur = {
   t: BLUR;
   radius: StyleNumValue;
+  center?: [StyleNumValue, StyleNumValue];
   saturation?: StyleNumValue;
+  angle?: StyleNumValue;
 };
 
 export type ComputedBlur = {
   t: BLUR;
   radius: number;
+  center?: [number, number];
   saturation?: number;
+  angle?: number;
 };
 
 export type StyleBlurValue = {
@@ -362,7 +366,7 @@ export enum BLUR {
   NONE = 0,
   GAUSSIAN = 1,
   MOTION = 2,
-  ZOOM = 3,
+  RADIAL = 3,
   BACKGROUND = 4,
 }
 

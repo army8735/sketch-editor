@@ -21,6 +21,7 @@ import {
 import { TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
+import reg from '../style/reg';
 
 // sketch的Page没有尺寸，固定100
 const W = 100, H = 100;
@@ -411,6 +412,16 @@ async function convertItem(
     }
     else if (type === SketchFormat.BlurType.Background) {
       blur = `background(${b.radius}px) saturation(${(b.saturation || 0) * 100}%)`;
+    }
+    else if (type === SketchFormat.BlurType.Zoom) {
+      const center = b.center.match(reg.number) || ['0.5', '0.5'];
+      const p = center.map(item => {
+        return parseFloat(item) * 100 + '%';
+      });
+      blur = `radial(${b.radius}px) center(${p[0]}, ${p[1]})`;
+    }
+    else if (type === SketchFormat.BlurType.Motion) {
+      blur = `motion(${b.radius}px) angle(${r2d(b.motionAngle || 0)})`;
     }
   }
   // 颜色调整
