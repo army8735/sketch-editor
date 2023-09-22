@@ -364,7 +364,7 @@ class Node extends Event {
         return item.v.slice(0);
       }
       const p = item.v as Pattern;
-      if (p && p.url) {
+      if (p && p.url !== undefined) {
         return {
           url: p.url,
           type: p.type,

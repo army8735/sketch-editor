@@ -386,113 +386,119 @@ class Polyline extends Geom {
       // 非纯色
       else {
         // 图像填充
-        if ((f as ComputedPattern).url) {
+        if ((f as ComputedPattern).url !== undefined) {
           f = f as ComputedPattern;
           const url = f.url;
-          let loader = this.loaders[i];
-          const cache = inject.IMG[url];
-          // 已有的图像同步直接用
-          if (!loader && cache) {
-            loader = this.loaders[i] = {
-              error: false,
-              loading: false,
-              width: cache.width,
-              height: cache.height,
-              source: cache.source,
-            };
-          }
-          if (loader) {
-            if (!loader.error && !loader.loading) {
-              const width = this.width;
-              const height = this.height;
-              const wc = width * scale;
-              const hc = height * scale;
-              // 裁剪到范围内，不包含边框，即矢量本身的内容范围，本来直接在原画布即可，但chrome下clip+mbm有问题，不得已用离屏
-              const os = inject.getOffscreenCanvas(w, h);
-              const ctx2 = os.ctx;
-              ctx2.beginPath();
-              canvasPolygon(ctx2, points, scale, dx, dy);
-              if (this.props.isClosed) {
-                ctx2.closePath();
-              }
-              ctx2.save();
-              ctx2.clip();
-              if (f.type === PATTERN_FILL_TYPE.TILE) {
-                const ratio = f.scale ?? 1;
-                for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
-                  for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
-                    ctx2.drawImage(
-                      loader.source!,
-                      dx + i * loader.width * scale * ratio,
-                      dy + j * loader.height * scale * ratio,
-                      loader.width * scale * ratio,
-                      loader.height * scale * ratio,
-                    );
-                  }
-                }
-              } else if (f.type === PATTERN_FILL_TYPE.FILL) {
-                const sx = wc / loader.width;
-                const sy = hc / loader.height;
-                const sc = Math.max(sx, sy);
-                const x = (loader.width * sc - wc) * -0.5;
-                const y = (loader.height * sc - hc) * -0.5;
-                ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
-                  x + dx, y + dy, loader.width * sc, loader.height * sc);
-              } else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                ctx2.drawImage(loader.source!, dx, dy, wc, hc);
-              } else if (f.type === PATTERN_FILL_TYPE.FIT) {
-                const sx = wc / loader.width;
-                const sy = hc / loader.height;
-                const sc = Math.min(sx, sy);
-                const x = (loader.width * sc - wc) * -0.5;
-                const y = (loader.height * sc - hc) * -0.5;
-                ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
-                  x + dx, y + dy, loader.width * sc, loader.height * sc);
-              }
-              // 记得还原
-              ctx2.restore();
-              if (mode !== MIX_BLEND_MODE.NORMAL) {
-                ctx.globalCompositeOperation = getCanvasGCO(mode);
-              }
-              ctx.drawImage(os.canvas, 0, 0);
-              if (mode !== MIX_BLEND_MODE.NORMAL) {
-                ctx.globalCompositeOperation = 'source-over';
-              }
-              os.release();
+          if (url) {
+            let loader = this.loaders[i];
+            const cache = inject.IMG[url];
+            // 已有的图像同步直接用
+            if (!loader && cache) {
+              loader = this.loaders[i] = {
+                error: false,
+                loading: false,
+                width: cache.width,
+                height: cache.height,
+                source: cache.source,
+              };
             }
-          }
-          else {
-            loader = this.loaders[i] = this.loaders[i] || {
-              error: false,
-              loading: true,
-              width: 0,
-              height: 0,
-              source: undefined,
-            };
-            inject.measureImg(url, (data: any) => {
-              // 可能会变更，所以加载完后对比下是不是当前最新的
-              if (url === (fill[i] as ComputedPattern)?.url) {
-                loader.loading = false;
-                if (data.success) {
-                  loader.error = false;
-                  loader.source = data.source;
-                  loader.width = data.width;
-                  loader.height = data.height;
-                  if (!this.isDestroyed) {
-                    this.root!.addUpdate(
-                      this,
-                      [],
-                      RefreshLevel.REPAINT,
-                      false,
-                      false,
-                      undefined,
-                    );
-                  }
-                } else {
-                  loader.error = true;
+            if (loader) {
+              if (!loader.error && !loader.loading) {
+                const width = this.width;
+                const height = this.height;
+                const wc = width * scale;
+                const hc = height * scale;
+                // 裁剪到范围内，不包含边框，即矢量本身的内容范围，本来直接在原画布即可，但chrome下clip+mbm有问题，不得已用离屏
+                const os = inject.getOffscreenCanvas(w, h);
+                const ctx2 = os.ctx;
+                ctx2.beginPath();
+                canvasPolygon(ctx2, points, scale, dx, dy);
+                if (this.props.isClosed) {
+                  ctx2.closePath();
                 }
+                ctx2.save();
+                ctx2.clip();
+                if (f.type === PATTERN_FILL_TYPE.TILE) {
+                  const ratio = f.scale ?? 1;
+                  for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
+                    for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
+                      ctx2.drawImage(
+                        loader.source!,
+                        dx + i * loader.width * scale * ratio,
+                        dy + j * loader.height * scale * ratio,
+                        loader.width * scale * ratio,
+                        loader.height * scale * ratio,
+                      );
+                    }
+                  }
+                }
+                else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                  const sx = wc / loader.width;
+                  const sy = hc / loader.height;
+                  const sc = Math.max(sx, sy);
+                  const x = (loader.width * sc - wc) * -0.5;
+                  const y = (loader.height * sc - hc) * -0.5;
+                  ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                    x + dx, y + dy, loader.width * sc, loader.height * sc);
+                }
+                else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                  ctx2.drawImage(loader.source!, dx, dy, wc, hc);
+                }
+                else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                  const sx = wc / loader.width;
+                  const sy = hc / loader.height;
+                  const sc = Math.min(sx, sy);
+                  const x = (loader.width * sc - wc) * -0.5;
+                  const y = (loader.height * sc - hc) * -0.5;
+                  ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                    x + dx, y + dy, loader.width * sc, loader.height * sc);
+                }
+                // 记得还原
+                ctx2.restore();
+                if (mode !== MIX_BLEND_MODE.NORMAL) {
+                  ctx.globalCompositeOperation = getCanvasGCO(mode);
+                }
+                ctx.drawImage(os.canvas, 0, 0);
+                if (mode !== MIX_BLEND_MODE.NORMAL) {
+                  ctx.globalCompositeOperation = 'source-over';
+                }
+                os.release();
               }
-            });
+            }
+            else {
+              loader = this.loaders[i] = this.loaders[i] || {
+                error: false,
+                loading: true,
+                width: 0,
+                height: 0,
+                source: undefined,
+              };
+              inject.measureImg(url, (data: any) => {
+                // 可能会变更，所以加载完后对比下是不是当前最新的
+                if (url === (fill[i] as ComputedPattern)?.url) {
+                  loader.loading = false;
+                  if (data.success) {
+                    loader.error = false;
+                    loader.source = data.source;
+                    loader.width = data.width;
+                    loader.height = data.height;
+                    if (!this.isDestroyed) {
+                      this.root!.addUpdate(
+                        this,
+                        [],
+                        RefreshLevel.REPAINT,
+                        false,
+                        false,
+                        undefined,
+                      );
+                    }
+                  }
+                  else {
+                    loader.error = true;
+                  }
+                }
+              });
+            }
           }
           continue;
         }

@@ -337,105 +337,108 @@ class Bitmap extends Node {
           if ((f as ComputedPattern).url) {
             f = f as ComputedPattern;
             const url = f.url;
-            let loader = this.loaders[i];
-            const cache = inject.IMG[url];
-            // 已有的图像同步直接用
-            if (!loader && cache) {
-              loader = this.loaders[i] = {
-                error: false,
-                loading: false,
-                width: cache.width,
-                height: cache.height,
-                source: cache.source,
-              };
-            }
-            const img = inject.IMG[url];
-            if (loader) {
-              // 离屏绘出fill图片，然后先在离屏上应用混合原始图像mask，再主画布应用mode
-              if (!loader.error && !loader.loading) {
-                const os = blend || inject.getOffscreenCanvas(w, h);
-                const ctx2 = os.ctx;
-                if (f.type === PATTERN_FILL_TYPE.TILE) {
-                  const ratio = f.scale ?? 1;
-                  for (let i = 0, len = Math.ceil(iw / scale / ratio / loader.width); i < len; i++) {
-                    for (let j = 0, len = Math.ceil(ih / scale / ratio / loader.height); j < len; j++) {
-                      ctx2.drawImage(
-                        img.source!,
-                        dx + i * img.width * scale * ratio,
-                        dy + j * img.height * scale * ratio,
-                        img.width * scale * ratio,
-                        img.height * scale * ratio,
-                      );
-                    }
-                  }
-                }
-                else if (f.type === PATTERN_FILL_TYPE.FILL) {
-                  const sx = iw / img.width;
-                  const sy = ih / img.height;
-                  const sc = Math.max(sx, sy);
-                  const x = (img.width * sc - iw) * -0.5;
-                  const y = (img.height * sc - ih) * -0.5;
-                  ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
-                    x + dx, y + dy, img.width * sc, img.height * sc);
-                }
-                else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                  ctx2.drawImage(img.source!, dx, dy, iw, ih);
-                }
-                else if (f.type === PATTERN_FILL_TYPE.FIT) {
-                  const sx = iw / img.width;
-                  const sy = ih / img.height;
-                  const sc = Math.min(sx, sy);
-                  const x = (img.width * sc - iw) * -0.5;
-                  const y = (img.height * sc - ih) * -0.5;
-                  ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
-                    x + dx, y + dy, img.width * sc, img.height * sc);
-                }
-                // 离屏上以主画布作为mask保留相同部分
-                ctx2.globalCompositeOperation = 'destination-atop';
-                ctx2.drawImage(canvasCache.offscreen.canvas, 0, 0);
-                // 记得还原
-                if (mode !== MIX_BLEND_MODE.NORMAL) {
-                  ctx.globalCompositeOperation = getCanvasGCO(mode);
-                }
-                ctx.drawImage(os.canvas, 0, 0);
-                if (mode !== MIX_BLEND_MODE.NORMAL) {
-                  ctx.globalCompositeOperation = 'source-atop';
-                }
-                os.release();
+            if (url) {
+              let loader = this.loaders[i];
+              const cache = inject.IMG[url];
+              // 已有的图像同步直接用
+              if (!loader && cache) {
+                loader = this.loaders[i] = {
+                  error: false,
+                  loading: false,
+                  width: cache.width,
+                  height: cache.height,
+                  source: cache.source,
+                };
               }
-            }
-            else {
-              loader = this.loaders[i] = this.loaders[i] || {
-                error: false,
-                loading: true,
-                width: 0,
-                height: 0,
-                source: undefined,
-              };
-              inject.measureImg(url, (data: any) => {
-                // 可能会变或者删除，判断一致
-                if (url === (fill[i] as ComputedPattern)?.url) {
-                  loader.loading = false;
-                  if (data.success) {
-                    loader.error = false;
-                    loader.source = data.source;
-                    loader.width = data.width;
-                    loader.height = data.height;
-                    if (!this.isDestroyed) {
-                      this.root!.addUpdate(
-                        this,
-                        [],
-                        RefreshLevel.REPAINT,
-                        false,
-                        false,
-                        undefined,
-                      );
+              const img = inject.IMG[url];
+              if (loader) {
+                // 离屏绘出fill图片，然后先在离屏上应用混合原始图像mask，再主画布应用mode
+                if (!loader.error && !loader.loading) {
+                  const os = blend || inject.getOffscreenCanvas(w, h);
+                  const ctx2 = os.ctx;
+                  if (f.type === PATTERN_FILL_TYPE.TILE) {
+                    const ratio = f.scale ?? 1;
+                    for (let i = 0, len = Math.ceil(iw / scale / ratio / loader.width); i < len; i++) {
+                      for (let j = 0, len = Math.ceil(ih / scale / ratio / loader.height); j < len; j++) {
+                        ctx2.drawImage(
+                          img.source!,
+                          dx + i * img.width * scale * ratio,
+                          dy + j * img.height * scale * ratio,
+                          img.width * scale * ratio,
+                          img.height * scale * ratio,
+                        );
+                      }
                     }
-                  } else {
-                    loader.error = true;
                   }
+                  else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                    const sx = iw / img.width;
+                    const sy = ih / img.height;
+                    const sc = Math.max(sx, sy);
+                    const x = (img.width * sc - iw) * -0.5;
+                    const y = (img.height * sc - ih) * -0.5;
+                    ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
+                      x + dx, y + dy, img.width * sc, img.height * sc);
+                  }
+                  else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                    ctx2.drawImage(img.source!, dx, dy, iw, ih);
+                  }
+                  else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                    const sx = iw / img.width;
+                    const sy = ih / img.height;
+                    const sc = Math.min(sx, sy);
+                    const x = (img.width * sc - iw) * -0.5;
+                    const y = (img.height * sc - ih) * -0.5;
+                    ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
+                      x + dx, y + dy, img.width * sc, img.height * sc);
+                  }
+                  // 离屏上以主画布作为mask保留相同部分
+                  ctx2.globalCompositeOperation = 'destination-atop';
+                  ctx2.drawImage(canvasCache.offscreen.canvas, 0, 0);
+                  // 记得还原
+                  if (mode !== MIX_BLEND_MODE.NORMAL) {
+                    ctx.globalCompositeOperation = getCanvasGCO(mode);
+                  }
+                  ctx.drawImage(os.canvas, 0, 0);
+                  if (mode !== MIX_BLEND_MODE.NORMAL) {
+                    ctx.globalCompositeOperation = 'source-atop';
+                  }
+                  os.release();
                 }
-              });
+              }
+              else {
+                loader = this.loaders[i] = this.loaders[i] || {
+                  error: false,
+                  loading: true,
+                  width: 0,
+                  height: 0,
+                  source: undefined,
+                };
+                inject.measureImg(url, (data: any) => {
+                  // 可能会变或者删除，判断一致
+                  if (url === (fill[i] as ComputedPattern)?.url) {
+                    loader.loading = false;
+                    if (data.success) {
+                      loader.error = false;
+                      loader.source = data.source;
+                      loader.width = data.width;
+                      loader.height = data.height;
+                      if (!this.isDestroyed) {
+                        this.root!.addUpdate(
+                          this,
+                          [],
+                          RefreshLevel.REPAINT,
+                          false,
+                          false,
+                          undefined,
+                        );
+                      }
+                    }
+                    else {
+                      loader.error = true;
+                    }
+                  }
+                });
+              }
             }
             continue;
           }
