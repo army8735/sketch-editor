@@ -145,7 +145,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
   if (ua) {
     const { scrollOrigin, zoomValue } = ua;
     if (scrollOrigin) {
-      const match = /\{([+-.\d]+),\s*([+-.\d]+)\}/.exec(scrollOrigin);
+      const match = /\{([+-.\d]+),\s*([+-.\d]+)}/.exec(scrollOrigin);
       if (match) {
         x = parseFloat(match[1]) || 0;
         y = parseFloat(match[2]) || 0;

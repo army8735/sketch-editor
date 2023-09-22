@@ -23,16 +23,17 @@ class TextureCache {
     this.gl.deleteTexture(this.texture);
   }
 
-  releaseImg(url: string) {
+  releaseImg(id: string, url: string) {
     if (!this.available) {
       return;
     }
     this.available = false;
-    const o = HASH[url];
-    o.count--;
-    if (!o.count) {
+    const o = HASH[id];
+    const item = o[url];
+    item.count--;
+    if (!item.count) {
       // 此时无引用计数可清空且释放texture
-      delete HASH[url];
+      delete o[url];
       this.gl.deleteTexture(this.texture);
     }
   }
@@ -42,14 +43,18 @@ class TextureCache {
     return new TextureCache(gl, texture, bbox);
   }
 
-  static getImgInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, canvas: HTMLCanvasElement, url: string, bbox: Float64Array) {
-    if (HASH.hasOwnProperty(url)) {
-      const o = HASH[url];
-      o.count++;
-      return new TextureCache(gl, HASH[url].value, bbox);
+  static getImgInstance(id: string, gl: WebGL2RenderingContext | WebGLRenderingContext, canvas: HTMLCanvasElement, url: string, bbox: Float64Array) {
+    if (HASH.hasOwnProperty(id)) {
+      const o = HASH[id];
+      if (o.hasOwnProperty(url)) {
+        const item = o[url];
+        item.count++;
+        return new TextureCache(gl, item.value, bbox);
+      }
     }
     const texture = createTexture(gl, 0, canvas);
-    HASH[url] = {
+    const item = HASH[id] = HASH[id] || {};
+    item[url] = {
       value: texture,
       count: 1,
     };

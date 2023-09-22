@@ -747,6 +747,7 @@ class Bitmap extends Node {
           this.textureTarget[scaleIndex] =
             this.textureCache[0] =
               TextureCache.getImgInstance(
+                this.root!.uuid,
                 gl,
                 canvasCache.offscreen.canvas,
                 this._src,
@@ -762,7 +763,7 @@ class Bitmap extends Node {
   override clearCache(includeSelf = false) {
     if (this.onlyImg) {
       if (includeSelf) {
-        this.textureCache.forEach((item) => item?.releaseImg(this._src));
+        this.textureCache.forEach((item) => item?.releaseImg(this.root!.uuid, this._src));
       }
       this.textureTarget.splice(0);
       // total是本身无需
