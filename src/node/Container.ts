@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Override, Props } from '../format';
+import { JContainer, JNode, Override, Props } from '../format';
 import { pointInRect } from '../math/geom';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
@@ -311,6 +311,12 @@ class Container extends Node {
     props.uuid = uuid.v4();
     const res = new Container(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
+    return res;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson() as JContainer;
+    res.children = this.children.map(item => item.toJson());
     return res;
   }
 }

@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { BitmapProps, Override } from '../format';
+import { BitmapProps, JNode, Override, TAG_NAME } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
@@ -740,19 +740,32 @@ class Bitmap extends Node {
         this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = target;
         return;
       }
+      const uuid = this.root!.uuid;
+      if (TextureCache.hasImgInstance(uuid, this._src)) {
+        this.textureCache[scaleIndex] =
+          this.textureTarget[scaleIndex] =
+          this.textureCache[0] =
+            TextureCache.getImgInstance(
+              uuid,
+              gl,
+              this._src,
+              (this._rect || this.rect).slice(0),
+            );
+        return;
+      }
       this.renderCanvas(scale);
       const canvasCache = this.canvasCache;
       if (canvasCache?.available) {
         this.textureCache[scaleIndex] =
           this.textureTarget[scaleIndex] =
-            this.textureCache[0] =
-              TextureCache.getImgInstance(
-                this.root!.uuid,
-                gl,
-                canvasCache.offscreen.canvas,
-                this._src,
-                (this._rect || this.rect).slice(0),
-              );
+          this.textureCache[0] =
+            TextureCache.getImgInstance(
+              uuid,
+              gl,
+              this._src,
+              (this._rect || this.rect).slice(0),
+              canvasCache.offscreen.canvas,
+            );
         canvasCache.releaseImg(this._src);
       }
     } else {
@@ -780,6 +793,12 @@ class Bitmap extends Node {
     props.src = this._src;
     const res = new Bitmap(props);
     res.style = clone(this.style);
+    return res;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.BITMAP;
     return res;
   }
 

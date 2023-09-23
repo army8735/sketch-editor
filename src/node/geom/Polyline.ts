@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Override, PageProps, Point, PolylineProps } from '../../format';
+import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../../format';
 import { angleBySides, pointsDistance, r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import { unitize } from '../../math/vector';
@@ -922,6 +922,12 @@ class Polyline extends Geom {
     props.uuid = uuid.v4();
     const res = new Polyline(props);
     res.style = clone(this.style);
+    return res;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.POLYLINE;
     return res;
   }
 

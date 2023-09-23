@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { getDefaultStyle, Override, Props } from '../../format';
+import { getDefaultStyle, JNode, Override, Props, TAG_NAME } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
@@ -69,27 +69,12 @@ function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
           return [
             c1, c2, c3, c4, c5, c6,
           ];
-          // return [
-          //   toPrecision(c1),
-          //   toPrecision(c2),
-          //   toPrecision(c3),
-          //   toPrecision(c4),
-          //   toPrecision(c5),
-          //   toPrecision(c6),
-          // ];
         }
         return [
           c1, c2, c3, c4,
         ];
-        // return [
-        //   toPrecision(c1),
-        //   toPrecision(c2),
-        //   toPrecision(c3),
-        //   toPrecision(c4),
-        // ];
       } else {
         return [c1, c2];
-        // return [toPrecision(c1), toPrecision(c2)];
       }
     });
   }
@@ -720,6 +705,12 @@ class ShapeGroup extends Group {
     props.uuid = uuid.v4();
     const res = new ShapeGroup(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
+    return res;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.SHAPE_GROUP;
     return res;
   }
 

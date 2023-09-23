@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Override, Props } from '../format';
+import { JNode, Override, Props, TAG_NAME } from '../format';
 import { calRectPoints } from '../math/matrix';
 import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
@@ -210,6 +210,12 @@ class Group extends Container {
     props.uuid = uuid.v4();
     const res = new Group(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
+    return res;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.GROUP;
     return res;
   }
 

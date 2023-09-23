@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Override, Rich, TextProps } from '../format';
+import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
@@ -2332,6 +2332,12 @@ class Text extends Node {
     props.content = this._content;
     const res = new Text(props);
     res.style = clone(this.style);
+    return res;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.TEXT;
     return res;
   }
 

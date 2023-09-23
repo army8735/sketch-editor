@@ -1,4 +1,4 @@
-import { Override, SymbolInstanceProps } from '../format';
+import { JNode, Override, SymbolInstanceProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import Group from './Group';
 
@@ -19,6 +19,12 @@ class SymbolInstance extends Group {
     this.symbolMaster = symbolMaster;
     this.symbolInstance = this;
     symbolMaster.addSymbolInstance(this);
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.SYMBOL_INSTANCE;
+    return res;
   }
 }
 

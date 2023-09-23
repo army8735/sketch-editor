@@ -1,6 +1,6 @@
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import * as uuid from 'uuid';
-import { getDefaultStyle, JStyle, Override, PageProps, Point, Props } from '../format/';
+import { getDefaultStyle, JNode, JStyle, Override, PageProps, Point, Props } from '../format/';
 import { ResizingConstraint } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -1597,6 +1597,97 @@ class Node extends Event {
     return [this.struct];
   }
 
+  toJson(): JNode {
+    return {
+      tagName: 'node',
+      props: clone(this.props),
+    };
+  }
+
+  toSketchJson(): SketchFormat.AnyLayer {
+    const { props, width, height, style, computedStyle } = this;
+    let resizingConstraint = 0;
+    if (style.left.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.LEFT;
+    }
+    if (style.right.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.RIGHT;
+    }
+    if (style.top.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.TOP;
+    }
+    if (style.bottom.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.BOTTOM;
+    }
+    if (style.width.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.WIDTH;
+    }
+    if (style.height.v === StyleUnit.PX) {
+      resizingConstraint |= ResizingConstraint.HEIGHT;
+    }
+    resizingConstraint ^= ResizingConstraint.UNSET;
+    return {
+      backgroundColor: {
+        alpha: computedStyle.backgroundColor[3],
+        blue: computedStyle.backgroundColor[2] / 255,
+        green: computedStyle.backgroundColor[1] / 255,
+        red: computedStyle.backgroundColor[0] / 255,
+        _class: 'color',
+      },
+      booleanOperation: computedStyle.booleanOperation - 1,
+      clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
+      do_objectID: props.uuid!,
+      exportOptions: {
+        exportFormats: [],
+        includedLayerIds: [],
+        layerOptions: 0,
+        shouldTrim: false,
+        _class: 'exportOptions',
+      },
+      frame: {
+        constrainProportions: props.constrainProportions || false,
+        height,
+        width,
+        x: computedStyle.left,
+        y: computedStyle.top,
+        _class: 'rect',
+      },
+      hasBackgroundColor: false,
+      hasClickThrough: true,
+      hasClippingMask: computedStyle.maskMode !== MASK.NONE,
+      horizontalRulerData: {
+        base: 0,
+        guides: [],
+        _class: 'rulerData',
+      },
+      includeBackgroundColorInExport: false,
+      isFixedToViewport: false,
+      isFlippedHorizontal: false,
+      isFlippedVertical: false,
+      isFlowHome: false,
+      isLocked: props.isLocked || false,
+      isTemplate: false,
+      isVisible: computedStyle.visible,
+      layerListExpandedType: props.isExpanded
+        ? SketchFormat.LayerListExpanded.Expanded
+        : SketchFormat.LayerListExpanded.Collapsed,
+      layers: [],
+      name: props.name || '',
+      nameIsFixed: false,
+      resizesContent: false,
+      resizingConstraint,
+      resizingType: 0,
+      rotation: -computedStyle.rotateZ,
+      shouldBreakMaskChain: computedStyle.breakMask,
+      verticalRulerData: {
+        base: 0,
+        guides: [],
+        _class: 'rulerData',
+      },
+      _class: 'artboard',
+    };
+  }
+
   clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
@@ -1816,90 +1907,6 @@ class Node extends Event {
       }
     }
     return res;
-  }
-
-  toSketchJson(): SketchFormat.AnyLayer {
-    const { props, width, height, style, computedStyle } = this;
-    let resizingConstraint = 0;
-    if (style.left.v === StyleUnit.PX) {
-      resizingConstraint |= ResizingConstraint.LEFT;
-    }
-    if (style.right.v === StyleUnit.PX) {
-      resizingConstraint |= ResizingConstraint.RIGHT;
-    }
-    if (style.top.v === StyleUnit.PX) {
-      resizingConstraint |= ResizingConstraint.TOP;
-    }
-    if (style.bottom.v === StyleUnit.PX) {
-      resizingConstraint |= ResizingConstraint.BOTTOM;
-    }
-    if (style.width.v === StyleUnit.PX) {
-      resizingConstraint |= ResizingConstraint.WIDTH;
-    }
-    if (style.height.v === StyleUnit.PX) {
-      resizingConstraint |= ResizingConstraint.HEIGHT;
-    }
-    resizingConstraint ^= ResizingConstraint.UNSET;
-    return {
-      backgroundColor: {
-        alpha: computedStyle.backgroundColor[3],
-        blue: computedStyle.backgroundColor[2] / 255,
-        green: computedStyle.backgroundColor[1] / 255,
-        red: computedStyle.backgroundColor[0] / 255,
-        _class: 'color',
-      },
-      booleanOperation: computedStyle.booleanOperation - 1,
-      clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
-      do_objectID: props.uuid!,
-      exportOptions: {
-        exportFormats: [],
-        includedLayerIds: [],
-        layerOptions: 0,
-        shouldTrim: false,
-        _class: 'exportOptions',
-      },
-      frame: {
-        constrainProportions: props.constrainProportions || false,
-        height,
-        width,
-        x: computedStyle.left,
-        y: computedStyle.top,
-        _class: 'rect',
-      },
-      hasBackgroundColor: false,
-      hasClickThrough: true,
-      hasClippingMask: computedStyle.maskMode !== MASK.NONE,
-      horizontalRulerData: {
-        base: 0,
-        guides: [],
-        _class: 'rulerData',
-      },
-      includeBackgroundColorInExport: false,
-      isFixedToViewport: false,
-      isFlippedHorizontal: false,
-      isFlippedVertical: false,
-      isFlowHome: false,
-      isLocked: props.isLocked || false,
-      isTemplate: false,
-      isVisible: computedStyle.visible,
-      layerListExpandedType: props.isExpanded
-        ? SketchFormat.LayerListExpanded.Expanded
-        : SketchFormat.LayerListExpanded.Collapsed,
-      layers: [],
-      name: props.name || '',
-      nameIsFixed: false,
-      resizesContent: false,
-      resizingConstraint,
-      resizingType: 0,
-      rotation: -computedStyle.rotateZ,
-      shouldBreakMaskChain: computedStyle.breakMask,
-      verticalRulerData: {
-        base: 0,
-        guides: [],
-        _class: 'rulerData',
-      },
-      _class: 'artboard',
-    };
   }
 }
 

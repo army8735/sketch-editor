@@ -43,7 +43,17 @@ class TextureCache {
     return new TextureCache(gl, texture, bbox);
   }
 
-  static getImgInstance(id: string, gl: WebGL2RenderingContext | WebGLRenderingContext, canvas: HTMLCanvasElement, url: string, bbox: Float64Array) {
+  static hasImgInstance(id: string, url: string) {
+    if (HASH.hasOwnProperty(id)) {
+      const o = HASH[id];
+      if (o.hasOwnProperty(url)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static getImgInstance(id: string, gl: WebGL2RenderingContext | WebGLRenderingContext, url: string, bbox: Float64Array, canvas?: HTMLCanvasElement) {
     if (HASH.hasOwnProperty(id)) {
       const o = HASH[id];
       if (o.hasOwnProperty(url)) {
@@ -52,7 +62,7 @@ class TextureCache {
         return new TextureCache(gl, item.value, bbox);
       }
     }
-    const texture = createTexture(gl, 0, canvas);
+    const texture = createTexture(gl, 0, canvas!);
     const item = HASH[id] = HASH[id] || {};
     item[url] = {
       value: texture,

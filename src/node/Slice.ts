@@ -1,5 +1,5 @@
 import Node from './Node';
-import { Props } from '../format';
+import { JNode, Props, TAG_NAME } from '../format';
 
 class Slice extends Node {
   constructor(props: Props) {
@@ -9,6 +9,12 @@ class Slice extends Node {
 
   override calContent(): boolean {
     return this.hasContent = false;
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.SLICE;
+    return res;
   }
 }
 

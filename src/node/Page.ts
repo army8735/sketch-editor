@@ -209,6 +209,12 @@ class Page extends Container {
     }
   }
 
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.PAGE;
+    return res;
+  }
+
   static parse(json: JNode, root: Root) {
     return parse(json, root);
   }

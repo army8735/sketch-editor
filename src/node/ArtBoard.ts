@@ -1,4 +1,4 @@
-import { ArtBoardProps, Props } from '../format';
+import { ArtBoardProps, JNode, Props, TAG_NAME } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoints } from '../math/matrix';
 import { color2gl } from '../style/css';
@@ -336,6 +336,12 @@ class ArtBoard extends Container {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer);
     gl.disableVertexAttribArray(a_position);
+  }
+
+  override toJson(): JNode {
+    const res = super.toJson();
+    res.tagName = TAG_NAME.ART_BOARD;
+    return res;
   }
 
   static BOX_SHADOW =
