@@ -1067,45 +1067,39 @@ $main.addEventListener('wheel', function(e) {
   hideHover();
   // 按下时缩放
   if (metaKey) {
-    let sc = 1;
+    let sc = 0;
     if(e.deltaY < 0) {
-      if(e.deltaY < -300) {
-        sc = 0.125;
+      if(e.deltaY < -400) {
+        sc = -0.2;
       }
       else if(e.deltaY < -200) {
-        sc = 0.25;
+        sc = -0.15;
       }
       else if(e.deltaY < -100) {
-        sc = 0.5;
+        sc = -0.1;
       }
       else if(e.deltaY < -50) {
-        sc = 0.75;
-      }
-      else if(e.deltaY < -20) {
-        sc = 0.875;
+        sc = -0.05;
       }
       else {
-        sc = 0.9375;
+        sc = -0.02;
       }
     }
     else if(e.deltaY > 0) {
-      if(e.deltaY > 300) {
-        sc = 2;
+      if(e.deltaY > 400) {
+        sc = 0.2;
       }
       else if(e.deltaY > 200) {
-        sc = 1.75;
+        sc = 0.15;
       }
       else if(e.deltaY > 100) {
-        sc = 1.5;
+        sc = 0.1;
       }
       else if(e.deltaY > 50) {
-        sc = 1.25;
-      }
-      else if(e.deltaY > 20) {
-        sc = 1.125;
+        sc = 0.05;
       }
       else {
-        sc = 1.0625;
+        sc = 0.02;
       }
     }
     const x = lastX - originX;
@@ -1113,12 +1107,12 @@ $main.addEventListener('wheel', function(e) {
     const x1 = x * dpi / root.width;
     const y1 = y * dpi / root.height;
     const scaleX = curPage.computedStyle.scaleX;
-    let scale = scaleX * sc;
+    let scale = scaleX + sc;
     if(scale > 32) {
       scale = 32;
     }
-    else if(scale < 0.03125) {
-      scale = 0.03125;
+    else if(scale < 0.01) {
+      scale = 0.01;
     }
     root.zoomTo(scale, x1, y1);
     zoom = curPage.getZoom();
