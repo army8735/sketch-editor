@@ -448,17 +448,77 @@ export function drawMotion(
   const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
-  // 纹理单元
-  bindTexture(gl, texture, 0);
-  const u_texture = gl.getUniformLocation(program, 'u_texture');
-  gl.uniform1i(u_texture, 0);
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
-  const sin = Math.sin(angle) * kernel * 0.5 / (w - kernel * 2);
-  const cos = Math.cos(angle) * kernel * 0.5 / (h - kernel * 2);
+  const sin = Math.sin(angle) * kernel * 0.5 / w;
+  const cos = Math.cos(angle) * kernel * 0.5 / h;
   const u_velocity = gl.getUniformLocation(program, 'u_velocity');
   gl.uniform2f(u_velocity, cos, sin);
+  // 类似高斯模糊，但不拆分xy，直接一起固定执行
+  let res = texture;
+  const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收
+  for (let i = 0; i < 3; i++) {
+    const t = createTexture(gl, 0, undefined, w, h);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      t,
+      0,
+    );
+    bindTexture(gl, res, 0);
+    const u_texture = gl.getUniformLocation(program, 'u_texture');
+    gl.uniform1i(u_texture, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    recycle.push(res);
+    res = t;
+  }
+  // 销毁
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  recycle.forEach((item) => {
+    // 传入的原始不回收，交由外部控制
+    if (item !== texture) {
+      gl.deleteTexture(item);
+    }
+  });
+  return res;
+}
+
+export function drawRadial(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: any,
+  texture: WebGLTexture,
+  kernel: number,
+  center: [number, number],
+  w: number,
+  h: number,
+) {
+  const { vtPoint, vtTex } = getSingleCoords();
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  const texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 参数
+  const u_kernel = gl.getUniformLocation(program, 'u_kernel');
+  gl.uniform1i(u_kernel, kernel >> 1); // 转半径，自动奇数变偶数
+  const u_center = gl.getUniformLocation(program, 'u_center');
+  gl.uniform2f(u_center, center[0], center[1]);
+  const u_size = gl.getUniformLocation(program, 'u_size');
+  gl.uniform2f(u_size, w, h);
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
   let res = texture;
   const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收

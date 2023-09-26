@@ -27,6 +27,7 @@ import mainVert from '../gl/main.vert';
 import mainFrag from '../gl/main.frag';
 import maskFrag from '../gl/mask.frag';
 import motionFrag from '../gl/motion.frag';
+import radialFrag from '../gl/radial.frag';
 import simpleVert from '../gl/simple.vert';
 import simpleFrag from '../gl/simple.frag';
 import tintFrag from '../gl/tint.frag';
@@ -181,6 +182,7 @@ class Root extends Container implements FrameCallback {
     this.programs.tintProgram = initShaders(gl, simpleVert, tintFrag);
     this.programs.cmProgram = initShaders(gl, simpleVert, cmFrag);
     this.programs.motionProgram = initShaders(gl, simpleVert, motionFrag);
+    this.programs.radialProgram = initShaders(gl, simpleVert, radialFrag);
     gl.useProgram(program);
   }
 

@@ -8,7 +8,7 @@ import {
   drawColorMatrix,
   drawGauss,
   drawMask,
-  drawMbm, drawMotion,
+  drawMbm, drawMotion, drawRadial,
   drawTextureCache,
   drawTint,
   initShaders,
@@ -1071,20 +1071,20 @@ function genFilter(
   }
   // 径向模糊/缩放模糊
   else if (blur.t === BLUR.RADIAL && blur.radius >= 1) {
-    // let t = genRadialBlur(
-    //   gl,
-    //   root,
-    //   res || source,
-    //   blur.radius,
-    //   blur.center!,
-    //   W,
-    //   H,
-    //   scale,
-    // );
-    // if (res) {
-    //   res.release();
-    // }
-    // res = t;
+    let t = genRadialBlur(
+      gl,
+      root,
+      res || source,
+      blur.radius,
+      blur.center!,
+      W,
+      H,
+      scale,
+    );
+    if (res) {
+      res.release();
+    }
+    res = t;
   }
   // 运动模糊/方向模糊
   else if (blur.t === BLUR.MOTION && blur.radius >= 1) {
@@ -1303,18 +1303,88 @@ function genMotionBlur(
     dy,
     false,
   );
-  // 迭代方向模糊
-  // const res = createTexture(gl, 0, undefined, w, h);
-  // gl.framebufferTexture2D(
-  //   gl.FRAMEBUFFER,
-  //   gl.COLOR_ATTACHMENT0,
-  //   gl.TEXTURE_2D,
-  //   res,
-  //   0,
-  // );
+  // 迭代运动模糊
   const programMotion = programs.motionProgram;
   gl.useProgram(programMotion);
   const res = drawMotion(gl, programMotion, target.texture, spread, d2r(angle), w, h);
+  // 删除fbo恢复
+  gl.deleteTexture(target.texture);
+  target.texture = res;
+  gl.useProgram(program);
+  releaseFrameBuffer(gl, frameBuffer, W, H);
+  return target;
+}
+
+function genRadialBlur(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  textureTarget: TextureCache,
+  sigma: number,
+  center: [number, number],
+  W: number,
+  H: number,
+  scale: number,
+) {
+  const d = kernelSize(sigma * scale);
+  const spread = outerSizeByD(d);
+  const bbox = textureTarget.bbox.slice(0);
+  bbox[0] -= spread;
+  bbox[1] -= spread;
+  bbox[2] += spread;
+  bbox[3] += spread;
+  // 写到一个扩展好尺寸的tex中方便后续处理
+  const x = bbox[0],
+    y = bbox[1];
+  let w = bbox[2] - bbox[0],
+    h = bbox[3] - bbox[1];
+  while (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+    ) {
+    if (scale <= 1) {
+      break;
+    }
+    scale = scale >> 1;
+  }
+  if (
+    w * scale > config.MAX_TEXTURE_SIZE ||
+    h * scale > config.MAX_TEXTURE_SIZE
+  ) {
+    return;
+  }
+  const programs = root.programs;
+  const program = programs.program;
+  const dx = -x,
+    dy = -y;
+  w *= scale;
+  h *= scale;
+  const cx = w * 0.5,
+    cy = h * 0.5;
+  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
+  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
+  const matrix = multiplyScale(identity(), scale);
+  // 原本内容绘入扩展好的
+  drawTextureCache(
+    gl,
+    cx,
+    cy,
+    program,
+    [
+      {
+        opacity: 1,
+        matrix,
+        bbox: textureTarget.bbox,
+        texture: textureTarget.texture,
+      },
+    ],
+    dx,
+    dy,
+    false,
+  );
+  // 迭代径向模糊
+  const programRadial = programs.radialProgram;
+  gl.useProgram(programRadial);
+  const res = drawRadial(gl, programRadial, target.texture, spread, center, w, h);
   // 删除fbo恢复
   gl.deleteTexture(target.texture);
   target.texture = res;

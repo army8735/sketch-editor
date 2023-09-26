@@ -444,12 +444,12 @@ export function normalize(style: any): Style {
           const m = match[1].match(reg.number);
           if (m) {
             center[0] = {
-              u: parseFloat(m[0]),
-              v: StyleUnit.PERCENT,
+              v: parseFloat(m[0]),
+              u: StyleUnit.PERCENT,
             };
             center[1] = {
-              u: parseFloat(m[1]),
-              v: StyleUnit.PERCENT,
+              v: parseFloat(m[1]),
+              u: StyleUnit.PERCENT,
             };
           }
         }

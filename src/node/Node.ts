@@ -21,16 +21,11 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import TextureCache from '../refresh/TextureCache';
-import {
-  calNormalLineHeight,
-  calSize,
-  color2hexStr,
-  equalStyle,
-  normalize,
-} from '../style/css';
+import { calNormalLineHeight, calSize, color2hexStr, equalStyle, normalize, } from '../style/css';
 import {
   BLUR,
-  ColorStop, ComputedGradient,
+  ColorStop,
+  ComputedGradient,
   ComputedPattern,
   ComputedShadow,
   ComputedStyle,
@@ -45,7 +40,7 @@ import {
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
 import Event from '../util/Event';
-import { equal, clone } from '../util/util';
+import { clone, equal } from '../util/util';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
@@ -1892,7 +1887,7 @@ class Node extends Event {
       res[1] += sb[1];
       res[2] += sb[2];
       res[3] += sb[3];
-      if (blur.t === BLUR.GAUSSIAN) {
+      if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.BACKGROUND || blur.t === BLUR.RADIAL) {
         const r = blur.radius!;
         if (r > 0) {
           const d = kernelSize(r);
