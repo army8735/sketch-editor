@@ -1,4 +1,4 @@
-import equation from './equation';
+import { getRoots, pointSlope2General, twoPoint2General } from './equation';
 
 /**
  * 二阶贝塞尔曲线范围框
@@ -32,10 +32,10 @@ function bboxBezier2(x0: number, y0: number, x1: number, y1: number, x2: number,
     else if (ty > 1) {
       ty = 1;
     }
-    let sx = 1 - tx;
-    let sy = 1 - ty;
-    let qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
-    let qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
+    const sx = 1 - tx;
+    const sy = 1 - ty;
+    const qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
+    const qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
     minX = Math.min(minX, qx);
     minY = Math.min(minY, qy);
     maxX = Math.max(maxX, qx);
@@ -53,12 +53,12 @@ function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number,
   let maxX = Math.max(x0, x3);
   let maxY = Math.max(y0, y3);
   if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
-    let cx = -x0 + x1;
-    let cy = -y0 + y1;
-    let bx = x0 - 2 * x1 + x2;
-    let by = y0 - 2 * y1 + y2;
-    let ax = -x0 + 3 * x1 - 3 * x2 + x3;
-    let ay = -y0 + 3 * y1 - 3 * y2 + y3;
+    const cx = -x0 + x1;
+    const cy = -y0 + y1;
+    const bx = x0 - 2 * x1 + x2;
+    const by = y0 - 2 * y1 + y2;
+    const ax = -x0 + 3 * x1 - 3 * x2 + x3;
+    const ay = -y0 + 3 * y1 - 3 * y2 + y3;
     let hx = bx * bx - ax * cx;
     let hy = by * by - ay * cy;
     if (hx > 0) {
@@ -66,15 +66,15 @@ function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number,
       let t = (-bx - hx) / ax;
       // 2次项系数为0注意降级为一元一次方程
       if (ax && t > 0 && t < 1) {
-        let s = 1 - t;
-        let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+        const s = 1 - t;
+        const q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
         minX = Math.min(minX, q);
         maxX = Math.max(maxX, q);
       }
       t = ax ? ((-bx + hx) / ax) : (-cx * 0.5 / bx);
       if (t > 0 && t < 1) {
-        let s = 1 - t;
-        let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+        const s = 1 - t;
+        const q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
         minX = Math.min(minX, q);
         maxX = Math.max(maxX, q);
       }
@@ -83,15 +83,15 @@ function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number,
       hy = Math.sqrt(hy);
       let t = (-by - hy) / ay;
       if (ay && t > 0 && t < 1) {
-        let s = 1 - t;
-        let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
+        const s = 1 - t;
+        const q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
         minY = Math.min(minY, q);
         maxY = Math.max(maxY, q);
       }
       t = ay ? ((-by + hy) / ay) : (-cy * 0.5 / by);
       if (t > 0 && t < 1) {
-        let s = 1 - t;
-        let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
+        const s = 1 - t;
+        const q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
         minY = Math.min(minY, q);
         maxY = Math.max(maxY, q);
       }
@@ -102,12 +102,12 @@ function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number,
 
 export function bboxBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number,
                            x3?: number, y3?: number) {
-  let len = arguments.length;
+  const len = arguments.length;
   if (len === 4) {
-    let a = Math.min(x0, x1);
-    let b = Math.min(y0, y1);
-    let c = Math.max(x0, x1);
-    let d = Math.max(y0, y1);
+    const a = Math.min(x0, x1);
+    const b = Math.min(y0, y1);
+    const c = Math.max(x0, x1);
+    const d = Math.max(y0, y1);
     return [a, b, c, d];
   }
   if (len === 6) {
@@ -123,16 +123,16 @@ export function bboxBezier(x0: number, y0: number, x1: number, y1: number, x2: n
  * 范数 or 模
  */
 export function norm(v: Array<number>) {
-  let order = v.length;
-  let sum = v.reduce((a, b) => Math.pow(a, order) + Math.pow(b, order));
+  const order = v.length;
+  const sum = v.reduce((a, b) => Math.pow(a, order) + Math.pow(b, order));
   return Math.pow(sum, 1 / order);
 }
 
 // https://zhuanlan.zhihu.com/p/130247362
 function simpson38(derivativeFunc: (n: number) => number, l: number, r: number) {
-  let f = derivativeFunc;
-  let middleL = (2 * l + r) / 3;
-  let middleR = (l + 2 * r) / 3;
+  const f = derivativeFunc;
+  const middleL = (2 * l + r) / 3;
+  const middleR = (l + 2 * r) / 3;
   return (f(l) + 3 * f(middleL) + 3 * f(middleR) + f(r)) * (r - l) / 8;
 }
 
@@ -145,12 +145,12 @@ function simpson38(derivativeFunc: (n: number) => number, l: number, r: number) 
  * @return {*} number
  */
 function adaptiveSimpson38(derivativeFunc: (n: number) => number, l: number, r: number, eps = 0.001): number {
-  let f = derivativeFunc;
-  let mid = (l + r) / 2;
-  let st = simpson38(f, l, r);
-  let sl = simpson38(f, l, mid);
-  let sr = simpson38(f, mid, r);
-  let ans = sl + sr - st;
+  const f = derivativeFunc;
+  const mid = (l + r) / 2;
+  const st = simpson38(f, l, r);
+  const sl = simpson38(f, l, mid);
+  const sr = simpson38(f, mid, r);
+  const ans = sl + sr - st;
   if (Math.abs(ans) <= 15 * eps) {
     return sl + sr + ans / 15;
   }
@@ -166,15 +166,15 @@ function adaptiveSimpson38(derivativeFunc: (n: number) => number, l: number, r: 
  */
 export function bezierLength(points: Array<{ x: number, y: number }>, startT = 0, endT = 1) {
   if (points.length === 2) {
-    let { x: x0, y: y0 } = points[0];
-    let { x: x1, y: y1 } = points[1];
+    const { x: x0, y: y0 } = points[0];
+    const { x: x1, y: y1 } = points[1];
     return Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
   }
   if (points.length > 4) {
     throw new Error('Unsupported order');
   }
-  let derivativeFunc = (t: number) => {
-    const r = at(t, points);
+  const derivativeFunc = (t: number) => {
+    const r = bezierAt(t, points);
     return norm([r.x, r.y]);
   };
   return adaptiveSimpson38(derivativeFunc, startT, endT);
@@ -183,11 +183,11 @@ export function bezierLength(points: Array<{ x: number, y: number }>, startT = 0
 /**
  * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
  */
-function at3(t: number, points: Array<{ x: number, y: number }>, order = 1) {
-  let { x: x0, y: y0 } = points[0];
-  let { x: x1, y: y1 } = points[1];
-  let { x: x2, y: y2 } = points[2];
-  let { x: x3, y: y3 } = points[3];
+function bezierAt3(t: number, points: Array<{ x: number, y: number }>, order = 1) {
+  const { x: x0, y: y0 } = points[0];
+  const { x: x1, y: y1 } = points[1];
+  const { x: x2, y: y2 } = points[2];
+  const { x: x3, y: y3 } = points[3];
   let x = 0;
   let y = 0;
   // 3阶导数就是常数了，大于3阶的都是0
@@ -213,10 +213,10 @@ function at3(t: number, points: Array<{ x: number, y: number }>, order = 1) {
 /**
  * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
  */
-function at2(t: number, points: Array<{ x: number, y: number }>, order = 1) {
-  let { x: x0, y: y0 } = points[0];
-  let { x: x1, y: y1 } = points[1];
-  let { x: x2, y: y2 } = points[2];
+function bezierAt2(t: number, points: Array<{ x: number, y: number }>, order = 1) {
+  const { x: x0, y: y0 } = points[0];
+  const { x: x1, y: y1 } = points[1];
+  const { x: x2, y: y2 } = points[2];
   let x = 0;
   let y = 0;
   if (order === 0) {
@@ -234,12 +234,12 @@ function at2(t: number, points: Array<{ x: number, y: number }>, order = 1) {
   return { x, y };
 }
 
-export function at(t: number, points: Array<{ x: number, y: number }>, derivativeOrder = 1) {
+export function bezierAt(t: number, points: Array<{ x: number, y: number }>, derivativeOrder = 1) {
   if (points.length === 4) {
-    return at3(t, points, derivativeOrder);
+    return bezierAt3(t, points, derivativeOrder);
   }
   else if (points.length === 3) {
-    return at2(t, points, derivativeOrder);
+    return bezierAt2(t, points, derivativeOrder);
   }
   else {
     throw new Error('Unsupported order')
@@ -357,12 +357,12 @@ export function getPointT(points: Array<{ x: number, y: number }>, x: number, y:
 
 function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: number) {
   // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
-  let tx = equation.getRoots([
+  const tx = getRoots([
     points[0].x - x,
     2 * (points[1].x - points[0].x),
     points[2].x + points[0].x - 2 * points[1].x,
   ]).filter(i => i >= 0 && i <= 1);
-  let ty = equation.getRoots([
+  const ty = getRoots([
     points[0].y - y,
     2 * (points[1].y - points[0].y),
     points[2].y + points[0].y - 2 * points[1].y,
@@ -370,10 +370,10 @@ function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: numbe
   // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
   let t = [];
   for (let i = 0, len = tx.length; i < len; i++) {
-    let x = tx[i];
+    const x = tx[i];
     for (let j = 0, len = ty.length; j < len; j++) {
-      let y = ty[j];
-      let diff = Math.abs(x - y);
+      const y = ty[j];
+      const diff = Math.abs(x - y);
       // 必须小于一定误差
       if (diff <= 1e-2) {
         t.push({
@@ -392,12 +392,12 @@ function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: numbe
   }
   // 取均数
   t = t.map(item => (item.x + item.y) * 0.5);
-  let res: Array<number> = [];
+  const res: Array<number> = [];
   t.forEach(t => {
-    let xt = points[0].x * Math.pow(1 - t, 2)
+    const xt = points[0].x * Math.pow(1 - t, 2)
       + 2 * points[1].x * t * (1 - t)
       + points[2].x * t * t;
-    let yt = points[0].y * Math.pow(1 - t, 2)
+    const yt = points[0].y * Math.pow(1 - t, 2)
       + 2 * points[1].y * t * (1 - t)
       + points[2].y * t * t;
     // 计算误差忽略
@@ -409,13 +409,13 @@ function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: numbe
 }
 
 function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: number) {
-  let tx = equation.getRoots([
+  const tx = getRoots([
     points[0].x - x,
     3 * (points[1].x - points[0].x),
     3 * (points[2].x + points[0].x - 2 * points[1].x),
     points[3].x - points[0].x + 3 * points[1].x - 3 * points[2].x,
   ]).filter(i => i >= 0 && i <= 1);
-  let ty = equation.getRoots([
+  const ty = getRoots([
     points[0].y - y,
     3 * (points[1].y - points[0].y),
     3 * (points[2].y + points[0].y - 2 * points[1].y),
@@ -424,10 +424,10 @@ function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: numbe
   // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
   let t = [];
   for (let i = 0, len = tx.length; i < len; i++) {
-    let x = tx[i];
+    const x = tx[i];
     for (let j = 0, len = ty.length; j < len; j++) {
-      let y = ty[j];
-      let diff = Math.abs(x - y);
+      const y = ty[j];
+      const diff = Math.abs(x - y);
       // 必须小于一定误差
       if (diff <= 1e-2) {
         t.push({
@@ -446,13 +446,13 @@ function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: numbe
   }
   // 取均数
   t = t.map(item => (item.x + item.y) * 0.5);
-  let res: Array<number> = [];
+  const res: Array<number> = [];
   t.forEach(t => {
-    let xt = points[0].x * Math.pow(1 - t, 3)
+    const xt = points[0].x * Math.pow(1 - t, 3)
       + 3 * points[1].x * t * Math.pow(1 - t, 2)
       + 3 * points[2].x * t * t * (1 - t)
       + points[3].x * Math.pow(t, 3);
-    let yt = points[0].y * Math.pow(1 - t, 3)
+    const yt = points[0].y * Math.pow(1 - t, 3)
       + 3 * points[1].y * t * Math.pow(1 - t, 2)
       + 3 * points[2].y * t * t * (1 - t)
       + points[3].y * Math.pow(t, 3);
@@ -510,13 +510,133 @@ function bezier3Slope(points: Array<{ x: number, y: number }>, t: number) {
     + 3 * y1 - 3 * y0) / x;
 }
 
+function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
+  let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+  if (isNaN(tx) || tx < 0) {
+    tx = 0;
+  }
+  else if (tx > 1) {
+    tx = 1;
+  }
+  let ty = (y0 - y1) / (y0 - 2 * y1 + y2);
+  if (isNaN(ty) || ty < 0) {
+    ty = 0;
+  }
+  else if (ty > 1) {
+    ty = 1;
+  }
+  const res = [tx];
+  if (ty !== tx) {
+    res.push(ty);
+  }
+  res.sort((a, b) => a - b);
+  if (res[0] > 0) {
+    res.unshift(0);
+  }
+  if (res[res.length - 1] < 1) {
+    res.push(1);
+  }
+  return res;
+}
+
+function bezierExtremeT3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+  const cx = -x0 + x1;
+  const cy = -y0 + y1;
+  const bx = x0 - 2 * x1 + x2;
+  const by = y0 - 2 * y1 + y2;
+  const ax = -x0 + 3 * x1 - 3 * x2 + x3;
+  const ay = -y0 + 3 * y1 - 3 * y2 + y3;
+  let hx = bx * bx - ax * cx;
+  let hy = by * by - ay * cy;
+  const res: number[] = [];
+  if (hx > 0) {
+    hx = Math.sqrt(hx);
+    let t = (-bx - hx) / ax;
+    // 2次项系数为0注意降级为一元一次方程
+    if (ax && t > 0 && t < 1) {
+      res.push(t);
+    }
+    t = ax ? ((-bx + hx) / ax) : (-cx * 0.5 / bx);
+    if (t > 0 && t < 1) {
+      res.push(t);
+    }
+  }
+  if (hy > 0) {
+    hy = Math.sqrt(hy);
+    let t = (-by - hy) / ay;
+    if (ay && t > 0 && t < 1) {
+      res.push(t);
+    }
+    t = ay ? ((-by + hy) / ay) : (-cy * 0.5 / by);
+    if (t > 0 && t < 1) {
+      res.push(t);
+    }
+  }
+  res.sort((a, b) => a - b);
+  for (let i = res.length - 1; i > 0; i--) {
+    if (res[i] === res[i - 1]) {
+      res.splice(i, 1);
+    }
+  }
+  if (res[0] > 0) {
+    res.unshift(0);
+  }
+  if (res[res.length - 1] < 1) {
+    res.push(1);
+  }
+  return res;
+}
+
+// 贝塞尔曲线的极值点的t，包含默认的0和1，直线则默认就是[0, 1]
+export function bezierExtremeT(x0: number, y0: number, x1: number, y1: number,
+                               x2?: number, y2?: number, x3?: number, y3?: number) {
+  const len = arguments.length;
+  if (len === 4) {
+    return [0, 1];
+  }
+  if (len === 6) {
+    return bezierExtremeT2(x0, y0, x1, y1, x2!, y2!);
+  }
+  if (len === 8) {
+    return bezierExtremeT3(x0, y0, x1, y1, x2!, y2!, x3!, y3!);
+  }
+  throw new Error('Unsupported order');
+}
+
+// 在t处的切线方程，返回一般式，直线就是本身
+export function bezierTangent(points: Array<{ x: number, y: number }>, t = 0) {
+  if (points.length === 2) {
+    return twoPoint2General(points[0].x, points[0].y, points[1].x, points[1].y);
+  }
+  if (points.length === 3) {
+    return bezierTangent2(points, t);
+  }
+  if (points.length === 4) {
+    return bezierTangent3(points, t);
+  }
+  throw new Error('Unsupported order');
+}
+
+function bezierTangent2(points: Array<{ x: number, y: number }>, t = 0) {
+  const k = bezier2Slope(points, t);
+  const p = pointByT2(points, t);
+  return pointSlope2General(p.x, p.y, k);
+}
+
+function bezierTangent3(points: Array<{ x: number, y: number }>, t = 0) {
+  const k = bezier3Slope(points, t);
+  const p = pointByT3(points, t);
+  return pointSlope2General(p.x, p.y, k);
+}
+
 export default {
   bboxBezier,
   bezierLength,
-  at,
+  bezierAt,
   sliceBezier,
   sliceBezier2Both,
   pointByT,
   getPointT,
   bezierSlope,
+  bezierExtremeT,
 };

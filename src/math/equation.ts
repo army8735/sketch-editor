@@ -6,7 +6,7 @@ const TOLERANCE = 1e-9;
  * root = -b / a
  * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
  */
-function getLinearRoot(coefs: Array<number>) {
+function getLinearRoot(coefs: number[]) {
   let result = [];
   let a = coefs[1];
 
@@ -22,7 +22,7 @@ function getLinearRoot(coefs: Array<number>) {
  * root = (-b ± sqrt(b^2 - 4ac)) / 2a
  * @param {Array<Number>} coefs 系数，系数 [c, b, a]
  */
-function getQuadraticRoots(coefs: Array<number>) {
+function getQuadraticRoots(coefs: number[]) {
   let results = [];
 
   let a = coefs[2];
@@ -46,7 +46,7 @@ function getQuadraticRoots(coefs: Array<number>) {
  * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
  * @param {Array<Number>} coefs 系数
  */
-function getCubicRoots(coefs: Array<number>) {
+function getCubicRoots(coefs: number[]) {
   let results = [];
 
   let c3 = coefs[3];
@@ -114,7 +114,7 @@ function getCubicRoots(coefs: Array<number>) {
  * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
  * @param {Array<Number>} coefs 系数
  */
-function getQuarticRoots(coefs: Array<number>) {
+function getQuarticRoots(coefs: number[]) {
   let results = [];
 
   let c4 = coefs[4];
@@ -184,7 +184,7 @@ function getQuarticRoots(coefs: Array<number>) {
  * 计算方程的根
  * @param {Array<Number>} coefs 系数按幂次方倒序
  */
-function getRoots(coefs: Array<number>) {
+export function getRoots(coefs: number[]) {
   let degree = coefs.length - 1;
   for(let i = degree; i >= 0; i--) {
     if(Math.abs(coefs[i]) < 1e-12) {
@@ -194,7 +194,7 @@ function getRoots(coefs: Array<number>) {
       break;
     }
   }
-  let result: Array<number> = [];
+  let result: number[] = [];
   switch (degree) {
     case 1:
       result = getLinearRoot(coefs);
@@ -211,6 +211,18 @@ function getRoots(coefs: Array<number>) {
   return result;
 }
 
+// 直线两点式转一般式
+export function twoPoint2General(x1: number, y1: number, x2: number, y2: number) {
+  return [y2 - y1, x1 - x2, y1 * (x2 - x1) - x1 * (y2 - y1)];
+}
+
+// 直线点斜式转一般式
+export function pointSlope2General(x1: number, y1: number, k: number) {
+  return [k, -1, y1 - k * x1];
+}
+
 export default {
   getRoots,
+  twoPoint2General,
+  pointSlope2General,
 };
