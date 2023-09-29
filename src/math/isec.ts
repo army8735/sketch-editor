@@ -1,4 +1,4 @@
-import equation from './equation';
+import { getRoots } from './equation';
 import vector from './vector';
 
 type Point = {
@@ -12,7 +12,6 @@ type Point3 = {
   z: number,
 };
 
-const getRoots = equation.getRoots;
 const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 
 // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)

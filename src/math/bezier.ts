@@ -307,7 +307,13 @@ export function sliceBezier2Both(points: Array<{ x: number, y: number }>, start 
   return points;
 }
 
-export function pointByT(points: Array<{ x: number, y: number }>, t = 0) {
+export function getPointByT(points: Array<{ x: number, y: number }>, t = 0) {
+  if (t === 0) {
+    return points[0];
+  }
+  if (t === 1) {
+    return points[points.length - 1];
+  }
   if (points.length === 4) {
     return pointByT3(points, t);
   }
@@ -635,7 +641,7 @@ export default {
   bezierAt,
   sliceBezier,
   sliceBezier2Both,
-  pointByT,
+  getPointByT,
   getPointT,
   bezierSlope,
   bezierExtremeT,

@@ -1351,7 +1351,7 @@ function getYByX(coords: Array<Point>, x: number) {
         coords[2].x + coords[0].x - 2 * coords[1].x,
       ])
       .filter((i) => i >= 0 && i <= 1);
-    return bezier.pointByT(coords, t[0])!.y;
+    return bezier.getPointByT(coords, t[0])!.y;
   } else if (len === 4) {
     const t = equation
       .getRoots([
@@ -1361,7 +1361,7 @@ function getYByX(coords: Array<Point>, x: number) {
         coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x,
       ])
       .filter((i) => i >= 0 && i <= 1);
-    return bezier.pointByT(coords, t[0])!.y;
+    return bezier.getPointByT(coords, t[0])!.y;
   }
 }
 
