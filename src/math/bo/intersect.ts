@@ -40,8 +40,8 @@ function getIntersectionLineLine(
     toClip <= 1 &&
     ((toSource > EPS && toSource < EPS2) || (toClip > EPS && toClip < EPS2))
   ) {
-    let ox = ax1 + toSource * (ax2 - ax1);
-    let oy = ay1 + toSource * (ay2 - ay1);
+    const ox = ax1 + toSource * (ax2 - ax1);
+    const oy = ay1 + toSource * (ay2 - ay1);
     return [
       {
         point: new Point(ox, oy),

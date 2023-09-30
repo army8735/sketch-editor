@@ -475,7 +475,7 @@ function findIntersection(
       });
     }
 
-    const { x, arr } = list[0];
+    const { x, arr } = list.shift();
     while (arr.length) {
       const seg = arr.shift();
       // 被切割的老线段无效
@@ -859,7 +859,6 @@ function findIntersection(
         // console.log(ael.map(item => item.toString()));
       }
     }
-    list.shift();
   }
   // 最后面的线
   delList.forEach((seg) => {
@@ -1366,8 +1365,8 @@ function getYByX(coords: Array<Point>, x: number) {
 }
 
 function isRectsOverlap(
-  bboxA: Array<number>,
-  bboxB: Array<number>,
+  bboxA: number[],
+  bboxB: number[],
   lenA: number,
   lenB: number,
 ) {

@@ -213,7 +213,7 @@ function bezierAt3(t: number, points: Array<{ x: number, y: number }>, order = 1
 /**
  * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
  */
-function bezierAt2(t: number, points: Array<{ x: number, y: number }>, order = 1) {
+function bezierAt2(t: number, points: { x: number, y: number }[], order = 1) {
   const { x: x0, y: y0 } = points[0];
   const { x: x1, y: y1 } = points[1];
   const { x: x2, y: y2 } = points[2];
@@ -234,7 +234,7 @@ function bezierAt2(t: number, points: Array<{ x: number, y: number }>, order = 1
   return { x, y };
 }
 
-export function bezierAt(t: number, points: Array<{ x: number, y: number }>, derivativeOrder = 1) {
+export function bezierAt(t: number, points: { x: number, y: number }[], derivativeOrder = 1) {
   if (points.length === 4) {
     return bezierAt3(t, points, derivativeOrder);
   }
@@ -246,7 +246,7 @@ export function bezierAt(t: number, points: Array<{ x: number, y: number }>, der
   }
 }
 
-export function sliceBezier(points: Array<{ x: number, y: number }>, t: number) {
+export function sliceBezier(points: { x: number, y: number }[], t: number) {
   if (!Array.isArray(points) || points.length < 3) {
     return points;
   }
@@ -286,7 +286,7 @@ export function sliceBezier(points: Array<{ x: number, y: number }>, t: number) 
   }
 }
 
-export function sliceBezier2Both(points: Array<{ x: number, y: number }>, start = 0, end = 1) {
+export function sliceBezier2Both(points: { x: number, y: number }[], start = 0, end = 1) {
   if (!Array.isArray(points) || points.length < 3) {
     return points;
   }
@@ -307,7 +307,7 @@ export function sliceBezier2Both(points: Array<{ x: number, y: number }>, start 
   return points;
 }
 
-export function getPointByT(points: Array<{ x: number, y: number }>, t = 0) {
+export function getPointByT(points: { x: number, y: number }[], t = 0) {
   if (t === 0) {
     return points[0];
   }
@@ -325,7 +325,7 @@ export function getPointByT(points: Array<{ x: number, y: number }>, t = 0) {
   }
 }
 
-function pointByT2(points: Array<{ x: number, y: number }>, t: number) {
+function pointByT2(points: { x: number, y: number }[], t: number) {
   const x = points[0].x * (1 - t) * (1 - t)
     + 2 * points[1].x * t * (1 - t)
     + points[2].x * t * t;
@@ -335,7 +335,7 @@ function pointByT2(points: Array<{ x: number, y: number }>, t: number) {
   return { x, y };
 }
 
-function pointByT3(points: Array<{ x: number, y: number }>, t: number) {
+function pointByT3(points: { x: number, y: number }[], t: number) {
   const x = points[0].x * (1 - t) * (1 - t) * (1 - t)
     + 3 * points[1].x * t * (1 - t) * (1 - t)
     + 3 * points[2].x * t * t * (1 - t)
@@ -349,7 +349,7 @@ function pointByT3(points: Array<{ x: number, y: number }>, t: number) {
 
 
 // 已知曲线和上面一点获得t
-export function getPointT(points: Array<{ x: number, y: number }>, x: number, y: number) {
+export function getPointT(points: { x: number, y: number }[], x: number, y: number) {
   if (points.length === 4) {
     return getPointT3(points, x, y);
   }
@@ -361,7 +361,7 @@ export function getPointT(points: Array<{ x: number, y: number }>, x: number, y:
   }
 }
 
-function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: number) {
+function getPointT2(points: { x: number, y: number }[], x: number, y: number) {
   // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
   const tx = getRoots([
     points[0].x - x,
@@ -414,7 +414,7 @@ function getPointT2(points: Array<{ x: number, y: number }>, x: number, y: numbe
   return res;
 }
 
-function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: number) {
+function getPointT3(points: { x: number, y: number }[], x: number, y: number) {
   const tx = getRoots([
     points[0].x - x,
     3 * (points[1].x - points[0].x),
@@ -471,7 +471,7 @@ function getPointT3(points: Array<{ x: number, y: number }>, x: number, y: numbe
 }
 
 
-export function bezierSlope(points: Array<{ x: number, y: number }>, t = 0) {
+export function bezierSlope(points: { x: number, y: number }[], t = 0) {
   if (points.length === 2) {
     const { x: x1, y: y1 } = points[0];
     const { x: x2, y: y2 } = points[1];
@@ -489,7 +489,7 @@ export function bezierSlope(points: Array<{ x: number, y: number }>, t = 0) {
   throw new Error('Unsupported order');
 }
 
-function bezier2Slope(points: Array<{ x: number, y: number }>, t = 0) {
+function bezier2Slope(points: { x: number, y: number }[], t = 0) {
   const { x: x0, y: y0 } = points[0];
   const { x: x1, y: y1 } = points[1];
   const { x: x2, y: y2 } = points[2];
@@ -500,7 +500,7 @@ function bezier2Slope(points: Array<{ x: number, y: number }>, t = 0) {
   return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
 }
 
-function bezier3Slope(points: Array<{ x: number, y: number }>, t: number) {
+function bezier3Slope(points: { x: number, y: number }[], t: number) {
   const { x: x0, y: y0 } = points[0];
   const { x: x1, y: y1 } = points[1];
   const { x: x2, y: y2 } = points[2];
@@ -610,7 +610,7 @@ export function bezierExtremeT(x0: number, y0: number, x1: number, y1: number,
 }
 
 // 在t处的切线方程，返回一般式，直线就是本身
-export function bezierTangent(points: Array<{ x: number, y: number }>, t = 0) {
+export function bezierTangent(points: { x: number, y: number }[], t = 0) {
   if (points.length === 2) {
     return twoPoint2General(points[0].x, points[0].y, points[1].x, points[1].y);
   }
@@ -623,13 +623,13 @@ export function bezierTangent(points: Array<{ x: number, y: number }>, t = 0) {
   throw new Error('Unsupported order');
 }
 
-function bezierTangent2(points: Array<{ x: number, y: number }>, t = 0) {
+function bezierTangent2(points: { x: number, y: number }[], t = 0) {
   const k = bezier2Slope(points, t);
   const p = pointByT2(points, t);
   return pointSlope2General(p.x, p.y, k);
 }
 
-function bezierTangent3(points: Array<{ x: number, y: number }>, t = 0) {
+function bezierTangent3(points: { x: number, y: number }[], t = 0) {
   const k = bezier3Slope(points, t);
   const p = pointByT3(points, t);
   return pointSlope2General(p.x, p.y, k);

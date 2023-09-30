@@ -1,8 +1,7 @@
 import * as uuid from 'uuid';
 import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../../format';
-import { angleBySides, pointsDistance, r2d } from '../../math/geom';
+import { r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
-import { unitize } from '../../math/vector';
 import CanvasCache from '../../refresh/CanvasCache';
 import config from '../../refresh/config';
 import { canvasPolygon } from '../../refresh/paint';
@@ -25,10 +24,8 @@ import { clone } from '../../util/util';
 import Geom from './Geom';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
-
-function isCornerPoint(point: Point) {
-  return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
-}
+import { getCurve, getStraight, isCornerPoint, XY } from './corner';
+import { sliceBezier } from '../../math/bezier';
 
 type Loader = {
   error: boolean;
@@ -77,7 +74,14 @@ class Polyline extends Geom {
       }
     }
     // 如果有圆角，拟合画圆
-    const cache: Array<any> = [];
+    const cache: Array<{
+      prevTangent: XY,
+      prevHandle: XY,
+      nextTangent: XY,
+      nextHandle: XY,
+      t1?: number,
+      t2?: number,
+    } | undefined> = [];
     if (hasCorner) {
       // 将圆角点拆分为2个顶点
       for (let i = 0, len = points.length; i < len; i++) {
@@ -104,83 +108,16 @@ class Polyline extends Geom {
           !nextPoint.hasCurveTo;
         // 先看最普通的直线，可以用角平分线+半径最小值约束求解
         if (isPrevStraight && isNextStraight) {
-          // 2直线边长，ABC3个点，A是prev，B是curr，C是next
-          const lenAB = pointsDistance(
-            prevPoint.absX!,
-            prevPoint.absY!,
-            point.absX!,
-            point.absY!,
-          );
-          const lenBC = pointsDistance(
-            point.absX!,
-            point.absY!,
-            nextPoint.absX!,
-            nextPoint.absY!,
-          );
-          const lenAC = pointsDistance(
-            prevPoint.absX!,
-            prevPoint.absY!,
-            nextPoint.absX!,
-            nextPoint.absY!,
-          );
-          // 三点之间的夹角
-          const radian = angleBySides(lenAC, lenAB, lenBC);
-          // 计算切点距离
-          const tangent = Math.tan(radian * 0.5);
-          let dist = radius / tangent;
-          // 校准 dist，用户设置的 cornerRadius 可能太大，而实际显示 cornerRadius 受到 AB BC 两边长度限制。
-          // 如果 B C 端点设置了 cornerRadius，可用长度减半
-          const minDist = Math.min(
-            isPrevCorner ? lenAB * 0.5 : lenAB,
-            isNextCorner ? lenBC * 0.5 : lenBC,
-          );
-          if (dist > minDist) {
-            dist = minDist;
-            radius = dist * tangent;
-          }
-          // 方向向量
-          const px = prevPoint.absX! - point.absX!,
-            py = prevPoint.absY! - point.absY!;
-          const pv = unitize(px, py);
-          const nx = nextPoint.absX! - point.absX!,
-            ny = nextPoint.absY! - point.absY!;
-          const nv = unitize(nx, ny);
-          // 相切的点
-          const prevTangent = { x: pv.x * dist, y: pv.y * dist };
-          prevTangent.x += points[i].absX!;
-          prevTangent.y += points[i].absY!;
-          const nextTangent = { x: nv.x * dist, y: nv.y * dist };
-          nextTangent.x += points[i].absX!;
-          nextTangent.y += points[i].absY!;
-          // 计算 cubic handler 位置
-          const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
-          const prevHandle = {
-            x: pv.x * -radius * kappa,
-            y: pv.y * -radius * kappa,
-          };
-          prevHandle.x += prevTangent.x;
-          prevHandle.y += prevTangent.y;
-          const nextHandle = {
-            x: nv.x * -radius * kappa,
-            y: nv.y * -radius * kappa,
-          };
-          nextHandle.x += nextTangent.x;
-          nextHandle.y += nextTangent.y;
-          cache[i] = {
-            prevTangent,
-            prevHandle,
-            nextTangent,
-            nextHandle,
-          };
+          cache[i] = getStraight(prevPoint, point, nextPoint, isPrevCorner, isNextCorner, radius);
         }
-        // 两边只要有贝塞尔（一定是2阶），就只能用离散来逼近求圆心路径，两边中的直线则能直接求，2个圆心路径交点为所需圆心坐标
+        // 两边只要有贝塞尔（一定是2阶），就只能用离散来逼近求圆心路径，2个圆心路径交点为所需圆心坐标
         else {
-          // TODO
+          cache[i] = getCurve(prevPoint, point, nextPoint, isPrevCorner, isNextCorner, radius);
         }
       }
     }
     // 将圆角的2个点替换掉原本的1个点
-    const temp = points.slice(0);
+    const temp = clone(points);
     for (let i = 0, len = temp.length; i < len; i++) {
       const c = cache[i];
       if (c) {
@@ -223,13 +160,35 @@ class Polyline extends Geom {
           absTx: nextHandle.x,
           absTy: nextHandle.y,
         };
+        // 前后如果是曲线，需用t计算截取，改变控制点即可
+        if (c.t1) {
+          const prev = temp[(i + len - 1) % len];
+          const curve = sliceBezier([
+            { x: prev.absX!, y: prev.absY! },
+            { x: prev.absFx!, y: prev.absFy! },
+            { x: temp[i].absX!, y: temp[i].absY! },
+          ], c.t1);
+          prev.absFx = curve[1].x;
+          prev.absFy = curve[1].y;
+        }
+        if (c.t2) {
+          const next = temp[(i + 1) % len];
+          const curve = sliceBezier([
+            { x: next.absX!, y: next.absY! },
+            { x: next.absTx!, y: next.absTy! },
+            { x: temp[i].absX!, y: temp[i].absY! },
+          ], 1 - c.t2);
+          next.absTx = curve[1].x;
+          next.absTy = curve[1].y;
+        }
+        // 插入新点注意索引
         temp.splice(i, 1, p, n);
         i++;
         len++;
         cache.splice(i, 0, undefined);
       }
     }
-    // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的，保留4位小数防止精度问题
+    // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
     const first = temp[0];
     const p: Array<number> = [
       first.absX!,
