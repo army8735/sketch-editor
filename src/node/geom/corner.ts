@@ -149,7 +149,6 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
     const nextB = nextTangent.y - nextK * nextTangent.x;
     const x = (nextB - prevB) / (prevK - nextK);
     const y = prevK * x + prevB;
-    console.log(x, y);
     // 剩下的和直线圆角一样，只是顶点变成了新的
     const lenAB = pointsDistance(
       prevTangent.x,
@@ -201,6 +200,7 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
   }
 }
 
+// 已知2阶曲线，法线半径长度，求出法线拟合点轨迹
 function getDispersedSegs(
   points: { x: number, y: number }[],
   x1: number, y1: number, x2: number, y2: number, clock: number,
@@ -222,13 +222,26 @@ function getDispersedSegs(
     } else {
       k = -1 / slop;
     }
-    const b = tg.y - k * tg.x;
-    const xs = getRoots([
-      Math.pow(tg.x, 2) + Math.pow(b, 2) - 2 * tg.y * b + Math.pow(tg.y, 2) - Math.pow(r, 2),
-      2 * (b * k - tg.x - tg.y * k),
-      Math.pow(k, 2) + 1,
-    ]);
-    const ys = xs.map(x => k * x + b);
+    let b: number;
+    // 特殊的竖线，原本则是水平线k为0，记录原本的b
+    if (k === Infinity) {
+      b = tg.y;
+    } else {
+      b = tg.y - k * tg.x;
+    }
+    // 点斜式求法线上距离r的解
+    let xs: number[], ys: number[];
+    if (k === Infinity) {
+      xs = [0, 0];
+      ys = [tg.y - r, tg.y + r];
+    } else {
+      xs = getRoots([
+        Math.pow(tg.x, 2) + Math.pow(b, 2) - 2 * tg.y * b + Math.pow(tg.y, 2) - Math.pow(r, 2),
+        2 * (b * k - tg.x - tg.y * k),
+        Math.pow(k, 2) + 1,
+      ]);
+      ys = xs.map(x => k * x + b);
+    }
     for (let j = 0; j < xs.length; j++) {
       const x = xs[j];
       const y = ys[j];
