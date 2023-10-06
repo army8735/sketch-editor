@@ -107,6 +107,15 @@ export function getStraight(prevPoint: Point, point: Point, nextPoint: Point,
 
 export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
                          isPrevCorner: boolean, isNextCorner: boolean, radius: number) {
+  // 半径限制，如果相邻也是圆角，则最大为两点距离的一半
+  if (isPrevCorner) {
+    const d = Math.sqrt(Math.pow(point.absX! - prevPoint.absX!, 2) + Math.pow(point.absY! - prevPoint.absY!, 2));
+    radius = Math.max(radius, d * 0.5);
+  }
+  if (isNextCorner) {
+    const d = Math.sqrt(Math.pow(point.absX! - nextPoint.absX!, 2) + Math.pow(point.absY! - nextPoint.absY!, 2));
+    radius = Math.max(radius, d * 0.5);
+  }
   // 前控制点-当前顶点-后控制点，组成的夹角或时钟序，先记下，后续法线上求点有2个解需用到择取正确的
   const x1 = point.absX! - prevPoint.absFx!;
   const y1 = point.absY! - prevPoint.absFy!;
