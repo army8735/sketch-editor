@@ -422,11 +422,13 @@ class Root extends Container implements FrameCallback {
     if (this.isDestroyed) {
       return;
     }
-    this.clear();
     const rl = this.rl;
-    this.rl = RefreshLevel.NONE;
-    renderWebgl(this.ctx!, this);
-    this.emit(Event.REFRESH, rl);
+    if (rl > RefreshLevel.NONE) {
+      this.clear();
+      this.rl = RefreshLevel.NONE;
+      renderWebgl(this.ctx!, this);
+      this.emit(Event.REFRESH, rl);
+    }
   }
 
   reLayout() {

@@ -1688,6 +1688,7 @@ class Node extends Event {
     props.uuid = uuid.v4();
     const res = new Node(props);
     res.style = clone(this.style);
+    if (override) {}
     return res;
   }
 
