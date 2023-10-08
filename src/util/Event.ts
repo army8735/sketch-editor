@@ -106,6 +106,7 @@ class Event {
   }
 
   static REFRESH = 'refresh';
+  static REFRESH_COMPLETE = 'refreshComplete';
   static DID_ADD_DOM = 'didAddDom';
   static WILL_REMOVE_DOM = 'willRemoveDom';
   static PAGE_CHANGED = 'pageChanged';

@@ -202,7 +202,11 @@ class Bitmap extends Node {
         break;
       }
     }
-    return (this.hasContent = !!this.loader.source);
+    const res = (this.hasContent = !!this.loader.source);
+    if (!res && !this.loader.error) {
+      this.root!.imgLoadingCount++;
+    }
+    return res;
   }
 
   override renderCanvas(scale: number) {

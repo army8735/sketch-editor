@@ -68,6 +68,7 @@ class Root extends Container implements FrameCallback {
   taskClone: Array<((sync: boolean) => void) | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
   artBoardShadowTexture: WebGLTexture | undefined;
+  imgLoadingCount: number; // 刷新过程统计图片有没有加载完
 
   constructor(props: RootProps, children: Array<Node> = []) {
     super(props, children);
@@ -82,6 +83,7 @@ class Root extends Container implements FrameCallback {
     this.task = [];
     this.taskClone = [];
     this.rl = RefreshLevel.REBUILD;
+    this.imgLoadingCount = 0;
   }
 
   appendTo(canvas: HTMLCanvasElement) {
@@ -424,10 +426,14 @@ class Root extends Container implements FrameCallback {
     }
     const rl = this.rl;
     if (rl > RefreshLevel.NONE) {
+      this.imgLoadingCount = 0;
       this.clear();
       this.rl = RefreshLevel.NONE;
       renderWebgl(this.ctx!, this);
       this.emit(Event.REFRESH, rl);
+      if (!this.imgLoadingCount) {
+        this.emit(Event.REFRESH_COMPLETE, rl);
+      }
     }
   }
 
