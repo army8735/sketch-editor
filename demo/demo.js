@@ -1211,11 +1211,11 @@ function showBasic() {
   $basic.querySelectorAll('.num').forEach(item => {
     item.disabled = false;
   });
-  $x.value = editor.math.geom.toPrecision(frameProps.x, 2);
-  $y.value = editor.math.geom.toPrecision(frameProps.y, 2);
-  $rotate.value = editor.math.geom.toPrecision(frameProps.rotation, 2);
-  $w.value = editor.math.geom.toPrecision(frameProps.w, 2);
-  $h.value = editor.math.geom.toPrecision(frameProps.h, 2);
+  $x.value = editor.math.toPrecision(frameProps.x, 2);
+  $y.value = editor.math.toPrecision(frameProps.y, 2);
+  $rotate.value = editor.math.toPrecision(frameProps.rotation, 2);
+  $w.value = editor.math.toPrecision(frameProps.w, 2);
+  $h.value = editor.math.toPrecision(frameProps.h, 2);
 }
 
 function hideBasic() {
