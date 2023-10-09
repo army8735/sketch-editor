@@ -6,11 +6,6 @@ import { RefreshLevel } from '../refresh/level';
 import { canvasPolygon } from '../refresh/paint';
 import TextureCache from '../refresh/TextureCache';
 import { color2rgbaStr } from '../style/css';
-import inject, { OffScreen } from '../util/inject';
-import { isFunction } from '../util/type';
-import { clone } from '../util/util';
-import { LayoutData } from './layout';
-import Node from './Node';
 import {
   ComputedGradient,
   ComputedPattern,
@@ -23,6 +18,11 @@ import {
 } from '../style/define';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
+import inject, { OffScreen } from '../util/inject';
+import { isFunction } from '../util/type';
+import { clone } from '../util/util';
+import { LayoutData } from './layout';
+import Node from './Node';
 
 type Loader = {
   error: boolean;
@@ -362,8 +362,18 @@ class Bitmap extends Node {
                   const ctx2 = os.ctx;
                   if (f.type === PATTERN_FILL_TYPE.TILE) {
                     const ratio = f.scale ?? 1;
-                    for (let i = 0, len = Math.ceil(iw / scale / ratio / loader.width); i < len; i++) {
-                      for (let j = 0, len = Math.ceil(ih / scale / ratio / loader.height); j < len; j++) {
+                    for (
+                      let i = 0,
+                        len = Math.ceil(iw / scale / ratio / loader.width);
+                      i < len;
+                      i++
+                    ) {
+                      for (
+                        let j = 0,
+                          len = Math.ceil(ih / scale / ratio / loader.height);
+                        j < len;
+                        j++
+                      ) {
                         ctx2.drawImage(
                           img.source!,
                           dx + i * img.width * scale * ratio,
@@ -373,27 +383,42 @@ class Bitmap extends Node {
                         );
                       }
                     }
-                  }
-                  else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                  } else if (f.type === PATTERN_FILL_TYPE.FILL) {
                     const sx = iw / img.width;
                     const sy = ih / img.height;
                     const sc = Math.max(sx, sy);
                     const x = (img.width * sc - iw) * -0.5;
                     const y = (img.height * sc - ih) * -0.5;
-                    ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
-                      x + dx, y + dy, img.width * sc, img.height * sc);
-                  }
-                  else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                    ctx2.drawImage(
+                      img.source!,
+                      0,
+                      0,
+                      img.width,
+                      img.height,
+                      x + dx,
+                      y + dy,
+                      img.width * sc,
+                      img.height * sc,
+                    );
+                  } else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
                     ctx2.drawImage(img.source!, dx, dy, iw, ih);
-                  }
-                  else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                  } else if (f.type === PATTERN_FILL_TYPE.FIT) {
                     const sx = iw / img.width;
                     const sy = ih / img.height;
                     const sc = Math.min(sx, sy);
                     const x = (img.width * sc - iw) * -0.5;
                     const y = (img.height * sc - ih) * -0.5;
-                    ctx2.drawImage(img.source!, 0, 0, img.width, img.height,
-                      x + dx, y + dy, img.width * sc, img.height * sc);
+                    ctx2.drawImage(
+                      img.source!,
+                      0,
+                      0,
+                      img.width,
+                      img.height,
+                      x + dx,
+                      y + dy,
+                      img.width * sc,
+                      img.height * sc,
+                    );
                   }
                   // 离屏上以主画布作为mask保留相同部分
                   ctx2.globalCompositeOperation = 'destination-atop';
@@ -408,8 +433,7 @@ class Bitmap extends Node {
                   }
                   os.release();
                 }
-              }
-              else {
+              } else {
                 loader = this.loaders[i] = this.loaders[i] || {
                   error: false,
                   loading: true,
@@ -436,8 +460,7 @@ class Bitmap extends Node {
                           undefined,
                         );
                       }
-                    }
-                    else {
+                    } else {
                       loader.error = true;
                     }
                   }
@@ -450,14 +473,28 @@ class Bitmap extends Node {
           else {
             f = f as ComputedGradient;
             if (f.t === GRADIENT.LINEAR) {
-              const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const gd = getLinear(
+                f.stops,
+                f.d,
+                dx,
+                dy,
+                w - dx * 2,
+                h - dy * 2,
+              );
               const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
               gd.stop.forEach((item) => {
                 lg.addColorStop(item.offset!, color2rgbaStr(item.color));
               });
               ctx.fillStyle = lg;
             } else if (f.t === GRADIENT.RADIAL) {
-              const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const gd = getRadial(
+                f.stops,
+                f.d,
+                dx,
+                dy,
+                w - dx * 2,
+                h - dy * 2,
+              );
               const rg = ctx.createRadialGradient(
                 gd.cx,
                 gd.cy,
@@ -685,7 +722,8 @@ class Bitmap extends Node {
           }
         }
         // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
-        let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
+        let os: OffScreen | undefined,
+          ctx2: CanvasRenderingContext2D | undefined;
         if (p === STROKE_POSITION.INSIDE) {
           ctx.lineWidth = strokeWidth[i] * 2 * scale;
         } else if (p === STROKE_POSITION.OUTSIDE) {
@@ -780,7 +818,9 @@ class Bitmap extends Node {
   override clearCache(includeSelf = false) {
     if (this.onlyImg) {
       if (includeSelf) {
-        this.textureCache.forEach((item) => item?.releaseImg(this.root!.uuid, this._src));
+        this.textureCache.forEach((item) =>
+          item?.releaseImg(this.root!.uuid, this._src),
+        );
       }
       this.textureTarget.splice(0);
       // total是本身无需
@@ -797,6 +837,8 @@ class Bitmap extends Node {
     props.src = this._src;
     const res = new Bitmap(props);
     res.style = clone(this.style);
+    if (override) {
+    }
     return res;
   }
 

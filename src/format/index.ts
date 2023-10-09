@@ -1,4 +1,9 @@
-import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
+import {
+  CORNER_STYLE,
+  CURVE_MODE,
+  TEXT_ALIGN,
+  TEXT_BEHAVIOUR,
+} from '../style/define';
 
 export type JFile = {
   pages: JPage[];
@@ -109,13 +114,15 @@ export type JStyle = {
   letterSpacing: number;
   paragraphSpacing: number;
   textAlign: 'left' | 'center' | 'right' | 'justify';
-  textVerticalAlign: 'top' | 'middle' | 'bottom',
+  textVerticalAlign: 'top' | 'middle' | 'bottom';
   translateX: number;
   translateY: number;
   scaleX: number;
   scaleY: number;
   rotateZ: number;
-  transformOrigin: Array<number | 'left' | 'right' | 'top' | 'bottom' | 'center'> | string;
+  transformOrigin:
+    | Array<number | 'left' | 'right' | 'top' | 'bottom' | 'center'>
+    | string;
   booleanOperation: 'none' | 'union' | 'subtract' | 'intersect' | 'xor';
   mixBlendMode:
     | 'normal'
@@ -244,7 +251,7 @@ export type SymbolMasterProps = ArtBoardProps & {
 
 export type SymbolInstanceProps = Props & {
   symbolId: string;
-  overrideValues: Array<{ name: string, value: string }>;
+  overrideValues: Array<{ name: string; value: string }>;
 };
 
 export type TextProps = Props & {
@@ -324,6 +331,6 @@ export enum POINTS_RADIUS_BEHAVIOUR {
 }
 
 export type Override = {
-  property: string,
-  value: string,
+  property: string;
+  value: string;
 };
