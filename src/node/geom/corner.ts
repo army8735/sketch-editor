@@ -1,9 +1,10 @@
 import { Point } from '../../format';
 import { CURVE_MODE } from '../../style/define';
-import { bezierLength, bezierSlope, getPointByT } from '../../math/bezier';
+import { bezierLength, bezierSlope, getPointT, getPointByT } from '../../math/bezier';
 import { getRoots } from '../../math/equation';
 import { crossProduct, unitize } from '../../math/vector';
 import { angleBySides, pointsDistance, isRectsOverlap } from '../../math/geom';
+import isec from '../../math/isec';
 
 export type XY = {
   x: number;
@@ -116,24 +117,95 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
     const d = Math.sqrt(Math.pow(point.absX! - nextPoint.absX!, 2) + Math.pow(point.absY! - nextPoint.absY!, 2));
     radius = Math.min(radius, d * 0.5);
   }
-  // 前控制点-当前顶点-后控制点，组成的夹角或时钟序，先记下，后续法线上求点有2个解需用到择取正确的
-  const x1 = point.absX! - prevPoint.absFx!;
-  const y1 = point.absY! - prevPoint.absFy!;
+  /**
+   * 前顶点-当前顶点-后顶点，组成的夹角或时钟序，先记下clockVert，后续法线上求点有2个解需用到择取正确的。
+   * 一般情况下，假设前在左后在右中在上，这个向量会是个逆时针，其它情况可能会不一样，后续都以此为假设解说。
+   * 除此之外，前控制点-当前顶点-后控制点的时钟序也需记录clockCtrl，一般情况下会和clockVert一致，
+   * 但是当2个控制点连线超过中顶点上方时，会变成反向，这种情况也需记录识别记录。
+   * 然后再记录前控制点-当前顶点-前顶点的时钟序clockPrev，后控制点相同，辨别控制点是否越过自身边线。
+   */
+  const x1 = prevPoint.absFx! - point.absX!;
+  const y1 = prevPoint.absFy! - point.absY!;
   const x2 = nextPoint.absTx! - point.absX!;
   const y2 = nextPoint.absTy! - point.absY!;
-  const clock = crossProduct(x1, y1, x2, y2);
+  const x3 = prevPoint.absX! - point.absX!;
+  const y3 = prevPoint.absY! - point.absY!;
+  const x4 = nextPoint.absX! - point.absX!;
+  const y4 = nextPoint.absY! - point.absY!;
+  const clockCtrl = crossProduct(x1, y1, x2, y2);
+  const clockVert = crossProduct(x3, y3, x4, y4);
+  const clockPrev = crossProduct(x1, y1, x3, y3);
+  const clockNext = crossProduct(x2, y2, x4, y4);
+  // 控制点和顶点几乎是一条线，无法形成圆角
+  if (Math.abs(clockCtrl) < 1e-6) {
+    return;
+  }
   const prev = [
     { x: prevPoint.absX!, y: prevPoint.absY! },
     { x: prevPoint.absFx!, y: prevPoint.absFy! },
     { x: point.absX!, y: point.absY! },
   ];
-  const prevPts = getDispersedSegs(prev, x1, y1, x2, y2, clock, radius, false);
   const next = [
     { x: point.absX!, y: point.absY! },
     { x: nextPoint.absTx!, y: nextPoint.absTy! },
     { x: nextPoint.absX!, y: nextPoint.absY! },
   ];
-  const nextPts = getDispersedSegs(next, x1, y1, x2, y2, clock, radius, true);
+  // 2曲线交点数，需排除顶点
+  const its = isec.intersectBezier2Bezier2(
+    prev[0].x, prev[0].y, prev[1].x, prev[1].y, prev[2].x, prev[2].y,
+    next[0].x, next[0].y, next[1].x, next[1].y, next[2].x, next[2].y,
+  ).filter(item => item.t > 1e-4 && item.t < (1 - 1e-4))
+    .sort((a, b) => b.t - a.t);
+  const count = its.length;
+  // 无交点直接求
+  if (!count) {
+    return getNormalLineIsec(prev, next, point,
+      count, false,
+      clockCtrl, clockVert, clockPrev, clockNext,
+      radius, 0, 1, 0, 1);
+  }
+  // 有交点求相对于2曲线的t值，防止精度计算问题找不到
+  const prevTs = its.map(item => item.t);
+  const nextTs = its.map(item => getPointT(next, item.x, item.y)[0]);
+  if (nextTs.find((item) => item === undefined)) {
+    return;
+  }
+  // 曲线有交点则需先从最近的区域开始查找，每经过一个交点区域将查表结果反向重置
+  let isReversed = false;
+  prevTs.unshift(1);
+  prevTs.push(0);
+  nextTs.unshift(0);
+  nextTs.push(1);
+  for (let i = 0; i <= count; i++) {
+    const res = getNormalLineIsec(prev, next, point,
+      count, isReversed,
+      clockCtrl, clockVert, clockPrev, clockNext,
+      radius, prevTs[i + 1], prevTs[i], nextTs[i], nextTs[i + 1]);
+    if (res) {
+      return res;
+    }
+    isReversed = !isReversed;
+  }
+}
+
+// 限定(t1, t2]范围内，求出法线交点为圆心，切点为曲线拟合端点
+function getNormalLineIsec(
+  prev: XY[], next: XY[], point: Point,
+  count: number, isReversed: boolean,
+  clockCtrl: number, clockVert: number, clockPrev: number, clockNext: number,
+  radius: number, t1: number, t2: number, t3: number, t4: number,
+) {
+  // 离散求得2条法线的端点轨迹，很多细小的线段组成
+  const prevPts = getDispersedSegs(prev, count, isReversed,
+    clockCtrl, clockVert, clockPrev,
+    radius, true, t1, t2);
+  const nextPts = getDispersedSegs(next, count, isReversed,
+    clockCtrl, clockVert, clockNext,
+    radius, false, t3, t4);
+  // 无解或半径不满足等忽略
+  if (!prevPts || prevPts.length < 2 || !nextPts || nextPts.length < 2) {
+    return;
+  }
   const res = intersectPolylinePolyline(prevPts, nextPts);
   // 可能有多个解，取离当前顶点最近的那个
   if (res.length) {
@@ -209,19 +281,58 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
   }
 }
 
+/**
+ * 查表，顶点时钟序（顺0逆1）、控制点时钟序、前/后（0/1)，边线时钟序，交点个数（0-3）
+ */
+const TABLE: Record<string, 0 | 1> = {
+  '11010': 1,
+  '11000': 1,
+  '11110': 1,
+  '11100': 1,
+  '11001': 1,
+  '11111': 1,
+  '11012': 1,
+  '11002': 1,
+  '11112': 1,
+  '11102': 1,
+  '11013': 1,
+  '11103': 1,
+  '10010': 0,
+  '10100': 0,
+  '10011': 0,
+  '10001': 0,
+  '10111': 0,
+  '10101': 0,
+};
+
 // 已知2阶曲线，法线半径长度，求出法线拟合点轨迹
 function getDispersedSegs(
-  points: { x: number, y: number }[],
-  x1: number, y1: number, x2: number, y2: number, clock: number,
-  r: number, isReversed: boolean) {
+  points: { x: number, y: number }[], count: number, isReversed: boolean,
+  clockCtrl: number, clockVert: number, clockEdge: number,
+  r: number, isPrev: boolean, t1: number, t2: number) {
+  const key = (clockVert >= 0 ? '0' : '1') +
+    (clockCtrl >= 0 ? '0' : '1') +
+    (isPrev ? '0' : '1') +
+    (clockEdge >= 0 ? '0' : '1') + count;
+  // 有的情况无解查不到
+  if (!TABLE.hasOwnProperty(key)) {
+    return;
+  }
   const len = Math.ceil(bezierLength(points));
-  // 注意方向
-  const point = isReversed ? points[0] : points[2];
   const pts: XY[] = [];
+  const temp: XY[] = [];
   // 约为每1px的线段
   for (let i = 0; i <= len; i++) {
     const t = i / len;
+    // 有交点多区域时限定
+    if (t <= t1 || t > t2) {
+      continue;
+    }
+    // 求切点和切线方向
+    const tangentX = 2 * (points[0].x - 2 * points[1].x + points[2].x) * t + 2 * points[1].x - 2 * points[0].x;
+    const tangentY = 2 * (points[0].y - 2 * points[1].y + points[2].y) * t + 2 * points[1].y - 2 * points[0].y;
     const tg = getPointByT(points, t);
+    temp.push(tg);
     const slop = bezierSlope(points, t);
     let k = 0;
     if (Math.abs(slop) < 1e-12) {
@@ -238,7 +349,7 @@ function getDispersedSegs(
     } else {
       b = tg.y - k * tg.x;
     }
-    // 点斜式求法线上距离r的解
+    // 点斜式求法线上距离r的解，一定仅有2个解
     let xs: number[], ys: number[];
     if (k === Infinity) {
       xs = [0, 0];
@@ -251,25 +362,22 @@ function getDispersedSegs(
       ]);
       ys = xs.map(x => k * x + b);
     }
-    for (let j = 0; j < xs.length; j++) {
-      const x = xs[j];
-      const y = ys[j];
-      // 前控制点-当前顶点-圆心点的时钟序和前面夹角时钟序一致（反向圆形点-当前顶点-后控制点）
-      const x3 = (x - point.x) * (isReversed ? -1 : 1);
-      const y3 = (y - point.y) * (isReversed ? -1 : 1);
-      const c1 = isReversed ? crossProduct(x3, y3, x2, y2) : crossProduct(x1, y1, x3, y3);
-      if (clock > 0 && c1 > 0 || clock < 0 && c1 < 0) {
-        // 有可能2个解都一致（半径很小的情况），再加上切点-当前顶点-圆心点的时钟序判断（反向圆心点-当前顶点-切点），注意顶点特殊叉乘为0
-        const x4 = (point.x - tg.x) * (isReversed ? -1 : 1);
-        const y4 = (point.y - tg.y) * (isReversed ? -1 : 1);
-        const c2 = isReversed ? crossProduct(x3, y3, x4, y4) : crossProduct(x4, y4, x3, y3);
-        if (clock > 0 && c2 > 0 || clock < 0 && c2 < 0 || !c2 && t === (isReversed ? 0 : 1)) {
-          pts.push({ x, y, t });
-          break;
-        }
-      }
+    // 判断2个解中哪个在图形内部，即随便找一个解，用这个点和曲线上的点形成的直线，和切线做时钟序，查表对比
+    const x1 = xs[0] - tg.x;
+    const y1 = ys[0] - tg.y;
+    let clock = crossProduct(x1, y1, tangentX, tangentY) >= 0 ? 0 : 1;
+    // 2曲线有节点时每经过一个交点区域设置反向
+    if (isReversed) {
+      clock = (clock + 1) % 2;
+    }
+    if (TABLE[key] === clock) {
+      pts.push({ x: xs[0], y: ys[0], t });
+    } else {
+      pts.push({ x: xs[1], y: ys[1], t });
     }
   }
+  // console.log(JSON.stringify(temp.map(item => [item.x * 0.01, item.y * 0.01])))
+  // console.log(JSON.stringify(pts.map(item => [item.x * 0.01, item.y * 0.01])))
   return pts;
 }
 
@@ -413,7 +521,6 @@ function convert2Seg(ps: XY[], belong: number) {
     ];
     res.push({
       id: uuid++,
-      t: (t1! + t2!) * 0.5,
       x1,
       y1,
       x2,
@@ -422,6 +529,7 @@ function convert2Seg(ps: XY[], belong: number) {
       belong,
       isVisited: false,
       isDeleted: false,
+      t: (t1! + t2!) * 0.5,
     });
   }
   return res;
