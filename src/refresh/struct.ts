@@ -8,7 +8,9 @@ import {
   drawColorMatrix,
   drawGauss,
   drawMask,
-  drawMbm, drawMotion, drawRadial,
+  drawMbm,
+  drawMotion,
+  drawRadial,
   drawTextureCache,
   drawTint,
   initShaders,
@@ -597,79 +599,6 @@ export function renderWebgl(
       if (artBoardIndex[i]) {
         resTexture = pageTexture;
         drawArtBoardClip(gl, programs, resTexture, artBoardTexture!, artBoardIndex[i], W, H, cx, cy);
-        // // 可能画板内没有超出的子节点，先判断下，节省绘制
-        // let needMask = false;
-        // const ab = artBoardIndex[i];
-        // const children = ab.children;
-        // const rect = ab._rect || ab.rect;
-        // const matrixWorld = ab._matrixWorld || ab.matrixWorld;
-        // const abRect = getScreenBbox(rect, matrixWorld);
-        // for (let i = 0, len = children.length; i < len; i++) {
-        //   const child = children[i];
-        //   const bbox = child._filterBbox || child.filterBbox;
-        //   const matrix = child._matrixWorld || child.matrixWorld;
-        //   const childRect = getScreenBbox(bbox, matrix);
-        //   if (childRect.left < abRect.left ||
-        //     childRect.top < abRect.top ||
-        //     childRect.right > abRect.right ||
-        //     childRect.bottom > abRect.bottom) {
-        //     needMask = true;
-        //     break;
-        //   }
-        // }
-        // // 先画出类似背景色的遮罩，再绘入Page
-        // if (needMask) {
-        //   const tex = createTexture(gl, 0, undefined, W, H);
-        //   gl.framebufferTexture2D(
-        //     gl.FRAMEBUFFER,
-        //     gl.COLOR_ATTACHMENT0,
-        //     gl.TEXTURE_2D,
-        //     tex,
-        //     0,
-        //   );
-        //   ab.renderBgc(gl, cx, cy, [1.0, 1.0, 1.0, 1.0]);
-        //   const tex2 = createTexture(gl, 0, undefined, W, H);
-        //   const maskProgram = programs.maskProgram;
-        //   gl.useProgram(maskProgram);
-        //   gl.framebufferTexture2D(
-        //     gl.FRAMEBUFFER,
-        //     gl.COLOR_ATTACHMENT0,
-        //     gl.TEXTURE_2D,
-        //     tex2,
-        //     0,
-        //   );
-        //   drawMask(gl, maskProgram, tex, artBoardTexture!);
-        //   gl.deleteTexture(tex);
-        //   gl.deleteTexture(artBoardTexture!);
-        //   artBoardTexture = tex2;
-        //   gl.useProgram(program);
-        // }
-        // // 无超出的直接绘制回Page即可，mask也复用这段逻辑
-        // gl.framebufferTexture2D(
-        //   gl.FRAMEBUFFER,
-        //   gl.COLOR_ATTACHMENT0,
-        //   gl.TEXTURE_2D,
-        //   resTexture,
-        //   0,
-        // );
-        // drawTextureCache(
-        //   gl,
-        //   cx,
-        //   cy,
-        //   program,
-        //   [
-        //     {
-        //       opacity: 1,
-        //       bbox: new Float64Array([0, 0, W, H]),
-        //       texture: artBoardTexture!,
-        //     },
-        //   ],
-        //   0,
-        //   0,
-        //   false,
-        // );
-        // // 退出画板删除且置空标明回到Page上
-        // gl.deleteTexture(artBoardTexture!);
         artBoardTexture = undefined;
       }
     }
