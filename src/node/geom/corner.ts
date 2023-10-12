@@ -142,7 +142,7 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
   }
   const prev = [
     { x: prevPoint.absX!, y: prevPoint.absY! },
-    { x: prevPoint.absFx!, y: prevPoint.absFy! },
+    { x: nextPoint.absTx ?? nextPoint.absX!, y: nextPoint.absTy ?? nextPoint.absY! },
     { x: point.absX!, y: point.absY! },
   ];
   const next = [
@@ -338,7 +338,6 @@ function getDispersedSegs(
   }
   const len = Math.ceil(bezierLength(points));
   const pts: XY[] = [];
-  const temp: XY[] = [];
   // 约为每1px的线段
   for (let i = 0; i <= len; i++) {
     const t = i / len;
@@ -350,7 +349,6 @@ function getDispersedSegs(
     const tangentX = 2 * (points[0].x - 2 * points[1].x + points[2].x) * t + 2 * points[1].x - 2 * points[0].x;
     const tangentY = 2 * (points[0].y - 2 * points[1].y + points[2].y) * t + 2 * points[1].y - 2 * points[0].y;
     const tg = getPointByT(points, t);
-    temp.push(tg);
     const slop = bezierSlope(points, t);
     let k = 0;
     if (Math.abs(slop) < 1e-12) {
@@ -394,7 +392,6 @@ function getDispersedSegs(
       pts.push({ x: xs[1], y: ys[1], t });
     }
   }
-  // console.log(JSON.stringify(temp.map(item => [item.x * 0.01, item.y * 0.01])))
   // console.log(JSON.stringify(pts.map(item => [item.x * 0.01, item.y * 0.01])))
   return pts;
 }
