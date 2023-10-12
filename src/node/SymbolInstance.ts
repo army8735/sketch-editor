@@ -1,6 +1,8 @@
+import * as uuid from 'uuid';
 import { JNode, Override, SymbolInstanceProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import Group from './Group';
+import { clone } from '../util/util';
 
 class SymbolInstance extends Group {
   symbolMaster: SymbolMaster;
@@ -19,6 +21,17 @@ class SymbolInstance extends Group {
     this.symbolMaster = symbolMaster;
     this.symbolInstance = this;
     symbolMaster.addSymbolInstance(this);
+  }
+
+  override clone(override?: Record<string, Override>) {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    const sm = this.symbolMaster.clone(override);
+    const res = new SymbolInstance(props, sm);
+    sm.addSymbolInstance(res);
+    res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
+    return res;
   }
 
   override toJson(): JNode {

@@ -90,27 +90,30 @@ class Root extends Container implements FrameCallback {
     this.isDestroyed = false;
     this.canvas = canvas;
     // gl的初始化和配置
-    let gl: WebGL2RenderingContext | WebGLRenderingContext = canvas.getContext(
-      'webgl2',
-      ca,
-    ) as WebGL2RenderingContext;
-    if (gl) {
-      this.ctx = gl;
-      this.isWebgl2 = true;
-    } else {
-      this.ctx = gl = canvas.getContext('webgl', ca) as WebGLRenderingContext;
-      this.isWebgl2 = false;
+    if (!this.ctx) {
+      let gl: WebGL2RenderingContext | WebGLRenderingContext = canvas.getContext(
+        'webgl2',
+        ca,
+      ) as WebGL2RenderingContext;
+      if (gl) {
+        this.ctx = gl;
+        this.isWebgl2 = true;
+      }
+      else {
+        this.ctx = gl = canvas.getContext('webgl', ca) as WebGLRenderingContext;
+        this.isWebgl2 = false;
+      }
+      if (!gl) {
+        throw new Error('Webgl unsupported!');
+      }
+      config.init(
+        gl.getParameter(gl.MAX_TEXTURE_SIZE),
+        gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
+        gl.getParameter(gl.MAX_VARYING_VECTORS),
+      );
+      this.programs = {};
+      this.initShaders(gl);
     }
-    if (!gl) {
-      throw new Error('Webgl unsupported!');
-    }
-    config.init(
-      gl.getParameter(gl.MAX_TEXTURE_SIZE),
-      gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
-      gl.getParameter(gl.MAX_VARYING_VECTORS),
-    );
-    this.programs = {};
-    this.initShaders(gl);
     this.didMount();
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
@@ -458,6 +461,8 @@ class Root extends Container implements FrameCallback {
   override destroy() {
     super.destroy();
     frame.removeRoot(this);
+    this.task.splice(0);
+    this.taskClone.splice(0);
     const { ctx: gl, programs } = this;
     if (gl) {
       [

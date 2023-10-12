@@ -837,6 +837,7 @@ class Bitmap extends Node {
     props.src = this._src;
     const res = new Bitmap(props);
     res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
     if (override) {
     }
     return res;

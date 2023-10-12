@@ -311,6 +311,7 @@ class Container extends Node {
     props.uuid = uuid.v4();
     const res = new Container(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
     return res;
   }
 

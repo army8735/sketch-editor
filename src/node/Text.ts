@@ -2332,6 +2332,7 @@ class Text extends Node {
     props.content = this._content;
     const res = new Text(props);
     res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
     return res;
   }
 

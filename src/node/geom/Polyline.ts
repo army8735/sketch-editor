@@ -881,6 +881,8 @@ class Polyline extends Geom {
     props.uuid = uuid.v4();
     const res = new Polyline(props);
     res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
+    if (override) {}
     return res;
   }
 

@@ -1,7 +1,9 @@
-import { JNode, SymbolMasterProps, TAG_NAME } from '../format';
+import * as uuid from 'uuid';
+import { JNode, Override, SymbolMasterProps, TAG_NAME } from '../format';
 import ArtBoard from './ArtBoard';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
+import { clone } from '../util/util';
 
 class SymbolMaster extends ArtBoard {
   symbolInstances: SymbolInstance[];
@@ -23,6 +25,16 @@ class SymbolMaster extends ArtBoard {
     if (i > -1) {
       this.symbolInstances.splice(i, 1);
     }
+  }
+
+  override clone(override?: Record<string, Override>) {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    const res = new SymbolMaster(props, this.children.map(item => item.clone(override)));
+    res.symbolInstances = [];
+    res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
+    return res;
   }
 
   override toJson(): JNode {
