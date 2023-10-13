@@ -132,7 +132,7 @@ function getRootsInInterval(min: number, max: number, coefs: Array<number>) {
  * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
  * @return {[]}
  */
-function intersectBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
+export function intersectBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
                                  bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number) {
   let c12, c11, c10;
   let c22, c21, c20;
@@ -227,7 +227,7 @@ function intersectBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay2: num
   return result;
 }
 
-function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
+export function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
                                  bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
   let c13, c12, c11, c10; // 三阶系数
   let c23, c22, c21, c20;
@@ -517,7 +517,7 @@ function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: num
   return result;
 }
 
-function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
+export function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
                                  bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
   let c12, c11, c10;
   let c23, c22, c21, c20;
@@ -656,7 +656,7 @@ export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: nu
   }
 }
 
-function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
+export function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
                               bx1: number, by1: number, bx2: number, by2: number) {
   let c2, c1, c0;
   let cl, n;
@@ -755,7 +755,7 @@ function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number
  *        ||                     ||                ||        ||
  *        c3                     c2                c1        c0
  */
-function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
+export function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
                               bx1: number, by1: number, bx2: number, by2: number) {
   let c3, c2, c1, c0;
   let cl, n;
@@ -861,7 +861,7 @@ function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number
  * limitToFiniteSegment可传0、1、2、3，默认0是不考虑点是否在传入的顶点组成的线段上
  * 1为限制在p1/p2线段，2为限制在p3/p4线段，3为都限制
  */
-function intersectLineLine3(p1: Point3, p2: Point3, p3: Point3, p4: Point3, limitToFiniteSegment = 0, tolerance = 1e-9) {
+export function intersectLineLine3(p1: Point3, p2: Point3, p3: Point3, p4: Point3, limitToFiniteSegment = 0, tolerance = 1e-9) {
   const p13 = subtractPoint(p1, p3);
   const p43 = subtractPoint(p4, p3);
   const p21 = subtractPoint(p2, p1);

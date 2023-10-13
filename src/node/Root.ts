@@ -576,7 +576,7 @@ class Root extends Container implements FrameCallback {
     if (this.lastPage) {
       return this.lastPage.getZoom();
     }
-    return 1;
+    return this.dpi;
   }
 
   getNodeFromCurPage(

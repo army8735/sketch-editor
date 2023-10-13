@@ -335,6 +335,17 @@ export function multiplyTranslateY(m: Float64Array, v: number) {
   return m;
 }
 
+export function multiplyTranslate(m: Float64Array, x: number, y: number) {
+  if (!x && !y) {
+    return m;
+  }
+  m[12] += m[0] * x + m[4] * y;
+  m[13] += m[1] * x + m[5] * y;
+  m[14] += m[2] * x + m[6] * y;
+  m[15] += m[3] * x + m[7] * y;
+  return m;
+}
+
 export function multiplyRotateZ(m: Float64Array, v: number) {
   if (!v) {
     return m;

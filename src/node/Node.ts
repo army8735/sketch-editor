@@ -44,7 +44,6 @@ import { clone, equal } from '../util/util';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
-import SymbolMaster from './SymbolMaster';
 import SymbolInstance from './SymbolInstance';
 
 class Node extends Event {
@@ -58,7 +57,6 @@ class Node extends Event {
   root: Root | undefined;
   page: Page | undefined;
   artBoard: ArtBoard | undefined;
-  symbolMaster: SymbolMaster | undefined;
   symbolInstance: SymbolInstance | undefined;
   prev: Node | undefined;
   next: Node | undefined;
@@ -161,9 +159,6 @@ class Node extends Event {
     }
     if (!this.isArtBoard) {
       this.artBoard = parent.artBoard;
-    }
-    if (!this.isSymbolMaster) {
-      this.symbolMaster = parent.symbolMaster;
     }
     if (!this.isSymbolInstance) {
       this.symbolInstance = parent.symbolInstance;
@@ -744,9 +739,6 @@ class Node extends Event {
     }
     if (!this.isArtBoard) {
       this.artBoard = undefined;
-    }
-    if (!this.isSymbolMaster) {
-      this.symbolMaster = undefined;
     }
     if (!this.isSymbolInstance) {
       this.symbolInstance = undefined;
