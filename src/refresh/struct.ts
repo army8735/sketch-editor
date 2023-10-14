@@ -286,8 +286,8 @@ export function renderWebgl(
           node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] = t;
         }
       }
-      // 生成mask
-      if (maskMode && node.next) {
+      // 生成mask，轮廓模板不需要验证有被遮罩对象
+      if (maskMode === MASK.OUTLINE || maskMode === MASK.ALPHA && node.next) {
         // 可能超过尺寸没有total汇总，暂时防御下
         if (node.textureTarget[scaleIndex]) {
           node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] =
