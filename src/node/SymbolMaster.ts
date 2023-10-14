@@ -10,7 +10,6 @@ class SymbolMaster extends ArtBoard {
   constructor(props: SymbolMasterProps, children: Array<Node>) {
     super(props, children);
     this.isSymbolMaster = true;
-    this.symbolMaster = this;
     this.symbolInstances = [];
   }
 
