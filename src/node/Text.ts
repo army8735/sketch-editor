@@ -422,7 +422,7 @@ class Text extends Node {
     /**
      * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
      * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
-     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到方向末尾。
+     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到方向尺寸上。
      * 另外编辑文字修改内容后，新的尺寸肯定和老的rect不一致，差值修正的逻辑正好被复用做修改后重排版。
      */
     if (autoW) {
@@ -430,13 +430,13 @@ class Text extends Node {
       if (dw) {
         this.width = computedStyle.width = maxW;
         // 不可能左右都固定，只需考虑%修正，px固定修改尺寸不影响，右固定只有可能是px不可能%
-        const { left, width } = style;
-        if (left.u === StyleUnit.PERCENT) {
-          const half = dw * 0.5;
-          left.v += half / data.w;
-          computedStyle.left += half;
-          computedStyle.right += half;
-        }
+        const { width } = style;
+        // if (left.u === StyleUnit.PERCENT) {
+        //   const half = dw * 0.5;
+        //   left.v += half * 100 / data.w;
+        //   computedStyle.left += half;
+        //   computedStyle.right += half;
+        // }
         if (width.u === StyleUnit.PX) {
           width.v += dw;
         }
@@ -451,13 +451,13 @@ class Text extends Node {
       if (dh) {
         this.height = computedStyle.height = h;
         // 不可能上下都固定，只需考虑%修正，px固定修改尺寸不影响，底固定只有可能是px不可能%
-        const { top, height } = style;
-        if (top.u === StyleUnit.PERCENT) {
-          const half = dh * 0.5;
-          top.v += half / data.h;
-          computedStyle.top += half;
-          computedStyle.bottom += half;
-        }
+        const { height } = style;
+        // if (top.u === StyleUnit.PERCENT) {
+        //   const half = dh * 0.5;
+        //   top.v += half * 100 / data.h;
+        //   computedStyle.top += half;
+        //   computedStyle.bottom += half;
+        // }
         if (height.u === StyleUnit.PX) {
           height.v += dh;
         }
