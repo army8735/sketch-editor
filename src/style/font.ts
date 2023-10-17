@@ -29,6 +29,7 @@ export type fontData = {
 };
 
 const o: any = {
+  KEY_INFO,
   info: {
     // family为key的信息，同一系列共享
     arial,
