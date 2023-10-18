@@ -851,23 +851,21 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   const lhr =
     (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
       .lhr || 1.2;
-  return Math.ceil(style.fontSize * lhr);
+  return style.fontSize * lhr;
 }
 
 /**
  * https://zhuanlan.zhihu.com/p/25808995
  * 根据字形信息计算baseline的正确值，差值上下均分
- * @param style computedStyle
- * @returns {number}
  */
-export function getBaseline(style: ComputedStyle | Rich) {
+export function getBaseline(style: ComputedStyle | Rich, lineHeight?: number) {
   let fontSize = style.fontSize;
   let ff = calFontFamily(style.fontFamily);
   let normal = calNormalLineHeight(style, ff);
   const blr =
     (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
       .blr || 1;
-  return (style.lineHeight - normal) * 0.5 + fontSize * blr;
+  return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * blr;
 }
 
 export function calSize(v: StyleNumValue, p: number): number {
