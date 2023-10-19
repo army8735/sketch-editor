@@ -730,11 +730,13 @@ function genBboxTotal(
         mergeBbox(res, b, m);
       }
     }
-    if (
-      (target && target !== node2.textureCache[scaleIndex]) ||
-      node2.isShapeGroup
-    ) {
+    // 有局部缓存跳过，注意可用
+    if (target && target.available && target !== node2.textureCache[scaleIndex]) {
       i += total2 + next2;
+    }
+    // 没缓存的shapeGroup仅可跳过孩子
+    else if (node2.isShapeGroup) {
+      i += total2;
     }
     // 收集子节点中的嵌套关系，子的不是顶层isTop
     const mg = mergeHash[i];
