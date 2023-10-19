@@ -54,7 +54,7 @@ async function initFonts() {
     const status = await navigator.permissions.query({
       name: 'local-fonts',
     });
-    if(status.state !== 'granted') {
+    if(status.state === 'denied') {
       console.error('No Permission.');
       return;
     }
@@ -801,6 +801,7 @@ $overlap.addEventListener('mousedown', function(e) {
     startY = e.pageY;
     // 空格按下移动画布
     if (spaceKey) {
+      e.preventDefault();
       const o = curPage.getComputedStyle();
       pageTx = o.translateX;
       pageTy = o.translateY;
