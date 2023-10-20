@@ -352,7 +352,7 @@ class Polyline extends Geom {
             let loader = this.loaders[i];
             const cache = inject.IMG[url];
             // 已有的图像同步直接用
-            if (!loader && cache) {
+            if (!loader && cache && cache.source) {
               loader = this.loaders[i] = {
                 error: false,
                 loading: false,
@@ -362,7 +362,7 @@ class Polyline extends Geom {
               };
             }
             if (loader) {
-              if (!loader.error && !loader.loading) {
+              if (!loader.error && !loader.loading && loader.source) {
                 const width = this.width;
                 const height = this.height;
                 const wc = width * scale;
@@ -382,7 +382,7 @@ class Polyline extends Geom {
                   for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
                     for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
                       ctx2.drawImage(
-                        loader.source!,
+                        loader.source,
                         dx + i * loader.width * scale * ratio,
                         dy + j * loader.height * scale * ratio,
                         loader.width * scale * ratio,
@@ -397,7 +397,7 @@ class Polyline extends Geom {
                   const sc = Math.max(sx, sy);
                   const x = (loader.width * sc - wc) * -0.5;
                   const y = (loader.height * sc - hc) * -0.5;
-                  ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                  ctx2.drawImage(loader.source, 0, 0, loader.width, loader.height,
                     x + dx, y + dy, loader.width * sc, loader.height * sc);
                 }
                 else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
@@ -409,7 +409,7 @@ class Polyline extends Geom {
                   const sc = Math.min(sx, sy);
                   const x = (loader.width * sc - wc) * -0.5;
                   const y = (loader.height * sc - hc) * -0.5;
-                  ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                  ctx2.drawImage(loader.source, 0, 0, loader.width, loader.height,
                     x + dx, y + dy, loader.width * sc, loader.height * sc);
                 }
                 // 记得还原

@@ -164,7 +164,7 @@ function adaptiveSimpson38(derivativeFunc: (n: number) => number, l: number, r: 
  * @param endT 计算长度的终点
  * @return {*} number
  */
-export function bezierLength(points: Array<{ x: number, y: number }>, startT = 0, endT = 1) {
+export function bezierLength(points: { x: number, y: number }[], startT = 0, endT = 1) {
   if (points.length === 2) {
     const { x: x0, y: y0 } = points[0];
     const { x: x1, y: y1 } = points[1];
@@ -183,7 +183,7 @@ export function bezierLength(points: Array<{ x: number, y: number }>, startT = 0
 /**
  * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
  */
-function bezierAt3(t: number, points: Array<{ x: number, y: number }>, order = 1) {
+function bezierAt3(t: number, points: { x: number, y: number }[], order = 1) {
   const { x: x0, y: y0 } = points[0];
   const { x: x1, y: y1 } = points[1];
   const { x: x2, y: y2 } = points[2];

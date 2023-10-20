@@ -147,7 +147,7 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
   ];
   const next = [
     { x: point.absX!, y: point.absY! },
-    { x: nextPoint.absTx!, y: nextPoint.absTy! },
+    { x: nextPoint.absTx ?? nextPoint.absX!, y: nextPoint.absTy ?? nextPoint.absY! },
     { x: nextPoint.absX!, y: nextPoint.absY! },
   ];
   // 2曲线交点数，需排除顶点
