@@ -564,6 +564,10 @@ export function normalize(style: any): Style {
       res[k] = n;
     }
   });
+  const matrix = style.matrix;
+  if (!isNil(matrix)) {
+    res.matrix = { v: style.matrix, u: StyleUnit.MATRIX };
+  }
   return res;
 }
 
@@ -696,6 +700,21 @@ export function equalStyle(k: string, a: Style, b: Style) {
       const ai = av[i],
         bi = bv[i];
       if (ai.u !== bi.u || ai.v !== bi.v) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (k === 'matrix') {
+    if (av && !bv || !av && bv) {
+      return false;
+    }
+    const v1 = av.v, v2 = bv.v;
+    if (v1.length !== v2.length) {
+      return false;
+    }
+    for (let i = 0, len = v1.length; i < len; i++) {
+      if (v1[i] !== v2[i]) {
         return false;
       }
     }

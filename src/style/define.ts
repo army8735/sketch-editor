@@ -11,6 +11,7 @@ export enum StyleUnit {
   BLUR = 9,
   PATTERN = 10,
   SHADOW = 11,
+  MATRIX = 12,
 }
 
 export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumValue {
@@ -204,6 +205,13 @@ export type ComputedShadow = {
   color: number[];
 };
 
+export type StyleMatrixValue = {
+  v: Float64Array;
+  u: StyleUnit.MATRIX;
+};
+
+export type ComputedMatrix = Float64Array;
+
 export type Style = {
   top: StyleNumValue;
   right: StyleNumValue;
@@ -258,6 +266,7 @@ export type Style = {
   saturate: StyleNumValue;
   brightness: StyleNumValue;
   contrast: StyleNumValue;
+  matrix?: StyleMatrixValue;
 };
 
 export type ComputedStyle = {
@@ -316,6 +325,7 @@ export type ComputedStyle = {
   saturate: number;
   brightness: number;
   contrast: number;
+  matrix?: ComputedMatrix;
 };
 
 export enum TEXT_ALIGN {

@@ -75,7 +75,7 @@ export function getLevel(k: string): RefreshLevel {
   if (k === 'scaleY') {
     return RefreshLevel.SCALE_Y;
   }
-  if (k === 'transformOrigin') {
+  if (k === 'transformOrigin' || k === 'matrix') {
     return RefreshLevel.TRANSFORM;
   }
   if (k === 'opacity') {

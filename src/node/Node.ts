@@ -555,6 +555,13 @@ class Node extends Event {
     // 普通布局或者第一次计算
     else {
       toE(transform);
+      // 开个口子，直接提供matrix
+      if (style.matrix) {
+        computedStyle.matrix = style.matrix.v.slice(0);
+        assignMatrix(matrix, computedStyle.matrix);
+        return matrix;
+      }
+      // 一般走这里
       transform[12] = computedStyle.translateX =
         computedStyle.left + calSize(style.translateX, this.width);
       transform[13] = computedStyle.translateY =
@@ -568,20 +575,23 @@ class Node extends Event {
       if (scaleX !== 1) {
         if (isE(transform)) {
           transform[0] = scaleX;
-        } else {
+        }
+        else {
           multiplyScaleX(transform, scaleX);
         }
       }
       if (scaleY !== 1) {
         if (isE(transform)) {
           transform[5] = scaleY;
-        } else {
+        }
+        else {
           multiplyScaleY(transform, scaleY);
         }
       }
       if (isE(transform)) {
         calRotateZ(transform, rotateZ);
-      } else if (rotateZ) {
+      }
+      else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
       const tfo = style.transformOrigin.map((item, i) => {
