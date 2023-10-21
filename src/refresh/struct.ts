@@ -72,7 +72,7 @@ export function renderWebgl(
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(),
     scaleIndex = 0;
-  if (scale < 1.1) {
+  if (scale < 1.01) {
     scale = 1;
   } else {
     let n = 2;
@@ -82,7 +82,7 @@ export function renderWebgl(
       scaleIndex++;
     }
     if (n > 2) {
-      const m = (n >> 1) * 1.1;
+      const m = (n >> 1) * 1.01;
       // 看0.5n和n之间scale更靠近哪一方（0.5n*1.1分界线），就用那个放大数
       if (scale >= m) {
         scale = n;
@@ -433,7 +433,7 @@ export function renderWebgl(
         node.genTexture(gl, 1, 0);
         target = textureTarget[0];
       }
-      if (target) {
+      if (target && target.available) {
         const isInScreen = checkInScreen(target.bbox, matrix, W, H);
         if (isInScreen) {
           drawTextureCache(
@@ -461,7 +461,7 @@ export function renderWebgl(
       let target = textureTarget[scaleIndex],
         isInScreen = false;
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
-      if (target) {
+      if (target && target.available) {
         isInScreen = checkInScreen(target.bbox, matrix, W, H);
       }
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
@@ -589,11 +589,10 @@ export function renderWebgl(
         }
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-      if (
-        (target && target !== node.textureCache[scaleIndex]) ||
-        node.isShapeGroup
-      ) {
+      if (target && target.available && target !== node.textureCache[scaleIndex]) {
         i += total + next;
+      } else if (node.isShapeGroup) {
+        i += total;
       }
       // 在end处切回Page，需要先把画布的FBO实现overflow:hidden，再绘制回Page
       if (artBoardIndex[i]) {
@@ -862,7 +861,7 @@ function genTotal(
       node2.genTexture(gl, scale, scaleIndex);
       target2 = node2.textureTarget[scaleIndex];
     }
-    if (target2) {
+    if (target2 && target2.available) {
       const mixBlendMode = computedStyle.mixBlendMode;
       let tex: WebGLTexture | undefined;
       // 有mbm先将本节点内容绘制到同尺寸纹理上
@@ -908,11 +907,10 @@ function genTotal(
       }
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (
-      (target2 && target2 !== node2.textureCache[scaleIndex]) ||
-      node2.isShapeGroup
-    ) {
+    if (target2 && target2.available && target2 !== node2.textureCache[scaleIndex]) {
       i += total2 + next2;
+    } else if (node2.isShapeGroup) {
+      i += total2;
     }
   }
   // 删除fbo恢复
@@ -1794,7 +1792,7 @@ function genMask(
     // 需要保存引用，当更改时取消mask节点的缓存重新生成
     node2.mask = node;
     // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
-    const { shouldIgnore } = shouldIgnoreAndIsBgBlur(node, computedStyle);
+    const { shouldIgnore } = shouldIgnoreAndIsBgBlur(node2, computedStyle);
     if (shouldIgnore) {
       i += total2 + next2;
       continue;
@@ -1833,7 +1831,7 @@ function genMask(
       node2.genTexture(gl, scale, scaleIndex);
       target2 = node2.textureTarget[scaleIndex];
     }
-    if (target2) {
+    if (target2 && target2.available) {
       const mixBlendMode = computedStyle.mixBlendMode;
       let tex: WebGLTexture | undefined;
       // 有mbm先将本节点内容绘制到同尺寸纹理上
@@ -1886,11 +1884,10 @@ function genMask(
       }
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (
-      (target2 && target2 !== node2.textureCache[scaleIndex]) ||
-      node2.isShapeGroup
-    ) {
+    if (target2 && target2.available && target2 !== node2.textureCache[scaleIndex]) {
       i += total2 + next2;
+    } else if (node2.isShapeGroup) {
+      i += total2;
     }
   }
   const target = TextureCache.getEmptyInstance(gl, bbox, scale);
