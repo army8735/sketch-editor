@@ -1220,6 +1220,9 @@ function parseStrPoint(s: string) {
 }
 
 async function readImageFile(filename: string, opt: Opt) {
+  if (!filename || !opt.zipFile) {
+    return '';
+  }
   if (!/\.\w+$/.test(filename)) {
     filename = `${filename}.png`;
   }

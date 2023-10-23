@@ -496,7 +496,7 @@ export function renderWebgl(
           gl.useProgram(program);
         }
       }
-      if (isInScreen && target) {
+      if (isInScreen && target && target.available) {
         const { mixBlendMode, blur } = computedStyle;
         /**
          * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
@@ -518,6 +518,7 @@ export function renderWebgl(
             gl,
             resTexture,
             node,
+            node._matrixWorld,
             outline!,
             blur,
             programs,
@@ -1792,7 +1793,7 @@ function genMask(
     // 需要保存引用，当更改时取消mask节点的缓存重新生成
     node2.mask = node;
     // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
-    const { shouldIgnore } = shouldIgnoreAndIsBgBlur(node2, computedStyle);
+    const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(node2, computedStyle);
     if (shouldIgnore) {
       i += total2 + next2;
       continue;
@@ -1832,7 +1833,44 @@ function genMask(
       target2 = node2.textureTarget[scaleIndex];
     }
     if (target2 && target2.available) {
-      const mixBlendMode = computedStyle.mixBlendMode;
+      const { mixBlendMode, blur } = computedStyle;
+      // 同主循环的bgBlur
+      if (isBgBlur) {
+        const outline = node2.textureOutline = genOutline(
+          gl,
+          node2,
+          structs,
+          i,
+          total,
+          target2.bbox,
+          scale,
+        );
+        // outline会覆盖这个值，恶心
+        assignMatrix(node2.tempMatrix, matrix);
+        summary = genBgBlur(
+          gl,
+          summary,
+          node2,
+          node2.tempMatrix,
+          outline!,
+          blur,
+          programs,
+          scale,
+          cx,
+          cy,
+          w,
+          h,
+          dx,
+          dy,
+        );
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          summary,
+          0,
+        );
+      }
       let tex: WebGLTexture | undefined;
       // 有mbm先将本节点内容绘制到同尺寸纹理上
       if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index + 1) {
@@ -2050,11 +2088,12 @@ function genMbm(
   return res;
 }
 
-// 创建一个和画布一样大的纹理，线将画布和节点进行mask操作，保留重合的部分，再进行blur，再和节点进行mask保留重合的部分
+// 创建一个和画布一样大的纹理，先将画布和节点进行mask操作，保留重合的部分，再进行blur，再和节点进行mask保留重合的部分
 function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   tex: WebGLTexture,
   node: Node,
+  matrix: Float64Array,
   target: TextureCache,
   blur: ComputedBlur,
   programs: any,
@@ -2063,6 +2102,8 @@ function genBgBlur(
   cy: number,
   w: number,
   h: number,
+  dx = 0,
+  dy = 0,
 ) {
   // 将节点绘制到一张空画布
   const mask = createTexture(gl, 0, undefined, w, h);
@@ -2082,13 +2123,13 @@ function genBgBlur(
     [
       {
         opacity: 1,
-        matrix: node._matrixWorld,
+        matrix,
         bbox: target.bbox,
         texture: target.texture,
       },
     ],
-    0,
-    0,
+    dx,
+    dy,
     false,
   );
   // 画布内容进行blur
