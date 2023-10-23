@@ -575,23 +575,20 @@ class Node extends Event {
       if (scaleX !== 1) {
         if (isE(transform)) {
           transform[0] = scaleX;
-        }
-        else {
+        } else {
           multiplyScaleX(transform, scaleX);
         }
       }
       if (scaleY !== 1) {
         if (isE(transform)) {
           transform[5] = scaleY;
-        }
-        else {
+        } else {
           multiplyScaleY(transform, scaleY);
         }
       }
       if (isE(transform)) {
         calRotateZ(transform, rotateZ);
-      }
-      else if (rotateZ) {
+      } else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
       const tfo = style.transformOrigin.map((item, i) => {
@@ -1841,17 +1838,17 @@ class Node extends Event {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用4倍弥补
+      // 所有描边最大值，影响bbox
       let border = 0;
       strokeWidth.forEach((item, i) => {
         if (strokeEnable[i]) {
           if (strokePosition[i] === STROKE_POSITION.INSIDE) {
             // 0
           } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item * 4);
+            border = Math.max(border, item);
           } else {
             // 默认中间
-            border = Math.max(border, item * 0.5 * 4);
+            border = Math.max(border, item * 0.5);
           }
         }
       });

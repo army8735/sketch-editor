@@ -2,7 +2,7 @@ import { Props } from '../../format';
 import bezier from '../../math/bezier';
 import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
-import { FILL_RULE } from '../../style/define';
+import { FILL_RULE, STROKE_POSITION } from '../../style/define';
 import { mergeBbox } from '../../util/util';
 import { LayoutData } from '../layout';
 import Node from '../Node';
@@ -136,6 +136,34 @@ class Geom extends Node {
           ya = yb;
         }
       }
+    }
+    return res;
+  }
+
+  override get bbox(): Float64Array {
+    let res = this._bbox;
+    if (!res) {
+      const rect = this._rect || this.rect;
+      res = this._bbox = rect.slice(0);
+      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用2倍弥补
+      let border = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.INSIDE) {
+            // 0
+          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item * 4);
+          } else {
+            // 默认中间
+            border = Math.max(border, item * 0.5 * 4);
+          }
+        }
+      });
+      res[0] -= border;
+      res[1] -= border;
+      res[2] += border;
+      res[3] += border;
     }
     return res;
   }
