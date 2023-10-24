@@ -1,10 +1,11 @@
-import { d2r } from '../math/geom';
+import { angleBySides, d2r, r2d } from '../math/geom';
 import { identity, multiplyRotateZ, multiplyScaleY } from '../math/matrix';
 import { clone } from '../util';
-import { color2rgbaInt } from './css';
-import { calUnit, ColorStop, ComputedColorStop, GRADIENT, StyleUnit } from './define';
+import { color2rgbaInt, color2rgbaStr } from './css';
+import { calUnit, ColorStop, ComputedColorStop, ComputedGradient, GRADIENT, StyleUnit } from './define';
 import reg from './reg';
 import { calMatrixByOrigin } from './transform';
+import { toPrecision } from '../math';
 
 // 获取color-stop区间范围，去除无用值
 export function getColorStop(
@@ -399,9 +400,132 @@ export function getConic(
   };
 }
 
+export function convert2Css(g: ComputedGradient, bbox: Float64Array) {
+  const { t, d, stops } = g;
+  let [x1, y1, x2, y2] = d;
+  const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+  x1 *= w;
+  x2 *= w;
+  y1 *= h;
+  y2 *= h;
+  let deg = 0;
+  if (x1 === x2) {
+    if (y1 < y2) {
+      deg = 180;
+    }
+  } else {
+    if (x2 > x1) {
+      if (y2 >= y1) {
+        deg = 180 - r2d(Math.atan((y2 - y1) / (x2 - x1)));
+      } else {
+        deg = r2d(Math.atan( (x2 - x1) / (y1 - y2)));
+      }
+    } else {
+      if (y2 >= y1) {
+        deg = 180 + r2d(Math.atan((x1 - x2) / (y2 - y1)));
+      } else {
+        deg = 360 - r2d(Math.atan((x1 - x2) / (y1 - y2)));
+      }
+    }
+  }
+  if (t === GRADIENT.LINEAR) {
+    let start: { x: number, y: number }, end: { x: number, y: number };
+    if (deg <= 90) {
+      start = { x: bbox[0], y: bbox[3] };
+      end = { x: bbox[2], y: bbox[1] };
+    } else if (deg <= 180) {
+      start = { x: bbox[0], y: bbox[1] };
+      end = { x: bbox[2], y: bbox[3] };
+    } else if (deg <= 270) {
+      start = { x: bbox[2], y: bbox[1] };
+      end = { x: bbox[0], y: bbox[3] };
+    } else {
+      start = { x: bbox[2], y: bbox[3] };
+      end = { x: bbox[0], y: bbox[1] };
+    }
+    let a = Math.sqrt(Math.pow(y2 - start.y, 2) + Math.pow(x2 - start.x, 2));
+    let b = Math.sqrt(Math.pow(y1 - start.y, 2) + Math.pow(x1 - start.x, 2));
+    const c = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+    let theta = angleBySides(a, b, c);
+    const p1 = b * Math.cos(theta);
+    a = Math.sqrt(Math.pow(y1 - end.y, 2) + Math.pow(x1- end.x, 2));
+    b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
+    theta = angleBySides(a, b, c);
+    const p2 = b * Math.cos(theta);
+    const list = stops.slice(0).sort((a, b) => a.offset! - b.offset!);
+    // start超过截取
+    if (p1 > 0) {
+      const offset = p1 / c;
+      for (let i = 0, len = list.length; i < len; i++) {
+        const item = list[i];
+        if (item.offset! >= offset) {
+          const prev = list[i - 1];
+          list.splice(0, i);
+          if (item.offset! > offset) {
+            const l = c * (item.offset! - prev.offset!);
+            const p = (p1 - prev.offset! * c) / l;
+            const color = prev.color.map((color, i) => {
+              return color + Math.floor((item.color[i] - color) * p);
+            });
+            const n = {
+              color,
+              offset: 0,
+            };
+            list.unshift(n);
+          }
+          break;
+        }
+      }
+    }
+    // 不足计算正确的offset，原本开头是0
+    else if (p1 < 0) {
+      list.forEach(item => {
+        item.offset! = (item.offset! * c - p1) / (c - p1);
+      });
+    }
+    // end一样
+    if (p2 > 0) {
+      const offset = p2 / c;
+      for (let i = list.length - 1; i >= 0; i--) {
+        const item = list[i];
+        if (item.offset! <= offset) {
+          const next = list[i + 1];
+          list.splice(i + 1);
+          if (item.offset! < offset) {
+            const l = c * (next.offset! - item.offset!);
+            const p = (p2 - (1 - next.offset!) * c) / l;
+            const color = next.color.map((color, i) => {
+              return color + Math.floor((next.color[i] - color) * p);
+            });
+            const n = {
+              color,
+              offset: 1,
+            };
+            list.push(n);
+          }
+          break;
+        }
+      }
+    } else if (p2 < 0) {
+      list.forEach(item => {
+        item.offset! = (item.offset! * (c - p1)) / (c - p1 - p2);
+      });
+    }
+    let s = `linear-gradient(${toPrecision(deg)}deg, `;
+    list.forEach((item, i) => {
+      if (i) {
+        s += ' ,';
+      }
+      s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
+    });
+    return s + ')';
+  }
+}
+
 export default {
   getColorStop,
   getLinear,
   getRadial,
   getConic,
+  convert2Css,
 };

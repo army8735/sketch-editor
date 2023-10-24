@@ -633,7 +633,7 @@ class Text extends Node {
       }
     }
     // 富文本每串不同的需要设置字体颜色
-    const SET_COLOR_INDEX: Array<{ index: number; color: string }> = [];
+    const SET_COLOR_INDEX: { index: number; color: string }[] = [];
     let color: string;
     // 如果有fill，原本的颜色失效，sketch多个fill还将忽略颜色的alpha，这里都忽略
     let hasFill = false;

@@ -39,14 +39,16 @@ function offscreenCanvas(
   height = Math.ceil(height);
   o.width = width;
   o.height = height;
+  o.style.webkitFontSmoothing = 'antialiased';
   if (config.debug) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
     if (key) {
       o.setAttribute('key', key);
     }
-    document.body.appendChild(o);
+    // document.body.appendChild(o);
   }
+  document.body.appendChild(o);
   let ctx = o.getContext('2d', contextAttributes);
   if (!ctx) {
     inject.error('Total canvas memory use exceeds the maximum limit');
@@ -65,9 +67,10 @@ function offscreenCanvas(
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
-      if (config.debug && o) {
-        document.body.removeChild(o);
-      }
+      // if (config.debug && o) {
+      //   document.body.removeChild(o);
+      // }
+      document.body.removeChild(o);
       o = null;
     },
   };
