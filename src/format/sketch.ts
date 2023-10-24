@@ -1232,6 +1232,10 @@ async function readImageFile(filename: string, opt: Opt) {
     return '';
   }
   const ab = await file.async('arraybuffer');
+  if (!ab.byteLength) {
+    console.error(`image is empty: >>>${filename}<<<`);
+    return '';
+  }
   const buffer = new Uint8Array(ab);
   const blob = new Blob([buffer.buffer]);
   let img: HTMLImageElement;
