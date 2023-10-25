@@ -9,11 +9,11 @@ import { toPrecision } from '../math';
 
 // 获取color-stop区间范围，去除无用值
 export function getColorStop(
-  stops: Array<ComputedColorStop>,
+  stops: ComputedColorStop[],
   total: number,
   isConic = false,
 ): { color: number[], offset: number }[] {
-  const list: Array<{ color: Array<number>; offset?: number }> = [];
+  const list: { color: number[]; offset?: number }[] = [];
   const firstColor = stops[0].color;
   // offset是[0,1]的百分比形式，可能未声明缺省
   for (let i = 0, len = stops.length; i < len; i++) {
@@ -179,7 +179,7 @@ export function parseGradient(s: string) {
       radial: GRADIENT.RADIAL,
       conic: GRADIENT.CONIC,
     }[gradient[1].toLowerCase()]!;
-    let d: Array<number>;
+    let d: number[];
     if (t === GRADIENT.LINEAR || t === GRADIENT.CONIC) {
       const points =
         /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(
@@ -216,7 +216,7 @@ export function parseGradient(s: string) {
       gradient[2].match(
         /(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)?)|(transparent)/gi,
       ) || [];
-    const stops: Array<ColorStop> = v.map((item) => {
+    const stops: ColorStop[] = v.map((item) => {
       const color =
         /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
       const percent =
@@ -267,8 +267,8 @@ export type Linear = {
  * @param h
  */
 export function getLinear(
-  stops: Array<ComputedColorStop>,
-  d: Array<number>,
+  stops: ComputedColorStop[],
+  d: number[],
   ox: number,
   oy: number,
   w: number,
@@ -302,8 +302,8 @@ export type Radial = {
 };
 
 export function getRadial(
-  stops: Array<ComputedColorStop>,
-  d: Array<number>,
+  stops: ComputedColorStop[],
+  d: number[],
   dx: number,
   dy: number,
   w: number,
@@ -356,8 +356,8 @@ export type Conic = {
 };
 
 export function getConic(
-  stops: Array<ComputedColorStop>,
-  d: Array<number>,
+  stops: ComputedColorStop[],
+  d: number[],
   ox: number,
   oy: number,
   w: number,

@@ -142,7 +142,7 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
   }
   const prev = [
     { x: prevPoint.absX!, y: prevPoint.absY! },
-    { x: nextPoint.absTx ?? nextPoint.absX!, y: nextPoint.absTy ?? nextPoint.absY! },
+    { x: prevPoint.absFx ?? prevPoint.absX!, y: prevPoint.absFy ?? prevPoint.absY! },
     { x: point.absX!, y: point.absY! },
   ];
   const next = [
@@ -228,8 +228,25 @@ function getNormalLineIsec(
     const nextK = bezierSlope(next, center.t2);
     const prevB = prevTangent.y - prevK * prevTangent.x;
     const nextB = nextTangent.y - nextK * nextTangent.x;
-    const x = (nextB - prevB) / (prevK - nextK);
-    const y = prevK * x + prevB;
+    let x = (nextB - prevB) / (prevK - nextK);
+    let y = prevK * x + prevB;
+    if (Math.abs(prevK) < 1e-9) {
+      y = prevTangent.y;
+      if (nextK === Infinity || nextK === -Infinity) {
+        x = nextTangent.x;
+      }
+    } else if (Math.abs(nextK) < 1e-9) {
+      y = nextTangent.y;
+      if (prevK === Infinity || prevK === -Infinity) {
+        x = prevTangent.x;
+      }
+    } else if (prevK === Infinity || prevK === -Infinity) {
+      x = prevTangent.x;
+      y = nextTangent.y;
+    } else if (nextK === Infinity || nextK === -Infinity) {
+      x = nextTangent.x;
+      y = prevTangent.y;
+    }
     // 剩下的和直线圆角一样，只是顶点变成了新的
     const lenAB = pointsDistance(
       prevTangent.x,
@@ -368,7 +385,7 @@ function getDispersedSegs(
     // 点斜式求法线上距离r的解，一定仅有2个解
     let xs: number[], ys: number[];
     if (k === Infinity) {
-      xs = [0, 0];
+      xs = [tg.x, tg.x];
       ys = [tg.y - r, tg.y + r];
     } else {
       xs = getRoots([
@@ -392,7 +409,7 @@ function getDispersedSegs(
       pts.push({ x: xs[1], y: ys[1], t });
     }
   }
-  // console.log(JSON.stringify(pts.map(item => [item.x * 0.01, item.y * 0.01])))
+  // console.table(pts.map(item => [item.t, item.x, item.y]))
   return pts;
 }
 
