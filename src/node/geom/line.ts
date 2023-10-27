@@ -1,9 +1,57 @@
 import { STROKE_LINE_CAP, STROKE_LINE_JOIN } from '../../style/define';
 import { crossProduct } from '../../math/vector';
 import { intersectLineLine } from '../../math/isec';
+import { bezierSlope } from '../../math/bezier';
 
 export function lineCap(bbox: Float64Array, width: number, points: number[][], cap: STROKE_LINE_CAP) {
   const res = bbox.slice(0);
+  // 圆角最简单，已知圆心和半径，直接取范围
+  if (cap === STROKE_LINE_CAP.ROUND) {
+    res[0] -= width;
+    res[1] -= width;
+    res[2] += width;
+    res[3] += width;
+  }
+  // 仅首尾端点生效，一条线
+  const first = points[0];
+  const last = points[points.length - 1];
+  const ll = last.length;
+  const pts: { x: number, y: number }[] = [];
+  for (let i = 0; i < ll; i += 2) {
+    pts.push({
+      x: last[i],
+      y: last[i + 1],
+    });
+  }
+  let slop1 = 0, slop2 = 0;
+  // 求端点斜率，可能是曲线或直线，这里统一用正数，因为就2个点，三角函数算出偏移值后min/max各取正负即可
+  if (ll > 2) {
+    slop1 = Math.abs(bezierSlope(pts, 0));
+    slop2 = Math.abs(bezierSlope(pts, 1));
+  } else {
+    slop1 = slop2 = Math.abs(last[ll - 1] - first[1]) / Math.abs(last[ll - 2] - first[0]);
+  }
+  const deg1 = Math.atan(slop1);
+  const deg2 = Math.atan(slop2);
+  const sin1 = Math.sin(deg1);
+  const cos1 = Math.cos(deg1);
+  const sin2 = Math.sin(deg2);
+  const cos2 = Math.cos(deg2);
+  const dx1 = (sin1 === Infinity) ? width : Math.abs(sin1 * width);
+  const dy1 = (cos1 === Infinity) ? width : Math.abs(cos1 * width);
+  const dx2 = (sin2 === Infinity) ? width : Math.abs(sin2 * width);
+  const dy2 = (cos2 === Infinity) ? width : Math.abs(cos2 * width);
+  if (cap === STROKE_LINE_CAP.BUTT) {
+    res[0] = Math.min(res[0], first[0] - dx1, last[ll - 2] - dx2);
+    res[1] = Math.min(res[1], first[1] - dy1, last[ll - 1] - dy2);
+    res[2] = Math.max(res[2], first[0] + dx1, last[ll - 2] + dx2);
+    res[3] = Math.max(res[3], first[1] + dy1, last[ll - 1] + dy2);
+  } else if (cap === STROKE_LINE_CAP.SQUARE) {
+    res[0] = Math.min(res[0], first[0] - dx1 - dy1, last[ll - 2] - dx2 - dy2);
+    res[1] = Math.min(res[1], first[1] - dx1 - dy1, last[ll - 1] - dx2 - dy2);
+    res[2] = Math.max(res[2], first[0] + dx1 + dy1, last[ll - 2] + dx2 + dy2);
+    res[3] = Math.max(res[3], first[1] + dx1 + dy1, last[ll - 1] + dx2 + dy2);
+  }
   return res;
 }
 
@@ -110,7 +158,7 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
       false,
     )!;
     // 无延展
-    if (pt.toSource === 1 || pt.toClip === 0) {
+    if (!pt || pt.toSource === 1 || pt.toClip === 0) {
       continue;
     }
     // 不同类型的限制，bevel在交点处延2条边同时等量回退，并回退顶点形成width*2的新边
