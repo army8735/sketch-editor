@@ -6,7 +6,7 @@ import { FILL_RULE, STROKE_POSITION } from '../../style/define';
 import { mergeBbox } from '../../util/util';
 import { LayoutData } from '../layout';
 import Node from '../Node';
-import { lineCap, lineJoin } from './line';
+import { lineCap, lineJoin } from './border';
 
 class Geom extends Node {
   points?: number[][];

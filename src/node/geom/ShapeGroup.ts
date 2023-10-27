@@ -30,7 +30,7 @@ import Node from '../Node';
 import Polyline from './Polyline';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
-import { lineJoin } from './line';
+import { lineJoin } from './border';
 
 function scaleUp(points: Array<Array<number>>) {
   return points.map(point => {
