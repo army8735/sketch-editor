@@ -68,8 +68,14 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
   // 根据宽度求向量平移截距后的平行线，知道平移距离求得平移x/y，有2个解，看时钟序选择
   for (let i = 0, len = vectors.length; i < len; i++) {
     const p = vectors[i], n = vectors[(i + 1) % len];
+    if (!p[0] || !p[1] || !n[0] || !n[1]) {
+      continue;
+    }
     const cp = crossProduct(p[0], p[1], n[0], n[1]);
     const dp = lines[i], dn = lines[(i + 1) % len];
+    if (!dp[0] && !dp[1] && !dn[0] && !dn[1]) {
+      continue;
+    }
     let dxp = 0, dyp = 0;
     let dxn = 0, dyn = 0;
     // 终点-截距点的矢量和原本边矢量对比
@@ -103,6 +109,10 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
       nx1, ny1, nx2, ny2,
       false,
     )!;
+    // 无延展
+    if (pt.toSource === 1 || pt.toClip === 0) {
+      continue;
+    }
     // 不同类型的限制，bevel在交点处延2条边同时等量回退，并回退顶点形成width*2的新边
     if (join === STROKE_LINE_JOIN.BEVEL) {
       const distance = Math.sqrt(Math.pow(nx1 - px2, 2) + Math.pow(ny1 - py2, 2));
