@@ -603,7 +603,7 @@ class Polyline extends Geom {
     } else {
       ctx.lineJoin = 'miter';
     }
-    ctx.miterLimit = strokeMiterlimit * scale;
+    ctx.miterLimit = strokeMiterlimit;
     // 再上层的stroke
     for (let i = 0, len = stroke.length; i < len; i++) {
       if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -646,7 +646,7 @@ class Polyline extends Geom {
             ctx2.setLineDash(ctx.getLineDash());
             ctx2.lineCap = ctx.lineCap;
             ctx2.lineJoin = ctx.lineJoin;
-            ctx2.miterLimit = ctx.miterLimit * scale;
+            ctx2.miterLimit = ctx.miterLimit;
             ctx2.lineWidth = strokeWidth[i] * scale;
             ctx2.strokeStyle = '#FFF';
             ctx2.beginPath();
@@ -701,7 +701,7 @@ class Polyline extends Geom {
         ctx2.setLineDash(ctx.getLineDash());
         ctx2.lineCap = ctx.lineCap;
         ctx2.lineJoin = ctx.lineJoin;
-        ctx2.miterLimit = ctx.miterLimit * scale;
+        ctx2.miterLimit = ctx.miterLimit;
         ctx2.strokeStyle = ctx.strokeStyle;
         ctx2.lineWidth = strokeWidth[i] * 2 * scale;
         ctx2.beginPath();

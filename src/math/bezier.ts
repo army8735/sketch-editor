@@ -1,3 +1,4 @@
+import { Vector2Like } from './bo/Point';
 import { getRoots, pointSlope2General, twoPoint2General } from './equation';
 
 /**
@@ -246,6 +247,95 @@ export function bezierAt(t: number, points: { x: number, y: number }[], derivati
   }
 }
 
+
+// 求某一定点离贝塞尔曲线最近的一个点，segment越少性能越好但不准确。总计算量为segemnt的两倍。第一遍为找到最近点前后点2个时间，然后进一步差值计算求更准确点时间。
+export function nearestPointFromPointToBezier(
+  x: number,
+  y: number,
+  points: Array<{ x: number; y: number }>,
+  segment = 20,
+) {
+  let delta = 1 / segment;
+  let minP = { x: 0, y: 0 };
+  let minDistance: number = Infinity;
+  let minT = -1;
+  for (let i = 0; i <= segment; i++) {
+    const p = bezierAt(i * delta, points, 0);
+    const distanceSq = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y);
+
+    if (minDistance > distanceSq) {
+      minDistance = distanceSq;
+      minP = p;
+      minT = i;
+    }
+  }
+
+  const mintime = Math.max(0, (minT - 1) * delta);
+  const maxtime = Math.min(1, (minT + 1) * delta);
+
+  delta = (maxtime - mintime) / segment;
+  for (let i = 0; i <= segment; i++) {
+    const p = bezierAt(i * delta + mintime, points, 0);
+    const distanceSq = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y);
+
+    if (minDistance > distanceSq) {
+      minDistance = distanceSq;
+      minP = p;
+      minT = i * delta + mintime; // 此处直接就是时间
+    }
+  }
+
+  // 本质是精度问题
+  if (minT > 1) {
+    minT = 1 - 0.5 / segment / segment;
+  }
+
+  return {
+    point: minP,
+    distance: Math.sqrt(minDistance),
+    time: minT,
+    curve: points,
+    index: -1,
+  };
+}
+
+function mixPoint(n1: Vector2Like, n2: Vector2Like, percent: number) {
+  return {
+    x: mix(n1.x, n2.x, percent),
+    y: mix(n1.y, n2.y, percent),
+  };
+}
+
+export function interceptionBezier(
+  startPoint: Vector2Like,
+  control1: Vector2Like,
+  control2: Vector2Like,
+  endPoint: Vector2Like,
+  s: number,
+  e: number,
+) {
+  if (s === e) return null;
+  let s1 = mixPoint(startPoint, control1, s);
+  let s2 = mixPoint(control1, control2, s);
+  let s3 = mixPoint(control2, endPoint, s);
+  let e1 = mixPoint(startPoint, control1, e);
+  let e2 = mixPoint(control1, control2, e);
+  let e3 = mixPoint(control2, endPoint, e);
+  let ss1 = mixPoint(s1, s2, s);
+  let ss2 = mixPoint(s2, s3, s);
+  let ee1 = mixPoint(e1, e2, e);
+  let ee2 = mixPoint(e2, e3, e);
+  let ctrl_start = mixPoint(ss1, ss2, e);
+  let ctrl_end = mixPoint(ee2, ee1, 1 - s);
+  let s_n = bezierAt(s, [startPoint, control1, control2, endPoint], 0);
+  let e_n = bezierAt(e, [startPoint, control1, control2, endPoint], 0);
+  return [s_n, ctrl_start, ctrl_end, e_n];
+}
+
+export function mix(n1: number, n2: number, percent: number) {
+  return n1 + (n2 - n1) * percent;
+}
+
 export function sliceBezier(points: { x: number, y: number }[], t: number) {
   if (!Array.isArray(points) || points.length < 3) {
     return points;
@@ -489,7 +579,7 @@ export function bezierSlope(points: { x: number, y: number }[], t = 0) {
   throw new Error('Unsupported order');
 }
 
-function bezier2Slope(points: { x: number, y: number }[], t = 0) {
+export function bezier2Slope(points: { x: number, y: number }[], t = 0) {
   const { x: x0, y: y0 } = points[0];
   const { x: x1, y: y1 } = points[1];
   const { x: x2, y: y2 } = points[2];
@@ -500,7 +590,7 @@ function bezier2Slope(points: { x: number, y: number }[], t = 0) {
   return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
 }
 
-function bezier3Slope(points: { x: number, y: number }[], t: number) {
+export function bezier3Slope(points: { x: number, y: number }[], t: number) {
   const { x: x0, y: y0 } = points[0];
   const { x: x1, y: y1 } = points[1];
   const { x: x2, y: y2 } = points[2];
@@ -516,7 +606,7 @@ function bezier3Slope(points: { x: number, y: number }[], t: number) {
     + 3 * y1 - 3 * y0) / x;
 }
 
-function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
+export function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
   let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
   if (isNaN(tx) || tx < 0) {
     tx = 0;
@@ -545,7 +635,7 @@ function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, x2: num
   return res;
 }
 
-function bezierExtremeT3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+export function bezierExtremeT3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
   const cx = -x0 + x1;
   const cy = -y0 + y1;
   const bx = x0 - 2 * x1 + x2;
@@ -623,13 +713,13 @@ export function bezierTangent(points: { x: number, y: number }[], t = 0) {
   throw new Error('Unsupported order');
 }
 
-function bezierTangent2(points: { x: number, y: number }[], t = 0) {
+export function bezierTangent2(points: { x: number, y: number }[], t = 0) {
   const k = bezier2Slope(points, t);
   const p = pointByT2(points, t);
   return pointSlope2General(p.x, p.y, k);
 }
 
-function bezierTangent3(points: { x: number, y: number }[], t = 0) {
+export function bezierTangent3(points: { x: number, y: number }[], t = 0) {
   const k = bezier3Slope(points, t);
   const p = pointByT3(points, t);
   return pointSlope2General(p.x, p.y, k);
@@ -645,4 +735,5 @@ export default {
   getPointT,
   bezierSlope,
   bezierExtremeT,
+  bezierTangent,
 };

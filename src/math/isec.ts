@@ -133,7 +133,7 @@ function getRootsInInterval(min: number, max: number, coefs: Array<number>) {
  * @return {[]}
  */
 export function intersectBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                 bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number) {
+                                        bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number) {
   let c12, c11, c10;
   let c22, c21, c20;
 
@@ -228,7 +228,7 @@ export function intersectBezier2Bezier2(ax1: number, ay1: number, ax2: number, a
 }
 
 export function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
-                                 bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
+                                        bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
   let c13, c12, c11, c10; // 三阶系数
   let c23, c22, c21, c20;
 
@@ -518,7 +518,7 @@ export function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, a
 }
 
 export function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                 bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
+                                        bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
   let c12, c11, c10;
   let c23, c22, c21, c20;
   const result = [];
@@ -634,7 +634,8 @@ export function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, a
 }
 
 export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
-                                  bx1: number, by1: number, bx2: number, by2: number) {
+                                  bx1: number, by1: number, bx2: number, by2: number,
+                                  limit = true) {
   const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
   if (d !== 0) {
     const toSource = (
@@ -643,21 +644,22 @@ export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: nu
     const toClip = (
       (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
     ) / d;
-    if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1) {
-      let ox = ax1 + toSource * (ax2 - ax1);
-      let oy = ay1 + toSource * (ay2 - ay1);
-      return {
-        x: ox,
-        y: oy,
-        toSource,
-        toClip,
-      };
+    if (limit && (toSource < 0 || toSource > 1 || toClip < 0 || toClip > 1)) {
+      return;
     }
+    const ox = ax1 + toSource * (ax2 - ax1);
+    const oy = ay1 + toSource * (ay2 - ay1);
+    return {
+      x: ox,
+      y: oy,
+      toSource,
+      toClip,
+    };
   }
 }
 
 export function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                              bx1: number, by1: number, bx2: number, by2: number) {
+                                     bx1: number, by1: number, bx2: number, by2: number) {
   let c2, c1, c0;
   let cl, n;
   const isV = bx1 === bx2;
@@ -756,7 +758,7 @@ export function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2:
  *        c3                     c2                c1        c0
  */
 export function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
-                              bx1: number, by1: number, bx2: number, by2: number) {
+                                     bx1: number, by1: number, bx2: number, by2: number) {
   let c3, c2, c1, c0;
   let cl, n;
   const isV = bx1 === bx2;

@@ -6,17 +6,14 @@ import { FILL_RULE, STROKE_POSITION } from '../../style/define';
 import { mergeBbox } from '../../util/util';
 import { LayoutData } from '../layout';
 import Node from '../Node';
+import { lineCap, lineJoin } from './line';
 
 class Geom extends Node {
-  points?: Array<Array<number>>;
-  static isLine(node: Node) {
-    if (node instanceof Geom) {
-      return node.isLine();
-    }
-    return false;
-  }
+  points?: number[][];
+
   constructor(props: Props) {
     super(props);
+    this.isGeom = true;
   }
 
   override lay(data: LayoutData) {
@@ -145,25 +142,33 @@ class Geom extends Node {
     if (!res) {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
-      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用2倍弥补
+      const {
+        strokeWidth,
+        strokeEnable,
+        strokePosition,
+        strokeLinecap,
+        strokeLinejoin,
+        strokeMiterlimit,
+      } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗范围
       let border = 0;
       strokeWidth.forEach((item, i) => {
         if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.INSIDE) {
-            // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
-            border = Math.max(border, item * 4);
-          } else {
-            // 默认中间
-            border = Math.max(border, item * 0.5 * 4);
+          if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item);
+          } else if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5);
           }
         }
       });
-      res[0] -= border;
-      res[1] -= border;
-      res[2] += border;
-      res[3] += border;
+      // lineCap仅对非闭合首尾端点有用
+      if (this.isLine()) {
+        res = this._bbox = lineCap(res, border, this.points!, strokeLinecap);
+      }
+      // 闭合看lineJoin
+      else {
+        res = this._bbox = lineJoin(res, border, this.points!, strokeLinejoin, strokeMiterlimit);
+      }
     }
     return res;
   }

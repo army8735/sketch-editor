@@ -1,3 +1,8 @@
+export interface Vector2Like {
+  x: number;
+  y: number;
+}
+
 class Point {
   x: number;
   y: number;

@@ -96,6 +96,7 @@ class Node extends Event {
   isSymbolInstance = false;
   isPage = false;
   isText = false;
+  isGeom = false;
   isPolyline = false;
   isBitmap = false;
   isShapeGroup = false;
@@ -402,6 +403,7 @@ class Node extends Event {
     computedStyle.strokeDasharray = style.strokeDasharray.map((item) => item.v);
     computedStyle.strokeLinecap = style.strokeLinecap.v;
     computedStyle.strokeLinejoin = style.strokeLinejoin.v;
+    computedStyle.strokeMiterlimit = style.strokeMiterlimit.v;
     computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;

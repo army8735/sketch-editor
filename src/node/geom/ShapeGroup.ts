@@ -30,6 +30,7 @@ import Node from '../Node';
 import Polyline from './Polyline';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
+import { lineJoin } from './line';
 
 function scaleUp(points: Array<Array<number>>) {
   return points.map(point => {
@@ -90,10 +91,10 @@ type Loader = {
 };
 
 class ShapeGroup extends Group {
-  points?: Array<Array<Array<number>>>;
+  points?: number[][][];
   loaders: Loader[];
 
-  constructor(props: Props, children: Array<Node>) {
+  constructor(props: Props, children: Node[]) {
     super(props, children);
     this.isShapeGroup = true;
     this.loaders = [];
@@ -540,7 +541,7 @@ class ShapeGroup extends Group {
     } else {
       ctx.lineJoin = 'miter';
     }
-    ctx.miterLimit = strokeMiterlimit * scale;
+    ctx.miterLimit = strokeMiterlimit;
     // 再上层的stroke
     for (let i = 0, len = stroke.length; i < len; i++) {
       if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -581,7 +582,7 @@ class ShapeGroup extends Group {
             ctx2.setLineDash(strokeDasharray);
             ctx2.lineCap = ctx.lineCap;
             ctx2.lineJoin = ctx.lineJoin;
-            ctx2.miterLimit = ctx.miterLimit * scale;
+            ctx2.miterLimit = ctx.miterLimit;
             ctx2.lineWidth = strokeWidth[i] * scale;
             ctx2.strokeStyle = '#F00';
             ctx2.beginPath();
@@ -636,7 +637,7 @@ class ShapeGroup extends Group {
         ctx2.setLineDash(strokeDasharray);
         ctx2.lineCap = ctx.lineCap;
         ctx2.lineJoin = ctx.lineJoin;
-        ctx2.miterLimit = ctx.miterLimit * scale;
+        ctx2.miterLimit = ctx.miterLimit;
         ctx2.strokeStyle = ctx.strokeStyle;
         ctx2.lineWidth = strokeWidth[i] * 2 * scale;
         ctx2.beginPath();
@@ -801,7 +802,13 @@ class ShapeGroup extends Group {
     if (!res) {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
-      const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
+      const {
+        strokeWidth,
+        strokeEnable,
+        strokePosition,
+        strokeLinejoin,
+        strokeMiterlimit,
+      } = this.computedStyle;
       // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用2倍弥补
       let border = 0;
       strokeWidth.forEach((item, i) => {
@@ -816,10 +823,13 @@ class ShapeGroup extends Group {
           }
         }
       });
-      res[0] -= border;
-      res[1] -= border;
-      res[2] += border;
-      res[3] += border;
+      this.points!.forEach(points => {
+        const t = lineJoin(res!, border, points, strokeLinejoin, strokeMiterlimit);
+        res![0] = Math.min(res![0], t[0]);
+        res![1] = Math.min(res![1], t[1]);
+        res![2] = Math.min(res![2], t[2]);
+        res![3] = Math.min(res![3], t[3]);
+      });
     }
     return res;
   }

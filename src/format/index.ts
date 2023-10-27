@@ -17,7 +17,7 @@ export type JNode = {
 };
 
 export type JContainer = JNode & {
-  children: Array<JNode>;
+  children: JNode[];
 };
 
 export type JPage = JContainer & {
@@ -94,15 +94,15 @@ export type JStyle = {
     | 'extraBold'
     | 'black';
   fontStyle: 'normal' | 'italic' | 'oblique';
-  backgroundColor: string | Array<number>;
-  color: string | Array<number>;
+  backgroundColor: string | number[];
+  color: string | number[];
   opacity: number;
-  fill: Array<string | Array<number>>;
+  fill: Array<string | number[]>;
   fillOpacity: number[];
   fillEnable: boolean[];
   fillMode: string[];
   fillRule: 'nonzero' | 'evenodd';
-  stroke: Array<string | Array<number>>;
+  stroke: Array<string | number[]>;
   strokeEnable: boolean[];
   strokeWidth: number[];
   strokePosition: Array<'center' | 'inside' | 'outside'>;
@@ -252,12 +252,12 @@ export type SymbolMasterProps = ArtBoardProps & {
 
 export type SymbolInstanceProps = Props & {
   symbolId: string;
-  overrideValues: Array<{ name: string; value: string }>;
+  overrideValues: { name: string; value: string }[];
 };
 
 export type TextProps = Props & {
   content: string;
-  rich?: Array<Rich>;
+  rich?: Rich[];
   textBehaviour?: TEXT_BEHAVIOUR;
 };
 
@@ -276,7 +276,7 @@ export type Rich = {
 };
 
 export type PolylineProps = Props & {
-  points: Array<Point>;
+  points: Point[];
   isClosed: boolean;
   constrainProportions: boolean;
   fixedRadius: number;

@@ -585,6 +585,7 @@ async function convertItem(
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
+      strokeMiterlimit,
     } = await geomStyle(layer, opt);
     return {
       tagName: TAG_NAME.BITMAP,
@@ -613,6 +614,7 @@ async function convertItem(
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
+          strokeMiterlimit,
           translateX,
           translateY,
           scaleX,
@@ -742,6 +744,7 @@ async function convertItem(
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
+      strokeMiterlimit,
     } = await geomStyle(layer, opt);
     let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
     if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
@@ -777,6 +780,7 @@ async function convertItem(
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
+          strokeMiterlimit,
           translateX,
           translateY,
           scaleX,
@@ -846,6 +850,7 @@ async function convertItem(
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
+      strokeMiterlimit,
     } = await geomStyle(layer, opt);
     let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
     if (
@@ -896,6 +901,7 @@ async function convertItem(
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
+          strokeMiterlimit,
           translateX,
           translateY,
           scaleX,
@@ -933,6 +939,7 @@ async function convertItem(
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
+      strokeMiterlimit,
     } = await geomStyle(layer, opt);
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
@@ -971,6 +978,7 @@ async function convertItem(
           strokeDasharray,
           strokeLinecap,
           strokeLinejoin,
+          strokeMiterlimit,
           translateX,
           translateY,
           scaleX,
