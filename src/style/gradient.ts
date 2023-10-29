@@ -6,6 +6,7 @@ import { calUnit, ColorStop, ComputedColorStop, ComputedGradient, GRADIENT, Styl
 import reg from './reg';
 import { calMatrixByOrigin } from './transform';
 import { toPrecision } from '../math';
+import Node from '../node/Node';
 
 // 获取color-stop区间范围，去除无用值
 export function getColorStop(
@@ -400,14 +401,14 @@ export function getConic(
   };
 }
 
-export function convert2Css(g: ComputedGradient, bbox: Float64Array) {
+export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
+  const { bbox, width, height } = node;
   const { t, d, stops } = g;
   let [x1, y1, x2, y2] = d;
-  const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
-  x1 *= w;
-  x2 *= w;
-  y1 *= h;
-  y2 *= h;
+  x1 *= width;
+  x2 *= width;
+  y1 *= height;
+  y2 *= height;
   let deg = 0;
   if (x1 === x2) {
     if (y1 < y2) {
@@ -452,7 +453,7 @@ export function convert2Css(g: ComputedGradient, bbox: Float64Array) {
     b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
     theta = angleBySides(a, b, c);
     const p2 = b * Math.cos(theta);
-    const list = stops.slice(0).sort((a, b) => a.offset! - b.offset!);
+    const list = (clone(stops) as ComputedColorStop[]).sort((a, b) => a.offset! - b.offset!);
     // start超过截取
     if (p1 > 0) {
       const offset = p1 / c;
@@ -465,6 +466,9 @@ export function convert2Css(g: ComputedGradient, bbox: Float64Array) {
             const l = c * (item.offset! - prev.offset!);
             const p = (p1 - prev.offset! * c) / l;
             const color = prev.color.map((color, i) => {
+              if (i === 3) {
+                return color + (item.color[i] - color) * p;
+              }
               return color + Math.floor((item.color[i] - color) * p);
             });
             const n = {
@@ -495,6 +499,9 @@ export function convert2Css(g: ComputedGradient, bbox: Float64Array) {
             const l = c * (next.offset! - item.offset!);
             const p = (p2 - (1 - next.offset!) * c) / l;
             const color = next.color.map((color, i) => {
+              if (i === 3) {
+                return color + (next.color[i] - color) * p;
+              }
               return color + Math.floor((next.color[i] - color) * p);
             });
             const n = {
@@ -514,9 +521,35 @@ export function convert2Css(g: ComputedGradient, bbox: Float64Array) {
     let s = `linear-gradient(${toPrecision(deg)}deg, `;
     list.forEach((item, i) => {
       if (i) {
-        s += ' ,';
+        s += ', ';
       }
+      item.color[3] *= opacity;
+      item.color[3] = toPrecision(item.color[3]);
       s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
+    });
+    return s + ')';
+  } else if (t === GRADIENT.RADIAL) {
+    // 半径，和圆心到4个角的距离取最大值即farthest-corner
+    const r = Math.sqrt((Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
+    const d1 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1, 2)));
+    const d2 = Math.sqrt((Math.pow(x1 - width, 2) + Math.pow(y1, 2)));
+    const d3 = Math.sqrt((Math.pow(x1 - width, 2) + Math.pow(y1 - height, 2)));
+    const d4 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1 - height, 2)));
+    const distance = Math.max(d1, d2, d3, d4);
+    const ratio = distance / r;
+    let s = `radial-gradient(circle at ${toPrecision(d[0]) * 100}% ${toPrecision(d[1]) * 100}%, `;
+    stops.forEach((item, i) => {
+      if (i) {
+        s += ', ';
+      }
+      const color = item.color.map((c, i) => {
+        if (i === 3) {
+          return toPrecision(c * opacity);
+        } else {
+          return Math.min(255, Math.floor(c * ratio));
+        }
+      });
+      s += color2rgbaStr(color) + ' ' + toPrecision(item.offset! * 100) + '%';
     });
     return s + ')';
   }
