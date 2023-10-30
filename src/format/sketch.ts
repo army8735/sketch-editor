@@ -39,6 +39,10 @@ export enum ResizingConstraint {
 
 export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   const zipFile = await JSZip.loadAsync(arrayBuffer);
+  return openAndConvertSketchZip(zipFile);
+}
+
+export async function openAndConvertSketchZip(zipFile: JSZip) {
   const document: SketchFormat.Document = await readJsonFile(
     zipFile,
     'document.json',
