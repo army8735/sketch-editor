@@ -1,5 +1,5 @@
 import { TAG_NAME, JFile, JSymbolMaster } from './format';
-import { openAndConvertSketchBuffer, convertSketch } from './format/sketch';
+import { openAndConvertSketchBuffer, convertSketch, openAndConvertSketchZip } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
 import math from './math';
@@ -41,6 +41,7 @@ export default {
     return root;
   },
   openAndConvertSketchBuffer,
+  openAndConvertSketchZip,
   convertSketch,
   node,
   refresh,
