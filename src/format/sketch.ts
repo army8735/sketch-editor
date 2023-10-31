@@ -77,11 +77,11 @@ async function readJsonFile(zipFile: JSZip, filename: string) {
 }
 
 type Opt = {
-  zipFile: JSZip;
+  zipFile?: JSZip;
   user: any;
 };
 
-export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
+export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
   console.log('sketch', json);
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
@@ -95,7 +95,7 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
     const postscriptName = item.postscriptNames[0];
     return !!postscriptName;
   });
-  if (fontReferences.length) {
+  if (zipFile && fontReferences.length) {
     await Promise.all(
       fontReferences.map((item: SketchFormat.FontRef) => {
         if (item.fontData._ref_class === 'MSFontData') {
@@ -117,7 +117,7 @@ export async function convertSketch(json: any, zipFile: JSZip): Promise<JFile> {
     })
   );
   const pages = await Promise.all(
-    json.pages.map((page: SketchFormat.Page) => {
+    (json.pages || []).map((page: SketchFormat.Page) => {
       return convertPage(page, opt);
     }),
   );
@@ -185,10 +185,10 @@ async function convertItem(
   w: number,
   h: number,
 ): Promise<JNode | undefined> {
-  let width: number | string = layer.frame.width;
-  let height: number | string = layer.frame.height;
-  let translateX: number | string = layer.frame.x;
-  let translateY: number | string = layer.frame.y;
+  let width: number | string = layer.frame.width || 0.5;
+  let height: number | string = layer.frame.height || 0.5;
+  let translateX: number | string = layer.frame.x || 0;
+  let translateY: number | string = layer.frame.y || 0;
   // sketch不会出现非正数，但人工可能修改，sketch对此做了兼容转换
   if (width < 0) {
     translateX += width;
