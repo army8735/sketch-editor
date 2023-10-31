@@ -60,7 +60,7 @@ type Merge = {
   total: number;
   node: Node;
   valid: boolean;
-  subList: Array<Merge>; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
+  subList: Merge[]; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
   isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可视范围外有tempBbox
   isTop: boolean; // 是否是最上层，当嵌套时子Merge不是顶层
 };
@@ -97,8 +97,8 @@ export function renderWebgl(
   const { structs, width: W, height: H } = root;
   const cx = W * 0.5,
     cy = H * 0.5;
-  const mergeList: Array<Merge> = [],
-    mergeHash: Array<Merge> = [];
+  const mergeList: Merge[] = [],
+    mergeHash: Merge[] = [];
   // 先计算内容matrix等，如果有需要merge合并汇总的记录下来
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total } = structs[i];
@@ -169,10 +169,14 @@ export function renderWebgl(
         blur.t === BLUR.RADIAL && blur.radius >= 1 ||
         blur.t === BLUR.MOTION && blur.radius >= 1) &&
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
-    const needMask =
+    let needMask =
       maskMode > 0 &&
-      !!node.next &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
+    // 单个的alpha蒙版不渲染
+    if (needMask && maskMode === MASK.ALPHA && !node.next) {
+      needMask = false;
+      node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+    }
     const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
     // 记录汇总的同时以下标为k记录个类hash
     if (needTotal || needShadow || needBlur || needMask || needColor) {
@@ -472,7 +476,8 @@ export function renderWebgl(
           W,
           H,
         );
-        if (isInScreen && node.hasContent) {
+        // 单个的alpha蒙版不渲染
+        if (isInScreen && node.hasContent && !node.computedStyle.maskMode) {
           node.genTexture(gl, scale, scaleIndex);
           target = textureTarget[scaleIndex];
         }
@@ -705,14 +710,14 @@ export function renderWebgl(
  * 由于根节点视作E且其rect的原点一定是0，因此子节点可以直接使用matrix预乘父节点，不会产生transformOrigin偏移
  */
 function genBboxTotal(
-  structs: Array<Struct>,
+  structs: Struct[],
   node: Node,
   index: number,
   total: number,
   isNew: boolean,
   scaleIndex: number,
   merge: Merge,
-  mergeHash: Array<Merge>,
+  mergeHash: Merge[],
 ) {
   const res = (node.tempBbox || node._rect || node.rect).slice(0);
   toE(node.tempMatrix);
@@ -770,7 +775,7 @@ function genTotal(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
   node: Node,
-  structs: Array<Struct>,
+  structs: Struct[],
   index: number,
   lv: number,
   total: number,
@@ -1723,7 +1728,7 @@ function genMask(
   root: Root,
   node: Node,
   maskMode: MASK,
-  structs: Array<Struct>,
+  structs: Struct[],
   index: number,
   lv: number,
   total: number,
@@ -2160,7 +2165,7 @@ function genBgBlur(
 function genOutline(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   node: Node,
-  structs: Array<Struct>,
+  structs: Struct[],
   index: number,
   total: number,
   bbox: Float64Array,
@@ -2339,7 +2344,7 @@ function checkInScreen(
 // 统计mask节点后续关联跳过的数量
 function genNextCount(
   node: Node,
-  structs: Array<Struct>,
+  structs: Struct[],
   index: number,
   lv: number,
   total: number,
