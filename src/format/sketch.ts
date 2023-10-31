@@ -194,15 +194,9 @@ async function convertItem(
     translateX += width;
     width = Math.abs(width);
   }
-  else if (width === 0) {
-    width = 1;
-  }
   if (height < 0) {
     translateY += height;
     height = Math.abs(height);
-  }
-  else if (height === 0) {
-    height = 1;
   }
   const visible = layer.isVisible;
   const opacity = layer.style?.contextSettings?.opacity ?? 1;
