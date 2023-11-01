@@ -417,7 +417,7 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
   } else {
     if (x2 > x1) {
       if (y2 >= y1) {
-        deg = 180 - r2d(Math.atan((y2 - y1) / (x2 - x1)));
+        deg = 90 + r2d(Math.atan((y2 - y1) / (x2 - x1)));
       } else {
         deg = r2d(Math.atan( (x2 - x1) / (y1 - y2)));
       }
@@ -448,11 +448,11 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     let b = Math.sqrt(Math.pow(y1 - start.y, 2) + Math.pow(x1 - start.x, 2));
     const c = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
     let theta = angleBySides(a, b, c);
-    const p1 = b * Math.cos(theta);
-    a = Math.sqrt(Math.pow(y1 - end.y, 2) + Math.pow(x1- end.x, 2));
+    const p1 = theta ? b * Math.cos(theta) : b;
+    a = Math.sqrt(Math.pow(y1 - end.y, 2) + Math.pow(x1 - end.x, 2));
     b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
     theta = angleBySides(a, b, c);
-    const p2 = b * Math.cos(theta);
+    const p2 = theta ? b * Math.cos(theta) : b;
     const list = (clone(stops) as ComputedColorStop[]).sort((a, b) => a.offset! - b.offset!);
     // start超过截取
     if (p1 > 0) {
