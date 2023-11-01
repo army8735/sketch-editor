@@ -8,12 +8,22 @@ import { LayoutData } from '../layout';
 import Node from '../Node';
 import { lineCap, lineJoin } from './border';
 
+export type Loader = {
+  error: boolean;
+  loading: boolean;
+  source?: HTMLImageElement;
+  width: number;
+  height: number;
+};
+
 class Geom extends Node {
   points?: number[][];
+  loaders: Loader[];
 
   constructor(props: Props) {
     super(props);
     this.isGeom = true;
+    this.loaders = [];
   }
 
   override lay(data: LayoutData) {
@@ -161,6 +171,10 @@ class Geom extends Node {
           }
         }
       });
+      const minX = res[0] - border;
+      const minY = res[1] - border;
+      const maxX = res[2] + border;
+      const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
       if (this.isLine()) {
         res = this._bbox = lineCap(res, border, this.points!, strokeLinecap);
@@ -169,6 +183,10 @@ class Geom extends Node {
       else {
         res = this._bbox = lineJoin(res, border, this.points!, strokeLinejoin, strokeMiterlimit);
       }
+      res[0] = Math.min(res[0], minX);
+      res[1] = Math.min(res[1], minY);
+      res[2] = Math.max(res[2], maxX);
+      res[3] = Math.max(res[3], maxY);
     }
     return res;
   }

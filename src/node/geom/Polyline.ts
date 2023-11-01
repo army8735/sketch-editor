@@ -27,23 +27,13 @@ import { getCanvasGCO } from '../../style/mbm';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
 
-type Loader = {
-  error: boolean;
-  loading: boolean;
-  source?: HTMLImageElement;
-  width: number;
-  height: number;
-};
-
 class Polyline extends Geom {
   props: PolylineProps;
-  loaders: Loader[];
 
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
     this.isPolyline = true;
-    this.loaders = [];
   }
 
   override buildPoints() {
@@ -190,16 +180,16 @@ class Polyline extends Geom {
     }
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
     const first = temp[0];
-    const p: Array<number> = [
+    const p: number[] = [
       first.absX!,
       first.absY!,
     ];
-    const res: Array<Array<number>> = [p],
+    const res: number[][] = [p],
       len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
-      const p: Array<number> = [
+      const p: number[] = [
         item.absX!,
         item.absY!,
       ];
@@ -214,7 +204,7 @@ class Polyline extends Geom {
     // 闭合
     if (this.props.isClosed) {
       const last = temp[len - 1];
-      const p: Array<number> = [
+      const p: number[] = [
         first.absX!,
         first.absY!,
       ];
@@ -422,9 +412,12 @@ class Polyline extends Geom {
                   ctx.globalCompositeOperation = 'source-over';
                 }
                 os.release();
+              } else {
+                this.root!.imgLoadingCount++;
               }
             }
             else {
+              this.root!.imgLoadingCount++;
               loader = this.loaders[i] = this.loaders[i] || {
                 error: false,
                 loading: true,
