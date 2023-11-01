@@ -98,7 +98,7 @@ export function pointsDistance(x1: number, y1: number, x2: number, y2: number) {
 export function angleBySides(a: number, b: number, c: number) {
   // Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB))
   let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
-  return Math.acos(theta);
+  return Math.acos(theta) || 0;
 }
 
 export const H = 4 * (Math.sqrt(2) - 1) / 3;

@@ -35,12 +35,12 @@ export function multiply(a: Float64Array, b: Float64Array): Float64Array {
   if (isE(b)) {
     return new Float64Array(a);
   }
-  let c = identity();
+  const c = identity();
   for (let i = 0; i < 4; i++) {
-    let a0 = a[i];
-    let a1 = a[i + 4];
-    let a2 = a[i + 8];
-    let a3 = a[i + 12];
+    const a0 = a[i];
+    const a1 = a[i + 4];
+    const a2 = a[i + 8];
+    const a3 = a[i + 12];
     c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
     c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
     c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
@@ -75,10 +75,10 @@ export function multiplyRef(a: Float64Array, b: Float64Array): Float64Array {
   const b14 = b[14];
   const b15 = b[15];
   for (let i = 0; i < 4; i++) {
-    let a0 = a[i];
-    let a1 = a[i + 4];
-    let a2 = a[i + 8];
-    let a3 = a[i + 12];
+    const a0 = a[i];
+    const a1 = a[i + 4];
+    const a2 = a[i + 8];
+    const a3 = a[i + 12];
     b[i] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
     b[i + 4] = a0 * b4 + a1 * b5 + a2 * b6 + a3 * b7;
     b[i + 8] = a0 * b8 + a1 * b9 + a2 * b10 + a3 * b11;
@@ -297,7 +297,7 @@ export function tfoMultiply(x: number, y: number, m: Float64Array) {
   if (!x && !y) {
     return m;
   }
-  let d = m[3],
+  const d = m[3],
     h = m[7],
     l = m[11],
     p = m[15];
@@ -350,9 +350,9 @@ export function multiplyRotateZ(m: Float64Array, v: number) {
   if (!v) {
     return m;
   }
-  let sin = Math.sin(v);
-  let cos = Math.cos(v);
-  let a = m[0],
+  const sin = Math.sin(v);
+  const cos = Math.cos(v);
+  const a = m[0],
     b = m[1],
     c = m[2],
     d = m[3],
@@ -410,12 +410,12 @@ export function multiplyScale(m: Float64Array, v: number) {
 
 export function calPoint(point: { x: number; y: number }, m?: Float64Array) {
   if (m && !isE(m)) {
-    let { x, y } = point;
-    let a1 = m[0],
+    const { x, y } = point;
+    const a1 = m[0],
       b1 = m[1];
-    let a2 = m[4],
+    const a2 = m[4],
       b2 = m[5];
-    let a4 = m[12],
+    const a4 = m[12],
       b4 = m[13];
     return {
       x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
@@ -433,7 +433,7 @@ export function inverse(m: Float64Array) {
   if (m.length === 16) {
     return inverse4(m);
   }
-  let a = m[0],
+  const a = m[0],
     b = m[1],
     c = m[2],
     d = m[3],
@@ -442,7 +442,7 @@ export function inverse(m: Float64Array) {
   if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
     return m;
   }
-  let divisor = a * d - b * c;
+  const divisor = a * d - b * c;
   if (divisor === 0) {
     return m;
   }
