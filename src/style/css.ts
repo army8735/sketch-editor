@@ -835,7 +835,8 @@ export function color2gl(color: string | number[]): number[] {
 
 export function setFontStyle(style: ComputedStyle | Rich) {
   const fontSize = style.fontSize || 0;
-  let fontFamily = style.fontFamily || inject.defaultFontFamily || 'arial';
+  let fontFamily = style.fontFamily || inject.defaultFontFamily;
+  fontFamily += ',' + 'pingfangsc-regular';
   if (/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }

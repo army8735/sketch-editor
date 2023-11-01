@@ -668,7 +668,7 @@ async function convertItem(
           length,
           attributes: {
             MSAttributedStringFontAttribute: {
-              attributes: { name, size: fontSize },
+              attributes: { name = 'PingFangSC-Regular', size: fontSize = 16 },
             },
             MSAttributedStringColorAttribute: { red, green, blue, alpha },
             kerning = 0,
