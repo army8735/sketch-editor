@@ -91,6 +91,7 @@ export function genMerge(
     }
     const {
       maskMode,
+      breakMask,
       opacity,
       shadow,
       shadowEnable,
@@ -147,10 +148,24 @@ export function genMerge(
     let needMask =
       maskMode > 0 &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
-    // 单个的alpha蒙版不渲染
+    // 单个的alpha蒙版不渲染，target指向空的mask纹理汇总，循环时判空跳过
     if (needMask && maskMode === MASK.ALPHA && !node.next) {
       needMask = false;
       node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+    }
+    // 兄弟连续的mask，后面的不生效，除非有breakMask
+    if (needMask && !breakMask) {
+      let prev = node.prev;
+      while (prev) {
+        if (prev.computedStyle.maskMode) {
+          needMask = false;
+          break;
+        }
+        if (prev.computedStyle.breakMask) {
+          break;
+        }
+        prev = prev.prev;
+      }
     }
     const needColor =
       hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
@@ -176,6 +191,7 @@ export function genMerge(
   }
   // console.warn(mergeList);
   if (mergeList.length) {
+    // 后根顺序，即叶子节点在前，兄弟的后节点在前
     mergeList.sort(function (a, b) {
       if (a.lv === b.lv) {
         return b.i - a.i;
@@ -396,13 +412,13 @@ function genNextCount(
   total: number,
 ) {
   for (let i = index + total + 1, len = structs.length; i < len; i++) {
-    const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
+    const { node: node2, lv: lv2 } = structs[i];
     const computedStyle = node2.computedStyle;
     if (lv > lv2) {
       node.struct.next = i - index - total - 1;
       break;
     } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
-      node.struct.next = i - index - total + total2 + next2;
+      node.struct.next = i - index - total - 1;
       break;
     }
   }
