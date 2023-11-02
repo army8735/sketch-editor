@@ -38,7 +38,7 @@ import {
   StyleNumValue,
   StyleUnit,
 } from '../style/define';
-import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import { calMatrixByOrigin, calRotateZ, calTransformByMatrixAndOrigin } from '../style/transform';
 import Event from '../util/Event';
 import { clone, equal } from '../util/util';
 import ArtBoard from './ArtBoard';
@@ -557,10 +557,15 @@ class Node extends Event {
     // 普通布局或者第一次计算
     else {
       toE(transform);
+      const tfo = style.transformOrigin.map((item, i) => {
+        return calSize(item, i ? this.height : this.width);
+      });
+      computedStyle.transformOrigin = tfo as [number, number];
       // 开个口子，直接提供matrix
       if (style.matrix) {
         computedStyle.matrix = style.matrix.v.slice(0);
         assignMatrix(matrix, computedStyle.matrix);
+        this.transform = calTransformByMatrixAndOrigin(matrix, tfo[0], tfo[1]);
         return matrix;
       }
       // 一般走这里
@@ -593,10 +598,6 @@ class Node extends Event {
       } else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
-      const tfo = style.transformOrigin.map((item, i) => {
-        return calSize(item, i ? this.height : this.width);
-      });
-      computedStyle.transformOrigin = tfo as [number, number];
       const t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
       assignMatrix(matrix, t);
     }

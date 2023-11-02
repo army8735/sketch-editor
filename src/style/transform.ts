@@ -13,8 +13,8 @@ import { calSize } from './css';
 
 export function calRotateZ(t: Float64Array, v: number) {
   v = d2r(v);
-  let sin = Math.sin(v);
-  let cos = Math.cos(v);
+  const sin = Math.sin(v);
+  const cos = Math.cos(v);
   t[0] = t[5] = cos;
   t[1] = sin;
   t[4] = -sin;
@@ -64,8 +64,16 @@ export function calMatrix(style: Style, width = 0, height = 0) {
   return transform;
 }
 
+export function calTransformByMatrixAndOrigin(matrix: Float64Array, x: number, y: number) {
+  let res = matrix.slice(0);
+  res = multiplyTfo(res, x, y);
+  res = tfoMultiply(-x, -y, res);
+  return res;
+}
+
 export default {
   calRotateZ,
   calMatrix,
   calMatrixByOrigin,
+  calTransformByMatrixAndOrigin,
 };
