@@ -32,19 +32,19 @@ import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { lineJoin } from './border';
 
-function scaleUp(points: Array<Array<number>>) {
+function scaleUp(points: number[][]) {
   return points.map(point => {
     return point.map(item => Math.round(item * 100));
   });
 }
 
-function scaleDown(points: Array<Array<number>>) {
+function scaleDown(points: number[][]) {
   return points.map(point => {
     return point.map(item => item * 0.01);
   });
 }
 
-function applyMatrixPoints(points: Array<Array<number>>, m: Float64Array) {
+function applyMatrixPoints(points: number[][], m: Float64Array) {
   if (m && !isE(m)) {
     const a1 = m[0],
       b1 = m[1];
@@ -823,6 +823,10 @@ class ShapeGroup extends Group {
           }
         }
       });
+      const minX = res[0] - border;
+      const minY = res[1] - border;
+      const maxX = res[2] + border;
+      const maxY = res[3] + border;
       this.points!.forEach(points => {
         const t = lineJoin(res!, border, points, strokeLinejoin, strokeMiterlimit);
         res![0] = Math.min(res![0], t[0]);
@@ -830,6 +834,10 @@ class ShapeGroup extends Group {
         res![2] = Math.min(res![2], t[2]);
         res![3] = Math.min(res![3], t[3]);
       });
+      res[0] = Math.min(res[0], minX);
+      res[1] = Math.min(res[1], minY);
+      res[2] = Math.max(res[2], maxX);
+      res[3] = Math.max(res[3], maxY);
     }
     return res;
   }

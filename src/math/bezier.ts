@@ -12,7 +12,7 @@ import { getRoots, pointSlope2General, twoPoint2General } from './equation';
  * @returns {number[]}
  * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
  */
-function bboxBezier2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
+export function bboxBezier2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
   let minX = Math.min(x0, x2);
   let minY = Math.min(y0, y2);
   let maxX = Math.max(x0, x2);
@@ -48,7 +48,7 @@ function bboxBezier2(x0: number, y0: number, x1: number, y1: number, x2: number,
 /**
  * 同上三阶的
  */
-function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+export function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
   let minX = Math.min(x0, x3);
   let minY = Math.min(y0, y3);
   let maxX = Math.max(x0, x3);
@@ -101,21 +101,22 @@ function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number,
   return [minX, minY, maxX, maxY];
 }
 
-export function bboxBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number,
-                           x3?: number, y3?: number) {
+export function bboxBezier(
+  x0: number, y0: number, x1: number, y1: number,
+  x2?: number, y2?: number, x3?: number, y3?: number) {
   const len = arguments.length;
-  if (len === 4) {
+  if (len === 4 || x2 === undefined) {
     const a = Math.min(x0, x1);
     const b = Math.min(y0, y1);
     const c = Math.max(x0, x1);
     const d = Math.max(y0, y1);
     return [a, b, c, d];
   }
-  if (len === 6) {
-    return bboxBezier2(x0, y0, x1, y1, x2, y2);
+  if (len === 6 || x3 === undefined) {
+    return bboxBezier2(x0, y0, x1, y1, x2!, y2!);
   }
   if (len === 8) {
-    return bboxBezier3(x0, y0, x1, y1, x2, y2, x3!, y3!);
+    return bboxBezier3(x0, y0, x1, y1, x2!, y2!, x3!, y3!);
   }
   throw new Error('Unsupported order');
 }
@@ -336,15 +337,18 @@ export function mix(n1: number, n2: number, percent: number) {
   return n1 + (n2 - n1) * percent;
 }
 
-export function sliceBezier(points: { x: number, y: number }[], t: number) {
-  if (!Array.isArray(points) || points.length < 3) {
-    return points;
-  }
+function sliceBezierS(points: { x: number, y: number }[], t: number) {
   const { x: x1, y: y1 } = points[0];
   const { x: x2, y: y2 } = points[1];
-  const { x: x3, y: y3 } = points[2];
   const x12 = (x2 - x1) * t + x1;
   const y12 = (y2 - y1) * t + y1;
+  if (points.length === 2) {
+    return [
+      { x: x1, y: y1 },
+      { x: x12, y: y12 },
+    ];
+  }
+  const { x: x3, y: y3 } = points[2];
   const x23 = (x3 - x2) * t + x2;
   const y23 = (y3 - y2) * t + y2;
   const x123 = (x23 - x12) * t + x12;
@@ -363,38 +367,86 @@ export function sliceBezier(points: { x: number, y: number }[], t: number) {
       { x: x123, y: y123 },
       { x: x1234, y: y1234 },
     ];
-  }
-  else if (points.length === 3) {
+  } else if (points.length === 3) {
     return [
       { x: x1, y: y1 },
       { x: x12, y: y12 },
       { x: x123, y: y123 },
     ];
-  }
-  else {
+  } else {
     throw new Error('Unsupported order');
   }
 }
 
-export function sliceBezier2Both(points: { x: number, y: number }[], start = 0, end = 1) {
-  if (!Array.isArray(points) || points.length < 3) {
-    return points;
-  }
+// export function sliceBezier2(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, start: number, end?: number) {
+//   start = Math.max(start, 0);
+//   start = Math.min(start, 1);
+//   // 只传1个默认从开头开始截取
+//   if (end === undefined) {
+//     const x12 = (x2 - x1) * start + x1;
+//     const y12 = (y2 - y1) * start + y1;
+//     const x23 = (x3 - x2) * start + x2;
+//     const y23 = (y3 - y2) * start + y2;
+//     const x123 = (x23 - x12) * start + x12;
+//     const y123 = (y23 - y12) * start + y12;
+//     return {
+//       x1,
+//       y1,
+//       x2: x12,
+//       y2: y12,
+//       x3: x123,
+//       y3: y123,
+//     };
+//   }
+//   // 都传，如果end<start说明需要颠倒
+//   else {
+//     end = Math.max(end, 0);
+//     end = Math.min(end, 1);
+//     const isReversed = end < start;
+//     if (isReversed) {
+//       [start, end] = [end, start];
+//     }
+//     if (start === 0 && end === 1) {
+//       if (isReversed) {
+//         return {
+//           x1: x3, y1: y3, x2, y2, x3: x1, y3: y1,
+//         };
+//       } else {
+//         return {
+//           x1, y1, x2, y2, x3, y3,
+//         };
+//       }
+//     }
+//     if (end < 1) {} else {}
+//   }
+// }
+
+export function sliceBezier(points: { x: number, y: number }[], start = 0, end = 1) {
   start = Math.max(start, 0);
+  start = Math.min(start, 1);
+  end = Math.max(end, 0);
   end = Math.min(end, 1);
+  let res = points.slice(0);
   if (start === 0 && end === 1) {
-    return points;
+    return res;
+  }
+  const isReversed = end < start;
+  if (isReversed) {
+    [start, end] = [end, start];
   }
   if (end < 1) {
-    points = sliceBezier(points, end);
+    res = sliceBezierS(points, end);
   }
   if (start > 0) {
     if (end < 1) {
       start = start / end;
     }
-    points = sliceBezier(points.slice(0).reverse(), (1 - start)).reverse();
+    res = sliceBezierS(res.reverse(), (1 - start)).reverse();
   }
-  return points;
+  if (isReversed) {
+    res.reverse();
+  }
+  return res;
 }
 
 export function getPointByT(points: { x: number, y: number }[], t = 0) {
@@ -406,11 +458,14 @@ export function getPointByT(points: { x: number, y: number }[], t = 0) {
   }
   if (points.length === 4) {
     return pointByT3(points, t);
-  }
-  else if (points.length === 3) {
+  } else if (points.length === 3) {
     return pointByT2(points, t);
-  }
-  else {
+  } else if (points.length === 2) {
+    return {
+      x: points[0].x + (points[1].x - points[0].x) * t,
+      y: points[0].y + (points[1].y - points[0].y) * t,
+    };
+  } else {
     throw new Error('Unsupported order');
   }
 }
@@ -730,7 +785,6 @@ export default {
   bezierLength,
   bezierAt,
   sliceBezier,
-  sliceBezier2Both,
   getPointByT,
   getPointT,
   bezierSlope,

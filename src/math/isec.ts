@@ -1,10 +1,6 @@
-import { getRoots } from './equation';
 import vector from './vector';
-
-type Point = {
-  x: number,
-  y: number,
-};
+import { bboxBezier, getPointByT, sliceBezier } from './bezier';
+import { isRectsOverlap } from './geom';
 
 type Point3 = {
   x: number,
@@ -14,628 +10,126 @@ type Point3 = {
 
 const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 
-// 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
-// 两个三次方程组无法解析表示，只能数值计算
-// 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
-const TOLERANCE = 1e-6;
-const ACCURACY = 6;
-
-/**
- * 获取求导之后的系数
- * @param coefs
- */
-function getDerivativeCoefs(coefs: Array<number>) {
-  const derivative = [];
-  for (let i = 1; i < coefs.length; i++) {
-    derivative.push(i * coefs[i]);
-  }
-  return derivative;
-}
-
-/**
- * 评估函数
- * @param x
- * @param coefs
- * @return {number}
- */
-function evaluate(x: number, coefs: Array<number>) {
-  let result = 0;
-  for (let i = coefs.length - 1; i >= 0; i--) {
-    result = result * x + coefs[i];
-  }
-  return result;
-}
-
-function bisection(min: number, max: number, coefs: Array<number>) {
-  let minValue = evaluate(min, coefs);
-  let maxValue = evaluate(max, coefs);
-  let result;
-  if (Math.abs(minValue) <= TOLERANCE) {
-    result = min;
-  }
-  else if (Math.abs(maxValue) <= TOLERANCE) {
-    result = max;
-  }
-  else if (minValue * maxValue <= 0) {
-    const tmp1 = Math.log(max - min);
-    const tmp2 = Math.LN10 * ACCURACY;
-    const iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
-    for (let i = 0; i < iters; i++) {
-      result = 0.5 * (min + max);
-      const value = evaluate(result, coefs);
-
-      if (Math.abs(value) <= TOLERANCE) {
-        break;
-      }
-
-      if (value * minValue < 0) {
-        max = result;
-        maxValue = value;
-      }
-      else {
-        min = result;
-        minValue = value;
-      }
-    }
-
-  }
-  return result;
-}
-
-function getRootsInInterval(min: number, max: number, coefs: Array<number>) {
-  // console.log('getRootsInInterval', coefs);
-  const roots = [];
-  let root;
-  const degree = coefs.length - 1;
-  if (degree === 1) {
-    root = bisection(min, max, coefs);
-    if (root !== undefined) {
-      roots.push(root);
-    }
-  }
-  else {
-    const derivativeCoefs = getDerivativeCoefs(coefs);
-    const droots = getRootsInInterval(min, max, derivativeCoefs);
-
-    if (droots.length > 0) {
-      // find root on [min, droots[0]]
-      root = bisection(min, droots[0], coefs);
-      if (root !== undefined) {
-        roots.push(root);
-      }
-      // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
-      for (let i = 0; i <= droots.length - 2; i++) {
-        root = bisection(droots[i], droots[i + 1], coefs);
-        if (root !== undefined) {
-          roots.push(root);
-        }
-      }
-
-      // find root on [droots[count-1],xmax]
-      root = bisection(droots[droots.length - 1], max, coefs);
-      if (root !== undefined) {
-        roots.push(root);
-      }
-    }
-    else {
-      // polynomial is monotone on [min,max], has at most one root
-      root = bisection(min, max, coefs);
-      if (root !== undefined) {
-        roots.push(root);
+function intersectFn(
+  a: { x: number, y: number }[], b: { x: number, y: number }[],
+  eps: number, t1: number, t2: number, t3: number, t4: number,
+  res: { x: number, y: number, t1: number, t2: number }[],
+) {
+  const bbox1 = bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
+  const bbox2 = bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
+  if (isRectsOverlap(bbox1[0], bbox1[1], bbox1[2], bbox1[3], bbox2[0], bbox2[1], bbox2[2], bbox2[3], true)) {
+    // 直线可能宽高为0
+    const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
+    const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
+    const l3 = (bbox2[2] - bbox2[0]) || Number.EPSILON;
+    const l4 = (bbox2[3] - bbox2[1]) || Number.EPSILON;
+    const area1 = l1 * l2;
+    const area2 = l3 * l4;
+    if (l1 <= eps && l2 <= eps && area1 <= eps &&
+      l3 <= eps && l4 <= eps && area2 <= eps) {
+      const ta = (t1 + t2) * 0.5;
+      const tb = (t3 + t4) * 0.5;
+      const ap = getPointByT(a, ta);
+      const bp = getPointByT(b, tb);
+      res.push({
+        x: (ap.x + bp.x) * 0.5,
+        y: (ap.y + bp.y) * 0.5,
+        t1: ta,
+        t2: tb,
+      });
+    } else {
+      if ((l1 > eps || l2 > eps || area1 > eps) &&
+        (l3 > eps || l4 > eps || area2 > eps)) {
+        const a1 = sliceBezier(a, 0, 0.5);
+        const a2 = sliceBezier(a, 0.5, 1);
+        const b1 = sliceBezier(b, 0, 0.5);
+        const b2 = sliceBezier(b, 0.5, 1);
+        intersectFn(a1, b1, eps, t1, t1 + (t2 - t1) * 0.5, t3, t3 + (t4 - t3) * 0.5, res);
+        intersectFn(a1, b2, eps, t1, t1 + (t2 - t1) * 0.5, t3 + (t4 - t3) * 0.5, t4, res);
+        intersectFn(a2, b1, eps, t1 + (t2 - t1) * 0.5, t2, t3, t3 + (t4 - t3) * 0.5, res);
+        intersectFn(a2, b2, eps, t1 + (t2 - t1) * 0.5, t2, t3 + (t4 - t3) * 0.5, t4, res);
+      } else if (l1 > eps || l2 > eps || area1 > eps) {
+        const a1 = sliceBezier(a, 0, 0.5);
+        const a2 = sliceBezier(a, 0.5, 1);
+        intersectFn(a1, b, eps, t1, t1 + (t2 - t1) * 0.5, t3, t4, res);
+        intersectFn(a2, b, eps, t1 + (t2 - t1) * 0.5, t2, t3, t4, res);
+      } else if (l3 > eps || l4 > eps || area2 > eps) {
+        const b1 = sliceBezier(b, 0, 0.5);
+        const b2 = sliceBezier(b, 0.5, 1);
+        intersectFn(a, b1, eps, t1, t2, t3, t3 + (t4 - t3) * 0.5, res);
+        intersectFn(a, b2, eps, t1, t2, t3 + (t4 - t3) * 0.5, t4, res);
       }
     }
   }
-  return roots;
 }
 
-/**
- * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
- * @return {[]}
- */
-export function intersectBezier2Bezier2(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                        bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number) {
-  let c12, c11, c10;
-  let c22, c21, c20;
-
-  const result = [];
-
-  c12 = {
-    x: ax1 - 2 * ax2 + ax3,
-    y: ay1 - 2 * ay2 + ay3,
-  };
-
-  c11 = {
-    x: 2 * ax2 - 2 * ax1,
-    y: 2 * ay2 - 2 * ay1,
-  };
-  c10 = { x: ax1, y: ay1 };
-  c22 = {
-    x: bx1 - 2 * bx2 + bx3,
-    y: by1 - 2 * by2 + by3,
-  };
-  c21 = {
-    x: 2 * bx2 - 2 * bx1,
-    y: 2 * by2 - 2 * by1,
-  };
-  c20 = { x: bx1, y: by1 };
-
-  let coefs;
-
-  if (c12.y === 0) {
-    const v0 = c12.x * (c10.y - c20.y);
-    const v1 = v0 - c11.x * c11.y;
-    // let v2 = v0 + v1;
-    const v3 = c11.y * c11.y;
-
-    coefs = [
-      c12.x * c22.y * c22.y,
-      2 * c12.x * c21.y * c22.y,
-      c12.x * c21.y * c21.y - c22.x * v3 - c22.y * v0 - c22.y * v1,
-      -c21.x * v3 - c21.y * v0 - c21.y * v1,
-      (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1
-    ].reverse();
-  }
-  else {
-    const v0 = c12.x * c22.y - c12.y * c22.x;
-    const v1 = c12.x * c21.y - c21.x * c12.y;
-    const v2 = c11.x * c12.y - c11.y * c12.x;
-    const v3 = c10.y - c20.y;
-    const v4 = c12.y * (c10.x - c20.x) - c12.x * v3;
-    const v5 = -c11.y * v2 + c12.y * v4;
-    const v6 = v2 * v2;
-    coefs = [
-      v0 * v0,
-      2 * v0 * v1,
-      (-c22.y * v6 + c12.y * v1 * v1 + c12.y * v0 * v4 + v0 * v5) / c12.y,
-      (-c21.y * v6 + c12.y * v1 * v4 + v1 * v5) / c12.y,
-      (v3 * v6 + v4 * v5) / c12.y
-    ].reverse();
-  }
-
-  const roots = getRoots(coefs);
-
-  for (let i = 0; i < roots.length; i++) {
-    const s = roots[i];
-
-    if (0 <= s && s <= 1) {
-      const xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
-
-      const yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
-
-      if (xRoots.length > 0 && yRoots.length > 0) {
-        const TOLERANCE = 1e-4;
-
-        checkRoots:
-          for (let j = 0; j < xRoots.length; j++) {
-            const xRoot = xRoots[j];
-
-            if (0 <= xRoot && xRoot <= 1) {
-              for (let k = 0; k < yRoots.length; k++) {
-                if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
-                  const x = c22.x * s * s + c21.x * s + c20.x;
-                  const y = c22.y * s * s + c21.y * s + c20.y;
-                  result.push({ x, y, t: xRoot });
-                  // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
-                  break checkRoots;
-                }
-              }
-            }
-          }
-      }
-    }
-  }
-  return result;
+export function intersectBezier2Bezier2(
+  ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
+  bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number,
+  eps = 1e-6,
+) {
+  const res: { x: number, y: number, t1: number, t2: number }[] = [];
+  intersectFn(
+    [
+      { x: ax1, y: ay1 },
+      { x: ax2, y: ay2 },
+      { x: ax3, y: ay3 },
+    ], [
+      { x: bx1, y: by1 },
+      { x: bx2, y: by2 },
+      { x: bx3, y: by3 },
+    ],
+    eps, 0, 1, 0, 1, res,
+  );
+  return res;
 }
 
-export function intersectBezier3Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
-                                        bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
-  let c13, c12, c11, c10; // 三阶系数
-  let c23, c22, c21, c20;
-
-  const result = [];
-
-  c13 = {
-    x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-    y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
-  };
-
-  c12 = {
-    x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-    y: 3 * ay1 - 6 * ay2 + 3 * ay3,
-  };
-
-  c11 = {
-    x: -3 * ax1 + 3 * ax2,
-    y: -3 * ay1 + 3 * ay2,
-  };
-
-  c10 = { x: ax1, y: ay1 };
-
-  c23 = {
-    x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
-    y: -by1 + 3 * by2 - 3 * by3 + by4,
-  };
-
-  c22 = {
-    x: 3 * bx1 - 6 * bx2 + 3 * bx3,
-    y: 3 * by1 - 6 * by2 + 3 * by3,
-  };
-
-  c21 = {
-    x: -3 * bx1 + 3 * bx2,
-    y: -3 * by1 + 3 * by2,
-  };
-
-  c20 = { x: bx1, y: by1 };
-
-  const c10x2 = c10.x * c10.x;
-  const c10x3 = c10.x * c10.x * c10.x;
-  const c10y2 = c10.y * c10.y;
-  const c10y3 = c10.y * c10.y * c10.y;
-  const c11x2 = c11.x * c11.x;
-  const c11x3 = c11.x * c11.x * c11.x;
-  const c11y2 = c11.y * c11.y;
-  const c11y3 = c11.y * c11.y * c11.y;
-  const c12x2 = c12.x * c12.x;
-  const c12x3 = c12.x * c12.x * c12.x;
-  const c12y2 = c12.y * c12.y;
-  const c12y3 = c12.y * c12.y * c12.y;
-  const c13x2 = c13.x * c13.x;
-  const c13x3 = c13.x * c13.x * c13.x;
-  const c13y2 = c13.y * c13.y;
-  const c13y3 = c13.y * c13.y * c13.y;
-  const c20x2 = c20.x * c20.x;
-  const c20x3 = c20.x * c20.x * c20.x;
-  const c20y2 = c20.y * c20.y;
-  const c20y3 = c20.y * c20.y * c20.y;
-  const c21x2 = c21.x * c21.x;
-  const c21x3 = c21.x * c21.x * c21.x;
-  const c21y2 = c21.y * c21.y;
-  const c22x2 = c22.x * c22.x;
-  const c22x3 = c22.x * c22.x * c22.x;
-  const c22y2 = c22.y * c22.y;
-  const c23x2 = c23.x * c23.x;
-  const c23x3 = c23.x * c23.x * c23.x;
-  const c23y2 = c23.y * c23.y;
-  const c23y3 = c23.y * c23.y * c23.y;
-
-  const coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y +
-  3 * c13x2 * c13.y * c23.x * c23y2,
-    -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 -
-    3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2,
-    -6 * c21.x * c13.x * c13y2 * c23.x * c23.y - 6 * c13.x * c22.x * c13y2 * c22.y * c23.x + 6 * c13x2 * c22.x * c13.y * c22.y * c23.y +
-    3 * c21.x * c13y3 * c23x2 + 3 * c22x2 * c13y3 * c23.x + 3 * c21.x * c13x2 * c13.y * c23y2 - 3 * c13.x * c21.y * c13y2 * c23x2 -
-    3 * c13.x * c22x2 * c13y2 * c23.y + c13x2 * c13.y * c23.x * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-c21.y * c23y2 -
-      2 * c22y2 * c23.y - c23.y * (2 * c21.y * c23.y + c22y2)),
-    c11.x * c12.y * c13.x * c13.y * c23.x * c23.y - c11.y * c12.x * c13.x * c13.y * c23.x * c23.y + 6 * c21.x * c22.x * c13y3 * c23.x +
-    3 * c11.x * c12.x * c13.x * c13.y * c23y2 + 6 * c10.x * c13.x * c13y2 * c23.x * c23.y - 3 * c11.x * c12.x * c13y2 * c23.x * c23.y -
-    3 * c11.y * c12.y * c13.x * c13.y * c23x2 - 6 * c10.y * c13x2 * c13.y * c23.x * c23.y - 6 * c20.x * c13.x * c13y2 * c23.x * c23.y +
-    3 * c11.y * c12.y * c13x2 * c23.x * c23.y - 2 * c12.x * c12y2 * c13.x * c23.x * c23.y - 6 * c21.x * c13.x * c22.x * c13y2 * c23.y -
-    6 * c21.x * c13.x * c13y2 * c22.y * c23.x - 6 * c13.x * c21.y * c22.x * c13y2 * c23.x + 6 * c21.x * c13x2 * c13.y * c22.y * c23.y +
-    2 * c12x2 * c12.y * c13.y * c23.x * c23.y + c22x3 * c13y3 - 3 * c10.x * c13y3 * c23x2 + 3 * c10.y * c13x3 * c23y2 +
-    3 * c20.x * c13y3 * c23x2 + c12y3 * c13.x * c23x2 - c12x3 * c13.y * c23y2 - 3 * c10.x * c13x2 * c13.y * c23y2 +
-    3 * c10.y * c13.x * c13y2 * c23x2 - 2 * c11.x * c12.y * c13x2 * c23y2 + c11.x * c12.y * c13y2 * c23x2 - c11.y * c12.x * c13x2 * c23y2 +
-    2 * c11.y * c12.x * c13y2 * c23x2 + 3 * c20.x * c13x2 * c13.y * c23y2 - c12.x * c12y2 * c13.y * c23x2 -
-    3 * c20.y * c13.x * c13y2 * c23x2 + c12x2 * c12.y * c13.x * c23y2 - 3 * c13.x * c22x2 * c13y2 * c22.y +
-    c13x2 * c13.y * c23.x * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c22.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
-    c13x3 * (-2 * c21.y * c22.y * c23.y - c20.y * c23y2 - c22.y * (2 * c21.y * c23.y + c22y2) - c23.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-    6 * c11.x * c12.x * c13.x * c13.y * c22.y * c23.y + c11.x * c12.y * c13.x * c22.x * c13.y * c23.y + c11.x * c12.y * c13.x * c13.y * c22.y * c23.x -
-    c11.y * c12.x * c13.x * c22.x * c13.y * c23.y - c11.y * c12.x * c13.x * c13.y * c22.y * c23.x - 6 * c11.y * c12.y * c13.x * c22.x * c13.y * c23.x -
-    6 * c10.x * c22.x * c13y3 * c23.x + 6 * c20.x * c22.x * c13y3 * c23.x + 6 * c10.y * c13x3 * c22.y * c23.y + 2 * c12y3 * c13.x * c22.x * c23.x -
-    2 * c12x3 * c13.y * c22.y * c23.y + 6 * c10.x * c13.x * c22.x * c13y2 * c23.y + 6 * c10.x * c13.x * c13y2 * c22.y * c23.x +
-    6 * c10.y * c13.x * c22.x * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c23.y - 3 * c11.x * c12.x * c13y2 * c22.y * c23.x +
-    2 * c11.x * c12.y * c22.x * c13y2 * c23.x + 4 * c11.y * c12.x * c22.x * c13y2 * c23.x - 6 * c10.x * c13x2 * c13.y * c22.y * c23.y -
-    6 * c10.y * c13x2 * c22.x * c13.y * c23.y - 6 * c10.y * c13x2 * c13.y * c22.y * c23.x - 4 * c11.x * c12.y * c13x2 * c22.y * c23.y -
-    6 * c20.x * c13.x * c22.x * c13y2 * c23.y - 6 * c20.x * c13.x * c13y2 * c22.y * c23.x - 2 * c11.y * c12.x * c13x2 * c22.y * c23.y +
-    3 * c11.y * c12.y * c13x2 * c22.x * c23.y + 3 * c11.y * c12.y * c13x2 * c22.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c23.y -
-    2 * c12.x * c12y2 * c13.x * c22.y * c23.x - 2 * c12.x * c12y2 * c22.x * c13.y * c23.x - 6 * c20.y * c13.x * c22.x * c13y2 * c23.x -
-    6 * c21.x * c13.x * c21.y * c13y2 * c23.x - 6 * c21.x * c13.x * c22.x * c13y2 * c22.y + 6 * c20.x * c13x2 * c13.y * c22.y * c23.y +
-    2 * c12x2 * c12.y * c13.x * c22.y * c23.y + 2 * c12x2 * c12.y * c22.x * c13.y * c23.y + 2 * c12x2 * c12.y * c13.y * c22.y * c23.x +
-    3 * c21.x * c22x2 * c13y3 + 3 * c21x2 * c13y3 * c23.x - 3 * c13.x * c21.y * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c23.y +
-    c13x2 * c22.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c13.y * c23.x * (6 * c20.y * c22.y + 3 * c21y2) +
-    c21.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c22.y * c23.y - c23.y * (2 * c20.y * c22.y + c21y2) -
-      c21.y * (2 * c21.y * c23.y + c22y2) - c22.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-    c11.x * c21.x * c12.y * c13.x * c13.y * c23.y + c11.x * c12.y * c13.x * c21.y * c13.y * c23.x + c11.x * c12.y * c13.x * c22.x * c13.y * c22.y -
-    c11.y * c12.x * c21.x * c13.x * c13.y * c23.y - c11.y * c12.x * c13.x * c21.y * c13.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c22.y -
-    6 * c11.y * c21.x * c12.y * c13.x * c13.y * c23.x - 6 * c10.x * c21.x * c13y3 * c23.x + 6 * c20.x * c21.x * c13y3 * c23.x +
-    2 * c21.x * c12y3 * c13.x * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c23.y + 6 * c10.x * c13.x * c21.y * c13y2 * c23.x +
-    6 * c10.x * c13.x * c22.x * c13y2 * c22.y + 6 * c10.y * c21.x * c13.x * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c23.y -
-    3 * c11.x * c12.x * c21.y * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c22.y + 2 * c11.x * c21.x * c12.y * c13y2 * c23.x +
-    4 * c11.y * c12.x * c21.x * c13y2 * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c23.y - 6 * c10.y * c13x2 * c21.y * c13.y * c23.x -
-    6 * c10.y * c13x2 * c22.x * c13.y * c22.y - 6 * c20.x * c21.x * c13.x * c13y2 * c23.y - 6 * c20.x * c13.x * c21.y * c13y2 * c23.x -
-    6 * c20.x * c13.x * c22.x * c13y2 * c22.y + 3 * c11.y * c21.x * c12.y * c13x2 * c23.y - 3 * c11.y * c12.y * c13.x * c22x2 * c13.y +
-    3 * c11.y * c12.y * c13x2 * c21.y * c23.x + 3 * c11.y * c12.y * c13x2 * c22.x * c22.y - 2 * c12.x * c21.x * c12y2 * c13.x * c23.y -
-    2 * c12.x * c21.x * c12y2 * c13.y * c23.x - 2 * c12.x * c12y2 * c13.x * c21.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c22.y -
-    6 * c20.y * c21.x * c13.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c22.x * c13y2 + 6 * c20.y * c13x2 * c21.y * c13.y * c23.x +
-    2 * c12x2 * c21.x * c12.y * c13.y * c23.y + 2 * c12x2 * c12.y * c21.y * c13.y * c23.x + 2 * c12x2 * c12.y * c22.x * c13.y * c22.y -
-    3 * c10.x * c22x2 * c13y3 + 3 * c20.x * c22x2 * c13y3 + 3 * c21x2 * c22.x * c13y3 + c12y3 * c13.x * c22x2 +
-    3 * c10.y * c13.x * c22x2 * c13y2 + c11.x * c12.y * c22x2 * c13y2 + 2 * c11.y * c12.x * c22x2 * c13y2 -
-    c12.x * c12y2 * c22x2 * c13.y - 3 * c20.y * c13.x * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c22.y +
-    c12x2 * c12.y * c13.x * (2 * c21.y * c23.y + c22y2) + c11.x * c12.x * c13.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
-    c21.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c21.y * c23.y - c22y2) +
-    c10.y * c13x3 * (6 * c21.y * c23.y + 3 * c22y2) + c11.y * c12.x * c13x2 * (-2 * c21.y * c23.y - c22y2) +
-    c11.x * c12.y * c13x2 * (-4 * c21.y * c23.y - 2 * c22y2) + c10.x * c13x2 * c13.y * (-6 * c21.y * c23.y - 3 * c22y2) +
-    c13x2 * c22.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) +
-    c13x3 * (-2 * c20.y * c21.y * c23.y - c22.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c21.y * c23.y + c22y2) -
-      c21.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-    -c10.x * c11.x * c12.y * c13.x * c13.y * c23.y + c10.x * c11.y * c12.x * c13.x * c13.y * c23.y + 6 * c10.x * c11.y * c12.y * c13.x * c13.y * c23.x -
-    6 * c10.y * c11.x * c12.x * c13.x * c13.y * c23.y - c10.y * c11.x * c12.y * c13.x * c13.y * c23.x + c10.y * c11.y * c12.x * c13.x * c13.y * c23.x +
-    c11.x * c11.y * c12.x * c12.y * c13.x * c23.y - c11.x * c11.y * c12.x * c12.y * c13.y * c23.x + c11.x * c20.x * c12.y * c13.x * c13.y * c23.y +
-    c11.x * c20.y * c12.y * c13.x * c13.y * c23.x + c11.x * c21.x * c12.y * c13.x * c13.y * c22.y + c11.x * c12.y * c13.x * c21.y * c22.x * c13.y -
-    c20.x * c11.y * c12.x * c13.x * c13.y * c23.y - 6 * c20.x * c11.y * c12.y * c13.x * c13.y * c23.x - c11.y * c12.x * c20.y * c13.x * c13.y * c23.x -
-    c11.y * c12.x * c21.x * c13.x * c13.y * c22.y - c11.y * c12.x * c13.x * c21.y * c22.x * c13.y - 6 * c11.y * c21.x * c12.y * c13.x * c22.x * c13.y -
-    6 * c10.x * c20.x * c13y3 * c23.x - 6 * c10.x * c21.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c23.x + 6 * c20.x * c21.x * c22.x * c13y3 +
-    2 * c20.x * c12y3 * c13.x * c23.x + 2 * c21.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c23.y - 6 * c10.x * c10.y * c13.x * c13y2 * c23.x +
-    3 * c10.x * c11.x * c12.x * c13y2 * c23.y - 2 * c10.x * c11.x * c12.y * c13y2 * c23.x - 4 * c10.x * c11.y * c12.x * c13y2 * c23.x +
-    3 * c10.y * c11.x * c12.x * c13y2 * c23.x + 6 * c10.x * c10.y * c13x2 * c13.y * c23.y + 6 * c10.x * c20.x * c13.x * c13y2 * c23.y -
-    3 * c10.x * c11.y * c12.y * c13x2 * c23.y + 2 * c10.x * c12.x * c12y2 * c13.x * c23.y + 2 * c10.x * c12.x * c12y2 * c13.y * c23.x +
-    6 * c10.x * c20.y * c13.x * c13y2 * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c22.y + 6 * c10.x * c13.x * c21.y * c22.x * c13y2 +
-    4 * c10.y * c11.x * c12.y * c13x2 * c23.y + 6 * c10.y * c20.x * c13.x * c13y2 * c23.x + 2 * c10.y * c11.y * c12.x * c13x2 * c23.y -
-    3 * c10.y * c11.y * c12.y * c13x2 * c23.x + 2 * c10.y * c12.x * c12y2 * c13.x * c23.x + 6 * c10.y * c21.x * c13.x * c22.x * c13y2 -
-    3 * c11.x * c20.x * c12.x * c13y2 * c23.y + 2 * c11.x * c20.x * c12.y * c13y2 * c23.x + c11.x * c11.y * c12y2 * c13.x * c23.x -
-    3 * c11.x * c12.x * c20.y * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c22.y - 3 * c11.x * c12.x * c21.y * c22.x * c13y2 +
-    2 * c11.x * c21.x * c12.y * c22.x * c13y2 + 4 * c20.x * c11.y * c12.x * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c22.x * c13y2 -
-    2 * c10.x * c12x2 * c12.y * c13.y * c23.y - 6 * c10.y * c20.x * c13x2 * c13.y * c23.y - 6 * c10.y * c20.y * c13x2 * c13.y * c23.x -
-    6 * c10.y * c21.x * c13x2 * c13.y * c22.y - 2 * c10.y * c12x2 * c12.y * c13.x * c23.y - 2 * c10.y * c12x2 * c12.y * c13.y * c23.x -
-    6 * c10.y * c13x2 * c21.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c23.y - 2 * c11.x * c11y2 * c13.x * c13.y * c23.x +
-    3 * c20.x * c11.y * c12.y * c13x2 * c23.y - 2 * c20.x * c12.x * c12y2 * c13.x * c23.y - 2 * c20.x * c12.x * c12y2 * c13.y * c23.x -
-    6 * c20.x * c20.y * c13.x * c13y2 * c23.x - 6 * c20.x * c21.x * c13.x * c13y2 * c22.y - 6 * c20.x * c13.x * c21.y * c22.x * c13y2 +
-    3 * c11.y * c20.y * c12.y * c13x2 * c23.x + 3 * c11.y * c21.x * c12.y * c13x2 * c22.y + 3 * c11.y * c12.y * c13x2 * c21.y * c22.x -
-    2 * c12.x * c20.y * c12y2 * c13.x * c23.x - 2 * c12.x * c21.x * c12y2 * c13.x * c22.y - 2 * c12.x * c21.x * c12y2 * c22.x * c13.y -
-    2 * c12.x * c12y2 * c13.x * c21.y * c22.x - 6 * c20.y * c21.x * c13.x * c22.x * c13y2 - c11y2 * c12.x * c12.y * c13.x * c23.x +
-    2 * c20.x * c12x2 * c12.y * c13.y * c23.y + 6 * c20.y * c13x2 * c21.y * c22.x * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c23.y +
-    c11x2 * c12.x * c12.y * c13.y * c23.y + 2 * c12x2 * c20.y * c12.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c22.y +
-    2 * c12x2 * c12.y * c21.y * c22.x * c13.y + c21x3 * c13y3 + 3 * c10x2 * c13y3 * c23.x - 3 * c10y2 * c13x3 * c23.y +
-    3 * c20x2 * c13y3 * c23.x + c11y3 * c13x2 * c23.x - c11x3 * c13y2 * c23.y - c11.x * c11y2 * c13x2 * c23.y +
-    c11x2 * c11.y * c13y2 * c23.x - 3 * c10x2 * c13.x * c13y2 * c23.y + 3 * c10y2 * c13x2 * c13.y * c23.x - c11x2 * c12y2 * c13.x * c23.y +
-    c11y2 * c12x2 * c13.y * c23.x - 3 * c21x2 * c13.x * c21.y * c13y2 - 3 * c20x2 * c13.x * c13y2 * c23.y + 3 * c20y2 * c13x2 * c13.y * c23.x +
-    c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
-    c10.y * c13x3 * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c11.y * c12.x * c13x2 * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) +
-    c12x2 * c12.y * c13.x * (2 * c20.y * c23.y + 2 * c21.y * c22.y) + c11.x * c12.y * c13x2 * (-4 * c20.y * c23.y - 4 * c21.y * c22.y) +
-    c10.x * c13x2 * c13.y * (-6 * c20.y * c23.y - 6 * c21.y * c22.y) + c20.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) +
-    c21.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21.y * c22.y - c20y2 * c23.y -
-      c21.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)),
-    -c10.x * c11.x * c12.y * c13.x * c13.y * c22.y + c10.x * c11.y * c12.x * c13.x * c13.y * c22.y + 6 * c10.x * c11.y * c12.y * c13.x * c22.x * c13.y -
-    6 * c10.y * c11.x * c12.x * c13.x * c13.y * c22.y - c10.y * c11.x * c12.y * c13.x * c22.x * c13.y + c10.y * c11.y * c12.x * c13.x * c22.x * c13.y +
-    c11.x * c11.y * c12.x * c12.y * c13.x * c22.y - c11.x * c11.y * c12.x * c12.y * c22.x * c13.y + c11.x * c20.x * c12.y * c13.x * c13.y * c22.y +
-    c11.x * c20.y * c12.y * c13.x * c22.x * c13.y + c11.x * c21.x * c12.y * c13.x * c21.y * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c22.y -
-    6 * c20.x * c11.y * c12.y * c13.x * c22.x * c13.y - c11.y * c12.x * c20.y * c13.x * c22.x * c13.y - c11.y * c12.x * c21.x * c13.x * c21.y * c13.y -
-    6 * c10.x * c20.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c22.x + 2 * c20.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c22.y -
-    6 * c10.x * c10.y * c13.x * c22.x * c13y2 + 3 * c10.x * c11.x * c12.x * c13y2 * c22.y - 2 * c10.x * c11.x * c12.y * c22.x * c13y2 -
-    4 * c10.x * c11.y * c12.x * c22.x * c13y2 + 3 * c10.y * c11.x * c12.x * c22.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c13.y * c22.y +
-    6 * c10.x * c20.x * c13.x * c13y2 * c22.y - 3 * c10.x * c11.y * c12.y * c13x2 * c22.y + 2 * c10.x * c12.x * c12y2 * c13.x * c22.y +
-    2 * c10.x * c12.x * c12y2 * c22.x * c13.y + 6 * c10.x * c20.y * c13.x * c22.x * c13y2 + 6 * c10.x * c21.x * c13.x * c21.y * c13y2 +
-    4 * c10.y * c11.x * c12.y * c13x2 * c22.y + 6 * c10.y * c20.x * c13.x * c22.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c22.y -
-    3 * c10.y * c11.y * c12.y * c13x2 * c22.x + 2 * c10.y * c12.x * c12y2 * c13.x * c22.x - 3 * c11.x * c20.x * c12.x * c13y2 * c22.y +
-    2 * c11.x * c20.x * c12.y * c22.x * c13y2 + c11.x * c11.y * c12y2 * c13.x * c22.x - 3 * c11.x * c12.x * c20.y * c22.x * c13y2 -
-    3 * c11.x * c12.x * c21.x * c21.y * c13y2 + 4 * c20.x * c11.y * c12.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c22.y -
-    6 * c10.y * c20.x * c13x2 * c13.y * c22.y - 6 * c10.y * c20.y * c13x2 * c22.x * c13.y - 6 * c10.y * c21.x * c13x2 * c21.y * c13.y -
-    2 * c10.y * c12x2 * c12.y * c13.x * c22.y - 2 * c10.y * c12x2 * c12.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c22.y -
-    2 * c11.x * c11y2 * c13.x * c22.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c22.y - 2 * c20.x * c12.x * c12y2 * c13.x * c22.y -
-    2 * c20.x * c12.x * c12y2 * c22.x * c13.y - 6 * c20.x * c20.y * c13.x * c22.x * c13y2 - 6 * c20.x * c21.x * c13.x * c21.y * c13y2 +
-    3 * c11.y * c20.y * c12.y * c13x2 * c22.x + 3 * c11.y * c21.x * c12.y * c13x2 * c21.y - 2 * c12.x * c20.y * c12y2 * c13.x * c22.x -
-    2 * c12.x * c21.x * c12y2 * c13.x * c21.y - c11y2 * c12.x * c12.y * c13.x * c22.x + 2 * c20.x * c12x2 * c12.y * c13.y * c22.y -
-    3 * c11.y * c21x2 * c12.y * c13.x * c13.y + 6 * c20.y * c21.x * c13x2 * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c22.y +
-    c11x2 * c12.x * c12.y * c13.y * c22.y + 2 * c12x2 * c20.y * c12.y * c22.x * c13.y + 2 * c12x2 * c21.x * c12.y * c21.y * c13.y -
-    3 * c10.x * c21x2 * c13y3 + 3 * c20.x * c21x2 * c13y3 + 3 * c10x2 * c22.x * c13y3 - 3 * c10y2 * c13x3 * c22.y + 3 * c20x2 * c22.x * c13y3 +
-    c21x2 * c12y3 * c13.x + c11y3 * c13x2 * c22.x - c11x3 * c13y2 * c22.y + 3 * c10.y * c21x2 * c13.x * c13y2 -
-    c11.x * c11y2 * c13x2 * c22.y + c11.x * c21x2 * c12.y * c13y2 + 2 * c11.y * c12.x * c21x2 * c13y2 + c11x2 * c11.y * c22.x * c13y2 -
-    c12.x * c21x2 * c12y2 * c13.y - 3 * c20.y * c21x2 * c13.x * c13y2 - 3 * c10x2 * c13.x * c13y2 * c22.y + 3 * c10y2 * c13x2 * c22.x * c13.y -
-    c11x2 * c12y2 * c13.x * c22.y + c11y2 * c12x2 * c22.x * c13.y - 3 * c20x2 * c13.x * c13y2 * c22.y + 3 * c20y2 * c13x2 * c22.x * c13.y +
-    c12x2 * c12.y * c13.x * (2 * c20.y * c22.y + c21y2) + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
-    c12x3 * c13.y * (-2 * c20.y * c22.y - c21y2) + c10.y * c13x3 * (6 * c20.y * c22.y + 3 * c21y2) +
-    c11.y * c12.x * c13x2 * (-2 * c20.y * c22.y - c21y2) + c11.x * c12.y * c13x2 * (-4 * c20.y * c22.y - 2 * c21y2) +
-    c10.x * c13x2 * c13.y * (-6 * c20.y * c22.y - 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) +
-    c13x3 * (-2 * c20.y * c21y2 - c20y2 * c22.y - c20.y * (2 * c20.y * c22.y + c21y2)),
-    -c10.x * c11.x * c12.y * c13.x * c21.y * c13.y + c10.x * c11.y * c12.x * c13.x * c21.y * c13.y + 6 * c10.x * c11.y * c21.x * c12.y * c13.x * c13.y -
-    6 * c10.y * c11.x * c12.x * c13.x * c21.y * c13.y - c10.y * c11.x * c21.x * c12.y * c13.x * c13.y + c10.y * c11.y * c12.x * c21.x * c13.x * c13.y -
-    c11.x * c11.y * c12.x * c21.x * c12.y * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c21.y + c11.x * c20.x * c12.y * c13.x * c21.y * c13.y +
-    6 * c11.x * c12.x * c20.y * c13.x * c21.y * c13.y + c11.x * c20.y * c21.x * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c13.x * c21.y * c13.y -
-    6 * c20.x * c11.y * c21.x * c12.y * c13.x * c13.y - c11.y * c12.x * c20.y * c21.x * c13.x * c13.y - 6 * c10.x * c20.x * c21.x * c13y3 -
-    2 * c10.x * c21.x * c12y3 * c13.x + 6 * c10.y * c20.y * c13x3 * c21.y + 2 * c20.x * c21.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c21.y * c13.y -
-    2 * c12x3 * c20.y * c21.y * c13.y - 6 * c10.x * c10.y * c21.x * c13.x * c13y2 + 3 * c10.x * c11.x * c12.x * c21.y * c13y2 -
-    2 * c10.x * c11.x * c21.x * c12.y * c13y2 - 4 * c10.x * c11.y * c12.x * c21.x * c13y2 + 3 * c10.y * c11.x * c12.x * c21.x * c13y2 +
-    6 * c10.x * c10.y * c13x2 * c21.y * c13.y + 6 * c10.x * c20.x * c13.x * c21.y * c13y2 - 3 * c10.x * c11.y * c12.y * c13x2 * c21.y +
-    2 * c10.x * c12.x * c21.x * c12y2 * c13.y + 2 * c10.x * c12.x * c12y2 * c13.x * c21.y + 6 * c10.x * c20.y * c21.x * c13.x * c13y2 +
-    4 * c10.y * c11.x * c12.y * c13x2 * c21.y + 6 * c10.y * c20.x * c21.x * c13.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c21.y -
-    3 * c10.y * c11.y * c21.x * c12.y * c13x2 + 2 * c10.y * c12.x * c21.x * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c21.y * c13y2 +
-    2 * c11.x * c20.x * c21.x * c12.y * c13y2 + c11.x * c11.y * c21.x * c12y2 * c13.x - 3 * c11.x * c12.x * c20.y * c21.x * c13y2 +
-    4 * c20.x * c11.y * c12.x * c21.x * c13y2 - 6 * c10.x * c20.y * c13x2 * c21.y * c13.y - 2 * c10.x * c12x2 * c12.y * c21.y * c13.y -
-    6 * c10.y * c20.x * c13x2 * c21.y * c13.y - 6 * c10.y * c20.y * c21.x * c13x2 * c13.y - 2 * c10.y * c12x2 * c21.x * c12.y * c13.y -
-    2 * c10.y * c12x2 * c12.y * c13.x * c21.y - c11.x * c11.y * c12x2 * c21.y * c13.y - 4 * c11.x * c20.y * c12.y * c13x2 * c21.y -
-    2 * c11.x * c11y2 * c21.x * c13.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c21.y - 2 * c20.x * c12.x * c21.x * c12y2 * c13.y -
-    2 * c20.x * c12.x * c12y2 * c13.x * c21.y - 6 * c20.x * c20.y * c21.x * c13.x * c13y2 - 2 * c11.y * c12.x * c20.y * c13x2 * c21.y +
-    3 * c11.y * c20.y * c21.x * c12.y * c13x2 - 2 * c12.x * c20.y * c21.x * c12y2 * c13.x - c11y2 * c12.x * c21.x * c12.y * c13.x +
-    6 * c20.x * c20.y * c13x2 * c21.y * c13.y + 2 * c20.x * c12x2 * c12.y * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c21.y * c13.y +
-    c11x2 * c12.x * c12.y * c21.y * c13.y + 2 * c12x2 * c20.y * c21.x * c12.y * c13.y + 2 * c12x2 * c20.y * c12.y * c13.x * c21.y +
-    3 * c10x2 * c21.x * c13y3 - 3 * c10y2 * c13x3 * c21.y + 3 * c20x2 * c21.x * c13y3 + c11y3 * c21.x * c13x2 - c11x3 * c21.y * c13y2 -
-    3 * c20y2 * c13x3 * c21.y - c11.x * c11y2 * c13x2 * c21.y + c11x2 * c11.y * c21.x * c13y2 - 3 * c10x2 * c13.x * c21.y * c13y2 +
-    3 * c10y2 * c21.x * c13x2 * c13.y - c11x2 * c12y2 * c13.x * c21.y + c11y2 * c12x2 * c21.x * c13.y - 3 * c20x2 * c13.x * c21.y * c13y2 +
-    3 * c20y2 * c21.x * c13x2 * c13.y,
-    c10.x * c10.y * c11.x * c12.y * c13.x * c13.y - c10.x * c10.y * c11.y * c12.x * c13.x * c13.y + c10.x * c11.x * c11.y * c12.x * c12.y * c13.y -
-    c10.y * c11.x * c11.y * c12.x * c12.y * c13.x - c10.x * c11.x * c20.y * c12.y * c13.x * c13.y + 6 * c10.x * c20.x * c11.y * c12.y * c13.x * c13.y +
-    c10.x * c11.y * c12.x * c20.y * c13.x * c13.y - c10.y * c11.x * c20.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c20.y * c13.x * c13.y +
-    c10.y * c20.x * c11.y * c12.x * c13.x * c13.y - c11.x * c20.x * c11.y * c12.x * c12.y * c13.y + c11.x * c11.y * c12.x * c20.y * c12.y * c13.x +
-    c11.x * c20.x * c20.y * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c20.y * c13.x * c13.y - 2 * c10.x * c20.x * c12y3 * c13.x +
-    2 * c10.y * c12x3 * c20.y * c13.y - 3 * c10.x * c10.y * c11.x * c12.x * c13y2 - 6 * c10.x * c10.y * c20.x * c13.x * c13y2 +
-    3 * c10.x * c10.y * c11.y * c12.y * c13x2 - 2 * c10.x * c10.y * c12.x * c12y2 * c13.x - 2 * c10.x * c11.x * c20.x * c12.y * c13y2 -
-    c10.x * c11.x * c11.y * c12y2 * c13.x + 3 * c10.x * c11.x * c12.x * c20.y * c13y2 - 4 * c10.x * c20.x * c11.y * c12.x * c13y2 +
-    3 * c10.y * c11.x * c20.x * c12.x * c13y2 + 6 * c10.x * c10.y * c20.y * c13x2 * c13.y + 2 * c10.x * c10.y * c12x2 * c12.y * c13.y +
-    2 * c10.x * c11.x * c11y2 * c13.x * c13.y + 2 * c10.x * c20.x * c12.x * c12y2 * c13.y + 6 * c10.x * c20.x * c20.y * c13.x * c13y2 -
-    3 * c10.x * c11.y * c20.y * c12.y * c13x2 + 2 * c10.x * c12.x * c20.y * c12y2 * c13.x + c10.x * c11y2 * c12.x * c12.y * c13.x +
-    c10.y * c11.x * c11.y * c12x2 * c13.y + 4 * c10.y * c11.x * c20.y * c12.y * c13x2 - 3 * c10.y * c20.x * c11.y * c12.y * c13x2 +
-    2 * c10.y * c20.x * c12.x * c12y2 * c13.x + 2 * c10.y * c11.y * c12.x * c20.y * c13x2 + c11.x * c20.x * c11.y * c12y2 * c13.x -
-    3 * c11.x * c20.x * c12.x * c20.y * c13y2 - 2 * c10.x * c12x2 * c20.y * c12.y * c13.y - 6 * c10.y * c20.x * c20.y * c13x2 * c13.y -
-    2 * c10.y * c20.x * c12x2 * c12.y * c13.y - 2 * c10.y * c11x2 * c11.y * c13.x * c13.y - c10.y * c11x2 * c12.x * c12.y * c13.y -
-    2 * c10.y * c12x2 * c20.y * c12.y * c13.x - 2 * c11.x * c20.x * c11y2 * c13.x * c13.y - c11.x * c11.y * c12x2 * c20.y * c13.y +
-    3 * c20.x * c11.y * c20.y * c12.y * c13x2 - 2 * c20.x * c12.x * c20.y * c12y2 * c13.x - c20.x * c11y2 * c12.x * c12.y * c13.x +
-    3 * c10y2 * c11.x * c12.x * c13.x * c13.y + 3 * c11.x * c12.x * c20y2 * c13.x * c13.y + 2 * c20.x * c12x2 * c20.y * c12.y * c13.y -
-    3 * c10x2 * c11.y * c12.y * c13.x * c13.y + 2 * c11x2 * c11.y * c20.y * c13.x * c13.y + c11x2 * c12.x * c20.y * c12.y * c13.y -
-    3 * c20x2 * c11.y * c12.y * c13.x * c13.y - c10x3 * c13y3 + c10y3 * c13x3 + c20x3 * c13y3 - c20y3 * c13x3 -
-    3 * c10.x * c20x2 * c13y3 - c10.x * c11y3 * c13x2 + 3 * c10x2 * c20.x * c13y3 + c10.y * c11x3 * c13y2 +
-    3 * c10.y * c20y2 * c13x3 + c20.x * c11y3 * c13x2 + c10x2 * c12y3 * c13.x - 3 * c10y2 * c20.y * c13x3 - c10y2 * c12x3 * c13.y +
-    c20x2 * c12y3 * c13.x - c11x3 * c20.y * c13y2 - c12x3 * c20y2 * c13.y - c10.x * c11x2 * c11.y * c13y2 +
-    c10.y * c11.x * c11y2 * c13x2 - 3 * c10.x * c10y2 * c13x2 * c13.y - c10.x * c11y2 * c12x2 * c13.y + c10.y * c11x2 * c12y2 * c13.x -
-    c11.x * c11y2 * c20.y * c13x2 + 3 * c10x2 * c10.y * c13.x * c13y2 + c10x2 * c11.x * c12.y * c13y2 +
-    2 * c10x2 * c11.y * c12.x * c13y2 - 2 * c10y2 * c11.x * c12.y * c13x2 - c10y2 * c11.y * c12.x * c13x2 + c11x2 * c20.x * c11.y * c13y2 -
-    3 * c10.x * c20y2 * c13x2 * c13.y + 3 * c10.y * c20x2 * c13.x * c13y2 + c11.x * c20x2 * c12.y * c13y2 - 2 * c11.x * c20y2 * c12.y * c13x2 +
-    c20.x * c11y2 * c12x2 * c13.y - c11.y * c12.x * c20y2 * c13x2 - c10x2 * c12.x * c12y2 * c13.y - 3 * c10x2 * c20.y * c13.x * c13y2 +
-    3 * c10y2 * c20.x * c13x2 * c13.y + c10y2 * c12x2 * c12.y * c13.x - c11x2 * c20.y * c12y2 * c13.x + 2 * c20x2 * c11.y * c12.x * c13y2 +
-    3 * c20.x * c20y2 * c13x2 * c13.y - c20x2 * c12.x * c12y2 * c13.y - 3 * c20x2 * c20.y * c13.x * c13y2 + c12x2 * c20y2 * c12.y * c13.x
-  ].reverse();
-
-  const roots = getRootsInInterval(0, 1, coefs);
-
-  for (let i = 0; i < roots.length; i++) {
-    const s = roots[i];
-    const xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-    const yRoots = getRoots([c13.y,
-      c12.y,
-      c11.y,
-      c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
-
-    if (xRoots.length > 0 && yRoots.length > 0) {
-      const TOLERANCE = 5e-4;
-
-      checkRoots:
-        for (let j = 0; j < xRoots.length; j++) {
-          const xRoot = xRoots[j];
-
-          if (0 <= xRoot && xRoot <= 1) {
-            for (let k = 0; k < yRoots.length; k++) {
-              if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
-                const x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
-                const y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                result.push({ x, y, t: xRoot });
-                break checkRoots;
-              }
-            }
-          }
-        }
-    }
-  }
-  return result;
+export function intersectBezier3Bezier3(
+  ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
+  bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
+  eps = 1e-6) {
+  const res: { x: number, y: number, t1: number, t2: number }[] = [];
+  intersectFn(
+    [
+      { x: ax1, y: ay1 },
+      { x: ax2, y: ay2 },
+      { x: ax3, y: ay3 },
+      { x: ax4, y: ay4 },
+    ], [
+      { x: bx1, y: by1 },
+      { x: bx2, y: by2 },
+      { x: bx3, y: by3 },
+      { x: bx4, y: by4 },
+    ],
+    eps, 0, 1, 0, 1, res,
+  );
+  return res;
 }
 
-export function intersectBezier2Bezier3(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                        bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number) {
-  let c12, c11, c10;
-  let c23, c22, c21, c20;
-  const result = [];
-
-  c12 = {
-    x: ax1 - 2 * ax2 + ax3,
-    y: ay1 - 2 * ay2 + ay3,
-  };
-
-  c11 = {
-    x: 2 * ax2 - 2 * ax1,
-    y: 2 * ay2 - 2 * ay1,
-  };
-  c10 = { x: ax1, y: ay1 };
-
-  c23 = {
-    x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
-    y: -by1 + 3 * by2 - 3 * by3 + by4,
-  };
-
-  c22 = {
-    x: 3 * bx1 - 6 * bx2 + 3 * bx3,
-    y: 3 * by1 - 6 * by2 + 3 * by3,
-  };
-
-  c21 = {
-    x: -3 * bx1 + 3 * bx2,
-    y: -3 * by1 + 3 * by2,
-  };
-
-  c20 = { x: bx1, y: by1 };
-
-  const c10x2 = c10.x * c10.x;
-  const c10y2 = c10.y * c10.y;
-  const c11x2 = c11.x * c11.x;
-  const c11y2 = c11.y * c11.y;
-  const c12x2 = c12.x * c12.x;
-  const c12y2 = c12.y * c12.y;
-  const c20x2 = c20.x * c20.x;
-  const c20y2 = c20.y * c20.y;
-  const c21x2 = c21.x * c21.x;
-  const c21y2 = c21.y * c21.y;
-  const c22x2 = c22.x * c22.x;
-  const c22y2 = c22.y * c22.y;
-  const c23x2 = c23.x * c23.x;
-  const c23y2 = c23.y * c23.y;
-
-  const coefs = [
-    -2 * c12.x * c12.y * c23.x * c23.y + c12x2 * c23y2 + c12y2 * c23x2,
-    -2 * c12.x * c12.y * c22.x * c23.y - 2 * c12.x * c12.y * c22.y * c23.x + 2 * c12y2 * c22.x * c23.x +
-    2 * c12x2 * c22.y * c23.y,
-    -2 * c12.x * c21.x * c12.y * c23.y - 2 * c12.x * c12.y * c21.y * c23.x - 2 * c12.x * c12.y * c22.x * c22.y +
-    2 * c21.x * c12y2 * c23.x + c12y2 * c22x2 + c12x2 * (2 * c21.y * c23.y + c22y2),
-    2 * c10.x * c12.x * c12.y * c23.y + 2 * c10.y * c12.x * c12.y * c23.x + c11.x * c11.y * c12.x * c23.y +
-    c11.x * c11.y * c12.y * c23.x - 2 * c20.x * c12.x * c12.y * c23.y - 2 * c12.x * c20.y * c12.y * c23.x -
-    2 * c12.x * c21.x * c12.y * c22.y - 2 * c12.x * c12.y * c21.y * c22.x - 2 * c10.x * c12y2 * c23.x -
-    2 * c10.y * c12x2 * c23.y + 2 * c20.x * c12y2 * c23.x + 2 * c21.x * c12y2 * c22.x -
-    c11y2 * c12.x * c23.x - c11x2 * c12.y * c23.y + c12x2 * (2 * c20.y * c23.y + 2 * c21.y * c22.y),
-    2 * c10.x * c12.x * c12.y * c22.y + 2 * c10.y * c12.x * c12.y * c22.x + c11.x * c11.y * c12.x * c22.y +
-    c11.x * c11.y * c12.y * c22.x - 2 * c20.x * c12.x * c12.y * c22.y - 2 * c12.x * c20.y * c12.y * c22.x -
-    2 * c12.x * c21.x * c12.y * c21.y - 2 * c10.x * c12y2 * c22.x - 2 * c10.y * c12x2 * c22.y +
-    2 * c20.x * c12y2 * c22.x - c11y2 * c12.x * c22.x - c11x2 * c12.y * c22.y + c21x2 * c12y2 +
-    c12x2 * (2 * c20.y * c22.y + c21y2),
-    2 * c10.x * c12.x * c12.y * c21.y + 2 * c10.y * c12.x * c21.x * c12.y + c11.x * c11.y * c12.x * c21.y +
-    c11.x * c11.y * c21.x * c12.y - 2 * c20.x * c12.x * c12.y * c21.y - 2 * c12.x * c20.y * c21.x * c12.y -
-    2 * c10.x * c21.x * c12y2 - 2 * c10.y * c12x2 * c21.y + 2 * c20.x * c21.x * c12y2 -
-    c11y2 * c12.x * c21.x - c11x2 * c12.y * c21.y + 2 * c12x2 * c20.y * c21.y,
-    -2 * c10.x * c10.y * c12.x * c12.y - c10.x * c11.x * c11.y * c12.y - c10.y * c11.x * c11.y * c12.x +
-    2 * c10.x * c12.x * c20.y * c12.y + 2 * c10.y * c20.x * c12.x * c12.y + c11.x * c20.x * c11.y * c12.y +
-    c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 +
-    c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y -
-    c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 +
-    c20x2 * c12y2 + c12x2 * c20y2].reverse();
-
-  const roots = getRootsInInterval(0, 1, coefs);
-  // console.log(roots);
-
-  for (let i = 0; i < roots.length; i++) {
-    const s = roots[i];
-    const xRoots = getRoots([c12.x,
-      c11.x,
-      c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-    const yRoots = getRoots([c12.y,
-      c11.y,
-      c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
-    //
-    // console.log('xRoots', xRoots);
-    //
-    // console.log('yRoots', yRoots);
-
-    if (xRoots.length > 0 && yRoots.length > 0) {
-      const TOLERANCE = 1e-4;
-
-      checkRoots:
-        for (let j = 0; j < xRoots.length; j++) {
-          const xRoot = xRoots[j];
-
-          if (0 <= xRoot && xRoot <= 1) {
-            for (let k = 0; k < yRoots.length; k++) {
-              if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
-
-                const x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
-                const y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                result.push({ x, y, t: xRoot });
-                break checkRoots;
-              }
-            }
-          }
-        }
-    }
-  }
-  return result;
+export function intersectBezier2Bezier3(
+  ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
+  bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
+  eps = 1e-6) {const res: { x: number, y: number, t1: number, t2: number }[] = [];
+  intersectFn(
+    [
+      { x: ax1, y: ay1 },
+      { x: ax2, y: ay2 },
+      { x: ax3, y: ay3 },
+    ], [
+      { x: bx1, y: by1 },
+      { x: bx2, y: by2 },
+      { x: bx3, y: by3 },
+      { x: bx4, y: by4 },
+    ],
+    eps, 0, 1, 0, 1, res,
+  );
+  return res;
 }
 
-export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: number,
-                                  bx1: number, by1: number, bx2: number, by2: number,
-                                  limit = true) {
+export function intersectLineLine(
+  ax1: number, ay1: number, ax2: number, ay2: number,
+  bx1: number, by1: number, bx2: number, by2: number,
+  limit = true, eps = 1e-6) {
   const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
   if (d !== 0) {
     const toSource = (
@@ -644,7 +138,7 @@ export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: nu
     const toClip = (
       (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
     ) / d;
-    if (limit && (toSource < 0 || toSource > 1 || toClip < 0 || toClip > 1)) {
+    if (limit && (toSource < eps || toSource > 1 - eps || toClip < eps || toClip > 1 - eps)) {
       return;
     }
     const ox = ax1 + toSource * (ax2 - ax1);
@@ -658,204 +152,43 @@ export function intersectLineLine(ax1: number, ay1: number, ax2: number, ay2: nu
   }
 }
 
-export function intersectBezier2Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
-                                     bx1: number, by1: number, bx2: number, by2: number) {
-  let c2, c1, c0;
-  let cl, n;
-  const isV = bx1 === bx2;
-  const isH = by1 === by2;
-  let result = [];
-
-  const minbx = Math.min(bx1, bx2);
-  const minby = Math.min(by1, by2);
-  const maxbx = Math.max(bx1, bx2);
-  const maxby = Math.max(by1, by2);
-
-  const dot = (a: Point, b: Point) => a.x * b.x + a.y * b.y;
-  const lerp = (a: Point, b: Point, t: number) => ({
-    x: a.x - (a.x - b.x) * t,
-    y: a.y - (a.y - b.y) * t,
-    t,
-  });
-
-  c2 = {
-    x: ax1 - 2 * ax2 + ax3,
-    y: ay1 - 2 * ay2 + ay3,
-  };
-  c1 = {
-    x: -2 * ax1 + 2 * ax2,
-    y: -2 * ay1 + 2 * ay2,
-  };
-  c0 = { x: ax1, y: ay1 };
-
-  n = { x: by1 - by2, y: bx2 - bx1 };
-  cl = bx1 * by2 - bx2 * by1;
-
-  // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
-
-  const coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse();
-
-  // console.log('intersectBezier2Line coefs', coefs);
-
-  const roots = getRoots(coefs);
-
-  // console.log('intersectBezier2Line roots', roots);
-
-  for (let i = 0; i < roots.length; i++) {
-    const t = roots[i];
-
-    if (0 <= t && t <= 1) {
-      const p4 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
-      const p5 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
-
-      const p6 = lerp(p4, p5, t);
-      // console.log('p4, p5, p6', p4, p5, p6);
-
-      if (bx1 === bx2) {
-        if (minby <= p6.y && p6.y <= maxby) {
-          result.push(p6);
-        }
-      }
-      else if (by1 === by2) {
-        if (minbx <= p6.x && p6.x <= maxbx) {
-          result.push(p6);
-        }
-      }
-      else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
-        result.push(p6);
-      }
-    }
-  }
-  if (isH || isV) {
-    result.forEach(item => {
-      if (isV) {
-        if (item.x < minbx) {
-          item.x = minbx;
-        }
-        else if (item.x > maxbx) {
-          item.x = maxbx;
-        }
-      }
-      else {
-        if (item.y < minby) {
-          item.y = minby;
-        }
-        else if (item.y > maxby) {
-          item.y = maxby;
-        }
-      }
-    });
-  }
-  return result;
+export function intersectBezier2Line(
+  ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
+  bx1: number, by1: number, bx2: number, by2: number,
+  eps = 1e-6) {
+  const res: { x: number, y: number, t1: number, t2: number }[] = [];
+  intersectFn(
+    [
+      { x: ax1, y: ay1 },
+      { x: ax2, y: ay2 },
+      { x: ax3, y: ay3 },
+    ], [
+      { x: bx1, y: by1 },
+      { x: bx2, y: by2 },
+    ],
+    eps, 0, 1, 0, 1, res,
+  );
+  return res;
 }
 
-
-/**
- *
- *    (-P1+3P2-3P3+P4)t^3 + (3P1-6P2+3P3)t^2 + (-3P1+3P2)t + P1
- *        /\                     /\                /\        /\
- *        ||                     ||                ||        ||
- *        c3                     c2                c1        c0
- */
-export function intersectBezier3Line(ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
-                                     bx1: number, by1: number, bx2: number, by2: number) {
-  let c3, c2, c1, c0;
-  let cl, n;
-  const isV = bx1 === bx2;
-  const isH = by1 === by2;
-  const result = [];
-
-  const minbx = Math.min(bx1, bx2);
-  const minby = Math.min(by1, by2);
-  const maxbx = Math.max(bx1, bx2);
-  const maxby = Math.max(by1, by2);
-
-  const dot = (a: Point, b: Point) => a.x * b.x + a.y * b.y;
-  const lerp = (a: Point, b: Point, t: number) => ({
-    x: a.x - (a.x - b.x) * t,
-    y: a.y - (a.y - b.y) * t,
-    t,
-  });
-
-  c3 = {
-    x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-    y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
-  };
-  c2 = {
-    x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-    y: 3 * ay1 - 6 * ay2 + 3 * ay3,
-  };
-  c1 = {
-    x: -3 * ax1 + 3 * ax2,
-    y: -3 * ay1 + 3 * ay2,
-  };
-  c0 = { x: ax1, y: ay1 };
-
-  n = { x: by1 - by2, y: bx2 - bx1 };
-  cl = bx1 * by2 - bx2 * by1;
-
-  const coefs = [
-    cl + dot(n, c0),
-    dot(n, c1),
-    dot(n, c2),
-    dot(n, c3),
-  ];
-
-  const roots = getRoots(coefs);
-
-  for (let i = 0; i < roots.length; i++) {
-    let t = roots[i];
-    if (t < 0 && t > -1e-9) {
-      t = 0;
-    }
-    else if (t > 1 && t < 1.000000001) {
-      t = 1;
-    }
-
-    if (0 <= t && t <= 1) {
-      const p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
-      const p6 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
-      const p7 = lerp({ x: ax3, y: ay3 }, { x: ax4, y: ay4 }, t);
-      const p8 = lerp(p5, p6, t);
-      const p9 = lerp(p6, p7, t);
-      const p10 = lerp(p8, p9, t);
-
-      if (bx1 === bx2) {
-        if (minby <= p10.y && p10.y <= maxby) {
-          result.push(p10);
-        }
-      }
-      else if (by1 === by2) {
-        if (minbx <= p10.x && p10.x <= maxbx) {
-          result.push(p10);
-        }
-      }
-      else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
-        result.push(p10);
-      }
-    }
-  }
-  if (isH || isV) {
-    result.forEach(item => {
-      if (isV) {
-        if (item.x < minbx) {
-          item.x = minbx;
-        }
-        else if (item.x > maxbx) {
-          item.x = maxbx;
-        }
-      }
-      else {
-        if (item.y < minby) {
-          item.y = minby;
-        }
-        else if (item.y > maxby) {
-          item.y = maxby;
-        }
-      }
-    });
-  }
-  return result;
+export function intersectBezier3Line(
+  ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
+  bx1: number, by1: number, bx2: number, by2: number,
+  eps = 1e-6) {
+  const res: { x: number, y: number, t1: number, t2: number }[] = [];
+  intersectFn(
+    [
+      { x: ax1, y: ay1 },
+      { x: ax2, y: ay2 },
+      { x: ax3, y: ay3 },
+      { x: ax4, y: ay4 },
+    ], [
+      { x: bx1, y: by1 },
+      { x: bx2, y: by2 },
+    ],
+    eps, 0, 1, 0, 1, res,
+  );
+  return res;
 }
 
 /**
