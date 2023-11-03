@@ -5,7 +5,7 @@ let uuid = 0;
 
 class Segment {
   uuid: number;
-  coords: Array<Point>;
+  coords: Point[];
   belong: number;
   myFill: [boolean, boolean];
   otherFill: [boolean, boolean];
@@ -13,9 +13,9 @@ class Segment {
   otherCoincide: number;
   isVisited: boolean;
   isDeleted: boolean;
-  bbox: Array<number>;
+  bbox: number[];
 
-  constructor(coords: Array<Point>, belong: number) {
+  constructor(coords: Point[], belong: number) {
     this.uuid = uuid++;
     // 截取过程中曲线可能分成很小一截的水平/垂直直线，这里去除一下
     if (coords.length > 2) {
@@ -35,6 +35,30 @@ class Segment {
       }
       if (equalX || equalY) {
         coords.splice(1, coords.length - 2);
+      }
+      // 斜线中如果控制点在线上，也视为直线
+      else {
+        const end = coords[coords.length - 1];
+        const tan = (end.y - first.y) / (end.x - first.x);
+        let equal = true;
+        for (let i = 1; i < coords.length - 1; i++) {
+          const mid = coords[i];
+          const t = (mid.y - first.y) / (mid.x - first.x);
+          if (tan === Infinity || tan === -Infinity) {
+            if (tan !== t) {
+              equal = false;
+              break;
+            }
+          } else {
+            if (Math.abs(t - tan) > 1e-9) {
+              equal = false;
+              break;
+            }
+          }
+        }
+        if (equal) {
+          coords.splice(1, coords.length - 2);
+        }
       }
     }
     this.coords = coords;
