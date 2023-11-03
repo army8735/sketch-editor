@@ -492,6 +492,10 @@ function genTotal(
       i += total2 + next2;
       continue;
     }
+    // 图片计数器
+    if (node2.isBitmap) {
+      (node2 as Bitmap).checkLoader();
+    }
     let opacity, matrix;
     // 首个节点即局部根节点，需要考虑scale放大
     if (i === index) {

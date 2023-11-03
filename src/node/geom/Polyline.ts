@@ -412,7 +412,7 @@ class Polyline extends Geom {
                   ctx.globalCompositeOperation = 'source-over';
                 }
                 os.release();
-              } else {
+              } else if (!loader.error && !loader.loading) {
                 this.root!.imgLoadingCount++;
               }
             }
@@ -448,6 +448,7 @@ class Polyline extends Geom {
                   else {
                     loader.error = true;
                   }
+                  this.root!.imgLoadingCount--;
                 }
               });
             }
@@ -885,72 +886,20 @@ class Polyline extends Geom {
     return res;
   }
 
-  // 一个形状由N个贝塞尔曲线围城，这个获取第几条贝塞尔曲线对应的4个控制点
-  getBezierCurveByIndex(index: number): Array<{ x: number; y: number }> {
-    const result: Array<{ x: number; y: number }> = [];
-    const props = this.getFrameProps();
-    const w = this.width;
-    const h = this.height;
-    const points = props.points;
-
-    if (index < points.length - 1) {
-      result.push(
-        {
-          x: points[index].x * w,
-          y: points[index].y * h,
-        },
-        {
-          x:
-            w *
-            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
-          y:
-            h *
-            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
-        },
-        {
-          x:
-            w *
-            (points[index + 1].hasCurveFrom
-              ? points[index + 1].tx
-              : points[index + 1].x),
-          y:
-            h *
-            (points[index + 1].hasCurveFrom
-              ? points[index + 1].ty
-              : points[index + 1].y),
-        },
-        {
-          x: w * points[index + 1].x,
-          y: h * points[index + 1].y,
-        },
-      );
-    } else if (this.props.isClosed) {
-      // 闭合曲线才有最后一条边
-      result.push(
-        {
-          x: points[index].x * w,
-          y: points[index].y * h,
-        },
-        {
-          x:
-            w *
-            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
-          y:
-            h *
-            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
-        },
-        {
-          x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
-          y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
-        },
-        {
-          x: w * points[0].x,
-          y: h * points[0].y,
-        },
-      );
+  override destroy() {
+    if (this.isDestroyed) {
+      return;
     }
-
-    return result;
+    const root = this.root;
+    super.destroy();
+    if (root) {
+      this.loaders.forEach(item => {
+        if (item.loading) {
+          root.imgLoadingCount--;
+          item.loading = false;
+        }
+      });
+    }
   }
 
   getAllBezierCurves(): Array<{ x: number; y: number }>[] {

@@ -8,6 +8,7 @@ import { assignMatrix, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Node from '../node/Node';
 import Root from '../node/Root';
+import Bitmap from '../node/Bitmap';
 import { MIX_BLEND_MODE } from '../style/define';
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
@@ -251,9 +252,9 @@ export function renderWebgl(
       // 画布和Page的FBO切换检测
       if (isInScreen) {
         // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，注意空画布无效需跳过
-        if (node.isArtBoard && node instanceof ArtBoard && total + next) {
+        if (node.isArtBoard && total + next) {
           pageTexture = resTexture; // 防止mbm导致新生成纹理，需赋值回去给page
-          artBoardIndex[i + total + next] = node;
+          artBoardIndex[i + total + next] = node as ArtBoard;
           artBoardTexture = createTexture(gl, 0, undefined, W, H);
           resTexture = artBoardTexture;
           gl.framebufferTexture2D(
@@ -263,8 +264,12 @@ export function renderWebgl(
             resTexture,
             0,
           );
-          node.renderBgc(gl, cx, cy);
+          (node as ArtBoard).renderBgc(gl, cx, cy);
           gl.useProgram(program);
+        }
+        // 图片检查内容加载
+        if (node.isBitmap) {
+          (node as Bitmap).checkLoader();
         }
       }
       if (isInScreen && target && target.available) {

@@ -19,9 +19,7 @@ import {
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
 import inject, { OffScreen } from '../util/inject';
-import { isFunction } from '../util/type';
 import { clone } from '../util/util';
-import { LayoutData } from './layout';
 import Node from './Node';
 
 type Loader = {
@@ -72,22 +70,7 @@ class Bitmap extends Node {
         // });
       }
       const cache = inject.IMG[src];
-      if (!cache) {
-        inject.measureImg(src, (res: any) => {
-          // 可能会变更，所以加载完后对比下是不是当前最新的
-          if (src === this._src) {
-            if (res.success) {
-              if (isFunction(props.onLoad)) {
-                props.onLoad!();
-              }
-            } else {
-              if (isFunction(props.onError)) {
-                props.onError!();
-              }
-            }
-          }
-        });
-      } else if (cache.state === inject.LOADED) {
+      if (cache && cache.state === inject.LOADED) {
         if (cache.success) {
           this.loader.source = cache.source;
           this.loader.width = cache.source.width;
@@ -96,31 +79,55 @@ class Bitmap extends Node {
           this.loader.error = true;
         }
       }
+      // if (!cache) {
+      //   inject.measureImg(src, (res: any) => {
+      //     // 可能会变更，所以加载完后对比下是不是当前最新的
+      //     if (src === this._src) {
+      //       if (res.success) {
+      //         if (isFunction(props.onLoad)) {
+      //           props.onLoad!();
+      //         }
+      //       } else {
+      //         if (isFunction(props.onError)) {
+      //           props.onError!();
+      //         }
+      //       }
+      //     }
+      //   });
+      // } else if (cache.state === inject.LOADED) {
+      //   if (cache.success) {
+      //     this.loader.source = cache.source;
+      //     this.loader.width = cache.source.width;
+      //     this.loader.height = cache.source.height;
+      //   } else {
+      //     this.loader.error = true;
+      //   }
+      // }
     }
   }
 
-  override lay(data: LayoutData) {
-    super.lay(data);
-    const src = this._src;
-    const loader = this.loader;
-    if (src) {
-      const cache = inject.IMG[src];
-      if (!cache || cache.state === inject.LOADING) {
-        if (!loader.loading) {
-          this.loadAndRefresh();
-        }
-      } else if (cache && cache.state === inject.LOADED) {
-        loader.loading = false;
-        if (cache.success) {
-          this.loader.source = cache.source;
-          this.loader.width = cache.width;
-          this.loader.height = cache.height;
-        } else {
-          this.loader.error = true;
-        }
-      }
-    }
-  }
+  // override lay(data: LayoutData) {
+  //   super.lay(data);
+  //   const src = this._src;
+  //   const loader = this.loader;
+  //   if (src) {
+  //     const cache = inject.IMG[src];
+  //     if (!cache || cache.state === inject.LOADING) {
+  //       if (!loader.loading) {
+  //         this.loadAndRefresh();
+  //       }
+  //     } else if (cache && cache.state === inject.LOADED) {
+  //       loader.loading = false;
+  //       if (cache.success) {
+  //         this.loader.source = cache.source;
+  //         this.loader.width = cache.width;
+  //         this.loader.height = cache.height;
+  //       } else {
+  //         this.loader.error = true;
+  //       }
+  //     }
+  //   }
+  // }
 
   private loadAndRefresh() {
     // 加载前先清空之前可能遗留的老数据
@@ -128,8 +135,32 @@ class Bitmap extends Node {
     loader.source = undefined;
     loader.error = false;
     if (!this.isDestroyed) {
+      const root = this.root!;
+      const cache = inject.IMG[this._src];
+      if (cache && cache.state === inject.LOADED) {
+        if (cache.success && cache.source) {
+          loader.source = cache.source;
+          loader.width = cache.width;
+          loader.height = cache.height;
+        } else {
+          loader.error = true;
+        }
+        this.root!.addUpdate(
+          this,
+          [],
+          RefreshLevel.REPAINT,
+          false,
+          false,
+          undefined,
+        );
+        return;
+      }
+      // 可能会多次连续触发更改图片url，判断状态只记录一次
+      if (!loader.loading) {
+        root.imgLoadingCount++;
+      }
       // 先置空图片
-      this.root!.addUpdate(
+      root.addUpdate(
         this,
         [],
         RefreshLevel.REPAINT,
@@ -141,6 +172,7 @@ class Bitmap extends Node {
       inject.measureImg(this._src, (data: any) => {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if (data.url === this._src) {
+          root.imgLoadingCount--;
           loader.loading = false;
           if (data.success) {
             loader.error = false;
@@ -162,6 +194,13 @@ class Bitmap extends Node {
           }
         }
       });
+    }
+  }
+
+  checkLoader() {
+    const loader = this.loader;
+    if (!loader.loading && !loader.source && !loader.error) {
+      this.loadAndRefresh();
     }
   }
 
@@ -202,11 +241,11 @@ class Bitmap extends Node {
         break;
       }
     }
-    const res = (this.hasContent = !!this.loader.source);
-    if (!res && !this.loader.error) {
-      this.root!.imgLoadingCount++;
-    }
-    return res;
+    return (this.hasContent = !!this.loader.source);
+    // if (!res && !this.loader.error) {
+    //   this.root!.imgLoadingCount++;
+    // }
+    // return res;
   }
 
   override renderCanvas(scale: number) {
@@ -786,13 +825,13 @@ class Bitmap extends Node {
       if (TextureCache.hasImgInstance(uuid, this._src)) {
         this.textureCache[scaleIndex] =
           this.textureTarget[scaleIndex] =
-          this.textureCache[0] =
-            TextureCache.getImgInstance(
-              uuid,
-              gl,
-              this._src,
-              (this._rect || this.rect).slice(0),
-            );
+            this.textureCache[0] =
+              TextureCache.getImgInstance(
+                uuid,
+                gl,
+                this._src,
+                (this._rect || this.rect).slice(0),
+              );
         return;
       }
       this.renderCanvas(scale);
@@ -800,14 +839,14 @@ class Bitmap extends Node {
       if (canvasCache?.available) {
         this.textureCache[scaleIndex] =
           this.textureTarget[scaleIndex] =
-          this.textureCache[0] =
-            TextureCache.getImgInstance(
-              uuid,
-              gl,
-              this._src,
-              (this._rect || this.rect).slice(0),
-              canvasCache.offscreen.canvas,
-            );
+            this.textureCache[0] =
+              TextureCache.getImgInstance(
+                uuid,
+                gl,
+                this._src,
+                (this._rect || this.rect).slice(0),
+                canvasCache.offscreen.canvas,
+              );
         canvasCache.releaseImg(this._src);
       }
     } else {
@@ -847,6 +886,19 @@ class Bitmap extends Node {
     const res = super.toJson();
     res.tagName = TAG_NAME.BITMAP;
     return res;
+  }
+
+  override destroy() {
+    if (this.isDestroyed) {
+      return;
+    }
+    const root = this.root;
+    super.destroy();
+    const loader = this.loader;
+    if (loader.loading && root) {
+      root.imgLoadingCount--;
+      loader.loading = false;
+    }
   }
 
   get src() {

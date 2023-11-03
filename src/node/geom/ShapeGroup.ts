@@ -306,7 +306,7 @@ class ShapeGroup extends Group {
               };
             }
             if (loader) {
-              if (!loader.error && !loader.loading) {
+              if (!loader.error && !loader.loading && loader.source) {
                 const width = this.width;
                 const height = this.height;
                 const wc = width * scale;
@@ -365,9 +365,12 @@ class ShapeGroup extends Group {
                   ctx.globalCompositeOperation = 'source-over';
                 }
                 os.release();
+              } else if (!loader.error && !loader.loading) {
+                this.root!.imgLoadingCount++;
               }
             }
             else {
+              this.root!.imgLoadingCount++;
               loader = this.loaders[i] = this.loaders[i] || {
                 error: false,
                 loading: true,
@@ -398,6 +401,7 @@ class ShapeGroup extends Group {
                   else {
                     loader.error = true;
                   }
+                  this.root!.imgLoadingCount--;
                 }
               });
             }
@@ -678,7 +682,20 @@ class ShapeGroup extends Group {
     const computedStyle = this.computedStyle;
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
-    let s = `<svg width="${this.width}" height="${this.height}">`;
+    const { scaleX, scaleY } = computedStyle;
+    let transform = '';
+    if (scaleX < 0 && scaleY < 0) {
+      transform += 'scale(-1,-1)';
+    } else if (scaleX < 0) {
+      transform += 'scale(-1,1)';
+    } else if (scaleY < 0) {
+      transform += 'scale(1,-1)';
+    }
+    let s = `<svg width="${this.width}" height="${this.height}"`;
+    if (transform) {
+      s += ' transform="' + transform + '"';
+    }
+    s += '>';
     const points = this.points!;
     if (points.length) {
       const props = [
@@ -713,6 +730,22 @@ class ShapeGroup extends Group {
     const res = super.toJson();
     res.tagName = TAG_NAME.SHAPE_GROUP;
     return res;
+  }
+
+  override destroy() {
+    if (this.isDestroyed) {
+      return;
+    }
+    const root = this.root;
+    super.destroy();
+    if (root) {
+      this.loaders.forEach(item => {
+        if (item.loading) {
+          root.imgLoadingCount--;
+          item.loading = false;
+        }
+      });
+    }
   }
 
   override get rect(): Float64Array {

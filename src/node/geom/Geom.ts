@@ -73,6 +73,15 @@ class Geom extends Node {
     const d = svgPolygon(this.points!) + (isClosed ? 'Z' : '');
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
+    const { scaleX, scaleY } = computedStyle;
+    let transform = '';
+    if (scaleX < 0 && scaleY < 0) {
+      transform += 'scale(-1,-1)';
+    } else if (scaleX < 0) {
+      transform += 'scale(-1,1)';
+    } else if (scaleY < 0) {
+      transform += 'scale(1,-1)';
+    }
     const props = [
       ['d', d],
       ['fill', '#D8D8D8'],
@@ -80,7 +89,11 @@ class Geom extends Node {
       ['stroke', '#979797'],
       ['stroke-width', (1 / scale).toString()],
     ];
-    let s = `<svg width="${this.width}" height="${this.height}"><path`;
+    let s = `<svg width="${this.width}" height="${this.height}"`;
+    if (transform) {
+      s += ' transform="' + transform + '"';
+    }
+    s += '><path';
     props.forEach((item) => {
       s += ' ' + item[0] + '="' + item[1] + '"';
     });
