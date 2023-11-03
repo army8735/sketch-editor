@@ -10,57 +10,133 @@ type Point3 = {
 
 const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 
+// 2分逼近法求曲线交点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果
 function intersectFn(
   a: { x: number, y: number }[], b: { x: number, y: number }[],
-  eps: number, t1: number, t2: number, t3: number, t4: number,
-  res: { x: number, y: number, t1: number, t2: number }[],
+  eps: number, res: { x: number, y: number, t1: number, t2: number }[],
 ) {
-  const bbox1 = bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
-  const bbox2 = bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
-  if (isRectsOverlap(bbox1[0], bbox1[1], bbox1[2], bbox1[3], bbox2[0], bbox2[1], bbox2[2], bbox2[3], true)) {
-    // 直线可能宽高为0
-    const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
-    const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
-    const l3 = (bbox2[2] - bbox2[0]) || Number.EPSILON;
-    const l4 = (bbox2[3] - bbox2[1]) || Number.EPSILON;
-    const area1 = l1 * l2;
-    const area2 = l3 * l4;
-    if (l1 <= eps && l2 <= eps && area1 <= eps &&
-      l3 <= eps && l4 <= eps && area2 <= eps) {
-      const ta = (t1 + t2) * 0.5;
-      const tb = (t3 + t4) * 0.5;
-      const ap = getPointByT(a, ta);
-      const bp = getPointByT(b, tb);
-      res.push({
-        x: (ap.x + bp.x) * 0.5,
-        y: (ap.y + bp.y) * 0.5,
-        t1: ta,
-        t2: tb,
-      });
-    } else {
-      if ((l1 > eps || l2 > eps || area1 > eps) &&
-        (l3 > eps || l4 > eps || area2 > eps)) {
-        const a1 = sliceBezier(a, 0, 0.5);
-        const a2 = sliceBezier(a, 0.5, 1);
-        const b1 = sliceBezier(b, 0, 0.5);
-        const b2 = sliceBezier(b, 0.5, 1);
-        intersectFn(a1, b1, eps, t1, t1 + (t2 - t1) * 0.5, t3, t3 + (t4 - t3) * 0.5, res);
-        intersectFn(a1, b2, eps, t1, t1 + (t2 - t1) * 0.5, t3 + (t4 - t3) * 0.5, t4, res);
-        intersectFn(a2, b1, eps, t1 + (t2 - t1) * 0.5, t2, t3, t3 + (t4 - t3) * 0.5, res);
-        intersectFn(a2, b2, eps, t1 + (t2 - t1) * 0.5, t2, t3 + (t4 - t3) * 0.5, t4, res);
-      } else if (l1 > eps || l2 > eps || area1 > eps) {
-        const a1 = sliceBezier(a, 0, 0.5);
-        const a2 = sliceBezier(a, 0.5, 1);
-        intersectFn(a1, b, eps, t1, t1 + (t2 - t1) * 0.5, t3, t4, res);
-        intersectFn(a2, b, eps, t1 + (t2 - t1) * 0.5, t2, t3, t4, res);
-      } else if (l3 > eps || l4 > eps || area2 > eps) {
-        const b1 = sliceBezier(b, 0, 0.5);
-        const b2 = sliceBezier(b, 0.5, 1);
-        intersectFn(a, b1, eps, t1, t2, t3, t3 + (t4 - t3) * 0.5, res);
-        intersectFn(a, b2, eps, t1, t2, t3 + (t4 - t3) * 0.5, t4, res);
+  const list = [{
+    a,
+    b,
+    t1: 0,
+    t2: 1,
+    t3: 0,
+    t4: 1,
+  }];
+  while (list.length) {
+    const { a, b, t1, t2, t3, t4 } = list.pop()!;
+    const bbox1 = bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
+    const bbox2 = bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
+    if (isRectsOverlap(bbox1[0], bbox1[1], bbox1[2], bbox1[3], bbox2[0], bbox2[1], bbox2[2], bbox2[3], true)) {
+      // 直线可能宽高为0
+      const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
+      const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
+      const l3 = (bbox2[2] - bbox2[0]) || Number.EPSILON;
+      const l4 = (bbox2[3] - bbox2[1]) || Number.EPSILON;
+      const area1 = l1 * l2;
+      const area2 = l3 * l4;
+      if (l1 <= eps && l2 <= eps && area1 <= eps &&
+        l3 <= eps && l4 <= eps && area2 <= eps) {
+        const ta = (t1 + t2) * 0.5;
+        const tb = (t3 + t4) * 0.5;
+        const ap = getPointByT(a, ta);
+        const bp = getPointByT(b, tb);
+        res.push({
+          x: (ap.x + bp.x) * 0.5,
+          y: (ap.y + bp.y) * 0.5,
+          t1: ta,
+          t2: tb,
+        });
+      } else {
+        if ((l1 > eps || l2 > eps || area1 > eps) &&
+          (l3 > eps || l4 > eps || area2 > eps)) {
+          const a1 = sliceBezier(a, 0, 0.5);
+          const a2 = sliceBezier(a, 0.5, 1);
+          const b1 = sliceBezier(b, 0, 0.5);
+          const b2 = sliceBezier(b, 0.5, 1);
+          list.push({
+            a: a1,
+            b: b1,
+            t1,
+            t2: t1 + (t2 - t1) * 0.5,
+            t3,
+            t4: t3 + (t4 - t3) * 0.5,
+          });
+          list.push({
+            a: a1,
+            b: b2,
+            t1,
+            t2: t1 + (t2 - t1) * 0.5,
+            t3: t3 + (t4 - t3) * 0.5,
+            t4,
+          });
+          list.push({
+            a: a2,
+            b: b1,
+            t1: t1 + (t2 - t1) * 0.5,
+            t2,
+            t3,
+            t4: t3 + (t4 - t3) * 0.5,
+          });
+          list.push({
+            a: a2,
+            b: b2,
+            t1: t1 + (t2 - t1) * 0.5,
+            t2,
+            t3: t3 + (t4 - t3) * 0.5,
+            t4,
+          });
+          // intersectFn(a1, b1, eps, t1, t1 + (t2 - t1) * 0.5, t3, t3 + (t4 - t3) * 0.5, res);
+          // intersectFn(a1, b2, eps, t1, t1 + (t2 - t1) * 0.5, t3 + (t4 - t3) * 0.5, t4, res);
+          // intersectFn(a2, b1, eps, t1 + (t2 - t1) * 0.5, t2, t3, t3 + (t4 - t3) * 0.5, res);
+          // intersectFn(a2, b2, eps, t1 + (t2 - t1) * 0.5, t2, t3 + (t4 - t3) * 0.5, t4, res);
+        } else if (l1 > eps || l2 > eps || area1 > eps) {
+          const a1 = sliceBezier(a, 0, 0.5);
+          const a2 = sliceBezier(a, 0.5, 1);
+          list.push({
+            a: a1,
+            b: b,
+            t1,
+            t2: t1 + (t2 - t1) * 0.5,
+            t3,
+            t4,
+          });
+          list.push({
+            a: a2,
+            b: b,
+            t1: t1 + (t2 - t1) * 0.5,
+            t2,
+            t3,
+            t4,
+          });
+          // intersectFn(a1, b, eps, t1, t1 + (t2 - t1) * 0.5, t3, t4, res);
+          // intersectFn(a2, b, eps, t1 + (t2 - t1) * 0.5, t2, t3, t4, res);
+        } else if (l3 > eps || l4 > eps || area2 > eps) {
+          const b1 = sliceBezier(b, 0, 0.5);
+          const b2 = sliceBezier(b, 0.5, 1);
+          list.push({
+            a: a,
+            b: b1,
+            t1,
+            t2,
+            t3,
+            t4: t3 + (t4 - t3) * 0.5,
+          });
+          list.push({
+            a: a,
+            b: b2,
+            t1,
+            t2,
+            t3: t3 + (t4 - t3) * 0.5,
+            t4,
+          });
+          // intersectFn(a, b1, eps, t1, t2, t3, t3 + (t4 - t3) * 0.5, res);
+          // intersectFn(a, b2, eps, t1, t2, t3 + (t4 - t3) * 0.5, t4, res);
+        }
       }
     }
   }
+  return res;
 }
 
 export function intersectBezier2Bezier2(
@@ -79,7 +155,7 @@ export function intersectBezier2Bezier2(
       { x: bx2, y: by2 },
       { x: bx3, y: by3 },
     ],
-    eps, 0, 1, 0, 1, res,
+    eps, res,
   );
   return res;
 }
@@ -101,7 +177,7 @@ export function intersectBezier3Bezier3(
       { x: bx3, y: by3 },
       { x: bx4, y: by4 },
     ],
-    eps, 0, 1, 0, 1, res,
+    eps, res,
   );
   return res;
 }
@@ -121,7 +197,7 @@ export function intersectBezier2Bezier3(
       { x: bx3, y: by3 },
       { x: bx4, y: by4 },
     ],
-    eps, 0, 1, 0, 1, res,
+    eps, res,
   );
   return res;
 }
@@ -166,7 +242,7 @@ export function intersectBezier2Line(
       { x: bx1, y: by1 },
       { x: bx2, y: by2 },
     ],
-    eps, 0, 1, 0, 1, res,
+    eps, res,
   );
   return res;
 }
@@ -186,7 +262,7 @@ export function intersectBezier3Line(
       { x: bx1, y: by1 },
       { x: bx2, y: by2 },
     ],
-    eps, 0, 1, 0, 1, res,
+    eps, res,
   );
   return res;
 }

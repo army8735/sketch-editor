@@ -154,8 +154,8 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
   const its = isec.intersectBezier2Bezier2(
     prev[0].x, prev[0].y, prev[1].x, prev[1].y, prev[2].x, prev[2].y,
     next[0].x, next[0].y, next[1].x, next[1].y, next[2].x, next[2].y,
-  ).filter(item => item.t > 1e-4 && item.t < (1 - 1e-4))
-    .sort((a, b) => b.t - a.t);
+  ).filter(item => item.x !== next[0].x && item.y !== next[0].y)
+    .sort((a, b) => b.t1 - a.t1);
   const count = its.length;
   // 无交点直接求
   if (!count) {
@@ -165,7 +165,7 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
       radius, 0, 1, 0, 1);
   }
   // 有交点求相对于2曲线的t值，防止精度计算问题找不到
-  const prevTs = its.map(item => item.t);
+  const prevTs = its.map(item => item.t1);
   const nextTs = its.map(item => getPointT(next, item.x, item.y)[0]);
   if (nextTs.find((item) => item === undefined)) {
     return;
