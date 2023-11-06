@@ -43,6 +43,7 @@ import Overlay from './overlay/Overlay';
 import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
+import Bitmap from './Bitmap';
 
 type RootProps = Props & {
   dpi: number;
@@ -69,6 +70,7 @@ class Root extends Container implements FrameCallback {
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
   artBoardShadowTexture: WebGLTexture | undefined;
   imgLoadingCount: number; // 刷新过程统计图片有没有加载完
+  imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
 
   constructor(props: RootProps, children: Array<Node> = []) {
     super(props, children);
@@ -84,6 +86,7 @@ class Root extends Container implements FrameCallback {
     this.taskClone = [];
     this.rl = RefreshLevel.REBUILD;
     this.imgLoadingCount = 0;
+    this.imgLoadList = [];
   }
 
   appendTo(canvas: HTMLCanvasElement) {

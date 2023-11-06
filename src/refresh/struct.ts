@@ -36,6 +36,7 @@ export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
 ) {
+  const imgLoadList = root.imgLoadList;
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(),
     scaleIndex = 0;
@@ -267,9 +268,9 @@ export function renderWebgl(
           (node as ArtBoard).renderBgc(gl, cx, cy);
           gl.useProgram(program);
         }
-        // 图片检查内容加载
-        if (node.isBitmap) {
-          (node as Bitmap).checkLoader();
+        // 图片检查内容加载计数器
+        if (node.isBitmap && (node as Bitmap).checkLoader()) {
+          imgLoadList.push(node as Bitmap);
         }
       }
       if (isInScreen && target && target.available) {
@@ -488,6 +489,11 @@ export function renderWebgl(
     0,
     true,
   );
+  // 收集的需要加载的图片在刷新结束后同一进行，防止过程中触发update进而计算影响bbox
+  for (let i = 0, len = imgLoadList.length; i < len; i++) {
+    imgLoadList[i].loadAndRefresh();
+  }
+  imgLoadList.splice(0);
 }
 
 function drawArtBoardClip(

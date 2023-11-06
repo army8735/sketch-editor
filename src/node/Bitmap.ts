@@ -129,7 +129,7 @@ class Bitmap extends Node {
   //   }
   // }
 
-  private loadAndRefresh() {
+  loadAndRefresh() {
     // 加载前先清空之前可能遗留的老数据
     const loader = this.loader;
     loader.source = undefined;
@@ -200,8 +200,10 @@ class Bitmap extends Node {
   checkLoader() {
     const loader = this.loader;
     if (!loader.loading && !loader.source && !loader.error) {
-      this.loadAndRefresh();
+      // this.loadAndRefresh();
+      return true;
     }
+    return false;
   }
 
   override calContent(): boolean {

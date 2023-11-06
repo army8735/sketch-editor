@@ -462,7 +462,7 @@ function genTotal(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -492,9 +492,9 @@ function genTotal(
       i += total2 + next2;
       continue;
     }
-    // 图片计数器
-    if (node2.isBitmap) {
-      (node2 as Bitmap).checkLoader();
+    // 图片检查内容加载计数器
+    if (node2.isBitmap && (node2 as Bitmap).checkLoader()) {
+      root.imgLoadList.push(node2 as Bitmap);
     }
     let opacity, matrix;
     // 首个节点即局部根节点，需要考虑scale放大
@@ -775,7 +775,7 @@ function genGaussBlur(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -881,7 +881,7 @@ function genMotionBlur(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -967,7 +967,7 @@ function genRadialBlur(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -1046,7 +1046,7 @@ function genColorMatrix(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -1229,7 +1229,7 @@ function genTint(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -1296,7 +1296,7 @@ function genShadow(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -1500,7 +1500,7 @@ function genMask(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
@@ -1547,6 +1547,10 @@ function genMask(
     if (shouldIgnore) {
       i += total2 + next2;
       continue;
+    }
+    // 图片检查内容加载计数器
+    if (node2.isBitmap && (node2 as Bitmap).checkLoader()) {
+      root.imgLoadList.push(node2 as Bitmap);
     }
     let opacity, matrix;
     // 同层级的next作为特殊的局部根节点，注意dx/dy偏移对transformOrigin的影响
@@ -1922,7 +1926,7 @@ export function genOutline(
   while (
     w * scale > config.MAX_TEXTURE_SIZE ||
     h * scale > config.MAX_TEXTURE_SIZE
-  ) {
+    ) {
     if (scale <= 1) {
       break;
     }
