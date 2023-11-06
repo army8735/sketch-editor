@@ -205,7 +205,7 @@ export function intersectBezier2Bezier3(
 export function intersectLineLine(
   ax1: number, ay1: number, ax2: number, ay2: number,
   bx1: number, by1: number, bx2: number, by2: number,
-  limit = true, eps = 1e-6) {
+  limit = true, eps = 0) {
   const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
   if (d !== 0) {
     const toSource = (
@@ -214,7 +214,8 @@ export function intersectLineLine(
     const toClip = (
       (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
     ) / d;
-    if (limit && (toSource < eps || toSource > 1 - eps || toClip < eps || toClip > 1 - eps)) {
+    const eps2 = 1 - eps
+    if (limit && (toSource < eps || toSource > eps2 || toClip < eps || toClip > eps2)) {
       return;
     }
     const ox = ax1 + toSource * (ax2 - ax1);

@@ -23,7 +23,6 @@ function getIntersectionLineLine(
     bx2,
     by2,
     true,
-    EPS,
   );
   if (res) {
     return [

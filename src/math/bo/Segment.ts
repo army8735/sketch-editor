@@ -117,13 +117,13 @@ class Segment {
   }
 
   toString() {
-    return this.toHash()
-      + ' ' + this.uuid
+    return this.uuid
       + ' ' + this.belong
       + ' ' + this.myCoincide
       + '' + this.otherCoincide
       + ' ' + this.myFill.map(i => i ? 1 : 0).join('')
-      + this.otherFill.map(i => i ? 1 : 0).join('');
+      + this.otherFill.map(i => i ? 1 : 0).join('')
+      + ' ' + this.toHash();
   }
 }
 

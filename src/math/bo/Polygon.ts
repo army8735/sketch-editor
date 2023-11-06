@@ -804,8 +804,6 @@ function findIntersection(
                  */
                 for (let i = inters.length - 1; i >= 0; i--) {
                   const pt = inters[i];
-                  // pt.point.x = Math.round(pt.point.x);
-                  // pt.point.y = Math.round(pt.point.y);
                   if (pt.point.equal(coordsA[0])) {
                     if (pt.point.equal(coordsB[0])) {
                       inters.splice(i, 1);
