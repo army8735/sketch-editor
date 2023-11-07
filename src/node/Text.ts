@@ -422,7 +422,7 @@ class Text extends Node {
     /**
      * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
      * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
-     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到方向尺寸上。
+     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到尺寸。
      * 另外编辑文字修改内容后，新的尺寸肯定和老的rect不一致，差值修正的逻辑正好被复用做修改后重排版。
      */
     if (autoW) {
@@ -1097,15 +1097,21 @@ class Text extends Node {
         ctx2.lineJoin = ctx.lineJoin;
         ctx2.miterLimit = ctx.miterLimit * scale;
         ctx2.strokeStyle = ctx.strokeStyle;
-        ctx2.lineWidth = strokeWidth[i] * 2 * scale;ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+        ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+        ctx2.lineWidth = strokeWidth[i] * 2 * scale;
         ctx2.fillStyle = '#FFF';
-        draw(ctx2, true);
-        if (p === STROKE_POSITION.INSIDE) {
-          ctx2.globalCompositeOperation = 'source-in';
-        } else {
-          ctx2.globalCompositeOperation = 'source-out';
-        }
         draw(ctx2, false);
+        const os3 = inject.getOffscreenCanvas(w, h);
+        const ctx3 = os3.ctx;
+        ctx3.fillStyle = '#FFF';
+        draw(ctx3, true);
+        if (p === STROKE_POSITION.INSIDE) {
+          ctx2.globalCompositeOperation = 'destination-in';
+        } else {
+          ctx2.globalCompositeOperation = 'destination-out';
+        }
+        ctx2.drawImage(os3.canvas, 0, 0);
+        os3.release();
       } else {
         ctx.lineWidth = strokeWidth[i] * scale;
         draw(ctx, false);
