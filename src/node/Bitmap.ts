@@ -191,6 +191,16 @@ class Bitmap extends Node {
             }
           } else {
             loader.error = true;
+            if (!this.isDestroyed) {
+              this.root!.addUpdate(
+                this,
+                [],
+                RefreshLevel.NONE,
+                false,
+                false,
+                undefined,
+              );
+            }
           }
         }
       });

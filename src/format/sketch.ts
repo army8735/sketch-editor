@@ -22,6 +22,7 @@ import { TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
+import inject from '../util/inject';
 
 // sketch的Page没有尺寸，固定100
 const W = 100, H = 100;
@@ -702,12 +703,8 @@ async function convertItem(
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
         ?.attributes;
-    const fontSize = MSAttributedStringFontAttribute
-      ? MSAttributedStringFontAttribute.size
-      : 16;
-    const fontFamily = MSAttributedStringFontAttribute
-      ? MSAttributedStringFontAttribute.name
-      : 'arial';
+    const fontSize = MSAttributedStringFontAttribute?.size || 16;
+    const fontFamily = MSAttributedStringFontAttribute?.name || inject.defaultFontFamily;
     const paragraphStyle =
       layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const alignment = paragraphStyle?.alignment;
@@ -1221,13 +1218,17 @@ async function readImageFile(filename: string, opt: Opt) {
   if (!filename || !opt.zipFile) {
     return '';
   }
+  const filename2 = filename;
   if (!/\.\w+$/.test(filename)) {
     filename = `${filename}.png`;
   }
-  const file = opt.zipFile.file(filename);
+  let file = opt.zipFile.file(filename);
   if (!file) {
-    console.error(`image not exist: >>>${filename}<<<`);
-    return '';
+    file = opt.zipFile.file(filename2);
+    if (!file) {
+      console.error(`image not exist: >>>${filename}<<<`);
+      return '';
+    }
   }
   const ab = await file.async('arraybuffer');
   if (!ab.byteLength) {

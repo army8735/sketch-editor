@@ -305,6 +305,9 @@ class Root extends Container implements FrameCallback {
       this.asyncDraw(cb);
     } else {
       cb && cb(true);
+      if (!this.imgLoadingCount) {
+        this.emit(Event.REFRESH_COMPLETE, RefreshLevel.NONE);
+      }
     }
     // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
     if (this.lastPage && node.page) {
@@ -432,14 +435,13 @@ class Root extends Container implements FrameCallback {
     }
     const rl = this.rl;
     if (rl > RefreshLevel.NONE) {
-      // this.imgLoadingCount = 0;
       this.clear();
       this.rl = RefreshLevel.NONE;
       renderWebgl(this.ctx!, this);
       this.emit(Event.REFRESH, rl);
-      if (!this.imgLoadingCount) {
-        this.emit(Event.REFRESH_COMPLETE, rl);
-      }
+    }
+    if (!this.imgLoadingCount) {
+      this.emit(Event.REFRESH_COMPLETE, rl);
     }
   }
 

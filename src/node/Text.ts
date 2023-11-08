@@ -157,8 +157,8 @@ type Loader = {
 
 class Text extends Node {
   _content: string;
-  rich: Array<Rich>;
-  lineBoxList: Array<LineBox>;
+  rich: Rich[];
+  lineBoxList: LineBox[];
   tempCursorX: number; // 上一次手动指定的光标x相对坐标，键盘上下移动时保持定位
   currentCursorX: number; // 当前光标x相对坐标，滚动画布时需要获取这个缓存
   cursor: Cursor; // 光标信息
@@ -209,7 +209,7 @@ class Text extends Node {
     let x = 0,
       y = 0;
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
-    const SET_FONT_INDEX: Array<number> = [];
+    const SET_FONT_INDEX: number[] = [];
     if (rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
@@ -2247,9 +2247,9 @@ class Text extends Node {
     if (rich.length === 1) {
       return [rich[0]];
     }
-    const res: Array<Rich> = [];
+    const res: Rich[] = [];
     // 字符索引对应的rich快速查找
-    const RICH_INDEX: Array<Rich> = [];
+    const RICH_INDEX: Rich[] = [];
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
       const { location, length } = item;

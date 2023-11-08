@@ -837,7 +837,7 @@ export function setFontStyle(style: ComputedStyle | Rich) {
   const fontSize = style.fontSize || 0;
   let fontFamily = style.fontFamily || inject.defaultFontFamily;
   fontFamily += ',' + 'pingfangsc-regular';
-  if (/\s/.test(fontFamily)) {
+  if (/[\s.,]/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
   return (
