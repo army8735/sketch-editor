@@ -419,6 +419,9 @@ class Text extends Node {
     // 最后一行对齐，以及最后一行循环里没算要再算一次
     lineBox.verticalAlign();
     maxW = Math.max(maxW, lineBox.w);
+    if (letterSpacing && letterSpacing < 0) {
+      maxW -= letterSpacing;
+    }
     /**
      * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
      * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
@@ -2390,6 +2393,10 @@ class Text extends Node {
       res[1] -= border;
       res[2] += border;
       res[3] += border;
+      res[0] = Math.floor(res[0]);
+      res[1] = Math.floor(res[1]);
+      res[2] = Math.ceil(res[2]);
+      res[3] = Math.ceil(res[3]);
     }
     return res;
   }

@@ -277,7 +277,7 @@ class Root extends Container implements FrameCallback {
    */
   addUpdate(
     node: Node,
-    keys: Array<string>,
+    keys: string[],
     focus: RefreshLevel = RefreshLevel.NONE,
     addDom: boolean = false,
     removeDom: boolean = false,

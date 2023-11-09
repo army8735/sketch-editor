@@ -200,6 +200,10 @@ class Geom extends Node {
       res[1] = Math.min(res[1], minY);
       res[2] = Math.max(res[2], maxX);
       res[3] = Math.max(res[3], maxY);
+      res[0] = Math.floor(res[0]);
+      res[1] = Math.floor(res[1]);
+      res[2] = Math.ceil(res[2]);
+      res[3] = Math.ceil(res[3]);
     }
     return res;
   }

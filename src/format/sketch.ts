@@ -202,8 +202,20 @@ async function convertItem(
   const visible = layer.isVisible;
   const opacity = layer.style?.contextSettings?.opacity ?? 1;
   const rotateZ = -layer.rotation;
-  const scaleX = layer.isFlippedHorizontal ? -1 : 1;
-  const scaleY = layer.isFlippedVertical ? -1 : 1;
+  let scaleX = layer.isFlippedHorizontal ? -1 : 1;
+  let scaleY = layer.isFlippedVertical ? -1 : 1;
+  if (layer._class === SketchFormat.ClassValue.SymbolInstance && layer.scale !== 1) {
+    scaleX *= layer.scale;
+    scaleY *= layer.scale;
+    const w = width / layer.scale;
+    const h = height / layer.scale;
+    const dw = w - width;
+    const dh = h - height;
+    translateX -= dw * 0.5;
+    translateY -= dh * 0.5;
+    width /= layer.scale;
+    height /= layer.scale;
+  }
   // 渲染无关的锁定/展开/固定宽高比
   const isLocked = layer.isLocked;
   const isExpanded =
@@ -669,7 +681,7 @@ async function convertItem(
           length,
           attributes: {
             MSAttributedStringFontAttribute: {
-              attributes: { name = 'PingFangSC-Regular', size: fontSize = 16 },
+              attributes: { name = inject.defaultFontFamily, size: fontSize = 16 },
             },
             MSAttributedStringColorAttribute: { red, green, blue, alpha },
             kerning = 0,
