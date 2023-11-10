@@ -25,6 +25,7 @@ import Node from './Node';
 type Loader = {
   error: boolean;
   loading: boolean;
+  url: string;
   source?: HTMLImageElement;
   width: number;
   height: number;
@@ -44,6 +45,7 @@ class Bitmap extends Node {
     this.loader = {
       error: false,
       loading: false,
+      url: src,
       width: 0,
       height: 0,
     };
@@ -132,6 +134,9 @@ class Bitmap extends Node {
   loadAndRefresh() {
     // 加载前先清空之前可能遗留的老数据
     const loader = this.loader;
+    if (loader.loading && loader.url === this._src) {
+      return;
+    }
     loader.source = undefined;
     loader.error = false;
     if (!this.isDestroyed) {
@@ -400,6 +405,7 @@ class Bitmap extends Node {
                 loader = this.loaders[i] = {
                   error: false,
                   loading: false,
+                  url,
                   width: cache.width,
                   height: cache.height,
                   source: cache.source,

@@ -39,15 +39,7 @@ import Text from '../node/Text';
 import config from './config';
 import { canvasPolygon } from './paint';
 import { color2gl } from '../style/css';
-import {
-  BLUR,
-  ComputedBlur,
-  ComputedShadow,
-  ComputedStyle,
-  FILL_RULE,
-  MASK,
-  MIX_BLEND_MODE,
-} from '../style/define';
+import { BLUR, ComputedBlur, ComputedShadow, ComputedStyle, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
 import { calMatrixByOrigin } from '../style/transform';
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
@@ -219,17 +211,20 @@ export function genMerge(
   // 再循环一遍，判断merge是否在可视范围内，这里只看最上层的即可，在范围内则将其及所有子merge打标valid
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
-    const { subList, node, isTop } = item;
+    const { node, isTop, i, lv, total } = item;
     if (isTop) {
       if (checkInScreen(node.tempBbox!, node.matrixWorld, W, H)) {
-        item.valid = true;
         // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
-        while (subList.length) {
-          const t = subList.pop()!;
-          t.valid = true;
-          const subList2 = t.subList;
-          while (subList2.length) {
-            subList.push(subList2.pop()!);
+        setValid(item);
+        // 如果是mask，还要看其是否影响被遮罩的merge，可能被遮罩在屏幕外面不可见
+        if (node.computedStyle.maskMode !== MASK.NONE) {
+          genNextCount(node, structs, i, lv, total);
+          for (let k = j; k >= 0; k--) {
+            const item2 = mergeList[k];
+            if (item2.i > i + total + node.struct.next) {
+              break;
+            }
+            setValid(item2);
           }
         }
       }
@@ -2041,4 +2036,17 @@ export function shouldIgnoreAndIsBgBlur(
     shouldIgnore = false;
   }
   return { shouldIgnore, isBgBlur };
+}
+
+function setValid(merge: Merge) {
+  merge.valid = true;
+  const subList = merge.subList;
+  while (subList.length) {
+    const t = subList.pop()!;
+    t.valid = true;
+    const subList2 = t.subList;
+    while (subList2.length) {
+      subList.push(subList2.pop()!);
+    }
+  }
 }
