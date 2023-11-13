@@ -316,7 +316,7 @@ function genBboxTotal(
       const parent = node2.parent!;
       const m = multiply(parent.tempMatrix, node2.matrix);
       assignMatrix(node2.tempMatrix, m);
-      const b = target?.bbox || node2._filterBbox || node2.filterBbox;
+      const b = target?.bbox || node2._filterBbox2 || node2.filterBbox2;
       // 防止空
       if (b[2] - b[0] && b[3] - b[1]) {
         mergeBbox(res, b, m);

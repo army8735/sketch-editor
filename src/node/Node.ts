@@ -78,6 +78,8 @@ class Node extends Event {
   _rect: Float64Array | undefined; // x/y/w/h组成的内容框
   _bbox: Float64Array | undefined; // 包含边框包围盒
   _filterBbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
+  _bbox2: Float64Array | undefined; // 扩大取整的bbox
+  _filterBbox2: Float64Array | undefined; // 扩大取整的filterBbox
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
   textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
@@ -638,7 +640,7 @@ class Node extends Event {
         TextureCache.getInstance(
           gl,
           this.canvasCache!.offscreen.canvas,
-          (this._bbox || this.bbox).slice(0),
+          (this._bbox2 || this.bbox2).slice(0),
         );
       canvasCache.release();
     } else {
@@ -1859,10 +1861,6 @@ class Node extends Event {
       res[1] -= border;
       res[2] += border;
       res[3] += border;
-      res[0] = Math.floor(res[0]);
-      res[1] = Math.floor(res[1]);
-      res[2] = Math.ceil(res[2]);
-      res[3] = Math.ceil(res[3]);
     }
     return res;
   }
@@ -1908,6 +1906,30 @@ class Node extends Event {
           }
         }
       }
+    }
+    return res;
+  }
+
+  get bbox2() {
+    let res = this._bbox2;
+    if (!res) {
+      res = (this._bbox || this.bbox).slice(0);
+      res[0] = Math.floor(res[0]);
+      res[0] = Math.floor(res[0]);
+      res[0] = Math.floor(res[0]);
+      res[0] = Math.floor(res[0]);
+    }
+    return res;
+  }
+
+  get filterBbox2() {
+    let res = this._filterBbox2;
+    if (!res) {
+      res = (this._filterBbox || this.filterBbox).slice(0);
+      res[0] = Math.floor(res[0]);
+      res[0] = Math.floor(res[0]);
+      res[0] = Math.floor(res[0]);
+      res[0] = Math.floor(res[0]);
     }
     return res;
   }

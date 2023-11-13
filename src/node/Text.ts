@@ -2393,10 +2393,6 @@ class Text extends Node {
       res[1] -= border;
       res[2] += border;
       res[3] += border;
-      res[0] = Math.floor(res[0]);
-      res[1] = Math.floor(res[1]);
-      res[2] = Math.ceil(res[2]);
-      res[3] = Math.ceil(res[3]);
     }
     return res;
   }
