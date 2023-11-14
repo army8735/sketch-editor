@@ -246,7 +246,7 @@ class Node extends Event {
       } else {
         this.height = 0.5;
       }
-      computedStyle.top = data.w - computedStyle.bottom - this.height;
+      computedStyle.top = data.h - computedStyle.bottom - this.height;
     }
   }
 
@@ -1915,9 +1915,9 @@ class Node extends Event {
     if (!res) {
       res = (this._bbox || this.bbox).slice(0);
       res[0] = Math.floor(res[0]);
-      res[0] = Math.floor(res[0]);
-      res[0] = Math.floor(res[0]);
-      res[0] = Math.floor(res[0]);
+      res[1] = Math.floor(res[1]);
+      res[2] = Math.ceil(res[2]);
+      res[3] = Math.ceil(res[3]);
     }
     return res;
   }
@@ -1927,9 +1927,9 @@ class Node extends Event {
     if (!res) {
       res = (this._filterBbox || this.filterBbox).slice(0);
       res[0] = Math.floor(res[0]);
-      res[0] = Math.floor(res[0]);
-      res[0] = Math.floor(res[0]);
-      res[0] = Math.floor(res[0]);
+      res[1] = Math.floor(res[1]);
+      res[2] = Math.ceil(res[2]);
+      res[3] = Math.ceil(res[3]);
     }
     return res;
   }
