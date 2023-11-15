@@ -116,22 +116,28 @@ function measure(
       }
     }
   }
-  // 查看是否有空格，防止字符串过长indexOf无效查找
-  let hasEnter = false;
+  // 查看是否有换行，防止字符串过长indexOf无效查找
   for (let i = start, len = start + hypotheticalNum; i < len; i++) {
     if (content.charAt(i) === '\n') {
       hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
       rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
-      if (letterSpacing) {
-        // rw += hypotheticalNum * letterSpacing;
-      }
       newLine = false;
-      hasEnter = true;
       break;
     }
   }
+  // 末尾是英文或数字时，本行前面有空格或者CJK，需要把末尾英文数字放到下一行
+  if (/[\w.-]/.test(content.charAt(start + hypotheticalNum))) {
+    for (let i = start + hypotheticalNum - 1; i > start; i--) {
+      if (!/[\w.-]/.test(content.charAt(i))) {
+        hypotheticalNum = i - start + 1;
+        rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
+        newLine = true;
+        break;
+      }
+    }
+  }
   // 下一个字符是回车，强制忽略换行，外层循环识别
-  if (!hasEnter && content.charAt(start + hypotheticalNum) === '\n') {
+  else if (content.charAt(start + hypotheticalNum) === '\n') {
     newLine = false;
   }
   return { hypotheticalNum, rw, newLine };
@@ -530,7 +536,7 @@ class Text extends Node {
 
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
-    const bbox = this._bbox || this.bbox;
+    const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
     let w = bbox[2] - x,
