@@ -10,7 +10,11 @@ type Point3 = {
 
 const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 
-// 2分逼近法求曲线交点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果
+/**
+ * 2分逼近法求曲线交点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果
+ * 当出现几乎重叠但不重叠的情况，2分后会出现和对方一半几乎重叠另一半相邻的情况，造成大量组合浪费
+ * 需要判断这种情况避免，即bbox相邻但端点都在边上且不相交
+ */
 function intersectFn(
   a: { x: number, y: number }[], b: { x: number, y: number }[],
   eps: number, res: { x: number, y: number, t1: number, t2: number }[],
@@ -28,13 +32,14 @@ function intersectFn(
     const bbox1 = bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
     const bbox2 = bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
     if (isRectsOverlap(bbox1[0], bbox1[1], bbox1[2], bbox1[3], bbox2[0], bbox2[1], bbox2[2], bbox2[3], true)) {
-      // 直线可能宽高为0
+      // 直线可能宽高为0，防止非法运算取min值
       const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
       const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
       const l3 = (bbox2[2] - bbox2[0]) || Number.EPSILON;
       const l4 = (bbox2[3] - bbox2[1]) || Number.EPSILON;
       const area1 = l1 * l2;
       const area2 = l3 * l4;
+      // 精度到一定程度认为找到了解
       if (l1 <= eps && l2 <= eps && area1 <= eps &&
         l3 <= eps && l4 <= eps && area2 <= eps) {
         const ta = (t1 + t2) * 0.5;
@@ -47,7 +52,9 @@ function intersectFn(
           t1: ta,
           t2: tb,
         });
-      } else {
+      }
+      // 双方继续2分
+      else {
         if ((l1 > eps || l2 > eps || area1 > eps) &&
           (l3 > eps || l4 > eps || area2 > eps)) {
           const a1 = sliceBezier(a, 0, 0.5);
@@ -90,7 +97,9 @@ function intersectFn(
           // intersectFn(a1, b2, eps, t1, t1 + (t2 - t1) * 0.5, t3 + (t4 - t3) * 0.5, t4, res);
           // intersectFn(a2, b1, eps, t1 + (t2 - t1) * 0.5, t2, t3, t3 + (t4 - t3) * 0.5, res);
           // intersectFn(a2, b2, eps, t1 + (t2 - t1) * 0.5, t2, t3 + (t4 - t3) * 0.5, t4, res);
-        } else if (l1 > eps || l2 > eps || area1 > eps) {
+        }
+        // 只有一方的2分
+        else if (l1 > eps || l2 > eps || area1 > eps) {
           const a1 = sliceBezier(a, 0, 0.5);
           const a2 = sliceBezier(a, 0.5, 1);
           list.push({
@@ -111,7 +120,9 @@ function intersectFn(
           });
           // intersectFn(a1, b, eps, t1, t1 + (t2 - t1) * 0.5, t3, t4, res);
           // intersectFn(a2, b, eps, t1 + (t2 - t1) * 0.5, t2, t3, t4, res);
-        } else if (l3 > eps || l4 > eps || area2 > eps) {
+        }
+        // 另一方的2分
+        else if (l3 > eps || l4 > eps || area2 > eps) {
           const b1 = sliceBezier(b, 0, 0.5);
           const b2 = sliceBezier(b, 0.5, 1);
           list.push({

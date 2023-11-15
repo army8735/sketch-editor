@@ -787,10 +787,10 @@ function findIntersection(
               }
               // 有重合的，重合线段已经求好，直接使用
               if (overs) {
-                // console.log('overs', i, overs, seg.toString(), item.toString())
+                // console.log('overs', i, overs, '\n', seg.toString(), '\n', item.toString())
+                seg.isDeleted = item.isDeleted = true;
                 activeNewSeg(segments, list, ael, x, overs.ra);
                 activeNewSeg(segments, list, ael, x, overs.rb);
-                seg.isDeleted = item.isDeleted = true;
                 ael.splice(i, 1);
                 break;
               }
@@ -862,7 +862,13 @@ function findIntersection(
   }
   // 最后面的线
   delList.forEach((seg) => {
-    if (!seg.isDeleted) {
+    if (!seg.isDeleted && segments.indexOf(seg) === -1) {
+      segments.push(seg);
+    }
+  });
+  // 最后面新产生的竖线可能不进扫描循环
+  ael.forEach((seg) => {
+    if (!seg.isDeleted && segments.indexOf(seg) === -1) {
       segments.push(seg);
     }
   });
@@ -1057,7 +1063,6 @@ function activeNewSeg(
     if (x1 > x2) {
       [x1, x2] = [x2, x1];
     }
-    // console.log(seg.toString(), x1, x2, x);
     // 活跃x之前无相交判断意义，除了竖线，因为非竖线发生过相交的话不会再交了，竖线则有可能再次被别的左侧端点交
     if (x2 <= x && x1 !== x2) {
       segments.push(seg);
@@ -1067,7 +1072,7 @@ function activeNewSeg(
     if (x1 === x2) {
       for (let i = ael.length - 1; i >= 0; i--) {
         const item = ael[i];
-        if (seg.equal(item)) {
+        if (seg.equal(item) && !item.isDeleted) {
           if (seg.belong === item.belong) {
             item.myCoincide++;
           } else {
@@ -1081,6 +1086,10 @@ function activeNewSeg(
     let i = 0;
     if (x1 < x) {
       seg.isVisited = true;
+      ael.push(seg);
+    }
+    // 特殊情况，形成的新的竖线恰好是末尾
+    else if (!list.length) {
       ael.push(seg);
     } else {
       for (let len = list.length; i < len; i++) {

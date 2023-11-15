@@ -44,7 +44,12 @@ class Segment {
         for (let i = 1; i < coords.length - 1; i++) {
           const mid = coords[i];
           const t = (mid.y - first.y) / (mid.x - first.x);
-          if (tan === Infinity || tan === -Infinity) {
+          if (isNaN(tan) || isNaN(t)) {
+            if (tan !== t) {
+              equal = false;
+              break;
+            }
+          } else if (tan === Infinity || tan === -Infinity) {
             if (tan !== t) {
               equal = false;
               break;
@@ -119,8 +124,8 @@ class Segment {
   toString() {
     return this.uuid
       + ' ' + this.belong
-      + ' ' + this.myCoincide
-      + '' + this.otherCoincide
+      + ' ' + this.myCoincide + '' + this.otherCoincide
+      + ' ' + (this.isVisited ? 'v' : 'n') + (this.isDeleted ? 'd' : 'n')
       + ' ' + this.myFill.map(i => i ? 1 : 0).join('')
       + this.otherFill.map(i => i ? 1 : 0).join('')
       + ' ' + this.toHash();

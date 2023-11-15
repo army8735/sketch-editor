@@ -220,18 +220,18 @@ class Group extends Container {
     return res;
   }
 
-  override get rect() {
-    let res = this._rect;
-    if (!res) {
-      res = this._rect = new Float64Array(4);
-      const rect = this.getChildrenRect(true);
-      res[0] = rect.minX;
-      res[1] = rect.minY;
-      res[2] = rect.maxX;
-      res[3] = rect.maxY;
-    }
-    return res;
-  }
+  // override get rect() {
+  //   let res = this._rect;
+  //   if (!res) {
+  //     res = this._rect = new Float64Array(4);
+  //     const rect = this.getChildrenRect(true);
+  //     res[0] = rect.minX;
+  //     res[1] = rect.minY;
+  //     res[2] = rect.maxX;
+  //     res[3] = rect.maxY;
+  //   }
+  //   return res;
+  // }
 
   // 至少1个node进行编组，以第0个位置为基准
   static group(nodes: Array<Node>, props?: Props) {
