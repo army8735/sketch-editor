@@ -94,6 +94,11 @@ export type StyleTvaValue = {
   u: StyleUnit.NUMBER;
 };
 
+export type StyleTdValue = {
+  v: TEXT_DECORATION;
+  u: StyleUnit.NUMBER;
+};
+
 export type ColorStop = {
   color: StyleColorValue;
   offset?: StyleNumValue;
@@ -246,6 +251,7 @@ export type Style = {
   paragraphSpacing: StyleNumValue;
   textAlign: StyleTaValue;
   textVerticalAlign: StyleTvaValue;
+  textDecoration: StyleTdValue[];
   translateX: StyleNumValue;
   translateY: StyleNumValue;
   scaleX: StyleNumValue;
@@ -305,6 +311,7 @@ export type ComputedStyle = {
   paragraphSpacing: number;
   textAlign: TEXT_ALIGN;
   textVerticalAlign: TEXT_VERTICAL_ALIGN;
+  textDecoration: TEXT_DECORATION[];
   translateX: number;
   translateY: number;
   scaleX: number;
@@ -449,3 +456,9 @@ export default {
   StyleUnit,
   calUnit,
 };
+
+export enum TEXT_DECORATION {
+  NONE = 0,
+  UNDERLINE = 1,
+  LINE_THROUGH = 2,
+}

@@ -2,7 +2,7 @@ import {
   CORNER_STYLE,
   CURVE_MODE,
   TEXT_ALIGN,
-  TEXT_BEHAVIOUR,
+  TEXT_BEHAVIOUR, TEXT_DECORATION,
 } from '../style/define';
 
 export type JFile = {
@@ -115,6 +115,7 @@ export type JStyle = {
   paragraphSpacing: number;
   textAlign: 'left' | 'center' | 'right' | 'justify';
   textVerticalAlign: 'top' | 'middle' | 'bottom';
+  textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'>;
   translateX: number;
   translateY: number;
   scaleX: number;
@@ -192,6 +193,7 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
       paragraphSpacing: 0,
       textAlign: 'left',
       textVerticalAlign: 'top',
+      textDecoration: [],
       translateX: 0,
       translateY: 0,
       scaleX: 1,
@@ -270,6 +272,7 @@ export type Rich = {
   fontStyle: string; // 同
   lineHeight: number;
   textAlign: TEXT_ALIGN;
+  textDecoration: TEXT_DECORATION[];
   letterSpacing: number;
   paragraphSpacing: number;
   color: string | number[];

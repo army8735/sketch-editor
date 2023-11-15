@@ -2104,6 +2104,7 @@ class Text extends Node {
         fontStyle: 'normal',
         letterSpacing: 0,
         textAlign: TEXT_ALIGN.LEFT,
+        textDecoration: [],
         lineHeight: 0,
         paragraphSpacing: 0,
         color: [0, 0, 0, 1],

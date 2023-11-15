@@ -18,7 +18,7 @@ import {
   Rich,
   TAG_NAME,
 } from './';
-import { TEXT_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
+import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_DECORATION } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
@@ -685,6 +685,8 @@ async function convertItem(
             },
             MSAttributedStringColorAttribute: { red, green, blue, alpha },
             kerning = 0,
+            underlineStyle = SketchFormat.UnderlineStyle.None,
+            strikethroughStyle = SketchFormat.StrikethroughStyle.None,
             paragraphStyle: {
               alignment = 0,
               maximumLineHeight = 0,
@@ -692,6 +694,13 @@ async function convertItem(
             } = {},
           },
         } = item;
+        const textDecoration: TEXT_DECORATION[] = [];
+        if (underlineStyle !== SketchFormat.UnderlineStyle.None) {
+          textDecoration.push(TEXT_DECORATION.UNDERLINE);
+        }
+        if (strikethroughStyle !== SketchFormat.StrikethroughStyle.None) {
+          textDecoration.push(TEXT_DECORATION.LINE_THROUGH);
+        }
         return {
           location,
           length,
@@ -701,6 +710,7 @@ async function convertItem(
           fontStyle: 'normal', // 同
           letterSpacing: kerning,
           textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
+          textDecoration,
           lineHeight: maximumLineHeight,
           paragraphSpacing,
           color: [
@@ -724,6 +734,13 @@ async function convertItem(
     const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
     const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
     const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
+    const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
+    if (layer.style?.textStyle?.encodedAttributes.underlineStyle !== SketchFormat.UnderlineStyle.None) {
+      textDecoration.push('underline');
+    }
+    if (layer.style?.textStyle?.encodedAttributes.strikethroughStyle !== SketchFormat.StrikethroughStyle.None) {
+      textDecoration.push('lineThrough');
+    }
     const letterSpacing =
       layer.style?.textStyle?.encodedAttributes?.kerning || 0;
     const paragraphSpacing = paragraphStyle?.paragraphSpacing || 0;
@@ -798,6 +815,7 @@ async function convertItem(
           color,
           textAlign,
           textVerticalAlign,
+          textDecoration,
           letterSpacing,
           lineHeight,
           paragraphSpacing,
