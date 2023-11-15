@@ -67,13 +67,13 @@ class Polygon {
           const cPoint = new Point(curr[0], curr[1]);
           const t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
           if (t) {
-            const points: Array<[number, number]> = [
+            const points: [number, number][] = [
               [startPoint.x, startPoint.y],
               [curr[0], curr[1]],
               [endPoint.x, endPoint.y],
             ];
             const curve1 = bezier.sliceBezier(
-              Point.toPoints(points), t[0]
+              Point.toPoints(points), 0, t[0],
             ).map(item => {
               return {
                 x: Math.round(item.x),

@@ -299,7 +299,7 @@ class Bitmap extends Node {
     // 带fill/stroke/innerShadow的则不能共用一个canvas的cache
     else {
       super.renderCanvas(scale);
-      const bbox = this._bbox || this.bbox;
+      const bbox = this._bbox2 || this.bbox2;
       const x = bbox[0],
         y = bbox[1];
       let w = bbox[2] - x,

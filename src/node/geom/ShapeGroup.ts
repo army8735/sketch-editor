@@ -213,7 +213,7 @@ class ShapeGroup extends Group {
     super.renderCanvas(scale);
     this.buildPoints();
     const points = this.points!;
-    const bbox = this._bbox || this.bbox;
+    const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
     let w = bbox[2] - x,
