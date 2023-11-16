@@ -157,7 +157,7 @@ class Polyline extends Geom {
             { x: prev.absX!, y: prev.absY! },
             { x: prev.absFx!, y: prev.absFy! },
             { x: temp[i].absX!, y: temp[i].absY! },
-          ], c.t1);
+          ], 0, c.t1);
           prev.absFx = curve[1].x;
           prev.absFy = curve[1].y;
         }
@@ -167,7 +167,7 @@ class Polyline extends Geom {
             { x: next.absX!, y: next.absY! },
             { x: next.absTx!, y: next.absTy! },
             { x: temp[i].absX!, y: temp[i].absY! },
-          ], 1 - c.t2);
+          ], 0, 1 - c.t2);
           next.absTx = curve[1].x;
           next.absTy = curve[1].y;
         }
