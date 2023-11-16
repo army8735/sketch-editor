@@ -424,6 +424,7 @@ class Node extends Event {
     computedStyle.innerShadowEnable = style.innerShadowEnable.map(
       (item) => item.v,
     );
+    computedStyle.textDecoration = style.textDecoration.map(item => item.v);
     // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);

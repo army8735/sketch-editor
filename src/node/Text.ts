@@ -4,7 +4,14 @@ import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../refresh/config';
 import { RefreshLevel } from '../refresh/level';
-import { calNormalLineHeight, color2rgbaInt, color2rgbaStr, getBaseline, setFontStyle, } from '../style/css';
+import {
+  calNormalLineHeight,
+  color2rgbaInt,
+  color2rgbaStr,
+  getBaseline,
+  getContentArea,
+  setFontStyle,
+} from '../style/css';
 import {
   ComputedGradient,
   ComputedPattern,
@@ -17,6 +24,7 @@ import {
   StyleUnit,
   TEXT_ALIGN,
   TEXT_BEHAVIOUR,
+  TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
 import font from '../style/font';
@@ -208,9 +216,11 @@ class Text extends Node {
     let paragraphSpacing: number;
     let lineHeight: number;
     let baseline: number;
+    let contentArea: number;
     let fontFamily: string;
     let fontSize: number;
     let color: string;
+    let textDecoration: TEXT_DECORATION[] = [];
     let maxW = 0;
     let x = 0,
       y = 0;
@@ -296,12 +306,15 @@ class Text extends Node {
       perW = first.fontSize * 0.8 + letterSpacing;
       lineHeight = first.lineHeight;
       baseline = getBaseline(first);
+      contentArea = getContentArea(first);
       fontFamily = first.fontFamily;
       fontSize = first.fontSize;
       color = color2rgbaStr(first.color);
+      textDecoration = first.textDecoration || [];
       if (!lineHeight) {
         lineHeight = calNormalLineHeight(first);
         baseline += lineHeight * 0.5;
+        contentArea += lineHeight * 0.5;
       }
       ctx.font = setFontStyle(first);
       // @ts-ignore
@@ -314,9 +327,11 @@ class Text extends Node {
       perW = computedStyle.fontWeight * 0.8 + letterSpacing;
       lineHeight = computedStyle.lineHeight;
       baseline = getBaseline(computedStyle);
+      contentArea = getContentArea(computedStyle);
       fontFamily = computedStyle.fontFamily;
       fontSize = computedStyle.fontSize;
       color = color2rgbaStr(computedStyle.color);
+      textDecoration = computedStyle.textDecoration || [];
       ctx.font = setFontStyle(computedStyle);
       // @ts-ignore
       ctx.letterSpacing = letterSpacing + 'px';
@@ -341,12 +356,15 @@ class Text extends Node {
         perW = cur.fontSize * 0.8 + letterSpacing;
         lineHeight = cur.lineHeight;
         baseline = getBaseline(cur);
+        contentArea = getContentArea(cur);
         fontFamily = cur.fontFamily;
         fontSize = cur.fontSize;
         color = color2rgbaStr(cur.color);
+        textDecoration = cur.textDecoration || [];
         if (!lineHeight) {
           lineHeight = calNormalLineHeight(cur);
           baseline += lineHeight * 0.5;
+          contentArea += lineHeight * 0.5;
         }
         ctx.font = setFontStyle(cur);
         // @ts-ignore
@@ -397,6 +415,7 @@ class Text extends Node {
         rw,
         lineHeight,
         baseline,
+        contentArea,
         i,
         content.slice(i, i + num),
         ctx.font,
@@ -404,6 +423,7 @@ class Text extends Node {
         fontSize,
         color,
         letterSpacing,
+        textDecoration,
       );
       lineBox.add(textBox);
       i += num;
@@ -679,6 +699,7 @@ class Text extends Node {
         const len = list.length;
         for (let i = 0; i < len; i++) {
           const textBox = list[i];
+          const textDecoration = textBox.textDecoration;
           setFontAndLetterSpacing(ctx, textBox, scale);
           if (isFillOrStroke) {
             ctx.fillText(
@@ -686,12 +707,50 @@ class Text extends Node {
               textBox.x * scale + dx,
               (textBox.y + textBox.baseline) * scale + dy,
             );
+            if (textDecoration.length) {
+              textDecoration.forEach(item => {
+                if (item === TEXT_DECORATION.UNDERLINE) {
+                  ctx.fillRect(
+                    textBox.x,
+                    (textBox.y + textBox.contentArea - 1.5) * scale + dy,
+                    textBox.w * scale,
+                    3 * scale,
+                  );
+                } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                  ctx.fillRect(
+                    textBox.x,
+                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
+                    textBox.w * scale,
+                    3 * scale,
+                  );
+                }
+              });
+            }
           } else {
             ctx.strokeText(
               textBox.str,
               textBox.x * scale + dx,
               (textBox.y + textBox.baseline) * scale + dy,
             );
+            if (textDecoration.length) {
+              textDecoration.forEach(item => {
+                if (item === TEXT_DECORATION.UNDERLINE) {
+                  ctx.strokeRect(
+                    textBox.x,
+                    (textBox.y + textBox.contentArea - 1.5) * scale + dy,
+                    textBox.w * scale,
+                    3 * scale,
+                  );
+                } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                  ctx.strokeRect(
+                    textBox.x,
+                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
+                    textBox.w * scale,
+                    3 * scale,
+                  );
+                }
+              });
+            }
           }
         }
       }
@@ -889,6 +948,7 @@ class Text extends Node {
         }
       }
     }
+    // 普通颜色
     else {
       // 富文本记录索引开始对应的颜色
       if (rich.length) {
@@ -917,6 +977,7 @@ class Text extends Node {
         const len = list.length;
         for (let i = 0; i < len; i++) {
           const textBox = list[i];
+          const textDecoration = textBox.textDecoration;
           // textBox的分隔一定是按rich的，用字符索引来获取颜色
           const index = textBox.index;
           if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
@@ -930,6 +991,25 @@ class Text extends Node {
             textBox.x * scale + dx,
             (textBox.y + textBox.baseline) * scale + dy,
           );
+          if (textDecoration.length) {
+            textDecoration.forEach(item => {
+              if (item === TEXT_DECORATION.UNDERLINE) {
+                ctx.fillRect(
+                  textBox.x,
+                  (textBox.y + textBox.contentArea - 1.5) * scale + dy,
+                  textBox.w * scale,
+                  3 * scale,
+                );
+              } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                ctx.fillRect(
+                  textBox.x,
+                  (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
+                  textBox.w * scale,
+                  3 * scale,
+                );
+              }
+            });
+          }
         }
       }
     }

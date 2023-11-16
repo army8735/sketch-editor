@@ -2,7 +2,8 @@ import {
   CORNER_STYLE,
   CURVE_MODE,
   TEXT_ALIGN,
-  TEXT_BEHAVIOUR, TEXT_DECORATION,
+  TEXT_BEHAVIOUR,
+  TEXT_DECORATION,
 } from '../style/define';
 
 export type JFile = {

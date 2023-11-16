@@ -18,6 +18,7 @@ import {
   StyleNumValue,
   StyleUnit,
   TEXT_ALIGN,
+  TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
 } from './define';
 import font from './font';
@@ -340,6 +341,18 @@ export function normalize(style: any): Style {
       v = TEXT_VERTICAL_ALIGN.BOTTOM;
     }
     res.textVerticalAlign = { v, u: StyleUnit.NUMBER };
+  }
+  const textDecoration = style.textDecoration;
+  if (!isNil(textDecoration) && Array.isArray(textDecoration)) {
+    res.textDecoration = textDecoration.map(item => {
+      let v = TEXT_DECORATION.NONE;
+      if (item === 'underline') {
+        v = TEXT_DECORATION.UNDERLINE;
+      } else if (item === 'line-through' || item === 'lineThrough') {
+        v = TEXT_DECORATION.LINE_THROUGH;
+      }
+      return { v, u: StyleUnit.NUMBER };
+    });
   }
   const transformOrigin = style.transformOrigin;
   if (!isNil(transformOrigin)) {
@@ -691,7 +704,9 @@ export function equalStyle(k: string, a: Style, b: Style) {
     k === 'strokeEnable' ||
     k === 'strokeWidth' ||
     k === 'strokePosition' ||
-    k === 'strokeDasharray'
+    k === 'strokeDasharray' ||
+    k === 'shadowEnable' ||
+    k === 'innerShadowEnable'
   ) {
     if (av.length !== bv.length) {
       return false;
@@ -715,6 +730,27 @@ export function equalStyle(k: string, a: Style, b: Style) {
     }
     for (let i = 0, len = v1.length; i < len; i++) {
       if (v1[i] !== v2[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (k === 'shadow' || k === 'innerShadow') {
+    if (av.length !== bv.length) {
+      return false;
+    }
+    for (let i = 0, len = av.length; i < len; i++) {
+      const ai = av[i];
+      const bi = bv[i];
+      if (ai.x.v !== bi.x.v || ai.x.u !== bi.x.u ||
+        ai.y.v !== bi.y.v || ai.y.u !== bi.y.u ||
+        ai.blur.v !== bi.blur.v || ai.blur.u !== bi.blur.u ||
+        ai.spread.v !== bi.spread.v || ai.spread.u !== bi.spread.u) {
+        return false;
+      }
+      const ac = ai.color.v;
+      const bc = bi.color.v;
+      if (ac[0] !== bc[0] || ac[1] !== bc[1] || ac[2] !== bc[2] || ac[3] !== bc[3]) {
         return false;
       }
     }
@@ -879,13 +915,23 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
  * 根据字形信息计算baseline的正确值，差值上下均分
  */
 export function getBaseline(style: ComputedStyle | Rich, lineHeight?: number) {
-  let fontSize = style.fontSize;
-  let ff = calFontFamily(style.fontFamily);
-  let normal = calNormalLineHeight(style, ff);
+  const fontSize = style.fontSize;
+  const ff = calFontFamily(style.fontFamily);
+  const normal = calNormalLineHeight(style, ff);
   const blr =
     (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
       .blr || 1;
   return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * blr;
+}
+
+export function getContentArea(style: ComputedStyle | Rich, lineHeight?: number) {
+  const fontSize = style.fontSize;
+  const ff = calFontFamily(style.fontFamily);
+  const normal = calNormalLineHeight(style, ff);
+  const car =
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+      .car || 1;
+  return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * car;
 }
 
 export function calSize(v: StyleNumValue, p: number): number {
@@ -908,5 +954,6 @@ export default {
   calFontFamily,
   calNormalLineHeight,
   getBaseline,
+  getContentArea,
   calSize,
 };
