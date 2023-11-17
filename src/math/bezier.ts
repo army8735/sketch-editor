@@ -780,6 +780,73 @@ export function bezierTangent3(points: { x: number, y: number }[], t = 0) {
   return pointSlope2General(p.x, p.y, k);
 }
 
+/**
+ * 用点距累加近似法均分曲线为n段，获得均分后的点的t值
+ * https://zhuanlan.zhihu.com/p/130247362
+ * simpson38只适合单点精确计算长度，多点性能会呈倍增长，点距累加已经够了，性能也好
+ */
+export function splitBezierT(points: { x: number, y: number }[], n: number, maxIterTime = 20) {
+  if (n < 2) {
+    return [];
+  }
+  if (points.length > 4 || points.length < 2) {
+    throw new Error('Unsupported order');
+  }
+  // 初始化的t是平均分割的，包含首尾
+  const start = points[0], end = points[points.length - 1];
+  const res: Array<{ x: number; y: number; t: number }> = [{ x: start.x, y: start.y, t: 0 }];
+  const per = 1 / n;
+  for (let i = 1; i < n; i++) {
+    const t = per * i;
+    const p = getPointByT(points, t);
+    res.push({
+      x: p.x,
+      y: p.y,
+      t,
+    });
+  }
+  res.push({
+    x: end.x,
+    y: end.y,
+    t: 1,
+  });
+  // 直线
+  if (points.length === 2) {
+    return res;
+  }
+  const length = bezierLength(points);
+  const avg = length / n;
+  for (let i = 0; i < maxIterTime; i++) {
+    const dists: number[] = [0];
+    // 1. 计算上一次迭代确定的 t 参数下，每一个采样点的位置
+    for (let j = 1; j < n; j++) {
+      dists[j] = Math.abs(Math.pow(res[j].x - res[j - 1].x, 2) + Math.pow(res[j].y - res[j - 1].y, 2));
+    }
+    // console.warn(i, dists.slice(0));
+    // console.log(JSON.parse(JSON.stringify(res)))
+    let offset = 0;
+    for (let j = 1; j < n; j++) {
+      // 2. 累计近似弧长并计算误差
+      const err = dists[j] - avg;
+      offset += err;
+      // 3. Newton's method
+      const o = res[j];
+      const first = bezierAt(o.t, points, 1);
+      const firstOrder = Math.sqrt(Math.pow(first.x - start.x, 2) + Math.pow(first.y - start.y, 2));
+      const second = bezierAt(o.t, points, 2);
+      const secondOrder = Math.sqrt(Math.pow(second.x - start.x, 2) + Math.pow(second.y - start.y, 2));
+      const numerator = 2 * offset * Math.abs(firstOrder);
+      const denominator  = 2 * offset * Math.abs(secondOrder) + firstOrder * firstOrder;
+      console.log(j, o.t, numerator / denominator, numerator, denominator)
+      o.t = o.t - numerator / denominator;
+      const p = getPointByT(points, o.t);
+      o.x = p.x;
+      o.y = p.y;
+    }
+  }
+  return res;
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -790,4 +857,5 @@ export default {
   bezierSlope,
   bezierExtremeT,
   bezierTangent,
+  splitBezierT,
 };
