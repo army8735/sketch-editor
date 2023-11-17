@@ -121,15 +121,6 @@ export function bboxBezier(
   throw new Error('Unsupported order');
 }
 
-/**
- * 范数 or 模
- */
-export function norm(v: Array<number>) {
-  const order = v.length;
-  const sum = v.reduce((a, b) => Math.pow(a, order) + Math.pow(b, order));
-  return Math.pow(sum, 1 / order);
-}
-
 // https://zhuanlan.zhihu.com/p/130247362
 function simpson38(derivativeFunc: (n: number) => number, l: number, r: number) {
   const f = derivativeFunc;
@@ -177,7 +168,7 @@ export function bezierLength(points: { x: number, y: number }[], startT = 0, end
   }
   const derivativeFunc = (t: number) => {
     const r = bezierAt(t, points);
-    return norm([r.x, r.y]);
+    return Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2));
   };
   return adaptiveSimpson38(derivativeFunc, startT, endT);
 }
@@ -244,7 +235,7 @@ export function bezierAt(t: number, points: { x: number, y: number }[], derivati
     return bezierAt2(t, points, derivativeOrder);
   }
   else {
-    throw new Error('Unsupported order')
+    throw new Error('Unsupported order');
   }
 }
 
@@ -378,49 +369,6 @@ function sliceBezierS(points: { x: number, y: number }[], t: number) {
   }
 }
 
-// export function sliceBezier2(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, start: number, end?: number) {
-//   start = Math.max(start, 0);
-//   start = Math.min(start, 1);
-//   // 只传1个默认从开头开始截取
-//   if (end === undefined) {
-//     const x12 = (x2 - x1) * start + x1;
-//     const y12 = (y2 - y1) * start + y1;
-//     const x23 = (x3 - x2) * start + x2;
-//     const y23 = (y3 - y2) * start + y2;
-//     const x123 = (x23 - x12) * start + x12;
-//     const y123 = (y23 - y12) * start + y12;
-//     return {
-//       x1,
-//       y1,
-//       x2: x12,
-//       y2: y12,
-//       x3: x123,
-//       y3: y123,
-//     };
-//   }
-//   // 都传，如果end<start说明需要颠倒
-//   else {
-//     end = Math.max(end, 0);
-//     end = Math.min(end, 1);
-//     const isReversed = end < start;
-//     if (isReversed) {
-//       [start, end] = [end, start];
-//     }
-//     if (start === 0 && end === 1) {
-//       if (isReversed) {
-//         return {
-//           x1: x3, y1: y3, x2, y2, x3: x1, y3: y1,
-//         };
-//       } else {
-//         return {
-//           x1, y1, x2, y2, x3, y3,
-//         };
-//       }
-//     }
-//     if (end < 1) {} else {}
-//   }
-// }
-
 export function sliceBezier(points: { x: number, y: number }[], start = 0, end = 1) {
   start = Math.max(start, 0);
   start = Math.min(start, 1);
@@ -543,7 +491,7 @@ function getPointT2(points: { x: number, y: number }[], x: number, y: number) {
   }
   // 取均数
   t = t.map(item => (item.x + item.y) * 0.5);
-  const res: Array<number> = [];
+  const res: number[] = [];
   t.forEach(t => {
     const xt = points[0].x * Math.pow(1 - t, 2)
       + 2 * points[1].x * t * (1 - t)
@@ -597,7 +545,7 @@ function getPointT3(points: { x: number, y: number }[], x: number, y: number) {
   }
   // 取均数
   t = t.map(item => (item.x + item.y) * 0.5);
-  const res: Array<number> = [];
+  const res: number[] = [];
   t.forEach(t => {
     const xt = points[0].x * Math.pow(1 - t, 3)
       + 3 * points[1].x * t * Math.pow(1 - t, 2)
@@ -820,10 +768,8 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
     const dists: number[] = [0];
     // 1. 计算上一次迭代确定的 t 参数下，每一个采样点的位置
     for (let j = 1; j < n; j++) {
-      dists[j] = Math.abs(Math.pow(res[j].x - res[j - 1].x, 2) + Math.pow(res[j].y - res[j - 1].y, 2));
+      dists[j] = Math.sqrt(Math.pow(res[j].x - res[j - 1].x, 2) + Math.pow(res[j].y - res[j - 1].y, 2));
     }
-    // console.warn(i, dists.slice(0));
-    // console.log(JSON.parse(JSON.stringify(res)))
     let offset = 0;
     for (let j = 1; j < n; j++) {
       // 2. 累计近似弧长并计算误差
@@ -832,12 +778,11 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
       // 3. Newton's method
       const o = res[j];
       const first = bezierAt(o.t, points, 1);
-      const firstOrder = Math.sqrt(Math.pow(first.x - start.x, 2) + Math.pow(first.y - start.y, 2));
+      const firstOrder = Math.sqrt(Math.pow(first.x, 2) + Math.pow(first.y, 2));
       const second = bezierAt(o.t, points, 2);
-      const secondOrder = Math.sqrt(Math.pow(second.x - start.x, 2) + Math.pow(second.y - start.y, 2));
-      const numerator = 2 * offset * Math.abs(firstOrder);
-      const denominator  = 2 * offset * Math.abs(secondOrder) + firstOrder * firstOrder;
-      console.log(j, o.t, numerator / denominator, numerator, denominator)
+      const secondOrder = Math.sqrt(Math.pow(second.x, 2) + Math.pow(second.y, 2));
+      const numerator = 2 * offset * firstOrder;
+      const denominator  = 2 * offset * secondOrder + firstOrder * firstOrder;
       o.t = o.t - numerator / denominator;
       const p = getPointByT(points, o.t);
       o.x = p.x;
@@ -857,5 +802,4 @@ export default {
   bezierSlope,
   bezierExtremeT,
   bezierTangent,
-  splitBezierT,
 };
