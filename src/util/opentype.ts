@@ -1206,7 +1206,7 @@ export default {
     if (signature === String.fromCharCode(0, 1, 0, 0) || signature === 'true' || signature === 'typ1') {
       numTables = getUShort(data, 4);
       tableEntries = parseOpenTypeTableEntries(data, numTables);
-      isTrueType = true;
+      // isTrueType = true;
     }
     else if (signature === 'OTTO') {
       numTables = getUShort(data, 4);
@@ -1216,7 +1216,7 @@ export default {
     else if (signature === 'wOFF') {
       let flavor = getTag(data, 4);
       if (flavor === String.fromCharCode(0, 1, 0, 0)) {
-        isTrueType = true;
+        // isTrueType = true;
       }
       else if (flavor === 'OTTO') {}
       else {
@@ -1268,7 +1268,7 @@ export default {
       else if (tableEntry.tag === 'OS/2') {
         let table = uncompressTable(data, tableEntry);
         let p = new Parser(table.data, table.offset);
-        p.parseUShort();
+        const version = p.parseUShort();
         p.parseShort();
         p.parseUShort();
         p.parseUShort();

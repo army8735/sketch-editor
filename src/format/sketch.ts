@@ -96,10 +96,10 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
     const postscriptName = item.postscriptNames[0];
     return !!postscriptName;
   });
-  if (zipFile && fontReferences.length) {
+  if (fontReferences.length) {
     await Promise.all(
       fontReferences.map((item: SketchFormat.FontRef) => {
-        if (item.fontData._ref_class === 'MSFontData') {
+        if (item.fontData._ref_class === 'MSFontData' && zipFile) {
           return readFontFile(item.fontData._ref, zipFile);
         } else if ((item.fontData._ref_class as string) === 'MSNetFontData') {
           return readNetFont(item.fontData._ref, item.postscriptNames[0]);
@@ -1344,6 +1344,9 @@ async function readNetFont(url: string, postscriptName: string) {
   }
   return new Promise((resolve, reject) => {
     fetch(url).then((res) => res.arrayBuffer()).then(ab => {
+      if (font.hasRegister(postscriptName)) {
+        return;
+      }
       const data = font.registerAb(ab);
       if (typeof document !== 'undefined') {
         const f = new FontFace(postscriptName, ab);

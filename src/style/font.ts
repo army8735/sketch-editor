@@ -10,7 +10,7 @@ const arial = {
   lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
 };
 
-const KEY_INFO = 'LOCAL_FONTS'; // 解析过的存本地缓存，解析时间还是有些成本
+const KEY_INFO = 'localFonts'; // 解析过的存本地缓存，解析时间还是有些成本
 
 export type fontData = {
   family: string; // 保持大小写
@@ -79,18 +79,11 @@ const o: any = {
           o.family = family;
           const r = this._cal(familyL, f);
           Object.assign(o, r);
-          cacheInfo[familyL] = {
-            name: o.name,
-            lhr: r.lhr,
-            car: r.car,
-            blr: r.blr,
-            lgr: r.lgr,
-          };
         }
         this._register(familyL, style, postscriptName, true);
       }
     }
-    localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
+    this.updateLocalStorage();
   },
   registerAb(ab: ArrayBuffer) {
     const o: any = {};
@@ -104,39 +97,23 @@ const o: any = {
         o.family;
     }
     // 没有信息无效
-    let family = o.family;
-    let style = f.name.preferredSubfamily?.en || f.name.fontSubfamily?.en;
-    let postscriptName = f.name.postScriptName?.en;
+    const family = o.family;
+    const style = f.name.preferredSubfamily?.en || f.name.fontSubfamily?.en;
+    const postscriptName = f.name.postScriptName?.en;
     if (!family || !style || !postscriptName) {
       return;
     }
-    family = family.toLowerCase();
-    postscriptName = postscriptName.toLowerCase();
-    if (!this.info.hasOwnProperty(family)) {
-      this.info[family] = o;
-      const r = this._cal(family, f);
+    const familyL = family.toLowerCase();
+    const postscriptNameL = postscriptName.toLowerCase();
+    // 没注册才注册
+    if (!this.info.hasOwnProperty(familyL)) {
+      this.info[familyL] = o;
+      const r = this._cal(familyL, f);
       Object.assign(o, r);
+      this._register(familyL, style, postscriptNameL, true);
+      this.updateLocalStorage();
     }
-    const res = this._register(family, style, postscriptName, true);
-    const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
-    let exist = false;
-    for (let i in cacheInfo) {
-      if (i === res.familyL) {
-        exist = true;
-        break;
-      }
-    }
-    if (!exist) {
-      cacheInfo[res.familyL] = {
-        name: o.name,
-        lhr: o.lhr,
-        car: o.car,
-        blr: o.blr,
-        lgr: o.lgr,
-      };
-      localStorage.setItem(KEY_INFO, JSON.stringify(cacheInfo));
-    }
-    return res;
+    return this.info[familyL];
   },
   _cal(family: string, f: any) {
     let spread = 0;
@@ -165,13 +142,13 @@ const o: any = {
     url?: string,
   ) {
     const familyL = family.toLowerCase();
-    const psL = postscriptName.toLowerCase();
-    const o = this.info[familyL];
-    const list = (o.list = o.list || []);
+    const postscriptNameL = postscriptName.toLowerCase();
+    const info = this.info[familyL];
+    const list = (info.list = info.list || []);
     let has = false;
     for (let i = 0, len = list.length; i < len; i++) {
       const item = list[i];
-      if (item.postscriptName === psL) {
+      if (item.postscriptName === postscriptNameL) {
         has = true;
         if (loaded) {
           item.loaded = true;
@@ -182,7 +159,7 @@ const o: any = {
     if (!has) {
       list.push({
         style,
-        postscriptName: psL,
+        postscriptName: postscriptNameL,
         loaded,
         url,
       });
@@ -191,8 +168,8 @@ const o: any = {
       family: family,
       familyL: familyL,
       postscriptName: postscriptName,
-      postscriptNameL: psL,
-      data: (this.data[familyL] = this.data[psL] = o),
+      postscriptNameL: postscriptNameL,
+      data: (this.data[familyL] = this.data[postscriptNameL] = info),
     }; // 同个字体族不同postscriptName指向一个引用
   },
   registerData(data: fontData) {
@@ -200,15 +177,35 @@ const o: any = {
     if (!this.info.hasOwnProperty(familyL)) {
       this.info[familyL] = data;
     }
-    data.list.forEach((item) => {
-      this._register(
-        familyL,
-        item.style,
-        item.postscriptName,
-        item.loaded,
-        item.url,
-      );
-    });
+    if (!this.data.hasOwnProperty(familyL)) {
+      data.list.forEach((item) => {
+        this._register(
+          familyL,
+          item.style,
+          item.postscriptName,
+          item.loaded,
+          item.url,
+        );
+      });
+      this.updateLocalStorage();
+    }
+  },
+  updateLocalStorage() {
+    const res: any = {};
+    const info = this.info;
+    for (let i in info) {
+      if (info.hasOwnProperty(i)) {
+        const o = info[i];
+        res[i] = {
+          name: o.name,
+          lhr: o.lhr,
+          car: o.car,
+          blr: o.blr,
+          lgr: o.lgr,
+        };
+      }
+    }
+    localStorage.setItem(KEY_INFO, JSON.stringify(res));
   },
 };
 
