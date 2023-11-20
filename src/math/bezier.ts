@@ -733,7 +733,7 @@ export function bezierTangent3(points: { x: number, y: number }[], t = 0) {
  * https://zhuanlan.zhihu.com/p/130247362
  * simpson38只适合单点精确计算长度，多点性能会呈倍增长，点距累加已经够了，性能也好
  */
-export function splitBezierT(points: { x: number, y: number }[], n: number, maxIterTime = 5) {
+export function splitBezierT(points: { x: number, y: number }[], n: number, maxIterTime = 5, length?: number) {
   if (n < 2) {
     return [];
   }
@@ -762,7 +762,7 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
   if (points.length === 2) {
     return res;
   }
-  const length = bezierLength(points);
+  length = length || bezierLength(points);
   const avg = length / n;
   for (let i = 0; i < maxIterTime; i++) {
     const dists: number[] = [0];

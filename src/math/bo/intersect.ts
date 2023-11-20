@@ -3,7 +3,7 @@ import Point from './Point';
 
 const EPS = 5e-3;
 
-function getIntersectionLineLine(
+export function getIntersectionLineLine(
   ax1: number,
   ay1: number,
   ax2: number,
@@ -35,7 +35,7 @@ function getIntersectionLineLine(
   }
 }
 
-function getIntersectionBezier2Line(
+export function getIntersectionBezier2Line(
   ax1: number,
   ay1: number,
   ax2: number,
@@ -65,7 +65,7 @@ function getIntersectionBezier2Line(
   }
 }
 
-function getIntersectionBezier2Bezier2(
+export function getIntersectionBezier2Bezier2(
   ax1: number,
   ay1: number,
   ax2: number,
@@ -99,7 +99,7 @@ function getIntersectionBezier2Bezier2(
   }
 }
 
-function getIntersectionBezier2Bezier3(
+export function getIntersectionBezier2Bezier3(
   ax1: number,
   ay1: number,
   ax2: number,
@@ -137,7 +137,7 @@ function getIntersectionBezier2Bezier3(
   }
 }
 
-function getIntersectionBezier3Line(
+export function getIntersectionBezier3Line(
   ax1: number,
   ay1: number,
   ax2: number,
@@ -171,7 +171,7 @@ function getIntersectionBezier3Line(
   }
 }
 
-function getIntersectionBezier3Bezier3(
+export function getIntersectionBezier3Bezier3(
   ax1: number,
   ay1: number,
   ax2: number,
@@ -213,7 +213,7 @@ function getIntersectionBezier3Bezier3(
   }
 }
 
-function filterIsec(res: Array<{ x: number; y: number; t1: number; t2: number }>) {
+export function filterIsec(res: Array<{ x: number; y: number; t1: number; t2: number }>) {
   res.sort((a, b) => {
     if (a.x === b.x) {
       return a.y - b.y;
@@ -240,7 +240,7 @@ function filterIsec(res: Array<{ x: number; y: number; t1: number; t2: number }>
 }
 
 // 两条线可能多个交点，将交点按原本线段的方向顺序排序
-function sortIntersection(
+export function sortIntersection(
   res: Array<{ point: Point; toSource: number; toClip: number }>,
   isSource: boolean,
 ) {
