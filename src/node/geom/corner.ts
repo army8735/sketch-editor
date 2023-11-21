@@ -155,20 +155,13 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
     prev[0].x, prev[0].y, prev[1].x, prev[1].y, prev[2].x, prev[2].y,
     next[0].x, next[0].y, next[1].x, next[1].y, next[2].x, next[2].y,
   ).filter(item => {
-    return Math.sqrt(Math.pow(item.x - next[0].x, 2) + Math.pow(item.y - next[0].y, 2)) > 1e-2;
-  })
-    .sort((a, b) => {
-      if (a.t1 === b.t1) {
-        return b.t2 - a.t2;
-      }
-      return b.t1 - a.t1;
-    });
-  for (let i = its.length - 1; i > 0; i--) {
-    const prev = its[i - 1], curr = its[i];
-    if (Math.sqrt(Math.pow(curr.x - prev.x, 2) + Math.pow(curr.y - prev.y, 2)) < 1e-2) {
-      its.splice(i, 1);
+    return item.x !== next[0].x && item.y !== next[0].y;
+  }).sort((a, b) => {
+    if (a.t1 === b.t1) {
+      return b.t2 - a.t2;
     }
-  }
+    return b.t1 - a.t1;
+  });
   const count = its.length;
   // 无交点直接求
   if (!count) {
