@@ -11,6 +11,7 @@ const arial = {
 };
 
 const KEY_INFO = 'localFonts'; // 解析过的存本地缓存，解析时间还是有些成本
+const VERSION = 1;
 
 export type fontData = {
   family: string; // 保持大小写
@@ -43,6 +44,10 @@ const o: any = {
   },
   async registerLocalFonts(fonts: any) {
     const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
+    let data: any = cacheInfo.data || {};
+    if (!cacheInfo.version || cacheInfo.version < VERSION) {
+      data = {};
+    }
     for (let k in fonts) {
       if (fonts.hasOwnProperty(k)) {
         const font = fonts[k];
@@ -51,8 +56,8 @@ const o: any = {
         const familyL = family.toLowerCase();
         const style = font.style;
         // localStorage存的是this.info
-        if (cacheInfo.hasOwnProperty(familyL)) {
-          const o: any = cacheInfo[familyL];
+        if (data.hasOwnProperty(familyL)) {
+          const o: any = data[familyL];
           this.info[familyL] = this.info[familyL] || {
             name: o.name,
             family: family, // 保持大小写
@@ -191,12 +196,12 @@ const o: any = {
     }
   },
   updateLocalStorage() {
-    const res: any = {};
+    const data: any = {};
     const info = this.info;
     for (let i in info) {
       if (info.hasOwnProperty(i)) {
         const o = info[i];
-        res[i] = {
+        data[i] = {
           name: o.name,
           lhr: o.lhr,
           car: o.car,
@@ -205,7 +210,29 @@ const o: any = {
         };
       }
     }
-    localStorage.setItem(KEY_INFO, JSON.stringify(res));
+    localStorage.setItem(KEY_INFO, JSON.stringify({ version: VERSION, data }));
+  },
+  async loadLocalFonts(cb?: (res: boolean) => void) {
+    try {
+      const status = await navigator.permissions.query({
+        // @ts-ignore
+        name: 'local-fonts',
+      });
+      if (status.state === 'denied') {
+        console.error('No Permission.');
+        cb && cb(false);
+        return false;
+      }
+      // @ts-ignore
+      const fonts = await window.queryLocalFonts();
+      o.registerLocalFonts(fonts);
+      cb && cb(true);
+      return true;
+    } catch (err: any) {
+      console.error(err.message);
+      cb && cb(false);
+    }
+    return false;
   },
 };
 
