@@ -59,20 +59,20 @@ class Root extends Container implements FrameCallback {
   refs: Record<string, Node>;
   symbolMasters: Record<string, SymbolMaster>;
   lastPage: Page | undefined; // 上一个显示的Page对象
-  pageContainer: Container | undefined; // 存Page显示对象列表的容器
-  overlay: Overlay | undefined; // 不跟随Page缩放的选框标尺等容器
-  structs: Array<Struct>; // 队列代替递归Tree的数据结构
+  pageContainer: Container; // 存Page显示对象列表的容器
+  overlay: Overlay; // 不跟随Page缩放的选框标尺等容器
+  structs: Struct[]; // 队列代替递归Tree的数据结构
   isAsyncDraw: boolean; // 异步下帧刷新标识，多次刷新任务去重
   ani = []; // 动画任务，空占位
   aniChange = false;
   task: Array<((sync: boolean) => void) | undefined>; // 刷新任务回调
   taskClone: Array<((sync: boolean) => void) | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
-  artBoardShadowTexture: WebGLTexture | undefined;
+  artBoardShadowTexture: WebGLTexture | undefined; // 画板统一使用的阴影纹理
   imgLoadingCount: number; // 刷新过程统计图片有没有加载完
   imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
 
-  constructor(props: RootProps, children: Array<Node> = []) {
+  constructor(props: RootProps, children: Node[] = []) {
     super(props, children);
     this.uuid = uuid.v4();
     // 初始化的数据
@@ -87,6 +87,33 @@ class Root extends Container implements FrameCallback {
     this.rl = RefreshLevel.REBUILD;
     this.imgLoadingCount = 0;
     this.imgLoadList = [];
+    // 存所有Page
+    this.pageContainer = new Container(
+      {
+        name: 'pageContainer',
+        style: {
+          width: '100%',
+          height: '100%',
+          pointerEvents: false,
+          scaleX: this.dpi,
+          scaleY: this.dpi,
+          transformOrigin: [0, 0],
+        },
+      },
+      [],
+    );
+    // 存上层的展示工具标尺等
+    this.overlay = new Overlay(
+      {
+        name: 'overlay',
+        style: {
+          width: '100%',
+          height: '100%',
+          pointerEvents: false,
+        },
+      },
+      [],
+    );
   }
 
   appendTo(canvas: HTMLCanvasElement) {
@@ -121,34 +148,7 @@ class Root extends Container implements FrameCallback {
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
-    // 存所有Page
-    this.pageContainer = new Container(
-      {
-        name: 'pageContainer',
-        style: {
-          width: '100%',
-          height: '100%',
-          pointerEvents: false,
-          scaleX: this.dpi,
-          scaleY: this.dpi,
-          transformOrigin: [0, 0],
-        },
-      },
-      [],
-    );
     this.appendChild(this.pageContainer);
-    // 存上层的展示工具标尺等
-    this.overlay = new Overlay(
-      {
-        name: 'overlay',
-        style: {
-          width: '100%',
-          height: '100%',
-          pointerEvents: false,
-        },
-      },
-      [],
-    );
     this.appendChild(this.overlay);
   }
 
@@ -200,20 +200,20 @@ class Root extends Container implements FrameCallback {
     this.ctx!.viewport(0, 0, this.width, this.height);
   }
 
-  setJPages(jPages: Array<JPage>) {
+  setJPages(jPages: JPage[]) {
     jPages.forEach((item) => {
       const page = new Page(item.props, []);
       page.json = item;
-      this.pageContainer!.appendChild(page);
+      this.pageContainer.appendChild(page);
     });
   }
 
   setPageIndex(index: number) {
-    if (index < 0 || index >= this.pageContainer!.children.length) {
+    if (index < 0 || index >= this.pageContainer.children.length) {
       return;
     }
     if (this.lastPage) {
-      if (this.lastPage === this.pageContainer!.children[index]) {
+      if (this.lastPage === this.pageContainer.children[index]) {
         return;
       }
       this.lastPage.updateStyle({
@@ -222,26 +222,26 @@ class Root extends Container implements FrameCallback {
     }
     // 先置空，否则新页初始化添加DOM会触发事件到老页上
     this.lastPage = undefined;
-    let newPage = this.pageContainer!.children[index] as Page;
+    let newPage = this.pageContainer.children[index] as Page;
     // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
     newPage.updateStyle({
       visible: true,
     });
     this.lastPage = newPage;
-    const children: Array<ArtBoard> = [];
+    const children: ArtBoard[] = [];
     newPage.children.forEach((item) => {
       if (item instanceof ArtBoard) {
         children.push(item);
       }
     });
-    this.overlay!.setArtBoard(children);
+    this.overlay.setArtBoard(children);
     // 触发事件告知外部如刷新图层列表
     this.emit(Event.PAGE_CHANGED, newPage);
   }
 
   addNewPage(page?: Page, setCurrent = false) {
-    const pageContainer = this.pageContainer!;
+    const pageContainer = this.pageContainer;
     if (!page) {
       page = new Page(
         {
@@ -553,7 +553,7 @@ class Root extends Container implements FrameCallback {
   }
 
   getPages() {
-    return this.pageContainer!.children as Array<Page>;
+    return this.pageContainer.children as Page[];
   }
 
   getCurPage() {
@@ -561,7 +561,7 @@ class Root extends Container implements FrameCallback {
   }
 
   setCurPage(page: Page) {
-    const i = this.pageContainer!.children.indexOf(page);
+    const i = this.pageContainer.children.indexOf(page);
     this.setPageIndex(i);
   }
 

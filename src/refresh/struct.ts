@@ -23,6 +23,8 @@ import {
   releaseFrameBuffer,
   shouldIgnoreAndIsBgBlur,
 } from './merge';
+import TileManager from './TileManager';
+import Tile from './Tile';
 
 export type Struct = {
   node: Node;
@@ -36,7 +38,6 @@ export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
 ) {
-  const imgLoadList = root.imgLoadList;
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(),
     scaleIndex = 0;
@@ -51,7 +52,7 @@ export function renderWebgl(
     }
     if (n > 2) {
       const m = (n >> 1) * 1.01;
-      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.1分界线），就用那个放大数
+      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.01分界线），就用那个放大数
       if (scale >= m) {
         scale = n;
       } else {
@@ -65,13 +66,12 @@ export function renderWebgl(
   // 先生成需要汇总的临时根节点上的纹理
   genMerge(gl, root, scale, scaleIndex);
   // 再普通遍历渲染
-  const { structs, width: W, height: H } = root;
-  const cx = W * 0.5,
-    cy = H * 0.5;
+  const { width: W, height: H, imgLoadList } = root;
   const programs = root.programs;
   const bgColorProgram = programs.bgColorProgram;
   // 先渲染Page的背景色，默认透明显示外部css白色，当没有Artboard时，Page渲染为浅灰色
   const page = root.lastPage;
+  // page一般都有，防止特殊数据极端情况没有
   if (page) {
     const children = page.children,
       len = children.length;
@@ -103,16 +103,81 @@ export function renderWebgl(
       gl.disableVertexAttribArray(a_position);
     }
   }
-  /**
-   * Page的孩子可能是直接的渲染对象，也可能是画板，画板需要实现overflow:hidden的效果，如果用画板本身尺寸离屏绘制，
-   * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。可以用和画布同尺寸的一个FBO，
-   * 所有的内容依旧照常绘入（可视范围外还可以跳过节省资源），最后再用mask功能裁剪掉画布范围外的即可。
-   * 另外，Page的非画布孩子无需mask逻辑，只要判断是否在可视范围外即可。
-   * mixBlendMode/backgroundBlur需要离屏混入，画布本身就已经离屏无需再申请，因此Page的非画布孩子绘入一个相同离屏即可。
-   * sketch里，一个渲染对象只要和画布重叠相交，就一定在画布内，所以无需关心Page的非画布孩子和画布的zIndex问题。
-   * 在遍历渲染过程中，记录一个索引hash，当画板开始时切换到画板FBO，结束时切换到PageFBO，
-   * 每进入画板则生成画板FBO，退出将结果汇入Page，删除FBO且置undefined。
-   */
+  // 瓦片分析切割，每个page独立区分，可能page为空，内部做了识别封装
+  const tileManager = TileManager.getSingleInstance(gl, page);
+  let tileList: Tile[] = [];
+  if (page) {
+    const { translateX, translateY, scaleX } = page.computedStyle;
+    /**
+     * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scale是跟随渲染整数倍范围的，
+     * 但scaleX是真实的缩放倍数有小数，一定范围内scale是不变的，scaleX会发生变化，
+     * 因此这个范围内瓦片实际尺寸虽然不变，但渲染尺寸会变化，屏幕内的瓦片数量也会发生变化。
+     * 瓦片是从Page的0/0坐标开始平铺的。
+     */
+    const x = Math.floor(translateX * root.dpi);
+    const y = Math.floor(translateY * root.dpi);
+    // 这个unit是考虑了高清方案后的
+    const unit = (Tile.UNIT * root.dpi) * scaleX;
+    let nw = 0;
+    let nh = 0;
+    // console.log(x, y, translateX, translateY, scale, scaleIndex, scaleX, W, H, unit);
+    // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
+    const offsetX = x % unit;
+    const offsetY = y % unit;
+    let indexX = Math.floor(-x / unit);
+    let indexY = Math.floor(-y / unit);
+    // 注意正负数，对偏移造成的影响不同，正数右下移左上多出来是漏出的Tile尺寸，负数左上移是本身遮盖的Tile尺寸
+    if (offsetX > 0) {
+      nw = Math.ceil((W - offsetX) / unit) + 1;
+    } else {
+      nw = Math.ceil((W - offsetX) / unit);
+    }
+    if (offsetY > 0) {
+      nh = Math.ceil((H - offsetY) / unit) + 1;
+    } else {
+      nh = Math.ceil((H - offsetY) / unit);
+    }
+    // console.log(offsetX, offsetY, nw, nh, indexX, indexY);
+    tileList = tileManager.active(
+      scale,
+      root.dpi,
+      indexX * Tile.UNIT * root.dpi,
+      indexY * Tile.UNIT * root.dpi,
+      nw,
+      nh,
+    );
+    console.log(tileList)
+  }
+  renderWebglNoTile(gl, root, scale, scaleIndex);
+  // 收集的需要加载的图片在刷新结束后同一进行，防止过程中触发update进而计算影响bbox
+  for (let i = 0, len = imgLoadList.length; i < len; i++) {
+    imgLoadList[i].loadAndRefresh();
+  }
+  imgLoadList.splice(0);
+}
+
+/**
+ * Page的孩子可能是直接的渲染对象，也可能是画板，画板需要实现overflow:hidden的效果，如果用画板本身尺寸离屏绘制，
+ * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。可以用和画布同尺寸的一个FBO，
+ * 所有的内容依旧照常绘入（可视范围外还可以跳过节省资源），最后再用mask功能裁剪掉画布范围外的即可。
+ * 另外，Page的非画布孩子无需mask逻辑，只要判断是否在可视范围外即可。
+ * mixBlendMode/backgroundBlur需要离屏混入，画布本身就已经离屏无需再申请，因此Page的非画布孩子绘入一个相同离屏即可。
+ * sketch里，一个渲染对象只要和画布重叠相交，就一定在画布内，所以无需关心Page的非画布孩子和画布的zIndex问题。
+ * 在遍历渲染过程中，记录一个索引hash，当画板开始时切换到画板FBO，结束时切换到PageFBO，
+ * 每进入画板则生成画板FBO，退出将结果汇入Page，删除FBO且置undefined。
+ */
+function renderWebglNoTile(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  scale: number,
+  scaleIndex: number,
+) {
+  const { structs, width: W, height: H, imgLoadList } = root;
+  const cx = W * 0.5,
+    cy = H * 0.5;
+  const programs = root.programs;
+  const page = root.lastPage;
+  // 初始化工作
   const artBoardIndex: ArtBoard[] = [];
   let pageTexture = createTexture(gl, 0, undefined, W, H);
   let artBoardTexture: WebGLTexture | undefined;
@@ -121,7 +186,7 @@ export function renderWebgl(
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
-  const overlay = root.overlay!;
+  const overlay = root.overlay;
   let isOverlay = false;
   const program = programs.program;
   gl.useProgram(programs.program);
@@ -195,7 +260,7 @@ export function renderWebgl(
       }
       node.hasCacheMw = true;
     }
-
+    // 计算后的世界坐标结果
     const opacity = node._opacity;
     const matrix = node._matrixWorld;
     // overlay上的没有高清要忽略
@@ -236,7 +301,7 @@ export function renderWebgl(
       if (target && target.available) {
         isInScreen = checkInScreen(target.bbox, matrix, W, H);
       }
-      // 无merge的是单个节点，判断是否有内容以及是否在可视范围内
+      // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
       else {
         isInScreen = checkInScreen(
           node._filterBbox || node.filterBbox,
@@ -489,11 +554,6 @@ export function renderWebgl(
     0,
     true,
   );
-  // 收集的需要加载的图片在刷新结束后同一进行，防止过程中触发update进而计算影响bbox
-  for (let i = 0, len = imgLoadList.length; i < len; i++) {
-    imgLoadList[i].loadAndRefresh();
-  }
-  imgLoadList.splice(0);
 }
 
 function drawArtBoardClip(
