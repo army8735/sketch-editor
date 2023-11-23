@@ -95,7 +95,7 @@ class Root extends Container implements FrameCallback {
           width: '100%',
           height: '100%',
           pointerEvents: false,
-          scaleX: this.dpi,
+          scaleX: this.dpi, // 高清canvas被css缩放了，内部需反向扩大，不能省略，因为overlay上也要高清
           scaleY: this.dpi,
           transformOrigin: [0, 0],
         },

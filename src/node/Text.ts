@@ -134,8 +134,9 @@ function measure(
     }
   }
   // 末尾是英文或数字时，本行前面有空格或者CJK，需要把末尾英文数字放到下一行
-  if (/[\w.-]/.test(content.charAt(start + hypotheticalNum))) {
-    for (let i = start + hypotheticalNum - 1; i > start; i--) {
+  if ((start + hypotheticalNum) < length &&
+    /[\w.-]/.test(content.charAt(start + hypotheticalNum - 1))) {
+    for (let i = start + hypotheticalNum - 2; i > start; i--) {
       if (!/[\w.-]/.test(content.charAt(i))) {
         hypotheticalNum = i - start + 1;
         rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
