@@ -1,6 +1,5 @@
 import { crossProduct } from './vector';
 import { calPoint, isE } from './matrix';
-import { intersectLineLine } from './isec';
 
 export function d2r(n: number) {
   return n * Math.PI / 180;
@@ -19,7 +18,7 @@ export function r2d(n: number) {
  * @returns {boolean}
  */
 export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: number, y: number }>,
-                                     includeIntersect: boolean = false) {
+                                     includeIntersect = false) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
   let { x: xmax, y: ymax } = vertexes[0];
   let { x: xmin, y: ymin } = vertexes[0];
@@ -97,7 +96,7 @@ export function pointsDistance(x1: number, y1: number, x2: number, y2: number) {
 // 余弦定理3边长求夹角，返回a边对应的角
 export function angleBySides(a: number, b: number, c: number) {
   // Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB))
-  let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
+  const theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
   return Math.acos(theta) || 0;
 }
 
@@ -150,22 +149,19 @@ export function isRectsInside(ax1: number, ay1: number, ax2: number, ay2: number
   return false;
 }
 
-// 两个直线多边形是否相交重叠
+// 两个直线凸多边形是否相交重叠
 export function isConvexPolygonOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
-                                       includeIntersect: boolean) {
+                                       includeIntersect = false) {
   for (let i = 0, len = a.length; i < len - 1; i++) {
-    const { x: x1, y: y1 } = a[i];
-    const { x: x2, y: y2 } = a[i + 1];
-    for (let j = 0, len = b.length; j < len - 1; j++) {
-      const { x: x3, y: y3 } = b[j];
-      const { x: x4, y: y4 } = b[j + 1];
-      const res = intersectLineLine(x1, y1, x2, y2, x3, y3, x4, y4);
-      if (res) {
-        if (includeIntersect) {
-          return true;
-        }
-        return res.toSource > 0 && res.toSource < 1 && res.toClip > 0 && res.toClip < 1;
-      }
+    const { x, y } = a[i];
+    if (pointInConvexPolygon(x, y, b, includeIntersect)) {
+      return true;
+    }
+  }
+  for (let i = 0, len = b.length; i < len - 1; i++) {
+    const { x, y } = b[i];
+    if (pointInConvexPolygon(x, y, a, includeIntersect)) {
+      return true;
     }
   }
   return false;
