@@ -40,10 +40,10 @@ void main() {
     vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
     float a = color1.a + color2.a - color1.a * color2.a;
     gl_FragColor = vec4(
-    alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
-    alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
-    alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
-    a
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
     );
   }
 }

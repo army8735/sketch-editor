@@ -323,6 +323,15 @@ function renderWebglNoTile(
           artBoardIndex[i + total + next] = node as ArtBoard;
           artBoardTexture = createTexture(gl, 0, undefined, W, H);
           resTexture = artBoardTexture;
+          // 背景色需要画在page，否则会干扰mbm
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            pageTexture,
+            0,
+          );
+          (node as ArtBoard).renderBgc(gl, cx, cy);
           gl.framebufferTexture2D(
             gl.FRAMEBUFFER,
             gl.COLOR_ATTACHMENT0,
@@ -330,7 +339,6 @@ function renderWebglNoTile(
             resTexture,
             0,
           );
-          (node as ArtBoard).renderBgc(gl, cx, cy);
           gl.useProgram(program);
         }
         // 图片检查内容加载计数器
