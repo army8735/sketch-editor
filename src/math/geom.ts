@@ -49,13 +49,31 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
       // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
       if (first === undefined) {
         first = n;
-      }
-      else if (first ^ n) {
+      } else if (first ^ n) {
         return false;
       }
     }
-    else if (!includeIntersect) {
-      return false;
+    // 正好在边延长线上，判断顶点重合或者顶点在边上
+    else if (includeIntersect) {
+      if (x === x1 && y === y1 || x === x2 && y === y2) {
+        return true;
+      }
+      // 两点之间的边上则坐标差正负刚好相反，但要考虑水平垂直情况下为0
+      const dx1 = x - x1;
+      const dx2 = x2 - x;
+      const dy1 = y - y1;
+      const dy2 = y2 - y;
+      if (dx1 === 0 || dx2 === 0) {
+        if (dy1 ^ dy2) {
+          return true;
+        }
+      } else if (dy1 === 0 || dy2 === 0) {
+        if (dx1 ^ dx2) {
+          return true;
+        }
+      } else if (dx1 ^ dx2 && dy1 ^ dy2) {
+        return true;
+      }
     }
   }
   return true;
@@ -149,20 +167,205 @@ export function isRectsInside(ax1: number, ay1: number, ax2: number, ay2: number
   return false;
 }
 
-// 两个直线凸多边形是否相交重叠
-export function isConvexPolygonOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
-                                       includeIntersect = false) {
+// 两个直线凸多边形是否重叠，不能简单地互相判断顶点在对方内部，因为有特殊的完全重合状态
+export function isConvexPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
+                                        includeIntersect = false) {
+  let xa = 0, ya = 0, xb = 0, yb = 0;
   for (let i = 0, len = a.length; i < len - 1; i++) {
     const { x, y } = a[i];
-    if (pointInConvexPolygon(x, y, b, includeIntersect)) {
-      return true;
+    if (i) {
+      xa = Math.min(xa, x);
+      ya = Math.min(ya, y);
+      xb = Math.max(xb, x);
+      yb = Math.max(yb, y);
+    } else {
+      xa = x;
+      ya = y;
+      xb = x;
+      yb = y;
     }
   }
+  let xc = 0, yc = 0, xd = 0, yd = 0;
   for (let i = 0, len = b.length; i < len - 1; i++) {
     const { x, y } = b[i];
-    if (pointInConvexPolygon(x, y, a, includeIntersect)) {
-      return true;
+    if (i) {
+      xc = Math.min(xc, x);
+      yc = Math.min(yc, y);
+      xd = Math.max(xd, x);
+      yd = Math.max(yd, y);
+    } else {
+      xc = x;
+      yc = y;
+      xd = x;
+      yd = y;
     }
+  }
+  // 最大最小值不重合提前跳出
+  if (includeIntersect) {
+    if (xa > xd || ya > yd || xb < xc || yb < yc) {
+      return false;
+    }
+  } else {
+    if (xa >= xd || ya >= yd || xb <= xc || yb <= yc) {
+      return false;
+    }
+  }
+  let allIn = true;
+  // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
+  outer:
+    for (let i = 0, len = a.length; i < len - 1; i++) {
+      const { x, y } = a[i];
+      let first;
+      for (let j = 0, len = b.length; j < len - 1; j++) {
+        const { x: x1, y: y1 } = b[i];
+        const { x: x2, y: y2 } = b[(i + 1 % len)];
+        let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+        if (n !== 0) {
+          n = n > 0 ? 1 : 0;
+          // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+          if (first === undefined) {
+            first = n;
+          } else if (first ^ n) {
+            allIn = false;
+            continue outer;
+          }
+        }
+        // 正好在边延长线上，判断顶点重合或者顶点在边上
+        else if (includeIntersect) {
+          if (x === x1 && y === y1 || x === x2 && y === y2) {
+            return true;
+          }
+          // 两点之间的边上则坐标差正负刚好相反，但要考虑水平垂直情况下为0
+          const dx1 = x - x1;
+          const dx2 = x2 - x;
+          const dy1 = y - y1;
+          const dy2 = y2 - y;
+          if (dx1 === 0 || dx2 === 0) {
+            if (dy1 ^ dy2) {
+              return true;
+            }
+          } else if (dy1 === 0 || dy2 === 0) {
+            if (dx1 ^ dx2) {
+              return true;
+            }
+          } else if (dx1 ^ dx2 && dy1 ^ dy2) {
+            return true;
+          }
+          allIn = false;
+        }
+      }
+    }
+  // 完全重合情况
+  if (allIn) {
+    return true;
+  }
+  // 反过来再判断一次
+  outer:
+    for (let i = 0, len = b.length; i < len - 1; i++) {
+      const { x, y } = b[i];
+      let first;
+      for (let j = 0, len = a.length; j < len - 1; j++) {
+        const { x: x1, y: y1 } = a[i];
+        const { x: x2, y: y2 } = a[(i + 1 % len)];
+        let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+        if (n !== 0) {
+          n = n > 0 ? 1 : 0;
+          // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+          if (first === undefined) {
+            first = n;
+          } else if (first ^ n) {
+            allIn = false;
+            continue outer;
+          }
+        }
+        // 正好在边延长线上，判断顶点重合或者顶点在边上
+        else if (includeIntersect) {
+          if (x === x1 && y === y1 || x === x2 && y === y2) {
+            return true;
+          }
+          // 两点之间的边上则坐标差正负刚好相反，但要考虑水平垂直情况下为0
+          const dx1 = x - x1;
+          const dx2 = x2 - x;
+          const dy1 = y - y1;
+          const dy2 = y2 - y;
+          if (dx1 === 0 || dx2 === 0) {
+            if (dy1 ^ dy2) {
+              return true;
+            }
+          } else if (dy1 === 0 || dy2 === 0) {
+            if (dx1 ^ dx2) {
+              return true;
+            }
+          } else if (dx1 ^ dx2 && dy1 ^ dy2) {
+            return true;
+          }
+          allIn = false;
+        }
+      }
+    }
+  // 完全重合情况
+  if (allIn) {
+    return true;
+  }
+  return false;
+}
+
+// 特殊优化，凸多边形是否和无旋转矩形重叠
+export function isConvexPolygonOverlapRect(
+  x1: number, y1: number, x2: number, y2: number,
+  points: Array<{ x: number, y: number }>, includeIntersect = false,
+) {
+  let xa = 0, ya = 0, xb = 0, yb = 0;
+  let allInRect = true;
+  // 看多边形顶点是否在矩形内
+  for (let i = 0, len = points.length; i < len; i++) {
+    const { x, y } = points[i];
+    if (i) {
+      xa = Math.min(xa, x);
+      ya = Math.min(ya, y);
+      xb = Math.max(xb, x);
+      yb = Math.max(yb, y);
+    } else {
+      xa = x;
+      ya = y;
+      xb = x;
+      yb = y;
+    }
+    // 在矩形内可提前跳出
+    if (includeIntersect) {
+      if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
+        return true;
+      }
+    }
+    else {
+      if (x > x1 && x < x2 && y > y1 && y < y2) {
+        return true;
+      }
+    }
+    // 特殊情况，正好和矩形重合时，所有点都在边上认为还是重叠
+    if (x < x1 || x > x2 || y < y1 || y > y2) {
+      allInRect = false;
+    }
+  }
+  // 完全重合情况
+  if (allInRect) {
+    return true;
+  }
+  // 在矩形外可提前跳出
+  if (includeIntersect) {
+    if (xb < x1 || xa > x2 || yb < y1 || ya > y2) {
+      return false;
+    }
+  } else {
+    if (xb <= x1 || xa >= x2 || yb <= y1 || ya >= y2) {
+      return false;
+    }
+  }
+  if (pointInConvexPolygon(x1, y1, points, includeIntersect) ||
+    pointInConvexPolygon(x2, y1, points, includeIntersect) ||
+    pointInConvexPolygon(x2, y2, points, includeIntersect) ||
+    pointInConvexPolygon(x1, y2, points, includeIntersect)) {
+    return true;
   }
   return false;
 }
@@ -180,5 +383,6 @@ export default {
   angleBySides,
   isRectsOverlap,
   isRectsInside,
-  isConvexPolygonOverlap,
+  isConvexPolygonsOverlap,
+  isConvexPolygonOverlapRect,
 };

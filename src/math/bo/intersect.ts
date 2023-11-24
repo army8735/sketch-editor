@@ -1,7 +1,7 @@
 import isec from '../isec';
 import Point from './Point';
 
-const EPS = 5e-3;
+const EPS = 5e-1;
 
 export function getIntersectionLineLine(
   ax1: number,
