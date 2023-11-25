@@ -129,7 +129,7 @@ export function h(deg: number) {
 // 两个矩形是否相交重叠，无旋转，因此各自只需2个坐标：左上和右下
 export function isRectsOverlap(ax1: number, ay1: number, ax2: number, ay2: number,
                                bx1: number, by1: number, bx2: number, by2: number,
-                               includeIntersect: boolean) {
+                               includeIntersect = false) {
   if (includeIntersect) {
     if (ax1 > bx2 || ay1 > by2 || bx1 > ax2 || by1 > ay2) {
       return false;

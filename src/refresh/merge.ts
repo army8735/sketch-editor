@@ -16,7 +16,7 @@ import {
   initShaders,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
-import { d2r, isRectsOverlap } from '../math/geom';
+import { d2r, isConvexPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 import {
   assignMatrix,
   calPoint,
@@ -362,40 +362,41 @@ function mergeBbox(bbox: Float64Array, t: Float64Array, matrix: Float64Array) {
   bbox[3] = Math.max(bbox[3], y2);
 }
 
-export function getScreenBbox(bbox: Float64Array, matrix: Float64Array) {
-  const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
-  const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-  // 不在画布显示范围内忽略，用比较简单的方法，无需太过精确，提高性能
-  const left = Math.min(x1, x2, x3, x4);
-  const top = Math.min(y1, y2, y3, y4);
-  const right = Math.max(x1, x2, x3, x4);
-  const bottom = Math.max(y1, y2, y3, y4);
-  return {
-    left,
-    top,
-    right,
-    bottom,
-  };
-}
-
 export function checkInScreen(
   bbox: Float64Array,
   matrix: Float64Array,
   width: number,
   height: number,
 ) {
-  const o = getScreenBbox(bbox, matrix);
-  return isRectsOverlap(
-    o.left,
-    o.top,
-    o.right,
-    o.bottom,
-    0,
-    0,
-    width,
-    height,
-    true,
-  );
+  return checkInWorldRect(bbox, matrix, 0, 0, width, height);
+}
+
+export function checkInWorldRect(
+  bbox: Float64Array,
+  matrix: Float64Array,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const box = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+  let { x1, y1, x2, y2, x3, y3, x4, y4 } = box;
+  // box是矩形可以加速，注意可能因为镜像导致坐标顺序颠倒
+  if (x1 === x4 && y1 === y2 && x2 === x3 && y3 === y4) {
+    if (x1 > x2) {
+      [x1, x3] = [x3, x1];
+    }
+    if (y2 > y3) {
+      [y1, y3] = [y3, y1];
+    }
+    return isRectsOverlap(x, y, width, height, x1, y1, x3, y3, false);
+  }
+  return isConvexPolygonOverlapRect(x, y, width, height, [
+    { x: x1, y: y1 },
+    { x: x2, y: y2 },
+    { x: x3, y: y3 },
+    { x: x4, y: y4 },
+  ], false);
 }
 
 // 统计mask节点后续关联跳过的数量

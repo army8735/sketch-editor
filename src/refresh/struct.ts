@@ -1,30 +1,28 @@
-import {
-  bindTexture,
-  createTexture,
-  drawMask,
-  drawTextureCache,
-} from '../gl/webgl';
-import { assignMatrix, multiply } from '../math/matrix';
+import { bindTexture, createTexture, drawMask, drawTextureCache, } from '../gl/webgl';
+import { assignMatrix, calRectPoints, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
+import Container from '../node/Container';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
 import { MIX_BLEND_MODE } from '../style/define';
+import config from '../util/config';
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
 import {
   checkInScreen,
+  checkInWorldRect,
   genBgBlur,
   genFrameBufferWithTexture,
   genMbm,
   genMerge,
   genOutline,
-  getScreenBbox,
   releaseFrameBuffer,
   shouldIgnoreAndIsBgBlur,
 } from './merge';
 import TileManager from './TileManager';
 import Tile from './Tile';
+import { isConvexPolygonOverlapRect } from '../math/geom';
 
 export type Struct = {
   node: Node;
@@ -106,7 +104,7 @@ export function renderWebgl(
   // 瓦片分析切割，每个page独立区分，可能page为空，内部做了识别封装
   const tileManager = TileManager.getSingleInstance(gl, page);
   let tileList: Tile[] = [];
-  if (page) {
+  if (config.tile && page) {
     const { translateX, translateY, scaleX } = page.computedStyle;
     /**
      * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scale是跟随渲染整数倍范围的，
@@ -141,19 +139,175 @@ export function renderWebgl(
     tileList = tileManager.active(
       scale,
       root.dpi,
-      indexX * Tile.UNIT * root.dpi,
-      indexY * Tile.UNIT * root.dpi,
+      indexX * Tile.UNIT,
+      indexY * Tile.UNIT,
       nw,
       nh,
     );
-    console.log(tileList)
   }
-  renderWebglNoTile(gl, root, scale, scaleIndex);
+  if (config.tile) {
+    renderWebglNoTile(gl, root, scale, scaleIndex);
+    renderWebglTile(gl, root, tileManager, tileList, scale, scaleIndex);
+  } else {
+    renderWebglNoTile(gl, root, scale, scaleIndex);
+  }
   // 收集的需要加载的图片在刷新结束后同一进行，防止过程中触发update进而计算影响bbox
   for (let i = 0, len = imgLoadList.length; i < len; i++) {
     imgLoadList[i].loadAndRefresh();
   }
   imgLoadList.splice(0);
+}
+
+/**
+ * 瓦片渲染和直接渲染逻辑并不相同，需要原本每个渲染节点拆分成块状，即依次判断是否在当前展示的瓦片列表中，
+ * 用判断矩形内部矢量法计算，当在某个瓦片中时，以瓦片为FBO坐标系进行渲染。
+ * 每个瓦片记录内部共有多少节点，以及多少节点已经渲染（图片等可能未加载，性能原因可能只渲染了一部分），
+ * 如果瓦片内部所有节点均已完全渲染使完备状态，设置标识，这样下次就可跳过判断。
+ * 当所有瓦片都是完备状态时，甚至可以跳过所有节点的遍历过程，从而增加性能，
+ * 当瓦片没有完备时，但有非对应scale（一般是更小即范围更大更模糊）的时，可以暂时先用低清渲染。
+ * 画板的overflow:hidden效果也和直接渲染逻辑不同，无法为每个画板设置一个单独的FBO来简单进行，
+ * 需要为每个画板计算mask尺寸，每次瓦片渲染都要应用。
+ */
+function renderWebglTile(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  tileManager: TileManager,
+  tileList: Tile[],
+  scale: number,
+  scaleIndex: number,
+) {
+  console.log(tileList)
+  const { structs, width: W, height: H, imgLoadList } = root;
+  const cx = W * 0.5,
+    cy = H * 0.5;
+  const W2 = Tile.UNIT * scale;
+  const cx2 = W2 * 0.5;
+  const programs = root.programs;
+  const page = root.lastPage;
+  // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
+  let complete = true;
+  for (let i = 0, len = tileList.length; i < len; i++) {
+    const tile = tileList[i];
+    // console.log(i, tile);
+    if (!tile.complete) {
+      complete = false;
+      break;
+    }
+  }
+  const overlay = root.overlay;
+  // 非完备，遍历节点渲染到Tile上
+  if (!complete) {
+    const page = root.lastPage!;
+    const pm = page._matrixWorld || page.matrixWorld;
+    // 先收集所有的Tile在当前Page的matrix下的坐标，要和节点比对
+    for (let i = 0, len = tileList.length; i < len; i++) {
+      const tile = tileList[i];
+      tile.initTex();
+      const { x: x1, y: y1, size } = tile;
+      const x2 = x1 + size;
+      const y2 = y1 + size;
+      const bbox = calRectPoints(x1, y1, x2, y2, pm);
+      tile.bbox[0] = bbox.x1;
+      tile.bbox[1] = bbox.y1;
+      tile.bbox[2] = bbox.x3;
+      tile.bbox[3] = bbox.y3;
+    }
+    // 循环非overlay的节点
+    for (let i = 0, len = structs.length; i < len; i++) {
+      const { node, total, next } = structs[i];
+      // tile不收集overlay的东西
+      if (overlay === node) {
+        break;
+      }
+      const computedStyle = node.computedStyle;
+      const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
+        node,
+        computedStyle,
+      );
+      // 和普通渲染相比没有检查画板写回Page的过程
+      if (shouldIgnore) {
+        i += total + next;
+        continue;
+      }
+      // 继承父的opacity和matrix，仍然要注意root没有parent
+      const { parent, textureTarget } = node;
+      calWorldMatrixAndOpacity(node, i, parent);
+      // 计算后的世界坐标结果
+      const opacity = node._opacity;
+      const matrix = node._matrixWorld;
+      let target = textureTarget[scaleIndex],
+        isInScreen = false;
+      // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
+      if (target && target.available) {
+        isInScreen = checkInScreen(target.bbox, matrix, W, H);
+      }
+      // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
+      else {
+        isInScreen = checkInScreen(
+          node._filterBbox || node.filterBbox,
+          matrix,
+          W,
+          H,
+        );
+        // 单个的alpha蒙版不渲染
+        if (isInScreen && node.hasContent && !node.computedStyle.maskMode) {
+          node.genTexture(gl, scale, scaleIndex);
+          target = textureTarget[scaleIndex];
+        }
+      }
+      // 和普通渲染比没有画布索引部分，仅图片检查内容加载计数器
+      if (isInScreen && node.isBitmap && (node as Bitmap).checkLoader()) {
+        imgLoadList.push(node as Bitmap);
+      }
+      // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中
+      if (isInScreen && target && target.available) {
+        const { mixBlendMode, blur } = computedStyle;
+        const bbox = target.bbox;
+        const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+        // console.warn(node.props.name, sb.x1, sb.y1, sb.x2, sb.y2, sb.x3, sb.y3, sb.x4, sb.y4)
+        for (let j = 0, len = tileList.length; j < len; j++) {
+          const tile = tileList[j];
+          const bbox = tile.bbox;
+          if (!isConvexPolygonOverlapRect(
+            bbox[0], bbox[1], bbox[2], bbox[3],
+            [{
+              x: sb.x1, y: sb.y1,
+            }, {
+              x: sb.x2, y: sb.y2,
+            }, {
+              x: sb.x3, y: sb.y3,
+            }, {
+              x: sb.x4, y: sb.y4,
+            }],
+          )) {
+            continue;
+          }
+          // console.log(j, bbox.join(','));
+          if (isBgBlur) {}
+          if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
+          // 这里才是真正生成mbm
+          if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
+        }
+      }
+      // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+      if (
+        target &&
+        target.available &&
+        target !== node.textureCache[scaleIndex]
+      ) {
+        i += total + next;
+      } else if (node.isShapeGroup) {
+        i += total;
+      }
+    }
+    // for (let j = 0, len = tileList.length; j < len; j++) {
+    //   const tile = tileList[j];
+    //   if (tile.complete) {
+    //     continue;
+    //   }
+    // }
+  }
+  // 遍历tile，渲染，可能某个未完备，检查是否有低清版本
 }
 
 /**
@@ -183,16 +337,13 @@ function renderWebglNoTile(
   let artBoardTexture: WebGLTexture | undefined;
   let resTexture = pageTexture;
   const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  // gl.clearColor(0, 0, 0, 0);
+  // gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
   const overlay = root.overlay;
   let isOverlay = false;
   const program = programs.program;
   gl.useProgram(programs.program);
-  // 世界opacity和matrix不一定需要重算，有可能之前调用算过了有缓存
-  let hasCacheOp = false,
-    hasCacheMw = false;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];
@@ -229,37 +380,7 @@ function renderWebglNoTile(
     }
     // 继承父的opacity和matrix，仍然要注意root没有parent
     const { parent, textureTarget } = node;
-    // 第一个是Root层级0
-    if (!i) {
-      hasCacheOp = node.hasCacheOp;
-      hasCacheMw = node.hasCacheMw;
-    } else {
-      hasCacheOp = node.hasCacheOp && node.parentOpId === parent!.localOpId;
-      hasCacheMw = node.hasCacheMw && node.parentMwId === parent!.localMwId;
-    }
-    // opacity和matrix的世界计算，父子相乘
-    if (!hasCacheOp) {
-      node._opacity = parent
-        ? parent._opacity * node.computedStyle.opacity
-        : node.computedStyle.opacity;
-      if (parent) {
-        node.parentOpId = parent.localOpId;
-      }
-      node.hasCacheOp = true;
-    }
-    if (!hasCacheMw) {
-      assignMatrix(
-        node._matrixWorld,
-        parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix,
-      );
-      if (parent) {
-        node.parentMwId = parent.localMwId;
-      }
-      if (node.hasCacheMw) {
-        node.localMwId++;
-      }
-      node.hasCacheMw = true;
-    }
+    calWorldMatrixAndOpacity(node, i, parent);
     // 计算后的世界坐标结果
     const opacity = node._opacity;
     const matrix = node._matrixWorld;
@@ -317,7 +438,7 @@ function renderWebglNoTile(
       }
       // 画布和Page的FBO切换检测
       if (isInScreen) {
-        // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，注意空画布无效需跳过
+        // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
         if (node.isArtBoard && total + next) {
           pageTexture = resTexture; // 防止mbm导致新生成纹理，需赋值回去给page
           artBoardIndex[i + total + next] = node as ArtBoard;
@@ -346,6 +467,7 @@ function renderWebglNoTile(
           imgLoadList.push(node as Bitmap);
         }
       }
+      // 真正的渲染部分
       if (isInScreen && target && target.available) {
         const { mixBlendMode, blur } = computedStyle;
         /**
@@ -564,6 +686,44 @@ function renderWebglNoTile(
   );
 }
 
+// 计算节点的世界坐标系数据
+function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
+  // 世界opacity和matrix不一定需要重算，有可能之前调用算过了有缓存
+  let hasCacheOp = false;
+  let hasCacheMw = false;
+  // 第一个是Root层级0
+  if (!i) {
+    hasCacheOp = node.hasCacheOp;
+    hasCacheMw = node.hasCacheMw;
+  } else {
+    hasCacheOp = node.hasCacheOp && node.parentOpId === parent!.localOpId;
+    hasCacheMw = node.hasCacheMw && node.parentMwId === parent!.localMwId;
+  }
+  // opacity和matrix的世界计算，父子相乘
+  if (!hasCacheOp) {
+    node._opacity = parent
+      ? parent._opacity * node.computedStyle.opacity
+      : node.computedStyle.opacity;
+    if (parent) {
+      node.parentOpId = parent.localOpId;
+    }
+    node.hasCacheOp = true;
+  }
+  if (!hasCacheMw) {
+    assignMatrix(
+      node._matrixWorld,
+      parent ? multiply(parent._matrixWorld, node.matrix) : node.matrix,
+    );
+    if (parent) {
+      node.parentMwId = parent.localMwId;
+    }
+    if (node.hasCacheMw) {
+      node.localMwId++;
+    }
+    node.hasCacheMw = true;
+  }
+}
+
 function drawArtBoardClip(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
   programs: any,
@@ -580,18 +740,13 @@ function drawArtBoardClip(
   const children = artBoard.children;
   const rect = artBoard._rect || artBoard.rect;
   const matrixWorld = artBoard._matrixWorld || artBoard.matrixWorld;
-  const abRect = getScreenBbox(rect, matrixWorld);
+  // 画板一定没有旋转
+  const abRect = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
   for (let i = 0, len = children.length; i < len; i++) {
     const child = children[i];
-    const bbox = child._filterBbox || child.filterBbox;
+    const bbox = child._filterBbox2 || child.filterBbox2;
     const matrix = child._matrixWorld || child.matrixWorld;
-    const childRect = getScreenBbox(bbox, matrix);
-    if (
-      childRect.left < abRect.left ||
-      childRect.top < abRect.top ||
-      childRect.right > abRect.right ||
-      childRect.bottom > abRect.bottom
-    ) {
+    if (checkInWorldRect(bbox, matrix, abRect.x1, abRect.y1, abRect.x3, abRect.y3)) {
       needMask = true;
       break;
     }
