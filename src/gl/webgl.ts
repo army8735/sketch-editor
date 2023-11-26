@@ -144,8 +144,13 @@ export function bindTexture(
 export type DrawData = {
   opacity: number;
   matrix?: Float64Array;
-  // cache: TextureCache;
   bbox: Float64Array;
+  coords?: { // 手动传入提前计算好的坐标，tile时复用数据
+    t1: { x: number, y: number },
+    t2: { x: number, y: number },
+    t3: { x: number, y: number },
+    t4: { x: number, y: number },
+  },
   texture: WebGLTexture;
 };
 
@@ -158,7 +163,7 @@ export function drawTextureCache(
   cx: number,
   cy: number,
   program: any,
-  list: Array<DrawData>,
+  list: DrawData[],
   dx = 0,
   dy = 0,
   flipY = true,
@@ -189,9 +194,10 @@ export function drawTextureCache(
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
-    const { opacity, matrix, bbox, texture } = list[i];
+    const { opacity, matrix, bbox, coords, texture } = list[i];
     bindTexture(gl, texture, 0);
-    const { t1, t2, t3, t4 } = bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
+    const { t1, t2, t3, t4 } =
+      coords ? offsetCoords(coords, dx, dy) : bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
     let k = i * 12;
     vtPoint[k] = t1.x;
     vtPoint[k + 1] = t1.y;
@@ -717,4 +723,26 @@ export function bbox2Coords(
   const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
   const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
   return { t1, t2, t3, t4 };
+}
+
+export function offsetCoords(
+  coords: {
+    t1: { x: number, y: number },
+    t2: { x: number, y: number },
+    t3: { x: number, y: number },
+    t4: { x: number, y: number },
+  },
+  dx = 0,
+  dy = 0,
+) {
+  if (dx || dy) {
+    const { t1, t2, t3, t4 } = coords;
+    return {
+      t1: { x: t1.x + dx, y: t1.y + dy },
+      t2: { x: t2.x + dx, y: t2.y + dy },
+      t3: { x: t3.x + dx, y: t3.y + dy },
+      t4: { x: t4.x + dx, y: t4.y + dy },
+    };
+  }
+  return coords;
 }

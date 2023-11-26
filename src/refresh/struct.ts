@@ -1,5 +1,5 @@
-import { bindTexture, createTexture, drawMask, drawTextureCache, } from '../gl/webgl';
-import { assignMatrix, calRectPoints, multiply } from '../math/matrix';
+import { bbox2Coords, createTexture, drawMask, drawTextureCache, } from '../gl/webgl';
+import { assignMatrix, calRectPoints, inverse, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Container from '../node/Container';
 import Node from '../node/Node';
@@ -7,8 +7,6 @@ import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
 import { MIX_BLEND_MODE } from '../style/define';
 import config from '../util/config';
-import inject from '../util/inject';
-import { RefreshLevel } from './level';
 import {
   checkInScreen,
   checkInWorldRect,
@@ -64,7 +62,7 @@ export function renderWebgl(
   // 先生成需要汇总的临时根节点上的纹理
   genMerge(gl, root, scale, scaleIndex);
   // 再普通遍历渲染
-  const { width: W, height: H, imgLoadList } = root;
+  const { imgLoadList } = root;
   const programs = root.programs;
   const bgColorProgram = programs.bgColorProgram;
   // 先渲染Page的背景色，默认透明显示外部css白色，当没有Artboard时，Page渲染为浅灰色
@@ -101,53 +99,11 @@ export function renderWebgl(
       gl.disableVertexAttribArray(a_position);
     }
   }
-  // 瓦片分析切割，每个page独立区分，可能page为空，内部做了识别封装
-  const tileManager = TileManager.getSingleInstance(gl, page);
-  let tileList: Tile[] = [];
-  if (config.tile && page) {
-    const { translateX, translateY, scaleX } = page.computedStyle;
-    /**
-     * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scale是跟随渲染整数倍范围的，
-     * 但scaleX是真实的缩放倍数有小数，一定范围内scale是不变的，scaleX会发生变化，
-     * 因此这个范围内瓦片实际尺寸虽然不变，但渲染尺寸会变化，屏幕内的瓦片数量也会发生变化。
-     * 瓦片是从Page的0/0坐标开始平铺的。
-     */
-    const x = Math.floor(translateX * root.dpi);
-    const y = Math.floor(translateY * root.dpi);
-    // 这个unit是考虑了高清方案后的
-    const unit = (Tile.UNIT * root.dpi) * scaleX;
-    let nw = 0;
-    let nh = 0;
-    // console.log(x, y, translateX, translateY, scale, scaleIndex, scaleX, W, H, unit);
-    // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
-    const offsetX = x % unit;
-    const offsetY = y % unit;
-    let indexX = Math.floor(-x / unit);
-    let indexY = Math.floor(-y / unit);
-    // 注意正负数，对偏移造成的影响不同，正数右下移左上多出来是漏出的Tile尺寸，负数左上移是本身遮盖的Tile尺寸
-    if (offsetX > 0) {
-      nw = Math.ceil((W - offsetX) / unit) + 1;
-    } else {
-      nw = Math.ceil((W - offsetX) / unit);
-    }
-    if (offsetY > 0) {
-      nh = Math.ceil((H - offsetY) / unit) + 1;
-    } else {
-      nh = Math.ceil((H - offsetY) / unit);
-    }
-    // console.log(offsetX, offsetY, nw, nh, indexX, indexY);
-    tileList = tileManager.active(
-      scale,
-      root.dpi,
-      indexX * Tile.UNIT,
-      indexY * Tile.UNIT,
-      nw,
-      nh,
-    );
-  }
   if (config.tile) {
-    renderWebglNoTile(gl, root, scale, scaleIndex);
-    renderWebglTile(gl, root, tileManager, tileList, scale, scaleIndex);
+    // renderWebglNoTile(gl, root, scale, scaleIndex);
+    if (page) {
+      renderWebglTile(gl, root, scale, scaleIndex);
+    }
   } else {
     renderWebglNoTile(gl, root, scale, scaleIndex);
   }
@@ -171,47 +127,86 @@ export function renderWebgl(
 function renderWebglTile(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
-  tileManager: TileManager,
-  tileList: Tile[],
   scale: number,
   scaleIndex: number,
 ) {
-  console.log(tileList)
-  const { structs, width: W, height: H, imgLoadList } = root;
+  const { structs, lastPage: page, width: W, height: H, dpi, imgLoadList } = root;
+  const { translateX, translateY, scaleX } = page!.computedStyle;
+  /**
+   * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scale是跟随渲染整数倍范围的，
+   * 但scaleX是真实的缩放倍数有小数，一定范围内scale是不变的，scaleX会发生变化，
+   * 因此这个范围内瓦片实际尺寸虽然不变，但渲染尺寸会变化，屏幕内的瓦片数量也会发生变化。
+   * 瓦片是从Page的0/0坐标开始平铺的。
+   */
+  const tileManager = TileManager.getSingleInstance(gl, page);
+  const x = Math.floor(translateX * root.dpi);
+  const y = Math.floor(translateY * root.dpi);
+  // 这个unit是考虑了高清方案后的
+  const unit = (Tile.UNIT * root.dpi) * scaleX;
+  let nw = 0;
+  let nh = 0;
+  // console.log(x, y, translateX, translateY, scale, scaleIndex, scaleX, W, H, unit);
+  // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
+  const offsetX = x % unit;
+  const offsetY = y % unit;
+  let indexX = Math.floor(-x / unit);
+  let indexY = Math.floor(-y / unit);
+  // 注意正负数，对偏移造成的影响不同，正数右下移左上多出来是漏出的Tile尺寸，负数左上移是本身遮盖的Tile尺寸
+  if (offsetX > 0) {
+    nw = Math.ceil((W - offsetX) / unit) + 1;
+  } else {
+    nw = Math.ceil((W - offsetX) / unit);
+  }
+  if (offsetY > 0) {
+    nh = Math.ceil((H - offsetY) / unit) + 1;
+  } else {
+    nh = Math.ceil((H - offsetY) / unit);
+  }
+  // console.log(offsetX, offsetY, nw, nh, indexX, indexY);
+  const tileList = tileManager.active(
+    scale,
+    indexX * Tile.UNIT,
+    indexY * Tile.UNIT,
+    nw,
+    nh,
+  );
+  // 渲染准备
   const cx = W * 0.5,
     cy = H * 0.5;
-  const W2 = Tile.UNIT * scale;
-  const cx2 = W2 * 0.5;
   const programs = root.programs;
-  const page = root.lastPage;
+  const program = programs.program;
+  gl.useProgram(programs.program);
+  const pm = page!._matrixWorld || page!.matrixWorld;
   // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
   let complete = true;
   for (let i = 0, len = tileList.length; i < len; i++) {
     const tile = tileList[i];
+    tile.init(dpi);
     // console.log(i, tile);
     if (!tile.complete) {
       complete = false;
-      break;
+      // break;
     }
+    // 更新tile的屏幕坐标
+    const { x: x1, y: y1, size } = tile;
+    const x2 = x1 + size;
+    const y2 = y1 + size;
+    const bbox = calRectPoints(x1, y1, x2, y2, pm);
+    tile.bbox[0] = bbox.x1;
+    tile.bbox[1] = bbox.y1;
+    tile.bbox[2] = bbox.x3;
+    tile.bbox[3] = bbox.y3;
   }
   const overlay = root.overlay;
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
-    const page = root.lastPage!;
-    const pm = page._matrixWorld || page.matrixWorld;
-    // 先收集所有的Tile在当前Page的matrix下的坐标，要和节点比对
-    for (let i = 0, len = tileList.length; i < len; i++) {
-      const tile = tileList[i];
-      tile.initTex();
-      const { x: x1, y: y1, size } = tile;
-      const x2 = x1 + size;
-      const y2 = y1 + size;
-      const bbox = calRectPoints(x1, y1, x2, y2, pm);
-      tile.bbox[0] = bbox.x1;
-      tile.bbox[1] = bbox.y1;
-      tile.bbox[2] = bbox.x3;
-      tile.bbox[3] = bbox.y3;
-    }
+    let resFrameBuffer: WebGLFramebuffer | undefined;
+    const im = inverse(pm);
+    // tile的坐标系，向tile输入不考虑缩放需完整
+    const W2 = Tile.UNIT * dpi;
+    const cx2 = W2 * 0.5;
+    const originX = tileList[0].x, originY = tileList[0].y;
+    // console.warn(tileList, originX, originY)
     // 循环非overlay的节点
     for (let i = 0, len = structs.length; i < len; i++) {
       const { node, total, next } = structs[i];
@@ -264,11 +259,19 @@ function renderWebglTile(
         const { mixBlendMode, blur } = computedStyle;
         const bbox = target.bbox;
         const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
-        // console.warn(node.props.name, sb.x1, sb.y1, sb.x2, sb.y2, sb.x3, sb.y3, sb.x4, sb.y4)
+        /**
+         * 按照page坐标系+左上原点tile坐标算出target的渲染坐标，后续每个tile渲染时都用此数据不变，
+         * 但是每个tile都有一定的偏移值，这个值用tile的x/y-原点tile的x/y得出即可。
+         * 需先求出相对于page的matrix，即忽略掉pageContainer的缩放，逆矩阵运算。
+         */
+        const m = multiply(matrix, im);
+        const coords = bbox2Coords(bbox, cx2, cx2, -originX, -originY, false, m);
+        // console.log(node.props.name, coords, bbox.join(','));
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
-          if (!isConvexPolygonOverlapRect(
+          // 不在此tile中跳过，tile也可能是老的已有完备的
+          if (tile.complete || !isConvexPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -282,9 +285,41 @@ function renderWebglTile(
           )) {
             continue;
           }
-          // console.log(j, bbox.join(','));
+          // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
+          if (!resFrameBuffer) {
+            resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2 * dpi, W2 * dpi);
+          } else {
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0,
+              gl.TEXTURE_2D,
+              tile.texture!,
+              0,
+            );
+          }
           if (isBgBlur) {}
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
+          // 有无mbm都复用这段逻辑
+          drawTextureCache(
+            gl,
+            cx2,
+            cx2,
+            program,
+            [
+              {
+                opacity,
+                bbox: target.bbox, // 无用有coords
+                coords,
+                texture: target.texture,
+              },
+            ],
+            (originX - tile.x) / cx2,
+            (originY - tile.y) / cx2,
+            false,
+          );
+          // 记录节点和tile的关系
+          tile.count++;
+          tile.add(node);
           // 这里才是真正生成mbm
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
         }
@@ -300,14 +335,37 @@ function renderWebglTile(
         i += total;
       }
     }
-    // for (let j = 0, len = tileList.length; j < len; j++) {
-    //   const tile = tileList[j];
-    //   if (tile.complete) {
-    //     continue;
-    //   }
-    // }
+    // 释放回主画布
+    if (resFrameBuffer) {
+      releaseFrameBuffer(gl, resFrameBuffer, W, H);
+    }
   }
   // 遍历tile，渲染，可能某个未完备，检查是否有低清版本
+  // console.log(tileList)
+  for (let i = 0, len = tileList.length; i < len; i++) {
+    const tile = tileList[i];
+    if (tile.available && tile.count) {
+      // console.log(i, tile.bbox.join(','))
+      drawTextureCache(
+        gl,
+        cx,
+        cy,
+        program,
+        [
+          {
+            opacity: 1,
+            bbox: tile.bbox,
+            texture: tile.texture!,
+          },
+        ],
+        0,
+        0,
+        true,
+      );
+    }
+    // 无论如何都会设置完备，当有节点更新，会重置关联的tile
+    tile.complete = true;
+  }
 }
 
 /**
@@ -330,15 +388,14 @@ function renderWebglNoTile(
   const cx = W * 0.5,
     cy = H * 0.5;
   const programs = root.programs;
-  const page = root.lastPage;
   // 初始化工作
   const artBoardIndex: ArtBoard[] = [];
-  let pageTexture = createTexture(gl, 0, undefined, W, H);
+  let pageTexture = root.pageTexture || createTexture(gl, 0, undefined, W, H);
   let artBoardTexture: WebGLTexture | undefined;
   let resTexture = pageTexture;
   const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
-  // gl.clearColor(0, 0, 0, 0);
-  // gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
   const overlay = root.overlay;
   let isOverlay = false;
@@ -418,6 +475,7 @@ function renderWebglNoTile(
     else {
       let target = textureTarget[scaleIndex],
         isInScreen = false;
+      // console.log(i, node.props.name, node.matrix.join(','), matrix.join(','))
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
       if (target && target.available) {
         isInScreen = checkInScreen(target.bbox, matrix, W, H);
@@ -589,83 +647,6 @@ function renderWebglNoTile(
       }
     }
   }
-  // 再覆盖渲染artBoard的阴影和标题
-  if (page) {
-    const children = page.children,
-      len = children.length;
-    // boxShadow用统一纹理
-    if (root.artBoardShadowTexture) {
-      let count = 0;
-      for (let i = 0; i < len; i++) {
-        const artBoard = children[i];
-        if (artBoard instanceof ArtBoard) {
-          count++;
-        }
-      }
-      const bsPoint = new Float32Array(count * 96);
-      const bsTex = new Float32Array(count * 96);
-      let count2 = 0;
-      for (let i = 0; i < len; i++) {
-        const artBoard = children[i];
-        if (artBoard instanceof ArtBoard) {
-          artBoard.collectBsData(count2++, bsPoint, bsTex, cx, cy);
-        }
-      }
-      const simpleProgram = programs.simpleProgram;
-      gl.useProgram(simpleProgram);
-      // 顶点buffer
-      const pointBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, bsPoint, gl.STATIC_DRAW);
-      const a_position = gl.getAttribLocation(simpleProgram, 'a_position');
-      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(a_position);
-      // 纹理buffer
-      const texBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, bsTex, gl.STATIC_DRAW);
-      let a_texCoords = gl.getAttribLocation(simpleProgram, 'a_texCoords');
-      gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(a_texCoords);
-      // 纹理单元
-      let u_texture = gl.getUniformLocation(simpleProgram, 'u_texture');
-      gl.uniform1i(u_texture, 0);
-      bindTexture(gl, root.artBoardShadowTexture, 0);
-      // 渲染并销毁
-      gl.drawArrays(gl.TRIANGLES, 0, count * 48);
-      gl.deleteBuffer(pointBuffer);
-      gl.deleteBuffer(texBuffer);
-      gl.disableVertexAttribArray(a_position);
-      gl.disableVertexAttribArray(a_texCoords);
-      gl.useProgram(program);
-    } else {
-      const img = inject.IMG[ArtBoard.BOX_SHADOW];
-      // 一般首次不可能有缓存，太特殊的base64了
-      if (img && img.source) {
-        root.artBoardShadowTexture = createTexture(gl, 0, img.source);
-        root.addUpdate(
-          overlay,
-          [],
-          RefreshLevel.REPAINT,
-          false,
-          false,
-          undefined,
-        );
-      } else {
-        inject.measureImg(ArtBoard.BOX_SHADOW, (res: any) => {
-          root.artBoardShadowTexture = createTexture(gl, 0, res.source);
-          root.addUpdate(
-            overlay,
-            [],
-            RefreshLevel.REPAINT,
-            false,
-            false,
-            undefined,
-          );
-        });
-      }
-    }
-  }
   // 最后将离屏离屏frameBuffer绘入画布
   releaseFrameBuffer(gl, resFrameBuffer, W, H);
   drawTextureCache(
@@ -684,6 +665,7 @@ function renderWebglNoTile(
     0,
     true,
   );
+  gl.deleteTexture(pageTexture);
 }
 
 // 计算节点的世界坐标系数据

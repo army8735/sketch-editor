@@ -296,6 +296,8 @@ class ArtBoard extends Container {
     cx: number,
     cy: number,
     color?: number[], // 传入则指定color替代backgroundColor
+    shadow?: number[], // 阴影色
+    radius?: number, // 阴影半径
   ) {
     const programs = this.root!.programs;
     const { width, height, matrixWorld } = this;
@@ -325,7 +327,7 @@ class ArtBoard extends Container {
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_position);
     // color
-    let u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
+    const u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
     if (color) {
       gl.uniform4f(u_color, color[0], color[1], color[2], color[3]);
     } else {
@@ -336,6 +338,36 @@ class ArtBoard extends Container {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer);
     gl.disableVertexAttribArray(a_position);
+
+    // 阴影部分的计算渲染
+    const bgShadowProgram = programs.bgShadowProgram;
+    gl.useProgram(bgShadowProgram);
+    // 顶点buffer
+    const pointBuffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+    const a_position2 = gl.getAttribLocation(bgShadowProgram, 'a_position');
+    gl.vertexAttribPointer(a_position2, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position2);
+    const u_tl = gl.getUniformLocation(bgShadowProgram, 'u_tl');
+    gl.uniform2f(u_tl, t1.x, t1.y);
+    const u_br = gl.getUniformLocation(bgShadowProgram, 'u_br');
+    gl.uniform2f(u_br, t3.x, t3.y);
+    // color
+    const u_color2 = gl.getUniformLocation(bgShadowProgram, 'u_color');
+    if (shadow) {
+      gl.uniform4f(u_color2, shadow[0], shadow[1], shadow[2], shadow[3]);
+    } else {
+      gl.uniform4f(u_color2, 0.0, 0.0, 0.0, 0.3);
+    }
+    const u_radius = gl.getUniformLocation(bgShadowProgram, 'u_radius');
+    gl.uniform1f(u_radius, (radius ?? 10) / Math.sqrt(cx * cx + cy * cy));
+    const u_ratio = gl.getUniformLocation(bgShadowProgram, 'u_ratio');
+    gl.uniform1f(u_ratio, cx / cy);
+    // 渲染并销毁
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.deleteBuffer(pointBuffer2);
+    gl.disableVertexAttribArray(a_position2);
   }
 
   override toJson(): JNode {
@@ -343,9 +375,6 @@ class ArtBoard extends Container {
     res.tagName = TAG_NAME.ART_BOARD;
     return res;
   }
-
-  static BOX_SHADOW =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDkuMC1jMDAwIDc5LjE3MWMyN2ZhYiwgMjAyMi8wOC8xNi0yMjozNTo0MSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6Q0YxOEMzRkFDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6Q0YxOEMzRjlDNTZDMTFFRDhBRDU5QTAxNUFGMjI5QTAiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCRDFFMUYwM0M0QTExMUVEOTIxOUREMjgyNjUzODRENSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCRDFFMUYwNEM0QTExMUVEOTIxOUREMjgyNjUzODRENSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PrnWkg0AAACjSURBVHja7JXhCsIwDISTLsr2/i8rbjZueMGjbJhJ/+nBQSj0o224VOUllbe4zsi5VgIUWE9AHa6wGMEMHuCMHvAC1xY4rr4CqInTbbD76luc0uiKA2AT4BnggnoOjlEj4qrb2iUJFNqn/Ibc4XD5AKx7DSzSWX/gLwDtIOwR+Mxg8D2gN0GXE9GLfR5Ab4IuXwyHADrHrMv46j5gtfcX8BRgAOX7OzJVtOaeAAAAAElFTkSuQmCC';
 }
 
 export default ArtBoard;

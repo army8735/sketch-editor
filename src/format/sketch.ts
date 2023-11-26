@@ -1327,6 +1327,9 @@ async function readFontFile(filename: string, zipFile: JSZip) {
   }
   const ab = await file.async('arraybuffer');
   const data = font.registerAb(ab);
+  if (!data) {
+    return;
+  }
   return new Promise((resolve, reject) => {
     if (typeof document !== 'undefined') {
       const f = new FontFace(data.postscriptName, ab);

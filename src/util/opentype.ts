@@ -1299,7 +1299,7 @@ export default {
         // css规范里trueType或者强制位都建议使用OS/2的
         // https://www.w3.org/TR/WD-font-970721#typoascent
         // https://drafts.csswg.org/css-inline-3/#ascent-descent
-        if (version >= 4 && (fsSelection & 0b10000000 || isTrueType)) {
+        if (version >= 4 && (fsSelection & 0b10000000 || isTrueType) || ascent === undefined) {
           p.parseUShort();
           p.parseUShort();
           ascent = Math.abs(p.parseShort());
@@ -1309,7 +1309,7 @@ export default {
         }
       }
     }
-    const nt = parseNameTable(nameTable.data, nameTable.offset, ltagTable);
+    const nt = nameTable ? parseNameTable(nameTable.data, nameTable.offset, ltagTable) : {};
     let name = {};
     if (nt.macintosh) {
       Object.assign(name, nt.macintosh);

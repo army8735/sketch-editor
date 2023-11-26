@@ -20,6 +20,8 @@ import softLightFrag from '../gl/mbm/softLight.frag';
 import bgBlurFrag from '../gl/bgBlur.frag';
 import bgColorVert from '../gl/bgColor.vert';
 import bgColorFrag from '../gl/bgColor.frag';
+import bgShadowVert from '../gl/bgShadow.vert';
+import bgShadowFrag from '../gl/bgShadow.frag';
 import cmFrag from '../gl/cm.frag';
 import dropShadowFrag from '../gl/dropShadow.frag';
 import innerShadowFrag from '../gl/innerShadow.frag';
@@ -68,7 +70,7 @@ class Root extends Container implements FrameCallback {
   task: Array<((sync: boolean) => void) | undefined>; // 刷新任务回调
   taskClone: Array<((sync: boolean) => void) | undefined>; // 一帧内刷新任务clone，可能任务回调中会再次调用新的刷新，新的应该再下帧不能混在本帧
   rl: RefreshLevel; // 一帧内画布最大刷新等级记录
-  artBoardShadowTexture: WebGLTexture | undefined; // 画板统一使用的阴影纹理
+  pageTexture: WebGLTexture | undefined; // 整体渲染结果先绘制到一个离屏中，每次刷新复用清空
   imgLoadingCount: number; // 刷新过程统计图片有没有加载完
   imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
 
@@ -159,6 +161,7 @@ class Root extends Container implements FrameCallback {
       mainFrag,
     ));
     this.programs.bgColorProgram = initShaders(gl, bgColorVert, bgColorFrag);
+    this.programs.bgShadowProgram = initShaders(gl, bgShadowVert, bgShadowFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     this.programs.maskProgram = initShaders(gl, simpleVert, maskFrag);
     this.programs.bgBlurProgram = initShaders(gl, simpleVert, bgBlurFrag);
@@ -285,6 +288,11 @@ class Root extends Container implements FrameCallback {
   ) {
     if (this.isDestroyed) {
       return;
+    }
+    // root的resize需要清空整体的离屏绘制纹理
+    if (node === this && this.pageTexture && (keys.indexOf('width') > -1 || keys.indexOf('height') > -1)) {
+      this.ctx!.deleteTexture(this.pageTexture);
+      this.pageTexture = undefined;
     }
     let lv = focus;
     if (keys && keys.length) {
