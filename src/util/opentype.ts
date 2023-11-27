@@ -1299,13 +1299,16 @@ export default {
         // css规范里trueType或者强制位都建议使用OS/2的
         // https://www.w3.org/TR/WD-font-970721#typoascent
         // https://drafts.csswg.org/css-inline-3/#ascent-descent
-        if (version >= 4 && (fsSelection & 0b10000000 || isTrueType) || ascent === undefined) {
+        const useOs = version >= 4 && (fsSelection & 0b10000000 || isTrueType);
+        if (useOs || ascent === undefined) {
           p.parseUShort();
           p.parseUShort();
           ascent = Math.abs(p.parseShort());
           descent = Math.abs(p.parseShort());
           lineGap = Math.abs(p.parseShort() || 0);
-          useFsSelection = true;
+          if (useOs) {
+            useFsSelection = true;
+          }
         }
       }
     }
