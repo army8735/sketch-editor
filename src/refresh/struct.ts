@@ -91,7 +91,7 @@ export function renderWebgl(
       gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(a_position);
       // color
-      let u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
+      const u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
       gl.uniform4f(u_color, 0.95, 0.95, 0.95, 1.0);
       // 渲染并销毁
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -100,7 +100,6 @@ export function renderWebgl(
     }
   }
   if (config.tile) {
-    // renderWebglNoTile(gl, root, scale, scaleIndex);
     if (page) {
       renderWebglTile(gl, root, scale, scaleIndex);
     }
@@ -149,8 +148,8 @@ function renderWebglTile(
   // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
   const offsetX = x % unit;
   const offsetY = y % unit;
-  let indexX = Math.floor(-x / unit);
-  let indexY = Math.floor(-y / unit);
+  const indexX = Math.floor(-x / unit);
+  const indexY = Math.floor(-y / unit);
   // 注意正负数，对偏移造成的影响不同，正数右下移左上多出来是漏出的Tile尺寸，负数左上移是本身遮盖的Tile尺寸
   if (offsetX > 0) {
     nw = Math.ceil((W - offsetX) / unit) + 1;
@@ -162,7 +161,6 @@ function renderWebglTile(
   } else {
     nh = Math.ceil((H - offsetY) / unit);
   }
-  // console.log(offsetX, offsetY, nw, nh, indexX, indexY);
   const tileList = tileManager.active(
     scale,
     indexX * Tile.UNIT,
@@ -170,6 +168,7 @@ function renderWebglTile(
     nw,
     nh,
   );
+  // console.log(offsetX, offsetY, nw, nh, indexX, indexY, tileList.map(item => item.toString()));
   // 渲染准备
   const cx = W * 0.5,
     cy = H * 0.5;
@@ -182,10 +181,8 @@ function renderWebglTile(
   for (let i = 0, len = tileList.length; i < len; i++) {
     const tile = tileList[i];
     tile.init(dpi);
-    // console.log(i, tile);
     if (!tile.complete) {
       complete = false;
-      // break;
     }
     // 更新tile的屏幕坐标
     const { x: x1, y: y1, size } = tile;
@@ -205,8 +202,6 @@ function renderWebglTile(
     // tile的坐标系，向tile输入不考虑缩放需完整
     const W2 = Tile.UNIT * dpi;
     const cx2 = W2 * 0.5;
-    const originX = tileList[0].x, originY = tileList[0].y;
-    // console.warn(tileList, originX, originY)
     // 循环非overlay的节点
     for (let i = 0, len = structs.length; i < len; i++) {
       const { node, total, next } = structs[i];
@@ -262,14 +257,26 @@ function renderWebglTile(
         /**
          * 按照page坐标系+左上原点tile坐标算出target的渲染坐标，后续每个tile渲染时都用此数据不变，
          * 但是每个tile都有一定的偏移值，这个值用tile的x/y-原点tile的x/y得出即可。
-         * 需先求出相对于page的matrix，即忽略掉pageContainer的缩放，逆矩阵运算。
+         * 需先求出相对于page的matrix，即忽略掉page及其父的matrix，逆矩阵运算。
          */
-        const m = multiply(matrix, im);
-        const coords = bbox2Coords(bbox, cx2, cx2, -originX, -originY, false, m);
-        // console.log(node.props.name, coords, bbox.join(','));
+        const m = multiply(im, matrix);
+        const coords = bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
+        // console.warn(node.props.name, coords, bbox.join(','));
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
+          // console.log(j, bbox.join(','), sb, tile.complete, !isConvexPolygonOverlapRect(
+          //   bbox[0], bbox[1], bbox[2], bbox[3],
+          //   [{
+          //     x: sb.x1, y: sb.y1,
+          //   }, {
+          //     x: sb.x2, y: sb.y2,
+          //   }, {
+          //     x: sb.x3, y: sb.y3,
+          //   }, {
+          //     x: sb.x4, y: sb.y4,
+          //   }],
+          // ));
           // 不在此tile中跳过，tile也可能是老的已有完备的
           if (tile.complete || !isConvexPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
@@ -285,6 +292,7 @@ function renderWebglTile(
           )) {
             continue;
           }
+          console.log(node.props.name, j, -tile.x / cx2, -tile.y / cx2, !!resFrameBuffer);
           // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
           if (!resFrameBuffer) {
             resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2 * dpi, W2 * dpi);
@@ -313,8 +321,8 @@ function renderWebglTile(
                 texture: target.texture,
               },
             ],
-            (originX - tile.x) / cx2,
-            (originY - tile.y) / cx2,
+            -tile.x / cx2,
+            -tile.y / cx2,
             false,
           );
           // 记录节点和tile的关系

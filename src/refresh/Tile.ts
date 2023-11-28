@@ -2,8 +2,10 @@ import { createTexture } from '../gl/webgl';
 import Node from '../node/Node';
 
 const UNIT = 256; // 高清方案下尺寸要*2=512
+let uuid = 0;
 
 class Tile {
+  uuid: number;
   available: boolean;
   count: number; // tile目前已绘多少节点
   nodes: Node[];
@@ -21,6 +23,7 @@ class Tile {
     y: number,
     size: number,
   ) {
+    this.uuid = uuid++;
     this.available = false;
     this.complete = false;
     this.count = 0;
@@ -84,14 +87,11 @@ class Tile {
     }
   }
 
-  static UNIT = UNIT;
+  toString() {
+    return this.uuid + ',' + this.x + ',' + this.y;
+  }
 
-  /**
-   * 当前page缩放程度后对应的unit，一定范围内（2的倍数）scale是不变的整数，unit也不变。
-   * 在scale为1时正好1:1，scale放大时unit要反而变小，scale变小则unit变大。
-   * scale
-   */
-  static scaleUnit(scale: number) {}
+  static UNIT = UNIT;
 }
 
 export default Tile;

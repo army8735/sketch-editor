@@ -34,14 +34,34 @@ class TileManager {
     }
     // 否则查找到对应的索引，由于是矩阵结构，直接就能计算出来
     else {
-      const first = table[0][0];
+      let first = table[0][0];
       const dx = x - first.x;
       const dy = y - first.y;
-      const ox = Math.round(dx / Tile.UNIT); // 肯定是整数，怕精度奇葩问题
-      const oy = Math.round(dy / Tile.UNIT);
-      for (let i = oy; i < nh; i++) {
+      let ox = Math.round(dx / Tile.UNIT); // 肯定是整数，怕精度奇葩问题
+      let oy = Math.round(dy / Tile.UNIT);
+      // console.warn(dx,dy,ox,oy,',',x,y,first.x,first.y);
+      // console.table(table.map(item => (item || []).map(item => item.toString())))
+      // 可能比之前的位置更小（左上），先填满
+      while (oy < 0) {
+        table.unshift([new Tile(this.gl, first.x, first.y - Tile.UNIT, Tile.UNIT)]);
+        first = table[0][0];
+        oy++;
+      }
+      while (ox < 0) {
+        for (let i = 0, len = table.length; i < len; i++) {
+          const list = table[i] = table[i] || [];
+          if (list.length) {
+            const tile = list[0];
+            list.unshift(new Tile(this.gl, tile.x - Tile.UNIT, tile.y, Tile.UNIT));
+          }
+        }
+        ox++;
+      }
+      // console.table(table.map(item => (item || []).map(item => item.toString())))
+      // 位置更大的话直接向右下找，其它情况上面已归零
+      for (let i = oy; i < oy + nh; i++) {
         const list: Tile[] = table[i] = table[i] || [];
-        for (let j = ox; j < nw; j++) {
+        for (let j = ox; j < ox + nw; j++) {
           if (list[j]) {
             res.push(list[j]);
           } else {
@@ -50,8 +70,8 @@ class TileManager {
             res.push(tile);
           }
         }
-        table.push(list);
       }
+      // console.table(table.map(item => (item || []).map(item => item.toString())))
     }
     return res;
   }
