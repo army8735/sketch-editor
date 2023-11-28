@@ -5,7 +5,7 @@ import Container from '../node/Container';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
-import { MIX_BLEND_MODE } from '../style/define';
+import { MASK, MIX_BLEND_MODE } from '../style/define';
 import config from '../util/config';
 import {
   checkInScreen,
@@ -59,8 +59,6 @@ export function renderWebgl(
       scale = n;
     }
   }
-  // 先生成需要汇总的临时根节点上的纹理
-  genMerge(gl, root, scale, scaleIndex);
   // 再普通遍历渲染
   const { imgLoadList } = root;
   const programs = root.programs;
@@ -99,6 +97,7 @@ export function renderWebgl(
       gl.disableVertexAttribArray(a_position);
     }
   }
+  gl.useProgram(programs.program);
   if (config.tile) {
     if (page) {
       renderWebglTile(gl, root, scale, scaleIndex);
@@ -129,7 +128,7 @@ function renderWebglTile(
   scale: number,
   scaleIndex: number,
 ) {
-  const { structs, lastPage: page, width: W, height: H, dpi, imgLoadList } = root;
+  const { structs, lastPage: page, width: W, height: H, dpi, imgLoadList, tileRecord } = root;
   const { translateX, translateY, scaleX } = page!.computedStyle;
   /**
    * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scale是跟随渲染整数倍范围的，
@@ -194,6 +193,48 @@ function renderWebglTile(
     tile.bbox[2] = bbox.x3;
     tile.bbox[3] = bbox.y3;
   }
+  // 这里生成merge的检查和普通不一样，由于tile可能只漏出一部分，因此屏幕范围比可视区域要大一些
+  let x1 = 0, y1 = 0, x2 = W, y2 = H;
+  if (tileList.length) {
+    const first = tileList[0], last = tileList[tileList.length - 1];
+    x1 = first.bbox[0];
+    y1 = first.bbox[1];
+    x2 = last.bbox[2];
+    y2 = last.bbox[3];
+  }
+  // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld
+  for (let i = 0, len = tileRecord.length; i < len; i++) {
+    const node = tileRecord[i];
+    if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
+      const m = node.matrixWorld;
+      const bbox = node.filterBbox;
+      if (checkInWorldRect(bbox, m, x1, y1, x2, y2)) {
+        const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
+        for (let j = 0, len = tileList.length; j < len; j++) {
+          const tile = tileList[j];
+          const bbox = tile.bbox;
+          if (isConvexPolygonOverlapRect(
+            bbox[0], bbox[1], bbox[2], bbox[3],
+            [{
+              x: sb.x1, y: sb.y1,
+            }, {
+              x: sb.x2, y: sb.y2,
+            }, {
+              x: sb.x3, y: sb.y3,
+            }, {
+              x: sb.x4, y: sb.y4,
+            }],
+          )) {
+            tile.clean();
+            complete = false;
+          }
+        }
+      }
+    }
+  }
+  // console.error('render', tileRecord, complete)
+  tileRecord.splice(0);
+  genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2);
   const overlay = root.overlay;
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
@@ -229,18 +270,16 @@ function renderWebglTile(
         isInScreen = false;
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
       if (target && target.available) {
-        isInScreen = checkInScreen(target.bbox, matrix, W, H);
+        isInScreen = checkInWorldRect(target.bbox, matrix, x1, y1, x2, y2);
       }
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
       else {
-        isInScreen = checkInScreen(
-          node._filterBbox || node.filterBbox,
-          matrix,
-          W,
-          H,
+        isInScreen = checkInWorldRect(
+          node._filterBbox || node.filterBbox, matrix,
+          x1, y1, x2, y2,
         );
         // 单个的alpha蒙版不渲染
-        if (isInScreen && node.hasContent && !node.computedStyle.maskMode) {
+        if (isInScreen && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
           node.genTexture(gl, scale, scaleIndex);
           target = textureTarget[scaleIndex];
         }
@@ -250,9 +289,10 @@ function renderWebglTile(
         imgLoadList.push(node as Bitmap);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中
-      if (isInScreen && target && target.available) {
+      if (isInScreen) {
+        const shouldRender = (target && target.available) || false;
         const { mixBlendMode, blur } = computedStyle;
-        const bbox = target.bbox;
+        const bbox = shouldRender ? target!.bbox : (node._filterBbox || node.filterBbox);
         const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
         /**
          * 按照page坐标系+左上原点tile坐标算出target的渲染坐标，后续每个tile渲染时都用此数据不变，
@@ -265,18 +305,6 @@ function renderWebglTile(
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
-          // console.log(j, bbox.join(','), sb, tile.complete, !isConvexPolygonOverlapRect(
-          //   bbox[0], bbox[1], bbox[2], bbox[3],
-          //   [{
-          //     x: sb.x1, y: sb.y1,
-          //   }, {
-          //     x: sb.x2, y: sb.y2,
-          //   }, {
-          //     x: sb.x3, y: sb.y3,
-          //   }, {
-          //     x: sb.x4, y: sb.y4,
-          //   }],
-          // ));
           // 不在此tile中跳过，tile也可能是老的已有完备的
           if (tile.complete || !isConvexPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
@@ -292,7 +320,16 @@ function renderWebglTile(
           )) {
             continue;
           }
-          console.log(node.props.name, j, -tile.x / cx2, -tile.y / cx2, !!resFrameBuffer);
+          const count = tile.count;
+          // 记录节点和tile的关系
+          if (!node.isPage && node.page) {
+            node.addTile(tile);
+            tile.add(node);
+          }
+          if (!shouldRender) {
+            continue;
+          }
+          // console.log(node.props.name, j, tile.uuid, count, -tile.x / cx2, -tile.y / cx2);
           // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
           if (!resFrameBuffer) {
             resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2 * dpi, W2 * dpi);
@@ -305,6 +342,11 @@ function renderWebglTile(
               0,
             );
           }
+          // 第一次绘制要清空
+          if (count === 0) {
+            gl.clearColor(0.0, 0.0, 0.0, 0.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+          }
           if (isBgBlur) {}
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
           // 有无mbm都复用这段逻辑
@@ -316,18 +358,15 @@ function renderWebglTile(
             [
               {
                 opacity,
-                bbox: target.bbox, // 无用有coords
+                bbox: target!.bbox, // 无用有coords
                 coords,
-                texture: target.texture,
+                texture: target!.texture,
               },
             ],
             -tile.x / cx2,
             -tile.y / cx2,
             false,
           );
-          // 记录节点和tile的关系
-          tile.count++;
-          tile.add(node);
           // 这里才是真正生成mbm
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
         }
@@ -393,6 +432,8 @@ function renderWebglNoTile(
   scaleIndex: number,
 ) {
   const { structs, width: W, height: H, imgLoadList } = root;
+  // 先生成需要汇总的临时根节点上的纹理
+  genMerge(gl, root, scale, scaleIndex, 0, 0, W, H);
   const cx = W * 0.5,
     cy = H * 0.5;
   const programs = root.programs;

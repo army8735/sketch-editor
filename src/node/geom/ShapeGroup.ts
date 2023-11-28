@@ -4,7 +4,7 @@ import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
-import config from '../../refresh/config';
+import config from '../../util/config';
 import { canvasPolygon, svgPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {

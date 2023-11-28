@@ -6,7 +6,7 @@ let uuid = 0;
 
 class Tile {
   uuid: number;
-  available: boolean;
+  available: boolean; // 延迟初始化创建纹理，可能tile为空不需要创建
   count: number; // tile目前已绘多少节点
   nodes: Node[];
   complete: boolean; // 是否绘制完备所有节点
@@ -44,29 +44,35 @@ class Tile {
     }
   }
 
-  clear(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    if (this.texture) {
-      gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,
-        gl.COLOR_ATTACHMENT0,
-        gl.TEXTURE_2D,
-        this.texture,
-        0,
-      );
-      gl.clearColor(0.0, 0.0, 0.0, 0.0);
-    }
+  // 引用清空，重绘清空为防止多次无效在第一次绘制时候做
+  clean() {
     this.count = 0;
-    this.nodes.splice(0);
+    this.complete = false;
+    const list = this.nodes.splice(0);
+    list.forEach(item => item.removeTile(this));
+    return list;
   }
 
   add(node: Node) {
     if (this.nodes.indexOf(node) === -1) {
       this.nodes.push(node);
+      node.addTile(this);
+      this.count++;
     }
   }
 
   has(node: Node) {
     return this.nodes.indexOf(node) > -1;
+  }
+
+  remove(node: Node) {
+    const i = this.nodes.indexOf(node);
+    if (i > -1) {
+      this.nodes.splice(i, 1);
+      node.removeTile(this);
+      this.count--;
+      this.complete = false;
+    }
   }
 
   updateTex(texture: WebGLTexture) {
@@ -80,7 +86,7 @@ class Tile {
     this.available = false;
     this.complete = false;
     this.count = 0;
-    this.nodes.splice(0);
+    // this.nodes.splice(0);
     if (this.texture) {
       this.gl.deleteTexture(this.texture);
       this.texture = undefined;
@@ -92,6 +98,10 @@ class Tile {
   }
 
   static UNIT = UNIT;
+
+  static clean(list: Tile[]) {
+    list.forEach(item => item.clean());
+  }
 }
 
 export default Tile;

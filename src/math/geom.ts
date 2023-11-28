@@ -316,7 +316,8 @@ export function isConvexPolygonOverlapRect(
   points: Array<{ x: number, y: number }>, includeIntersect = false,
 ) {
   let xa = 0, ya = 0, xb = 0, yb = 0;
-  let allInRect = true;
+  let allInX = true;
+  let allInY = true;
   // 看多边形顶点是否在矩形内
   for (let i = 0, len = points.length; i < len; i++) {
     const { x, y } = points[i];
@@ -343,13 +344,27 @@ export function isConvexPolygonOverlapRect(
       }
     }
     // 特殊情况，正好和矩形重合时，所有点都在边上认为还是重叠
-    if (x < x1 || x > x2 || y < y1 || y > y2) {
-      allInRect = false;
+    if (x < x1 || x > x2) {
+      allInX = false
+    }
+    if (y < y1 || y > y2) {
+      allInY = false;
     }
   }
   // 完全重合情况
-  if (allInRect) {
+  if (allInX && allInY) {
     return true;
+  }
+  // 部分重合的情况
+  if (allInX) {
+    if (ya >= y1 && ya <= y2 || yb >= y1 && yb <= y2) {
+      return true;
+    }
+  }
+  if (allInY) {
+    if (xa >= x1 && xa <= x2 || xb >= x1 && xb <= x2) {
+      return true;
+    }
   }
   // 在矩形外可提前跳出
   if (includeIntersect) {
@@ -361,13 +376,11 @@ export function isConvexPolygonOverlapRect(
       return false;
     }
   }
-  if (pointInConvexPolygon(x1, y1, points, includeIntersect) ||
+  // 最普通的情况
+  return pointInConvexPolygon(x1, y1, points, includeIntersect) ||
     pointInConvexPolygon(x2, y1, points, includeIntersect) ||
     pointInConvexPolygon(x2, y2, points, includeIntersect) ||
-    pointInConvexPolygon(x1, y2, points, includeIntersect)) {
-    return true;
-  }
-  return false;
+    pointInConvexPolygon(x1, y2, points, includeIntersect);
 }
 
 export default {

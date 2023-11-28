@@ -34,7 +34,8 @@ import simpleVert from '../gl/simple.vert';
 import simpleFrag from '../gl/simple.frag';
 import tintFrag from '../gl/tint.frag';
 import { initShaders } from '../gl/webgl';
-import config from '../refresh/config';
+import config from '../util/config';
+import Tile from '../refresh/Tile';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { renderWebgl, Struct } from '../refresh/struct';
 import Event from '../util/Event';
@@ -52,7 +53,6 @@ type RootProps = Props & {
 };
 
 class Root extends Container implements FrameCallback {
-  uuid: string;
   canvas?: HTMLCanvasElement;
   ctx: WebGL2RenderingContext | WebGLRenderingContext | undefined;
   dpi: number;
@@ -73,10 +73,11 @@ class Root extends Container implements FrameCallback {
   pageTexture: WebGLTexture | undefined; // 整体渲染结果先绘制到一个离屏中，每次刷新复用清空
   imgLoadingCount: number; // 刷新过程统计图片有没有加载完
   imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
+  firstDraw: boolean;
+  tileRecord: Node[]; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
 
   constructor(props: RootProps, children: Node[] = []) {
     super(props, children);
-    this.uuid = uuid.v4();
     // 初始化的数据
     this.dpi = props.dpi;
     this.root = this;
@@ -89,6 +90,8 @@ class Root extends Container implements FrameCallback {
     this.rl = RefreshLevel.REBUILD;
     this.imgLoadingCount = 0;
     this.imgLoadList = [];
+    this.firstDraw = true;
+    this.tileRecord = [];
     // 存所有Page
     this.pageContainer = new Container(
       {
@@ -306,9 +309,21 @@ class Root extends Container implements FrameCallback {
         this.emit(Event.WILL_REMOVE_PAGE, node);
       } else {
         this.emit(Event.WILL_REMOVE_DOM, node);
+        // 移除的同时重置关联tile
+        const list = node.cleanTile();
+        Tile.clean(list);
       }
     }
     const res = this.calUpdate(node, lv, keys, addDom, removeDom);
+    // 有tile时重置关联的tile，为了清空上一次绘制的tile的内容让其重绘
+    if (lv && config.tile && !this.firstDraw && node.page && !node.isPage) {
+      const list = node.cleanTile();
+      Tile.clean(list);
+      // 移动元素或者添加时，需要清空新的位置所占的tile区域，记录下来在渲染最初做
+      if (lv & RefreshLevel.TRANSLATE) {
+        this.tileRecord[node.uuid] = node;
+      }
+    }
     if (res) {
       this.asyncDraw(cb);
     } else {
@@ -447,6 +462,7 @@ class Root extends Container implements FrameCallback {
       this.rl = RefreshLevel.NONE;
       renderWebgl(this.ctx!, this);
       this.emit(Event.REFRESH, rl);
+      this.firstDraw = false;
     }
     if (!this.imgLoadingCount) {
       this.emit(Event.REFRESH_COMPLETE, rl);

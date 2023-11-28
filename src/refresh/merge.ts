@@ -36,7 +36,7 @@ import Group from '../node/Group';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
-import config from './config';
+import config from '../util/config';
 import { canvasPolygon } from './paint';
 import { color2gl } from '../style/css';
 import { BLUR, ComputedBlur, ComputedShadow, ComputedStyle, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
@@ -62,6 +62,10 @@ export function genMerge(
   root: Root,
   scale: number,
   scaleIndex: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
 ) {
   const { structs, width: W, height: H } = root;
   const mergeList: Merge[] = [];
@@ -213,7 +217,7 @@ export function genMerge(
     const item = mergeList[j];
     const { node, isTop, i, lv, total } = item;
     if (isTop) {
-      if (checkInScreen(node.tempBbox!, node.matrixWorld, W, H)) {
+      if (checkInWorldRect(node.tempBbox!, node.matrixWorld, x1, y1, x2, y2)) {
         // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
         setValid(item);
         // 如果是mask，还要看其是否影响被遮罩的merge，可能被遮罩在屏幕外面不可见
@@ -1486,6 +1490,7 @@ function genMask(
   const textureTarget = node.textureTarget[scaleIndex]!;
   const programs = root.programs;
   const program = programs.program;
+  gl.useProgram(program);
   // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
   const bbox = textureTarget.bbox;
   const { matrix, computedStyle } = node;

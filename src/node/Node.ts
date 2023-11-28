@@ -45,8 +45,12 @@ import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';
 import SymbolInstance from './SymbolInstance';
+import Tile from '../refresh/Tile';
+
+let id = 0;
 
 class Node extends Event {
+  uuid: number;
   width: number;
   height: number;
   minWidth: number; // 最小尺寸限制，当子节点有固定尺寸或者子节点还是组递归有固定时，最小限制不能调整
@@ -104,9 +108,11 @@ class Node extends Event {
   isShapeGroup = false;
   isContainer = false;
   isSlice = false;
+  tileList: Tile[];
 
   constructor(props: Props) {
     super();
+    this.uuid = id++;
     this.props = props;
     this.props.uuid = this.props.uuid || uuid.v4();
     this.style = normalize(getDefaultStyle(props.style));
@@ -141,9 +147,11 @@ class Node extends Event {
     this.textureFilter = [];
     this.textureMask = [];
     this.textureTarget = [];
+    // merge过程中相对于merge顶点作为局部根节点时暂存的数据
     this.tempOpacity = 1;
     this.tempMatrix = identity();
     this.tempIndex = 0;
+    this.tileList = [];
   }
 
   // 添加到dom后标记非销毁状态，和root引用
@@ -1696,6 +1704,29 @@ class Node extends Event {
     res.computedStyle = clone(this.computedStyle);
     if (override) {}
     return res;
+  }
+
+  addTile(tile: Tile) {
+    if (this.tileList.indexOf(tile) === -1) {
+      this.tileList.push(tile);
+      tile.add(this);
+    }
+  }
+
+  removeTile(tile: Tile) {
+    const i = this.tileList.indexOf(tile);
+    if (i > -1) {
+      const t = this.tileList.splice(i, 1);
+      t[0].remove(this);
+    }
+  }
+
+  cleanTile() {
+    const list = this.tileList.splice(0);
+    list.forEach(item => {
+      item.remove(this);
+    });
+    return list;
   }
 
   get opacity() {

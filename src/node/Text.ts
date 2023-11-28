@@ -2,7 +2,7 @@ import * as uuid from 'uuid';
 import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
-import config from '../refresh/config';
+import config from '../util/config';
 import { RefreshLevel } from '../refresh/level';
 import {
   calNormalLineHeight,
