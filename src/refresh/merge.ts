@@ -234,6 +234,7 @@ export function genMerge(
       }
     }
   }
+  const mergeRecord: Array<{ bbox: Float64Array, m: Float64Array }> = [];
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const { i, lv, total, node, valid, isNew } = mergeList[j];
@@ -249,51 +250,65 @@ export function genMerge(
     if ((!visible || opacity <= 0) && !maskMode) {
       continue;
     }
+    let res: TextureCache | undefined;
     // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-    const t = genTotal(
-      gl,
-      root,
-      node,
-      structs,
-      i,
-      lv,
-      total,
-      W,
-      H,
-      scale,
-      scaleIndex,
-    );
-    if (t) {
-      node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = t;
+    if (!node.textureTotal[scaleIndex]?.available) {
+      const t = genTotal(
+        gl,
+        root,
+        node,
+        structs,
+        i,
+        lv,
+        total,
+        W,
+        H,
+        scale,
+        scaleIndex,
+      );
+      if (t) {
+        node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = t;
+        res = t;
+      }
     }
     // 生成filter，这里直接进去，如果没有filter会返回空，group的tint也视作一种filter
-    if (node.textureTarget[scaleIndex]) {
+    if (node.textureTarget[scaleIndex] && !node.textureFilter[scaleIndex]?.available) {
       const t = genFilter(gl, root, node, W, H, scale, scaleIndex);
       if (t) {
         node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] = t;
+        res = t;
       }
     }
-    // 生成mask，轮廓模板不需要验证有被遮罩对象
-    if (maskMode === MASK.OUTLINE || (maskMode === MASK.ALPHA && node.next)) {
-      // 可能超过尺寸没有total汇总，暂时防御下
-      if (node.textureTarget[scaleIndex]) {
-        node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] = genMask(
-          gl,
-          root,
-          node,
-          maskMode,
-          structs,
-          i,
-          lv,
-          total,
-          W,
-          H,
-          scale,
-          scaleIndex,
-        );
+    // 生成mask，轮廓模板不需要验证有被遮罩对象但也无需生成
+    if (maskMode && node.textureTarget[scaleIndex] && !node.textureMask[scaleIndex]?.available && node.next) {
+      const t = genMask(
+        gl,
+        root,
+        node,
+        maskMode,
+        structs,
+        i,
+        lv,
+        total,
+        W,
+        H,
+        scale,
+        scaleIndex,
+      );
+      if (t) {
+        node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] = t;
+        res = t;
       }
+    }
+    // 变更区域影响tile
+    if (res && !root.firstDraw) {
+      mergeRecord.push({
+        bbox: res.bbox,
+        m: node._matrixWorld || node.matrixWorld,
+      });
     }
   }
+  return mergeRecord;
 }
 
 /**
@@ -1483,11 +1498,11 @@ function genMask(
   if (node.textureMask[scaleIndex]?.available) {
     return node.textureMask[scaleIndex];
   }
-  // 可能是个单叶子节点，mask申明无效；或者因为可视范围外还未生成汇总total
-  if (!node.next || !node.textureTarget[scaleIndex]) {
-    return node.textureTarget[scaleIndex];
-  }
   const textureTarget = node.textureTarget[scaleIndex]!;
+  // 可能是个单叶子节点，mask申明无效
+  if (!node.next) {
+    return textureTarget;
+  }
   const programs = root.programs;
   const program = programs.program;
   gl.useProgram(program);

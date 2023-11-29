@@ -95,9 +95,9 @@ export function renderWebgl(
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.deleteBuffer(pointBuffer);
       gl.disableVertexAttribArray(a_position);
+      gl.useProgram(programs.program);
     }
   }
-  gl.useProgram(programs.program);
   if (config.tile) {
     if (page) {
       renderWebglTile(gl, root, scale, scaleIndex);
@@ -213,7 +213,7 @@ function renderWebglTile(
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
-          if (isConvexPolygonOverlapRect(
+          if (tile.count && isConvexPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -234,7 +234,34 @@ function renderWebglTile(
   }
   // console.error('render', tileRecord, complete)
   tileRecord.splice(0);
-  genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2);
+  // 新生成的merge也影响tile，需清空重绘
+  const mergeRecord = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2);
+  for (let i = 0, len = mergeRecord.length; i < len; i++) {
+    const { bbox, m } = mergeRecord[i];
+    if (checkInWorldRect(bbox, m, x1, y1, x2, y2)) {
+      const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
+      for (let j = 0, len = tileList.length; j < len; j++) {
+        const tile = tileList[j];
+        const bbox = tile.bbox;
+        if (tile.count && isConvexPolygonOverlapRect(
+          bbox[0], bbox[1], bbox[2], bbox[3],
+          [{
+            x: sb.x1, y: sb.y1,
+          }, {
+            x: sb.x2, y: sb.y2,
+          }, {
+            x: sb.x3, y: sb.y3,
+          }, {
+            x: sb.x4, y: sb.y4,
+          }],
+        )) {
+          tile.clean();
+          complete = false;
+        }
+      }
+    }
+  }
+  // console.error('render2', mergeRecord, complete)
   const overlay = root.overlay;
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
