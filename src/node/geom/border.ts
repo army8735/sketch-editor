@@ -12,6 +12,9 @@ export function lineCap(bbox: Float64Array, width: number, points: number[][], c
     res[2] += width;
     res[3] += width;
   }
+  if (!points.length) {
+    return res;
+  }
   // 仅首尾端点生效，一条线
   const first = points[0];
   const last = points[points.length - 1];
@@ -63,6 +66,9 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
     res[1] -= width;
     res[2] += width;
     res[3] += width;
+    return res;
+  }
+  if (!points.length) {
     return res;
   }
   // 先求出向量，曲线则是尾部切线，用于判断相邻2条的时钟序，同时求得向量平移画线宽度一半的2条直线解

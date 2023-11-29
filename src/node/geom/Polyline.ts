@@ -3,7 +3,7 @@ import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../.
 import { r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
-import config from '../../refresh/config';
+import config from '../../util/config';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
 import {
@@ -44,6 +44,10 @@ class Polyline extends Geom {
     const props = this.props;
     const { width, height } = this;
     const points = props.points;
+    if (!points.length) {
+      this.points = [];
+      return;
+    }
     let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
     for (let i = 0, len = points.length; i < len; i++) {
