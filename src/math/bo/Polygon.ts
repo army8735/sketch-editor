@@ -843,9 +843,11 @@ function findIntersection(
                   if (rb.length) {
                     // 老的线段被删除无效了，踢出ael，防止seg没被分割
                     activeNewSeg(segments, list, ael, x, rb);
-                    ael.splice(i, 1);
+                    ael.splice(i--, 1);
                   }
-                  break;
+                  if (ra.length) {
+                    break;
+                  }
                 }
               }
             }
