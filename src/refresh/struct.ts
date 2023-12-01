@@ -232,7 +232,6 @@ function renderWebglTile(
       }
     }
   }
-  // console.error('render', tileRecord, complete)
   tileRecord.splice(0);
   // 新生成的merge也影响tile，需清空重绘
   const mergeRecord = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2);
@@ -261,8 +260,8 @@ function renderWebglTile(
       }
     }
   }
-  // console.error('render2', mergeRecord, complete)
   const overlay = root.overlay;
+  let overlayIdx = 0;
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
     let resFrameBuffer: WebGLFramebuffer | undefined;
@@ -275,6 +274,7 @@ function renderWebglTile(
       const { node, total, next } = structs[i];
       // tile不收集overlay的东西
       if (overlay === node) {
+        overlayIdx = i;
         break;
       }
       const computedStyle = node.computedStyle;
@@ -315,10 +315,10 @@ function renderWebglTile(
       if (isInScreen && node.isBitmap && (node as Bitmap).checkLoader()) {
         imgLoadList.push(node as Bitmap);
       }
-      // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中
-      if (isInScreen) {
+      // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
+      if (isInScreen && !node.isPage && node.page) {
         const shouldRender = (target && target.available) || false;
-        const { mixBlendMode, blur } = computedStyle;
+        const { mixBlendMode } = computedStyle;
         const bbox = shouldRender ? target!.bbox : (node._filterBbox || node.filterBbox);
         const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
         /**
@@ -328,6 +328,11 @@ function renderWebglTile(
          */
         const m = multiply(im, matrix);
         const coords = bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
+        let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
+        if (node.isArtBoard) {
+          const bbox = node._bbox || node.bbox;
+          ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
+        }
         // console.warn(node.props.name, coords, bbox.join(','));
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
@@ -353,7 +358,7 @@ function renderWebglTile(
             node.addTile(tile);
             tile.add(node);
           }
-          if (!shouldRender) {
+          if (!shouldRender && !node.isArtBoard) {
             continue;
           }
           // console.log(node.props.name, j, tile.uuid, count, -tile.x / cx2, -tile.y / cx2);
@@ -374,6 +379,11 @@ function renderWebglTile(
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
           }
+          // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差
+          if (node.isArtBoard) {
+            (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, tile, ab!);
+            continue;
+          }
           if (isBgBlur) {}
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
           // 有无mbm都复用这段逻辑
@@ -393,6 +403,7 @@ function renderWebglTile(
             -tile.x / cx2,
             -tile.y / cx2,
             false,
+            -1, -1, 1, 1,
           );
           // 这里才是真正生成mbm
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
@@ -415,7 +426,6 @@ function renderWebglTile(
     }
   }
   // 遍历tile，渲染，可能某个未完备，检查是否有低清版本
-  // console.log(tileList)
   for (let i = 0, len = tileList.length; i < len; i++) {
     const tile = tileList[i];
     if (tile.available && tile.count) {
@@ -435,18 +445,58 @@ function renderWebglTile(
         0,
         0,
         true,
+        -1, -1, 1, 1,
       );
     }
     // 无论如何都会设置完备，当有节点更新，会重置关联的tile
     tile.complete = true;
   }
+  // overlay的内容在tile之上单独渲染
+  overlay.update();
+  for (let i = overlayIdx, len = structs.length; i < len; i++ ) {
+    const { node } = structs[i];
+    // 继承父的opacity和matrix，仍然要注意root没有parent
+    const { parent, textureTarget } = node;
+    calWorldMatrixAndOpacity(node, i, parent);
+    // 计算后的世界坐标结果
+    const opacity = node._opacity;
+    const matrix = node._matrixWorld;
+    let target = textureTarget[0];
+    if (!target && node.hasContent) {
+      node.genTexture(gl, 1, 0);
+      target = textureTarget[0];
+    }
+    if (target && target.available) {
+      const isInScreen = checkInScreen(target.bbox, matrix, W, H);
+      if (isInScreen) {
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity,
+              matrix,
+              bbox: target.bbox,
+              texture: target.texture,
+            },
+          ],
+          0,
+          0,
+          true,
+          -1, -1, 1, 1,
+        );
+      }
+    }
+  }
 }
 
 /**
  * Page的孩子可能是直接的渲染对象，也可能是画板，画板需要实现overflow:hidden的效果，如果用画板本身尺寸离屏绘制，
- * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。可以用和画布同尺寸的一个FBO，
- * 所有的内容依旧照常绘入（可视范围外还可以跳过节省资源），最后再用mask功能裁剪掉画布范围外的即可。
- * 另外，Page的非画布孩子无需mask逻辑，只要判断是否在可视范围外即可。
+ * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。
+ * 使用坐标判断如果超过画布尺寸则discard掉，需要计算出画布所在屏幕的gl坐标范围。
+ * 另外，Page的非画布孩子无需clip逻辑，只要判断是否在可视范围外即可。
  * mixBlendMode/backgroundBlur需要离屏混入，画布本身就已经离屏无需再申请，因此Page的非画布孩子绘入一个相同离屏即可。
  * sketch里，一个渲染对象只要和画布重叠相交，就一定在画布内，所以无需关心Page的非画布孩子和画布的zIndex问题。
  * 在遍历渲染过程中，记录一个索引hash，当画板开始时切换到画板FBO，结束时切换到PageFBO，
@@ -467,9 +517,7 @@ function renderWebglNoTile(
   // 初始化工作
   const artBoardIndex: ArtBoard[] = [];
   let pageTexture = root.pageTexture || createTexture(gl, 0, undefined, W, H);
-  let artBoardTexture: WebGLTexture | undefined;
-  let resTexture = pageTexture;
-  const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
+  const resFrameBuffer = genFrameBufferWithTexture(gl, pageTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
@@ -477,6 +525,7 @@ function renderWebglNoTile(
   let isOverlay = false;
   const program = programs.program;
   gl.useProgram(programs.program);
+  let x1 = -1, y1 = -1, x2 = 1, y2 = 1;
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];
@@ -495,19 +544,8 @@ function renderWebglNoTile(
       i += total + next;
       // 同正常逻辑检查画板end，写回Page
       if (artBoardIndex[i]) {
-        resTexture = pageTexture;
-        drawArtBoardClip(
-          gl,
-          programs,
-          resTexture,
-          artBoardTexture!,
-          artBoardIndex[i],
-          W,
-          H,
-          cx,
-          cy,
-        );
-        artBoardTexture = undefined;
+        x1 = y1 = -1;
+        x2 = y2 = -1;
       }
       continue;
     }
@@ -543,6 +581,7 @@ function renderWebglNoTile(
             0,
             0,
             false,
+            x1, y1, x2, y2,
           );
         }
       }
@@ -573,28 +612,17 @@ function renderWebglNoTile(
       // 画布和Page的FBO切换检测
       if (isInScreen) {
         // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
-        if (node.isArtBoard && total + next) {
-          pageTexture = resTexture; // 防止mbm导致新生成纹理，需赋值回去给page
-          artBoardIndex[i + total + next] = node as ArtBoard;
-          artBoardTexture = createTexture(gl, 0, undefined, W, H);
-          resTexture = artBoardTexture;
-          // 背景色需要画在page，否则会干扰mbm
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            pageTexture,
-            0,
-          );
+        if (node.isArtBoard) {
           (node as ArtBoard).renderBgc(gl, cx, cy);
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            resTexture,
-            0,
-          );
-          gl.useProgram(program);
+          if (total + next) {
+            artBoardIndex[i + total + next] = node as ArtBoard;
+            const bbox = node._bbox || node.bbox;
+            const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+            x1 = (ab.x1 - cx) / cx;
+            y1 = (ab.y1 - cy) / cy;
+            x2 = (ab.x3 - cx) / cx;
+            y2 = (ab.y3 - cy) / cy;
+          }
         }
         // 图片检查内容加载计数器
         if (node.isBitmap && (node as Bitmap).checkLoader()) {
@@ -620,9 +648,9 @@ function renderWebglNoTile(
             target.bbox,
             scale,
           ));
-          resTexture = genBgBlur(
+          pageTexture = genBgBlur(
             gl,
-            resTexture,
+            pageTexture,
             node,
             node._matrixWorld,
             outline!,
@@ -638,14 +666,9 @@ function renderWebglNoTile(
             gl.FRAMEBUFFER,
             gl.COLOR_ATTACHMENT0,
             gl.TEXTURE_2D,
-            resTexture,
+            pageTexture,
             0,
           );
-          if (artBoardTexture) {
-            artBoardTexture = resTexture;
-          } else {
-            pageTexture = resTexture;
-          }
         }
         let tex: WebGLTexture | undefined;
         // 有mbm先将本节点内容绘制到和root同尺寸纹理上
@@ -676,23 +699,19 @@ function renderWebglNoTile(
           0,
           0,
           false,
+          x1, y1, x2, y2,
         );
         // 这里才是真正生成mbm
         if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
-          resTexture = genMbm(
+          pageTexture = genMbm(
             gl,
-            resTexture!,
+            pageTexture,
             tex!,
             mixBlendMode,
             programs,
             W,
             H,
           );
-          if (artBoardTexture) {
-            artBoardTexture = resTexture;
-          } else {
-            pageTexture = resTexture;
-          }
         }
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
@@ -707,19 +726,8 @@ function renderWebglNoTile(
       }
       // 在end处切回Page，需要先把画布的FBO实现overflow:hidden，再绘制回Page
       if (artBoardIndex[i]) {
-        resTexture = pageTexture;
-        drawArtBoardClip(
-          gl,
-          programs,
-          resTexture,
-          artBoardTexture!,
-          artBoardIndex[i],
-          W,
-          H,
-          cx,
-          cy,
-        );
-        artBoardTexture = undefined;
+        x1 = y1 = -1;
+        x2 = y2 = 1;
       }
     }
   }
@@ -740,8 +748,9 @@ function renderWebglNoTile(
     0,
     0,
     true,
+    x1, y1, x2, y2,
   );
-  gl.deleteTexture(pageTexture);
+  root.pageTexture = pageTexture;
 }
 
 // 计算节点的世界坐标系数据
@@ -780,86 +789,4 @@ function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
     }
     node.hasCacheMw = true;
   }
-}
-
-function drawArtBoardClip(
-  gl: WebGLRenderingContext | WebGL2RenderingContext,
-  programs: any,
-  resTexture: WebGLTexture,
-  artBoardTexture: WebGLTexture,
-  artBoard: ArtBoard,
-  W: number,
-  H: number,
-  cx: number,
-  cy: number,
-) {
-  // 可能画板内没有超出的子节点，先判断下，节省绘制
-  let needMask = false;
-  const children = artBoard.children;
-  const rect = artBoard._rect || artBoard.rect;
-  const matrixWorld = artBoard._matrixWorld || artBoard.matrixWorld;
-  // 画板一定没有旋转
-  const abRect = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
-  for (let i = 0, len = children.length; i < len; i++) {
-    const child = children[i];
-    const bbox = child._filterBbox2 || child.filterBbox2;
-    const matrix = child._matrixWorld || child.matrixWorld;
-    if (checkInWorldRect(bbox, matrix, abRect.x1, abRect.y1, abRect.x3, abRect.y3)) {
-      needMask = true;
-      break;
-    }
-  }
-  // 先画出类似背景色的遮罩，再绘入Page
-  if (needMask) {
-    const tex = createTexture(gl, 0, undefined, W, H);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex,
-      0,
-    );
-    artBoard.renderBgc(gl, cx, cy, [1.0, 1.0, 1.0, 1.0]);
-    const tex2 = createTexture(gl, 0, undefined, W, H);
-    const maskProgram = programs.maskProgram;
-    gl.useProgram(maskProgram);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex2,
-      0,
-    );
-    drawMask(gl, maskProgram, tex, artBoardTexture!);
-    gl.deleteTexture(tex);
-    gl.deleteTexture(artBoardTexture!);
-    artBoardTexture = tex2;
-    gl.useProgram(programs.program);
-  }
-  // 无超出的直接绘制回Page即可，mask也复用这段逻辑
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    resTexture,
-    0,
-  );
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    programs.program,
-    [
-      {
-        opacity: 1,
-        bbox: new Float64Array([0, 0, W, H]),
-        texture: artBoardTexture!,
-      },
-    ],
-    0,
-    0,
-    false,
-  );
-  // 退出画板删除且置空标明回到Page上
-  gl.deleteTexture(artBoardTexture!);
 }

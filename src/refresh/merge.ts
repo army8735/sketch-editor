@@ -570,6 +570,7 @@ function genTotal(
         dx,
         dy,
         false,
+        -1, -1, 1, 1,
       );
       // 这里才是真正生成mbm
       if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
@@ -830,6 +831,7 @@ function genGaussBlur(
     dx,
     dy,
     false,
+    -1, -1, 1, 1,
   );
   // 再建一个空白尺寸纹理，2个纹理互相写入对方，循环3次模糊，水平垂直分开
   const programGauss = genGaussShader(gl, programs, sigma * scale, d);
@@ -936,6 +938,7 @@ function genMotionBlur(
     dx,
     dy,
     false,
+    -1, -1, 1, 1,
   );
   // 迭代运动模糊
   const programMotion = programs.motionProgram;
@@ -1022,6 +1025,7 @@ function genRadialBlur(
     dx,
     dy,
     false,
+    -1, -1, 1, 1,
   );
   // 迭代径向模糊
   const programRadial = programs.radialProgram;
@@ -1351,6 +1355,7 @@ function genShadow(
     dx,
     dy,
     false,
+    -1, -1, 1, 1,
   );
   // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
   const dropShadowProgram = programs.dropShadowProgram;
@@ -1453,6 +1458,7 @@ function genShadow(
       dx,
       dy,
       false,
+      -1, -1, 1, 1,
     );
     gl.deleteTexture(item);
   });
@@ -1472,6 +1478,7 @@ function genShadow(
     dx,
     dy,
     false,
+    -1, -1, 1, 1,
   );
   target.release();
   gl.useProgram(program);
@@ -1669,6 +1676,7 @@ function genMask(
         dx,
         dy,
         false,
+        -1, -1, 1, 1,
       );
       // 这里才是真正生成mbm
       if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
@@ -1764,6 +1772,7 @@ function genMask(
         dx,
         dy,
         false,
+        -1, -1, 1, 1,
       );
     }
     drawTextureCache(
@@ -1782,6 +1791,7 @@ function genMask(
       dx,
       dy,
       false,
+      -1, -1, 1, 1,
     );
     temp.release();
   }
@@ -1896,6 +1906,7 @@ export function genBgBlur(
     dx,
     dy,
     false,
+    -1, -1, 1, 1,
   );
   // 画布内容进行blur
   const sigma = blur.radius * scale;

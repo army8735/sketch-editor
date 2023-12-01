@@ -167,6 +167,10 @@ export function drawTextureCache(
   dx = 0,
   dy = 0,
   flipY = true,
+  x1 = -1,
+  y1 = -1,
+  x2 = 1,
+  y2 = 1,
 ) {
   const length = list.length;
   if (!length) {
@@ -267,6 +271,15 @@ export function drawTextureCache(
   // 纹理单元
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, 0);
+  // clip范围
+  const u_x1 = gl.getUniformLocation(program, 'x1');
+  gl.uniform1f(u_x1, x1);
+  const u_y1 = gl.getUniformLocation(program, 'y1');
+  gl.uniform1f(u_y1, y1);
+  const u_x2 = gl.getUniformLocation(program, 'x2');
+  gl.uniform1f(u_x2, x2);
+  const u_y2 = gl.getUniformLocation(program, 'y2');
+  gl.uniform1f(u_y2, y2);
   // 渲染并销毁
   gl.drawArrays(isSingle ? gl.TRIANGLE_STRIP : gl.TRIANGLES, 0, num2);
   gl.deleteBuffer(pointBuffer);
@@ -588,7 +601,8 @@ export function drawTint(
   gl.uniform1i(u_texture, 0);
   const u_tint = gl.getUniformLocation(program, 'u_tint');
   const color = color2gl(tint);
-  gl.uniform4f(u_tint, color[0], color[1], color[2], color[3] * opacity);
+  color[3] *= opacity;
+  gl.uniform4f(u_tint, color[0] * color[3], color[1] * color[3], color[2] * color[3], color[3]);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);

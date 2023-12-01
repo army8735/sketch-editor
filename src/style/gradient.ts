@@ -454,6 +454,18 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     theta = angleBySides(a, b, c);
     const p2 = theta ? b * Math.cos(theta) : b;
     const list = (clone(stops) as ComputedColorStop[]).sort((a, b) => a.offset! - b.offset!);
+    if (list[0].offset! > 0) {
+      list.unshift({
+        color: list[0].color.slice(0),
+        offset: 0,
+      });
+    }
+    if (list[list.length - 1].offset! < 1) {
+      list.push({
+        color: list[list.length - 1].color.slice(0),
+        offset: 1,
+      });
+    }
     // start超过截取
     if (p1 > 0) {
       const offset = p1 / c;
@@ -489,7 +501,7 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     }
     // end一样
     if (p2 > 0) {
-      const offset = p2 / c;
+      const offset = (c - p2) / c;
       for (let i = list.length - 1; i >= 0; i--) {
         const item = list[i];
         if (item.offset! <= offset) {
