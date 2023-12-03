@@ -16,6 +16,10 @@ class Tile {
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   texture: WebGLTexture | undefined;
   bbox: Float64Array; // 相对于page的坐标，没有旋转所以只算2个顶点即可
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 
   constructor(
     gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -33,6 +37,8 @@ class Tile {
     this.size = size;
     this.gl = gl;
     this.bbox = new Float64Array([0, 0, 0, 0]);
+    this.x1 = this.y1 = -1;
+    this.x2 = this.y2 = 1;
   }
 
   init(dpi = 1) {

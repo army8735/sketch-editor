@@ -512,9 +512,9 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
             const p = (p2 - (1 - next.offset!) * c) / l;
             const color = next.color.map((color, i) => {
               if (i === 3) {
-                return color + (next.color[i] - color) * p;
+                return color + (item.color[i] - color) * p;
               }
-              return color + Math.floor((next.color[i] - color) * p);
+              return color + Math.floor((item.color[i] - color) * p);
             });
             const n = {
               color,

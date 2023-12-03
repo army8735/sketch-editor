@@ -20,7 +20,7 @@ import {
 } from './merge';
 import TileManager from './TileManager';
 import Tile from './Tile';
-import { isConvexPolygonOverlapRect } from '../math/geom';
+import { isPolygonOverlapRect } from '../math/geom';
 
 export type Struct = {
   node: Node;
@@ -174,6 +174,7 @@ function renderWebglTile(
   const programs = root.programs;
   const program = programs.program;
   gl.useProgram(programs.program);
+  const artBoardIndex: ArtBoard[] = [];
   const pm = page!._matrixWorld || page!.matrixWorld;
   // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
   let complete = true;
@@ -213,7 +214,7 @@ function renderWebglTile(
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
-          if (tile.count && isConvexPolygonOverlapRect(
+          if (tile.count && isPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -242,7 +243,7 @@ function renderWebglTile(
       for (let j = 0, len = tileList.length; j < len; j++) {
         const tile = tileList[j];
         const bbox = tile.bbox;
-        if (tile.count && isConvexPolygonOverlapRect(
+        if (tile.count && isPolygonOverlapRect(
           bbox[0], bbox[1], bbox[2], bbox[3],
           [{
             x: sb.x1, y: sb.y1,
@@ -285,6 +286,10 @@ function renderWebglTile(
       // 和普通渲染相比没有检查画板写回Page的过程
       if (shouldIgnore) {
         i += total + next;
+        // 在画布end处重置clip
+        if (artBoardIndex[i]) {
+          resetTileClip(tileList);
+        }
         continue;
       }
       // 继承父的opacity和matrix，仍然要注意root没有parent
@@ -333,12 +338,12 @@ function renderWebglTile(
           const bbox = node._bbox || node.bbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
         }
-        // console.warn(node.props.name, coords, bbox.join(','));
+        // console.warn(node.props.name, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
           // 不在此tile中跳过，tile也可能是老的已有完备的
-          if (tile.complete || !isConvexPolygonOverlapRect(
+          if (tile.complete || !isPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -379,9 +384,17 @@ function renderWebglTile(
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
           }
-          // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差
+          // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
           if (node.isArtBoard) {
             (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, tile, ab!);
+            if (total + next) {
+              artBoardIndex[i + total + next] = node as ArtBoard;
+              tile.x1 = (ab!.x1 - tile.x - cx2) / cx2;
+              tile.y1 = (ab!.y1 - tile.y - cx2) / cx2;
+              tile.x2 = (ab!.x3 - tile.x - cx2) / cx2;
+              tile.y2 = (ab!.y3 - tile.y - cx2) / cx2;
+              // console.log(i, j, ab!, tile.x1, tile.y1, tile.x2, tile.y2)
+            }
             continue;
           }
           if (isBgBlur) {}
@@ -403,7 +416,7 @@ function renderWebglTile(
             -tile.x / cx2,
             -tile.y / cx2,
             false,
-            -1, -1, 1, 1,
+            tile.x1, tile.y1, tile.x2, tile.y2,
           );
           // 这里才是真正生成mbm
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
@@ -419,11 +432,17 @@ function renderWebglTile(
       } else if (node.isShapeGroup) {
         i += total;
       }
+      // 在画布end处重置clip
+      if (artBoardIndex[i]) {
+        resetTileClip(tileList);
+      }
     }
     // 释放回主画布
     if (resFrameBuffer) {
       releaseFrameBuffer(gl, resFrameBuffer, W, H);
     }
+  } else {
+    overlayIdx = structs.indexOf(overlay.struct);
   }
   // 遍历tile，渲染，可能某个未完备，检查是否有低清版本
   for (let i = 0, len = tileList.length; i < len; i++) {
@@ -492,6 +511,13 @@ function renderWebglTile(
   }
 }
 
+function resetTileClip(tileList: Tile[]) {
+  tileList.forEach(item => {
+    item.x1 = item.y1 = -1;
+    item.x2 = item.y2 = 1;
+  });
+}
+
 /**
  * Page的孩子可能是直接的渲染对象，也可能是画板，画板需要实现overflow:hidden的效果，如果用画板本身尺寸离屏绘制，
  * 创建的离屏FBO纹理可能会非常大，因为画板并未限制尺寸，超大尺寸情况下实现会非常复杂。
@@ -542,7 +568,7 @@ function renderWebglNoTile(
     );
     if (shouldIgnore) {
       i += total + next;
-      // 同正常逻辑检查画板end，写回Page
+      // 同正常逻辑检查画板end，重置clip
       if (artBoardIndex[i]) {
         x1 = y1 = -1;
         x2 = y2 = -1;
@@ -581,7 +607,7 @@ function renderWebglNoTile(
             0,
             0,
             false,
-            x1, y1, x2, y2,
+            -1, -1, 1, 1,
           );
         }
       }
@@ -724,7 +750,7 @@ function renderWebglNoTile(
       } else if (node.isShapeGroup) {
         i += total;
       }
-      // 在end处切回Page，需要先把画布的FBO实现overflow:hidden，再绘制回Page
+      // 在画布end处重置clip
       if (artBoardIndex[i]) {
         x1 = y1 = -1;
         x2 = y2 = 1;
@@ -748,7 +774,7 @@ function renderWebglNoTile(
     0,
     0,
     true,
-    x1, y1, x2, y2,
+    -1, -1, 1, 1,
   );
   root.pageTexture = pageTexture;
 }

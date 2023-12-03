@@ -16,7 +16,7 @@ import {
   initShaders,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
-import { d2r, isConvexPolygonOverlapRect, isRectsOverlap } from '../math/geom';
+import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 import {
   assignMatrix,
   calPoint,
@@ -410,7 +410,7 @@ export function checkInWorldRect(
     }
     return isRectsOverlap(x, y, width, height, x1, y1, x3, y3, false);
   }
-  return isConvexPolygonOverlapRect(x, y, width, height, [
+  return isPolygonOverlapRect(x, y, width, height, [
     { x: x1, y: y1 },
     { x: x2, y: y2 },
     { x: x3, y: y3 },

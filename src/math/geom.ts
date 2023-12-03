@@ -1,5 +1,6 @@
 import { crossProduct } from './vector';
 import { calPoint, isE } from './matrix';
+import { intersectLineLine } from './isec';
 
 export function d2r(n: number) {
   return n * Math.PI / 180;
@@ -167,9 +168,9 @@ export function isRectsInside(ax1: number, ay1: number, ax2: number, ay2: number
   return false;
 }
 
-// 两个直线凸多边形是否重叠，不能简单地互相判断顶点在对方内部，因为有特殊的完全重合状态
-export function isConvexPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
-                                        includeIntersect = false) {
+// 两个直线多边形是否重叠，不能简单地互相判断顶点在对方内部，因为有特殊的完全重合状态
+export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
+                                  includeIntersect = false) {
   let xa = 0, ya = 0, xb = 0, yb = 0;
   for (let i = 0, len = a.length; i < len - 1; i++) {
     const { x, y } = a[i];
@@ -307,11 +308,27 @@ export function isConvexPolygonsOverlap(a: Array<{ x: number, y: number }>, b: A
   if (allIn) {
     return true;
   }
+  // 边相交也得判断
+  for (let i = 0, len = a.length; i < len - 1; i++) {
+    const { x: x1, y: y1 } = a[i];
+    const { x: x2, y: y2 } = a[i + 1];
+    for (let j = 0, len = b.length; j < len - 1; j++) {
+      const { x: x3, y: y3 } = b[j];
+      const { x: x4, y: y4 } = b[j + 1];
+      const res = intersectLineLine(x1, y1, x2, y2, x3, y3, x4, y4, true);
+      if (res) {
+        if (includeIntersect) {
+          return true;
+        }
+        return res.toSource > 0 && res.toSource < 1 && res.toClip > 0 && res.toClip < 1;
+      }
+    }
+  }
   return false;
 }
 
 // 特殊优化，凸多边形是否和无旋转矩形重叠
-export function isConvexPolygonOverlapRect(
+export function isPolygonOverlapRect(
   x1: number, y1: number, x2: number, y2: number,
   points: Array<{ x: number, y: number }>, includeIntersect = false,
 ) {
@@ -376,11 +393,19 @@ export function isConvexPolygonOverlapRect(
       return false;
     }
   }
-  // 最普通的情况
+  // 最普通的情况，相交或者包含都得判断
   return pointInConvexPolygon(x1, y1, points, includeIntersect) ||
     pointInConvexPolygon(x2, y1, points, includeIntersect) ||
     pointInConvexPolygon(x2, y2, points, includeIntersect) ||
-    pointInConvexPolygon(x1, y2, points, includeIntersect);
+    pointInConvexPolygon(x1, y2, points, includeIntersect) ||
+    isPolygonsOverlap(
+      [
+        { x: x1, y: y1 },
+        { x: x2, y: y1 },
+        { x: x2, y: y2 },
+        { x: x1, y: y2 },
+      ], points, includeIntersect,
+    );
 }
 
 export default {
@@ -396,6 +421,6 @@ export default {
   angleBySides,
   isRectsOverlap,
   isRectsInside,
-  isConvexPolygonsOverlap,
-  isConvexPolygonOverlapRect,
+  isPolygonsOverlap,
+  isPolygonOverlapRect,
 };
