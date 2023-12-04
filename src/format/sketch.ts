@@ -1276,7 +1276,7 @@ async function readImageFile(filename: string, opt: Opt) {
   return img.src;
 }
 
-async function loadImg(blob: Blob): Promise<HTMLImageElement> {
+export async function loadImg(blob: Blob): Promise<HTMLImageElement> {
   const img = new Image();
   return new Promise((resolve, reject) => {
     img.onload = () => {
@@ -1289,7 +1289,7 @@ async function loadImg(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
-async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
+export async function convertPdf(blob: Blob) {
   // @ts-ignore
   const pdfjsLib = window.pdfjsLib;
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -1307,7 +1307,7 @@ async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
     canvasContext: ctx,
     background: 'transparent',
   }).promise;
-  const res: Blob = await new Promise((resolve, reject) => {
+  return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(function (blob) {
       if (blob) {
         resolve(blob);
@@ -1316,6 +1316,10 @@ async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
       }
     });
   });
+}
+
+export async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
+  const res = await convertPdf(blob);
   return await loadImg(res);
 }
 
@@ -1327,9 +1331,6 @@ async function readFontFile(filename: string, zipFile: JSZip) {
   }
   const ab = await file.async('arraybuffer');
   const data = font.registerAb(ab);
-  if (!data) {
-    return;
-  }
   return new Promise((resolve, reject) => {
     if (typeof document !== 'undefined') {
       const f = new FontFace(data.postscriptName, ab);
