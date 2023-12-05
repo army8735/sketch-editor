@@ -1,4 +1,4 @@
-import { bbox2Coords, createTexture, drawMask, drawTextureCache, } from '../gl/webgl';
+import { bbox2Coords, createTexture, drawTextureCache, } from '../gl/webgl';
 import { assignMatrix, calRectPoints, inverse, multiply } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Container from '../node/Container';
@@ -366,7 +366,6 @@ function renderWebglTile(
           if (!shouldRender && !node.isArtBoard) {
             continue;
           }
-          // console.log(node.props.name, j, tile.uuid, count, -tile.x / cx2, -tile.y / cx2);
           // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
           if (!resFrameBuffer) {
             resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2 * dpi, W2 * dpi);
@@ -448,7 +447,6 @@ function renderWebglTile(
   for (let i = 0, len = tileList.length; i < len; i++) {
     const tile = tileList[i];
     if (tile.available && tile.count) {
-      // console.log(i, tile.bbox.join(','))
       drawTextureCache(
         gl,
         cx,
@@ -469,6 +467,42 @@ function renderWebglTile(
     }
     // 无论如何都会设置完备，当有节点更新，会重置关联的tile
     tile.complete = true;
+  }
+  if (config.debug) {
+    const tileProgram = programs.tileProgram;
+    gl.useProgram(tileProgram);
+    // 顶点buffer
+    const pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+    const a_position = gl.getAttribLocation(tileProgram, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position);
+    // 边宽
+    const r = 1 / Math.min(cx, cy);
+    const u_width = gl.getUniformLocation(tileProgram, 'width');
+    gl.uniform1f(u_width, r);
+    const u_height = gl.getUniformLocation(tileProgram, 'height');
+    gl.uniform1f(u_height, r * cx / cy);
+    // 遍历每个渲染
+    for (let i = 0, len = tileList.length; i < len; i++) {
+      const tile = tileList[i];
+      const u_x1 = gl.getUniformLocation(tileProgram, 'x1');
+      gl.uniform1f(u_x1, (tile.bbox[0] - cx) / cx);
+      const u_y1 = gl.getUniformLocation(tileProgram, 'y1');
+      gl.uniform1f(u_y1, (cy - tile.bbox[3]) / cy);
+      const u_x2 = gl.getUniformLocation(tileProgram, 'x2');
+      gl.uniform1f(u_x2, (tile.bbox[2] - cx) / cx);
+      const u_y2 = gl.getUniformLocation(tileProgram, 'y2');
+      gl.uniform1f(u_y2, (cy - tile.bbox[1]) / cy);
+      const u_count = gl.getUniformLocation(tileProgram, 'count');
+      gl.uniform1i(u_count, tile.count);
+      // 渲染并销毁
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    gl.deleteBuffer(pointBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.useProgram(program);
   }
   // overlay的内容在tile之上单独渲染
   overlay.update();

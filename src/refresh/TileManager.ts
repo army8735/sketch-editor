@@ -57,6 +57,7 @@ class TileManager {
         }
         ox++;
       }
+      first = table[0][0];
       // console.table(table.map(item => (item || []).map(item => item.toString())))
       // 位置更大的话直接向右下找，其它情况上面已归零
       for (let i = oy; i < oy + nh; i++) {
@@ -65,8 +66,15 @@ class TileManager {
           if (list[j]) {
             res.push(list[j]);
           } else {
-            const tile = new Tile(this.gl, x + j * Tile.UNIT, y + i * Tile.UNIT, Tile.UNIT);
-            list.push(tile);
+            const tile = new Tile(this.gl, first.x + j * Tile.UNIT, first.y + i * Tile.UNIT, Tile.UNIT);
+            list[j] = tile;
+            // 防止发生跳跃（比如先右移，再下移，可能左下角会空一格没有初始化导致索引错误）
+            for (let k = j - 1; k >= 0; k--) {
+              if (list[k]) {
+                break;
+              }
+              list[k] = new Tile(this.gl, first.x + k * Tile.UNIT, first.y + i * Tile.UNIT, Tile.UNIT);
+            }
             res.push(tile);
           }
         }

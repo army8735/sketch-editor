@@ -33,6 +33,8 @@ import radialFrag from '../gl/radial.frag';
 import simpleVert from '../gl/simple.vert';
 import simpleFrag from '../gl/simple.frag';
 import tintFrag from '../gl/tint.frag';
+import tileVert from '../gl/tile.vert';
+import tileFrag from '../gl/tile.frag';
 import { initShaders } from '../gl/webgl';
 import config from '../util/config';
 import Tile from '../refresh/Tile';
@@ -197,6 +199,7 @@ class Root extends Container implements FrameCallback {
     this.programs.cmProgram = initShaders(gl, simpleVert, cmFrag);
     this.programs.motionProgram = initShaders(gl, simpleVert, motionFrag);
     this.programs.radialProgram = initShaders(gl, simpleVert, radialFrag);
+    this.programs.tileProgram = initShaders(gl, tileVert, tileFrag);
     gl.useProgram(program);
   }
 
@@ -497,6 +500,7 @@ class Root extends Container implements FrameCallback {
       [
         'program',
         'bgColorProgram',
+        'bgShadowProgram',
         'simpleProgram',
         'maskProgram',
         'bgBlurProgram',
@@ -519,6 +523,9 @@ class Root extends Container implements FrameCallback {
         'innerShadowProgram',
         'tintProgram',
         'cmProgram',
+        'motionProgram',
+        'radialProgram',
+        'tileProgram',
       ].forEach(k => {
         const p = programs[k];
         gl.deleteProgram(p);
