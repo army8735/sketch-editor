@@ -94,8 +94,6 @@ class TileManager {
     }
     return hash.get(page)!;
   }
-
-  static UNIT = Tile.UNIT;
 }
 
 export default TileManager;

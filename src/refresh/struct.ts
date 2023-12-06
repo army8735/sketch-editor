@@ -203,7 +203,7 @@ function renderWebglTile(
     x2 = last.bbox[2];
     y2 = last.bbox[3];
   }
-  // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld
+  // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld不能用老的
   for (let i = 0, len = tileRecord.length; i < len; i++) {
     const node = tileRecord[i];
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
