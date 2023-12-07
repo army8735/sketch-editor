@@ -1,5 +1,5 @@
 import { bbox2Coords, createTexture, drawTextureCache, } from '../gl/webgl';
-import { assignMatrix, calRectPoints, inverse, multiply } from '../math/matrix';
+import { assignMatrix, calPoint, calRectPoints, identity, inverse, multiply, multiplyScale } from '../math/matrix';
 import ArtBoard from '../node/ArtBoard';
 import Container from '../node/Container';
 import Node from '../node/Node';
@@ -37,27 +37,16 @@ export function renderWebgl(
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
   let scale = root.getCurPageZoom(),
     scaleIndex = 0;
-  if (scale < 1.01) {
+  if (scale <= 1) {
     scale = 1;
   } else {
-    let n = 2;
-    scaleIndex = 1;
-    while (n < scale) {
+    let n = 1;
+    while (scale > 1) {
+      scale *= 0.5;
       n = n << 1;
       scaleIndex++;
     }
-    if (n > 2) {
-      const m = (n >> 1) * 1.01;
-      // 看0.5n和n之间scale更靠近哪一方（0.5n*1.01分界线），就用那个放大数
-      if (scale >= m) {
-        scale = n;
-      } else {
-        scale = n >> 1;
-        scaleIndex--;
-      }
-    } else {
-      scale = n;
-    }
+    scale = n;
   }
   // 再普通遍历渲染
   const { imgLoadList } = root;
@@ -129,21 +118,38 @@ function renderWebglTile(
   scaleIndex: number,
 ) {
   const { structs, lastPage: page, width: W, height: H, dpi, imgLoadList, tileRecord } = root;
-  const { translateX, translateY, scaleX } = page!.computedStyle;
+  const { scaleX } = page!.computedStyle;
+  const pm = page!.matrixWorld;
   /**
-   * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scale是跟随渲染整数倍范围的，
-   * 但scaleX是真实的缩放倍数有小数，一定范围内scale是不变的，scaleX会发生变化，
-   * 因此这个范围内瓦片实际尺寸虽然不变，但渲染尺寸会变化，屏幕内的瓦片数量也会发生变化。
+   * 根据缩放、位置、尺寸计算出当前在屏幕内的瓦片，注意scaleT（瓦片专用）是跟随渲染缩放范围的(0.5,1]，
+   * 在缩放为100%的时候，scaleB为1*dpi，scaleT为1*dpi，
+   * 在缩放为75%的时候，scaleB为1*dpi，scaleT为0.75*dpi，
+   * 在缩放为49%的时候，scaleB为0.5*dpi，scaleT为0.98%dpi，
+   * 在缩放为150%的似乎，scaleB为2*dpi，scaleT为0.75*dpi。
+   * 即scaleT始终是page真实缩放占scale比率。
+   * 为此，先要求出当前缩放所对应的幂值，在缩放>=100%的时候，它就是scale，
+   * 在<100%的时候，由于贴图纹理不再缩小，最低为1，因此需要重新计算。
    * 瓦片是从Page的0/0坐标开始平铺的。
    */
+  let scaleP = scaleX;
+  let scaleB = 1;
+  if (scaleP < 0.5) {
+    while (scaleP < 0.5) {
+      scaleP *= 2;
+      scaleB *= 0.5;
+    }
+  } else {
+    scaleB = scale / dpi;
+  }
+  const scaleT = scaleX / scaleB;
   const tileManager = TileManager.getSingleInstance(gl, page);
-  const x = Math.floor(translateX * root.dpi);
-  const y = Math.floor(translateY * root.dpi);
-  // 这个unit是考虑了高清方案后的
-  const unit = (Tile.UNIT * root.dpi) * scaleX;
+  // page的原点相对于屏幕坐标系的偏移
+  const { x, y } = calPoint({ x: 0, y: 0 }, pm);
+  // 这个unit是考虑了高清方案后的，当前tile在屏幕上占的尺寸，应该在(256,512]
+  const unit = Tile.UNIT * scaleT * dpi;
   let nw = 0;
   let nh = 0;
-  // console.log(x, y, translateX, translateY, scale, scaleIndex, scaleX, W, H, unit);
+  // console.log(x, y, translateX, translateY, '\n', scale, scaleIndex, scaleX, scaleB, scaleT, '\n', W, H, unit);
   // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
   const offsetX = x % unit;
   const offsetY = y % unit;
@@ -160,14 +166,15 @@ function renderWebglTile(
   } else {
     nh = Math.ceil((H - offsetY) / unit);
   }
+  const size = Math.round(Tile.UNIT / scaleB);
   const tileList = tileManager.active(
-    scale,
-    indexX * Tile.UNIT,
-    indexY * Tile.UNIT,
+    scaleB,
+    indexX * size,
+    indexY * size,
     nw,
     nh,
   );
-  // console.log(offsetX, offsetY, nw, nh, indexX, indexY, tileList.map(item => item.toString()));
+  // console.log(offsetX, offsetY, nw, nh, indexX, indexY);
   // 渲染准备
   const cx = W * 0.5,
     cy = H * 0.5;
@@ -175,7 +182,6 @@ function renderWebglTile(
   const program = programs.program;
   gl.useProgram(programs.program);
   const artBoardIndex: ArtBoard[] = [];
-  const pm = page!._matrixWorld || page!.matrixWorld;
   // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
   let complete = true;
   for (let i = 0, len = tileList.length; i < len; i++) {
@@ -185,7 +191,7 @@ function renderWebglTile(
       complete = false;
     }
     // 更新tile的屏幕坐标
-    const { x: x1, y: y1, size } = tile;
+    const { x: x1, y: y1 } = tile;
     const x2 = x1 + size;
     const y2 = y1 + size;
     const bbox = calRectPoints(x1, y1, x2, y2, pm);
@@ -194,6 +200,7 @@ function renderWebglTile(
     tile.bbox[2] = bbox.x3;
     tile.bbox[3] = bbox.y3;
   }
+  // console.log(tileList.map(item => item.toString()));
   // 这里生成merge的检查和普通不一样，由于tile可能只漏出一部分，因此屏幕范围比可视区域要大一些
   let x1 = 0, y1 = 0, x2 = W, y2 = H;
   if (tileList.length) {
@@ -330,8 +337,16 @@ function renderWebglTile(
          * 按照page坐标系+左上原点tile坐标算出target的渲染坐标，后续每个tile渲染时都用此数据不变，
          * 但是每个tile都有一定的偏移值，这个值用tile的x/y-原点tile的x/y得出即可。
          * 需先求出相对于page的matrix，即忽略掉page及其父的matrix，逆矩阵运算。
+         * 还有由于视图存在缩放，但Tile本身尺寸是固定的UNIT*dpi（一般是256*2=512），还根视图情况进行(1,2]缩放，
+         * 因此这个矩阵还要考虑预乘一个缩放因子，即(1,2]*dpi，记作factor。
          */
-        const m = multiply(im, matrix);
+        let m = multiply(im, matrix);
+        const factor = scaleB * dpi;
+        if (factor !== 1) {
+          const t = identity();
+          multiplyScale(t, factor);
+          m = multiply(t, m);
+        }
         const coords = bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
         if (node.isArtBoard) {
@@ -366,9 +381,10 @@ function renderWebglTile(
           if (!shouldRender && !node.isArtBoard) {
             continue;
           }
+          // console.log(j, tile.uuid)
           // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
           if (!resFrameBuffer) {
-            resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2 * dpi, W2 * dpi);
+            resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2, W2);
           } else {
             gl.framebufferTexture2D(
               gl.FRAMEBUFFER,
@@ -385,13 +401,13 @@ function renderWebglTile(
           }
           // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
           if (node.isArtBoard) {
-            (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, tile, ab!);
+            (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
             if (total + next) {
               artBoardIndex[i + total + next] = node as ArtBoard;
-              tile.x1 = (ab!.x1 - tile.x - cx2) / cx2;
-              tile.y1 = (ab!.y1 - tile.y - cx2) / cx2;
-              tile.x2 = (ab!.x3 - tile.x - cx2) / cx2;
-              tile.y2 = (ab!.y3 - tile.y - cx2) / cx2;
+              tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
+              tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
+              tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
+              tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
               // console.log(i, j, ab!, tile.x1, tile.y1, tile.x2, tile.y2)
             }
             continue;
@@ -412,8 +428,8 @@ function renderWebglTile(
                 texture: target!.texture,
               },
             ],
-            -tile.x / cx2,
-            -tile.y / cx2,
+            -tile.x * factor / cx2,
+            -tile.y * factor / cx2,
             false,
             tile.x1, tile.y1, tile.x2, tile.y2,
           );

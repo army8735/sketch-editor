@@ -102,6 +102,7 @@ class ArtBoard extends Container {
     cx2: number,
     cx: number,
     cy: number,
+    factor: number,
     tile: Tile,
     ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number },
   ) {
@@ -111,14 +112,14 @@ class ArtBoard extends Container {
     gl.useProgram(bgColorProgram);
     // 矩形固定2个三角形
     const t = {
-      x1: ab.x1 - tile.x,
-      y1: ab.y1 - tile.y,
-      x2: ab.x2 - tile.x,
-      y2: ab.y2 - tile.y,
-      x3: ab.x3 - tile.x,
-      y3: ab.y3 - tile.y,
-      x4: ab.x4 - tile.x,
-      y4: ab.y4 - tile.y,
+      x1: ab.x1 - tile.x * factor,
+      y1: ab.y1 - tile.y * factor,
+      x2: ab.x2 - tile.x * factor,
+      y2: ab.y2 - tile.y * factor,
+      x3: ab.x3 - tile.x * factor,
+      y3: ab.y3 - tile.y * factor,
+      x4: ab.x4 - tile.x * factor,
+      y4: ab.y4 - tile.y * factor,
     };
     const vtPoint = new Float32Array(8);
     const t1 = convertCoords2Gl(t.x1, t.y1, cx2, cx2, false);
