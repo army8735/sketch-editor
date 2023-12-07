@@ -137,7 +137,7 @@ export function genMerge(
     const needBlur =
       ((blur.t === BLUR.GAUSSIAN && blur.radius >= 1) ||
         (blur.t === BLUR.BACKGROUND &&
-          (blur.radius >= 1 || blur.saturation !== 0)) ||
+          (blur.radius >= 1 || blur.saturation !== 1)) ||
         (blur.t === BLUR.RADIAL && blur.radius >= 1) ||
         (blur.t === BLUR.MOTION && blur.radius >= 1)) &&
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
@@ -1755,7 +1755,7 @@ function genMask(
     toE(node.tempMatrix);
     multiplyScale(node.tempMatrix, scale);
     // mask本身可能不可见
-    if (computedStyle.visible && computedStyle.opacity > 0) {
+    if (computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
       drawTextureCache(
         gl,
         cx,

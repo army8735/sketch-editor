@@ -652,6 +652,17 @@ class Node extends Event {
           (this._bbox2 || this.bbox2).slice(0),
         );
       canvasCache.release();
+      // canvasCache.offscreen.canvas.toBlob((blob) => {
+      //   if (blob) {
+      //     const img = document.createElement('img');
+      //     img.onload = () => {
+      //       canvasCache.release();
+      //     };
+      //     img.src = URL.createObjectURL(blob);
+      //     img.setAttribute('name', this.props.name!);
+      //     document.body.appendChild(img);
+      //   }
+      // });
     } else {
       this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
         undefined;
