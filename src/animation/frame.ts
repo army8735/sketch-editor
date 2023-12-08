@@ -10,14 +10,14 @@ export interface FrameCallback {
   ref?: any;
 }
 
-function traversalBefore(list: Array<FrameCallback>, length: number, diff: number) {
+function traversalBefore(list: FrameCallback[], length: number, diff: number) {
   for (let i = 0; i < length; i++) {
     let item = list[i];
     item.before && item.before(diff);
   }
 }
 
-function traversalAfter(list: Array<FrameCallback>, length: number, diff: number) {
+function traversalAfter(list: FrameCallback[], length: number, diff: number) {
   for (let i = 0; i < length; i++) {
     let item = list[i];
     item.after(diff);
@@ -25,9 +25,9 @@ function traversalAfter(list: Array<FrameCallback>, length: number, diff: number
 }
 
 export class Frame {
-  rootTask: Array<FrameCallback>;
-  roots: Array<Root>;
-  task: Array<FrameCallback>;
+  rootTask: FrameCallback[];
+  roots: Root[];
+  task: FrameCallback[];
   now: number;
   id: number;
 

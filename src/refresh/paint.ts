@@ -43,7 +43,7 @@ export function canvasPolygon(ctx: CanvasRenderingContext2D, list: Array<Array<n
   }
 }
 
-export function svgPolygon(list: Array<Array<number>>, dx = 0, dy = 0) {
+export function svgPolygon(list: number[][], dx = 0, dy = 0) {
   if (!list || !list.length) {
     return '';
   }

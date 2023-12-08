@@ -2,90 +2,18 @@ import {
   JNode,
   JPage,
   PageProps,
-  SymbolMasterProps,
-  SymbolInstanceProps,
   TAG_NAME,
-  ArtBoardProps,
-  BitmapProps,
-  JContainer,
-  PolylineProps,
-  TextProps,
 } from '../format/';
 import { calPoint, inverse4 } from '../math/matrix';
 import { normalize } from '../style/css';
 import { calMatrix } from '../style/transform';
-import ArtBoard from './ArtBoard';
-import Bitmap from './Bitmap';
 import Container from './Container';
-import Polyline from './geom/Polyline';
-import ShapeGroup from './geom/ShapeGroup';
-import Group from './Group';
 import Node from './Node';
-import SymbolMaster from './SymbolMaster';
-import Text from './Text';
-import SymbolInstance from './SymbolInstance';
-import Slice from './Slice';
-import Root from './Root';
-
-function parse(json: JNode, root: Root): Node | undefined {
-  const tagName = json.tagName;
-  if (tagName === TAG_NAME.ART_BOARD || tagName === TAG_NAME.SYMBOL_MASTER) {
-    const children = [];
-    for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    if (tagName === TAG_NAME.SYMBOL_MASTER) {
-      const props = json.props as SymbolMasterProps;
-      const symbolId = props.symbolId;
-      /**
-       * 初始化前会先生成所有SymbolMaster的实例，包含内部和外部的，并存到root的symbolMasters下
-       * 后续进入控件页面时，页面是延迟初始化的，从json生成Node实例时，直接取缓存即可
-       */
-      return root.symbolMasters[symbolId] || new SymbolMaster(props, children);
-    }
-    return new ArtBoard(json.props as ArtBoardProps, children);
-  } else if (tagName === TAG_NAME.SYMBOL_INSTANCE) {
-    const props = json.props as SymbolInstanceProps;
-    const symbolId = props.symbolId;
-    const sm = root.symbolMasters[symbolId];
-    if (sm) {
-      return new SymbolInstance(props, sm);
-    }
-  } else if (tagName === TAG_NAME.GROUP) {
-    const children = [];
-    for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new Group(json.props, children);
-  } else if (tagName === TAG_NAME.BITMAP) {
-    return new Bitmap(json.props as BitmapProps);
-  } else if (tagName === TAG_NAME.TEXT) {
-    return new Text(json.props as TextProps);
-  } else if (tagName === TAG_NAME.POLYLINE) {
-    return new Polyline(json.props as PolylineProps);
-  } else if (tagName === TAG_NAME.SHAPE_GROUP) {
-    const children = [];
-    for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new ShapeGroup(json.props, children);
-  } else if (tagName === TAG_NAME.SLICE) {
-    return new Slice(json.props);
-  }
-}
+import { parse } from './parse';
 
 class Page extends Container {
   json?: JPage;
-  constructor(props: PageProps, children: Array<Node>) {
+  constructor(props: PageProps, children: Node[]) {
     super(props, children);
     this.isPage = true;
     this.page = this;
@@ -213,10 +141,6 @@ class Page extends Container {
     const res = super.toJson();
     res.tagName = TAG_NAME.PAGE;
     return res;
-  }
-
-  static parse(json: JNode, root: Root) {
-    return parse(json, root);
   }
 }
 

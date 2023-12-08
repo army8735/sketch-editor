@@ -7,7 +7,7 @@ import util from './util';
 import config from './util/config';
 import animation from './animation';
 import node from './node';
-import Page from './node/Page';
+import { parse, sortSymbolMasters } from './node/parse';
 import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
 
@@ -21,20 +21,26 @@ export default {
         height,
       },
     });
-    root.appendTo(canvas);
+    root.appendTo(canvas); console.error(json);
 
-    // symbolMaster优先初始化，其存在于控件页面的直接子节点，后续控件页面初始化的时候，遇到记得取缓存
-    (json.pages || []).forEach(item => {
+    // symbolMaster优先初始化，其存在于控件页面的直接子节点，以及外部json，先收集起来
+    const smList: JSymbolMaster[] = [];
+    (json.pages || []).forEach((item) => {
       const children = item.children;
-      children.forEach(child => {
+      children.forEach((child) => {
         if (child.tagName === TAG_NAME.SYMBOL_MASTER) {
-          root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child, root) as SymbolMaster;
+          smList.push(child as JSymbolMaster);
         }
       });
     });
     // 外部symbolMaster，sketch中是不展示出来的，masterGo专门有个外部控件页面
-    (json.symbolMasters || []).forEach(child => {
-      root.symbolMasters[(child as JSymbolMaster).props.symbolId] = Page.parse(child, root) as SymbolMaster;
+    (json.symbolMasters || []).forEach((child) => {
+      smList.push(child as JSymbolMaster);
+    });
+    // 收集完所有的之后，进行排序，因为可能出现互相递归依赖，无依赖的在前面先初始化，避免被引用时没初始化不存在
+    const list = sortSymbolMasters(smList);
+    list.forEach(item => {
+      root.symbolMasters[item.props.symbolId] = parse(item, root) as SymbolMaster;
     });
 
     root.setJPages(json.pages || []);

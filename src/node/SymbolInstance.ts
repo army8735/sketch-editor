@@ -16,6 +16,7 @@ class SymbolInstance extends Group {
         value: item.value,
       };
     });
+    console.log(props.name, symbolMaster.children.slice(0))
     super(props, symbolMaster.children.map(item => item.clone(hash)));
     this.isSymbolInstance = true;
     this.symbolMaster = symbolMaster;

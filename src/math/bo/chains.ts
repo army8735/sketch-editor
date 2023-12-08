@@ -4,9 +4,9 @@ import Segment from './Segment';
 
 // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
 function join(
-  res: Array<Array<Segment>>,
-  chains: Array<Array<Segment>>,
-  chain: Array<Segment>,
+  res: Segment[][],
+  chains: Segment[][],
+  chain: Segment[],
   index: number,
   pt: Point,
   isHead: boolean,
@@ -53,9 +53,9 @@ function join(
 }
 
 function close(
-  res: Array<Array<Segment>>,
-  chains: Array<Array<Segment>>,
-  chain: Array<Segment>,
+  res: Segment[][],
+  chains: Segment[][],
+  chain: Segment[],
   index: number,
 ) {
   let l = chain.length;
@@ -72,9 +72,9 @@ function close(
 }
 
 // function closeEps(
-//   res: Array<Array<Segment>>,
-//   chains: Array<Array<Segment>>,
-//   chain: Array<Segment>,
+//   res: Segment[][],
+//   chains: Segment[][],
+//   chain: Segment[],
 //   index: number,
 // ) {
 //   let l = chain.length;
@@ -92,14 +92,14 @@ function close(
 // }
 
 // 整条链颠倒，包含每个线段自身颠倒
-function reverse(chain: Array<Segment>) {
+function reverse(chain: Segment[]) {
   chain.forEach((item) => item.reverse());
   return chain.reverse();
 }
 
-export default function (list: Array<Segment>) {
-  let chains: Array<Array<Segment>> = [],
-    res: Array<Array<Segment>> = [];
+export default function (list: Segment[]) {
+  let chains: Segment[][] = [],
+    res: Segment[][] = [];
   // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
   list.sort(function (a: Segment, b: Segment) {
     if (b.otherFill[0] && b.otherFill[1]) {
