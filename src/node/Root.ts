@@ -155,6 +155,7 @@ class Root extends Container implements FrameCallback {
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
+    this.didMountBubble();
     this.appendChild(this.pageContainer);
     this.appendChild(this.overlay);
   }

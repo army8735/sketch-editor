@@ -70,7 +70,7 @@ class Geom extends Node {
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
-    const d = svgPolygon(this.points!) + (isClosed ? 'Z' : '');
+    const d = svgPolygon(this.points || []) + (isClosed ? 'Z' : '');
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     const { scaleX, scaleY } = computedStyle;
@@ -107,7 +107,7 @@ class Geom extends Node {
       // 可能不存在
       this.buildPoints();
       // 可能矢量编辑过程中超过或不足原本尺寸范围
-      const points = this.points!;
+      const points = this.points || [];
       if (points && points.length) {
         const first = points[0];
         let xa: number, ya: number;
@@ -165,6 +165,7 @@ class Geom extends Node {
     if (!res) {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
+      this.buildPoints();
       const {
         strokeWidth,
         strokeEnable,
@@ -190,11 +191,11 @@ class Geom extends Node {
       const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
       if (this.isLine()) {
-        res = this._bbox = lineCap(res, border, this.points!, strokeLinecap);
+        res = this._bbox = lineCap(res, border, this.points || [], strokeLinecap);
       }
       // 闭合看lineJoin
       else {
-        res = this._bbox = lineJoin(res, border, this.points!, strokeLinejoin, strokeMiterlimit);
+        res = this._bbox = lineJoin(res, border, this.points || [], strokeLinejoin, strokeMiterlimit);
       }
       res[0] = Math.min(res[0], minX);
       res[1] = Math.min(res[1], minY);

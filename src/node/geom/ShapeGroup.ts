@@ -212,7 +212,7 @@ class ShapeGroup extends Group {
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();
-    const points = this.points!;
+    const points = this.points || [];
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
@@ -696,7 +696,7 @@ class ShapeGroup extends Group {
       s += ' transform="' + transform + '"';
     }
     s += '>';
-    const points = this.points!;
+    const points = this.points || [];
     if (points.length) {
       const props = [
         ['d', ''],
@@ -835,6 +835,7 @@ class ShapeGroup extends Group {
     if (!res) {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
+      this.buildPoints();
       const {
         strokeWidth,
         strokeEnable,
@@ -860,7 +861,7 @@ class ShapeGroup extends Group {
       const minY = res[1] - border;
       const maxX = res[2] + border;
       const maxY = res[3] + border;
-      this.points!.forEach(points => {
+      (this.points || []).forEach(points => {
         const t = lineJoin(res!, border, points, strokeLinejoin, strokeMiterlimit);
         res![0] = Math.min(res![0], t[0]);
         res![1] = Math.min(res![1], t[1]);

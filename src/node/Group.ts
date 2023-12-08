@@ -16,6 +16,16 @@ class Group extends Container {
     this.fixedPosAndSize = false;
   }
 
+  override didMountBubble() {
+    super.didMountBubble();
+    const rect = this.rect;
+    const r = this.getChildrenRect(true);
+    const w = r.maxX - r.minX, h = r.maxY - r.minY;
+    if (r.minX < -1e-6 || r.minY < -1e-6 || w > rect[2] + 1e-6 || h > rect[3] + 1e-6) {
+      this.checkSizeChange();
+    }
+  }
+
   // 获取单个孩子相对于本父元素的盒子尺寸
   private getChildRect(child: Node) {
     const { width, height, matrix } = child;
@@ -219,19 +229,6 @@ class Group extends Container {
     res.tagName = TAG_NAME.GROUP;
     return res;
   }
-
-  // override get rect() {
-  //   let res = this._rect;
-  //   if (!res) {
-  //     res = this._rect = new Float64Array(4);
-  //     const rect = this.getChildrenRect(true);
-  //     res[0] = rect.minX;
-  //     res[1] = rect.minY;
-  //     res[2] = rect.maxX;
-  //     res[3] = rect.maxY;
-  //   }
-  //   return res;
-  // }
 
   // 至少1个node进行编组，以第0个位置为基准
   static group(nodes: Array<Node>, props?: Props) {

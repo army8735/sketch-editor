@@ -180,6 +180,8 @@ class Node extends Event {
     }
   }
 
+  didMountBubble() {}
+
   lay(data: LayoutData) {
     this.refreshLevel = RefreshLevel.REFLOW;
     // 布局时计算所有样式，更新时根据不同级别调用
@@ -295,7 +297,10 @@ class Node extends Event {
     }
     node.didMount();
     parent.insertStruct(node, i + 1);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
+      node.didMountBubble();
+      cb && cb(p);
+    });
   }
 
   // 插入node到自己前面
@@ -322,7 +327,10 @@ class Node extends Event {
     }
     node.didMount();
     parent.insertStruct(node, i);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
+      node.didMountBubble();
+      cb && cb(p);
+    });
   }
 
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值

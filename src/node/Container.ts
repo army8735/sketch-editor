@@ -52,6 +52,16 @@ class Container extends Node {
     }
   }
 
+  // 冒泡的didMount
+  override didMountBubble() {
+    const { children } = this;
+    const len = children.length;
+    for (let i = 0; i < len; i++) {
+      children[i].didMountBubble();
+    }
+    super.didMountBubble();
+  }
+
   override lay(data: LayoutData) {
     super.lay(data);
     const { children, computedStyle } = this;
@@ -98,7 +108,10 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
+      node.didMountBubble();
+      cb && cb(p);
+    });
   }
 
   prependChild(node: Node, cb?: (sync: boolean) => void) {
@@ -120,7 +133,10 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
+      node.didMountBubble();
+      cb && cb(p);
+    });
   }
 
   removeChild(node: Node, cb?: (sync: boolean) => void) {
