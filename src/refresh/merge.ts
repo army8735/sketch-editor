@@ -1866,7 +1866,7 @@ export function genMbm(
 // 创建一个和画布一样大的纹理，先将画布和节点进行mask操作，保留重合的部分，再进行blur，再和节点进行mask保留重合的部分
 export function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  tex: WebGLTexture,
+  tex: WebGLTexture, // 画布/背景
   node: Node,
   matrix: Float64Array,
   target: TextureCache,

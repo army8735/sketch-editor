@@ -680,7 +680,6 @@ class Text extends Node {
       strokeDasharray,
       strokeLinecap,
       strokeLinejoin,
-      strokeMiterlimit,
     } = computedStyle;
     for (let i = 0, len = fill.length; i < len; i++) {
       if (fillEnable[i] && fillOpacity[i]) {
@@ -1098,7 +1097,8 @@ class Text extends Node {
     } else {
       ctx.lineJoin = 'miter';
     }
-    ctx.miterLimit = strokeMiterlimit * scale;
+    // 强制1
+    ctx.miterLimit = 1;
     ctx.fillStyle = 'transparent';
     for (let i = 0, len = stroke.length; i < len; i++) {
       if (!strokeEnable[i] || !strokeWidth[i]) {
@@ -2463,7 +2463,7 @@ class Text extends Node {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
-      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗，先用2倍弥补
+      // 所有描边最大值，影响bbox，text强制miterLimit是1
       let border = 0;
       strokeWidth.forEach((item, i) => {
         if (strokeEnable[i]) {

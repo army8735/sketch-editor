@@ -413,7 +413,18 @@ function renderWebglTile(
             continue;
           }
           if (isBgBlur) {}
-          if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
+          let tex: WebGLTexture | undefined;
+          // 有mbm先将本节点内容绘制到和root同尺寸纹理上
+          if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+            tex = createTexture(gl, 0, undefined, W2, W2);
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0,
+              gl.TEXTURE_2D,
+              tex,
+              0,
+            );
+          }
           // 有无mbm都复用这段逻辑
           drawTextureCache(
             gl,
@@ -434,7 +445,18 @@ function renderWebglTile(
             tile.x1, tile.y1, tile.x2, tile.y2,
           );
           // 这里才是真正生成mbm
-          if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {}
+          if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+            const t = genMbm(
+              gl,
+              tile.texture!,
+              tex!,
+              mixBlendMode,
+              programs,
+              W2,
+              W2,
+            );
+            tile.updateTex(t);
+          }
         }
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
