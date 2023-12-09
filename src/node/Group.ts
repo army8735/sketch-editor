@@ -21,7 +21,7 @@ class Group extends Container {
     const rect = this.rect;
     const r = this.getChildrenRect(true);
     const w = r.maxX - r.minX, h = r.maxY - r.minY;
-    if (r.minX < -1e-6 || r.minY < -1e-6 || w > rect[2] + 1e-6 || h > rect[3] + 1e-6) {
+    if (Math.abs(r.minX) > 1e-6 || Math.abs(r.minY) > 1e-6 || w > rect[2] + 1e-6 || h > rect[3] + 1e-6) {
       this.checkSizeChange();
     }
   }
@@ -155,7 +155,7 @@ class Group extends Container {
       dw = rect.maxX - gw,
       dh = rect.maxY - gh;
     // 检查真正有变化，位置相对于自己原本位置为原点
-    if (dx || dy || dw || dh) {
+    if (Math.abs(dx) > 1e-6 || Math.abs(dy) > 1e-6 || Math.abs(dw) > 1e-6 || Math.abs(dh) > 1e-6) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
       const { width: gw, height: gh } = this;
