@@ -4,7 +4,6 @@ import {
   bbox2Coords,
   bindTexture,
   createTexture,
-  drawBgBlur,
   drawColorMatrix,
   drawGauss,
   drawMask,
@@ -1612,23 +1611,22 @@ function genMask(
       const { mixBlendMode, blur } = computedStyle;
       // 同主循环的bgBlur
       if (isBgBlur) {
-        const outline = (node2.textureOutline = genOutline(
-          gl,
-          node2,
-          structs,
-          i,
-          total,
-          target2.bbox,
-          scale,
-        ));
-        // outline会覆盖这个值，恶心
-        assignMatrix(node2.tempMatrix, matrix);
-        summary = genBgBlur(
+        // const outline = (node2.textureOutline = genOutline(
+        //   gl,
+        //   node2,
+        //   structs,
+        //   i,
+        //   total,
+        //   target2.bbox,
+        //   scale,
+        // ));
+        // // outline会覆盖这个值，恶心
+        // assignMatrix(node2.tempMatrix, matrix);
+        genBgBlur(
           gl,
           summary,
-          node2,
           node2.tempMatrix,
-          outline!,
+          target2,
           blur,
           programs,
           scale,
@@ -1638,13 +1636,6 @@ function genMask(
           h,
           dx,
           dy,
-        );
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          summary,
-          0,
         );
       }
       let tex: WebGLTexture | undefined;
@@ -1867,7 +1858,6 @@ export function genMbm(
 export function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   tex: WebGLTexture, // 画布/背景
-  node: Node,
   matrix: Float64Array,
   target: TextureCache,
   blur: ComputedBlur,
@@ -1875,32 +1865,37 @@ export function genBgBlur(
   scale: number,
   cx: number,
   cy: number,
-  w: number,
-  h: number,
+  W: number,
+  H: number,
   dx = 0,
   dy = 0,
 ) {
-  // 将节点绘制到一张空画布
-  const mask = createTexture(gl, 0, undefined, w, h);
+  const bbox = target.bbox;
+  const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
+  const cx2 = w * 0.5, cy2 = h * 0.5;
+  // 将画布以节点为坐标系绘制，取逆矩阵，也就是和节点重合的那一部分
+  const im = inverse(matrix);
+  const bg = createTexture(gl, 0, undefined, w, h);
+  gl.viewport(0, 0, w, h);
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
     gl.COLOR_ATTACHMENT0,
     gl.TEXTURE_2D,
-    mask,
+    bg,
     0,
   );
   const program = programs.program;
   drawTextureCache(
     gl,
-    cx,
-    cy,
+    cx2,
+    cy2,
     program,
     [
       {
         opacity: 1,
-        matrix,
-        bbox: target.bbox,
-        texture: target.texture,
+        matrix: im,
+        bbox: new Float64Array([0, 0, W, H]),
+        texture: tex,
       },
     ],
     dx,
@@ -1913,10 +1908,13 @@ export function genBgBlur(
   const d = kernelSize(sigma);
   const programGauss = genGaussShader(gl, programs, sigma, d);
   gl.useProgram(programGauss);
-  const blurContent = drawGauss(gl, programGauss, tex, w, h);
+  const blurContent = drawGauss(gl, programGauss, bg, w, h);
+  gl.deleteTexture(bg);
   // 将节点视作特殊mask，重合部分使用blur内容，非重合部分使用原本tex内容
   const bgBlurProgram = programs.bgBlurProgram;
   gl.useProgram(bgBlurProgram);
+  const maskProgram = programs.maskProgram;
+  gl.useProgram(maskProgram);
   const res = createTexture(gl, 0, undefined, w, h);
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
@@ -1925,12 +1923,36 @@ export function genBgBlur(
     res,
     0,
   );
-  drawBgBlur(gl, bgBlurProgram, mask, tex, blurContent);
-  gl.deleteTexture(mask);
+  drawMask(gl, maskProgram, target.texture, blurContent);
   gl.deleteTexture(blurContent);
-  gl.deleteTexture(tex);
   gl.useProgram(program);
-  return res;
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    tex,
+    0,
+  );
+  gl.viewport(0, 0, W, H);
+  drawTextureCache(
+    gl,
+    cx,
+    cy,
+    program,
+    [
+      {
+        opacity: 1,
+        matrix,
+        bbox: target.bbox,
+        texture: res,
+      },
+    ],
+    dx,
+    dy,
+    false,
+    -1, -1, 1, 1,
+  );
+  gl.deleteTexture(res);
 }
 
 export function genOutline(

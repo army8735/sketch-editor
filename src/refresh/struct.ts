@@ -14,7 +14,6 @@ import {
   genFrameBufferWithTexture,
   genMbm,
   genMerge,
-  genOutline,
   releaseFrameBuffer,
   shouldIgnoreAndIsBgBlur,
 } from './merge';
@@ -737,21 +736,20 @@ function renderWebglNoTile(
          * 并且它的text也无法设置，这里考虑增加text的支持，因为轮廓比较容易实现
          */
         if (isBgBlur) {
-          const outline = (node.textureOutline = genOutline(
-            gl,
-            node,
-            structs,
-            i,
-            total,
-            target.bbox,
-            scale,
-          ));
-          pageTexture = genBgBlur(
+          // const outline = (node.textureOutline = genOutline(
+          //   gl,
+          //   node,
+          //   structs,
+          //   i,
+          //   total,
+          //   target.bbox,
+          //   scale,
+          // ));
+          genBgBlur(
             gl,
             pageTexture,
-            node,
-            node._matrixWorld,
-            outline!,
+            node._matrixWorld || node.matrixWorld,
+            target,
             blur,
             programs,
             scale,
@@ -759,13 +757,6 @@ function renderWebglNoTile(
             cy,
             W,
             H,
-          );
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            pageTexture,
-            0,
           );
         }
         let tex: WebGLTexture | undefined;
