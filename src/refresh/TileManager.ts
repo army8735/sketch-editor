@@ -6,11 +6,26 @@ const hash = new WeakMap<Page, TileManager>();
 
 class TileManager {
   gl: WebGLRenderingContext | WebGL2RenderingContext;
+  hash: WeakMap<Page, Tile[][][]>;
   data: Tile[][][]; // 一维存scale缩放，二和三维存Tile数据，即原本二维平面坐标数据映射为二维数组，再多加一维scale
 
   constructor(gl: WebGLRenderingContext | WebGL2RenderingContext) {
     this.gl = gl;
+    this.hash = new WeakMap();
     this.data = [];
+  }
+
+  setPage(page?: Page) {
+    if (page) {
+      if (this.hash.has(page)) {
+        this.data = this.hash.get(page)!;
+      } else {
+        this.data = [];
+        this.hash.set(page, this.data);
+      }
+    } else {
+      this.data = [];
+    }
   }
 
   // 根据考虑了dpi的坐标和数量，找到data中对应的矩阵数据结构范围

@@ -2462,6 +2462,32 @@ class Text extends Node {
     if (!res) {
       const rect = this._rect || this.rect;
       res = this._bbox = rect.slice(0);
+      const lineBoxList = this.lineBoxList;
+      lineBoxList.forEach(lineBox => {
+        lineBox.list.forEach(textBox => {
+          const { fontFamily, fontSize, lineHeight, str, font: f } = textBox;
+          let normal = lineHeight;
+          if (font.hasRegister(fontFamily.toLowerCase())) {
+            const fontData = font.data[fontFamily.toLowerCase()];
+            normal = fontData.lhr * fontSize;
+          } else {
+            const ctx = inject.getFontCanvas().ctx;
+            ctx.font = f;
+            const r = ctx.measureText(str);
+            normal = r.actualBoundingBoxAscent + r.actualBoundingBoxDescent;
+          }
+          const dy = normal - lineHeight;
+          if (dy > 0) {
+            const half = dy * 0.5;
+            const y1 = textBox.y - half;
+            const y2 = textBox.lineHeight + half;
+            if (y1 < 0) {
+              res![1] = Math.min(res![1], y1);
+            }
+            res![3] = Math.max(res![3], y2);
+          }
+        });
+      });
       const { strokeWidth, strokeEnable, strokePosition } = this.computedStyle;
       // 所有描边最大值，影响bbox，text强制miterLimit是1
       let border = 0;

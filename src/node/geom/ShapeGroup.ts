@@ -100,6 +100,8 @@ class ShapeGroup extends Group {
     this.loaders = [];
   }
 
+  override didMountBubble() {}
+
   override lay(data: LayoutData) {
     super.lay(data);
     this.points = undefined;

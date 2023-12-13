@@ -17,7 +17,6 @@ import {
   releaseFrameBuffer,
   shouldIgnoreAndIsBgBlur,
 } from './merge';
-import TileManager from './TileManager';
 import Tile from './Tile';
 import { isPolygonOverlapRect } from '../math/geom';
 
@@ -90,6 +89,10 @@ export function renderWebgl(
     if (page) {
       renderWebglTile(gl, root, scale, scaleIndex);
     }
+    // 可能手动写的特殊场景没有page
+    else {
+      renderWebglNoTile(gl, root, scale, scaleIndex);
+    }
   } else {
     renderWebglNoTile(gl, root, scale, scaleIndex);
   }
@@ -141,7 +144,8 @@ function renderWebglTile(
     scaleB = scale / dpi;
   }
   const scaleT = scaleX / scaleB;
-  const tileManager = TileManager.getSingleInstance(gl, page);
+  const tileManager = root.tileManager!;
+  tileManager.setPage(page);
   // page的原点相对于屏幕坐标系的偏移
   const { x, y } = calPoint({ x: 0, y: 0 }, pm);
   // 这个unit是考虑了高清方案后的，当前tile在屏幕上占的尺寸，应该在(256,512]

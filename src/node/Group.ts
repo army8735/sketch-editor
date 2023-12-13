@@ -8,6 +8,8 @@ import Container from './Container';
 import Node from './Node';
 import { clone } from '../util/util';
 
+const EPS = 1e-2;
+
 class Group extends Container {
   fixedPosAndSize: boolean;
   constructor(props: Props, children: Node[]) {
@@ -21,7 +23,7 @@ class Group extends Container {
     const rect = this.rect;
     const r = this.getChildrenRect(true);
     const w = r.maxX - r.minX, h = r.maxY - r.minY;
-    if (Math.abs(r.minX) > 1e-6 || Math.abs(r.minY) > 1e-6 || w > rect[2] + 1e-6 || h > rect[3] + 1e-6) {
+    if (Math.abs(r.minX) > EPS || Math.abs(r.minY) > EPS || w > rect[2] + EPS || h > rect[3] + EPS) {
       this.checkSizeChange();
     }
   }
@@ -155,7 +157,7 @@ class Group extends Container {
       dw = rect.maxX - gw,
       dh = rect.maxY - gh;
     // 检查真正有变化，位置相对于自己原本位置为原点
-    if (Math.abs(dx) > 1e-6 || Math.abs(dy) > 1e-6 || Math.abs(dw) > 1e-6 || Math.abs(dh) > 1e-6) {
+    if (Math.abs(dx) > EPS || Math.abs(dy) > EPS || Math.abs(dw) > EPS || Math.abs(dh) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
       const { width: gw, height: gh } = this;

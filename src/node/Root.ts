@@ -38,6 +38,7 @@ import tileFrag from '../gl/tile.frag';
 import { initShaders } from '../gl/webgl';
 import config from '../util/config';
 import Tile from '../refresh/Tile';
+import TileManager from '../refresh/TileManager';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { renderWebgl, Struct } from '../refresh/struct';
 import Event from '../util/Event';
@@ -76,6 +77,7 @@ class Root extends Container implements FrameCallback {
   imgLoadingCount: number; // 刷新过程统计图片有没有加载完
   imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
   firstDraw: boolean;
+  tileManager?: TileManager;
   tileRecord: Node[]; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
 
   constructor(props: RootProps, children: Node[] = []) {
@@ -150,6 +152,7 @@ class Root extends Container implements FrameCallback {
       );
       this.programs = {};
       this.initShaders(gl);
+      this.tileManager = new TileManager(gl);
     }
     this.didMount();
     // 刷新动画侦听，目前就一个Root
