@@ -648,7 +648,7 @@ function renderWebglNoTile(
       // 同正常逻辑检查画板end，重置clip
       if (artBoardIndex[i]) {
         x1 = y1 = -1;
-        x2 = y2 = -1;
+        x2 = y2 = 1;
       }
       continue;
     }
