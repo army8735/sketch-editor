@@ -14,6 +14,7 @@ import {
   genFrameBufferWithTexture,
   genMbm,
   genMerge,
+  genOutline,
   releaseFrameBuffer,
   shouldIgnoreAndIsBgBlur,
 } from './merge';
@@ -466,7 +467,8 @@ function renderWebglTile(
       if (
         target &&
         target.available &&
-        target !== node.textureCache[scaleIndex]
+        target !== node.textureCache[scaleIndex] ||
+        computedStyle.maskMode
       ) {
         i += total + next;
       } else if (node.isShapeGroup) {
@@ -740,28 +742,31 @@ function renderWebglNoTile(
          * 并且它的text也无法设置，这里考虑增加text的支持，因为轮廓比较容易实现
          */
         if (isBgBlur) {
-          // const outline = (node.textureOutline = genOutline(
-          //   gl,
-          //   node,
-          //   structs,
-          //   i,
-          //   total,
-          //   target.bbox,
-          //   scale,
-          // ));
-          genBgBlur(
+          const outline = (node.textureOutline = genOutline(
             gl,
-            pageTexture,
-            node._matrixWorld || node.matrixWorld,
-            target,
-            blur,
-            programs,
+            node,
+            structs,
+            i,
+            total,
+            target.bbox,
             scale,
-            cx,
-            cy,
-            W,
-            H,
-          );
+          ));
+          if (outline) {
+            genBgBlur(
+              gl,
+              pageTexture,
+              node._matrixWorld || node.matrixWorld,
+              outline,
+              target,
+              blur,
+              programs,
+              scale,
+              cx,
+              cy,
+              W,
+              H,
+            );
+          }
         }
         let tex: WebGLTexture | undefined;
         // 有mbm先将本节点内容绘制到和root同尺寸纹理上
@@ -811,7 +816,8 @@ function renderWebglNoTile(
       if (
         target &&
         target.available &&
-        target !== node.textureCache[scaleIndex]
+        target !== node.textureCache[scaleIndex] ||
+        computedStyle.maskMode
       ) {
         i += total + next;
       } else if (node.isShapeGroup) {

@@ -136,7 +136,7 @@ export function genMerge(
     const needBlur =
       ((blur.t === BLUR.GAUSSIAN && blur.radius >= 1) ||
         (blur.t === BLUR.BACKGROUND &&
-          (blur.radius >= 1 || blur.saturation !== 1)) ||
+          (blur.radius >= 1 || blur.saturation !== 1) && total) ||
         (blur.t === BLUR.RADIAL && blur.radius >= 1) ||
         (blur.t === BLUR.MOTION && blur.radius >= 1)) &&
       (!textureFilter[scaleIndex] || !textureFilter[scaleIndex]?.available);
@@ -1611,32 +1611,35 @@ function genMask(
       const { mixBlendMode, blur } = computedStyle;
       // 同主循环的bgBlur
       if (isBgBlur) {
-        // const outline = (node2.textureOutline = genOutline(
-        //   gl,
-        //   node2,
-        //   structs,
-        //   i,
-        //   total,
-        //   target2.bbox,
-        //   scale,
-        // ));
-        // // outline会覆盖这个值，恶心
-        // assignMatrix(node2.tempMatrix, matrix);
-        genBgBlur(
+        const outline = (node2.textureOutline = genOutline(
           gl,
-          summary,
-          node2.tempMatrix,
-          target2,
-          blur,
-          programs,
+          node2,
+          structs,
+          i,
+          total,
+          target2.bbox,
           scale,
-          cx,
-          cy,
-          w,
-          h,
-          dx,
-          dy,
-        );
+        ));
+        // outline会覆盖这个值，恶心
+        assignMatrix(node2.tempMatrix, matrix);
+        if (outline) {
+          genBgBlur(
+            gl,
+            summary,
+            matrix,
+            outline,
+            target2,
+            blur,
+            programs,
+            scale,
+            cx,
+            cy,
+            w,
+            h,
+            dx,
+            dy,
+          );
+        }
       }
       let tex: WebGLTexture | undefined;
       // 有mbm先将本节点内容绘制到同尺寸纹理上
@@ -1859,6 +1862,7 @@ export function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   tex: WebGLTexture, // 画布/背景
   matrix: Float64Array,
+  outline: TextureCache,
   target: TextureCache,
   blur: ComputedBlur,
   programs: any,
@@ -1910,9 +1914,7 @@ export function genBgBlur(
   gl.useProgram(programGauss);
   const blurContent = drawGauss(gl, programGauss, bg, w, h);
   gl.deleteTexture(bg);
-  // 将节点视作特殊mask，重合部分使用blur内容，非重合部分使用原本tex内容
-  const bgBlurProgram = programs.bgBlurProgram;
-  gl.useProgram(bgBlurProgram);
+  // 将outline视作mask，过滤blur
   const maskProgram = programs.maskProgram;
   gl.useProgram(maskProgram);
   const res = createTexture(gl, 0, undefined, w, h);
@@ -1923,7 +1925,7 @@ export function genBgBlur(
     res,
     0,
   );
-  drawMask(gl, maskProgram, target.texture, blurContent);
+  drawMask(gl, maskProgram, outline.texture, blurContent);
   gl.deleteTexture(blurContent);
   gl.useProgram(program);
   gl.framebufferTexture2D(

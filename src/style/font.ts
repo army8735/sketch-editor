@@ -118,7 +118,11 @@ const o: any = {
       this._register(familyL, style, postscriptNameL, true);
       this.updateLocalStorage();
     }
-    return this.info[familyL];
+    return Object.assign({
+      postscriptName,
+      family,
+      style,
+    }, this.info[familyL]);
   },
   _cal(family: string, f: any) {
     let spread = 0;
