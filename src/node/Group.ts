@@ -23,7 +23,7 @@ class Group extends Container {
     const rect = this.rect;
     const r = this.getChildrenRect(true);
     const w = r.maxX - r.minX, h = r.maxY - r.minY;
-    if (Math.abs(r.minX) > EPS || Math.abs(r.minY) > EPS || w > rect[2] + EPS || h > rect[3] + EPS) {
+    if (Math.abs(r.minX) > EPS || Math.abs(r.minY) > EPS || Math.abs(w - rect[2]) > EPS || Math.abs(h - rect[3]) > EPS) {
       this.checkSizeChange();
     }
   }
