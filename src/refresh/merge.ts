@@ -45,6 +45,8 @@ import { RefreshLevel } from './level';
 import { Struct } from './struct';
 import TextureCache from './TextureCache';
 
+export const DELTA_TIME = 16;
+
 export type Merge = {
   i: number;
   lv: number;
@@ -65,12 +67,13 @@ export function genMerge(
   y1: number,
   x2: number,
   y2: number,
+  startTime: number,
 ) {
   const { structs, width: W, height: H } = root;
   const mergeList: Merge[] = [];
   const mergeHash: Merge[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
-    const { node, lv, total } = structs[i];
+    const { node, lv, total, next } = structs[i];
     const { refreshLevel, computedStyle } = node;
     node.refreshLevel = RefreshLevel.NONE;
     const { textureTotal, textureFilter, textureMask } = node;
@@ -183,6 +186,12 @@ export function genMerge(
     if (node instanceof ShapeGroup) {
       i += total;
     }
+    if (textureTotal[scaleIndex]?.available) {
+      i += total;
+      if (textureMask[scaleIndex]?.available) {
+        i += next;
+      }
+    }
   }
   // console.warn(mergeList);
   if (mergeList.length) {
@@ -233,6 +242,8 @@ export function genMerge(
       }
     }
   }
+  // let firstMerge = true;
+  // let breakMerge = false;
   const mergeRecord: Array<{ bbox: Float64Array, m: Float64Array }> = [];
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
@@ -249,6 +260,11 @@ export function genMerge(
     if ((!visible || opacity <= 0) && !maskMode) {
       continue;
     }
+    // console.log(i, firstMerge, (Date.now() - startTime), (Date.now() - startTime) > DELTA_TIME, node.props.name)
+    // if (!firstMerge && (Date.now() - startTime) > DELTA_TIME) {
+    //   breakMerge = true;
+    //   break;
+    // }
     let res: TextureCache | undefined;
     // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
     if (!node.textureTotal[scaleIndex]?.available) {
@@ -307,7 +323,7 @@ export function genMerge(
       });
     }
   }
-  return mergeRecord;
+  return { mergeRecord, };
 }
 
 /**
@@ -502,7 +518,13 @@ function genTotal(
   for (let i = index, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
-    if (!computedStyle.visible || computedStyle.opacity <= 0) {
+    // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
+    const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
+      node2,
+      computedStyle,
+      scaleIndex,
+    );
+    if (shouldIgnore) {
       i += total2 + next2;
       continue;
     }
@@ -539,7 +561,39 @@ function genTotal(
       target2 = node2.textureTarget[scaleIndex];
     }
     if (target2 && target2.available) {
-      const mixBlendMode = computedStyle.mixBlendMode;
+      const { mixBlendMode, blur } = computedStyle;
+      // 同主循环的bgBlur
+      if (isBgBlur) {
+        const outline = (node2.textureOutline = genOutline(
+          gl,
+          node2,
+          structs,
+          i,
+          total,
+          target2.bbox,
+          scale,
+        ));
+        // outline会覆盖这个值，恶心
+        assignMatrix(node2.tempMatrix, matrix);
+        if (outline) {
+          genBgBlur(
+            gl,
+            target.texture,
+            matrix,
+            outline,
+            target2,
+            blur,
+            programs,
+            scale,
+            cx,
+            cy,
+            w,
+            h,
+            dx,
+            dy,
+          );
+        }
+      }
       let tex: WebGLTexture | undefined;
       // 有mbm先将本节点内容绘制到同尺寸纹理上
       if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
@@ -588,7 +642,8 @@ function genTotal(
     if (
       target2 &&
       target2.available &&
-      target2 !== node2.textureCache[scaleIndex]
+      target2 !== node2.textureCache[scaleIndex] ||
+      computedStyle.maskMode
     ) {
       i += total2 + next2;
     } else if (node2.isShapeGroup) {
@@ -1565,6 +1620,7 @@ function genMask(
     const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
       node2,
       computedStyle,
+      scaleIndex,
     );
     if (shouldIgnore) {
       i += total2 + next2;
@@ -1688,7 +1744,8 @@ function genMask(
     if (
       target2 &&
       target2.available &&
-      target2 !== node2.textureCache[scaleIndex]
+      target2 !== node2.textureCache[scaleIndex] ||
+      computedStyle.maskMode
     ) {
       i += total2 + next2;
     } else if (node2.isShapeGroup) {
@@ -2075,6 +2132,7 @@ export function genOutline(
 export function shouldIgnoreAndIsBgBlur(
   node: Node,
   computedStyle: ComputedStyle,
+  scaleIndex: number,
 ) {
   const blur = computedStyle.blur;
   const isBgBlur =
@@ -2087,6 +2145,23 @@ export function shouldIgnoreAndIsBgBlur(
   let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
   if (shouldIgnore && computedStyle.maskMode && node.next) {
     shouldIgnore = false;
+  }
+  if (shouldIgnore && computedStyle.maskMode && computedStyle.opacity > 0) {
+    const textureTarget = node.textureTarget[scaleIndex];
+    // 轮廓模板如果opacity看不见，那么整个包含蒙版都看不见，如果visible看不见，仅自身看不见，还有可能未形成mask内容（被遮罩未加载）
+    if (computedStyle.maskMode === MASK.OUTLINE) {
+      if (computedStyle.visible) {
+        shouldIgnore = false;
+      } else if (textureTarget !== node.textureTotal[scaleIndex] && textureTarget !== node.textureCache[scaleIndex]) {
+        shouldIgnore = false;
+      }
+    }
+    // alpha，visible仅影响自身且自身一定不显示
+    else if (computedStyle.maskMode === MASK.ALPHA && node.next) {
+      if (textureTarget !== node.textureTotal[scaleIndex] && textureTarget !== node.textureCache[scaleIndex]) {
+        shouldIgnore = false;
+      }
+    }
   }
   if (shouldIgnore && isBgBlur && computedStyle.visible) {
     shouldIgnore = false;

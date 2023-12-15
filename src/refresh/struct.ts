@@ -10,6 +10,7 @@ import config from '../util/config';
 import {
   checkInScreen,
   checkInWorldRect,
+  DELTA_TIME,
   genBgBlur,
   genFrameBufferWithTexture,
   genMbm,
@@ -21,8 +22,6 @@ import {
 import Tile from './Tile';
 import { isPolygonOverlapRect } from '../math/geom';
 import { RefreshLevel } from '../refresh/level';
-
-const DELTA_TIME = 16;
 
 export type Struct = {
   node: Node;
@@ -248,8 +247,9 @@ function renderWebglTile(
     }
   }
   tileRecord.splice(0);
+  const startTime = Date.now();
   // 新生成的merge也影响tile，需清空重绘
-  const mergeRecord = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2);
+  const { mergeRecord } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
   for (let i = 0, len = mergeRecord.length; i < len; i++) {
     const { bbox, m } = mergeRecord[i];
     if (checkInWorldRect(bbox, m, x1, y1, x2, y2)) {
@@ -279,7 +279,6 @@ function renderWebglTile(
   let hasRemain = false;
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
-    const startTime = Date.now();
     let firstDraw = true;
     let resFrameBuffer: WebGLFramebuffer | undefined;
     const im = inverse(pm);
@@ -324,6 +323,7 @@ function renderWebglTile(
       const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
         node,
         computedStyle,
+        scaleIndex,
       );
       // 和普通渲染相比没有检查画板写回Page的过程
       if (shouldIgnore) {
@@ -656,7 +656,8 @@ function renderWebglNoTile(
 ) {
   const { structs, width: W, height: H, imgLoadList } = root;
   // 先生成需要汇总的临时根节点上的纹理
-  genMerge(gl, root, scale, scaleIndex, 0, 0, W, H);
+  const startTime = Date.now();
+  genMerge(gl, root, scale, scaleIndex, 0, 0, W, H, startTime);
   const cx = W * 0.5,
     cy = H * 0.5;
   const programs = root.programs;
@@ -685,6 +686,7 @@ function renderWebglNoTile(
     const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
       node,
       computedStyle,
+      scaleIndex,
     );
     if (shouldIgnore) {
       i += total + next;

@@ -137,6 +137,7 @@ class Bitmap extends Node {
     if (loader.loading && loader.url === this._src) {
       return;
     }
+    const { error, source } = loader;
     loader.source = undefined;
     loader.error = false;
     if (!this.isDestroyed) {
@@ -164,15 +165,17 @@ class Bitmap extends Node {
       if (!loader.loading) {
         root.imgLoadingCount++;
       }
-      // 先置空图片
-      root.addUpdate(
-        this,
-        [],
-        RefreshLevel.REPAINT,
-        false,
-        false,
-        undefined,
-      );
+      // 先置空图片，除非目前本身就是空的
+      if (error || source) {
+        root.addUpdate(
+          this,
+          [],
+          RefreshLevel.REPAINT,
+          false,
+          false,
+          undefined,
+        );
+      }
       loader.loading = true;
       inject.measureImg(this._src, (data: any) => {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
