@@ -710,7 +710,6 @@ class Node extends Event {
     this.textureTotal.forEach((item) => item?.release());
     this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
-    this.refreshLevel |= RefreshLevel.CACHE;
   }
 
   clearCacheUpward(includeSelf = false) {

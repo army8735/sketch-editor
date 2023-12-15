@@ -78,6 +78,7 @@ class Root extends Container implements FrameCallback {
   firstDraw: boolean;
   tileManager?: TileManager;
   tileRecord: Node[]; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
+  tileLastIndex: number; // 上次tile绘制到哪个节点，再一帧内没绘完下次再续时节省遍历性能
 
   constructor(props: RootProps, children: Node[] = []) {
     super(props, children);
@@ -95,6 +96,7 @@ class Root extends Container implements FrameCallback {
     this.imgLoadList = [];
     this.firstDraw = true;
     this.tileRecord = [];
+    this.tileLastIndex = 0;
     // 存所有Page
     this.pageContainer = new Container(
       {
@@ -463,6 +465,10 @@ class Root extends Container implements FrameCallback {
     }
     const rl = this.rl;
     if (rl > RefreshLevel.NONE) {
+      // 仅在一帧内没绘完的情况续上次，否则还是从头重绘
+      if (rl > RefreshLevel.CACHE) {
+        this.tileLastIndex = 0;
+      }
       this.clear();
       this.rl = RefreshLevel.NONE;
       renderWebgl(this.ctx!, this);

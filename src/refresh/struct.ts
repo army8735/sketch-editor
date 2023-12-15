@@ -20,6 +20,9 @@ import {
 } from './merge';
 import Tile from './Tile';
 import { isPolygonOverlapRect } from '../math/geom';
+import { RefreshLevel } from '../refresh/level';
+
+const DELTA_TIME = 16;
 
 export type Struct = {
   node: Node;
@@ -273,20 +276,48 @@ function renderWebglTile(
     }
   }
   const overlay = root.overlay;
-  let overlayIdx = 0;
+  let hasRemain = false;
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
+    const startTime = Date.now();
+    let firstDraw = true;
     let resFrameBuffer: WebGLFramebuffer | undefined;
     const im = inverse(pm);
     // tile的坐标系，向tile输入不考虑缩放需完整
     const W2 = Tile.UNIT * dpi;
     const cx2 = W2 * 0.5;
+    // 续上帧没画完的情况时，可能跳过了画布的裁剪逻辑，需补上
+    if (root.tileLastIndex) {
+      const { node, total, next } = structs[root.tileLastIndex];
+      const artBoard = node.artBoard;
+      if (artBoard && node !== artBoard && total + next) {
+        artBoardIndex[root.tileLastIndex + total + next] = artBoard as ArtBoard;
+        let m = multiply(im, node._matrixWorld || node.matrixWorld);
+        const factor = scaleB * dpi;
+        if (factor !== 1) {
+          const t = identity();
+          multiplyScale(t, factor);
+          m = multiply(t, m);
+        }
+        const bbox = artBoard._bbox || artBoard.bbox;
+        const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
+        for (let j = 0, len = tileList.length; j < len; j++) {
+          const tile = tileList[j];
+          // 不用再算是否在tile了，上一帧算过了
+          if (tile.has(artBoard)) {
+            tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
+            tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
+            tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
+            tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
+          }
+        }
+      }
+    }
     // 循环非overlay的节点
-    for (let i = 0, len = structs.length; i < len; i++) {
+    for (let i = root.tileLastIndex, len = structs.length; i < len; i++) {
       const { node, total, next } = structs[i];
       // tile不收集overlay的东西
       if (overlay === node) {
-        overlayIdx = i;
         break;
       }
       const computedStyle = node.computedStyle;
@@ -333,6 +364,11 @@ function renderWebglTile(
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
       if (isInScreen && !node.isPage && node.page) {
+        if (!firstDraw && (Date.now() - startTime) > DELTA_TIME) {
+          hasRemain = true;
+          root.tileLastIndex = i;
+          break;
+        }
         const shouldRender = (target && target.available) || false;
         const { mixBlendMode } = computedStyle;
         const bbox = shouldRender ? target!.bbox : (node._filterBbox || node.filterBbox);
@@ -361,8 +397,8 @@ function renderWebglTile(
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
-          // 不在此tile中跳过，tile也可能是老的已有完备的
-          if (tile.complete || !isPolygonOverlapRect(
+          // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
+          if (tile.complete || tile.has(node) || !isPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -384,6 +420,9 @@ function renderWebglTile(
           }
           if (!shouldRender && !node.isArtBoard) {
             continue;
+          }
+          if (firstDraw) {
+            firstDraw = false;
           }
           // console.log(j, tile.uuid)
           // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
@@ -483,8 +522,6 @@ function renderWebglTile(
     if (resFrameBuffer) {
       releaseFrameBuffer(gl, resFrameBuffer, W, H);
     }
-  } else {
-    overlayIdx = structs.indexOf(overlay.struct);
   }
   // 遍历tile，渲染，可能某个未完备，检查是否有低清版本
   for (let i = 0, len = tileList.length; i < len; i++) {
@@ -508,8 +545,10 @@ function renderWebglTile(
         -1, -1, 1, 1,
       );
     }
-    // 无论如何都会设置完备，当有节点更新，会重置关联的tile
-    tile.complete = true;
+    // 设置完备，当有节点更新，会重置关联的tile
+    if (!hasRemain) {
+      tile.complete = true;
+    }
   }
   if (config.debug) {
     const tileProgram = programs.tileProgram;
@@ -549,7 +588,7 @@ function renderWebglTile(
   }
   // overlay的内容在tile之上单独渲染
   overlay.update();
-  for (let i = overlayIdx, len = structs.length; i < len; i++ ) {
+  for (let i = structs.indexOf(overlay.struct), len = structs.length; i < len; i++ ) {
     const { node } = structs[i];
     // 继承父的opacity和matrix，仍然要注意root没有parent
     const { parent, textureTarget } = node;
@@ -585,6 +624,10 @@ function renderWebglTile(
         );
       }
     }
+  }
+  // 因性能限制原因没有绘制完全的情况，下一帧继续
+  if (hasRemain) {
+    root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined);
   }
 }
 
