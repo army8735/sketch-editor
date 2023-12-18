@@ -79,6 +79,8 @@ class Root extends Container implements FrameCallback {
   tileManager?: TileManager;
   tileRecord: Node[]; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
   tileLastIndex: number; // 上次tile绘制到哪个节点，再一帧内没绘完下次再续时节省遍历性能
+  tileRemain: boolean; // tile模式是否有因跨帧导致的没绘制完的
+  breakMerge: boolean; // 因跨帧渲染导致的没有渲染完成的标识
 
   constructor(props: RootProps, children: Node[] = []) {
     super(props, children);
@@ -97,6 +99,8 @@ class Root extends Container implements FrameCallback {
     this.firstDraw = true;
     this.tileRecord = [];
     this.tileLastIndex = 0;
+    this.tileRemain = false;
+    this.breakMerge = false;
     // 存所有Page
     this.pageContainer = new Container(
       {
@@ -463,6 +467,8 @@ class Root extends Container implements FrameCallback {
     if (this.isDestroyed) {
       return;
     }
+    this.tileRemain = false;
+    this.breakMerge = false;
     const rl = this.rl;
     if (rl > RefreshLevel.NONE) {
       // 仅在一帧内没绘完的情况续上次，否则还是从头重绘
@@ -475,7 +481,7 @@ class Root extends Container implements FrameCallback {
       this.emit(Event.REFRESH, rl);
       this.firstDraw = false;
     }
-    if (!this.imgLoadingCount) {
+    if (!this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
       this.emit(Event.REFRESH_COMPLETE, rl);
     }
   }

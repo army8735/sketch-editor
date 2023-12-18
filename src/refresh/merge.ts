@@ -242,8 +242,8 @@ export function genMerge(
       }
     }
   }
-  // let firstMerge = true;
-  // let breakMerge = false;
+  let firstMerge = true;
+  let breakMerge: Merge[] | undefined;
   const mergeRecord: Array<{ bbox: Float64Array, m: Float64Array }> = [];
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
@@ -261,10 +261,10 @@ export function genMerge(
       continue;
     }
     // console.log(i, firstMerge, (Date.now() - startTime), (Date.now() - startTime) > DELTA_TIME, node.props.name)
-    // if (!firstMerge && (Date.now() - startTime) > DELTA_TIME) {
-    //   breakMerge = true;
-    //   break;
-    // }
+    if (!firstMerge && (Date.now() - startTime) > DELTA_TIME) {
+      breakMerge = mergeList.slice(j);
+      break;
+    }
     let res: TextureCache | undefined;
     // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
     if (!node.textureTotal[scaleIndex]?.available) {
@@ -284,6 +284,7 @@ export function genMerge(
       if (t) {
         node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
+        firstMerge = false;
       }
     }
     // 生成filter，这里直接进去，如果没有filter会返回空，group的tint也视作一种filter
@@ -292,6 +293,7 @@ export function genMerge(
       if (t) {
         node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
+        firstMerge = false;
       }
     }
     // 生成mask，轮廓模板不需要验证有被遮罩对象但也无需生成
@@ -313,6 +315,7 @@ export function genMerge(
       if (t) {
         node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
+        firstMerge = false;
       }
     }
     // 变更区域影响tile
@@ -323,7 +326,10 @@ export function genMerge(
       });
     }
   }
-  return { mergeRecord, };
+  if (breakMerge && breakMerge.length) {
+    root.breakMerge = true;
+  }
+  return { mergeRecord, breakMerge };
 }
 
 /**

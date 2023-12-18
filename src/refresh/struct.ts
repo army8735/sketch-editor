@@ -627,6 +627,7 @@ function renderWebglTile(
   }
   // 因性能限制原因没有绘制完全的情况，下一帧继续
   if (hasRemain) {
+    root.tileRemain = true;
     root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined);
   }
 }
@@ -657,7 +658,7 @@ function renderWebglNoTile(
   const { structs, width: W, height: H, imgLoadList } = root;
   // 先生成需要汇总的临时根节点上的纹理
   const startTime = Date.now();
-  genMerge(gl, root, scale, scaleIndex, 0, 0, W, H, startTime);
+  const { breakMerge } = genMerge(gl, root, scale, scaleIndex, 0, 0, W, H, startTime);
   const cx = W * 0.5,
     cy = H * 0.5;
   const programs = root.programs;
@@ -895,6 +896,12 @@ function renderWebglNoTile(
     -1, -1, 1, 1,
   );
   root.pageTexture = pageTexture;
+  // 未完成的merge，跨帧渲染
+  if (breakMerge && breakMerge.length) {
+    for (let i = 0, len = breakMerge.length; i < len; i++) {
+      root.addUpdate(breakMerge[i].node, [], RefreshLevel.CACHE, false, false, undefined);
+    }
+  }
 }
 
 // 计算节点的世界坐标系数据
