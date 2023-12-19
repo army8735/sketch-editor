@@ -146,10 +146,15 @@ export function genMerge(
     let needMask =
       maskMode > 0 &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
-    // 单个的alpha蒙版不渲染，target指向空的mask纹理汇总，循环时判空跳过
-    if (needMask && maskMode === MASK.ALPHA && !node.next) {
-      needMask = false;
-      node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+    // 单个的alpha蒙版不渲染，target指向空的mask纹理汇总，循环时判空跳过，outline不可见蒙版不渲染
+    if (needMask) {
+      if (maskMode === MASK.ALPHA && !node.next) {
+        needMask = false;
+        node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+      } else if (maskMode === MASK.OUTLINE && !computedStyle.visible) {
+        needMask = false;
+        node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+      }
     }
     // 兄弟连续的mask，后面的不生效，除非有breakMask
     if (needMask && !breakMask) {
@@ -193,7 +198,6 @@ export function genMerge(
       }
     }
   }
-  // console.warn(mergeList);
   if (mergeList.length) {
     // 后根顺序，即叶子节点在前，兄弟的后节点在前
     mergeList.sort(function (a, b) {
@@ -203,6 +207,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
+  // console.warn(mergeList);
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
@@ -328,6 +333,12 @@ export function genMerge(
   }
   if (breakMerge && breakMerge.length) {
     root.breakMerge = true;
+  }
+  // 未完成的merge，跨帧渲染
+  if (breakMerge && breakMerge.length) {
+    for (let i = 0, len = breakMerge.length; i < len; i++) {
+      root.addUpdate(breakMerge[i].node, [], RefreshLevel.CACHE, false, false, undefined);
+    }
   }
   return { mergeRecord, breakMerge };
 }

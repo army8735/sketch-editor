@@ -249,7 +249,7 @@ function renderWebglTile(
   tileRecord.splice(0);
   const startTime = Date.now();
   // 新生成的merge也影响tile，需清空重绘
-  const { mergeRecord } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
+  const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
   for (let i = 0, len = mergeRecord.length; i < len; i++) {
     const { bbox, m } = mergeRecord[i];
     if (checkInWorldRect(bbox, m, x1, y1, x2, y2)) {
@@ -277,6 +277,7 @@ function renderWebglTile(
   }
   const overlay = root.overlay;
   let hasRemain = false;
+  // console.error('complete', complete)
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
     let firstDraw = true;
@@ -630,6 +631,10 @@ function renderWebglTile(
     root.tileRemain = true;
     root.addUpdate(root, [], RefreshLevel.CACHE, false, false, undefined);
   }
+  // merge中断跨帧重新生成，影响的节点会往上（根），索引会未知，从头重新渲染
+  if (breakMerge && breakMerge.length) {
+    root.tileLastIndex = 0;
+  }
 }
 
 function resetTileClip(tileList: Tile[]) {
@@ -658,7 +663,7 @@ function renderWebglNoTile(
   const { structs, width: W, height: H, imgLoadList } = root;
   // 先生成需要汇总的临时根节点上的纹理
   const startTime = Date.now();
-  const { breakMerge } = genMerge(gl, root, scale, scaleIndex, 0, 0, W, H, startTime);
+  genMerge(gl, root, scale, scaleIndex, 0, 0, W, H, startTime);
   const cx = W * 0.5,
     cy = H * 0.5;
   const programs = root.programs;
@@ -896,12 +901,6 @@ function renderWebglNoTile(
     -1, -1, 1, 1,
   );
   root.pageTexture = pageTexture;
-  // 未完成的merge，跨帧渲染
-  if (breakMerge && breakMerge.length) {
-    for (let i = 0, len = breakMerge.length; i < len; i++) {
-      root.addUpdate(breakMerge[i].node, [], RefreshLevel.CACHE, false, false, undefined);
-    }
-  }
 }
 
 // 计算节点的世界坐标系数据

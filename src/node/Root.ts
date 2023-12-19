@@ -328,8 +328,12 @@ class Root extends Container implements FrameCallback {
     const res = this.calUpdate(node, lv, keys, addDom, removeDom);
     // 有tile时重置关联的tile，为了清空上一次绘制的tile的内容让其重绘
     if (lv && config.tile && !this.firstDraw && node.page && !node.isPage) {
-      const list = node.cleanTile();
-      Tile.clean(list);
+      let p = node;
+      while (p && p.page && !p.isPage) {
+        const list = p.cleanTile();
+        Tile.clean(list);
+        p = p.parent!;
+      }
       // 移动元素或者添加时，需要清空新的位置所占的tile区域，记录下来在渲染最初做
       if (lv & RefreshLevel.TRANSLATE) {
         this.tileRecord[node.uuid] = node;
