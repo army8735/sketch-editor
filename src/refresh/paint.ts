@@ -1,4 +1,4 @@
-export function canvasPolygon(ctx: CanvasRenderingContext2D, list: Array<Array<number>>,
+export function canvasPolygon(ctx: CanvasRenderingContext2D, list: number[][],
                               scale: number, dx = 0, dy = 0) {
   if (!list || !list.length) {
     return;

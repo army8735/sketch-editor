@@ -343,7 +343,7 @@ class Root extends Container implements FrameCallback {
       this.asyncDraw(cb);
     } else {
       cb && cb(true);
-      if (!this.imgLoadingCount) {
+      if (!this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
         this.emit(Event.REFRESH_COMPLETE, RefreshLevel.NONE);
       }
     }

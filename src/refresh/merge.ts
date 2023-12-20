@@ -272,7 +272,7 @@ export function genMerge(
     }
     let res: TextureCache | undefined;
     // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-    if (!node.textureTotal[scaleIndex]?.available) {
+    if (!node.textureTotal[scaleIndex]?.available && !node.isShapeGroup) {
       const t = genTotal(
         gl,
         root,
@@ -485,7 +485,7 @@ function genTotal(
   scaleIndex: number,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
-  if (node.textureTotal[scaleIndex]?.available) {
+  if (node.textureTotal[scaleIndex]?.available || node.isShapeGroup) {
     return node.textureTotal[scaleIndex];
   }
   const bbox = node.tempBbox!;
