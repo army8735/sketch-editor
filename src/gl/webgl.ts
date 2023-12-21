@@ -150,7 +150,8 @@ export type DrawData = {
     t2: { x: number, y: number },
     t3: { x: number, y: number },
     t4: { x: number, y: number },
-  },
+  };
+  tc?: { x1: number, y1: number, x3: number, y3: number };
   texture: WebGLTexture;
 };
 
@@ -198,7 +199,14 @@ export function drawTextureCache(
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
-    const { opacity, matrix, bbox, coords, texture } = list[i];
+    const {
+      opacity,
+      matrix,
+      bbox,
+      coords,
+      tc,
+      texture,
+    } = list[i];
     bindTexture(gl, texture, 0);
     const { t1, t2, t3, t4 } =
       coords ? offsetCoords(coords, dx, dy) : bbox2Coords(bbox, cx, cy, dx, dy, flipY, matrix);
@@ -220,22 +228,43 @@ export function drawTextureCache(
       vtPoint[k + 10] = t3.x;
       vtPoint[k + 11] = t3.y;
     }
-    vtTex[k] = 0;
-    vtTex[k + 1] = 0;
-    vtTex[k + 2] = 0;
-    vtTex[k + 3] = 1;
-    vtTex[k + 4] = 1;
-    vtTex[k + 5] = 0;
-    if (isSingle) {
-      vtTex[k + 6] = 1;
-      vtTex[k + 7] = 1;
+    // 纹理坐标默认0,1，除非传入tc指定范围
+    if (tc) {
+      vtTex[k] = tc.x1;
+      vtTex[k + 1] = tc.y1;
+      vtTex[k + 2] = tc.x1;
+      vtTex[k + 3] = tc.y3;
+      vtTex[k + 4] = tc.x3;
+      vtTex[k + 5] = tc.y1;
+      if (isSingle) {
+        vtTex[k + 6] = tc.x3;
+        vtTex[k + 7] = tc.y3;
+      } else {
+        vtTex[k + 6] = tc.x1;
+        vtTex[k + 7] = tc.y3;
+        vtTex[k + 8] = tc.x3;
+        vtTex[k + 9] = tc.y1;
+        vtTex[k + 10] = tc.x3;
+        vtTex[k + 11] = tc.y3;
+      }
     } else {
-      vtTex[k + 6] = 0;
-      vtTex[k + 7] = 1;
-      vtTex[k + 8] = 1;
-      vtTex[k + 9] = 0;
-      vtTex[k + 10] = 1;
-      vtTex[k + 11] = 1;
+      vtTex[k] = 0;
+      vtTex[k + 1] = 0;
+      vtTex[k + 2] = 0;
+      vtTex[k + 3] = 1;
+      vtTex[k + 4] = 1;
+      vtTex[k + 5] = 0;
+      if (isSingle) {
+        vtTex[k + 6] = 1;
+        vtTex[k + 7] = 1;
+      } else {
+        vtTex[k + 6] = 0;
+        vtTex[k + 7] = 1;
+        vtTex[k + 8] = 1;
+        vtTex[k + 9] = 0;
+        vtTex[k + 10] = 1;
+        vtTex[k + 11] = 1;
+      }
     }
     k = i * 6;
     vtOpacity[k] = opacity;

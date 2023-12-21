@@ -12,7 +12,7 @@ class Tile {
   complete: boolean; // 是否绘制完备所有节点
   x: number;
   y: number;
-  // size: number;
+  size: number;
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   texture: WebGLTexture | undefined;
   bbox: Float64Array; // 相对于page的坐标，没有旋转所以只算2个顶点即可
@@ -25,7 +25,7 @@ class Tile {
     gl: WebGL2RenderingContext | WebGLRenderingContext,
     x: number,
     y: number,
-    // size: number,
+    size: number,
   ) {
     this.uuid = uuid++;
     this.available = false;
@@ -34,7 +34,7 @@ class Tile {
     this.nodes = [];
     this.x = x;
     this.y = y;
-    // this.size = size;
+    this.size = size;
     this.gl = gl;
     this.bbox = new Float64Array([0, 0, 0, 0]);
     this.x1 = this.y1 = -1;

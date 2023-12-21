@@ -148,7 +148,7 @@ function renderWebglTile(
   }
   const scaleT = scaleX / scaleB;
   const tileManager = root.tileManager!;
-  tileManager.setPage(page);
+  tileManager.setPage(page!);
   // page的原点相对于屏幕坐标系的偏移
   const { x, y } = calPoint({ x: 0, y: 0 }, pm);
   // 这个unit是考虑了高清方案后的，当前tile在屏幕上占的尺寸，应该在(256,512]
@@ -545,6 +545,72 @@ function renderWebglTile(
         true,
         -1, -1, 1, 1,
       );
+    } else {
+      const { x, y } = tile;
+      const down = tileManager.getDowngrade(scaleB, x, y);
+      if (down && down.length) {
+        for (let j = 0, len = down.length; j < len; j++) {
+          const item = down[j];
+          const ratio = item.scale / scaleB;
+          // <1是更大的纹理，用其中一部分
+          if (ratio < 1) {
+            const x1 = (x - item.tile.x) / item.tile.size;
+            const y1 = (y - item.tile.y) / item.tile.size;
+            drawTextureCache(
+              gl,
+              cx,
+              cy,
+              program,
+              [
+                {
+                  opacity: 1,
+                  bbox: tile.bbox,
+                  texture: item.tile.texture!,
+                  tc: {
+                    x1, y1, x3: x1 + ratio, y3: y1 + ratio,
+                  },
+                },
+              ],
+              0,
+              0,
+              true,
+              -1, -1, 1, 1,
+            );
+          }
+          // >1是全部绘制但只占原本的一部分
+          else if (ratio > 1) {
+            const x1 = (item.tile.x - x) / tile.size;
+            const y1 = (item.tile.y - y) / tile.size;
+            const bbox = tile.bbox;
+            const w = bbox[2] - bbox[0];
+            const h = bbox[3] - bbox[1];
+            const x0 = bbox[0] + x1 * w;
+            const y0 = bbox[1] + y1 * h;
+            drawTextureCache(
+              gl,
+              cx,
+              cy,
+              program,
+              [
+                {
+                  opacity: 1,
+                  bbox: new Float64Array([
+                    x0,
+                    y0,
+                    x0 + w / ratio,
+                    y0 + h / ratio,
+                  ]),
+                  texture: item.tile.texture!,
+                },
+              ],
+              0,
+              0,
+              true,
+              -1, -1, 1, 1,
+            );
+          }
+        }
+      }
     }
     // 设置完备，当有节点更新，会重置关联的tile
     if (!hasRemain) {
