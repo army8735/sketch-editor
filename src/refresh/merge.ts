@@ -148,10 +148,10 @@ export function genMerge(
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
     // 单个的alpha蒙版不渲染，target指向空的mask纹理汇总，循环时判空跳过，outline不可见蒙版不渲染
     if (needMask) {
-      if (maskMode === MASK.ALPHA && !node.next) {
+      if (maskMode === MASK.ALPHA && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         node.textureTarget[scaleIndex] = textureMask[scaleIndex];
-      } else if (maskMode === MASK.OUTLINE && !computedStyle.visible) {
+      } else if (maskMode === MASK.OUTLINE && (!computedStyle.visible || computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         node.textureTarget[scaleIndex] = textureMask[scaleIndex];
       }
@@ -272,7 +272,7 @@ export function genMerge(
     }
     let res: TextureCache | undefined;
     // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
-    if (!node.textureTotal[scaleIndex]?.available && !node.isShapeGroup) {
+    if (!node.textureTotal[scaleIndex]?.available) {
       const t = genTotal(
         gl,
         root,
@@ -485,13 +485,13 @@ function genTotal(
   scaleIndex: number,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
-  if (node.textureTotal[scaleIndex]?.available || node.isShapeGroup) {
+  if (node.textureTotal[scaleIndex]?.available) {
     return node.textureTotal[scaleIndex];
   }
   const bbox = node.tempBbox!;
   node.tempBbox = undefined;
   // 单个叶子节点也不需要，就是本身节点的内容
-  if (!total) {
+  if (!total || node.isShapeGroup) {
     let target = node.textureCache[scaleIndex];
     if ((!target || !target.available) && node.hasContent) {
       node.genTexture(gl, scale, scaleIndex);
@@ -660,7 +660,7 @@ function genTotal(
       target2 &&
       target2.available &&
       target2 !== node2.textureCache[scaleIndex] ||
-      computedStyle.maskMode
+      computedStyle.maskMode && i !== index
     ) {
       i += total2 + next2;
     } else if (node2.isShapeGroup) {
