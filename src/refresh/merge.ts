@@ -499,6 +499,10 @@ function genTotal(
     }
     return target;
   }
+  bbox[0] = Math.floor(bbox[0]);
+  bbox[1] = Math.floor(bbox[1]);
+  bbox[2] = Math.ceil(bbox[2]);
+  bbox[3] = Math.ceil(bbox[3]);
   const programs = root.programs;
   const program = programs.program;
   // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
