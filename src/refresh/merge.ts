@@ -440,9 +440,9 @@ export function checkInWorldRect(
     if (y2 > y3) {
       [y1, y3] = [y3, y1];
     }
-    return isRectsOverlap(x, y, width, height, x1, y1, x3, y3, false);
+    return isRectsOverlap(x, y, x + width, y + height, x1, y1, x3, y3, false);
   }
-  return isPolygonOverlapRect(x, y, width, height, [
+  return isPolygonOverlapRect(x, y, x + width, y + height, [
     { x: x1, y: y1 },
     { x: x2, y: y2 },
     { x: x3, y: y3 },
