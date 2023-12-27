@@ -922,7 +922,7 @@ function genGaussBlur(
 
 function genGaussShader(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  programs: any,
+  programs: Record<string, WebGLProgram>,
   sigma: number,
   d: number,
 ) {
@@ -1879,7 +1879,7 @@ export function genMbm(
   tex1: WebGLTexture,
   tex2: WebGLTexture,
   mixBlendMode: MIX_BLEND_MODE,
-  programs: any,
+  programs: Record<string, WebGLProgram>,
   w: number,
   h: number,
 ) {
@@ -1943,7 +1943,7 @@ export function genBgBlur(
   outline: TextureCache,
   target: TextureCache,
   blur: ComputedBlur,
-  programs: any,
+  programs: Record<string, WebGLProgram>,
   scale: number,
   cx: number,
   cy: number,

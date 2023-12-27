@@ -163,7 +163,7 @@ export function drawTextureCache(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   cx: number,
   cy: number,
-  program: any,
+  program: WebGLProgram,
   list: DrawData[],
   dx = 0,
   dy = 0,
@@ -343,7 +343,7 @@ export function getSingleCoords() {
 
 export function drawMask(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: any,
+  program: WebGLProgram,
   mask: WebGLTexture,
   summary: WebGLTexture,
 ) {
@@ -387,7 +387,7 @@ export function drawMask(
  */
 export function drawGauss(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: any,
+  program: WebGLProgram,
   texture: WebGLTexture,
   width: number,
   height: number,
@@ -474,7 +474,7 @@ export function drawGauss(
 
 export function drawMotion(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: any,
+  program: WebGLProgram,
   texture: WebGLTexture,
   kernel: number,
   angle: number,
@@ -538,7 +538,7 @@ export function drawMotion(
 
 export function drawRadial(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: any,
+  program: WebGLProgram,
   texture: WebGLTexture,
   kernel: number,
   center: [number, number],
@@ -604,7 +604,7 @@ export const drawMbm = drawMask;
 
 export function drawTint(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: any,
+  program: WebGLProgram,
   texture: WebGLTexture,
   tint: number[],
   opacity: number,
@@ -642,7 +642,7 @@ export function drawTint(
 
 export function drawColorMatrix(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: any,
+  program: WebGLProgram,
   texture: WebGLTexture,
   m: number[],
 ) {

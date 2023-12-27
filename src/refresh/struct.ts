@@ -736,7 +736,9 @@ function renderWebglNoTile(
   // 初始化工作
   const artBoardIndex: ArtBoard[] = [];
   let pageTexture = root.pageTexture || createTexture(gl, 0, undefined, W, H);
-  const resFrameBuffer = genFrameBufferWithTexture(gl, pageTexture, W, H);
+  let artBoardTexture: WebGLTexture | undefined;
+  let resTexture = pageTexture;
+  const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
@@ -766,6 +768,7 @@ function renderWebglNoTile(
       if (artBoardIndex[i]) {
         x1 = y1 = -1;
         x2 = y2 = 1;
+        resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
       }
       continue;
     }
@@ -842,6 +845,15 @@ function renderWebglNoTile(
             y1 = (ab.y1 - cy) / cy;
             x2 = (ab.x3 - cx) / cx;
             y2 = (ab.y3 - cy) / cy;
+            artBoardTexture = createTexture(gl, 0, undefined, W, H);
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0,
+              gl.TEXTURE_2D,
+              artBoardTexture,
+              0,
+            );
+            resTexture = artBoardTexture;
           }
         }
         // 图片检查内容加载计数器
@@ -871,7 +883,7 @@ function renderWebglNoTile(
           if (outline) {
             genBgBlur(
               gl,
-              pageTexture,
+              resTexture,
               node._matrixWorld || node.matrixWorld,
               outline,
               target,
@@ -918,9 +930,9 @@ function renderWebglNoTile(
         );
         // 这里才是真正生成mbm
         if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
-          pageTexture = genMbm(
+          resTexture = genMbm(
             gl,
-            pageTexture,
+            resTexture,
             tex!,
             mixBlendMode,
             programs,
@@ -944,6 +956,7 @@ function renderWebglNoTile(
       if (artBoardIndex[i]) {
         x1 = y1 = -1;
         x2 = y2 = 1;
+        resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
       }
     }
   }
@@ -958,7 +971,7 @@ function renderWebglNoTile(
       {
         opacity: 1,
         bbox: new Float64Array([0, 0, W, H]),
-        texture: pageTexture,
+        texture: resTexture,
       },
     ],
     0,
@@ -966,7 +979,7 @@ function renderWebglNoTile(
     true,
     -1, -1, 1, 1,
   );
-  root.pageTexture = pageTexture;
+  root.pageTexture = resTexture;
 }
 
 // 计算节点的世界坐标系数据
@@ -1005,4 +1018,40 @@ function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
     }
     node.hasCacheMw = true;
   }
+}
+
+function drawArtBoard2Page(gl: WebGLRenderingContext | WebGL2RenderingContext, program: WebGLProgram, cx: number, cy: number, W: number, H: number, pageTexture: WebGLTexture, artBoardTexture: WebGLTexture) {
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    pageTexture,
+    0,
+  );
+  drawTextureCache(
+    gl,
+    cx,
+    cy,
+    program,
+    [
+      {
+        opacity: 1,
+        bbox: new Float64Array([0, 0, W, H]),
+        texture: artBoardTexture!,
+      },
+    ],
+    0,
+    0,
+    false,
+    -1, -1, 1, 1,
+  );
+  gl.deleteTexture(artBoardTexture!);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    pageTexture,
+    0,
+  );
+  return pageTexture;
 }
