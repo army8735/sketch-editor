@@ -1303,8 +1303,8 @@ function genColorMatrix(
   gl.useProgram(programs.program);
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
+    return res;
   }
-  return res;
 }
 
 function genTint(
