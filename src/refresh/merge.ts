@@ -146,14 +146,18 @@ export function genMerge(
     let needMask =
       maskMode > 0 &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
-    // 单个的alpha蒙版不渲染，target指向空的mask纹理汇总，循环时判空跳过，outline不可见蒙版不渲染
+    // 单个的alpha蒙版不渲染，outline不可见蒙版不渲染
     if (needMask) {
       if (maskMode === MASK.ALPHA && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
-        node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+        node.textureTarget[scaleIndex] = undefined;
       } else if (maskMode === MASK.OUTLINE && (!computedStyle.visible || computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
-        node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+        if (!computedStyle.visible || computedStyle.opacity === 0) {
+          node.textureTarget[scaleIndex] = undefined;
+        } else {
+          node.resetTextureTarget();
+        }
       }
     }
     // 兄弟连续的mask，后面的不生效，除非有breakMask
