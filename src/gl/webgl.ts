@@ -499,8 +499,8 @@ export function drawMotion(
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
-  const sin = Math.sin(angle) * kernel * 0.5 / w;
-  const cos = Math.cos(angle) * kernel * 0.5 / h;
+  const sin = Math.sin(angle) * kernel / h;
+  const cos = Math.cos(angle) * kernel / w;
   const u_velocity = gl.getUniformLocation(program, 'u_velocity');
   gl.uniform2f(u_velocity, cos, sin);
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
