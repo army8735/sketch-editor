@@ -21,7 +21,7 @@ import {
 } from './merge';
 import Tile from './Tile';
 import { isPolygonOverlapRect } from '../math/geom';
-import { RefreshLevel } from '../refresh/level';
+import { RefreshLevel } from './level';
 
 export type Struct = {
   node: Node;
