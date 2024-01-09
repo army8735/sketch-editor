@@ -1946,7 +1946,7 @@ class Node extends Event {
       res[1] += sb[1];
       res[2] += sb[2];
       res[3] += sb[3];
-      if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.BACKGROUND || blur.t === BLUR.RADIAL) {
+      if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.RADIAL) {
         const r = blur.radius!;
         if (r > 0) {
           const d = kernelSize(r);
