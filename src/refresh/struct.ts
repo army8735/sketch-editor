@@ -827,7 +827,7 @@ function renderWebglNoTile(
           H,
         );
         // 单个的alpha蒙版不渲染
-        if (isInScreen && node.hasContent && !node.computedStyle.maskMode) {
+        if (isInScreen && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
           node.genTexture(gl, scale, scaleIndex);
           target = textureTarget[scaleIndex];
         }
