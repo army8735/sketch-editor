@@ -584,7 +584,7 @@ function showSelect(node) {
   $actual.classList.add('show');
   selectTree && selectTree.classList.remove('select');
   const li = abHash[node.props.uuid];
-  li.scrollIntoView();
+  // li.scrollIntoView();
   selectTree = li;
   selectTree.classList.add('select');
   if (node instanceof editor.node.Text) {

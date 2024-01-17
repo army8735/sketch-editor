@@ -39,6 +39,8 @@ function offscreenCanvas(
   height = Math.ceil(height);
   o.width = width;
   o.height = height;
+  o.style.position = 'fixed';
+  o.style.left = '9999px';
   o.style.webkitFontSmoothing = 'antialiased';
   if (config.debug) {
     o.style.width = width + 'px';

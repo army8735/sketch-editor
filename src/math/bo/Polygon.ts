@@ -466,7 +466,9 @@ function findIntersection(
     if (delList.length) {
       delList.splice(0).forEach((seg) => {
         const i = ael.indexOf(seg);
-        ael.splice(i, 1);
+        if (i > -1) {
+          ael.splice(i, 1);
+        }
         if (!seg.isDeleted) {
           segments.push(seg);
         }
@@ -489,7 +491,9 @@ function findIntersection(
         // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
         if (bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
           const i = ael.indexOf(seg);
-          ael.splice(i, 1);
+          if (i > -1) {
+            ael.splice(i, 1);
+          }
           if (!seg.isDeleted) {
             segments.push(seg);
           }
@@ -829,9 +833,9 @@ function findIntersection(
                 if (inters.length) {
                   // console.log('inters', i, inters.length > 1 ? inters : inters[0], '\n', seg.toString(), '\n', item.toString());
                   const pa = sortIntersection(inters!, !isSourceReverted);
-                  // console.log(pa);
+                  // console.log(pa.length === 1 ? pa[0] : pa);
                   const pb = sortIntersection(inters!, isSourceReverted);
-                  // console.log(pb);
+                  // console.log(pb.length === 1 ? pb[0] : pb);
                   let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                   // console.log('ra', ra.map(item => item.toString()));
                   let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
@@ -840,8 +844,8 @@ function findIntersection(
                   if (ra.length) {
                     activeNewSeg(segments, list, ael, x, ra);
                   }
+                  // 老的线段被删除无效了，踢出ael，防止seg没被分割
                   if (rb.length) {
-                    // 老的线段被删除无效了，踢出ael，防止seg没被分割
                     activeNewSeg(segments, list, ael, x, rb);
                     ael.splice(i--, 1);
                   }
@@ -880,7 +884,7 @@ function findIntersection(
 
 // 给定交点列表分割线段，ps切割点需排好顺序从头到尾，切割后的线段坐标需特别注意，
 // 因为精度的问题，可能切割点并不是十分严格的在线段上，从而造成不是按x增量排序的
-function sliceSegment(seg: Segment, ps: any[], isIntermediate: boolean) {
+function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isIntermediate: boolean) {
   const res: Segment[] = [];
   if (!ps.length) {
     return res;
