@@ -25,7 +25,7 @@ export default class Listener extends Event {
   pageTx: number;
   pageTy: number;
   select: Select;
-  node: Node | undefined;
+  selected: Node[];
 
   constructor(root: Root, dom: HTMLElement) {
     super();
@@ -49,6 +49,7 @@ export default class Listener extends Event {
     this.startY = 0;
     this.pageTx = 0;
     this.pageTy = 0;
+    this.selected = [];
 
     this.select = new Select(root, dom);
 
@@ -58,6 +59,7 @@ export default class Listener extends Event {
     dom.addEventListener('mouseleave', this.onMouseLeave.bind(this));
     dom.addEventListener('click', this.onClick.bind(this));
     dom.addEventListener('wheel', this.onWheel.bind(this));
+    dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
     document.addEventListener('keydown', this.onKeyDown.bind(this));
     document.addEventListener('keyup', this.onKeyUp.bind(this));
   }
@@ -90,15 +92,28 @@ export default class Listener extends Event {
           (e.pageY - this.originY) * dpi,
           !this.metaKey,
           this.metaKey,
-          (this.metaKey || this.node) ? undefined : 1,
+          this.metaKey ? undefined : 1,
         );
         if (node) {
-          this.select.showSelect(node);
-          this.select.hideHover();
+          const i = this.selected.indexOf(node);
+          if (i > -1) {
+            this.selected.splice(i, 1);
+          } else {
+            if (!this.shiftKey) {
+              this.selected.splice(0);
+            }
+            this.selected.push(node);
+          }
+        } else {
+          this.selected.splice(0);
+        }
+        if (this.selected.length) {
+          this.select.showSelect(this.selected);
         } else {
           this.select.hideSelect();
         }
-        this.node = node;
+        this.select.hideHover();
+        this.emit(Listener.SELECT_NODE, this.selected);
       }
     }
   }
@@ -120,8 +135,8 @@ export default class Listener extends Event {
             translateX: this.pageTx + dx,
             translateY: this.pageTy + dy,
           });
-          if (this.node) {
-            this.select.updateSelect(this.node);
+          if (this.selected.length) {
+            this.select.updateSelect(this.selected);
           }
         }
       } else if (isOnControl) {
@@ -138,20 +153,19 @@ export default class Listener extends Event {
         (e.pageY - this.originY) * dpi,
         !this.metaKey,
         this.metaKey,
-        (this.metaKey || this.node) ? undefined : 1,
+        this.metaKey ? undefined : 1,
       );
       if (node) {
-        if (node !== this.node) {
+        if (this.selected.indexOf(node) === -1) {
           this.select.showHover(node);
         }
-      }
-      else {
+      } else {
         this.select.hideHover();
       }
     }
   }
 
-  onMouseUp(e: MouseEvent) {
+  onMouseUp() {
     this.isMouseDown = false;
     this.isMouseMove = false;
     if (this.spaceKey) {
@@ -182,11 +196,11 @@ export default class Listener extends Event {
         if (e.deltaY < -400) {
           sc = -0.1;
         } else if (e.deltaY < -200) {
-          sc = -0.075;
+          sc = -0.08;
         } else if (e.deltaY < -100) {
           sc = -0.05;
         } else if (e.deltaY < -50) {
-          sc = -0.025;
+          sc = -0.02;
         } else {
           sc = -0.01;
         }
@@ -194,11 +208,11 @@ export default class Listener extends Event {
         if (e.deltaY > 400) {
           sc = 0.1;
         } else if (e.deltaY > 200) {
-          sc = 0.075;
+          sc = 0.08;
         } else if (e.deltaY > 100) {
           sc = 0.05;
         } else if (e.deltaY > 50) {
-          sc = 0.025;
+          sc = 0.02;
         } else {
           sc = 0.01;
         }
@@ -213,6 +227,7 @@ export default class Listener extends Event {
         scale = 0.01;
       }
       root.zoomTo(scale, x, y);
+      this.emit(Listener.ZOOM_PAGE, scale);
     }
     // 滚轮+shift状态是移动
     else {
@@ -315,9 +330,14 @@ export default class Listener extends Event {
   }
 
   updateSelected() {
-    if (this.node) {
-      this.select.updateHover(this.node);
+    if (this.selected.length) {
+      this.select.updateSelect(this.selected);
     }
+  }
+
+  onContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    this.emit(Listener.CONTEXT_MENU, e);
   }
 
   destroy() {
@@ -327,9 +347,14 @@ export default class Listener extends Event {
     this.dom.removeEventListener('mouseleave', this.onMouseLeave);
     this.dom.removeEventListener('click', this.onClick);
     this.dom.removeEventListener('wheel', this.onWheel);
+    this.dom.removeEventListener('contextmenu', this.onContextMenu);
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
 
     this.select.destroy();
   }
+
+  static SELECT_NODE = 'SELECT_NODE';
+  static ZOOM_PAGE = 'ZOOM_PAGE';
+  static CONTEXT_MENU = 'CONTEXT_MENU';
 }
