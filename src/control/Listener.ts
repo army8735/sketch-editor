@@ -87,17 +87,18 @@ export default class Listener extends Event {
       }
       // 普通按下是选择节点或者编辑文本
       else {
-        let node = root.getNodeFromCurPage(
+        let node = root.getNode(
           (e.pageX - this.originX) * dpi,
           (e.pageY - this.originY) * dpi,
-          !this.metaKey,
           this.metaKey,
-          this.metaKey ? undefined : 1,
+          this.selected,
         );
         if (node) {
           const i = this.selected.indexOf(node);
           if (i > -1) {
-            this.selected.splice(i, 1);
+            if (this.shiftKey) {
+              this.selected.splice(i, 1);
+            }
           } else {
             if (!this.shiftKey) {
               this.selected.splice(0);
@@ -148,12 +149,11 @@ export default class Listener extends Event {
       if (!this.metaKey && isOnControl) {
         return;
       }
-      const node = root.getNodeFromCurPage(
+      const node = root.getNode(
         (e.pageX - this.originX) * dpi,
         (e.pageY - this.originY) * dpi,
-        !this.metaKey,
         this.metaKey,
-        this.metaKey ? undefined : 1,
+        this.selected,
       );
       if (node) {
         if (this.selected.indexOf(node) === -1) {

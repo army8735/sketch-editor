@@ -59,7 +59,7 @@ class Root extends Container implements FrameCallback {
   ctx: WebGL2RenderingContext | WebGLRenderingContext | undefined;
   dpi: number;
   isWebgl2?: boolean;
-  programs: Record<string, WebGLProgram>;
+  programs: any;
   refs: Record<string, Node>;
   symbolMasters: Record<string, SymbolMaster>;
   lastPage: Page | undefined; // 上一个显示的Page对象
@@ -87,7 +87,6 @@ class Root extends Container implements FrameCallback {
     // 初始化的数据
     this.dpi = props.dpi;
     this.root = this;
-    this.programs = {};
     this.refs = {};
     this.symbolMasters = {};
     this.structs = this.structure(0);
@@ -156,6 +155,7 @@ class Root extends Container implements FrameCallback {
         gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
         gl.getParameter(gl.MAX_VARYING_VECTORS),
       );
+      this.programs = {};
       this.initShaders(gl);
       this.tileManager = new TileManager(gl);
     }
@@ -625,13 +625,14 @@ class Root extends Container implements FrameCallback {
     }
   }
 
-  getCurPageZoom() {
+  getCurPageZoom(excludeDpi = false) {
     if (this.lastPage) {
-      return this.lastPage.getZoom();
+      return this.lastPage.getZoom(excludeDpi);
     }
     return this.dpi;
   }
 
+  // @Deprecated
   getNodeFromCurPage(
     x: number,
     y: number,
@@ -648,6 +649,57 @@ class Root extends Container implements FrameCallback {
         includeArtBoard,
         lv === undefined ? lv : lv + 3,
       );
+    }
+  }
+
+  getNode(x: number, y: number, metaKey = false, selected: Node[] = []) {
+    if (this.isDestroyed) {
+      return;
+    }
+    const page = this.lastPage;
+    if (page) {
+      const res = page.getNodeByPoint(x, y);
+      if (res) {
+        // 按下metaKey，无论是否有选择节点，一定是返回最深的叶子节点
+        if (metaKey) {
+          return res;
+        }
+        // 没有选择节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
+        if (!selected.length) {
+          let n = res;
+          while (n.struct && n.struct.lv > 3) {
+            const p = n.parent!;
+            if (p instanceof ArtBoard) {
+              break;
+            }
+            n = p;
+          }
+          return n;
+        }
+        /**
+         * 已有选择节点比较复杂，先看已选的兄弟，最优先；
+         * 没有则向上递归，看已选的父亲的兄弟，如此循环；
+         * 没有则是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
+         */
+        else {
+          let n = res;
+          const len = selected.length;
+          while (n.struct && n.struct.lv > 3) {
+            for (let i = 0; i < len; i++) {
+              const o = selected[i];
+              if (n.isSibling(o) || n === o) {
+                return res;
+              }
+            }
+            const p = n.parent!;
+            if (p instanceof ArtBoard) {
+              break;
+            }
+            n = p;
+          }
+          return n;
+        }
+      }
     }
   }
 

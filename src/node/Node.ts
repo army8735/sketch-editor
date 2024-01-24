@@ -1626,6 +1626,24 @@ class Node extends Event {
     return [this.struct];
   }
 
+  isSibling(target: Node) {
+    let p = this.prev;
+    while (p) {
+      if (p === target) {
+        return true;
+      }
+      p = p.prev;
+    }
+    let n = this.next;
+    while (n) {
+      if (n === target) {
+        return true;
+      }
+      n = n.next;
+    }
+    return false;
+  }
+
   toJson(): JNode {
     return {
       tagName: 'node',
@@ -1946,7 +1964,7 @@ class Node extends Event {
       res[1] += sb[1];
       res[2] += sb[2];
       res[3] += sb[3];
-      if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.RADIAL) {
+      if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.BACKGROUND || blur.t === BLUR.RADIAL) {
         const r = blur.radius!;
         if (r > 0) {
           const d = kernelSize(r);

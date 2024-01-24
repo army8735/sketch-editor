@@ -312,6 +312,27 @@ class Container extends Node {
     }
   }
 
+  getNodeByPoint(x: number, y: number): Node | undefined {
+    const children = this.children;
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
+      const { computedStyle, rect, matrixWorld } = child;
+      // 在内部且pointerEvents为true才返回
+      if (
+        pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)
+      ) {
+        if (child instanceof Container) {
+          const res = child.getNodeByPoint(x, y);
+          if (res) {
+            return res;
+          }
+        } else if(computedStyle.pointerEvents) {
+          return child;
+        }
+      }
+    }
+  }
+
   override getStructs() {
     if (!this.root) {
       return [];
