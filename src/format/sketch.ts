@@ -122,7 +122,20 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
       return convertPage(page, opt);
     }),
   );
+  const document = json.document;
   return {
+    document: {
+      uuid: document.do_objectID,
+      assets: {
+        uuid: document.assets.do_objectID,
+      },
+      layerStyles: {
+        uuid: document.layerStyles.do_objectID,
+      },
+      layerTextStyles: {
+        uuid: document.layerTextStyles.do_objectID,
+      },
+    },
     pages,
     currentPageIndex: json.document?.currentPageIndex || 0,
     symbolMasters,
@@ -1074,15 +1087,11 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       const item = fills[i];
       if (item.fillType === SketchFormat.FillType.Pattern) {
         let url = '';
-        const image = item.image;
-        // 罕见的数据丢失
-        if (image) {
-          if (image._ref_class === 'MSImageData') {
-            url = await readImageFile(image._ref, opt);
-          }
-          else if ((image._ref_class as string) === 'MSNetworkImage') {
-            url = image._ref;
-          }
+        const image = item.image!;
+        if (image._ref_class === 'MSImageData') {
+          url = await readImageFile(image._ref, opt);
+        } else if ((image._ref_class as string) === 'MSNetworkImage') {
+          url = image._ref;
         }
         const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
         const scale = item.patternTileScale;

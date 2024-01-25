@@ -1,6 +1,8 @@
 import * as uuid from 'uuid';
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { frame, FrameCallback } from '../animation/frame';
-import { JPage, Props } from '../format';
+import { JPage, RootProps } from '../format';
 import ca from '../gl/ca';
 import colorFrag from '../gl/mbm/color.frag';
 import colorBurnFrag from '../gl/mbm/colorBurn.frag';
@@ -49,10 +51,6 @@ import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
-
-type RootProps = Props & {
-  dpi: number;
-};
 
 class Root extends Container implements FrameCallback {
   canvas?: HTMLCanvasElement;
@@ -105,6 +103,7 @@ class Root extends Container implements FrameCallback {
     this.pageContainer = new Container(
       {
         name: 'pageContainer',
+        uuid: '',
         style: {
           width: '100%',
           height: '100%',
@@ -120,6 +119,7 @@ class Root extends Container implements FrameCallback {
     this.overlay = new Overlay(
       {
         name: 'overlay',
+        uuid: '',
         style: {
           width: '100%',
           height: '100%',
@@ -223,6 +223,16 @@ class Root extends Container implements FrameCallback {
       page.json = item;
       this.pageContainer.appendChild(page);
     });
+  }
+
+  getPageIndex() {
+    const children = this.pageContainer.children;
+    for (let i = 0, len = children.length; i < len; i++) {
+      if (this.lastPage === children[i]) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   setPageIndex(index: number) {
@@ -709,6 +719,106 @@ class Root extends Container implements FrameCallback {
 
   zoomFit() {
     this.lastPage?.zoomFit();
+  }
+
+  async toSketchFile(): Promise<JSZip> {
+    const zip = new JSZip();
+    const pages = zip.folder('pages');
+    const props = this.props as RootProps;
+    const pagesAndArtboards: {
+      [key: string]: {
+        name: string;
+        artboards: {
+          [key: string]: {
+            name: string;
+          };
+        };
+      };
+    } = {};
+    this.pageContainer.children.forEach((item) => {
+      const page = item as Page;
+      const uuid = page.props.uuid;
+      pagesAndArtboards[uuid] = {
+        name: page.props.name || '',
+        artboards: {},
+      };
+      page.children.forEach((item2) => {
+        if (item2 instanceof ArtBoard) {
+          const uuid2 = item2.props.uuid;
+          pagesAndArtboards[uuid].artboards[uuid2] = {
+            name: item2.props.name || '',
+          };
+        }
+      });
+      if (pages) {
+        const json = page.toSketchJson();
+        pages.file(uuid + '.json', JSON.stringify(json));
+      }
+    });
+    const meta = {
+      commit: '',
+      pagesAndArtboards,
+      version: 146,
+      compatibilityVersion: 99,
+      app: SketchFormat.BundleId.PublicRelease,
+      autosaved: 0,
+      variant: 'NONAPPSTORE',
+      created: {
+        commit: '',
+        appVersion: '99.1',
+        build: 0,
+        app: SketchFormat.BundleId.PublicRelease,
+        coeditCompatibilityVersion: 145,
+        compatibilityVersion: 99,
+        version: 146,
+        variant: 'NONAPPSTORE',
+      },
+      saveHistory: [],
+      appVersion: '99.1',
+      build: 0,
+    };
+    const user = {
+      document: {
+        pageListHeight: 100,
+        pageListCollapsed: 0,
+      },
+    };
+    const document: SketchFormat.Document = {
+      _class: 'document',
+      do_objectID: props.uuid || uuid.v4(),
+      assets: {
+        _class: 'assetCollection',
+        do_objectID: props.assets.uuid || uuid.v4(),
+        colorAssets: [],
+        gradientAssets: [],
+        images: [],
+        colors: [],
+        gradients: [],
+        exportPresets: [],
+      },
+      colorSpace: SketchFormat.ColorSpace.SRGB,
+      currentPageIndex: this.getPageIndex(),
+      foreignLayerStyles: [],
+      foreignSymbols: [],
+      foreignTextStyles: [],
+      foreignSwatches: [],
+      layerStyles: {
+        _class: 'sharedStyleContainer',
+        do_objectID: props.layerStyles.uuid || uuid.v4(),
+        objects: [],
+      },
+      layerTextStyles: {
+        _class: 'sharedTextStyleContainer',
+        do_objectID: props.layerTextStyles.uuid || uuid.v4(),
+        objects: [],
+      },
+      perDocumentLibraries: [],
+      pages: [],
+    };
+    zip.file('meta.json', JSON.stringify(meta));
+    zip.file('user.json', JSON.stringify(user));
+    zip.file('document.json', JSON.stringify(document));
+    return zip;
   }
 }
 

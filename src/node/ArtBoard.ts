@@ -1,3 +1,4 @@
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { ArtBoardProps, JNode, Props, TAG_NAME } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoints } from '../math/matrix';
@@ -182,6 +183,30 @@ class ArtBoard extends Container {
     const res = super.toJson();
     res.tagName = TAG_NAME.ART_BOARD;
     return res;
+  }
+
+  override toSketchJson(): SketchFormat.Artboard {
+    const json = super.toSketchJson() as SketchFormat.Artboard;
+    json._class = SketchFormat.ClassValue.Artboard;
+    this.children.forEach(item => {
+      const j = item.toSketchJson() as (
+        SketchFormat.Group |
+        SketchFormat.Oval |
+        SketchFormat.Polygon |
+        SketchFormat.Rectangle |
+        SketchFormat.ShapePath |
+        SketchFormat.Star |
+        SketchFormat.Triangle |
+        SketchFormat.ShapeGroup |
+        SketchFormat.Text |
+        SketchFormat.SymbolInstance |
+        SketchFormat.Slice |
+        SketchFormat.Hotspot |
+        SketchFormat.Bitmap
+        );
+      json.layers.push(j);
+    });
+    return json;
   }
 
   override get filterBbox() {

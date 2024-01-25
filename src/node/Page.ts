@@ -1,3 +1,4 @@
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import {
   JNode,
   JPage,
@@ -141,6 +142,32 @@ class Page extends Container {
     const res = super.toJson();
     res.tagName = TAG_NAME.PAGE;
     return res;
+  }
+
+  override toSketchJson(): SketchFormat.Page {
+    const json = super.toSketchJson() as SketchFormat.Page;
+    json._class = SketchFormat.ClassValue.Page;
+    this.children.forEach(item => {
+      const j = item.toSketchJson() as (
+        SketchFormat.Artboard |
+        SketchFormat.Group |
+        SketchFormat.Oval |
+        SketchFormat.Polygon |
+        SketchFormat.Rectangle |
+        SketchFormat.ShapePath |
+        SketchFormat.Star |
+        SketchFormat.Triangle |
+        SketchFormat.ShapeGroup |
+        SketchFormat.Text |
+        SketchFormat.SymbolMaster |
+        SketchFormat.SymbolInstance |
+        SketchFormat.Slice |
+        SketchFormat.Hotspot |
+        SketchFormat.Bitmap
+        );
+      json.layers.push(j);
+    });
+    return json;
   }
 }
 

@@ -7,6 +7,18 @@ import {
 } from '../style/define';
 
 export type JFile = {
+  document: {
+    uuid: string;
+    assets: {
+      uuid: string;
+    };
+    layerStyles: {
+      uuid: string;
+    };
+    layerTextStyles: {
+      uuid: string;
+    };
+  };
   pages: JPage[];
   currentPageIndex: number;
   symbolMasters: JSymbolMaster[];
@@ -222,12 +234,25 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
 
 export type Props = {
   name?: string;
-  uuid?: string;
+  uuid: string;
   style?: any;
   constrainProportions?: boolean;
   isLocked?: boolean;
   isExpanded?: boolean;
   isSelected?: boolean;
+};
+
+export type RootProps = Props & {
+  dpi: number;
+  assets: {
+    uuid: string;
+  };
+  layerStyles: {
+    uuid: string;
+  };
+  layerTextStyles: {
+    uuid: string;
+  };
 };
 
 export type PageProps = Props & {

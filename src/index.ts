@@ -16,6 +16,10 @@ export default {
     const { width, height } = canvas;
     const root = new node.Root({
       dpi,
+      uuid: json.document.uuid,
+      assets: json.document.assets,
+      layerStyles: json.document.layerStyles,
+      layerTextStyles: json.document.layerTextStyles,
       style: {
         width,
         height,
