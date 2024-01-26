@@ -1,4 +1,6 @@
 import * as uuid from 'uuid';
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { BitmapProps, JNode, Override, TAG_NAME } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import config from '../util/config';
@@ -907,6 +909,17 @@ class Bitmap extends Node {
     const res = super.toJson();
     res.tagName = TAG_NAME.BITMAP;
     return res;
+  }
+
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Bitmap> {
+    const json = await super.toSketchJson(zip) as SketchFormat.Bitmap;
+    json._class = SketchFormat.ClassValue.Bitmap;
+    json.image = {
+      _class: 'MSJSONFileReference',
+      _ref_class: 'MSImageData',
+      _ref: '',
+    };
+    return json;
   }
 
   override destroy() {

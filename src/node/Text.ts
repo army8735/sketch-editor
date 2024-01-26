@@ -1,4 +1,6 @@
 import * as uuid from 'uuid';
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
@@ -2437,6 +2439,60 @@ class Text extends Node {
     const res = super.toJson();
     res.tagName = TAG_NAME.TEXT;
     return res;
+  }
+
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Text> {
+    const json = await super.toSketchJson(zip) as SketchFormat.Text;
+    json._class = SketchFormat.ClassValue.Text;
+    json.attributedString = {
+      _class: 'attributedString',
+      string: this._content,
+      attributes: this.rich.map(item => {
+        return {
+          _class: 'stringAttribute',
+          location: item.location,
+          length: item.length,
+          attributes: {
+            kerning: item.letterSpacing,
+            MSAttributedStringFontAttribute: {
+              _class: 'fontDescriptor',
+              attributes: {
+                name: item.fontFamily,
+                size: item.fontSize,
+              },
+            },
+            MSAttributedStringColorAttribute: {
+              _class: 'color',
+              alpha: item.color[3],
+              red: item.color[0] / 255,
+              green: item.color[1] / 255,
+              blue: item.color[2] / 255,
+            },
+            paragraphStyle: {
+              _class: 'paragraphStyle',
+              alignment: [
+                SketchFormat.TextHorizontalAlignment.Left,
+                SketchFormat.TextHorizontalAlignment.Right,
+                SketchFormat.TextHorizontalAlignment.Centered,
+                SketchFormat.TextHorizontalAlignment.Justified,
+              ][item.textAlign || 0],
+            },
+            underlineStyle: item.textDecoration.indexOf(TEXT_DECORATION.UNDERLINE) > -1 ?
+              SketchFormat.UnderlineStyle.Underlined :
+              SketchFormat.UnderlineStyle.None,
+            strikethroughStyle: item.textDecoration.indexOf(TEXT_DECORATION.LINE_THROUGH) > -1 ?
+              SketchFormat.StrikethroughStyle.Strikethrough :
+              SketchFormat.StrikethroughStyle.None,
+          },
+        };
+      }),
+    };
+    json.textBehaviour = [
+      SketchFormat.TextBehaviour.Flexible,
+      SketchFormat.TextBehaviour.Fixed,
+      SketchFormat.TextBehaviour.FixedWidthAndHeight,
+    ][this.textBehaviour || 0];
+    return json;
   }
 
   get content() {

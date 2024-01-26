@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import {
   JNode,
@@ -144,12 +145,25 @@ class Page extends Container {
     return res;
   }
 
-  override toSketchJson(): SketchFormat.Page {
-    const json = super.toSketchJson() as SketchFormat.Page;
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Page> {
+    const json = await super.toSketchJson(zip) as SketchFormat.Page;
     json._class = SketchFormat.ClassValue.Page;
-    this.children.forEach(item => {
-      const j = item.toSketchJson() as (
-        SketchFormat.Artboard |
+    json.hasClickThrough = true;
+    json.horizontalRulerData = {
+      _class: 'rulerData',
+      base: 0,
+      guides: [],
+    };
+    json.verticalRulerData = {
+      _class: 'rulerData',
+      base: 0,
+      guides: [],
+    };
+    const list = await Promise.all(this.children.map(item => {
+      return item.toSketchJson(zip);
+    }));
+    json.layers = list.map(item => {
+      return item as SketchFormat.Artboard |
         SketchFormat.Group |
         SketchFormat.Oval |
         SketchFormat.Polygon |
@@ -163,9 +177,7 @@ class Page extends Container {
         SketchFormat.SymbolInstance |
         SketchFormat.Slice |
         SketchFormat.Hotspot |
-        SketchFormat.Bitmap
-        );
-      json.layers.push(j);
+        SketchFormat.Bitmap;
     });
     return json;
   }

@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { getDefaultStyle, JNode, Override, Props, TAG_NAME } from '../../format';
+import { getDefaultStyle, JNode, Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
@@ -94,7 +94,7 @@ class ShapeGroup extends Group {
   points?: number[][][];
   loaders: Loader[];
 
-  constructor(props: Props, children: Node[]) {
+  constructor(props: ShapeGroupProps, children: Node[]) {
     super(props, children);
     this.isShapeGroup = true;
     this.loaders = [];
@@ -881,7 +881,7 @@ class ShapeGroup extends Group {
   static groupAsShape(
     nodes: Node[],
     bo = BOOLEAN_OPERATION.NONE,
-    props?: Props,
+    props?: ShapeGroupProps,
   ) {
     if (!nodes.length) {
       return;

@@ -1,4 +1,6 @@
 import * as uuid from 'uuid';
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Props, TAG_NAME } from '../format';
 import { calRectPoints } from '../math/matrix';
 import { RefreshLevel } from '../refresh/level';
@@ -230,6 +232,31 @@ class Group extends Container {
     const res = super.toJson();
     res.tagName = TAG_NAME.GROUP;
     return res;
+  }
+
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Group> {
+    const json = await super.toSketchJson(zip) as SketchFormat.Group;
+    json._class = SketchFormat.ClassValue.Group;
+    json.hasClickThrough = false;
+    const list = await Promise.all(this.children.map(item => {
+      return item.toSketchJson(zip);
+    }));
+    json.layers = list.map(item => {
+      return item as SketchFormat.Group |
+        SketchFormat.Oval |
+        SketchFormat.Polygon |
+        SketchFormat.Rectangle |
+        SketchFormat.ShapePath |
+        SketchFormat.Star |
+        SketchFormat.Triangle |
+        SketchFormat.ShapeGroup |
+        SketchFormat.Text |
+        SketchFormat.SymbolInstance |
+        SketchFormat.Slice |
+        SketchFormat.Hotspot |
+        SketchFormat.Bitmap;
+    });
+    return json;
   }
 
   // 至少1个node进行编组，以第0个位置为基准

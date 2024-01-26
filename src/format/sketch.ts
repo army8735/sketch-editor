@@ -782,6 +782,7 @@ async function convertItem(
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      styleId,
     } = await geomStyle(layer, opt);
     let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
     if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
@@ -796,6 +797,7 @@ async function convertItem(
         name: layer.name,
         constrainProportions,
         textBehaviour,
+        styleId,
         style: {
           left,
           top,
@@ -856,7 +858,7 @@ async function convertItem(
     layer._class === SketchFormat.ClassValue.Polygon ||
     layer._class === SketchFormat.ClassValue.ShapePath
   ) {
-    const points: Array<Point> = layer.points.map((item: any) => {
+    const points: Point[] = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
       const curveTo = parseStrPoint(item.curveTo);
@@ -889,6 +891,7 @@ async function convertItem(
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      styleId,
     } = await geomStyle(layer, opt);
     let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
     if (
@@ -917,6 +920,7 @@ async function convertItem(
         pointRadiusBehaviour,
         isRectangle: layer._class === 'rectangle',
         isOval: layer._class === 'oval',
+        styleId,
         style: {
           left,
           top,
@@ -978,6 +982,7 @@ async function convertItem(
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      styleId,
     } = await geomStyle(layer, opt);
     const children = await Promise.all(
       layer.layers.map((child: SketchFormat.AnyLayer) => {
@@ -994,6 +999,7 @@ async function convertItem(
         uuid: layer.do_objectID,
         name: layer.name,
         constrainProportions,
+        styleId,
         style: {
           left,
           top,
@@ -1077,6 +1083,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     fills,
     windingRule,
     miterLimit: strokeMiterlimit,
+    do_objectID: styleId,
   } = layer.style || {};
   const fill: Array<string | number[]> = [],
     fillEnable: boolean[] = [],
@@ -1118,9 +1125,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         } else if (g.gradientType === SketchFormat.GradientType.Radial) {
           const ellipseLength = g.elipseLength;
           fill.push(
-            `radialGradient(${from.x} ${from.y} ${to.x} ${
-              to.y
-            } ${ellipseLength},${stops.join(',')})`,
+            `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`,
           );
         } else if (g.gradientType === SketchFormat.GradientType.Angular) {
           fill.push(
@@ -1246,6 +1251,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     strokeLinecap,
     strokeLinejoin,
     strokeMiterlimit,
+    styleId,
   };
 }
 
@@ -1414,4 +1420,21 @@ function getBlendMode(blend: SketchFormat.BlendMode = SketchFormat.BlendMode.Nor
     // blendMode = 'plus-lighter';
   }
   return blendMode;
+}
+
+export function toSketchColor(color: number[], obj?: SketchFormat.Color): SketchFormat.Color {
+  if (obj) {
+    obj.alpha = color[3];
+    obj.red = color[0] / 255;
+    obj.green = color[1] / 255;
+    obj.blue = color[2] / 255;
+    return obj;
+  }
+  return {
+    _class: 'color',
+    alpha: color[3],
+    red: color[0] / 255,
+    green: color[1] / 255,
+    blue: color[2] / 255,
+  };
 }

@@ -723,7 +723,8 @@ class Root extends Container implements FrameCallback {
 
   async toSketchFile(): Promise<JSZip> {
     const zip = new JSZip();
-    const pages = zip.folder('pages');
+    const pagesZip = zip.folder('pages');
+    const imagesZip = zip.folder('images');
     const props = this.props as RootProps;
     const pagesAndArtboards: {
       [key: string]: {
@@ -735,9 +736,25 @@ class Root extends Container implements FrameCallback {
         };
       };
     } = {};
-    this.pageContainer.children.forEach((item) => {
+    const pages: SketchFormat.FileRef[] = [];
+    const user: SketchFormat.User = {
+      document: {
+        pageListHeight: 100,
+        pageListCollapsed: 0,
+      },
+    };
+    this.pageContainer.children.forEach(item => {
       const page = item as Page;
       const uuid = page.props.uuid;
+      pages.push({
+        _class: 'MSJSONFileReference',
+        _ref_class: 'MSImmutablePage',
+        _ref: 'pages/' + uuid,
+      });
+      user[uuid] = {
+        scrollOrigin: '{' + page.computedStyle.translateX + ', ' + page.computedStyle.translateY + '}',
+        zoomValue: page.getZoom(true),
+      };
       pagesAndArtboards[uuid] = {
         name: page.props.name || '',
         artboards: {},
@@ -750,12 +767,20 @@ class Root extends Container implements FrameCallback {
           };
         }
       });
-      if (pages) {
-        const json = page.toSketchJson();
-        pages.file(uuid + '.json', JSON.stringify(json));
-      }
+      // if (pagesZip) {
+      //   const json = page.toSketchJson();
+      //   pagesZip.file(uuid + '.json', JSON.stringify(json));
+      // }
     });
-    const meta = {
+    if (pagesZip && imagesZip) {
+      const list = await Promise.all(this.pageContainer.children.map(item => {
+        return item.toSketchJson(zip);
+      }));
+      list.forEach(item => {
+        pagesZip.file(item.do_objectID + '.json', JSON.stringify(item));
+      });
+    }
+    const meta: SketchFormat.Meta = {
       commit: '',
       pagesAndArtboards,
       version: 146,
@@ -777,12 +802,6 @@ class Root extends Container implements FrameCallback {
       appVersion: '99.1',
       build: 0,
     };
-    const user = {
-      document: {
-        pageListHeight: 100,
-        pageListCollapsed: 0,
-      },
-    };
     const document: SketchFormat.Document = {
       _class: 'document',
       do_objectID: props.uuid || uuid.v4(),
@@ -796,7 +815,7 @@ class Root extends Container implements FrameCallback {
         gradients: [],
         exportPresets: [],
       },
-      colorSpace: SketchFormat.ColorSpace.SRGB,
+      colorSpace: SketchFormat.ColorSpace.Unmanaged,
       currentPageIndex: this.getPageIndex(),
       foreignLayerStyles: [],
       foreignSymbols: [],
@@ -813,7 +832,7 @@ class Root extends Container implements FrameCallback {
         objects: [],
       },
       perDocumentLibraries: [],
-      pages: [],
+      pages,
     };
     zip.file('meta.json', JSON.stringify(meta));
     zip.file('user.json', JSON.stringify(user));

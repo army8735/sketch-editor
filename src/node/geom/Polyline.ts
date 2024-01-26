@@ -1,4 +1,6 @@
 import * as uuid from 'uuid';
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../../format';
 import { r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
@@ -26,6 +28,7 @@ import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
+import { toSketchColor } from '../../format/sketch';
 
 class Polyline extends Geom {
   props: PolylineProps;
@@ -888,6 +891,165 @@ class Polyline extends Geom {
     const res = super.toJson();
     res.tagName = TAG_NAME.POLYLINE;
     return res;
+  }
+
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.ShapePath> {
+    const json = await super.toSketchJson(zip) as SketchFormat.ShapePath;
+    json._class = SketchFormat.ClassValue.ShapePath;
+    json.isClosed = this.props.isClosed;
+    json.points = this.props.points.map(item => {
+      return {
+        _class: 'curvePoint',
+        cornerRadius: item.cornerRadius,
+        cornerStyle: [
+          SketchFormat.CornerStyle.Rounded,
+          SketchFormat.CornerStyle.RoundedInverted,
+          SketchFormat.CornerStyle.Angled,
+          SketchFormat.CornerStyle.Squared,
+        ][item.cornerStyle || 0],
+        curveMode: [
+          SketchFormat.CurveMode.None,
+          SketchFormat.CurveMode.Straight,
+          SketchFormat.CurveMode.Mirrored,
+          SketchFormat.CurveMode.Asymmetric,
+          SketchFormat.CurveMode.Disconnected,
+        ][item.curveMode || 0],
+        hasCurveFrom: item.hasCurveFrom,
+        hasCurveTo: item.hasCurveTo,
+        curveFrom: '{' + item.fx + ', ' + item.fy + '}',
+        curveTo: '{' + item.tx + ', ' + item.ty + '}',
+        point: '{' + item.x + ', ' + item.y + '}',
+      };
+    });
+    const computedStyle = this.computedStyle;
+    json.style!.fills = computedStyle.fill.map((f, i) => {
+      const color: SketchFormat.Color = {
+        _class: 'color',
+        alpha: 1,
+        red: 0,
+        green: 0,
+        blue: 0,
+      };
+      const gradient: SketchFormat.Gradient = {
+        _class: 'gradient',
+        gradientType: SketchFormat.GradientType.Linear,
+        elipseLength: 1,
+        from: '',
+        to: '',
+        stops: [],
+      };
+      let fillType = SketchFormat.FillType.Color;
+      // 纯色
+      if (Array.isArray(f)) {
+        toSketchColor(f, color);
+      }
+      // 非纯色
+      else {
+        // 图像填充
+        if ((f as ComputedPattern).url) {
+          fillType = SketchFormat.FillType.Pattern;
+        }
+        // 渐变
+        else {
+          fillType = SketchFormat.FillType.Gradient;
+          f = f as ComputedGradient;
+          gradient.from = '{' + f.d[0] + ', ' + f.d[1] + '}';
+          gradient.to = '{' + f.d[2] + ', ' + f.d[3] + '}';
+          if (f.t === GRADIENT.RADIAL) {
+            gradient.gradientType = SketchFormat.GradientType.Radial;
+            gradient.elipseLength = f.d[4];
+          } else if (f.t === GRADIENT.CONIC) {
+            gradient.gradientType = SketchFormat.GradientType.Angular;
+          }
+          f.stops.forEach(item => {
+            gradient.stops.push({
+              _class: 'gradientStop',
+              color: toSketchColor(item.color),
+              position: item.offset || 0,
+            });
+          });
+        }
+      }
+      return {
+        _class: 'fill',
+        isEnabled: computedStyle.fillEnable[i],
+        color,
+        fillType,
+        noiseIndex: 0,
+        noiseIntensity: 0,
+        patternFillType: SketchFormat.PatternFillType.Tile,
+        patternTileScale: 1,
+        gradient,
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: SketchFormat.BlendMode.Normal,
+          opacity: computedStyle.fillOpacity[i],
+        },
+      };
+    });
+    json.style!.borders = computedStyle.stroke.map((s, i) => {
+      const color: SketchFormat.Color = {
+        _class: 'color',
+        alpha: 1,
+        red: 0,
+        green: 0,
+        blue: 0,
+      };
+      const gradient: SketchFormat.Gradient = {
+        _class: 'gradient',
+        gradientType: SketchFormat.GradientType.Linear,
+        elipseLength: 1,
+        from: '',
+        to: '',
+        stops: [],
+      };
+      let fillType = SketchFormat.FillType.Color;
+      // 纯色
+      if (Array.isArray(s)) {
+        toSketchColor(s, color);
+      }
+      // 渐变
+      else {
+        fillType = SketchFormat.FillType.Gradient;
+        s = s as ComputedGradient;
+        gradient.from = '{' + s.d[0] + ', ' + s.d[1] + '}';
+        gradient.to = '{' + s.d[2] + ', ' + s.d[3] + '}';
+        if (s.t === GRADIENT.RADIAL) {
+          gradient.gradientType = SketchFormat.GradientType.Radial;
+          gradient.elipseLength = s.d[4];
+        } else if (s.t === GRADIENT.CONIC) {
+          gradient.gradientType = SketchFormat.GradientType.Angular;
+        }
+        s.stops.forEach(item => {
+          gradient.stops.push({
+            _class: 'gradientStop',
+            color: toSketchColor(item.color),
+            position: item.offset || 0,
+          });
+        });
+      }
+      let position = SketchFormat.BorderPosition.Center;
+      if (computedStyle.strokePosition[i] === STROKE_POSITION.INSIDE) {
+        position = SketchFormat.BorderPosition.Inside;
+      } else if (computedStyle.strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+        position = SketchFormat.BorderPosition.Outside;
+      }
+      return {
+        _class: 'border',
+        isEnabled: computedStyle.strokeEnable[i],
+        color,
+        fillType,
+        position,
+        thickness: computedStyle.strokeWidth[i],
+        gradient,
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: SketchFormat.BlendMode.Normal,
+          opacity: 1,
+        },
+      };
+    });
+    return json;
   }
 
   override destroy() {

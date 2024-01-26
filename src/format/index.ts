@@ -59,6 +59,7 @@ export type JGroup = JContainer & {
 
 export type JShapeGroup = JContainer & {
   tagName: TAG_NAME.SHAPE_GROUP;
+  props: ShapeGroupProps,
 };
 
 export type JBitmap = JContainer & {
@@ -240,6 +241,7 @@ export type Props = {
   isLocked?: boolean;
   isExpanded?: boolean;
   isSelected?: boolean;
+  styleId?: string;
 };
 
 export type RootProps = Props & {
@@ -301,7 +303,7 @@ export type Rich = {
   textDecoration: TEXT_DECORATION[];
   letterSpacing: number;
   paragraphSpacing: number;
-  color: string | number[];
+  color: number[];
 };
 
 export type PolylineProps = Props & {
@@ -312,6 +314,14 @@ export type PolylineProps = Props & {
   pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
   isRectangle: boolean;
   isOval: boolean;
+};
+
+export type ShapeGroupProps = Props & {
+  points: Point[];
+  isClosed: boolean;
+  constrainProportions: boolean;
+  fixedRadius: number;
+  pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
 };
 
 export type Point = {

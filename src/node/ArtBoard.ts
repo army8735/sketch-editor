@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { ArtBoardProps, JNode, Props, TAG_NAME } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
@@ -185,12 +186,37 @@ class ArtBoard extends Container {
     return res;
   }
 
-  override toSketchJson(): SketchFormat.Artboard {
-    const json = super.toSketchJson() as SketchFormat.Artboard;
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Artboard> {
+    const json = await super.toSketchJson(zip) as SketchFormat.Artboard;
     json._class = SketchFormat.ClassValue.Artboard;
-    this.children.forEach(item => {
-      const j = item.toSketchJson() as (
-        SketchFormat.Group |
+    json.hasClickThrough = false;
+    json.includeBackgroundColorInExport = false;
+    json.isFlowHome = false;
+    json.resizesContent = false;
+    json.horizontalRulerData = {
+      _class: 'rulerData',
+      base: 0,
+      guides: [],
+    };
+    json.verticalRulerData = {
+      _class: 'rulerData',
+      base: 0,
+      guides: [],
+    };
+    const computedStyle = this.computedStyle;
+    json.backgroundColor = {
+      alpha: computedStyle.backgroundColor[3],
+      blue: computedStyle.backgroundColor[2] / 255,
+      green: computedStyle.backgroundColor[1] / 255,
+      red: computedStyle.backgroundColor[0] / 255,
+      _class: 'color',
+    };
+    json.hasBackgroundColor = this.hasBackgroundColor;
+    const list = await Promise.all(this.children.map(item => {
+      return item.toSketchJson(zip);
+    }));
+    json.layers = list.map(item => {
+      return item as SketchFormat.Group |
         SketchFormat.Oval |
         SketchFormat.Polygon |
         SketchFormat.Rectangle |
@@ -202,9 +228,7 @@ class ArtBoard extends Container {
         SketchFormat.SymbolInstance |
         SketchFormat.Slice |
         SketchFormat.Hotspot |
-        SketchFormat.Bitmap
-        );
-      json.layers.push(j);
+        SketchFormat.Bitmap;
     });
     return json;
   }
