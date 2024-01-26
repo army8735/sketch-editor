@@ -2,7 +2,7 @@ import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { getDefaultStyle, JNode, JStyle, Override, PageProps, Point, Props } from '../format/';
-import { ResizingConstraint } from '../format/sketch';
+import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
 import {
@@ -29,11 +29,14 @@ import {
   ComputedGradient,
   ComputedPattern,
   ComputedShadow,
-  ComputedStyle, FILL_RULE,
+  ComputedStyle,
+  FILL_RULE,
   Gradient,
   GRADIENT,
   MASK,
-  Pattern, STROKE_LINE_CAP, STROKE_LINE_JOIN,
+  Pattern,
+  STROKE_LINE_CAP,
+  STROKE_LINE_JOIN,
   STROKE_POSITION,
   Style,
   StyleNumValue,
@@ -1652,29 +1655,7 @@ class Node extends Event {
     };
   }
 
-  async toSketchJson(zip: JSZip): Promise<Pick<
-    SketchFormat.AnyLayer,
-    'booleanOperation' |
-    'clippingMaskMode' |
-    'do_objectID' |
-    'exportOptions' |
-    'frame' |
-    'hasClippingMask' |
-    'isFixedToViewport' |
-    'isFlippedHorizontal' |
-    'isFlippedVertical' |
-    'isLocked' |
-    'isTemplate' |
-    'isVisible' |
-    'layerListExpandedType' |
-    'name' |
-    'nameIsFixed' |
-    'resizingConstraint' |
-    'resizingType' |
-    'rotation'|
-    'shouldBreakMaskChain' |
-    'style'
-  >> {
+  async toSketchJson(zip: JSZip) {
     const { props, width, height, style, computedStyle } = this;
     let resizingConstraint = 0;
     if (style.left.v === StyleUnit.PX) {
@@ -1708,34 +1689,74 @@ class Node extends Event {
     } else if (computedStyle.strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
       lineJoinStyle = SketchFormat.LineJoinStyle.Bevel;
     }
-    // json.style = {
-    //   _class: 'style',
-    //   do_objectID: this.props.styleId || uuid.v4(),
-    //   borderOptions: {
-    //     _class: 'borderOptions',
-    //     isEnabled: true,
-    //     dashPattern: computedStyle.strokeDasharray,
-    //     lineCapStyle,
-    //     lineJoinStyle,
-    //   },
-    //   startMarkerType: SketchFormat.MarkerType.OpenArrow,
-    //   endMarkerType: SketchFormat.MarkerType.OpenArrow,
-    //   miterLimit: computedStyle.strokeMiterlimit,
-    //   windingRule: computedStyle.fillRule === FILL_RULE.EVEN_ODD ?
-    //     SketchFormat.WindingRule.EvenOdd :
-    //     SketchFormat.WindingRule.NonZero,
-    //   shadows: [],
-    //   innerShadows: [],
-    //   colorControls: {
-    //     _class: 'colorControls',
-    //     isEnabled: false,
-    //     brightness: 0,
-    //     contrast: 0,
-    //     hue: 0,
-    //     saturation: 0,
-    //   },
-    // };
-    return {
+    const {
+      shadow,
+      shadowEnable,
+      innerShadow,
+      innerShadowEnable,
+      blur,
+      hueRotate,
+      brightness,
+      contrast,
+      saturate,
+    } = computedStyle;
+    const shadows: SketchFormat.Shadow[] = [];
+    const innerShadows: SketchFormat.InnerShadow[] = [];
+    shadow.forEach((item, i) => {
+      shadows.push({
+        _class: 'shadow',
+        isEnabled: shadowEnable[i],
+        blurRadius: item.blur,
+        color: toSketchColor(item.color),
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: SketchFormat.BlendMode.Normal,
+          opacity: 1,
+        },
+        offsetX: item.x,
+        offsetY: item.y,
+        spread: item.spread,
+      });
+    });
+    innerShadow.forEach((item, i) => {
+      innerShadows.push({
+        _class: 'innerShadow',
+        isEnabled: innerShadowEnable[i],
+        blurRadius: item.blur,
+        color: toSketchColor(item.color),
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: SketchFormat.BlendMode.Normal,
+          opacity: 1,
+        },
+        offsetX: item.x,
+        offsetY: item.y,
+        spread: item.spread,
+      });
+    });
+    const json: Pick<
+      SketchFormat.AnyLayer,
+      'booleanOperation' |
+      'clippingMaskMode' |
+      'do_objectID' |
+      'exportOptions' |
+      'frame' |
+      'hasClippingMask' |
+      'isFixedToViewport' |
+      'isFlippedHorizontal' |
+      'isFlippedVertical' |
+      'isLocked' |
+      'isTemplate' |
+      'isVisible' |
+      'layerListExpandedType' |
+      'name' |
+      'nameIsFixed' |
+      'resizingConstraint' |
+      'resizingType' |
+      'rotation'|
+      'shouldBreakMaskChain' |
+      'style'
+    > = {
       booleanOperation: computedStyle.booleanOperation - 1,
       clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
       do_objectID: props.uuid!,
@@ -1754,37 +1775,22 @@ class Node extends Event {
         y: computedStyle.translateY,
         _class: 'rect',
       },
-      // hasClickThrough: true,
       hasClippingMask: computedStyle.maskMode !== MASK.NONE,
-      // horizontalRulerData: {
-      //   base: 0,
-      //   guides: [],
-      //   _class: 'rulerData',
-      // },
-      // includeBackgroundColorInExport: false,
       isFixedToViewport: false,
       isFlippedHorizontal: false,
       isFlippedVertical: false,
-      // isFlowHome: false,
       isLocked: props.isLocked || false,
       isTemplate: false,
       isVisible: computedStyle.visible,
       layerListExpandedType: props.isExpanded
         ? SketchFormat.LayerListExpanded.Expanded
         : SketchFormat.LayerListExpanded.Collapsed,
-      // layers: [],
       name: props.name || '',
       nameIsFixed: false,
-      // resizesContent: false,
       resizingConstraint,
       resizingType: SketchFormat.ResizeType.Stretch,
       rotation: -computedStyle.rotateZ,
       shouldBreakMaskChain: computedStyle.breakMask,
-      // verticalRulerData: {
-      //   base: 0,
-      //   guides: [],
-      //   _class: 'rulerData',
-      // },
       style: {
         _class: 'style',
         do_objectID: this.props.styleId || uuid.v4(),
@@ -1801,18 +1807,183 @@ class Node extends Event {
         windingRule: computedStyle.fillRule === FILL_RULE.EVEN_ODD ?
           SketchFormat.WindingRule.EvenOdd :
           SketchFormat.WindingRule.NonZero,
-        shadows: [],
-        innerShadows: [],
+        shadows,
+        innerShadows,
         colorControls: {
           _class: 'colorControls',
-          isEnabled: false,
-          brightness: 0,
-          contrast: 0,
-          hue: 0,
-          saturation: 0,
+          isEnabled: true,
+          brightness: brightness - 1,
+          contrast,
+          hue: hueRotate,
+          saturation: saturate,
         },
       },
     };
+    json.style!.fills = await Promise.all(computedStyle.fill.map(async (f, i) => {
+      const color: SketchFormat.Color = {
+        _class: 'color',
+        alpha: 1,
+        red: 0,
+        green: 0,
+        blue: 0,
+      };
+      const gradient: SketchFormat.Gradient = {
+        _class: 'gradient',
+        gradientType: SketchFormat.GradientType.Linear,
+        elipseLength: 1,
+        from: '',
+        to: '',
+        stops: [],
+      };
+      let fillType = SketchFormat.FillType.Color;
+      let image: SketchFormat.FileRef | undefined;
+      // 纯色
+      if (Array.isArray(f)) {
+        toSketchColor(f, color);
+      }
+      // 非纯色
+      else {
+        // 图像填充
+        if ((f as ComputedPattern).url) {
+          f = f as ComputedPattern;
+          fillType = SketchFormat.FillType.Pattern;
+          const imagesZip = zip.folder('images');
+          if (imagesZip) {
+            const res = await fetch(f.url);
+            const blob = res.blob();
+            const url = (this.props.uuid || uuid.v4()) + '.png';
+            imagesZip.file(url, blob);
+            image = {
+              _class: 'MSJSONFileReference',
+              _ref_class: 'MSImageData',
+              _ref: 'images/' + url,
+            };
+          }
+        }
+        // 渐变
+        else {
+          fillType = SketchFormat.FillType.Gradient;
+          f = f as ComputedGradient;
+          gradient.from = '{' + f.d[0] + ', ' + f.d[1] + '}';
+          gradient.to = '{' + f.d[2] + ', ' + f.d[3] + '}';
+          if (f.t === GRADIENT.RADIAL) {
+            gradient.gradientType = SketchFormat.GradientType.Radial;
+            gradient.elipseLength = f.d[4];
+          } else if (f.t === GRADIENT.CONIC) {
+            gradient.gradientType = SketchFormat.GradientType.Angular;
+          }
+          f.stops.forEach(item => {
+            gradient.stops.push({
+              _class: 'gradientStop',
+              color: toSketchColor(item.color),
+              position: item.offset || 0,
+            });
+          });
+        }
+      }
+      return {
+        _class: 'fill',
+        isEnabled: computedStyle.fillEnable[i],
+        color,
+        fillType,
+        noiseIndex: 0,
+        noiseIntensity: 0,
+        patternFillType: SketchFormat.PatternFillType.Tile,
+        patternTileScale: 1,
+        gradient,
+        image,
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: SketchFormat.BlendMode.Normal,
+          opacity: computedStyle.fillOpacity[i],
+        },
+      };
+    }));
+    json.style!.borders = computedStyle.stroke.map((s, i) => {
+      const color: SketchFormat.Color = {
+        _class: 'color',
+        alpha: 1,
+        red: 0,
+        green: 0,
+        blue: 0,
+      };
+      const gradient: SketchFormat.Gradient = {
+        _class: 'gradient',
+        gradientType: SketchFormat.GradientType.Linear,
+        elipseLength: 1,
+        from: '',
+        to: '',
+        stops: [],
+      };
+      let fillType = SketchFormat.FillType.Color;
+      // 纯色
+      if (Array.isArray(s)) {
+        toSketchColor(s, color);
+      }
+      // 渐变
+      else {
+        fillType = SketchFormat.FillType.Gradient;
+        s = s as ComputedGradient;
+        gradient.from = '{' + s.d[0] + ', ' + s.d[1] + '}';
+        gradient.to = '{' + s.d[2] + ', ' + s.d[3] + '}';
+        if (s.t === GRADIENT.RADIAL) {
+          gradient.gradientType = SketchFormat.GradientType.Radial;
+          gradient.elipseLength = s.d[4];
+        } else if (s.t === GRADIENT.CONIC) {
+          gradient.gradientType = SketchFormat.GradientType.Angular;
+        }
+        s.stops.forEach(item => {
+          gradient.stops.push({
+            _class: 'gradientStop',
+            color: toSketchColor(item.color),
+            position: item.offset || 0,
+          });
+        });
+      }
+      let position = SketchFormat.BorderPosition.Center;
+      if (computedStyle.strokePosition[i] === STROKE_POSITION.INSIDE) {
+        position = SketchFormat.BorderPosition.Inside;
+      } else if (computedStyle.strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+        position = SketchFormat.BorderPosition.Outside;
+      }
+      return {
+        _class: 'border',
+        isEnabled: computedStyle.strokeEnable[i],
+        color,
+        fillType,
+        position,
+        thickness: computedStyle.strokeWidth[i],
+        gradient,
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: SketchFormat.BlendMode.Normal,
+          opacity: 1,
+        },
+      };
+    });
+    if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.BACKGROUND || blur.t === BLUR.RADIAL) {
+      let center = '';
+      if (blur.center) {
+        center = '{' + blur.center.join(', ') + '}';
+      } else {
+        center = '{0.5, 0.5}';
+      }
+      json.style!.blur = {
+        _class: 'blur',
+        isEnabled: true,
+        center,
+        motionAngle: d2r(blur.angle || 0),
+        radius: blur.radius || 0,
+        saturation: blur.saturation || 0,
+        type: [
+          SketchFormat.BlurType.Gaussian,
+          SketchFormat.BlurType.Motion,
+          SketchFormat.BlurType.Zoom,
+          SketchFormat.BlurType.Background,
+        ][blur.t - 1],
+      };
+    }
+    return json;
   }
 
   clone(override?: Record<string, Override>) {

@@ -919,6 +919,15 @@ class Bitmap extends Node {
       _ref_class: 'MSImageData',
       _ref: '',
     };
+    json.fillReplacesImage = false;
+    const imagesZip = zip.folder('images');
+    if (imagesZip) {
+      const res = await fetch(this._src);
+      const blob = res.blob();
+      const url = ((this.props as BitmapProps).md5 || this.props.uuid || uuid.v4()) + '.png';
+      imagesZip.file(url, blob);
+      json.image._ref = 'images/' + url;
+    }
     return json;
   }
 

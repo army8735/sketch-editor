@@ -14,6 +14,7 @@ class Overlay extends Container {
     this.artBoards = new Container(
       {
         name: 'overlay-artBoards',
+        uuid: '',
         style: {
           width: '100%',
           height: '100%',
@@ -35,6 +36,7 @@ class Overlay extends Container {
       const color = artBoard instanceof SymbolMaster ? '#b6e' : '#777';
       const text = new Text({
         name,
+        uuid: '',
         style: {
           fontSize: 24,
           color,

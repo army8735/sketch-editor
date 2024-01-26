@@ -1,4 +1,6 @@
 import * as uuid from 'uuid';
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { getDefaultStyle, JNode, Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
@@ -720,6 +722,7 @@ class ShapeGroup extends Group {
     return s + '</svg>';
   }
 
+  // @ts-ignore
   override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
@@ -732,6 +735,14 @@ class ShapeGroup extends Group {
     const res = super.toJson();
     res.tagName = TAG_NAME.SHAPE_GROUP;
     return res;
+  }
+
+  // @ts-ignore
+  override async toSketchJson(zip: JSZip): Promise<SketchFormat.ShapeGroup> {
+    // @ts-ignore
+    const json = await super.toSketchJson(zip) as SketchFormat.ShapeGroup;
+    json._class = SketchFormat.ClassValue.ShapeGroup;
+    return json;
   }
 
   override destroy() {

@@ -7,9 +7,11 @@ import {
   BitmapProps,
   JContainer,
   PolylineProps,
+  ShapeGroupProps,
   TextProps,
   JSymbolMaster,
-  JGroup, JSymbolInstance,
+  JGroup,
+  JSymbolInstance,
 } from '../format/';
 import ArtBoard from './ArtBoard';
 import Bitmap from './Bitmap';
@@ -74,7 +76,7 @@ export function parse(json: JNode, root: Root): Node | undefined {
         children.push(res);
       }
     }
-    return new ShapeGroup(json.props, children);
+    return new ShapeGroup(json.props as ShapeGroupProps, children);
   } else if (tagName === TAG_NAME.SLICE) {
     return new Slice(json.props);
   }

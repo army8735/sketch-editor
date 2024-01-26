@@ -266,6 +266,7 @@ export type PageProps = Props & {
 
 export type BitmapProps = Props & {
   src: string | undefined;
+  md5?: string;
   onLoad?: () => void;
   onError?: () => void;
 };
