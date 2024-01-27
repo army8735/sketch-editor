@@ -100,9 +100,8 @@ export default class Select {
     });
   }
 
-  isSelectDom(dom: HTMLElement) {
-    return this.select.indexOf(dom) > -1
-      ||  dom.parentElement && this.select.indexOf(dom.parentElement) > -1;
+  isSelectControlDom(dom: HTMLElement) {
+    return dom.parentElement && this.select.indexOf(dom.parentElement) > -1;
   }
 
   destroy() {

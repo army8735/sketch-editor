@@ -2,6 +2,7 @@ import Root from '../node/Root';
 import Node from '../node/Node';
 import Select from './Select';
 import Event from '../util/Event';
+import { ComputedStyle, StyleUnit } from '../style/define';
 
 enum Status {
   NONE = 0,
@@ -18,6 +19,8 @@ export default class Listener extends Event {
   spaceKey: boolean;
   isMouseDown: boolean;
   isMouseMove: boolean;
+  isControl: boolean;
+  controlType: string;
   originX: number;
   originY: number;
   startX: number;
@@ -26,6 +29,7 @@ export default class Listener extends Event {
   pageTy: number;
   select: Select;
   selected: Node[];
+  computedStyle: ComputedStyle[];
 
   constructor(root: Root, dom: HTMLElement) {
     super();
@@ -41,6 +45,8 @@ export default class Listener extends Event {
 
     this.isMouseDown = false;
     this.isMouseMove = false;
+    this.isControl = false;
+    this.controlType = '';
 
     const o = dom.getBoundingClientRect();
     this.originX = o.left;
@@ -50,6 +56,7 @@ export default class Listener extends Event {
     this.pageTx = 0;
     this.pageTy = 0;
     this.selected = [];
+    this.computedStyle = [];
 
     this.select = new Select(root, dom);
 
@@ -87,34 +94,46 @@ export default class Listener extends Event {
       }
       // 普通按下是选择节点或者编辑文本
       else {
-        let node = root.getNode(
-          (e.pageX - this.originX) * dpi,
-          (e.pageY - this.originY) * dpi,
-          this.metaKey,
-          this.selected,
-        );
-        if (node) {
-          const i = this.selected.indexOf(node);
-          if (i > -1) {
-            if (this.shiftKey) {
-              this.selected.splice(i, 1);
+        const target = e.target as HTMLElement;
+        const isControl = this.select.isSelectControlDom(target);
+        if (isControl) {
+          this.isControl = isControl;
+          this.controlType = target.className;
+          this.startX = e.pageX;
+          this.startY = e.pageY;
+          this.computedStyle = this.selected.map(item => item.getComputedStyle());
+        } else {
+          let node = root.getNode(
+            (e.pageX - this.originX) * dpi,
+            (e.pageY - this.originY) * dpi,
+            this.metaKey,
+            this.selected,
+          );
+          if (node) {
+            const i = this.selected.indexOf(node);
+            if (i > -1) {
+              if (this.shiftKey) {
+                this.selected.splice(i, 1);
+              }
+            }
+            else {
+              if (!this.shiftKey) {
+                this.selected.splice(0);
+              }
+              this.selected.push(node);
             }
           } else {
-            if (!this.shiftKey) {
-              this.selected.splice(0);
-            }
-            this.selected.push(node);
+            this.selected.splice(0);
           }
-        } else {
-          this.selected.splice(0);
+          if (this.selected.length) {
+            this.select.showSelect(this.selected);
+          } else {
+            this.select.hideSelect();
+          }
+          this.select.hideHover();
+          this.computedStyle = this.selected.map(item => item.getComputedStyle());
+          this.emit(Listener.SELECT_NODE, this.selected);
         }
-        if (this.selected.length) {
-          this.select.showSelect(this.selected);
-        } else {
-          this.select.hideSelect();
-        }
-        this.select.hideHover();
-        this.emit(Listener.SELECT_NODE, this.selected);
       }
     }
   }
@@ -122,7 +141,6 @@ export default class Listener extends Event {
   onMouseMove(e: MouseEvent) {
     const root = this.root;
     const dpi = root.dpi;
-    const isOnControl = this.select.isSelectDom(e.target as HTMLElement);
     // 空格拖拽画布
     if (this.spaceKey) {
       if (this.isMouseDown) {
@@ -140,32 +158,175 @@ export default class Listener extends Event {
             this.select.updateSelect(this.selected);
           }
         }
-      } else if (isOnControl) {
-        this.select.hideHover();
-      } else {}
+      } else {
+        const node = root.getNode(
+          (e.pageX - this.originX) * dpi,
+          (e.pageY - this.originY) * dpi,
+          this.metaKey,
+          this.selected,
+        );
+        if (node && this.selected.indexOf(node) === -1) {
+          this.select.showHover(node);
+        } else {
+          this.select.hideHover();
+        }
+      }
     }
     // 其它看情况点选
     else {
-      if (!this.metaKey && isOnControl) {
-        return;
+      const dx = e.pageX - this.startX;
+      const dy = e.pageY - this.startY;
+      const page = root.getCurPage();
+      const zoom = page!.getZoom();
+      const dx2 = dx / zoom * root.dpi;
+      const dy2 = dy / zoom * root.dpi;
+      // 操作控制尺寸的时候，已经mousedown了
+      if (this.isControl) {
+        this.selected.forEach((node, i) => {
+          const o: any = {};
+          const { style } = node;
+          const computedStyle = this.computedStyle[i];
+          if (this.controlType === 't' || this.controlType === 'tl' || this.controlType === 'tr') {
+            // top为确定值则修改它，还要看height是否是确定值也一并修改
+            if (style.top.u === StyleUnit.PX || style.top.u === StyleUnit.PERCENT) {
+              if (style.top.u === StyleUnit.PX) {
+                o.top = computedStyle.top + dy2;
+              } else {
+                o.top = (computedStyle.top + dy2) * 100 / node.parent!.height + '%';
+              }
+              if (style.height.u === StyleUnit.PX) {
+                o.height = computedStyle.height - dy2;
+              } else if (style.height.u === StyleUnit.PERCENT) {
+                o.height = (computedStyle.height - dy2) * 100 / node.parent!.height + '%';
+              }
+            }
+            // top为自动，高度则为确定值修改，根据bottom定位
+            else if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.PERCENT) {
+              if (style.height.u === StyleUnit.PX) {
+                o.height = computedStyle.height - dy2;
+              } else {
+                o.height = (computedStyle.height - dy2) * 100 / node.parent!.height + '%';
+              }
+            }
+          } else if (this.controlType === 'b' || this.controlType === 'bl' || this.controlType === 'br') {
+            // bottom为确定值则修改它，还要看height是否是确定值也一并修改
+            if (style.bottom.u === StyleUnit.PX || style.bottom.u === StyleUnit.PERCENT) {
+              if (style.bottom.u === StyleUnit.PX) {
+                o.bottom = computedStyle.bottom - dy2;
+              } else {
+                o.bottom = (computedStyle.bottom - dy2) * 100 / node.parent!.height + '%';
+              }
+              if (style.height.u === StyleUnit.PX) {
+                o.height = computedStyle.height + dy2;
+              } else if (style.height.u === StyleUnit.PERCENT) {
+                o.height = (computedStyle.height + dy2) * 100 / node.parent!.height + '%';
+              }
+            }
+            // bottom为自动，高度则为确定值修改，根据top定位
+            else if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.PERCENT) {
+              if (style.height.u === StyleUnit.PX) {
+                o.height = computedStyle.height + dy2;
+              } else {
+                o.height = (computedStyle.height + dy2) * 100 / node.parent!.height + '%';
+              }
+            }
+          }
+          if (this.controlType === 'l' || this.controlType === 'tl' || this.controlType === 'bl') {
+            // left为确定值则修改它，还要看width是否是确定值也一并修改
+            if (style.left.u === StyleUnit.PX || style.left.u === StyleUnit.PERCENT) {
+              if (style.left.u === StyleUnit.PX) {
+                o.left = computedStyle.left + dx2;
+              } else {
+                o.left = (computedStyle.left + dx2) * 100 / node.parent!.width + '%';
+              }
+              if (style.width.u === StyleUnit.PX) {
+                o.width = computedStyle.height - dx2;
+              } else if (style.width.u === StyleUnit.PERCENT) {
+                o.width = (computedStyle.width - dx2) * 100 / node.parent!.width + '%';
+              }
+            }
+            // top为自动，高度则为确定值修改，根据bottom定位
+            else if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.PERCENT) {
+              if (style.width.u === StyleUnit.PX) {
+                o.width = computedStyle.width - dx2;
+              } else {
+                o.width = (computedStyle.width - dx2) * 100 / node.parent!.width + '%';
+              }
+            }
+          } else if (this.controlType === 'r' || this.controlType === 'tr' || this.controlType === 'br') {
+            // right为确定值则修改它，还要看width是否是确定值也一并修改
+            if (style.right.u === StyleUnit.PX || style.right.u === StyleUnit.PERCENT) {
+              if (style.right.u === StyleUnit.PX) {
+                o.right = computedStyle.right - dx2;
+              } else {
+                o.right = (computedStyle.right - dx2) * 100 / node.parent!.width + '%';
+              }
+              if (style.width.u === StyleUnit.PX) {
+                o.width = computedStyle.width + dx2;
+              } else if (style.width.u === StyleUnit.PERCENT) {
+                o.width = (computedStyle.width + dx2) * 100 / node.parent!.width + '%';
+              }
+            }
+            // right为自动，高度则为确定值修改，根据left定位
+            else if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.PERCENT) {
+              if (style.width.u === StyleUnit.PX) {
+                o.width = computedStyle.width + dx2;
+              } else {
+                o.width = (computedStyle.width + dx2) * 100 / node.parent!.width + '%';
+              }
+            }
+          }
+          node.updateStyle(o);
+        });
+        this.select.updateSelect(this.selected);
+        this.emit(Listener.RESIZE_NODE, this.selected);
       }
-      const node = root.getNode(
-        (e.pageX - this.originX) * dpi,
-        (e.pageY - this.originY) * dpi,
-        this.metaKey,
-        this.selected,
-      );
-      if (node) {
-        if (this.selected.indexOf(node) === -1) {
-          this.select.showHover(node);
+      // 看是否有选择节点决定是拖拽节点还是多选框
+      else if (this.isMouseDown) {
+        if (this.selected.length) {
+          this.selected.forEach((node, i) => {
+            const computedStyle = this.computedStyle[i];
+            node.updateStyle({
+              translateX: computedStyle.translateX + dx2,
+              translateY: computedStyle.translateY + dy2,
+            });
+          });
+          this.select.updateSelect(this.selected);
+          this.emit(Listener.MOVE_NODE, this.selected);
+        } else {
+          // TODO
         }
-      } else {
-        this.select.hideHover();
+      }
+      // 普通的hover
+      else {
+        const node = root.getNode(
+          (e.pageX - this.originX) * dpi,
+          (e.pageY - this.originY) * dpi,
+          this.metaKey,
+          this.selected,
+        );
+        if (node && this.selected.indexOf(node) === -1) {
+          this.select.showHover(node);
+        } else {
+          this.select.hideHover();
+        }
       }
     }
   }
 
   onMouseUp() {
+    if (this.isControl) {
+      this.isControl = false;
+      if (this.isMouseMove) {
+        this.selected.forEach(node => {
+          node.checkSizeChange();
+        });
+      }
+    } else if (this.isMouseDown && this.isMouseMove) {
+      this.selected.forEach(node => {
+        node.checkPosChange();
+      });
+    }
     this.isMouseDown = false;
     this.isMouseMove = false;
     if (this.spaceKey) {
@@ -355,6 +516,8 @@ export default class Listener extends Event {
   }
 
   static SELECT_NODE = 'SELECT_NODE';
+  static RESIZE_NODE = 'RESIZE_NODE';
+  static MOVE_NODE = 'MOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }

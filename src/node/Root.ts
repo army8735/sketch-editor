@@ -677,7 +677,7 @@ class Root extends Container implements FrameCallback {
         // 没有选择节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
         if (!selected.length) {
           let n = res;
-          while (n.struct && n.struct.lv > 3) {
+          while (n.struct && n.struct.lv >= 3) {
             const p = n.parent!;
             if (p instanceof ArtBoard) {
               break;
@@ -694,11 +694,11 @@ class Root extends Container implements FrameCallback {
         else {
           let n = res;
           const len = selected.length;
-          while (n.struct && n.struct.lv > 3) {
+          while (n.struct && n.struct.lv >= 3) {
             for (let i = 0; i < len; i++) {
               const o = selected[i];
               if (n.isSibling(o) || n === o) {
-                return res;
+                return n;
               }
             }
             const p = n.parent!;
