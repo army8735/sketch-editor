@@ -924,7 +924,7 @@ class Bitmap extends Node {
     if (imagesZip) {
       const res = await fetch(this._src);
       const blob = res.blob();
-      const url = ((this.props as BitmapProps).md5 || this.props.uuid || uuid.v4()) + '.png';
+      const url = (this.props as BitmapProps).md5 || this.props.uuid || uuid.v4();
       imagesZip.file(url, blob);
       json.image._ref = 'images/' + url;
     }
