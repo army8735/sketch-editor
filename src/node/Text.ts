@@ -451,6 +451,14 @@ class Text extends Node {
     if (letterSpacing && letterSpacing < 0) {
       maxW -= letterSpacing;
     }
+    let fixedLeft = false;
+    let fixedRight = false;
+    if (style.left.u !== StyleUnit.AUTO) {
+      fixedLeft = true;
+    }
+    if (style.right.u !== StyleUnit.AUTO) {
+      fixedRight = true;
+    }
     /**
      * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
      * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
@@ -469,11 +477,17 @@ class Text extends Node {
         //   computedStyle.left += half;
         //   computedStyle.right += half;
         // }
-        if (width.u === StyleUnit.PX) {
-          width.v += dw;
-        }
-        else if (width.u === StyleUnit.PERCENT) {
-          width.v += dw * 0.5;
+        if (fixedLeft && fixedRight) {
+        } else if (fixedLeft) {
+          if (width.u === StyleUnit.PX) {
+            width.v += dw;
+          }
+          else if (width.u === StyleUnit.PERCENT) {
+            width.v += dw * 100 / data.w;
+          }
+          computedStyle.right -= dw;
+        } else if (fixedRight) {
+          computedStyle.left -= dw;
         }
       }
     }
@@ -1333,20 +1347,33 @@ class Text extends Node {
 
   /**
    * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），
-   * 将left移至最左侧，translateX取消-50%
+   * 将left移至最左侧，translateX取消-50%，同时要考虑textAlign
    */
   private beforeEdit() {
-    const { style, computedStyle } = this;
-    const { left, top, translateX, translateY } = style;
-    const isLeft = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT;
+    const { style, computedStyle, textBehaviour } = this;
+    const { left, right, top, translateX, translateY } = style;
+    const { textAlign, width } = computedStyle;
+    const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
+    const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
+    const isLeft = autoW && left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.LEFT;
     if (isLeft) {
-      const { left: left2, width: width2 } = computedStyle;
-      left.v = left2 - width2 * 0.5;
+      const { left: left2 } = computedStyle;
+      left.v = left2 - width * 0.5;
       left.u = StyleUnit.PX;
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
-    const isTop = top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
+    const isRight = autoW && left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.RIGHT;
+    if (isRight) {
+      const { right: right2 } = computedStyle;
+      left.v = 0;
+      left.u = StyleUnit.AUTO;
+      right.v = right2 + width * 0.5;
+      right.u = StyleUnit.PX;
+      translateX.v = 0;
+      translateX.u = StyleUnit.PX;
+    }
+    const isTop = autoH && top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
     if (isTop) {
       const { top: top2, height: height2 } = computedStyle;
       top.v = top2 - height2 * 0.5;
@@ -1354,16 +1381,16 @@ class Text extends Node {
       translateY.v = 0;
       translateY.u = StyleUnit.PX;
     }
-    return { isLeft, isTop };
+    return { isLeft, isRight, width, isTop };
   }
 
   // 改变后如果是中心对齐还原
-  private afterEdit(isLeft: boolean, isTop: boolean) {
-    if (!isLeft && !isTop) {
+  private afterEdit(isLeft: boolean, isRight: boolean, isTop: boolean) {
+    if (!isLeft && !isRight && !isTop) {
       return;
     }
     const { style, computedStyle } = this;
-    const { left, top, translateX, translateY } = style;
+    const { left, right, top, translateX, translateY } = style;
     if (isLeft) {
       const width = this.width;
       const v = computedStyle.left + width * 0.5;
@@ -1372,6 +1399,17 @@ class Text extends Node {
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
       computedStyle.left = v;
+    } else if (isRight) {
+      const width = this.width;
+      const v = computedStyle.left + width * 0.5;
+      left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent!.width;
+      left.u = StyleUnit.PERCENT;
+      right.v = 0;
+      right.u = StyleUnit.AUTO;
+      translateX.v = -50;
+      translateX.u = StyleUnit.PERCENT;
+      computedStyle.left = v;
+      computedStyle.right -= width * 0.5;
     }
     if (isTop) {
       const height = this.height;
@@ -1761,7 +1799,7 @@ class Text extends Node {
    * 不会出现仅右百分比的情况，所有改变处理都一样
    */
   input(s: string, style?: Partial<Rich>) {
-    const { isLeft, isTop } = this.beforeEdit();
+    const { isLeft, isRight, isTop } = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
@@ -1784,12 +1822,12 @@ class Text extends Node {
     }
     const c = this._content;
     this.content = c.slice(0, start) + s + c.slice(start);
-    this.afterEdit(isLeft, isTop);
+    this.afterEdit(isLeft, isRight, isTop);
     this.updateCursorByIndex(start + s.length);
   }
 
   enter() {
-    const { isLeft, isTop } = this.beforeEdit();
+    const { isLeft, isRight, isTop } = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
@@ -1805,7 +1843,7 @@ class Text extends Node {
     this.expandRich(start, 1);
     const c = this._content;
     this.content = c.slice(0, start) + '\n' + c.slice(start);
-    this.afterEdit(isLeft, isTop);
+    this.afterEdit(isLeft, isRight, isTop);
     this.updateCursorByIndex(start + 1);
   }
 
@@ -1822,7 +1860,7 @@ class Text extends Node {
       return;
     }
     this.showSelectArea = false;
-    const { isLeft, isTop } = this.beforeEdit();
+    const { isLeft, isRight, isTop } = this.beforeEdit();
     if (isMulti) {
       this.cursor.isMulti = false;
       // 肯定小于，多加一层防守
@@ -1836,7 +1874,7 @@ class Text extends Node {
       this.content = c.slice(0, start - 1) + c.slice(start);
       this.updateCursorByIndex(start - 1);
     }
-    this.afterEdit(isLeft, isTop);
+    this.afterEdit(isLeft, isRight, isTop);
   }
 
   // 给定相对x坐标获取光标位置，y已知传入lineBox
@@ -1924,12 +1962,46 @@ class Text extends Node {
   }
 
   updateTextStyle(style: any, cb?: (sync: boolean) => void) {
-    const { isLeft, isTop } = this.beforeEdit();
+    const { isLeft, isRight, isTop } = this.beforeEdit();
     const rich = this.rich;
+    // 转成rich的
+    const style2: any = {};
+    if (style.hasOwnProperty('textAlign')) {
+      if (style.textAlign === 'center') {
+        style2.textAlign = TEXT_ALIGN.CENTER;
+      } else if (style.textAlign === 'right') {
+        style2.textAlign = TEXT_ALIGN.RIGHT;
+      } else if (style.textAlign === 'justify') {
+        style2.textAlign = TEXT_ALIGN.JUSTIFY;
+      } else {
+        style2.textAlign = TEXT_ALIGN.LEFT;
+      }
+    }
+    if (style.hasOwnProperty('color')) {
+      style2.color = color2rgbaInt(style.color);
+    }
+    if (style.hasOwnProperty('fontFamily')) {
+      style2.fontFamily = style.fontFamily;
+    }
+    if (style.hasOwnProperty('fontSize')) {
+      style2.fontSize = style.fontSize;
+    }
+    if (style.hasOwnProperty('letterSpacing')) {
+      style2.letterSpacing = style.letterSpacing;
+    }
+    if (style.hasOwnProperty('textDecoration')) {
+      style2.textDecoration = style.textDecoration;
+    }
+    if (style.hasOwnProperty('lineHeight')) {
+      style2.lineHeight = style.lineHeight;
+    }
+    if (style.hasOwnProperty('paragraphSpacing')) {
+      style2.paragraphSpacing = style.paragraphSpacing;
+    }
     let hasChange = false;
     if (rich.length) {
       rich.forEach((item) => {
-        hasChange = this.updateRich(item, style) || hasChange;
+        hasChange = this.updateRich(item, style2) || hasChange;
       });
     }
     this.mergeRich();
@@ -1940,7 +2012,7 @@ class Text extends Node {
     } else if (hasChange) {
       this.refresh(RefreshLevel.REFLOW, cb);
     }
-    this.afterEdit(isLeft, isTop);
+    this.afterEdit(isLeft, isRight, isTop);
   }
 
   updateTextRangeStyle(style: any, cb?: (sync: boolean) => void) {
@@ -1949,7 +2021,7 @@ class Text extends Node {
     if (!cursor.isMulti || !rich.length) {
       return false;
     }
-    const { isLeft, isTop } = this.beforeEdit();
+    const { isLeft, isRight, isTop } = this.beforeEdit();
     const { isReversed, start, end } = this.getSortedCursor();
     let hasChange = false;
     // 找到所处的rich开始结束范围
@@ -2058,7 +2130,7 @@ class Text extends Node {
       this.setCursorByIndex(isReversed ? start : end, true);
       this.refresh(RefreshLevel.REPAINT, cb);
     }
-    this.afterEdit(isLeft, isTop);
+    this.afterEdit(isLeft, isRight, isTop);
     return hasChange;
   }
 
@@ -2106,6 +2178,11 @@ class Text extends Node {
       style.paragraphSpacing !== item.paragraphSpacing
     ) {
       item.paragraphSpacing = style.paragraphSpacing;
+      hasChange = true;
+    }
+    if (style.hasOwnProperty('textAlign') &&
+      style.textAlign !== item.textAlign) {
+      item.textAlign = style.textAlign;
       hasChange = true;
     }
     return hasChange;
@@ -2501,6 +2578,7 @@ class Text extends Node {
 
   set content(v: string) {
     if (v !== this._content) {
+      const { isLeft, isRight, isTop } = this.beforeEdit();
       this._content = v;
       this.root?.addUpdate(
         this,
@@ -2510,6 +2588,7 @@ class Text extends Node {
         false,
         undefined,
       );
+      this.afterEdit(isLeft, isRight, isTop);
     }
   }
 
