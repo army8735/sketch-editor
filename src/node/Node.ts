@@ -1214,7 +1214,7 @@ class Node extends Event {
     if (this.isDestroyed) {
       throw new Error('Can not resize a destroyed Node');
     }
-    const { top, bottom, left, right, width, height, translateX, translateY } =
+    const { top, bottom, left, right, translateX, translateY } =
       style;
     const { width: w, height: h } = this;
     /**
@@ -1226,31 +1226,15 @@ class Node extends Event {
      * leftPx不用管（无视width/right值）
      * rightPx不用管（无视width/left值）
      */
-    if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
-      if (
-        width.u === StyleUnit.PX ||
-        (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO)
-      ) {
-        const v = (computedStyle.left -= w * 0.5);
-        left.v = (v * 100) / parent!.width;
-      }
-      if (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
-        computedStyle.right += w * 0.5;
-      }
+    if (left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO) {
+      const v = (computedStyle.left -= w * 0.5);
+      left.v = (v * 100) / parent!.width;
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
-    if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
-      if (
-        height.u === StyleUnit.PX ||
-        (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO)
-      ) {
-        const v = (computedStyle.top -= h * 0.5);
-        top.v = (v * 100) / parent!.height;
-      }
-      if (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
-        computedStyle.bottom += h * 0.5;
-      }
+    if (top.u === StyleUnit.PERCENT && bottom.u === StyleUnit.AUTO) {
+      const v = (computedStyle.top -= h * 0.5);
+      top.v = (v * 100) / parent!.height;
       translateY.v = 0;
       translateY.u = StyleUnit.PX;
     }
@@ -1518,34 +1502,18 @@ class Node extends Event {
     if (!parent) {
       return;
     }
-    const { top, bottom, left, right, width, height, translateX, translateY } =
+    const { top, bottom, left, right, translateX, translateY } =
       style;
     const { width: w, height: h } = this;
-    if (left.u === StyleUnit.PERCENT && right.u !== StyleUnit.PX) {
-      if (
-        width.u === StyleUnit.PX ||
-        (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO)
-      ) {
-        const v = (computedStyle.left += w * 0.5);
-        left.v = (v * 100) / parent!.width;
-      }
-      if (width.u === StyleUnit.AUTO && right.u === StyleUnit.AUTO) {
-        computedStyle.right -= w * 0.5;
-      }
+    if (left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO) {
+      const v = (computedStyle.left += w * 0.5);
+      left.v = (v * 100) / parent!.width;
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
     }
-    if (top.u === StyleUnit.PERCENT && bottom.u !== StyleUnit.PX) {
-      if (
-        height.u === StyleUnit.PX ||
-        (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO)
-      ) {
-        const v = (computedStyle.top += h * 0.5);
-        top.v = (v * 100) / parent!.width;
-      }
-      if (height.u === StyleUnit.AUTO && bottom.u === StyleUnit.AUTO) {
-        computedStyle.bottom -= h * 0.5;
-      }
+    if (top.u === StyleUnit.PERCENT && bottom.u === StyleUnit.AUTO) {
+      const v = (computedStyle.top += h * 0.5);
+      top.v = (v * 100) / parent!.width;
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }
