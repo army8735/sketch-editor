@@ -1,8 +1,10 @@
-import Root from '../node/Root';
 import Node from '../node/Node';
-import Select from './Select';
-import Event from '../util/Event';
+import Root from '../node/Root';
+import Page from '../node/Page';
+import ArtBoard from '../node/ArtBoard';
 import { ComputedStyle, StyleUnit } from '../style/define';
+import Event from '../util/Event';
+import Select from './Select';
 
 enum Status {
   NONE = 0,
@@ -77,23 +79,25 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    const dpi = root.dpi;
+    const dpi = root.dpi; console.log(e.button);
     // 左键
-    if (e.button === 0) {
-      this.isMouseDown = true;
-      this.isMouseMove = false;
-      this.startX = e.pageX;
-      this.startY = e.pageY;
-      // 空格按下移动画布
-      if (this.spaceKey) {
-        e.preventDefault();
-        const o = page.getComputedStyle();
-        this.pageTx = o.translateX;
-        this.pageTy = o.translateY;
-        this.dom.style.cursor = 'grabbing';
+    if (e.button === 0 || e.button === 2) {
+      if (e.button === 0) {
+        this.isMouseDown = true;
+        this.isMouseMove = false;
+        this.startX = e.pageX;
+        this.startY = e.pageY;
+        // 空格按下移动画布
+        if (this.spaceKey) {
+          e.preventDefault();
+          const o = page.getComputedStyle();
+          this.pageTx = o.translateX;
+          this.pageTy = o.translateY;
+          this.dom.style.cursor = 'grabbing';
+        }
       }
       // 普通按下是选择节点或者编辑文本
-      else {
+      if (!this.spaceKey) {
         const target = e.target as HTMLElement;
         const isControl = this.select.isSelectControlDom(target);
         if (isControl) {
@@ -101,7 +105,9 @@ export default class Listener extends Event {
           this.controlType = target.className;
           this.startX = e.pageX;
           this.startY = e.pageY;
-          this.computedStyle = this.selected.map(item => item.getComputedStyle());
+          this.computedStyle = this.selected.map((item) =>
+            item.getComputedStyle(),
+          );
         } else {
           let node = root.getNode(
             (e.pageX - this.originX) * dpi,
@@ -115,8 +121,7 @@ export default class Listener extends Event {
               if (this.shiftKey) {
                 this.selected.splice(i, 1);
               }
-            }
-            else {
+            } else {
               if (!this.shiftKey) {
                 this.selected.splice(0);
               }
@@ -131,7 +136,9 @@ export default class Listener extends Event {
             this.select.hideSelect();
           }
           this.select.hideHover();
-          this.computedStyle = this.selected.map(item => item.getComputedStyle());
+          this.computedStyle = this.selected.map((item) =>
+            item.getComputedStyle(),
+          );
           this.emit(Listener.SELECT_NODE, this.selected);
         }
       }
@@ -178,101 +185,163 @@ export default class Listener extends Event {
       const dy = e.pageY - this.startY;
       const page = root.getCurPage();
       const zoom = page!.getZoom();
-      const dx2 = dx / zoom * root.dpi;
-      const dy2 = dy / zoom * root.dpi;
+      const dx2 = (dx / zoom) * root.dpi;
+      const dy2 = (dy / zoom) * root.dpi;
       // 操作控制尺寸的时候，已经mousedown了
       if (this.isControl) {
         this.selected.forEach((node, i) => {
           const o: any = {};
           const { style } = node;
           const computedStyle = this.computedStyle[i];
-          if (this.controlType === 't' || this.controlType === 'tl' || this.controlType === 'tr') {
+          if (
+            this.controlType === 't' ||
+            this.controlType === 'tl' ||
+            this.controlType === 'tr'
+          ) {
             // top为确定值则修改它，还要看height是否是确定值也一并修改
-            if (style.top.u === StyleUnit.PX || style.top.u === StyleUnit.PERCENT) {
+            if (
+              style.top.u === StyleUnit.PX ||
+              style.top.u === StyleUnit.PERCENT
+            ) {
               if (style.top.u === StyleUnit.PX) {
                 o.top = computedStyle.top + dy2;
               } else {
-                o.top = (computedStyle.top + dy2) * 100 / node.parent!.height + '%';
+                o.top =
+                  ((computedStyle.top + dy2) * 100) / node.parent!.height + '%';
               }
               if (style.height.u === StyleUnit.PX) {
                 o.height = computedStyle.height - dy2;
               } else if (style.height.u === StyleUnit.PERCENT) {
-                o.height = (computedStyle.height - dy2) * 100 / node.parent!.height + '%';
+                o.height =
+                  ((computedStyle.height - dy2) * 100) / node.parent!.height +
+                  '%';
               }
             }
             // top为自动，高度则为确定值修改，根据bottom定位
-            else if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.PERCENT) {
+            else if (
+              style.height.u === StyleUnit.PX ||
+              style.height.u === StyleUnit.PERCENT
+            ) {
               if (style.height.u === StyleUnit.PX) {
                 o.height = computedStyle.height - dy2;
               } else {
-                o.height = (computedStyle.height - dy2) * 100 / node.parent!.height + '%';
+                o.height =
+                  ((computedStyle.height - dy2) * 100) / node.parent!.height +
+                  '%';
               }
             }
-          } else if (this.controlType === 'b' || this.controlType === 'bl' || this.controlType === 'br') {
+          } else if (
+            this.controlType === 'b' ||
+            this.controlType === 'bl' ||
+            this.controlType === 'br'
+          ) {
             // bottom为确定值则修改它，还要看height是否是确定值也一并修改
-            if (style.bottom.u === StyleUnit.PX || style.bottom.u === StyleUnit.PERCENT) {
+            if (
+              style.bottom.u === StyleUnit.PX ||
+              style.bottom.u === StyleUnit.PERCENT
+            ) {
               if (style.bottom.u === StyleUnit.PX) {
                 o.bottom = computedStyle.bottom - dy2;
               } else {
-                o.bottom = (computedStyle.bottom - dy2) * 100 / node.parent!.height + '%';
+                o.bottom =
+                  ((computedStyle.bottom - dy2) * 100) / node.parent!.height +
+                  '%';
               }
               if (style.height.u === StyleUnit.PX) {
                 o.height = computedStyle.height + dy2;
               } else if (style.height.u === StyleUnit.PERCENT) {
-                o.height = (computedStyle.height + dy2) * 100 / node.parent!.height + '%';
+                o.height =
+                  ((computedStyle.height + dy2) * 100) / node.parent!.height +
+                  '%';
               }
             }
             // bottom为自动，高度则为确定值修改，根据top定位
-            else if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.PERCENT) {
+            else if (
+              style.height.u === StyleUnit.PX ||
+              style.height.u === StyleUnit.PERCENT
+            ) {
               if (style.height.u === StyleUnit.PX) {
                 o.height = computedStyle.height + dy2;
               } else {
-                o.height = (computedStyle.height + dy2) * 100 / node.parent!.height + '%';
+                o.height =
+                  ((computedStyle.height + dy2) * 100) / node.parent!.height +
+                  '%';
               }
             }
           }
-          if (this.controlType === 'l' || this.controlType === 'tl' || this.controlType === 'bl') {
+          if (
+            this.controlType === 'l' ||
+            this.controlType === 'tl' ||
+            this.controlType === 'bl'
+          ) {
             // left为确定值则修改它，还要看width是否是确定值也一并修改
-            if (style.left.u === StyleUnit.PX || style.left.u === StyleUnit.PERCENT) {
+            if (
+              style.left.u === StyleUnit.PX ||
+              style.left.u === StyleUnit.PERCENT
+            ) {
               if (style.left.u === StyleUnit.PX) {
                 o.left = computedStyle.left + dx2;
               } else {
-                o.left = (computedStyle.left + dx2) * 100 / node.parent!.width + '%';
+                o.left =
+                  ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
               }
               if (style.width.u === StyleUnit.PX) {
                 o.width = computedStyle.height - dx2;
               } else if (style.width.u === StyleUnit.PERCENT) {
-                o.width = (computedStyle.width - dx2) * 100 / node.parent!.width + '%';
+                o.width =
+                  ((computedStyle.width - dx2) * 100) / node.parent!.width +
+                  '%';
               }
             }
             // top为自动，高度则为确定值修改，根据bottom定位
-            else if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.PERCENT) {
+            else if (
+              style.width.u === StyleUnit.PX ||
+              style.width.u === StyleUnit.PERCENT
+            ) {
               if (style.width.u === StyleUnit.PX) {
                 o.width = computedStyle.width - dx2;
               } else {
-                o.width = (computedStyle.width - dx2) * 100 / node.parent!.width + '%';
+                o.width =
+                  ((computedStyle.width - dx2) * 100) / node.parent!.width +
+                  '%';
               }
             }
-          } else if (this.controlType === 'r' || this.controlType === 'tr' || this.controlType === 'br') {
+          } else if (
+            this.controlType === 'r' ||
+            this.controlType === 'tr' ||
+            this.controlType === 'br'
+          ) {
             // right为确定值则修改它，还要看width是否是确定值也一并修改
-            if (style.right.u === StyleUnit.PX || style.right.u === StyleUnit.PERCENT) {
+            if (
+              style.right.u === StyleUnit.PX ||
+              style.right.u === StyleUnit.PERCENT
+            ) {
               if (style.right.u === StyleUnit.PX) {
                 o.right = computedStyle.right - dx2;
               } else {
-                o.right = (computedStyle.right - dx2) * 100 / node.parent!.width + '%';
+                o.right =
+                  ((computedStyle.right - dx2) * 100) / node.parent!.width +
+                  '%';
               }
               if (style.width.u === StyleUnit.PX) {
                 o.width = computedStyle.width + dx2;
               } else if (style.width.u === StyleUnit.PERCENT) {
-                o.width = (computedStyle.width + dx2) * 100 / node.parent!.width + '%';
+                o.width =
+                  ((computedStyle.width + dx2) * 100) / node.parent!.width +
+                  '%';
               }
             }
             // right为自动，高度则为确定值修改，根据left定位
-            else if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.PERCENT) {
+            else if (
+              style.width.u === StyleUnit.PX ||
+              style.width.u === StyleUnit.PERCENT
+            ) {
               if (style.width.u === StyleUnit.PX) {
                 o.width = computedStyle.width + dx2;
               } else {
-                o.width = (computedStyle.width + dx2) * 100 / node.parent!.width + '%';
+                o.width =
+                  ((computedStyle.width + dx2) * 100) / node.parent!.width +
+                  '%';
               }
             }
           }
@@ -318,12 +387,12 @@ export default class Listener extends Event {
     if (this.isControl) {
       this.isControl = false;
       if (this.isMouseMove) {
-        this.selected.forEach(node => {
+        this.selected.forEach((node) => {
           node.checkSizeChange();
         });
       }
     } else if (this.isMouseDown && this.isMouseMove) {
-      this.selected.forEach(node => {
+      this.selected.forEach((node) => {
         node.checkPosChange();
       });
     }
@@ -336,13 +405,14 @@ export default class Listener extends Event {
     }
   }
 
-  onMouseLeave(e: MouseEvent) {
+  onMouseLeave() {
     this.select.hideHover();
   }
 
-  onClick(e: MouseEvent) {}
+  onClick() {}
 
   onWheel(e: WheelEvent) {
+    e.preventDefault();
     const root = this.root;
     const { dpi, width, height } = root;
     const page = root.getCurPage();
@@ -351,31 +421,31 @@ export default class Listener extends Event {
     }
     this.select.hideHover();
     // 按下时缩放
-    if (this.metaKey) {
+    if (e.ctrlKey || e.metaKey) {
       let sc = 0;
       if (e.deltaY < 0) {
         if (e.deltaY < -400) {
-          sc = -0.1;
-        } else if (e.deltaY < -200) {
-          sc = -0.08;
-        } else if (e.deltaY < -100) {
-          sc = -0.05;
-        } else if (e.deltaY < -50) {
-          sc = -0.02;
-        } else {
-          sc = -0.01;
-        }
-      } else if (e.deltaY > 0) {
-        if (e.deltaY > 400) {
           sc = 0.1;
-        } else if (e.deltaY > 200) {
+        } else if (e.deltaY < -200) {
           sc = 0.08;
-        } else if (e.deltaY > 100) {
+        } else if (e.deltaY < -100) {
           sc = 0.05;
-        } else if (e.deltaY > 50) {
+        } else if (e.deltaY < -50) {
           sc = 0.02;
         } else {
           sc = 0.01;
+        }
+      } else if (e.deltaY > 0) {
+        if (e.deltaY > 400) {
+          sc = -0.1;
+        } else if (e.deltaY > 200) {
+          sc = -0.08;
+        } else if (e.deltaY > 100) {
+          sc = -0.05;
+        } else if (e.deltaY > 50) {
+          sc = -0.02;
+        } else {
+          sc = -0.01;
         }
       }
       const x = (e.pageX * dpi) / width;
@@ -389,71 +459,75 @@ export default class Listener extends Event {
       }
       root.zoomTo(scale, x, y);
       this.emit(Listener.ZOOM_PAGE, scale);
-    }
-    // 滚轮+shift状态是移动
-    else {
-      let sc = 0;
-      if (this.shiftKey) {
-        if (e.deltaX < 0) {
-          if (e.deltaX < -200) {
-            sc = 50;
-          } else if (e.deltaX < -100) {
-            sc = 40;
-          } else if (e.deltaX < -50) {
-            sc = 30;
-          } else if (e.deltaX < -20) {
-            sc = 20;
-          } else {
-            sc = 10;
-          }
-        } else if (e.deltaX > 0) {
-          if (e.deltaX > 200) {
-            sc = -50;
-          } else if (e.deltaX > 100) {
-            sc = -40;
-          } else if (e.deltaX > 50) {
-            sc = -30;
-          } else if (e.deltaX > 20) {
-            sc = -20;
-          } else {
-            sc = -10;
-          }
-        }
-        const { translateX } = page.getComputedStyle();
-        page.updateStyle({
-          translateX: translateX + sc,
-        });
-      } else {
-        if (e.deltaY < 0) {
-          if (e.deltaY < -200) {
-            sc = 50;
-          } else if (e.deltaY < -100) {
-            sc = 40;
-          } else if (e.deltaY < -50) {
-            sc = 30;
-          } else if (e.deltaY < -20) {
-            sc = 20;
-          } else {
-            sc = 10;
-          }
-        } else if (e.deltaY > 0) {
-          if (e.deltaY > 200) {
-            sc = -50;
-          } else if (e.deltaY > 100) {
-            sc = -40;
-          } else if (e.deltaY > 50) {
-            sc = -30;
-          } else if (e.deltaY > 20) {
-            sc = -20;
-          } else {
-            sc = -10;
-          }
-        }
-        const { translateY } = page.getComputedStyle();
-        page.updateStyle({
-          translateY: translateY + sc,
-        });
-      }
+    } else {
+      const { translateX, translateY } = page.getComputedStyle();
+      page.updateStyle({
+        translateX: translateX - e.deltaX,
+        translateY: translateY - e.deltaY,
+      });
+      // 滚轮+shift状态是移动
+      // let sc = 0;
+      // if (this.shiftKey) {
+      //   if (e.deltaX < 0) {
+      //     if (e.deltaX < -200) {
+      //       sc = 50;
+      //     } else if (e.deltaX < -100) {
+      //       sc = 40;
+      //     } else if (e.deltaX < -50) {
+      //       sc = 30;
+      //     } else if (e.deltaX < -20) {
+      //       sc = 20;
+      //     } else {
+      //       sc = 10;
+      //     }
+      //   } else if (e.deltaX > 0) {
+      //     if (e.deltaX > 200) {
+      //       sc = -50;
+      //     } else if (e.deltaX > 100) {
+      //       sc = -40;
+      //     } else if (e.deltaX > 50) {
+      //       sc = -30;
+      //     } else if (e.deltaX > 20) {
+      //       sc = -20;
+      //     } else {
+      //       sc = -10;
+      //     }
+      //   }
+      //   const { translateX } = page.getComputedStyle();
+      //   page.updateStyle({
+      //     translateX: translateX + sc,
+      //   });
+      // } else {
+      //   if (e.deltaY < 0) {
+      //     if (e.deltaY < -200) {
+      //       sc = 50;
+      //     } else if (e.deltaY < -100) {
+      //       sc = 40;
+      //     } else if (e.deltaY < -50) {
+      //       sc = 30;
+      //     } else if (e.deltaY < -20) {
+      //       sc = 20;
+      //     } else {
+      //       sc = 10;
+      //     }
+      //   } else if (e.deltaY > 0) {
+      //     if (e.deltaY > 200) {
+      //       sc = -50;
+      //     } else if (e.deltaY > 100) {
+      //       sc = -40;
+      //     } else if (e.deltaY > 50) {
+      //       sc = -30;
+      //     } else if (e.deltaY > 20) {
+      //       sc = -20;
+      //     } else {
+      //       sc = -10;
+      //     }
+      //   }
+      //   const { translateY } = page.getComputedStyle();
+      //   page.updateStyle({
+      //     translateY: translateY + sc,
+      //   });
+      // }
     }
     this.updateSelected();
   }
@@ -468,12 +542,31 @@ export default class Listener extends Event {
       return;
     }
     // back
-    if (e.keyCode === 8) {}
+    if (e.keyCode === 8) {
+      if (this.selected.length) {
+        const list = this.selected.splice(0);
+        list.forEach(item => item.remove());
+        this.emit(Listener.REMOVE_NODE, list);
+        this.select.hideSelect();
+      }
+    }
     // space
     else if (e.keyCode === 32) {
       this.spaceKey = true;
       if (!this.isMouseDown) {
         this.dom.style.cursor = 'grab';
+      }
+    }
+    else if (e.keyCode === 27 && this.altKey) {
+      if (this.selected.length) {
+        let node = this.selected[0];
+        if (node instanceof Page || node instanceof Root || node instanceof ArtBoard) {
+          return;
+        }
+        node = node.parent!;
+        this.selected = [node];
+        this.select.updateSelect(this.selected);
+        this.emit(Listener.SELECT_NODE, this.selected);
       }
     }
   }
@@ -518,6 +611,7 @@ export default class Listener extends Event {
   static SELECT_NODE = 'SELECT_NODE';
   static RESIZE_NODE = 'RESIZE_NODE';
   static MOVE_NODE = 'MOVE_NODE';
+  static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }
