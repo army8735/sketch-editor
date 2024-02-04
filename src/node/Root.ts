@@ -662,7 +662,7 @@ class Root extends Container implements FrameCallback {
     }
   }
 
-  getNode(x: number, y: number, metaKey = false, selected: Node[] = []) {
+  getNode(x: number, y: number, metaKey = false, selected: Node[] = [], isChild = false) {
     if (this.isDestroyed) {
       return;
     }
@@ -687,7 +687,8 @@ class Root extends Container implements FrameCallback {
           return n;
         }
         /**
-         * 已有选择节点比较复杂，先看已选的兄弟，最优先；
+         * 已有选择节点比较复杂，双击情况下钻isChild为true；
+         * 单击先看已选自己或者它的兄弟，最优先；
          * 没有则向上递归，看已选的父亲的兄弟，如此循环；
          * 没有则是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
          */
@@ -697,6 +698,9 @@ class Root extends Container implements FrameCallback {
           while (n.struct && n.struct.lv >= 3) {
             for (let i = 0; i < len; i++) {
               const o = selected[i];
+              if (isChild && n.parent === o) {
+                return n;
+              }
               if (n.isSibling(o) || n === o) {
                 return n;
               }

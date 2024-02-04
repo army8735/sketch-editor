@@ -67,6 +67,7 @@ export default class Listener extends Event {
     dom.addEventListener('mouseup', this.onMouseUp.bind(this));
     dom.addEventListener('mouseleave', this.onMouseLeave.bind(this));
     dom.addEventListener('click', this.onClick.bind(this));
+    dom.addEventListener('dblclick', this.onDblClick.bind(this));
     dom.addEventListener('wheel', this.onWheel.bind(this));
     dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
     document.addEventListener('keydown', this.onKeyDown.bind(this));
@@ -79,7 +80,7 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    const dpi = root.dpi; console.log(e.button);
+    const dpi = root.dpi;
     // 左键
     if (e.button === 0 || e.button === 2) {
       if (e.button === 0) {
@@ -114,12 +115,15 @@ export default class Listener extends Event {
             (e.pageY - this.originY) * dpi,
             this.metaKey,
             this.selected,
+            false,
           );
           if (node) {
             const i = this.selected.indexOf(node);
             if (i > -1) {
               if (this.shiftKey) {
                 this.selected.splice(i, 1);
+              } else {
+                return;
               }
             } else {
               if (!this.shiftKey) {
@@ -171,6 +175,7 @@ export default class Listener extends Event {
           (e.pageY - this.originY) * dpi,
           this.metaKey,
           this.selected,
+          false,
         );
         if (node && this.selected.indexOf(node) === -1) {
           this.select.showHover(node);
@@ -373,6 +378,7 @@ export default class Listener extends Event {
           (e.pageY - this.originY) * dpi,
           this.metaKey,
           this.selected,
+          false,
         );
         if (node && this.selected.indexOf(node) === -1) {
           this.select.showHover(node);
@@ -409,7 +415,31 @@ export default class Listener extends Event {
     this.select.hideHover();
   }
 
-  onClick() {}
+  onClick() {
+  }
+
+  onDblClick(e: MouseEvent) {
+    const root = this.root;
+    const page = root.getCurPage();
+    if (!page) {
+      return;
+    }
+    const dpi = root.dpi;
+    let node = root.getNode(
+      (e.pageX - this.originX) * dpi,
+      (e.pageY - this.originY) * dpi,
+      this.metaKey,
+      this.selected,
+      true,
+    );
+    if (node) {
+      this.selected.splice(0);
+      this.selected.push(node);
+      this.select.showSelect(this.selected);
+    } else {
+      this.select.hideSelect();
+    }
+  }
 
   onWheel(e: WheelEvent) {
     e.preventDefault();
@@ -600,6 +630,7 @@ export default class Listener extends Event {
     this.dom.removeEventListener('mouseup', this.onMouseUp);
     this.dom.removeEventListener('mouseleave', this.onMouseLeave);
     this.dom.removeEventListener('click', this.onClick);
+    this.dom.removeEventListener('dblclick', this.onDblClick);
     this.dom.removeEventListener('wheel', this.onWheel);
     this.dom.removeEventListener('contextmenu', this.onContextMenu);
     document.removeEventListener('keydown', this.onKeyDown);
