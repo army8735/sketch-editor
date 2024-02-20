@@ -1,17 +1,20 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Page from '../node/Page';
+import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import { ComputedStyle, StyleUnit } from '../style/define';
 import Event from '../util/Event';
 import Select from './Select';
+import Input from './Input';
 
-enum Status {
-  NONE = 0,
+enum State {
+  NORMAL = 0,
+  EDIT_TEXT = 1,
 }
 
 export default class Listener extends Event {
-  status: Status;
+  state: State;
   root: Root;
   dom: HTMLElement;
   metaKey: boolean;
@@ -32,10 +35,11 @@ export default class Listener extends Event {
   select: Select;
   selected: Node[];
   computedStyle: ComputedStyle[];
+  input: Input;
 
   constructor(root: Root, dom: HTMLElement) {
     super();
-    this.status = Status.NONE;
+    this.state = State.NORMAL;
     this.root = root;
     this.dom = dom;
 
@@ -61,6 +65,7 @@ export default class Listener extends Event {
     this.computedStyle = [];
 
     this.select = new Select(root, dom);
+    this.input = new Input(root, dom, this.select);
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
     dom.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -109,6 +114,10 @@ export default class Listener extends Event {
           this.computedStyle = this.selected.map((item) =>
             item.getComputedStyle(),
           );
+          if (this.state === State.EDIT_TEXT) {
+            this.state = State.NORMAL;
+            this.input.hide();
+          }
         } else {
           let node = root.getNode(
             (e.pageX - this.originX) * dpi,
@@ -123,7 +132,23 @@ export default class Listener extends Event {
               if (this.shiftKey) {
                 this.selected.splice(i, 1);
               } else {
-                return;
+                if (this.state === State.EDIT_TEXT) {
+                  (this.selected[0] as Text).hideSelectArea();
+                  this.input.update(
+                    e.pageX - this.originX,
+                    e.pageY - this.originY
+                  );
+                  // 防止触发click事件失焦
+                  e.preventDefault();
+                  return;
+                }
+                if (this.selected.length === 1 && this.selected[0] === node) {
+                  this.computedStyle = this.selected.map((item) =>
+                    item.getComputedStyle(),
+                  );
+                  return;
+                }
+                this.selected = [node];
               }
             } else {
               if (!this.shiftKey) {
@@ -133,6 +158,10 @@ export default class Listener extends Event {
             }
           } else {
             this.selected.splice(0);
+          }
+          if (this.state === State.EDIT_TEXT) {
+            this.state = State.NORMAL;
+            this.input.hide();
           }
           if (this.selected.length) {
             this.select.showSelect(this.selected);
@@ -433,9 +462,19 @@ export default class Listener extends Event {
       true,
     );
     if (node) {
-      this.selected.splice(0);
-      this.selected.push(node);
-      this.select.showSelect(this.selected);
+      if (this.selected.length !== 1 || node !== this.selected[0]) {
+        this.selected.splice(0);
+        this.selected.push(node);
+        this.select.showSelect(this.selected);
+      }
+      if (node instanceof Text) {
+        this.input.show(
+          node,
+          e.pageX - this.originX,
+          e.pageY - this.originY
+        );
+        this.state = State.EDIT_TEXT;
+      }
     } else {
       this.select.hideSelect();
     }
@@ -495,71 +534,9 @@ export default class Listener extends Event {
         translateX: translateX - e.deltaX,
         translateY: translateY - e.deltaY,
       });
-      // 滚轮+shift状态是移动
-      // let sc = 0;
-      // if (this.shiftKey) {
-      //   if (e.deltaX < 0) {
-      //     if (e.deltaX < -200) {
-      //       sc = 50;
-      //     } else if (e.deltaX < -100) {
-      //       sc = 40;
-      //     } else if (e.deltaX < -50) {
-      //       sc = 30;
-      //     } else if (e.deltaX < -20) {
-      //       sc = 20;
-      //     } else {
-      //       sc = 10;
-      //     }
-      //   } else if (e.deltaX > 0) {
-      //     if (e.deltaX > 200) {
-      //       sc = -50;
-      //     } else if (e.deltaX > 100) {
-      //       sc = -40;
-      //     } else if (e.deltaX > 50) {
-      //       sc = -30;
-      //     } else if (e.deltaX > 20) {
-      //       sc = -20;
-      //     } else {
-      //       sc = -10;
-      //     }
-      //   }
-      //   const { translateX } = page.getComputedStyle();
-      //   page.updateStyle({
-      //     translateX: translateX + sc,
-      //   });
-      // } else {
-      //   if (e.deltaY < 0) {
-      //     if (e.deltaY < -200) {
-      //       sc = 50;
-      //     } else if (e.deltaY < -100) {
-      //       sc = 40;
-      //     } else if (e.deltaY < -50) {
-      //       sc = 30;
-      //     } else if (e.deltaY < -20) {
-      //       sc = 20;
-      //     } else {
-      //       sc = 10;
-      //     }
-      //   } else if (e.deltaY > 0) {
-      //     if (e.deltaY > 200) {
-      //       sc = -50;
-      //     } else if (e.deltaY > 100) {
-      //       sc = -40;
-      //     } else if (e.deltaY > 50) {
-      //       sc = -30;
-      //     } else if (e.deltaY > 20) {
-      //       sc = -20;
-      //     } else {
-      //       sc = -10;
-      //     }
-      //   }
-      //   const { translateY } = page.getComputedStyle();
-      //   page.updateStyle({
-      //     translateY: translateY + sc,
-      //   });
-      // }
     }
     this.updateSelected();
+    this.updateInput();
   }
 
   onKeyDown(e: KeyboardEvent) {
@@ -587,6 +564,7 @@ export default class Listener extends Event {
         this.dom.style.cursor = 'grab';
       }
     }
+    // option+esc
     else if (e.keyCode === 27 && this.altKey) {
       if (this.selected.length) {
         let node = this.selected[0];
@@ -616,6 +594,12 @@ export default class Listener extends Event {
   updateSelected() {
     if (this.selected.length) {
       this.select.updateSelect(this.selected);
+    }
+  }
+
+  updateInput() {
+    if (this.state === State.EDIT_TEXT) {
+      this.input.updateCurCursor();
     }
   }
 
