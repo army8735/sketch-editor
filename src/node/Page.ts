@@ -145,8 +145,8 @@ class Page extends Container {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Page> {
-    const json = await super.toSketchJson(zip) as SketchFormat.Page;
+  override async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean): Promise<SketchFormat.Page> {
+    const json = await super.toSketchJson(zip, filter) as SketchFormat.Page;
     json._class = SketchFormat.ClassValue.Page;
     json.hasClickThrough = true;
     json.horizontalRulerData = {
@@ -159,8 +159,13 @@ class Page extends Container {
       base: 0,
       guides: [],
     };
-    const list = await Promise.all(this.children.map(item => {
-      return item.toSketchJson(zip);
+    const list = await Promise.all(this.children.filter(item => {
+      if (filter) {
+        return filter(item);
+      }
+      return true;
+    }).map(item => {
+      return item.toSketchJson(zip, filter);
     }));
     json.layers = list.map(item => {
       return item as SketchFormat.Artboard |

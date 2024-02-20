@@ -1623,7 +1623,7 @@ class Node extends Event {
     };
   }
 
-  async toSketchJson(zip: JSZip) {
+  async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean) {
     const { props, width, height, style, computedStyle } = this;
     let resizingConstraint = 0;
     if (style.left.v === StyleUnit.PX) {

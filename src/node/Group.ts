@@ -234,11 +234,16 @@ class Group extends Container {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Group> {
+  override async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean): Promise<SketchFormat.Group> {
     const json = await super.toSketchJson(zip) as SketchFormat.Group;
     json._class = SketchFormat.ClassValue.Group;
     json.hasClickThrough = false;
-    const list = await Promise.all(this.children.map(item => {
+    const list = await Promise.all(this.children.filter(item => {
+      if (filter) {
+        return filter(item);
+      }
+      return true;
+    }).map(item => {
       return item.toSketchJson(zip);
     }));
     json.layers = list.map(item => {

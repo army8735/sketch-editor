@@ -186,8 +186,8 @@ class ArtBoard extends Container {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Artboard> {
-    const json = await super.toSketchJson(zip) as SketchFormat.Artboard;
+  override async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean): Promise<SketchFormat.Artboard> {
+    const json = await super.toSketchJson(zip, filter) as SketchFormat.Artboard;
     json._class = SketchFormat.ClassValue.Artboard;
     json.hasClickThrough = false;
     json.includeBackgroundColorInExport = false;
@@ -212,8 +212,13 @@ class ArtBoard extends Container {
       _class: 'color',
     };
     json.hasBackgroundColor = this.hasBackgroundColor;
-    const list = await Promise.all(this.children.map(item => {
-      return item.toSketchJson(zip);
+    const list = await Promise.all(this.children.filter(item => {
+      if (filter) {
+        return filter(item);
+      }
+      return true;
+    }).map(item => {
+      return item.toSketchJson(zip, filter);
     }));
     json.layers = list.map(item => {
       return item as SketchFormat.Group |

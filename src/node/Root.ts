@@ -725,7 +725,7 @@ class Root extends Container implements FrameCallback {
     this.lastPage?.zoomFit();
   }
 
-  async toSketchFile(): Promise<JSZip> {
+  async toSketchFile(filter?: (node: Node) => boolean): Promise<JSZip> {
     const zip = new JSZip();
     const pagesZip = zip.folder('pages');
     const imagesZip = zip.folder('images');
@@ -771,14 +771,10 @@ class Root extends Container implements FrameCallback {
           };
         }
       });
-      // if (pagesZip) {
-      //   const json = page.toSketchJson();
-      //   pagesZip.file(uuid + '.json', JSON.stringify(json));
-      // }
     });
     if (pagesZip && imagesZip) {
       const list = await Promise.all(this.pageContainer.children.map(item => {
-        return item.toSketchJson(zip);
+        return item.toSketchJson(zip, filter);
       }));
       list.forEach(item => {
         pagesZip.file(item.do_objectID + '.json', JSON.stringify(item));
