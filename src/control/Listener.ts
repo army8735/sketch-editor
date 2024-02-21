@@ -119,9 +119,11 @@ export default class Listener extends Event {
             this.input.hide();
           }
         } else {
+          const x = (e.pageX - this.originX) * dpi;
+          const y = (e.pageY - this.originY) * dpi;
           let node = root.getNode(
-            (e.pageX - this.originX) * dpi,
-            (e.pageY - this.originY) * dpi,
+            x,
+            y,
             this.metaKey,
             this.selected,
             false,
@@ -132,12 +134,16 @@ export default class Listener extends Event {
               if (this.shiftKey) {
                 this.selected.splice(i, 1);
               } else {
+                // 持续编辑更新文本的编辑光标并提前退出
                 if (this.state === State.EDIT_TEXT) {
-                  (this.selected[0] as Text).hideSelectArea();
+                  const text = this.selected[0] as Text;
+                  text.hideSelectArea();
+                  text.setCursorStartByAbsCoord(x, y);
                   this.input.update(
                     e.pageX - this.originX,
                     e.pageY - this.originY
                   );
+                  this.input.showCursor();
                   // 防止触发click事件失焦
                   e.preventDefault();
                   return;
@@ -157,8 +163,15 @@ export default class Listener extends Event {
               this.selected.push(node);
             }
           } else {
-            this.selected.splice(0);
+            // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
+            if (this.state === State.EDIT_TEXT) {
+              const text = this.selected[0] as Text;
+              text.hideSelectArea();
+            } else {
+              this.selected.splice(0);
+            }
           }
+          // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
           if (this.state === State.EDIT_TEXT) {
             this.state = State.NORMAL;
             this.input.hide();
@@ -384,20 +397,30 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.emit(Listener.RESIZE_NODE, this.selected);
       }
-      // 看是否有选择节点决定是拖拽节点还是多选框
+      // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
       else if (this.isMouseDown) {
-        if (this.selected.length) {
-          this.selected.forEach((node, i) => {
-            const computedStyle = this.computedStyle[i];
-            node.updateStyle({
-              translateX: computedStyle.translateX + dx2,
-              translateY: computedStyle.translateY + dy2,
-            });
-          });
-          this.select.updateSelect(this.selected);
-          this.emit(Listener.MOVE_NODE, this.selected);
+        this.isMouseMove = true;
+        if (this.state === State.EDIT_TEXT) {
+          const x = (e.pageX - this.originX) * dpi;
+          const y = (e.pageY - this.originY) * dpi;
+          const text = this.selected[0] as Text;
+          text.setCursorEndByAbsCoord(x, y);
+          this.input.hideCursor();
         } else {
-          // TODO
+          if (this.selected.length) {
+            this.selected.forEach((node, i) => {
+              const computedStyle = this.computedStyle[i];
+              node.updateStyle({
+                translateX: computedStyle.translateX + dx2,
+                translateY: computedStyle.translateY + dy2,
+              });
+            });
+            this.select.updateSelect(this.selected);
+            this.emit(Listener.MOVE_NODE, this.selected);
+          }
+          else {
+            // TODO 框选
+          }
         }
       }
       // 普通的hover
@@ -426,10 +449,24 @@ export default class Listener extends Event {
           node.checkSizeChange();
         });
       }
-    } else if (this.isMouseDown && this.isMouseMove) {
-      this.selected.forEach((node) => {
-        node.checkPosChange();
-      });
+    } else if (this.isMouseMove) {
+      // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
+      if (this.state === State.EDIT_TEXT) {
+        const text = this.selected[0] as Text;
+        const multi = text.checkCursorMulti();
+        // 可能框选的文字为空不是多选，需取消
+        if (!multi) {
+          this.input.updateCurCursor();
+          this.input.showCursor();
+        } else {
+          this.input.hideCursor();
+        }
+        this.input.focus();
+      } else {
+        this.selected.forEach((node) => {
+          node.checkPosChange();
+        });
+      }
     }
     this.isMouseDown = false;
     this.isMouseMove = false;
@@ -471,8 +508,9 @@ export default class Listener extends Event {
         this.input.show(
           node,
           e.pageX - this.originX,
-          e.pageY - this.originY
+          e.pageY - this.originY,
         );
+        node.hideSelectArea();
         this.state = State.EDIT_TEXT;
       }
     } else {

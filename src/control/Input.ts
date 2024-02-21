@@ -67,6 +67,7 @@ export default class Input {
           if (s) {
             this.node.input(s);
             this.updateCurCursor();
+            this.showCursor();
             inputEl.value = '';
             this.select.updateSelect([this.node]);
           }
@@ -82,6 +83,7 @@ export default class Input {
         const s = e.data;
         this.node.input(s);
         this.updateCurCursor();
+        this.showCursor();
         inputEl.value = '';
         this.select.updateSelect([this.node]);
       }
@@ -121,6 +123,7 @@ export default class Input {
     this.update(x, y);
     this.containerEl.style.opacity = '1';
     this.inputEl.focus();
+    this.showCursor();
   }
 
   update(x: number, y: number) {
@@ -132,8 +135,24 @@ export default class Input {
   }
 
   hide() {
-    this.containerEl.style.opacity = '10';
+    this.containerEl.style.opacity = '0';
     this.inputEl.blur();
+  }
+
+  focus() {
+    this.inputEl.focus();
+  }
+
+  blur() {
+    this.inputEl.blur();
+  }
+
+  showCursor() {
+    this.cursorEl.style.opacity = '1';
+  }
+
+  hideCursor() {
+    this.cursorEl.style.opacity = '0';
   }
 
   updateCurCursor() {
