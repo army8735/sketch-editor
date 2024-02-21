@@ -615,6 +615,17 @@ export default class Listener extends Event {
         this.emit(Listener.SELECT_NODE, this.selected);
       }
     }
+    // esc，编辑文字回到普通，普通取消选择
+    else if (e.keyCode === 27) {
+      if (this.state === State.EDIT_TEXT) {
+        this.state = State.NORMAL;
+        this.input.hide();
+      } else {
+        this.selected = [];
+        this.select.hideSelect();
+        this.emit(Listener.SELECT_NODE, this.selected);
+      }
+    }
   }
 
   onKeyUp(e: KeyboardEvent) {
