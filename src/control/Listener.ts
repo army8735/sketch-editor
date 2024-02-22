@@ -555,8 +555,8 @@ export default class Listener extends Event {
           sc = -0.01;
         }
       }
-      const x = (e.pageX * dpi) / width;
-      const y = (e.pageY * dpi) / height;
+      const x = (e.pageX - this.originX) * dpi / width;
+      const y = (e.pageY - this.originY) * dpi / height;
       let scale = page.getZoom(true);
       scale += sc;
       if (scale > 32) {
