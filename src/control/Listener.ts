@@ -357,14 +357,14 @@ export default class Listener extends Event {
                   ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
               }
               if (style.width.u === StyleUnit.PX) {
-                o.width = computedStyle.height - dx2;
+                o.width = computedStyle.width - dx2;
               } else if (style.width.u === StyleUnit.PERCENT) {
                 o.width =
                   ((computedStyle.width - dx2) * 100) / node.parent!.width +
                   '%';
               }
             }
-            // top为自动，高度则为确定值修改，根据bottom定位
+            // left为自动，宽度则为确定值修改，根据right定位
             else if (
               style.width.u === StyleUnit.PX ||
               style.width.u === StyleUnit.PERCENT
