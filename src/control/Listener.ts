@@ -54,15 +54,15 @@ export default class Listener extends Event {
     this.isControl = false;
     this.controlType = '';
 
-    const o = dom.getBoundingClientRect();
-    this.originX = o.left;
-    this.originY = o.top;
+    this.originX = 0;
+    this.originY = 0;
     this.startX = 0;
     this.startY = 0;
     this.pageTx = 0;
     this.pageTy = 0;
     this.selected = [];
     this.computedStyle = [];
+    this.updateOrigin();
 
     this.select = new Select(root, dom);
     this.input = new Input(root, dom, this.select);
@@ -77,6 +77,26 @@ export default class Listener extends Event {
     dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
     document.addEventListener('keydown', this.onKeyDown.bind(this));
     document.addEventListener('keyup', this.onKeyUp.bind(this));
+  }
+
+  updateOrigin() {
+    const o = this.dom.getBoundingClientRect();
+    this.originX = o.left;
+    this.originY = o.top;
+  }
+
+  active(nodes: Node[]) {
+    this.selected.splice(0);
+    this.selected.push(...nodes);
+    this.computedStyle = this.selected.map((item) =>
+      item.getComputedStyle(),
+    );
+    if (this.selected.length) {
+      this.select.showSelect(this.selected);
+    } else {
+      this.select.hideSelect();
+    }
+    this.emit(Listener.SELECT_NODE, this.selected);
   }
 
   onMouseDown(e: MouseEvent) {
@@ -176,12 +196,12 @@ export default class Listener extends Event {
             this.state = State.NORMAL;
             this.input.hide();
           }
+          this.select.hideHover();
           if (this.selected.length) {
             this.select.showSelect(this.selected);
           } else {
             this.select.hideSelect();
           }
-          this.select.hideHover();
           this.computedStyle = this.selected.map((item) =>
             item.getComputedStyle(),
           );
@@ -219,10 +239,14 @@ export default class Listener extends Event {
           this.selected,
           false,
         );
-        if (node && this.selected.indexOf(node) === -1) {
-          this.select.showHover(node);
+        if (node) {
+          if (this.selected.indexOf(node) === -1) {
+            this.select.showHover(node);
+          }
+          this.emit(Listener.HOVER_NODE, node);
         } else {
           this.select.hideHover();
+          this.emit(Listener.UN_HOVER_NODE);
         }
       }
     }
@@ -432,10 +456,14 @@ export default class Listener extends Event {
           this.selected,
           false,
         );
-        if (node && this.selected.indexOf(node) === -1) {
-          this.select.showHover(node);
+        if (node) {
+          if (this.selected.indexOf(node) === -1) {
+            this.select.showHover(node);
+          }
+          this.emit(Listener.HOVER_NODE, node);
         } else {
           this.select.hideHover();
+          this.emit(Listener.UN_HOVER_NODE);
         }
       }
     }
@@ -672,6 +700,8 @@ export default class Listener extends Event {
     this.select.destroy();
   }
 
+  static HOVER_NODE = 'HOVER_NODE';
+  static UN_HOVER_NODE = 'UN_HOVER_NODE';
   static SELECT_NODE = 'SELECT_NODE';
   static RESIZE_NODE = 'RESIZE_NODE';
   static MOVE_NODE = 'MOVE_NODE';

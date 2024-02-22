@@ -10,6 +10,6 @@ export function initCanvasControl(root: Root, dom: HTMLElement) {
   return new Listener(root, dom);
 }
 
-export function initTreeList(root: Root, dom: HTMLElement) {
-  return new Tree(root, dom);
+export function initTreeList(root: Root, dom: HTMLElement, listener: Listener) {
+  return new Tree(root, dom, listener);
 }

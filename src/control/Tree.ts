@@ -11,6 +11,7 @@ import Bitmap from '../node/Bitmap';
 import Text from '../node/Text';
 import Slice from '../node/Slice';
 import Container from '../node/Container';
+import Listener from './Listener';
 
 function genNodeTree(node: Node) {
   const type = getNodeType(node);
@@ -78,6 +79,18 @@ function genNodeTree(node: Node) {
   return dl;
 }
 
+function getOffsetTop(node: HTMLElement, top: HTMLElement) {
+  let count = 0;
+  let target: HTMLElement | null = node;
+  while (target && target !== top) {
+    if (target.nodeName === 'DL') {
+      count += target.offsetTop;
+    }
+    target = target.parentElement;
+  }
+  return count;
+}
+
 function getNodeType(node: Node) {
   let type = 'default';
   if (node instanceof SymbolInstance) {
@@ -105,11 +118,13 @@ function getNodeType(node: Node) {
 export default class Tree extends Event {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super();
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
 
     // 可能存在，如果不存在就侦听改变，切换页面同样侦听
     const page = root.getCurPage();
@@ -120,14 +135,24 @@ export default class Tree extends Event {
       this.init();
     });
 
+    listener.on(Listener.HOVER_NODE, (node: Node) => {
+      this.hover(node);
+    });
+    listener.on(Listener.UN_HOVER_NODE, () => {
+      this.unHover();
+    });
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+      this.select(nodes);
+    });
+
     this.dom.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
-      if (classList.contains('arrow') || classList.contains('name')) {
+      if (classList.contains('arrow')) {
         const dl = target.parentElement!.parentElement!;
         const uuid = dl.getAttribute('uuid');
         if (uuid) {
-          const node = this.root.refs[uuid];
+          const node = root.refs[uuid];
           if (node) {
             const isExpanded = node.props.isExpanded = !node.props.isExpanded;
             if (isExpanded) {
@@ -142,7 +167,7 @@ export default class Tree extends Event {
         const dl = target.parentElement!.parentElement!;
         const uuid = dl.getAttribute('uuid');
         if (uuid) {
-          const node = this.root.refs[uuid];
+          const node = root.refs[uuid];
           if (node) {
             const isVisible = node.computedStyle.visible;
             node.updateStyle({
@@ -155,7 +180,43 @@ export default class Tree extends Event {
             }
           }
         }
+      } else if (classList.contains('name') || classList.contains('type')) {
+        const actives = this.dom.querySelectorAll('dt.active');
+        actives.forEach((item) => {
+          item.classList.remove('active');
+        });
+        const dl = target.parentElement!.parentElement!;
+        const dt = dl.querySelector('dt')!;
+        dt.classList.add('active');
+        const uuid = dl.getAttribute('uuid');
+        if (uuid) {
+          const node = root.refs[uuid];
+          if (node) {
+            listener.active([node]);
+          }
+        }
       }
+    });
+
+    this.dom.addEventListener('mousemove', (e) => {
+      let target = e.target as HTMLElement;
+      if (target.nodeName === 'SPAN') {
+        target = target.parentElement!;
+      }
+      const dl = target.parentElement!;
+      const uuid = dl.getAttribute('uuid');
+      if (uuid) {
+        const node = root.refs[uuid];
+        if (node) {
+          listener.select.showHover(node);
+          return;
+        }
+      }
+      listener.select.hideHover();
+    });
+
+    this.dom.addEventListener('mouseleave', () => {
+      listener.select.hideHover();
     });
   }
 
@@ -172,6 +233,61 @@ export default class Tree extends Event {
         fragment.appendChild(genNodeTree(children[i]));
       }
       this.dom.appendChild(fragment);
+    }
+  }
+
+  hover(node: Node) {
+    const lastDt = this.dom.querySelector('dt.hover');
+    const uuid = node.props.uuid;
+    if (uuid) {
+      const dt = this.dom.querySelector(`dl[uuid="${uuid}"] dt`);
+      if (dt) {
+        dt.classList.add('hover');
+        if (dt !== lastDt && lastDt) {
+          lastDt.classList.remove('hover');
+        }
+      }
+    }
+  }
+
+  unHover() {
+    const dt = this.dom.querySelector('dt.hover');
+    if (dt) {
+      dt.classList.remove('hover');
+    }
+  }
+
+  select(nodes: Node[]) {
+    const dt = this.dom.querySelectorAll('dt.active');
+    dt.forEach((item) => {
+      item.classList.remove('active');
+    });
+    let isView = true;
+    const height = this.dom.clientHeight;
+    const scroll = this.dom.scrollTop;
+    let firstT = 0;
+    nodes.forEach((item, i) => {
+      const uuid = item.props.uuid;
+      if (uuid) {
+        const dt = this.dom.querySelector(`dl[uuid="${uuid}"] dt`);
+        if (dt) {
+          dt.classList.add('active');
+          const t = getOffsetTop(dt as HTMLElement, this.dom);
+          if (!i) {
+            firstT = t;
+          }
+          const h = (dt as HTMLElement).offsetHeight;
+          if (t < scroll || (t + h) > scroll + height) {
+            isView = false;
+          }
+        }
+      }
+    });
+    if (!isView) {
+      this.dom.scrollTo({
+        top: firstT,
+        behavior: 'smooth',
+      });
     }
   }
 }
