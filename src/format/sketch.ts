@@ -203,6 +203,12 @@ async function convertItem(
   let height: number | string = layer.frame.height || 0.5;
   let translateX: number | string = layer.frame.x || 0;
   let translateY: number | string = layer.frame.y || 0;
+  if (w < 0) {
+    w = 0;
+  }
+  if (h < 0) {
+    h = 0;
+  }
   // sketch不会出现非正数，但人工可能修改，sketch对此做了兼容转换
   if (width < 0) {
     translateX += width;
@@ -406,6 +412,26 @@ async function convertItem(
       translateY = 0;
       height = 'auto';
     }
+  }
+  // 兜底防止生成数据不合法
+  if (!w || w < 0) {
+    if (left !== 'auto') {
+      left = '0%';
+    }
+    if (right !== 'auto') {
+      right = '0%';
+    }
+  }
+  if (!h || h < 0) {
+    if (top !== 'auto') {
+      top = '0%';
+    }
+    if (bottom !== 'auto') {
+      bottom = '0%';
+    }
+  }
+  if (layer.do_objectID === '3e14e493-adfa-4f67-be22-3b9a0d74eded') {
+    console.log(layer.do_objectID, w, h, top, bottom, height, translateY);
   }
   // 遮罩转换
   let maskMode = 'none';

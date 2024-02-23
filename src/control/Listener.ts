@@ -3,10 +3,12 @@ import Root from '../node/Root';
 import Page from '../node/Page';
 import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
-import { ComputedStyle, StyleUnit } from '../style/define';
+import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import Event from '../util/Event';
 import Select from './Select';
 import Input from './Input';
+import { clone } from '../util/util';
+import { ArtBoardProps, JStyle } from '../format';
 
 enum State {
   NORMAL = 0,
@@ -34,7 +36,8 @@ export default class Listener extends Event {
   pageTy: number;
   select: Select;
   selected: Node[];
-  computedStyle: ComputedStyle[];
+  abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
+  computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   input: Input;
 
   constructor(root: Root, dom: HTMLElement) {
@@ -61,6 +64,7 @@ export default class Listener extends Event {
     this.pageTx = 0;
     this.pageTy = 0;
     this.selected = [];
+    this.abcStyle = [];
     this.computedStyle = [];
     this.updateOrigin();
 
@@ -132,6 +136,82 @@ export default class Listener extends Event {
           this.controlType = target.className;
           this.startX = e.pageX;
           this.startY = e.pageY;
+          this.abcStyle = selected.map((item) => {
+            // resize画板children的定位尺寸临时变为固定px
+            if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
+              return item.children.map((child) => {
+                const { computedStyle, style } = child;
+                const res = {
+                  left: clone(style.left),
+                  right: clone(style.right),
+                  top: clone(style.top),
+                  bottom: clone(style.bottom),
+                  width: clone(style.width),
+                  height: clone(style.height),
+                };
+                // 根据control的类型方向，决定将trbl某个改为px固定值，对称方向改为auto
+                if (
+                  this.controlType === 't' ||
+                  this.controlType === 'tl' ||
+                  this.controlType === 'tr'
+                ) {
+                  if (style.bottom.u !== StyleUnit.PX) {
+                    style.bottom.v = computedStyle.bottom;
+                    style.bottom.u = StyleUnit.PX;
+                  }
+                  if (style.top.u !== StyleUnit.AUTO) {
+                    style.top.u = StyleUnit.AUTO;
+                  }
+                } else if (this.controlType === 'b' ||
+                  this.controlType === 'bl' ||
+                  this.controlType === 'br') {
+                  if (style.top.u !== StyleUnit.PX) {
+                    style.top.v = computedStyle.top;
+                    style.top.u = StyleUnit.PX;
+                  }
+                  if (style.bottom.u !== StyleUnit.AUTO) {
+                    style.bottom.u = StyleUnit.AUTO;
+                  }
+                }
+                if (
+                  this.controlType === 'l' ||
+                  this.controlType === 'tl' ||
+                  this.controlType === 'bl'
+                ) {
+                  if (style.right.u !== StyleUnit.PX) {
+                    style.right.v = computedStyle.right;
+                    style.right.u = StyleUnit.PX;
+                  }
+                  if (style.left.u !== StyleUnit.AUTO) {
+                    style.left.u = StyleUnit.AUTO;
+                  }
+                } else if (
+                  this.controlType === 'r' ||
+                  this.controlType === 'tr' ||
+                  this.controlType === 'br'
+                ) {
+                  if (style.left.u !== StyleUnit.PX) {
+                    style.left.v = computedStyle.left;
+                    style.left.u = StyleUnit.PX;
+                  }
+                  if (style.right.u !== StyleUnit.AUTO) {
+                    style.right.u = StyleUnit.AUTO;
+                  }
+                }
+                // 尺寸一定会改固定
+                if (style.width.u !== StyleUnit.PX) {
+                  style.width.v = computedStyle.width;
+                  style.width.u = StyleUnit.PX;
+                }
+                if (style.height.u !== StyleUnit.PX) {
+                  style.height.v = computedStyle.height;
+                  style.height.u = StyleUnit.PX;
+                }
+                return res;
+              });
+            }
+            return [];
+          });
           this.computedStyle = selected.map((item) =>
             item.getComputedStyle(),
           );
@@ -275,7 +355,7 @@ export default class Listener extends Event {
       // 操作控制尺寸的时候，已经mousedown了
       if (this.isControl) {
         this.selected.forEach((node, i) => {
-          const o: any = {};
+          const o: Partial<JStyle> = {};
           const { style } = node;
           const computedStyle = this.computedStyle[i];
           if (
@@ -416,7 +496,7 @@ export default class Listener extends Event {
                   '%';
               }
             }
-            // right为自动，高度则为确定值修改，根据left定位
+            // right为自动，宽度则为确定值修改，根据left定位
             else if (
               style.width.u === StyleUnit.PX ||
               style.width.u === StyleUnit.PERCENT
@@ -486,6 +566,23 @@ export default class Listener extends Event {
   onMouseUp() {
     if (this.isControl) {
       this.isControl = false;
+      this.abcStyle.forEach((item, i) => {
+        if (item.length) {
+          const node = this.selected[i] as ArtBoard;
+          const children = node.children;
+          item.forEach((abcStyle, i) => {
+            const style = children[i].style;
+            ['left', 'right', 'top', 'bottom', 'width', 'height'].forEach((k) => {
+              // @ts-ignore
+              const o = abcStyle[k];
+              // @ts-ignore
+              style[k].v = o.v;
+              // @ts-ignore
+              style[k].u = o.u;
+            });
+          });
+        }
+      });
       if (this.isMouseMove) {
         this.selected.forEach((node) => {
           node.checkSizeChange();

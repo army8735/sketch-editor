@@ -236,6 +236,7 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
 export type Props = {
   name?: string;
   uuid: string;
+  sourceUuid?: string;
   style?: any;
   constrainProportions?: boolean;
   isLocked?: boolean;
