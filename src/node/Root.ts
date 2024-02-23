@@ -674,6 +674,10 @@ class Root extends Container implements FrameCallback {
         if (metaKey) {
           return res;
         }
+        // 没按metaKey选不了画板
+        if (res.isArtBoard) {
+          return;
+        }
         // 没有选择节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
         if (!selected.length) {
           let n = res;
@@ -712,6 +716,17 @@ class Root extends Container implements FrameCallback {
             n = p;
           }
           return n;
+        }
+      }
+      // 没有节点还要检查artBoard的文字标题，在overlay上单独渲染
+      const text = this.overlay.getNodeByPoint(x, y);
+      if (text && text.isText) {
+        const artBoardList = this.overlay.artBoardList;
+        for (let i = 0, len = artBoardList.length; i < len; i++) {
+          const item = artBoardList[i];
+          if (item.text === text) {
+            return item.artBoard;
+          }
         }
       }
     }

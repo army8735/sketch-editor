@@ -96,7 +96,7 @@ export default class Listener extends Event {
     } else {
       this.select.hideSelect();
     }
-    this.emit(Listener.SELECT_NODE, this.selected);
+    this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
 
   onMouseDown(e: MouseEvent) {
@@ -106,6 +106,7 @@ export default class Listener extends Event {
       return;
     }
     const dpi = root.dpi;
+    const selected = this.selected;
     // 左键
     if (e.button === 0 || e.button === 2) {
       if (e.button === 0) {
@@ -131,7 +132,7 @@ export default class Listener extends Event {
           this.controlType = target.className;
           this.startX = e.pageX;
           this.startY = e.pageY;
-          this.computedStyle = this.selected.map((item) =>
+          this.computedStyle = selected.map((item) =>
             item.getComputedStyle(),
           );
           if (this.state === State.EDIT_TEXT) {
@@ -145,18 +146,18 @@ export default class Listener extends Event {
             x,
             y,
             this.metaKey,
-            this.selected,
+            selected,
             false,
           );
           if (node) {
-            const i = this.selected.indexOf(node);
+            const i = selected.indexOf(node);
             if (i > -1) {
               if (this.shiftKey) {
-                this.selected.splice(i, 1);
+                selected.splice(i, 1);
               } else {
                 // 持续编辑更新文本的编辑光标并提前退出
                 if (this.state === State.EDIT_TEXT) {
-                  const text = this.selected[0] as Text;
+                  const text = selected[0] as Text;
                   text.hideSelectArea();
                   text.setCursorStartByAbsCoord(x, y);
                   this.input.update(
@@ -168,27 +169,40 @@ export default class Listener extends Event {
                   e.preventDefault();
                   return;
                 }
-                if (this.selected.length === 1 && this.selected[0] === node) {
-                  this.computedStyle = this.selected.map((item) =>
+                if (selected.length === 1 && selected[0] === node) {
+                  this.computedStyle = selected.map((item) =>
                     item.getComputedStyle(),
                   );
                   return;
                 }
-                this.selected = [node];
+                selected.splice(0);
+                selected.push(node);
               }
             } else {
               if (!this.shiftKey) {
-                this.selected.splice(0);
+                selected.splice(0);
               }
-              this.selected.push(node);
+              // 特殊的地方，即便按下shift，但如果已选画板内子元素去选画板将无视，已选画板去选其子元素将取消画板
+              else {
+                for (let i = selected.length - 1; i >= 0; i--) {
+                  const item = selected[i];
+                  if (node.isArtBoard && item.artBoard === node && node !== item) {
+                    return;
+                  }
+                  if (item.isArtBoard && node.artBoard === item && node !== item) {
+                    selected.splice(i, 1);
+                  }
+                }
+              }
+              selected.push(node);
             }
           } else {
             // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
             if (this.state === State.EDIT_TEXT) {
-              const text = this.selected[0] as Text;
+              const text = selected[0] as Text;
               text.hideSelectArea();
             } else {
-              this.selected.splice(0);
+              selected.splice(0);
             }
           }
           // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
@@ -197,15 +211,15 @@ export default class Listener extends Event {
             this.input.hide();
           }
           this.select.hideHover();
-          if (this.selected.length) {
-            this.select.showSelect(this.selected);
+          if (selected.length) {
+            this.select.showSelect(selected);
           } else {
             this.select.hideSelect();
           }
-          this.computedStyle = this.selected.map((item) =>
+          this.computedStyle = selected.map((item) =>
             item.getComputedStyle(),
           );
-          this.emit(Listener.SELECT_NODE, this.selected);
+          this.emit(Listener.SELECT_NODE, selected.slice(0));
         }
       }
     }
@@ -638,9 +652,10 @@ export default class Listener extends Event {
           return;
         }
         node = node.parent!;
-        this.selected = [node];
+        this.selected.splice(0);
+        this.selected.push(node);
         this.select.updateSelect(this.selected);
-        this.emit(Listener.SELECT_NODE, this.selected);
+        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
     }
     // esc，编辑文字回到普通，普通取消选择
@@ -649,9 +664,9 @@ export default class Listener extends Event {
         this.state = State.NORMAL;
         this.input.hide();
       } else {
-        this.selected = [];
+        this.selected.splice(0);
         this.select.hideSelect();
-        this.emit(Listener.SELECT_NODE, this.selected);
+        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
     }
   }

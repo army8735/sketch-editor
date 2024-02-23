@@ -325,8 +325,10 @@ class Container extends Node {
           const res = child.getNodeByPoint(x, y);
           if (res) {
             return res;
+          } else if (child.isArtBoard) {
+            return child;
           }
-        } else if(computedStyle.pointerEvents) {
+        } else if (computedStyle.pointerEvents) {
           return child;
         }
       }

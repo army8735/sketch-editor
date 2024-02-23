@@ -274,6 +274,7 @@ export type BitmapProps = Props & {
 export type ArtBoardProps = Props & {
   hasBackgroundColor: boolean;
   resizesContent: boolean;
+  includeBackgroundColorInExport: boolean;
 };
 
 export type SymbolMasterProps = ArtBoardProps & {

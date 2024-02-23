@@ -12,9 +12,13 @@ const SHADOW_SIZE = 8;
 
 class ArtBoard extends Container {
   hasBackgroundColor: boolean;
+  resizesContent: boolean;
+  includeBackgroundColorInExport: boolean;
   constructor(props: ArtBoardProps, children: Array<Node>) {
     super(props as Props, children);
     this.hasBackgroundColor = props.hasBackgroundColor;
+    this.resizesContent = props.resizesContent;
+    this.includeBackgroundColorInExport = props.includeBackgroundColorInExport;
     this.isArtBoard = true;
     this.artBoard = this;
   }
@@ -192,7 +196,8 @@ class ArtBoard extends Container {
     json.hasClickThrough = false;
     json.includeBackgroundColorInExport = false;
     json.isFlowHome = false;
-    json.resizesContent = false;
+    json.resizesContent = this.resizesContent;
+    json.includeBackgroundColorInExport = this.includeBackgroundColorInExport;
     json.horizontalRulerData = {
       _class: 'rulerData',
       base: 0,
@@ -206,10 +211,10 @@ class ArtBoard extends Container {
     const computedStyle = this.computedStyle;
     json.backgroundColor = {
       alpha: computedStyle.backgroundColor[3],
-      blue: computedStyle.backgroundColor[2] / 255,
-      green: computedStyle.backgroundColor[1] / 255,
-      red: computedStyle.backgroundColor[0] / 255,
-      _class: 'color',
+        blue: computedStyle.backgroundColor[2] / 255,
+        green: computedStyle.backgroundColor[1] / 255,
+        red: computedStyle.backgroundColor[0] / 255,
+        _class: 'color',
     };
     json.hasBackgroundColor = this.hasBackgroundColor;
     const list = await Promise.all(this.children.filter(item => {

@@ -1667,6 +1667,10 @@ class Node extends Event {
       brightness,
       contrast,
       saturate,
+      opacity,
+      mixBlendMode,
+      scaleX,
+      scaleY,
     } = computedStyle;
     const shadows: SketchFormat.Shadow[] = [];
     const innerShadows: SketchFormat.InnerShadow[] = [];
@@ -1745,8 +1749,8 @@ class Node extends Event {
       },
       hasClippingMask: computedStyle.maskMode !== MASK.NONE,
       isFixedToViewport: false,
-      isFlippedHorizontal: false,
-      isFlippedVertical: false,
+      isFlippedHorizontal: scaleX === -1,
+      isFlippedVertical: scaleY === -1,
       isLocked: props.isLocked || false,
       isTemplate: false,
       isVisible: computedStyle.visible,
@@ -1784,6 +1788,11 @@ class Node extends Event {
           contrast,
           hue: hueRotate,
           saturation: saturate,
+        },
+        contextSettings: {
+          _class: 'graphicsContextSettings',
+          blendMode: [0, 2, 5, 7, 1, 4, 6, 3, 9, 8, 10, 11, 12, 13, 14, 15][mixBlendMode] || 0,
+          opacity,
         },
       },
     };
