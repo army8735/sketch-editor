@@ -430,9 +430,6 @@ async function convertItem(
       bottom = '0%';
     }
   }
-  if (layer.do_objectID === '3e14e493-adfa-4f67-be22-3b9a0d74eded') {
-    console.log(layer.do_objectID, w, h, top, bottom, height, translateY);
-  }
   // 遮罩转换
   let maskMode = 'none';
   const { hasClippingMask, clippingMaskMode } = layer;

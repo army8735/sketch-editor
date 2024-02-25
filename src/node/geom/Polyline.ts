@@ -879,6 +879,7 @@ class Polyline extends Geom {
   override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
+    props.sourceUuid = this.props.uuid;
     const res = new Polyline(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);

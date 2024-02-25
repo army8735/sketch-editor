@@ -144,6 +144,17 @@ export default class Tree extends Event {
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
       this.select(nodes);
     });
+    listener.on(Listener.REMOVE_NODE, (nodes: Node[]) => {
+      nodes.forEach((item) => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            dl.parentElement!.remove();
+          }
+        }
+      });
+    });
 
     this.dom.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;

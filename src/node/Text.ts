@@ -2504,6 +2504,7 @@ class Text extends Node {
       }
     }
     props.uuid = uuid.v4();
+    props.sourceUuid = this.props.uuid;
     props.rich = clone(this.rich);
     props.content = this._content;
     const res = new Text(props);

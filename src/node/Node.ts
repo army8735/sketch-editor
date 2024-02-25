@@ -1741,8 +1741,8 @@ class Node extends Event {
       },
       frame: {
         constrainProportions: props.constrainProportions || false,
-        height,
-        width,
+        width: width || 0,
+        height: height || 0,
         x: computedStyle.translateX,
         y: computedStyle.translateY,
         _class: 'rect',
@@ -1966,6 +1966,7 @@ class Node extends Event {
   clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
+    props.sourceUuid = this.props.uuid;
     const res = new Node(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);

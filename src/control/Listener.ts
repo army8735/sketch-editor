@@ -729,7 +729,7 @@ export default class Listener extends Event {
     if (e.keyCode === 8) {
       if (this.selected.length) {
         const list = this.selected.splice(0);
-        list.forEach(item => item.remove());
+        list.forEach((item) => item.remove());
         this.emit(Listener.REMOVE_NODE, list);
         this.select.hideSelect();
       }

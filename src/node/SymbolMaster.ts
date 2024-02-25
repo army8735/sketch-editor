@@ -29,6 +29,7 @@ class SymbolMaster extends ArtBoard {
   override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
+    props.sourceUuid = this.props.uuid;
     const res = new SymbolMaster(props, this.children.map(item => item.clone(override)));
     res.symbolInstances = [];
     res.style = clone(this.style);
