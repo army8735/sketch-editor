@@ -13,7 +13,9 @@
     "strict": true,
     "target": "es2015",
     "experimentalDecorators": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationDir": "./"
   },
   "exclude": [
     "node_modules",
