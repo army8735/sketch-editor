@@ -9,7 +9,7 @@ export default [
     input: 'src/index.ts',
     output: {
       name: 'editor',
-      file: 'index.js',
+      file: 'dist/index.js',
       format: 'umd',
       sourcemap: true,
     },
@@ -21,4 +21,12 @@ export default [
       json(),
     ],
   },
+  {
+    input: 'src/index.ts',
+    output: {
+      file: 'dist/index.d.ts',
+      format: 'es'
+    },
+    plugins: [dts()]
+  }
 ];
