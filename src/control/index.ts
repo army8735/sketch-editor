@@ -1,6 +1,8 @@
 import Root from '../node/Root';
 import Listener from './Listener';
 import Tree from './Tree';
+import Select from './Select';
+import Input from './Input';
 
 /**
  * 所有控制相关的都在这里，传入渲染根节点，和容器DOM，需要DOM是absolute/relative，
@@ -13,3 +15,12 @@ export function initCanvasControl(root: Root, dom: HTMLElement) {
 export function initTreeList(root: Root, dom: HTMLElement, listener: Listener) {
   return new Tree(root, dom, listener);
 }
+
+export default {
+  initCanvasControl,
+  initTreeList,
+  Listener,
+  Tree,
+  Select,
+  Input,
+};

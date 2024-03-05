@@ -10,6 +10,7 @@ import node from './node';
 import { parse, sortSymbolMasters } from './node/parse';
 import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
+import control from './control';
 
 export default {
   parse(json: JFile, canvas: HTMLCanvasElement, dpi = 1) {
@@ -61,4 +62,5 @@ export default {
   animation,
   tools,
   config,
+  control,
 };
