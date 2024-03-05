@@ -15,7 +15,7 @@
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "declarationDir": "./"
+    "declarationDir": "./dist"
   },
   "exclude": [
     "node_modules",
