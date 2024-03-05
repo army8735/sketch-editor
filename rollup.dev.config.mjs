@@ -20,13 +20,5 @@ export default [
       typescript(),
       json(),
     ],
-  },
-  {
-    input: 'src/index.ts',
-    output: {
-      file: 'dist/index.d.ts',
-      format: 'es'
-    },
-    plugins: [dts()]
   }
 ];

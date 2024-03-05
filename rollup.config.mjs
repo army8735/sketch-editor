@@ -4,7 +4,6 @@ import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import glslify from 'rollup-plugin-glslify';
-import dts from 'rollup-plugin-dts';
 
 export default [
   {
@@ -55,12 +54,4 @@ export default [
       json()
     ]
   },
-  {
-    input: 'src/index.ts',
-    output: {
-      file: 'dist/index.d.ts',
-      format: 'es'
-    },
-    plugins: [dts()]
-  }
 ];
