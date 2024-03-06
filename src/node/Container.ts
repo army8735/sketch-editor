@@ -162,6 +162,8 @@ class Container extends Node {
         child.destroy();
       }
       root!.addUpdate(this, [], RefreshLevel.REFLOW, false, false, cb);
+    } else {
+      cb && cb(true);
     }
   }
 

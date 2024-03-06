@@ -1479,7 +1479,7 @@ class Node extends Event {
   }
 
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
-  adjustPosAndSize() {
+  protected adjustPosAndSize() {
     return false;
   }
 
