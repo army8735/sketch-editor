@@ -20,5 +20,18 @@ export default [
       typescript(),
       json(),
     ],
-  }
+  },
+  {
+    input: 'src/index.ts', // 你的主入口文件
+    output: {
+      file: 'dist/index.esm.js', // 输出文件
+      format: 'esm', // ES模块格式
+      sourcemap: true,
+    },
+    plugins:[
+      glslify(),
+      typescript(),
+      json()
+    ]
+  },
 ];

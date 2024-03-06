@@ -47,6 +47,7 @@ export default [
     output: {
       file: 'dist/index.esm.js', // 输出文件
       format: 'esm', // ES模块格式
+      sourcemap: true,
     },
     plugins:[
       glslify(),

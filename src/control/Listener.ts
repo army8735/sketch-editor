@@ -229,6 +229,7 @@ export default class Listener extends Event {
             selected,
             false,
           );
+          const oldSelected = selected.slice(0);
           if (node) {
             const i = selected.indexOf(node);
             if (i > -1) {
@@ -299,6 +300,10 @@ export default class Listener extends Event {
           this.computedStyle = selected.map((item) =>
             item.getComputedStyle(),
           );
+          // 一直点选空白不选节点，防止重复触发
+          if (oldSelected.length === 0 && selected.length === 0) {
+            return;
+          }
           this.emit(Listener.SELECT_NODE, selected.slice(0));
         }
       }
