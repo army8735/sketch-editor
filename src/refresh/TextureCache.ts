@@ -30,6 +30,9 @@ class TextureCache {
     this.available = false;
     const o = HASH[id];
     const item = o[url];
+    if (!item) {
+      return;
+    }
     item.count--;
     if (!item.count) {
       // 此时无引用计数可清空且释放texture

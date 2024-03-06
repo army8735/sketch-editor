@@ -953,6 +953,7 @@ class Bitmap extends Node {
     if (this._src === v) {
       return;
     }
+    this.clearCache(true);
     this._src = v;
     this.loadAndRefresh();
   }
