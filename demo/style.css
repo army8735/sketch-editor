@@ -29,7 +29,7 @@ html, body {
   z-index: 10;
 }
 
-.container {
+.wrap>.container {
   position: absolute;
   left: 0;
   top: 50px;
@@ -40,9 +40,11 @@ html, body {
 
 .list {
   position: relative;
+  z-index: 10;
   width: 250px;
   height: 100%;
-  background: #EEE8EA;
+  /*background: #EEE8EA;*/
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .page {
@@ -57,6 +59,10 @@ html, body {
   border-bottom: 1px solid #CCC;
   overflow-y: scroll;
   list-style: none;
+}
+
+.page::-webkit-scrollbar {
+  display: none;
 }
 
 .page li {
@@ -78,91 +84,148 @@ html, body {
   left: 0;
   top: 150px;
   bottom: 0;
-  box-sizing: border-box;
-  padding: 5px 8px;
   width: 100%;
   overflow-y: scroll;
-  font-size: 14px;
+  font-size: 12px;
 }
 
-.tree ol {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.tree::-webkit-scrollbar {
+  display: none;
 }
 
-.tree ol ol {
-  margin-left: 16px;
-}
-
-.tree div {
-  display: flex;
-  padding: 0 4px;
+.tree dl {
+  margin: 0 0 0 10px;
   height: 24px;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+
+.tree dl.expand {
+  height: auto;
+}
+
+.tree dl.expand>dt>.arrow {
+  transform: rotate(90deg);
+}
+
+.tree dl.expand>dt>.group {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*jd_KTbs8Hs8AAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree>dl {
+  margin-left: 0;
+}
+
+.tree dt {
+  display: flex;
   align-items: center;
-  border-radius: 5px;
+  margin: 0;
+  font-weight: 400;
+  height: 24px;
+  border-radius: 3px;
+}
+
+.tree dt:hover, .tree dt.hover {
+  background: #f3f3f3;
+}
+
+.tree dt:hover .visible, .tree dt.hover .visible {
+  opacity: 1 !important;
+}
+
+.tree dt.active {
+  background: #F96;
+}
+
+.tree dt span {
+  margin: 0 1px;
+}
+
+.tree .name {
+  flex: 1;
+  margin: 0 1px 0 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  word-break: keep-all;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+.tree .arrow {
+  width: 16px;
+  height: 16px;
+  background: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*qMOCQpxCKiIAAAAAAAAAAAAADv55AQ/original')
+  no-repeat center;
+  background-size: 14px 14px;
+}
+
+.tree .mask {
+  width: 12px;
+  height: 12px;
+  background: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*c3dTRJg9U-kAAAAAAAAAAAAADv55AQ/original')
+  no-repeat center;
+  background-size: 12px 12px;
 }
 
 .tree .type {
   width: 16px;
   height: 16px;
-  font-family: Menlo, "Courier New";
-  font-size: 14px;
-  color: #999;
-  cursor: default;
-  user-select: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
 }
 
-.tree .type b {
-  display: block;
-  position: relative;
-  top: 1px;
+.tree .type.group {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*flTQQbWWETQAAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree .type.text {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*ZzGQTJ5l6dsAAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree .type.symbol-master {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*qcLQTJD5qQIAAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree .type.symbol-instance {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*oaxoQK6kcm4AAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree .type.art-board {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*wdxnR6qkPmMAAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree .type.bitmap {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*ll5OSaPUW0MAAAAAAAAAAAAADv55AQ/original');
+}
+
+.tree .geom {
   width: 14px;
   height: 14px;
+}
+
+.tree .geom svg {
+  display: block;
+  overflow: visible;
   transform-origin: 0 0;
 }
 
-.tree .type svg {
-  display: block;
-  overflow: visible;
-}
-
-.tree .name {
-  flex: 1 0 auto;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  color: #333;
-}
-
-.tree .mask > div > .name {
-  font-style: italic;
-}
-
-.tree .symbol-master > div > .name {
-  color: #b6e;
-}
-
 .tree .visible {
-  margin-left: 2px;
-  font-size: 12px;
-  color: #999;
-  cursor: default;
-  user-select: none;
-  white-space: nowrap;
+  width: 16px;
+  height: 16px;
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*LzCrSJDKj88AAAAAAAAAAAAADv55AQ/original');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
 }
 
-.tree .visible:hover {
-  color: #F99;
+.tree .visible.t {
+  background-image: url('https://mdn.alipayobjects.com/huamei_vtyjk6/afts/img/A*99U0QJKv8T8AAAAAAAAAAAAADv55AQ/original');
+  opacity: 0;
 }
 
-.tree .hover>div {
-  box-shadow: 0 0 2px #000;
-}
-
-.tree .select>div {
-  background: #FA8;
+.tree dd {
+  margin: 0;
 }
 
 .main {
@@ -174,255 +237,25 @@ html, body {
   width: 100%;
   height: 100%;
   background: #FFF;
-}
-
-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.overlap {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
 }
 
-.overlap.space {
-  cursor: grab;
-}
-.overlap.space.down {
-  cursor: grabbing;
-}
-.overlap.t {
-  cursor: ns-resize;
-}
-.overlap.r {
-  cursor: ew-resize;
-}
-.overlap.b {
-  cursor: ns-resize;
-}
-.overlap.l {
-  cursor: ew-resize;
-}
-.overlap.tl {
-  cursor: nwse-resize;
-}
-.overlap.tr {
-  cursor: nesw-resize;
-}
-.overlap.br {
-  cursor: nwse-resize;
-}
-.overlap.bl {
-  cursor: nesw-resize;
-}
-
-.overlap .hover {
-  position: absolute;
-  border: 1px solid #F43;
-  visibility: hidden;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-  transform: translate(-1px, -1px);
-}
-
-.overlap .actual {
-  position: absolute;
-  visibility: hidden;
-  border: 1px dashed rgba(0, 0, 0, 0.5);
-}
-
-.overlap .selection {
-  position: absolute;
-  visibility: hidden;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-}
-
-.overlap .selection span, .selection b {
-  pointer-events: auto;
-}
-
-.overlap .t {
+canvas {
   position: absolute;
   left: 0;
-  top: -4px;
-  width: 100%;
-  height: 8px;
-  transform: scaleY(0.5);
-  cursor: ns-resize;
-}
-
-.overlap .t b {
-  position: absolute;
-  left: 0;
-  top: 2px;
-  width: 100%;
-  height: 100%;
-  border-top: 1px solid #34F;
-  pointer-events: none;
-}
-
-.overlap .r {
-  position: absolute;
-  right: -4px;
-  top: 0;
-  width: 8px;
-  height: 100%;
-  transform: scaleX(0.5);
-  cursor: ew-resize;
-}
-
-.overlap .r b {
-  position: absolute;
-  right: 2px;
   top: 0;
   width: 100%;
   height: 100%;
-  border-right: 1px solid #34F;
-  pointer-events: none;
-}
-
-.overlap .b {
-  position: absolute;
-  left: 0;
-  bottom: -4px;
-  width: 100%;
-  height: 8px;
-  transform: scaleY(0.5);
-  cursor: ns-resize;
-}
-
-.overlap .b b {
-  position: absolute;
-  left: 0;
-  bottom: 2px;
-  width: 100%;
-  height: 100%;
-  border-bottom: 1px solid #34F;
-  pointer-events: none;
-}
-
-.overlap .l {
-  position: absolute;
-  left: -4px;
-  top: 0;
-  width: 8px;
-  height: 100%;
-  transform: scaleX(0.5);
-  cursor: ew-resize;
-}
-
-.overlap .l b {
-  position: absolute;
-  left: 2px;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  border-left: 1px solid #34F;
-  pointer-events: none;
-}
-
-.overlap .tl {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 14px;
-  height: 14px;
-  border: 1px solid #999;
-  background: #FFF;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-  transform: translate(-8px, -8px) scale(0.5);
-  cursor: nwse-resize;
-}
-
-.overlap .tr {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 14px;
-  height: 14px;
-  border: 1px solid #999;
-  background: #FFF;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-  transform: translate(8px, -8px) scale(0.5);
-  cursor: nesw-resize;
-}
-
-.overlap .br {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 14px;
-  height: 14px;
-  border: 1px solid #999;
-  background: #FFF;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-  transform: translate(8px, 8px) scale(0.5);
-  cursor: nwse-resize;
-}
-
-.overlap .bl {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 14px;
-  height: 14px;
-  border: 1px solid #999;
-  background: #FFF;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-  transform: translate(-8px, 8px) scale(0.5);
-  cursor: nesw-resize;
-}
-
-.show {
-  visibility: visible !important;
-}
-
-.input-container {
-  position: absolute;
-  left: 0;
-  top: 0;
-  /*display: none;*/
-  z-index: 10;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateZ(0);
-}
-
-.input-container .cursor {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  border-left: 1px solid #000;
-  animation: blink 0.8s infinite;
-  pointer-events: none;
-}
-
-.input-container input {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 10px;
-  height: 100%;
-  opacity: 0;
-  box-sizing: content-box;
-  border: none;
-  pointer-events: none;
-  transform: translateZ(0);
 }
 
 .side {
+  position: relative;
+  z-index: 11;
   width: 250px;
   padding: 6px 10px;
-  background: #FFF;
-  border-left: 1px solid #DDD;
   overflow-x: visible;
   overflow-y: auto;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .basic {

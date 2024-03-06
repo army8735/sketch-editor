@@ -8,8 +8,8 @@ import Bitmap from '../node/Bitmap';
 import { MASK, MIX_BLEND_MODE } from '../style/define';
 import config from '../util/config';
 import {
+  checkInRect,
   checkInScreen,
-  checkInWorldRect,
   DELTA_TIME,
   genBgBlur,
   genFrameBufferWithTexture,
@@ -22,6 +22,7 @@ import {
 import Tile from './Tile';
 import { isPolygonOverlapRect } from '../math/geom';
 import { RefreshLevel } from './level';
+import TextureCache from '../refresh/TextureCache';
 
 export type Struct = {
   node: Node;
@@ -222,7 +223,7 @@ function renderWebglTile(
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
       const m = node.matrixWorld;
       const bbox = node.filterBbox;
-      if (checkInWorldRect(bbox, m, x1, y1, x2, y2)) {
+      if (checkInRect(bbox, m, x1, y1, x2, y2)) {
         const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
@@ -252,7 +253,7 @@ function renderWebglTile(
   const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
   for (let i = 0, len = mergeRecord.length; i < len; i++) {
     const { bbox, m } = mergeRecord[i];
-    if (checkInWorldRect(bbox, m, x1, y1, x2, y2)) {
+    if (checkInRect(bbox, m, x1, y1, x2, y2)) {
       const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
       for (let j = 0, len = tileList.length; j < len; j++) {
         const tile = tileList[j];
@@ -345,11 +346,11 @@ function renderWebglTile(
         isInScreen = false;
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
       if (target && target.available) {
-        isInScreen = checkInWorldRect(target.bbox, matrix, x1, y1, x2, y2);
+        isInScreen = checkInRect(target.bbox, matrix, x1, y1, x2, y2);
       }
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
       else {
-        isInScreen = checkInWorldRect(
+        isInScreen = checkInRect(
           node._filterBbox || node.filterBbox, matrix,
           x1, y1, x2, y2,
         );
@@ -671,24 +672,28 @@ function renderWebglTile(
     if (target && target.available) {
       const isInScreen = checkInScreen(target.bbox, matrix, W, H);
       if (isInScreen) {
-        drawTextureCache(
-          gl,
-          cx,
-          cy,
-          program,
-          [
-            {
-              opacity,
-              matrix,
-              bbox: target.bbox,
-              texture: target.texture,
-            },
-          ],
-          0,
-          0,
-          true,
-          -1, -1, 1, 1,
-        );
+        const list = target.list;
+        for (let i = 0, len = list.length; i < len; i++) {
+          const { bbox, t } = list[i];
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity,
+                matrix,
+                bbox: bbox,
+                texture: t,
+              },
+            ],
+            0,
+            0,
+            false,
+            -1, -1, 1, 1,
+          );
+        }
       }
     }
   }
@@ -736,9 +741,9 @@ function renderWebglNoTile(
   // 初始化工作
   const artBoardIndex: ArtBoard[] = [];
   let pageTexture = root.pageTexture || createTexture(gl, 0, undefined, W, H);
-  let artBoardTexture: WebGLTexture | undefined;
+  let artBoardTexture: WebGLTexture | undefined; // 画布的背景色单独渲染，会干扰mbm的透明判断
   let resTexture = pageTexture;
-  const resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
+  let resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
@@ -788,24 +793,28 @@ function renderWebglNoTile(
       if (target && target.available) {
         const isInScreen = checkInScreen(target.bbox, matrix, W, H);
         if (isInScreen) {
-          drawTextureCache(
-            gl,
-            cx,
-            cy,
-            program,
-            [
-              {
-                opacity,
-                matrix,
-                bbox: target.bbox,
-                texture: target.texture,
-              },
-            ],
-            0,
-            0,
-            false,
-            -1, -1, 1, 1,
-          );
+          const list = target.list;
+          for (let i = 0, len = list.length; i < len; i++) {
+            const { bbox, t } = list[i];
+            drawTextureCache(
+              gl,
+              cx,
+              cy,
+              program,
+              [
+                {
+                  opacity,
+                  matrix,
+                  bbox: bbox,
+                  texture: t,
+                },
+              ],
+              0,
+              0,
+              false,
+              -1, -1, 1, 1,
+            );
+          }
         }
       }
     }
@@ -821,7 +830,7 @@ function renderWebglNoTile(
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
       else {
         isInScreen = checkInScreen(
-          node._filterBbox || node.filterBbox,
+          node._filterBbox || node.filterBbox, // 检测用原始的渲染用取整的
           matrix,
           W,
           H,
@@ -870,8 +879,8 @@ function renderWebglNoTile(
          * sketch中group无法设置，只能对单个节点（包括ShapeGroup）的轮廓进行类似轮廓蒙版的重合裁剪，
          * 并且它的text也无法设置，这里考虑增加text的支持，因为轮廓比较容易实现
          */
-        if (isBgBlur) {
-          const outline = (node.textureOutline = genOutline(
+        if (isBgBlur && i) {
+          const outline = node.textureOutline[scale] = genOutline(
             gl,
             node,
             structs,
@@ -879,26 +888,28 @@ function renderWebglNoTile(
             total,
             target.bbox,
             scale,
-          ));
-          if (outline) {
-            genBgBlur(
-              gl,
-              resTexture,
-              node._matrixWorld || node.matrixWorld,
-              outline,
-              target,
-              blur,
-              programs,
-              scale,
-              cx,
-              cy,
-              W,
-              H,
-            );
-          }
+          );
+          // 包装画布为TextureCache，默认画布不会超过尺寸限制，即便超过手动设置的，也不会超过系统
+          const wrap = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, W, H]));
+          wrap.list.push({
+            bbox: new Float64Array([0, 0, W, H]),
+            w: W,
+            h: H,
+            t: resTexture,
+          });
+          genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
+          gl.viewport(0, 0, W, H);
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            resTexture,
+            0,
+          );
         }
-        let tex: WebGLTexture | undefined;
         // 有mbm先将本节点内容绘制到和root同尺寸纹理上
+        let tex: WebGLTexture | undefined;
         if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
           tex = createTexture(gl, 0, undefined, W, H);
           gl.framebufferTexture2D(
@@ -910,24 +921,28 @@ function renderWebglNoTile(
           );
         }
         // 有无mbm都复用这段逻辑
-        drawTextureCache(
-          gl,
-          cx,
-          cy,
-          program,
-          [
-            {
-              opacity,
-              matrix,
-              bbox: target.bbox,
-              texture: target.texture,
-            },
-          ],
-          0,
-          0,
-          false,
-          x1, y1, x2, y2,
-        );
+        const list = target.list;
+        for (let i = 0, len = list.length; i < len; i++) {
+          const { bbox, t } = list[i];
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity,
+                matrix,
+                bbox,
+                texture: t,
+              },
+            ],
+            0,
+            0,
+            false,
+            x1, y1, x2, y2,
+          );
+        }
         // 这里才是真正生成mbm
         if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
           resTexture = genMbm(

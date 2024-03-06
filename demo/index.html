@@ -7,7 +7,6 @@
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<!--<div id="root" class="wrap"></div>-->
 <div class="wrap">
   <div class="menu">
     <input type="file" title="请选择sketch文件" id="file" accept=".sketch"/>
@@ -19,66 +18,78 @@
     </div>
     <div class="main" id="main">
       <div class="canvas-c" id="canvasC"></div>
-      <div class="overlap" id="overlap">
-        <div class="hover" id="hover"></div>
-        <div class="actual" id="actual"></div>
-        <div class="selection" id="selection">
-          <span class="l" id="l"><b></b></span>
-          <span class="t" id="t"><b></b></span>
-          <span class="r" id="r"><b></b></span>
-          <span class="b" id="b"><b></b></span>
-          <span class="tl" id="tl"></span>
-          <span class="tr" id="tr"></span>
-          <span class="br" id="br"></span>
-          <span class="bl" id="bl"></span>
-        </div>
-      </div>
-      <div
-        id="input-container"
-        class="input-container">
-        <div class="cursor"></div>
-        <input
-          type="text"
-          autoComplete="off"
-          spellCheck="false"
-        />
-      </div>
     </div>
-    <div class="side" id="side">
-      <div class="basic" id="basic">
-        <div class="line">
-          <label><input type="number" class="num" id="x" step="1" disabled/><span>X</span></label>
-          <label><input type="number" class="num" id="y" step="1" disabled/><span>Y</span></label>
-          <label><input type="number" class="num" id="rotate" step="1" disabled/><span>°</span></label>
-        </div>
-        <div class="line">
-          <label><input type="number" class="num" id="w" step="1" disabled/><span>W</span></label>
-          <label><input type="number" class="num" id="h" step="1" disabled/><span>H</span></label>
-        </div>
-      </div>
-      <div class="text" id="text">
-        <div class="line">
-          <select class="family" id="family"></select>
-          <div class="family2" id="family2"></div>
-        </div>
-        <div class="line">
-          <div class="line2">
-            <select class="style" id="style"></select>
-            <div class="style2" id="style2"></div>
-          </div>
-          <div class="line2">
-            <input class="color" id="color" type="color"/>
-            <div class="color2" id="color2">•••</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="side" id="side"></div>
   </div>
 </div>
-<!--<script src="https://gw.alipayobjects.com/os/lib/react/18.2.0/umd/react.production.min.js"></script>-->
 <script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
-<!--<script src='https://cdn.jsdelivr.net/npm/bignumber.js@9.1.0/bignumber.min.js'></script>-->
 <script src="../dist/index.js"></script>
-<script src="demo.js"></script>
+<script>
+  // const $input = document.querySelector('#file');
+  // $input.onchange = function(e) {
+  //   const file = $input.files[0];
+  //   $input.value = null;
+  //   $input.blur();
+  //   const reader = new FileReader();
+  //   reader.readAsArrayBuffer(file);
+  //   reader.onload = function() {
+  //     editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
+  //       const canvas = document.createElement('canvas');
+  //
+  //       function resize() {
+  //         const { clientWidth, clientHeight } = $canvasC;
+  //         canvas.width = clientWidth * dpi;
+  //         canvas.height = clientHeight * dpi;
+  //         const o = $canvasC.getBoundingClientRect();
+  //         originX = o.left;
+  //         originY = o.top;
+  //         if(root) {
+  //           root.updateStyle({
+  //             width: clientWidth * dpi,
+  //             height: clientHeight * dpi,
+  //           });
+  //         }
+  //       }
+  //
+  //       resize();
+  //       window.onresize = resize;
+  //       if(root) {
+  //         root.destroy();
+  //         $page.innerHTML = '';
+  //         root = null;
+  //         $canvasC.innerHTML = '';
+  //         hideHover();
+  //         hideSelect();
+  //       }
+  //       $canvasC.appendChild(canvas);
+  //       root = editor.parse(json, canvas, dpi);
+  //       root.setPageIndex(json.currentPageIndex || 0);
+  //     });
+  //   }
+  // };
+
+  fetch('./2.sketch')
+    .then((res) => {
+      return res.arrayBuffer();
+    })
+    .then((buff) => {
+      editor
+        .openAndConvertSketchBuffer(buff)
+        .then(json => {
+          const dpi = 2;
+          const $canvasC = document.querySelector('#canvasC');
+          const { clientWidth, clientHeight } = $canvasC;
+          const canvas = document.createElement('canvas');
+          canvas.width = clientWidth * dpi;
+          canvas.height = clientHeight * dpi;
+          $canvasC.appendChild(canvas);
+          const root = editor.parse(json, canvas, dpi);
+          root.setPageIndex(json.currentPageIndex || 0);
+
+          editor.control.initCanvasControl(root, $canvasC);
+          editor.control.initTreeList(root, document.querySelector('#tree'));
+        });
+    })
+</script>
 </body>
 </html>

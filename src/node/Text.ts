@@ -4,7 +4,6 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
-import config from '../util/config';
 import { RefreshLevel } from '../refresh/level';
 import {
   calNormalLineHeight,
@@ -578,103 +577,93 @@ class Text extends Node {
       y = bbox[1];
     let w = bbox[2] - x,
       h = bbox[3] - y;
-    while (
-      w * scale > config.MAX_TEXTURE_SIZE ||
-      h * scale > config.MAX_TEXTURE_SIZE
-      ) {
-      if (scale <= 1) {
-        break;
-      }
-      scale = scale >> 1;
-    }
-    if (
-      w * scale > config.MAX_TEXTURE_SIZE ||
-      h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-      return;
-    }
     const dx = -x * scale,
       dy = -y * scale;
     w *= scale;
     h *= scale;
     const { rich, computedStyle, lineBoxList } = this;
-    const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h));
+    const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
     canvasCache.available = true;
-    const ctx = canvasCache.offscreen.ctx;
+    const list = canvasCache.list;
     // 如果处于选择范围状态，渲染背景
     if (this.showSelectArea) {
-      ctx.fillStyle = '#f4d3c1';
-      const cursor = this.cursor;
-      // 单行多行区分开
-      if (cursor.startLineBox === cursor.endLineBox) {
-        const lineBox = lineBoxList[cursor.startLineBox];
-        const list = lineBox.list;
-        let textBox = list[cursor.startTextBox];
-        let x1 = textBox.x * scale;
-        ctx.font = textBox.font;
-        x1 +=
-          ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
-          scale;
-        textBox = list[cursor.endTextBox];
-        let x2 = textBox.x * scale;
-        ctx.font = textBox.font;
-        x2 +=
-          ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
-        // 反向api自动支持了
-        ctx.fillRect(
-          x1,
-          lineBox.y * scale,
-          x2 - x1,
-          lineBox.lineHeight * scale,
-        );
-      } else {
-        // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
-        const {
-          startLineBox,
-          startTextBox,
-          startString,
-          endLineBox,
-          endTextBox,
-          endString,
-        } = this.getSortedCursor();
-        // 先首行
-        let lineBox = lineBoxList[startLineBox];
-        let list = lineBox.list;
-        let textBox = list[startTextBox];
-        if (textBox) {
-          let x1 = textBox.x * scale;
+      for (let i = 0, len = list.length; i < len; i++) {
+        const { x, y, os: { ctx } } = list[i];
+        const dx2 = dx - x;
+        const dy2 = dy - y;
+        ctx.fillStyle = '#f4d3c1';
+        const cursor = this.cursor;
+        // 单行多行区分开
+        if (cursor.startLineBox === cursor.endLineBox) {
+          const lineBox = lineBoxList[cursor.startLineBox];
+          const list = lineBox.list;
+          let textBox = list[cursor.startTextBox];
+          let x1 = textBox.x * scale + dx2;
           ctx.font = textBox.font;
           x1 +=
-            ctx.measureText(textBox.str.slice(0, startString)).width * scale;
+            ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
+            scale;
+          textBox = list[cursor.endTextBox];
+          let x2 = textBox.x * scale + dx2;
+          ctx.font = textBox.font;
+          x2 +=
+            ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
+          // 反向api自动支持了
           ctx.fillRect(
             x1,
-            lineBox.y * scale,
-            lineBox.w * scale - x1,
+            lineBox.y * scale + dy2,
+            x2 - x1,
             lineBox.lineHeight * scale,
           );
-        }
-        // 中间循环
-        for (let i = startLineBox + 1, len = endLineBox; i < len; i++) {
-          const lineBox = lineBoxList[i];
-          if (lineBox.list.length) {
+        } else {
+          // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
+          const {
+            startLineBox,
+            startTextBox,
+            startString,
+            endLineBox,
+            endTextBox,
+            endString,
+          } = this.getSortedCursor();
+          // 先首行
+          let lineBox = lineBoxList[startLineBox];
+          let list = lineBox.list;
+          let textBox = list[startTextBox];
+          if (textBox) {
+            let x1 = textBox.x * scale + dx2;
+            ctx.font = textBox.font;
+            x1 +=
+              ctx.measureText(textBox.str.slice(0, startString)).width * scale;
             ctx.fillRect(
-              lineBox.list[0].x * scale,
-              lineBox.y * scale,
-              lineBox.w * scale,
+              x1,
+              lineBox.y * scale + dy2,
+              lineBox.w * scale - x1,
               lineBox.lineHeight * scale,
             );
           }
-        }
-        // 最后尾行
-        lineBox = lineBoxList[endLineBox];
-        list = lineBox.list;
-        textBox = list[endTextBox];
-        if (textBox) {
-          let x1 = textBox.x * scale;
-          ctx.font = textBox.font;
-          let x2 =
-            ctx.measureText(textBox.str.slice(0, endString)).width * scale;
-          ctx.fillRect(x1, lineBox.y * scale, x2, lineBox.lineHeight * scale);
+          // 中间循环
+          for (let i = startLineBox + 1, len = endLineBox; i < len; i++) {
+            const lineBox = lineBoxList[i];
+            if (lineBox.list.length) {
+              ctx.fillRect(
+                lineBox.list[0].x * scale + dx2,
+                lineBox.y * scale + dy2,
+                lineBox.w * scale,
+                lineBox.lineHeight * scale,
+              );
+            }
+          }
+          // 最后尾行
+          lineBox = lineBoxList[endLineBox];
+          list = lineBox.list;
+          textBox = list[endTextBox];
+          if (textBox) {
+            let x1 = textBox.x * scale + dx2;
+            ctx.font = textBox.font;
+            let x2 =
+              ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx2;
+            ctx.fillRect(x1, lineBox.y * scale + dy2, x2, lineBox.lineHeight * scale);
+          }
         }
       }
     }
@@ -771,286 +760,222 @@ class Text extends Node {
         }
       }
     }
-    // fill就用普通颜色绘制，每个fill都需绘制一遍
-    if (hasFill) {
-      for (let i = 0, len = fill.length; i < len; i++) {
-        if (!fillEnable[i] || !fillOpacity[i]) {
-          continue;
-        }
-        let f = fill[i];
-        // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
-        let ellipse: OffScreen | undefined;
-        const mode = fillMode[i];
-        ctx.globalAlpha = fillOpacity[i];
-        if (Array.isArray(f)) {
-          if (!f[3]) {
+    for (let i = 0, len = list.length; i < len; i++) {
+      const { x, y, os: { ctx } } = list[i];
+      const dx2 = dx - x;
+      const dy2 = dy - y;
+      // fill就用普通颜色绘制，每个fill都需绘制一遍
+      if (hasFill) {
+        for (let i = 0, len = fill.length; i < len; i++) {
+          if (!fillEnable[i] || !fillOpacity[i]) {
             continue;
           }
-          ctx.fillStyle = color2rgbaStr(f);
-        }
-        // 非纯色
-        else {
-          // 图像填充
-          if ((f as ComputedPattern).url !== undefined) {
-            f = f as ComputedPattern;
-            const url = f.url;
-            if (url) {
-              let loader = this.loaders[i];
-              const cache = inject.IMG[url];
-              // 已有的图像同步直接用
-              if (!loader && cache) {
-                loader = this.loaders[i] = {
-                  error: false,
-                  loading: false,
-                  width: cache.width,
-                  height: cache.height,
-                  source: cache.source,
-                };
-              }
-              if (loader) {
-                if (!loader.error && !loader.loading) {
-                  const width = this.width;
-                  const height = this.height;
-                  const wc = width * scale;
-                  const hc = height * scale;
-                  // 裁剪到范围内，text没有points概念，使用混合模拟mask来代替
-                  const os = inject.getOffscreenCanvas(w, h);
-                  const ctx2 = os.ctx;
-                  if (f.type === PATTERN_FILL_TYPE.TILE) {
-                    const ratio = f.scale ?? 1;
-                    for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
-                      for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
-                        ctx2.drawImage(
-                          loader.source!,
-                          dx + i * loader.width * scale * ratio,
-                          dy + j * loader.height * scale * ratio,
-                          loader.width * scale * ratio,
-                          loader.height * scale * ratio,
-                        );
+          let f = fill[i];
+          // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
+          let ellipse: OffScreen | undefined;
+          const mode = fillMode[i];
+          ctx.globalAlpha = fillOpacity[i];
+          if (Array.isArray(f)) {
+            if (!f[3]) {
+              continue;
+            }
+            ctx.fillStyle = color2rgbaStr(f);
+          }
+          // 非纯色
+          else {
+            // 图像填充
+            if ((f as ComputedPattern).url !== undefined) {
+              f = f as ComputedPattern;
+              const url = f.url;
+              if (url) {
+                let loader = this.loaders[i];
+                const cache = inject.IMG[url];
+                // 已有的图像同步直接用
+                if (!loader && cache) {
+                  loader = this.loaders[i] = {
+                    error: false,
+                    loading: false,
+                    width: cache.width,
+                    height: cache.height,
+                    source: cache.source,
+                  };
+                }
+                if (loader) {
+                  if (!loader.error && !loader.loading) {
+                    const width = this.width;
+                    const height = this.height;
+                    const wc = width * scale;
+                    const hc = height * scale;
+                    // 裁剪到范围内，text没有points概念，使用混合模拟mask来代替
+                    const os = inject.getOffscreenCanvas(w, h);
+                    const ctx2 = os.ctx;
+                    if (f.type === PATTERN_FILL_TYPE.TILE) {
+                      const ratio = f.scale ?? 1;
+                      for (let i = 0, len = Math.ceil(width / ratio / loader.width); i < len; i++) {
+                        for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
+                          ctx2.drawImage(
+                            loader.source!,
+                            dx2 + i * loader.width * scale * ratio,
+                            dy2 + j * loader.height * scale * ratio,
+                            loader.width * scale * ratio,
+                            loader.height * scale * ratio,
+                          );
+                        }
                       }
                     }
+                    else if (f.type === PATTERN_FILL_TYPE.FILL) {
+                      const sx = wc / loader.width;
+                      const sy = hc / loader.height;
+                      const sc = Math.max(sx, sy);
+                      const x = (loader.width * sc - wc) * -0.5;
+                      const y = (loader.height * sc - hc) * -0.5;
+                      ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                        x + dx2, y + dy2, loader.width * sc, loader.height * sc);
+                    }
+                    else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
+                      ctx2.drawImage(loader.source!, dx2, dy2, wc, hc);
+                    }
+                    else if (f.type === PATTERN_FILL_TYPE.FIT) {
+                      const sx = wc / loader.width;
+                      const sy = hc / loader.height;
+                      const sc = Math.min(sx, sy);
+                      const x = (loader.width * sc - wc) * -0.5;
+                      const y = (loader.height * sc - hc) * -0.5;
+                      ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
+                        x + dx2, y + dy2, loader.width * sc, loader.height * sc);
+                    }
+                    // 先离屏混合只展示text部分
+                    ctx2.fillStyle = '#FFF';
+                    ctx2.globalCompositeOperation = 'destination-in';
+                    draw(ctx2, true);
+                    ctx2.globalCompositeOperation = 'source-over';
+                    if (mode !== MIX_BLEND_MODE.NORMAL) {
+                      ctx.globalCompositeOperation = getCanvasGCO(mode);
+                    }
+                    ctx.drawImage(os.canvas, 0, 0);
+                    if (mode !== MIX_BLEND_MODE.NORMAL) {
+                      ctx.globalCompositeOperation = 'source-over';
+                    }
+                    os.release();
                   }
-                  else if (f.type === PATTERN_FILL_TYPE.FILL) {
-                    const sx = wc / loader.width;
-                    const sy = hc / loader.height;
-                    const sc = Math.max(sx, sy);
-                    const x = (loader.width * sc - wc) * -0.5;
-                    const y = (loader.height * sc - hc) * -0.5;
-                    ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
-                      x + dx, y + dy, loader.width * sc, loader.height * sc);
-                  }
-                  else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                    ctx2.drawImage(loader.source!, dx, dy, wc, hc);
-                  }
-                  else if (f.type === PATTERN_FILL_TYPE.FIT) {
-                    const sx = wc / loader.width;
-                    const sy = hc / loader.height;
-                    const sc = Math.min(sx, sy);
-                    const x = (loader.width * sc - wc) * -0.5;
-                    const y = (loader.height * sc - hc) * -0.5;
-                    ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
-                      x + dx, y + dy, loader.width * sc, loader.height * sc);
-                  }
-                  // 先离屏混合只展示text部分
-                  ctx2.fillStyle = '#FFF';
-                  ctx2.globalCompositeOperation = 'destination-in';
-                  draw(ctx2, true);
-                  ctx2.globalCompositeOperation = 'source-over';
-                  if (mode !== MIX_BLEND_MODE.NORMAL) {
-                    ctx.globalCompositeOperation = getCanvasGCO(mode);
-                  }
-                  ctx.drawImage(os.canvas, 0, 0);
-                  if (mode !== MIX_BLEND_MODE.NORMAL) {
-                    ctx.globalCompositeOperation = 'source-over';
-                  }
-                  os.release();
+                }
+                else {
+                  loader = this.loaders[i] = this.loaders[i] || {
+                    error: false,
+                    loading: true,
+                    width: 0,
+                    height: 0,
+                    source: undefined,
+                  };
+                  inject.measureImg(url, (data: any) => {
+                    // 可能会变更，所以加载完后对比下是不是当前最新的
+                    if (url === (fill[i] as ComputedPattern)?.url) {
+                      loader.loading = false;
+                      if (data.success) {
+                        loader.error = false;
+                        loader.source = data.source;
+                        loader.width = data.width;
+                        loader.height = data.height;
+                        if (!this.isDestroyed) {
+                          this.root!.addUpdate(
+                            this,
+                            [],
+                            RefreshLevel.REPAINT,
+                            false,
+                            false,
+                            undefined,
+                          );
+                        }
+                      }
+                      else {
+                        loader.error = true;
+                      }
+                    }
+                  });
                 }
               }
-              else {
-                loader = this.loaders[i] = this.loaders[i] || {
-                  error: false,
-                  loading: true,
-                  width: 0,
-                  height: 0,
-                  source: undefined,
-                };
-                inject.measureImg(url, (data: any) => {
-                  // 可能会变更，所以加载完后对比下是不是当前最新的
-                  if (url === (fill[i] as ComputedPattern)?.url) {
-                    loader.loading = false;
-                    if (data.success) {
-                      loader.error = false;
-                      loader.source = data.source;
-                      loader.width = data.width;
-                      loader.height = data.height;
-                      if (!this.isDestroyed) {
-                        this.root!.addUpdate(
-                          this,
-                          [],
-                          RefreshLevel.REPAINT,
-                          false,
-                          false,
-                          undefined,
-                        );
-                      }
-                    }
-                    else {
-                      loader.error = true;
-                    }
-                  }
+              continue;
+            }
+            // 渐变
+            else {
+              f = f as ComputedGradient;
+              if (f.t === GRADIENT.LINEAR) {
+                const gd = getLinear(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
+                const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+                gd.stop.forEach((item) => {
+                  lg.addColorStop(item.offset!, color2rgbaStr(item.color));
                 });
+                ctx.fillStyle = lg;
+              } else if (f.t === GRADIENT.RADIAL) {
+                const gd = getRadial(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
+                const rg = ctx.createRadialGradient(
+                  gd.cx,
+                  gd.cy,
+                  0,
+                  gd.cx,
+                  gd.cy,
+                  gd.total,
+                );
+                gd.stop.forEach((item) => {
+                  rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+                });
+                // 椭圆渐变，由于有缩放，用混合模式确定绘制范围，然后缩放长短轴绘制椭圆
+                const m = gd.matrix;
+                if (m) {
+                  ellipse = inject.getOffscreenCanvas(w, h);
+                  const ctx2 = ellipse.ctx;
+                  ctx2.fillStyle = '#FFF';
+                  draw(ctx2, true);
+                  ctx2.globalCompositeOperation = 'source-in';
+                  ctx2.fillStyle = rg;
+                  ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                  ctx2.fillRect(0, 0, w, h);
+                } else {
+                  ctx.fillStyle = rg;
+                }
+              } else if (f.t === GRADIENT.CONIC) {
+                const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
+                const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                gd.stop.forEach((item) => {
+                  cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+                });
+                ctx.fillStyle = cg;
               }
             }
-            continue;
           }
-          // 渐变
-          else {
-            f = f as ComputedGradient;
-            if (f.t === GRADIENT.LINEAR) {
-              const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-              const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-              gd.stop.forEach((item) => {
-                lg.addColorStop(item.offset!, color2rgbaStr(item.color));
-              });
-              ctx.fillStyle = lg;
-            } else if (f.t === GRADIENT.RADIAL) {
-              const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-              const rg = ctx.createRadialGradient(
-                gd.cx,
-                gd.cy,
-                0,
-                gd.cx,
-                gd.cy,
-                gd.total,
-              );
-              gd.stop.forEach((item) => {
-                rg.addColorStop(item.offset!, color2rgbaStr(item.color));
-              });
-              // 椭圆渐变，由于有缩放，用混合模式确定绘制范围，然后缩放长短轴绘制椭圆
-              const m = gd.matrix;
-              if (m) {
-                ellipse = inject.getOffscreenCanvas(w, h);
-                const ctx2 = ellipse.ctx;
-                ctx2.fillStyle = '#FFF';
-                draw(ctx2, true);
-                ctx2.globalCompositeOperation = 'source-in';
-                ctx2.fillStyle = rg;
-                ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-                ctx2.fillRect(0, 0, w, h);
-              } else {
-                ctx.fillStyle = rg;
-              }
-            } else if (f.t === GRADIENT.CONIC) {
-              const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
-              const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-              gd.stop.forEach((item) => {
-                cg.addColorStop(item.offset!, color2rgbaStr(item.color));
-              });
-              ctx.fillStyle = cg;
-            }
+          if (mode !== MIX_BLEND_MODE.NORMAL) {
+            ctx.globalCompositeOperation = getCanvasGCO(mode);
+          }
+          if (ellipse) {
+            ctx.drawImage(ellipse.canvas, 0, 0);
+            ellipse.release();
+          } else {
+            draw(ctx, true);
+          }
+          if (mode !== MIX_BLEND_MODE.NORMAL) {
+            ctx.globalCompositeOperation = 'source-over';
           }
         }
-        if (mode !== MIX_BLEND_MODE.NORMAL) {
-          ctx.globalCompositeOperation = getCanvasGCO(mode);
-        }
-        if (ellipse) {
-          ctx.drawImage(ellipse.canvas, 0, 0);
-          ellipse.release();
-        } else {
-          draw(ctx, true);
-        }
-        if (mode !== MIX_BLEND_MODE.NORMAL) {
-          ctx.globalCompositeOperation = 'source-over';
-        }
       }
-    }
-    // 普通颜色
-    else {
-      // 富文本记录索引开始对应的颜色
-      if (rich.length) {
-        for (let i = 0, len = rich.length; i < len; i++) {
-          const item = rich[i];
-          SET_COLOR_INDEX.push({
-            index: item.location,
-            color: color2rgbaStr(item.color),
-          });
-        }
-        const first = rich[0];
-        color = color2rgbaStr(first.color);
-      }
-      // 非富默认颜色
+      // 普通颜色
       else {
-        color = color2rgbaStr(computedStyle.color);
-        ctx.fillStyle = color;
-      }
-      for (let i = 0, len = lineBoxList.length; i < len; i++) {
-        const lineBox = lineBoxList[i];
-        // 固定尺寸超过则overflow: hidden
-        if (lineBox.y >= h) {
-          break;
-        }
-        const list = lineBox.list;
-        const len = list.length;
-        for (let i = 0; i < len; i++) {
-          const textBox = list[i];
-          const textDecoration = textBox.textDecoration;
-          // textBox的分隔一定是按rich的，用字符索引来获取颜色
-          const index = textBox.index;
-          if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
-            const cur = SET_COLOR_INDEX.shift()!;
-            color = color2rgbaStr(cur.color);
-            ctx.fillStyle = color;
-          }
-          setFontAndLetterSpacing(ctx, textBox, scale);
-          ctx.fillText(
-            textBox.str,
-            textBox.x * scale + dx,
-            (textBox.y + textBox.baseline) * scale + dy,
-          );
-          if (textDecoration.length) {
-            textDecoration.forEach(item => {
-              if (item === TEXT_DECORATION.UNDERLINE) {
-                ctx.fillRect(
-                  textBox.x,
-                  (textBox.y + textBox.contentArea - 1.5) * scale + dy,
-                  textBox.w * scale,
-                  3 * scale,
-                );
-              } else if (item === TEXT_DECORATION.LINE_THROUGH) {
-                ctx.fillRect(
-                  textBox.x,
-                  (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
-                  textBox.w * scale,
-                  3 * scale,
-                );
-              }
+        // 富文本记录索引开始对应的颜色
+        if (rich.length) {
+          for (let i = 0, len = rich.length; i < len; i++) {
+            const item = rich[i];
+            SET_COLOR_INDEX.push({
+              index: item.location,
+              color: color2rgbaStr(item.color),
             });
           }
+          const first = rich[0];
+          color = color2rgbaStr(first.color);
         }
-      }
-    }
-    // fill有opacity和mode，设置记得还原
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-    // 利用canvas的能力绘制shadow
-    const { innerShadow, innerShadowEnable } = this.computedStyle;
-    if (innerShadow && innerShadow.length) {
-      let hasInnerShadow = false;
-      const os2 = inject.getOffscreenCanvas(w, h);
-      const ctx2 = os2.ctx;
-      ctx2.fillStyle = '#FFF';
-      let n = 0;
-      innerShadow.forEach((item, i) => {
-        if (!innerShadowEnable[i]) {
-          return;
+        // 非富默认颜色
+        else {
+          color = color2rgbaStr(computedStyle.color);
+          ctx.fillStyle = color;
         }
-        hasInnerShadow = true;
-        const m =
-          (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
-        n = Math.max(n, m + item.blur * scale);
-      });
-      if (hasInnerShadow) {
-        // 类似普通绘制文字的循环，只是颜色统一
         for (let i = 0, len = lineBoxList.length; i < len; i++) {
           const lineBox = lineBoxList[i];
           // 固定尺寸超过则overflow: hidden
@@ -1061,173 +986,242 @@ class Text extends Node {
           const len = list.length;
           for (let i = 0; i < len; i++) {
             const textBox = list[i];
-            setFontAndLetterSpacing(ctx2, textBox, scale);
-            ctx2.fillText(
+            const textDecoration = textBox.textDecoration;
+            // textBox的分隔一定是按rich的，用字符索引来获取颜色
+            const index = textBox.index;
+            if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
+              const cur = SET_COLOR_INDEX.shift()!;
+              color = color2rgbaStr(cur.color);
+              ctx.fillStyle = color;
+            }
+            setFontAndLetterSpacing(ctx, textBox, scale);
+            ctx.fillText(
               textBox.str,
-              textBox.x * scale + dx,
-              (textBox.y + textBox.baseline) * scale + dy,
+              textBox.x * scale + dx2,
+              (textBox.y + textBox.baseline) * scale + dy2,
             );
+            if (textDecoration.length) {
+              textDecoration.forEach(item => {
+                if (item === TEXT_DECORATION.UNDERLINE) {
+                  ctx.fillRect(
+                    textBox.x * scale + dx2,
+                    (textBox.y + textBox.contentArea - 1.5) * scale + dy2,
+                    textBox.w * scale,
+                    3 * scale,
+                  );
+                } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                  ctx.fillRect(
+                    textBox.x * scale + dx2,
+                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy2,
+                    textBox.w * scale,
+                    3 * scale,
+                  );
+                }
+              });
+            }
           }
         }
-        // 反向，即文字部分才是透明，形成一张位图
-        ctx2.globalCompositeOperation = 'source-out';
-        ctx2.fillRect(-n, -n, w + n, h + n);
-        // 将这个位图设置shadow绘制到另外一个位图上
-        const os3 = inject.getOffscreenCanvas(w, h);
-        const ctx3 = os3.ctx;
+      }
+      // fill有opacity和mode，设置记得还原
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      // 利用canvas的能力绘制shadow
+      const { innerShadow, innerShadowEnable } = this.computedStyle;
+      if (innerShadow && innerShadow.length) {
+        let hasInnerShadow = false;
+        const os2 = inject.getOffscreenCanvas(w, h);
+        const ctx2 = os2.ctx;
+        ctx2.fillStyle = '#FFF';
+        let n = 0;
         innerShadow.forEach((item, i) => {
           if (!innerShadowEnable[i]) {
             return;
           }
-          ctx3.shadowOffsetX = item.x * scale;
-          ctx3.shadowOffsetY = item.y * scale;
-          ctx3.shadowColor = color2rgbaStr(item.color);
-          ctx3.shadowBlur = item.blur * scale;
-          ctx3.drawImage(os2.canvas, 0, 0);
+          hasInnerShadow = true;
+          const m =
+            (Math.max(Math.abs(item.x), Math.abs(item.y)) + item.spread) * scale;
+          n = Math.max(n, m + item.blur * scale);
         });
-        // 再次利用混合模式把shadow返回，注意只保留文字重合部分
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.drawImage(os3.canvas, 0, 0);
-        ctx.globalCompositeOperation = 'source-over';
-        os2.release();
-        os3.release();
-      }
-    }
-    // stroke文字，fill设置透明即可，但位置需要用到裁剪
-    if (scale !== 1) {
-      ctx.setLineDash(strokeDasharray.map((i) => i * scale));
-    } else {
-      ctx.setLineDash(strokeDasharray);
-    }
-    if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
-      ctx.lineCap = 'round';
-    } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
-      ctx.lineCap = 'square';
-    } else {
-      ctx.lineCap = 'butt';
-    }
-    if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
-      ctx.lineJoin = 'round';
-    } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
-      ctx.lineJoin = 'bevel';
-    } else {
-      ctx.lineJoin = 'miter';
-    }
-    // 强制1
-    ctx.miterLimit = 1;
-    ctx.fillStyle = 'transparent';
-    for (let i = 0, len = stroke.length; i < len; i++) {
-      if (!strokeEnable[i] || !strokeWidth[i]) {
-        continue;
-      }
-      const s = stroke[i];
-      const p = strokePosition[i];
-      ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
-      // 颜色
-      if (Array.isArray(s)) {
-        ctx.strokeStyle = color2rgbaStr(s);
-      }
-      // 或者渐变
-      else {
-        if (s.t === GRADIENT.LINEAR) {
-          const gd = getLinear(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-          const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-          gd.stop.forEach((item) => {
-            lg.addColorStop(item.offset!, color2rgbaStr(item.color));
-          });
-          ctx.strokeStyle = lg;
-        } else if (s.t === GRADIENT.RADIAL) {
-          const gd = getRadial(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-          const rg = ctx.createRadialGradient(
-            gd.cx,
-            gd.cy,
-            0,
-            gd.cx,
-            gd.cy,
-            gd.total,
-          );
-          gd.stop.forEach((item) => {
-            rg.addColorStop(item.offset!, color2rgbaStr(item.color));
-          });
-          const m = gd.matrix;
-          if (m) {
-            const ellipse = inject.getOffscreenCanvas(w, h);
-            const ctx2 = ellipse.ctx;
-            ctx2.setLineDash(ctx.getLineDash());
-            ctx2.lineCap = ctx.lineCap;
-            ctx2.lineJoin = ctx.lineJoin;
-            ctx2.miterLimit = ctx.miterLimit * scale;
-            ctx2.lineWidth = strokeWidth[i] * scale;
-            if (p === STROKE_POSITION.INSIDE || p === STROKE_POSITION.OUTSIDE) {
-              ctx2.fillStyle = '#FFF';
-              draw(ctx2, true);
-              ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-              ctx2.strokeStyle = '#FFF';
-              if (p === STROKE_POSITION.INSIDE) {
-                ctx2.globalCompositeOperation = 'source-in';
-              } else {
-                ctx2.globalCompositeOperation = 'source-out';
-              }
-              draw(ctx2, false);
-            } else {
-              ctx2.lineWidth = strokeWidth[i] * scale;
-              ctx2.strokeStyle = '#FFF';
-              draw(ctx2, false);
+        if (hasInnerShadow) {
+          // 类似普通绘制文字的循环，只是颜色统一
+          for (let i = 0, len = lineBoxList.length; i < len; i++) {
+            const lineBox = lineBoxList[i];
+            // 固定尺寸超过则overflow: hidden
+            if (lineBox.y >= h) {
+              break;
             }
-            ctx2.globalCompositeOperation = 'source-in';
-            ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-            ctx2.fillStyle = rg;
-            ctx2.fillRect(0, 0, w, h);
-            ctx.drawImage(ellipse.canvas, 0, 0);
-            ellipse.release();
-            continue;
-          } else {
-            ctx.strokeStyle = rg;
+            const list = lineBox.list;
+            const len = list.length;
+            for (let i = 0; i < len; i++) {
+              const textBox = list[i];
+              setFontAndLetterSpacing(ctx2, textBox, scale);
+              ctx2.fillText(
+                textBox.str,
+                textBox.x * scale + dx2,
+                (textBox.y + textBox.baseline) * scale + dy2,
+              );
+            }
           }
-        } else if (s.t === GRADIENT.CONIC) {
-          const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
-          const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
-          gd.stop.forEach((item) => {
-            cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+          // 反向，即文字部分才是透明，形成一张位图
+          ctx2.globalCompositeOperation = 'source-out';
+          ctx2.fillRect(-n, -n, w + n, h + n);
+          // 将这个位图设置shadow绘制到另外一个位图上
+          const os3 = inject.getOffscreenCanvas(w, h);
+          const ctx3 = os3.ctx;
+          innerShadow.forEach((item, i) => {
+            if (!innerShadowEnable[i]) {
+              return;
+            }
+            ctx3.shadowOffsetX = item.x * scale;
+            ctx3.shadowOffsetY = item.y * scale;
+            ctx3.shadowColor = color2rgbaStr(item.color);
+            ctx3.shadowBlur = item.blur * scale;
+            ctx3.drawImage(os2.canvas, 0, 0);
           });
-          ctx.strokeStyle = cg;
+          // 再次利用混合模式把shadow返回，注意只保留文字重合部分
+          ctx.globalCompositeOperation = 'source-atop';
+          ctx.drawImage(os3.canvas, 0, 0);
+          ctx.globalCompositeOperation = 'source-over';
+          os2.release();
+          os3.release();
         }
       }
-      // 注意canvas只有居中描边，内部外部需离屏擦除
-      let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
-      if (p === STROKE_POSITION.INSIDE || p === STROKE_POSITION.OUTSIDE) {
-        os = inject.getOffscreenCanvas(w, h);
-        ctx2 = os.ctx;
-        ctx2.setLineDash(ctx.getLineDash());
-        ctx2.lineCap = ctx.lineCap;
-        ctx2.lineJoin = ctx.lineJoin;
-        ctx2.miterLimit = ctx.miterLimit * scale;
-        ctx2.strokeStyle = ctx.strokeStyle;
-        ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-        ctx2.lineWidth = strokeWidth[i] * 2 * scale;
-        ctx2.fillStyle = '#FFF';
-        draw(ctx2, false);
-        const os3 = inject.getOffscreenCanvas(w, h);
-        const ctx3 = os3.ctx;
-        ctx3.fillStyle = '#FFF';
-        draw(ctx3, true);
-        if (p === STROKE_POSITION.INSIDE) {
-          ctx2.globalCompositeOperation = 'destination-in';
-        } else {
-          ctx2.globalCompositeOperation = 'destination-out';
-        }
-        ctx2.drawImage(os3.canvas, 0, 0);
-        os3.release();
+      // stroke文字，fill设置透明即可，但位置需要用到裁剪
+      if (scale !== 1) {
+        ctx.setLineDash(strokeDasharray.map((i) => i * scale));
       } else {
-        ctx.lineWidth = strokeWidth[i] * scale;
-        draw(ctx, false);
+        ctx.setLineDash(strokeDasharray);
       }
-      if (os) {
-        ctx.drawImage(os.canvas, 0, 0);
-        os.release();
+      if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
+        ctx.lineCap = 'round';
+      } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+        ctx.lineCap = 'square';
+      } else {
+        ctx.lineCap = 'butt';
       }
-      // 还原
-      ctx.globalCompositeOperation = 'source-over';
+      if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
+        ctx.lineJoin = 'round';
+      } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+        ctx.lineJoin = 'bevel';
+      } else {
+        ctx.lineJoin = 'miter';
+      }
+      // 强制1
+      ctx.miterLimit = 1;
+      ctx.fillStyle = 'transparent';
+      for (let i = 0, len = stroke.length; i < len; i++) {
+        if (!strokeEnable[i] || !strokeWidth[i]) {
+          continue;
+        }
+        const s = stroke[i];
+        const p = strokePosition[i];
+        ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
+        // 颜色
+        if (Array.isArray(s)) {
+          ctx.strokeStyle = color2rgbaStr(s);
+        }
+        // 或者渐变
+        else {
+          if (s.t === GRADIENT.LINEAR) {
+            const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
+            const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+            gd.stop.forEach((item) => {
+              lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+            });
+            ctx.strokeStyle = lg;
+          } else if (s.t === GRADIENT.RADIAL) {
+            const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
+            const rg = ctx.createRadialGradient(
+              gd.cx,
+              gd.cy,
+              0,
+              gd.cx,
+              gd.cy,
+              gd.total,
+            );
+            gd.stop.forEach((item) => {
+              rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+            });
+            const m = gd.matrix;
+            if (m) {
+              const ellipse = inject.getOffscreenCanvas(w, h);
+              const ctx2 = ellipse.ctx;
+              ctx2.setLineDash(ctx.getLineDash());
+              ctx2.lineCap = ctx.lineCap;
+              ctx2.lineJoin = ctx.lineJoin;
+              ctx2.miterLimit = ctx.miterLimit * scale;
+              ctx2.lineWidth = strokeWidth[i] * scale;
+              if (p === STROKE_POSITION.INSIDE || p === STROKE_POSITION.OUTSIDE) {
+                ctx2.fillStyle = '#FFF';
+                draw(ctx2, true);
+                ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                ctx2.strokeStyle = '#FFF';
+                if (p === STROKE_POSITION.INSIDE) {
+                  ctx2.globalCompositeOperation = 'source-in';
+                } else {
+                  ctx2.globalCompositeOperation = 'source-out';
+                }
+                draw(ctx2, false);
+              } else {
+                ctx2.lineWidth = strokeWidth[i] * scale;
+                ctx2.strokeStyle = '#FFF';
+                draw(ctx2, false);
+              }
+              ctx2.globalCompositeOperation = 'source-in';
+              ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              ctx2.fillStyle = rg;
+              ctx2.fillRect(0, 0, w, h);
+              ctx.drawImage(ellipse.canvas, 0, 0);
+              ellipse.release();
+              continue;
+            } else {
+              ctx.strokeStyle = rg;
+            }
+          } else if (s.t === GRADIENT.CONIC) {
+            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
+            const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+            gd.stop.forEach((item) => {
+              cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+            });
+            ctx.strokeStyle = cg;
+          }
+        }
+        // 注意canvas只有居中描边，内部外部需离屏擦除
+        let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
+        if (p === STROKE_POSITION.INSIDE || p === STROKE_POSITION.OUTSIDE) {
+          os = inject.getOffscreenCanvas(w, h);
+          ctx2 = os.ctx;
+          ctx2.setLineDash(ctx.getLineDash());
+          ctx2.lineCap = ctx.lineCap;
+          ctx2.lineJoin = ctx.lineJoin;
+          ctx2.miterLimit = ctx.miterLimit * scale;
+          ctx2.strokeStyle = ctx.strokeStyle;
+          ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+          ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+          ctx2.fillStyle = '#FFF';
+          draw(ctx2, false);
+          const os3 = inject.getOffscreenCanvas(w, h);
+          const ctx3 = os3.ctx;
+          ctx3.fillStyle = '#FFF';
+          draw(ctx3, true);
+          if (p === STROKE_POSITION.INSIDE) {
+            ctx2.globalCompositeOperation = 'destination-in';
+          } else {
+            ctx2.globalCompositeOperation = 'destination-out';
+          }
+          ctx2.drawImage(os3.canvas, 0, 0);
+          os3.release();
+        } else {
+          ctx.lineWidth = strokeWidth[i] * scale;
+          draw(ctx, false);
+        }
+        if (os) {
+          ctx.drawImage(os.canvas, 0, 0);
+          os.release();
+        }
+        // 还原
+        ctx.globalCompositeOperation = 'source-over';
+      }
     }
   }
 
