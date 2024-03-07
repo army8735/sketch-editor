@@ -204,7 +204,7 @@ html, body {
   height: 14px;
 }
 
-.tree .geom svg {
+.tree svg {
   display: block;
   overflow: visible;
   transform-origin: 0 0;

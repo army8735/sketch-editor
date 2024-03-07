@@ -93,9 +93,7 @@ class ArtBoard extends Container {
     const u_color2 = gl.getUniformLocation(bgShadowProgram, 'u_color');
     gl.uniform4f(u_color2, 0.0, 0.0, 0.0, 0.2);
     const u_radius = gl.getUniformLocation(bgShadowProgram, 'u_radius');
-    gl.uniform1f(u_radius, SHADOW_SIZE / Math.min(cx, cy));
-    const u_ratio = gl.getUniformLocation(bgShadowProgram, 'u_ratio');
-    gl.uniform1f(u_ratio, cx / cy);
+    gl.uniform2f(u_radius, SHADOW_SIZE / cx, SHADOW_SIZE / cy);
     // 渲染并销毁
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer2);
@@ -174,9 +172,7 @@ class ArtBoard extends Container {
     const u_color2 = gl.getUniformLocation(bgShadowProgram, 'u_color');
     gl.uniform4f(u_color2, 0.0, 0.0, 0.0, 0.2);
     const u_radius = gl.getUniformLocation(bgShadowProgram, 'u_radius');
-    gl.uniform1f(u_radius, SHADOW_SIZE / Math.min(cx, cy));
-    const u_ratio = gl.getUniformLocation(bgShadowProgram, 'u_ratio');
-    gl.uniform1f(u_ratio, 1);
+    gl.uniform2f(u_radius, SHADOW_SIZE / cx, SHADOW_SIZE / cy);
     // 渲染并销毁
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.deleteBuffer(pointBuffer2);

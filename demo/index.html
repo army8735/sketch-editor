@@ -68,7 +68,7 @@
   //   }
   // };
 
-  fetch('./2.sketch')
+  fetch('./1.sketch')
     .then((res) => {
       return res.arrayBuffer();
     })
@@ -86,8 +86,8 @@
           const root = editor.parse(json, canvas, dpi);
           root.setPageIndex(json.currentPageIndex || 0);
 
-          editor.control.initCanvasControl(root, $canvasC);
-          editor.control.initTreeList(root, document.querySelector('#tree'));
+          const listener = editor.control.initCanvasControl(root, $canvasC);
+          editor.control.initTreeList(root, document.querySelector('#tree'), listener);
         });
     })
 </script>
