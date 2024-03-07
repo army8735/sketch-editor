@@ -306,7 +306,6 @@ class Polygon {
           }
           hash[hc] = true;
         }
-        // console.error(seg.toString(), ael.length)
         // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
         if (!ael.length) {
           if (seg.myCoincide) {
@@ -376,7 +375,7 @@ class Polygon {
     });
     // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
     // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
-    const ael: any = [],
+    const ael: Segment[] = [],
       hash: any = {};
     list.forEach((item) => {
       const { isStart, seg } = item;
@@ -1294,20 +1293,20 @@ function segAboveCompare(segA: Segment, segB: Segment) {
   }
   // a是竖线的话，另外一条（一定是曲线）如果相连，特殊判断看在左在右，注意相连不可能出现a首b尾的情况
   if (la === 2 && a1.x === ca[1].x) {
-    if (a1 === b1) {
+    if (a1.equal(b1)) {
       // b只可能首相连，尾的会end优先出栈进不来
       return true;
     }
-    else if (ca[la - 1] === b1) {
+    else if (ca[la - 1].equal(b1)) {
       return true;
     }
-    else if (ca[la - 1] === cb[lb - 1]) {
+    else if (ca[la - 1].equal(cb[lb - 1])) {
       return false;
     }
   }
   // b是竖线同上，但只可能a和b首相连
   if (lb === 2 && b1.x === cb[1].x) {
-    if (a1 === b1) {
+    if (a1.equal(b1)) {
       return false;
     }
   }
@@ -1315,7 +1314,7 @@ function segAboveCompare(segA: Segment, segB: Segment) {
   const x1 = Math.max(a1.x, b1.x),
     x3 = Math.min(ca[la - 1].x, cb[lb - 1].x),
     x2 = x1 + (x3 - x1) * 0.5;
-  if (a1 !== b1) {
+  if (!a1.equal(b1)) {
     const y1 = getYByX(ca, x1)!,
       y2 = getYByX(cb, x1)!;
     if (y1 !== y2) {
@@ -1328,7 +1327,7 @@ function segAboveCompare(segA: Segment, segB: Segment) {
     return y1 > y2;
   }
   // 一般开始点和中间点就不会相同了，否则就是重合或相交，这里末尾点再判断下兜个底，曲线曾经出现过一个特例，末尾点判断的上下性反了，所以放在最后
-  if (ca[la - 1] !== cb[lb - 1]) {
+  if (!ca[la - 1].equal(cb[lb - 1])) {
     const y1 = getYByX(ca, x3)!,
       y2 = getYByX(cb, x3)!;
     if (y1 !== y2) {
