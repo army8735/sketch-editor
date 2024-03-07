@@ -11,8 +11,10 @@ import { parse, sortSymbolMasters } from './node/parse';
 import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
 import control from './control';
+import { version } from '../package.json';
 
 export default {
+  version,
   parse(json: JFile, canvas: HTMLCanvasElement, dpi = 1) {
     const { width, height } = canvas;
     const root = new node.Root({

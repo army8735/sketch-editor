@@ -151,7 +151,7 @@ export function genMerge(
       if (maskMode === MASK.ALPHA && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         node.textureTarget[scaleIndex] = textureMask[scaleIndex];
-      } else if (maskMode === MASK.OUTLINE && (!computedStyle.visible || computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
+      } else if (maskMode === MASK.OUTLINE && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         if (!computedStyle.visible || computedStyle.opacity === 0) {
           node.textureTarget[scaleIndex] = textureMask[scaleIndex];
