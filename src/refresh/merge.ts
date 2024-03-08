@@ -960,11 +960,8 @@ function createInOverlay(
       let x1 = Math.max(bboxR[0], x + j * UNIT / scale - spread * 2),
         y1 = Math.max(bboxR[1], y + i * unit / scale - spread);
       let x2 = Math.min(bboxR[2], x1 + spread * 4),
-        y2 = Math.min(bboxR[3], y1 + unit + spread * 2);
+        y2 = Math.min(bboxR[3], y1 + unit / scale + spread * 2);
       const bbox = new Float64Array([x1, y1, x2, y2]);
-      // 边界处假如尺寸不够，要往回（左上）收缩，避免比如最下方很细的长条（高度不足spread）
-      const w = (bbox[2] - bbox[0]) * scale,
-        h = (bbox[3] - bbox[1]) * scale;
       if (x1 > bboxR[2] - spread * 2) {
         x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
         x2 = bbox[2] = bboxR[2];
@@ -973,6 +970,9 @@ function createInOverlay(
         y1 = bbox[1] = Math.max(bboxR[1], bboxR[3] - spread * 2);
         y2 = bbox[3] = bboxR[3];
       }
+      // 边界处假如尺寸不够，要往回（左上）收缩，避免比如最下方很细的长条（高度不足spread）
+      const w = (bbox[2] - bbox[0]) * scale,
+        h = (bbox[3] - bbox[1]) * scale;
       listO.push({
         bbox,
         w,
@@ -990,11 +990,9 @@ function createInOverlay(
     for (let j = 0, len2 = Math.ceil(w2 / unit); j < len2; j++) {
       let x1 = Math.max(bboxR[0], x + j * unit / scale - spread),
         y1 = Math.max(bboxR[1], y + i * UNIT / scale - spread * 2);
-      let x2 = Math.min(bboxR[2], x1 + unit + spread * 2),
+      let x2 = Math.min(bboxR[2], x1 + unit / scale + spread * 2),
         y2 = Math.min(bboxR[3], y1 + spread * 4);
       const bbox = new Float64Array([x1, y1, x2, y2]);
-      const w = (bbox[2] - bbox[0]) * scale,
-        h = (bbox[3] - bbox[1]) * scale;
       if (x1 > bboxR[2] - spread * 2) {
         x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
         x2 = bbox[2] = bboxR[2];
@@ -1003,6 +1001,8 @@ function createInOverlay(
         y1 = bbox[1] = Math.max(bboxR[1], bboxR[3] - spread * 2);
         y2 = bbox[3] = bboxR[3];
       }
+      const w = (bbox[2] - bbox[0]) * scale,
+        h = (bbox[3] - bbox[1]) * scale;
       listO.push({
         bbox,
         w,
@@ -1295,7 +1295,7 @@ function genMotionBlur(
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
-    const tex = drawMotion(gl, programMotion, t, spread, radian, w, h);
+    const tex = drawMotion(gl, programMotion, t, spread * 0.5 * scale, radian, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1354,7 +1354,7 @@ function genMotionBlur(
       }
       if (hasDraw) {
         gl.useProgram(programMotion);
-        item.t = drawMotion(gl, programMotion, t, spread, radian, w, h);
+        item.t = drawMotion(gl, programMotion, t, spread * 0.5 * scale, radian, w, h);
       }
       gl.deleteTexture(t);
     }
@@ -1378,10 +1378,7 @@ function genRadialBlur(
   scale: number,
 ) {
   const bboxS = textureTarget.bbox;
-  const sx = Math.ceil(bboxS[2] - bboxS[0]),
-    sy = Math.ceil(bboxS[3] - bboxS[1]),
-    sz = Math.ceil(Math.sqrt(sx * sx + sy * sy) * 0.02);
-  const d = kernelSize(sigma + sz);
+  const d = kernelSize(sigma);
   const spread = outerSizeByD(d);
   const bboxR = bboxS.slice(0);
   bboxR[0] -= spread;
@@ -1413,9 +1410,11 @@ function genRadialBlur(
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
+    const w2 = bbox[2] - bbox[0],
+      h2 = bbox[3] - bbox[1];
     const center2 = [
-      cx0 / (bbox[2] - bbox[0]) - (bbox[0] / w),
-      cy0 / (bbox[3] - bbox[1]) - (bbox[1] / h),
+      (cx0 - bbox[0]) / w2,
+      (cy0 - bbox[1]) / h2,
     ] as [number, number];
     const tex = drawRadial(gl, programRadial, t, spread * scale, center2, w, h);
     listR.push({
@@ -1441,8 +1440,8 @@ function genRadialBlur(
       );
       gl.viewport(0, 0, w, h);
       const center2 = [
-        cx0 / (bbox[2] - bbox[0]) - (bbox[0] / w),
-        cy0 / (bbox[3] - bbox[1]) - (bbox[1] / h),
+        (cx0 - bbox[0]) / w2,
+        (cy0 - bbox[1]) / h2,
       ] as [number, number];
       const cx = w * 0.5,
         cy = h * 0.5;
@@ -1480,7 +1479,7 @@ function genRadialBlur(
       }
       if (hasDraw) {
         gl.useProgram(programRadial);
-        item.t = drawRadial(gl, programRadial, t, spread, center2, w, h);
+        item.t = drawRadial(gl, programRadial, t, spread * scale, center2, w, h);
       }
       gl.deleteTexture(t);
     }

@@ -477,7 +477,7 @@ export function drawMotion(
   program: WebGLProgram,
   texture: WebGLTexture,
   kernel: number,
-  angle: number,
+  radian: number,
   w: number,
   h: number,
 ) {
@@ -499,8 +499,8 @@ export function drawMotion(
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
-  const sin = Math.sin(angle) * kernel / h;
-  const cos = Math.cos(angle) * kernel / w;
+  const sin = Math.sin(radian) * kernel / h;
+  const cos = Math.cos(radian) * kernel / w;
   const u_velocity = gl.getUniformLocation(program, 'u_velocity');
   gl.uniform2f(u_velocity, cos, sin);
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
@@ -566,14 +566,11 @@ export function drawRadial(
   const u_center = gl.getUniformLocation(program, 'u_center');
   gl.uniform2f(u_center, center[0], center[1]);
   const u_size = gl.getUniformLocation(program, 'u_size');
-  gl.uniform3f(u_size, w, h, Math.sqrt(w * w + h * h));
+  gl.uniform2f(u_size, w, h);
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
   let res = texture;
   const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收
   for (let i = 0; i < 3; i++) {
-    if (i) {
-      gl.uniform1i(u_kernel, kernel * 0.25);
-    }
     const t = createTexture(gl, 0, undefined, w, h);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
