@@ -45,7 +45,7 @@ import { Struct } from './struct';
 import TextureCache from './TextureCache';
 import CanvasCache from './CanvasCache';
 
-export const DELTA_TIME = 160;
+export const DELTA_TIME = 16;
 
 export type Merge = {
   i: number;
@@ -151,7 +151,7 @@ export function genMerge(
       if (maskMode === MASK.ALPHA && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         node.textureTarget[scaleIndex] = undefined;
-      } else if (maskMode === MASK.OUTLINE && (!computedStyle.visible || computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
+      } else if (maskMode === MASK.OUTLINE && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         if (!computedStyle.visible || computedStyle.opacity === 0) {
           node.textureTarget[scaleIndex] = undefined;
@@ -273,7 +273,7 @@ export function genMerge(
       breakMerge = mergeList.slice(j);
       break;
     }
-    let res: TextureCache | undefined;console.log(i, node.props.name)
+    let res: TextureCache | undefined;
     // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
     if (!node.textureTotal[scaleIndex]?.available) {
       const t = genTotal(
@@ -288,7 +288,7 @@ export function genMerge(
         scale,
         scaleIndex,
       );
-      if (t) {console.log('genTotal')
+      if (t) {
         node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
         firstMerge = false;
@@ -297,7 +297,7 @@ export function genMerge(
     // 生成filter，这里直接进去，如果没有filter会返回空，group的tint也视作一种filter
     if (node.textureTarget[scaleIndex] && !node.textureFilter[scaleIndex]?.available) {
       const t = genFilter(gl, root, node, W, H, scale, scaleIndex);
-      if (t) {console.log('genFilter')
+      if (t) {
         node.textureFilter[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
         firstMerge = false;
@@ -319,7 +319,7 @@ export function genMerge(
         scale,
         scaleIndex,
       );
-      if (t) {console.log('genMask')
+      if (t) {
         node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
         firstMerge = false;
@@ -936,27 +936,33 @@ function drawInSpreadBbox(
 function createInOverlay(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
   res: TextureCache,
-  x: number, y: number, scale: number,
-  w2: number, h2: number, spread: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  scale: number,
+  spread: number, // 不考虑scale
 ) {
   const UNIT = config.canvasSize;
-  const unit = UNIT - spread * scale * 2;
+  const unit = UNIT - spread * scale * 2; // 去除spread的单位
   const listO: {
     bbox: Float64Array,
     w: number, h: number,
-    x1: number, y1: number, x2: number, y2: number,
+    x1: number, y1: number, x2: number, y2: number, // 中间覆盖渲染的部分
     t: WebGLTexture,
   }[] = [];
   const bboxR = res.bbox;
+  const w2 = w * scale,
+    h2 = h * scale;
   // 左右2个之间的交界处需要重新blur的，宽度是spread*4，中间一半是需要的，上下则UNIT各缩spread到unit
   for (let i = 0, len = Math.ceil(h2 / unit); i < len; i++) {
     for (let j = 1, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
-      let x1 = Math.max(bboxR[0], x / scale + j * UNIT / scale - spread * 2),
-        y1 = Math.max(bboxR[1], y / scale + i * unit / scale - spread);
+      let x1 = Math.max(bboxR[0], x + j * UNIT / scale - spread * 2),
+        y1 = Math.max(bboxR[1], y + i * unit / scale - spread);
       let x2 = Math.min(bboxR[2], x1 + spread * 4),
-        y2 = Math.min(bboxR[3], x1 + unit + spread * 2);
+        y2 = Math.min(bboxR[3], y1 + unit + spread * 2);
       const bbox = new Float64Array([x1, y1, x2, y2]);
-      // 边界处假如尺寸不够，要往回（左上）收缩，避免比如最下方很矮很细的一点点尺寸
+      // 边界处假如尺寸不够，要往回（左上）收缩，避免比如最下方很细的长条（高度不足spread）
       const w = (bbox[2] - bbox[0]) * scale,
         h = (bbox[3] - bbox[1]) * scale;
       if (x1 > bboxR[2] - spread * 2) {
@@ -973,17 +979,17 @@ function createInOverlay(
         h,
         t: createTexture(gl, 0, undefined, w, h),
         x1: Math.max(bboxR[0], x1 + spread),
-        y1: Math.max(bboxR[1], y1 + spread),
-        x2: Math.min(bboxR[2], x1 + spread * 3),
-        y2: Math.min(bboxR[3], y1 + unit + spread),
+        y1: Math.max(bboxR[1], i ? (y1 + spread) : y1),
+        x2: Math.min(bboxR[2], x2 - spread),
+        y2: Math.min(bboxR[3], (i === len - 1) ? y2 : (y1 + unit + spread)),
       });
     }
   }
   // 上下2个之间的交界处需要重新blur的，高度是spread*4，中间一半是需要的，左右则UNIT各缩spread到unit
   for (let i = 1, len = Math.ceil(h2 / UNIT); i < len; i++) {
     for (let j = 0, len2 = Math.ceil(w2 / unit); j < len2; j++) {
-      let x1 = Math.max(bboxR[0], x / scale + j * unit / scale - spread),
-        y1 = Math.max(bboxR[1], y / scale + i * UNIT / scale - spread * 2);
+      let x1 = Math.max(bboxR[0], x + j * unit / scale - spread),
+        y1 = Math.max(bboxR[1], y + i * UNIT / scale - spread * 2);
       let x2 = Math.min(bboxR[2], x1 + unit + spread * 2),
         y2 = Math.min(bboxR[3], y1 + spread * 4);
       const bbox = new Float64Array([x1, y1, x2, y2]);
@@ -1002,10 +1008,10 @@ function createInOverlay(
         w,
         h,
         t: createTexture(gl, 0, undefined, w, h),
-        x1: Math.max(bboxR[0], x1 + spread),
+        x1: Math.max(bboxR[0], j ? (x1 + spread) : x1),
         y1: Math.max(bboxR[1], y1 + spread),
-        x2: Math.min(bboxR[2], x1 + unit + spread),
-        y2: Math.min(bboxR[3], y1 + spread * 3),
+        x2: Math.min(bboxR[2], (j === len2 - 1) ? x2 : (x1 + unit + spread)),
+        y2: Math.min(bboxR[3], y2 - spread),
       });
     }
   }
@@ -1061,7 +1067,7 @@ function drawInOverlay(
       }
       const w3 = bbox3[2] - bbox3[0],
         h3 = bbox3[3] - bbox3[1];
-      if (checkInRect(bbox, undefined, bbox3[0] * scale, bbox3[1] * scale, w3, h3)) {
+      if (checkInRect(bbox, undefined, bbox3[0], bbox3[1], w3, h3)) {
         drawTextureCache(
           gl,
           cx,
@@ -1070,13 +1076,18 @@ function drawInOverlay(
           [
             {
               opacity: 1,
-              bbox: bbox3,
+              bbox: new Float64Array([
+                bbox3[0] * scale,
+                bbox3[1] * scale,
+                bbox3[2] * scale,
+                bbox3[3] * scale,
+              ]),
               texture: t2,
               tc: {
-                x1: (bbox3[0] === bboxR[0] ? 0 : spread) / w2,
-                y1: (bbox3[1] === bboxR[1] ? 0 : spread) / h2,
-                x3: (bbox3[2] === bboxR[2] ? w2 : (w2 - spread)) / w2,
-                y3: (bbox3[3] === bboxR[3] ? h2 : (h2 - spread)) / h2,
+                x1: (bbox3[0] === bboxR[0] ? 0 : spread * scale) / w2,
+                y1: (bbox3[1] === bboxR[1] ? 0 : spread * scale) / h2,
+                x3: (bbox3[2] === bboxR[2] ? w2 : (w2 - spread * scale)) / w2,
+                y3: (bbox3[3] === bboxR[3] ? h2 : (h2 - spread * scale)) / h2,
               },
             },
           ],
@@ -1115,14 +1126,14 @@ function genGaussBlur(
   bboxR[0] -= spread;
   bboxR[1] -= spread;
   bboxR[2] += spread;
-  bboxR[3] += spread;console.log(bboxR.join(','), scale)
+  bboxR[3] += spread;
   // 写到一个扩展好尺寸的tex中方便后续处理
   const x = bboxR[0],
     y = bboxR[1];
   const w = bboxR[2] - bboxR[0],
     h = bboxR[3] - bboxR[1];
-  const x2 = x * scale,
-    y2 = y * scale;
+  // const x2 = x * scale,
+  //   y2 = y * scale;
   const w2 = w * scale,
     h2 = h * scale;
   const programs = root.programs;
@@ -1148,9 +1159,9 @@ function genGaussBlur(
     });
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
-  if (listT.length > 1) {console.log(listT.slice(0), x2, y2, scale, w2, h2, spread)
-    const listO = createInOverlay(gl, res, x2, y2, scale, w2, h2, spread);
-    console.log(listO);
+  if (listT.length > 1) {
+    const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
+    // 遍历这些相邻部分，先绘制原始图像
     for (let i = 0, len = listO.length; i < len; i++) {
       const item = listO[i];
       const { bbox, w, h, t } = item;
@@ -1168,8 +1179,10 @@ function genGaussBlur(
       let hasDraw = false;
       // 用temp而非原始的，因为位图存在缩放，bbox会有误差
       for (let j = 0, len = listT.length; j < len; j++) {
-        const { bbox: bbox2, w: w2, h: h2, t: t2 } = listT[j];
-        if (checkInRect(bbox, undefined, bbox2[0] * scale, bbox2[1] * scale, w2, h2)) {
+        const { bbox: bbox2, t: t2 } = listT[j];
+        const w2 = bbox2[2] - bbox2[0],
+          h2 = bbox2[3] - bbox2[1];
+        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
             cx,
@@ -1195,12 +1208,14 @@ function genGaussBlur(
           hasDraw = true;
         }
       }
+      // 一定会有，没有就是计算错了，这里预防下
       if (hasDraw) {
         gl.useProgram(programGauss);
         item.t = drawGauss(gl, programGauss, t, w, h);
       }
       gl.deleteTexture(t);
     }
+    // 所有相邻部分回填
     drawInOverlay(gl, program, scale, res, listO, bboxR, spread);
   }
   // 删除fbo恢复
@@ -1262,8 +1277,8 @@ function genMotionBlur(
     y = bboxR[1];
   const w = bboxR[2] - bboxR[0],
     h = bboxR[3] - bboxR[1];
-  const x2 = x * scale,
-    y2 = y * scale;
+  // const x2 = x * scale,
+  //   y2 = y * scale;
   const w2 = w * scale,
     h2 = h * scale;
   const programs = root.programs;
@@ -1290,7 +1305,7 @@ function genMotionBlur(
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
   if (listT.length > 1) {
-    const listO = createInOverlay(gl, res, x2, y2, scale, w2, h2, spread);
+    const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
     for (let i = 0, len = listO.length; i < len; i++) {
       const item = listO[i];
       const { bbox, w, h, t } = item;
@@ -1308,7 +1323,9 @@ function genMotionBlur(
       let hasDraw = false;
       // 用temp而非原始的，因为位图存在缩放，bbox会有误差
       for (let j = 0, len = listT.length; j < len; j++) {
-        const { bbox: bbox2, w: w2, h: h2, t: t2 } = listT[j];
+        const { bbox: bbox2, t: t2 } = listT[j];
+        const w2 = bbox2[2] - bbox2[0],
+          h2 = bbox2[3] - bbox2[1];
         if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
@@ -1318,12 +1335,17 @@ function genMotionBlur(
             [
               {
                 opacity: 1,
-                bbox: bbox2,
+                bbox: new Float64Array([
+                  bbox2[0] * scale,
+                  bbox2[1] * scale,
+                  bbox2[2] * scale,
+                  bbox2[3] * scale,
+                ]),
                 texture: t2,
               },
             ],
-            -bbox[0],
-            -bbox[1],
+            -bbox[0] * scale,
+            -bbox[1] * scale,
             false,
             -1, -1, 1, 1,
           );
@@ -1371,8 +1393,8 @@ function genRadialBlur(
     y = bboxR[1];
   const w = bboxR[2] - bboxR[0],
     h = bboxR[3] - bboxR[1];
-  const x2 = x * scale,
-    y2 = y * scale;
+  // const x2 = x * scale,
+  //   y2 = y * scale;
   const w2 = w * scale,
     h2 = h * scale;
   const programs = root.programs;
@@ -1405,7 +1427,7 @@ function genRadialBlur(
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
   if (listT.length > 1) {
-    const listO = createInOverlay(gl, res, x2, y2, scale, w2, h2, spread);
+    const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
     for (let i = 0, len = listO.length; i < len; i++) {
       const item = listO[i];
       const { bbox, w, h, t } = item;
@@ -1427,8 +1449,10 @@ function genRadialBlur(
       let hasDraw = false;
       // 用temp而非原始的，因为位图存在缩放，bbox会有误差
       for (let j = 0, len = listT.length; j < len; j++) {
-        const { bbox: bbox2, w: w2, h: h2, t: t2 } = listT[j];
-        if (checkInRect(bbox, undefined, bbox2[0] * scale, bbox2[1] * scale, w2, h2)) {
+        const { bbox: bbox2, t: t2 } = listT[j];
+        const w2 = bbox2[2] - bbox2[0],
+          h2 = bbox2[3] - bbox2[1];
+        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
             cx,
@@ -1437,7 +1461,12 @@ function genRadialBlur(
             [
               {
                 opacity: 1,
-                bbox: bbox2,
+                bbox: new Float64Array([
+                  bbox2[0] * scale,
+                  bbox2[1] * scale,
+                  bbox2[2] * scale,
+                  bbox2[3] * scale,
+                ]),
                 texture: t2,
               },
             ],
@@ -1726,8 +1755,8 @@ function genShadow(
       y = bboxR[1];
     const w = bboxR[2] - bboxR[0],
       h = bboxR[3] - bboxR[1];
-    const x2 = x * scale,
-      y2 = y * scale;
+    // const x2 = x * scale,
+    //   y2 = y * scale;
     const w2 = w * scale,
       h2 = h * scale;
     const temp = TextureCache.getEmptyInstance(gl, bboxR);
@@ -1784,7 +1813,7 @@ function genShadow(
         });
       }
       if (listR.length > 1) {
-        const listO = createInOverlay(gl, temp, x2, y2, scale, w2, h2, spread);
+        const listO = createInOverlay(gl, temp, x, y, w, h, scale, spread);
         for (let i = 0, len = listO.length; i < len; i++) {
           const item = listO[i];
           const { bbox, w, h, t } = item;
