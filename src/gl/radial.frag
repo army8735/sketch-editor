@@ -15,13 +15,16 @@ const int MAX_KERNEL_SIZE = 2048;
 void main(void) {
   vec4 color = texture2D(u_texture, v_texCoords);
   int k = u_kernel - 1;
-  for(int i = 0; i < MAX_KERNEL_SIZE - 1; i++) {
+  for(int i = 1; i < MAX_KERNEL_SIZE - 1; i++) {
     if (i == k) {
       break;
     }
-    vec2 velocity = (u_center - v_texCoords) * float(u_kernel * 2) / u_size;
-    vec2 bias = velocity * (float(i) / float(k));
-    color += texture2D(u_texture, v_texCoords + bias);
+    vec2 velocity = v_texCoords - u_center;
+    vec2 velocity2 = velocity * u_size;
+    float dist = length(velocity2);
+    float ratio = float(i) / dist;
+    vec2 bias = v_texCoords + velocity * ratio;
+    color += texture2D(u_texture, bias);
   }
   gl_FragColor = color / float(u_kernel);
 }

@@ -477,7 +477,7 @@ export function drawMotion(
   program: WebGLProgram,
   texture: WebGLTexture,
   kernel: number,
-  angle: number,
+  radian: number,
   w: number,
   h: number,
 ) {
@@ -499,8 +499,8 @@ export function drawMotion(
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
-  const sin = Math.sin(angle) * kernel / h;
-  const cos = Math.cos(angle) * kernel / w;
+  const sin = Math.sin(radian) * kernel / h;
+  const cos = Math.cos(radian) * kernel / w;
   const u_velocity = gl.getUniformLocation(program, 'u_velocity');
   gl.uniform2f(u_velocity, cos, sin);
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
@@ -562,7 +562,7 @@ export function drawRadial(
   gl.enableVertexAttribArray(a_texCoords);
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
-  gl.uniform1i(u_kernel, kernel >> 1); // 转半径，自动奇数变偶数
+  gl.uniform1i(u_kernel, kernel);
   const u_center = gl.getUniformLocation(program, 'u_center');
   gl.uniform2f(u_center, center[0], center[1]);
   const u_size = gl.getUniformLocation(program, 'u_size');
@@ -598,6 +598,40 @@ export function drawRadial(
     }
   });
   return res;
+}
+
+export function drawShadow(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: WebGLProgram,
+  texture: WebGLTexture,
+  color: number[],
+  w: number,
+  h: number,
+) {
+  const { vtPoint, vtTex } = getSingleCoords();
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  const texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  bindTexture(gl, texture, 0);
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
+  gl.uniform1i(u_texture, 0);
+  // shadow颜色
+  const u_color = gl.getUniformLocation(program, 'u_color');
+  const a = color[3];
+  gl.uniform4f(u_color, color[0] * a, color[1] * a, color[2] * a, a);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
 export const drawMbm = drawMask;
@@ -701,8 +735,9 @@ export function convertCoords2Gl(
 }
 
 /**
- * 这里的换算非常绕，bbox是节点本身不包含缩放画布的scale的，dx/dy同样，参与和bbox的偏移计算，
- * matrix是最终世界matrix，包含了画布缩放的scale（PageContainer上），因此坐标是bbox乘matrix
+ * 这里的换算非常绕，bbox是节点本身不包含缩放画布的scale的，参与和bbox的偏移计算，
+ * matrix是最终世界matrix，包含了画布缩放的scale（PageContainer上），因此坐标是bbox乘matrix，
+ * dx/dy不参与matrix计算
  */
 export function bbox2Coords(
   bbox: Float64Array,
@@ -714,17 +749,17 @@ export function bbox2Coords(
   matrix?: Float64Array,
 ) {
   const t = calRectPoints(
-    bbox[0] + dx,
-    bbox[1] + dy,
-    bbox[2] + dx,
-    bbox[3] + dy,
+    bbox[0],
+    bbox[1],
+    bbox[2],
+    bbox[3],
     matrix,
   );
   const { x1, y1, x2, y2, x3, y3, x4, y4 } = t;
-  const t1 = convertCoords2Gl(x1, y1, cx, cy, flipY);
-  const t2 = convertCoords2Gl(x2, y2, cx, cy, flipY);
-  const t3 = convertCoords2Gl(x3, y3, cx, cy, flipY);
-  const t4 = convertCoords2Gl(x4, y4, cx, cy, flipY);
+  const t1 = convertCoords2Gl(x1 + dx, y1 + dy, cx, cy, flipY);
+  const t2 = convertCoords2Gl(x2 + dx, y2 + dy, cx, cy, flipY);
+  const t3 = convertCoords2Gl(x3 + dx, y3 + dy, cx, cy, flipY);
+  const t4 = convertCoords2Gl(x4 + dx, y4 + dy, cx, cy, flipY);
   return { t1, t2, t3, t4 };
 }
 

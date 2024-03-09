@@ -1,8 +1,6 @@
 import gaussFrag from '../gl/gauss.frag';
 import simpleVert from '../gl/simple.vert';
 import {
-  bbox2Coords,
-  bindTexture,
   createTexture,
   drawColorMatrix,
   drawGauss,
@@ -12,6 +10,7 @@ import {
   drawRadial,
   drawTextureCache,
   drawTint,
+  drawShadow,
   initShaders,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
@@ -44,6 +43,7 @@ import inject from '../util/inject';
 import { RefreshLevel } from './level';
 import { Struct } from './struct';
 import TextureCache from './TextureCache';
+import CanvasCache from './CanvasCache';
 
 export const DELTA_TIME = 16;
 
@@ -146,15 +146,15 @@ export function genMerge(
     let needMask =
       maskMode > 0 &&
       (!textureMask[scaleIndex] || !textureMask[scaleIndex]?.available);
-    // 单个的alpha蒙版不渲染，outline不可见蒙版不渲染
+    // 单个的alpha蒙版不渲染，target指向空的mask纹理汇总，循环时判空跳过，outline不可见蒙版不渲染
     if (needMask) {
       if (maskMode === MASK.ALPHA && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
-        node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+        node.textureTarget[scaleIndex] = undefined;
       } else if (maskMode === MASK.OUTLINE && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         if (!computedStyle.visible || computedStyle.opacity === 0) {
-          node.textureTarget[scaleIndex] = textureMask[scaleIndex];
+          node.textureTarget[scaleIndex] = undefined;
         } else {
           node.resetTextureTarget();
         }
@@ -211,7 +211,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
-  // console.warn(mergeList);
+  console.warn('mergeList', mergeList);
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
@@ -234,7 +234,7 @@ export function genMerge(
     const item = mergeList[j];
     const { node, isTop, i, lv, total } = item;
     if (isTop) {
-      if (checkInWorldRect(node.tempBbox!, node.matrixWorld, x1, y1, x2, y2)) {
+      if (checkInRect(node.tempBbox!, node.matrixWorld, x1, y1, x2, y2)) {
         // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
         setValid(item);
         // 如果是mask，还要看其是否影响被遮罩的merge，可能被遮罩在屏幕外面不可见
@@ -269,7 +269,6 @@ export function genMerge(
     if ((!visible || opacity <= 0) && !maskMode) {
       continue;
     }
-    // console.log(i, firstMerge, (Date.now() - startTime), (Date.now() - startTime) > DELTA_TIME, node.props.name)
     if (!firstMerge && (Date.now() - startTime) > DELTA_TIME) {
       breakMerge = mergeList.slice(j);
       break;
@@ -283,7 +282,6 @@ export function genMerge(
         node,
         structs,
         i,
-        lv,
         total,
         W,
         H,
@@ -419,16 +417,16 @@ function mergeBbox(bbox: Float64Array, t: Float64Array, matrix: Float64Array) {
 
 export function checkInScreen(
   bbox: Float64Array,
-  matrix: Float64Array,
+  matrix: Float64Array | undefined,
   width: number,
   height: number,
 ) {
-  return checkInWorldRect(bbox, matrix, 0, 0, width, height);
+  return checkInRect(bbox, matrix, 0, 0, width, height);
 }
 
-export function checkInWorldRect(
+export function checkInRect(
   bbox: Float64Array,
-  matrix: Float64Array,
+  matrix: Float64Array | undefined,
   x: number,
   y: number,
   width: number,
@@ -481,7 +479,6 @@ function genTotal(
   node: Node,
   structs: Struct[],
   index: number,
-  lv: number,
   total: number,
   W: number,
   H: number,
@@ -494,6 +491,10 @@ function genTotal(
   }
   const bbox = node.tempBbox!;
   node.tempBbox = undefined;
+  bbox[0] = Math.floor(bbox[0]);
+  bbox[1] = Math.floor(bbox[1]);
+  bbox[2] = Math.ceil(bbox[2]);
+  bbox[3] = Math.ceil(bbox[3]);
   // 单个叶子节点也不需要，就是本身节点的内容
   if (!total || node.isShapeGroup) {
     let target = node.textureCache[scaleIndex];
@@ -503,43 +504,51 @@ function genTotal(
     }
     return target;
   }
-  bbox[0] = Math.floor(bbox[0]);
-  bbox[1] = Math.floor(bbox[1]);
-  bbox[2] = Math.ceil(bbox[2]);
-  bbox[3] = Math.ceil(bbox[3]);
   const programs = root.programs;
   const program = programs.program;
   // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
   const x = bbox[0],
     y = bbox[1];
-  let w = bbox[2] - x,
-    h = bbox[3] - y;
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
+  const x2 = x * scale,
+    y2 = y * scale;
+  const w = Math.ceil(bbox[2] - x),
+    h = Math.ceil(bbox[3] - y);
+  const w2 = w * scale,
+    h2 = h * scale;
+  const res = TextureCache.getEmptyInstance(gl, bbox);
+  const list = res.list;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  const UNIT = config.canvasSize;
+  const listRect: { x: number, y: number }[] = [];
+  // 要先按整数创建纹理块，再反向计算bbox（真实尺寸/scale），创建完再重新遍历按节点顺序渲染，因为有bgBlur存在
+  for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
+    for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
+      const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
+      const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
+      const t = createTexture(gl, 0, undefined, width, height);
+      const x0 = x + j * UNIT / scale,
+        y0 = y + i * UNIT / scale;
+      const w0 = width / scale,
+        h0 = height / scale;
+      const bbox = new Float64Array([
+        x0,
+        y0,
+        x0 + w0,
+        y0 + h0,
+      ]);
+      list.push({
+        bbox,
+        w: width,
+        h: height,
+        t,
+      });
+      // checkInRect用
+      const x1 = x2 + j * UNIT,
+        y1 = y2 + i * UNIT;
+      listRect.push({ x: x1, y: y1 });
     }
-    scale = scale >> 1;
   }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE ||
-    !w ||
-    !h
-  ) {
-    return;
-  }
-  const dx = -x,
-    dy = -y;
-  w *= scale;
-  h *= scale;
-  const cx = w * 0.5,
-    cy = h * 0.5;
-  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-  // 和主循环很类似的，但是以此节点为根视作opacity=1和matrix=E
+  // 再外循环按节点序，内循环按分块，确保节点序内容先渲染，从而正确生成分块的bgBlur
   for (let i = index, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
     const computedStyle = node2.computedStyle;
@@ -557,7 +566,7 @@ function genTotal(
     if (node2.isBitmap && (node2 as Bitmap).checkLoader()) {
       root.imgLoadList.push(node2 as Bitmap);
     }
-    let opacity, matrix;
+    let opacity: number, matrix: Float64Array;
     // 首个节点即局部根节点，需要考虑scale放大
     if (i === index) {
       opacity = node2.tempOpacity = 1;
@@ -567,18 +576,18 @@ function genTotal(
     // 子节点的matrix计算比较复杂，可能dx/dy不是0原点，造成transformOrigin偏移需重算matrix
     else {
       const parent = node2.parent!;
-      opacity = computedStyle.opacity * parent.tempOpacity;
-      node2.tempOpacity = opacity;
-      if (dx || dy) {
+      opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
+      if (x || y) {
         const transform = node2.transform;
         const tfo = computedStyle.transformOrigin;
-        const t = calMatrixByOrigin(transform, tfo[0] + dx, tfo[1] + dy);
-        matrix = multiply(parent.tempMatrix, t);
-      } else {
+        const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
+        matrix = multiply(parent.tempMatrix, m);
+      }
+      else {
         matrix = multiply(parent.tempMatrix, node2.matrix);
       }
-      assignMatrix(node2.tempMatrix, matrix);
     }
+    assignMatrix(node2.tempMatrix, matrix);
     let target2 = node2.textureTarget[scaleIndex];
     // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
     if (!target2 && node2.hasContent) {
@@ -587,80 +596,85 @@ function genTotal(
     }
     if (target2 && target2.available) {
       const { mixBlendMode, blur } = computedStyle;
-      // 同主循环的bgBlur
-      if (isBgBlur) {
-        const outline = (node2.textureOutline = genOutline(
-          gl,
-          node2,
-          structs,
-          i,
-          total,
-          target2.bbox,
-          scale,
-        ));
+      // 同主循环的bgBlur，先提取总的outline，在分块渲染时每块单独对背景blur
+      if (isBgBlur && i > index) {
+        const outline = node.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
         // outline会覆盖这个值，恶心
         assignMatrix(node2.tempMatrix, matrix);
-        if (outline) {
-          genBgBlur(
-            gl,
-            target.texture,
-            matrix,
-            outline,
-            target2,
-            blur,
-            programs,
-            scale,
-            cx,
-            cy,
-            w,
-            h,
-            dx,
-            dy,
-          );
+        genBgBlur(gl, root, res, matrix, outline, blur, programs, scale, w, h);
+        if (frameBuffer) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
         }
       }
-      let tex: WebGLTexture | undefined;
-      // 有mbm先将本节点内容绘制到同尺寸纹理上
-      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
-        tex = createTexture(gl, 0, undefined, w, h);
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          tex,
-          0,
-        );
-      }
-      // 有无mbm都复用这段逻辑
-      drawTextureCache(
-        gl,
-        cx,
-        cy,
-        program,
-        [
-          {
-            opacity,
-            matrix,
-            bbox: target2.bbox,
-            texture: target2.texture,
-          },
-        ],
-        dx,
-        dy,
-        false,
-        -1, -1, 1, 1,
-      );
-      // 这里才是真正生成mbm
-      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
-        target.texture = genMbm(
-          gl,
-          target.texture,
-          tex,
-          mixBlendMode,
-          programs,
-          w,
-          h,
-        );
+      const list2 = target2.list;
+      // 内循环目标分块
+      for (let j = 0, len = list.length; j < len; j++) {
+        const area = list[j];
+        const rect = listRect[j];
+        const { w, h, t } = area;
+        if (frameBuffer) {
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            t,
+            0,
+          );
+          gl.viewport(0, 0, w, h);
+        } else {
+          frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
+        }
+        const cx = w * 0.5,
+          cy = h * 0.5;
+        // 再循环当前target的分块
+        for (let k = 0, len = list2.length; k < len; k++) {
+          const { bbox: bbox2, t: t2 } = list2[k];
+          if (checkInRect(bbox2, matrix, rect.x, rect.y, w, h)) {
+            let tex: WebGLTexture | undefined;
+            // 有mbm先将本节点内容绘制到同尺寸纹理上
+            if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+              tex = createTexture(gl, 0, undefined, w, h);
+              gl.framebufferTexture2D(
+                gl.FRAMEBUFFER,
+                gl.COLOR_ATTACHMENT0,
+                gl.TEXTURE_2D,
+                tex,
+                0,
+              );
+            }
+            // 有无mbm都复用这段逻辑
+            drawTextureCache(
+              gl,
+              cx,
+              cy,
+              program,
+              [
+                {
+                  opacity,
+                  matrix,
+                  bbox: bbox2,
+                  texture: t2,
+                },
+              ],
+              -rect.x,
+              -rect.y,
+              false,
+              -1, -1, 1, 1,
+            );
+            // 这里才是真正生成mbm
+            if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
+              area.t = genMbm(
+                gl,
+                t,
+                tex,
+                mixBlendMode,
+                programs,
+                w,
+                h,
+              );
+            }
+          }
+        }
       }
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
@@ -676,8 +690,8 @@ function genTotal(
     }
   }
   // 删除fbo恢复
-  releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target;
+  releaseFrameBuffer(gl, frameBuffer!, W, H);
+  return res;
 }
 
 export function genFrameBufferWithTexture(
@@ -757,7 +771,6 @@ function genFilter(
         fillOpacity[0],
         W,
         H,
-        scale,
       );
     }
   }
@@ -767,9 +780,9 @@ function genFilter(
       sd.push(item);
     }
   });
-  // 2种阴影不能互相干扰，因此都以原本图像为基准生成，最后统一绘入原图
+  // 内阴影由canvas实现，这里只有外阴影，以原本图像为基准生成，最后统一绘入原图
   if (sd.length) {
-    let t = genShadow(gl, root, res || source, sd, W, H, scale);
+    const t = genShadow(gl, root, res || source, sd, W, H, scale);
     if (res) {
       res.release();
     }
@@ -777,7 +790,7 @@ function genFilter(
   }
   // 高斯模糊
   if (blur.t === BLUR.GAUSSIAN && blur.radius >= 1) {
-    let t = genGaussBlur(gl, root, res || source, blur.radius, W, H, scale);
+    const t = genGaussBlur(gl, root, res || source, blur.radius, W, H, scale);
     if (res) {
       res.release();
     }
@@ -785,7 +798,7 @@ function genFilter(
   }
   // 径向模糊/缩放模糊
   else if (blur.t === BLUR.RADIAL && blur.radius >= 1) {
-    let t = genRadialBlur(
+    const t = genRadialBlur(
       gl,
       root,
       res || source,
@@ -802,7 +815,7 @@ function genFilter(
   }
   // 运动模糊/方向模糊
   else if (blur.t === BLUR.MOTION && blur.radius >= 1) {
-    let t = genMotionBlur(
+    const t = genMotionBlur(
       gl,
       root,
       res || source,
@@ -819,7 +832,7 @@ function genFilter(
   }
   // 颜色调整
   if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
-    let t = genColorMatrix(
+    const t = genColorMatrix(
       gl,
       root,
       res || source,
@@ -829,7 +842,6 @@ function genFilter(
       contrast,
       W,
       H,
-      scale,
     );
     if (res) {
       res.release();
@@ -839,11 +851,263 @@ function genFilter(
   return res;
 }
 
+// 因为blur原因，原本内容先绘入一个更大尺寸的fbo中
+function drawInSpreadBbox(
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  program: WebGLProgram,
+  textureTarget: TextureCache,
+  temp: TextureCache,
+  x: number, y: number, scale: number,
+  w2: number, h2: number,
+) {
+  const UNIT = config.canvasSize;
+  const listS = textureTarget.list;
+  const listT = temp.list;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
+    for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
+      const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
+      const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
+      const t = createTexture(gl, 0, undefined, width, height);
+      const x0 = x + j * UNIT / scale,
+        y0 = y + i * UNIT / scale;
+      const w0 = width / scale,
+        h0 = height / scale;
+      const bbox = new Float64Array([
+        x0,
+        y0,
+        x0 + w0,
+        y0 + h0,
+      ]);
+      const area = {
+        bbox,
+        w: width,
+        h: height,
+        t,
+      };
+      listT.push(area);
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          t,
+          0,
+        );
+        gl.viewport(0, 0, width, height);
+      } else {
+        frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
+      }
+      const cx = width * 0.5,
+        cy = height * 0.5;
+      for (let i = 0, len = listS.length; i < len; i++) {
+        const { bbox: bbox2, t: t2 } = listS[i];
+        if (checkInRect(bbox2, undefined, x0, y0, w0, h0)) {
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                bbox: new Float64Array([
+                  bbox2[0] * scale,
+                  bbox2[1] * scale,
+                  bbox2[2] * scale,
+                  bbox2[3] * scale,
+                ]),
+                texture: t2,
+              },
+            ],
+            -x0 * scale,
+            -y0 * scale,
+            false,
+            -1, -1, 1, 1,
+          );
+        }
+      }
+    }
+  }
+  return frameBuffer!;
+}
+
+// 因blur原因，生成扩展好的尺寸后，交界处根据spread扩展因子，求出交界处的一块范围重叠区域，重新blur并覆盖交界处
+function createInOverlay(
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  res: TextureCache,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  scale: number,
+  spread: number, // 不考虑scale
+) {
+  const UNIT = config.canvasSize;
+  const unit = UNIT - spread * scale * 2; // 去除spread的单位
+  const listO: {
+    bbox: Float64Array,
+    w: number, h: number,
+    x1: number, y1: number, x2: number, y2: number, // 中间覆盖渲染的部分
+    t: WebGLTexture,
+  }[] = [];
+  const bboxR = res.bbox;
+  const w2 = w * scale,
+    h2 = h * scale;
+  // 左右2个之间的交界处需要重新blur的，宽度是spread*4，中间一半是需要的，上下则UNIT各缩spread到unit
+  for (let i = 0, len = Math.ceil(h2 / unit); i < len; i++) {
+    for (let j = 1, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
+      let x1 = Math.max(bboxR[0], x + j * UNIT / scale - spread * 2),
+        y1 = Math.max(bboxR[1], y + i * unit / scale - spread);
+      let x2 = Math.min(bboxR[2], x1 + spread * 4),
+        y2 = Math.min(bboxR[3], y1 + unit / scale + spread * 2);
+      const bbox = new Float64Array([x1, y1, x2, y2]);
+      if (x1 > bboxR[2] - spread * 2) {
+        x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
+        x2 = bbox[2] = bboxR[2];
+      }
+      if (y1 > bboxR[3] - spread * 2) {
+        y1 = bbox[1] = Math.max(bboxR[1], bboxR[3] - spread * 2);
+        y2 = bbox[3] = bboxR[3];
+      }
+      // 边界处假如尺寸不够，要往回（左上）收缩，避免比如最下方很细的长条（高度不足spread）
+      const w = (bbox[2] - bbox[0]) * scale,
+        h = (bbox[3] - bbox[1]) * scale;
+      listO.push({
+        bbox,
+        w,
+        h,
+        t: createTexture(gl, 0, undefined, w, h),
+        x1: Math.max(bboxR[0], x1 + spread),
+        y1: Math.max(bboxR[1], i ? (y1 + spread) : y1),
+        x2: Math.min(bboxR[2], x2 - spread),
+        y2: Math.min(bboxR[3], (i === len - 1) ? y2 : (y1 + unit + spread)),
+      });
+    }
+  }
+  // 上下2个之间的交界处需要重新blur的，高度是spread*4，中间一半是需要的，左右则UNIT各缩spread到unit
+  for (let i = 1, len = Math.ceil(h2 / UNIT); i < len; i++) {
+    for (let j = 0, len2 = Math.ceil(w2 / unit); j < len2; j++) {
+      let x1 = Math.max(bboxR[0], x + j * unit / scale - spread),
+        y1 = Math.max(bboxR[1], y + i * UNIT / scale - spread * 2);
+      let x2 = Math.min(bboxR[2], x1 + unit / scale + spread * 2),
+        y2 = Math.min(bboxR[3], y1 + spread * 4);
+      const bbox = new Float64Array([x1, y1, x2, y2]);
+      if (x1 > bboxR[2] - spread * 2) {
+        x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
+        x2 = bbox[2] = bboxR[2];
+      }
+      if (y1 > bboxR[3] - spread * 2) {
+        y1 = bbox[1] = Math.max(bboxR[1], bboxR[3] - spread * 2);
+        y2 = bbox[3] = bboxR[3];
+      }
+      const w = (bbox[2] - bbox[0]) * scale,
+        h = (bbox[3] - bbox[1]) * scale;
+      listO.push({
+        bbox,
+        w,
+        h,
+        t: createTexture(gl, 0, undefined, w, h),
+        x1: Math.max(bboxR[0], j ? (x1 + spread) : x1),
+        y1: Math.max(bboxR[1], y1 + spread),
+        x2: Math.min(bboxR[2], (j === len2 - 1) ? x2 : (x1 + unit + spread)),
+        y2: Math.min(bboxR[3], y2 - spread),
+      });
+    }
+  }
+  return listO;
+}
+
+// 将交界处单独生成的模糊覆盖掉原本区块模糊的边界
+function drawInOverlay(
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  program: WebGLProgram,
+  scale: number,
+  res: TextureCache,
+  listO: {
+    bbox: Float64Array,
+    w: number, h: number,
+    x1: number, y1: number, x2: number, y2: number,
+    t: WebGLTexture,
+  }[],
+  bboxR: Float64Array,
+  spread: number,
+) {
+  gl.useProgram(program);
+  gl.blendFunc(gl.ONE, gl.ZERO);
+  const listR = res.list;
+  for (let i = 0, len = listR.length; i < len; i++) {
+    const item = listR[i];
+    const { bbox, w, h, t } = item;
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      t,
+      0,
+    );
+    gl.viewport(0, 0, w, h);
+    const cx = w * 0.5,
+      cy = h * 0.5;
+    for (let j = 0, len = listO.length; j < len; j++) {
+      const { bbox: bbox2, w: w2, h: h2, t: t2 } = listO[j];
+      const bbox3 = bbox2.slice(0);
+      // 中间一块儿区域，但是如果是原始图形边界处，不应该取边界
+      if (bbox3[0] !== bboxR[0]) {
+        bbox3[0] += spread;
+      }
+      if (bbox3[1] !== bboxR[1]) {
+        bbox3[1] += spread;
+      }
+      if (bbox3[2] !== bboxR[2]) {
+        bbox3[2] -= spread;
+      }
+      if (bbox3[3] !== bboxR[3]) {
+        bbox3[3] -= spread;
+      }
+      const w3 = bbox3[2] - bbox3[0],
+        h3 = bbox3[3] - bbox3[1];
+      if (checkInRect(bbox, undefined, bbox3[0], bbox3[1], w3, h3)) {
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([
+                bbox3[0] * scale,
+                bbox3[1] * scale,
+                bbox3[2] * scale,
+                bbox3[3] * scale,
+              ]),
+              texture: t2,
+              tc: {
+                x1: (bbox3[0] === bboxR[0] ? 0 : spread * scale) / w2,
+                y1: (bbox3[1] === bboxR[1] ? 0 : spread * scale) / h2,
+                x3: (bbox3[2] === bboxR[2] ? w2 : (w2 - spread * scale)) / w2,
+                y3: (bbox3[3] === bboxR[3] ? h2 : (h2 - spread * scale)) / h2,
+              },
+            },
+          ],
+          -bbox[0] * scale,
+          -bbox[1] * scale,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
+    }
+  }
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  listO.forEach(item => gl.deleteTexture(item.t));
+}
+
 /**
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
  * 按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
  * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
- * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
+ * 先动态生成gl程序，根据sigma获得d（一定奇数，省略偶数情况），再计算权重
  * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
  */
 function genGaussBlur(
@@ -855,73 +1119,110 @@ function genGaussBlur(
   H: number,
   scale: number,
 ) {
-  const d = kernelSize(sigma * scale);
+  const d = kernelSize(sigma);
   const spread = outerSizeByD(d);
-  const bbox = textureTarget.bbox.slice(0);
-  bbox[0] -= spread;
-  bbox[1] -= spread;
-  bbox[2] += spread;
-  bbox[3] += spread;
+  const bboxS = textureTarget.bbox;
+  const bboxR = bboxS.slice(0);
+  bboxR[0] -= spread;
+  bboxR[1] -= spread;
+  bboxR[2] += spread;
+  bboxR[3] += spread;
   // 写到一个扩展好尺寸的tex中方便后续处理
-  const x = bbox[0],
-    y = bbox[1];
-  let w = bbox[2] - bbox[0],
-    h = bbox[3] - bbox[1];
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
+  const x = bboxR[0],
+    y = bboxR[1];
+  const w = bboxR[2] - bboxR[0],
+    h = bboxR[3] - bboxR[1];
+  // const x2 = x * scale,
+  //   y2 = y * scale;
+  const w2 = w * scale,
+    h2 = h * scale;
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x,
-    dy = -y;
-  w *= scale;
-  h *= scale;
-  const cx = w * 0.5,
-    cy = h * 0.5;
-  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-  const matrix = multiplyScale(identity(), scale);
-  // 原本内容绘入扩展好的
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix,
-        bbox: textureTarget.bbox,
-        texture: textureTarget.texture,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  // 再建一个空白尺寸纹理，2个纹理互相写入对方，循环3次模糊，水平垂直分开
-  const programGauss = genGaussShader(gl, programs, sigma * scale, d);
+  const temp = TextureCache.getEmptyInstance(gl, bboxR);
+  const listT = temp.list;
+  // 由于存在扩展，原本的位置全部偏移，需要重算
+  const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
+  // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
+  const programGauss = genGaussShader(gl, programs, sigma * scale, kernelSize(sigma * scale));
   gl.useProgram(programGauss);
-  const res = drawGauss(gl, programGauss, target.texture, w, h);
-  gl.deleteTexture(target.texture);
-  target.texture = res;
+  const res = TextureCache.getEmptyInstance(gl, bboxR);
+  const listR = res.list;
+  for (let i = 0, len = listT.length; i < len; i++) {
+    const { bbox, w, h, t } = listT[i];
+    gl.viewport(0, 0, w, h);
+    const tex = drawGauss(gl, programGauss, t, w, h);
+    listR.push({
+      bbox: bbox.slice(0),
+      w,
+      h,
+      t: tex,
+    });
+  }
+  // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
+  if (listT.length > 1) {
+    const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
+    // 遍历这些相邻部分，先绘制原始图像
+    for (let i = 0, len = listO.length; i < len; i++) {
+      const item = listO[i];
+      const { bbox, w, h, t } = item;
+      gl.useProgram(program);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        t,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+      const cx = w * 0.5,
+        cy = h * 0.5;
+      let hasDraw = false;
+      // 用temp而非原始的，因为位图存在缩放，bbox会有误差
+      for (let j = 0, len = listT.length; j < len; j++) {
+        const { bbox: bbox2, t: t2 } = listT[j];
+        const w2 = bbox2[2] - bbox2[0],
+          h2 = bbox2[3] - bbox2[1];
+        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                bbox: new Float64Array([
+                  bbox2[0] * scale,
+                  bbox2[1] * scale,
+                  bbox2[2] * scale,
+                  bbox2[3] * scale,
+                ]),
+                texture: t2,
+              },
+            ],
+            -bbox[0] * scale,
+            -bbox[1] * scale,
+            false,
+            -1, -1, 1, 1,
+          );
+          hasDraw = true;
+        }
+      }
+      // 一定会有，没有就是计算错了，这里预防下
+      if (hasDraw) {
+        gl.useProgram(programGauss);
+        item.t = drawGauss(gl, programGauss, t, w, h);
+      }
+      gl.deleteTexture(t);
+    }
+    // 所有相邻部分回填
+    drawInOverlay(gl, program, scale, res, listO, bboxR, spread);
+  }
   // 删除fbo恢复
+  temp.release();
   gl.useProgram(program);
-  releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target;
+  releaseFrameBuffer(gl, frameBuffer!, W, H);
+  return res;
 }
 
 function genGaussShader(
@@ -962,81 +1263,108 @@ function genMotionBlur(
   H: number,
   scale: number,
 ) {
-  const d = kernelSize(sigma * scale);
+  const radian = d2r(angle);
+  const d = kernelSize(sigma);
   const spread = outerSizeByD(d);
-  const bbox = textureTarget.bbox.slice(0);
-  bbox[0] -= spread;
-  bbox[1] -= spread;
-  bbox[2] += spread;
-  bbox[3] += spread;
+  const bboxS = textureTarget.bbox;
+  const bboxR = bboxS.slice(0);
+  bboxR[0] -= spread;
+  bboxR[1] -= spread;
+  bboxR[2] += spread;
+  bboxR[3] += spread;
   // 写到一个扩展好尺寸的tex中方便后续处理
-  const x = bbox[0],
-    y = bbox[1];
-  let w = bbox[2] - bbox[0],
-    h = bbox[3] - bbox[1];
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
+  const x = bboxR[0],
+    y = bboxR[1];
+  const w = bboxR[2] - bboxR[0],
+    h = bboxR[3] - bboxR[1];
+  // const x2 = x * scale,
+  //   y2 = y * scale;
+  const w2 = w * scale,
+    h2 = h * scale;
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x,
-    dy = -y;
-  w *= scale;
-  h *= scale;
-  const cx = w * 0.5,
-    cy = h * 0.5;
-  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-  const matrix = multiplyScale(identity(), scale);
-  // 原本内容绘入扩展好的
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix,
-        bbox: textureTarget.bbox,
-        texture: textureTarget.texture,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  // 迭代运动模糊
+  const temp = TextureCache.getEmptyInstance(gl, bboxR);
+  const listT = temp.list;
+  // 由于存在扩展，原本的位置全部偏移，需要重算
+  const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
+  // 迭代运动模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const programMotion = programs.motionProgram;
   gl.useProgram(programMotion);
-  const res = drawMotion(
-    gl,
-    programMotion,
-    target.texture,
-    spread,
-    d2r(angle),
-    w,
-    h,
-  );
+  const res = TextureCache.getEmptyInstance(gl, bboxR);
+  const listR = res.list;
+  for (let i = 0, len = listT.length; i < len; i++) {
+    const { bbox, w, h, t } = listT[i];
+    gl.viewport(0, 0, w, h);
+    const tex = drawMotion(gl, programMotion, t, spread * 0.5 * scale, radian, w, h);
+    listR.push({
+      bbox: bbox.slice(0),
+      w,
+      h,
+      t: tex,
+    });
+  }
+  // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
+  if (listT.length > 1) {
+    const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
+    for (let i = 0, len = listO.length; i < len; i++) {
+      const item = listO[i];
+      const { bbox, w, h, t } = item;
+      gl.useProgram(program);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        t,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+      const cx = w * 0.5,
+        cy = h * 0.5;
+      let hasDraw = false;
+      // 用temp而非原始的，因为位图存在缩放，bbox会有误差
+      for (let j = 0, len = listT.length; j < len; j++) {
+        const { bbox: bbox2, t: t2 } = listT[j];
+        const w2 = bbox2[2] - bbox2[0],
+          h2 = bbox2[3] - bbox2[1];
+        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                bbox: new Float64Array([
+                  bbox2[0] * scale,
+                  bbox2[1] * scale,
+                  bbox2[2] * scale,
+                  bbox2[3] * scale,
+                ]),
+                texture: t2,
+              },
+            ],
+            -bbox[0] * scale,
+            -bbox[1] * scale,
+            false,
+            -1, -1, 1, 1,
+          );
+          hasDraw = true;
+        }
+      }
+      if (hasDraw) {
+        gl.useProgram(programMotion);
+        item.t = drawMotion(gl, programMotion, t, spread * 0.5 * scale, radian, w, h);
+      }
+      gl.deleteTexture(t);
+    }
+    drawInOverlay(gl, program, scale, res, listO, bboxR, spread);
+  }
   // 删除fbo恢复
-  gl.deleteTexture(target.texture);
-  target.texture = res;
+  temp.release();
   gl.useProgram(program);
   releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target;
+  return res;
 }
 
 function genRadialBlur(
@@ -1049,81 +1377,119 @@ function genRadialBlur(
   H: number,
   scale: number,
 ) {
-  const d = kernelSize(sigma * scale);
+  const bboxS = textureTarget.bbox;
+  const d = kernelSize(sigma);
   const spread = outerSizeByD(d);
-  const bbox = textureTarget.bbox.slice(0);
-  bbox[0] -= spread;
-  bbox[1] -= spread;
-  bbox[2] += spread;
-  bbox[3] += spread;
+  const bboxR = bboxS.slice(0);
+  bboxR[0] -= spread;
+  bboxR[1] -= spread;
+  bboxR[2] += spread;
+  bboxR[3] += spread;
   // 写到一个扩展好尺寸的tex中方便后续处理
-  const x = bbox[0],
-    y = bbox[1];
-  let w = bbox[2] - bbox[0],
-    h = bbox[3] - bbox[1];
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
+  const x = bboxR[0],
+    y = bboxR[1];
+  const w = bboxR[2] - bboxR[0],
+    h = bboxR[3] - bboxR[1];
+  // const x2 = x * scale,
+  //   y2 = y * scale;
+  const w2 = w * scale,
+    h2 = h * scale;
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x,
-    dy = -y;
-  w *= scale;
-  h *= scale;
-  const cx = w * 0.5,
-    cy = h * 0.5;
-  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-  const matrix = multiplyScale(identity(), scale);
-  // 原本内容绘入扩展好的
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix,
-        bbox: textureTarget.bbox,
-        texture: textureTarget.texture,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  // 迭代径向模糊
+  const temp = TextureCache.getEmptyInstance(gl, bboxR);
+  const listT = temp.list;
+  // 由于存在扩展，原本的位置全部偏移，需要重算
+  const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
+  // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const programRadial = programs.radialProgram;
   gl.useProgram(programRadial);
-  const res = drawRadial(
-    gl,
-    programRadial,
-    target.texture,
-    spread,
-    center,
-    w,
-    h,
-  );
+  const res = TextureCache.getEmptyInstance(gl, bboxR);
+  const listR = res.list;
+  const cx0 = center[0] * w,
+    cy0 = center[1] * h;
+  for (let i = 0, len = listT.length; i < len; i++) {
+    const { bbox, w, h, t } = listT[i];
+    gl.viewport(0, 0, w, h);
+    const w2 = bbox[2] - bbox[0],
+      h2 = bbox[3] - bbox[1];
+    const center2 = [
+      (cx0 - bbox[0]) / w2,
+      (cy0 - bbox[1]) / h2,
+    ] as [number, number];
+    const tex = drawRadial(gl, programRadial, t, spread * scale, center2, w, h);
+    listR.push({
+      bbox: bbox.slice(0),
+      w,
+      h,
+      t: tex,
+    });
+  }
+  // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
+  if (listT.length > 1) {
+    const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
+    for (let i = 0, len = listO.length; i < len; i++) {
+      const item = listO[i];
+      const { bbox, w, h, t } = item;
+      gl.useProgram(program);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        t,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+      const center2 = [
+        (cx0 - bbox[0]) / w2,
+        (cy0 - bbox[1]) / h2,
+      ] as [number, number];
+      const cx = w * 0.5,
+        cy = h * 0.5;
+      let hasDraw = false;
+      // 用temp而非原始的，因为位图存在缩放，bbox会有误差
+      for (let j = 0, len = listT.length; j < len; j++) {
+        const { bbox: bbox2, t: t2 } = listT[j];
+        const w2 = bbox2[2] - bbox2[0],
+          h2 = bbox2[3] - bbox2[1];
+        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                bbox: new Float64Array([
+                  bbox2[0] * scale,
+                  bbox2[1] * scale,
+                  bbox2[2] * scale,
+                  bbox2[3] * scale,
+                ]),
+                texture: t2,
+              },
+            ],
+            -bbox[0] * scale,
+            -bbox[1] * scale,
+            false,
+            -1, -1, 1, 1,
+          );
+          hasDraw = true;
+        }
+      }
+      if (hasDraw) {
+        gl.useProgram(programRadial);
+        item.t = drawRadial(gl, programRadial, t, spread * scale, center2, w, h);
+      }
+      gl.deleteTexture(t);
+    }
+    drawInOverlay(gl, program, scale, res, listO, bboxR, spread);
+  }
   // 删除fbo恢复
-  gl.deleteTexture(target.texture);
-  target.texture = res;
+  temp.release();
   gl.useProgram(program);
   releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target;
+  return res;
 }
 
 function genColorMatrix(
@@ -1136,28 +1502,7 @@ function genColorMatrix(
   contrast: number,
   W: number,
   H: number,
-  scale: number,
 ) {
-  const bbox = textureTarget.bbox.slice(0);
-  let w = bbox[2] - bbox[0],
-    h = bbox[3] - bbox[1];
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
-  w *= scale;
-  h *= scale;
   const programs = root.programs;
   const cmProgram = programs.cmProgram;
   gl.useProgram(cmProgram);
@@ -1168,78 +1513,32 @@ function genColorMatrix(
     const cosR = Math.cos(rotation);
     const sinR = Math.sin(rotation);
     const m = [
-      0.213 + cosR * 0.787 - sinR * 0.213,
-      0.715 - cosR * 0.715 - sinR * 0.715,
-      0.072 - cosR * 0.072 + sinR * 0.928,
-      0,
-      0,
-      0.213 - cosR * 0.213 + sinR * 0.143,
-      0.715 + cosR * 0.285 + sinR * 0.14,
-      0.072 - cosR * 0.072 - sinR * 0.283,
-      0,
-      0,
-      0.213 - cosR * 0.213 - sinR * 0.787,
-      0.715 - cosR * 0.715 + sinR * 0.715,
-      0.072 + cosR * 0.928 + sinR * 0.072,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
+      0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0,
+      0, 0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.14, 0.072 - cosR * 0.072 - sinR * 0.283,
+      0, 0, 0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715,
+      0.072 + cosR * 0.928 + sinR * 0.072, 0, 0, 0,
+      0, 0, 1, 0,
     ];
     const old = res;
-    res = TextureCache.getEmptyInstance(gl, bbox, scale);
-    frameBuffer =
-      frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      res.texture,
-      0,
-    );
-    drawColorMatrix(gl, cmProgram, old.texture, m);
+    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+    res = t.res;
+    frameBuffer = t.frameBuffer;
     if (old !== textureTarget) {
       old.release();
     }
   }
   if (saturate !== 1) {
     const m = [
-      0.213 + 0.787 * saturate,
-      0.715 - 0.715 * saturate,
-      0.072 - 0.072 * saturate,
-      0,
-      0,
-      0.213 - 0.213 * saturate,
-      0.715 + 0.285 * saturate,
-      0.072 - 0.072 * saturate,
-      0,
-      0,
-      0.213 - 0.213 * saturate,
-      0.715 - 0.715 * saturate,
-      0.072 + 0.928 * saturate,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
+      0.213 + 0.787 * saturate, 0.715 - 0.715 * saturate, 0.072 - 0.072 * saturate, 0,
+      0, 0.213 - 0.213 * saturate, 0.715 + 0.285 * saturate, 0.072 - 0.072 * saturate,
+      0, 0, 0.213 - 0.213 * saturate, 0.715 - 0.715 * saturate,
+      0.072 + 0.928 * saturate, 0, 0, 0,
+      0, 0, 1, 0,
     ];
     const old = res;
-    res = TextureCache.getEmptyInstance(gl, bbox, scale);
-    frameBuffer =
-      frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      res.texture,
-      0,
-    );
-    drawColorMatrix(gl, cmProgram, old.texture, m);
+    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+    res = t.res;
+    frameBuffer = t.frameBuffer;
     if (old !== textureTarget) {
       old.release();
     }
@@ -1247,39 +1546,16 @@ function genColorMatrix(
   if (brightness !== 1) {
     const b = brightness;
     const m = [
-      1,
-      0,
-      0,
-      0,
-      b - 1,
-      0,
-      1,
-      0,
-      0,
-      b - 1,
-      0,
-      0,
-      1,
-      0,
-      b - 1,
-      0,
-      0,
-      0,
-      1,
-      0,
+      1, 0, 0, 0,
+      b - 1, 0, 1, 0,
+      0, b - 1, 0, 0,
+      1, 0, b - 1, 0,
+      0, 0, 1, 0,
     ];
     const old = res;
-    res = TextureCache.getEmptyInstance(gl, bbox, scale);
-    frameBuffer =
-      frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      res.texture,
-      0,
-    );
-    drawColorMatrix(gl, cmProgram, old.texture, m);
+    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+    res = t.res;
+    frameBuffer = t.frameBuffer;
     if (old !== textureTarget) {
       old.release();
     }
@@ -1287,19 +1563,17 @@ function genColorMatrix(
   if (contrast !== 1) {
     const a = contrast;
     const o = -0.5 * a + 0.5;
-    const m = [a, 0, 0, 0, o, 0, a, 0, 0, o, 0, 0, a, 0, o, 0, 0, 0, 1, 0];
+    const m = [
+      a, 0, 0, 0,
+      o, 0, a, 0,
+      0, o, 0, 0,
+      a, 0, o, 0,
+      0, 0, 1, 0,
+    ];
     const old = res;
-    res = TextureCache.getEmptyInstance(gl, bbox, scale);
-    frameBuffer =
-      frameBuffer || genFrameBufferWithTexture(gl, res.texture, w, h);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      res.texture,
-      0,
-    );
-    drawColorMatrix(gl, cmProgram, old.texture, m);
+    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+    res = t.res;
+    frameBuffer = t.frameBuffer;
     if (old !== textureTarget) {
       old.release();
     }
@@ -1308,7 +1582,45 @@ function genColorMatrix(
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
     return res;
+  } else {
+    gl.viewport(0, 0, W, H);
   }
+}
+
+function genColorByMatrix(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  cmProgram: WebGLProgram,
+  old: TextureCache,
+  m: number[],
+  frameBuffer?: WebGLFramebuffer,
+) {
+  const res = TextureCache.getEmptyInstance(gl, old.bbox);
+  const list = old.list;
+  const listR = res.list;
+  for (let i = 0, len = list.length; i < len; i++) {
+    const { bbox, w, h, t } = list[i];
+    const tex = createTexture(gl, 0, undefined, w, h);
+    if (frameBuffer) {
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        tex,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+    } else {
+      frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+    }
+    drawColorMatrix(gl, cmProgram, t, m);
+    listR.push({
+      bbox: bbox.slice(0),
+      w,
+      h,
+      t: tex,
+    });
+  }
+  return { res, frameBuffer };
 }
 
 function genTint(
@@ -1319,43 +1631,39 @@ function genTint(
   opacity: number,
   W: number,
   H: number,
-  scale: number,
 ) {
-  const bbox = textureTarget.bbox.slice(0);
-  let w = bbox[2] - bbox[0],
-    h = bbox[3] - bbox[1];
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
-  w *= scale;
-  h *= scale;
+  const { bbox, list } = textureTarget;
   const programs = root.programs;
   const tintProgram = programs.tintProgram;
   gl.useProgram(tintProgram);
-  const res = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const frameBuffer = genFrameBufferWithTexture(gl, res.texture, w, h);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    res.texture,
-    0,
-  );
-  drawTint(gl, tintProgram, textureTarget.texture, tint, opacity);
+  const res = TextureCache.getEmptyInstance(gl, bbox);
+  const listR = res.list;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  for (let i = 0, len = list.length; i < len; i++) {
+    const { bbox, w, h, t } = list[i];
+    const tex = createTexture(gl, 0, undefined, w, h);
+    if (frameBuffer) {
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        tex,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+    } else {
+      frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+    }
+    drawTint(gl, tintProgram, t, tint, opacity);
+    listR.push({
+      bbox: bbox.slice(0),
+      w,
+      h,
+      t: tex,
+    });
+  }
   gl.useProgram(programs.program);
-  releaseFrameBuffer(gl, frameBuffer, W, H);
+  releaseFrameBuffer(gl, frameBuffer!, W, H);
   return res;
 }
 
@@ -1368,12 +1676,16 @@ function genShadow(
   H: number,
   scale: number,
 ) {
-  const bbox = textureTarget.bbox.slice(0);
+  // 先求出最终的bbox，多个shadow汇总，并生成每个的spread数据
+  const bboxS = textureTarget.bbox;
+  const bboxR2 = bboxS.slice(0);
   const sb = [0, 0, 0, 0];
+  const data: number[] = [];
   for (let i = 0, len = shadow.length; i < len; i++) {
     const item = shadow[i];
-    const d = kernelSize(item.blur * scale * 0.5);
+    const d = kernelSize(item.blur * 0.5);
     const spread = outerSizeByD(d);
+    data.push(spread);
     // 除了模糊增量还需考虑偏移增量
     if (item.x || item.y || spread) {
       sb[0] = Math.min(sb[0], item.x - spread);
@@ -1382,188 +1694,263 @@ function genShadow(
       sb[3] = Math.max(sb[3], item.y + spread);
     }
   }
-  bbox[0] += sb[0];
-  bbox[1] += sb[1];
-  bbox[2] += sb[2];
-  bbox[3] += sb[3];
-  // 写到一个扩展好尺寸的tex中方便后续处理
-  const x = bbox[0],
-    y = bbox[1];
-  let w = bbox[2] - bbox[0],
-    h = bbox[3] - bbox[1];
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
+  bboxR2[0] += sb[0];
+  bboxR2[1] += sb[1];
+  bboxR2[2] += sb[2];
+  bboxR2[3] += sb[3];
+  const x = bboxR2[0],
+    y = bboxR2[1];
+  const w = bboxR2[2] - bboxR2[0],
+    h = bboxR2[3] - bboxR2[1];
+  const w2 = w * scale,
+    h2 = h * scale;
   const programs = root.programs;
   const program = programs.program;
-  const dx = -x,
-    dy = -y;
-  w *= scale;
-  h *= scale;
-  const cx = w * 0.5,
-    cy = h * 0.5;
-  // 扩展好尺寸的原节点纹理
-  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const frameBuffer = genFrameBufferWithTexture(gl, target.texture, w, h);
-  const matrix = multiplyScale(identity(), scale);
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix,
-        bbox: textureTarget.bbox,
-        texture: textureTarget.texture,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
   const dropShadowProgram = programs.dropShadowProgram;
-  const vtPoint = new Float32Array(8);
-  const vtTex = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
-  const list = shadow.map((item) => {
-    gl.useProgram(dropShadowProgram);
-    // 先生成无blur的
-    const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      temp.texture,
-      0,
-    );
-    // 这里顶点计算需要考虑shadow本身的偏移，将其加到dx/dy上即可
-    const { t1, t2, t3, t4 } = bbox2Coords(
-      bbox,
-      cx,
-      cy,
-      dx + item.x,
-      dy + item.y,
-      false,
-      matrix,
-    );
-    vtPoint[0] = t1.x;
-    vtPoint[1] = t1.y;
-    vtPoint[2] = t4.x;
-    vtPoint[3] = t4.y;
-    vtPoint[4] = t2.x;
-    vtPoint[5] = t2.y;
-    vtPoint[6] = t3.x;
-    vtPoint[7] = t3.y;
-    // 顶点buffer
-    const pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-    const a_position = gl.getAttribLocation(dropShadowProgram, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position);
-    // 纹理buffer
-    const texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-    let a_texCoords = gl.getAttribLocation(dropShadowProgram, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords);
-    // 纹理单元
-    bindTexture(gl, target.texture, 0);
-    const u_texture = gl.getUniformLocation(dropShadowProgram, 'u_texture');
-    gl.uniform1i(u_texture, 0);
-    // shadow颜色
-    const u_color = gl.getUniformLocation(dropShadowProgram, 'u_color');
-    const color = color2gl(item.color);
-    const a = color[3];
-    gl.uniform4f(u_color, color[0] * a, color[1] * a, color[2] * a, a);
-    // 渲染并销毁
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-    // 有blur再生成
-    if (item.blur > 0) {
-      const sigma = item.blur * scale * 0.5;
-      const d = kernelSize(sigma);
-      const programGauss = genGaussShader(gl, programs, sigma, d);
-      gl.useProgram(programGauss);
-      const res = drawGauss(gl, programGauss, temp.texture, w, h);
-      temp.release();
-      return res;
+  // 先生成最终的尺寸结果，空白即可，后面的shadow依次绘入，最上层是图像本身
+  const res2 = TextureCache.getEmptyInstance(gl, bboxR2);
+  const listR2 = res2.list;
+  const UNIT = config.canvasSize;
+  for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
+    for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
+      const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
+      const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
+      const t = createTexture(gl, 0, undefined, width, height);
+      const x0 = x + j * UNIT / scale,
+        y0 = y + i * UNIT / scale;
+      const w0 = width / scale,
+        h0 = height / scale;
+      const bbox = new Float64Array([
+        x0,
+        y0,
+        x0 + w0,
+        y0 + h0,
+      ]);
+      listR2.push({
+        bbox,
+        w: width,
+        h: height,
+        t,
+      });
     }
-    return temp.texture;
-  });
-  // 将生成的shadow纹理和节点源纹理进行混合
-  gl.useProgram(program);
-  const target2 = TextureCache.getEmptyInstance(gl, bbox, scale);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    target2.texture,
-    0,
-  );
-  list.forEach((item) => {
-    drawTextureCache(
-      gl,
-      cx,
-      cy,
-      program,
-      [
-        {
-          opacity: 1,
-          matrix,
-          bbox,
-          texture: item,
-        },
-      ],
-      dx,
-      dy,
-      false,
-      -1, -1, 1, 1,
-    );
-    gl.deleteTexture(item);
-  });
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix,
-        bbox: target.bbox,
-        texture: target.texture,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  target.release();
-  gl.useProgram(program);
-  // 删除fbo恢复
-  releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target2;
+  }
+  // 高清/scale
+  let matrix: Float64Array | undefined;
+  if (scale !== 1) {
+    matrix = identity();
+    multiplyScale(matrix, scale);
+  }
+  // 循环遍历每个shadow，分别生成后再合成在一起，先忽略掉偏移，按原位置渲染，最后用bbox偏移的方式做
+  for (let i = 0, len = shadow.length; i < len; i++) {
+    const spread = data[i];
+    const { x: dx, y: dy, blur, color } = shadow[i];
+    const bboxR = bboxS.slice(0);
+    bboxR[0] -= spread;
+    bboxR[1] -= spread;
+    bboxR[2] += spread;
+    bboxR[3] += spread;
+    // 写到一个扩展好尺寸的tex中方便后续处理
+    const x = bboxR[0],
+      y = bboxR[1];
+    const w = bboxR[2] - bboxR[0],
+      h = bboxR[3] - bboxR[1];
+    // const x2 = x * scale,
+    //   y2 = y * scale;
+    const w2 = w * scale,
+      h2 = h * scale;
+    const temp = TextureCache.getEmptyInstance(gl, bboxR);
+    const listT = temp.list;
+    // 由于存在扩展，原本的位置全部偏移，需要重算
+    const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
+    let res = TextureCache.getEmptyInstance(gl, bboxR);
+    let listR = res.list;
+    gl.useProgram(dropShadowProgram);
+    // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
+    for (let i = 0, len = listT.length; i < len; i++) {
+      const { bbox, w, h, t } = listT[i];
+      gl.viewport(0, 0, w, h);
+      const b = bbox.slice(0);
+      b[0] += dx;
+      b[1] += dy;
+      b[2] += dx;
+      b[3] += dy;
+      const tex = createTexture(gl, 0, undefined, w, h);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        tex,
+        0,
+      );
+      drawShadow(gl, dropShadowProgram, t, color2gl(color), w, h);
+      listR.push({
+        bbox: b,
+        w,
+        h,
+        t: tex,
+      });
+    }
+    temp.release();
+    // blur是可选的，有才生成
+    if (blur) {
+      const sigma = blur * 0.5;
+      const d = kernelSize(sigma);
+      const spread = outerSizeByD(d);
+      const programGauss = genGaussShader(gl, programs, sigma * scale, kernelSize(sigma * scale));
+      gl.useProgram(programGauss);
+      const temp = TextureCache.getEmptyInstance(gl, bboxR);
+      const listT = temp.list;
+      for (let i = 0, len = listR.length; i < len; i++) {
+        const { bbox, w, h, t } = listR[i];
+        gl.viewport(0, 0, w, h);
+        const tex = drawGauss(gl, programGauss, t, w, h);
+        listT.push({
+          bbox: bbox.slice(0),
+          w,
+          h,
+          t: tex,
+        });
+      }
+      if (listR.length > 1) {
+        const listO = createInOverlay(gl, temp, x, y, w, h, scale, spread);
+        for (let i = 0, len = listO.length; i < len; i++) {
+          const item = listO[i];
+          const { bbox, w, h, t } = item;
+          gl.useProgram(program);
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            t,
+            0,
+          );
+          gl.viewport(0, 0, w, h);
+          const cx = w * 0.5,
+            cy = h * 0.5;
+          let hasDraw = false;
+          // 用temp而非原始的，因为位图存在缩放，bbox会有误差
+          for (let j = 0, len = listR.length; j < len; j++) {
+            const { bbox: bbox2, w: w2, h: h2, t: t2 } = listR[j];
+            if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+              drawTextureCache(
+                gl,
+                cx,
+                cy,
+                program,
+                [
+                  {
+                    opacity: 1,
+                    bbox: bbox2,
+                    texture: t2,
+                  },
+                ],
+                -bbox[0],
+                -bbox[1],
+                false,
+                -1, -1, 1, 1,
+              );
+              hasDraw = true;
+            }
+          }
+          if (hasDraw) {
+            gl.useProgram(programGauss);
+            item.t = drawGauss(gl, programGauss, t, w, h);
+          }
+          gl.deleteTexture(t);
+        }
+        drawInOverlay(gl, program, scale, res, listO, bboxR, spread);
+      }
+      res.release();
+      res = temp;
+      listR = res.list;
+    }
+    gl.useProgram(program);
+    // 将这个shadow汇入最终结果上，要考虑偏移
+    for (let i = 0, len = listR2.length; i < len; i++) {
+      const { bbox, w, h, t } = listR2[i];
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        t,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+      const cx = w * 0.5,
+        cy = h * 0.5;
+      for (let j = 0, len = listR.length; j < len; j++) {
+        const { bbox: bbox2, w: w2, h: h2, t: t2 } = listR[j];
+        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                matrix,
+                bbox: bbox2,
+                texture: t2,
+              },
+            ],
+            -bbox[0] * scale,
+            -bbox[1] * scale,
+            false,
+            -1, -1, 1, 1,
+          );
+        }
+      }
+    }
+    // 删除fbo恢复
+    res.release();
+    releaseFrameBuffer(gl, frameBuffer!, W, H);
+  }
+  // 将原本的图层绘到最上方
+  let frameBuffer: WebGLFramebuffer | undefined;
+  const listS = textureTarget.list;
+  for (let i = 0, len = listR2.length; i < len; i++) {
+    const { bbox, w, h, t } = listR2[i];
+    if (frameBuffer) {
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        t,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+    } else {
+      frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
+    }
+    const cx = w * 0.5,
+      cy = h * 0.5;
+    for (let j = 0, len = listS.length; j < len; j++) {
+      const { bbox: bbox2, w: w2, h: h2, t: t2 } = listS[j];
+      if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              matrix,
+              bbox: bbox2,
+              texture: t2,
+            },
+          ],
+          -bbox[0] * scale,
+          -bbox[1] * scale,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
+    }
+  }
+  releaseFrameBuffer(gl, frameBuffer!, W, H);
+  return res2;
 }
 
 function genMask(
@@ -1589,6 +1976,7 @@ function genMask(
   if (!node.next) {
     return textureTarget;
   }
+  const listM = textureTarget.list;
   const programs = root.programs;
   const program = programs.program;
   gl.useProgram(program);
@@ -1597,135 +1985,218 @@ function genMask(
   const { matrix, computedStyle } = node;
   const x = bbox[0],
     y = bbox[1];
-  let w = bbox[2] - x,
+  const x2 = x * scale,
+    y2 = y * scale;
+  const w = bbox[2] - x,
     h = bbox[3] - y;
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
-  const dx = -x,
-    dy = -y;
-  w *= scale;
-  h *= scale;
-  const cx = w * 0.5,
-    cy = h * 0.5;
-  let summary = createTexture(gl, 0, undefined, w, h);
-  const frameBuffer = genFrameBufferWithTexture(gl, summary, w, h);
+  const w2 = w * scale,
+    h2 = h * scale;
+  const summary = TextureCache.getEmptyInstance(gl, bbox);
+  const listS = summary.list;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  const UNIT = config.canvasSize;
   const m = identity();
   assignMatrix(m, matrix);
   multiplyScale(m, 1 / scale);
   // 作为mask节点视作E，next后的节点要除以它的matrix即点乘逆矩阵
   const im = inverse(m);
   // 先循环收集此节点后面的内容汇总，直到结束或者打断mask
-  for (let i = index + total + 1, len = structs.length; i < len; i++) {
-    const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
-    const computedStyle = node2.computedStyle;
-    // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
-    if (lv > lv2) {
-      node.struct.next = i - index - total - 1;
-      break;
-    } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
-      node.struct.next = i - index - total - 1;
-      break;
-    }
-    // 需要保存引用，当更改时取消mask节点的缓存重新生成
-    node2.mask = node;
-    // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
-    const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
-      node2,
-      computedStyle,
-      scaleIndex,
-    );
-    if (shouldIgnore) {
-      i += total2 + next2;
-      continue;
-    }
-    // 图片检查内容加载计数器
-    if (node2.isBitmap && (node2 as Bitmap).checkLoader()) {
-      root.imgLoadList.push(node2 as Bitmap);
-    }
-    let opacity, matrix;
-    // 同层级的next作为特殊的局部根节点，注意dx/dy偏移对transformOrigin的影响
-    if (lv === lv2) {
-      opacity = node2.tempOpacity = computedStyle.opacity;
-      if (dx || dy) {
-        const transform = node2.transform;
-        const tfo = computedStyle.transformOrigin;
-        const t = calMatrixByOrigin(transform, tfo[0] + dx, tfo[1] + dy);
-        matrix = multiply(im, t);
+  for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
+    for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
+      // 这里的逻辑和genTotal几乎一样
+      const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
+      const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
+      const t = createTexture(gl, 0, undefined, width, height);
+      const x0 = x + j * UNIT / scale,
+        y0 = y + i * UNIT / scale;
+      const w0 = width / scale,
+        h0 = height / scale;
+      const bbox = new Float64Array([
+        x0,
+        y0,
+        x0 + w0,
+        y0 + h0,
+      ]);
+      const area = {
+        bbox,
+        w: width,
+        h: height,
+        t,
+      };
+      listS.push(area);
+      const x1 = x2 + j * UNIT,
+        y1 = y2 + i * UNIT;
+      const isFirst = !i && !j;
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          t,
+          0,
+        );
+        gl.viewport(0, 0, width, height);
       } else {
-        matrix = multiply(im, node2.matrix);
+        frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
       }
-      assignMatrix(node2.tempMatrix, matrix);
-    } else {
-      const parent = node2.parent!;
-      opacity = computedStyle.opacity * parent.tempOpacity;
-      node2.tempOpacity = opacity;
-      if (dx || dy) {
-        const transform = node2.transform;
-        const tfo = computedStyle.transformOrigin;
-        const t = calMatrixByOrigin(transform, tfo[0] + dx, tfo[1] + dy);
-        matrix = multiply(parent.tempMatrix, t);
-      } else {
-        matrix = multiply(parent.tempMatrix, node2.matrix);
-      }
-      assignMatrix(node2.tempMatrix, matrix);
-    }
-    let target2 = node2.textureTarget[scaleIndex];
-    // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
-    if (!target2 && node2.hasContent) {
-      node2.genTexture(gl, scale, scaleIndex);
-      target2 = node2.textureTarget[scaleIndex];
-    }
-    if (target2 && target2.available) {
-      const { mixBlendMode, blur } = computedStyle;
-      // 同主循环的bgBlur
-      if (isBgBlur) {
-        const outline = (node2.textureOutline = genOutline(
-          gl,
+      const cx = width * 0.5,
+        cy = height * 0.5;
+      for (let i = index + total + 1, len = structs.length; i < len; i++) {
+        const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
+        const computedStyle = node2.computedStyle;
+        // mask只会影响next同层级以及其子节点，跳出后实现（比如group结束）
+        if (lv > lv2) {
+          node.struct.next = i - index - total - 1;
+          break;
+        } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
+          node.struct.next = i - index - total - 1;
+          break;
+        }
+        // 需要保存引用，当更改时取消mask节点的缓存重新生成
+        if (isFirst) {
+          node2.mask = node;
+        }
+        // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
+        const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(
           node2,
-          structs,
-          i,
-          total,
-          target2.bbox,
-          scale,
-        ));
-        // outline会覆盖这个值，恶心
-        assignMatrix(node2.tempMatrix, matrix);
-        if (outline) {
-          genBgBlur(
-            gl,
-            summary,
-            matrix,
-            outline,
-            target2,
-            blur,
-            programs,
-            scale,
-            cx,
-            cy,
-            w,
-            h,
-            dx,
-            dy,
-          );
+          computedStyle,
+          scaleIndex,
+        );
+        if (shouldIgnore) {
+          i += total2 + next2;
+          continue;
+        }
+        // 图片检查内容加载计数器
+        if (isFirst && node2.isBitmap && (node2 as Bitmap).checkLoader()) {
+          root.imgLoadList.push(node2 as Bitmap);
+        }
+        let opacity: number,
+          matrix: Float64Array;
+        if (isFirst) {
+          // 同层级的next作为特殊的局部根节点，注意dx/dy偏移对transformOrigin的影响
+          if (lv === lv2) {
+            opacity = node2.tempOpacity = computedStyle.opacity;
+            if (x || y) {
+              const transform = node2.transform;
+              const tfo = computedStyle.transformOrigin;
+              const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
+              matrix = multiply(im, m);
+            } else {
+              matrix = multiply(im, node2.matrix);
+            }
+          } else {
+            const parent = node2.parent!;
+            opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
+            if (x || y) {
+              const transform = node2.transform;
+              const tfo = computedStyle.transformOrigin;
+              const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
+              matrix = multiply(parent.tempMatrix, m);
+            } else {
+              matrix = multiply(parent.tempMatrix, node2.matrix);
+            }
+          }
+          assignMatrix(node2.tempMatrix, matrix);
+        } else {
+          opacity = node2.tempOpacity;
+          matrix = node2.tempMatrix;
+        }
+        let target2 = node2.textureTarget[scaleIndex];
+        // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
+        if (!target2 && node2.hasContent) {
+          node2.genTexture(gl, scale, scaleIndex);
+          target2 = node2.textureTarget[scaleIndex];
+        }
+        if (target2 && target2.available) {
+          const { mixBlendMode, blur } = computedStyle;
+          // 同主循环的bgBlur
+          if (isBgBlur && i > index + total + 1) {
+            const outline = node.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
+            // outline会覆盖这个值，恶心
+            assignMatrix(node2.tempMatrix, matrix);
+            genBgBlur(gl, root, summary, matrix, outline, blur, programs, scale, w, h);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+            gl.viewport(0, 0, width, height);
+          }
+          const list2 = target2.list;
+          for (let j = 0, len2 = list2.length; j < len2; j++) {
+            const { bbox: bbox2, t: t2 } = list2[j];
+            if (checkInRect(bbox2, matrix, x1, y1, width, height)) {
+              let tex: WebGLTexture | undefined;
+              // 有mbm先将本节点内容绘制到同尺寸纹理上
+              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+                tex = createTexture(gl, 0, undefined, width, height);
+                if (frameBuffer) {
+                  gl.framebufferTexture2D(
+                    gl.FRAMEBUFFER,
+                    gl.COLOR_ATTACHMENT0,
+                    gl.TEXTURE_2D,
+                    tex,
+                    0,
+                  );
+                  gl.viewport(0, 0, w, h);
+                } else {
+                  frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+                }
+              }
+              // 有无mbm都复用这段逻辑
+              drawTextureCache(
+                gl,
+                cx,
+                cy,
+                program,
+                [
+                  {
+                    opacity,
+                    matrix,
+                    bbox: bbox2,
+                    texture: t2,
+                  },
+                ],
+                -x1,
+                -y1,
+                false,
+                -1, -1, 1, 1,
+              );
+              // 这里才是真正生成mbm
+              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
+                area.t = genMbm(
+                  gl,
+                  area.t,
+                  tex,
+                  mixBlendMode,
+                  programs,
+                  width,
+                  height,
+                );
+              }
+            }
+          }
+        }
+        // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+        if (
+          target2 &&
+          target2.available &&
+          target2 !== node2.textureCache[scaleIndex] ||
+          computedStyle.maskMode
+        ) {
+          i += total2 + next2;
+        } else if (node2.isShapeGroup) {
+          i += total2;
         }
       }
-      let tex: WebGLTexture | undefined;
-      // 有mbm先将本节点内容绘制到同尺寸纹理上
-      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index + 1) {
-        tex = createTexture(gl, 0, undefined, w, h);
+    }
+  }
+  let res = TextureCache.getEmptyInstance(gl, bbox);
+  const maskProgram = programs.maskProgram;
+  gl.useProgram(maskProgram);
+  // alpha直接应用，汇总乘以mask本身的alpha即可
+  if (maskMode === MASK.ALPHA) {
+    const listR = res.list;
+    for (let i = 0, len = listS.length; i < len; i++) {
+      const { bbox, w, h, t } = listS[i];
+      const tex = createTexture(gl, 0, undefined, w, h);
+      if (frameBuffer) {
         gl.framebufferTexture2D(
           gl.FRAMEBUFFER,
           gl.COLOR_ATTACHMENT0,
@@ -1733,68 +2204,23 @@ function genMask(
           tex,
           0,
         );
+        gl.viewport(0, 0, w, h);
+      } else {
+        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
-      // 有无mbm都复用这段逻辑
-      drawTextureCache(
-        gl,
-        cx,
-        cy,
-        program,
-        [
-          {
-            opacity,
-            matrix,
-            bbox: target2.bbox,
-            texture: target2.texture,
-          },
-        ],
-        dx,
-        dy,
-        false,
-        -1, -1, 1, 1,
-      );
-      // 这里才是真正生成mbm
-      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
-        summary = genMbm(gl, summary, tex, mixBlendMode, programs, w, h);
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          summary,
-          0,
-        );
-      }
+      drawMask(gl, maskProgram, listM[i].t, t);
+      listR.push({
+        bbox: bbox.slice(0),
+        w,
+        h,
+        t: tex,
+      });
     }
-    // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-    if (
-      target2 &&
-      target2.available &&
-      target2 !== node2.textureCache[scaleIndex] ||
-      computedStyle.maskMode
-    ) {
-      i += total2 + next2;
-    } else if (node2.isShapeGroup) {
-      i += total2;
-    }
-  }
-  const target = TextureCache.getEmptyInstance(gl, bbox, scale);
-  const maskProgram = programs.maskProgram;
-  gl.useProgram(maskProgram);
-  // alpha直接应用，汇总乘以mask本身的alpha即可
-  if (maskMode === MASK.ALPHA) {
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      target.texture,
-      0,
-    );
-    drawMask(gl, maskProgram, textureTarget.texture, summary);
     gl.useProgram(program);
   }
   // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
   else if (maskMode === MASK.OUTLINE) {
-    const outline = (node.textureOutline = genOutline(
+    const outline = node.textureOutline[scale] = genOutline(
       gl,
       node,
       structs,
@@ -1802,79 +2228,109 @@ function genMask(
       total,
       bbox,
       scale,
-    ));
-    const temp = TextureCache.getEmptyInstance(gl, bbox, scale);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      temp.texture,
-      0,
     );
-    drawMask(gl, maskProgram, outline!.texture, summary);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      null,
-      0,
-    );
-    // 将mask本身和汇总应用的mask内容绘制到一起
+    const listO = outline.list;
+    const temp = TextureCache.getEmptyInstance(gl, bbox);
+    const listT = temp.list;
+    // summary的list和outline的list是完全对应的，直接应用mask
+    for (let i = 0, len = listS.length; i < len; i++) {
+      const { bbox, w, h, t } = listS[i];
+      const tex = createTexture(gl, 0, undefined, w, h);
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+        gl.viewport(0, 0, w, h);
+      } else {
+        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+      }
+      drawMask(gl, maskProgram, listO[i].t, t);
+      listT.push({
+        bbox: bbox.slice(0),
+        w,
+        h,
+        t: tex,
+      });
+    }
+    // 将mask本身和生成的mask内容temp绘制到一起，mask可能不可见，轮廓类型不可见就不绘制
     gl.useProgram(program);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      target.texture,
-      0,
-    );
     toE(node.tempMatrix);
     multiplyScale(node.tempMatrix, scale);
-    // mask本身可能不可见
     if (computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
-      drawTextureCache(
-        gl,
-        cx,
-        cy,
-        program,
-        [
-          {
-            opacity: 1,
-            matrix: node.tempMatrix,
-            bbox: textureTarget.bbox,
-            texture: textureTarget.texture,
-          },
-        ],
-        dx,
-        dy,
-        false,
-        -1, -1, 1, 1,
-      );
+      const listR = res.list;
+      for (let i = 0, len = listS.length; i < len; i++) {
+        const { bbox, w, h, t } = listS[i];
+        const tex = createTexture(gl, 0, undefined, w, h);
+        if (frameBuffer) {
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tex,
+            0,
+          );
+          gl.viewport(0, 0, w, h);
+        } else {
+          frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+        }
+        drawTextureCache(
+          gl,
+          w * 0.5,
+          h * 0.5,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, w, h]),
+              texture: listM[i].t,
+            }
+          ],
+          0,
+          0,
+          false,
+          -1, -1, 1, 1,
+        );
+        drawTextureCache(
+          gl,
+          w * 0.5,
+          h * 0.5,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, w, h]),
+              texture: t,
+            }
+          ],
+          0,
+          0,
+          false,
+          -1, -1, 1, 1,
+        );
+        listR.push({
+          bbox: bbox.slice(0),
+          w,
+          h,
+          t: tex,
+        });
+      }
+    } else {
+      res.release();
+      res = temp;
     }
-    drawTextureCache(
-      gl,
-      cx,
-      cy,
-      program,
-      [
-        {
-          opacity: 1,
-          matrix: node.tempMatrix,
-          bbox: temp.bbox,
-          texture: temp.texture,
-        },
-      ],
-      dx,
-      dy,
-      false,
-      -1, -1, 1, 1,
-    );
-    temp.release();
   }
   // 删除fbo恢复
-  gl.deleteTexture(summary);
-  releaseFrameBuffer(gl, frameBuffer, W, H);
-  return target;
+  // summary.release();
+  if (frameBuffer) {
+    releaseFrameBuffer(gl, frameBuffer, W, H);
+  } else {
+    gl.viewport(0, 0, W, H);
+  }
+  return res;
 }
 
 // 创建一个和画布一样大的纹理，将画布和即将mbm混合的节点作为输入，结果重新赋值给画布
@@ -1888,7 +2344,7 @@ export function genMbm(
   h: number,
 ) {
   // 获取对应的mbm程序
-  let program: any;
+  let program: WebGLProgram;
   if (mixBlendMode === MIX_BLEND_MODE.MULTIPLY) {
     program = programs.multiplyProgram;
   } else if (mixBlendMode === MIX_BLEND_MODE.SCREEN) {
@@ -1939,106 +2395,201 @@ export function genMbm(
   return res;
 }
 
-// 创建一个和画布一样大的纹理，先将画布和节点进行mask操作，保留重合的部分，再进行blur，再和节点进行mask保留重合的部分
+// 创建一个和背景一样大的纹理，先将背景按mask逆矩阵绘制，再进行blur，再和节点进行mask保留重合的部分
 export function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  tex: WebGLTexture, // 画布/背景
-  matrix: Float64Array,
+  root: Root,
+  target: TextureCache, // 画布/背景
+  matrix: Float64Array | undefined, // outline相对于target的
   outline: TextureCache,
-  target: TextureCache,
   blur: ComputedBlur,
   programs: Record<string, WebGLProgram>,
   scale: number,
-  cx: number,
-  cy: number,
   W: number,
   H: number,
-  dx = 0,
-  dy = 0,
 ) {
-  const bbox = target.bbox;
-  const w = bbox[2] - bbox[0], h = bbox[3] - bbox[1];
-  const cx2 = w * 0.5, cy2 = h * 0.5;
-  // 将画布以节点为坐标系绘制，取逆矩阵，也就是和节点重合的那一部分
-  const im = inverse(matrix);
-  const bg = createTexture(gl, 0, undefined, w, h);
-  gl.viewport(0, 0, w, h);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    bg,
-    0,
-  );
   const program = programs.program;
-  drawTextureCache(
-    gl,
-    cx2,
-    cy2,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix: im,
-        bbox: new Float64Array([0, 0, W, H]),
-        texture: tex,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  // 画布内容进行blur
-  const sigma = blur.radius * scale;
-  const d = kernelSize(sigma);
-  const programGauss = genGaussShader(gl, programs, sigma, d);
-  gl.useProgram(programGauss);
-  const blurContent = drawGauss(gl, programGauss, bg, w, h);
-  gl.deleteTexture(bg);
-  // 将outline视作mask，过滤blur
+  // 先背景blur
+  const bg = genGaussBlur(gl, root, target, blur.radius, W, H, scale);
+  const listB = bg.list;
+  const listO = outline.list;
+  let frameBuffer: WebGLFramebuffer | undefined;
+  // {
+  //   const { w, h, t } = listB[0];
+  //   frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
+  //   const pixels = new Uint8Array(w * h * 4);
+  //   gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  //   const os = inject.getOffscreenCanvas(w, h);
+  //   const id = os.ctx.getImageData(0, 0, w, h);
+  //   for (let i = 0, len = w * h * 4; i < len ;i++) {
+  //     id.data[i] = pixels[i];
+  //   }
+  //   os.ctx.putImageData(id, 0, 0);
+  //   const img = document.createElement('img');
+  //   img.setAttribute('name', 'a');
+  //   os.canvas.toBlob(blob => {
+  //     img.src = URL.createObjectURL(blob!);
+  //     document.body.appendChild(img);
+  //   });
+  // }
+  // outline扩展和背景blur一样大，方便后续mask
+  const listO2: WebGLTexture[] = [];
+  for (let i = 0, len = listB.length; i < len; i++) {
+    const { bbox, w, h } = listB[i];
+    const cx = w * 0.5,
+      cy = h * 0.5;
+    const tex = createTexture(gl, 0, undefined, w, h);
+    listO2.push(tex);
+    if (frameBuffer) {
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        tex,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
+    } else {
+      frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+    }
+    for (let j = 0, len = listO.length; j < len; j++) {
+      const { bbox: bbox2, t: t2 } = listO[j];
+      if (checkInRect(bbox2, matrix, bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1])) {
+        // 这里不能传bbox和matrix，因为bg因blur造成了扩展，原点发生变化，需手动算出相对于原始无blur的位置后再偏移
+        // const t = bbox2Coords(bbox2, cx, cy, 0, 0, false, matrix);
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              matrix,
+              bbox: bbox2,
+              // coords: t,
+              texture: t2,
+            },
+          ],
+          -bbox[0] * scale,
+          -bbox[1] * scale,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
+    }
+  }
+  // 应用mask
   const maskProgram = programs.maskProgram;
   gl.useProgram(maskProgram);
-  const res = createTexture(gl, 0, undefined, w, h);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    res,
-    0,
-  );
-  drawMask(gl, maskProgram, outline.texture, blurContent);
-  gl.deleteTexture(blurContent);
+  for (let i = 0, len = listB.length; i < len; i++) {
+    const { w, h, t } = listB[i];
+    const tex = createTexture(gl, 0, undefined, w, h);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex,
+      0,
+    );
+    gl.viewport(0, 0, w, h);
+    drawMask(gl, maskProgram, listO2[i], t);
+    gl.deleteTexture(t);
+    listB[i].t = tex;
+  }
+  // {
+  //   const { w, h, t } = listB[0];
+  //   gl.framebufferTexture2D(
+  //     gl.FRAMEBUFFER,
+  //     gl.COLOR_ATTACHMENT0,
+  //     gl.TEXTURE_2D,
+  //     t,
+  //     0,
+  //   );
+  //   gl.viewport(0, 0, w, h);
+  //   const pixels = new Uint8Array(w * h * 4);
+  //   gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  //   const os = inject.getOffscreenCanvas(w, h);
+  //   const id = os.ctx.getImageData(0, 0, w, h);
+  //   for (let i = 0, len = w * h * 4; i < len ;i++) {
+  //     id.data[i] = pixels[i];
+  //   }
+  //   os.ctx.putImageData(id, 0, 0);
+  //   const img = document.createElement('img');
+  //   img.setAttribute('name', 'c');
+  //   os.canvas.toBlob(blob => {
+  //     img.src = URL.createObjectURL(blob!);
+  //     document.body.appendChild(img);
+  //   });
+  // }
+  // 可能存在的饱和度
+  if (blur.saturation !== undefined && blur.saturation !== 1) {
+    const t = genColorMatrix(
+      gl,
+      root,
+      bg,
+      0,
+      blur.saturation!,
+      1,
+      1,
+      W,
+      H,
+    );
+    if (t) {
+      for (let i = 0, len = listB.length; i < len; i++) {
+        gl.deleteTexture(listB[i].t);
+        listB[i].t = t.list[i].t;
+      }
+      if (frameBuffer) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+      }
+    }
+  }
+  // 原始纹理上绘入结果
   gl.useProgram(program);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    tex,
-    0,
-  );
-  gl.viewport(0, 0, W, H);
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        matrix,
-        bbox: target.bbox,
-        texture: res,
-      },
-    ],
-    dx,
-    dy,
-    false,
-    -1, -1, 1, 1,
-  );
-  gl.deleteTexture(res);
+  const listT = target.list;
+  for (let i = 0, len = listT.length; i < len; i++) {
+    const { bbox, w, h, t } = listT[i];
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      t,
+      0,
+    );
+    gl.viewport(0, 0, w, h);
+    for (let j = 0, len = listB.length; j < len; j++) {
+      const { bbox: bbox2, t: t2 } = listB[j];
+      if (checkInRect(bbox2, undefined, bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1])) {
+        drawTextureCache(
+          gl,
+          w * 0.5,
+          h * 0.5,
+          program,
+          [
+            {
+              opacity: 1,
+              matrix,
+              bbox: bbox2,
+              texture: t2,
+            },
+          ],
+          -bbox[0] * scale,
+          -bbox[1] * scale,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
+    }
+  }
+  if (frameBuffer) {
+    releaseFrameBuffer(gl, frameBuffer, W, H);
+  } else {
+    gl.viewport(0, 0, W, H);
+  }
 }
 
+// 仅叶子结点矢量文本图片可用，组不可用，会干扰merge过程中生成的tempMatrix，记得结束后还原
 export function genOutline(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   node: Node,
@@ -2049,107 +2600,99 @@ export function genOutline(
   scale: number,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
-  if (node.textureOutline?.available) {
-    return node.textureOutline;
+  if (node.textureOutline[scale]?.available) {
+    return node.textureOutline[scale]!;
   }
   const x = bbox[0],
     y = bbox[1];
   const w = bbox[2] - x,
     h = bbox[3] - y;
-  while (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-    ) {
-    if (scale <= 1) {
-      break;
-    }
-    scale = scale >> 1;
-  }
-  if (
-    w * scale > config.MAX_TEXTURE_SIZE ||
-    h * scale > config.MAX_TEXTURE_SIZE
-  ) {
-    return;
-  }
-  // canvas模式特殊的dx和matrix
   const dx = -x * scale,
     dy = -y * scale;
-  const os = inject.getOffscreenCanvas(w * scale, h * scale);
-  const ctx = os.ctx;
-  ctx.fillStyle = '#FFF';
-  // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
-  for (let i = index, len = index + total + 1; i < len; i++) {
-    const { node, total, next } = structs[i];
-    let matrix;
-    if (i === index) {
-      matrix = toE(node.tempMatrix);
-    } else {
-      const parent = node.parent!;
-      matrix = multiply(parent.tempMatrix, node.matrix);
-      assignMatrix(node.tempMatrix, matrix);
-    }
-    const fillRule =
-      node.computedStyle.fillRule === FILL_RULE.EVEN_ODD
-        ? 'evenodd'
-        : 'nonzero';
-    ctx.setTransform(
-      matrix[0],
-      matrix[1],
-      matrix[4],
-      matrix[5],
-      matrix[12],
-      matrix[13],
-    );
-    // 矢量很特殊
-    if (node instanceof Polyline) {
-      const points = node.points!;
-      ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx, dy);
-      ctx.closePath();
-      ctx.fill(fillRule);
-    }
-    // 忽略子节点
-    else if (node instanceof ShapeGroup) {
-      const points = node.points!;
-      ctx.beginPath();
-      points.forEach((item) => {
-        canvasPolygon(ctx, item, scale, dx, dy);
-      });
-      ctx.closePath();
-      ctx.fill(fillRule);
-      i += total + next;
-    }
-    // 文本忽略透明度渲染
-    else if (node instanceof Text) {
-      const lineBoxList = node.lineBoxList;
-      for (let i = 0, len = lineBoxList.length; i < len; i++) {
-        const lineBox = lineBoxList[i];
-        if (lineBox.y >= h) {
-          break;
-        }
-        const list = lineBox.list;
-        const len = list.length;
-        for (let i = 0; i < len; i++) {
-          const textBox = list[i];
-          Text.setFontAndLetterSpacing(ctx, textBox, scale);
-          ctx.fillText(
-            textBox.str,
-            textBox.x * scale + dx,
-            (textBox.y + textBox.baseline) * scale + dy,
-          );
+  const w2 = w * scale,
+    h2 = h * scale;
+  const canvasCache = CanvasCache.getInstance(w2, h2, dx, dy);
+  canvasCache.available = true;
+  const list = canvasCache.list;
+  for (let i = 0, len = list.length; i < len; i++) {
+    const { x, y, os: { ctx } } = list[i];
+    const dx2 = dx - x;
+    const dy2 = dy - y;
+    ctx.fillStyle = '#FFF';
+    // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
+    for (let i = index, len = index + total + 1; i < len; i++) {
+      const { node, total, next } = structs[i];
+      let matrix: Float64Array;
+      if (i === index) {
+        matrix = toE(node.tempMatrix);
+      } else {
+        const parent = node.parent!;
+        matrix = multiply(parent.tempMatrix, node.matrix);
+        assignMatrix(node.tempMatrix, matrix);
+      }
+      const fillRule =
+        node.computedStyle.fillRule === FILL_RULE.EVEN_ODD
+          ? 'evenodd'
+          : 'nonzero';
+      ctx.setTransform(
+        matrix[0],
+        matrix[1],
+        matrix[4],
+        matrix[5],
+        matrix[12],
+        matrix[13],
+      );
+      // 矢量很特殊
+      if (node instanceof Polyline) {
+        const points = node.points!;
+        ctx.beginPath();
+        canvasPolygon(ctx, points, scale, dx2, dy2);
+        ctx.closePath();
+        ctx.fill(fillRule);
+      }
+      // 忽略子节点
+      else if (node instanceof ShapeGroup) {
+        const points = node.points!;
+        ctx.beginPath();
+        points.forEach((item) => {
+          canvasPolygon(ctx, item, scale, dx2, dy2);
+        });
+        ctx.closePath();
+        ctx.fill(fillRule);
+        i += total + next;
+      }
+      // 文本忽略透明度渲染
+      else if (node instanceof Text) {
+        const lineBoxList = node.lineBoxList;
+        for (let i = 0, len = lineBoxList.length; i < len; i++) {
+          const lineBox = lineBoxList[i];
+          if (lineBox.y >= h) {
+            break;
+          }
+          const list = lineBox.list;
+          const len = list.length;
+          for (let i = 0; i < len; i++) {
+            const textBox = list[i];
+            Text.setFontAndLetterSpacing(ctx, textBox, scale);
+            ctx.fillText(
+              textBox.str,
+              textBox.x * scale + dx2,
+              (textBox.y + textBox.baseline) * scale + dy2,
+            );
+          }
         }
       }
-    }
-    // 普通节点就是个矩形，组要跳过子节点
-    else {
-      ctx.fillRect(dx, dy, node.width * scale, node.height * scale);
-      if (node instanceof Group) {
-        i += total + next;
+      // 普通节点就是个矩形，组要跳过子节点
+      else {
+        ctx.fillRect(dx2, dy2, node.width * scale, node.height * scale);
+        if (node instanceof Group) {
+          i += total + next;
+        }
       }
     }
   }
-  const target = TextureCache.getInstance(gl, os.canvas, bbox);
-  os.release();
+  const target = TextureCache.getInstance(gl, canvasCache, bbox);
+  canvasCache.release();
   return target;
 }
 

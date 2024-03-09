@@ -95,7 +95,7 @@ class Node extends Event {
   textureFilter: Array<TextureCache | undefined>; // 有filter时的缓存
   textureMask: Array<TextureCache | undefined>; // 作为mask时的缓存
   textureTarget: Array<TextureCache | undefined>; // 指向自身所有缓存中最优先的那个
-  textureOutline?: TextureCache; // 轮廓mask特殊使用
+  textureOutline: Array<TextureCache | undefined>; // 轮廓mask特殊使用
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
   tempMatrix: Float64Array;
   tempBbox?: Float64Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
@@ -151,6 +151,7 @@ class Node extends Event {
     this.textureFilter = [];
     this.textureMask = [];
     this.textureTarget = [];
+    this.textureOutline = [];
     // merge过程中相对于merge顶点作为局部根节点时暂存的数据
     this.tempOpacity = 1;
     this.tempMatrix = identity();
@@ -273,7 +274,7 @@ class Node extends Event {
     // repaint和matrix计算需要x/y/width/height
     this.calRepaintStyle(RefreshLevel.REFLOW);
     // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
-    this.textureOutline?.release();
+    this.textureOutline.forEach((item) => item?.release());
     this._rect = undefined;
   }
 
@@ -660,7 +661,7 @@ class Node extends Event {
       this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
         TextureCache.getInstance(
           gl,
-          this.canvasCache!.offscreen.canvas,
+          canvasCache,
           (this._bbox2 || this.bbox2).slice(0),
         );
       canvasCache.release();
@@ -715,6 +716,7 @@ class Node extends Event {
     this.textureTotal.forEach((item) => item?.release());
     this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
+    this.textureOutline.forEach((item) => item?.release());
   }
 
   clearCacheUpward(includeSelf = false) {
@@ -1479,7 +1481,7 @@ class Node extends Event {
   }
 
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
-  protected adjustPosAndSize() {
+  adjustPosAndSize() {
     return false;
   }
 
@@ -1624,7 +1626,6 @@ class Node extends Event {
   }
 
   async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean) {
-    if (filter) {}
     const { props, width, height, style, computedStyle } = this;
     let resizingConstraint = 0;
     if (style.left.v === StyleUnit.PX) {

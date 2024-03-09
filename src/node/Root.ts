@@ -57,7 +57,7 @@ class Root extends Container implements FrameCallback {
   ctx: WebGL2RenderingContext | WebGLRenderingContext | undefined;
   dpi: number;
   isWebgl2?: boolean;
-  programs: any;
+  programs: Record<string, WebGLProgram>;
   refs: Record<string, Node>;
   symbolMasters: Record<string, SymbolMaster>;
   lastPage: Page | undefined; // 上一个显示的Page对象
@@ -85,6 +85,7 @@ class Root extends Container implements FrameCallback {
     // 初始化的数据
     this.dpi = props.dpi;
     this.root = this;
+    this.programs = {};
     this.refs = {};
     this.symbolMasters = {};
     this.structs = this.structure(0);
@@ -155,7 +156,6 @@ class Root extends Container implements FrameCallback {
         gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
         gl.getParameter(gl.MAX_VARYING_VECTORS),
       );
-      this.programs = {};
       this.initShaders(gl);
       this.tileManager = new TileManager(gl);
     }

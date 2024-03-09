@@ -42,7 +42,7 @@ class Geom extends Node {
     if (this.points) {
       return;
     }
-    this.textureOutline?.release();
+    this.textureOutline.forEach((item) => item?.release());
     this.points = [];
   }
 

@@ -207,10 +207,10 @@ class ArtBoard extends Container {
     const computedStyle = this.computedStyle;
     json.backgroundColor = {
       alpha: computedStyle.backgroundColor[3],
-        blue: computedStyle.backgroundColor[2] / 255,
-        green: computedStyle.backgroundColor[1] / 255,
-        red: computedStyle.backgroundColor[0] / 255,
-        _class: 'color',
+      blue: computedStyle.backgroundColor[2] / 255,
+      green: computedStyle.backgroundColor[1] / 255,
+      red: computedStyle.backgroundColor[0] / 255,
+      _class: 'color',
     };
     json.hasBackgroundColor = this.hasBackgroundColor;
     const list = await Promise.all(this.children.filter(item => {
