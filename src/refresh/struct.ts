@@ -217,7 +217,7 @@ function renderWebglTile(
     x2 = last.bbox[2];
     y2 = last.bbox[3];
   }
-  // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld不能用老的
+  // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld/filterBbox不能用老的
   for (let i = 0, len = tileRecord.length; i < len; i++) {
     const node = tileRecord[i];
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
@@ -365,7 +365,7 @@ function renderWebglTile(
         imgLoadList.push(node as Bitmap);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
-      if (isInScreen && !node.isPage && node.page) {
+      if (isInScreen && !node.isPage && node.page && target && target.available) {
         if (!firstDraw && (Date.now() - startTime) > DELTA_TIME) {
           hasRemain = true;
           root.tileLastIndex = i;
@@ -471,24 +471,46 @@ function renderWebglTile(
             );
           }
           // 有无mbm都复用这段逻辑
-          drawTextureCache(
-            gl,
-            cx2,
-            cx2,
-            program,
-            [
-              {
-                opacity,
-                bbox: target!.bbox, // 无用有coords
-                coords,
-                texture: target!.texture,
-              },
-            ],
-            -tile.x * factor / cx2,
-            -tile.y * factor / cx2,
-            false,
-            tile.x1, tile.y1, tile.x2, tile.y2,
-          );
+          const list = target.list; console.log(list)
+          for (let i = 0, len = list.length; i < len; i++) {
+            const { bbox, t } = list[i];
+            drawTextureCache(
+              gl,
+              cx2,
+              cx2,
+              program,
+              [
+                {
+                  opacity,
+                  bbox, // 无用有coords
+                  coords,
+                  texture: t,
+                },
+              ],
+              -tile.x * factor / cx2,
+              -tile.y * factor / cx2,
+              false,
+              tile.x1, tile.y1, tile.x2, tile.y2,
+            );
+          }
+          // drawTextureCache(
+          //   gl,
+          //   cx2,
+          //   cx2,
+          //   program,
+          //   [
+          //     {
+          //       opacity,
+          //       bbox: target!.bbox, // 无用有coords
+          //       coords,
+          //       texture: target!.texture,
+          //     },
+          //   ],
+          //   -tile.x * factor / cx2,
+          //   -tile.y * factor / cx2,
+          //   false,
+          //   tile.x1, tile.y1, tile.x2, tile.y2,
+          // );
           // 这里才是真正生成mbm
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
             const t = genMbm(
