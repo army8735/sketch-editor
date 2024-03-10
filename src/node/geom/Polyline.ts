@@ -718,6 +718,15 @@ class Polyline extends Geom {
       // 还原
       ctx.globalCompositeOperation = 'source-over';
     }
+    list.forEach(item => {
+      item.os.canvas.toBlob(blob => {
+        if (blob) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(blob);
+          document.body.appendChild(img);
+        }
+      });
+    });
   }
 
   override getFrameProps() {

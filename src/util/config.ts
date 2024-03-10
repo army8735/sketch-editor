@@ -2,7 +2,7 @@ export default {
   debug: false,
   offscreenCanvas: false,
   tile: false,
-  canvasSize: 2048,
+  canvasSize: 1024,
   MAX_TEXTURE_SIZE: 2048,
   MAX_TEXTURE_UNITS: 8,
   MAX_VARYING_VECTORS: 15,

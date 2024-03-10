@@ -365,7 +365,7 @@ function renderWebglTile(
         imgLoadList.push(node as Bitmap);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
-      if (isInScreen && !node.isPage && node.page && target && target.available) {
+      if (isInScreen && !node.isPage && node.page) {
         if (!firstDraw && (Date.now() - startTime) > DELTA_TIME) {
           hasRemain = true;
           root.tileLastIndex = i;
@@ -379,7 +379,7 @@ function renderWebglTile(
          * 按照page坐标系+左上原点tile坐标算出target的渲染坐标，后续每个tile渲染时都用此数据不变，
          * 但是每个tile都有一定的偏移值，这个值用tile的x/y-原点tile的x/y得出即可。
          * 需先求出相对于page的matrix，即忽略掉page及其父的matrix，逆矩阵运算。
-         * 还有由于视图存在缩放，但Tile本身尺寸是固定的UNIT*dpi（一般是256*2=512），还根视图情况进行(1,2]缩放，
+         * 还有由于视图存在缩放，但Tile本身尺寸是固定的UNIT*dpi（一般是256*2=512），还看视图情况进行(1,2]缩放，
          * 因此这个矩阵还要考虑预乘一个缩放因子，即(1,2]*dpi，记作factor。
          */
         let m = multiply(im, matrix);
@@ -389,7 +389,22 @@ function renderWebglTile(
           multiplyScale(t, factor);
           m = multiply(t, m);
         }
-        const coords = bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
+        // 只有1个渲染块时等同于不分块
+        let coords: {
+          t1: { x: number, y: number },
+          t2: { x: number, y: number },
+          t3: { x: number, y: number },
+          t4: { x: number, y: number },
+        } | undefined = (shouldRender && target!.list.length === 1)
+          ? bbox2Coords(bbox, cx2, cx2, 0, 0, false, m)
+          : undefined;
+        // >1个，即多个渲染区块，在首次遍历时计算坐标并存储下来
+        const coords2: {
+          t1: { x: number, y: number },
+          t2: { x: number, y: number },
+          t3: { x: number, y: number },
+          t4: { x: number, y: number },
+        }[] = [];
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
         if (node.isArtBoard) {
           const bbox = node._bbox || node.bbox;
@@ -398,10 +413,10 @@ function renderWebglTile(
         // console.warn(node.props.name, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
-          const bbox = tile.bbox;
+          const bboxT = tile.bbox;
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
           if (tile.complete || tile.has(node) || !isPolygonOverlapRect(
-            bbox[0], bbox[1], bbox[2], bbox[3],
+            bboxT[0], bboxT[1], bboxT[2], bboxT[3],
             [{
               x: sb.x1, y: sb.y1,
             }, {
@@ -426,8 +441,8 @@ function renderWebglTile(
           if (firstDraw) {
             firstDraw = false;
           }
-          // console.log(j, tile.uuid)
-          // tile对象绑定输出FBO，高清下尺寸不一致，用viewport实现
+          // console.log('tile', j, tile)
+          // tile对象绑定输出FBO
           if (!resFrameBuffer) {
             resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2, W2);
           } else {
@@ -471,9 +486,9 @@ function renderWebglTile(
             );
           }
           // 有无mbm都复用这段逻辑
-          const list = target.list; console.log(list)
-          for (let i = 0, len = list.length; i < len; i++) {
-            const { bbox, t } = list[i];
+          const list = target!.list;
+          // 特殊优化，对象只有1个渲染目标时等同于不分块，省略一些计算判断
+          if (list.length === 1) {
             drawTextureCache(
               gl,
               cx2,
@@ -484,7 +499,7 @@ function renderWebglTile(
                   opacity,
                   bbox, // 无用有coords
                   coords,
-                  texture: t,
+                  texture: list[0].t,
                 },
               ],
               -tile.x * factor / cx2,
@@ -493,24 +508,48 @@ function renderWebglTile(
               tile.x1, tile.y1, tile.x2, tile.y2,
             );
           }
-          // drawTextureCache(
-          //   gl,
-          //   cx2,
-          //   cx2,
-          //   program,
-          //   [
-          //     {
-          //       opacity,
-          //       bbox: target!.bbox, // 无用有coords
-          //       coords,
-          //       texture: target!.texture,
-          //     },
-          //   ],
-          //   -tile.x * factor / cx2,
-          //   -tile.y * factor / cx2,
-          //   false,
-          //   tile.x1, tile.y1, tile.x2, tile.y2,
-          // );
+          // >1个时分块，每块都要单独计算坐标值
+          else if (list.length > 1) {
+            for (let i = 0, len = list.length; i < len; i++) {
+              const { bbox, t } = list[i];
+              const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+              // 再次判断，节点可能有多区块，每个区块不一定都在对应tile上
+              if (!isPolygonOverlapRect(
+                bboxT[0], bboxT[1], bboxT[2], bboxT[3],
+                [{
+                  x: sb.x1, y: sb.y1,
+                }, {
+                  x: sb.x2, y: sb.y2,
+                }, {
+                  x: sb.x3, y: sb.y3,
+                }, {
+                  x: sb.x4, y: sb.y4,
+                }],
+              )) {
+                continue;
+              }
+              // tile循环第一次，即第0个tile时计算避免重复
+              coords2[i] = coords2[i] || bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
+              drawTextureCache(
+                gl,
+                cx2,
+                cx2,
+                program,
+                [
+                  {
+                    opacity,
+                    bbox, // 无用有coords
+                    coords: coords2[i],
+                    texture: t,
+                  },
+                ],
+                -tile.x * factor / cx2,
+                -tile.y * factor / cx2,
+                false,
+                tile.x1, tile.y1, tile.x2, tile.y2,
+              );
+            }
+          }
           // 这里才是真正生成mbm
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
             const t = genMbm(
@@ -640,6 +679,7 @@ function renderWebglTile(
       tile.complete = true;
     }
   }
+  // tile的辅助展示区块范围
   if (config.debug) {
     const tileProgram = programs.tileProgram;
     gl.useProgram(tileProgram);

@@ -60,7 +60,7 @@ function offscreenCanvas(
     ctx,
     available: true,
     release() {
-      if (!this.available) {
+      if (!this.available || config.debug) {
         return;
       }
       this.available = false;
@@ -69,9 +69,6 @@ function offscreenCanvas(
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
-      // if (config.debug && o) {
-      //   document.body.removeChild(o);
-      // }
       document.body.removeChild(o);
       o = null;
     },

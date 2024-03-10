@@ -43,17 +43,17 @@ function genNodeTree(node: Node) {
     const width = rect[2] - rect[0];
     const height = rect[3] - rect[1];
     if (!width || !height) {
-      s += '<svg class="geom" width="14" height="14"><path d="M0,0L10,0L10,10L0,10L0,0ZM4,4L14,4L14,14L4,14,L4,4Z" fill="#D8D8D8" fill-rule="evenodd" stroke="#979797" stroke-width="1"></path></svg>';
+      s += '<svg class="geom" width="12" height="12"><path d="M0,0L10,0L10,10L0,10L0,0ZM4,4L12,4L12,12L4,12,L4,4Z" fill="#D8D8D8" fill-rule="evenodd" stroke="#979797" stroke-width="1"></path></svg>';
     } else {
       let scale, x = 0, y = 0;
       if(width >= height) {
-        scale = 14 / width;
-        y = (14 - height * scale) * 0.5;
+        scale = 12 / width;
+        y = (12 - height * scale) * 0.5;
       } else {
-        scale = 14 / height;
-        x = (14 - width * scale) * 0.5;
+        scale = 12 / height;
+        x = (12 - width * scale) * 0.5;
       }
-      const svg = node.toSvg(scale).replace('<svg', `<svg style="transform:translate(${x}px, ${y}px)scale(${scale})"`);
+      const svg = node.toSvg(scale).replace('<svg', `<svg style="transform:translate(${x+2}px, ${y+2}px)scale(${scale})"`);
       s += `<span class="geom">` + svg + '</span>';
     }
   } else {

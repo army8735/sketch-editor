@@ -211,7 +211,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
-  console.warn('mergeList', mergeList);
+  // console.warn('mergeList', mergeList);
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
@@ -1159,8 +1159,9 @@ function genGaussBlur(
     });
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
-  if (listT.length > 1) {
+  if (listT.length > 1) { console.log(listT.slice(0))
     const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
+    console.log(listO.slice(0).map(item => item.bbox.join(', ')))
     // 遍历这些相邻部分，先绘制原始图像
     for (let i = 0, len = listO.length; i < len; i++) {
       const item = listO[i];

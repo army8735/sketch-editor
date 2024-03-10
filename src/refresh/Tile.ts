@@ -1,7 +1,7 @@
 import { createTexture } from '../gl/webgl';
 import Node from '../node/Node';
 
-const UNIT = 256; // 高清方案下尺寸要*2=512
+const UNIT = 512; // 高清方案下尺寸要*2=512
 let uuid = 0;
 
 class Tile {
@@ -15,7 +15,7 @@ class Tile {
   size: number;
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   texture: WebGLTexture | undefined;
-  bbox: Float64Array; // 相对于page的坐标，没有旋转所以只算2个顶点即可
+  bbox: Float64Array; // 相对于画布的坐标，没有旋转所以只算2个顶点即可
   x1: number;
   y1: number;
   x2: number;
