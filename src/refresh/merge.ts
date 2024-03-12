@@ -1159,9 +1159,8 @@ function genGaussBlur(
     });
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
-  if (listT.length > 1) { console.log(listT.slice(0))
+  if (listT.length > 1) {
     const listO = createInOverlay(gl, res, x, y, w, h, scale, spread);
-    console.log(listO.slice(0).map(item => item.bbox.join(', ')))
     // 遍历这些相邻部分，先绘制原始图像
     for (let i = 0, len = listO.length; i < len; i++) {
       const item = listO[i];
