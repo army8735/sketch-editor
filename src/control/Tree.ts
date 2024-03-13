@@ -79,17 +79,17 @@ function genNodeTree(node: Node) {
   return dl;
 }
 
-function getOffsetTop(node: HTMLElement, top: HTMLElement) {
-  let count = 0;
-  let target: HTMLElement | null = node;
-  while (target && target !== top) {
-    if (target.nodeName === 'DL') {
-      count += target.offsetTop;
-    }
-    target = target.parentElement;
-  }
-  return count;
-}
+// function getOffsetTop(node: HTMLElement, top: HTMLElement) {
+//   let count = 0;
+//   let target: HTMLElement | null = node;
+//   while (target && target !== top) {
+//     if (target.nodeName === 'DL') {
+//       count += target.offsetTop;
+//     }
+//     target = target.parentElement;
+//   }
+//   return count;
+// }
 
 function getNodeType(node: Node) {
   let type = 'default';
@@ -273,32 +273,29 @@ export default class Tree extends Event {
     dt.forEach((item) => {
       item.classList.remove('active');
     });
-    let isView = true;
-    const height = this.dom.clientHeight;
-    const scroll = this.dom.scrollTop;
-    let firstT = 0;
-    nodes.forEach((item, i) => {
-      const uuid = item.props.uuid;
-      if (uuid) {
-        const dt = this.dom.querySelector(`dl[uuid="${uuid}"] dt`);
-        if (dt) {
-          dt.classList.add('active');
-          const t = getOffsetTop(dt as HTMLElement, this.dom);
-          if (!i) {
-            firstT = t;
+    if (nodes.length) {
+      const dt = this.dom.querySelector(`dl[uuid="${nodes[0].props.uuid}"] dt`);
+      if (dt) {
+        let dl = dt.parentElement;
+        while(dl) {
+          if (dl.nodeName === 'DL') {
+            dl.classList.add('expand');
+            const uuid = dl.getAttribute('uuid');
+            if (uuid) {
+              const node = this.root.refs[uuid];
+              if (node) {
+                node.props.isExpanded = true;
+              }
+            }
           }
-          const h = (dt as HTMLElement).offsetHeight;
-          if (t < scroll || (t + h) > scroll + height) {
-            isView = false;
+          if (dl === this.dom) {
+            break;
           }
+          dl = dl.parentElement;
         }
+        dt.classList.add('active');
+        dt.scrollIntoView();
       }
-    });
-    if (!isView) {
-      this.dom.scrollTo({
-        top: firstT,
-        behavior: 'smooth',
-      });
     }
   }
 }
