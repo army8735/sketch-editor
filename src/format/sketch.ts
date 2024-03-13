@@ -49,13 +49,9 @@ export async function openAndConvertSketchZip(zipFile: JSZip) {
     'document.json',
   );
   const pages: SketchFormat.Page[] = [];
-  await Promise.all(
-    document.pages.map((page: { _ref: string }, i: number) => {
-      return readJsonFile(zipFile, page._ref + '.json').then((pageJson) => {
-        pages[i] = pageJson;
-      });
-    }),
-  );
+  for (let i = 0, len = document.pages.length; i < len; i++) {
+    pages[i] = await readJsonFile(zipFile, document.pages[i]._ref + '.json');
+  }
   const meta = await readJsonFile(zipFile, 'meta.json');
   const user = await readJsonFile(zipFile, 'user.json');
   return await convertSketch(
@@ -80,6 +76,7 @@ async function readJsonFile(zipFile: JSZip, filename: string) {
 type Opt = {
   zipFile?: JSZip;
   user: any;
+  imgBlobRecord: Record<string, string>;
 };
 
 export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
@@ -110,18 +107,20 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
   const opt: Opt = {
     zipFile,
     user: json.user,
+    imgBlobRecord: {},
   };
   // 外部控件
-  const symbolMasters = await Promise.all(
-    (json.document?.foreignSymbols || []).map((item: SketchFormat.ForeignSymbol) => {
-      return convertItem(item.symbolMaster, opt, W, H);
-    })
-  );
-  const pages = await Promise.all(
-    (json.pages || []).map((page: SketchFormat.Page) => {
-      return convertPage(page, opt);
-    }),
-  );
+  const symbolMasters: any[] = [];
+  const foreignSymbols = json.document?.foreignSymbols || [];
+  for (let i = 0, len = foreignSymbols.length; i < len; i++) {
+    symbolMasters[i] = await convertItem(foreignSymbols[i].symbolMaster, opt, W, H);
+  }
+  const pages: any[] = [];
+  if (json.pages) {
+    for (let i = 0, len = json.pages.length; i < len; i++) {
+      pages[i] = await convertPage(json.pages[i], opt);
+    }
+  }
   const document = json.document;
   return {
     document: {
@@ -143,11 +142,11 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
 }
 
 async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
-  const children = await Promise.all(
-    page.layers.map((layer: SketchFormat.AnyLayer) => {
-      return convertItem(layer, opt, W, H);
-    }),
-  );
+  const children: (JNode | undefined)[] = [];
+  for (let i = 0, len = page.layers.length; i < len; i++) {
+    const res = await convertItem(page.layers[i], opt, W, H);
+    children.push(res);
+  }
   let x = 0,
     y = 0,
     zoom = 1;
@@ -243,11 +242,11 @@ async function convertItem(
   // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
   if (layer._class === SketchFormat.ClassValue.Artboard
     || layer._class === SketchFormat.ClassValue.SymbolMaster) {
-    const children = await Promise.all(
-      layer.layers.map((child: SketchFormat.AnyLayer) => {
-        return convertItem(child, opt, width as number, height as number);
-      }),
-    );
+    const children: (JNode | undefined)[] = [];
+    for (let i = 0, len = layer.layers.length; i < len; i++) {
+      const res = await convertItem(layer.layers[i], opt, width as number, height as number);
+      children.push(res);
+    }
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
       ? [
@@ -564,11 +563,11 @@ async function convertItem(
     } as JSymbolInstance;
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
-    const children = await Promise.all(
-      layer.layers.map((child: SketchFormat.AnyLayer) => {
-        return convertItem(child, opt, layer.frame.width, layer.frame.height);
-      }),
-    );
+    const children: (JNode | undefined)[] = [];
+    for (let i = 0, len = layer.layers.length; i < len; i++) {
+      const res = await convertItem(layer.layers[i], opt, layer.frame.width, layer.frame.height);
+      children.push(res);
+    }
     const {
       fill,
       fillEnable,
@@ -1010,15 +1009,11 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
-    const children = await Promise.all(
-      layer.layers.map((child: SketchFormat.AnyLayer) => {
-        if (child._class === SketchFormat.ClassValue.Group) {
-          // @ts-ignore sketch矢量组中会有普通组，转为矢量组，figma中直接忽略子树，mastergo是删去这一层
-          child._class = SketchFormat.ClassValue.ShapeGroup;
-        }
-        return convertItem(child, opt, layer.frame.width, layer.frame.height);
-      }),
-    );
+    const children: (JNode | undefined)[] = [];
+    for (let i = 0, len = layer.layers.length; i < len; i++) {
+      const res = await convertItem(layer.layers[i], opt, layer.frame.width, layer.frame.height);
+      children.push(res);
+    }
     return {
       tagName: TAG_NAME.SHAPE_GROUP,
       props: {
@@ -1297,6 +1292,9 @@ async function readImageFile(filename: string, opt: Opt) {
   if (!/\.\w+$/.test(filename)) {
     filename = `${filename}.png`;
   }
+  if (opt.imgBlobRecord[filename2]) {
+    return opt.imgBlobRecord[filename2];
+  }
   let file = opt.zipFile.file(filename);
   if (!file) {
     file = opt.zipFile.file(filename2);
@@ -1318,6 +1316,7 @@ async function readImageFile(filename: string, opt: Opt) {
   } else {
     img = await loadImg(blob);
   }
+  opt.imgBlobRecord[filename2] = img.src;
   return img.src;
 }
 

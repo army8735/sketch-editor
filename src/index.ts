@@ -28,7 +28,7 @@ export default {
         height,
       },
     });
-    root.appendTo(canvas); console.error(json);
+    root.appendTo(canvas);
 
     // symbolMaster优先初始化，其存在于控件页面的直接子节点，以及外部json，先收集起来
     const smList: JSymbolMaster[] = [];

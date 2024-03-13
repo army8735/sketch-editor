@@ -752,7 +752,7 @@ function renderWebglTile(
             ],
             0,
             0,
-            false,
+            true,
             -1, -1, 1, 1,
           );
         }
@@ -1037,7 +1037,7 @@ function renderWebglNoTile(
       }
     }
   }
-  // 最后将离屏离屏frameBuffer绘入画布
+  // 最后将离屏frameBuffer绘入画布
   releaseFrameBuffer(gl, resFrameBuffer, W, H);
   drawTextureCache(
     gl,
