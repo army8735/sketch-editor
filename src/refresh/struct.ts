@@ -346,13 +346,16 @@ function renderWebglTile(
         isInScreen = false;
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
       if (target && target.available) {
-        isInScreen = checkInRect(target.bbox, matrix, x1, y1, x2, y2);
+        isInScreen = checkInRect(
+          target.bbox, matrix,
+          x1, y1, x2 - x1, y2 - y1,
+        );
       }
       // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
       else {
         isInScreen = checkInRect(
           node._filterBbox || node.filterBbox, matrix,
-          x1, y1, x2, y2,
+          x1, y1, x2 - x1, y2 - y1,
         );
         // 单个的alpha蒙版不渲染
         if (isInScreen && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
