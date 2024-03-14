@@ -25,71 +25,57 @@
 <script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
 <script src="../dist/index.js"></script>
 <script>
-  // const $input = document.querySelector('#file');
-  // $input.onchange = function(e) {
-  //   const file = $input.files[0];
-  //   $input.value = null;
-  //   $input.blur();
-  //   const reader = new FileReader();
-  //   reader.readAsArrayBuffer(file);
-  //   reader.onload = function() {
-  //     editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
-  //       const canvas = document.createElement('canvas');
-  //
-  //       function resize() {
-  //         const { clientWidth, clientHeight } = $canvasC;
-  //         canvas.width = clientWidth * dpi;
-  //         canvas.height = clientHeight * dpi;
-  //         const o = $canvasC.getBoundingClientRect();
-  //         originX = o.left;
-  //         originY = o.top;
-  //         if(root) {
-  //           root.updateStyle({
-  //             width: clientWidth * dpi,
-  //             height: clientHeight * dpi,
-  //           });
-  //         }
-  //       }
-  //
-  //       resize();
-  //       window.onresize = resize;
-  //       if(root) {
-  //         root.destroy();
-  //         $page.innerHTML = '';
-  //         root = null;
-  //         $canvasC.innerHTML = '';
-  //         hideHover();
-  //         hideSelect();
-  //       }
-  //       $canvasC.appendChild(canvas);
-  //       root = editor.parse(json, canvas, dpi);
-  //       root.setPageIndex(json.currentPageIndex || 0);
-  //     });
-  //   }
-  // };
+  // editor.config.tile = true;
+  // editor.config.debug = true;
 
-  fetch('./1.sketch')
-    .then((res) => {
-      return res.arrayBuffer();
-    })
-    .then((buff) => {
-      editor
-        .openAndConvertSketchBuffer(buff)
-        .then(json => {
-          const dpi = 2;
-          const $canvasC = document.querySelector('#canvasC');
+  const $canvasC = document.querySelector('#canvasC');
+  const dpi = 2;
+  const $input = document.querySelector('#file');
+  $input.onchange = function(e) {
+    const file = $input.files[0];
+    $input.value = null;
+    $input.blur();
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = function() {
+      editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
+        const canvas = document.createElement('canvas');
+        let root;
+
+        function resize() {
           const { clientWidth, clientHeight } = $canvasC;
-          const canvas = document.createElement('canvas');
           canvas.width = clientWidth * dpi;
           canvas.height = clientHeight * dpi;
-          $canvasC.appendChild(canvas);
-          const root = editor.parse(json, canvas, dpi);
-          root.setPageIndex(json.currentPageIndex || 0);
+          const o = $canvasC.getBoundingClientRect();
+          originX = o.left;
+          originY = o.top;
+          if(root) {
+            root.updateStyle({
+              width: clientWidth * dpi,
+              height: clientHeight * dpi,
+            });
+          }
+        }
 
-          const listener = editor.control.initCanvasControl(root, $canvasC);
-          editor.control.initTreeList(root, document.querySelector('#tree'), listener);
-        });
-    })
+        resize();
+        window.onresize = resize;
+        if(root) {
+          root.destroy();
+          $page.innerHTML = '';
+          root = null;
+          $canvasC.innerHTML = '';
+          hideHover();
+          hideSelect();
+        }
+        $canvasC.appendChild(canvas);
+        root = editor.parse(json, canvas, dpi);
+        root.setPageIndex(json.currentPageIndex || 0);
+
+        const listener = editor.control.initCanvasControl(root, $canvasC);
+        editor.control.initTreeList(root, document.querySelector('#tree'), listener);
+      });
+    }
+  };
 </script>
 </body>
 </html>

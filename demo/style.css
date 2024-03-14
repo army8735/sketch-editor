@@ -14,7 +14,7 @@ body {
   height: 100%;
   overflow: hidden;
 }
-.menu {
+.wrap .menu {
   position: absolute;
   left: 0;
   top: 0;
@@ -34,6 +34,7 @@ body {
   bottom: 0;
   display: flex;
   width: 100%;
+  overflow: hidden;
 }
 .list {
   position: relative;
@@ -56,9 +57,6 @@ body {
   overflow-y: scroll;
   list-style: none;
 }
-.page::-webkit-scrollbar {
-  display: none;
-}
 .page li {
   display: flex;
   align-items: center;
@@ -79,9 +77,6 @@ body {
   width: 100%;
   overflow-y: scroll;
   font-size: 12px;
-}
-.tree::-webkit-scrollbar {
-  display: none;
 }
 .tree dl {
   margin: 0 0 0 10px;

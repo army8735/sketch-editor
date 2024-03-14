@@ -13,29 +13,30 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
 
-.menu {
-  position: absolute;
-  left: 0;
-  top: 0;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  width: 100%;
-  height: 50px;
-  background: #413B3D;
-  z-index: 10;
-}
+  .menu {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    width: 100%;
+    height: 50px;
+    background: #413B3D;
+    z-index: 10;
+  }
 
-.wrap>.container {
-  position: absolute;
-  left: 0;
-  top: 50px;
-  bottom: 0;
-  display: flex;
-  width: 100%;
+  > .container {
+    position: absolute;
+    left: 0;
+    top: 50px;
+    bottom: 0;
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+  }
 }
 
 .list {
@@ -60,10 +61,6 @@ html, body {
   overflow-y: scroll;
   list-style: none;
 
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
   li {
     display: flex;
     align-items: center;
@@ -87,10 +84,6 @@ html, body {
   width: 100%;
   overflow-y: scroll;
   font-size: 12px;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 
   dl {
     margin: 0 0 0 10px;
