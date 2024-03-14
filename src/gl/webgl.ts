@@ -540,6 +540,7 @@ export function drawRadial(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   program: WebGLProgram,
   texture: WebGLTexture,
+  ratio: number,
   kernel: number,
   center: [number, number],
   w: number,
@@ -565,12 +566,12 @@ export function drawRadial(
   gl.uniform1i(u_kernel, kernel);
   const u_center = gl.getUniformLocation(program, 'u_center');
   gl.uniform2f(u_center, center[0], center[1]);
-  const u_size = gl.getUniformLocation(program, 'u_size');
-  gl.uniform2f(u_size, w, h);
+  const u_ratio = gl.getUniformLocation(program, 'u_ratio');
+  gl.uniform1f(u_ratio, ratio);
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
   let res = texture;
-  const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收
-  for (let i = 0; i < 3; i++) {
+  const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收，先1次
+  for (let i = 0; i < 1; i++) {
     const t = createTexture(gl, 0, undefined, w, h);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,

@@ -1381,10 +1381,21 @@ function genRadialBlur(
   const d = kernelSize(sigma);
   const spread = outerSizeByD(d);
   const bboxR = bboxS.slice(0);
-  bboxR[0] -= spread;
-  bboxR[1] -= spread;
-  bboxR[2] += spread;
-  bboxR[3] += spread;
+  // 根据center和shader算法得四周扩展，中心点和四边距离是向量长度r，spread*2/diagonal是扩展比例
+  const w1 = bboxR[2] - bboxR[0],
+    h1 = bboxR[3] - bboxR[1];
+  const cx = center[0] * w1,
+    cy = center[1] * h1;
+  const diagonal = Math.sqrt(w1 * w1 + h1 * h1);
+  const ratio = spread * 2 / diagonal;
+  const left = Math.ceil(ratio * cx);
+  const right = Math.ceil(ratio * (w1 - cx));
+  const top = Math.ceil(ratio * cy);
+  const bottom = Math.ceil(ratio * (h1 - cy));
+  bboxR[0] -= left;
+  bboxR[1] -= top;
+  bboxR[2] += right;
+  bboxR[3] += bottom;
   // 写到一个扩展好尺寸的tex中方便后续处理
   const x = bboxR[0],
     y = bboxR[1];
@@ -1405,18 +1416,18 @@ function genRadialBlur(
   gl.useProgram(programRadial);
   const res = TextureCache.getEmptyInstance(gl, bboxR);
   const listR = res.list;
-  const cx0 = center[0] * w,
-    cy0 = center[1] * h;
+  const cx0 = cx + left,
+    cy0 = cy + top;
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
     const w2 = bbox[2] - bbox[0],
       h2 = bbox[3] - bbox[1];
     const center2 = [
-      (cx0 - bbox[0]) / w2,
-      (cy0 - bbox[1]) / h2,
+      (cx0 - bbox[0] + bboxR[0]) / w2,
+      (cy0 - bbox[1] + bboxR[1]) / h2,
     ] as [number, number];
-    const tex = drawRadial(gl, programRadial, t, spread * scale, center2, w, h);
+    const tex = drawRadial(gl, programRadial, t, ratio,  spread * scale, center2, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1440,8 +1451,8 @@ function genRadialBlur(
       );
       gl.viewport(0, 0, w, h);
       const center2 = [
-        (cx0 - bbox[0]) / w2,
-        (cy0 - bbox[1]) / h2,
+        (cx0 - bbox[0] + bboxR[0]) / (bbox[2] - bbox[0]),
+        (cy0 - bbox[1] + bboxR[0]) / (bbox[3] - bbox[1]),
       ] as [number, number];
       const cx = w * 0.5,
         cy = h * 0.5;
@@ -1479,7 +1490,7 @@ function genRadialBlur(
       }
       if (hasDraw) {
         gl.useProgram(programRadial);
-        item.t = drawRadial(gl, programRadial, t, spread * scale, center2, w, h);
+        item.t = drawRadial(gl, programRadial, t, ratio, spread * scale, center2, w, h);
       }
       gl.deleteTexture(t);
     }

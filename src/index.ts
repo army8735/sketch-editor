@@ -16,7 +16,13 @@ import { version } from '../package.json';
 export default {
   version,
   parse(json: JFile, canvas: HTMLCanvasElement, dpi = 1) {
-    const { width, height } = canvas;
+    let { width, height } = canvas;
+    if (width <= 0) {
+      width = 1;
+    }
+    if (height <= 0) {
+      height = 1;
+    }
     const root = new node.Root({
       dpi,
       uuid: json.document.uuid,
