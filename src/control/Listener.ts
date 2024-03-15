@@ -3,7 +3,8 @@ import Root from '../node/Root';
 import Page from '../node/Page';
 import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
-import { ComputedStyle, Style, StyleUnit } from '../style/define';
+import Group from '../node/Group';
+import { ComputedStyle, Style, StyleUnit, TEXT_BEHAVIOUR } from '../style/define';
 import Event from '../util/Event';
 import Select from './Select';
 import Input from './Input';
@@ -36,6 +37,8 @@ export default class Listener extends Event {
   pageTy: number;
   select: Select;
   selected: Node[];
+  hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
+  textState: { isLeft: boolean, isRight: boolean, isTop: boolean }[];
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   input: Input;
@@ -64,6 +67,8 @@ export default class Listener extends Event {
     this.pageTx = 0;
     this.pageTy = 0;
     this.selected = [];
+    this.hasControl = false;
+    this.textState = [];
     this.abcStyle = [];
     this.computedStyle = [];
     this.updateOrigin();
@@ -112,9 +117,21 @@ export default class Listener extends Event {
     // 点到控制html上
     if (isControl) {
       this.isControl = isControl;
+      this.hasControl = false;
       this.controlType = target.className;
       this.startX = e.pageX;
       this.startY = e.pageY;
+      this.textState.splice(0);
+      // 调整前先锁住group，防止自适应，在mouseup整体结束后统一进行，text也要记住状态
+      this.selected.forEach((item, i) => {
+        const p = item.parent;
+        if (p && p.isGroup && p instanceof Group) {
+          p.fixedPosAndSize = true;
+        }
+        if (item.isText && item instanceof Text) {
+          this.textState[i] = item.beforeEdit();
+        }
+      });
       this.abcStyle = selected.map((item) => {
         // resize画板children的定位尺寸临时变为固定px
         if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
@@ -490,7 +507,20 @@ export default class Listener extends Event {
             }
           }
         }
+        if (node.isText && node instanceof Text) {
+          if (o.left || o.right || o.width) {
+            if (node.textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE) {
+              node.textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
+            }
+          }
+          if (o.top || o.bottom || o.height) {
+            if (node.textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE) {
+              node.textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
+            }
+          }
+        }
         node.updateStyle(o);
+        this.hasControl = true;
       });
       this.select.updateSelect(this.selected);
       this.emit(Listener.RESIZE_NODE, this.selected);
@@ -610,6 +640,25 @@ export default class Listener extends Event {
       if (this.isMouseMove) {
         this.selected.forEach((node) => {
           node.checkSizeChange();
+        });
+      }
+      // 调整前锁住的group，结束后统一进行
+      this.selected.forEach((item) => {
+        const p = item.parent;
+        if (p && p.isGroup && p instanceof Group) {
+          p.fixedPosAndSize = false;
+        }
+      });
+      if (this.hasControl) {
+        this.hasControl = false;
+        this.selected.forEach((item, i) => {
+          if (item.isText && item instanceof Text) {
+            const o = this.textState[i];
+            if (o) {
+              item.afterEdit(o.isLeft, o.isRight, o.isTop);
+            }
+          }
+          item.checkPosSizeUpward();
         });
       }
     } else if (this.isMouseMove) {

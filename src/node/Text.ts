@@ -450,14 +450,14 @@ class Text extends Node {
     if (letterSpacing && letterSpacing < 0) {
       maxW -= letterSpacing;
     }
-    let fixedLeft = false;
-    let fixedRight = false;
-    if (style.left.u !== StyleUnit.AUTO) {
-      fixedLeft = true;
-    }
-    if (style.right.u !== StyleUnit.AUTO) {
-      fixedRight = true;
-    }
+    // let fixedLeft = false;
+    // let fixedRight = false;
+    // if (style.left.u !== StyleUnit.AUTO) {
+    //   fixedLeft = true;
+    // }
+    // if (style.right.u !== StyleUnit.AUTO) {
+    //   fixedRight = true;
+    // }
     /**
      * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
      * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
@@ -468,26 +468,45 @@ class Text extends Node {
       const dw = maxW - this.width;
       if (dw) {
         this.width = computedStyle.width = maxW;
-        // 不可能左右都固定，只需考虑%修正，px固定修改尺寸不影响，右固定只有可能是px不可能%
-        const { width } = style;
+        // 可能上下都固定，也可能上+高
+        const { left, right, width } = style;
         // if (left.u === StyleUnit.PERCENT) {
         //   const half = dw * 0.5;
         //   left.v += half * 100 / data.w;
         //   computedStyle.left += half;
         //   computedStyle.right += half;
         // }
-        if (fixedLeft && fixedRight) {
-        } else if (fixedLeft) {
-          if (width.u === StyleUnit.PX) {
-            width.v += dw;
+        if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
+          if (left.u === StyleUnit.PX) {
+            left.v += dw;
           }
-          else if (width.u === StyleUnit.PERCENT) {
-            width.v += dw * 100 / data.w;
+          else if (left.u === StyleUnit.PERCENT) {
+            left.v += dw * 100 / data.w;
           }
-          computedStyle.right -= dw;
-        } else if (fixedRight) {
-          computedStyle.left -= dw;
+          if (right.u === StyleUnit.PX) {
+            right.v -= dw;
+          }
+          else if (right.u === StyleUnit.PERCENT) {
+            right.v -= dw * 100 / data.w;
+          }
         }
+        else if (width.u === StyleUnit.PX) {
+          width.v += dw;
+        }
+        else if (width.u === StyleUnit.PERCENT) {
+          width.v += dw * 100 / data.w;
+        }
+        // else if (fixedLeft) {
+        //   if (width.u === StyleUnit.PX) {
+        //     width.v += dw;
+        //   }
+        //   else if (width.u === StyleUnit.PERCENT) {
+        //     width.v += dw * 100 / data.w;
+        //   }
+        //   computedStyle.right -= dw;
+        // } else if (fixedRight) {
+        //   computedStyle.left -= dw;
+        // }
       }
     }
     if (autoH) {
@@ -495,19 +514,33 @@ class Text extends Node {
       const dh = h - this.height;
       if (dh) {
         this.height = computedStyle.height = h;
-        // 不可能上下都固定，只需考虑%修正，px固定修改尺寸不影响，底固定只有可能是px不可能%
-        const { height } = style;
+        // 可能上下都固定，也可能上+高
+        const { top, bottom, height } = style;
         // if (top.u === StyleUnit.PERCENT) {
         //   const half = dh * 0.5;
         //   top.v += half * 100 / data.h;
         //   computedStyle.top += half;
         //   computedStyle.bottom += half;
         // }
-        if (height.u === StyleUnit.PX) {
+        if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+          if (top.u === StyleUnit.PX) {
+            top.v += dh;
+          }
+          else if (top.u === StyleUnit.PERCENT) {
+            top.v += dh * 100 / data.h;
+          }
+          if (bottom.u === StyleUnit.PX) {
+            bottom.v -= dh;
+          }
+          else if (bottom.u === StyleUnit.PERCENT) {
+            bottom.v -= dh * 100 / data.h;
+          }
+        }
+        else if (height.u === StyleUnit.PX) {
           height.v += dh;
         }
         else if (height.u === StyleUnit.PERCENT) {
-          height.v += dh * 0.5;
+          height.v += dh * 100 / data.h;
         }
       }
     }
@@ -1346,12 +1379,13 @@ class Text extends Node {
   beforeEdit() {
     const { style, computedStyle } = this;
     const { left, right, top, translateX, translateY } = style;
-    const { textAlign, width } = computedStyle;
+    const { textAlign, width, height } = computedStyle;
     // const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
     // const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
     const isLeft = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.LEFT;
     if (isLeft) {
       const { left: left2 } = computedStyle;
+      computedStyle.left -= width * 0.5;
       left.v = left2 - width * 0.5;
       left.u = StyleUnit.PX;
       translateX.v = 0;
@@ -1360,8 +1394,9 @@ class Text extends Node {
     const isRight = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.RIGHT;
     if (isRight) {
       const { right: right2 } = computedStyle;
-      left.v = 0;
-      left.u = StyleUnit.AUTO;
+      computedStyle.right -= width * 0.5;
+      // left.v = 0;
+      // left.u = StyleUnit.AUTO;
       right.v = right2 + width * 0.5;
       right.u = StyleUnit.PX;
       translateX.v = 0;
@@ -1369,13 +1404,14 @@ class Text extends Node {
     }
     const isTop = top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
     if (isTop) {
-      const { top: top2, height: height2 } = computedStyle;
-      top.v = top2 - height2 * 0.5;
+      const { top: top2 } = computedStyle;
+      computedStyle.top -= height * 0.5;
+      top.v = top2 - height * 0.5;
       top.u = StyleUnit.PX;
       translateY.v = 0;
       translateY.u = StyleUnit.PX;
     }
-    return { isLeft, isRight, width, isTop };
+    return { isLeft, isRight, isTop };
   }
 
   // 改变后如果是中心对齐还原
@@ -1393,17 +1429,18 @@ class Text extends Node {
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
       computedStyle.left = v;
-    } else if (isRight) {
+    }
+    if (isRight) {
       const width = this.width;
-      const v = computedStyle.left + width * 0.5;
-      left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent!.width;
-      left.u = StyleUnit.PERCENT;
-      right.v = 0;
-      right.u = StyleUnit.AUTO;
+      const v = computedStyle.right + width * 0.5;
+      right.v = ((computedStyle.right + width * 0.5) * 100) / this.parent!.width;
+      right.u = StyleUnit.PERCENT;
+      // right.v = 0;
+      // right.u = StyleUnit.AUTO;
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
-      computedStyle.left = v;
-      computedStyle.right -= width * 0.5;
+      computedStyle.right = v;
+      // computedStyle.right -= width * 0.5;
     }
     if (isTop) {
       const height = this.height;
