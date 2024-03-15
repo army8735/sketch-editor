@@ -1343,13 +1343,13 @@ class Text extends Node {
    * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），
    * 将left移至最左侧，translateX取消-50%，同时要考虑textAlign
    */
-  private beforeEdit() {
-    const { style, computedStyle, textBehaviour } = this;
+  beforeEdit() {
+    const { style, computedStyle } = this;
     const { left, right, top, translateX, translateY } = style;
     const { textAlign, width } = computedStyle;
-    const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
-    const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
-    const isLeft = autoW && left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.LEFT;
+    // const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
+    // const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
+    const isLeft = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.LEFT;
     if (isLeft) {
       const { left: left2 } = computedStyle;
       left.v = left2 - width * 0.5;
@@ -1357,7 +1357,7 @@ class Text extends Node {
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
-    const isRight = autoW && left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.RIGHT;
+    const isRight = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.RIGHT;
     if (isRight) {
       const { right: right2 } = computedStyle;
       left.v = 0;
@@ -1367,7 +1367,7 @@ class Text extends Node {
       translateX.v = 0;
       translateX.u = StyleUnit.PX;
     }
-    const isTop = autoH && top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
+    const isTop = top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
     if (isTop) {
       const { top: top2, height: height2 } = computedStyle;
       top.v = top2 - height2 * 0.5;
@@ -1379,7 +1379,7 @@ class Text extends Node {
   }
 
   // 改变后如果是中心对齐还原
-  private afterEdit(isLeft: boolean, isRight: boolean, isTop: boolean) {
+  afterEdit(isLeft: boolean, isRight: boolean, isTop: boolean) {
     if (!isLeft && !isRight && !isTop) {
       return;
     }
