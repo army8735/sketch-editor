@@ -14,6 +14,7 @@ const EPS = 1e-2;
 
 class Group extends Container {
   fixedPosAndSize: boolean;
+
   constructor(props: Props, children: Node[]) {
     super(props, children);
     this.isGroup = true;
@@ -68,7 +69,8 @@ class Group extends Container {
       }
       if (computedStyle.maskMode) {
         isMask = true;
-      } else if (computedStyle.breakMask) {
+      }
+      else if (computedStyle.breakMask) {
         isMask = false;
       }
       if (i) {
@@ -76,7 +78,8 @@ class Group extends Container {
         rect.minY = Math.min(rect.minY, minY);
         rect.maxX = Math.max(rect.maxX, maxX);
         rect.maxY = Math.max(rect.maxY, maxY);
-      } else {
+      }
+      else {
         rect.minX = minX;
         rect.minY = minY;
         rect.maxX = maxX;
@@ -109,13 +112,15 @@ class Group extends Container {
       computedStyle.left -= dx;
       if (left.u === StyleUnit.PX) {
         left.v = computedStyle.left;
-      } else if (left.u === StyleUnit.PERCENT && gw) {
+      }
+      else if (left.u === StyleUnit.PERCENT && gw) {
         left.v = (computedStyle.left * 100) / gw;
       }
       computedStyle.right += dw;
       if (right.u === StyleUnit.PX) {
         right.v = computedStyle.right;
-      } else if (right.u === StyleUnit.PERCENT && gw) {
+      }
+      else if (right.u === StyleUnit.PERCENT && gw) {
         right.v = (computedStyle.right * 100) / gw;
       }
     }
@@ -125,13 +130,15 @@ class Group extends Container {
       computedStyle.top -= dy;
       if (top.u === StyleUnit.PX) {
         top.v = computedStyle.top;
-      } else if (top.u === StyleUnit.PERCENT && gh) {
+      }
+      else if (top.u === StyleUnit.PERCENT && gh) {
         top.v = (computedStyle.top * 100) / gh;
       }
       computedStyle.bottom += dh;
       if (bottom.u === StyleUnit.PX) {
         bottom.v = computedStyle.bottom;
-      } else if (bottom.u === StyleUnit.PERCENT && gh) {
+      }
+      else if (bottom.u === StyleUnit.PERCENT && gh) {
         bottom.v = (computedStyle.bottom * 100) / gh;
       }
     }

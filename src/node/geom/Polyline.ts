@@ -57,7 +57,8 @@ class Polyline extends Geom {
       item.absY = (item.y || 0) * height;
       if (isCornerPoint(item)) {
         hasCorner = true;
-      } else {
+      }
+      else {
         if (item.hasCurveTo) {
           item.absTx = item.tx * width;
           item.absTy = item.ty * height;
@@ -296,7 +297,8 @@ class Polyline extends Geom {
       const dy2 = dy - y;
       if (scale !== 1) {
         ctx.setLineDash(strokeDasharray.map((i) => i * scale));
-      } else {
+      }
+      else {
         ctx.setLineDash(strokeDasharray);
       }
       ctx.beginPath();
@@ -400,7 +402,8 @@ class Polyline extends Geom {
                     ctx.globalCompositeOperation = 'source-over';
                   }
                   os.release();
-                } else if (!loader.error && !loader.loading) {
+                }
+                else if (!loader.error && !loader.loading) {
                   this.root!.imgLoadingCount++;
                 }
               }
@@ -453,7 +456,8 @@ class Polyline extends Geom {
                 lg.addColorStop(item.offset!, color2rgbaStr(item.color));
               });
               ctx.fillStyle = lg;
-            } else if (f.t === GRADIENT.RADIAL) {
+            }
+            else if (f.t === GRADIENT.RADIAL) {
               const gd = getRadial(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const rg = ctx.createRadialGradient(
                 gd.cx,
@@ -480,10 +484,12 @@ class Polyline extends Geom {
                 ctx2.fillStyle = rg;
                 ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
                 ctx2.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
-              } else {
+              }
+              else {
                 ctx.fillStyle = rg;
               }
-            } else if (f.t === GRADIENT.CONIC) {
+            }
+            else if (f.t === GRADIENT.CONIC) {
               const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
               gd.stop.forEach((item) => {
@@ -499,7 +505,8 @@ class Polyline extends Geom {
         if (ellipse) {
           ctx.drawImage(ellipse.canvas, 0, 0);
           ellipse.release();
-        } else {
+        }
+        else {
           ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
         }
         if (mode !== MIX_BLEND_MODE.NORMAL) {
@@ -573,16 +580,20 @@ class Polyline extends Geom {
       // 线帽设置
       if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
         ctx.lineCap = 'round';
-      } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+      }
+      else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
         ctx.lineCap = 'square';
-      } else {
+      }
+      else {
         ctx.lineCap = 'butt';
       }
       if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
         ctx.lineJoin = 'round';
-      } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+      }
+      else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
         ctx.lineJoin = 'bevel';
-      } else {
+      }
+      else {
         ctx.lineJoin = 'miter';
       }
       ctx.miterLimit = strokeMiterlimit;
@@ -607,7 +618,8 @@ class Polyline extends Geom {
               lg.addColorStop(item.offset!, color2rgbaStr(item.color));
             });
             ctx.strokeStyle = lg;
-          } else if (s.t === GRADIENT.RADIAL) {
+          }
+          else if (s.t === GRADIENT.RADIAL) {
             const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const rg = ctx.createRadialGradient(
               gd.cx,
@@ -642,7 +654,8 @@ class Polyline extends Geom {
                 ctx2.clip();
                 ctx2.stroke();
                 ctx2.restore();
-              } else if (p === STROKE_POSITION.OUTSIDE) {
+              }
+              else if (p === STROKE_POSITION.OUTSIDE) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
@@ -651,7 +664,8 @@ class Polyline extends Geom {
                 ctx2.strokeStyle = '#FFF';
                 ctx2.stroke();
                 ctx2.restore();
-              } else {
+              }
+              else {
                 ctx2.stroke();
               }
               ctx2.fillStyle = rg;
@@ -661,10 +675,12 @@ class Polyline extends Geom {
               ctx.drawImage(ellipse.canvas, 0, 0);
               ellipse.release();
               continue;
-            } else {
+            }
+            else {
               ctx.strokeStyle = rg;
             }
-          } else if (s.t === GRADIENT.CONIC) {
+          }
+          else if (s.t === GRADIENT.CONIC) {
             const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
             gd.stop.forEach((item) => {
@@ -677,7 +693,8 @@ class Polyline extends Geom {
         let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
         if (p === STROKE_POSITION.INSIDE) {
           ctx.lineWidth = strokeWidth[i] * 2 * scale;
-        } else if (p === STROKE_POSITION.OUTSIDE) {
+        }
+        else if (p === STROKE_POSITION.OUTSIDE) {
           os = inject.getOffscreenCanvas(w, h);
           ctx2 = os.ctx;
           ctx2.setLineDash(ctx.getLineDash());
@@ -688,7 +705,8 @@ class Polyline extends Geom {
           ctx2.lineWidth = strokeWidth[i] * 2 * scale;
           ctx2.beginPath();
           canvasPolygon(ctx2, points, scale, dx2, dy2);
-        } else {
+        }
+        else {
           ctx.lineWidth = strokeWidth[i] * scale;
         }
         if (this.props.isClosed) {
@@ -701,7 +719,8 @@ class Polyline extends Geom {
           ctx.clip();
           ctx.stroke();
           ctx.restore();
-        } else if (p === STROKE_POSITION.OUTSIDE) {
+        }
+        else if (p === STROKE_POSITION.OUTSIDE) {
           ctx2!.stroke();
           ctx2!.save();
           ctx2!.clip();
@@ -711,7 +730,8 @@ class Polyline extends Geom {
           ctx2!.restore();
           ctx.drawImage(os!.canvas, 0, 0);
           os!.release();
-        } else {
+        }
+        else {
           ctx.stroke();
         }
       }
@@ -734,10 +754,12 @@ class Polyline extends Geom {
       if (dx === 0) {
         if (points[1].absY! >= points[0].absY!) {
           res.angle = 90;
-        } else {
+        }
+        else {
           res.angle = -90;
         }
-      } else {
+      }
+      else {
         const tan = (points[1].absY! - points[0].absY!) / dx;
         res.angle = r2d(Math.atan(tan));
       }
@@ -866,7 +888,8 @@ class Polyline extends Geom {
     const res = new Polyline(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
-    if (override) {}
+    if (override) {
+    }
     return res;
   }
 

@@ -481,7 +481,8 @@ export function calRectPoints(
     y2 = y1;
     x4 = x1;
     y4 = y3;
-  } else {
+  }
+  else {
     let t = calPoint({ x: xb, y: ya }, matrix);
     x2 = t.x;
     y2 = t.y;

@@ -15,7 +15,8 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.on(id[i], handle);
       }
-    } else {
+    }
+    else {
       if (!this.__eHash.hasOwnProperty(id)) {
         this.__eHash[id] = [];
       }
@@ -50,7 +51,8 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.once(id[i], handle);
       }
-    } else {
+    }
+    else {
       this.on(id, cb);
     }
     return this;
@@ -61,7 +63,8 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.off(id[i], handle);
       }
-    } else if (this.__eHash.hasOwnProperty(id)) {
+    }
+    else if (this.__eHash.hasOwnProperty(id)) {
       if (handle) {
         for (
           let i = 0, item = this.__eHash[id], len = item.length;
@@ -88,7 +91,8 @@ class Event {
       for (let i = 0, len = id.length; i < len; i++) {
         this.emit(id[i], data);
       }
-    } else {
+    }
+    else {
       if (this.__eHash.hasOwnProperty(id)) {
         let list = this.__eHash[id];
         if (list.length) {

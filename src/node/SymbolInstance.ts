@@ -6,6 +6,7 @@ import { clone } from '../util/util';
 
 class SymbolInstance extends Group {
   symbolMaster: SymbolMaster;
+
   constructor(props: SymbolInstanceProps, symbolMaster: SymbolMaster) {
     const hash: Record<string, Override> = {};
     const overrideValues = props.overrideValues;

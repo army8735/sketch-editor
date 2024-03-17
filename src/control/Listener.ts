@@ -10,6 +10,9 @@ import Select from './Select';
 import Input from './Input';
 import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
+import history from '../history';
+
+const { History, UpdateStyleCommand } = history;
 
 enum State {
   NORMAL = 0,
@@ -37,8 +40,9 @@ export default class Listener extends Event {
   pageTy: number;
   select: Select;
   selected: Node[];
+  updateStyle: (Partial<JStyle> | undefined)[]; // 每次变更的style记录，在结束时供history使用
   hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
-  textState: { isLeft: boolean, isRight: boolean, isTop: boolean }[];
+  textState: ({ isLeft: boolean, isRight: boolean, isTop: boolean } | undefined)[];
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   input: Input;
@@ -67,6 +71,7 @@ export default class Listener extends Event {
     this.pageTx = 0;
     this.pageTy = 0;
     this.selected = [];
+    this.updateStyle = [];
     this.hasControl = false;
     this.textState = [];
     this.abcStyle = [];
@@ -105,7 +110,8 @@ export default class Listener extends Event {
     );
     if (this.selected.length) {
       this.select.showSelect(this.selected);
-    } else {
+    }
+    else {
       this.select.hideSelect();
     }
     this.emit(Listener.SELECT_NODE, this.selected.slice(0));
@@ -114,6 +120,9 @@ export default class Listener extends Event {
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
+    // 操作开始清除
+    this.textState.splice(0);
+    this.updateStyle.splice(0);
     // 点到控制html上
     if (isControl) {
       this.isControl = isControl;
@@ -121,7 +130,6 @@ export default class Listener extends Event {
       this.controlType = target.className;
       this.startX = e.pageX;
       this.startY = e.pageY;
-      this.textState.splice(0);
       // 调整前先锁住group，防止自适应，在mouseup整体结束后统一进行，text也要记住状态
       this.selected.forEach((item, i) => {
         const p = item.parent;
@@ -158,7 +166,8 @@ export default class Listener extends Event {
               if (style.top.u !== StyleUnit.AUTO) {
                 style.top.u = StyleUnit.AUTO;
               }
-            } else if (this.controlType === 'b' ||
+            }
+            else if (this.controlType === 'b' ||
               this.controlType === 'bl' ||
               this.controlType === 'br') {
               if (style.top.u !== StyleUnit.PX) {
@@ -181,7 +190,8 @@ export default class Listener extends Event {
               if (style.left.u !== StyleUnit.AUTO) {
                 style.left.u = StyleUnit.AUTO;
               }
-            } else if (
+            }
+            else if (
               this.controlType === 'r' ||
               this.controlType === 'tr' ||
               this.controlType === 'br'
@@ -235,7 +245,8 @@ export default class Listener extends Event {
         if (i > -1) {
           if (this.shiftKey) {
             selected.splice(i, 1);
-          } else {
+          }
+          else {
             // 持续编辑更新文本的编辑光标并提前退出
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
@@ -261,7 +272,8 @@ export default class Listener extends Event {
             selected.splice(0);
             selected.push(node);
           }
-        } else {
+        }
+        else {
           if (!this.shiftKey) {
             selected.splice(0);
           }
@@ -279,12 +291,14 @@ export default class Listener extends Event {
           }
           selected.push(node);
         }
-      } else {
+      }
+      else {
         // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
         if (this.state === State.EDIT_TEXT) {
           const text = selected[0] as Text;
           text.hideSelectArea();
-        } else {
+        }
+        else {
           selected.splice(0);
         }
       }
@@ -296,7 +310,8 @@ export default class Listener extends Event {
       this.select.hideHover();
       if (selected.length) {
         this.select.showSelect(selected);
-      } else {
+      }
+      else {
         this.select.hideSelect();
       }
       this.computedStyle = selected.map((item) =>
@@ -367,13 +382,15 @@ export default class Listener extends Event {
           ) {
             if (style.top.u === StyleUnit.PX) {
               o.top = computedStyle.top + dy2;
-            } else {
+            }
+            else {
               o.top =
                 ((computedStyle.top + dy2) * 100) / node.parent!.height + '%';
             }
             if (style.height.u === StyleUnit.PX) {
               o.height = computedStyle.height - dy2;
-            } else if (style.height.u === StyleUnit.PERCENT) {
+            }
+            else if (style.height.u === StyleUnit.PERCENT) {
               o.height =
                 ((computedStyle.height - dy2) * 100) / node.parent!.height +
                 '%';
@@ -386,13 +403,15 @@ export default class Listener extends Event {
           ) {
             if (style.height.u === StyleUnit.PX) {
               o.height = computedStyle.height - dy2;
-            } else {
+            }
+            else {
               o.height =
                 ((computedStyle.height - dy2) * 100) / node.parent!.height +
                 '%';
             }
           }
-        } else if (
+        }
+        else if (
           this.controlType === 'b' ||
           this.controlType === 'bl' ||
           this.controlType === 'br'
@@ -404,14 +423,16 @@ export default class Listener extends Event {
           ) {
             if (style.bottom.u === StyleUnit.PX) {
               o.bottom = computedStyle.bottom - dy2;
-            } else {
+            }
+            else {
               o.bottom =
                 ((computedStyle.bottom - dy2) * 100) / node.parent!.height +
                 '%';
             }
             if (style.height.u === StyleUnit.PX) {
               o.height = computedStyle.height + dy2;
-            } else if (style.height.u === StyleUnit.PERCENT) {
+            }
+            else if (style.height.u === StyleUnit.PERCENT) {
               o.height =
                 ((computedStyle.height + dy2) * 100) / node.parent!.height +
                 '%';
@@ -424,7 +445,8 @@ export default class Listener extends Event {
           ) {
             if (style.height.u === StyleUnit.PX) {
               o.height = computedStyle.height + dy2;
-            } else {
+            }
+            else {
               o.height =
                 ((computedStyle.height + dy2) * 100) / node.parent!.height +
                 '%';
@@ -443,13 +465,15 @@ export default class Listener extends Event {
           ) {
             if (style.left.u === StyleUnit.PX) {
               o.left = computedStyle.left + dx2;
-            } else {
+            }
+            else {
               o.left =
                 ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
             }
             if (style.width.u === StyleUnit.PX) {
               o.width = computedStyle.width - dx2;
-            } else if (style.width.u === StyleUnit.PERCENT) {
+            }
+            else if (style.width.u === StyleUnit.PERCENT) {
               o.width =
                 ((computedStyle.width - dx2) * 100) / node.parent!.width +
                 '%';
@@ -462,13 +486,15 @@ export default class Listener extends Event {
           ) {
             if (style.width.u === StyleUnit.PX) {
               o.width = computedStyle.width - dx2;
-            } else {
+            }
+            else {
               o.width =
                 ((computedStyle.width - dx2) * 100) / node.parent!.width +
                 '%';
             }
           }
-        } else if (
+        }
+        else if (
           this.controlType === 'r' ||
           this.controlType === 'tr' ||
           this.controlType === 'br'
@@ -480,14 +506,16 @@ export default class Listener extends Event {
           ) {
             if (style.right.u === StyleUnit.PX) {
               o.right = computedStyle.right - dx2;
-            } else {
+            }
+            else {
               o.right =
                 ((computedStyle.right - dx2) * 100) / node.parent!.width +
                 '%';
             }
             if (style.width.u === StyleUnit.PX) {
               o.width = computedStyle.width + dx2;
-            } else if (style.width.u === StyleUnit.PERCENT) {
+            }
+            else if (style.width.u === StyleUnit.PERCENT) {
               o.width =
                 ((computedStyle.width + dx2) * 100) / node.parent!.width +
                 '%';
@@ -500,7 +528,8 @@ export default class Listener extends Event {
           ) {
             if (style.width.u === StyleUnit.PX) {
               o.width = computedStyle.width + dx2;
-            } else {
+            }
+            else {
               o.width =
                 ((computedStyle.width + dx2) * 100) / node.parent!.width +
                 '%';
@@ -520,6 +549,7 @@ export default class Listener extends Event {
           }
         }
         node.updateStyle(o);
+        this.updateStyle[i] = o;
         this.hasControl = true;
       });
       this.select.updateSelect(this.selected);
@@ -534,14 +564,17 @@ export default class Listener extends Event {
         const text = this.selected[0] as Text;
         text.setCursorEndByAbsCoord(x, y);
         this.input.hideCursor();
-      } else {
+      }
+      else {
         if (this.selected.length) {
           this.selected.forEach((node, i) => {
             const computedStyle = this.computedStyle[i];
-            node.updateStyle({
+            const o = {
               translateX: computedStyle.translateX + dx2,
               translateY: computedStyle.translateY + dy2,
-            });
+            };
+            node.updateStyle(o);
+            this.updateStyle[i] = o;
           });
           this.select.updateSelect(this.selected);
           this.emit(Listener.MOVE_NODE, this.selected);
@@ -565,7 +598,8 @@ export default class Listener extends Event {
           this.select.showHover(node);
         }
         this.emit(Listener.HOVER_NODE, node);
-      } else {
+      }
+      else {
         this.select.hideHover();
         this.emit(Listener.UN_HOVER_NODE);
       }
@@ -592,7 +626,8 @@ export default class Listener extends Event {
             this.select.updateSelect(this.selected);
           }
         }
-      } else {
+      }
+      else {
         const node = root.getNode(
           (e.pageX - this.originX) * dpi,
           (e.pageY - this.originY) * dpi,
@@ -605,7 +640,8 @@ export default class Listener extends Event {
             this.select.showHover(node);
           }
           this.emit(Listener.HOVER_NODE, node);
-        } else {
+        }
+        else {
           this.select.hideHover();
           this.emit(Listener.UN_HOVER_NODE);
         }
@@ -661,7 +697,8 @@ export default class Listener extends Event {
           item.checkPosSizeUpward();
         });
       }
-    } else if (this.isMouseMove) {
+    }
+    else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
       if (this.state === State.EDIT_TEXT) {
         const text = this.selected[0] as Text;
@@ -670,13 +707,19 @@ export default class Listener extends Event {
         if (!multi) {
           this.input.updateCurCursor();
           this.input.showCursor();
-        } else {
+        }
+        else {
           this.input.hideCursor();
         }
         this.input.focus();
-      } else {
-        this.selected.forEach((node) => {
+      }
+      else {
+        this.selected.forEach((node, i) => {
           node.checkPosChange();
+          const o = this.updateStyle[i];
+          if (o) {
+            History.getInstance().addCommand(new UpdateStyleCommand(node, o));
+          }
         });
       }
     }
@@ -684,7 +727,8 @@ export default class Listener extends Event {
     this.isMouseMove = false;
     if (this.spaceKey) {
       this.dom.style.cursor = 'grab';
-    } else {
+    }
+    else {
       this.dom.style.cursor = 'auto';
     }
   }
@@ -749,7 +793,8 @@ export default class Listener extends Event {
         node.hideSelectArea();
         this.state = State.EDIT_TEXT;
       }
-    } else {
+    }
+    else {
       this.select.hideSelect();
     }
   }
@@ -769,25 +814,34 @@ export default class Listener extends Event {
       if (e.deltaY < 0) {
         if (e.deltaY < -400) {
           sc = 0.1;
-        } else if (e.deltaY < -200) {
+        }
+        else if (e.deltaY < -200) {
           sc = 0.08;
-        } else if (e.deltaY < -100) {
+        }
+        else if (e.deltaY < -100) {
           sc = 0.05;
-        } else if (e.deltaY < -50) {
+        }
+        else if (e.deltaY < -50) {
           sc = 0.02;
-        } else {
+        }
+        else {
           sc = 0.01;
         }
-      } else if (e.deltaY > 0) {
+      }
+      else if (e.deltaY > 0) {
         if (e.deltaY > 400) {
           sc = -0.1;
-        } else if (e.deltaY > 200) {
+        }
+        else if (e.deltaY > 200) {
           sc = -0.08;
-        } else if (e.deltaY > 100) {
+        }
+        else if (e.deltaY > 100) {
           sc = -0.05;
-        } else if (e.deltaY > 50) {
+        }
+        else if (e.deltaY > 50) {
           sc = -0.02;
-        } else {
+        }
+        else {
           sc = -0.01;
         }
       }
@@ -797,12 +851,14 @@ export default class Listener extends Event {
       scale += sc;
       if (scale > 32) {
         scale = 32;
-      } else if (scale < 0.01) {
+      }
+      else if (scale < 0.01) {
         scale = 0.01;
       }
       root.zoomTo(scale, x, y);
       this.emit(Listener.ZOOM_PAGE, scale);
-    } else {
+    }
+    else {
       const { translateX, translateY } = page.getComputedStyle();
       page.updateStyle({
         translateX: translateX - e.deltaX,
@@ -857,10 +913,20 @@ export default class Listener extends Event {
       if (this.state === State.EDIT_TEXT) {
         this.state = State.NORMAL;
         this.input.hide();
-      } else {
+      }
+      else {
         this.selected.splice(0);
         this.select.hideSelect();
         this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+      }
+    }
+    // z，undo/redo
+    else if (e.keyCode === 90) {
+      if (this.metaKey && this.shiftKey) {
+        // History.getInstance().redo();
+      }
+      else if (this.metaKey) {
+        // History.getInstance().undo();
       }
     }
   }

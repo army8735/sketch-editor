@@ -53,7 +53,8 @@ class Bitmap extends Node {
     this.loaders = [];
     if (!src) {
       this.loader.error = true;
-    } else {
+    }
+    else {
       const isBlob = /^blob:/.test(src);
       if (isBlob) {
         // fetch('https://karas.alipay.com/api/uploadbase64', {
@@ -78,7 +79,8 @@ class Bitmap extends Node {
           this.loader.source = cache.source;
           this.loader.width = cache.source.width;
           this.loader.height = cache.source.height;
-        } else {
+        }
+        else {
           this.loader.error = true;
         }
       }
@@ -149,7 +151,8 @@ class Bitmap extends Node {
           loader.source = cache.source;
           loader.width = cache.width;
           loader.height = cache.height;
-        } else {
+        }
+        else {
           loader.error = true;
         }
         this.root!.addUpdate(
@@ -198,7 +201,8 @@ class Bitmap extends Node {
                 undefined,
               );
             }
-          } else {
+          }
+          else {
             loader.error = true;
             if (!this.isDestroyed) {
               this.root!.addUpdate(
@@ -337,7 +341,8 @@ class Bitmap extends Node {
         ctx.drawImage(loader.source!, dx2, dy2, iw, ih);
         if (scale !== 1) {
           ctx.setLineDash(strokeDasharray.map((i) => i * scale));
-        } else {
+        }
+        else {
           ctx.setLineDash(strokeDasharray);
         }
         const points = [
@@ -662,16 +667,20 @@ class Bitmap extends Node {
         // 线帽设置
         if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
           ctx.lineCap = 'round';
-        } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+        }
+        else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
           ctx.lineCap = 'square';
-        } else {
+        }
+        else {
           ctx.lineCap = 'butt';
         }
         if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
           ctx.lineJoin = 'round';
-        } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+        }
+        else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
           ctx.lineJoin = 'bevel';
-        } else {
+        }
+        else {
           ctx.lineJoin = 'miter';
         }
         ctx.miterLimit = strokeMiterlimit * scale;
@@ -696,7 +705,8 @@ class Bitmap extends Node {
                 lg.addColorStop(item.offset!, color2rgbaStr(item.color));
               });
               ctx.strokeStyle = lg;
-            } else if (s.t === GRADIENT.RADIAL) {
+            }
+            else if (s.t === GRADIENT.RADIAL) {
               const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const rg = ctx.createRadialGradient(
                 gd.cx,
@@ -754,7 +764,8 @@ class Bitmap extends Node {
               else {
                 ctx.strokeStyle = rg;
               }
-            } else if (s.t === GRADIENT.CONIC) {
+            }
+            else if (s.t === GRADIENT.CONIC) {
               const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
               gd.stop.forEach((item) => {
@@ -768,7 +779,8 @@ class Bitmap extends Node {
             ctx2: CanvasRenderingContext2D | undefined;
           if (p === STROKE_POSITION.INSIDE) {
             ctx.lineWidth = strokeWidth[i] * 2 * scale;
-          } else if (p === STROKE_POSITION.OUTSIDE) {
+          }
+          else if (p === STROKE_POSITION.OUTSIDE) {
             os = inject.getOffscreenCanvas(w, h);
             ctx2 = os.ctx;
             ctx2.setLineDash(ctx.getLineDash());
@@ -779,7 +791,8 @@ class Bitmap extends Node {
             ctx2.lineWidth = strokeWidth[i] * 2 * scale;
             ctx2.beginPath();
             canvasPolygon(ctx2, points, scale, dx2, dy2);
-          } else {
+          }
+          else {
             ctx.lineWidth = strokeWidth[i] * scale;
           }
           if (ctx2) {
@@ -790,7 +803,8 @@ class Bitmap extends Node {
             ctx.clip();
             ctx.stroke();
             ctx.restore();
-          } else if (p === STROKE_POSITION.OUTSIDE) {
+          }
+          else if (p === STROKE_POSITION.OUTSIDE) {
             ctx2!.stroke();
             ctx2!.save();
             ctx2!.clip();
@@ -800,7 +814,8 @@ class Bitmap extends Node {
             ctx2!.restore();
             ctx.drawImage(os!.canvas, 0, 0);
             os!.release();
-          } else {
+          }
+          else {
             ctx.stroke();
           }
         }
@@ -853,7 +868,8 @@ class Bitmap extends Node {
               );
         canvasCache.releaseImg(this._src);
       }
-    } else {
+    }
+    else {
       super.genTexture(gl, scale, scaleIndex);
     }
   }
@@ -869,7 +885,8 @@ class Bitmap extends Node {
       // total是本身无需
       this.textureFilter.forEach((item) => item?.release());
       this.textureMask.forEach((item) => item?.release());
-    } else {
+    }
+    else {
       super.clearCache(includeSelf);
     }
   }

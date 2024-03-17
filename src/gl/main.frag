@@ -18,7 +18,7 @@ void main() {
     discard;
   }
   float opacity = v_opacity;
-  if(opacity <= 0.0) {
+  if (opacity <= 0.0) {
     discard;
   }
   opacity = clamp(opacity, 0.0, 1.0);

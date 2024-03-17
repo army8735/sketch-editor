@@ -151,11 +151,13 @@ export function genMerge(
       if (maskMode === MASK.ALPHA && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         node.textureTarget[scaleIndex] = undefined;
-      } else if (maskMode === MASK.OUTLINE && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
+      }
+      else if (maskMode === MASK.OUTLINE && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
         if (!computedStyle.visible || computedStyle.opacity === 0) {
           node.textureTarget[scaleIndex] = undefined;
-        } else {
+        }
+        else {
           node.resetTextureTarget();
         }
       }
@@ -466,7 +468,8 @@ function genNextCount(
     if (lv > lv2) {
       node.struct.next = i - index - total - 1;
       break;
-    } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
+    }
+    else if (i === len || (computedStyle.breakMask && lv === lv2)) {
       node.struct.next = i - index - total - 1;
       break;
     }
@@ -621,7 +624,8 @@ function genTotal(
             0,
           );
           gl.viewport(0, 0, w, h);
-        } else {
+        }
+        else {
           frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
         }
         const cx = w * 0.5,
@@ -685,7 +689,8 @@ function genTotal(
       computedStyle.maskMode && i !== index
     ) {
       i += total2 + next2;
-    } else if (node2.isShapeGroup) {
+    }
+    else if (node2.isShapeGroup) {
       i += total2;
     }
   }
@@ -895,7 +900,8 @@ function drawInSpreadBbox(
           0,
         );
         gl.viewport(0, 0, width, height);
-      } else {
+      }
+      else {
         frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
       }
       const cx = width * 0.5,
@@ -1427,7 +1433,7 @@ function genRadialBlur(
       (cx0 - bbox[0] + bboxR[0]) / w2,
       (cy0 - bbox[1] + bboxR[1]) / h2,
     ] as [number, number];
-    const tex = drawRadial(gl, programRadial, t, ratio,  spread * scale, center2, w, h);
+    const tex = drawRadial(gl, programRadial, t, ratio, spread * scale, center2, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1593,7 +1599,8 @@ function genColorMatrix(
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
     return res;
-  } else {
+  }
+  else {
     gl.viewport(0, 0, W, H);
   }
 }
@@ -1620,7 +1627,8 @@ function genColorByMatrix(
         0,
       );
       gl.viewport(0, 0, w, h);
-    } else {
+    }
+    else {
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
     drawColorMatrix(gl, cmProgram, t, m);
@@ -1662,7 +1670,8 @@ function genTint(
         0,
       );
       gl.viewport(0, 0, w, h);
-    } else {
+    }
+    else {
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
     drawTint(gl, tintProgram, t, tint, opacity);
@@ -1931,7 +1940,8 @@ function genShadow(
         0,
       );
       gl.viewport(0, 0, w, h);
-    } else {
+    }
+    else {
       frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
     }
     const cx = w * 0.5,
@@ -2047,7 +2057,8 @@ function genMask(
           0,
         );
         gl.viewport(0, 0, width, height);
-      } else {
+      }
+      else {
         frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
       }
       const cx = width * 0.5,
@@ -2059,7 +2070,8 @@ function genMask(
         if (lv > lv2) {
           node.struct.next = i - index - total - 1;
           break;
-        } else if (i === len || (computedStyle.breakMask && lv === lv2)) {
+        }
+        else if (i === len || (computedStyle.breakMask && lv === lv2)) {
           node.struct.next = i - index - total - 1;
           break;
         }
@@ -2092,10 +2104,12 @@ function genMask(
               const tfo = computedStyle.transformOrigin;
               const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
               matrix = multiply(im, m);
-            } else {
+            }
+            else {
               matrix = multiply(im, node2.matrix);
             }
-          } else {
+          }
+          else {
             const parent = node2.parent!;
             opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
             if (x || y) {
@@ -2103,12 +2117,14 @@ function genMask(
               const tfo = computedStyle.transformOrigin;
               const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
               matrix = multiply(parent.tempMatrix, m);
-            } else {
+            }
+            else {
               matrix = multiply(parent.tempMatrix, node2.matrix);
             }
           }
           assignMatrix(node2.tempMatrix, matrix);
-        } else {
+        }
+        else {
           opacity = node2.tempOpacity;
           matrix = node2.tempMatrix;
         }
@@ -2146,7 +2162,8 @@ function genMask(
                     0,
                   );
                   gl.viewport(0, 0, w, h);
-                } else {
+                }
+                else {
                   frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
                 }
               }
@@ -2192,7 +2209,8 @@ function genMask(
           computedStyle.maskMode
         ) {
           i += total2 + next2;
-        } else if (node2.isShapeGroup) {
+        }
+        else if (node2.isShapeGroup) {
           i += total2;
         }
       }
@@ -2216,7 +2234,8 @@ function genMask(
           0,
         );
         gl.viewport(0, 0, w, h);
-      } else {
+      }
+      else {
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
       drawMask(gl, maskProgram, listM[i].t, t);
@@ -2256,7 +2275,8 @@ function genMask(
           0,
         );
         gl.viewport(0, 0, w, h);
-      } else {
+      }
+      else {
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
       drawMask(gl, maskProgram, listO[i].t, t);
@@ -2285,7 +2305,8 @@ function genMask(
             0,
           );
           gl.viewport(0, 0, w, h);
-        } else {
+        }
+        else {
           frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
         }
         drawTextureCache(
@@ -2329,7 +2350,8 @@ function genMask(
           t: tex,
         });
       }
-    } else {
+    }
+    else {
       res.release();
       res = temp;
     }
@@ -2338,7 +2360,8 @@ function genMask(
   // summary.release();
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
-  } else {
+  }
+  else {
     gl.viewport(0, 0, W, H);
   }
   return res;
@@ -2358,35 +2381,50 @@ export function genMbm(
   let program: WebGLProgram;
   if (mixBlendMode === MIX_BLEND_MODE.MULTIPLY) {
     program = programs.multiplyProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.SCREEN) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.SCREEN) {
     program = programs.screenProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.OVERLAY) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.OVERLAY) {
     program = programs.overlayProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.DARKEN) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.DARKEN) {
     program = programs.darkenProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.LIGHTEN) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.LIGHTEN) {
     program = programs.lightenProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.COLOR_DODGE) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.COLOR_DODGE) {
     program = programs.colorDodgeProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.COLOR_BURN) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.COLOR_BURN) {
     program = programs.colorBurnProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.HARD_LIGHT) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.HARD_LIGHT) {
     program = programs.hardLightProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.SOFT_LIGHT) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.SOFT_LIGHT) {
     program = programs.softLightProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.DIFFERENCE) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.DIFFERENCE) {
     program = programs.differenceProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.EXCLUSION) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.EXCLUSION) {
     program = programs.exclusionProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.HUE) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.HUE) {
     program = programs.hueProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.SATURATION) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.SATURATION) {
     program = programs.saturationProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.COLOR) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.COLOR) {
     program = programs.colorProgram;
-  } else if (mixBlendMode === MIX_BLEND_MODE.LUMINOSITY) {
+  }
+  else if (mixBlendMode === MIX_BLEND_MODE.LUMINOSITY) {
     program = programs.luminosityProgram;
-  } else {
+  }
+  else {
     inject.error('Unknown mixBlendMode: ' + mixBlendMode);
     program = programs.program;
   }
@@ -2460,7 +2498,8 @@ export function genBgBlur(
         0,
       );
       gl.viewport(0, 0, w, h);
-    } else {
+    }
+    else {
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
     for (let j = 0, len = listO.length; j < len; j++) {
@@ -2595,7 +2634,8 @@ export function genBgBlur(
   }
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
-  } else {
+  }
+  else {
     gl.viewport(0, 0, W, H);
   }
 }
@@ -2636,7 +2676,8 @@ export function genOutline(
       let matrix: Float64Array;
       if (i === index) {
         matrix = toE(node.tempMatrix);
-      } else {
+      }
+      else {
         const parent = node.parent!;
         matrix = multiply(parent.tempMatrix, node.matrix);
         assignMatrix(node.tempMatrix, matrix);
@@ -2731,7 +2772,8 @@ export function shouldIgnoreAndIsBgBlur(
     if (computedStyle.maskMode === MASK.OUTLINE) {
       if (computedStyle.visible) {
         shouldIgnore = false;
-      } else if (textureTarget !== node.textureTotal[scaleIndex] && textureTarget !== node.textureCache[scaleIndex]) {
+      }
+      else if (textureTarget !== node.textureTotal[scaleIndex] && textureTarget !== node.textureCache[scaleIndex]) {
         shouldIgnore = false;
       }
     }

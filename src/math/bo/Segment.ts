@@ -49,12 +49,14 @@ class Segment {
               equal = false;
               break;
             }
-          } else if (tan === Infinity || tan === -Infinity) {
+          }
+          else if (tan === Infinity || tan === -Infinity) {
             if (tan !== t) {
               equal = false;
               break;
             }
-          } else {
+          }
+          else {
             if (Math.abs(t - tan) > 1e-9) {
               equal = false;
               break;

@@ -358,13 +358,15 @@ function sliceBezierS(points: { x: number, y: number }[], t: number) {
       { x: x123, y: y123 },
       { x: x1234, y: y1234 },
     ];
-  } else if (points.length === 3) {
+  }
+  else if (points.length === 3) {
     return [
       { x: x1, y: y1 },
       { x: x12, y: y12 },
       { x: x123, y: y123 },
     ];
-  } else {
+  }
+  else {
     throw new Error('Unsupported order');
   }
 }
@@ -406,14 +408,17 @@ export function getPointByT(points: { x: number, y: number }[], t = 0) {
   }
   if (points.length === 4) {
     return pointByT3(points, t);
-  } else if (points.length === 3) {
+  }
+  else if (points.length === 3) {
     return pointByT2(points, t);
-  } else if (points.length === 2) {
+  }
+  else if (points.length === 2) {
     return {
       x: points[0].x + (points[1].x - points[0].x) * t,
       y: points[0].y + (points[1].y - points[0].y) * t,
     };
-  } else {
+  }
+  else {
     throw new Error('Unsupported order');
   }
 }
@@ -782,7 +787,7 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
       const second = bezierAt(o.t, points, 2);
       const secondOrder = Math.sqrt(Math.pow(second.x, 2) + Math.pow(second.y, 2));
       const numerator = offset * firstOrder;
-      const denominator  = offset * secondOrder + firstOrder * firstOrder;
+      const denominator = offset * secondOrder + firstOrder * firstOrder;
       o.t = o.t - numerator / denominator;
       const p = getPointByT(points, o.t);
       o.x = p.x;

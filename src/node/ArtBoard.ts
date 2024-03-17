@@ -14,6 +14,7 @@ class ArtBoard extends Container {
   hasBackgroundColor: boolean;
   resizesContent: boolean;
   includeBackgroundColorInExport: boolean;
+
   constructor(props: ArtBoardProps, children: Array<Node>) {
     super(props as Props, children);
     this.hasBackgroundColor = props.hasBackgroundColor;

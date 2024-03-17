@@ -328,7 +328,8 @@ class Root extends Container implements FrameCallback {
     if (removeDom) {
       if (node instanceof Page) {
         this.emit(Event.WILL_REMOVE_PAGE, node);
-      } else {
+      }
+      else {
         this.emit(Event.WILL_REMOVE_DOM, node);
         // 移除的同时重置关联tile
         const list = node.cleanTile();
@@ -351,7 +352,8 @@ class Root extends Container implements FrameCallback {
     }
     if (res) {
       this.asyncDraw(cb);
-    } else {
+    }
+    else {
       cb && cb(true);
       if (!this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
         this.emit(Event.REFRESH_COMPLETE, RefreshLevel.NONE);
@@ -362,10 +364,12 @@ class Root extends Container implements FrameCallback {
       if (addDom) {
         if (node instanceof Page) {
           this.emit(Event.DID_ADD_PAGE, node);
-        } else {
+        }
+        else {
           this.emit(Event.DID_ADD_DOM, node);
         }
-      } else if (!removeDom && keys.length) {
+      }
+      else if (!removeDom && keys.length) {
         this.emit(Event.STYLE_CHANGED, node, keys);
       }
     }
@@ -391,14 +395,17 @@ class Root extends Container implements FrameCallback {
       // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
       if (node === this) {
         this.reLayout();
-      } else {
+      }
+      else {
         checkReflow(node, addDom, removeDom);
       }
-    } else {
+    }
+    else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
         node.calRepaintStyle(lv);
-      } else {
+      }
+      else {
         const { style, computedStyle } = node;
         if (lv & RefreshLevel.TRANSFORM_ALL) {
           node.calMatrix(lv);
@@ -558,7 +565,7 @@ class Root extends Container implements FrameCallback {
         gl.deleteProgram(p);
       });
       for (let k in gl) {
-        if(k.indexOf('programGauss,') === 0) {
+        if (k.indexOf('programGauss,') === 0) {
           const p = programs[k];
           gl.deleteProgram(p);
         }

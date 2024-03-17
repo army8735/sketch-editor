@@ -15,6 +15,7 @@ import { parse } from './parse';
 
 class Page extends Container {
   json?: JPage;
+
   constructor(props: PageProps, children: Node[]) {
     super(props, children);
     this.isPage = true;
@@ -129,7 +130,8 @@ class Page extends Container {
         scaleX: sy,
         scaleY: sy,
       });
-    } else {
+    }
+    else {
       this.updateStyle({
         translateX: -tx * sx,
         translateY: -ty * sx - (h * sx - height) * 0.5,

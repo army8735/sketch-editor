@@ -2,16 +2,16 @@
 const toString = {}.toString;
 
 function isType(type: string) {
-  return function(obj: any) {
+  return function (obj: any) {
     return toString.call(obj) === '[object ' + type + ']';
   }
 }
 
 function isTypes(types: Array<string>) {
-  return function(obj: any) {
+  return function (obj: any) {
     let s = toString.call(obj);
-    for(let i = 0, len = types.length; i < len; i++) {
-      if(s === '[object ' + types[i] + ']') {
+    for (let i = 0, len = types.length; i < len; i++) {
+      if (s === '[object ' + types[i] + ']') {
         return true;
       }
     }
@@ -35,11 +35,11 @@ export function isNil(v: any) {
 }
 
 export function isPlainObject(obj: any) {
-  if(!obj || toString.call(obj) !== '[object Object]') {
+  if (!obj || toString.call(obj) !== '[object Object]') {
     return false;
   }
   let proto = Object.getPrototypeOf(obj);
-  if(!proto) {
+  if (!proto) {
     return true;
   }
   let Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;

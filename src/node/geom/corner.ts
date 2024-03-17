@@ -241,15 +241,18 @@ function getNormalLineIsec(
       if (nextK === Infinity || nextK === -Infinity) {
         x = nextTangent.x;
       }
-    } else if (Math.abs(nextK) < 1e-9) {
+    }
+    else if (Math.abs(nextK) < 1e-9) {
       y = nextTangent.y;
       if (prevK === Infinity || prevK === -Infinity) {
         x = prevTangent.x;
       }
-    } else if (prevK === Infinity || prevK === -Infinity) {
+    }
+    else if (prevK === Infinity || prevK === -Infinity) {
       x = prevTangent.x;
       y = nextTangent.y;
-    } else if (nextK === Infinity || nextK === -Infinity) {
+    }
+    else if (nextK === Infinity || nextK === -Infinity) {
       x = nextTangent.x;
       y = prevTangent.y;
     }
@@ -376,16 +379,19 @@ function getDispersedSegs(
     let k = 0;
     if (Math.abs(slop) < 1e-12) {
       k = Infinity;
-    } else if (slop === Infinity || slop === -Infinity) {
+    }
+    else if (slop === Infinity || slop === -Infinity) {
       k = 0;
-    } else {
+    }
+    else {
       k = -1 / slop;
     }
     let b: number;
     // 特殊的竖线，原本则是水平线k为0，记录原本的b
     if (k === Infinity) {
       b = tg.y;
-    } else {
+    }
+    else {
       b = tg.y - k * tg.x;
     }
     // 点斜式求法线上距离r的解，一定仅有2个解
@@ -393,7 +399,8 @@ function getDispersedSegs(
     if (k === Infinity) {
       xs = [tg.x, tg.x];
       ys = [tg.y - r, tg.y + r];
-    } else {
+    }
+    else {
       xs = getRoots([
         Math.pow(tg.x, 2) + Math.pow(b, 2) - 2 * tg.y * b + Math.pow(tg.y, 2) - Math.pow(r, 2),
         2 * (b * k - tg.x - tg.y * k),
@@ -411,7 +418,8 @@ function getDispersedSegs(
     }
     if (TABLE[key] === clock) {
       pts.push({ x: xs[0], y: ys[0], t });
-    } else {
+    }
+    else {
       pts.push({ x: xs[1], y: ys[1], t });
     }
   }
@@ -534,13 +542,15 @@ function putHashX(hashX: any, x: number, seg: Seg) {
   if (seg.isVisited) {
     list.unshift(seg);
     seg.isVisited = false;
-  } else {
+  }
+  else {
     list.push(seg);
     seg.isVisited = true;
   }
 }
 
 let uuid = 0;
+
 function convert2Seg(ps: XY[], belong: number) {
   const res: Seg[] = [];
   for (let i = 1, len = ps.length; i < len; i++) {

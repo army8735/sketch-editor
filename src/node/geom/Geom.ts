@@ -77,9 +77,11 @@ class Geom extends Node {
     let transform = '';
     if (scaleX < 0 && scaleY < 0) {
       transform += 'scale(-1,-1)';
-    } else if (scaleX < 0) {
+    }
+    else if (scaleX < 0) {
       transform += 'scale(-1,1)';
-    } else if (scaleY < 0) {
+    }
+    else if (scaleY < 0) {
       transform += 'scale(1,-1)';
     }
     const props = [
@@ -114,10 +116,12 @@ class Geom extends Node {
         if (first.length === 4) {
           xa = first[2];
           ya = first[3];
-        } else if (first.length === 6) {
+        }
+        else if (first.length === 6) {
           xa = first[4];
           ya = first[5];
-        } else {
+        }
+        else {
           xa = first[0];
           ya = first[1];
         }
@@ -133,7 +137,8 @@ class Geom extends Node {
             yb = item[3];
             const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
             mergeBbox(res, b[0], b[1], b[2], b[3]);
-          } else if (item.length === 6) {
+          }
+          else if (item.length === 6) {
             xb = item[4];
             yb = item[5];
             const b = bezier.bboxBezier(
@@ -147,7 +152,8 @@ class Geom extends Node {
               yb,
             );
             mergeBbox(res, b[0], b[1], b[2], b[3]);
-          } else {
+          }
+          else {
             xb = item[0];
             yb = item[1];
             mergeBbox(res, xb, yb, xb, yb);
@@ -180,7 +186,8 @@ class Geom extends Node {
         if (strokeEnable[i]) {
           if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
             border = Math.max(border, item);
-          } else if (strokePosition[i] === STROKE_POSITION.CENTER) {
+          }
+          else if (strokePosition[i] === STROKE_POSITION.CENTER) {
             border = Math.max(border, item * 0.5);
           }
         }

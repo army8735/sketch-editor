@@ -24,7 +24,7 @@ export function calRotateZ(t: Float64Array, v: number) {
 // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
 export function calMatrixByOrigin(m: Float64Array, ox: number, oy: number) {
   let res = m.slice(0);
-  if(ox === 0 && oy === 0 || isE(m)) {
+  if (ox === 0 && oy === 0 || isE(m)) {
     return res;
   }
   res = tfoMultiply(ox, oy, res);

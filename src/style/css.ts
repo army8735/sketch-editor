@@ -28,11 +28,13 @@ import reg from './reg';
 function compatibleTransform(k: string, v: StyleNumValue) {
   if (k === 'scaleX' || k === 'scaleY') {
     v.u = StyleUnit.NUMBER;
-  } else if (k === 'translateX' || k === 'translateY') {
+  }
+  else if (k === 'translateX' || k === 'translateY') {
     if (v.u === StyleUnit.NUMBER) {
       v.u = StyleUnit.PX;
     }
-  } else {
+  }
+  else {
     if (v.u === StyleUnit.NUMBER) {
       v.u = StyleUnit.DEG;
     }
@@ -75,7 +77,8 @@ export function normalize(style: any): Style {
         v: 0,
         u: StyleUnit.AUTO,
       };
-    } else {
+    }
+    else {
       let n = calUnit(lineHeight || 0, true);
       if (n.v <= 0) {
         n = {
@@ -118,24 +121,33 @@ export function normalize(style: any): Style {
     if (isString(fontWeight)) {
       if (/thin/i.test(fontWeight as string)) {
         res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
-      } else if (/lighter/i.test(fontWeight as string)) {
+      }
+      else if (/lighter/i.test(fontWeight as string)) {
         res.fontWeight = { v: 200, u: StyleUnit.NUMBER };
-      } else if (/light/i.test(fontWeight as string)) {
+      }
+      else if (/light/i.test(fontWeight as string)) {
         res.fontWeight = { v: 300, u: StyleUnit.NUMBER };
-      } else if (/medium/i.test(fontWeight as string)) {
+      }
+      else if (/medium/i.test(fontWeight as string)) {
         res.fontWeight = { v: 500, u: StyleUnit.NUMBER };
-      } else if (/semiBold/i.test(fontWeight as string)) {
+      }
+      else if (/semiBold/i.test(fontWeight as string)) {
         res.fontWeight = { v: 600, u: StyleUnit.NUMBER };
-      } else if (/bold/i.test(fontWeight as string)) {
+      }
+      else if (/bold/i.test(fontWeight as string)) {
         res.fontWeight = { v: 700, u: StyleUnit.NUMBER };
-      } else if (/extraBold/i.test(fontWeight as string)) {
+      }
+      else if (/extraBold/i.test(fontWeight as string)) {
         res.fontWeight = { v: 800, u: StyleUnit.NUMBER };
-      } else if (/black/i.test(fontWeight as string)) {
+      }
+      else if (/black/i.test(fontWeight as string)) {
         res.fontWeight = { v: 900, u: StyleUnit.NUMBER };
-      } else {
+      }
+      else {
         res.fontWeight = { v: 400, u: StyleUnit.NUMBER };
       }
-    } else {
+    }
+    else {
       res.fontWeight = {
         v: Math.min(900, Math.max(100, parseInt(fontWeight as string) || 400)),
         u: StyleUnit.NUMBER,
@@ -147,7 +159,8 @@ export function normalize(style: any): Style {
     let v = FONT_STYLE.NORMAL;
     if (/italic/i.test(fontStyle)) {
       v = FONT_STYLE.ITALIC;
-    } else if (/oblique/i.test(fontStyle)) {
+    }
+    else if (/oblique/i.test(fontStyle)) {
       v = FONT_STYLE.OBLIQUE;
     }
     res.fontStyle = { v, u: StyleUnit.NUMBER };
@@ -176,16 +189,19 @@ export function normalize(style: any): Style {
           if (v) {
             return { v, u: StyleUnit.GRADIENT };
           }
-        } else if (reg.img.test(item as string)) {
+        }
+        else if (reg.img.test(item as string)) {
           const v = reg.img.exec(item as string);
           if (v) {
             let type = PATTERN_FILL_TYPE.TILE;
             const s = item.replace(v[0], '');
             if (s.indexOf('fill') > -1) {
               type = PATTERN_FILL_TYPE.FILL;
-            } else if (s.indexOf('stretch') > -1) {
+            }
+            else if (s.indexOf('stretch') > -1) {
               type = PATTERN_FILL_TYPE.STRETCH;
-            } else if (s.indexOf('fit') > -1) {
+            }
+            else if (s.indexOf('fit') > -1) {
               type = PATTERN_FILL_TYPE.FIT;
             }
             let scale;
@@ -233,7 +249,8 @@ export function normalize(style: any): Style {
     res.stroke = stroke.map((item: any) => {
       if (isString(item) && isGradient(item as string)) {
         return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
-      } else {
+      }
+      else {
         return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
       }
     });
@@ -256,7 +273,8 @@ export function normalize(style: any): Style {
       let v = STROKE_POSITION.CENTER;
       if (item === 'inside') {
         v = STROKE_POSITION.INSIDE;
-      } else if (item === 'outside') {
+      }
+      else if (item === 'outside') {
         v = STROKE_POSITION.OUTSIDE;
       }
       return { v, u: StyleUnit.NUMBER };
@@ -279,7 +297,8 @@ export function normalize(style: any): Style {
     let v = STROKE_LINE_CAP.BUTT;
     if (strokeLinecap === 'round') {
       v = STROKE_LINE_CAP.ROUND;
-    } else if (strokeLinecap === 'square') {
+    }
+    else if (strokeLinecap === 'square') {
       v = STROKE_LINE_CAP.SQUARE;
     }
     res.strokeLinecap = { v, u: StyleUnit.NUMBER };
@@ -289,7 +308,8 @@ export function normalize(style: any): Style {
     let v = STROKE_LINE_JOIN.MITER;
     if (strokeLinejoin === 'round') {
       v = STROKE_LINE_JOIN.ROUND;
-    } else if (strokeLinejoin === 'bevel') {
+    }
+    else if (strokeLinejoin === 'bevel') {
       v = STROKE_LINE_JOIN.BEVEL;
     }
     res.strokeLinejoin = { v, u: StyleUnit.NUMBER };
@@ -324,9 +344,11 @@ export function normalize(style: any): Style {
     let v = TEXT_ALIGN.LEFT;
     if (textAlign === 'center') {
       v = TEXT_ALIGN.CENTER;
-    } else if (textAlign === 'right') {
+    }
+    else if (textAlign === 'right') {
       v = TEXT_ALIGN.RIGHT;
-    } else if (textAlign === 'justify') {
+    }
+    else if (textAlign === 'justify') {
       v = TEXT_ALIGN.JUSTIFY;
     }
     res.textAlign = { v, u: StyleUnit.NUMBER };
@@ -348,7 +370,8 @@ export function normalize(style: any): Style {
       let v = TEXT_DECORATION.NONE;
       if (item === 'underline') {
         v = TEXT_DECORATION.UNDERLINE;
-      } else if (item === 'line-through' || item === 'lineThrough') {
+      }
+      else if (item === 'line-through' || item === 'lineThrough') {
         v = TEXT_DECORATION.LINE_THROUGH;
       }
       return { v, u: StyleUnit.NUMBER };
@@ -359,7 +382,8 @@ export function normalize(style: any): Style {
     let o: Array<number | string>;
     if (Array.isArray(transformOrigin)) {
       o = transformOrigin;
-    } else {
+    }
+    else {
       o = transformOrigin.match(reg.position) as Array<string>;
     }
     if (o.length === 1) {
@@ -371,7 +395,8 @@ export function normalize(style: any): Style {
       if (/^[-+]?[\d.]/.test(item as string)) {
         let n = calUnit(item, true);
         arr.push(n);
-      } else {
+      }
+      else {
         arr.push({
           v: {
             top: 0,
@@ -395,11 +420,14 @@ export function normalize(style: any): Style {
     let v = BOOLEAN_OPERATION.NONE;
     if (booleanOperation === 'union') {
       v = BOOLEAN_OPERATION.UNION;
-    } else if (booleanOperation === 'subtract') {
+    }
+    else if (booleanOperation === 'subtract') {
       v = BOOLEAN_OPERATION.SUBTRACT;
-    } else if (booleanOperation === 'intersect') {
+    }
+    else if (booleanOperation === 'intersect') {
       v = BOOLEAN_OPERATION.INTERSECT;
-    } else if (booleanOperation === 'xor') {
+    }
+    else if (booleanOperation === 'xor') {
       v = BOOLEAN_OPERATION.XOR;
     }
     res.booleanOperation = { v, u: StyleUnit.NUMBER };
@@ -417,7 +445,8 @@ export function normalize(style: any): Style {
     let v = MASK.NONE;
     if (maskMode === 'outline') {
       v = MASK.OUTLINE;
-    } else if (maskMode === 'alpha') {
+    }
+    else if (maskMode === 'alpha') {
       v = MASK.ALPHA;
     }
     res.maskMode = { v, u: StyleUnit.NUMBER };
@@ -436,7 +465,8 @@ export function normalize(style: any): Style {
           v: { t: BLUR.GAUSSIAN, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX } },
           u: StyleUnit.BLUR,
         };
-      } else if (t === 'background') {
+      }
+      else if (t === 'background') {
         const match = /saturation\s*\((.+)\)/i.exec(blur);
         let saturation = 0;
         if (match) {
@@ -450,7 +480,8 @@ export function normalize(style: any): Style {
           },
           u: StyleUnit.BLUR,
         };
-      } else if (t === 'radial') {
+      }
+      else if (t === 'radial') {
         const match = /center\s*\((.+)\)/i.exec(blur);
         let center = [{ v: 50, u: StyleUnit.PERCENT }, { v: 50, u: StyleUnit.PERCENT }];
         if (match) {
@@ -466,8 +497,12 @@ export function normalize(style: any): Style {
             };
           }
         }
-        res.blur = { v: { t: BLUR.RADIAL, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, center }, u: StyleUnit.BLUR };
-      } else if (t === 'motion') {
+        res.blur = {
+          v: { t: BLUR.RADIAL, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, center },
+          u: StyleUnit.BLUR
+        };
+      }
+      else if (t === 'motion') {
         const match = /angle\s*\((.+)\)/i.exec(blur);
         let angle = {
           v: 0,
@@ -476,11 +511,16 @@ export function normalize(style: any): Style {
         if (match) {
           angle.v = parseFloat(match[1]);
         }
-        res.blur = { v: { t: BLUR.MOTION, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, angle }, u: StyleUnit.BLUR };
-      } else {
+        res.blur = {
+          v: { t: BLUR.MOTION, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, angle },
+          u: StyleUnit.BLUR
+        };
+      }
+      else {
         res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
       }
-    } else {
+    }
+    else {
       res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
     }
   }
@@ -588,33 +628,47 @@ function getBlendMode(blend: string) {
   let v = MIX_BLEND_MODE.NORMAL;
   if (/multiply/i.test(blend)) {
     v = MIX_BLEND_MODE.MULTIPLY;
-  } else if (/screen/i.test(blend)) {
+  }
+  else if (/screen/i.test(blend)) {
     v = MIX_BLEND_MODE.SCREEN;
-  } else if (/overlay/i.test(blend)) {
+  }
+  else if (/overlay/i.test(blend)) {
     v = MIX_BLEND_MODE.OVERLAY;
-  } else if (/darken/i.test(blend)) {
+  }
+  else if (/darken/i.test(blend)) {
     v = MIX_BLEND_MODE.DARKEN;
-  } else if (/lighten/i.test(blend)) {
+  }
+  else if (/lighten/i.test(blend)) {
     v = MIX_BLEND_MODE.LIGHTEN;
-  } else if (/color-dodge/i.test(blend)) {
+  }
+  else if (/color-dodge/i.test(blend)) {
     v = MIX_BLEND_MODE.COLOR_DODGE;
-  } else if (/color-burn/i.test(blend)) {
+  }
+  else if (/color-burn/i.test(blend)) {
     v = MIX_BLEND_MODE.COLOR_BURN;
-  } else if (/hard-light/i.test(blend)) {
+  }
+  else if (/hard-light/i.test(blend)) {
     v = MIX_BLEND_MODE.HARD_LIGHT;
-  } else if (/soft-light/i.test(blend)) {
+  }
+  else if (/soft-light/i.test(blend)) {
     v = MIX_BLEND_MODE.SOFT_LIGHT;
-  } else if (/difference/i.test(blend)) {
+  }
+  else if (/difference/i.test(blend)) {
     v = MIX_BLEND_MODE.DIFFERENCE;
-  } else if (/exclusion/i.test(blend)) {
+  }
+  else if (/exclusion/i.test(blend)) {
     v = MIX_BLEND_MODE.EXCLUSION;
-  } else if (/hue/i.test(blend)) {
+  }
+  else if (/hue/i.test(blend)) {
     v = MIX_BLEND_MODE.HUE;
-  } else if (/saturation/i.test(blend)) {
+  }
+  else if (/saturation/i.test(blend)) {
     v = MIX_BLEND_MODE.SATURATION;
-  } else if (/color/i.test(blend)) {
+  }
+  else if (/color/i.test(blend)) {
     v = MIX_BLEND_MODE.COLOR;
-  } else if (/luminosity/i.test(blend)) {
+  }
+  else if (/luminosity/i.test(blend)) {
     v = MIX_BLEND_MODE.LUMINOSITY;
   }
   return v;
@@ -660,7 +714,8 @@ export function equalStyle(k: string, a: Style, b: Style) {
         ) {
           return false;
         }
-      } else if (ai.u === StyleUnit.GRADIENT) {
+      }
+      else if (ai.u === StyleUnit.GRADIENT) {
         if (ai.v.t !== bi.v.t) {
           return false;
         }
@@ -766,7 +821,8 @@ export function color2rgbaInt(color: string | number[]): number[] {
   let res = [];
   if (!color || /transparent/i.test(color)) {
     res = [0, 0, 0, 0];
-  } else if (/^#?[a-f\d]{3,8}$/i.test(color)) {
+  }
+  else if (/^#?[a-f\d]{3,8}$/i.test(color)) {
     color = color.replace('#', '');
     if (color.length === 3 || color.length === 4) {
       res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
@@ -774,24 +830,29 @@ export function color2rgbaInt(color: string | number[]): number[] {
       res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
       if (color.length === 4) {
         res[3] = parseInt(color.charAt(3) + color.charAt(3), 16);
-      } else {
+      }
+      else {
         res[3] = 1;
       }
-    } else if (color.length === 6) {
+    }
+    else if (color.length === 6) {
       res.push(parseInt(color.slice(0, 2), 16));
       res.push(parseInt(color.slice(2, 4), 16));
       res.push(parseInt(color.slice(4), 16));
       res[3] = 1;
-    } else if (color.length === 8) {
+    }
+    else if (color.length === 8) {
       res.push(parseInt(color.slice(0, 2), 16));
       res.push(parseInt(color.slice(2, 4), 16));
       res.push(parseInt(color.slice(4, 6), 16));
       res.push(parseInt(color.slice(6), 16) / 255);
-    } else {
+    }
+    else {
       res[0] = res[1] = res[2] = 0;
       res[3] = 1;
     }
-  } else {
+  }
+  else {
     let c = color.match(
       /rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i,
     );
@@ -799,10 +860,12 @@ export function color2rgbaInt(color: string | number[]): number[] {
       res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
       if (!isNil(c[4])) {
         res[3] = parseFloat(c[4]);
-      } else {
+      }
+      else {
         res[3] = 1;
       }
-    } else {
+    }
+    else {
       res = [0, 0, 0, 0];
     }
   }

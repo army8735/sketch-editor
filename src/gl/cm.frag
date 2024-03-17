@@ -11,7 +11,7 @@ uniform float u_m[20];
 
 void main() {
   vec4 c = texture2D(u_texture, v_texCoords);
-  if(c.a > 0.0) {
+  if (c.a > 0.0) {
     c.rgb /= c.a;
   }
   vec4 result;

@@ -48,12 +48,14 @@ export default class Input {
             this.updateCurCursor();
             this.select.updateSelect([this.node!]);
           }, 1);
-        } else if (keyCode === 8) {
+        }
+        else if (keyCode === 8) {
           e.stopPropagation();
           this.node!.delete();
           this.updateCurCursor();
           this.select.updateSelect([this.node]);
-        } else if (keyCode >= 37 && keyCode <= 40) {
+        }
+        else if (keyCode >= 37 && keyCode <= 40) {
           this.node.moveCursor(keyCode);
           this.updateCurCursor();
         }

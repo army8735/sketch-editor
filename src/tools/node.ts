@@ -31,7 +31,8 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
     migrate(parent, item);
     if (position === POSITION.BEFORE) {
       target.insertBefore(item);
-    } else if (position === POSITION.AFTER) {
+    }
+    else if (position === POSITION.AFTER) {
       target.insertAfter(item);
     }
     // 默认under
@@ -283,7 +284,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
       v: 0,
       u: StyleUnit.AUTO,
     };
-  } else if (fixedLeft) {
+  }
+  else if (fixedLeft) {
     if (left.u === StyleUnit.PERCENT) {
       style.left = {
         v: computedStyle.left * 100 / parent.width,
@@ -298,7 +300,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
       v: computedStyle.width * 100 / parent.width,
       u: StyleUnit.PERCENT,
     };
-  } else if (fixedRight) {
+  }
+  else if (fixedRight) {
     if (right.u === StyleUnit.PERCENT) {
       style.right = {
         v: computedStyle.right * 100 / parent.width,
@@ -313,7 +316,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
       v: computedStyle.width * 100 / parent.width,
       u: StyleUnit.PERCENT,
     };
-  } else {
+  }
+  else {
     style.left = {
       v: (computedStyle.left + computedStyle.width * 0.5) * 100 / parent.width,
       u: StyleUnit.PERCENT,
@@ -345,7 +349,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
       v: 0,
       u: StyleUnit.AUTO,
     };
-  } else if (fixedTop) {
+  }
+  else if (fixedTop) {
     if (top.u === StyleUnit.PERCENT) {
       style.top = {
         v: computedStyle.top * 100 / parent.height,
@@ -360,7 +365,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
       v: computedStyle.height * 100 / parent.height,
       u: StyleUnit.PERCENT,
     };
-  } else if (fixedBottom) {
+  }
+  else if (fixedBottom) {
     if (bottom.u === StyleUnit.PERCENT) {
       style.bottom = {
         v: computedStyle.bottom * 100 / parent.height,
@@ -375,7 +381,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
       v: computedStyle.height * 100 / parent.height,
       u: StyleUnit.PERCENT,
     };
-  } else {
+  }
+  else {
     style.top = {
       v: (computedStyle.top + child.height * 0.5) * 100 / parent.height,
       u: StyleUnit.PERCENT,

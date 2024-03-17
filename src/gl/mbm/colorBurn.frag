@@ -10,7 +10,7 @@ uniform sampler2D u_texture1;
 uniform sampler2D u_texture2;
 
 float op(float a, float b) {
-  if(b == 0.0) {
+  if (b == 0.0) {
     return a == 1.0 ? a : 0.0;
   }
   return 1.0 - min(1.0, (1.0 - a) / b);
@@ -18,7 +18,7 @@ float op(float a, float b) {
 
 vec3 premultipliedAlpha(vec4 color) {
   float a = color.a;
-  if(a == 0.0) {
+  if (a == 0.0) {
     return vec3(0.0, 0.0, 0.0);
   }
   return vec3(color.r / a, color.g / a, color.b / a);
@@ -31,10 +31,10 @@ float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
 void main() {
   vec4 color1 = texture2D(u_texture1, v_texCoords);
   vec4 color2 = texture2D(u_texture2, v_texCoords);
-  if(color1.a == 0.0) {
+  if (color1.a == 0.0) {
     gl_FragColor = color2;
   }
-  else if(color2.a == 0.0) {
+  else if (color2.a == 0.0) {
     gl_FragColor = color1;
   }
   else {

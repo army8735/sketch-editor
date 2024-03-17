@@ -440,7 +440,8 @@ class Text extends Node {
           lineBox = new LineBox(y, lineHeight, i, false);
           lineBoxList.push(lineBox);
         }
-      } else {
+      }
+      else {
         x += rw;
       }
     }
@@ -571,7 +572,8 @@ class Text extends Node {
           lineBox.offsetX(d * 0.5);
         }
       }
-    } else if (textAlign === TEXT_ALIGN.RIGHT) {
+    }
+    else if (textAlign === TEXT_ALIGN.RIGHT) {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
         const d = this.width - lineBox.w;
@@ -648,7 +650,8 @@ class Text extends Node {
             x2 - x1,
             lineBox.lineHeight * scale,
           );
-        } else {
+        }
+        else {
           // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
           const {
             startLineBox,
@@ -725,6 +728,7 @@ class Text extends Node {
         break;
       }
     }
+
     // fill/stroke复用
     function draw(ctx: CanvasRenderingContext2D, isFillOrStroke = true) {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
@@ -754,7 +758,8 @@ class Text extends Node {
                     textBox.w * scale,
                     3 * scale,
                   );
-                } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                }
+                else if (item === TEXT_DECORATION.LINE_THROUGH) {
                   ctx.fillRect(
                     textBox.x,
                     (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
@@ -764,7 +769,8 @@ class Text extends Node {
                 }
               });
             }
-          } else {
+          }
+          else {
             ctx.strokeText(
               textBox.str,
               textBox.x * scale + dx,
@@ -779,7 +785,8 @@ class Text extends Node {
                     textBox.w * scale,
                     3 * scale,
                   );
-                } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                }
+                else if (item === TEXT_DECORATION.LINE_THROUGH) {
                   ctx.strokeRect(
                     textBox.x,
                     (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
@@ -793,6 +800,7 @@ class Text extends Node {
         }
       }
     }
+
     for (let i = 0, len = list.length; i < len; i++) {
       const { x, y, os: { ctx } } = list[i];
       const dx2 = dx - x;
@@ -939,7 +947,8 @@ class Text extends Node {
                   lg.addColorStop(item.offset!, color2rgbaStr(item.color));
                 });
                 ctx.fillStyle = lg;
-              } else if (f.t === GRADIENT.RADIAL) {
+              }
+              else if (f.t === GRADIENT.RADIAL) {
                 const gd = getRadial(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
                 const rg = ctx.createRadialGradient(
                   gd.cx,
@@ -963,10 +972,12 @@ class Text extends Node {
                   ctx2.fillStyle = rg;
                   ctx2.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
                   ctx2.fillRect(0, 0, w, h);
-                } else {
+                }
+                else {
                   ctx.fillStyle = rg;
                 }
-              } else if (f.t === GRADIENT.CONIC) {
+              }
+              else if (f.t === GRADIENT.CONIC) {
                 const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
                 const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                 gd.stop.forEach((item) => {
@@ -982,7 +993,8 @@ class Text extends Node {
           if (ellipse) {
             ctx.drawImage(ellipse.canvas, 0, 0);
             ellipse.release();
-          } else {
+          }
+          else {
             draw(ctx, true);
           }
           if (mode !== MIX_BLEND_MODE.NORMAL) {
@@ -1042,7 +1054,8 @@ class Text extends Node {
                     textBox.w * scale,
                     3 * scale,
                   );
-                } else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                }
+                else if (item === TEXT_DECORATION.LINE_THROUGH) {
                   ctx.fillRect(
                     textBox.x * scale + dx2,
                     (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy2,
@@ -1122,21 +1135,26 @@ class Text extends Node {
       // stroke文字，fill设置透明即可，但位置需要用到裁剪
       if (scale !== 1) {
         ctx.setLineDash(strokeDasharray.map((i) => i * scale));
-      } else {
+      }
+      else {
         ctx.setLineDash(strokeDasharray);
       }
       if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
         ctx.lineCap = 'round';
-      } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+      }
+      else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
         ctx.lineCap = 'square';
-      } else {
+      }
+      else {
         ctx.lineCap = 'butt';
       }
       if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
         ctx.lineJoin = 'round';
-      } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+      }
+      else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
         ctx.lineJoin = 'bevel';
-      } else {
+      }
+      else {
         ctx.lineJoin = 'miter';
       }
       // 强制1
@@ -1162,7 +1180,8 @@ class Text extends Node {
               lg.addColorStop(item.offset!, color2rgbaStr(item.color));
             });
             ctx.strokeStyle = lg;
-          } else if (s.t === GRADIENT.RADIAL) {
+          }
+          else if (s.t === GRADIENT.RADIAL) {
             const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const rg = ctx.createRadialGradient(
               gd.cx,
@@ -1191,11 +1210,13 @@ class Text extends Node {
                 ctx2.strokeStyle = '#FFF';
                 if (p === STROKE_POSITION.INSIDE) {
                   ctx2.globalCompositeOperation = 'source-in';
-                } else {
+                }
+                else {
                   ctx2.globalCompositeOperation = 'source-out';
                 }
                 draw(ctx2, false);
-              } else {
+              }
+              else {
                 ctx2.lineWidth = strokeWidth[i] * scale;
                 ctx2.strokeStyle = '#FFF';
                 draw(ctx2, false);
@@ -1207,10 +1228,12 @@ class Text extends Node {
               ctx.drawImage(ellipse.canvas, 0, 0);
               ellipse.release();
               continue;
-            } else {
+            }
+            else {
               ctx.strokeStyle = rg;
             }
-          } else if (s.t === GRADIENT.CONIC) {
+          }
+          else if (s.t === GRADIENT.CONIC) {
             const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
             gd.stop.forEach((item) => {
@@ -1239,12 +1262,14 @@ class Text extends Node {
           draw(ctx3, true);
           if (p === STROKE_POSITION.INSIDE) {
             ctx2.globalCompositeOperation = 'destination-in';
-          } else {
+          }
+          else {
             ctx2.globalCompositeOperation = 'destination-out';
           }
           ctx2.drawImage(os3.canvas, 0, 0);
           os3.release();
-        } else {
+        }
+        else {
           ctx.lineWidth = strokeWidth[i] * scale;
           draw(ctx, false);
         }
@@ -1466,13 +1491,16 @@ class Text extends Node {
       const str = textBox.str;
       const w = ctx.measureText(str.slice(0, cursor.startString)).width;
       this.tempCursorX = this.currentCursorX = textBox.x + w;
-    } else {
+    }
+    else {
       const textAlign = this.computedStyle.textAlign;
       if (textAlign === TEXT_ALIGN.CENTER) {
         this.tempCursorX = this.currentCursorX = this.width * 0.5;
-      } else if (textAlign === TEXT_ALIGN.RIGHT) {
+      }
+      else if (textAlign === TEXT_ALIGN.RIGHT) {
         this.tempCursorX = this.currentCursorX = this.width;
-      } else {
+      }
+      else {
         this.tempCursorX = this.currentCursorX = 0;
       }
     }
@@ -1510,7 +1538,8 @@ class Text extends Node {
             cursor.endLineBox = i;
             cursor.endTextBox = j;
             cursor.endString = index - textBox.index;
-          } else {
+          }
+          else {
             cursor.startLineBox = i;
             cursor.startTextBox = j;
             cursor.startString = index - textBox.index;
@@ -1525,14 +1554,16 @@ class Text extends Node {
     const list = lineBox.list;
     if (isEnd) {
       cursor.endLineBox = i;
-    } else {
+    }
+    else {
       cursor.startLineBox = i;
     }
     if (!list || !list.length) {
       if (isEnd) {
         cursor.endTextBox = 0;
         cursor.endString = 0;
-      } else {
+      }
+      else {
         cursor.startTextBox = 0;
         cursor.startString = 0;
       }
@@ -1543,7 +1574,8 @@ class Text extends Node {
     if (isEnd) {
       cursor.endTextBox = j;
       cursor.endString = textBox.str.length;
-    } else {
+    }
+    else {
       cursor.startTextBox = j;
       cursor.startString = textBox.str.length;
     }
@@ -1579,7 +1611,8 @@ class Text extends Node {
       let x = 0;
       if (textAlign === TEXT_ALIGN.CENTER) {
         x = this.width * 0.5;
-      } else if (textAlign === TEXT_ALIGN.RIGHT) {
+      }
+      else if (textAlign === TEXT_ALIGN.RIGHT) {
         x = this.width;
       }
       return calPoint({ x, y: lineBox.y }, m);
@@ -1621,7 +1654,8 @@ class Text extends Node {
           if (!list.length) {
             cursor.startTextBox = 0;
             cursor.startString = 0;
-          } else {
+          }
+          else {
             cursor.startTextBox = j = list.length - 1;
             // 看是否是enter，决定是否到末尾
             textBox = list[j];
@@ -1743,7 +1777,8 @@ class Text extends Node {
         if (j === list.length - 1) {
           if (lineBox.endEnter || i === lineBoxList.length - 1) {
             cursor.startString++;
-          } else {
+          }
+          else {
             cursor.startLineBox = ++i;
             lineBox = lineBoxList[i];
             list = lineBox.list;
@@ -1810,13 +1845,16 @@ class Text extends Node {
       const str = textBox.str;
       const w = ctx.measureText(str.slice(0, cursor.startString)).width;
       this.tempCursorX = this.currentCursorX = textBox.x + w;
-    } else {
+    }
+    else {
       const textAlign = this.computedStyle.textAlign;
       if (textAlign === TEXT_ALIGN.CENTER) {
         this.tempCursorX = this.currentCursorX = this.width * 0.5;
-      } else if (textAlign === TEXT_ALIGN.RIGHT) {
+      }
+      else if (textAlign === TEXT_ALIGN.RIGHT) {
         this.tempCursorX = this.currentCursorX = this.width;
-      } else {
+      }
+      else {
         this.tempCursorX = this.currentCursorX = 0;
       }
     }
@@ -1900,7 +1938,8 @@ class Text extends Node {
         this.content = c.slice(0, start) + c.slice(end);
         this.updateCursorByIndex(start);
       }
-    } else {
+    }
+    else {
       this.cutRich(start - 1, start);
       this.content = c.slice(0, start - 1) + c.slice(start);
       this.updateCursorByIndex(start - 1);
@@ -1918,7 +1957,8 @@ class Text extends Node {
     // 可能空行，先赋值默认0，再循环2分查找
     if (isEnd) {
       cursor.endString = 0;
-    } else {
+    }
+    else {
       cursor.startString = 0;
     }
     outer: for (let i = 0, len = list.length; i < len; i++) {
@@ -1931,7 +1971,8 @@ class Text extends Node {
       ) {
         if (isEnd) {
           cursor.endTextBox = i;
-        } else {
+        }
+        else {
           cursor.startTextBox = i;
         }
         const ctx = inject.getFontCanvas().ctx;
@@ -1949,14 +1990,17 @@ class Text extends Node {
               rx = x + w2;
               if (isEnd) {
                 cursor.endString = end;
-              } else {
+              }
+              else {
                 cursor.startString = end;
               }
-            } else {
+            }
+            else {
               rx = x + w1;
               if (isEnd) {
                 cursor.endString = start;
-              } else {
+              }
+              else {
                 cursor.startString = start;
               }
             }
@@ -1966,12 +2010,15 @@ class Text extends Node {
           const w = ctx.measureText(str.slice(0, mid)).width;
           if (localX > x + w) {
             start = mid;
-          } else if (localX < x + w) {
+          }
+          else if (localX < x + w) {
             end = mid;
-          } else {
+          }
+          else {
             if (isEnd) {
               cursor.endString = mid;
-            } else {
+            }
+            else {
               cursor.startString = mid;
             }
             rx = x + w;
@@ -1985,7 +2032,8 @@ class Text extends Node {
       const textAlign = this.computedStyle.textAlign;
       if (textAlign === TEXT_ALIGN.CENTER) {
         rx = this.width * 0.5;
-      } else if (textAlign === TEXT_ALIGN.RIGHT) {
+      }
+      else if (textAlign === TEXT_ALIGN.RIGHT) {
         rx = this.width;
       }
     }
@@ -2000,11 +2048,14 @@ class Text extends Node {
     if (style.hasOwnProperty('textAlign')) {
       if (style.textAlign === 'center') {
         style2.textAlign = TEXT_ALIGN.CENTER;
-      } else if (style.textAlign === 'right') {
+      }
+      else if (style.textAlign === 'right') {
         style2.textAlign = TEXT_ALIGN.RIGHT;
-      } else if (style.textAlign === 'justify') {
+      }
+      else if (style.textAlign === 'justify') {
         style2.textAlign = TEXT_ALIGN.JUSTIFY;
-      } else {
+      }
+      else {
         style2.textAlign = TEXT_ALIGN.LEFT;
       }
     }
@@ -2040,7 +2091,8 @@ class Text extends Node {
     const keys = this.updateStyleData(style);
     if (keys.length) {
       this.root?.addUpdate(this, keys, undefined, false, false, cb);
-    } else if (hasChange) {
+    }
+    else if (hasChange) {
       this.refresh(RefreshLevel.REFLOW, cb);
     }
     this.afterEdit(isLeft, isRight, isTop);
@@ -2322,7 +2374,8 @@ class Text extends Node {
         if (item.location === start) {
           rich.splice(i, 0, st);
           item.location += length;
-        } else {
+        }
+        else {
           const copy = clone(item);
           item.length = start - item.location;
           copy.location = start + length;
@@ -2389,7 +2442,8 @@ class Text extends Node {
           startString,
         ];
         isReversed = true;
-      } else if (startLineBox === endLineBox && startTextBox > endTextBox) {
+      }
+      else if (startLineBox === endLineBox && startTextBox > endTextBox) {
         [startTextBox, startString, endTextBox, endString] = [
           endTextBox,
           endString,
@@ -2397,7 +2451,8 @@ class Text extends Node {
           startString,
         ];
         isReversed = true;
-      } else if (
+      }
+      else if (
         startLineBox === endLineBox &&
         startTextBox === endTextBox &&
         startString > endString
@@ -2412,7 +2467,8 @@ class Text extends Node {
     let list = lineBox.list;
     if (!list.length) {
       start = lineBox.index;
-    } else {
+    }
+    else {
       const textBox = list[startTextBox];
       start = textBox.index + startString;
     }
@@ -2421,7 +2477,8 @@ class Text extends Node {
     list = lineBox.list;
     if (!list.length) {
       end = lineBox.index;
-    } else {
+    }
+    else {
       const textBox = list[endTextBox];
       end = textBox.index + endString;
     }
@@ -2476,7 +2533,8 @@ class Text extends Node {
       let list = lineBox.list;
       if (!list) {
         start = lineBox.index;
-      } else {
+      }
+      else {
         const textBox = list[startTextBox];
         start = textBox.index + startString;
       }
@@ -2484,7 +2542,8 @@ class Text extends Node {
       list = lineBox.list;
       if (!list) {
         end = lineBox.index;
-      } else {
+      }
+      else {
         const textBox = list[endTextBox];
         end = textBox.index + endString;
       }
@@ -2509,7 +2568,8 @@ class Text extends Node {
         if (res.indexOf(r) === -1) {
           res.push(r);
         }
-      } else {
+      }
+      else {
         // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首
         const i =
           startString === 0 && startTextBox > 0
@@ -2637,7 +2697,8 @@ class Text extends Node {
           if (font.hasRegister(fontFamily.toLowerCase())) {
             const fontData = font.data[fontFamily.toLowerCase()];
             normal = fontData.lhr * fontSize;
-          } else {
+          }
+          else {
             const ctx = inject.getFontCanvas().ctx;
             ctx.font = f;
             const r = ctx.measureText(str);
@@ -2662,9 +2723,11 @@ class Text extends Node {
         if (strokeEnable[i]) {
           if (strokePosition[i] === STROKE_POSITION.INSIDE) {
             // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+          }
+          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
             border = Math.max(border, item * 2);
-          } else {
+          }
+          else {
             // 默认中间
             border = Math.max(border, item * 0.5 * 2);
           }
@@ -2705,7 +2768,8 @@ function equalRich(a: Rich, b: Rich) {
       ) {
         return false;
       }
-    } else {
+    }
+    else {
       if (oa !== ob) {
         return false;
       }

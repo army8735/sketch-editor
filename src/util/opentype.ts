@@ -1218,7 +1218,8 @@ export default {
       if (flavor === String.fromCharCode(0, 1, 0, 0)) {
         // isTrueType = true;
       }
-      else if (flavor === 'OTTO') {}
+      else if (flavor === 'OTTO') {
+      }
       else {
         inject.error('Unsupported OpenType flavor ' + signature);
         return;

@@ -9,6 +9,7 @@ import Text from '../Text';
 class Overlay extends Container {
   artBoards: Container;
   artBoardList: Array<{ artBoard: ArtBoard; text: Text }>;
+
   constructor(props: Props, children: Array<Node>) {
     super(props, children);
     this.artBoards = new Container(

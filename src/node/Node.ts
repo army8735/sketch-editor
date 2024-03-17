@@ -185,7 +185,8 @@ class Node extends Event {
     }
   }
 
-  didMountBubble() {}
+  didMountBubble() {
+  }
 
   lay(data: LayoutData) {
     this.refreshLevel = RefreshLevel.REFLOW;
@@ -217,29 +218,35 @@ class Node extends Event {
     // 考虑min值约束
     if (width.u !== StyleUnit.AUTO) {
       this.minWidth = this.width;
-    } else {
+    }
+    else {
       this.minWidth = 0.5;
     }
     if (height.u !== StyleUnit.AUTO) {
       this.minHeight = this.height;
-    } else {
+    }
+    else {
       this.minHeight = 0.5;
     }
     // 左右决定width
     if (fixedLeft && fixedRight) {
       this.width = computedStyle.width =
         data.w - computedStyle.left - computedStyle.right;
-    } else if (fixedLeft) {
+    }
+    else if (fixedLeft) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
-      } else {
+      }
+      else {
         this.width = 0.5;
       }
       computedStyle.right = data.w - computedStyle.left - this.width;
-    } else if (fixedRight) {
+    }
+    else if (fixedRight) {
       if (width.u !== StyleUnit.AUTO) {
         this.width = computedStyle.width;
-      } else {
+      }
+      else {
         this.width = 0.5;
       }
       computedStyle.left = data.w - computedStyle.right - this.width;
@@ -248,17 +255,21 @@ class Node extends Event {
     if (fixedTop && fixedBottom) {
       this.height = computedStyle.height =
         data.h - computedStyle.top - computedStyle.bottom;
-    } else if (fixedTop) {
+    }
+    else if (fixedTop) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
-      } else {
+      }
+      else {
         this.height = 0.5;
       }
       computedStyle.bottom = data.h - computedStyle.top - this.height;
-    } else if (fixedBottom) {
+    }
+    else if (fixedBottom) {
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height;
-      } else {
+      }
+      else {
         this.height = 0.5;
       }
       computedStyle.top = data.h - computedStyle.bottom - this.height;
@@ -348,7 +359,8 @@ class Node extends Event {
     const lineHeight = style.lineHeight;
     if (lineHeight.u === StyleUnit.AUTO) {
       computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-    } else {
+    }
+    else {
       computedStyle.lineHeight = lineHeight.v;
     }
     this.width = this.height = 0;
@@ -606,20 +618,23 @@ class Node extends Event {
       if (scaleX !== 1) {
         if (isE(transform)) {
           transform[0] = scaleX;
-        } else {
+        }
+        else {
           multiplyScaleX(transform, scaleX);
         }
       }
       if (scaleY !== 1) {
         if (isE(transform)) {
           transform[5] = scaleY;
-        } else {
+        }
+        else {
           multiplyScaleY(transform, scaleY);
         }
       }
       if (isE(transform)) {
         calRotateZ(transform, rotateZ);
-      } else if (rotateZ) {
+      }
+      else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
       const t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
@@ -676,7 +691,8 @@ class Node extends Event {
       //     document.body.appendChild(img);
       //   }
       // });
-    } else {
+    }
+    else {
       this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
         undefined;
     }
@@ -688,13 +704,17 @@ class Node extends Event {
     for (let i = 0, len = Math.max(textureCache.length, textureTotal.length); i < len; i++) {
       if (textureMask[i]?.available) {
         this.textureTarget[i] = textureMask[i];
-      } else if (textureFilter[i]?.available) {
+      }
+      else if (textureFilter[i]?.available) {
         this.textureTarget[i] = textureFilter[i];
-      } else if (textureTotal[i]?.available) {
+      }
+      else if (textureTotal[i]?.available) {
         this.textureTarget[i] = textureTotal[i];
-      } else if (textureCache[i]?.available) {
+      }
+      else if (textureCache[i]?.available) {
         this.textureTarget[i] = textureCache[i];
-      } else {
+      }
+      else {
         this.textureTarget[i] = undefined;
       }
     }
@@ -705,7 +725,8 @@ class Node extends Event {
     if (includeSelf) {
       this.refreshLevel |= RefreshLevel.REPAINT;
       this.textureCache.forEach((item) => item?.release());
-    } else {
+    }
+    else {
       this.textureCache.forEach((item, i) => {
         if (item && item.available) {
           this.textureTarget[i] = item;
@@ -848,7 +869,8 @@ class Node extends Event {
         const w = parent.width - computedStyle.right - left;
         if (w < this.minWidth) {
           if (style.left.u === StyleUnit.PX) {
-          } else if (style.left.u === StyleUnit.PERCENT) {
+          }
+          else if (style.left.u === StyleUnit.PERCENT) {
             const max =
               ((parent.width - computedStyle.right - this.minWidth) * 100) /
               parent.width;
@@ -856,12 +878,14 @@ class Node extends Event {
             if (style.left.v === max) {
               let i = keys.indexOf('left');
               keys.splice(i, 1);
-            } else {
+            }
+            else {
               style.left.v = this.style.left.v = max;
             }
           }
         }
-      } else if (
+      }
+      else if (
         style.hasOwnProperty('right') &&
         !style.hasOwnProperty('left') &&
         this.style.left.u !== StyleUnit.AUTO
@@ -870,7 +894,8 @@ class Node extends Event {
         const w = parent.width - computedStyle.left - right;
         if (w < this.minWidth) {
           if (style.right.u === StyleUnit.PX) {
-          } else if (style.right.u === StyleUnit.PERCENT) {
+          }
+          else if (style.right.u === StyleUnit.PERCENT) {
             const max =
               ((parent.width - computedStyle.left - this.minWidth) * 100) /
               parent.width;
@@ -878,7 +903,8 @@ class Node extends Event {
             if (style.right.v === max) {
               let i = keys.indexOf('right');
               keys.splice(i, 1);
-            } else {
+            }
+            else {
               style.right.v = this.style.right.v = max;
             }
           }
@@ -894,7 +920,8 @@ class Node extends Event {
         const h = parent.height - computedStyle.bottom - top;
         if (h < this.minHeight) {
           if (style.top.u === StyleUnit.PX) {
-          } else if (style.top.u === StyleUnit.PERCENT) {
+          }
+          else if (style.top.u === StyleUnit.PERCENT) {
             const max =
               ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
               parent.height;
@@ -902,12 +929,14 @@ class Node extends Event {
             if (style.top.v === max) {
               let i = keys.indexOf('top');
               keys.splice(i, 1);
-            } else {
+            }
+            else {
               style.top.v = this.style.top.v = max;
             }
           }
         }
-      } else if (
+      }
+      else if (
         style.hasOwnProperty('bottom') &&
         !style.hasOwnProperty('top') &&
         this.style.top.u !== StyleUnit.AUTO
@@ -916,7 +945,8 @@ class Node extends Event {
         const h = parent.height - computedStyle.top - bottom;
         if (h < this.minHeight) {
           if (style.bottom.u === StyleUnit.PX) {
-          } else if (style.bottom.u === StyleUnit.PERCENT) {
+          }
+          else if (style.bottom.u === StyleUnit.PERCENT) {
             const max =
               ((parent.height - computedStyle.top - this.minHeight) * 100) /
               parent.height;
@@ -924,7 +954,8 @@ class Node extends Event {
             if (style.bottom.v === max) {
               let i = keys.indexOf('bottom');
               keys.splice(i, 1);
-            } else {
+            }
+            else {
               style.bottom.v = this.style.bottom.v = max;
             }
           }
@@ -982,7 +1013,8 @@ class Node extends Event {
     let keys: string[];
     if (Array.isArray(style)) {
       keys = style.slice(0);
-    } else {
+    }
+    else {
       keys = Object.keys(style);
       keys.forEach((k) => {
         // @ts-ignore
@@ -1001,7 +1033,8 @@ class Node extends Event {
     let keys: string[];
     if (Array.isArray(props)) {
       keys = props.slice(0);
-    } else {
+    }
+    else {
       keys = Object.keys(props);
       keys.forEach((k) => {
         // @ts-ignore
@@ -1050,11 +1083,13 @@ class Node extends Event {
         res[k] = res[k].map((item: any) => {
           if (Array.isArray(item)) {
             return color2hexStr(item);
-          } else {
+          }
+          else {
             if (item.url) {
               const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
               return `url(${item.url}) ${type} ${item.scale}`;
-            } else if (
+            }
+            else if (
               item.t === GRADIENT.LINEAR ||
               item.t === GRADIENT.RADIAL ||
               item.t === GRADIENT.CONIC
@@ -1062,7 +1097,8 @@ class Node extends Event {
               let s = 'linear-gradient';
               if (item.t === GRADIENT.RADIAL) {
                 s = 'radial-gradient';
-              } else if (item.t === GRADIENT.CONIC) {
+              }
+              else if (item.t === GRADIENT.CONIC) {
                 s = 'conic-gradient';
               }
               return `${s}(${item.d.join(' ')}, ${item.stops.map(
@@ -1100,7 +1136,8 @@ class Node extends Event {
           item.spread
         }`;
       });
-    } else {
+    }
+    else {
       res.color = res.color.slice(0);
       res.backgroundColor = res.backgroundColor.slice(0);
       res.fill = res.fill.slice(0);
@@ -1132,7 +1169,8 @@ class Node extends Event {
       i[13] = matrix[13];
       const m = multiply(parent.matrixWorld, i);
       t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
-    } else {
+    }
+    else {
       t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
     }
     const x1 = t.x1;
@@ -1259,17 +1297,20 @@ class Node extends Event {
     if (width.u === StyleUnit.AUTO) {
       if (left.u === StyleUnit.PX) {
         left.v = tx;
-      } else if (left.u === StyleUnit.PERCENT) {
+      }
+      else if (left.u === StyleUnit.PERCENT) {
         if (right.u === StyleUnit.AUTO) {
           // 文本自动宽情况无right
           left.v = ((tx + w * 0.5) * 100) / pw;
-        } else {
+        }
+        else {
           left.v = (tx * 100) / pw;
         }
       }
       if (right.u === StyleUnit.PX) {
         right.v = pw - tx - w;
-      } else if (right.u === StyleUnit.PERCENT) {
+      }
+      else if (right.u === StyleUnit.PERCENT) {
         right.v = ((pw - tx - w) * 100) / pw;
       }
     }
@@ -1277,12 +1318,14 @@ class Node extends Event {
     else {
       if (left.u === StyleUnit.PX) {
         left.v = tx;
-      } else if (left.u === StyleUnit.PERCENT) {
+      }
+      else if (left.u === StyleUnit.PERCENT) {
         left.v = ((tx + w * 0.5) * 100) / pw;
       }
       if (right.u === StyleUnit.PX) {
         right.v = pw - tx - w;
-      } else if (right.u === StyleUnit.PERCENT) {
+      }
+      else if (right.u === StyleUnit.PERCENT) {
         right.v = ((pw - tx - w) * 100) / pw;
       }
     }
@@ -1305,16 +1348,19 @@ class Node extends Event {
     if (height.u === StyleUnit.AUTO) {
       if (top.u === StyleUnit.PX) {
         top.v = ty;
-      } else if (top.u === StyleUnit.PERCENT) {
+      }
+      else if (top.u === StyleUnit.PERCENT) {
         if (bottom.u === StyleUnit.AUTO) {
           top.v = ((ty + h * 0.5) * 100) / ph;
-        } else {
+        }
+        else {
           top.v = (ty * 100) / ph;
         }
       }
       if (bottom.u === StyleUnit.PX) {
         bottom.v = ph - ty - h;
-      } else if (bottom.u === StyleUnit.PERCENT) {
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
         bottom.v = ((ph - ty - h) * 100) / ph;
       }
     }
@@ -1322,12 +1368,14 @@ class Node extends Event {
     else {
       if (top.u === StyleUnit.PX) {
         top.v = ty;
-      } else if (top.u === StyleUnit.PERCENT) {
+      }
+      else if (top.u === StyleUnit.PERCENT) {
         top.v = ((ty + h * 0.5) * 100) / ph;
       }
       if (bottom.u === StyleUnit.PX) {
         bottom.v = ph - ty - h;
-      } else if (bottom.u === StyleUnit.PERCENT) {
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
         bottom.v = ((ph - ty - h) * 100) / ph;
       }
     }
@@ -1377,7 +1425,8 @@ class Node extends Event {
     if (dx) {
       if (left.u === StyleUnit.PX) {
         left.v += dx;
-      } else if (left.u === StyleUnit.PERCENT) {
+      }
+      else if (left.u === StyleUnit.PERCENT) {
         left.v += (dx * 100) / pw;
       }
       computedStyle.left += dx;
@@ -1385,9 +1434,11 @@ class Node extends Event {
     if (dw) {
       if (right.u === StyleUnit.PX) {
         right.v -= dw;
-      } else if (right.u === StyleUnit.PERCENT) {
+      }
+      else if (right.u === StyleUnit.PERCENT) {
         right.v -= (dw * 100) / pw;
-      } else if (width.u === StyleUnit.PX) {
+      }
+      else if (width.u === StyleUnit.PX) {
         width.v = dw + this.width - dx;
       }
       computedStyle.right -= dw;
@@ -1400,7 +1451,8 @@ class Node extends Event {
     if (dy) {
       if (top.u === StyleUnit.PX) {
         top.v += dy;
-      } else if (top.u === StyleUnit.PERCENT) {
+      }
+      else if (top.u === StyleUnit.PERCENT) {
         top.v += (dy * 100) / ph;
       }
       computedStyle.top += dy;
@@ -1408,9 +1460,11 @@ class Node extends Event {
     if (dh) {
       if (bottom.u === StyleUnit.PX) {
         bottom.v -= dh;
-      } else if (bottom.u === StyleUnit.PERCENT) {
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
         bottom.v -= (dh * 100) / ph;
-      } else if (height.u === StyleUnit.PX) {
+      }
+      else if (height.u === StyleUnit.PX) {
         height.v = dh + this.height - dy;
       }
       computedStyle.bottom -= dh;
@@ -1437,9 +1491,11 @@ class Node extends Event {
   ) {
     if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
       translateX.v = 0;
-    } else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
+    }
+    else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
       translateX.v = 0;
-    } else {
+    }
+    else {
       translateX.v = -50;
       translateX.u = StyleUnit.PERCENT;
     }
@@ -1453,9 +1509,11 @@ class Node extends Event {
   ) {
     if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
       translateY.v = 0;
-    } else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
+    }
+    else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
       translateY.v = 0;
-    } else {
+    }
+    else {
       translateY.v = -50;
       translateY.u = StyleUnit.PERCENT;
     }
@@ -1650,13 +1708,15 @@ class Node extends Event {
     let lineCapStyle = SketchFormat.LineCapStyle.Butt;
     if (computedStyle.strokeLinecap === STROKE_LINE_CAP.ROUND) {
       lineCapStyle = SketchFormat.LineCapStyle.Round;
-    } else if (computedStyle.strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+    }
+    else if (computedStyle.strokeLinecap === STROKE_LINE_CAP.SQUARE) {
       lineCapStyle = SketchFormat.LineCapStyle.Projecting;
     }
     let lineJoinStyle = SketchFormat.LineJoinStyle.Miter;
     if (computedStyle.strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
       lineJoinStyle = SketchFormat.LineJoinStyle.Round;
-    } else if (computedStyle.strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+    }
+    else if (computedStyle.strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
       lineJoinStyle = SketchFormat.LineJoinStyle.Bevel;
     }
     const {
@@ -1727,7 +1787,7 @@ class Node extends Event {
       'nameIsFixed' |
       'resizingConstraint' |
       'resizingType' |
-      'rotation'|
+      'rotation' |
       'shouldBreakMaskChain' |
       'style'
     > = {
@@ -1848,7 +1908,8 @@ class Node extends Event {
           if (f.t === GRADIENT.RADIAL) {
             gradient.gradientType = SketchFormat.GradientType.Radial;
             gradient.elipseLength = f.d[4];
-          } else if (f.t === GRADIENT.CONIC) {
+          }
+          else if (f.t === GRADIENT.CONIC) {
             gradient.gradientType = SketchFormat.GradientType.Angular;
           }
           f.stops.forEach(item => {
@@ -1908,7 +1969,8 @@ class Node extends Event {
         if (s.t === GRADIENT.RADIAL) {
           gradient.gradientType = SketchFormat.GradientType.Radial;
           gradient.elipseLength = s.d[4];
-        } else if (s.t === GRADIENT.CONIC) {
+        }
+        else if (s.t === GRADIENT.CONIC) {
           gradient.gradientType = SketchFormat.GradientType.Angular;
         }
         s.stops.forEach(item => {
@@ -1922,7 +1984,8 @@ class Node extends Event {
       let position = SketchFormat.BorderPosition.Center;
       if (computedStyle.strokePosition[i] === STROKE_POSITION.INSIDE) {
         position = SketchFormat.BorderPosition.Inside;
-      } else if (computedStyle.strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+      }
+      else if (computedStyle.strokePosition[i] === STROKE_POSITION.OUTSIDE) {
         position = SketchFormat.BorderPosition.Outside;
       }
       return {
@@ -1944,7 +2007,8 @@ class Node extends Event {
       let center = '';
       if (blur.center) {
         center = '{' + blur.center.join(', ') + '}';
-      } else {
+      }
+      else {
         center = '{0.5, 0.5}';
       }
       json.style!.blur = {
@@ -1972,7 +2036,8 @@ class Node extends Event {
     const res = new Node(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
-    if (override) {}
+    if (override) {
+    }
     return res;
   }
 
@@ -2035,7 +2100,8 @@ class Node extends Event {
           node.hasCacheOp = true;
           if (node === root) {
             node._opacity = node.computedStyle.opacity;
-          } else {
+          }
+          else {
             node._opacity = node.parent!._opacity * node.computedStyle.opacity;
             node.parentOpId = node.parent!.localOpId;
           }
@@ -2051,7 +2117,8 @@ class Node extends Event {
       if (parent) {
         this._opacity = parent._opacity * this.computedStyle.opacity;
         this.parentOpId = parent.localOpId;
-      } else {
+      }
+      else {
         this._opacity = this.computedStyle.opacity;
       }
     }
@@ -2102,7 +2169,8 @@ class Node extends Event {
           node.hasCacheMw = true;
           if (node === root) {
             assignMatrix(node._matrixWorld, node.matrix);
-          } else {
+          }
+          else {
             const t = multiply(node.parent!._matrixWorld, node.matrix);
             assignMatrix(node._matrixWorld, t);
             node.parentMwId = node.parent!.localMwId;
@@ -2120,7 +2188,8 @@ class Node extends Event {
         const t = multiply(parent._matrixWorld, this.matrix);
         assignMatrix(m, t);
         this.parentMwId = parent.localMwId; // 更新以便后续对比
-      } else {
+      }
+      else {
         assignMatrix(m, this.matrix);
       }
     }
@@ -2151,9 +2220,11 @@ class Node extends Event {
         if (strokeEnable[i]) {
           if (strokePosition[i] === STROKE_POSITION.INSIDE) {
             // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+          }
+          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
             border = Math.max(border, item);
-          } else {
+          }
+          else {
             // 默认中间
             border = Math.max(border, item * 0.5);
           }

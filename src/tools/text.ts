@@ -47,7 +47,8 @@ function putData(
       name.push(o.name);
     }
     valid = true;
-  } else {
+  }
+  else {
     if (fontFamily.indexOf(ff2) === -1) {
       fontFamily.push(ff2);
       name.push(ff2);
@@ -79,7 +80,8 @@ function putData(
   if (width.u !== StyleUnit.AUTO) {
     if (height.u !== StyleUnit.AUTO) {
       tb = TEXT_BEHAVIOUR.FIXED_W_H;
-    } else {
+    }
+    else {
       tb = TEXT_BEHAVIOUR.FIXED_W;
     }
   }
@@ -177,7 +179,8 @@ function getWeight(valid: boolean, fontFamily: string[]) {
         fontWeight = item.style;
       }
     }
-  } else if (fontFamily.length > 1) {
+  }
+  else if (fontFamily.length > 1) {
     fontWeight = '多种字重';
   }
   return { fontWeight, fontWeightList };

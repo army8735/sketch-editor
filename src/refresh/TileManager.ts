@@ -20,7 +20,8 @@ class TileManager {
   setPage(page: Page) {
     if (this.hash.has(page)) {
       this.data = this.hash.get(page)!;
-    } else {
+    }
+    else {
       this.data = [];
       this.hash.set(page, this.data);
     }
@@ -80,7 +81,8 @@ class TileManager {
         for (let j = ox; j < ox + nw; j++) {
           if (list[j]) {
             res.push(list[j]);
-          } else {
+          }
+          else {
             const tile = new Tile(this.gl, first.x + j * size, first.y + i * size, size);
             list[j] = tile;
             // 防止发生跳跃（比如先右移，再下移，可能左下角会空一格没有初始化导致索引错误）
@@ -148,7 +150,8 @@ class TileManager {
                     break;
                   }
                 }
-              } else if (first.y > y) {
+              }
+              else if (first.y > y) {
                 break;
               }
             }
@@ -174,11 +177,13 @@ class TileManager {
                       scale: scale2,
                       tile: item2,
                     });
-                  } else if (item2.x >= x + s) {
+                  }
+                  else if (item2.x >= x + s) {
                     break;
                   }
                 }
-              } else if (first.y >= y + s) {
+              }
+              else if (first.y >= y + s) {
                 break;
               }
             }

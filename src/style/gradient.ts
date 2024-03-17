@@ -39,7 +39,8 @@ export function getColorStop(
     const item = list[i];
     if (item.offset !== undefined) {
       start = item.offset;
-    } else {
+    }
+    else {
       let j = i + 1;
       let end = list[list.length - 1].offset;
       for (; j < len - 1; j++) {
@@ -115,7 +116,8 @@ export function getColorStop(
   list.forEach((item) => {
     if (item.offset! < 0) {
       item.offset = 0;
-    } else if (item.offset! > 1) {
+    }
+    else if (item.offset! > 1) {
       item.offset = 1;
     }
   });
@@ -193,10 +195,12 @@ export function parseGradient(s: string) {
           parseFloat(points[3]),
           parseFloat(points[4]),
         ];
-      } else {
+      }
+      else {
         return;
       }
-    } else if (t === GRADIENT.RADIAL) {
+    }
+    else if (t === GRADIENT.RADIAL) {
       const points =
         /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(
           gradient[2],
@@ -209,7 +213,8 @@ export function parseGradient(s: string) {
           parseFloat(points[4]),
           parseFloat(points[5]),
         ];
-      } else {
+      }
+      else {
         return;
       }
     }
@@ -326,10 +331,12 @@ export function getRadial(
       if (x2 === x1) {
         if (y2 >= y1) {
           multiplyRotateZ(matrix, d2r(90));
-        } else {
+        }
+        else {
           multiplyRotateZ(matrix, d2r(270));
         }
-      } else {
+      }
+      else {
         const tan = Math.atan((y2 - y1) / (x2 - x1));
         multiplyRotateZ(matrix, tan);
       }
@@ -381,10 +388,12 @@ export function getConic(
   if (x === 0) {
     if (y >= 0) {
       angle = 0;
-    } else {
+    }
+    else {
       angle = Math.PI;
     }
-  } else {
+  }
+  else {
     angle = Math.atan(y / x);
   }
   // safari的bug，不是水平右位0而是垂直上，角度需增加90
@@ -414,17 +423,21 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     if (y1 < y2) {
       deg = 180;
     }
-  } else {
+  }
+  else {
     if (x2 > x1) {
       if (y2 >= y1) {
         deg = 90 + r2d(Math.atan((y2 - y1) / (x2 - x1)));
-      } else {
-        deg = r2d(Math.atan( (x2 - x1) / (y1 - y2)));
       }
-    } else {
+      else {
+        deg = r2d(Math.atan((x2 - x1) / (y1 - y2)));
+      }
+    }
+    else {
       if (y2 >= y1) {
         deg = 180 + r2d(Math.atan((x1 - x2) / (y2 - y1)));
-      } else {
+      }
+      else {
         deg = 360 - r2d(Math.atan((x1 - x2) / (y1 - y2)));
       }
     }
@@ -434,13 +447,16 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     if (deg <= 90) {
       start = { x: bbox[0], y: bbox[3] };
       end = { x: bbox[2], y: bbox[1] };
-    } else if (deg <= 180) {
+    }
+    else if (deg <= 180) {
       start = { x: bbox[0], y: bbox[1] };
       end = { x: bbox[2], y: bbox[3] };
-    } else if (deg <= 270) {
+    }
+    else if (deg <= 270) {
       start = { x: bbox[2], y: bbox[1] };
       end = { x: bbox[0], y: bbox[3] };
-    } else {
+    }
+    else {
       start = { x: bbox[2], y: bbox[3] };
       end = { x: bbox[0], y: bbox[1] };
     }
@@ -525,7 +541,8 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
           break;
         }
       }
-    } else if (p2 < 0) {
+    }
+    else if (p2 < 0) {
       list.forEach(item => {
         item.offset! = (item.offset! * (c - p1)) / (c - p1 - p2);
       });
@@ -540,7 +557,8 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
       s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
     });
     return s + ')';
-  } else if (t === GRADIENT.RADIAL) {
+  }
+  else if (t === GRADIENT.RADIAL) {
     // 半径，和圆心到4个角的距离取最大值即farthest-corner
     const r = Math.sqrt((Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
     const d1 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1, 2)));
@@ -557,7 +575,8 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
       const color = item.color.map((c, i) => {
         if (i === 3) {
           return toPrecision(c * opacity);
-        } else {
+        }
+        else {
           return Math.min(255, Math.floor(c * ratio));
         }
       });

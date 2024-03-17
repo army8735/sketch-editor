@@ -51,9 +51,11 @@ export function equal(a: any, b: any) {
         return false;
       }
     }
-  } else if (isDate(a) && isDate(b)) {
+  }
+  else if (isDate(a) && isDate(b)) {
     return a.getTime() === b.getTime();
-  } else if (Array.isArray(a) && Array.isArray(b)) {
+  }
+  else if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) {
       return false;
     }

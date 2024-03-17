@@ -45,7 +45,8 @@ export function parse(json: JNode, root: Root): Node | undefined {
       return root.symbolMasters[symbolId] || new SymbolMaster(props, children);
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
-  } else if (tagName === TAG_NAME.SYMBOL_INSTANCE) {
+  }
+  else if (tagName === TAG_NAME.SYMBOL_INSTANCE) {
     const props = json.props as SymbolInstanceProps;
     const symbolId = props.symbolId;
     const sm = root.symbolMasters[symbolId];
@@ -53,7 +54,8 @@ export function parse(json: JNode, root: Root): Node | undefined {
     if (sm) {
       return new SymbolInstance(props, sm);
     }
-  } else if (tagName === TAG_NAME.GROUP) {
+  }
+  else if (tagName === TAG_NAME.GROUP) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i], root);
@@ -62,13 +64,17 @@ export function parse(json: JNode, root: Root): Node | undefined {
       }
     }
     return new Group(json.props, children);
-  } else if (tagName === TAG_NAME.BITMAP) {
+  }
+  else if (tagName === TAG_NAME.BITMAP) {
     return new Bitmap(json.props as BitmapProps);
-  } else if (tagName === TAG_NAME.TEXT) {
+  }
+  else if (tagName === TAG_NAME.TEXT) {
     return new Text(json.props as TextProps);
-  } else if (tagName === TAG_NAME.POLYLINE) {
+  }
+  else if (tagName === TAG_NAME.POLYLINE) {
     return new Polyline(json.props as PolylineProps);
-  } else if (tagName === TAG_NAME.SHAPE_GROUP) {
+  }
+  else if (tagName === TAG_NAME.SHAPE_GROUP) {
     const children = [];
     for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
       const res = parse((json as JContainer).children[i], root);
@@ -77,7 +83,8 @@ export function parse(json: JNode, root: Root): Node | undefined {
       }
     }
     return new ShapeGroup(json.props as ShapeGroupProps, children);
-  } else if (tagName === TAG_NAME.SLICE) {
+  }
+  else if (tagName === TAG_NAME.SLICE) {
     return new Slice(json.props);
   }
 }
@@ -94,7 +101,8 @@ export function sortSymbolMasters(list: JSymbolMaster[]) {
     const id2 = b.props.symbolId;
     if (hash[id1] === id2) {
       return -1;
-    } else if (hash[id2] === id1) {
+    }
+    else if (hash[id2] === id1) {
       return 1;
     }
     return 0;
@@ -108,9 +116,11 @@ function scan(id: string, children: JNode[], hash: Record<string, string>) {
       const id2 = (item as JSymbolMaster).props.symbolId;
       hash[id2] = id;
       scan(id2, (item as JSymbolMaster).children || [], hash);
-    } else if (item.tagName === TAG_NAME.SYMBOL_INSTANCE) {
+    }
+    else if (item.tagName === TAG_NAME.SYMBOL_INSTANCE) {
       hash[(item as JSymbolInstance).props.symbolId] = id;
-    } else if (item.tagName === TAG_NAME.GROUP) {
+    }
+    else if (item.tagName === TAG_NAME.GROUP) {
       const cd = (item as JGroup).children || [];
       scan(id, cd, hash);
     }

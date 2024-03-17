@@ -142,7 +142,8 @@ class Container extends Node {
   removeChild(node: Node, cb?: (sync: boolean) => void) {
     if (node.parent === this) {
       node.remove(cb);
-    } else {
+    }
+    else {
       inject.error('Invalid parameter of removeChild()');
     }
   }
@@ -195,7 +196,8 @@ class Container extends Node {
       const s = this.children[childIndex - 1].struct;
       const total = s.total;
       i = structs.indexOf(s) + total + 1;
-    } else {
+    }
+    else {
       i = structs.indexOf(struct) + 1;
     }
     structs.splice(i, 0, ...cs);
@@ -325,10 +327,12 @@ class Container extends Node {
           const res = child.getNodeByPoint(x, y);
           if (res) {
             return res;
-          } else if (child.isArtBoard) {
+          }
+          else if (child.isArtBoard) {
             return child;
           }
-        } else if (computedStyle.pointerEvents) {
+        }
+        else if (computedStyle.pointerEvents) {
           return child;
         }
       }

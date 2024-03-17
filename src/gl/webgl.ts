@@ -121,7 +121,8 @@ export function createTexture(
       gl.UNSIGNED_BYTE,
       null,
     );
-  } else {
+  }
+  else {
     throw new Error('Missing texImageSource or w/h');
   }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -185,17 +186,20 @@ export function drawTextureCache(
   let vtPoint: Float32Array, vtTex: Float32Array, vtOpacity: Float32Array;
   if (lastVtPoint && lastVtPoint.length === num1) {
     vtPoint = lastVtPoint;
-  } else {
+  }
+  else {
     vtPoint = lastVtPoint = new Float32Array(num1);
   }
   if (lastVtTex && lastVtTex.length === num1) {
     vtTex = lastVtTex;
-  } else {
+  }
+  else {
     vtTex = lastVtTex = new Float32Array(num1);
   }
   if (lastVtOpacity && lastVtOpacity.length === num2) {
     vtOpacity = lastVtOpacity;
-  } else {
+  }
+  else {
     vtOpacity = lastVtOpacity = new Float32Array(num2);
   }
   for (let i = 0, len = list.length; i < len; i++) {
@@ -220,7 +224,8 @@ export function drawTextureCache(
     if (isSingle) {
       vtPoint[k + 6] = t3.x;
       vtPoint[k + 7] = t3.y;
-    } else {
+    }
+    else {
       vtPoint[k + 6] = t4.x;
       vtPoint[k + 7] = t4.y;
       vtPoint[k + 8] = t2.x;
@@ -239,7 +244,8 @@ export function drawTextureCache(
       if (isSingle) {
         vtTex[k + 6] = tc.x3;
         vtTex[k + 7] = tc.y3;
-      } else {
+      }
+      else {
         vtTex[k + 6] = tc.x1;
         vtTex[k + 7] = tc.y3;
         vtTex[k + 8] = tc.x3;
@@ -247,7 +253,8 @@ export function drawTextureCache(
         vtTex[k + 10] = tc.x3;
         vtTex[k + 11] = tc.y3;
       }
-    } else {
+    }
+    else {
       vtTex[k] = 0;
       vtTex[k + 1] = 0;
       vtTex[k + 2] = 0;
@@ -257,7 +264,8 @@ export function drawTextureCache(
       if (isSingle) {
         vtTex[k + 6] = 1;
         vtTex[k + 7] = 1;
-      } else {
+      }
+      else {
         vtTex[k + 6] = 0;
         vtTex[k + 7] = 1;
         vtTex[k + 8] = 1;
@@ -432,7 +440,8 @@ export function drawGauss(
     bindTexture(gl, tex1, 0);
     if (width >= height) {
       gl.uniform2f(u_direction, max, 0);
-    } else {
+    }
+    else {
       gl.uniform2f(u_direction, max / ratio, 0);
     }
     gl.uniform1i(u_texture, 0);
@@ -449,7 +458,8 @@ export function drawGauss(
     bindTexture(gl, tex2, 1);
     if (width >= height) {
       gl.uniform2f(u_direction, 0, max * ratio);
-    } else {
+    }
+    else {
       gl.uniform2f(u_direction, 0, max);
     }
     gl.uniform1i(u_texture, 1);
@@ -720,15 +730,18 @@ export function convertCoords2Gl(
 ) {
   if (x === cx) {
     x = 0;
-  } else {
+  }
+  else {
     x = (x - cx) / cx;
   }
   if (y === cy) {
     y = 0;
-  } else {
+  }
+  else {
     if (flipY) {
       y = (cy - y) / cy;
-    } else {
+    }
+    else {
       y = (y - cy) / cy;
     }
   }

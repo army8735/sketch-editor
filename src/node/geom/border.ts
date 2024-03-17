@@ -31,7 +31,8 @@ export function lineCap(bbox: Float64Array, width: number, points: number[][], c
   if (ll > 2) {
     slop1 = Math.abs(bezierSlope(pts, 0));
     slop2 = Math.abs(bezierSlope(pts, 1));
-  } else {
+  }
+  else {
     slop1 = slop2 = Math.abs(last[ll - 1] - first[1]) / Math.abs(last[ll - 2] - first[0]);
   }
   const deg1 = Math.atan(slop1);
@@ -49,7 +50,8 @@ export function lineCap(bbox: Float64Array, width: number, points: number[][], c
     res[1] = Math.min(res[1], first[1] - dy1, last[ll - 1] - dy2);
     res[2] = Math.max(res[2], first[0] + dx1, last[ll - 2] + dx2);
     res[3] = Math.max(res[3], first[1] + dy1, last[ll - 1] + dy2);
-  } else if (cap === STROKE_LINE_CAP.SQUARE) {
+  }
+  else if (cap === STROKE_LINE_CAP.SQUARE) {
     res[0] = Math.min(res[0], first[0] - dx1 - dy1, last[ll - 2] - dx2 - dy2);
     res[1] = Math.min(res[1], first[1] - dx1 - dy1, last[ll - 1] - dx2 - dy2);
     res[2] = Math.max(res[2], first[0] + dx1 + dy1, last[ll - 2] + dx2 + dy2);
@@ -84,13 +86,15 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
       x = p[0];
       y = p[1];
       vectors.push([dx, dy]);
-    } else if (p.length === 4) {
+    }
+    else if (p.length === 4) {
       dx = 2 * (x - 2 * p[0] + p[2]) + 2 * p[0] - 2 * x;
       dy = 2 * (y - 2 * p[1] + p[3]) + 2 * p[1] - 2 * y;
       x = p[2];
       y = p[3];
       vectors.push([dx, dy]);
-    } else if (p.length === 6) {
+    }
+    else if (p.length === 6) {
       dx = 3 * (-x + 3 * p[0] - 3 * p[2] + p[4])
         + 2 * (3 * x - 6 * p[0] + 3 * p[2])
         + 3 * p[0] - 3 * x;
@@ -108,13 +112,16 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
     if (dx >= 0) {
       if (dy >= 0) {
         lines.push([-xd, yd]);
-      } else {
+      }
+      else {
         lines.push([xd, yd]);
       }
-    } else {
+    }
+    else {
       if (dy >= 0) {
         lines.push([-xd, -yd]);
-      } else {
+      }
+      else {
         lines.push([xd, -yd]);
       }
     }
@@ -138,7 +145,8 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
     if (cp >= 0 && cross1 >= 0 || cp < 0 && cross1 < 0) {
       dxp = -dp[0];
       dyp = -dp[1];
-    } else {
+    }
+    else {
       dxp = dp[0];
       dyp = dp[1];
     }
@@ -147,7 +155,8 @@ export function lineJoin(bbox: Float64Array, width: number, points: number[][], 
     if (cp >= 0 && cross2 >= 0 || cp < 0 && cross2 < 0) {
       dxn = -dn[0];
       dyn = -dn[1];
-    } else {
+    }
+    else {
       dxn = dn[0];
       dyn = dn[1];
     }

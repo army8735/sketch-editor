@@ -33,7 +33,8 @@ function getQuadraticRoots(coefs: number[]) {
     let e = Math.sqrt(d);
     results.push(0.5 * (-b + e));
     results.push(0.5 * (-b - e));
-  } else if (d === 0) {
+  }
+  else if (d === 0) {
     // 两个相同的根，只要返回一个
     results.push(0.5 * -b);
   }
@@ -82,7 +83,8 @@ function getCubicRoots(coefs: number[]) {
       root -= Math.pow(-tmp, 1 / 3);
 
     results.push(root - offset);
-  } else if (discrim < 0) {
+  }
+  else if (discrim < 0) {
     let distance = Math.sqrt(-a / 3);
     let angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
     let cos = Math.cos(angle);
@@ -92,7 +94,8 @@ function getCubicRoots(coefs: number[]) {
     results.push(2 * distance * cos - offset);
     results.push(-distance * (cos + sqrt3 * sin) - offset);
     results.push(-distance * (cos - sqrt3 * sin) - offset);
-  } else {
+  }
+  else {
     let tmp;
 
     if (halfB >= 0)
@@ -123,7 +126,7 @@ function getQuarticRoots(coefs: number[]) {
   let c1 = coefs[1] / c4;
   let c0 = coefs[0] / c4;
 
-  let resolveRoots = getCubicRoots([ 1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1 ].reverse());
+  let resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
 
   let y = resolveRoots[0];
   let discrim = c3 * c3 / 4 - c2 + y;
@@ -152,9 +155,11 @@ function getQuarticRoots(coefs: number[]) {
       results.push(-c3 / 4 + (f - e) / 2);
       results.push(-c3 / 4 - (f + e) / 2);
     }
-  } else if (discrim < 0) {
+  }
+  else if (discrim < 0) {
     // no roots
-  } else {
+  }
+  else {
     let t2 = y * y - 4 * c0;
 
     if (t2 >= -TOLERANCE) {
@@ -186,8 +191,8 @@ function getQuarticRoots(coefs: number[]) {
  */
 export function getRoots(coefs: number[]) {
   let degree = coefs.length - 1;
-  for(let i = degree; i >= 0; i--) {
-    if(Math.abs(coefs[i]) < 1e-12) {
+  for (let i = degree; i >= 0; i--) {
+    if (Math.abs(coefs[i]) < 1e-12) {
       degree--;
     }
     else {

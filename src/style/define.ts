@@ -27,12 +27,14 @@ export function calUnit(v: string | number, degOrNumber2Px = false): StyleNumVal
       v: n,
       u: StyleUnit.PERCENT,
     };
-  } else if (/px$/i.test(v as string)) {
+  }
+  else if (/px$/i.test(v as string)) {
     return {
       v: n,
       u: StyleUnit.PX,
     };
-  } else if (/deg$/i.test(v as string)) {
+  }
+  else if (/deg$/i.test(v as string)) {
     return {
       v: n,
       u: degOrNumber2Px ? StyleUnit.PX : StyleUnit.DEG,

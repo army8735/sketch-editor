@@ -7,6 +7,7 @@ import { clone } from '../util/util';
 
 class SymbolMaster extends ArtBoard {
   symbolInstances: SymbolInstance[];
+
   constructor(props: SymbolMasterProps, children: Array<Node>) {
     super(props, children);
     this.isSymbolMaster = true;

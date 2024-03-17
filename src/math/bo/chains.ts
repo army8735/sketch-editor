@@ -27,19 +27,22 @@ function join(
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
-        } else {
+        }
+        else {
           item = chain.concat(item);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
         }
-      } else if (pt.equal(ptTail)) {
+      }
+      else if (pt.equal(ptTail)) {
         if (isHead) {
           item = item.concat(chain);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
-        } else {
+        }
+        else {
           item = item.concat(reverse(chain));
           chains[i] = item;
           chains.splice(index, 1);
@@ -129,33 +132,40 @@ export default function (list: Segment[]) {
           chain.push(seg);
           join(res, chains, chain, i, end, false);
           continue outer;
-        } else if (!temp) {
+        }
+        else if (!temp) {
           temp = { i, t: 0 };
         }
-      } else if (start.equal(ptHead)) {
+      }
+      else if (start.equal(ptHead)) {
         if (seg.belong !== tail.belong) {
           seg.reverse();
           chain.unshift(seg);
           join(res, chains, chain, i, end, true);
           continue outer;
-        } else if (!temp) {
+        }
+        else if (!temp) {
           temp = { i, t: 1 };
         }
-      } else if (end.equal(ptTail)) {
+      }
+      else if (end.equal(ptTail)) {
         if (seg.belong !== tail.belong) {
           seg.reverse();
           chain.push(seg);
           join(res, chains, chain, i, start, false);
           continue outer;
-        } else if (!temp) {
+        }
+        else if (!temp) {
           temp = { i, t: 2 };
         }
-      } else if (end.equal(ptHead)) {
+      }
+      else if (end.equal(ptHead)) {
         if (seg.belong !== tail.belong) {
           chain.unshift(seg);
           join(res, chains, chain, i, start, true);
           continue outer;
-        } else if (!temp) {
+        }
+        else if (!temp) {
           temp = { i, t: 3 };
         }
       }
@@ -165,15 +175,18 @@ export default function (list: Segment[]) {
       if (temp.t === 0) {
         chains[temp.i].push(seg);
         join(res, chains, chains[temp.i], temp.i, end, false);
-      } else if (temp.t === 1) {
+      }
+      else if (temp.t === 1) {
         seg.reverse();
         chains[temp.i].unshift(seg);
         join(res, chains, chains[temp.i], temp.i, end, true);
-      } else if (temp.t === 2) {
+      }
+      else if (temp.t === 2) {
         seg.reverse();
         chains[temp.i].push(seg);
         join(res, chains, chains[temp.i], temp.i, start, false);
-      } else if (temp.t === 3) {
+      }
+      else if (temp.t === 3) {
         chains[temp.i].unshift(seg);
         join(res, chains, chains[temp.i], temp.i, start, true);
       }
@@ -217,7 +230,8 @@ export default function (list: Segment[]) {
         minY = Math.min(minY, bbox[1]);
         maxX = Math.max(maxX, bbox[2]);
         maxY = Math.max(maxY, bbox[3]);
-      } else {
+      }
+      else {
         minX = bbox[0];
         minY = bbox[1];
         maxX = bbox[2];
@@ -226,23 +240,28 @@ export default function (list: Segment[]) {
       if (len === 2) {
         if (i) {
           s += lastX * coords[1].y - lastY * coords[1].x;
-        } else {
+        }
+        else {
           s += coords[0].x * coords[1].y - coords[0].y * coords[1].x;
         }
         lastX = coords[1].x;
         lastY = coords[1].y;
-      } else if (len === 3) {
+      }
+      else if (len === 3) {
         if (i) {
           s += lastX * coords[2].y - lastY * coords[2].x;
-        } else {
+        }
+        else {
           s += coords[0].x * coords[1].y - coords[0].y * coords[2].x;
         }
         lastX = coords[2].x;
         lastY = coords[2].y;
-      } else if (len === 4) {
+      }
+      else if (len === 4) {
         if (i) {
           s += lastX * coords[3].y - lastY * coords[3].x;
-        } else {
+        }
+        else {
           s += coords[0].x * coords[3].y - coords[0].y * coords[3].x;
         }
         lastX = coords[3].x;
@@ -357,7 +376,8 @@ export default function (list: Segment[]) {
         len = coords.length;
       if (len === 3) {
         return [coords[1].x, coords[1].y, coords[2].x, coords[2].y];
-      } else if (len === 4) {
+      }
+      else if (len === 4) {
         return [
           coords[1].x,
           coords[1].y,
@@ -366,7 +386,8 @@ export default function (list: Segment[]) {
           coords[3].x,
           coords[3].y,
         ];
-      } else {
+      }
+      else {
         return [coords[1].x, coords[1].y];
       }
     });

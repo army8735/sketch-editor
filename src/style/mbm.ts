@@ -1,6 +1,6 @@
 import { MIX_BLEND_MODE } from './define';
 
-export function getCanvasGCO (blend: MIX_BLEND_MODE) {
+export function getCanvasGCO(blend: MIX_BLEND_MODE) {
   switch (blend) {
     case MIX_BLEND_MODE.MULTIPLY:
       return 'multiply';

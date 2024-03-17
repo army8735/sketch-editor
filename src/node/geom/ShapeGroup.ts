@@ -75,7 +75,8 @@ function applyMatrixPoints(points: number[][], m: Float64Array) {
         return [
           c1, c2, c3, c4,
         ];
-      } else {
+      }
+      else {
         return [c1, c2];
       }
     });
@@ -101,7 +102,8 @@ class ShapeGroup extends Group {
     this.loaders = [];
   }
 
-  override didMountBubble() {}
+  override didMountBubble() {
+  }
 
   override lay(data: LayoutData) {
     super.lay(data);
@@ -151,7 +153,8 @@ class ShapeGroup extends Group {
       if (item instanceof Polyline || item instanceof ShapeGroup) {
         item.buildPoints();
         points = item.points;
-      } else {
+      }
+      else {
         const { width, height } = item;
         points = [
           [0, 0],
@@ -169,26 +172,30 @@ class ShapeGroup extends Group {
           p = points.map((item) =>
             scaleUp(applyMatrixPoints(item as number[][], matrix)),
           );
-        } else {
+        }
+        else {
           p = [scaleUp(applyMatrixPoints(points as number[][], matrix))];
         }
         const booleanOperation = item.computedStyle.booleanOperation;
         if (first || !booleanOperation) {
           res = res.concat(p);
           first = false;
-        } else {
+        }
+        else {
           // TODO 连续多个bo运算中间产物优化
           if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
             const t = bo.intersect(res, p) as number[][][];
             res = t || [];
-          } else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
+          }
+          else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
             // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
             const pp: number[][][] = [],
               pl: number[][][] = [];
             p.forEach((item) => {
               if (item.length <= 2) {
                 pl.push(item);
-              } else {
+              }
+              else {
                 pp.push(item);
               }
             });
@@ -199,10 +206,12 @@ class ShapeGroup extends Group {
             if (pl.length) {
               res = res.concat(pl);
             }
-          } else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
+          }
+          else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
             const t = bo.subtract(res, p) as number[][][];
             res = t || [];
-          } else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
+          }
+          else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
             const t = bo.xor(res, p) as number[][][];
             res = t || [];
           }
@@ -274,7 +283,8 @@ class ShapeGroup extends Group {
             continue;
           }
           ctx.fillStyle = color2rgbaStr(f);
-        } else {
+        }
+        else {
           if ((f as ComputedPattern).url !== undefined) {
             f = f as ComputedPattern;
             const url = f.url;
@@ -351,7 +361,8 @@ class ShapeGroup extends Group {
                     ctx.globalCompositeOperation = 'source-over';
                   }
                   os.release();
-                } else if (!loader.error && !loader.loading) {
+                }
+                else if (!loader.error && !loader.loading) {
                   this.root!.imgLoadingCount++;
                 }
               }
@@ -393,7 +404,8 @@ class ShapeGroup extends Group {
               }
             }
             continue;
-          } else {
+          }
+          else {
             f = f as ComputedGradient;
             if (f.t === GRADIENT.LINEAR) {
               const gd = getLinear(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
@@ -451,7 +463,8 @@ class ShapeGroup extends Group {
         if (ellipse) {
           ctx.drawImage(ellipse.canvas, 0, 0);
           ellipse.release();
-        } else {
+        }
+        else {
           ctx.fill(fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero');
         }
         if (mode !== MIX_BLEND_MODE.NORMAL) {
@@ -519,16 +532,20 @@ class ShapeGroup extends Group {
       // 线帽设置
       if (strokeLinecap === STROKE_LINE_CAP.ROUND) {
         ctx.lineCap = 'round';
-      } else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
+      }
+      else if (strokeLinecap === STROKE_LINE_CAP.SQUARE) {
         ctx.lineCap = 'square';
-      } else {
+      }
+      else {
         ctx.lineCap = 'butt';
       }
       if (strokeLinejoin === STROKE_LINE_JOIN.ROUND) {
         ctx.lineJoin = 'round';
-      } else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
+      }
+      else if (strokeLinejoin === STROKE_LINE_JOIN.BEVEL) {
         ctx.lineJoin = 'bevel';
-      } else {
+      }
+      else {
         ctx.lineJoin = 'miter';
       }
       ctx.miterLimit = strokeMiterlimit;
@@ -543,7 +560,8 @@ class ShapeGroup extends Group {
         if (Array.isArray(s)) {
           ctx.strokeStyle = color2rgbaStr(s);
           ctx.lineWidth = strokeWidth[i];
-        } else {
+        }
+        else {
           if (s.t === GRADIENT.LINEAR) {
             const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
@@ -551,7 +569,8 @@ class ShapeGroup extends Group {
               lg.addColorStop(item.offset!, color2rgbaStr(item.color));
             });
             ctx.strokeStyle = lg;
-          } else if (s.t === GRADIENT.RADIAL) {
+          }
+          else if (s.t === GRADIENT.RADIAL) {
             const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const rg = ctx.createRadialGradient(
               gd.cx,
@@ -586,7 +605,8 @@ class ShapeGroup extends Group {
                 ctx2.clip();
                 ctx2.stroke();
                 ctx2.restore();
-              } else if (p === STROKE_POSITION.OUTSIDE) {
+              }
+              else if (p === STROKE_POSITION.OUTSIDE) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
@@ -595,7 +615,8 @@ class ShapeGroup extends Group {
                 ctx2.strokeStyle = '#FFF';
                 ctx2.stroke();
                 ctx2.restore();
-              } else {
+              }
+              else {
                 ctx2.stroke();
               }
               ctx2.fillStyle = rg;
@@ -605,10 +626,12 @@ class ShapeGroup extends Group {
               ctx.drawImage(ellipse.canvas, 0, 0);
               ellipse.release();
               continue;
-            } else {
+            }
+            else {
               ctx.strokeStyle = rg;
             }
-          } else if (s.t === GRADIENT.CONIC) {
+          }
+          else if (s.t === GRADIENT.CONIC) {
             const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
             gd.stop.forEach((item) => {
@@ -621,7 +644,8 @@ class ShapeGroup extends Group {
         let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
         if (p === STROKE_POSITION.INSIDE) {
           ctx.lineWidth = strokeWidth[i] * 2 * scale;
-        } else if (p === STROKE_POSITION.OUTSIDE) {
+        }
+        else if (p === STROKE_POSITION.OUTSIDE) {
           os = inject.getOffscreenCanvas(w, h);
           ctx2 = os.ctx;
           ctx2.setLineDash(strokeDasharray);
@@ -634,7 +658,8 @@ class ShapeGroup extends Group {
           points.forEach((item) => {
             canvasPolygon(ctx2!, item, scale, dx2, dy2);
           });
-        } else {
+        }
+        else {
           ctx.lineWidth = strokeWidth[i] * scale;
         }
         if (ctx2) {
@@ -645,7 +670,8 @@ class ShapeGroup extends Group {
           ctx.clip();
           ctx.stroke();
           ctx.restore();
-        } else if (p === STROKE_POSITION.OUTSIDE) {
+        }
+        else if (p === STROKE_POSITION.OUTSIDE) {
           ctx2!.stroke();
           ctx2!.save();
           ctx2!.clip();
@@ -655,7 +681,8 @@ class ShapeGroup extends Group {
           ctx2!.restore();
           ctx.drawImage(os!.canvas, 0, 0);
           os!.release();
-        } else {
+        }
+        else {
           ctx.stroke();
         }
       }
@@ -673,9 +700,11 @@ class ShapeGroup extends Group {
     let transform = '';
     if (scaleX < 0 && scaleY < 0) {
       transform += 'scale(-1,-1)';
-    } else if (scaleX < 0) {
+    }
+    else if (scaleX < 0) {
       transform += 'scale(-1,1)';
-    } else if (scaleY < 0) {
+    }
+    else if (scaleY < 0) {
       transform += 'scale(1,-1)';
     }
     let s = `<svg width="${this.width}" height="${this.height}"`;
@@ -759,10 +788,12 @@ class ShapeGroup extends Group {
         if (first.length === 4) {
           xa = first[2];
           ya = first[3];
-        } else if (first.length === 6) {
+        }
+        else if (first.length === 6) {
           xa = first[4];
           ya = first[5];
-        } else {
+        }
+        else {
           xa = first[0];
           ya = first[1];
         }
@@ -783,10 +814,12 @@ class ShapeGroup extends Group {
               if (item2.length === 4) {
                 xa = item2[2];
                 ya = item2[3];
-              } else if (item2.length === 6) {
+              }
+              else if (item2.length === 6) {
                 xa = item2[4];
                 ya = item2[5];
-              } else {
+              }
+              else {
                 xa = item2[0];
                 ya = item2[1];
               }
@@ -799,7 +832,8 @@ class ShapeGroup extends Group {
               yb = item2[3];
               const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
               mergeBbox(res, b[0], b[1], b[2], b[3]);
-            } else if (item2.length === 6) {
+            }
+            else if (item2.length === 6) {
               xb = item2[4];
               yb = item2[5];
               const b = bezier.bboxBezier(
@@ -813,7 +847,8 @@ class ShapeGroup extends Group {
                 yb,
               );
               mergeBbox(res, b[0], b[1], b[2], b[3]);
-            } else {
+            }
+            else {
               xb = item2[0];
               yb = item2[1];
               mergeBbox(res, xb, yb, xb, yb);
@@ -846,9 +881,11 @@ class ShapeGroup extends Group {
         if (strokeEnable[i]) {
           if (strokePosition[i] === STROKE_POSITION.INSIDE) {
             // 0
-          } else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+          }
+          else if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
             border = Math.max(border, item * 4);
-          } else {
+          }
+          else {
             // 默认中间
             border = Math.max(border, item * 0.5 * 4);
           }

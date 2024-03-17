@@ -51,7 +51,8 @@ function intersectFn(
             p1.x === b[b.length - 1].x && p1.y === b[b.length - 1].y) {
             ta = 0;
           }
-        } else if (t2 === 1) {
+        }
+        else if (t2 === 1) {
           const p1 = a[a.length - 1];
           if (p1.x === b[0].x && p1.y === b[0].y ||
             p1.x === b[b.length - 1].x && p1.y === b[b.length - 1].y) {
@@ -64,7 +65,8 @@ function intersectFn(
             p1.x === a[a.length - 1].x && p1.y === a[a.length - 1].y) {
             tb = 0;
           }
-        } else if (t4 === 1) {
+        }
+        else if (t4 === 1) {
           const p1 = b[b.length - 1];
           if (p1.x === a[0].x && p1.y === a[0].y ||
             p1.x === a[a.length - 1].x && p1.y === a[a.length - 1].y) {
@@ -189,10 +191,12 @@ function intersectFn(
       if (i === 1) {
         if (curr.t1 === 0 || curr.t1 === 1 || curr.t2 === 0 || curr.t2 === 1) {
           res.shift();
-        } else {
+        }
+        else {
           res.splice(1, 1);
         }
-      } else {
+      }
+      else {
         for (let j = i - 1; j > 0; j--) {
           const curr2 = res[j];
           const prev2 = res[j - 1];
@@ -206,9 +210,11 @@ function intersectFn(
               // 有t=0/1优选首尾，否则取中值
               if (curr.t1 === 0 || curr.t1 === 1 || curr.t2 === 0 || curr.t2 === 1) {
                 res.splice(index, i - index);
-              } else if (pt.t1 === 0 || pt.t1 === 1 || pt.t2 === 0 || pt.t2 === 1) {
+              }
+              else if (pt.t1 === 0 || pt.t1 === 1 || pt.t2 === 0 || pt.t2 === 1) {
                 res.splice(index + 1, i - index);
-              } else {
+              }
+              else {
                 const mid = res[(index + i) >> 1];
                 res.splice(index, i - index + 1, mid);
               }
@@ -273,7 +279,8 @@ export function intersectBezier3Bezier3(
 export function intersectBezier2Bezier3(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
-  eps = 1e-4) {const res: { x: number, y: number, t1: number, t2: number }[] = [];
+  eps = 1e-4) {
+  const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
       { x: ax1, y: ay1 },

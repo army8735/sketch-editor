@@ -44,19 +44,22 @@ function genNodeTree(node: Node) {
     const height = rect[3] - rect[1];
     if (!width || !height) {
       s += '<svg class="geom" width="12" height="12"><path d="M0,0L10,0L10,10L0,10L0,0ZM4,4L12,4L12,12L4,12,L4,4Z" fill="#D8D8D8" fill-rule="evenodd" stroke="#979797" stroke-width="1"></path></svg>';
-    } else {
+    }
+    else {
       let scale, x = 0, y = 0;
-      if(width >= height) {
+      if (width >= height) {
         scale = 12 / width;
         y = (12 - height * scale) * 0.5;
-      } else {
+      }
+      else {
         scale = 12 / height;
         x = (12 - width * scale) * 0.5;
       }
-      const svg = node.toSvg(scale).replace('<svg', `<svg style="transform:translate(${x+2}px, ${y+2}px)scale(${scale})"`);
+      const svg = node.toSvg(scale).replace('<svg', `<svg style="transform:translate(${x + 2}px, ${y + 2}px)scale(${scale})"`);
       s += `<span class="geom">` + svg + '</span>';
     }
-  } else {
+  }
+  else {
     s += `<span class="type ${type}"></span>`;
   }
   s += `<span class="name">${node.props.name || ''}</span>`;
@@ -95,21 +98,29 @@ function getNodeType(node: Node) {
   let type = 'default';
   if (node instanceof SymbolInstance) {
     type = 'symbol-instance';
-  } else if (node instanceof SymbolMaster) {
+  }
+  else if (node instanceof SymbolMaster) {
     type = 'symbol-master';
-  } else if (node instanceof ArtBoard) {
+  }
+  else if (node instanceof ArtBoard) {
     type = 'art-board';
-  } else if (node instanceof Group) {
+  }
+  else if (node instanceof Group) {
     type = 'group';
-  } else if (node instanceof Bitmap) {
+  }
+  else if (node instanceof Bitmap) {
     type = 'bitmap';
-  } else if (node instanceof Text) {
+  }
+  else if (node instanceof Text) {
     type = 'text';
-  } else if (node instanceof Geom) {
+  }
+  else if (node instanceof Geom) {
     type = 'geom';
-  } else if (node instanceof ShapeGroup) {
+  }
+  else if (node instanceof ShapeGroup) {
     type = 'shape-group';
-  } else if (node instanceof Slice) {
+  }
+  else if (node instanceof Slice) {
     type = 'slice';
   }
   return type;
@@ -174,7 +185,8 @@ export default class Tree extends Event {
             }
           }
         }
-      } else if (classList.contains('visible')) {
+      }
+      else if (classList.contains('visible')) {
         const dl = target.parentElement!.parentElement!;
         const uuid = dl.getAttribute('uuid');
         if (uuid) {
@@ -186,12 +198,14 @@ export default class Tree extends Event {
             });
             if (isVisible) {
               classList.remove('t');
-            } else {
+            }
+            else {
               classList.add('t');
             }
           }
         }
-      } else if (classList.contains('name') || classList.contains('type')) {
+      }
+      else if (classList.contains('name') || classList.contains('type')) {
         const actives = this.dom.querySelectorAll('dt.active');
         actives.forEach((item) => {
           item.classList.remove('active');
@@ -277,7 +291,7 @@ export default class Tree extends Event {
       const dt = this.dom.querySelector(`dl[uuid="${nodes[0].props.uuid}"] dt`);
       if (dt) {
         let dl = dt.parentElement;
-        while(dl) {
+        while (dl) {
           if (dl.nodeName === 'DL') {
             dl.classList.add('expand');
             const uuid = dl.getAttribute('uuid');

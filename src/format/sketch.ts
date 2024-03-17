@@ -29,13 +29,13 @@ const W = 100, H = 100;
 
 // prettier-ignore
 export enum ResizingConstraint {
-  UNSET =  0b111111,
-  RIGHT =  0b000001, // 1
-  WIDTH =  0b000010, // 2
-  LEFT =   0b000100, // 4
+  UNSET = 0b111111,
+  RIGHT = 0b000001, // 1
+  WIDTH = 0b000010, // 2
+  LEFT = 0b000100, // 4
   BOTTOM = 0b001000, // 8
   HEIGHT = 0b010000, // 16
-  TOP =    0b100000, // 32
+  TOP = 0b100000, // 32
 }
 
 export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
@@ -98,7 +98,8 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
       fontReferences.map((item: SketchFormat.FontRef) => {
         if (item.fontData._ref_class === 'MSFontData' && zipFile) {
           return readFontFile(item.fontData._ref, zipFile);
-        } else if ((item.fontData._ref_class as string) === 'MSNetFontData') {
+        }
+        else if ((item.fontData._ref_class as string) === 'MSNetFontData') {
           return readNetFont(item.fontData._ref, item.postscriptNames[0]);
         }
       })
@@ -435,7 +436,8 @@ async function convertItem(
   if (hasClippingMask) {
     if (clippingMaskMode) {
       maskMode = 'alpha';
-    } else {
+    }
+    else {
       maskMode = 'outline';
     }
   }
@@ -617,7 +619,8 @@ async function convertItem(
     if (layer.image._ref_class === 'MSImageData') {
       md5 = layer.image._ref.replace(/^images\//, '');
       src = await readImageFile(layer.image._ref, opt);
-    } else if ((layer.image._ref_class as string) === 'MSNetworkImage') {
+    }
+    else if ((layer.image._ref_class as string) === 'MSNetworkImage') {
       src = layer.image._ref;
     }
     const {
@@ -812,7 +815,8 @@ async function convertItem(
     let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
     if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
       textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
-    } else if (layer.textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
+    }
+    else if (layer.textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
       textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
     }
     return {
@@ -923,11 +927,13 @@ async function convertItem(
       layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy
     ) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.LEGACY;
-    } else if (
+    }
+    else if (
       layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded
     ) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.ROUNDED;
-    } else if (
+    }
+    else if (
       layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth
     ) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
@@ -1118,13 +1124,15 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         const image = item.image!;
         if (image._ref_class === 'MSImageData') {
           url = await readImageFile(image._ref, opt);
-        } else if ((image._ref_class as string) === 'MSNetworkImage') {
+        }
+        else if ((image._ref_class as string) === 'MSNetworkImage') {
           url = image._ref;
         }
         const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
         const scale = item.patternTileScale;
         fill.push(`url(${url}) ${type} ${scale * 100}%`);
-      } else if (item.fillType === SketchFormat.FillType.Gradient) {
+      }
+      else if (item.fillType === SketchFormat.FillType.Gradient) {
         const g = item.gradient;
         const from = parseStrPoint(g.from);
         const to = parseStrPoint(g.to);
@@ -1143,21 +1151,25 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
               ',',
             )})`,
           );
-        } else if (g.gradientType === SketchFormat.GradientType.Radial) {
+        }
+        else if (g.gradientType === SketchFormat.GradientType.Radial) {
           const ellipseLength = g.elipseLength;
           fill.push(
             `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`,
           );
-        } else if (g.gradientType === SketchFormat.GradientType.Angular) {
+        }
+        else if (g.gradientType === SketchFormat.GradientType.Angular) {
           fill.push(
             `conicGradient(${0.5} ${0.5} ${0.5} ${0.5},${stops.join(
               ',',
             )})`,
           );
-        } else {
+        }
+        else {
           throw new Error('Unknown gradient');
         }
-      } else {
+      }
+      else {
         fill.push([
           Math.floor(item.color.red * 255),
           Math.floor(item.color.green * 255),
@@ -1198,23 +1210,27 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
               ',',
             )})`,
           );
-        } else if (g.gradientType === SketchFormat.GradientType.Radial) {
+        }
+        else if (g.gradientType === SketchFormat.GradientType.Radial) {
           const ellipseLength = g.elipseLength;
           stroke.push(
             `radialGradient(${from.x} ${from.y} ${to.x} ${
               to.y
             } ${ellipseLength},${stops.join(',')})`,
           );
-        } else if (g.gradientType === SketchFormat.GradientType.Angular) {
+        }
+        else if (g.gradientType === SketchFormat.GradientType.Angular) {
           stroke.push(
             `conicGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
               ',',
             )})`,
           );
-        } else {
+        }
+        else {
           throw new Error('Unknown gradient');
         }
-      } else {
+      }
+      else {
         stroke.push([
           Math.floor(item.color.red * 255),
           Math.floor(item.color.green * 255),
@@ -1226,9 +1242,11 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       strokeWidth.push(item.thickness || 0);
       if (item.position === SketchFormat.BorderPosition.Inside) {
         strokePosition.push('inside');
-      } else if (item.position === SketchFormat.BorderPosition.Outside) {
+      }
+      else if (item.position === SketchFormat.BorderPosition.Outside) {
         strokePosition.push('outside');
-      } else {
+      }
+      else {
         strokePosition.push('center');
       }
       const blend = item.contextSettings.blendMode;
@@ -1244,14 +1262,16 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     });
     if (borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Round) {
       strokeLinecap = 'round';
-    } else if (
+    }
+    else if (
       borderOptions.lineCapStyle === SketchFormat.LineCapStyle.Projecting
     ) {
       strokeLinecap = 'square';
     }
     if (borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Round) {
       strokeLinejoin = 'round';
-    } else if (
+    }
+    else if (
       borderOptions.lineJoinStyle === SketchFormat.LineJoinStyle.Bevel
     ) {
       strokeLinejoin = 'bevel';
@@ -1313,7 +1333,8 @@ async function readImageFile(filename: string, opt: Opt) {
   let img: HTMLImageElement;
   if (filename.endsWith('.pdf')) {
     img = await loadPdf(blob);
-  } else {
+  }
+  else {
     img = await loadImg(blob);
   }
   opt.imgBlobRecord[filename2] = img.src;
@@ -1355,7 +1376,8 @@ export async function convertPdf(blob: Blob) {
     canvas.toBlob(function (blob) {
       if (blob) {
         resolve(blob);
-      } else {
+      }
+      else {
         reject();
       }
     });
@@ -1380,7 +1402,8 @@ async function readFontFile(filename: string, zipFile: JSZip) {
       const f = new FontFace(data.postscriptName, ab);
       document.fonts.add(f);
       resolve(data.data);
-    } else {
+    }
+    else {
       reject(data.data);
     }
   });
@@ -1400,7 +1423,8 @@ async function readNetFont(url: string, postscriptName: string) {
         const f = new FontFace(postscriptName, ab);
         document.fonts.add(f);
         resolve(data.data);
-      } else {
+      }
+      else {
         reject(data.data);
       }
     });
@@ -1411,37 +1435,53 @@ function getBlendMode(blend: SketchFormat.BlendMode = SketchFormat.BlendMode.Nor
   let blendMode = 'normal';
   if (blend === SketchFormat.BlendMode.Darken) {
     blendMode = 'darken';
-  } else if (blend === SketchFormat.BlendMode.Multiply) {
+  }
+  else if (blend === SketchFormat.BlendMode.Multiply) {
     blendMode = 'multiply';
-  } else if (blend === SketchFormat.BlendMode.ColorBurn) {
+  }
+  else if (blend === SketchFormat.BlendMode.ColorBurn) {
     blendMode = 'color-burn';
-  } else if (blend === SketchFormat.BlendMode.Lighten) {
+  }
+  else if (blend === SketchFormat.BlendMode.Lighten) {
     blendMode = 'lighten';
-  } else if (blend === SketchFormat.BlendMode.Screen) {
+  }
+  else if (blend === SketchFormat.BlendMode.Screen) {
     blendMode = 'screen';
-  } else if (blend === SketchFormat.BlendMode.ColorDodge) {
+  }
+  else if (blend === SketchFormat.BlendMode.ColorDodge) {
     blendMode = 'color-dodge';
-  } else if (blend === SketchFormat.BlendMode.Overlay) {
+  }
+  else if (blend === SketchFormat.BlendMode.Overlay) {
     blendMode = 'overlay';
-  } else if (blend === SketchFormat.BlendMode.SoftLight) {
+  }
+  else if (blend === SketchFormat.BlendMode.SoftLight) {
     blendMode = 'soft-light';
-  } else if (blend === SketchFormat.BlendMode.HardLight) {
+  }
+  else if (blend === SketchFormat.BlendMode.HardLight) {
     blendMode = 'hard-light';
-  } else if (blend === SketchFormat.BlendMode.Difference) {
+  }
+  else if (blend === SketchFormat.BlendMode.Difference) {
     blendMode = 'difference';
-  } else if (blend === SketchFormat.BlendMode.Exclusion) {
+  }
+  else if (blend === SketchFormat.BlendMode.Exclusion) {
     blendMode = 'exclusion';
-  } else if (blend === SketchFormat.BlendMode.Hue) {
+  }
+  else if (blend === SketchFormat.BlendMode.Hue) {
     blendMode = 'hue';
-  } else if (blend === SketchFormat.BlendMode.Saturation) {
+  }
+  else if (blend === SketchFormat.BlendMode.Saturation) {
     blendMode = 'saturation';
-  } else if (blend === SketchFormat.BlendMode.Color) {
+  }
+  else if (blend === SketchFormat.BlendMode.Color) {
     blendMode = 'color';
-  } else if (blend === SketchFormat.BlendMode.Luminosity) {
+  }
+  else if (blend === SketchFormat.BlendMode.Luminosity) {
     blendMode = 'luminosity';
-  } else if (blend === SketchFormat.BlendMode.PlusDarker) {
+  }
+  else if (blend === SketchFormat.BlendMode.PlusDarker) {
     // blendMode = 'plus-darker';
-  } else if (blend === SketchFormat.BlendMode.PlusLighter) {
+  }
+  else if (blend === SketchFormat.BlendMode.PlusLighter) {
     // blendMode = 'plus-lighter';
   }
   return blendMode;

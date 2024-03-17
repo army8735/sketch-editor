@@ -21,7 +21,7 @@ void main(void) {
   vec4 color = texture2D(u_texture, v_texCoords);
   int k = u_kernel - 1;
   float total = 1.0;
-  for(int i = 1; i < MAX_KERNEL_SIZE - 1; i++) {
+  for (int i = 1; i < MAX_KERNEL_SIZE - 1; i++) {
     if (i == k) {
       break;
     }

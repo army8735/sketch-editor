@@ -50,7 +50,8 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
       // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
       if (first === undefined) {
         first = n;
-      } else if (first ^ n) {
+      }
+      else if (first ^ n) {
         return false;
       }
     }
@@ -68,11 +69,13 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
         if (dy1 ^ dy2) {
           return true;
         }
-      } else if (dy1 === 0 || dy2 === 0) {
+      }
+      else if (dy1 === 0 || dy2 === 0) {
         if (dx1 ^ dx2) {
           return true;
         }
-      } else if (dx1 ^ dx2 && dy1 ^ dy2) {
+      }
+      else if (dx1 ^ dx2 && dy1 ^ dy2) {
         return true;
       }
     }
@@ -179,7 +182,8 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
       ya = Math.min(ya, y);
       xb = Math.max(xb, x);
       yb = Math.max(yb, y);
-    } else {
+    }
+    else {
       xa = x;
       ya = y;
       xb = x;
@@ -194,7 +198,8 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
       yc = Math.min(yc, y);
       xd = Math.max(xd, x);
       yd = Math.max(yd, y);
-    } else {
+    }
+    else {
       xc = x;
       yc = y;
       xd = x;
@@ -206,7 +211,8 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
     if (xa > xd || ya > yd || xb < xc || yb < yc) {
       return false;
     }
-  } else {
+  }
+  else {
     if (xa >= xd || ya >= yd || xb <= xc || yb <= yc) {
       return false;
     }
@@ -226,7 +232,8 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
           // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
           if (first === undefined) {
             first = n;
-          } else if (first ^ n) {
+          }
+          else if (first ^ n) {
             allIn = false;
             continue outer;
           }
@@ -245,11 +252,13 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
             if (dy1 ^ dy2) {
               return true;
             }
-          } else if (dy1 === 0 || dy2 === 0) {
+          }
+          else if (dy1 === 0 || dy2 === 0) {
             if (dx1 ^ dx2) {
               return true;
             }
-          } else if (dx1 ^ dx2 && dy1 ^ dy2) {
+          }
+          else if (dx1 ^ dx2 && dy1 ^ dy2) {
             return true;
           }
           allIn = false;
@@ -274,7 +283,8 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
           // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
           if (first === undefined) {
             first = n;
-          } else if (first ^ n) {
+          }
+          else if (first ^ n) {
             allIn = false;
             continue outer;
           }
@@ -293,11 +303,13 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
             if (dy1 ^ dy2) {
               return true;
             }
-          } else if (dy1 === 0 || dy2 === 0) {
+          }
+          else if (dy1 === 0 || dy2 === 0) {
             if (dx1 ^ dx2) {
               return true;
             }
-          } else if (dx1 ^ dx2 && dy1 ^ dy2) {
+          }
+          else if (dx1 ^ dx2 && dy1 ^ dy2) {
             return true;
           }
           allIn = false;
@@ -343,7 +355,8 @@ export function isPolygonOverlapRect(
       ya = Math.min(ya, y);
       xb = Math.max(xb, x);
       yb = Math.max(yb, y);
-    } else {
+    }
+    else {
       xa = x;
       ya = y;
       xb = x;
@@ -388,7 +401,8 @@ export function isPolygonOverlapRect(
     if (xb < x1 || xa > x2 || yb < y1 || ya > y2) {
       return false;
     }
-  } else {
+  }
+  else {
     if (xb <= x1 || xa >= x2 || yb <= y1 || ya >= y2) {
       return false;
     }

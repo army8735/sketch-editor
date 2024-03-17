@@ -26,12 +26,14 @@ function offscreenCanvas(
       !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS
         ? new OffscreenCanvas(width, height)
         : document.createElement('canvas');
-  } else if (!CANVAS[key]) {
+  }
+  else if (!CANVAS[key]) {
     o = CANVAS[key] =
       !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS
         ? new OffscreenCanvas(width, height)
         : document.createElement('canvas');
-  } else {
+  }
+  else {
     o = CANVAS[key];
   }
   // 防止小数向上取整
@@ -98,7 +100,8 @@ const inject = {
     if (typeof requestAnimationFrame !== 'undefined') {
       inject.requestAnimationFrame = requestAnimationFrame.bind(null);
       res = requestAnimationFrame(cb);
-    } else {
+    }
+    else {
       res = setTimeout(cb, SPF);
       inject.requestAnimationFrame = function (cb) {
         return setTimeout(cb, SPF);
@@ -111,7 +114,8 @@ const inject = {
     if (typeof cancelAnimationFrame !== 'undefined') {
       inject.cancelAnimationFrame = cancelAnimationFrame.bind(null);
       res = cancelAnimationFrame(id);
-    } else {
+    }
+    else {
       res = clearTimeout(id);
       inject.cancelAnimationFrame = function (id) {
         return clearTimeout(id);
@@ -215,7 +219,8 @@ const inject = {
         });
       });
       return;
-    } else if (!url || !isString(url)) {
+    }
+    else if (!url || !isString(url)) {
       inject.error('Load font invalid: ' + url);
       cb &&
       cb({
@@ -231,9 +236,11 @@ const inject = {
     });
     if (cache.state === LOADED) {
       cb && cb(cache);
-    } else if (cache.state === LOADING) {
+    }
+    else if (cache.state === LOADING) {
       cb && cache.task.push(cb);
-    } else {
+    }
+    else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
       if (MAX_LOAD_NUM > 0 && fontCount >= MAX_LOAD_NUM) {
@@ -244,17 +251,20 @@ const inject = {
         return;
       }
       fontCount++;
+
       function load(fontFamily: string, url: string | ArrayBuffer, cache: any) {
         if (url instanceof ArrayBuffer) {
           success(url);
-        } else {
+        }
+        else {
           let request = new XMLHttpRequest();
           request.open('get', url, true);
           request.responseType = 'arraybuffer';
           request.onload = function () {
             if (request.response) {
               success(request.response);
-            } else {
+            }
+            else {
               error();
             }
           };
@@ -297,6 +307,7 @@ const inject = {
           }
         }
       }
+
       load(fontFamily, url as string, cache);
     }
   },
@@ -331,7 +342,8 @@ const inject = {
         });
       });
       return;
-    } else if (!url || !isString(url)) {
+    }
+    else if (!url || !isString(url)) {
       inject.error('Measure img invalid: ' + url);
       cb &&
       cb({
@@ -347,9 +359,11 @@ const inject = {
     });
     if (cache.state === LOADED) {
       cb && cb(cache);
-    } else if (cache.state === LOADING) {
+    }
+    else if (cache.state === LOADING) {
       cb && cache.task.push(cb);
-    } else {
+    }
+    else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
       if (MAX_LOAD_NUM > 0 && imgCount >= MAX_LOAD_NUM) {
@@ -357,6 +371,7 @@ const inject = {
         return;
       }
       imgCount++;
+
       function load(url: string, cache: any) {
         let img = new Image();
         img.onload = function () {
@@ -404,6 +419,7 @@ const inject = {
           document.body.appendChild(img);
         }
       }
+
       load(url, cache);
     }
   },

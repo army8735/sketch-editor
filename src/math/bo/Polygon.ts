@@ -110,7 +110,8 @@ class Polygon {
               ? [endPoint, p3, p2]
               : [p2, p3, endPoint];
             seg = new Segment(coords, index);
-          } else {
+          }
+          else {
             const coords = Point.compare(startPoint, endPoint)
               ? [endPoint, cPoint, startPoint]
               : [startPoint, cPoint, endPoint];
@@ -199,7 +200,8 @@ class Polygon {
               ? [endPoint, p2, p1, lastPoint]
               : [lastPoint, p1, p2, endPoint];
             seg = new Segment(coords, index);
-          } else {
+          }
+          else {
             const coords = Point.compare(startPoint, endPoint)
               ? [endPoint, cPoint2, cPoint1, startPoint]
               : [startPoint, cPoint1, cPoint2, endPoint];
@@ -310,11 +312,13 @@ class Polygon {
         if (!ael.length) {
           if (seg.myCoincide) {
             seg.myFill[0] = seg.myCoincide % 2 === 0;
-          } else {
+          }
+          else {
             seg.myFill[0] = true;
           }
           ael.push(seg);
-        } else {
+        }
+        else {
           // 插入到ael正确的位置，按照x升序、y升序
           const len = ael.length,
             top = ael[len - 1];
@@ -325,7 +329,8 @@ class Polygon {
             if (seg.myCoincide) {
               seg.myFill[0] =
                 seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
-            } else {
+            }
+            else {
               seg.myFill[0] = !seg.myFill[1];
             }
             ael.push(seg);
@@ -334,11 +339,13 @@ class Polygon {
           else if (len === 1) {
             if (seg.myCoincide) {
               seg.myFill[0] = seg.myCoincide % 2 === 0;
-            } else {
+            }
+            else {
               seg.myFill[0] = true;
             }
             ael.unshift(seg);
-          } else {
+          }
+          else {
             // 遍历，尝试对比是否在ael栈中相邻2条线段之间
             for (let i = len - 2; i >= 0; i--) {
               const curr = ael[i];
@@ -348,15 +355,18 @@ class Polygon {
                 if (seg.myCoincide) {
                   seg.myFill[0] =
                     seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
-                } else {
+                }
+                else {
                   seg.myFill[0] = !seg.myFill[1];
                 }
                 ael.splice(i + 1, 0, seg);
                 break;
-              } else if (i === 0) {
+              }
+              else if (i === 0) {
                 if (seg.myCoincide) {
                   seg.myFill[0] = seg.myCoincide % 2 === 0;
-                } else {
+                }
+                else {
                   seg.myFill[0] = true;
                 }
                 ael.unshift(seg);
@@ -365,7 +375,8 @@ class Polygon {
           }
         }
         // console.warn(seg.toString());
-      } else {
+      }
+      else {
         const i = ael.indexOf(seg);
         // 一般肯定有，重合线段会剔除不进ael
         if (i > -1) {
@@ -394,20 +405,24 @@ class Polygon {
         if (!ael.length) {
           inside = false;
           ael.push(seg);
-        } else {
+        }
+        else {
           const len = ael.length,
             top = ael[len - 1];
           const isAboveLast = segAboveCompare(seg, top);
           if (isAboveLast) {
             if (top.belong === belong) {
               inside = top.otherFill[0];
-            } else {
+            }
+            else {
               inside = top.myFill[0];
             }
             ael.push(seg);
-          } else if (len === 1) {
+          }
+          else if (len === 1) {
             ael.unshift(seg);
-          } else {
+          }
+          else {
             for (let i = len - 2; i >= 0; i--) {
               const curr = ael[i];
               const isAbove = segAboveCompare(seg, curr);
@@ -436,7 +451,8 @@ class Polygon {
           seg.otherFill[1] = inside;
         }
         // console.warn(seg.toString());
-      } else {
+      }
+      else {
         const i = ael.indexOf(seg);
         if (i > -1) {
           ael.splice(i, 1);
@@ -496,7 +512,8 @@ function findIntersection(
           if (!seg.isDeleted) {
             segments.push(seg);
           }
-        } else {
+        }
+        else {
           delList.push(seg);
         }
         seg.isVisited = false; // 还原以备后面逻辑重复利用
@@ -536,7 +553,8 @@ function findIntersection(
                   item.otherCoincide++;
                   seg.otherFill = item.myFill;
                   item.otherFill = seg.myFill;
-                } else {
+                }
+                else {
                   seg.myCoincide++;
                   item.myCoincide++;
                   seg.myFill = item.myFill;
@@ -571,7 +589,8 @@ function findIntersection(
                           true,
                         );
                       }
-                    } else {
+                    }
+                    else {
                       // 水平线默认k是0
                       let k1 = 0;
                       let k2 = 0;
@@ -599,7 +618,8 @@ function findIntersection(
                         );
                       }
                     }
-                  } else {
+                  }
+                  else {
                     inters = getIntersectionLineLine(
                       ax1,
                       ay1,
@@ -810,22 +830,29 @@ function findIntersection(
                   if (pt.point.equal(coordsA[0])) {
                     if (pt.point.equal(coordsB[0])) {
                       inters.splice(i, 1);
-                    } else if (pt.point.equal(coordsB[lenB - 1])) {
+                    }
+                    else if (pt.point.equal(coordsB[lenB - 1])) {
                       inters.splice(i, 1);
-                    } else {
+                    }
+                    else {
                       pt.point = coordsA[0];
                     }
-                  } else if (pt.point.equal(coordsA[lenA - 1])) {
+                  }
+                  else if (pt.point.equal(coordsA[lenA - 1])) {
                     if (pt.point.equal(coordsB[0])) {
                       inters.splice(i, 1);
-                    } else if (pt.point.equal(coordsB[lenB - 1])) {
+                    }
+                    else if (pt.point.equal(coordsB[lenB - 1])) {
                       inters.splice(i, 1);
-                    } else {
+                    }
+                    else {
                       pt.point = coordsA[lenA - 1];
                     }
-                  } else if (pt.point.equal(coordsB[0])) {
+                  }
+                  else if (pt.point.equal(coordsB[0])) {
                     pt.point = coordsB[0];
-                  } else if (pt.point.equal(coordsB[lenB - 1])) {
+                  }
+                  else if (pt.point.equal(coordsB[lenB - 1])) {
                     pt.point = coordsB[lenB - 1];
                   }
                 }
@@ -905,10 +932,12 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
     if (len === 2) {
       if (Point.compare(startPoint, point)) {
         ns = new Segment([point, startPoint], belong);
-      } else {
+      }
+      else {
         ns = new Segment([startPoint, point], belong);
       }
-    } else if (len === 3) {
+    }
+    else if (len === 3) {
       const c = bezier.sliceBezier(coords, lastT, t).map(item => {
         return {
           x: Math.round(item.x),
@@ -924,7 +953,8 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           ],
           belong,
         );
-      } else {
+      }
+      else {
         ns = new Segment(
           [
             startPoint,
@@ -934,7 +964,8 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           belong,
         );
       }
-    } else if (len === 4) {
+    }
+    else if (len === 4) {
       const c = bezier.sliceBezier(coords, lastT, t).map(item => {
         return {
           x: Math.round(item.x),
@@ -951,7 +982,8 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           ],
           belong,
         );
-      } else {
+      }
+      else {
         ns = new Segment(
           [
             startPoint,
@@ -978,10 +1010,12 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
     if (len === 2) {
       if (Point.compare(startPoint, coords[1])) {
         ns = new Segment([coords[1], startPoint], belong);
-      } else {
+      }
+      else {
         ns = new Segment([startPoint, coords[1]], belong);
       }
-    } else if (len === 3) {
+    }
+    else if (len === 3) {
       const c = bezier.sliceBezier(coords, lastT, 1).map(item => {
         return {
           x: Math.round(item.x),
@@ -997,7 +1031,8 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           ],
           belong,
         );
-      } else {
+      }
+      else {
         ns = new Segment(
           [
             startPoint,
@@ -1007,7 +1042,8 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           belong,
         );
       }
-    } else if (len === 4) {
+    }
+    else if (len === 4) {
       const c = bezier.sliceBezier(coords, lastT, 1).map(item => {
         return {
           x: Math.round(item.x),
@@ -1024,7 +1060,8 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           ],
           belong,
         );
-      } else {
+      }
+      else {
         ns = new Segment(
           [
             startPoint,
@@ -1080,7 +1117,8 @@ function activeNewSeg(
         if (seg.equal(item) && !item.isDeleted) {
           if (seg.belong === item.belong) {
             item.myCoincide++;
-          } else {
+          }
+          else {
             item.otherCoincide++;
           }
           return;
@@ -1096,7 +1134,8 @@ function activeNewSeg(
     // 特殊情况，形成的新的竖线恰好是末尾
     else if (!list.length) {
       ael.push(seg);
-    } else {
+    }
+    else {
       for (let len = list.length; i < len; i++) {
         const item = list[i];
         const lx = item.x;
@@ -1176,7 +1215,8 @@ function putHashX(hashX: any, x: number, seg: Segment) {
   if (seg.isVisited) {
     list.unshift(seg);
     seg.isVisited = false;
-  } else {
+  }
+  else {
     list.push(seg);
     seg.isVisited = true;
   }
@@ -1287,7 +1327,8 @@ function segAboveCompare(segA: Segment, segB: Segment) {
       b2 = cb[1];
     if (a1.equal(b1)) {
       return pointAboveOrOnLine(a2, b1, b2);
-    } else {
+    }
+    else {
       return pointAboveOrOnLine(a1, b1, b2);
     }
   }
@@ -1348,7 +1389,8 @@ function getBezierMonotonicity(coords: Point[], isX: boolean) {
     if (t > 1e-9 && t < 1 - 1e-9) {
       return [t];
     }
-  } else if (coords.length === 4) {
+  }
+  else if (coords.length === 4) {
     const t = equation
       .getRoots([
         isX ? 3 * (coords[1].x - coords[0].x) : 3 * (coords[1].y - coords[0].y),
@@ -1383,7 +1425,8 @@ function getYByX(coords: Point[], x: number) {
     }
     const p = (x - coords[0].x) / (coords[1].x - coords[0].x);
     return coords[0].y + p * (coords[1].y - coords[0].y);
-  } else if (len === 3) {
+  }
+  else if (len === 3) {
     const t = equation
       .getRoots([
         coords[0].x - x,
@@ -1392,7 +1435,8 @@ function getYByX(coords: Point[], x: number) {
       ])
       .filter((i) => i >= 0 && i <= 1);
     return bezier.getPointByT(coords, t[0])!.y;
-  } else if (len === 4) {
+  }
+  else if (len === 4) {
     const t = equation
       .getRoots([
         coords[0].x - x,
@@ -1471,10 +1515,12 @@ function checkOverlapLine(
       ra.push(new Segment([coordsB[0], coordsA[1]], segA.belong));
       rb.push(new Segment([coordsB[0], coordsA[1]], segB.belong));
       rb.push(new Segment([coordsA[1], coordsB[1]], segB.belong));
-    } else if ((ax2 === bx2 && !isV) || (ay2 === by2 && isV)) {
+    }
+    else if ((ax2 === bx2 && !isV) || (ay2 === by2 && isV)) {
       ra.push(new Segment([coordsB[0], coordsB[1]], segA.belong));
       rb.push(new Segment([coordsB[0], coordsB[1]], segB.belong));
-    } else {
+    }
+    else {
       ra.push(new Segment([coordsB[0], coordsB[1]], segA.belong));
       rb.push(new Segment([coordsB[0], coordsB[1]], segB.belong));
       ra.push(new Segment([coordsB[1], coordsA[1]], segA.belong));
@@ -1486,7 +1532,8 @@ function checkOverlapLine(
       ra.push(new Segment([coordsA[0], coordsA[1]], segA.belong));
       rb.push(new Segment([coordsA[0], coordsA[1]], segB.belong));
       rb.push(new Segment([coordsA[1], coordsB[1]], segB.belong));
-    } else {
+    }
+    else {
       ra.push(new Segment([coordsB[0], coordsB[1]], segA.belong));
       ra.push(new Segment([coordsB[1], coordsA[1]], segA.belong));
       rb.push(new Segment([coordsB[0], coordsB[1]], segB.belong));
@@ -1499,10 +1546,12 @@ function checkOverlapLine(
       ra.push(new Segment([coordsA[0], coordsA[1]], segA.belong));
       rb.push(new Segment([coordsA[0], coordsA[1]], segB.belong));
       rb.push(new Segment([coordsA[1], coordsB[1]], segB.belong));
-    } else if ((ax2 === bx2 && !isV) || (ay2 === by2 && isV)) {
+    }
+    else if ((ax2 === bx2 && !isV) || (ay2 === by2 && isV)) {
       ra.push(new Segment([coordsA[0], coordsA[1]], segA.belong));
       rb.push(new Segment([coordsA[0], coordsA[1]], segB.belong));
-    } else {
+    }
+    else {
       ra.push(new Segment([coordsA[0], coordsB[1]], segA.belong));
       rb.push(new Segment([coordsA[0], coordsB[1]], segB.belong));
       ra.push(new Segment([coordsB[1], coordsA[1]], segA.belong));

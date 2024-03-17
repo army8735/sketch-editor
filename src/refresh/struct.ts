@@ -41,7 +41,8 @@ export function renderWebgl(
     scaleIndex = 0;
   if (scale <= 1) {
     scale = 1;
-  } else {
+  }
+  else {
     let n = 1;
     while (scale > 1) {
       scale *= 0.5;
@@ -97,7 +98,8 @@ export function renderWebgl(
     else {
       renderWebglNoTile(gl, root, scale, scaleIndex);
     }
-  } else {
+  }
+  else {
     renderWebglNoTile(gl, root, scale, scaleIndex);
   }
   // 收集的需要加载的图片在刷新结束后同一进行，防止过程中触发update进而计算影响bbox
@@ -144,7 +146,8 @@ function renderWebglTile(
       scaleP *= 2;
       scaleB *= 0.5;
     }
-  } else {
+  }
+  else {
     scaleB = scale / dpi;
   }
   const scaleT = scaleX / scaleB;
@@ -165,12 +168,14 @@ function renderWebglTile(
   // 注意正负数，对偏移造成的影响不同，正数右下移左上多出来是漏出的Tile尺寸，负数左上移是本身遮盖的Tile尺寸
   if (offsetX > 0) {
     nw = Math.ceil((W - offsetX) / unit) + 1;
-  } else {
+  }
+  else {
     nw = Math.ceil((W - offsetX) / unit);
   }
   if (offsetY > 0) {
     nh = Math.ceil((H - offsetY) / unit) + 1;
-  } else {
+  }
+  else {
     nh = Math.ceil((H - offsetY) / unit);
   }
   const size = Math.round(Tile.UNIT / scaleB);
@@ -448,7 +453,8 @@ function renderWebglTile(
           // tile对象绑定输出FBO
           if (!resFrameBuffer) {
             resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2, W2);
-          } else {
+          }
+          else {
             gl.framebufferTexture2D(
               gl.FRAMEBUFFER,
               gl.COLOR_ATTACHMENT0,
@@ -475,7 +481,8 @@ function renderWebglTile(
             }
             continue;
           }
-          if (isBgBlur) {}
+          if (isBgBlur) {
+          }
           let tex: WebGLTexture | undefined;
           // 有mbm先将本节点内容绘制到和root同尺寸纹理上
           if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
@@ -576,7 +583,8 @@ function renderWebglTile(
         computedStyle.maskMode
       ) {
         i += total + next;
-      } else if (node.isShapeGroup) {
+      }
+      else if (node.isShapeGroup) {
         i += total;
       }
       // 在画布end处重置clip
@@ -610,7 +618,8 @@ function renderWebglTile(
         true,
         -1, -1, 1, 1,
       );
-    } else {
+    }
+    else {
       const { x, y } = tile;
       const down = tileManager.getDowngrade(scaleB, x, y);
       if (down && down.length) {
@@ -721,7 +730,7 @@ function renderWebglTile(
   }
   // overlay的内容在tile之上单独渲染
   overlay.update();
-  for (let i = structs.indexOf(overlay.struct), len = structs.length; i < len; i++ ) {
+  for (let i = structs.indexOf(overlay.struct), len = structs.length; i < len; i++) {
     const { node } = structs[i];
     // 继承父的opacity和matrix，仍然要注意root没有parent
     const { parent, textureTarget } = node;
@@ -1029,7 +1038,8 @@ function renderWebglNoTile(
         computedStyle.maskMode
       ) {
         i += total + next;
-      } else if (node.isShapeGroup) {
+      }
+      else if (node.isShapeGroup) {
         i += total;
       }
       // 在画布end处重置clip
@@ -1071,7 +1081,8 @@ function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
   if (!i) {
     hasCacheOp = node.hasCacheOp;
     hasCacheMw = node.hasCacheMw;
-  } else {
+  }
+  else {
     hasCacheOp = node.hasCacheOp && node.parentOpId === parent!.localOpId;
     hasCacheMw = node.hasCacheMw && node.parentMwId === parent!.localMwId;
   }

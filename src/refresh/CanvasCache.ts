@@ -17,6 +17,7 @@ class CanvasCache {
     h: number;
     os: OffScreen;
   }[];
+
   constructor(w: number, h: number, dx: number = 0, dy: number = 0) {
     this.available = false;
     // this.offscreen = inject.getOffscreenCanvas(w, h);
