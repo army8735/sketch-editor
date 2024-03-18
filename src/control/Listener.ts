@@ -105,6 +105,10 @@ export default class Listener extends Event {
   active(nodes: Node[]) {
     this.selected.splice(0);
     this.selected.push(...nodes);
+    this.updateActive();
+  }
+
+  updateActive() {
     this.computedStyle = this.selected.map((item) =>
       item.getComputedStyle(),
     );
