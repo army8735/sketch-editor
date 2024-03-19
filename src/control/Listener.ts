@@ -40,7 +40,7 @@ export default class Listener extends Event {
   pageTy: number;
   select: Select;
   selected: Node[];
-  updateStyle: (Partial<JStyle> | undefined)[]; // 每次变更的style记录，在结束时供history使用
+  updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
   hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
   textState: ({ isLeft: boolean, isRight: boolean, isTop: boolean } | undefined)[];
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
@@ -106,6 +106,7 @@ export default class Listener extends Event {
     this.selected.splice(0);
     this.selected.push(...nodes);
     this.updateActive();
+    this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
 
   updateActive() {
@@ -118,7 +119,6 @@ export default class Listener extends Event {
     else {
       this.select.hideSelect();
     }
-    this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
 
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
@@ -553,7 +553,7 @@ export default class Listener extends Event {
           }
         }
         node.updateStyle(o);
-        this.updateStyle[i] = o;
+        // this.updateStyle[i] = o;
         this.hasControl = true;
       });
       this.select.updateSelect(this.selected);
@@ -573,12 +573,24 @@ export default class Listener extends Event {
         if (this.selected.length) {
           this.selected.forEach((node, i) => {
             const computedStyle = this.computedStyle[i];
+            /**
+             * 这里用computedStyle的translate差值做计算，得到当前的translate的px值updateStyle给node，
+             * 在node的calMatrix那里是优化过的计算方式，只有translate变更的话也是只做差值计算，更快。
+             * 需要注意目前matrix的整体计算是将布局信息TRLB换算为translate，因此style上的原始值和更新的这个px值并不一致，
+             * 如果涉及到相关的读取写入话要注意换算，这里没有涉及到，updateStyle会同步将translate写会布局TRLB的style上满足功能要求。
+             */
             const o = {
               translateX: computedStyle.translateX + dx2,
               translateY: computedStyle.translateY + dy2,
             };
             node.updateStyle(o);
-            this.updateStyle[i] = o;
+            this.updateStyle[i] = {
+              prev: {
+                translateX: computedStyle.translateX,
+                translateY: computedStyle.translateY,
+              },
+              next: o,
+            };
           });
           this.select.updateSelect(this.selected);
           this.emit(Listener.MOVE_NODE, this.selected);
@@ -927,10 +939,20 @@ export default class Listener extends Event {
     // z，undo/redo
     else if (e.keyCode === 90) {
       if (this.metaKey && this.shiftKey) {
-        // History.getInstance().redo();
+        const c = History.getInstance().redo();
+        if (c) {
+          if (c instanceof UpdateStyleCommand) {
+            this.updateActive();
+          }
+        }
       }
       else if (this.metaKey) {
-        // History.getInstance().undo();
+        const c = History.getInstance().undo();
+        if (c) {
+          if (c instanceof UpdateStyleCommand) {
+            this.updateActive();
+          }
+        }
       }
     }
   }

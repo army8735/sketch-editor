@@ -4,26 +4,20 @@ import { JStyle } from '../format';
 
 class UpdateStyleCommand extends Command {
   node: Node;
-  style: Partial<JStyle>;
-  oldStyle: Partial<JStyle>;
+  style: { prev: Partial<JStyle>, next: Partial<JStyle> };
 
-  constructor(node: Node, style: Partial<JStyle>) {
+  constructor(node: Node, style: { prev: Partial<JStyle>, next: Partial<JStyle> }) {
     super();
     this.node = node;
     this.style = style;
-    this.oldStyle = {};
-    Object.keys(style).forEach((k) => {
-      // @ts-ignore
-      this.oldStyle[k] = node.style[k];
-    });
   }
 
   execute() {
-    this.node.updateStyle(this.style);
+    this.node.updateStyle(this.style.next);
   }
 
   undo() {
-    this.node.updateStyle(this.oldStyle);
+    this.node.updateStyle(this.style.prev);
   }
 }
 

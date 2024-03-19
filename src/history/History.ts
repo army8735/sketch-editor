@@ -25,9 +25,9 @@ class History {
   undo() {
     if (this.commands.length) {
       const c = this.commands.pop()!;
-      console.log(c);
       c.undo();
       this.commandsR.push(c);
+      return c;
     }
   }
 
@@ -36,6 +36,7 @@ class History {
       const c = this.commandsR.pop()!;
       c.execute();
       this.commands.push(c);
+      return c;
     }
   }
 
