@@ -16,7 +16,7 @@ const { History, UpdateStyleCommand } = history;
 
 enum State {
   NORMAL = 0,
-  EDIT_TEXT = 1,
+  EDIT_TEXT = 1, // 编辑文字进入特殊状态
 }
 
 export default class Listener extends Event {
@@ -31,21 +31,22 @@ export default class Listener extends Event {
   isMouseDown: boolean;
   isMouseMove: boolean;
   isControl: boolean;
-  controlType: string;
+  controlType: string; // 拖动尺寸dom时节点的class，区分比如左拉还是右拉
   originX: number;
   originY: number;
   startX: number;
   startY: number;
   pageTx: number;
   pageTy: number;
-  select: Select;
-  selected: Node[];
+  select: Select; // 展示的选框dom
+  selected: Node[]; // 已选的节点们
   updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
   hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
-  textState: ({ isLeft: boolean, isRight: boolean, isTop: boolean } | undefined)[];
+  sizeChangeStyle: Style[]; // 修改size时记录
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
-  input: Input;
+  cssStyle: JStyle[]; // 同上
+  input: Input; // 输入文字dom和文本光标
 
   constructor(root: Root, dom: HTMLElement) {
     super();
@@ -73,9 +74,10 @@ export default class Listener extends Event {
     this.selected = [];
     this.updateStyle = [];
     this.hasControl = false;
-    this.textState = [];
+    this.sizeChangeStyle = [];
     this.abcStyle = [];
     this.computedStyle = [];
+    this.cssStyle = [];
     this.updateOrigin();
 
     this.select = new Select(root, dom);
@@ -96,6 +98,7 @@ export default class Listener extends Event {
     document.addEventListener('keyup', this.onKeyUp.bind(this));
   }
 
+  // 更新dom的位置，拖动时计算用，很少发生，一般首次调用即可
   updateOrigin() {
     const o = this.dom.getBoundingClientRect();
     this.originX = o.left;
@@ -121,11 +124,28 @@ export default class Listener extends Event {
     }
   }
 
+  // 调整前先锁住group，防止自适应，在mouseup整体结束后统一进行，text也要记住状态
+  prepare(isSize = false) {
+    const selected = this.selected;
+    selected.forEach((node, i) => {
+      const p = node.parent;
+      if (p && p.isGroup && p instanceof Group) {
+        p.fixedPosAndSize = true;
+      }
+      // 暂时只有Text节点自适应尺寸时会有translate:-50%，不排除人工修改数据
+      if (isSize) {
+        this.sizeChangeStyle[i] = node.startSizeChange();
+      }
+    });
+    this.computedStyle = selected.map((item) => item.getComputedStyle());
+    this.cssStyle = selected.map((item) => item.getCssComputedStyle());
+  }
+
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
     // 操作开始清除
-    this.textState.splice(0);
+    this.sizeChangeStyle.splice(0);
     this.updateStyle.splice(0);
     // 点到控制html上
     if (isControl) {
@@ -134,16 +154,7 @@ export default class Listener extends Event {
       this.controlType = target.className;
       this.startX = e.pageX;
       this.startY = e.pageY;
-      // 调整前先锁住group，防止自适应，在mouseup整体结束后统一进行，text也要记住状态
-      this.selected.forEach((item, i) => {
-        const p = item.parent;
-        if (p && p.isGroup && p instanceof Group) {
-          p.fixedPosAndSize = true;
-        }
-        if (item.isText && item instanceof Text) {
-          this.textState[i] = item.beforeEdit();
-        }
-      });
+      this.prepare(true);
       this.abcStyle = selected.map((item) => {
         // resize画板children的定位尺寸临时变为固定px
         if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
@@ -157,7 +168,7 @@ export default class Listener extends Event {
               width: clone(style.width),
               height: clone(style.height),
             };
-            // 根据control的类型方向，决定将trbl某个改为px固定值，对称方向改为auto
+            // 根据control的类型方向，决定将TRBL某个改为px固定值，对称方向改为auto
             if (
               this.controlType === 't' ||
               this.controlType === 'tl' ||
@@ -222,9 +233,6 @@ export default class Listener extends Event {
         }
         return [];
       });
-      this.computedStyle = selected.map((item) =>
-        item.getComputedStyle(),
-      );
       if (this.state === State.EDIT_TEXT) {
         this.state = State.NORMAL;
         this.input.hide();
@@ -246,6 +254,7 @@ export default class Listener extends Event {
       const oldSelected = selected.slice(0);
       if (node) {
         const i = selected.indexOf(node);
+        // 点选已有节点
         if (i > -1) {
           if (this.shiftKey) {
             selected.splice(i, 1);
@@ -267,16 +276,16 @@ export default class Listener extends Event {
               }
               return;
             }
+            // 唯一已选节点继续点击，不触发选择事件
             if (selected.length === 1 && selected[0] === node) {
-              this.computedStyle = selected.map((item) =>
-                item.getComputedStyle(),
-              );
+              this.prepare();
               return;
             }
             selected.splice(0);
             selected.push(node);
           }
         }
+        // 点选新节点
         else {
           if (!this.shiftKey) {
             selected.splice(0);
@@ -318,13 +327,11 @@ export default class Listener extends Event {
       else {
         this.select.hideSelect();
       }
-      this.computedStyle = selected.map((item) =>
-        item.getComputedStyle(),
-      );
       // 一直点选空白不选节点，防止重复触发
       if (oldSelected.length === 0 && selected.length === 0) {
         return;
       }
+      this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
     }
   }
@@ -361,19 +368,25 @@ export default class Listener extends Event {
 
   onMove(e: MouseEvent | Touch) {
     const root = this.root;
+    const page = root.getCurPage();
+    if (!page) {
+      return;
+    }
     const dpi = root.dpi;
     const dx = e.pageX - this.startX;
     const dy = e.pageY - this.startY;
-    const page = root.getCurPage();
-    const zoom = page!.getZoom();
+    const zoom = page.getZoom();
     const dx2 = (dx / zoom) * root.dpi;
     const dy2 = (dy / zoom) * root.dpi;
+    const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
-      this.selected.forEach((node, i) => {
-        const o: Partial<JStyle> = {};
+      selected.forEach((node, i) => {
+        const prev: Partial<JStyle> = {};
+        const next: Partial<JStyle> = {};
         const { style } = node;
         const computedStyle = this.computedStyle[i];
+        const cssStyle = this.cssStyle[i];
         if (
           this.controlType === 't' ||
           this.controlType === 'tl' ||
@@ -385,17 +398,17 @@ export default class Listener extends Event {
             style.top.u === StyleUnit.PERCENT
           ) {
             if (style.top.u === StyleUnit.PX) {
-              o.top = computedStyle.top + dy2;
+              next.top = computedStyle.top + dy2;
             }
             else {
-              o.top =
+              next.top =
                 ((computedStyle.top + dy2) * 100) / node.parent!.height + '%';
             }
             if (style.height.u === StyleUnit.PX) {
-              o.height = computedStyle.height - dy2;
+              next.height = computedStyle.height - dy2;
             }
             else if (style.height.u === StyleUnit.PERCENT) {
-              o.height =
+              next.height =
                 ((computedStyle.height - dy2) * 100) / node.parent!.height +
                 '%';
             }
@@ -406,10 +419,10 @@ export default class Listener extends Event {
             style.height.u === StyleUnit.PERCENT
           ) {
             if (style.height.u === StyleUnit.PX) {
-              o.height = computedStyle.height - dy2;
+              next.height = computedStyle.height - dy2;
             }
             else {
-              o.height =
+              next.height =
                 ((computedStyle.height - dy2) * 100) / node.parent!.height +
                 '%';
             }
@@ -426,18 +439,18 @@ export default class Listener extends Event {
             style.bottom.u === StyleUnit.PERCENT
           ) {
             if (style.bottom.u === StyleUnit.PX) {
-              o.bottom = computedStyle.bottom - dy2;
+              next.bottom = computedStyle.bottom - dy2;
             }
             else {
-              o.bottom =
+              next.bottom =
                 ((computedStyle.bottom - dy2) * 100) / node.parent!.height +
                 '%';
             }
             if (style.height.u === StyleUnit.PX) {
-              o.height = computedStyle.height + dy2;
+              next.height = computedStyle.height + dy2;
             }
             else if (style.height.u === StyleUnit.PERCENT) {
-              o.height =
+              next.height =
                 ((computedStyle.height + dy2) * 100) / node.parent!.height +
                 '%';
             }
@@ -448,10 +461,10 @@ export default class Listener extends Event {
             style.height.u === StyleUnit.PERCENT
           ) {
             if (style.height.u === StyleUnit.PX) {
-              o.height = computedStyle.height + dy2;
+              next.height = computedStyle.height + dy2;
             }
             else {
-              o.height =
+              next.height =
                 ((computedStyle.height + dy2) * 100) / node.parent!.height +
                 '%';
             }
@@ -468,17 +481,17 @@ export default class Listener extends Event {
             style.left.u === StyleUnit.PERCENT
           ) {
             if (style.left.u === StyleUnit.PX) {
-              o.left = computedStyle.left + dx2;
+              next.left = computedStyle.left + dx2;
             }
             else {
-              o.left =
+              next.left =
                 ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
             }
             if (style.width.u === StyleUnit.PX) {
-              o.width = computedStyle.width - dx2;
+              next.width = computedStyle.width - dx2;
             }
             else if (style.width.u === StyleUnit.PERCENT) {
-              o.width =
+              next.width =
                 ((computedStyle.width - dx2) * 100) / node.parent!.width +
                 '%';
             }
@@ -489,10 +502,10 @@ export default class Listener extends Event {
             style.width.u === StyleUnit.PERCENT
           ) {
             if (style.width.u === StyleUnit.PX) {
-              o.width = computedStyle.width - dx2;
+              next.width = computedStyle.width - dx2;
             }
             else {
-              o.width =
+              next.width =
                 ((computedStyle.width - dx2) * 100) / node.parent!.width +
                 '%';
             }
@@ -509,18 +522,18 @@ export default class Listener extends Event {
             style.right.u === StyleUnit.PERCENT
           ) {
             if (style.right.u === StyleUnit.PX) {
-              o.right = computedStyle.right - dx2;
+              next.right = computedStyle.right - dx2;
             }
             else {
-              o.right =
+              next.right =
                 ((computedStyle.right - dx2) * 100) / node.parent!.width +
                 '%';
             }
             if (style.width.u === StyleUnit.PX) {
-              o.width = computedStyle.width + dx2;
+              next.width = computedStyle.width + dx2;
             }
             else if (style.width.u === StyleUnit.PERCENT) {
-              o.width =
+              next.width =
                 ((computedStyle.width + dx2) * 100) / node.parent!.width +
                 '%';
             }
@@ -531,33 +544,37 @@ export default class Listener extends Event {
             style.width.u === StyleUnit.PERCENT
           ) {
             if (style.width.u === StyleUnit.PX) {
-              o.width = computedStyle.width + dx2;
+              next.width = computedStyle.width + dx2;
             }
             else {
-              o.width =
+              next.width =
                 ((computedStyle.width + dx2) * 100) / node.parent!.width +
                 '%';
             }
           }
         }
         if (node.isText && node instanceof Text) {
-          if (o.left || o.right || o.width) {
+          if (next.left || next.right || next.width) {
             if (node.textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE) {
               node.textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
             }
           }
-          if (o.top || o.bottom || o.height) {
+          if (next.top || next.bottom || next.height) {
             if (node.textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE) {
               node.textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
             }
           }
         }
-        node.updateStyle(o);
-        // this.updateStyle[i] = o;
+        node.updateStyle(next);
+        Object.keys(next).forEach((k) => {
+          // @ts-ignore
+          prev[k] = cssStyle[k as keyof JStyle];
+        });
+        this.updateStyle[i] = { prev, next };
         this.hasControl = true;
       });
-      this.select.updateSelect(this.selected);
-      this.emit(Listener.RESIZE_NODE, this.selected);
+      this.select.updateSelect(selected);
+      this.emit(Listener.RESIZE_NODE, selected.slice(0));
     }
     // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
     else if (this.isMouseDown) {
@@ -565,13 +582,13 @@ export default class Listener extends Event {
       if (this.state === State.EDIT_TEXT) {
         const x = (e.pageX - this.originX) * dpi;
         const y = (e.pageY - this.originY) * dpi;
-        const text = this.selected[0] as Text;
+        const text = selected[0] as Text;
         text.setCursorEndByAbsCoord(x, y);
         this.input.hideCursor();
       }
       else {
-        if (this.selected.length) {
-          this.selected.forEach((node, i) => {
+        if (selected.length) {
+          selected.forEach((node, i) => {
             const computedStyle = this.computedStyle[i];
             /**
              * 这里用computedStyle的translate差值做计算，得到当前的translate的px值updateStyle给node，
@@ -592,8 +609,8 @@ export default class Listener extends Event {
               next: o,
             };
           });
-          this.select.updateSelect(this.selected);
-          this.emit(Listener.MOVE_NODE, this.selected);
+          this.select.updateSelect(selected);
+          this.emit(Listener.MOVE_NODE, selected.slice(0));
         }
         else {
           // TODO 框选
@@ -606,11 +623,11 @@ export default class Listener extends Event {
         (e.pageX - this.originX) * dpi,
         (e.pageY - this.originY) * dpi,
         this.metaKey,
-        this.selected,
+        selected,
         false,
       );
       if (node) {
-        if (this.selected.indexOf(node) === -1) {
+        if (selected.indexOf(node) === -1) {
           this.select.showHover(node);
         }
         this.emit(Listener.HOVER_NODE, node);
@@ -625,6 +642,7 @@ export default class Listener extends Event {
   onMouseMove(e: MouseEvent) {
     const root = this.root;
     const dpi = root.dpi;
+    const selected = this.selected;
     // 空格拖拽画布
     if (this.spaceKey) {
       if (this.isMouseDown) {
@@ -638,8 +656,8 @@ export default class Listener extends Event {
             translateX: this.pageTx + dx,
             translateY: this.pageTy + dy,
           });
-          if (this.selected.length) {
-            this.select.updateSelect(this.selected);
+          if (selected.length) {
+            this.select.updateSelect(selected);
           }
         }
       }
@@ -648,11 +666,11 @@ export default class Listener extends Event {
           (e.pageX - this.originX) * dpi,
           (e.pageY - this.originY) * dpi,
           this.metaKey,
-          this.selected,
+          selected,
           false,
         );
         if (node) {
-          if (this.selected.indexOf(node) === -1) {
+          if (selected.indexOf(node) === -1) {
             this.select.showHover(node);
           }
           this.emit(Listener.HOVER_NODE, node);
@@ -670,17 +688,18 @@ export default class Listener extends Event {
   }
 
   onMouseUp() {
+    const selected = this.selected;
     if (this.isControl) {
       this.isControl = false;
+      // 还原artBoard的children为初始值
       this.abcStyle.forEach((item, i) => {
         if (item.length) {
-          const node = this.selected[i] as ArtBoard;
+          const node = selected[i] as ArtBoard;
           const children = node.children;
           item.forEach((abcStyle, i) => {
             const style = children[i].style;
             ['left', 'right', 'top', 'bottom', 'width', 'height'].forEach((k) => {
-              // @ts-ignore
-              const o = abcStyle[k];
+              const o = abcStyle[k as keyof Style];
               // @ts-ignore
               style[k].v = o.v;
               // @ts-ignore
@@ -689,35 +708,32 @@ export default class Listener extends Event {
           });
         }
       });
-      if (this.isMouseMove) {
-        this.selected.forEach((node) => {
-          node.checkSizeChange();
-        });
-      }
-      // 调整前锁住的group，结束后统一进行
-      this.selected.forEach((item) => {
-        const p = item.parent;
+      selected.forEach((node, i) => {
+        // 调整之前锁住的group，结束后统一进行解锁
+        const p = node.parent;
         if (p && p.isGroup && p instanceof Group) {
           p.fixedPosAndSize = false;
         }
-      });
-      if (this.hasControl) {
-        this.hasControl = false;
-        this.selected.forEach((item, i) => {
-          if (item.isText && item instanceof Text) {
-            const o = this.textState[i];
-            if (o) {
-              item.afterEdit(o.isLeft, o.isRight, o.isTop);
-            }
+        // 还原最初的translate值
+        const prev = this.sizeChangeStyle[i];
+        if (prev) {
+          node.endSizeChange(prev);
+        }
+        // 有调整尺寸的话，向上检测组的自适应尺寸
+        if (this.hasControl) {
+          node.checkPosSizeUpward();
+          const o = this.updateStyle[i];
+          if (o) {
+            History.getInstance().addCommand(new UpdateStyleCommand(node, o));
           }
-          item.checkPosSizeUpward();
-        });
-      }
+        }
+      });
+      this.hasControl = false;
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
       if (this.state === State.EDIT_TEXT) {
-        const text = this.selected[0] as Text;
+        const text = selected[0] as Text;
         const multi = text.checkCursorMulti();
         // 可能框选的文字为空不是多选，需取消
         if (!multi) {
@@ -730,7 +746,17 @@ export default class Listener extends Event {
         this.input.focus();
       }
       else {
-        this.selected.forEach((node, i) => {
+        selected.forEach((node, i) => {
+          // 调整之前锁住的group，结束后统一进行解锁
+          const p = node.parent;
+          if (p && p.isGroup && p instanceof Group) {
+            p.fixedPosAndSize = false;
+          }
+          // 还原最初的translate值
+          const prev = this.sizeChangeStyle[i];
+          if (prev) {
+            node.endSizeChange(prev);
+          }
           node.checkPosChange();
           const o = this.updateStyle[i];
           if (o) {

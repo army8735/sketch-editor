@@ -4,7 +4,7 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Props, TAG_NAME } from '../format';
 import { calRectPoints } from '../math/matrix';
 import { RefreshLevel } from '../refresh/level';
-import { StyleUnit } from '../style/define';
+import { StyleUnit, Style, } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
@@ -24,10 +24,13 @@ class Group extends Container {
   override didMountBubble() {
     super.didMountBubble();
     const rect = this.rect;
-    const r = this.getChildrenRect(true);
-    const w = r.maxX - r.minX, h = r.maxY - r.minY;
-    if (Math.abs(r.minX) > EPS || Math.abs(r.minY) > EPS || Math.abs(w - rect[2]) > EPS || Math.abs(h - rect[3]) > EPS) {
-      this.checkSizeChange();
+    const r = this.getChildrenRect(false);
+    if (Math.abs(r.minX - rect[0]) > EPS
+      || Math.abs(r.minY - rect[1]) > EPS
+      || Math.abs(r.maxX - rect[2]) > EPS
+      || Math.abs(r.maxY - rect[3]) > EPS) {
+      // 冒泡过程无需向下检测，直接向上
+      this.checkPosSizeUpward();
     }
   }
 
@@ -103,8 +106,16 @@ class Group extends Container {
     if (!root) {
       return;
     }
-    const { top, right, bottom, left, width, height, translateX, translateY } =
-      style;
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      // width,
+      // height,
+      // translateX,
+      // translateY,
+    } = style;
     // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
     // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
     // 2个只要有发生，都会影响左右，因为干扰尺寸
@@ -124,7 +135,7 @@ class Group extends Container {
         right.v = (computedStyle.right * 100) / gw;
       }
     }
-    this.resetTranslateX(left, right, width, translateX);
+    // this.resetTranslateX(left, right, width, translateX);
     // 类似水平情况
     if (dy || dh) {
       computedStyle.top -= dy;
@@ -142,7 +153,7 @@ class Group extends Container {
         bottom.v = (computedStyle.bottom * 100) / gh;
       }
     }
-    this.resetTranslateY(top, bottom, height, translateY);
+    // this.resetTranslateY(top, bottom, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     child.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;
@@ -181,15 +192,14 @@ class Group extends Container {
   }
 
   /**
-   * 组调整尺寸reflow后，先递归看子节点，可能会变更如left百分比等数据，需重新计算更新，
-   * 这个递归是深度递归回溯，先叶子节点的变化及对其父元素的影响，然后慢慢向上到引发检测的组，
-   * 然后再向上看，和位置变化一样，自身的改变向上递归影响父级组的尺寸位置。
+   * 组调整尺寸reflow后，先检查是否有无效或者需要二次自适应尺寸，
+   * 比如组右下角固定left+top+width+height的矩形，右下拉伸变大应该无效，sketch中交互是拉不动，
+   * 这个检查在初始化也有做，防止人工脏数据，比如组的尺寸和子节点bbox集合不等。
+   * 然后执行基类的逻辑，见Node同名方法。
    */
-  override checkSizeChange() {
-    this.checkTranslateHalf();
-    if (this.checkPosSizeDownward()) {
-      this.checkPosSizeUpward();
-    }
+  override endSizeChange(prev: Style) {
+    this.checkPosSizeDownward();
+    super.endSizeChange(prev);
   }
 
   private checkPosSizeDownward() {
@@ -201,6 +211,13 @@ class Group extends Container {
       }
     }
     return this.adjustPosAndSize();
+  }
+
+  // 添加一个节点后，可能新节点在原本bbox之外，组需要调整尺寸
+  checkPosSizeSelf() {
+    if (this.adjustPosAndSize()) {
+      this.checkPosSizeUpward();
+    }
   }
 
   unGroup() {
@@ -273,7 +290,7 @@ class Group extends Container {
   }
 
   // 至少1个node进行编组，以第0个位置为基准
-  static group(nodes: Array<Node>, props?: Props) {
+  static group(nodes: Node[], props?: Props) {
     if (!nodes.length) {
       return;
     }

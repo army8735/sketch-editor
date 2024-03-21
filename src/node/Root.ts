@@ -311,7 +311,7 @@ class Root extends Container implements FrameCallback {
     cb?: (sync: boolean) => void,
   ) {
     if (this.isDestroyed) {
-      return;
+      return RefreshLevel.NONE;
     }
     // root的resize需要清空整体的离屏绘制纹理
     if (node === this && this.pageTexture && (keys.indexOf('width') > -1 || keys.indexOf('height') > -1)) {
@@ -335,6 +335,9 @@ class Root extends Container implements FrameCallback {
         const list = node.cleanTile();
         Tile.clean(list);
       }
+    }
+    if (addDom || removeDom) {
+      lv |= RefreshLevel.REFLOW;
     }
     const res = this.calUpdate(node, lv, keys, addDom, removeDom);
     // 有tile时重置关联的tile，为了清空上一次绘制的tile的内容让其重绘
@@ -373,6 +376,7 @@ class Root extends Container implements FrameCallback {
         this.emit(Event.STYLE_CHANGED, node, keys);
       }
     }
+    return lv;
   }
 
   private calUpdate(

@@ -39,7 +39,6 @@ import {
   STROKE_LINE_JOIN,
   STROKE_POSITION,
   Style,
-  StyleNumValue,
   StyleUnit,
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ, calTransformByMatrixAndOrigin } from '../style/transform';
@@ -836,13 +835,12 @@ class Node extends Event {
     return [temp];
   }
 
-  updateFormatStyleData(style: any) {
-    const keys: Array<string> = [];
+  updateFormatStyleData(style: Partial<Style>) {
+    const keys: string[] = [];
     for (let k in style) {
       if (style.hasOwnProperty(k)) {
-        // @ts-ignore
-        const v = style[k];
-        if (!equalStyle(k, style, this.style)) {
+        const v = style[k as keyof Style];
+        if (!equalStyle(k, style as any, this.style)) {
           // @ts-ignore
           this.style[k] = v;
           keys.push(k);
@@ -865,22 +863,23 @@ class Node extends Event {
         !style.hasOwnProperty('right') &&
         this.style.right.u !== StyleUnit.AUTO
       ) {
-        const left = calSize(style.left, parent.width);
-        const w = parent.width - computedStyle.right - left;
+        const left = style.left!;
+        const left2 = calSize(left, parent.width);
+        const w = parent.width - computedStyle.right - left2;
         if (w < this.minWidth) {
-          if (style.left.u === StyleUnit.PX) {
+          if (left.u === StyleUnit.PX) {
           }
-          else if (style.left.u === StyleUnit.PERCENT) {
+          else if (left.u === StyleUnit.PERCENT) {
             const max =
               ((parent.width - computedStyle.right - this.minWidth) * 100) /
               parent.width;
             // 限制导致的无效更新去除
-            if (style.left.v === max) {
+            if (left.v === max) {
               let i = keys.indexOf('left');
               keys.splice(i, 1);
             }
             else {
-              style.left.v = this.style.left.v = max;
+              left.v = this.style.left.v = max;
             }
           }
         }
@@ -890,22 +889,23 @@ class Node extends Event {
         !style.hasOwnProperty('left') &&
         this.style.left.u !== StyleUnit.AUTO
       ) {
-        const right = calSize(style.right, parent.width);
-        const w = parent.width - computedStyle.left - right;
+        const right = style.right!;
+        const right2 = calSize(right, parent.width);
+        const w = parent.width - computedStyle.left - right2;
         if (w < this.minWidth) {
-          if (style.right.u === StyleUnit.PX) {
+          if (right.u === StyleUnit.PX) {
           }
-          else if (style.right.u === StyleUnit.PERCENT) {
+          else if (right.u === StyleUnit.PERCENT) {
             const max =
               ((parent.width - computedStyle.left - this.minWidth) * 100) /
               parent.width;
             // 限制导致的无效更新去除
-            if (style.right.v === max) {
+            if (right.v === max) {
               let i = keys.indexOf('right');
               keys.splice(i, 1);
             }
             else {
-              style.right.v = this.style.right.v = max;
+              right.v = this.style.right.v = max;
             }
           }
         }
@@ -916,22 +916,23 @@ class Node extends Event {
         !style.hasOwnProperty('bottom') &&
         this.style.bottom.u !== StyleUnit.AUTO
       ) {
-        const top = calSize(style.top, parent.height);
-        const h = parent.height - computedStyle.bottom - top;
+        const top = style.top!;
+        const top2 = calSize(top, parent.height);
+        const h = parent.height - computedStyle.bottom - top2;
         if (h < this.minHeight) {
-          if (style.top.u === StyleUnit.PX) {
+          if (top.u === StyleUnit.PX) {
           }
-          else if (style.top.u === StyleUnit.PERCENT) {
+          else if (top.u === StyleUnit.PERCENT) {
             const max =
               ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
               parent.height;
             // 限制导致的无效更新去除
-            if (style.top.v === max) {
+            if (top.v === max) {
               let i = keys.indexOf('top');
               keys.splice(i, 1);
             }
             else {
-              style.top.v = this.style.top.v = max;
+              top.v = this.style.top.v = max;
             }
           }
         }
@@ -941,22 +942,23 @@ class Node extends Event {
         !style.hasOwnProperty('top') &&
         this.style.top.u !== StyleUnit.AUTO
       ) {
-        const bottom = calSize(style.bottom, parent.height);
-        const h = parent.height - computedStyle.top - bottom;
+        const bottom = style.bottom!;
+        const bottom2 = calSize(bottom, parent.height);
+        const h = parent.height - computedStyle.top - bottom2;
         if (h < this.minHeight) {
-          if (style.bottom.u === StyleUnit.PX) {
+          if (bottom.u === StyleUnit.PX) {
           }
-          else if (style.bottom.u === StyleUnit.PERCENT) {
+          else if (bottom.u === StyleUnit.PERCENT) {
             const max =
               ((parent.height - computedStyle.top - this.minHeight) * 100) /
               parent.height;
             // 限制导致的无效更新去除
-            if (style.bottom.v === max) {
+            if (bottom.v === max) {
               let i = keys.indexOf('bottom');
               keys.splice(i, 1);
             }
             else {
-              style.bottom.v = this.style.bottom.v = max;
+              bottom.v = this.style.bottom.v = max;
             }
           }
         }
@@ -1053,97 +1055,17 @@ class Node extends Event {
     this.root?.addUpdate(this, [], lv, false, false, cb);
   }
 
-  getComputedStyle(toCssString = false) {
-    const res: any = Object.assign({}, this.computedStyle);
-    if (toCssString) {
-      res.color = color2hexStr(res.color);
-      res.backgroundColor = color2hexStr(res.backgroundColor);
-      res.fontSize = ['normal', 'italic', 'oblique'][res.fontSize];
-      res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
-      res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
-      res.mixBlendMode = [
-        'normal',
-        'multiply',
-        'screen',
-        'overlay',
-        'darken',
-        'lighten',
-        'color-dodge',
-        'color-burn',
-        'hard-light',
-        'soft-light',
-        'difference',
-        'exclusion',
-        'hue',
-        'saturation',
-        'color',
-        'luminosity',
-      ][res.mixBlendMode];
-      ['fill', 'stroke'].forEach((k) => {
-        res[k] = res[k].map((item: any) => {
-          if (Array.isArray(item)) {
-            return color2hexStr(item);
-          }
-          else {
-            if (item.url) {
-              const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
-              return `url(${item.url}) ${type} ${item.scale}`;
-            }
-            else if (
-              item.t === GRADIENT.LINEAR ||
-              item.t === GRADIENT.RADIAL ||
-              item.t === GRADIENT.CONIC
-            ) {
-              let s = 'linear-gradient';
-              if (item.t === GRADIENT.RADIAL) {
-                s = 'radial-gradient';
-              }
-              else if (item.t === GRADIENT.CONIC) {
-                s = 'conic-gradient';
-              }
-              return `${s}(${item.d.join(' ')}, ${item.stops.map(
-                (stop: ColorStop) => {
-                  return (
-                    color2hexStr(stop.color.v) +
-                    ' ' +
-                    stop.offset!.v * 100 +
-                    '%'
-                  );
-                },
-              )})`;
-            }
-            return '';
-          }
-        });
-      });
-      res.strokeLinecap = ['butt', 'round', 'square'][res.strokeLinecap];
-      res.strokeLinejoin = ['miter', 'round', 'bevel'][res.strokeLinejoin];
-      res.strokePosition = res.strokePosition.map((item: STROKE_POSITION) => {
-        return ['center', 'inside', 'outside'][item];
-      });
-      res.maskMode = ['none', 'outline', 'alpha'][res.maskMode];
-      res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
-      res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
-        res.booleanOperation
-        ];
-      res.blur =
-        ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
-        '(' +
-        res.blur.v +
-        ')';
-      res.shadow = res.shadow.map((item: ComputedShadow) => {
-        return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${
-          item.spread
-        }`;
-      });
-    }
-    else {
-      res.color = res.color.slice(0);
-      res.backgroundColor = res.backgroundColor.slice(0);
-      res.fill = res.fill.slice(0);
-      res.stroke = res.stroke.slice(0);
-      res.shadow = res.shadow.slice(0);
-    }
+  getStyle() {
+    return clone(this.style) as Style;
+  }
+
+  getComputedStyle() {
+    const res: ComputedStyle = Object.assign({}, this.computedStyle);
+    res.color = res.color.slice(0);
+    res.backgroundColor = res.backgroundColor.slice(0);
+    res.fill = res.fill.slice(0);
+    res.stroke = res.stroke.slice(0);
+    res.shadow = res.shadow.slice(0);
     res.fillOpacity = res.fillOpacity.slice(0);
     res.fillEnable = res.fillEnable.slice(0);
     res.fillMode = res.fillMode.slice(0);
@@ -1153,6 +1075,107 @@ class Node extends Event {
     res.strokeDasharray = res.strokeDasharray.slice(0);
     res.shadowEnable = res.shadowEnable.slice(0);
     return res;
+  }
+
+  getCssComputedStyle() {
+    const res: any = Object.assign({}, this.computedStyle);
+    const style = this.style;
+    // %单位转换
+    ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY'].forEach((k) => {
+      const o: any = style[k as keyof JStyle];
+      if (o.u === StyleUnit.PERCENT) {
+        res[k] = o.v + '%';
+      }
+    });
+    res.color = color2hexStr(res.color);
+    res.backgroundColor = color2hexStr(res.backgroundColor);
+    res.fontSize = ['normal', 'italic', 'oblique'][res.fontSize];
+    res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
+    res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
+    res.mixBlendMode = [
+      'normal',
+      'multiply',
+      'screen',
+      'overlay',
+      'darken',
+      'lighten',
+      'color-dodge',
+      'color-burn',
+      'hard-light',
+      'soft-light',
+      'difference',
+      'exclusion',
+      'hue',
+      'saturation',
+      'color',
+      'luminosity',
+    ][res.mixBlendMode];
+    ['fill', 'stroke'].forEach((k) => {
+      res[k] = res[k].map((item: any) => {
+        if (Array.isArray(item)) {
+          return color2hexStr(item);
+        }
+        else {
+          if (item.url) {
+            const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
+            return `url(${item.url}) ${type} ${item.scale}`;
+          }
+          else if (
+            item.t === GRADIENT.LINEAR ||
+            item.t === GRADIENT.RADIAL ||
+            item.t === GRADIENT.CONIC
+          ) {
+            let s = 'linear-gradient';
+            if (item.t === GRADIENT.RADIAL) {
+              s = 'radial-gradient';
+            }
+            else if (item.t === GRADIENT.CONIC) {
+              s = 'conic-gradient';
+            }
+            return `${s}(${item.d.join(' ')}, ${item.stops.map(
+              (stop: ColorStop) => {
+                return (
+                  color2hexStr(stop.color.v) +
+                  ' ' +
+                  stop.offset!.v * 100 +
+                  '%'
+                );
+              },
+            )})`;
+          }
+          return '';
+        }
+      });
+    });
+    res.strokeLinecap = ['butt', 'round', 'square'][res.strokeLinecap];
+    res.strokeLinejoin = ['miter', 'round', 'bevel'][res.strokeLinejoin];
+    res.strokePosition = res.strokePosition.map((item: STROKE_POSITION) => {
+      return ['center', 'inside', 'outside'][item];
+    });
+    res.maskMode = ['none', 'outline', 'alpha'][res.maskMode];
+    res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
+    res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
+      res.booleanOperation
+      ];
+    res.blur =
+      ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
+      '(' +
+      res.blur.v +
+      ')';
+    res.shadow = res.shadow.map((item: ComputedShadow) => {
+      return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${
+        item.spread
+      }`;
+    });
+    const tfo = style.transformOrigin;
+    res.transformOrigin = res.transformOrigin.map((item: number, i: number) => {
+      const o = tfo[i];
+      if (o.u === StyleUnit.PERCENT) {
+        return o.v + '%';
+      }
+      return item;
+    });
+    return res as JStyle;
   }
 
   getBoundingClientRect(includeBbox: boolean = false, excludeRotate = false) {
@@ -1245,50 +1268,101 @@ class Node extends Event {
   }
 
   /**
-   * 拖拽开始变更尺寸前预校验，如果是以自身中心点为基准，需要改成普通模式，
-   * 即left百分比调整到以左侧为基准，translateX不再-50%，垂直方向同理，
-   * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回自身中心基准数据。
+   * 拖拽开始变更尺寸前预校验，如果style有translate初始值，需要改成普通模式（为0），目前只有Text有且仅值-50%且left是百分比，
+   * 即left调整到以左侧为基准（translateX从-50%到0，差值重新加到left上），top同理，
+   * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回去（translateX重新-50%，left也重算）。
+   * right/bottom一般情况不用关心，因为如果是left+right说明Text是固定尺寸width无效且无translateX，但为了扩展兼容可以写，
+   * 只有left百分比+translateX-50%需要，width可能固定也可能自动不用考虑只需看当前计算好的width值。
    */
   startSizeChange() {
-    const { style, computedStyle, parent } = this;
-    if (this.isDestroyed) {
+    const {
+      width,
+      height,
+      style,
+      parent,
+      isDestroyed,
+    } = this;
+    if (isDestroyed) {
       throw new Error('Can not resize a destroyed Node');
     }
-    const { top, bottom, left, right, translateX, translateY } =
-      style;
-    const { width: w, height: h } = this;
-    /**
-     * 有很多种情况，修改种类也不尽相同，以水平为例：
-     * left%+right%，锚点在中心，只需将锚点改为原点即可
-     * left%+widthPx，锚点在中心，除了锚点改原点，left需偏移半宽
-     * 没有right%+widthPX
-     * 文本特殊left%+widthAuto+rightAuto，同上
-     * leftPx不用管（无视width/right值）
-     * rightPx不用管（无视width/left值）
-     */
-    if (left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO) {
-      const v = (computedStyle.left -= w * 0.5);
-      left.v = (v * 100) / parent!.width;
-      translateX.v = 0;
-      translateX.u = StyleUnit.PX;
+    const prev = this.getStyle();
+    const {
+      top,
+      bottom,
+      left,
+      right,
+      translateX,
+      translateY,
+    } = style;
+    // root没有parent，但不可能调整root，加个预防root的parent取自己
+    const { width: pw, height: ph } = parent || this;
+    // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
+    if (translateX.v !== 0) {
+      let v = 0;
+      if (translateX.u === StyleUnit.PERCENT) {
+        v = translateX.v * width * 0.01;
+      }
+      else if (translateX.u === StyleUnit.PX) {
+        v = translateX.v;
+      }
+      if (v) {
+        if (left.u === StyleUnit.PERCENT) {
+          left.v += v * 100 / pw;
+        }
+        else if (left.u === StyleUnit.PX) {
+          left.v += v;
+        }
+        if (right.u === StyleUnit.PERCENT) {
+          right.v -= v * 100 / pw;
+        }
+        else if (right.u === StyleUnit.PX) {
+          right.v -= v;
+        }
+      }
     }
-    if (top.u === StyleUnit.PERCENT && bottom.u === StyleUnit.AUTO) {
-      const v = (computedStyle.top -= h * 0.5);
-      top.v = (v * 100) / parent!.height;
-      translateY.v = 0;
-      translateY.u = StyleUnit.PX;
+    if (translateY.v !== 0) {
+      let v = 0;
+      if (translateY.u === StyleUnit.PERCENT) {
+        v = translateY.v * height * 0.01;
+      }
+      else if (translateY.u === StyleUnit.PX) {
+        v = translateY.v;
+      }
+      if (v) {
+        if (top.u === StyleUnit.PERCENT) {
+          top.v += v * 100 / ph;
+        }
+        else if (top.u === StyleUnit.PX) {
+          top.v += v;
+        }
+        if (bottom.u === StyleUnit.PERCENT) {
+          bottom.v -= v * 100 / ph;
+        }
+        else if (bottom.u === StyleUnit.PX) {
+          bottom.v -= v;
+        }
+      }
     }
-    return this.getComputedStyle();
+    return prev;
   }
 
   // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，如果是固定尺寸，还要还原translate为-50%（中心点对齐）
   checkPosChange() {
     const { style, computedStyle, parent } = this;
+    // root没parent，但root不可能被拖动，防止下
     if (!parent) {
       return;
     }
-    const { top, right, bottom, left, width, height, translateX, translateY } =
-      style;
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      // translateX,
+      // translateY,
+    } = style;
     const { translateX: tx, translateY: ty } = computedStyle;
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent;
@@ -1329,7 +1403,7 @@ class Node extends Event {
         right.v = ((pw - tx - w) * 100) / pw;
       }
     }
-    this.resetTranslateX(left, right, width, translateX);
+    // this.resetTranslateX(left, right, width, translateX);
     // 换算，固定不固定统一处理
     if (left.u !== StyleUnit.AUTO) {
       computedStyle.left = calSize(left, pw);
@@ -1379,7 +1453,7 @@ class Node extends Event {
         bottom.v = ((ph - ty - h) * 100) / ph;
       }
     }
-    this.resetTranslateY(top, bottom, height, translateY);
+    // this.resetTranslateY(top, bottom, height, translateY);
     // 换算，固定不固定统一处理
     if (top.u !== StyleUnit.AUTO) {
       computedStyle.top = calSize(top, ph);
@@ -1419,8 +1493,16 @@ class Node extends Event {
       return;
     }
     const { width: pw, height: ph } = parent;
-    const { top, right, bottom, left, width, height, translateX, translateY } =
-      style;
+    const {
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+      // translateX,
+      // translateY,
+    } = style;
     // 水平调整统一处理，固定此时无效
     if (dx) {
       if (left.u === StyleUnit.PX) {
@@ -1446,7 +1528,7 @@ class Node extends Event {
     this.width = computedStyle.width =
       parent.width - computedStyle.left - computedStyle.right;
     // translateX调整根据是否固定尺寸，不会有%尺寸目前
-    this.resetTranslateX(left, right, width, translateX);
+    // this.resetTranslateX(left, right, width, translateX);
     // 垂直和水平一样
     if (dy) {
       if (top.u === StyleUnit.PX) {
@@ -1471,7 +1553,7 @@ class Node extends Event {
     }
     this.height = computedStyle.height =
       parent.height - computedStyle.top - computedStyle.bottom;
-    this.resetTranslateY(top, bottom, height, translateY);
+    // this.resetTranslateY(top, bottom, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     this.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;
@@ -1483,41 +1565,41 @@ class Node extends Event {
     this.tempBbox = undefined;
   }
 
-  resetTranslateX(
-    left: StyleNumValue,
-    right: StyleNumValue,
-    width: StyleNumValue,
-    translateX: StyleNumValue,
-  ) {
-    if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
-      translateX.v = 0;
-    }
-    else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
-      translateX.v = 0;
-    }
-    else {
-      translateX.v = -50;
-      translateX.u = StyleUnit.PERCENT;
-    }
-  }
-
-  resetTranslateY(
-    top: StyleNumValue,
-    bottom: StyleNumValue,
-    height: StyleNumValue,
-    translateY: StyleNumValue,
-  ) {
-    if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
-      translateY.v = 0;
-    }
-    else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
-      translateY.v = 0;
-    }
-    else {
-      translateY.v = -50;
-      translateY.u = StyleUnit.PERCENT;
-    }
-  }
+  // resetTranslateX(
+  //   left: StyleNumValue,
+  //   right: StyleNumValue,
+  //   width: StyleNumValue,
+  //   translateX: StyleNumValue,
+  // ) {
+  //   if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
+  //     translateX.v = 0;
+  //   }
+  //   else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
+  //     translateX.v = 0;
+  //   }
+  //   else {
+  //     translateX.v = -50;
+  //     translateX.u = StyleUnit.PERCENT;
+  //   }
+  // }
+  //
+  // resetTranslateY(
+  //   top: StyleNumValue,
+  //   bottom: StyleNumValue,
+  //   height: StyleNumValue,
+  //   translateY: StyleNumValue,
+  // ) {
+  //   if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+  //     translateY.v = 0;
+  //   }
+  //   else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
+  //     translateY.v = 0;
+  //   }
+  //   else {
+  //     translateY.v = -50;
+  //     translateY.u = StyleUnit.PERCENT;
+  //   }
+  // }
 
   // 节点位置尺寸发生变更后，会递归向上影响，逐步检查，可能在某层没有影响提前跳出中断
   checkPosSizeUpward() {
@@ -1532,50 +1614,93 @@ class Node extends Event {
     }
   }
 
-  checkPosSizeSelf() {
-    if (this.adjustPosAndSize()) {
-      this.checkPosSizeUpward();
-    }
-  }
-
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
   adjustPosAndSize() {
     return false;
   }
 
   /**
-   * 自身不再计算，叶子节点调整过程中就是在reflow，自己本身数据已经及时更新。
-   * 如果是组，子节点虽然在reflow过程中更新了数据，但是相对于组的老数据情况，
-   * 子节点reflow过程中可能会对组产生位置尺寸的影响，需要组先根据子节点情况更新自己。
-   * 然后再检查向上影响，是否需要重新计算，组覆盖实现。
-   * 对于固定尺寸+%对齐的，在开始前将基点转换到左上，并且translate变为0，防止变形，
-   * 在这里结束后需要转换回来，即自身中点为基准，translate为-50%。
+   * 参考 startSizeChange()，反向进行，在连续拖拽改变尺寸的过程中，最后结束调用。
+   * 自身不再计算，叶子节点调整过程中就是在reflow，数据都已经及时更新。
+   * 根据开始调整时记录的prev样式，还原布局信息到translate上，然后再检查父级向上影响。
+   * 组是个特殊的节点，由于存在自适应子节点尺寸，在改变尺寸后可能出现无效或二次修正的情况，
+   * 需overwrite实现，在向上检查前先自适应尺寸，这个在初始化也有做防止人工不正确的数据。
    */
-  checkSizeChange() {
-    this.checkTranslateHalf();
+  endSizeChange(prev: Style) {
+    this.checkTRBL2Translate(prev);
     this.checkPosSizeUpward();
   }
 
-  // 参考startSizeChange，反向进行
-  protected checkTranslateHalf() {
-    const { style, computedStyle, parent } = this;
-    if (!parent) {
-      return;
+  // 参考 startSizeChange()，反向进行
+  protected checkTRBL2Translate(prev: Style) {
+    const {
+      width,
+      height,
+      style,
+      parent,
+      isDestroyed,
+    } = this;
+    if (isDestroyed) {
+      throw new Error('Can not resize a destroyed Node');
     }
-    const { top, bottom, left, right, translateX, translateY } =
-      style;
-    const { width: w, height: h } = this;
-    if (left.u === StyleUnit.PERCENT && right.u === StyleUnit.AUTO) {
-      const v = (computedStyle.left += w * 0.5);
-      left.v = (v * 100) / parent!.width;
-      translateX.v = -50;
-      translateX.u = StyleUnit.PERCENT;
+    const {
+      top,
+      bottom,
+      left,
+      right,
+      translateX,
+      translateY,
+    } = prev;
+    // root没有parent，但不可能调整root，加个预防root的parent取自己
+    const { width: pw, height: ph } = parent || this;
+    // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
+    if (translateX.v !== 0) {
+      let v = 0;
+      if (translateX.u === StyleUnit.PERCENT) {
+        v = translateX.v * width * 0.01;
+      }
+      else if (translateX.u === StyleUnit.PX) {
+        v = translateX.v;
+      }
+      if (v) {
+        if (left.u === StyleUnit.PERCENT) {
+          left.v -= v * 100 / pw;
+        }
+        else if (left.u === StyleUnit.PX) {
+          left.v -= v;
+        }
+        if (right.u === StyleUnit.PERCENT) {
+          right.v += v * 100 / pw;
+        }
+        else if (right.u === StyleUnit.PX) {
+          right.v += v;
+        }
+        style.translateX.v = translateX.v;
+      }
     }
-    if (top.u === StyleUnit.PERCENT && bottom.u === StyleUnit.AUTO) {
-      const v = (computedStyle.top += h * 0.5);
-      top.v = (v * 100) / parent!.width;
-      translateY.v = -50;
-      translateY.u = StyleUnit.PERCENT;
+    if (translateY.v !== 0) {
+      let v = 0;
+      if (translateY.u === StyleUnit.PERCENT) {
+        v = translateY.v * height * 0.01;
+      }
+      else if (translateY.u === StyleUnit.PX) {
+        v = translateY.v;
+      }
+      if (v) {
+        if (top.u === StyleUnit.PERCENT) {
+          top.v -= v * 100 / ph;
+        }
+        else if (top.u === StyleUnit.PX) {
+          top.v -= v;
+        }
+        if (bottom.u === StyleUnit.PERCENT) {
+          bottom.v += v * 100 / ph;
+        }
+        else if (bottom.u === StyleUnit.PX) {
+          bottom.v += v;
+        }
+        style.translateY.v = translateY.v;
+      }
     }
   }
 

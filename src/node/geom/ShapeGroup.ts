@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, Override, ShapeGroupProps, TAG_NAME } from '../../format';
+import { getDefaultStyle, JNode, JStyle, Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
@@ -103,15 +103,12 @@ class ShapeGroup extends Group {
   }
 
   override didMountBubble() {
+    super.didMountBubble();
+    this.points = undefined; // 初始化肯定为空，防止其它过程再确保重置下
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
-    this.points = undefined;
-  }
-
-  override checkSizeChange() {
-    super.checkSizeChange();
     this.points = undefined;
   }
 
@@ -931,11 +928,11 @@ class ShapeGroup extends Group {
       item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
     }
     // 取第一个矢量图形的描绘属性
-    let style;
+    let style: JStyle | undefined;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
       if (item instanceof Polyline || item instanceof ShapeGroup) {
-        style = item.getComputedStyle(true);
+        style = item.getCssComputedStyle();
         break;
       }
     }
@@ -978,7 +975,7 @@ class ShapeGroup extends Group {
     if (parent instanceof Group) {
       parent.fixedPosAndSize = false;
     }
-    shapeGroup.checkSizeChange();
+    shapeGroup.checkPosSizeSelf();
     return shapeGroup;
   }
 }
