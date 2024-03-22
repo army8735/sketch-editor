@@ -1656,48 +1656,48 @@ class Node extends Event {
     // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
     if (translateX.v !== 0) {
       let v = 0;
-      if (translateX.u === StyleUnit.PERCENT) {
-        v = translateX.v * width * 0.01;
-      }
-      else if (translateX.u === StyleUnit.PX) {
+      if (translateX.u === StyleUnit.PX) {
         v = translateX.v;
       }
+      else if (translateX.u === StyleUnit.PERCENT) {
+        v = translateX.v * width * 0.01;
+      }
       if (v) {
-        if (left.u === StyleUnit.PERCENT) {
-          left.v -= v * 100 / pw;
-        }
-        else if (left.u === StyleUnit.PX) {
+        if (left.u === StyleUnit.PX) {
           left.v -= v;
         }
-        if (right.u === StyleUnit.PERCENT) {
-          right.v += v * 100 / pw;
+        else if (left.u === StyleUnit.PERCENT) {
+          left.v -= v * 100 / pw;
         }
-        else if (right.u === StyleUnit.PX) {
+        if (right.u === StyleUnit.PX) {
           right.v += v;
+        }
+        else if (right.u === StyleUnit.PERCENT) {
+          right.v += v * 100 / pw;
         }
         style.translateX.v = translateX.v;
       }
     }
     if (translateY.v !== 0) {
       let v = 0;
-      if (translateY.u === StyleUnit.PERCENT) {
-        v = translateY.v * height * 0.01;
-      }
-      else if (translateY.u === StyleUnit.PX) {
+      if (translateY.u === StyleUnit.PX) {
         v = translateY.v;
       }
+      else if (translateY.u === StyleUnit.PERCENT) {
+        v = translateY.v * height * 0.01;
+      }
       if (v) {
-        if (top.u === StyleUnit.PERCENT) {
-          top.v -= v * 100 / ph;
-        }
-        else if (top.u === StyleUnit.PX) {
+        if (top.u === StyleUnit.PX) {
           top.v -= v;
         }
-        if (bottom.u === StyleUnit.PERCENT) {
-          bottom.v += v * 100 / ph;
+        else if (top.u === StyleUnit.PERCENT) {
+          top.v -= v * 100 / ph;
         }
-        else if (bottom.u === StyleUnit.PX) {
+        if (bottom.u === StyleUnit.PX) {
           bottom.v += v;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          bottom.v += v * 100 / ph;
         }
         style.translateY.v = translateY.v;
       }
