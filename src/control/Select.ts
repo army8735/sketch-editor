@@ -38,12 +38,6 @@ export default class Select {
     hover.style.transform = 'translate(-2px, -2px)';
     dom.appendChild(hover);
     this.select = [];
-    // const select = this.select = document.createElement('div');
-    // select.style.display = 'none';
-    // select.style.position = 'absolute';
-    // select.style.boxSizing = 'content-box';
-    // select.innerHTML = html;
-    // dom.appendChild(select);
   }
 
   showHover(node: Node) {
