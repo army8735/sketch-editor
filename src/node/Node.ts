@@ -237,7 +237,7 @@ class Node extends Event {
         this.width = computedStyle.width;
       }
       else {
-        this.width = 0.5;
+        this.width = this.minWidth;
       }
       computedStyle.right = data.w - computedStyle.left - this.width;
     }
@@ -246,7 +246,7 @@ class Node extends Event {
         this.width = computedStyle.width;
       }
       else {
-        this.width = 0.5;
+        this.width = this.minWidth;
       }
       computedStyle.left = data.w - computedStyle.right - this.width;
     }
@@ -260,7 +260,7 @@ class Node extends Event {
         this.height = computedStyle.height;
       }
       else {
-        this.height = 0.5;
+        this.height = this.minHeight;
       }
       computedStyle.bottom = data.h - computedStyle.top - this.height;
     }
@@ -269,7 +269,7 @@ class Node extends Event {
         this.height = computedStyle.height;
       }
       else {
-        this.height = 0.5;
+        this.height = this.minHeight;
       }
       computedStyle.top = data.h - computedStyle.bottom - this.height;
     }
@@ -1640,8 +1640,8 @@ class Node extends Event {
       parent,
       isDestroyed,
     } = this;
-    if (isDestroyed) {
-      throw new Error('Can not resize a destroyed Node');
+    if (isDestroyed || !parent) {
+      throw new Error('Can not resize a destroyed Node Or Root');
     }
     const {
       top,
@@ -1652,7 +1652,7 @@ class Node extends Event {
       translateY,
     } = prev;
     // root没有parent，但不可能调整root，加个预防root的parent取自己
-    const { width: pw, height: ph } = parent || this;
+    const { width: pw, height: ph } = parent;
     // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
     if (translateX.v !== 0) {
       let v = 0;
