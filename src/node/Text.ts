@@ -22,6 +22,7 @@ import {
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
+  Style,
   StyleUnit,
   TEXT_ALIGN,
   TEXT_BEHAVIOUR,
@@ -451,117 +452,42 @@ class Text extends Node {
     if (letterSpacing && letterSpacing < 0) {
       maxW -= letterSpacing;
     }
-    // let fixedLeft = false;
-    // let fixedRight = false;
-    // if (style.left.u !== StyleUnit.AUTO) {
-    //   fixedLeft = true;
-    // }
-    // if (style.right.u !== StyleUnit.AUTO) {
-    //   fixedRight = true;
-    // }
     /**
-     * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，正常情况下按此即可，
+     * 文字排版定位非常特殊的地方，本身在sketch中有frame的rect属性标明矩形包围框的x/y/w/h，理想情况下按此即可，
      * 但可能存在字体缺失、末尾空格忽略不换行、环境测量精度不一致等问题，这样canvas计算排版后可能与rect不一致，
-     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到尺寸。
+     * 所以在转换过程中，文字的尺寸在非固定情况下会变成auto，在Node的lay()中auto会被计算为min值0.5。
+     * 根据差值，以及是否固定宽高，将这些差值按照是否固定上下左右的不同，追加到定位数据上。
      * 另外编辑文字修改内容后，新的尺寸肯定和老的rect不一致，差值修正的逻辑正好被复用做修改后重排版。
      */
     if (autoW) {
-      const dw = maxW - this.width;
-      if (dw) {
+      const d = maxW - this.width;
+      if (d) {
         this.width = computedStyle.width = maxW;
-        // 可能上下都固定，也可能上+高
-        const { left, right, width } = style;
-        // if (left.u === StyleUnit.PERCENT) {
-        //   const half = dw * 0.5;
-        //   left.v += half * 100 / data.w;
-        //   computedStyle.left += half;
-        //   computedStyle.right += half;
-        // }
-        if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
-          if (left.u === StyleUnit.PX) {
-            left.v += dw;
-          }
-          else if (left.u === StyleUnit.PERCENT) {
-            left.v += dw * 100 / data.w;
-          }
-          if (right.u === StyleUnit.PX) {
-            right.v -= dw;
-          }
-          else if (right.u === StyleUnit.PERCENT) {
-            right.v -= dw * 100 / data.w;
-          }
+        const { left, right } = style;
+        if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {}
+        else if (left.u !== StyleUnit.AUTO) {
+          computedStyle.right -= d;
         }
-        else if (width.u === StyleUnit.PX) {
-          width.v += dw;
+        else if (right.u !== StyleUnit.AUTO) {
+          computedStyle.left -= d;
         }
-        else if (width.u === StyleUnit.PERCENT) {
-          width.v += dw * 100 / data.w;
-        }
-        // else if (fixedLeft) {
-        //   if (width.u === StyleUnit.PX) {
-        //     width.v += dw;
-        //   }
-        //   else if (width.u === StyleUnit.PERCENT) {
-        //     width.v += dw * 100 / data.w;
-        //   }
-        //   computedStyle.right -= dw;
-        // } else if (fixedRight) {
-        //   computedStyle.left -= dw;
-        // }
       }
     }
     if (autoH) {
       const h = lineBox.y + lineBox.lineHeight;
-      const dh = h - this.height;
-      if (dh) {
+      const d = h - this.height;
+      if (d) {
         this.height = computedStyle.height = h;
-        // 可能上下都固定，也可能上+高
-        const { top, bottom, height } = style;
-        // if (top.u === StyleUnit.PERCENT) {
-        //   const half = dh * 0.5;
-        //   top.v += half * 100 / data.h;
-        //   computedStyle.top += half;
-        //   computedStyle.bottom += half;
-        // }
-        if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
-          if (top.u === StyleUnit.PX) {
-            top.v += dh;
-          }
-          else if (top.u === StyleUnit.PERCENT) {
-            top.v += dh * 100 / data.h;
-          }
-          if (bottom.u === StyleUnit.PX) {
-            bottom.v -= dh;
-          }
-          else if (bottom.u === StyleUnit.PERCENT) {
-            bottom.v -= dh * 100 / data.h;
-          }
+        const { top, bottom } = style;
+        if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {}
+        else if (top.u !== StyleUnit.AUTO) {
+          computedStyle.bottom -= d;
         }
-        else if (height.u === StyleUnit.PX) {
-          height.v += dh;
-        }
-        else if (height.u === StyleUnit.PERCENT) {
-          height.v += dh * 100 / data.h;
+        else if (bottom.u !== StyleUnit.AUTO) {
+          computedStyle.top -= d;
         }
       }
     }
-    // 覆盖，文本很特殊，尺寸有auto情况
-    // const fixedLeft = style.left.u !== StyleUnit.AUTO;
-    // const fixedTop = style.top.u !== StyleUnit.AUTO;
-    // const fixedRight = style.right.u !== StyleUnit.AUTO;
-    // const fixedBottom = style.bottom.u !== StyleUnit.AUTO;
-    // if (fixedLeft && fixedRight) {
-    // } else if (fixedLeft) {
-    //   computedStyle.right = data.w - computedStyle.left - this.width;
-    // } else if (fixedRight) {
-    //   computedStyle.left = data.w - computedStyle.right - this.width;
-    // }
-    // if (fixedTop && fixedBottom) {
-    // } else if (fixedTop) {
-    //   computedStyle.bottom = data.h - computedStyle.top - this.height;
-    // } else if (fixedBottom) {
-    //   computedStyle.top = data.h - computedStyle.bottom - this.height;
-    // }
     // 水平非左对齐偏移
     const textAlign = computedStyle.textAlign;
     if (textAlign === TEXT_ALIGN.CENTER) {
@@ -1398,83 +1324,508 @@ class Text extends Node {
   }
 
   /**
-   * 改变尺寸前防止中心对齐导致位移，一般只有left百分比+定宽（水平方向，垂直同理），
-   * 将left移至最左侧，translateX取消-50%，同时要考虑textAlign
+   * 改变内容影响定位尺寸前防止中心对齐导致位移，一般情况是left%+translateX:-50%（水平方向，垂直同理），
+   * 先记录此时style，再将left换算成translateX为0的值，为了兼容，可以写成translateX是任意非零%值。
+   * 一般状态下左对齐，将left变为px绝对值，这样内容改变重新排版的时候x坐标就不变，结束后还原回来。
+   * 首要考虑textAlign，它的优先级高于对应方位的布局信息（比如居右对齐即便left是px都忽略，强制右侧对齐，视觉不懂css布局）。
    */
-  beforeEdit() {
-    const { style, computedStyle } = this;
-    const { left, right, top, translateX, translateY } = style;
-    const { textAlign, width, height } = computedStyle;
-    // const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
-    // const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
-    const isLeft = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.LEFT;
-    if (isLeft) {
-      const { left: left2 } = computedStyle;
-      computedStyle.left -= width * 0.5;
-      left.v = left2 - width * 0.5;
-      left.u = StyleUnit.PX;
-      translateX.v = 0;
-      translateX.u = StyleUnit.PX;
+  private beforeEdit() {
+    const {
+      style,
+      computedStyle,
+      parent,
+      isDestroyed,
+      textBehaviour,
+      width: w,
+      height: h,
+    } = this;
+    if (isDestroyed || !parent) {
+      throw new Error('Can not edit a destroyed Text');
     }
-    const isRight = left.u === StyleUnit.PERCENT && translateX.v === -50 && translateX.u === StyleUnit.PERCENT && textAlign === TEXT_ALIGN.RIGHT;
-    if (isRight) {
-      const { right: right2 } = computedStyle;
-      computedStyle.right -= width * 0.5;
-      // left.v = 0;
-      // left.u = StyleUnit.AUTO;
-      right.v = right2 + width * 0.5;
+    const prev = this.getStyle();
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+      translateX,
+      translateY,
+      textAlign,
+      textVerticalAlign,
+    } = style;
+    // 非固定尺寸时，需还原tx到left/right上
+    const isFixedWidth = left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO
+      || width.u !== StyleUnit.AUTO;
+    const isLeft = textAlign.v === TEXT_ALIGN.LEFT
+      && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
+      && !isFixedWidth
+      && (
+        left.u !== StyleUnit.AUTO
+          && !!translateX.v
+          && translateX.u === StyleUnit.PERCENT // 一般情况
+        || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边不变
+      );
+    // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
+    const isCenter = textAlign.v === TEXT_ALIGN.CENTER
+      && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
+      && !isFixedWidth
+      && (translateX.v !== -50 || translateX.u !== StyleUnit.PERCENT);
+    // right比较绕，定宽或者右定位都无效，提取规则发现需要right为auto
+    const isRight = textAlign.v === TEXT_ALIGN.RIGHT
+      && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
+      && right.u === StyleUnit.AUTO;
+    // 同水平
+    const isFixedHeight = top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO
+      || height.u !== StyleUnit.AUTO;
+    const isTop = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.TOP
+      && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
+      && !isFixedHeight
+      && (
+        top.u !== StyleUnit.AUTO
+        && !!translateY.v
+        && translateY.u === StyleUnit.PERCENT
+        || bottom.u !== StyleUnit.AUTO
+      );
+    const isMiddle = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.MIDDLE
+      && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
+      && !isFixedHeight
+      && (translateY.v !== -50 || translateY.u !== StyleUnit.PERCENT);
+    const isBottom = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.BOTTOM
+      && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
+      && !isFixedHeight
+      && !!translateY.v
+      && translateY.u === StyleUnit.PERCENT;
+    const { width: pw, height: ph } = parent;
+    let impact = false;
+    // translateX%且左对齐，如果内容变化影响width会干扰布局
+    let tx = 0;
+    if (translateX.u === StyleUnit.PX) {
+      tx = translateX.v;
+    }
+    else if (translateX.u === StyleUnit.PERCENT) {
+      tx = translateX.v * 0.01 * w;
+    }
+    if (isLeft) {
+      if (left.u !== StyleUnit.AUTO
+        && !!translateX.v
+        && translateX.u === StyleUnit.PERCENT) {
+        impact = true;
+        if (left.u === StyleUnit.PX) {
+          left.v += tx;
+        }
+        else if (left.u === StyleUnit.PERCENT) {
+          left.v += tx * 100 / pw;
+        }
+        // 可能是auto，自动宽度，也可能人工数据
+        if (right.u === StyleUnit.PX) {
+          right.v -= tx;
+        }
+        else if (right.u === StyleUnit.PERCENT) {
+          right.v -= tx * 100 / pw;
+        }
+      }
+      else if (right.u !== StyleUnit.AUTO) {
+        impact = true;
+        left.v = computedStyle.left + tx;
+        left.u = StyleUnit.PX;
+        right.v = 0;
+        right.u = StyleUnit.AUTO;
+      }
+      translateX.v = 0;
+    }
+    else if (isCenter) {
+      // auto就是0，除非人工脏数据会px，将不是-50%的变为-50%
+      if (translateX.u === StyleUnit.AUTO || translateX.u === StyleUnit.PX) {
+        impact = true;
+        const dx = w * 0.5 - translateX.v;
+        // 左右互斥出现，否则是定宽了
+        if (left.u === StyleUnit.PX) {
+          left.v += dx;
+          translateX.v = -50;
+        }
+        else if (left.u === StyleUnit.PERCENT) {
+          left.v += dx * 100 / pw;
+          translateX.v = -50;
+        }
+        else if (right.u === StyleUnit.PX) {
+          right.v += dx;
+          translateX.v = 50;
+        }
+        else if (right.u === StyleUnit.PERCENT) {
+          right.v += dx * 100 / pw;
+          translateX.v = 50;
+        }
+        translateX.u = StyleUnit.PERCENT;
+      }
+      // 一般都是translate:-50%，人工脏数据转换
+      else if (translateX.u === StyleUnit.PERCENT) {
+        if (translateX.v !== -50) {
+          impact = true;
+          const tx = w * 0.5 - translateX.v * w;
+          if (left.u === StyleUnit.PX) {
+            left.v += tx;
+            translateX.v = -50;
+          }
+          else if (left.u === StyleUnit.PERCENT) {
+            left.v += tx * 100 / pw;
+            translateX.v = -50;
+          }
+          else if (right.u === StyleUnit.PX) {
+            right.v += tx;
+            translateX.v = 50;
+          }
+          else if (right.u === StyleUnit.PERCENT) {
+            right.v += tx * 100 / pw;
+            translateX.v = 50;
+          }
+        }
+      }
+    }
+    else if (isRight) {
+      impact = true;
+      // 有left时right一定是auto，改成left是auto且right是固定
+      if (left.u !== StyleUnit.AUTO) {
+        left.v = 0;
+        left.u = StyleUnit.AUTO;
+      }
+      // right变为固定值+translate归零，虽然tx是px时无需关心，但统一逻辑最后还原
+      right.v = computedStyle.right - tx;
       right.u = StyleUnit.PX;
       translateX.v = 0;
-      translateX.u = StyleUnit.PX;
     }
-    const isTop = top.u === StyleUnit.PERCENT && translateY.v === -50 && translateY.u === StyleUnit.PERCENT;
+    // 垂直同理水平
+    let ty = 0;
+    if (translateY.u === StyleUnit.PX) {
+      ty = translateY.v;
+    }
+    else if (translateY.u === StyleUnit.PERCENT) {
+      ty = translateY.v * 0.01 * h;
+    }
     if (isTop) {
-      const { top: top2 } = computedStyle;
-      computedStyle.top -= height * 0.5;
-      top.v = top2 - height * 0.5;
-      top.u = StyleUnit.PX;
+      if (top.u !== StyleUnit.AUTO
+        && !!translateY.v
+        && translateY.u === StyleUnit.PERCENT) {
+        impact = true;
+        if (top.u === StyleUnit.PX) {
+          top.v += ty;
+        }
+        else if (top.u === StyleUnit.PERCENT) {
+          top.v += ty * 100 / ph;
+        }
+        // 可能是auto，自动宽度，也可能人工数据
+        if (bottom.u === StyleUnit.PX) {
+          bottom.v -= ty;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          bottom.v -= ty * 100 / ph;
+        }
+      }
+      else if (bottom.u !== StyleUnit.AUTO) {
+        impact = true;
+        top.v = computedStyle.top + ty;
+        top.u = StyleUnit.PX;
+        bottom.v = 0;
+        bottom.u = StyleUnit.AUTO;
+      }
       translateY.v = 0;
-      translateY.u = StyleUnit.PX;
     }
-    return { isLeft, isRight, isTop };
-  }
-
-  // 改变后如果是中心对齐还原
-  afterEdit(isLeft: boolean, isRight: boolean, isTop: boolean) {
-    if (!isLeft && !isRight && !isTop) {
+    else if (isMiddle) {
+      if (translateY.u === StyleUnit.AUTO || translateY.u === StyleUnit.PX) {
+        impact = true;
+        const dy = h * 0.5 - translateY.v;
+        if (top.u === StyleUnit.PX) {
+          top.v += dy;
+          translateY.v = -50;
+        }
+        else if (top.u === StyleUnit.PERCENT) {
+          top.v += dy * 100 / ph;
+          translateY.v = -50;
+        }
+        else if (bottom.u === StyleUnit.PX) {
+          bottom.v += dy;
+          translateY.v = 50;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          bottom.v += dy * 100 / ph;
+          translateY.v = 50;
+        }
+        translateY.u = StyleUnit.PERCENT;
+      }
+      else if (translateY.u === StyleUnit.PERCENT) {
+        if (translateY.v !== -50) {
+          impact = true;
+          const dy = h * 0.5 - translateY.v * h;
+          if (top.u === StyleUnit.PX) {
+            top.v += dy;
+            translateY.v = -50;
+          }
+          else if (top.u === StyleUnit.PERCENT) {
+            top.v += dy * 100 / ph;
+            translateY.v = -50;
+          }
+          else if (bottom.u === StyleUnit.PX) {
+            bottom.v -= dy;
+            translateY.v = 50;
+          }
+          else if (bottom.u === StyleUnit.PERCENT) {
+            bottom.v -= dy * 100 / ph;
+            translateY.v = 50;
+          }
+          translateY.v = -50;
+        }
+      }
+    }
+    else if (isBottom) {
+      impact = true;
+      if (top.u !== StyleUnit.AUTO) {
+        top.v = 0;
+        top.u = StyleUnit.AUTO;
+      }
+      bottom.v = computedStyle.bottom - ty;
+      bottom.u = StyleUnit.PX;
+      translateY.v = 0;
+    }
+    // 无影响则返回空，结束无需还原
+    if (!impact) {
       return;
     }
-    const { style, computedStyle } = this;
-    const { left, right, top, translateX, translateY } = style;
-    if (isLeft) {
-      const width = this.width;
-      const v = computedStyle.left + width * 0.5;
-      left.v = ((computedStyle.left + width * 0.5) * 100) / this.parent!.width;
-      left.u = StyleUnit.PERCENT;
-      translateX.v = -50;
-      translateX.u = StyleUnit.PERCENT;
-      computedStyle.left = v;
+    return {
+      isLeft,
+      isCenter,
+      isRight,
+      isTop,
+      isMiddle,
+      isBottom,
+      prev,
+    };
+  }
+
+  // 和beforeEditContent()对应，可能prev为空即无需关心样式还原问题。
+  private afterEdit(payload?: {
+    isLeft: boolean,
+    isCenter: boolean,
+    isRight: boolean,
+    isTop: boolean,
+    isMiddle: boolean,
+    isBottom: boolean,
+    prev: Style,
+  }) {
+    if (!payload) {
+      return;
     }
-    if (isRight) {
-      const width = this.width;
-      const v = computedStyle.right + width * 0.5;
-      right.v = ((computedStyle.right + width * 0.5) * 100) / this.parent!.width;
-      right.u = StyleUnit.PERCENT;
-      // right.v = 0;
-      // right.u = StyleUnit.AUTO;
-      translateX.v = -50;
-      translateX.u = StyleUnit.PERCENT;
-      computedStyle.right = v;
-      // computedStyle.right -= width * 0.5;
+    const {
+      isLeft,
+      isCenter,
+      isRight,
+      isTop,
+      isMiddle,
+      isBottom,
+      prev,
+    } = payload;
+    const {
+      style,
+      computedStyle,
+      parent,
+      width: w,
+      height: h,
+    } = this;
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      translateX,
+      translateY,
+    } = prev;
+    // parent的尺寸没变，自适应要等这个结束之后才会调用
+    const { width: pw, height: ph } = parent!;
+    let tx = 0;
+    if (translateX.u === StyleUnit.PX) {
+      tx = translateX.v;
+    }
+    else if (translateX.u === StyleUnit.PERCENT) {
+      tx = translateX.v * 0.01 * w;
+    }
+    if (isLeft) {
+      if (left.u !== StyleUnit.AUTO
+        && !!translateX.v
+        && translateX.u === StyleUnit.PERCENT) {
+        if (left.u === StyleUnit.PX) {
+          style.left.v -= tx;
+          computedStyle.left -= tx;
+        }
+        else if (left.u === StyleUnit.PERCENT) {
+          const v = tx * 100 / pw;
+          style.left.v -= v;
+          computedStyle.left -= tx;
+        }
+        if (right.u === StyleUnit.PX) {
+          style.right.v += tx;
+          computedStyle.right += tx;
+        }
+        else if (right.u === StyleUnit.PERCENT) {
+          const v = tx * 100 / pw;
+          style.right.v += v;
+          computedStyle.right += tx;
+        }
+      }
+      else if (right.u !== StyleUnit.AUTO) {
+        style.left.v = 0;
+        style.left.u = StyleUnit.AUTO;
+        computedStyle.left -= tx;
+        style.right.v = right.v;
+        style.right.u = right.u;
+        computedStyle.right += tx;
+      }
+      style.translateX.v = translateX.v;
+    }
+    else if (isCenter) {
+      if (translateX.u === StyleUnit.AUTO || translateX.u === StyleUnit.PX) {
+        const dx = w * 0.5 - translateX.v;
+        if (left.u === StyleUnit.PX) {
+          style.left.v -= dx;
+        }
+        else if (left.u === StyleUnit.PERCENT) {
+          style.left.v -= dx * 100 / pw;
+        }
+        else if (right.u === StyleUnit.PX) {
+          style.right.v -= dx;
+        }
+        else if (right.u === StyleUnit.PERCENT) {
+          style.right.v -= dx * 100 / pw;
+        }
+        style.translateX.v = translateX.v;
+        style.translateX.u = translateX.u;
+      }
+      else if (translateX.u === StyleUnit.PERCENT) {
+        if (translateX.v !== -50) {
+          const dx = w * 0.5 - translateX.v * w;
+          if (left.u === StyleUnit.PX) {
+            style.left.v -= dx;
+          }
+          else if (left.u === StyleUnit.PERCENT) {
+            style.left.v -= dx * 100 / pw;
+          }
+          if (right.u === StyleUnit.PX) {
+            style.right.v -= dx;
+          }
+          else if (right.u === StyleUnit.PERCENT) {
+            style.right.v -= dx * 100 / pw;
+          }
+          style.translateX.v = translateX.v;
+        }
+      }
+    }
+    else if (isRight) {
+      computedStyle.left -= tx;
+      if (left.u === StyleUnit.PX) {
+        style.left.v = computedStyle.left;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        style.left.v = computedStyle.left * 100 / pw;
+      }
+      computedStyle.right += tx;
+      if (right.u === StyleUnit.AUTO) {
+        style.right.v = 0;
+        style.right.u = StyleUnit.AUTO;
+      }
+      style.translateX.v = translateX.v;
+      style.translateX.u = translateX.u;
+    }
+    let ty = 0;
+    if (translateY.u === StyleUnit.PX) {
+      ty = translateY.v;
+    }
+    else if (translateY.u === StyleUnit.PERCENT) {
+      ty = translateY.v * 0.01 * h;
     }
     if (isTop) {
-      const height = this.height;
-      const v = computedStyle.top + height * 0.5;
-      top.v = ((computedStyle.top + height * 0.5) * 100) / this.parent!.height;
-      top.u = StyleUnit.PERCENT;
-      translateY.v = -50;
-      translateY.u = StyleUnit.PERCENT;
-      computedStyle.top = v;
+      if (top.u !== StyleUnit.AUTO
+        && !!translateY.v
+        && translateY.u === StyleUnit.PERCENT) {
+        if (top.u === StyleUnit.PX) {
+          style.top.v -= ty;
+          computedStyle.top -= ty;
+        }
+        else if (top.u === StyleUnit.PERCENT) {
+          const v = ty * 100 / ph;
+          style.top.v -= v;
+          computedStyle.top -= ty;
+        }
+        if (bottom.u === StyleUnit.PX) {
+          style.bottom.v += ty;
+          computedStyle.bottom += ty;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          const v = ty * 100 / ph;
+          style.bottom.v += v;
+          computedStyle.bottom += ty;
+        }
+      }
+      else if (bottom.u !== StyleUnit.AUTO) {
+        style.top.v = 0;
+        style.top.u = StyleUnit.AUTO;
+        computedStyle.top -= ty;
+        style.bottom.v = bottom.v;
+        style.bottom.u = bottom.u;
+        computedStyle.bottom += ty;
+      }
+      style.translateY.v = translateY.v;
+    }
+    else if (isMiddle) {
+      if (translateY.u === StyleUnit.AUTO || translateY.u === StyleUnit.PX) {
+        const dy = h * 0.5 - translateY.v;
+        if (top.u === StyleUnit.PX) {
+          style.top.v -= dy;
+        }
+        else if (top.u === StyleUnit.PERCENT) {
+          style.top.v -= dy * 100 / ph;
+        }
+        else if (bottom.u === StyleUnit.PX) {
+          style.bottom.v -= dy;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          style.bottom.v -= dy * 100 / ph;
+        }
+        style.translateY.v = translateY.v;
+        style.translateY.u = StyleUnit.PX;
+      }
+      else if (translateY.u === StyleUnit.PERCENT) {
+        if (translateY.v !== -50) {
+          const dy = h * 0.5 - translateY.v * h;
+          if (top.u === StyleUnit.PX) {
+            style.top.v -= dy;
+          }
+          else if (top.u === StyleUnit.PERCENT) {
+            style.top.v -= dy * 100 / ph;
+          }
+          else if (bottom.u === StyleUnit.PX) {
+            style.bottom.v -= dy;
+          }
+          else if (bottom.u === StyleUnit.PERCENT) {
+            style.bottom.v -= dy * 100 / ph;
+          }
+          style.translateY.v = translateY.v;
+        }
+      }
+    }
+    else if (isBottom) {
+      computedStyle.top -= ty;
+      if (top.u === StyleUnit.PX) {
+        style.top.v = computedStyle.top;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        style.top.v = computedStyle.top * 100 / ph;
+      }
+      computedStyle.bottom += ty;
+      if (bottom.u === StyleUnit.AUTO) {
+        style.bottom.v = 0;
+        style.bottom.u = StyleUnit.AUTO;
+      }
+      style.translateY.v = translateY.v;
+      style.translateY.u = translateY.u;
     }
   }
 
@@ -1868,7 +2219,7 @@ class Text extends Node {
    * 不会出现仅右百分比的情况，所有改变处理都一样
    */
   input(s: string, style?: Partial<Rich>) {
-    const { isLeft, isRight, isTop } = this.beforeEdit();
+    const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
@@ -1890,13 +2241,21 @@ class Text extends Node {
       this.expandRich(start, s.length);
     }
     const c = this._content;
-    this.content = c.slice(0, start) + s + c.slice(start);
-    this.afterEdit(isLeft, isRight, isTop);
+    this._content = c.slice(0, start) + s + c.slice(start);
+    this.root?.addUpdate(
+      this,
+      [],
+      RefreshLevel.REFLOW,
+      false,
+      false,
+      undefined,
+    );
+    this.afterEdit(payload);
     this.updateCursorByIndex(start + s.length);
   }
 
   enter() {
-    const { isLeft, isRight, isTop } = this.beforeEdit();
+    const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
@@ -1911,8 +2270,16 @@ class Text extends Node {
     }
     this.expandRich(start, 1);
     const c = this._content;
-    this.content = c.slice(0, start) + '\n' + c.slice(start);
-    this.afterEdit(isLeft, isRight, isTop);
+    this._content = c.slice(0, start) + '\n' + c.slice(start);
+    this.root?.addUpdate(
+      this,
+      [],
+      RefreshLevel.REFLOW,
+      false,
+      false,
+      undefined,
+    );
+    this.afterEdit(payload);
     this.updateCursorByIndex(start + 1);
   }
 
@@ -1929,22 +2296,30 @@ class Text extends Node {
       return;
     }
     this.showSelectArea = false;
-    const { isLeft, isRight, isTop } = this.beforeEdit();
+    const payload = this.beforeEdit();
     if (isMulti) {
       this.cursor.isMulti = false;
       // 肯定小于，多加一层防守
       if (start < end) {
         this.cutRich(start, end);
-        this.content = c.slice(0, start) + c.slice(end);
+        this._content = c.slice(0, start) + c.slice(end);
         this.updateCursorByIndex(start);
       }
     }
     else {
       this.cutRich(start - 1, start);
-      this.content = c.slice(0, start - 1) + c.slice(start);
+      this._content = c.slice(0, start - 1) + c.slice(start);
       this.updateCursorByIndex(start - 1);
     }
-    this.afterEdit(isLeft, isRight, isTop);
+    this.root?.addUpdate(
+      this,
+      [],
+      RefreshLevel.REFLOW,
+      false,
+      false,
+      undefined,
+    );
+    this.afterEdit(payload);
   }
 
   // 给定相对x坐标获取光标位置，y已知传入lineBox
@@ -2041,7 +2416,7 @@ class Text extends Node {
   }
 
   updateTextStyle(style: any, cb?: (sync: boolean) => void) {
-    const { isLeft, isRight, isTop } = this.beforeEdit();
+    const payload = this.beforeEdit();
     const rich = this.rich;
     // 转成rich的
     const style2: any = {};
@@ -2095,7 +2470,7 @@ class Text extends Node {
     else if (hasChange) {
       this.refresh(RefreshLevel.REFLOW, cb);
     }
-    this.afterEdit(isLeft, isRight, isTop);
+    this.afterEdit(payload);
   }
 
   updateTextRangeStyle(style: any, cb?: (sync: boolean) => void) {
@@ -2104,7 +2479,7 @@ class Text extends Node {
     if (!cursor.isMulti || !rich.length) {
       return false;
     }
-    const { isLeft, isRight, isTop } = this.beforeEdit();
+    const payload = this.beforeEdit();
     const { isReversed, start, end } = this.getSortedCursor();
     let hasChange = false;
     // 找到所处的rich开始结束范围
@@ -2213,7 +2588,7 @@ class Text extends Node {
       this.setCursorByIndex(isReversed ? start : end, true);
       this.refresh(RefreshLevel.REPAINT, cb);
     }
-    this.afterEdit(isLeft, isRight, isTop);
+    this.afterEdit(payload);
     return hasChange;
   }
 
@@ -2670,7 +3045,7 @@ class Text extends Node {
 
   set content(v: string) {
     if (v !== this._content) {
-      const { isLeft, isRight, isTop } = this.beforeEdit();
+      const payload = this.beforeEdit();
       this._content = v;
       this.root?.addUpdate(
         this,
@@ -2680,7 +3055,7 @@ class Text extends Node {
         false,
         undefined,
       );
-      this.afterEdit(isLeft, isRight, isTop);
+      this.afterEdit(payload);
     }
   }
 
