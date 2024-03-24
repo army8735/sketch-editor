@@ -80,7 +80,6 @@ type Opt = {
 };
 
 export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
-  console.log('sketch', json);
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
@@ -692,28 +691,28 @@ async function convertItem(
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
-    // const textBehaviour = layer.textBehaviour;
-    // sketch冗余的信息，文本的宽高在自动情况下实时测量获得
-    // if (textBehaviour === SketchFormat.TextBehaviour.Flexible) {
-    //   if (left !== 'auto' && right !== 'auto') {
-    //     right = 'auto';
-    //   }
-    //   if (top !== 'auto' && bottom !== 'auto') {
-    //     bottom = 'auto';
-    //   }
-    //   width = 'auto';
-    //   height = 'auto';
-    // } else if (textBehaviour === SketchFormat.TextBehaviour.Fixed) {
-    //   // 可能width是auto（left+right），也可能是left+width，或者right固定+width
-    //   if (top !== 'auto' && bottom !== 'auto') {
-    //     bottom = 'auto';
-    //   }
-    //   height = 'auto';
-    // } else if (
-    //   textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight
-    // ) {
-    //   // 啥也不干，等同普通节点的固定宽高
-    // }
+    const tb = layer.textBehaviour;
+    // sketch冗余的信息，文本的宽高在自动情况下实时测量获得，另外优先级高于ResizingConstraint
+    if (tb === SketchFormat.TextBehaviour.Flexible) {
+      if (left !== 'auto' && right !== 'auto') {
+        right = 'auto';
+      }
+      if (top !== 'auto' && bottom !== 'auto') {
+        bottom = 'auto';
+      }
+      width = 'auto';
+      height = 'auto';
+    }
+    else if (tb === SketchFormat.TextBehaviour.Fixed) {
+      // 可能width是auto（left+right），也可能是left+width，或者right固定+width
+      if (top !== 'auto' && bottom !== 'auto') {
+        bottom = 'auto';
+      }
+      height = 'auto';
+    }
+    else if (tb === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
+      // 啥也不干，等同普通节点的固定宽高
+    }
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
