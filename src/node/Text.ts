@@ -25,7 +25,7 @@ import {
   Style,
   StyleUnit,
   TEXT_ALIGN,
-  TEXT_BEHAVIOUR,
+  // TEXT_BEHAVIOUR,
   TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
@@ -182,14 +182,14 @@ class Text extends Node {
   showSelectArea: boolean;
   asyncRefresh: boolean;
   loaders: Loader[];
-  textBehaviour: TEXT_BEHAVIOUR;
+  // textBehaviour: TEXT_BEHAVIOUR;
 
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
     this._content = props.content;
     this.rich = props.rich || [];
-    this.textBehaviour = props.textBehaviour ?? TEXT_BEHAVIOUR.FLEXIBLE;
+    // this.textBehaviour = props.textBehaviour ?? TEXT_BEHAVIOUR.FLEXIBLE;
     this.lineBoxList = [];
     this.tempCursorX = 0;
     this.currentCursorX = 0;
@@ -209,9 +209,21 @@ class Text extends Node {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const { rich, textBehaviour, style, computedStyle, _content: content, lineBoxList } = this;
-    const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
-    const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
+    const { rich, style, computedStyle, _content: content, lineBoxList } = this;
+    // const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
+    // const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+    } = style;
+    const autoW = width.u === StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+    const autoH = height.u === StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
     let i = 0;
     let length = content.length;
     let perW: number;
@@ -1335,7 +1347,7 @@ class Text extends Node {
       computedStyle,
       parent,
       isDestroyed,
-      textBehaviour,
+      // textBehaviour,
       width: w,
       height: h,
     } = this;
@@ -1359,7 +1371,7 @@ class Text extends Node {
     const isFixedWidth = left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO
       || width.u !== StyleUnit.AUTO;
     const isLeft = textAlign.v === TEXT_ALIGN.LEFT
-      && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
+      // && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
       && !isFixedWidth
       && (
         left.u !== StyleUnit.AUTO
@@ -1369,18 +1381,18 @@ class Text extends Node {
       );
     // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
     const isCenter = textAlign.v === TEXT_ALIGN.CENTER
-      && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
+      // && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
       && !isFixedWidth
       && (translateX.v !== -50 || translateX.u !== StyleUnit.PERCENT);
     // right比较绕，定宽或者右定位都无效，提取规则发现需要right为auto
     const isRight = textAlign.v === TEXT_ALIGN.RIGHT
-      && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
+      // && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
       && right.u === StyleUnit.AUTO;
     // 同水平
     const isFixedHeight = top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO
       || height.u !== StyleUnit.AUTO;
     const isTop = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.TOP
-      && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
+      // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
       && (
         top.u !== StyleUnit.AUTO
@@ -1389,11 +1401,11 @@ class Text extends Node {
         || bottom.u !== StyleUnit.AUTO
       );
     const isMiddle = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.MIDDLE
-      && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
+      // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
       && (translateY.v !== -50 || translateY.u !== StyleUnit.PERCENT);
     const isBottom = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.BOTTOM
-      && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
+      // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
       && !!translateY.v
       && translateY.u === StyleUnit.PERCENT;
@@ -3031,11 +3043,35 @@ class Text extends Node {
         };
       }),
     };
-    json.textBehaviour = [
-      SketchFormat.TextBehaviour.Flexible,
-      SketchFormat.TextBehaviour.Fixed,
-      SketchFormat.TextBehaviour.FixedWidthAndHeight,
-    ][this.textBehaviour || 0];
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+    } = this.style;
+    const autoW = width.u === StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+    const autoH = height.u === StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+    if (autoW && autoH) {
+      json.textBehaviour = SketchFormat.TextBehaviour.Flexible;
+    }
+    else if (autoW) {
+      json.textBehaviour = SketchFormat.TextBehaviour.Flexible;
+    }
+    else if (autoH) {
+      json.textBehaviour = SketchFormat.TextBehaviour.Fixed;
+    }
+    else {
+      json.textBehaviour = SketchFormat.TextBehaviour.FixedWidthAndHeight;
+    }
+    // json.textBehaviour = [
+    //   SketchFormat.TextBehaviour.Flexible,
+    //   SketchFormat.TextBehaviour.Fixed,
+    //   SketchFormat.TextBehaviour.FixedWidthAndHeight,
+    // ][this.textBehaviour || 0];
     return json;
   }
 
