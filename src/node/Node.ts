@@ -1269,9 +1269,9 @@ class Node extends Event {
 
   /**
    * 拖拽开始变更尺寸前预校验，如果style有translate初始值，需要改成普通模式（为0），目前只有Text有且仅值-50%且left是百分比，
-   * 即left调整到以左侧为基准（translateX从-50%到0，差值重新加到left上），top同理，
+   * 但不排除其它节点可能所有一并考虑，left调整到以左侧为基准（translateX从-50%到0，差值重新加到left上），top同理，
    * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回去（translateX重新-50%，left也重算）。
-   * right/bottom一般情况不用关心，因为如果是left+right说明Text是固定尺寸width无效且无translateX，但为了扩展兼容可以写，
+   * right/bottom一般情况不用关心，因为如果是left+right说明Text是固定尺寸width无效且无translateX，但为了扩展兼容一并考虑，
    * 只有left百分比+translateX-50%需要，width可能固定也可能自动不用考虑只需看当前计算好的width值。
    */
   startSizeChange() {
@@ -1279,25 +1279,27 @@ class Node extends Event {
       width,
       height,
       style,
+      computedStyle,
       parent,
       isDestroyed,
     } = this;
-    if (isDestroyed) {
-      throw new Error('Can not resize a destroyed Node');
+    if (isDestroyed || !parent) {
+      throw new Error('Can not resize a destroyed Node or Root');
     }
     const prev = this.getStyle();
     const {
-      top,
-      bottom,
       left,
       right,
+      top,
+      bottom,
       translateX,
       translateY,
     } = style;
-    // root没有parent，但不可能调整root，加个预防root的parent取自己
-    const { width: pw, height: ph } = parent || this;
+    const { width: pw, height: ph } = parent;
+    let impact = false;
     // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
     if (translateX.v !== 0) {
+      impact = true;
       let v = 0;
       if (translateX.u === StyleUnit.PERCENT) {
         v = translateX.v * width * 0.01;
@@ -1305,22 +1307,24 @@ class Node extends Event {
       else if (translateX.u === StyleUnit.PX) {
         v = translateX.v;
       }
-      if (v) {
-        if (left.u === StyleUnit.PERCENT) {
-          left.v += v * 100 / pw;
-        }
-        else if (left.u === StyleUnit.PX) {
-          left.v += v;
-        }
-        if (right.u === StyleUnit.PERCENT) {
-          right.v -= v * 100 / pw;
-        }
-        else if (right.u === StyleUnit.PX) {
-          right.v -= v;
-        }
+      if (left.u === StyleUnit.PERCENT) {
+        left.v += v * 100 / pw;
       }
+      else if (left.u === StyleUnit.PX) {
+        left.v += v;
+      }
+      computedStyle.left += v;
+      if (right.u === StyleUnit.PERCENT) {
+        right.v -= v * 100 / pw;
+      }
+      else if (right.u === StyleUnit.PX) {
+        right.v -= v;
+      }
+      computedStyle.right -= v;
+      translateX.v = 0;
     }
     if (translateY.v !== 0) {
+      impact = true;
       let v = 0;
       if (translateY.u === StyleUnit.PERCENT) {
         v = translateY.v * height * 0.01;
@@ -1328,20 +1332,25 @@ class Node extends Event {
       else if (translateY.u === StyleUnit.PX) {
         v = translateY.v;
       }
-      if (v) {
-        if (top.u === StyleUnit.PERCENT) {
-          top.v += v * 100 / ph;
-        }
-        else if (top.u === StyleUnit.PX) {
-          top.v += v;
-        }
-        if (bottom.u === StyleUnit.PERCENT) {
-          bottom.v -= v * 100 / ph;
-        }
-        else if (bottom.u === StyleUnit.PX) {
-          bottom.v -= v;
-        }
+      if (top.u === StyleUnit.PERCENT) {
+        top.v += v * 100 / ph;
       }
+      else if (top.u === StyleUnit.PX) {
+        top.v += v;
+      }
+      computedStyle.top += v;
+      if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v -= v * 100 / ph;
+      }
+      else if (bottom.u === StyleUnit.PX) {
+        bottom.v -= v;
+      }
+      computedStyle.bottom -= v;
+      translateY.v = 0;
+    }
+    // 无影响则返回空，结束无需还原
+    if (!impact) {
+      return;
     }
     return prev;
   }

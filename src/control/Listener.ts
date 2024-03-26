@@ -4,7 +4,7 @@ import Page from '../node/Page';
 import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
-import { ComputedStyle, Style, StyleUnit, TEXT_BEHAVIOUR } from '../style/define';
+import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import Event from '../util/Event';
 import Select from './Select';
 import Input from './Input';
@@ -42,7 +42,7 @@ export default class Listener extends Event {
   selected: Node[]; // 已选的节点们
   updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
   hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
-  sizeChangeStyle: Style[]; // 修改size时记录
+  sizeChangeStyle: (Style | undefined)[]; // 修改size时记录
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   cssStyle: JStyle[]; // 同上
@@ -132,7 +132,7 @@ export default class Listener extends Event {
       if (p && p.isGroup && p instanceof Group) {
         p.fixedPosAndSize = true;
       }
-      // 暂时只有Text节点自适应尺寸时会有translate:-50%，不排除人工修改数据
+      // 暂时只有Text节点自适应尺寸时会有translate:-50%，不排除人工修改数据，所以记录所有节点
       if (isSize) {
         this.sizeChangeStyle[i] = node.startSizeChange();
       }
@@ -404,27 +404,29 @@ export default class Listener extends Event {
               next.top =
                 ((computedStyle.top + dy2) * 100) / node.parent!.height + '%';
             }
-            if (style.height.u === StyleUnit.PX) {
+            if (style.height.u === StyleUnit.PX ||
+              // 只有top定位的自动高度文本
+              style.height.u === StyleUnit.AUTO && style.bottom.u === StyleUnit.AUTO) {
               next.height = computedStyle.height - dy2;
             }
             else if (style.height.u === StyleUnit.PERCENT) {
               next.height =
-                ((computedStyle.height - dy2) * 100) / node.parent!.height +
-                '%';
+                ((computedStyle.height - dy2) * 100) / node.parent!.height + '%';
             }
           }
           // top为自动，高度则为确定值修改，根据bottom定位
           else if (
             style.height.u === StyleUnit.PX ||
-            style.height.u === StyleUnit.PERCENT
+            style.height.u === StyleUnit.PERCENT ||
+            // top和height均为auto，只有人工bottom定位文本
+            style.height.u === StyleUnit.AUTO
           ) {
-            if (style.height.u === StyleUnit.PX) {
+            if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
               next.height = computedStyle.height - dy2;
             }
             else {
               next.height =
-                ((computedStyle.height - dy2) * 100) / node.parent!.height +
-                '%';
+                ((computedStyle.height - dy2) * 100) / node.parent!.height + '%';
             }
           }
         }
@@ -443,30 +445,28 @@ export default class Listener extends Event {
             }
             else {
               next.bottom =
-                ((computedStyle.bottom - dy2) * 100) / node.parent!.height +
-                '%';
+                ((computedStyle.bottom - dy2) * 100) / node.parent!.height + '%';
             }
             if (style.height.u === StyleUnit.PX) {
               next.height = computedStyle.height + dy2;
             }
             else if (style.height.u === StyleUnit.PERCENT) {
               next.height =
-                ((computedStyle.height + dy2) * 100) / node.parent!.height +
-                '%';
+                ((computedStyle.height + dy2) * 100) / node.parent!.height + '%';
             }
           }
           // bottom为自动，高度则为确定值修改，根据top定位
           else if (
             style.height.u === StyleUnit.PX ||
-            style.height.u === StyleUnit.PERCENT
+            style.height.u === StyleUnit.PERCENT ||
+            style.height.u === StyleUnit.AUTO
           ) {
-            if (style.height.u === StyleUnit.PX) {
+            if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
               next.height = computedStyle.height + dy2;
             }
             else {
               next.height =
-                ((computedStyle.height + dy2) * 100) / node.parent!.height +
-                '%';
+                ((computedStyle.height + dy2) * 100) / node.parent!.height + '%';
             }
           }
         }
@@ -487,27 +487,29 @@ export default class Listener extends Event {
               next.left =
                 ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
             }
-            if (style.width.u === StyleUnit.PX) {
+            if (style.width.u === StyleUnit.PX ||
+              // 只有left定位的自动高度文本
+              style.width.u === StyleUnit.AUTO && style.right.u === StyleUnit.AUTO) {
               next.width = computedStyle.width - dx2;
             }
             else if (style.width.u === StyleUnit.PERCENT) {
               next.width =
-                ((computedStyle.width - dx2) * 100) / node.parent!.width +
-                '%';
+                ((computedStyle.width - dx2) * 100) / node.parent!.width + '%';
             }
           }
           // left为自动，宽度则为确定值修改，根据right定位
           else if (
             style.width.u === StyleUnit.PX ||
-            style.width.u === StyleUnit.PERCENT
+            style.width.u === StyleUnit.PERCENT ||
+            // left和width均为auto，只有人工right定位文本
+            style.width.u === StyleUnit.AUTO
           ) {
-            if (style.width.u === StyleUnit.PX) {
+            if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
               next.width = computedStyle.width - dx2;
             }
             else {
               next.width =
-                ((computedStyle.width - dx2) * 100) / node.parent!.width +
-                '%';
+                ((computedStyle.width - dx2) * 100) / node.parent!.width + '%';
             }
           }
         }
@@ -526,42 +528,33 @@ export default class Listener extends Event {
             }
             else {
               next.right =
-                ((computedStyle.right - dx2) * 100) / node.parent!.width +
-                '%';
+                ((computedStyle.right - dx2) * 100) / node.parent!.width + '%';
             }
             if (style.width.u === StyleUnit.PX) {
               next.width = computedStyle.width + dx2;
             }
             else if (style.width.u === StyleUnit.PERCENT) {
               next.width =
-                ((computedStyle.width + dx2) * 100) / node.parent!.width +
-                '%';
+                ((computedStyle.width + dx2) * 100) / node.parent!.width + '%';
+            }
+            if (node.isText && node instanceof Text
+              && style.left.u === StyleUnit.AUTO
+              && style.width.u === StyleUnit.AUTO) {
             }
           }
           // right为自动，宽度则为确定值修改，根据left定位
           else if (
             style.width.u === StyleUnit.PX ||
-            style.width.u === StyleUnit.PERCENT
+            style.width.u === StyleUnit.PERCENT ||
+            // right和width均auto，只有自动宽度文本，修改为定宽
+            style.width.u === StyleUnit.AUTO
           ) {
-            if (style.width.u === StyleUnit.PX) {
+            if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
               next.width = computedStyle.width + dx2;
             }
             else {
               next.width =
-                ((computedStyle.width + dx2) * 100) / node.parent!.width +
-                '%';
-            }
-          }
-        }
-        if (node.isText && node instanceof Text) {
-          if (next.left || next.right || next.width) {
-            if (node.textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE) {
-              node.textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
-            }
-          }
-          if (next.top || next.bottom || next.height) {
-            if (node.textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE) {
-              node.textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
+                ((computedStyle.width + dx2) * 100) / node.parent!.width + '%';
             }
           }
         }
