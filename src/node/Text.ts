@@ -25,7 +25,6 @@ import {
   Style,
   StyleUnit,
   TEXT_ALIGN,
-  // TEXT_BEHAVIOUR,
   TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
@@ -1375,7 +1374,7 @@ class Text extends Node {
       && !isFixedWidth
       && (
         left.u !== StyleUnit.AUTO
-          && !!translateX.v
+          && translateX.v
           && translateX.u === StyleUnit.PERCENT // 一般情况
         || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边不变
       );
@@ -1396,7 +1395,7 @@ class Text extends Node {
       && !isFixedHeight
       && (
         top.u !== StyleUnit.AUTO
-        && !!translateY.v
+        && translateY.v
         && translateY.u === StyleUnit.PERCENT
         || bottom.u !== StyleUnit.AUTO
       );
@@ -1407,8 +1406,7 @@ class Text extends Node {
     const isBottom = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.BOTTOM
       // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
-      && !!translateY.v
-      && translateY.u === StyleUnit.PERCENT;
+      && bottom.u === StyleUnit.AUTO;
     const { width: pw, height: ph } = parent;
     let impact = false;
     // translateX%且左对齐，如果内容变化影响width会干扰布局
@@ -1662,7 +1660,7 @@ class Text extends Node {
     }
     if (isLeft) {
       if (left.u !== StyleUnit.AUTO
-        && !!translateX.v
+        && translateX.v
         && translateX.u === StyleUnit.PERCENT) {
         if (left.u === StyleUnit.PX) {
           style.left.v -= tx;
@@ -1755,7 +1753,7 @@ class Text extends Node {
     }
     if (isTop) {
       if (top.u !== StyleUnit.AUTO
-        && !!translateY.v
+        && translateY.v
         && translateY.u === StyleUnit.PERCENT) {
         if (top.u === StyleUnit.PX) {
           style.top.v -= ty;
