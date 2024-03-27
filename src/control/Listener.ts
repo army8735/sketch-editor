@@ -45,6 +45,7 @@ export default class Listener extends Event {
   sizeChangeStyle: (Style | undefined)[]; // 修改size时记录
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
+  originStyle: Style[]; // 同上
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
 
@@ -77,6 +78,7 @@ export default class Listener extends Event {
     this.sizeChangeStyle = [];
     this.abcStyle = [];
     this.computedStyle = [];
+    this.originStyle = [];
     this.cssStyle = [];
     this.updateOrigin();
 
@@ -138,6 +140,7 @@ export default class Listener extends Event {
       }
     });
     this.computedStyle = selected.map((item) => item.getComputedStyle());
+    this.originStyle = selected.map((item) => item.getStyle());
     this.cssStyle = selected.map((item) => item.getCssComputedStyle());
   }
 
@@ -454,6 +457,9 @@ export default class Listener extends Event {
               next.height =
                 ((computedStyle.height + dy2) * 100) / node.parent!.height + '%';
             }
+            else if (style.height.u === StyleUnit.AUTO) {
+              next.height = computedStyle.height + dy2;
+            }
           }
           // bottom为自动，高度则为确定值修改，根据top定位
           else if (
@@ -537,9 +543,8 @@ export default class Listener extends Event {
               next.width =
                 ((computedStyle.width + dx2) * 100) / node.parent!.width + '%';
             }
-            if (node.isText && node instanceof Text
-              && style.left.u === StyleUnit.AUTO
-              && style.width.u === StyleUnit.AUTO) {
+            else if (style.width.u === StyleUnit.AUTO) {
+              next.width = computedStyle.width + dx2;
             }
           }
           // right为自动，宽度则为确定值修改，根据left定位
@@ -707,11 +712,9 @@ export default class Listener extends Event {
         if (p && p.isGroup && p instanceof Group) {
           p.fixedPosAndSize = false;
         }
-        // 还原最初的translate值
+        // 还原最初的translate/TRBL值
         const prev = this.sizeChangeStyle[i];
-        if (prev) {
-          node.endSizeChange(prev);
-        }
+        node.endSizeChange(prev);
         // 有调整尺寸的话，向上检测组的自适应尺寸
         if (this.hasControl) {
           node.checkPosSizeUpward();
@@ -745,12 +748,9 @@ export default class Listener extends Event {
           if (p && p.isGroup && p instanceof Group) {
             p.fixedPosAndSize = false;
           }
-          // 还原最初的translate值
-          const prev = this.sizeChangeStyle[i];
-          if (prev) {
-            node.endSizeChange(prev);
-          }
-          node.checkPosChange();
+          // 还原最初的translate/TRBL值
+          node.endPosChange(this.originStyle[i]);
+          node.checkPosSizeUpward();
           const o = this.updateStyle[i];
           if (o) {
             History.getInstance().addCommand(new UpdateStyleCommand(node, o));

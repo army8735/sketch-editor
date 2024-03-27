@@ -1298,15 +1298,9 @@ class Node extends Event {
     const { width: pw, height: ph } = parent;
     let impact = false;
     // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
-    if (translateX.v !== 0) {
+    if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       impact = true;
-      let v = 0;
-      if (translateX.u === StyleUnit.PERCENT) {
-        v = translateX.v * width * 0.01;
-      }
-      else if (translateX.u === StyleUnit.PX) {
-        v = translateX.v;
-      }
+      const v =  translateX.v * width * 0.01;
       if (left.u === StyleUnit.PERCENT) {
         left.v += v * 100 / pw;
       }
@@ -1323,15 +1317,9 @@ class Node extends Event {
       computedStyle.right -= v;
       translateX.v = 0;
     }
-    if (translateY.v !== 0) {
+    if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       impact = true;
-      let v = 0;
-      if (translateY.u === StyleUnit.PERCENT) {
-        v = translateY.v * height * 0.01;
-      }
-      else if (translateY.u === StyleUnit.PX) {
-        v = translateY.v;
-      }
+      const v = translateY.v * height * 0.01;
       if (top.u === StyleUnit.PERCENT) {
         top.v += v * 100 / ph;
       }
@@ -1355,131 +1343,241 @@ class Node extends Event {
     return prev;
   }
 
-  // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，如果是固定尺寸，还要还原translate为-50%（中心点对齐）
-  checkPosChange() {
-    const { style, computedStyle, parent } = this;
-    // root没parent，但root不可能被拖动，防止下
-    if (!parent) {
+  /**
+   * 参考 startSizeChange()，反向进行，在连续拖拽改变尺寸的过程中，最后结束调用。
+   * 根据开始调整时记录的prev样式，还原布局信息到translate上。
+   * 还需向上检查组的自适应尺寸，放在外部自己调用check。
+   */
+  endSizeChange(prev?: Style) {
+    if (!prev) {
       return;
     }
+    const {
+      translateX,
+      translateY,
+    } = prev;
+    const {
+      style,
+      computedStyle,
+      parent,
+      width: w,
+      height: h,
+    } = this;
+    const {
+      left,
+      right,
+      top,
+      bottom,
+    } = style;
+    const { width: pw, height: ph } = parent!;
+    if (translateX.v && translateX.u === StyleUnit.PERCENT) {
+      const v = translateX.v * w * 0.01;
+      if (left.u === StyleUnit.PX) {
+        left.v -= v;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v -= v * 100 / pw;
+      }
+      computedStyle.left -= v;
+      if (right.u === StyleUnit.PX) {
+        right.v += v;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v += v * 100 / pw;
+      }
+      computedStyle.right += v;
+      style.translateX.v = translateX.v;
+    }
+    if (translateY.v && translateY.u === StyleUnit.PERCENT) {
+      const v = translateY.v * h * 0.01;
+      if (top.u === StyleUnit.PX) {
+        top.v -= v;
+      }
+      else if (style.top.u === StyleUnit.PERCENT) {
+        top.v -= v * 100 / ph;
+      }
+      computedStyle.top -= v;
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v += v;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v += v * 100 / ph;
+      }
+      computedStyle.bottom += v;
+      style.translateY.v = translateY.v;
+    }
+  }
+
+  // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的%（可能）
+  endPosChange(prev: Style) {
+    const { style, computedStyle, parent } = this;
+    const {
+      // width,
+      // height,
+      translateX,
+      translateY,
+    } = prev;
     const {
       top,
       right,
       bottom,
       left,
-      width,
-      height,
-      // translateX,
-      // translateY,
     } = style;
-    const { translateX: tx, translateY: ty } = computedStyle;
+    // const { translateX: tx, translateY: ty } = computedStyle;
     // 一定有parent，不会改root下固定的Container子节点
-    const { width: pw, height: ph } = parent;
+    const { width: pw, height: ph } = parent!;
     const { width: w, height: h } = this;
+    console.log(translateX, style.translateX)
+    if (translateX.v) {
+      let v = 0;
+      if (translateX.u === StyleUnit.PX) {
+        v = translateX.v;
+      }
+      else if (translateX.u === StyleUnit.PERCENT) {
+        v = translateX.v * w * 0.01;
+      }
+      if (left.u === StyleUnit.PX) {
+        left.v -= v;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v -= v * 100 / pw;
+      }
+      computedStyle.left -= v;
+      if (right.u === StyleUnit.PX) {
+        right.v += v;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v += v * 100 / pw;
+      }
+      computedStyle.right += v;
+      style.translateX.v = translateX.v;
+    }
+    if (translateY.v) {
+      let v = 0;
+      if (translateY.u === StyleUnit.PX) {
+        v = translateY.v;
+      }
+      else if (translateY.u === StyleUnit.PERCENT) {
+        v = translateY.v * h * 0.01;
+      }
+      if (top.u === StyleUnit.PX) {
+        top.v -= v;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        top.v -= v * 100 / ph;
+      }
+      computedStyle.top -= v;
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v += v;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v += v * 100 / ph;
+      }
+      computedStyle.bottom += v;
+      style.translateY.v = translateY.v;
+    }
     // 宽度自动，left一定有值，right一般有值（Text自适应宽度除外）
-    if (width.u === StyleUnit.AUTO) {
-      if (left.u === StyleUnit.PX) {
-        left.v = tx;
-      }
-      else if (left.u === StyleUnit.PERCENT) {
-        if (right.u === StyleUnit.AUTO) {
-          // 文本自动宽情况无right
-          left.v = ((tx + w * 0.5) * 100) / pw;
-        }
-        else {
-          left.v = (tx * 100) / pw;
-        }
-      }
-      if (right.u === StyleUnit.PX) {
-        right.v = pw - tx - w;
-      }
-      else if (right.u === StyleUnit.PERCENT) {
-        right.v = ((pw - tx - w) * 100) / pw;
-      }
-    }
-    // 固定宽度，left/right至少有一个固定值，translateX需要重置为-50%
-    else {
-      if (left.u === StyleUnit.PX) {
-        left.v = tx;
-      }
-      else if (left.u === StyleUnit.PERCENT) {
-        left.v = ((tx + w * 0.5) * 100) / pw;
-      }
-      if (right.u === StyleUnit.PX) {
-        right.v = pw - tx - w;
-      }
-      else if (right.u === StyleUnit.PERCENT) {
-        right.v = ((pw - tx - w) * 100) / pw;
-      }
-    }
-    // this.resetTranslateX(left, right, width, translateX);
-    // 换算，固定不固定统一处理
-    if (left.u !== StyleUnit.AUTO) {
-      computedStyle.left = calSize(left, pw);
-    }
-    if (right.u !== StyleUnit.AUTO) {
-      computedStyle.right = calSize(right, pw);
-    }
-    // auto依赖left/right处理完
-    if (left.u === StyleUnit.AUTO) {
-      computedStyle.left = pw - computedStyle.right - w;
-    }
-    if (right.u === StyleUnit.AUTO) {
-      computedStyle.right = pw - computedStyle.left - w;
-    }
-    // 自动高度，和自动宽度一样
-    if (height.u === StyleUnit.AUTO) {
-      if (top.u === StyleUnit.PX) {
-        top.v = ty;
-      }
-      else if (top.u === StyleUnit.PERCENT) {
-        if (bottom.u === StyleUnit.AUTO) {
-          top.v = ((ty + h * 0.5) * 100) / ph;
-        }
-        else {
-          top.v = (ty * 100) / ph;
-        }
-      }
-      if (bottom.u === StyleUnit.PX) {
-        bottom.v = ph - ty - h;
-      }
-      else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = ((ph - ty - h) * 100) / ph;
-      }
-    }
-    // 固定高度，和固定宽度一样
-    else {
-      if (top.u === StyleUnit.PX) {
-        top.v = ty;
-      }
-      else if (top.u === StyleUnit.PERCENT) {
-        top.v = ((ty + h * 0.5) * 100) / ph;
-      }
-      if (bottom.u === StyleUnit.PX) {
-        bottom.v = ph - ty - h;
-      }
-      else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v = ((ph - ty - h) * 100) / ph;
-      }
-    }
-    // this.resetTranslateY(top, bottom, height, translateY);
-    // 换算，固定不固定统一处理
-    if (top.u !== StyleUnit.AUTO) {
-      computedStyle.top = calSize(top, ph);
-    }
-    if (bottom.u !== StyleUnit.AUTO) {
-      computedStyle.bottom = calSize(bottom, ph);
-    }
-    // auto依赖top/bottom处理完
-    if (top.u === StyleUnit.AUTO) {
-      computedStyle.top = ph - computedStyle.bottom - h;
-    }
-    if (bottom.u === StyleUnit.AUTO) {
-      computedStyle.bottom = ph - computedStyle.top - h;
-    }
+    // if (width.u === StyleUnit.AUTO) {
+    //   if (left.u === StyleUnit.PX) {
+    //     left.v = tx;
+    //   }
+    //   else if (left.u === StyleUnit.PERCENT) {
+    //     if (right.u === StyleUnit.AUTO) {
+    //       // 文本自动宽情况无right
+    //       left.v = ((tx + w * 0.5) * 100) / pw;
+    //     }
+    //     else {
+    //       left.v = (tx * 100) / pw;
+    //     }
+    //   }
+    //   if (right.u === StyleUnit.PX) {
+    //     right.v = pw - tx - w;
+    //   }
+    //   else if (right.u === StyleUnit.PERCENT) {
+    //     right.v = ((pw - tx - w) * 100) / pw;
+    //   }
+    // }
+    // // 固定宽度，left/right至少有一个固定值，translateX需要重置为-50%
+    // else {
+    //   if (left.u === StyleUnit.PX) {
+    //     left.v = tx;
+    //   }
+    //   else if (left.u === StyleUnit.PERCENT) {
+    //     left.v = ((tx + w * 0.5) * 100) / pw;
+    //   }
+    //   if (right.u === StyleUnit.PX) {
+    //     right.v = pw - tx - w;
+    //   }
+    //   else if (right.u === StyleUnit.PERCENT) {
+    //     right.v = ((pw - tx - w) * 100) / pw;
+    //   }
+    // }
+    // // this.resetTranslateX(left, right, width, translateX);
+    // // 换算，固定不固定统一处理
+    // if (left.u !== StyleUnit.AUTO) {
+    //   computedStyle.left = calSize(left, pw);
+    // }
+    // if (right.u !== StyleUnit.AUTO) {
+    //   computedStyle.right = calSize(right, pw);
+    // }
+    // // auto依赖left/right处理完
+    // if (left.u === StyleUnit.AUTO) {
+    //   computedStyle.left = pw - computedStyle.right - w;
+    // }
+    // if (right.u === StyleUnit.AUTO) {
+    //   computedStyle.right = pw - computedStyle.left - w;
+    // }
+    // // 自动高度，和自动宽度一样
+    // if (height.u === StyleUnit.AUTO) {
+    //   if (top.u === StyleUnit.PX) {
+    //     top.v = ty;
+    //   }
+    //   else if (top.u === StyleUnit.PERCENT) {
+    //     if (bottom.u === StyleUnit.AUTO) {
+    //       top.v = ((ty + h * 0.5) * 100) / ph;
+    //     }
+    //     else {
+    //       top.v = (ty * 100) / ph;
+    //     }
+    //   }
+    //   if (bottom.u === StyleUnit.PX) {
+    //     bottom.v = ph - ty - h;
+    //   }
+    //   else if (bottom.u === StyleUnit.PERCENT) {
+    //     bottom.v = ((ph - ty - h) * 100) / ph;
+    //   }
+    // }
+    // // 固定高度，和固定宽度一样
+    // else {
+    //   if (top.u === StyleUnit.PX) {
+    //     top.v = ty;
+    //   }
+    //   else if (top.u === StyleUnit.PERCENT) {
+    //     top.v = ((ty + h * 0.5) * 100) / ph;
+    //   }
+    //   if (bottom.u === StyleUnit.PX) {
+    //     bottom.v = ph - ty - h;
+    //   }
+    //   else if (bottom.u === StyleUnit.PERCENT) {
+    //     bottom.v = ((ph - ty - h) * 100) / ph;
+    //   }
+    // }
+    // // this.resetTranslateY(top, bottom, height, translateY);
+    // // 换算，固定不固定统一处理
+    // if (top.u !== StyleUnit.AUTO) {
+    //   computedStyle.top = calSize(top, ph);
+    // }
+    // if (bottom.u !== StyleUnit.AUTO) {
+    //   computedStyle.bottom = calSize(bottom, ph);
+    // }
+    // // auto依赖top/bottom处理完
+    // if (top.u === StyleUnit.AUTO) {
+    //   computedStyle.top = ph - computedStyle.bottom - h;
+    // }
+    // if (bottom.u === StyleUnit.AUTO) {
+    //   computedStyle.bottom = ph - computedStyle.top - h;
+    // }
     // matrix并无变化，移动过程中一直在更新translate，并触发了matrix变更
-    // 向上检查group的影响，group一定是自适应尺寸需要调整的，group的固定宽度仅针对父级调整尺寸而言
-    this.checkPosSizeUpward();
   }
 
   checkShapeChange() {
@@ -1626,18 +1724,6 @@ class Node extends Event {
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
   adjustPosAndSize() {
     return false;
-  }
-
-  /**
-   * 参考 startSizeChange()，反向进行，在连续拖拽改变尺寸的过程中，最后结束调用。
-   * 自身不再计算，叶子节点调整过程中就是在reflow，数据都已经及时更新。
-   * 根据开始调整时记录的prev样式，还原布局信息到translate上，然后再检查父级向上影响。
-   * 组是个特殊的节点，由于存在自适应子节点尺寸，在改变尺寸后可能出现无效或二次修正的情况，
-   * 需overwrite实现，在向上检查前先自适应尺寸，这个在初始化也有做防止人工不正确的数据。
-   */
-  endSizeChange(prev: Style) {
-    this.checkTRBL2Translate(prev);
-    this.checkPosSizeUpward();
   }
 
   // 参考 startSizeChange()，反向进行
