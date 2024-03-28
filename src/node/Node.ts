@@ -1422,38 +1422,38 @@ class Node extends Event {
       left,
     } = style;
     // 一定有parent，不会改root下固定的Container子节点
-    const { width: pw, height: ph } = parent!;
+    const { width: pw, height: ph } = parent!; console.log(dx, dy)
     if (dx) {
       if (left.u === StyleUnit.PX) {
-        left.v -= dx;
+        left.v += dx;
       }
       else if (left.u === StyleUnit.PERCENT) {
-        left.v -= dx * 100 / pw;
+        left.v += dx * 100 / pw;
       }
-      computedStyle.left -= dx;
+      computedStyle.left += dx;
       if (right.u === StyleUnit.PX) {
-        right.v += dx;
+        right.v -= dx;
       }
       else if (right.u === StyleUnit.PERCENT) {
-        right.v += dx * 100 / pw;
+        right.v -= dx * 100 / pw;
       }
-      computedStyle.right += dx;
+      computedStyle.right -= dx;
     }
     if (dy) {
       if (top.u === StyleUnit.PX) {
-        top.v -= dy;
+        top.v += dy;
       }
       else if (top.u === StyleUnit.PERCENT) {
-        top.v -= dy * 100 / ph;
+        top.v += dy * 100 / ph;
       }
-      computedStyle.top -= dy;
+      computedStyle.top += dy;
       if (bottom.u === StyleUnit.PX) {
-        bottom.v += dy;
+        bottom.v -= dy;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v += dy * 100 / ph;
+        bottom.v -= dy * 100 / ph;
       }
-      computedStyle.bottom += dy;
+      computedStyle.bottom -= dy;
     }
     style.translateX.v = translateX.v;
     style.translateX.u = translateX.u;
