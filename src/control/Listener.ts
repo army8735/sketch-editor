@@ -38,6 +38,8 @@ export default class Listener extends Event {
   startY: number;
   pageTx: number;
   pageTy: number;
+  dx: number; // 上次move的px，考虑缩放和dpi
+  dy: number;
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
   updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
@@ -72,6 +74,8 @@ export default class Listener extends Event {
     this.startY = 0;
     this.pageTx = 0;
     this.pageTy = 0;
+    this.dx = 0;
+    this.dy = 0;
     this.selected = [];
     this.updateStyle = [];
     this.hasControl = false;
@@ -150,6 +154,7 @@ export default class Listener extends Event {
     // 操作开始清除
     this.sizeChangeStyle.splice(0);
     this.updateStyle.splice(0);
+    this.dx = this.dy = 0;
     // 点到控制html上
     if (isControl) {
       this.isControl = isControl;
@@ -379,8 +384,8 @@ export default class Listener extends Event {
     const dx = e.pageX - this.startX;
     const dy = e.pageY - this.startY;
     const zoom = page.getZoom();
-    const dx2 = (dx / zoom) * root.dpi;
-    const dy2 = (dy / zoom) * root.dpi;
+    const dx2 = this.dx = (dx / zoom) * root.dpi;
+    const dy2 = this.dy = (dy / zoom) * root.dpi;
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
@@ -524,6 +529,7 @@ export default class Listener extends Event {
           this.controlType === 'tr' ||
           this.controlType === 'br'
         ) {
+          console.log(style.right.v, style.right.u, dx2)
           // right为确定值则修改它，还要看width是否是确定值也一并修改
           if (
             style.right.u === StyleUnit.PX ||
@@ -749,7 +755,7 @@ export default class Listener extends Event {
             p.fixedPosAndSize = false;
           }
           // 还原最初的translate/TRBL值
-          node.endPosChange(this.originStyle[i]);
+          node.endPosChange(this.originStyle[i], this.dx, this.dy);
           node.checkPosSizeUpward();
           const o = this.updateStyle[i];
           if (o) {
