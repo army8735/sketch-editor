@@ -11,7 +11,7 @@
     "build": "rimraf ./dist && rollup -c rollup.config.mjs",
     "dev": "rimraf ./dist && rollup -c rollup.dev.config.mjs --watch",
     "test": "mocha test/tests.js -R spec",
-    "test1": "nightwatch --filter test.js"
+    "test1": "nightwatch --group test1 --filter test.js"
   },
   "repository": {
     "type": "git",
