@@ -2,7 +2,6 @@ import {
   CORNER_STYLE,
   CURVE_MODE,
   TEXT_ALIGN,
-  TEXT_BEHAVIOUR,
   TEXT_DECORATION,
 } from '../style/define';
 
@@ -291,7 +290,7 @@ export type SymbolInstanceProps = Props & {
 export type TextProps = Props & {
   content: string;
   rich?: Rich[];
-  textBehaviour?: TEXT_BEHAVIOUR;
+  // textBehaviour?: TEXT_BEHAVIOUR;
 };
 
 export type Rich = {

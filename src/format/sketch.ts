@@ -18,7 +18,7 @@ import {
   Rich,
   TAG_NAME,
 } from './';
-import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_DECORATION } from '../style/define';
+import { TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
@@ -811,20 +811,20 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
-    let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
-    if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
-      textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
-    }
-    else if (layer.textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
-      textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
-    }
+    // let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
+    // if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
+    //   textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
+    // }
+    // else if (layer.textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
+    //   textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
+    // }
     return {
       tagName: TAG_NAME.TEXT,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
         constrainProportions,
-        textBehaviour,
+        // textBehaviour,
         styleId,
         style: {
           left,
