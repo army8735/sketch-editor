@@ -13,6 +13,8 @@ jobs:
           node-version: 20
       - name: npm install
         run: npm install
+      - name: npm build
+        run: npm build
       - name: npm test
         run: npm run test
   test1:
@@ -25,6 +27,8 @@ jobs:
           node-version: 20
       - name: npm install
         run: npm install
+      - name: npm build
+        run: npm build
       - name: npm test1
         uses: GabrielBB/xvfb-action@v1
         with:
