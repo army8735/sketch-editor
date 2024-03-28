@@ -848,122 +848,122 @@ class Node extends Event {
       }
     }
     // 最小尺寸约束
-    const parent = this.parent;
-    if (parent) {
-      const computedStyle = this.computedStyle;
-      /**
-       * 拖拽拉伸只会有left或者right之一，同时有是修改x输入框时left+right同时平移等量距离
-       * 文本是个特殊，自动尺寸时left和right只有一方且width是auto
-       * 因此修改left时如果同时修改right可以不校验（x输入框触发，后续会改成translate），
-       * 而如果right是auto则说明是自适应/固定尺寸的文本，也要忽略
-       * 如果要更精细地区分，需要看left/right/width的值和修改值，暂时省略
-       */
-      if (
-        style.hasOwnProperty('left') &&
-        !style.hasOwnProperty('right') &&
-        this.style.right.u !== StyleUnit.AUTO
-      ) {
-        const left = style.left!;
-        const left2 = calSize(left, parent.width);
-        const w = parent.width - computedStyle.right - left2;
-        if (w < this.minWidth) {
-          if (left.u === StyleUnit.PX) {
-          }
-          else if (left.u === StyleUnit.PERCENT) {
-            const max =
-              ((parent.width - computedStyle.right - this.minWidth) * 100) /
-              parent.width;
-            // 限制导致的无效更新去除
-            if (left.v === max) {
-              let i = keys.indexOf('left');
-              keys.splice(i, 1);
-            }
-            else {
-              left.v = this.style.left.v = max;
-            }
-          }
-        }
-      }
-      else if (
-        style.hasOwnProperty('right') &&
-        !style.hasOwnProperty('left') &&
-        this.style.left.u !== StyleUnit.AUTO
-      ) {
-        const right = style.right!;
-        const right2 = calSize(right, parent.width);
-        const w = parent.width - computedStyle.left - right2;
-        if (w < this.minWidth) {
-          if (right.u === StyleUnit.PX) {
-          }
-          else if (right.u === StyleUnit.PERCENT) {
-            const max =
-              ((parent.width - computedStyle.left - this.minWidth) * 100) /
-              parent.width;
-            // 限制导致的无效更新去除
-            if (right.v === max) {
-              let i = keys.indexOf('right');
-              keys.splice(i, 1);
-            }
-            else {
-              right.v = this.style.right.v = max;
-            }
-          }
-        }
-      }
-      // 上下也一样
-      if (
-        style.hasOwnProperty('top') &&
-        !style.hasOwnProperty('bottom') &&
-        this.style.bottom.u !== StyleUnit.AUTO
-      ) {
-        const top = style.top!;
-        const top2 = calSize(top, parent.height);
-        const h = parent.height - computedStyle.bottom - top2;
-        if (h < this.minHeight) {
-          if (top.u === StyleUnit.PX) {
-          }
-          else if (top.u === StyleUnit.PERCENT) {
-            const max =
-              ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
-              parent.height;
-            // 限制导致的无效更新去除
-            if (top.v === max) {
-              let i = keys.indexOf('top');
-              keys.splice(i, 1);
-            }
-            else {
-              top.v = this.style.top.v = max;
-            }
-          }
-        }
-      }
-      else if (
-        style.hasOwnProperty('bottom') &&
-        !style.hasOwnProperty('top') &&
-        this.style.top.u !== StyleUnit.AUTO
-      ) {
-        const bottom = style.bottom!;
-        const bottom2 = calSize(bottom, parent.height);
-        const h = parent.height - computedStyle.top - bottom2;
-        if (h < this.minHeight) {
-          if (bottom.u === StyleUnit.PX) {
-          }
-          else if (bottom.u === StyleUnit.PERCENT) {
-            const max =
-              ((parent.height - computedStyle.top - this.minHeight) * 100) /
-              parent.height;
-            // 限制导致的无效更新去除
-            if (bottom.v === max) {
-              let i = keys.indexOf('bottom');
-              keys.splice(i, 1);
-            }
-            else {
-              bottom.v = this.style.bottom.v = max;
-            }
-          }
-        }
-      }
-    }
+    // const parent = this.parent;
+    // if (parent) {
+    //   const computedStyle = this.computedStyle;
+    //   /**
+    //    * 拖拽拉伸只会有left或者right之一，同时有是修改x输入框时left+right同时平移等量距离
+    //    * 文本是个特殊，自动尺寸时left和right只有一方且width是auto
+    //    * 因此修改left时如果同时修改right可以不校验（x输入框触发，后续会改成translate），
+    //    * 而如果right是auto则说明是自适应/固定尺寸的文本，也要忽略
+    //    * 如果要更精细地区分，需要看left/right/width的值和修改值，暂时省略
+    //    */
+    //   if (
+    //     style.hasOwnProperty('left') &&
+    //     !style.hasOwnProperty('right') &&
+    //     this.style.right.u !== StyleUnit.AUTO
+    //   ) {
+    //     const left = style.left!;
+    //     const left2 = calSize(left, parent.width);
+    //     const w = parent.width - computedStyle.right - left2;
+    //     if (w < this.minWidth) {
+    //       if (left.u === StyleUnit.PX) {
+    //       }
+    //       else if (left.u === StyleUnit.PERCENT) {
+    //         const max =
+    //           ((parent.width - computedStyle.right - this.minWidth) * 100) /
+    //           parent.width;
+    //         // 限制导致的无效更新去除
+    //         if (left.v === max) {
+    //           let i = keys.indexOf('left');
+    //           keys.splice(i, 1);
+    //         }
+    //         else {
+    //           left.v = this.style.left.v = max;
+    //         }
+    //       }
+    //     }
+    //   }
+    //   else if (
+    //     style.hasOwnProperty('right') &&
+    //     !style.hasOwnProperty('left') &&
+    //     this.style.left.u !== StyleUnit.AUTO
+    //   ) {
+    //     const right = style.right!;
+    //     const right2 = calSize(right, parent.width);
+    //     const w = parent.width - computedStyle.left - right2;
+    //     if (w < this.minWidth) {
+    //       if (right.u === StyleUnit.PX) {
+    //       }
+    //       else if (right.u === StyleUnit.PERCENT) {
+    //         const max =
+    //           ((parent.width - computedStyle.left - this.minWidth) * 100) /
+    //           parent.width;
+    //         // 限制导致的无效更新去除
+    //         if (right.v === max) {
+    //           let i = keys.indexOf('right');
+    //           keys.splice(i, 1);
+    //         }
+    //         else {
+    //           right.v = this.style.right.v = max;
+    //         }
+    //       }
+    //     }
+    //   }
+    //   // 上下也一样
+    //   if (
+    //     style.hasOwnProperty('top') &&
+    //     !style.hasOwnProperty('bottom') &&
+    //     this.style.bottom.u !== StyleUnit.AUTO
+    //   ) {
+    //     const top = style.top!;
+    //     const top2 = calSize(top, parent.height);
+    //     const h = parent.height - computedStyle.bottom - top2;
+    //     if (h < this.minHeight) {
+    //       if (top.u === StyleUnit.PX) {
+    //       }
+    //       else if (top.u === StyleUnit.PERCENT) {
+    //         const max =
+    //           ((parent.height - computedStyle.bottom - this.minHeight) * 100) /
+    //           parent.height;
+    //         // 限制导致的无效更新去除
+    //         if (top.v === max) {
+    //           let i = keys.indexOf('top');
+    //           keys.splice(i, 1);
+    //         }
+    //         else {
+    //           top.v = this.style.top.v = max;
+    //         }
+    //       }
+    //     }
+    //   }
+    //   else if (
+    //     style.hasOwnProperty('bottom') &&
+    //     !style.hasOwnProperty('top') &&
+    //     this.style.top.u !== StyleUnit.AUTO
+    //   ) {
+    //     const bottom = style.bottom!;
+    //     const bottom2 = calSize(bottom, parent.height);
+    //     const h = parent.height - computedStyle.top - bottom2;
+    //     if (h < this.minHeight) {
+    //       if (bottom.u === StyleUnit.PX) {
+    //       }
+    //       else if (bottom.u === StyleUnit.PERCENT) {
+    //         const max =
+    //           ((parent.height - computedStyle.top - this.minHeight) * 100) /
+    //           parent.height;
+    //         // 限制导致的无效更新去除
+    //         if (bottom.v === max) {
+    //           let i = keys.indexOf('bottom');
+    //           keys.splice(i, 1);
+    //         }
+    //         else {
+    //           bottom.v = this.style.bottom.v = max;
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     return keys;
   }
 
@@ -1422,7 +1422,7 @@ class Node extends Event {
       left,
     } = style;
     // 一定有parent，不会改root下固定的Container子节点
-    const { width: pw, height: ph } = parent!; console.log(dx, dy)
+    const { width: pw, height: ph } = parent!;
     if (dx) {
       if (left.u === StyleUnit.PX) {
         left.v += dx;

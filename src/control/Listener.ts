@@ -455,15 +455,14 @@ export default class Listener extends Event {
               next.bottom =
                 ((computedStyle.bottom - dy2) * 100) / node.parent!.height + '%';
             }
-            if (style.height.u === StyleUnit.PX) {
+            if (style.height.u === StyleUnit.PX ||
+              // 只有bottom定位的自动高度文本
+            style.height.u === StyleUnit.AUTO && style.top.u === StyleUnit.AUTO) {
               next.height = computedStyle.height + dy2;
             }
             else if (style.height.u === StyleUnit.PERCENT) {
               next.height =
                 ((computedStyle.height + dy2) * 100) / node.parent!.height + '%';
-            }
-            else if (style.height.u === StyleUnit.AUTO) {
-              next.height = computedStyle.height + dy2;
             }
           }
           // bottom为自动，高度则为确定值修改，根据top定位
@@ -499,7 +498,7 @@ export default class Listener extends Event {
                 ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
             }
             if (style.width.u === StyleUnit.PX ||
-              // 只有left定位的自动高度文本
+              // 只有left定位的自动宽度文本
               style.width.u === StyleUnit.AUTO && style.right.u === StyleUnit.AUTO) {
               next.width = computedStyle.width - dx2;
             }
@@ -529,7 +528,6 @@ export default class Listener extends Event {
           this.controlType === 'tr' ||
           this.controlType === 'br'
         ) {
-          console.log(style.right.v, style.right.u, dx2)
           // right为确定值则修改它，还要看width是否是确定值也一并修改
           if (
             style.right.u === StyleUnit.PX ||
@@ -542,15 +540,14 @@ export default class Listener extends Event {
               next.right =
                 ((computedStyle.right - dx2) * 100) / node.parent!.width + '%';
             }
-            if (style.width.u === StyleUnit.PX) {
+            if (style.width.u === StyleUnit.PX ||
+              // 只有right定位的自动宽度文本
+              style.width.u === StyleUnit.AUTO && style.left.u === StyleUnit.AUTO) {
               next.width = computedStyle.width + dx2;
             }
             else if (style.width.u === StyleUnit.PERCENT) {
               next.width =
                 ((computedStyle.width + dx2) * 100) / node.parent!.width + '%';
-            }
-            else if (style.width.u === StyleUnit.AUTO) {
-              next.width = computedStyle.width + dx2;
             }
           }
           // right为自动，宽度则为确定值修改，根据left定位
