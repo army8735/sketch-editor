@@ -265,7 +265,10 @@ export default class Listener extends Event {
         // 点选已有节点
         if (i > -1) {
           if (this.shiftKey) {
-            selected.splice(i, 1);
+            // 已选唯一相同节点，按shift不消失，是水平/垂直移动
+            if (selected.length !== 1 || selected[0] !== node) {
+              selected.splice(i, 1);
+            }
           }
           else {
             // 持续编辑更新文本的编辑光标并提前退出
@@ -384,8 +387,8 @@ export default class Listener extends Event {
     const dx = e.pageX - this.startX;
     const dy = e.pageY - this.startY;
     const zoom = page.getZoom();
-    const dx2 = this.dx = (dx / zoom) * root.dpi;
-    const dy2 = this.dy = (dy / zoom) * root.dpi;
+    let dx2 = this.dx = (dx / zoom) * root.dpi;
+    let dy2 = this.dy = (dy / zoom) * root.dpi;
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
@@ -589,6 +592,15 @@ export default class Listener extends Event {
       }
       else {
         if (selected.length) {
+          // 水平/垂直
+          if (this.shiftKey) {
+            if (dx2 >= dy2) {
+              dy2 = 0;
+            }
+            else {
+              dx2 = 0;
+            }
+          }
           selected.forEach((node, i) => {
             const computedStyle = this.computedStyle[i];
             /**
