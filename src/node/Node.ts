@@ -1469,13 +1469,13 @@ class Node extends Event {
 
   // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
   protected adjustPosAndSizeSelf(
-    dx: number,
-    dy: number,
-    dw: number,
-    dh: number,
+    dx1: number,
+    dy1: number,
+    dx2: number,
+    dy2: number,
   ) {
     const { style, computedStyle, parent, root } = this;
-    if (!parent || !root || (!dx && !dy && !dw && !dh)) {
+    if (!parent || !root || (!dx1 && !dy1 && !dx2 && !dy2)) {
       return;
     }
     const { width: pw, height: ph } = parent;
@@ -1486,60 +1486,55 @@ class Node extends Event {
       left,
       width,
       height,
-      // translateX,
-      // translateY,
     } = style;
     // 水平调整统一处理，固定此时无效
-    if (dx) {
+    if (dx1) {
       if (left.u === StyleUnit.PX) {
-        left.v += dx;
+        left.v += dx1;
       }
       else if (left.u === StyleUnit.PERCENT) {
-        left.v += (dx * 100) / pw;
+        left.v += (dx1 * 100) / pw;
       }
-      computedStyle.left += dx;
+      computedStyle.left += dx1;
     }
-    if (dw) {
+    if (dx2) {
       if (right.u === StyleUnit.PX) {
-        right.v -= dw;
+        right.v -= dx2;
       }
       else if (right.u === StyleUnit.PERCENT) {
-        right.v -= (dw * 100) / pw;
+        right.v -= (dx2 * 100) / pw;
       }
       else if (width.u === StyleUnit.PX) {
-        width.v = dw + this.width - dx;
+        width.v = dx2 + this.width - dx1;
       }
-      computedStyle.right -= dw;
+      computedStyle.right -= dx2;
     }
     this.width = computedStyle.width =
       parent.width - computedStyle.left - computedStyle.right;
-    // translateX调整根据是否固定尺寸，不会有%尺寸目前
-    // this.resetTranslateX(left, right, width, translateX);
     // 垂直和水平一样
-    if (dy) {
+    if (dy1) {
       if (top.u === StyleUnit.PX) {
-        top.v += dy;
+        top.v += dy1;
       }
       else if (top.u === StyleUnit.PERCENT) {
-        top.v += (dy * 100) / ph;
+        top.v += (dy1 * 100) / ph;
       }
-      computedStyle.top += dy;
+      computedStyle.top += dy1;
     }
-    if (dh) {
+    if (dy2) {
       if (bottom.u === StyleUnit.PX) {
-        bottom.v -= dh;
+        bottom.v -= dy2
       }
       else if (bottom.u === StyleUnit.PERCENT) {
-        bottom.v -= (dh * 100) / ph;
+        bottom.v -= (dy2 * 100) / ph;
       }
       else if (height.u === StyleUnit.PX) {
-        height.v = dh + this.height - dy;
+        height.v = dy2 + this.height - dy1;
       }
-      computedStyle.bottom -= dh;
+      computedStyle.bottom -= dy2;
     }
     this.height = computedStyle.height =
       parent.height - computedStyle.top - computedStyle.bottom;
-    // this.resetTranslateY(top, bottom, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     this.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;
@@ -1550,42 +1545,6 @@ class Node extends Event {
     this._filterBbox = undefined;
     this.tempBbox = undefined;
   }
-
-  // resetTranslateX(
-  //   left: StyleNumValue,
-  //   right: StyleNumValue,
-  //   width: StyleNumValue,
-  //   translateX: StyleNumValue,
-  // ) {
-  //   if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
-  //     translateX.v = 0;
-  //   }
-  //   else if (left.u === StyleUnit.PX || right.u === StyleUnit.PX) {
-  //     translateX.v = 0;
-  //   }
-  //   else {
-  //     translateX.v = -50;
-  //     translateX.u = StyleUnit.PERCENT;
-  //   }
-  // }
-  //
-  // resetTranslateY(
-  //   top: StyleNumValue,
-  //   bottom: StyleNumValue,
-  //   height: StyleNumValue,
-  //   translateY: StyleNumValue,
-  // ) {
-  //   if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
-  //     translateY.v = 0;
-  //   }
-  //   else if (top.u === StyleUnit.PX || bottom.u === StyleUnit.PX) {
-  //     translateY.v = 0;
-  //   }
-  //   else {
-  //     translateY.v = -50;
-  //     translateY.u = StyleUnit.PERCENT;
-  //   }
-  // }
 
   // 节点位置尺寸发生变更后，会递归向上影响，逐步检查，可能在某层没有影响提前跳出中断
   checkPosSizeUpward() {
@@ -1603,79 +1562,6 @@ class Node extends Event {
   // 空实现，叶子节点和Container要么没children，要么不关心根据children自适应尺寸，Group会覆盖
   adjustPosAndSize() {
     return false;
-  }
-
-  // 参考 startSizeChange()，反向进行
-  protected checkTRBL2Translate(prev: Style) {
-    const {
-      width,
-      height,
-      style,
-      parent,
-      isDestroyed,
-    } = this;
-    if (isDestroyed || !parent) {
-      throw new Error('Can not resize a destroyed Node Or Root');
-    }
-    const {
-      top,
-      bottom,
-      left,
-      right,
-      translateX,
-      translateY,
-    } = prev;
-    // root没有parent，但不可能调整root，加个预防root的parent取自己
-    const { width: pw, height: ph } = parent;
-    // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
-    if (translateX.v !== 0) {
-      let v = 0;
-      if (translateX.u === StyleUnit.PX) {
-        v = translateX.v;
-      }
-      else if (translateX.u === StyleUnit.PERCENT) {
-        v = translateX.v * width * 0.01;
-      }
-      if (v) {
-        if (left.u === StyleUnit.PX) {
-          left.v -= v;
-        }
-        else if (left.u === StyleUnit.PERCENT) {
-          left.v -= v * 100 / pw;
-        }
-        if (right.u === StyleUnit.PX) {
-          right.v += v;
-        }
-        else if (right.u === StyleUnit.PERCENT) {
-          right.v += v * 100 / pw;
-        }
-        style.translateX.v = translateX.v;
-      }
-    }
-    if (translateY.v !== 0) {
-      let v = 0;
-      if (translateY.u === StyleUnit.PX) {
-        v = translateY.v;
-      }
-      else if (translateY.u === StyleUnit.PERCENT) {
-        v = translateY.v * height * 0.01;
-      }
-      if (v) {
-        if (top.u === StyleUnit.PX) {
-          top.v -= v;
-        }
-        else if (top.u === StyleUnit.PERCENT) {
-          top.v -= v * 100 / ph;
-        }
-        if (bottom.u === StyleUnit.PX) {
-          bottom.v += v;
-        }
-        else if (bottom.u === StyleUnit.PERCENT) {
-          bottom.v += v * 100 / ph;
-        }
-        style.translateY.v = translateY.v;
-      }
-    }
   }
 
   getZoom(excludeDpi = false): number {

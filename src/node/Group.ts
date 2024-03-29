@@ -30,7 +30,7 @@ class Group extends Container {
       || Math.abs(r.maxX - rect[2]) > EPS
       || Math.abs(r.maxY - rect[3]) > EPS) {
       // 冒泡过程无需向下检测，直接向上
-      this.checkPosSizeUpward();
+      this.adjustPosAndSize();
     }
   }
 
@@ -95,10 +95,10 @@ class Group extends Container {
   // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
   private adjustPosAndSizeChild(
     child: Node,
-    dx: number,
-    dy: number,
-    dw: number,
-    dh: number,
+    dx1: number,
+    dy1: number,
+    dx2: number,
+    dy2: number,
     gw: number,
     gh: number,
   ) {
@@ -111,23 +111,19 @@ class Group extends Container {
       right,
       bottom,
       left,
-      // width,
-      // height,
-      // translateX,
-      // translateY,
     } = style;
     // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
     // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
     // 2个只要有发生，都会影响左右，因为干扰尺寸
-    if (dx || dw) {
-      computedStyle.left -= dx;
+    if (dx1 || dx2) {
+      computedStyle.left -= dx1;
       if (left.u === StyleUnit.PX) {
         left.v = computedStyle.left;
       }
       else if (left.u === StyleUnit.PERCENT && gw) {
         left.v = (computedStyle.left * 100) / gw;
       }
-      computedStyle.right += dw;
+      computedStyle.right += dx2;
       if (right.u === StyleUnit.PX) {
         right.v = computedStyle.right;
       }
@@ -135,17 +131,16 @@ class Group extends Container {
         right.v = (computedStyle.right * 100) / gw;
       }
     }
-    // this.resetTranslateX(left, right, width, translateX);
     // 类似水平情况
-    if (dy || dh) {
-      computedStyle.top -= dy;
+    if (dy1 || dy2) {
+      computedStyle.top -= dy1;
       if (top.u === StyleUnit.PX) {
         top.v = computedStyle.top;
       }
       else if (top.u === StyleUnit.PERCENT && gh) {
         top.v = (computedStyle.top * 100) / gh;
       }
-      computedStyle.bottom += dh;
+      computedStyle.bottom += dy2;
       if (bottom.u === StyleUnit.PX) {
         bottom.v = computedStyle.bottom;
       }
@@ -153,7 +148,6 @@ class Group extends Container {
         bottom.v = (computedStyle.bottom * 100) / gh;
       }
     }
-    // this.resetTranslateY(top, bottom, height, translateY);
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     child.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;
@@ -170,21 +164,23 @@ class Group extends Container {
     if (this.fixedPosAndSize) {
       return false;
     }
-    const { children, width: gw, height: gh } = this;
-    const rect = this.getChildrenRect(false);
-    const dx = rect.minX,
-      dy = rect.minY,
-      dw = rect.maxX - gw,
-      dh = rect.maxY - gh;
+    const { children } = this;
+    const rectC = this.getChildrenRect(false);
+    const rect = this._rect || this.rect;
+    const dx1 = rectC.minX - rect[0],
+      dy1 = rectC.minY - rect[1],
+      dx2 = rectC.maxX - rect[2],
+      dy2 = rectC.maxY - rect[3];
     // 检查真正有变化，位置相对于自己原本位置为原点
-    if (Math.abs(dx) > EPS || Math.abs(dy) > EPS || Math.abs(dw) > EPS || Math.abs(dh) > EPS) {
+    if (Math.abs(dx1) > EPS || Math.abs(dy1) > EPS || Math.abs(dx2) > EPS || Math.abs(dy2) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
-      this.adjustPosAndSizeSelf(dx, dy, dw, dh);
-      const { width: gw, height: gh } = this;
+      this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
+      const gw = rect[2] - rect[0];
+      const gh = rect[3] - rect[1];
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
-        this.adjustPosAndSizeChild(child, dx, dy, dw, dh, gw, gh);
+        this.adjustPosAndSizeChild(child, dx1, dy1, dx2, dy2, gw, gh);
       }
       return true;
     }
