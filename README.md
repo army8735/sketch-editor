@@ -1,6 +1,9 @@
 # sketch-editor
 A sketch Render&Editor on Canvas/WebGL.
 
+[![NPM version](https://img.shields.io/npm/v/sketch-editor.svg)](https://npmjs.org/package/sketch-editor)
+![CI](https://github.com/army8735/sketch-editor/workflows/CI/badge.svg)
+
 ## Dev
 ```
 npm run dev
