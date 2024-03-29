@@ -215,22 +215,22 @@ class Node extends Event {
       computedStyle.bottom = calSize(bottom, data.h);
     }
     // 考虑min值约束
-    if (width.u !== StyleUnit.AUTO) {
-      this.minWidth = this.width;
-    }
-    else {
-      this.minWidth = 0.5;
-    }
-    if (height.u !== StyleUnit.AUTO) {
-      this.minHeight = this.height;
-    }
-    else {
-      this.minHeight = 0.5;
-    }
+    // if (width.u !== StyleUnit.AUTO) {
+    //   this.minWidth = this.width;
+    // }
+    // else {
+    //   this.minWidth = 0.5;
+    // }
+    // if (height.u !== StyleUnit.AUTO) {
+    //   this.minHeight = this.height;
+    // }
+    // else {
+    //   this.minHeight = 0.5;
+    // }
     // 左右决定width
     if (fixedLeft && fixedRight) {
       this.width = computedStyle.width =
-        data.w - computedStyle.left - computedStyle.right;
+        Math.max(this.minWidth, data.w - computedStyle.left - computedStyle.right);
     }
     else if (fixedLeft) {
       if (width.u !== StyleUnit.AUTO) {
@@ -253,7 +253,7 @@ class Node extends Event {
     // 上下决定height
     if (fixedTop && fixedBottom) {
       this.height = computedStyle.height =
-        data.h - computedStyle.top - computedStyle.bottom;
+        Math.max(this.minHeight, data.h - computedStyle.top - computedStyle.bottom);
     }
     else if (fixedTop) {
       if (height.u !== StyleUnit.AUTO) {
@@ -367,10 +367,10 @@ class Node extends Event {
     const height = style.height;
     if (parent) {
       if (width.u !== StyleUnit.AUTO) {
-        this.width = computedStyle.width = calSize(width, parent.width);
+        this.width = computedStyle.width = Math.max(this.minWidth, calSize(width, parent.width));
       }
       if (height.u !== StyleUnit.AUTO) {
-        this.height = computedStyle.height = calSize(height, parent.height);
+        this.height = computedStyle.height = Math.max(this.minHeight, calSize(height, parent.height));
       }
     }
     computedStyle.letterSpacing = style.letterSpacing.v;
@@ -983,10 +983,10 @@ class Node extends Event {
     // 无变更
     if (!keys.length) {
       cb && cb(true);
-      return keys;
+      return { keys };
     }
-    this.root?.addUpdate(this, keys, undefined, false, false, cb);
-    return keys;
+    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    return { keys, lv };
   }
 
   updateProps(props: any, cb?: (sync: boolean) => void) {
@@ -1286,7 +1286,6 @@ class Node extends Event {
     if (isDestroyed || !parent) {
       throw new Error('Can not resize a destroyed Node or Root');
     }
-    const prev = this.getStyle();
     const {
       left,
       right,
@@ -1340,7 +1339,6 @@ class Node extends Event {
     if (!impact) {
       return;
     }
-    return prev;
   }
 
   /**

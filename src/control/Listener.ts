@@ -44,7 +44,6 @@ export default class Listener extends Event {
   selected: Node[]; // 已选的节点们
   updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
   hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
-  sizeChangeStyle: (Style | undefined)[]; // 修改size时记录
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   originStyle: Style[]; // 同上
@@ -79,7 +78,6 @@ export default class Listener extends Event {
     this.selected = [];
     this.updateStyle = [];
     this.hasControl = false;
-    this.sizeChangeStyle = [];
     this.abcStyle = [];
     this.computedStyle = [];
     this.originStyle = [];
@@ -131,16 +129,12 @@ export default class Listener extends Event {
   }
 
   // 调整前先锁住group，防止自适应，在mouseup整体结束后统一进行，text也要记住状态
-  prepare(isSize = false) {
+  prepare() {
     const selected = this.selected;
-    selected.forEach((node, i) => {
+    selected.forEach((node) => {
       const p = node.parent;
       if (p && p.isGroup && p instanceof Group) {
         p.fixedPosAndSize = true;
-      }
-      // 暂时只有Text节点自适应尺寸时会有translate:-50%，不排除人工修改数据，所以记录所有节点
-      if (isSize) {
-        this.sizeChangeStyle[i] = node.startSizeChange();
       }
     });
     this.computedStyle = selected.map((item) => item.getComputedStyle());
@@ -152,7 +146,7 @@ export default class Listener extends Event {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
     // 操作开始清除
-    this.sizeChangeStyle.splice(0);
+    this.originStyle.splice(0);
     this.updateStyle.splice(0);
     this.dx = this.dy = 0;
     // 点到控制html上
@@ -162,7 +156,7 @@ export default class Listener extends Event {
       this.controlType = target.className;
       this.startX = e.pageX;
       this.startY = e.pageY;
-      this.prepare(true);
+      this.prepare();
       this.abcStyle = selected.map((item) => {
         // resize画板children的定位尺寸临时变为固定px
         if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
@@ -595,10 +589,10 @@ export default class Listener extends Event {
           // 水平/垂直
           if (this.shiftKey) {
             if (dx2 >= dy2) {
-              dy2 = 0;
+              this.dy = dy2 = 0;
             }
             else {
-              dx2 = 0;
+              this.dx = dx2 = 0;
             }
           }
           selected.forEach((node, i) => {
@@ -609,10 +603,13 @@ export default class Listener extends Event {
              * 需要注意目前matrix的整体计算是将布局信息TRLB换算为translate，因此style上的原始值和更新的这个px值并不一致，
              * 如果涉及到相关的读取写入话要注意换算，这里没有涉及到，updateStyle会同步将translate写会布局TRLB的style上满足功能要求。
              */
-            const o = {
-              translateX: computedStyle.translateX + dx2,
-              translateY: computedStyle.translateY + dy2,
-            };
+            const o: any = {};
+            if (dx2) {
+              o.translateX = computedStyle.translateX + dx2;
+            }
+            if (dy2) {
+              o.translateY = computedStyle.translateY + dy2;
+            }
             node.updateStyle(o);
             this.updateStyle[i] = {
               prev: {
@@ -728,8 +725,7 @@ export default class Listener extends Event {
           p.fixedPosAndSize = false;
         }
         // 还原最初的translate/TRBL值
-        const prev = this.sizeChangeStyle[i];
-        node.endSizeChange(prev);
+        node.endSizeChange(this.originStyle[i]);
         // 有调整尺寸的话，向上检测组的自适应尺寸
         if (this.hasControl) {
           node.checkPosSizeUpward();
