@@ -12,6 +12,7 @@ import {
   JSymbolMaster,
   JGroup,
   JSymbolInstance,
+  JLayer,
 } from '../format/';
 import ArtBoard from './ArtBoard';
 import Bitmap from './Bitmap';
@@ -25,7 +26,7 @@ import SymbolInstance from './SymbolInstance';
 import Slice from './Slice';
 import Root from './Root';
 
-export function parse(json: JNode, root: Root): Node | undefined {
+export function parse(json: JLayer, root?: Root): Node | undefined {
   const tagName = json.tagName;
   if (tagName === TAG_NAME.ART_BOARD || tagName === TAG_NAME.SYMBOL_MASTER) {
     const children = [];
@@ -42,14 +43,14 @@ export function parse(json: JNode, root: Root): Node | undefined {
        * 初始化前会先生成所有SymbolMaster的实例，包含内部和外部的，并存到root的symbolMasters下
        * 后续进入控件页面时，页面是延迟初始化的，从json生成Node实例时，直接取缓存即可
        */
-      return root.symbolMasters[symbolId] || new SymbolMaster(props, children);
+      return root?.symbolMasters[symbolId] || new SymbolMaster(props, children);
     }
     return new ArtBoard(json.props as ArtBoardProps, children);
   }
   else if (tagName === TAG_NAME.SYMBOL_INSTANCE) {
     const props = json.props as SymbolInstanceProps;
     const symbolId = props.symbolId;
-    const sm = root.symbolMasters[symbolId];
+    const sm = root?.symbolMasters[symbolId];
     // 应该有，前置逻辑保证被递归引用的maters先分析，可能人工或bug造成缺数据
     if (sm) {
       return new SymbolInstance(props, sm);

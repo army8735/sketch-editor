@@ -1,4 +1,4 @@
-import { TAG_NAME, JFile, JSymbolMaster } from './format';
+import { TAG_NAME, JFile, JSymbolMaster, JLayer } from './format';
 import { openAndConvertSketchBuffer, convertSketch, openAndConvertSketchZip } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -12,11 +12,17 @@ import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
 import control from './control';
 import { version } from '../package.json';
+import Root from './node/Root';
 
 export default {
   version,
-  parse(json: JFile, canvas: HTMLCanvasElement, dpi = 1) {
-    let { width, height } = canvas;
+  parse(json: JFile | JLayer, canvasOrRoot?: HTMLCanvasElement | Root, dpi = 1) {
+    if (arguments.length === 1 || canvasOrRoot instanceof Root) {
+      return parse(json as JLayer, canvasOrRoot as Root);
+    }
+    json = json as JFile;
+    canvasOrRoot = canvasOrRoot as HTMLCanvasElement;
+    let { width, height } = canvasOrRoot;
     if (width <= 0) {
       width = 1;
     }
@@ -34,7 +40,7 @@ export default {
         height,
       },
     });
-    root.appendTo(canvas);
+    root.appendTo(canvasOrRoot);
 
     // symbolMaster优先初始化，其存在于控件页面的直接子节点，以及外部json，先收集起来
     const smList: JSymbolMaster[] = [];

@@ -76,6 +76,18 @@ export type JPolyline = JNode & {
   props: PolylineProps;
 };
 
+export type JLayer = JNode
+  | JContainer
+  | JPage
+  | JArtBoard
+  | JSymbolMaster
+  | JSymbolInstance
+  | JGroup
+  | JShapeGroup
+  | JBitmap
+  | JText
+  | JPolyline;
+
 export type JStyle = {
   top: number | string;
   right: number | string;
