@@ -84,55 +84,8 @@ class Bitmap extends Node {
           this.loader.error = true;
         }
       }
-      // if (!cache) {
-      //   inject.measureImg(src, (res: any) => {
-      //     // 可能会变更，所以加载完后对比下是不是当前最新的
-      //     if (src === this._src) {
-      //       if (res.success) {
-      //         if (isFunction(props.onLoad)) {
-      //           props.onLoad!();
-      //         }
-      //       } else {
-      //         if (isFunction(props.onError)) {
-      //           props.onError!();
-      //         }
-      //       }
-      //     }
-      //   });
-      // } else if (cache.state === inject.LOADED) {
-      //   if (cache.success) {
-      //     this.loader.source = cache.source;
-      //     this.loader.width = cache.source.width;
-      //     this.loader.height = cache.source.height;
-      //   } else {
-      //     this.loader.error = true;
-      //   }
-      // }
     }
   }
-
-  // override lay(data: LayoutData) {
-  //   super.lay(data);
-  //   const src = this._src;
-  //   const loader = this.loader;
-  //   if (src) {
-  //     const cache = inject.IMG[src];
-  //     if (!cache || cache.state === inject.LOADING) {
-  //       if (!loader.loading) {
-  //         this.loadAndRefresh();
-  //       }
-  //     } else if (cache && cache.state === inject.LOADED) {
-  //       loader.loading = false;
-  //       if (cache.success) {
-  //         this.loader.source = cache.source;
-  //         this.loader.width = cache.width;
-  //         this.loader.height = cache.height;
-  //       } else {
-  //         this.loader.error = true;
-  //       }
-  //     }
-  //   }
-  // }
 
   loadAndRefresh() {
     // 加载前先清空之前可能遗留的老数据
@@ -223,7 +176,6 @@ class Bitmap extends Node {
   checkLoader() {
     const loader = this.loader;
     if (!loader.loading && !loader.source && !loader.error) {
-      // this.loadAndRefresh();
       return true;
     }
     return false;
@@ -267,10 +219,6 @@ class Bitmap extends Node {
       }
     }
     return (this.hasContent = !!this.loader.source);
-    // if (!res && !this.loader.error) {
-    //   this.root!.imgLoadingCount++;
-    // }
-    // return res;
   }
 
   override renderCanvas(scale: number) {
@@ -347,9 +295,9 @@ class Bitmap extends Node {
         }
         const points = [
           [0, 0],
-          [iw / scale, 0],
-          [iw / scale, ih / scale],
-          [0, ih / scale],
+          [iw, 0],
+          [iw, ih],
+          [0, ih],
           [0, 0],
         ];
         ctx.beginPath();
