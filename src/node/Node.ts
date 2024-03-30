@@ -596,18 +596,19 @@ class Node extends Event {
         return calSize(item, i ? this.height : this.width);
       });
       computedStyle.transformOrigin = tfo as [number, number];
+      const { left, top } = computedStyle;
       // 开个口子，直接提供matrix
       if (style.matrix) {
         computedStyle.matrix = style.matrix.v.slice(0);
         assignMatrix(matrix, computedStyle.matrix);
-        this.transform = calTransformByMatrixAndOrigin(matrix, tfo[0], tfo[1]);
+        this.transform = calTransformByMatrixAndOrigin(matrix, left + tfo[0], top + tfo[1]);
         return matrix;
       }
       // 一般走这里
-      transform[12] = computedStyle.translateX =
-        computedStyle.left + calSize(style.translateX, this.width);
-      transform[13] = computedStyle.translateY =
-        computedStyle.top + calSize(style.translateY, this.height);
+      computedStyle.translateX = calSize(style.translateX, this.width);
+      transform[12] = left + computedStyle.translateX;
+      computedStyle.translateY = calSize(style.translateY, this.height);
+      transform[13] = top + computedStyle.translateY;
       const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
       const scaleX = style.scaleX ? style.scaleX.v : 1;
       const scaleY = style.scaleY ? style.scaleY.v : 1;
@@ -636,7 +637,7 @@ class Node extends Event {
       else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
-      const t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
+      const t = calMatrixByOrigin(transform, left + tfo[0], top + tfo[1]);
       assignMatrix(matrix, t);
     }
     return matrix;
