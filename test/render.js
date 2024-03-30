@@ -11,7 +11,7 @@ fetch('./sketch.sketch')
       .then(json => {
         const dpi = 2;
         const { clientWidth, clientHeight } = canvas;
-        const root = editor.parse(json, canvas, dpi);
+        const root = window.root = editor.parse(json, canvas, dpi);
         root.setPageIndex(json.currentPageIndex || 0);
         root.on(editor.node.Root.REFRESH_COMPLETE, () => {
           input.value = canvas.toDataURL();
