@@ -45,8 +45,6 @@ import { Struct } from './struct';
 import TextureCache from './TextureCache';
 import CanvasCache from './CanvasCache';
 
-export const DELTA_TIME = 16;
-
 export type Merge = {
   i: number;
   lv: number;
@@ -271,7 +269,7 @@ export function genMerge(
     if ((!visible || opacity <= 0) && !maskMode) {
       continue;
     }
-    if (!firstMerge && (Date.now() - startTime) > DELTA_TIME) {
+    if (!firstMerge && (Date.now() - startTime) > config.deltaTime) {
       breakMerge = mergeList.slice(j);
       break;
     }
@@ -521,7 +519,7 @@ function genTotal(
   const res = TextureCache.getEmptyInstance(gl, bbox);
   const list = res.list;
   let frameBuffer: WebGLFramebuffer | undefined;
-  const UNIT = config.canvasSize;
+  const UNIT = config.MAX_TEXTURE_SIZE;
   const listRect: { x: number, y: number }[] = [];
   // 要先按整数创建纹理块，再反向计算bbox（真实尺寸/scale），创建完再重新遍历按节点顺序渲染，因为有bgBlur存在
   for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
@@ -865,7 +863,7 @@ function drawInSpreadBbox(
   x: number, y: number, scale: number,
   w2: number, h2: number,
 ) {
-  const UNIT = config.canvasSize;
+  const UNIT = config.MAX_TEXTURE_SIZE;
   const listS = textureTarget.list;
   const listT = temp.list;
   let frameBuffer: WebGLFramebuffer | undefined;
@@ -949,7 +947,7 @@ function createInOverlay(
   scale: number,
   spread: number, // 不考虑scale
 ) {
-  const UNIT = config.canvasSize;
+  const UNIT = config.MAX_TEXTURE_SIZE;
   const unit = UNIT - spread * scale * 2; // 去除spread的单位
   const listO: {
     bbox: Float64Array,
@@ -1730,7 +1728,7 @@ function genShadow(
   // 先生成最终的尺寸结果，空白即可，后面的shadow依次绘入，最上层是图像本身
   const res2 = TextureCache.getEmptyInstance(gl, bboxR2);
   const listR2 = res2.list;
-  const UNIT = config.canvasSize;
+  const UNIT = config.MAX_TEXTURE_SIZE;
   for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
     for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
       const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
@@ -2015,7 +2013,7 @@ function genMask(
   const summary = TextureCache.getEmptyInstance(gl, bbox);
   const listS = summary.list;
   let frameBuffer: WebGLFramebuffer | undefined;
-  const UNIT = config.canvasSize;
+  const UNIT = config.MAX_TEXTURE_SIZE;
   const m = identity();
   assignMatrix(m, matrix);
   multiplyScale(m, 1 / scale);
