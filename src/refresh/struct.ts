@@ -10,7 +10,6 @@ import config from '../util/config';
 import {
   checkInRect,
   checkInScreen,
-  DELTA_TIME,
   genBgBlur,
   genFrameBufferWithTexture,
   genMbm,
@@ -374,7 +373,7 @@ function renderWebglTile(
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
       if (isInScreen && !node.isPage && node.page) {
-        if (!firstDraw && (Date.now() - startTime) > DELTA_TIME) {
+        if (!firstDraw && (Date.now() - startTime) > config.deltaTime) {
           hasRemain = true;
           root.tileLastIndex = i;
           break;
