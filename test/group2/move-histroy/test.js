@@ -7,9 +7,9 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(20)
-      .moveTo('canvas', 100, 100)
+      .moveTo('canvas', 10, 10)
       .mouseButtonDown(0)
-      .moveTo('canvas', 120, 110)
+      .moveTo('canvas', 30, 20)
       .mouseButtonUp(0)
       .execute(() => {
         const style = window.root.getCurPage().children[0].style;
