@@ -7,9 +7,9 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(20)
-      .moveTo('canvas', 10, 10)
+      .moveTo('canvas', 20, 20)
       .mouseButtonDown(0)
-      .moveTo('canvas', 30, 20)
+      .moveTo('canvas', 40, 30)
       .mouseButtonUp(0)
       .execute(() => {
         const node = window.root.getCurPage().children[0];
