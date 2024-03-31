@@ -49,5 +49,5 @@ jobs:
       - name: npm test2
         uses: GabrielBB/xvfb-action@v1
         with:
-          run: npm run test1
+          run: npm run test2
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
