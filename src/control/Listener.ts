@@ -12,7 +12,7 @@ import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
 import history from '../history';
 
-const { History, UpdateStyleCommand } = history;
+const { History, Command, MoveCommand, UpdateStyleCommand } = history;
 
 enum State {
   NORMAL = 0,
@@ -132,14 +132,18 @@ export default class Listener extends Event {
   prepare() {
     const selected = this.selected;
     selected.forEach((node) => {
-      const p = node.parent;
-      if (p && p.isGroup && p instanceof Group) {
-        p.fixedPosAndSize = true;
-      }
+      this.toggleGroup(node, true);
     });
     this.computedStyle = selected.map((item) => item.getComputedStyle());
     this.originStyle = selected.map((item) => item.getStyle());
     this.cssStyle = selected.map((item) => item.getCssComputedStyle());
+  }
+
+  toggleGroup(node: Node, value = false) {
+    const p = node.parent;
+    if (p && p.isGroup && p instanceof Group) {
+      p.fixedPosAndSize = value;
+    }
   }
 
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
@@ -720,10 +724,7 @@ export default class Listener extends Event {
       });
       selected.forEach((node, i) => {
         // 调整之前锁住的group，结束后统一进行解锁
-        const p = node.parent;
-        if (p && p.isGroup && p instanceof Group) {
-          p.fixedPosAndSize = false;
-        }
+        this.toggleGroup(node, false);
         // 还原最初的translate/TRBL值
         node.endSizeChange(this.originStyle[i]);
         // 有调整尺寸的话，向上检测组的自适应尺寸
@@ -753,20 +754,17 @@ export default class Listener extends Event {
         this.input.focus();
       }
       else {
-        selected.forEach((node, i) => {
-          // 调整之前锁住的group，结束后统一进行解锁
-          const p = node.parent;
-          if (p && p.isGroup && p instanceof Group) {
-            p.fixedPosAndSize = false;
-          }
-          // 还原最初的translate/TRBL值
-          node.endPosChange(this.originStyle[i], this.dx, this.dy);
-          node.checkPosSizeUpward();
-          const o = this.updateStyle[i];
-          if (o) {
-            History.getInstance().addCommand(new UpdateStyleCommand(node, o));
-          }
-        });
+        const { dx, dy } = this;
+        if (dx || dy) {
+          selected.forEach((node, i) => {
+            // 调整之前锁住的group，结束后统一进行解锁
+            this.toggleGroup(node, false);
+            // 还原最初的translate/TRBL值
+            node.endPosChange(this.originStyle[i], dx, dy);
+            node.checkPosSizeUpward();
+            History.getInstance().addCommand(new MoveCommand(node, dx, dy));
+          });
+        }
       }
     }
     this.isMouseDown = false;
@@ -971,7 +969,7 @@ export default class Listener extends Event {
       if (this.metaKey && this.shiftKey) {
         const c = History.getInstance().redo();
         if (c) {
-          if (c instanceof UpdateStyleCommand) {
+          if (c instanceof Command) {
             this.updateActive();
           }
         }
@@ -979,7 +977,7 @@ export default class Listener extends Event {
       else if (this.metaKey) {
         const c = History.getInstance().undo();
         if (c) {
-          if (c instanceof UpdateStyleCommand) {
+          if (c instanceof Command) {
             this.updateActive();
           }
         }

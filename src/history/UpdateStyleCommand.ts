@@ -13,7 +13,8 @@ class UpdateStyleCommand extends Command {
     this.style = style;
   }
 
-  execute() {const { node, style } = this;
+  execute() {
+    const { node, style } = this;
     const originStyle = node.getStyle();
     const cs1 = node.getComputedStyle();
     const { lv } = node.updateStyle(style.next);

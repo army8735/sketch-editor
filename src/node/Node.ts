@@ -1437,6 +1437,7 @@ class Node extends Event {
         right.v -= dx * 100 / pw;
       }
       computedStyle.right -= dx;
+      computedStyle.translateX -= dx;
     }
     if (dy) {
       if (top.u === StyleUnit.PX) {
@@ -1453,6 +1454,7 @@ class Node extends Event {
         bottom.v -= dy * 100 / ph;
       }
       computedStyle.bottom -= dy;
+      computedStyle.translateY -= dy;
     }
     style.translateX.v = translateX.v;
     style.translateX.u = translateX.u;
