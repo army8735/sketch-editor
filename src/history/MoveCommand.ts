@@ -17,13 +17,11 @@ class MoveCommand extends Command {
     const { node, dx, dy } = this;
     const originStyle = node.getStyle();
     const computedStyle = node.computedStyle;
-    const dx2 = computedStyle.translateX + dx;
-    const dy2 = computedStyle.translateY + dy;
     node.updateStyle({
-      translateX: dx2,
-      translateY: dy2,
+      translateX: computedStyle.translateX + dx,
+      translateY: computedStyle.translateY + dy,
     });
-    node.endPosChange(originStyle, dx2, dy2);
+    node.endPosChange(originStyle, dx, dy);
     node.checkPosSizeUpward();
   }
 
@@ -31,13 +29,11 @@ class MoveCommand extends Command {
     const { node, dx, dy } = this;
     const originStyle = node.getStyle();
     const computedStyle = node.computedStyle;
-    const dx2 = computedStyle.translateX - dx;
-    const dy2 = computedStyle.translateY - dy;
     node.updateStyle({
-      translateX: dx2,
-      translateY: dy2,
+      translateX: computedStyle.translateX - dx,
+      translateY: computedStyle.translateY - dy,
     });
-    node.endPosChange(originStyle, dx2, dy2);
+    node.endPosChange(originStyle, -dx, -dy);
     node.checkPosSizeUpward();
   }
 }
