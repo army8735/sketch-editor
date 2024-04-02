@@ -7,6 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(20)
+      .moveToElement('canvas', 20, 20)
       .mouseButtonClick(1)
       .assert.value('input', '')
       .mouseButtonClick(2)
