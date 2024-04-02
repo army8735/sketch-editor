@@ -28,7 +28,10 @@ fetch('./sketch.sketch')
           }
           else if (e.button === 2) {
             e.preventDefault();
-            const node = root.getCurPage().children[0];
+            let node = root.getCurPage().children[0];
+            if (node instanceof editor.node.Container) {
+              node = node.children[0];
+            }
             const style = node.style;
             const computedStyle = node.computedStyle;
             input.value = JSON.stringify([
