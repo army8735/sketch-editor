@@ -13,6 +13,7 @@ import tools from './tools';
 import control from './control';
 import { version } from '../package.json';
 import Root from './node/Root';
+import ca from './gl/ca';
 
 export default {
   version,
@@ -77,4 +78,5 @@ export default {
   tools,
   config,
   control,
+  ca,
 };

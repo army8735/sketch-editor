@@ -1,5 +1,6 @@
 let canvas = document.querySelector('canvas');
 let input = document.querySelector('#base64');
+editor.ca.preserveDrawingBuffer = true;
 
 fetch('./sketch.sketch')
   .then((res) => {
