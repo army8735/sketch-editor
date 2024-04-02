@@ -12,7 +12,7 @@ import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
 import history from '../history';
 
-const { History, Command, MoveCommand, UpdateStyleCommand } = history;
+const { History, MoveCommand, UpdateStyleCommand } = history;
 
 enum State {
   NORMAL = 0,
@@ -969,17 +969,13 @@ export default class Listener extends Event {
       if (this.metaKey && this.shiftKey) {
         const c = History.getInstance().redo();
         if (c) {
-          if (c instanceof Command) {
-            this.updateActive();
-          }
+          this.updateActive();
         }
       }
       else if (this.metaKey) {
         const c = History.getInstance().undo();
         if (c) {
-          if (c instanceof Command) {
-            this.updateActive();
-          }
+          this.updateActive();
         }
       }
     }
