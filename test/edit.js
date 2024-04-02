@@ -20,7 +20,8 @@ fetch('./sketch.sketch')
         root.setPageIndex(json.currentPageIndex || 0);
         const listener = editor.control.initCanvasControl(root, $canvasC);
         editor.control.initTreeList(root, document.querySelector('#tree'), listener);
-        $canvasC.addEventListener('click', (e) => {
+        $canvasC.addEventListener('mousedown', (e) => {
+          console.log(e.button)
           if (e.button === 1) {
             e.preventDefault();
             input.value = canvas.toDataURL();
