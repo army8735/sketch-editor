@@ -12,17 +12,15 @@ fetch('./sketch.sketch')
       .then(json => {
         const dpi = 2;
         const $canvasC = document.querySelector('#canvasC');
-        const { clientWidth, clientHeight } = $canvasC;
         const canvas = document.createElement('canvas');
-        canvas.width = clientWidth * dpi;
-        canvas.height = clientHeight * dpi;
+        canvas.width = 500 * dpi;
+        canvas.height = 500 * dpi;
         $canvasC.appendChild(canvas);
         const root = window.root = editor.parse(json, canvas, dpi);
         root.setPageIndex(json.currentPageIndex || 0);
         const listener = editor.control.initCanvasControl(root, $canvasC);
         editor.control.initTreeList(root, document.querySelector('#tree'), listener);
         $canvasC.addEventListener('mousedown', (e) => {
-          console.log(e.button)
           if (e.button === 1) {
             e.preventDefault();
             input.value = canvas.toDataURL();
