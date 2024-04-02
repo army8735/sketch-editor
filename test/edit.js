@@ -20,10 +20,11 @@ fetch('./sketch.sketch')
         root.setPageIndex(json.currentPageIndex || 0);
         const listener = editor.control.initCanvasControl(root, $canvasC);
         editor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        let count = 0;
         $canvasC.addEventListener('mousedown', (e) => {
           if (e.button === 1) {
             e.preventDefault();
-            input.value = canvas.toDataURL();
+            input.value = (count++) + ',' + canvas.toDataURL();
           }
           else if (e.button === 2) {
             e.preventDefault();
@@ -31,6 +32,7 @@ fetch('./sketch.sketch')
             const style = node.style;
             const computedStyle = node.computedStyle;
             input.value = JSON.stringify([
+              count++,
               style.left,
               style.right,
               style.top,
