@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "rimraf ./dist && rollup -c rollup.config.mjs",
-    "dev": "rimraf ./dist && rollup -c rollup.dev.config.mjs --watch",
+    "dev": "rollup -c rollup.dev.config.mjs --watch",
     "test": "mocha test/tests.js -R spec",
     "test1": "nightwatch --group group1 --filter test.js",
     "test2": "nightwatch --group group2 --filter test.js"
