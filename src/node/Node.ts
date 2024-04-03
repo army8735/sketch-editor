@@ -1386,6 +1386,7 @@ class Node extends Event {
       }
       computedStyle.right += v;
       style.translateX.v = translateX.v;
+      style.translateX.u = translateX.u;
     }
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       const v = translateY.v * h * 0.01;
@@ -1404,6 +1405,7 @@ class Node extends Event {
       }
       computedStyle.bottom += v;
       style.translateY.v = translateY.v;
+      style.translateY.u = translateY.u;
     }
   }
 

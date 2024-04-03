@@ -12,7 +12,7 @@ import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
 import history from '../history';
 
-const { History, MoveCommand, UpdateStyleCommand } = history;
+const { History, MoveCommand, ResizeCommand } = history;
 
 enum State {
   NORMAL = 0,
@@ -733,7 +733,7 @@ export default class Listener extends Event {
           node.checkPosSizeUpward();
           const o = this.updateStyle[i];
           if (o) {
-            History.getInstance().addCommand(new UpdateStyleCommand(node, o));
+            History.getInstance().addCommand(new ResizeCommand(node, o));
           }
         }
       });
@@ -779,6 +779,10 @@ export default class Listener extends Event {
 
   onMouseLeave() {
     this.select.hideHover();
+    // 离屏需终止当前操作
+    if (this.isControl || this.isMouseMove) {
+      this.onMouseUp();
+    }
   }
 
   onTouchStart(e: TouchEvent) {
