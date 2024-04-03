@@ -43,7 +43,6 @@ export default class Listener extends Event {
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
   updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
-  hasControl: Boolean; // 每次control按下后是否进行了调整，性能优化
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   originStyle: Style[]; // 同上
@@ -77,7 +76,6 @@ export default class Listener extends Event {
     this.dy = 0;
     this.selected = [];
     this.updateStyle = [];
-    this.hasControl = false;
     this.abcStyle = [];
     this.computedStyle = [];
     this.originStyle = [];
@@ -156,7 +154,6 @@ export default class Listener extends Event {
     // 点到控制html上
     if (isControl) {
       this.isControl = isControl;
-      this.hasControl = false;
       this.controlType = target.className;
       this.startX = e.pageX;
       this.startY = e.pageY;
@@ -391,6 +388,10 @@ export default class Listener extends Event {
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
       selected.forEach((node, i) => {
+        // 改变尺寸前置记录操作
+        if (!this.isMouseMove) {
+          node.startSizeChange();
+        }
         const prev: Partial<JStyle> = {};
         const next: Partial<JStyle> = {};
         const { style } = node;
@@ -573,14 +574,13 @@ export default class Listener extends Event {
           prev[k] = cssStyle[k as keyof JStyle];
         });
         this.updateStyle[i] = { prev, next };
-        this.hasControl = true;
       });
+      this.isMouseMove = true;
       this.select.updateSelect(selected);
       this.emit(Listener.RESIZE_NODE, selected.slice(0));
     }
     // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
     else if (this.isMouseDown) {
-      this.isMouseMove = true;
       if (this.state === State.EDIT_TEXT) {
         const x = (e.pageX - this.originX) * dpi;
         const y = (e.pageY - this.originY) * dpi;
@@ -630,6 +630,7 @@ export default class Listener extends Event {
           // TODO 框选
         }
       }
+      this.isMouseMove = true;
     }
     // 普通的hover
     else {
@@ -725,10 +726,10 @@ export default class Listener extends Event {
       selected.forEach((node, i) => {
         // 调整之前锁住的group，结束后统一进行解锁
         this.toggleGroup(node, false);
-        // 还原最初的translate/TRBL值
-        node.endSizeChange(this.originStyle[i]);
         // 有调整尺寸的话，向上检测组的自适应尺寸
-        if (this.hasControl) {
+        if (this.isMouseMove) {
+          // 还原最初的translate/TRBL值
+          node.endSizeChange(this.originStyle[i]);
           node.checkPosSizeUpward();
           const o = this.updateStyle[i];
           if (o) {
@@ -736,7 +737,6 @@ export default class Listener extends Event {
           }
         }
       });
-      this.hasControl = false;
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
