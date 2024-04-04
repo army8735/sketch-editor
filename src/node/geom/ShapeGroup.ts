@@ -932,7 +932,7 @@ class ShapeGroup extends Group {
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
       if (item instanceof Polyline || item instanceof ShapeGroup) {
-        style = item.getCssComputedStyle();
+        style = item.getCssStyle();
         break;
       }
     }

@@ -134,7 +134,7 @@ export default class Listener extends Event {
     });
     this.computedStyle = selected.map((item) => item.getComputedStyle());
     this.originStyle = selected.map((item) => item.getStyle());
-    this.cssStyle = selected.map((item) => item.getCssComputedStyle());
+    this.cssStyle = selected.map((item) => item.getCssStyle());
   }
 
   toggleGroup(node: Node, value = false) {
@@ -570,8 +570,9 @@ export default class Listener extends Event {
         }
         node.updateStyle(next);
         Object.keys(next).forEach((k) => {
+          const v = cssStyle[k as keyof JStyle];
           // @ts-ignore
-          prev[k] = cssStyle[k as keyof JStyle];
+          prev[k] = v;
         });
         this.updateStyle[i] = { prev, next };
       });
@@ -732,7 +733,7 @@ export default class Listener extends Event {
           node.endSizeChange(this.originStyle[i]);
           node.checkPosSizeUpward();
           const o = this.updateStyle[i];
-          if (o) {
+          if (o) { console.log(o);
             History.getInstance().addCommand(new ResizeCommand(node, o));
           }
         }

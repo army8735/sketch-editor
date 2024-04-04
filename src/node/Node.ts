@@ -1078,19 +1078,22 @@ class Node extends Event {
     return res;
   }
 
-  getCssComputedStyle() {
+  getCssStyle() {
     const res: any = Object.assign({}, this.computedStyle);
     const style = this.style;
     // %单位转换
     ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY'].forEach((k) => {
       const o: any = style[k as keyof JStyle];
-      if (o.u === StyleUnit.PERCENT) {
+      if (o.u === StyleUnit.AUTO) {
+        res[k] = 'auto';
+      }
+      else if (o.u === StyleUnit.PERCENT) {
         res[k] = o.v + '%';
       }
     });
     res.color = color2hexStr(res.color);
     res.backgroundColor = color2hexStr(res.backgroundColor);
-    res.fontSize = ['normal', 'italic', 'oblique'][res.fontSize];
+    res.fontStyle = ['normal', 'italic', 'oblique'][res.fontStyle];
     res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
     res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
     res.mixBlendMode = [
@@ -1155,18 +1158,13 @@ class Node extends Event {
     });
     res.maskMode = ['none', 'outline', 'alpha'][res.maskMode];
     res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
-    res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][
-      res.booleanOperation
-      ];
+    res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
+      [res.booleanOperation];
     res.blur =
       ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
-      '(' +
-      res.blur.v +
-      ')';
+      '(' + res.blur.v + ')';
     res.shadow = res.shadow.map((item: ComputedShadow) => {
-      return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${
-        item.spread
-      }`;
+      return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
     });
     const tfo = style.transformOrigin;
     res.transformOrigin = res.transformOrigin.map((item: number, i: number) => {
@@ -1300,7 +1298,7 @@ class Node extends Event {
     // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       impact = true;
-      const v =  translateX.v * width * 0.01;
+      const v = translateX.v * width * 0.01;
       if (left.u === StyleUnit.PERCENT) {
         left.v += v * 100 / pw;
       }
