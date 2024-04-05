@@ -1383,7 +1383,7 @@ class Node extends Event {
         right.v += v * 100 / pw;
       }
       computedStyle.right += v;
-      computedStyle.translateX += v;
+      computedStyle.translateX += v; // start置0了
     }
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       const v = translateY.v * h * 0.01;
