@@ -1383,8 +1383,7 @@ class Node extends Event {
         right.v += v * 100 / pw;
       }
       computedStyle.right += v;
-      style.translateX.v = translateX.v;
-      style.translateX.u = translateX.u;
+      computedStyle.translateX += v;
     }
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       const v = translateY.v * h * 0.01;
@@ -1402,9 +1401,12 @@ class Node extends Event {
         bottom.v += v * 100 / ph;
       }
       computedStyle.bottom += v;
-      style.translateY.v = translateY.v;
-      style.translateY.u = translateY.u;
+      computedStyle.translateY += v;
     }
+    style.translateX.v = translateX.v;
+    style.translateX.u = translateX.u;
+    style.translateY.v = translateY.v;
+    style.translateY.u = translateY.u;
   }
 
   // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的%（可能）
