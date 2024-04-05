@@ -392,6 +392,7 @@ export default class Listener extends Event {
         if (!this.isMouseMove) {
           node.startSizeChange();
           this.computedStyle[i] = node.getComputedStyle();
+          this.cssStyle[i] = node.getCssStyle();
         }
         const prev: Partial<JStyle> = {};
         const next: Partial<JStyle> = {};
