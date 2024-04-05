@@ -1294,10 +1294,8 @@ class Node extends Event {
       translateY,
     } = style;
     const { width: pw, height: ph } = parent;
-    let impact = false;
     // 理论sketch中只有-50%，但人工可能有其他值，可统一处理
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
-      impact = true;
       const v = translateX.v * width * 0.01;
       if (left.u === StyleUnit.PERCENT) {
         left.v += v * 100 / pw;
@@ -1316,7 +1314,6 @@ class Node extends Event {
       translateX.v = 0;
     }
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
-      impact = true;
       const v = translateY.v * height * 0.01;
       if (top.u === StyleUnit.PERCENT) {
         top.v += v * 100 / ph;
@@ -1333,10 +1330,6 @@ class Node extends Event {
       }
       computedStyle.bottom -= v;
       translateY.v = 0;
-    }
-    // 无影响则返回空，结束无需还原
-    if (!impact) {
-      return;
     }
   }
 

@@ -388,9 +388,10 @@ export default class Listener extends Event {
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
       selected.forEach((node, i) => {
-        // 改变尺寸前置记录操作
+        // 改变尺寸前置记录操作，注意更新computedStyle，影响计算
         if (!this.isMouseMove) {
           node.startSizeChange();
+          this.computedStyle[i] = node.getComputedStyle();
         }
         const prev: Partial<JStyle> = {};
         const next: Partial<JStyle> = {};
@@ -733,7 +734,7 @@ export default class Listener extends Event {
           node.endSizeChange(this.originStyle[i]);
           node.checkPosSizeUpward();
           const o = this.updateStyle[i];
-          if (o) { console.log(o);
+          if (o) {
             History.getInstance().addCommand(new ResizeCommand(node, o));
           }
         }
