@@ -601,10 +601,11 @@ class Node extends Event {
       if (style.matrix) {
         computedStyle.matrix = style.matrix.v.slice(0);
         assignMatrix(matrix, computedStyle.matrix);
-        this.transform = calTransformByMatrixAndOrigin(matrix, left + tfo[0], top + tfo[1]);
+        this.transform = calTransformByMatrixAndOrigin(matrix, tfo[0], tfo[1]);
         return matrix;
       }
-      // 一般走这里
+      // 一般走这里，特殊将left/top和translate合并一起加到matrix上，这样渲染视为[0, 0]开始
+      // karas是不加上但渲染时以left/top为开始
       computedStyle.translateX = calSize(style.translateX, this.width);
       transform[12] = left + computedStyle.translateX;
       computedStyle.translateY = calSize(style.translateY, this.height);
@@ -637,7 +638,7 @@ class Node extends Event {
       else if (rotateZ) {
         multiplyRotateZ(transform, d2r(rotateZ));
       }
-      const t = calMatrixByOrigin(transform, left + tfo[0], top + tfo[1]);
+      const t = calMatrixByOrigin(transform, tfo[0], tfo[1]);
       assignMatrix(matrix, t);
     }
     return matrix;
