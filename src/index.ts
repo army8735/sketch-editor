@@ -64,6 +64,7 @@ export default {
     });
 
     root.setJPages(json.pages || []);
+    root.setPageIndex(json.currentPageIndex || 0);
     return root;
   },
   openAndConvertSketchBuffer,
