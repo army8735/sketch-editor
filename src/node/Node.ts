@@ -312,9 +312,11 @@ class Node extends Event {
     }
     node.didMount();
     parent.insertStruct(node, i + 1);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
-      node.didMountBubble();
-      cb && cb(p);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
+      if (!sync && node.page) {
+        node.didMountBubble();
+      }
+      cb && cb(sync);
     });
   }
 
@@ -342,9 +344,11 @@ class Node extends Event {
     }
     node.didMount();
     parent.insertStruct(node, i);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
-      node.didMountBubble();
-      cb && cb(p);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
+      if (!sync && node.page) {
+        node.didMountBubble();
+      }
+      cb && cb(sync);
     });
   }
 
@@ -1506,6 +1510,9 @@ class Node extends Event {
       else if (width.u === StyleUnit.PX) {
         width.v = dx2 + this.width - dx1;
       }
+      else if (width.u === StyleUnit.PERCENT) {
+        width.v = (dx2 + this.width - dx1) * 100 / parent.width;
+      }
       computedStyle.right -= dx2;
     }
     this.width = computedStyle.width =
@@ -1530,6 +1537,9 @@ class Node extends Event {
       else if (height.u === StyleUnit.PX) {
         height.v = dy2 + this.height - dy1;
       }
+      else if (height.u === StyleUnit.PERCENT) {
+        height.v = (dy2 + this.height - dy1) * 100 / parent.height;
+      }
       computedStyle.bottom -= dy2;
     }
     this.height = computedStyle.height =
@@ -1541,7 +1551,9 @@ class Node extends Event {
     // 记得重置
     this._rect = undefined;
     this._bbox = undefined;
+    this._bbox2 = undefined;
     this._filterBbox = undefined;
+    this._filterBbox2 = undefined;
     this.tempBbox = undefined;
   }
 

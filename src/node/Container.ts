@@ -108,9 +108,11 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
-      node.didMountBubble();
-      cb && cb(p);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
+      if (!sync && node.page) {
+        node.didMountBubble();
+      }
+      cb && cb(sync);
     });
   }
 
@@ -133,9 +135,11 @@ class Container extends Node {
     }
     node.didMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (p) => {
-      node.didMountBubble();
-      cb && cb(p);
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
+      if (!sync && node.page) {
+        node.didMountBubble();
+      }
+      cb && cb(sync);
     });
   }
 
