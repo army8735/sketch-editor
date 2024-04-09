@@ -83,16 +83,16 @@ class Group extends Container {
       }
       if (first) {
         first = false;
-        rect.minX = Math.min(rect.minX, minX);
-        rect.minY = Math.min(rect.minY, minY);
-        rect.maxX = Math.max(rect.maxX, maxX);
-        rect.maxY = Math.max(rect.maxY, maxY);
-      }
-      else {
         rect.minX = minX;
         rect.minY = minY;
         rect.maxX = maxX;
         rect.maxY = maxY;
+      }
+      else {
+        rect.minX = Math.min(rect.minX, minX);
+        rect.minY = Math.min(rect.minY, minY);
+        rect.maxX = Math.max(rect.maxX, maxX);
+        rect.maxY = Math.max(rect.maxY, maxY);
       }
     }
     return rect;
