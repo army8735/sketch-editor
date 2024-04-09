@@ -218,6 +218,19 @@ class ShapeGroup extends Group {
     this.points = res.map(o => scaleDown(o));
   }
 
+  // protected override getChildRect(child: Node) {
+  //   if (child instanceof Polyline) {
+  //     console.log(111)
+  //     child.buildPoints();
+  //     const p = applyMatrixPoints(child.points!, child.matrix);
+  //     console.log(p);
+  //   }
+  //   else if (child instanceof ShapeGroup) {}
+  //   else {
+  //     return super.getChildRect(child);
+  //   }
+  // }
+
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();

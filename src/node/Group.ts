@@ -35,7 +35,7 @@ class Group extends Container {
   }
 
   // 获取单个孩子相对于本父元素的盒子尺寸
-  private getChildRect(child: Node) {
+  protected getChildRect(child: Node): { minX: number, minY: number, maxX: number, maxY: number} | undefined {
     const { width, height, matrix } = child;
     let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(
       0,
@@ -62,11 +62,16 @@ class Group extends Container {
       maxY: 0,
     };
     let isMask = false;
+    let first = true;
     // 注意要考虑mask和breakMask，被遮罩的都忽略
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       const computedStyle = child.computedStyle;
-      const { minX, minY, maxX, maxY } = this.getChildRect(child);
+      const o = this.getChildRect(child);
+      if (!o) {
+        continue;
+      }
+      const { minX, minY, maxX, maxY } = o;
       if (isMask && !computedStyle.breakMask && excludeMask) {
         continue;
       }
@@ -76,7 +81,8 @@ class Group extends Container {
       else if (computedStyle.breakMask) {
         isMask = false;
       }
-      if (i) {
+      if (first) {
+        first = false;
         rect.minX = Math.min(rect.minX, minX);
         rect.minY = Math.min(rect.minY, minY);
         rect.maxX = Math.max(rect.maxX, maxX);

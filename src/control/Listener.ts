@@ -1029,6 +1029,12 @@ export default class Listener extends Event {
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
 
+    this.selected.splice(0);
+    this.updateStyle.splice(0);
+    this.abcStyle.splice(0);
+    this.computedStyle.splice(0);
+    this.originStyle.splice(0);
+    this.cssStyle.splice(0);
     this.select.destroy();
   }
 
