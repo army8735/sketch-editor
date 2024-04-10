@@ -30,7 +30,7 @@ class Group extends Container {
       || Math.abs(r.maxX - rect[2]) > EPS
       || Math.abs(r.maxY - rect[3]) > EPS) {
       // 冒泡过程无需向下检测，直接向上
-      this.adjustPosAndSize();
+      this.adjustPosAndSize(r);
     }
   }
 
@@ -166,23 +166,33 @@ class Group extends Container {
   }
 
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
-  override adjustPosAndSize() {
+  override adjustPosAndSize(rectC?: {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  }) {
     if (this.fixedPosAndSize) {
       return false;
     }
     const { children } = this;
-    const rectC = this.getChildrenRect(false);
+    if (!rectC) {
+      rectC = this.getChildrenRect(false);
+    }
     const rect = this._rect || this.rect;
     const dx1 = rectC.minX - rect[0],
       dy1 = rectC.minY - rect[1],
       dx2 = rectC.maxX - rect[2],
       dy2 = rectC.maxY - rect[3];
     // 检查真正有变化，位置相对于自己原本位置为原点
-    if (Math.abs(dx1) > EPS || Math.abs(dy1) > EPS || Math.abs(dx2) > EPS || Math.abs(dy2) > EPS) {
+    if (Math.abs(dx1) > EPS
+      || Math.abs(dy1) > EPS
+      || Math.abs(dx2) > EPS
+      || Math.abs(dy2) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
-      const gw = rect[2] - rect[0];
-      const gh = rect[3] - rect[1];
+      const gw = this.width;
+      const gh = this.height;
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
