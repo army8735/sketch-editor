@@ -1,4 +1,4 @@
-const { StyleUnit } = editor.style.define;
+const { StyleUnit } = sketchEditor.style.define;
 
 const $input = document.querySelector('#file');
 const $page = document.querySelector('#page');
@@ -47,7 +47,7 @@ let hoverTree, selectTree;
 let zoom = 1;
 let isEditText;
 
-// editor.util.inject.measureImg(editor.node.ArtBoard.BOX_SHADOW);
+// sketchEditor.util.inject.measureImg(sketchEditor.node.ArtBoard.BOX_SHADOW);
 
 async function initFonts() {
   try {
@@ -59,7 +59,7 @@ async function initFonts() {
       return;
     }
     const fonts = await window.queryLocalFonts();
-    editor.style.font.registerLocalFonts(fonts);
+    sketchEditor.style.font.registerLocalFonts(fonts);
   } catch(err) {
     console.error(err.message);
   }
@@ -213,7 +213,7 @@ const defaultFont = {
 }
 for (let k in defaultFont) {
   if (defaultFont.hasOwnProperty(k)) {
-    editor.style.font.registerData(defaultFont[k]);
+    sketchEditor.style.font.registerData(defaultFont[k]);
   }
 }
 
@@ -224,7 +224,7 @@ $input.onchange = function(e) {
   const reader = new FileReader();
   reader.readAsArrayBuffer(file);
   reader.onload = function() {
-    editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
+    sketchEditor.openAndConvertSketchBuffer(reader.result).then(function(json) {
       const canvas = document.createElement('canvas');
 
       function resize() {
@@ -253,7 +253,7 @@ $input.onchange = function(e) {
         hideSelect();
       }
       $canvasC.appendChild(canvas);
-      root = editor.parse(json, canvas, dpi);
+      root = sketchEditor.parse(json, canvas, dpi);
 
       // page列表
       const pages = root.getPages();
@@ -279,7 +279,7 @@ $input.onchange = function(e) {
       });
 
       // 每次切页面更新数据
-      root.on(editor.util.Event.PAGE_CHANGED, function(newPage) {
+      root.on(sketchEditor.util.Event.PAGE_CHANGED, function(newPage) {
         curPage = newPage;
         zoom = curPage.getZoom();
         const last = $page.querySelector('.current');
@@ -301,7 +301,7 @@ $input.onchange = function(e) {
         hideSelect();
       });
 
-      root.on(editor.util.Event.DID_ADD_PAGE, function(newPage) {
+      root.on(sketchEditor.util.Event.DID_ADD_PAGE, function(newPage) {
         const uuid = newPage.props.uuid;
         const li = document.createElement('li');
         li.setAttribute('uuid', uuid);
@@ -311,7 +311,7 @@ $input.onchange = function(e) {
         $page.appendChild(li);
       });
 
-      root.on(editor.util.Event.DID_ADD_DOM, function(node) {
+      root.on(sketchEditor.util.Event.DID_ADD_DOM, function(node) {
         const li = genNodeTree(node, abHash);
         const parent = node.parent, children = parent.children, uuid = parent.props.uuid;
         const i = children.indexOf(node);
@@ -332,13 +332,13 @@ $input.onchange = function(e) {
         }
       });
 
-      root.on(editor.util.Event.WILL_REMOVE_DOM, function(node) {
+      root.on(sketchEditor.util.Event.WILL_REMOVE_DOM, function(node) {
         const li = abHash[node.props.uuid];
         li.parentElement.removeChild(li);
         delete abHash[node.props.uuid];
       });
 
-      root.on(editor.util.Event.UPDATE_CURSOR, function(x, y, h) {
+      root.on(sketchEditor.util.Event.UPDATE_CURSOR, function(x, y, h) {
         showEditText(x / dpi, y / dpi, h / dpi);
         setFontPanel(selectNode);
       });
@@ -352,7 +352,7 @@ $input.onchange = function(e) {
 
 function genNodeTree(node, abHash) {
   let type = getNodeType(node);
-  if (node instanceof editor.node.Geom || node instanceof editor.node.ShapeGroup) {
+  if (node instanceof sketchEditor.node.Geom || node instanceof sketchEditor.node.ShapeGroup) {
     const rect = node.rect;
     let width = rect[2] - rect[0];
     let height = rect[3] - rect[1];
@@ -379,7 +379,7 @@ function genNodeTree(node, abHash) {
   if (node.computedStyle.maskMode) {
     classNames.push('mask');
   }
-  if (node instanceof editor.node.SymbolMaster) {
+  if (node instanceof sketchEditor.node.SymbolMaster) {
     classNames.push('symbol-master');
   }
   li.className = classNames.join(' ');
@@ -388,12 +388,12 @@ function genNodeTree(node, abHash) {
   let s = `<div>
 <span class="type">${type}</span>
 <span class="name">${node.props.name}</span>`
-  if (!(node instanceof editor.node.ArtBoard)) {
+  if (!(node instanceof sketchEditor.node.ArtBoard)) {
     s += `<span class="visible ${node.computedStyle.visible ? 't' : ''}">${node.computedStyle.visible ? '可见' : '隐藏'}</span>`;
   }
   s += '</div>';
   li.innerHTML = s;
-  if (node instanceof editor.node.Container) {
+  if (node instanceof sketchEditor.node.Container) {
     const children = node.children;
     if (children.length > 0) {
       const ol = document.createElement('ol');
@@ -408,28 +408,28 @@ function genNodeTree(node, abHash) {
 
 function getNodeType(node) {
   let type = '';
-  if (node instanceof editor.node.SymbolInstance) {
+  if (node instanceof sketchEditor.node.SymbolInstance) {
     type = '🔷';
   }
-  else if (node instanceof editor.node.ArtBoard) {
+  else if (node instanceof sketchEditor.node.ArtBoard) {
     type = '🎨';
   }
-  else if (node instanceof editor.node.Group) {
+  else if (node instanceof sketchEditor.node.Group) {
     type = '🗂️';
   }
-  else if (node instanceof editor.node.Bitmap) {
+  else if (node instanceof sketchEditor.node.Bitmap) {
     type = '🖼️';
   }
-  else if (node instanceof editor.node.Text) {
+  else if (node instanceof sketchEditor.node.Text) {
     type = '🔤';
   }
-  else if (node instanceof editor.node.Geom) {
+  else if (node instanceof sketchEditor.node.Geom) {
     type = '📏';
   }
-  else if (node instanceof editor.node.ShapeGroup) {
+  else if (node instanceof sketchEditor.node.ShapeGroup) {
     type = '📐';
   }
-  else if (node instanceof editor.node.Slice) {
+  else if (node instanceof sketchEditor.node.Slice) {
     type = '⬜';
   }
   else {
@@ -544,20 +544,20 @@ function getActiveNodeWhenSelected(node) {
     }
     // 检查二者是否有共同group祖先，没有只能展示最上层group，有则看是否为group
     let p1 = node;
-    while (p1.parent instanceof editor.node.Group) {
+    while (p1.parent instanceof sketchEditor.node.Group) {
       p1 = p1.parent;
     }
     let p2 = selectNode;
-    while (p2.parent instanceof editor.node.Group) {
+    while (p2.parent instanceof sketchEditor.node.Group) {
       p2 = p2.parent;
     }
     if (p1 !== p2) {
       return p1;
     }
-    else if ((node instanceof editor.node.Group)) {
+    else if ((node instanceof sketchEditor.node.Group)) {
       let p = selectNode.parent;
       // 如果需要展示的node是select的祖先group，要忽略
-      while (p && p instanceof editor.node.Group) {
+      while (p && p instanceof sketchEditor.node.Group) {
         if (p === node) {
           return;
         }
@@ -587,7 +587,7 @@ function showSelect(node) {
   // li.scrollIntoView();
   selectTree = li;
   selectTree.classList.add('select');
-  if (node instanceof editor.node.Text) {
+  if (node instanceof sketchEditor.node.Text) {
     setFontPanel(node);
     $text.classList.add('show');
   }
@@ -750,7 +750,7 @@ function onMove(e, isOnControl) {
       isMouseMove = true;
       if(selectNode) {
         // 处于编辑状态时，隐藏光标显示区域
-        if(isEditText && selectNode instanceof editor.node.Text) {
+        if(isEditText && selectNode instanceof sketchEditor.node.Text) {
           selectNode.setCursorEndByAbsCoord(nx * dpi, ny * dpi);
           // $inputContainer.style.display = 'none';
           $inputContainer.style.opacity = 0;
@@ -881,7 +881,7 @@ $overlap.addEventListener('dblclick', function(e) {
   const { offsetX, offsetY } = e;
   const x = $selection.offsetLeft + offsetX;
   const y = $selection.offsetTop + offsetY;
-  if (selectNode && selectNode instanceof editor.node.Text) {
+  if (selectNode && selectNode instanceof sketchEditor.node.Text) {
     const p = selectNode.setCursorStartByAbsCoord(x * dpi, y * dpi);
     showEditText(p.x / dpi, p.y / dpi, p.h / dpi);
     setFontPanel(selectNode);
@@ -912,7 +912,7 @@ function updateEditText() {
 
 function hideEditText() {
   if (isEditText) {
-    if (selectNode && selectNode instanceof editor.node.Text) {
+    if (selectNode && selectNode instanceof sketchEditor.node.Text) {
       selectNode.hideSelectArea();
     }
     isEditText = false;
@@ -1212,11 +1212,11 @@ function showBasic() {
   $basic.querySelectorAll('.num').forEach(item => {
     item.disabled = false;
   });
-  $x.value = editor.math.toPrecision(frameProps.x, 2);
-  $y.value = editor.math.toPrecision(frameProps.y, 2);
-  $rotate.value = editor.math.toPrecision(frameProps.rotation, 2);
-  $w.value = editor.math.toPrecision(frameProps.w, 2);
-  $h.value = editor.math.toPrecision(frameProps.h, 2);
+  $x.value = sketchEditor.math.toPrecision(frameProps.x, 2);
+  $y.value = sketchEditor.math.toPrecision(frameProps.y, 2);
+  $rotate.value = sketchEditor.math.toPrecision(frameProps.rotation, 2);
+  $w.value = sketchEditor.math.toPrecision(frameProps.w, 2);
+  $h.value = sketchEditor.math.toPrecision(frameProps.h, 2);
 }
 
 function hideBasic() {
@@ -1256,7 +1256,7 @@ $y.addEventListener('change', function() {
 });
 
 function setFontPanel(node) {
-  const { info, data } = editor.style.font;
+  const { info, data } = sketchEditor.style.font;
   let s = '';
   for (let i in info) {
     if (info.hasOwnProperty(i)) {
@@ -1267,7 +1267,7 @@ function setFontPanel(node) {
       }
     }
   }
-  const res = isEditText ? editor.tools.text.getEditData(node) : editor.tools.text.getData([node]);
+  const res = isEditText ? sketchEditor.tools.text.getEditData(node) : sketchEditor.tools.text.getData([node]);
   if (res.fontFamily.length > 1) {
     s = '<option value="多种字体" disabled="disabled">多种字体</option>' + s;
   }
@@ -1306,7 +1306,7 @@ function setFontPanel(node) {
     $style2.classList.remove('style-n');
     $style.disabled = !res.fontWeightList.length || res.fontFamily.length > 1;
   }
-  $color.value = editor.style.css.color2hexStr(res.color[0]).slice(0, 7);
+  $color.value = sketchEditor.style.css.color2hexStr(res.color[0]).slice(0, 7);
   if (res.color.length > 1) {
     $color2.style.display = 'block';
   }
@@ -1316,7 +1316,7 @@ function setFontPanel(node) {
 }
 
 $family.addEventListener('change', function() {
-  const list = editor.style.font.data[$family.value.toLowerCase()].list;
+  const list = sketchEditor.style.font.data[$family.value.toLowerCase()].list;
   const fontFamily = list[0].postscriptName;
   if (isEditText) {
     if (selectNode.cursor.isMulti) {

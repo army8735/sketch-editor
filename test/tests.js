@@ -1,9 +1,9 @@
 const expect = require('expect.js');
-const editor = require('../dist/index');
+const sketchEditor = require('../dist/index');
 
 describe('Event', function() {
   it('on && emit', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -12,7 +12,7 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('on data', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = [];
     event.on('name', function(a, b) {
       count = [a, b];
@@ -21,7 +21,7 @@ describe('Event', function() {
     expect(count).to.eql([1, 2]);
   });
   it('emit count', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -35,7 +35,7 @@ describe('Event', function() {
     expect(count).to.eql(4);
   });
   it('off', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     function cb() {
       count++;
@@ -46,7 +46,7 @@ describe('Event', function() {
     expect(count).to.eql(0);
   });
   it('off no ref', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -58,7 +58,7 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('off no param', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -68,7 +68,7 @@ describe('Event', function() {
     expect(count).to.eql(0);
   });
   it('off arguments', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     function cb() {
       count++;
@@ -82,7 +82,7 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('callback list is not altered during trigger', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = [0, 0, 0];
     function cb1() {
       count[1]++;
@@ -100,7 +100,7 @@ describe('Event', function() {
     expect(count).to.eql([1, 1, 1]);
   });
   it('return self', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -108,7 +108,7 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('on array', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on(['name', 'name2'], function() {
       count++;
@@ -118,7 +118,7 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
   it('emit array', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -130,7 +130,7 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
   it('off array', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.on('name', function() {
       count++;
@@ -143,7 +143,7 @@ describe('Event', function() {
     expect(count).to.eql(0);
   });
   it('once', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.once('name', function() {
       count++;
@@ -154,7 +154,7 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('once array but emit only 1', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.once(['name', 'name2'], function() {
       count++;
@@ -165,7 +165,7 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('once array', function() {
-    let event = new editor.util.Event();
+    let event = new sketchEditor.util.Event();
     let count = 0;
     event.once(['name', 'name2'], function() {
       count++;

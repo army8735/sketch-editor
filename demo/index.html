@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>sketch editor</title>
+  <title>sketch sketchEditor</title>
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
@@ -25,8 +25,8 @@
 <script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
 <script src="../dist/index.js"></script>
 <script>
-  // editor.config.tile = true;
-  // editor.config.debug = true;
+  // sketchEditor.config.tile = true;
+  // sketchEditor.config.debug = true;
 
   const $canvasC = document.querySelector('#canvasC');
   const dpi = 2;
@@ -38,7 +38,7 @@
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
     reader.onload = function() {
-      editor.openAndConvertSketchBuffer(reader.result).then(function(json) {
+      sketchEditor.openAndConvertSketchBuffer(reader.result).then(function(json) {
         const canvas = document.createElement('canvas');
         let root;
 
@@ -68,11 +68,10 @@
           hideSelect();
         }
         $canvasC.appendChild(canvas);
-        root = editor.parse(json, canvas, dpi);
-        root.setPageIndex(json.currentPageIndex || 0);
+        root = sketchEditor.parse(json, canvas, dpi);
 
-        const listener = editor.control.initCanvasControl(root, $canvasC);
-        editor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
+        sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
       });
     }
   };

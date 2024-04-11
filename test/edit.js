@@ -1,13 +1,13 @@
 let canvas = document.querySelector('canvas');
 let input = document.querySelector('#base64');
-editor.ca.preserveDrawingBuffer = true;
+sketchEditor.ca.preserveDrawingBuffer = true;
 
 fetch('./sketch.sketch')
   .then((res) => {
     return res.arrayBuffer();
   })
   .then((buff) => {
-    editor
+    sketchEditor
       .openAndConvertSketchBuffer(buff)
       .then(json => {
         const dpi = 2;
@@ -16,10 +16,10 @@ fetch('./sketch.sketch')
         canvas.width = 500 * dpi;
         canvas.height = 500 * dpi;
         $canvasC.appendChild(canvas);
-        const root = window.root = editor.parse(json, canvas, dpi);
+        const root = window.root = sketchEditor.parse(json, canvas, dpi);
         root.setPageIndex(json.currentPageIndex || 0);
-        const listener = editor.control.initCanvasControl(root, $canvasC);
-        editor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
+        sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
         let count = 0;
         $canvasC.addEventListener('mousedown', (e) => {
           if (e.button === 1) {
@@ -29,7 +29,7 @@ fetch('./sketch.sketch')
           else if (e.button === 2) {
             e.preventDefault();
             let node = root.getCurPage().children[0];
-            if (node instanceof editor.node.Container) {
+            if (node instanceof sketchEditor.node.Container) {
               node = node.children[0];
             }
             const style = node.style;
