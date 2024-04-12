@@ -10,7 +10,8 @@ import glslify from 'rollup-plugin-glslify';
 const publicConfig = {
   format: 'umd',
   name: 'sketchEditor',
-}
+  sourcemap: true,
+};
 
 export default [
   {

@@ -2570,7 +2570,7 @@ export function genBgBlur(
   //     document.body.appendChild(img);
   //   });
   // }
-  // 可能存在的饱和度
+  // 可能存在的饱和度 TODO 没生效
   if (blur.saturation !== undefined && blur.saturation !== 1) {
     const t = genColorMatrix(
       gl,

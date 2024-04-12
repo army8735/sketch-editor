@@ -8,7 +8,8 @@ import postcss from 'rollup-plugin-postcss';
 const publicConfig = {
   format: 'umd',
   name: 'sketchEditor',
-}
+  sourcemap: true,
+};
 
 export default [
   {
