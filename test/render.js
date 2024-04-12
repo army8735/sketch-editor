@@ -13,7 +13,6 @@ fetch('./sketch.sketch')
         const dpi = 2;
         const { clientWidth, clientHeight } = canvas;
         const root = window.root = sketchEditor.parse(json, canvas, dpi);
-        root.setPageIndex(json.currentPageIndex || 0);
         root.on(sketchEditor.node.Root.REFRESH_COMPLETE, () => {
           input.value = canvas.toDataURL();
         });

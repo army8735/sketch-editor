@@ -17,7 +17,6 @@ fetch('./sketch.sketch')
         canvas.height = 500 * dpi;
         $canvasC.appendChild(canvas);
         const root = window.root = sketchEditor.parse(json, canvas, dpi);
-        root.setPageIndex(json.currentPageIndex || 0);
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
         let count = 0;
