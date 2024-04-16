@@ -11,7 +11,6 @@ fetch('./sketch.sketch')
       .openAndConvertSketchBuffer(buff)
       .then(json => {
         const dpi = 2;
-        const { clientWidth, clientHeight } = canvas;
         const root = window.root = sketchEditor.parse(json, canvas, dpi);
         root.on(sketchEditor.node.Root.REFRESH_COMPLETE, () => {
           input.value = canvas.toDataURL();
