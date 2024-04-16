@@ -5,10 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
   <title>test</title>
   <style>
+    body {
+      /*background: #000;*/
+    }
     canvas {
       display: block;
       width: 500px;
       height: 500px;
+    }
+    input {
+      display: block;
+    }
+    img {
+      margin-bottom:-6px;
     }
   </style>
 </head>
@@ -17,7 +26,7 @@
 <input id="base64" type="text" value=""/>
 <script src="../../../dist/index.js"></script>
 <script>
-  sketchEditor.config.MAX_TEXTURE_SIZE = 128;
+  sketchEditor.config.MAX_TEXTURE_SIZE = 256;
 </script>
 <script src="../../render.js"></script>
 </body>

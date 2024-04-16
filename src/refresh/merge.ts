@@ -211,7 +211,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
-  // console.warn('mergeList', mergeList);
+  // console.warn('mergeList', mergeList.slice(0));
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
@@ -2462,23 +2462,38 @@ export function genBgBlur(
   const listO = outline.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   // {
-  //   const { w, h, t } = listB[0];
-  //   frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
-  //   const pixels = new Uint8Array(w * h * 4);
-  //   gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-  //   const os = inject.getOffscreenCanvas(w, h);
-  //   const id = os.ctx.getImageData(0, 0, w, h);
-  //   for (let i = 0, len = w * h * 4; i < len ;i++) {
-  //     id.data[i] = pixels[i];
-  //   }
-  //   os.ctx.putImageData(id, 0, 0);
-  //   const img = document.createElement('img');
-  //   img.setAttribute('name', 'a');
-  //   os.canvas.toBlob(blob => {
-  //     img.src = URL.createObjectURL(blob!);
-  //     document.body.appendChild(img);
+  //   const arr: HTMLImageElement[] = [];
+  //   listB.forEach((item, i) => {
+  //     const { w, h, t } = item;
+  //     frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
+  //     const pixels = new Uint8Array(w * h * 4);
+  //     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  //     const os = inject.getOffscreenCanvas(w, h);
+  //     const id = os.ctx.getImageData(0, 0, w, h);
+  //     for (let i = 0, len = w * h * 4; i < len ;i++) {
+  //       id.data[i] = pixels[i];
+  //     }
+  //     os.ctx.putImageData(id, 0, 0);
+  //     const img = document.createElement('img');
+  //     img.setAttribute('name', i.toString());
+  //     os.canvas.toBlob(blob => {
+  //       img.src = URL.createObjectURL(blob!);
+  //       img.style.width = w * 0.5 + 'px';
+  //       img.style.height = h * 0.5 + 'px';
+  //       arr.push(img);
+  //       if (arr.length === listB.length) {
+  //         arr.sort((a, b) => {
+  //           return parseInt(a.getAttribute('name')!)
+  //             - parseInt(b.getAttribute('name')!);
+  //         });
+  //         arr.forEach(img => {
+  //           document.body.appendChild(img);
+  //         });
+  //       }
+  //     });
   //   });
   // }
+  const arr: HTMLImageElement[] = [];
   // outline扩展和背景blur一样大，方便后续mask
   const listO2: WebGLTexture[] = [];
   for (let i = 0, len = listB.length; i < len; i++) {
@@ -2502,9 +2517,9 @@ export function genBgBlur(
     }
     for (let j = 0, len = listO.length; j < len; j++) {
       const { bbox: bbox2, t: t2 } = listO[j];
-      if (checkInRect(bbox2, matrix, bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1])) {
-        // 这里不能传bbox和matrix，因为bg因blur造成了扩展，原点发生变化，需手动算出相对于原始无blur的位置后再偏移
-        // const t = bbox2Coords(bbox2, cx, cy, 0, 0, false, matrix);
+      if (checkInRect(bbox2, matrix,
+        bbox[0] * scale, bbox[1] * scale,
+        (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale)) {
         drawTextureCache(
           gl,
           cx,
@@ -2515,7 +2530,6 @@ export function genBgBlur(
               opacity: 1,
               matrix,
               bbox: bbox2,
-              // coords: t,
               texture: t2,
             },
           ],
@@ -2526,6 +2540,32 @@ export function genBgBlur(
         );
       }
     }
+
+    // const pixels = new Uint8Array(w * h * 4);
+    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    // const os = inject.getOffscreenCanvas(w, h);
+    // const id = os.ctx.getImageData(0, 0, w, h);
+    // for (let i = 0, len = w * h * 4; i < len ;i++) {
+    //   id.data[i] = pixels[i];
+    // }
+    // os.ctx.putImageData(id, 0, 0);
+    // const img = document.createElement('img');
+    // img.setAttribute('name', i.toString());
+    // os.canvas.toBlob(blob => {
+    //   img.src = URL.createObjectURL(blob!);
+    //   img.style.width = w * 0.5 + 'px';
+    //   img.style.height = h * 0.5 + 'px';
+    //   arr.push(img);
+    //   if (arr.length === listB.length) {
+    //     arr.sort((a, b) => {
+    //       return parseInt(a.getAttribute('name')!)
+    //         - parseInt(b.getAttribute('name')!);
+    //     });
+    //     arr.forEach(img => {
+    //       document.body.appendChild(img);
+    //     });
+    //   }
+    // });
   }
   // 应用mask
   const maskProgram = programs.maskProgram;
@@ -2546,28 +2586,35 @@ export function genBgBlur(
     listB[i].t = tex;
   }
   // {
-  //   const { w, h, t } = listB[0];
-  //   gl.framebufferTexture2D(
-  //     gl.FRAMEBUFFER,
-  //     gl.COLOR_ATTACHMENT0,
-  //     gl.TEXTURE_2D,
-  //     t,
-  //     0,
-  //   );
-  //   gl.viewport(0, 0, w, h);
-  //   const pixels = new Uint8Array(w * h * 4);
-  //   gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-  //   const os = inject.getOffscreenCanvas(w, h);
-  //   const id = os.ctx.getImageData(0, 0, w, h);
-  //   for (let i = 0, len = w * h * 4; i < len ;i++) {
-  //     id.data[i] = pixels[i];
-  //   }
-  //   os.ctx.putImageData(id, 0, 0);
-  //   const img = document.createElement('img');
-  //   img.setAttribute('name', 'c');
-  //   os.canvas.toBlob(blob => {
-  //     img.src = URL.createObjectURL(blob!);
-  //     document.body.appendChild(img);
+  //   const arr: HTMLImageElement[] = [];
+  //   listB.forEach((item, i) => {
+  //     const { w, h, t } = item;
+  //     frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
+  //     const pixels = new Uint8Array(w * h * 4);
+  //     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  //     const os = inject.getOffscreenCanvas(w, h);
+  //     const id = os.ctx.getImageData(0, 0, w, h);
+  //     for (let i = 0, len = w * h * 4; i < len ;i++) {
+  //       id.data[i] = pixels[i];
+  //     }
+  //     os.ctx.putImageData(id, 0, 0);
+  //     const img = document.createElement('img');
+  //     img.setAttribute('name', i.toString());
+  //     os.canvas.toBlob(blob => {
+  //       img.src = URL.createObjectURL(blob!);
+  //       img.style.width = w * 0.5 + 'px';
+  //       img.style.height = h * 0.5 + 'px';
+  //       arr.push(img);
+  //       if (arr.length === listB.length) {
+  //         arr.sort((a, b) => {
+  //           return parseInt(a.getAttribute('name')!)
+  //             - parseInt(b.getAttribute('name')!);
+  //         });
+  //         arr.forEach(img => {
+  //           document.body.appendChild(img);
+  //         });
+  //       }
+  //     });
   //   });
   // }
   // 可能存在的饱和度 TODO 没生效
@@ -2593,9 +2640,13 @@ export function genBgBlur(
       }
     }
   }
-  // 原始纹理上绘入结果
+  // 原始纹理上绘入结果，即root或者局部根节点
   gl.useProgram(program);
   const listT = target.list;
+  const m = identity();
+  if (scale !== 1) {
+    multiplyScale(m, scale);
+  }
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.framebufferTexture2D(
@@ -2617,7 +2668,7 @@ export function genBgBlur(
           [
             {
               opacity: 1,
-              matrix,
+              matrix: m,
               bbox: bbox2,
               texture: t2,
             },

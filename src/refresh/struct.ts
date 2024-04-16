@@ -962,10 +962,12 @@ function renderWebglNoTile(
             target.bbox,
             scale,
           );
-          // 包装画布为TextureCache，默认画布不会超过尺寸限制，即便超过手动设置的，也不会超过系统
-          const wrap = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, W, H]));
+          const w = H / root.dpi;
+          const h = H / root.dpi;
+          // 包装画布bg为TextureCache，默认画布不会超过尺寸限制，即便超过手动设置的，也不会超过系统
+          const wrap = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, w, h]));
           wrap.list.push({
-            bbox: new Float64Array([0, 0, W, H]),
+            bbox: new Float64Array([0, 0, w, h]),
             w: W,
             h: H,
             t: resTexture,
