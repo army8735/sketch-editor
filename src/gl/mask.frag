@@ -15,5 +15,8 @@ void main() {
     discard;
   }
   vec4 color2 = texture2D(u_texture2, v_texCoords);
+  if (color2.a <= 0.0) {
+    discard;
+  }
   gl_FragColor = color2 * color1.a;
 }
