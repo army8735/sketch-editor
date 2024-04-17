@@ -23,6 +23,7 @@ import bgColorVert from '../gl/bgColor.vert';
 import bgColorFrag from '../gl/bgColor.frag';
 import bgShadowVert from '../gl/bgShadow.vert';
 import bgShadowFrag from '../gl/bgShadow.frag';
+import clipFrag from '../gl/clip.frag';
 import cmFrag from '../gl/cm.frag';
 import dropShadowFrag from '../gl/dropShadow.frag';
 import innerShadowFrag from '../gl/innerShadow.frag';
@@ -178,6 +179,7 @@ class Root extends Container implements FrameCallback {
     this.programs.bgShadowProgram = initShaders(gl, bgShadowVert, bgShadowFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     this.programs.maskProgram = initShaders(gl, simpleVert, maskFrag);
+    this.programs.clipProgram = initShaders(gl, simpleVert, clipFrag);
     this.programs.multiplyProgram = initShaders(gl, simpleVert, multiplyFrag);
     this.programs.screenProgram = initShaders(gl, simpleVert, screenFrag);
     this.programs.overlayProgram = initShaders(gl, simpleVert, overlayFrag);
@@ -542,6 +544,7 @@ class Root extends Container implements FrameCallback {
         'bgShadowProgram',
         'simpleProgram',
         'maskProgram',
+        'clipProgram',
         'multiplyProgram',
         'screenProgram',
         'overlayProgram',

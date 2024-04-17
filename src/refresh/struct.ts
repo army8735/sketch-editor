@@ -973,6 +973,8 @@ function renderWebglNoTile(
             t: resTexture,
           });
           genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
+          // blur过程会销毁掉原本的bg纹理
+          resTexture = wrap.list[0].t;
           gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
           gl.viewport(0, 0, W, H);
           gl.framebufferTexture2D(
