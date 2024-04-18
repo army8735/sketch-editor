@@ -1,7 +1,7 @@
 import { createTexture } from '../gl/webgl';
 import Node from '../node/Node';
 
-const UNIT = 512; // 高清方案下尺寸要*2=512
+let UNIT = 512; // 如果256则高清方案下尺寸要*2
 let uuid = 0;
 
 class Tile {
@@ -101,11 +101,31 @@ class Tile {
 
   toString() {
     return this.uuid + ': '
-      + this.x + ',' + this.y + ',' + (this.x + Tile.UNIT) + ',' + (this.y + Tile.UNIT)
+      + this.x + ',' + this.y + ',' + (this.x + UNIT) + ',' + (this.y + UNIT)
       + '; ' + this.bbox.map(item => Math.round(item)).join(',');
   }
 
-  static UNIT = UNIT;
+  static get UNIT() {
+    return UNIT;
+  };
+
+  static set UNIT(v: number) {
+    let n = v;
+    let count = 0;
+    while (n > 0) {
+      n >>= 1;
+      count++;
+    }
+    n = 0;
+    while (count > 0) {
+      count--;
+      n <<= 1;
+    }
+    if (n < 32) {
+      throw new Error('The UNIT of Tile muse be a power of 2 and the minimum is 32');
+    }
+    UNIT = n;
+  }
 
   static clean(list: Tile[]) {
     list.forEach(item => item.clean());

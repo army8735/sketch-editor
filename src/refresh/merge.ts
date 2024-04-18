@@ -2714,6 +2714,7 @@ export function genBgBlur(
   // 开始clip过程，去掉outline重合
   const clipProgram = programs.clipProgram;
   gl.useProgram(clipProgram);
+  // const arr3: HTMLImageElement[] = [];
   for (let i = 0, len = listT.length; i < len; i++) {
     const item = listT[i];
     const { w, h, t } = item;
@@ -2730,6 +2731,31 @@ export function genBgBlur(
     gl.deleteTexture(t);
     gl.deleteTexture(listO3[i]);
     item.t = tex;
+    // const pixels = new Uint8Array(w * h * 4);
+    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    // const os = inject.getOffscreenCanvas(w, h);
+    // const id = os.ctx.getImageData(0, 0, w, h);
+    // for (let i = 0, len = w * h * 4; i < len ;i++) {
+    //   id.data[i] = pixels[i];
+    // }
+    // os.ctx.putImageData(id, 0, 0);
+    // const img = document.createElement('img');
+    // img.setAttribute('name', i.toString());
+    // os.canvas.toBlob(blob => {
+    //   img.src = URL.createObjectURL(blob!);
+    //   img.style.width = w * 0.5 + 'px';
+    //   img.style.height = h * 0.5 + 'px';
+    //   arr3.push(img);
+    //   if (arr3.length === listT.length) {
+    //     arr3.sort((a, b) => {
+    //       return parseInt(a.getAttribute('name')!)
+    //         - parseInt(b.getAttribute('name')!);
+    //     });
+    //     arr3.forEach(img => {
+    //       document.body.appendChild(img);
+    //     });
+    //   }
+    // });
   }
   // 原始纹理上绘入结果，即root或者局部根节点
   gl.useProgram(program);
