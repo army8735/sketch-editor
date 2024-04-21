@@ -422,29 +422,6 @@ export function isPolygonOverlapRect(
     );
 }
 
-// export function getPointsRect(points: number[][] | number[][][]) {
-//   let first = true;
-//   let rect: Float64Array = new Float64Array([0, 0, 0, 0]);
-//   points.forEach(item => {
-//     if (item.length) {
-//       // 3维数组，即shapeGroup
-//       if (Array.isArray(item[0])) {
-//         item.forEach(item2 => {});
-//       }
-//       // 2维，即Polyline
-//       else {
-//         if (first) {
-//           rect[0] = item[0];
-//           rect[1] = item[0];
-//           rect[2] = item[0];
-//           rect[3] = item[0];
-//         }
-//         else {}
-//       }
-//     }
-//   });
-// }
-
 export default {
   d2r,
   r2d,

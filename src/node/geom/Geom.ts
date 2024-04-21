@@ -1,12 +1,11 @@
 import { Props } from '../../format';
-import bezier from '../../math/bezier';
 import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE, STROKE_POSITION } from '../../style/define';
-import { mergeBbox } from '../../util/util';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import { lineCap, lineJoin } from './border';
+import { getPointsRect } from '../../math/bbox';
 
 export type Loader = {
   error: boolean;
@@ -109,58 +108,9 @@ class Geom extends Node {
       // 可能不存在
       this.buildPoints();
       // 可能矢量编辑过程中超过或不足原本尺寸范围
-      const points = this.points || [];
+      const points = this.points;
       if (points && points.length) {
-        const first = points[0];
-        let xa: number, ya: number;
-        if (first.length === 4) {
-          xa = first[2];
-          ya = first[3];
-        }
-        else if (first.length === 6) {
-          xa = first[4];
-          ya = first[5];
-        }
-        else {
-          xa = first[0];
-          ya = first[1];
-        }
-        res[0] = xa;
-        res[1] = ya;
-        res[2] = xa;
-        res[3] = ya;
-        for (let i = 1, len = points.length; i < len; i++) {
-          const item = points[i];
-          let xb: number, yb: number;
-          if (item.length === 4) {
-            xb = item[2];
-            yb = item[3];
-            const b = bezier.bboxBezier(xa, ya, item[0], item[1], xb, yb);
-            mergeBbox(res, b[0], b[1], b[2], b[3]);
-          }
-          else if (item.length === 6) {
-            xb = item[4];
-            yb = item[5];
-            const b = bezier.bboxBezier(
-              xa,
-              ya,
-              item[0],
-              item[1],
-              item[2],
-              item[3],
-              xb,
-              yb,
-            );
-            mergeBbox(res, b[0], b[1], b[2], b[3]);
-          }
-          else {
-            xb = item[0];
-            yb = item[1];
-            mergeBbox(res, xb, yb, xb, yb);
-          }
-          xa = xb;
-          ya = yb;
-        }
+        getPointsRect(points, res);
       }
     }
     return res;

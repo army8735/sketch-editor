@@ -2,7 +2,6 @@ import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { getDefaultStyle, JNode, JStyle, Override, ShapeGroupProps, TAG_NAME } from '../../format';
-import bezier from '../../math/bezier';
 import bo from '../../math/bo';
 import { isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
@@ -24,7 +23,7 @@ import {
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
-import { mergeBbox, clone } from '../../util/util';
+import { clone } from '../../util/util';
 import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
@@ -32,6 +31,7 @@ import Polyline from './Polyline';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { lineJoin } from './border';
+import { getPointsRect, getShapeGroupRect } from '../../math/bbox';
 
 function scaleUp(points: number[][]) {
   return points.map(point => {
@@ -218,18 +218,36 @@ class ShapeGroup extends Group {
     this.points = res.map(o => scaleDown(o));
   }
 
-  // protected override getChildRect(child: Node) {
-  //   if (child instanceof Polyline) {
-  //     console.log(111)
-  //     child.buildPoints();
-  //     const p = applyMatrixPoints(child.points!, child.matrix);
-  //     console.log(p);
-  //   }
-  //   else if (child instanceof ShapeGroup) {}
-  //   else {
-  //     return super.getChildRect(child);
-  //   }
-  // }
+  // 和group不同，child的rect不是简单的[0,0,w,h]，而是考虑矢量图形的真实范围
+  protected override getChildRect(child: Node) {
+    if (child instanceof Polyline) {
+      child.buildPoints();
+      const p = applyMatrixPoints(child.points!, child.matrix);
+      const res = getPointsRect(p);
+      return {
+        minX: res[0],
+        minY: res[1],
+        maxX: res[2],
+        maxY: res[3],
+      };
+    }
+    else if (child instanceof ShapeGroup) {
+      child.buildPoints();
+      const p = child.points!.map(item => {
+        return applyMatrixPoints(item, child.matrix);
+      });
+      const res = getShapeGroupRect(p);
+      return {
+        minX: res[0],
+        minY: res[1],
+        maxX: res[2],
+        maxY: res[3],
+      };
+    }
+    else {
+      return super.getChildRect(child);
+    }
+  }
 
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
@@ -793,80 +811,7 @@ class ShapeGroup extends Group {
       // 子元素可能因为编辑模式临时超过范围
       const points = this.points;
       if (points && points.length) {
-        const first = points[0][0];
-        let xa: number, ya: number;
-        if (first.length === 4) {
-          xa = first[2];
-          ya = first[3];
-        }
-        else if (first.length === 6) {
-          xa = first[4];
-          ya = first[5];
-        }
-        else {
-          xa = first[0];
-          ya = first[1];
-        }
-        res[0] = xa;
-        res[1] = ya;
-        res[2] = xa;
-        res[3] = ya;
-        for (let i = 0, len = points.length; i < len; i++) {
-          const item = points[i];
-          for (let j = 0, len = item.length; j < len; j++) {
-            // first已经处理过了
-            if (!i && !j) {
-              continue;
-            }
-            const item2 = item[j];
-            // 每个区域的第一个特殊处理
-            if (!j) {
-              if (item2.length === 4) {
-                xa = item2[2];
-                ya = item2[3];
-              }
-              else if (item2.length === 6) {
-                xa = item2[4];
-                ya = item2[5];
-              }
-              else {
-                xa = item2[0];
-                ya = item2[1];
-              }
-              mergeBbox(res, xa, ya, xa, ya);
-              continue;
-            }
-            let xb: number, yb: number;
-            if (item2.length === 4) {
-              xb = item2[2];
-              yb = item2[3];
-              const b = bezier.bboxBezier(xa, ya, item2[0], item2[1], xb, yb);
-              mergeBbox(res, b[0], b[1], b[2], b[3]);
-            }
-            else if (item2.length === 6) {
-              xb = item2[4];
-              yb = item2[5];
-              const b = bezier.bboxBezier(
-                xa,
-                ya,
-                item2[0],
-                item2[1],
-                item2[2],
-                item2[3],
-                xb,
-                yb,
-              );
-              mergeBbox(res, b[0], b[1], b[2], b[3]);
-            }
-            else {
-              xb = item2[0];
-              yb = item2[1];
-              mergeBbox(res, xb, yb, xb, yb);
-            }
-            xa = xb;
-            ya = yb;
-          }
-        }
+        getShapeGroupRect(points, res);
       }
     }
     return res;
