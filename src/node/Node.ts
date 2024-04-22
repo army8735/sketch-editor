@@ -1186,7 +1186,6 @@ class Node extends Event {
     const bbox = includeBbox
       ? this._bbox || this.bbox
       : this._rect || this.rect;
-    console.log('getBoundingClientRect', this.props.name, this._rect?.join(','), bbox.join(','))
     let t;
     // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
     if (excludeRotate && !this.isPage) {
@@ -1484,7 +1483,6 @@ class Node extends Event {
     if (!parent || !root || (!dx1 && !dy1 && !dx2 && !dy2)) {
       return;
     }
-    console.log('adjustPosAndSizeSelf', dx1, dy1, dx2, dy2)
     const { width: pw, height: ph } = parent;
     const {
       top,
@@ -1559,7 +1557,6 @@ class Node extends Event {
     this._filterBbox = undefined;
     this._filterBbox2 = undefined;
     this.tempBbox = undefined;
-    console.log(this.width, this.height)
   }
 
   // 节点位置尺寸发生变更后，会递归向上影响，逐步检查，可能在某层没有影响提前跳出中断
