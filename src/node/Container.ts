@@ -10,9 +10,9 @@ import { clone } from '../util/util';
 import { LayoutData } from './layout';
 
 class Container extends Node {
-  children: Array<Node>;
+  children: Node[];
 
-  constructor(props: Props, children: Array<Node> = []) {
+  constructor(props: Props, children: Node[] = []) {
     super(props);
     this.children = children;
     const len = children.length;

@@ -1217,6 +1217,14 @@ class Text extends Node {
         // 还原
         ctx.globalCompositeOperation = 'source-over';
       }
+
+      // list[i].os.canvas.toBlob(blob => {
+      //   if (blob) {
+      //     const img = document.createElement('img');
+      //     img.src = URL.createObjectURL(blob);
+      //     document.body.appendChild(img);
+      //   }
+      // });
     }
   }
 
@@ -1336,7 +1344,7 @@ class Text extends Node {
 
   /**
    * 改变内容影响定位尺寸前防止中心对齐导致位移，一般情况是left%+translateX:-50%（水平方向，垂直同理），
-   * 先记录此时style，再将left换算成translateX为0的值，为了兼容，可以写成translateX是任意非零%值。
+   * 先记录此时style，再将left换算成translateX为0的值，为了兼容translateX是任意非零%值。
    * 一般状态下左对齐，将left变为px绝对值，这样内容改变重新排版的时候x坐标就不变，结束后还原回来。
    * 首要考虑textAlign，它的优先级高于对应方位的布局信息（比如居右对齐即便left是px都忽略，强制右侧对齐，视觉不懂css布局）。
    */
@@ -1612,7 +1620,7 @@ class Text extends Node {
     };
   }
 
-  // 和beforeEditContent()对应，可能prev为空即无需关心样式还原问题。
+  // 和beforeEdit()对应，可能prev为空即无需关心样式还原问题。
   private afterEdit(payload?: {
     isLeft: boolean,
     isCenter: boolean,
@@ -1680,6 +1688,7 @@ class Text extends Node {
           style.right.v += v;
           computedStyle.right += tx;
         }
+        computedStyle.translateX += tx;
       }
       else if (right.u !== StyleUnit.AUTO) {
         style.left.v = 0;
@@ -1783,6 +1792,7 @@ class Text extends Node {
         computedStyle.bottom += ty;
       }
       style.translateY.v = translateY.v;
+      computedStyle.translateY += ty;
     }
     else if (isMiddle) {
       if (translateY.u === StyleUnit.AUTO || translateY.u === StyleUnit.PX) {
