@@ -267,6 +267,14 @@ export type RootProps = Props & {
   layerTextStyles: {
     uuid: string;
   };
+  contextAttributes: {
+    alpha: boolean;
+    antialias: boolean;
+    premultipliedAlpha: boolean;
+    preserveDrawingBuffer: boolean;
+    depth: boolean;
+    stencil: boolean;
+  },
 };
 
 export type PageProps = Props & {

@@ -17,7 +17,9 @@ import ca from './gl/ca';
 
 export default {
   version,
-  parse(json: JFile | JLayer, canvasOrRoot?: HTMLCanvasElement | Root, dpi = 1) {
+  parse(json: JFile | JLayer, canvasOrRoot?: HTMLCanvasElement | Root, options: {
+    dpi: number,
+  } | number = { dpi: 1 }) {
     if (arguments.length === 1 || canvasOrRoot instanceof Root) {
       return parse(json as JLayer, canvasOrRoot as Root);
     }
@@ -30,6 +32,17 @@ export default {
     if (height <= 0) {
       height = 1;
     }
+    if (typeof options === 'number') {
+      options = { dpi: options };
+    }
+    const { dpi = 1 } = options;
+    const contextAttributes = Object.assign({}, ca);
+    Object.keys(ca).forEach(k => {
+      if (options.hasOwnProperty(k)) {
+        // @ts-ignore
+        contextAttributes[k] = options[k];
+      }
+    });
     const root = new node.Root({
       dpi,
       uuid: json.document.uuid,
@@ -40,6 +53,7 @@ export default {
         width,
         height,
       },
+      contextAttributes,
     });
     root.appendTo(canvasOrRoot);
 

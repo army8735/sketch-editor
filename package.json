@@ -1,6 +1,6 @@
 {
   "name": "sketch-editor",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "maintainers": [
     {
       "name": "army8735",
@@ -22,6 +22,7 @@
     "pdfjs-dist": "^3.11.174"
   },
   "dependencies": {
+    "@sketch-hq/sketch-file-format-ts": "^6.4.0",
     "jszip": "^3.10.1",
     "uuid": "^9.0.0"
   },
@@ -31,7 +32,6 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
-    "@sketch-hq/sketch-file-format-ts": "^6.4.0",
     "@types/uuid": "^9.0.1",
     "chromedriver": "^123.0.1",
     "expect.js": "^0.3.1",
