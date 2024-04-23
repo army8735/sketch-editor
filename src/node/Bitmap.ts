@@ -284,8 +284,8 @@ class Bitmap extends Node {
       const list = canvasCache.list;
       for (let i = 0, len = list.length; i < len; i++) {
         const { x, y, os: { ctx, canvas } } = list[i];
-        const dx2 = dx - x;
-        const dy2 = dy - y;
+        const dx2 = -x;
+        const dy2 = -y;
         ctx.drawImage(loader.source!, dx2, dy2, iw, ih);
         if (scale !== 1) {
           ctx.setLineDash(strokeDasharray.map((i) => i * scale));
@@ -760,7 +760,7 @@ class Bitmap extends Node {
             ctx2!.strokeStyle = '#FFF';
             ctx2!.stroke();
             ctx2!.restore();
-            ctx.drawImage(os!.canvas, 0, 0);
+            ctx.drawImage(os!.canvas, dx2 - dx, dy2 - dy);
             os!.release();
           }
           else {
