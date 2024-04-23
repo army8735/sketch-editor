@@ -903,6 +903,40 @@ class Bitmap extends Node {
     this._src = v;
     this.loadAndRefresh();
   }
+
+  override get bbox(): Float64Array {
+    let res = this._bbox;
+    if (!res) {
+      const rect = this._rect || this.rect;
+      res = this._bbox = rect.slice(0);
+      const {
+        strokeWidth,
+        strokeEnable,
+        strokePosition,
+      } = this.computedStyle;
+      // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗范围
+      let border = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+            border = Math.max(border, item);
+          }
+          else if (strokePosition[i] === STROKE_POSITION.CENTER) {
+            border = Math.max(border, item * 0.5);
+          }
+        }
+      });
+      const minX = res[0] - border;
+      const minY = res[1] - border;
+      const maxX = res[2] + border;
+      const maxY = res[3] + border;
+      res[0] = Math.min(res[0], minX);
+      res[1] = Math.min(res[1], minY);
+      res[2] = Math.max(res[2], maxX);
+      res[3] = Math.max(res[3], maxY);
+    }
+    return res;
+  }
 }
 
 export default Bitmap;

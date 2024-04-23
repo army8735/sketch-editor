@@ -292,7 +292,9 @@ class Polyline extends Geom {
     } = this.computedStyle;
     const list = canvasCache.list;
     for (let i = 0, len = list.length; i < len; i++) {
-      const { os: { ctx } } = list[i];
+      const { x, y, os: { ctx } } = list[i];
+      const dx2 = dx - x;
+      const dy2 = dy - y;
       if (scale !== 1) {
         ctx.setLineDash(strokeDasharray.map((i) => i * scale));
       }
@@ -300,7 +302,7 @@ class Polyline extends Geom {
         ctx.setLineDash(strokeDasharray);
       }
       ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx, dy);
+      canvasPolygon(ctx, points, scale, dx2, dy2);
       if (this.props.isClosed) {
         ctx.closePath();
       }
@@ -349,7 +351,7 @@ class Polyline extends Geom {
                   const os = inject.getOffscreenCanvas(w, h);
                   const ctx2 = os.ctx;
                   ctx2.beginPath();
-                  canvasPolygon(ctx2, points, scale, dx, dy);
+                  canvasPolygon(ctx2, points, scale, dx2, dy2);
                   if (this.props.isClosed) {
                     ctx2.closePath();
                   }
@@ -361,8 +363,8 @@ class Polyline extends Geom {
                       for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
                         ctx2.drawImage(
                           loader.source,
-                          dx + i * loader.width * scale * ratio,
-                          dy + j * loader.height * scale * ratio,
+                          dx2 + i * loader.width * scale * ratio,
+                          dy2 + j * loader.height * scale * ratio,
                           loader.width * scale * ratio,
                           loader.height * scale * ratio,
                         );
@@ -376,10 +378,10 @@ class Polyline extends Geom {
                     const x = (loader.width * sc - wc) * -0.5;
                     const y = (loader.height * sc - hc) * -0.5;
                     ctx2.drawImage(loader.source, 0, 0, loader.width, loader.height,
-                      x + dx, y + dy, loader.width * sc, loader.height * sc);
+                      x + dx2, y + dy2, loader.width * sc, loader.height * sc);
                   }
                   else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                    ctx2.drawImage(loader.source!, dx, dy, wc, hc);
+                    ctx2.drawImage(loader.source!, dx2, dy2, wc, hc);
                   }
                   else if (f.type === PATTERN_FILL_TYPE.FIT) {
                     const sx = wc / loader.width;
@@ -388,7 +390,7 @@ class Polyline extends Geom {
                     const x = (loader.width * sc - wc) * -0.5;
                     const y = (loader.height * sc - hc) * -0.5;
                     ctx2.drawImage(loader.source, 0, 0, loader.width, loader.height,
-                      x + dx, y + dy, loader.width * sc, loader.height * sc);
+                      x + dx2, y + dy2, loader.width * sc, loader.height * sc);
                   }
                   // 记得还原
                   ctx2.restore();
@@ -448,7 +450,7 @@ class Polyline extends Geom {
           else {
             f = f as ComputedGradient;
             if (f.t === GRADIENT.LINEAR) {
-              const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const gd = getLinear(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
               gd.stop.forEach((item) => {
                 lg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -456,7 +458,7 @@ class Polyline extends Geom {
               ctx.fillStyle = lg;
             }
             else if (f.t === GRADIENT.RADIAL) {
-              const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const gd = getRadial(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const rg = ctx.createRadialGradient(
                 gd.cx,
                 gd.cy,
@@ -474,7 +476,7 @@ class Polyline extends Geom {
                 ellipse = inject.getOffscreenCanvas(w, h);
                 const ctx2 = ellipse.ctx;
                 ctx2.beginPath();
-                canvasPolygon(ctx2, points, scale, dx, dy);
+                canvasPolygon(ctx2, points, scale, dx2, dy2);
                 if (this.props.isClosed) {
                   ctx2.closePath();
                 }
@@ -488,7 +490,7 @@ class Polyline extends Geom {
               }
             }
             else if (f.t === GRADIENT.CONIC) {
-              const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+              const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
               gd.stop.forEach((item) => {
                 cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -533,7 +535,7 @@ class Polyline extends Geom {
           // 限制在图形内clip
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, dx, dy);
+          canvasPolygon(ctx, points, scale, dx2, dy2);
           if (this.props.isClosed) {
             ctx.closePath();
           }
@@ -541,7 +543,7 @@ class Polyline extends Geom {
           ctx.fillStyle = '#FFF';
           // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, dx, dy);
+          canvasPolygon(ctx, points, scale, dx2, dy2);
           canvasPolygon(
             ctx,
             [
@@ -569,7 +571,7 @@ class Polyline extends Geom {
           ctx.restore();
           // 还原给stroke用
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, dx, dy);
+          canvasPolygon(ctx, points, scale, dx2, dy2);
           if (this.props.isClosed) {
             ctx.closePath();
           }
@@ -610,7 +612,7 @@ class Polyline extends Geom {
         // 或者渐变
         else {
           if (s.t === GRADIENT.LINEAR) {
-            const gd = getLinear(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
             gd.stop.forEach((item) => {
               lg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -618,7 +620,7 @@ class Polyline extends Geom {
             ctx.strokeStyle = lg;
           }
           else if (s.t === GRADIENT.RADIAL) {
-            const gd = getRadial(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const rg = ctx.createRadialGradient(
               gd.cx,
               gd.cy,
@@ -642,7 +644,7 @@ class Polyline extends Geom {
               ctx2.lineWidth = strokeWidth[i] * scale;
               ctx2.strokeStyle = '#FFF';
               ctx2.beginPath();
-              canvasPolygon(ctx2, points, scale, dx, dy);
+              canvasPolygon(ctx2, points, scale, dx2, dy2);
               if (this.props.isClosed) {
                 ctx2.closePath();
               }
@@ -679,7 +681,7 @@ class Polyline extends Geom {
             }
           }
           else if (s.t === GRADIENT.CONIC) {
-            const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -702,7 +704,7 @@ class Polyline extends Geom {
           ctx2.strokeStyle = ctx.strokeStyle;
           ctx2.lineWidth = strokeWidth[i] * 2 * scale;
           ctx2.beginPath();
-          canvasPolygon(ctx2, points, scale, dx, dy);
+          canvasPolygon(ctx2, points, scale, dx2, dy2);
         }
         else {
           ctx.lineWidth = strokeWidth[i] * scale;

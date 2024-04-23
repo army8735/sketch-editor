@@ -560,7 +560,7 @@ class Text extends Node {
     // 如果处于选择范围状态，渲染背景
     if (this.showSelectArea) {
       for (let i = 0, len = list.length; i < len; i++) {
-        const { os: { ctx } } = list[i];
+        const { x, y, os: { ctx } } = list[i];
         ctx.fillStyle = '#f4d3c1';
         const cursor = this.cursor;
         // 单行多行区分开
@@ -1214,13 +1214,13 @@ class Text extends Node {
         ctx.globalCompositeOperation = 'source-over';
       }
 
-      // list[i].os.canvas.toBlob(blob => {
-      //   if (blob) {
-      //     const img = document.createElement('img');
-      //     img.src = URL.createObjectURL(blob);
-      //     document.body.appendChild(img);
-      //   }
-      // });
+      list[i].os.canvas.toBlob(blob => {
+        if (blob) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(blob);
+          document.body.appendChild(img);
+        }
+      });
     }
   }
 
@@ -1378,8 +1378,8 @@ class Text extends Node {
       && !isFixedWidth
       && (
         left.u !== StyleUnit.AUTO
-          && translateX.v
-          && translateX.u === StyleUnit.PERCENT // 一般情况
+        && translateX.v
+        && translateX.u === StyleUnit.PERCENT // 一般情况
         || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边不变
       );
     // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
