@@ -1214,13 +1214,13 @@ class Text extends Node {
         ctx.globalCompositeOperation = 'source-over';
       }
 
-      list[i].os.canvas.toBlob(blob => {
-        if (blob) {
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(blob);
-          document.body.appendChild(img);
-        }
-      });
+      // list[i].os.canvas.toBlob(blob => {
+      //   if (blob) {
+      //     const img = document.createElement('img');
+      //     img.src = URL.createObjectURL(blob);
+      //     document.body.appendChild(img);
+      //   }
+      // });
     }
   }
 

@@ -19,7 +19,21 @@ enum State {
   EDIT_TEXT = 1, // 编辑文字进入特殊状态
 }
 
+export type ListenerOptions = {
+  disabled?: {
+    select?: boolean;
+    hover?: boolean;
+    move?: boolean; // 移动节点
+    resize?: boolean;
+    drag?: boolean; // 拖拽画布
+    scale?: boolean;
+    editText?: boolean;
+    input?: boolean;
+  };
+};
+
 export default class Listener extends Event {
+  options: ListenerOptions;
   state: State;
   root: Root;
   dom: HTMLElement;
@@ -49,8 +63,9 @@ export default class Listener extends Event {
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
+    this.options = options;
     this.state = State.NORMAL;
     this.root = root;
     this.dom = dom;
@@ -153,6 +168,9 @@ export default class Listener extends Event {
     this.dx = this.dy = 0;
     // 点到控制html上
     if (isControl) {
+      if (this.options.disabled?.resize) {
+        return;
+      }
       this.isControl = isControl;
       this.controlType = target.className;
       this.startX = e.pageX;
@@ -343,6 +361,9 @@ export default class Listener extends Event {
   }
 
   onMouseDown(e: MouseEvent) {
+    if (this.options.disabled?.select) {
+      return;
+    }
     const root = this.root;
     const page = root.getCurPage();
     if (!page) {
@@ -592,6 +613,9 @@ export default class Listener extends Event {
         this.input.hideCursor();
       }
       else {
+        if (this.options.disabled?.move) {
+          return;
+        }
         if (selected.length) {
           // 水平/垂直
           if (this.shiftKey) {
@@ -637,6 +661,9 @@ export default class Listener extends Event {
     }
     // 普通的hover
     else {
+      if (this.options.disabled?.hover) {
+        return;
+      }
       const node = root.getNode(
         (e.pageX - this.originX) * dpi,
         (e.pageY - this.originY) * dpi,
@@ -664,6 +691,9 @@ export default class Listener extends Event {
     // 空格拖拽画布
     if (this.spaceKey) {
       if (this.isMouseDown) {
+        if (this.options.disabled?.drag) {
+          return;
+        }
         this.select.hideHover();
         this.isMouseMove = true;
         const page = root.getCurPage();
@@ -680,6 +710,9 @@ export default class Listener extends Event {
         }
       }
       else {
+        if (this.options.disabled?.hover) {
+          return;
+        }
         const node = root.getNode(
           (e.pageX - this.originX) * dpi,
           (e.pageY - this.originY) * dpi,
@@ -744,6 +777,9 @@ export default class Listener extends Event {
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
       if (this.state === State.EDIT_TEXT) {
+        if (this.options.disabled?.input) {
+          return;
+        }
         const text = selected[0] as Text;
         const multi = text.checkCursorMulti();
         // 可能框选的文字为空不是多选，需取消
@@ -773,6 +809,9 @@ export default class Listener extends Event {
     this.isMouseDown = false;
     this.isMouseMove = false;
     if (this.spaceKey) {
+      if (this.options.disabled?.drag) {
+        return;
+      }
       this.dom.style.cursor = 'grab';
     }
     else {
@@ -831,11 +870,17 @@ export default class Listener extends Event {
     );
     if (node) {
       if (this.selected.length !== 1 || node !== this.selected[0]) {
+        if (this.options.disabled?.select) {
+          return;
+        }
         this.selected.splice(0);
         this.selected.push(node);
         this.select.showSelect(this.selected);
       }
       if (node instanceof Text) {
+        if (this.options.disabled?.editText) {
+          return;
+        }
         this.input.show(
           node,
           e.pageX - this.originX,
@@ -861,6 +906,9 @@ export default class Listener extends Event {
     this.select.hideHover();
     // 按下时缩放
     if (e.ctrlKey || e.metaKey) {
+      if (this.options.disabled?.scale) {
+        return;
+      }
       let sc = 0;
       if (e.deltaY < 0) {
         if (e.deltaY < -400) {
@@ -910,6 +958,9 @@ export default class Listener extends Event {
       this.emit(Listener.ZOOM_PAGE, scale);
     }
     else {
+      if (this.options.disabled?.drag) {
+        return;
+      }
       const { translateX, translateY } = page.getComputedStyle();
       page.updateStyle({
         translateX: translateX - e.deltaX,
