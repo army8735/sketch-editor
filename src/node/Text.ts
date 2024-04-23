@@ -561,6 +561,8 @@ class Text extends Node {
     if (this.showSelectArea) {
       for (let i = 0, len = list.length; i < len; i++) {
         const { x, y, os: { ctx } } = list[i];
+        const dx2 = -x;
+        const dy2 = -y;
         ctx.fillStyle = '#f4d3c1';
         const cursor = this.cursor;
         // 单行多行区分开
@@ -568,20 +570,20 @@ class Text extends Node {
           const lineBox = lineBoxList[cursor.startLineBox];
           const list = lineBox.list;
           let textBox = list[cursor.startTextBox];
-          let x1 = textBox.x * scale + dx;
+          let x1 = textBox.x * scale + dx2;
           ctx.font = textBox.font;
           x1 +=
             ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
             scale;
           textBox = list[cursor.endTextBox];
-          let x2 = textBox.x * scale + dx;
+          let x2 = textBox.x * scale + dx2;
           ctx.font = textBox.font;
           x2 +=
             ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
           // 反向api自动支持了
           ctx.fillRect(
             x1,
-            lineBox.y * scale + dy,
+            lineBox.y * scale + dy2,
             x2 - x1,
             lineBox.lineHeight * scale,
           );
@@ -601,13 +603,13 @@ class Text extends Node {
           let list = lineBox.list;
           let textBox = list[startTextBox];
           if (textBox) {
-            let x1 = textBox.x * scale + dx;
+            let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
             x1 +=
               ctx.measureText(textBox.str.slice(0, startString)).width * scale;
             ctx.fillRect(
               x1,
-              lineBox.y * scale + dy,
+              lineBox.y * scale + dy2,
               lineBox.w * scale - x1,
               lineBox.lineHeight * scale,
             );
@@ -617,8 +619,8 @@ class Text extends Node {
             const lineBox = lineBoxList[i];
             if (lineBox.list.length) {
               ctx.fillRect(
-                lineBox.list[0].x * scale + dx,
-                lineBox.y * scale + dy,
+                lineBox.list[0].x * scale + dx2,
+                lineBox.y * scale + dy2,
                 lineBox.w * scale,
                 lineBox.lineHeight * scale,
               );
@@ -629,11 +631,11 @@ class Text extends Node {
           list = lineBox.list;
           textBox = list[endTextBox];
           if (textBox) {
-            let x1 = textBox.x * scale + dx;
+            let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
             let x2 =
-              ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx;
-            ctx.fillRect(x1, lineBox.y * scale + dy, x2, lineBox.lineHeight * scale);
+              ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx2;
+            ctx.fillRect(x1, lineBox.y * scale + dy2, x2, lineBox.lineHeight * scale);
           }
         }
       }
@@ -688,7 +690,7 @@ class Text extends Node {
               textDecoration.forEach(item => {
                 if (item === TEXT_DECORATION.UNDERLINE) {
                   ctx.fillRect(
-                    textBox.x,
+                    textBox.x * scale + dx,
                     (textBox.y + textBox.contentArea - 1.5) * scale + dy,
                     textBox.w * scale,
                     3 * scale,
@@ -696,7 +698,7 @@ class Text extends Node {
                 }
                 else if (item === TEXT_DECORATION.LINE_THROUGH) {
                   ctx.fillRect(
-                    textBox.x,
+                    textBox.x * scale + dx,
                     (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
                     textBox.w * scale,
                     3 * scale,
@@ -715,7 +717,7 @@ class Text extends Node {
               textDecoration.forEach(item => {
                 if (item === TEXT_DECORATION.UNDERLINE) {
                   ctx.strokeRect(
-                    textBox.x,
+                    textBox.x * scale + dx,
                     (textBox.y + textBox.contentArea - 1.5) * scale + dy,
                     textBox.w * scale,
                     3 * scale,
@@ -723,7 +725,7 @@ class Text extends Node {
                 }
                 else if (item === TEXT_DECORATION.LINE_THROUGH) {
                   ctx.strokeRect(
-                    textBox.x,
+                    textBox.x * scale + dx,
                     (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
                     textBox.w * scale,
                     3 * scale,
@@ -738,6 +740,8 @@ class Text extends Node {
 
     for (let i = 0, len = list.length; i < len; i++) {
       const { x, y, os: { ctx } } = list[i];
+      const dx2 = -x;
+      const dy2 = -y;
       // fill就用普通颜色绘制，每个fill都需绘制一遍
       if (hasFill) {
         for (let i = 0, len = fill.length; i < len; i++) {
@@ -789,8 +793,8 @@ class Text extends Node {
                         for (let j = 0, len = Math.ceil(height / ratio / loader.height); j < len; j++) {
                           ctx2.drawImage(
                             loader.source!,
-                            dx + i * loader.width * scale * ratio,
-                            dy + j * loader.height * scale * ratio,
+                            dx2 + i * loader.width * scale * ratio,
+                            dy2 + j * loader.height * scale * ratio,
                             loader.width * scale * ratio,
                             loader.height * scale * ratio,
                           );
@@ -804,10 +808,10 @@ class Text extends Node {
                       const x = (loader.width * sc - wc) * -0.5;
                       const y = (loader.height * sc - hc) * -0.5;
                       ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
-                        x + dx, y + dy, loader.width * sc, loader.height * sc);
+                        x + dx2, y + dy2, loader.width * sc, loader.height * sc);
                     }
                     else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                      ctx2.drawImage(loader.source!, dx, dy, wc, hc);
+                      ctx2.drawImage(loader.source!, dx2, dy2, wc, hc);
                     }
                     else if (f.type === PATTERN_FILL_TYPE.FIT) {
                       const sx = wc / loader.width;
@@ -816,7 +820,7 @@ class Text extends Node {
                       const x = (loader.width * sc - wc) * -0.5;
                       const y = (loader.height * sc - hc) * -0.5;
                       ctx2.drawImage(loader.source!, 0, 0, loader.width, loader.height,
-                        x + dx, y + dy, loader.width * sc, loader.height * sc);
+                        x + dx2, y + dy2, loader.width * sc, loader.height * sc);
                     }
                     // 先离屏混合只展示text部分
                     ctx2.fillStyle = '#FFF';
@@ -874,7 +878,7 @@ class Text extends Node {
             else {
               f = f as ComputedGradient;
               if (f.t === GRADIENT.LINEAR) {
-                const gd = getLinear(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                const gd = getLinear(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
                 const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
                 gd.stop.forEach((item) => {
                   lg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -882,7 +886,7 @@ class Text extends Node {
                 ctx.fillStyle = lg;
               }
               else if (f.t === GRADIENT.RADIAL) {
-                const gd = getRadial(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                const gd = getRadial(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
                 const rg = ctx.createRadialGradient(
                   gd.cx,
                   gd.cy,
@@ -911,7 +915,7 @@ class Text extends Node {
                 }
               }
               else if (f.t === GRADIENT.CONIC) {
-                const gd = getConic(f.stops, f.d, dx, dy, w - dx * 2, h - dy * 2);
+                const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
                 const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
                 gd.stop.forEach((item) => {
                   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -975,23 +979,23 @@ class Text extends Node {
             setFontAndLetterSpacing(ctx, textBox, scale);
             ctx.fillText(
               textBox.str,
-              textBox.x * scale + dx,
-              (textBox.y + textBox.baseline) * scale + dy,
+              textBox.x * scale + dx2,
+              (textBox.y + textBox.baseline) * scale + dy2,
             );
             if (textDecoration.length) {
               textDecoration.forEach(item => {
                 if (item === TEXT_DECORATION.UNDERLINE) {
                   ctx.fillRect(
-                    textBox.x * scale + dx,
-                    (textBox.y + textBox.contentArea - 1.5) * scale + dy,
+                    textBox.x * scale + dx2,
+                    (textBox.y + textBox.contentArea - 1.5) * scale + dy2,
                     textBox.w * scale,
                     3 * scale,
                   );
                 }
                 else if (item === TEXT_DECORATION.LINE_THROUGH) {
                   ctx.fillRect(
-                    textBox.x * scale + dx,
-                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
+                    textBox.x * scale + dx2,
+                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy2,
                     textBox.w * scale,
                     3 * scale,
                   );
@@ -1036,8 +1040,8 @@ class Text extends Node {
               setFontAndLetterSpacing(ctx2, textBox, scale);
               ctx2.fillText(
                 textBox.str,
-                textBox.x * scale + dx,
-                (textBox.y + textBox.baseline) * scale + dy,
+                textBox.x * scale + dx2,
+                (textBox.y + textBox.baseline) * scale + dy2,
               );
             }
           }
@@ -1107,7 +1111,7 @@ class Text extends Node {
         // 或者渐变
         else {
           if (s.t === GRADIENT.LINEAR) {
-            const gd = getLinear(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
             gd.stop.forEach((item) => {
               lg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -1115,7 +1119,7 @@ class Text extends Node {
             ctx.strokeStyle = lg;
           }
           else if (s.t === GRADIENT.RADIAL) {
-            const gd = getRadial(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const rg = ctx.createRadialGradient(
               gd.cx,
               gd.cy,
@@ -1167,7 +1171,7 @@ class Text extends Node {
             }
           }
           else if (s.t === GRADIENT.CONIC) {
-            const gd = getConic(s.stops, s.d, dx, dy, w - dx * 2, h - dy * 2);
+            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset!, color2rgbaStr(item.color));
@@ -1207,20 +1211,21 @@ class Text extends Node {
           draw(ctx, false);
         }
         if (os) {
-          ctx.drawImage(os.canvas, 0, 0);
+          ctx.drawImage(os.canvas, dx2 - dx, dy2 - dy);
           os.release();
         }
         // 还原
         ctx.globalCompositeOperation = 'source-over';
       }
 
-      // list[i].os.canvas.toBlob(blob => {
-      //   if (blob) {
-      //     const img = document.createElement('img');
-      //     img.src = URL.createObjectURL(blob);
-      //     document.body.appendChild(img);
-      //   }
-      // });
+      list[i].os.canvas.toBlob(blob => {
+        if (blob) {
+          const img = document.createElement('img');
+          img.style.position = 'absolute';
+          img.src = URL.createObjectURL(blob);
+          document.body.appendChild(img);
+        }
+      });
     }
   }
 
@@ -1378,8 +1383,8 @@ class Text extends Node {
       && !isFixedWidth
       && (
         left.u !== StyleUnit.AUTO
-        && translateX.v
-        && translateX.u === StyleUnit.PERCENT // 一般情况
+          && translateX.v
+          && translateX.u === StyleUnit.PERCENT // 一般情况
         || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边不变
       );
     // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
