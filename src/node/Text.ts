@@ -560,7 +560,7 @@ class Text extends Node {
     // 如果处于选择范围状态，渲染背景
     if (this.showSelectArea) {
       for (let i = 0, len = list.length; i < len; i++) {
-        const { x, y, os: { ctx } } = list[i];
+        const { os: { ctx } } = list[i];
         ctx.fillStyle = '#f4d3c1';
         const cursor = this.cursor;
         // 单行多行区分开
