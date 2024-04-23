@@ -32,8 +32,8 @@ class CanvasCache {
         const width = j === len2 - 1 ? (w - j * UNIT) : UNIT;
         const height = i === len - 1 ? (h - i * UNIT) : UNIT;
         this.list.push({
-          x: j * UNIT,
-          y: i * UNIT,
+          x: j * UNIT - dx,
+          y: i * UNIT - dy,
           w: width,
           h: height,
           os: inject.getOffscreenCanvas(width, height),
