@@ -577,13 +577,13 @@ class Bitmap extends Node {
           });
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, points, 1, 0, 0);
+          canvasPolygon(ctx, points, scale, 0, 0);
           ctx.closePath();
           ctx.clip();
           ctx.fillStyle = '#FFF';
           // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
           ctx.beginPath();
-          canvasPolygon(ctx, points, 1, 0, 0);
+          canvasPolygon(ctx, points, scale, 0, 0);
           canvasPolygon(
             ctx,
             [
