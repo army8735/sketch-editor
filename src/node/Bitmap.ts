@@ -260,8 +260,6 @@ class Bitmap extends Node {
         dy = -y * scale;
       w *= scale;
       h *= scale;
-      iw *= scale;
-      ih *= scale;
       const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
       canvasCache.available = true;
       const {
@@ -286,7 +284,7 @@ class Bitmap extends Node {
         const { x, y, os: { ctx, canvas } } = list[i];
         const dx2 = -x;
         const dy2 = -y;
-        ctx.drawImage(loader.source!, dx2, dy2, iw, ih);
+        ctx.drawImage(loader.source!, dx2, dy2, iw * scale, ih * scale);
         if (scale !== 1) {
           ctx.setLineDash(strokeDasharray.map((i) => i * scale));
         }
@@ -360,13 +358,13 @@ class Bitmap extends Node {
                       const ratio = f.scale ?? 1;
                       for (
                         let i = 0,
-                          len = Math.ceil(iw / scale / ratio / loader.width);
+                          len = Math.ceil(iw / ratio / loader.width);
                         i < len;
                         i++
                       ) {
                         for (
                           let j = 0,
-                            len = Math.ceil(ih / scale / ratio / loader.height);
+                            len = Math.ceil(ih / ratio / loader.height);
                           j < len;
                           j++
                         ) {
@@ -381,11 +379,11 @@ class Bitmap extends Node {
                       }
                     }
                     else if (f.type === PATTERN_FILL_TYPE.FILL) {
-                      const sx = iw / img.width;
-                      const sy = ih / img.height;
+                      const sx = iw * scale / img.width;
+                      const sy = ih * scale / img.height;
                       const sc = Math.max(sx, sy);
-                      const x = (img.width * sc - iw) * -0.5;
-                      const y = (img.height * sc - ih) * -0.5;
+                      const x = (img.width * sc - iw * scale) * -0.5;
+                      const y = (img.height * sc - ih * scale) * -0.5;
                       ctx2.drawImage(
                         img.source!,
                         0,
@@ -399,14 +397,14 @@ class Bitmap extends Node {
                       );
                     }
                     else if (f.type === PATTERN_FILL_TYPE.STRETCH) {
-                      ctx2.drawImage(img.source!, dx2, dy2, iw, ih);
+                      ctx2.drawImage(img.source!, dx2, dy2, iw * scale, ih * scale);
                     }
                     else if (f.type === PATTERN_FILL_TYPE.FIT) {
-                      const sx = iw / img.width;
-                      const sy = ih / img.height;
+                      const sx = iw * scale / img.width;
+                      const sy = ih * scale / img.height;
                       const sc = Math.min(sx, sy);
-                      const x = (img.width * sc - iw) * -0.5;
-                      const y = (img.height * sc - ih) * -0.5;
+                      const x = (img.width * sc - iw * scale) * -0.5;
+                      const y = (img.height * sc - ih * scale) * -0.5;
                       ctx2.drawImage(
                         img.source!,
                         0,
@@ -926,14 +924,10 @@ class Bitmap extends Node {
           }
         }
       });
-      const minX = res[0] - border;
-      const minY = res[1] - border;
-      const maxX = res[2] + border;
-      const maxY = res[3] + border;
-      res[0] = Math.min(res[0], minX);
-      res[1] = Math.min(res[1], minY);
-      res[2] = Math.max(res[2], maxX);
-      res[3] = Math.max(res[3], maxY);
+      res[0] -= border;
+      res[1] -= border;
+      res[2] += border;
+      res[3] += border;
     }
     return res;
   }
