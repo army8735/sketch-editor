@@ -511,7 +511,7 @@ class Bitmap extends Node {
               }
               else if (f.t === GRADIENT.CONIC) {
                 const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
-                const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
                 gd.stop.forEach((item) => {
                   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
                 });
@@ -577,13 +577,13 @@ class Bitmap extends Node {
           });
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, 0, 0);
+          canvasPolygon(ctx, points, scale, dx2, dx2);
           ctx.closePath();
           ctx.clip();
           ctx.fillStyle = '#FFF';
           // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, 0, 0);
+          canvasPolygon(ctx, points, scale, dx2, dx2);
           canvasPolygon(
             ctx,
             [
@@ -594,8 +594,8 @@ class Bitmap extends Node {
               [-n, -n],
             ],
             1,
-            0,
-            0,
+            dx2,
+            dx2,
           );
           ctx.closePath();
           innerShadow.forEach((item, i) => {
@@ -713,7 +713,7 @@ class Bitmap extends Node {
             }
             else if (s.t === GRADIENT.CONIC) {
               const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
-              const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+              const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
               gd.stop.forEach((item) => {
                 cg.addColorStop(item.offset!, color2rgbaStr(item.color));
               });

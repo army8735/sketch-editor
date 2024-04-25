@@ -916,7 +916,7 @@ class Text extends Node {
               }
               else if (f.t === GRADIENT.CONIC) {
                 const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
-                const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+                const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
                 gd.stop.forEach((item) => {
                   cg.addColorStop(item.offset!, color2rgbaStr(item.color));
                 });
@@ -1172,7 +1172,7 @@ class Text extends Node {
           }
           else if (s.t === GRADIENT.CONIC) {
             const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
-            const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+            const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset!, color2rgbaStr(item.color));
             });

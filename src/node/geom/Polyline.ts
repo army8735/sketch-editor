@@ -491,7 +491,7 @@ class Polyline extends Geom {
             }
             else if (f.t === GRADIENT.CONIC) {
               const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
-              const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+              const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
               gd.stop.forEach((item) => {
                 cg.addColorStop(item.offset!, color2rgbaStr(item.color));
               });
@@ -554,8 +554,8 @@ class Polyline extends Geom {
               [-n, -n],
             ],
             1,
-            0,
-            0,
+            dx2,
+            dy2,
           );
           ctx.closePath();
           innerShadow.forEach((item, i) => {
@@ -682,7 +682,7 @@ class Polyline extends Geom {
           }
           else if (s.t === GRADIENT.CONIC) {
             const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
-            const cg = ctx.createConicGradient(gd.angle, gd.cx, gd.cy);
+            const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset!, color2rgbaStr(item.color));
             });
