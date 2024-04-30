@@ -95,3 +95,30 @@ export default {
   control,
   ca,
 };
+
+import ArtBoard from './node/ArtBoard'
+import Bitmap from './node/Bitmap'
+import Container from './node/Container'
+import Group from './node/Group'
+import LineBox from './node/LineBox'
+import Node from './node/Node'
+import Page from './node/Page'
+import Slice from './node/Slice'
+import Text from './node/Text'
+import TextBox from './node/TextBox'
+import Listener from './control/Listener'
+
+export {
+  ArtBoard,
+  Bitmap,
+  Container,
+  Group,
+  LineBox,
+  Node,
+  Root,
+  Page,
+  Slice,
+  Text,
+  TextBox,
+  Listener
+}
