@@ -741,6 +741,7 @@ class ShapeGroup extends Group {
     }
     s += '>';
     const points = this.points || [];
+    const [dx, dy] = this._rect || this.rect;
     if (points.length) {
       const props = [
         ['d', ''],
@@ -750,7 +751,7 @@ class ShapeGroup extends Group {
         ['stroke-width', (1 / scale).toString()],
       ];
       points.forEach(item => {
-        const d = svgPolygon(item) + 'Z';
+        const d = svgPolygon(item, -dx, -dy) + 'Z';
         props[0][1] += d;
       });
       s += '<path';

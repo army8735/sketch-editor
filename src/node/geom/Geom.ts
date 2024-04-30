@@ -69,7 +69,9 @@ class Geom extends Node {
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
-    const d = svgPolygon(this.points || []) + (isClosed ? 'Z' : '');
+    const points = this.points || [];
+    const [dx, dy] = this._rect || this.rect;
+    const d = svgPolygon(points, -dx, -dy) + (isClosed ? 'Z' : '');
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     const { scaleX, scaleY } = computedStyle;
