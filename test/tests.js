@@ -1,5 +1,5 @@
 const expect = require('expect.js');
-const sketchEditor = require('../dist/index');
+const { default: sketchEditor } = require('../dist/index');
 
 describe('Event', function() {
   it('on && emit', function() {
