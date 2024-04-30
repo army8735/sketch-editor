@@ -721,9 +721,9 @@ async function convertItem(
           length,
           attributes: {
             MSAttributedStringFontAttribute: {
-              attributes: { name = inject.defaultFontFamily, size: fontSize = 16 },
-            },
-            MSAttributedStringColorAttribute: { red, green, blue, alpha },
+              attributes: { name = inject.defaultFontFamily, size: fontSize = 16 } = {},
+            } = {},
+            MSAttributedStringColorAttribute: { red = 0, green = 0, blue = 0, alpha = 1 } = {},
             kerning = 0,
             underlineStyle = SketchFormat.UnderlineStyle.None,
             strikethroughStyle = SketchFormat.StrikethroughStyle.None,
