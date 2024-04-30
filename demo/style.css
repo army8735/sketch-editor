@@ -215,46 +215,34 @@ body {
   overflow-y: auto;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
-.basic {
-  opacity: 0.5;
-}
-.basic.show {
-  opacity: 1;
-}
-.basic .line {
+.side .basic .line {
   display: flex;
   margin-bottom: 3px;
 }
-.basic label {
+.side .basic label {
   display: inline-flex;
   justify-content: space-between;
   align-items: center;
   margin-left: 15px;
-  width: 72px;
-  font-size: 12px;
+  width: 70px;
   font-family: Menlo, "Courier New";
+  font-size: 10px;
 }
-.basic label:first-child {
+.side .basic label.disabled {
+  opacity: 0.5;
+}
+.side .basic label:first-child {
   margin-left: 0;
 }
-.basic label .num {
+.side .basic .num {
   margin: 0 2px 0 0;
   padding: 0 5px;
-  width: 65px;
-  height: 21px;
+  width: 60px;
+  height: 20px;
   border: none;
-  background: #ededed;
-  border-radius: 5px;
-  font-size: 12px;
-  transform: scale(0.917);
-  transform-origin: 0 center;
-}
-.basic label .num:disabled {
-  color: #bbb;
-}
-.basic label span {
-  transform: translateX(-5px) scale(0.833);
-  transform-origin: 0 center;
+  background: #F0F0F0;
+  border-radius: 3px;
+  font-size: 11px;
 }
 /*.text {*/
 /*  display: none;*/

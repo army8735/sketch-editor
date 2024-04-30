@@ -30,6 +30,7 @@ export default class Select {
     this.root = root;
     this.dom = dom;
     const hover = this.hover = document.createElement('div');
+    hover.className = 'hover';
     hover.style.display = 'none';
     hover.style.position = 'absolute';
     hover.style.boxSizing = 'content-box';
@@ -67,6 +68,7 @@ export default class Select {
     this.hideSelect();
     selected.forEach(() => {
       const select = document.createElement('div');
+      select.className = 'select';
       select.style.position = 'absolute';
       select.style.boxSizing = 'content-box';
       select.innerHTML = html;

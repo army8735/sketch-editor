@@ -26,9 +26,6 @@
 <script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
 <script src="../dist/index.js"></script>
 <script>
-  // sketchEditor.config.tile = true;
-  // sketchEditor.config.debug = true;
-
   const $canvasC = document.querySelector('#canvasC');
   const dpi = 2;
   const $input = document.querySelector('#file');
@@ -73,6 +70,7 @@
 
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
       });
     }
   };

@@ -3,6 +3,7 @@ import Listener, { ListenerOptions } from './Listener';
 import Tree from './Tree';
 import Select from './Select';
 import Input from './Input';
+import Panel from './Panel';
 
 /**
  * 所有控制相关的都在这里，传入渲染根节点，和容器DOM，需要DOM是absolute/relative，
@@ -16,11 +17,17 @@ export function initTreeList(root: Root, dom: HTMLElement, listener: Listener) {
   return new Tree(root, dom, listener);
 }
 
+export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
+  return new Panel(root, dom, listener);
+}
+
 export default {
   initCanvasControl,
   initTreeList,
+  initPanel,
   Listener,
   Tree,
   Select,
   Input,
+  Panel,
 };

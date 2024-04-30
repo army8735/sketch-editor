@@ -1,6 +1,5 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import Event from '../util/Event';
 import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import ArtBoard from '../node/ArtBoard';
@@ -82,18 +81,6 @@ function genNodeTree(node: Node) {
   return dl;
 }
 
-// function getOffsetTop(node: HTMLElement, top: HTMLElement) {
-//   let count = 0;
-//   let target: HTMLElement | null = node;
-//   while (target && target !== top) {
-//     if (target.nodeName === 'DL') {
-//       count += target.offsetTop;
-//     }
-//     target = target.parentElement;
-//   }
-//   return count;
-// }
-
 function getNodeType(node: Node) {
   let type = 'default';
   if (node instanceof SymbolInstance) {
@@ -126,13 +113,12 @@ function getNodeType(node: Node) {
   return type;
 }
 
-export default class Tree extends Event {
+export default class Tree {
   root: Root;
   dom: HTMLElement;
   listener: Listener;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    super();
     this.root = root;
     this.dom = dom;
     this.listener = listener;
