@@ -2075,7 +2075,7 @@ class Node extends Event {
       cache = this.hasCacheOp,
       parent = node.parent,
       index = -1;
-    const pList: Array<Container> = [];
+    const pList: Container[] = [];
     while (parent) {
       pList.push(parent);
       // 父级变更过后id就会对不上，但首次初始化后是一致的，防止初始化后立刻调用所以要多判断下

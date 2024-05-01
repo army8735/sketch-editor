@@ -62,6 +62,8 @@ class BasicPanel {
     });
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
+      item.placeholder = '';
+      item.value = '';
     });
     const xs: number[] = [];
     const ys: number[] = [];
@@ -94,42 +96,32 @@ class BasicPanel {
     const h = panel.querySelector('.h input') as HTMLInputElement;
     if (xs.length > 1) {
       x.placeholder = '多个';
-      x.value = '';
     }
     else {
-      x.placeholder = '';
       x.value = toPrecision(xs[0]).toString();
     }
     if (ys.length > 1) {
       y.placeholder = '多个';
-      y.value = '';
     }
     else {
-      y.placeholder = '';
       y.value = toPrecision(ys[0]).toString();
     }
     if (rs.length > 1) {
       r.placeholder = '多个';
-      r.value = '';
     }
     else {
-      r.placeholder = '';
       r.value = toPrecision(rs[0]).toString();
     }
     if (ws.length > 1) {
       w.placeholder = '多个';
-      w.value = '';
     }
     else {
-      w.placeholder = '';
       w.value = toPrecision(ws[0]).toString();
     }
     if (hs.length > 1) {
       h.placeholder = '多个';
-      h.value = '';
     }
     else {
-      h.placeholder = '';
       h.value = toPrecision(hs[0]).toString();
     }
   }

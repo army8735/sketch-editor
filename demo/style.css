@@ -257,8 +257,11 @@ body {
   padding: 0 10px;
 }
 .side .opacity .line {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+}
+.side .opacity input[type=range] {
+  flex: 1;
 }
 .side .opacity input[type=number] {
   margin: 0 2px 0 5px;
