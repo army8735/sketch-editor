@@ -27,6 +27,7 @@ html, body {
     height: 50px;
     background: #413B3D;
     z-index: 10;
+    color: #FFF;
   }
 
   > .container {
@@ -246,12 +247,17 @@ html, body {
   position: relative;
   z-index: 11;
   width: 250px;
-  padding: 6px 10px;
+  padding: 5px 0;
   overflow-x: visible;
   overflow-y: auto;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
 
   .basic {
+    margin-bottom: 5px;
+    padding: 0 10px 5px;
+    border-bottom: 0.5px solid #CCC;
+
     .line {
       display: flex;
       margin-bottom: 3px;
@@ -262,7 +268,10 @@ html, body {
       justify-content: space-between;
       align-items: center;
       margin-left: 15px;
-      width: 70px;
+      width: 62px;
+      padding: 0 5px 0 0;
+      background: #F0F0F0;
+      border-radius: 3px;
       font-family: Menlo, "Courier New";
       font-size: 10px;
 
@@ -276,17 +285,34 @@ html, body {
     }
 
     .num {
-      margin: 0 2px 0 0;
+      margin: 0;
       padding: 0 5px;
-      width: 60px;
+      width: 45px;
       height: 20px;
       border: none;
-      background: #F0F0F0;
-      border-radius: 3px;
+      background: transparent;
       font-size: 11px;
     }
+  }
 
-    span {}
+  .opacity {
+    padding: 0 10px;
+
+    .line {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    input[type=number] {
+      margin: 0 2px 0 5px;
+      padding: 0 5px;
+      width: 40px;
+      height: 20px;
+      border: none;
+      border-radius: 3px;
+      background: #F0F0F0;
+      font-size: 11px;
+    }
   }
 }
 

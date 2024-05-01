@@ -27,6 +27,7 @@ body {
   height: 50px;
   background: #413B3D;
   z-index: 10;
+  color: #FFF;
 }
 .wrap > .container {
   position: absolute;
@@ -210,10 +211,16 @@ body {
   position: relative;
   z-index: 11;
   width: 250px;
-  padding: 6px 10px;
+  padding: 5px 0;
   overflow-x: visible;
   overflow-y: auto;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+}
+.side .basic {
+  margin-bottom: 5px;
+  padding: 0 10px 5px;
+  border-bottom: 0.5px solid #CCC;
 }
 .side .basic .line {
   display: flex;
@@ -224,7 +231,10 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-left: 15px;
-  width: 70px;
+  width: 62px;
+  padding: 0 5px 0 0;
+  background: #F0F0F0;
+  border-radius: 3px;
   font-family: Menlo, "Courier New";
   font-size: 10px;
 }
@@ -235,13 +245,29 @@ body {
   margin-left: 0;
 }
 .side .basic .num {
-  margin: 0 2px 0 0;
+  margin: 0;
   padding: 0 5px;
-  width: 60px;
+  width: 45px;
   height: 20px;
   border: none;
-  background: #F0F0F0;
+  background: transparent;
+  font-size: 11px;
+}
+.side .opacity {
+  padding: 0 10px;
+}
+.side .opacity .line {
+  display: inline-flex;
+  align-items: center;
+}
+.side .opacity input[type=number] {
+  margin: 0 2px 0 5px;
+  padding: 0 5px;
+  width: 40px;
+  height: 20px;
+  border: none;
   border-radius: 3px;
+  background: #F0F0F0;
   font-size: 11px;
 }
 /*.text {*/

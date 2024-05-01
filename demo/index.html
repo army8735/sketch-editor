@@ -10,6 +10,7 @@
 <div class="wrap">
   <div class="menu">
     <input type="file" title="请选择sketch文件" id="file" accept=".sketch"/>
+    <label><input type="checkbox"/>开启tile</label>
     <button id="save">保存</button>
   </div>
   <div class="container">
@@ -26,6 +27,20 @@
 <script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
 <script src="../dist/index.js"></script>
 <script>
+  const search = {};
+  (location.search.replace(/^\?/, '')).split('&').forEach(function(item) {
+    const arr = item.split('=');
+    search[arr[0]] = arr[1];
+  });
+  const tile = document.querySelector('input[type=checkbox]');
+  if (search.tile && search.tile !== 0 && search.tile !== false) {
+    sketchEditor.config.tile = true;
+    tile.checked = true;
+  }
+  tile.addEventListener('change', function() {
+    location.href = '?tile=' + (tile.checked ? '1' : '');
+  });
+
   const $canvasC = document.querySelector('#canvasC');
   const dpi = 2;
   const $input = document.querySelector('#file');
