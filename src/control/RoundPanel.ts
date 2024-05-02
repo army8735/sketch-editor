@@ -1,16 +1,18 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { toPrecision } from '../math';
+import ShapeGroup from '../node/geom/ShapeGroup';
+import Polyline from '../node/geom/Polyline';
 
 const html = `
-  <h4>不透明度</h4>
+  <h4>圆角</h4>
   <div class="line">
     <input type="range" min="0" max="100" step="1"/>
-    <input type="number" min="0" max="100" step="1"/>%
+    <input type="number" min="0" max="100" step="1"/>
   </div>
 `;
 
-class OpacityPanel {
+class RoundPanel {
   root: Root;
   dom: HTMLElement;
   panel: HTMLElement;
@@ -20,7 +22,7 @@ class OpacityPanel {
     this.dom = dom;
 
     const panel = this.panel = document.createElement('div');
-    panel.className = 'opacity-panel';
+    panel.className = 'round-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
@@ -43,25 +45,13 @@ class OpacityPanel {
       item.placeholder = '';
       item.value = '';
     });
-    const as: number[] = [];
+    const rs: number[] = [];
     nodes.forEach(item => {
-      const opacity = item.computedStyle.opacity;
-      if (!as.includes(opacity)) {
-        as.push(opacity);
+      if (item instanceof Polyline) {
+        //
       }
     });
-    const r = panel.querySelector('input[type=range]') as HTMLInputElement;
-    const n = panel.querySelector('input[type=number]') as HTMLInputElement;
-    if (as.length > 1) {
-      r.value = '0';
-      n.placeholder = '多个';
-    }
-    else {
-      const a = toPrecision(as[0] * 100, 0);
-      r.value = a.toString();
-      n.value = a.toString();
-    }
   }
 }
 
-export default OpacityPanel;
+export default RoundPanel;

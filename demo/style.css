@@ -217,16 +217,16 @@ body {
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
   font-size: 12px;
 }
-.side .basic {
+.side .basic-panel {
   margin-bottom: 5px;
   padding: 0 10px 5px;
   border-bottom: 0.5px solid #CCC;
 }
-.side .basic .line {
+.side .basic-panel .line {
   display: flex;
   margin-bottom: 3px;
 }
-.side .basic label {
+.side .basic-panel label {
   display: inline-flex;
   justify-content: space-between;
   align-items: center;
@@ -238,13 +238,13 @@ body {
   font-family: Menlo, "Courier New";
   font-size: 10px;
 }
-.side .basic label.disabled {
+.side .basic-panel label.disabled {
   opacity: 0.5;
 }
-.side .basic label:first-child {
+.side .basic-panel label:first-child {
   margin-left: 0;
 }
-.side .basic .num {
+.side .basic-panel .num {
   margin: 0;
   padding: 0 5px;
   width: 45px;
@@ -253,17 +253,20 @@ body {
   background: transparent;
   font-size: 11px;
 }
-.side .opacity {
+.side .opacity-panel {
   padding: 0 10px;
 }
-.side .opacity .line {
+.side .opacity-panel h4 {
+  margin: 0;
+}
+.side .opacity-panel .line {
   display: flex;
   align-items: center;
 }
-.side .opacity input[type=range] {
+.side .opacity-panel input[type=range] {
   flex: 1;
 }
-.side .opacity input[type=number] {
+.side .opacity-panel input[type=number] {
   margin: 0 2px 0 5px;
   padding: 0 5px;
   width: 40px;

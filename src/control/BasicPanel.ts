@@ -39,7 +39,7 @@ class BasicPanel {
     this.dom = dom;
 
     const panel = this.panel = document.createElement('div');
-    panel.className = 'basic';
+    panel.className = 'basic-panel';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
   }

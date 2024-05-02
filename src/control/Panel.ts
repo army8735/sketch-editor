@@ -3,6 +3,7 @@ import Root from '../node/Root';
 import Listener from './Listener';
 import BasicPanel from './BasicPanel';
 import OpacityPanel from './OpacityPanel';
+import RoundPanel from './RoundPanel';
 
 class Panel {
   root: Root;
@@ -10,6 +11,7 @@ class Panel {
   listener: Listener;
   basicPanel: BasicPanel;
   opacityPanel: OpacityPanel;
+  roundPanel: RoundPanel;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -22,6 +24,9 @@ class Panel {
     this.opacityPanel = new OpacityPanel(root, dom);
     this.opacityPanel.show(listener.selected);
 
+    this.roundPanel = new RoundPanel(root, dom);
+    this.roundPanel.show(listener.selected);
+
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
       this.select(nodes);
     });
@@ -30,6 +35,7 @@ class Panel {
   select(nodes: Node[]) {
     this.basicPanel.show(nodes);
     this.opacityPanel.show(nodes);
+    this.roundPanel.show(nodes);
   }
 }
 
