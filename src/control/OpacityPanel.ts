@@ -6,7 +6,8 @@ const html = `
   <h4>不透明度</h4>
   <div class="line">
     <input type="range" min="0" max="100" step="1"/>
-    <input type="number" min="0" max="100" step="1"/>%
+    <input type="number" min="0" max="100" step="1"/>
+    <span>%</span>
   </div>
 `;
 

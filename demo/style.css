@@ -281,6 +281,10 @@ body {
   background: #F0F0F0;
   font-size: 11px;
 }
+.side .opacity-panel span,
+.side .round-panel span {
+  width: 12px;
+}
 /*.text {*/
 /*  display: none;*/
 /*  margin-top:10px;*/
