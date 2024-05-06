@@ -1,4 +1,4 @@
-import { Props } from '../../format';
+import { Point, Props } from '../../format';
 import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE, STROKE_POSITION } from '../../style/define';
@@ -16,43 +16,46 @@ export type Loader = {
 };
 
 class Geom extends Node {
-  points?: number[][];
+  coords: Point[];
+  points: number[][];
   loaders: Loader[];
 
   constructor(props: Props) {
     super(props);
     this.isGeom = true;
     this.loaders = [];
+    this.coords = [];
+    this.points = [];
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
-    this.points = undefined;
+    this.points.splice(0);
   }
 
   override calRepaintStyle(lv: RefreshLevel) {
     super.calRepaintStyle(lv);
-    this.points = undefined;
+    this.points.splice(0);
     this._rect = undefined;
     this._bbox = undefined;
   }
 
   buildPoints() {
-    if (this.points) {
+    if (this.points.length) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
-    this.points = [];
+    this.points.splice(0);
   }
 
   override calContent(): boolean {
     this.buildPoints();
-    return (this.hasContent = !!this.points && this.points.length > 1);
+    return (this.hasContent = this.points.length > 1);
   }
 
   isLine() {
     this.buildPoints();
-    const points = this.points || [];
+    const points = this.points;
     return (
       points.length === 2 && points[0].length === 2 && points[1].length === 2
     );
@@ -69,7 +72,7 @@ class Geom extends Node {
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
-    const points = this.points || [];
+    const points = this.points;
     const [dx, dy] = this._rect || this.rect;
     const d = svgPolygon(points, -dx, -dy) + (isClosed ? 'Z' : '');
     const fillRule =
@@ -150,11 +153,11 @@ class Geom extends Node {
       const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
       if (this.isLine()) {
-        res = this._bbox = lineCap(res, border, this.points || [], strokeLinecap);
+        res = this._bbox = lineCap(res, border, this.points, strokeLinecap);
       }
       // 闭合看lineJoin
       else {
-        res = this._bbox = lineJoin(res, border, this.points || [], strokeLinejoin, strokeMiterlimit);
+        res = this._bbox = lineJoin(res, border, this.points, strokeLinejoin, strokeMiterlimit);
       }
       res[0] = Math.min(res[0], minX);
       res[1] = Math.min(res[1], minY);

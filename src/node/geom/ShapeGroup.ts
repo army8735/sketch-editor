@@ -93,27 +93,30 @@ type Loader = {
 };
 
 class ShapeGroup extends Group {
-  points?: number[][][];
+  props: ShapeGroupProps;
+  points: number[][][];
   loaders: Loader[];
 
   constructor(props: ShapeGroupProps, children: Node[]) {
     super(props, children);
-    this.isShapeGroup = true;
+    this.props = props;
+    this.points = [];
     this.loaders = [];
+    this.isShapeGroup = true;
   }
 
   override didMountBubble() {
     super.didMountBubble();
-    this.points = undefined; // 初始化肯定为空，防止其它过程再确保重置下
+    this.points.splice(0); // 初始化肯定为空，防止其它过程再确保重置下
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
-    this.points = undefined;
+    this.points.splice(0);
   }
 
   override clearPoints() {
-    this.points = undefined;
+    this.points.splice(0);
     this._rect = undefined;
     this._bbox = undefined;
     this.clearCache(true);
@@ -129,11 +132,11 @@ class ShapeGroup extends Group {
 
   override calContent(): boolean {
     this.buildPoints();
-    return (this.hasContent = !!this.points && !!this.points.length);
+    return (this.hasContent = this.points.length > 0);
   }
 
   buildPoints() {
-    if (this.points) {
+    if (this.points.length) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
@@ -215,14 +218,19 @@ class ShapeGroup extends Group {
         }
       }
     }
-    this.points = res.map(o => scaleDown(o));
+    res.forEach(item => {
+      if (item.length > 1) {
+        const t = scaleDown(item);
+        this.points.push(t);
+      }
+    });
   }
 
   // 和group不同，child的rect不是简单的[0,0,w,h]，而是考虑矢量图形的真实范围
   protected override getChildRect(child: Node) {
     if (child instanceof Polyline) {
       child.buildPoints();
-      const p = applyMatrixPoints(child.points!, child.matrix);
+      const p = applyMatrixPoints(child.points, child.matrix);
       const res = getPointsRect(p);
       return {
         minX: res[0],
@@ -233,7 +241,7 @@ class ShapeGroup extends Group {
     }
     else if (child instanceof ShapeGroup) {
       child.buildPoints();
-      const p = child.points!.map(item => {
+      const p = child.points.map(item => {
         return applyMatrixPoints(item, child.matrix);
       });
       const res = getShapeGroupRect(p);
@@ -252,7 +260,7 @@ class ShapeGroup extends Group {
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();
-    const points = this.points || [];
+    const points = this.points;
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];

@@ -895,7 +895,6 @@ function renderWebglNoTile(
     else {
       let target = textureTarget[scaleIndex],
         isInScreen = false;
-      // console.log(i, node.props.name, node.matrix.join(','), matrix.join(','))
       // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
       if (target && target.available) {
         isInScreen = checkInScreen(target.bbox, matrix, W, H);

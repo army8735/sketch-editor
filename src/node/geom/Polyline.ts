@@ -34,25 +34,25 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
+    this.coords = clone(props.points || []);
     this.isPolyline = true;
   }
 
   override buildPoints() {
-    if (this.points) {
+    if (this.points.length) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
-    const props = this.props;
     const { width, height } = this;
-    const points = props.points;
-    if (!points.length) {
-      this.points = [];
+    const coords = this.coords;
+    if (!coords.length) {
+      this.points.splice(0);
       return;
     }
     let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
-    for (let i = 0, len = points.length; i < len; i++) {
-      const item = points[i];
+    for (let i = 0, len = coords.length; i < len; i++) {
+      const item = coords[i];
       item.absX = (item.x || 0) * width;
       item.absY = (item.y || 0) * height;
       if (isCornerPoint(item)) {
@@ -80,16 +80,16 @@ class Polyline extends Geom {
     } | undefined> = [];
     if (hasCorner) {
       // 将圆角点拆分为2个顶点
-      for (let i = 0, len = points.length; i < len; i++) {
-        const point = points[i];
+      for (let i = 0, len = coords.length; i < len; i++) {
+        const point = coords[i];
         if (!isCornerPoint(point)) {
           continue;
         }
         // 观察前后2个顶点的情况
         const prevIdx = i ? i - 1 : len - 1;
         const nextIdx = (i + 1) % len;
-        const prevPoint = points[prevIdx];
-        const nextPoint = points[nextIdx];
+        const prevPoint = coords[prevIdx];
+        const nextPoint = coords[nextIdx];
         let radius = point.cornerRadius;
         // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
         const isPrevCorner = isCornerPoint(prevPoint);
@@ -113,7 +113,7 @@ class Polyline extends Geom {
       }
     }
     // 将圆角的2个点替换掉原本的1个点
-    const temp = clone(points);
+    const temp = clone(coords);
     for (let i = 0, len = temp.length; i < len; i++) {
       const c = cache[i];
       if (c) {
@@ -222,47 +222,47 @@ class Polyline extends Geom {
       }
       res.push(p);
     }
-    this.points = res;
+    this.points.push(...res);
   }
 
-  deletePoint(point: Point | number) {
-    const props = this.props;
-    const points = props.points;
-    if (typeof point === 'number') {
-      points.splice(point, 1);
-      this.points = undefined;
-      // this.checkPointsChange();
-      this.refresh();
-      return;
-    }
-    const i = points.indexOf(point);
-    if (i > -1) {
-      points.splice(i, 1);
-      this.points = undefined;
-      // this.checkPointsChange();
-      this.refresh();
-    }
-  }
-
-  addPoint(point: Point, index: number) {
-    const props = this.props;
-    const points = props.points;
-    points.splice(index, 0, point);
-    this.points = undefined;
-    // this.checkPointsChange();
-    this.refresh();
-  }
-
-  modifyPoint() {
-    this.points = undefined;
-    // this.checkPointsChange();
-    this.refresh();
-  }
+  // deletePoint(point: Point | number) {
+  //   const props = this.props;
+  //   const points = props.points;
+  //   if (typeof point === 'number') {
+  //     points.splice(point, 1);
+  //     this.points = undefined;
+  //     // this.checkPointsChange();
+  //     this.refresh();
+  //     return;
+  //   }
+  //   const i = points.indexOf(point);
+  //   if (i > -1) {
+  //     points.splice(i, 1);
+  //     this.points = undefined;
+  //     // this.checkPointsChange();
+  //     this.refresh();
+  //   }
+  // }
+  //
+  // addPoint(point: Point, index: number) {
+  //   const props = this.props;
+  //   const points = props.points;
+  //   points.splice(index, 0, point);
+  //   this.points = undefined;
+  //   // this.checkPointsChange();
+  //   this.refresh();
+  // }
+  //
+  // modifyPoint() {
+  //   this.points = undefined;
+  //   // this.checkPointsChange();
+  //   this.refresh();
+  // }
 
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();
-    const points = this.points!;
+    const points = this.points;
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
@@ -874,7 +874,7 @@ class Polyline extends Geom {
         point.ty = (point.absTy! - dy) / height;
       }
     });
-    this.points = undefined;
+    this.points.splice(0);
   }
 
   toSvg(scale: number) {
