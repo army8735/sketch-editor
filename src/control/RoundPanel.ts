@@ -39,7 +39,6 @@ class RoundPanel {
       });
       return;
     }
-    panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
       item.placeholder = '';
@@ -48,9 +47,43 @@ class RoundPanel {
     const rs: number[] = [];
     nodes.forEach(item => {
       if (item instanceof Polyline) {
-        //
+        item.coords.forEach(point => {
+          const r = point.cornerRadius;
+          if (!rs.includes(r)) {
+            rs.push(r);
+          }
+        });
+      }
+      else if (item instanceof ShapeGroup) {
+        item.children.forEach(child => {
+          if (child instanceof Polyline) {
+            child.coords.forEach(point => {
+              const r = point.cornerRadius;
+              if (!rs.includes(r)) {
+                rs.push(r);
+              }
+            });
+          }
+        });
       }
     });
+    if (rs.length) {
+      panel.style.display = 'block';
+      const r = panel.querySelector('input[type=range]') as HTMLInputElement;
+      const n = panel.querySelector('input[type=number]') as HTMLInputElement;
+      if (rs.length > 1) {
+        r.value = '0';
+        n.placeholder = '多个';
+      }
+      else {
+        const c = toPrecision(rs[0] * 100, 0);
+        r.value = c.toString();
+        n.value = c.toString();
+      }
+    }
+    else {
+      panel.style.display = 'none';
+    }
   }
 }
 

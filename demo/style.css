@@ -253,20 +253,25 @@ body {
   background: transparent;
   font-size: 11px;
 }
-.side .opacity-panel {
+.side .opacity-panel,
+.side .round-panel {
   padding: 0 10px;
 }
-.side .opacity-panel h4 {
+.side .opacity-panel h4,
+.side .round-panel h4 {
   margin: 0;
 }
-.side .opacity-panel .line {
+.side .opacity-panel .line,
+.side .round-panel .line {
   display: flex;
   align-items: center;
 }
-.side .opacity-panel input[type=range] {
+.side .opacity-panel input[type=range],
+.side .round-panel input[type=range] {
   flex: 1;
 }
-.side .opacity-panel input[type=number] {
+.side .opacity-panel input[type=number],
+.side .round-panel input[type=number] {
   margin: 0 2px 0 5px;
   padding: 0 5px;
   width: 40px;
