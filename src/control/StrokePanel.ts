@@ -20,13 +20,13 @@ const single = `
     </div>
     <div class="pos $\{position}">
       <div>
-        <span class="outside" title="外部"></span>
-        <span class="center" title="中间"></span>
         <span class="inside" title="内部"></span>
+        <span class="center" title="中间"></span>
+        <span class="outside" title="外部"></span>
       </div>
-      <span class="outside">外部</span>
-      <span class="center">中间</span>
       <span class="inside">内部</span>
+      <span class="center">中间</span>
+      <span class="outside">外部</span>
       <span class="multi">多个</span>
     </div>
     <div class="width">
