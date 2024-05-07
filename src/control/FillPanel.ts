@@ -14,11 +14,24 @@ const html = `
 const single = `
   <div class="line">
     <span class="$\{checked}"></span>
-    <input type="color" min="0" max="100" step="1" value="$\{color}" placeholder="$\{colorM}"/>
-    <span class="color">#</span>
-    <input type="text" value="$\{color}" placeholder="$\{colorM}"/>
-    <input type="number" min="0" max="100" step="1" value="$\{opacity}" placeholder="$\{opacityM}"/>
-    <span>%</span>
+    <div class="color">
+      <input type="color" min="0" max="100" step="1" value="$\{color}" placeholder="$\{colorM}"/>
+      <span>颜色</span>
+    </div>
+    <div class="hex">
+      <div>
+        <span>#</span>
+        <input type="text" value="$\{color}" placeholder="$\{colorM}"/>
+      </div>
+      <span>Hex</span>
+    </div>
+    <div class="opacity">
+      <div>
+        <input type="number" min="0" max="100" step="1" value="$\{opacity}" placeholder="$\{opacityM}"/>
+        <span>%</span>
+      </div>
+      <span>不透明度</span>
+    </div>
   </div>
 `;
 
@@ -112,9 +125,9 @@ class FillPanel {
       }
       const s = renderTemplate(single, {
         checked,
-        color: c.length > 1 ? '' : c[0].replace('#', ''),
+        color: c.length > 1 ? '' : c[0].replace('#', '').toUpperCase(),
         colorM: c.length > 1 ? '多个' : '',
-        opacity: o.length > 1 ? '' : toPrecision(o[0] * 100, 0),
+        opacity: o.length > 1 ? '' : toPrecision(o[0], 0),
         opacityM: o.length > 1 ? '多个' : '',
       });
       this.panel.innerHTML += s;
