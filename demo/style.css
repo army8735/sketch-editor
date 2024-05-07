@@ -217,6 +217,9 @@ body {
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
   font-size: 12px;
 }
+.side .panel-title {
+  margin: 0 0 2px;
+}
 .side .basic-panel {
   margin-bottom: 5px;
   padding: 0 10px 5px;
@@ -235,7 +238,7 @@ body {
   padding: 0 5px 0 0;
   background: #F0F0F0;
   border-radius: 3px;
-  font-family: Menlo, "Courier New";
+  font-family: Menlo, "Courier New", sans-serif;
   font-size: 10px;
 }
 .side .basic-panel label.disabled {
@@ -255,11 +258,9 @@ body {
 }
 .side .opacity-panel,
 .side .round-panel {
-  padding: 0 10px;
-}
-.side .opacity-panel h4,
-.side .round-panel h4 {
-  margin: 0;
+  margin-bottom: 5px;
+  padding: 0 10px 5px;
+  border-bottom: 0.5px solid #CCC;
 }
 .side .opacity-panel .line,
 .side .round-panel .line {
@@ -283,6 +284,74 @@ body {
 }
 .side .opacity-panel span,
 .side .round-panel span {
+  width: 12px;
+}
+.side .fill-panel {
+  margin: 5px;
+  padding: 0 5px 5px;
+  border-bottom: 0.5px solid #CCC;
+}
+.side .fill-panel .line {
+  display: flex;
+  align-items: center;
+}
+.side .fill-panel .un-checked {
+  margin-right: 5px;
+  width: 12px;
+  height: 12px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAGKADAAQAAAABAAAAGAAAAADB/VeXAAABLUlEQVRIDe2WMY6CUBCG970sndV2m+wNLLyCIR5jO3HhBB7CCwAGO4+xMV5hC29gYrcVHQn4f0YSY+GDCFa8ZJw3j5lvJiN5g3m7rqqqTJIkgfTcGDPW8ah+1lDnij0odhNFUSZdEWf4SdP0syzLrbY+dgdrZ639DsPw9H6tvIYflXkp2fOwTSKKFGsqWSnOp2DtZyaO44UO1pKj53mTIAj+24DvfbMs+yiK4k/nX5IfqyxznKj8WTgcGLDYw7Yy+ENJsEd3sWoWbCvg5W1p2/NHhdywRiTodQ0JnO0dWjS0yNkBp8NL3qKcMrjPneU0dLhh5VzXB+Kkpw3jnW41CzbX9YYIGSuGhTPa4QADFm6wjQyG/a9sX9LVyGSa7TT8Z70P/UsCZaNFvXy2nAG9DqEGM9MRewAAAABJRU5ErkJggg==) no-repeat center;
+  background-size: contain;
+}
+.side .fill-panel .checked {
+  margin-right: 5px;
+  width: 12px;
+  height: 12px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAGKADAAQAAAABAAAAGAAAAADB/VeXAAACMklEQVRIDbWWz2sTQRTHv7PZaTfYHLzpvRYkBz14UfxFqKeeSvFnqgd/JEEFRS8iRfEXXoSCgtraetGL/4AHkQgieAmoSFSkd882LRubWdf3Nplk11k0ZtcHk5n33rzPe/ODnQh0xAdEozJ2Er5/gkx5aiPa12e/QvPqEGIx9/DrggAISVD+WS1t3uiJ1lNSC6wnF7+a8eX0uvnP3yyuPF04lycKzGS2WK6MnaJtmU9edQxBiJLV2fMYbwomOk+LMHygyUQ6ADdT8pzgX29LBCP3FJGbrQVNbp+M+JjNCQaWocIxOIevAvZQ0IanLhmsgRPIvUUMH5iJAP3V7xGdlYESyF2H4By8EoH5ay6aTy5HbLEJ7PxujNx+HTR76z4jQO7cD+fINb7hPV+rCfd+Bd5SrWfrjIwVONM3INZvCFq2dBf2tolukNwxBad48zf4D7gPTsP78rY7Lzyww4oxtjLIHr8DlxwiI+EcvRWFqzW4c2egPr0xQrVBLJc3BR8lbbC3jCNbvkenk9Em4KfXBovQglWL4GehPr7qzYsZhSLaXvXhJdzHF9tQHcDJwnBPwX107q9wDjcSsFHVnptJ2MFCq3EXzoML6UdiE3BgbBKGL16AeveiH3Yw54+HHCShg9R3vvnsOtT7/irXFfAhN0hJ9D3SsJh+hbeoHuNIy1S3+A1Ni2ZwiC34WWuUR2lj03qPdRq/mptbGrf49ecHmrqqdiXv248+s7tfrGAl/+Fvyy9N0bde6toDwgAAAABJRU5ErkJggg==) no-repeat center;
+  background-size: contain;
+}
+.side .fill-panel .multi-checked {
+  margin-right: 5px;
+  width: 12px;
+  height: 12px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAGKADAAQAAAABAAAAGAAAAADB/VeXAAABLUlEQVRIDWNkgIL/DAyMnzPUUhj+/08GCmkDMQ9Mjkj6C1DdVQZGxrm8M27NYWRgABoJNBREfE3TlPzL+HsJkOsE4lMO/u9j/s8awz3r+nMmkMupazjIeYxOIDNBZjN+ylBLBQbLLMpdjcUERsY0JmiYY5GlghAwPpmAxoAilFZAG2QBqamFFMfwgCygKRj6FrCghw+Ljh0DR3QLA6OgBLoUXv7/9y8YfiytYfhz5RCKOowgIsdwkIkgB4H0ogMMC9AVUMrHsADkTZB3SQWwIELXx/gpXRVc6qFLUIuP4QNqGQwzZ3hYAKqJaAW+gILoKq1MB5nNBKpDaWYB0GxGULX2OV1lD6iao65F//fxzrzjwgSq/UEVNJDaRz0LIJU+yGxwqwJkMNgnNGi2AACn3l2PYicOrQAAAABJRU5ErkJggg==) no-repeat center;
+  background-size: contain;
+}
+.side .fill-panel input[type=color] {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.side .fill-panel input[type=text] {
+  flex: 1;
+  margin: 0 2px;
+  padding: 0 5px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: #F0F0F0;
+  font-size: 11px;
+}
+.side .fill-panel input[type=number] {
+  flex: 0 0 auto;
+  margin: 0 2px;
+  padding: 0 5px;
+  width: 40px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: #F0F0F0;
+  font-size: 11px;
+}
+.side .fill-panel .color {
+  text-align: right;
+  color: #999;
+}
+.side .fill-panel span {
+  flex: 0 0 auto;
   width: 12px;
 }
 /*.text {*/

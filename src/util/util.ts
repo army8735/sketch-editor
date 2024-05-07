@@ -55,7 +55,17 @@ export function equal(a: any, b: any) {
   return a === b;
 }
 
+export function renderTemplate(t: string, vars: Record<string, any>) {
+  return t.replace(/\${([\w$-]+)}/g, function($0, $1) {
+    if (vars.hasOwnProperty($1)) {
+      return vars[$1];
+    }
+    return '';
+  });
+}
+
 export default {
   equal,
   clone,
+  renderTemplate,
 };

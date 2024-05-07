@@ -2,6 +2,7 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Listener from './Listener';
 import BasicPanel from './BasicPanel';
+import FillPanel from './FillPanel';
 import OpacityPanel from './OpacityPanel';
 import RoundPanel from './RoundPanel';
 
@@ -10,6 +11,7 @@ class Panel {
   dom: HTMLElement;
   listener: Listener;
   basicPanel: BasicPanel;
+  fillPanel: FillPanel;
   opacityPanel: OpacityPanel;
   roundPanel: RoundPanel;
 
@@ -27,6 +29,9 @@ class Panel {
     this.roundPanel = new RoundPanel(root, dom);
     this.roundPanel.show(listener.selected);
 
+    this.fillPanel = new FillPanel(root, dom);
+    this.fillPanel.show(listener.selected);
+
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
       this.select(nodes);
     });
@@ -36,6 +41,7 @@ class Panel {
     this.basicPanel.show(nodes);
     this.opacityPanel.show(nodes);
     this.roundPanel.show(nodes);
+    this.fillPanel.show(nodes);
   }
 }
 

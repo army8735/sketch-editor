@@ -3,6 +3,7 @@ import Root from '../node/Root';
 import { toPrecision } from '../math';
 
 const html = `
+  <h4 class="panel-title">基本</h4>
   <div class="line">
     <label class="x">
       <input type="number" class="num" step="1" disabled/>

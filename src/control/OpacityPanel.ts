@@ -3,7 +3,7 @@ import Root from '../node/Root';
 import { toPrecision } from '../math';
 
 const html = `
-  <h4>不透明度</h4>
+  <h4 class="panel-title">不透明度</h4>
   <div class="line">
     <input type="range" min="0" max="100" step="1"/>
     <input type="number" min="0" max="100" step="1"/>
@@ -31,11 +31,6 @@ class OpacityPanel {
     const panel = this.panel;
     if (!nodes.length) {
       panel.style.display = 'none';
-      panel.querySelectorAll('input').forEach(item => {
-        item.disabled = true;
-        item.placeholder = '';
-        item.value = '';
-      });
       return;
     }
     panel.style.display = 'block';

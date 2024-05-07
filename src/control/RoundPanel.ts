@@ -1,11 +1,11 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { toPrecision } from '../math';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
+import { toPrecision } from '../math';
 
 const html = `
-  <h4>圆角</h4>
+  <h4 class="panel-title">圆角</h4>
   <div class="line">
     <input type="range" min="0" max="100" step="1"/>
     <input type="number" min="0" max="100" step="1"/>
@@ -33,11 +33,6 @@ class RoundPanel {
     const panel = this.panel;
     if (!nodes.length) {
       panel.style.display = 'none';
-      panel.querySelectorAll('input').forEach(item => {
-        item.disabled = true;
-        item.placeholder = '';
-        item.value = '';
-      });
       return;
     }
     panel.querySelectorAll('input').forEach(item => {
