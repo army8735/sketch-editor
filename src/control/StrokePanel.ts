@@ -15,7 +15,7 @@ const single = `
   <div class="line">
     <span class="$\{checked}"></span>
     <div class="color">
-      <input type="color" min="0" max="100" step="1" value="$\{color}" placeholder="$\{colorM}"/>
+      <input type="color" value="#$\{color}" placeholder="$\{colorM}"/>
       <span>颜色</span>
     </div>
     <div class="pos $\{position}">
@@ -118,7 +118,8 @@ class StrokePanel {
     this.panel.querySelectorAll('.line').forEach(item => {
       item.remove();
     });
-    es.forEach((e, i) => {
+    for (let i = es.length - 1; i >= 0; i--) {
+      const e = es[i];
       // 理论不会空，兜底防止bug
       if (!e.length) {
         return;
@@ -137,12 +138,12 @@ class StrokePanel {
         checked,
         color: c.length > 1 ? '' : c[0].replace('#', '').toUpperCase(),
         colorM: c.length > 1 ? '多个' : '',
-        width: w.length > 1 ? '' : toPrecision(w[0] * 100, 0),
+        width: w.length > 1 ? '' : toPrecision(w[0], 0),
         widthM: w.length > 1 ? '多个' : '',
         position: p.length > 1 ? 'multi' : p[0],
       });
       this.panel.innerHTML += s;
-    });
+    }
   }
 }
 

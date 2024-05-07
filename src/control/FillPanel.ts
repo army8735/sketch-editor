@@ -15,7 +15,7 @@ const single = `
   <div class="line">
     <span class="$\{checked}"></span>
     <div class="color">
-      <input type="color" min="0" max="100" step="1" value="$\{color}" placeholder="$\{colorM}"/>
+      <input type="color" value="#$\{color}" placeholder="$\{colorM}"/>
       <span>颜色</span>
     </div>
     <div class="hex">
@@ -109,7 +109,8 @@ class FillPanel {
     this.panel.querySelectorAll('.line').forEach(item => {
       item.remove();
     });
-    es.forEach((e, i) => {
+    for (let i = es.length - 1; i >= 0; i--) {
+      const e = es[i];
       // 理论不会空，兜底防止bug
       if (!e.length) {
         return;
@@ -127,11 +128,11 @@ class FillPanel {
         checked,
         color: c.length > 1 ? '' : c[0].replace('#', '').toUpperCase(),
         colorM: c.length > 1 ? '多个' : '',
-        opacity: o.length > 1 ? '' : toPrecision(o[0], 0),
+        opacity: o.length > 1 ? '' : toPrecision(o[0] * 100, 0),
         opacityM: o.length > 1 ? '多个' : '',
       });
       this.panel.innerHTML += s;
-    });
+    }
   }
 }
 
