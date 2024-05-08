@@ -548,6 +548,7 @@ html, body {
       display: flex;
       align-items: center;
       position: relative;
+      margin-bottom: 4px;
     }
 
     .ff {
@@ -574,6 +575,33 @@ html, body {
         color: #999;
         user-select: none;
         pointer-events: none;
+      }
+    }
+
+    .num {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      > div {
+        display: flex;
+        flex-direction: column;
+        width: 54px;
+      }
+
+      input[type=number] {
+        padding: 0 5px;
+        height: 20px;
+        border: none;
+        border-radius: 3px;
+        background: #F0F0F0;
+        font-size: 11px;
+      }
+
+      span {
+        margin-top: 2px;
+        font-size: 10px;
+        text-align: center;
       }
     }
   }

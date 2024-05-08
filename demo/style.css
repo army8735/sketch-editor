@@ -491,6 +491,7 @@ body {
   display: flex;
   align-items: center;
   position: relative;
+  margin-bottom: 4px;
 }
 .side .text-panel .ff select {
   flex: 1;
@@ -514,6 +515,29 @@ body {
   color: #999;
   user-select: none;
   pointer-events: none;
+}
+.side .text-panel .num {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.side .text-panel .num > div {
+  display: flex;
+  flex-direction: column;
+  width: 54px;
+}
+.side .text-panel .num input[type=number] {
+  padding: 0 5px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: #F0F0F0;
+  font-size: 11px;
+}
+.side .text-panel .num span {
+  margin-top: 2px;
+  font-size: 10px;
+  text-align: center;
 }
 /*.text {*/
 /*  display: none;*/
