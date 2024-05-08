@@ -79,6 +79,7 @@ export async function loadLocalFonts() {
     return await window.queryLocalFonts();
   } catch(err) {
     inject.error(err);
+    return [];
   }
 }
 

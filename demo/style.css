@@ -500,7 +500,7 @@ body {
   background: #FFF;
   border-radius: 3px;
 }
-.side .text-panel .ff span {
+.side .text-panel .ff .multi {
   position: absolute;
   left: 1px;
   top: 1px;

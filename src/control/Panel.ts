@@ -6,6 +6,7 @@ import OpacityPanel from './OpacityPanel';
 import RoundPanel from './RoundPanel';
 import FillPanel from './FillPanel';
 import StrokePanel from './StrokePanel';
+import TextPanel from './TextPanel';
 
 class Panel {
   root: Root;
@@ -16,6 +17,7 @@ class Panel {
   roundPanel: RoundPanel;
   fillPanel: FillPanel;
   strokePanel: StrokePanel;
+  textPanel: TextPanel;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -37,6 +39,9 @@ class Panel {
     this.strokePanel = new StrokePanel(root, dom);
     this.strokePanel.show(listener.selected);
 
+    this.textPanel = new TextPanel(root, dom);
+    this.textPanel.show(listener.selected);
+
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
       this.select(nodes);
     });
@@ -48,6 +53,7 @@ class Panel {
     this.roundPanel.show(nodes);
     this.fillPanel.show(nodes);
     this.strokePanel.show(nodes);
+    this.textPanel.show(nodes);
   }
 }
 
