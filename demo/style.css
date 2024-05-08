@@ -429,7 +429,7 @@ body {
 }
 .side .fill-panel .pos div span:hover,
 .side .stroke-panel .pos div span:hover {
-  transform: scale(1.1);
+  transform: translateY(-1px);
 }
 .side .fill-panel .pos div .outside,
 .side .stroke-panel .pos div .outside {
@@ -481,6 +481,39 @@ body {
 .side .fill-panel .pos.multi > span.multi,
 .side .stroke-panel .pos.multi > span.multi {
   display: block;
+}
+.side .text-panel {
+  margin-bottom: 5px;
+  padding: 0 10px 5px;
+  border-bottom: 0.5px solid #CCC;
+}
+.side .text-panel .line {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.side .text-panel .ff select {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  height: 20px;
+  background: #FFF;
+  border-radius: 3px;
+}
+.side .text-panel .ff span {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  right: 20px;
+  padding: 0 2px;
+  height: 18px;
+  background: #FFF;
+  line-height: 18px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #999;
+  user-select: none;
+  pointer-events: none;
 }
 /*.text {*/
 /*  display: none;*/

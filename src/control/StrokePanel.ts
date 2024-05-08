@@ -57,10 +57,6 @@ class StrokePanel {
 
   show(nodes: Node[]) {
     const panel = this.panel;
-    if (!nodes.length) {
-      panel.style.display = 'none';
-      return;
-    }
     let willShow = false;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];

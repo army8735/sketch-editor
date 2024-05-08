@@ -4,7 +4,7 @@ export default {
   debug: false,
   offscreenCanvas: false,
   tile: false,
-  deltaTime: 16,
+  deltaTime: 8,
   maxTextureSize: 8192,
   get MAX_TEXTURE_SIZE() {
     return this.maxTextureSize;
