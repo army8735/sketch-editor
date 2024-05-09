@@ -294,8 +294,8 @@ body {
 }
 .side .fill-panel,
 .side .stroke-panel {
-  margin: 5px;
-  padding: 0 5px 5px;
+  margin-bottom: 5px;
+  padding: 0 10px 5px;
   border-bottom: 0.5px solid #CCC;
 }
 .side .fill-panel .line,
@@ -491,6 +491,8 @@ body {
   display: flex;
   align-items: center;
   position: relative;
+}
+.side .text-panel .ff {
   margin-bottom: 4px;
 }
 .side .text-panel .ff select {
@@ -500,6 +502,7 @@ body {
   height: 20px;
   background: #FFF;
   border-radius: 3px;
+  font-size: 11px;
 }
 .side .text-panel .ff .multi {
   position: absolute;
