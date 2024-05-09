@@ -31,7 +31,7 @@ import Polyline from './Polyline';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { lineJoin } from './border';
-import { getPointsRect, getShapeGroupRect } from '../../math/bbox';
+import { getShapeGroupRect } from '../../math/bbox';
 
 function scaleUp(points: number[][]) {
   return points.map(point => {
@@ -106,8 +106,23 @@ class ShapeGroup extends Group {
   }
 
   override didMountBubble() {
-    super.didMountBubble();
-    this.points.splice(0); // 初始化肯定为空，防止其它过程再确保重置下
+    this.buildPoints();
+    const rect = this._rect || this.rect;
+    const { width, height } = this;
+    const EPS = Group.EPS;
+    // 和group的对比不同，直接用points的结果的rect
+    if (Math.abs(-rect[0]) > EPS
+      || Math.abs(-rect[1]) > EPS
+      || Math.abs(width - rect[2]) > EPS
+      || Math.abs(height - rect[3]) > EPS) {
+      // 冒泡过程无需向下检测，直接向上
+      this.adjustPosAndSize({
+        minX: rect[0],
+        minY: rect[1],
+        maxX: rect[2],
+        maxY: rect[3],
+      });
+    }
   }
 
   override lay(data: LayoutData) {
@@ -224,37 +239,6 @@ class ShapeGroup extends Group {
         this.points.push(t);
       }
     });
-  }
-
-  // 和group不同，child的rect不是简单的[0,0,w,h]，而是考虑矢量图形的真实范围
-  protected override getChildRect(child: Node) {
-    if (child instanceof Polyline) {
-      child.buildPoints();
-      const p = applyMatrixPoints(child.points, child.matrix);
-      const res = getPointsRect(p);
-      return {
-        minX: res[0],
-        minY: res[1],
-        maxX: res[2],
-        maxY: res[3],
-      };
-    }
-    else if (child instanceof ShapeGroup) {
-      child.buildPoints();
-      const p = child.points.map(item => {
-        return applyMatrixPoints(item, child.matrix);
-      });
-      const res = getShapeGroupRect(p);
-      return {
-        minX: res[0],
-        minY: res[1],
-        maxX: res[2],
-        maxY: res[3],
-      };
-    }
-    else {
-      return super.getChildRect(child);
-    }
   }
 
   override renderCanvas(scale: number) {
@@ -815,7 +799,6 @@ class ShapeGroup extends Group {
     let res = this._rect;
     if (!res) {
       res = this._rect = new Float64Array(4);
-      // 可能不存在
       this.buildPoints();
       // 子元素可能因为编辑模式临时超过范围
       const points = this.points;

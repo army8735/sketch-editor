@@ -23,7 +23,7 @@ class Group extends Container {
 
   override didMountBubble() {
     super.didMountBubble();
-    const rect = this.rect;
+    const rect = this._rect || this.rect;
     const r = this.getChildrenRect(false);
     if (Math.abs(r.minX - rect[0]) > EPS
       || Math.abs(r.minY - rect[1]) > EPS
@@ -32,24 +32,6 @@ class Group extends Container {
       // 冒泡过程无需向下检测，直接向上
       this.adjustPosAndSize(r);
     }
-  }
-
-  // 获取单个孩子相对于本父元素的盒子尺寸
-  protected getChildRect(child: Node): { minX: number, minY: number, maxX: number, maxY: number} | undefined {
-    const { width, height, matrix } = child;
-    let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(
-      0,
-      0,
-      width,
-      height,
-      matrix,
-    );
-    return {
-      minX: Math.min(x1, x2, x3, x4),
-      minY: Math.min(y1, y2, y3, y4),
-      maxX: Math.max(x1, x2, x3, x4),
-      maxY: Math.max(y1, y2, y3, y4),
-    };
   }
 
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
@@ -67,11 +49,6 @@ class Group extends Container {
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       const computedStyle = child.computedStyle;
-      const o = this.getChildRect(child);
-      if (!o) {
-        continue;
-      }
-      const { minX, minY, maxX, maxY } = o;
       if (isMask && !computedStyle.breakMask && excludeMask) {
         continue;
       }
@@ -81,6 +58,12 @@ class Group extends Container {
       else if (computedStyle.breakMask) {
         isMask = false;
       }
+      const r = child._rect || child.rect;
+      const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(r[0], r[1], r[2], r[3], child.matrix);
+      const minX = Math.min(x1, x2, x3, x4);
+      const minY = Math.min(y1, y2, y3, y4);
+      const maxX = Math.max(x1, x2, x3, x4);
+      const maxY = Math.max(y1, y2, y3, y4);
       if (first) {
         first = false;
         rect.minX = minX;
@@ -345,6 +328,10 @@ class Group extends Container {
     }
     group.checkPosSizeSelf();
     return group;
+  }
+
+  static get EPS() {
+    return EPS;
   }
 }
 
