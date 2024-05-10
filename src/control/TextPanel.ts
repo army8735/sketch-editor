@@ -5,6 +5,7 @@ import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
 import text from '../tools/text';
+import { TEXT_ALIGN } from '../style/define';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -39,6 +40,12 @@ const html = `
       <span>段落</span>
     </div>
   </div>
+  <div class="line al">
+    <span class="left" title="左对齐"></span>
+    <span class="center" title="居中对齐"></span>
+    <span class="right" title="右对齐"></span>
+    <span class="justify" title="两端对齐"></span>
+  </div>  
 `;
 
 let local = false;
@@ -204,6 +211,27 @@ class TextPanel {
       }
       else {
         input.value = o.paragraphSpacing[0].toString();
+      }
+    }
+    {
+      const span = panel.querySelector('.al .cur') as HTMLElement;
+      if (span) {
+        span.classList.remove('cur');
+      }
+      if (o.textAlign.length === 1) {
+        const ta = o.textAlign[0];
+        if (ta === TEXT_ALIGN.LEFT) {
+          panel.querySelector('.al .left')!.classList.add('cur');
+        }
+        else if (ta === TEXT_ALIGN.CENTER) {
+          panel.querySelector('.al .center')!.classList.add('cur');
+        }
+        else if (ta === TEXT_ALIGN.RIGHT) {
+          panel.querySelector('.al .right')!.classList.add('cur');
+        }
+        else if (ta === TEXT_ALIGN.JUSTIFY) {
+          panel.querySelector('.al .justify')!.classList.add('cur');
+        }
       }
     }
   }
