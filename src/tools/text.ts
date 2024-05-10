@@ -24,12 +24,12 @@ function putData(
   fontSize: number[],
   letterSpacing: number[],
   lineHeight: number[],
+  autoLineHeight: boolean[],
   paragraphSpacing: number[],
   textAlign: TEXT_ALIGN[],
   textBehaviour: TEXT_BEHAVIOUR[],
   obj: any,
 ) {
-  let autoLineHeight = false;
   const {
     fontFamily: ff,
     color: c,
@@ -65,11 +65,12 @@ function putData(
   if (!letterSpacing.includes(ls)) {
     letterSpacing.push(ls);
   }
-  if (lh.u === StyleUnit.AUTO) {
-    autoLineHeight = true;
-  }
   if (!lineHeight.includes(lh2)) {
     lineHeight.push(lh2);
+  }
+  const auto = lh.u === StyleUnit.AUTO;
+  if (!autoLineHeight.includes(auto)) {
+    autoLineHeight.push(auto);
   }
   if (!paragraphSpacing.includes(ps)) {
     paragraphSpacing.push(ps);
@@ -89,7 +90,6 @@ function putData(
   if (!textBehaviour.includes(tb)) {
     textBehaviour.push(tb);
   }
-  return { autoLineHeight };
 }
 
 export function getData(nodes: Text[]) {
@@ -100,16 +100,16 @@ export function getData(nodes: Text[]) {
   const fontSize: number[] = [];
   const letterSpacing: number[] = [];
   const lineHeight: number[] = [];
+  const autoLineHeight: boolean[] = [];
   const paragraphSpacing: number[] = [];
   const textAlign: TEXT_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
-  let autoLineHeight = false;
   for (let i = 0, len = nodes.length; i < len; i++) {
     const { rich, style, computedStyle } = nodes[i];
     const { width, height, lineHeight: lh } = style;
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
-        const res = putData(
+        putData(
           width,
           height,
           lh,
@@ -120,16 +120,16 @@ export function getData(nodes: Text[]) {
           fontSize,
           letterSpacing,
           lineHeight,
+          autoLineHeight,
           paragraphSpacing,
           textAlign,
           textBehaviour,
           rich[i],
         );
-        autoLineHeight = res.autoLineHeight || autoLineHeight;
       }
       continue;
     }
-    const res = putData(
+    putData(
       width,
       height,
       lh,
@@ -140,12 +140,12 @@ export function getData(nodes: Text[]) {
       fontSize,
       letterSpacing,
       lineHeight,
+      autoLineHeight,
       paragraphSpacing,
       textAlign,
       textBehaviour,
       computedStyle,
     );
-    autoLineHeight = res.autoLineHeight || autoLineHeight;
   }
   const { fontWeight, fontWeightList } = getWeight(fontFamily);
   return {
@@ -212,14 +212,14 @@ export function getEditData(node: Text) {
   const fontSize: number[] = [];
   const letterSpacing: number[] = [];
   const lineHeight: number[] = [];
+  const autoLineHeight: boolean[] = [];
   const paragraphSpacing: number[] = [];
   const textAlign: TEXT_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
-  let autoLineHeight = false;
   const richList = node.getCursorRich();
   const { width, height, lineHeight: lh } = style;
   for (let i = 0, len = richList.length; i < len; i++) {
-    const res = putData(
+    putData(
       width,
       height,
       lh,
@@ -230,12 +230,12 @@ export function getEditData(node: Text) {
       fontSize,
       letterSpacing,
       lineHeight,
+      autoLineHeight,
       paragraphSpacing,
       textAlign,
       textBehaviour,
       richList[i],
     );
-    autoLineHeight = res.autoLineHeight || autoLineHeight;
   }
   const { fontWeight, fontWeightList } = getWeight(fontFamily);
   return {
