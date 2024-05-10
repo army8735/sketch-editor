@@ -14,6 +14,10 @@ export const SIZE_LIST = [
 ];
 
 function putData(
+  left: StyleNumValue,
+  right: StyleNumValue,
+  top: StyleNumValue,
+  bottom: StyleNumValue,
   width: StyleNumValue,
   height: StyleNumValue,
   lh: StyleNumValue,
@@ -79,13 +83,18 @@ function putData(
     textAlign.push(ta);
   }
   let tb = TEXT_BEHAVIOUR.AUTO;
-  if (width.u !== StyleUnit.AUTO) {
-    if (height.u !== StyleUnit.AUTO) {
-      tb = TEXT_BEHAVIOUR.FIXED_W_H;
-    }
-    else {
-      tb = TEXT_BEHAVIOUR.FIXED_W;
-    }
+
+  const autoW = width.u === StyleUnit.AUTO
+    && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+  const autoH = height.u === StyleUnit.AUTO
+    && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+  if (autoW && autoH) {
+  }
+  else if (autoH) {
+    tb = TEXT_BEHAVIOUR.FIXED_W;
+  }
+  else {
+    tb = TEXT_BEHAVIOUR.FIXED_W_H;
   }
   if (!textBehaviour.includes(tb)) {
     textBehaviour.push(tb);
@@ -106,10 +115,14 @@ export function getData(nodes: Text[]) {
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   for (let i = 0, len = nodes.length; i < len; i++) {
     const { rich, style, computedStyle } = nodes[i];
-    const { width, height, lineHeight: lh } = style;
+    const { left, right, top, bottom, width, height, lineHeight: lh } = style;
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         putData(
+          left,
+          right,
+          top,
+          bottom,
           width,
           height,
           lh,
@@ -130,6 +143,10 @@ export function getData(nodes: Text[]) {
       continue;
     }
     putData(
+      left,
+      right,
+      top,
+      bottom,
       width,
       height,
       lh,
@@ -217,9 +234,13 @@ export function getEditData(node: Text) {
   const textAlign: TEXT_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   const richList = node.getCursorRich();
-  const { width, height, lineHeight: lh } = style;
+  const { left, right, top, bottom, width, height, lineHeight: lh } = style;
   for (let i = 0, len = richList.length; i < len; i++) {
     putData(
+      left,
+      right,
+      top,
+      bottom,
       width,
       height,
       lh,

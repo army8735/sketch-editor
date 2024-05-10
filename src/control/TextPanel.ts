@@ -4,7 +4,7 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import text from '../tools/text';
+import text, { TEXT_BEHAVIOUR } from '../tools/text';
 import { TEXT_ALIGN } from '../style/define';
 
 const html = `
@@ -39,6 +39,14 @@ const html = `
       <input type="number" step="1"/>
       <span>段落</span>
     </div>
+  </div>
+  <div class="line wh">
+    <div>
+      <span class="auto" title="自动宽度"></span>
+      <span class="fw" title="自动高度"></span>
+      <span class="fwh" title="固定尺寸"></span>
+    </div>
+    <span class="txt"></span>
   </div>
   <div class="line al">
     <span class="left" title="左对齐"></span>
@@ -211,6 +219,31 @@ class TextPanel {
       }
       else {
         input.value = o.paragraphSpacing[0].toString();
+      }
+    }
+    {
+      const span = panel.querySelector('.wh .cur') as HTMLElement;
+      if (span) {
+        span.classList.remove('cur');
+      }
+      const txt = panel.querySelector('.wh .txt') as HTMLSpanElement;
+      if (o.textBehaviour.length === 1) {
+        const tb = o.textBehaviour[0];
+        if (tb === TEXT_BEHAVIOUR.AUTO) {
+          panel.querySelector('.wh .auto')!.classList.add('cur');
+          txt.innerHTML = '自动宽度';
+        }
+        else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
+          panel.querySelector('.wh .fw')!.classList.add('cur');
+          txt.innerHTML = '自动高度';
+        }
+        else if (tb === TEXT_BEHAVIOUR.FIXED_W_H) {
+          panel.querySelector('.wh .fwh')!.classList.add('cur');
+          txt.innerHTML = '固定尺寸';
+        }
+      }
+      else {
+        txt.innerHTML = '多种';
       }
     }
     {
