@@ -519,6 +519,46 @@ body {
   user-select: none;
   pointer-events: none;
 }
+.side .text-panel .wc {
+  margin-bottom: 4px;
+}
+.side .text-panel .wc > div {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+.side .text-panel .wc > div select {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  height: 20px;
+  background: #FFF;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.side .text-panel .wc > div .multi {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  right: 20px;
+  padding: 0 2px;
+  height: 18px;
+  background: #FFF;
+  line-height: 18px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #999;
+  user-select: none;
+  pointer-events: none;
+}
+.side .text-panel .wc input[type=color] {
+  margin-left: 10px;
+  width: 40px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+}
 .side .text-panel .num {
   display: flex;
   align-items: center;

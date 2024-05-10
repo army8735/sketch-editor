@@ -580,6 +580,51 @@ html, body {
       }
     }
 
+    .wc {
+      margin-bottom: 4px;
+
+      > div {
+        flex: 1;
+        display: flex;
+        position: relative;
+
+        select {
+          flex: 1;
+          margin: 0;
+          padding: 0;
+          height: 20px;
+          background: #FFF;
+          border-radius: 3px;
+          font-size: 11px;
+        }
+
+        .multi {
+          position: absolute;
+          left: 1px;
+          top: 1px;
+          right: 20px;
+          padding: 0 2px;
+          height: 18px;
+          background: #FFF;
+          line-height: 18px;
+          border-radius: 3px;
+          font-size: 11px;
+          color: #999;
+          user-select: none;
+          pointer-events: none;
+        }
+      }
+
+      input[type=color] {
+        margin-left: 10px;
+        width: 40px;
+        height: 20px;
+        border: none;
+        border-radius: 3px;
+        font-size: 11px;
+      }
+    }
+
     .num {
       display: flex;
       align-items: center;

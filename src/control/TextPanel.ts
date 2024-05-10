@@ -4,6 +4,7 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
+import text from '../tools/text';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -12,6 +13,13 @@ const html = `
       <option value="arial">Arial</option>
     </select>
     <span class="multi">多种字体</span>
+  </div>
+  <div class="line wc">
+    <div>
+      <select></select>
+      <span class="multi">多种字重</span>
+    </div>
+    <input type="color"/>
   </div>
   <div class="line num">
     <div class="fs">
@@ -97,38 +105,13 @@ class TextPanel {
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
       item.placeholder = '';
-      item.value = '';
     });
-    const ffs: string[] = [];
-    const fss: number[] = [];
-    const lss: number[] = [];
-    const lhs: number[] = [];
-    const pss: number[] = [];
-    nodes.forEach(node => {
-      if (node instanceof Text) {
-        const style = node.getCssStyle();
-        if (!ffs.includes(style.fontFamily)) {
-          ffs.push(style.fontFamily);
-        }
-        if (!fss.includes(style.fontSize)) {
-          fss.push(style.fontSize);
-        }
-        if (!lss.includes(style.letterSpacing)) {
-          lss.push(style.letterSpacing);
-        }
-        const lineHeight = style.lineHeight as number;
-        if (!lhs.includes(lineHeight)) {
-          lhs.push(lineHeight);
-        }
-        if (!pss.includes(style.paragraphSpacing)) {
-          pss.push(style.paragraphSpacing);
-        }
-      }
-    });
+    const texts = nodes.filter(item => item instanceof Text) as Text[];
+    const o = text.getData(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       const multi = panel.querySelector('.ff .multi') as HTMLElement;
-      if (ffs.length > 1) {
+      if (o.fontFamily.length > 1) {
         multi.style.display = 'block';
       }
       else {
@@ -141,9 +124,10 @@ class TextPanel {
         const { data } = style.font;
         const list = select.querySelectorAll('option');
         let has = false;
+        const ff = o.fontFamily[0];
         for (let i = 0, len = list.length; i < len; i++) {
           const option = list[i];
-          const o = data[ffs[0]];
+          const o = data[ff];
           if (o && o.family.toLowerCase() === option.value) {
             has = true;
             option.selected = true;
@@ -151,46 +135,75 @@ class TextPanel {
           }
         }
         if (!has) {
-          const option = `<option value="${ffs[0]}" selected="selected" disabled>${ffs[0]}</option>`;
+          const option = `<option value="${ff}" selected="selected" disabled>${ff}</option>`;
           select.innerHTML += option;
           select.classList.add('invalid');
         }
       }
     }
     {
+      const select = panel.querySelector('.wc select') as HTMLSelectElement;
+      let s = '';
+      o.fontWeightList.forEach(item => {
+        s += `<option value="${item.value}">${item.label}</option>`;
+      });
+      select.innerHTML = s;
+      const multi = panel.querySelector('.wc .multi') as HTMLElement;
+      if (o.fontWeight.length > 1) {
+        multi.style.display = 'block';
+        select.disabled = true;
+      }
+      else {
+        multi.style.display = 'none';
+        select.disabled = false;
+        const list = select.querySelectorAll('option');
+        for (let i = 0, len = list.length; i < len; i++) {
+          const option = list[i];
+          if (option.innerHTML === o.fontWeight[0]) {
+            option.selected = true;
+            break;
+          }
+        }
+      }
+    }
+    {
+      const color = panel.querySelector('input[type=color]') as HTMLInputElement;
+      color.value = o.color[0];
+    }
+    {
       const input = panel.querySelector('.fs input') as HTMLInputElement;
-      if (fss.length > 1) {
+      if (o.fontSize.length > 1) {
         input.placeholder = '多个';
       }
       else {
-        input.value = toPrecision(fss[0], 0).toString();
+        input.value = toPrecision(o.fontSize[0], 0).toString();
       }
     }
     {
       const input = panel.querySelector('.ls input') as HTMLInputElement;
-      if (lss.length > 1) {
+      if (o.letterSpacing.length > 1) {
         input.placeholder = '多个';
       }
       else {
-        input.value = toPrecision(lss[0], 0).toString();
+        input.value = toPrecision(o.letterSpacing[0], 0).toString();
       }
     }
     {
       const input = panel.querySelector('.lh input') as HTMLInputElement;
-      if (lhs.length > 1) {
+      if (o.lineHeight.length > 1) {
         input.placeholder = '多个';
       }
       else {
-        input.value = toPrecision(lhs[0], 0).toString();
+        input.value = toPrecision(o.lineHeight[0], 0).toString();
       }
     }
     {
       const input = panel.querySelector('.ps input') as HTMLInputElement;
-      if (pss.length > 1) {
+      if (o.paragraphSpacing.length > 1) {
         input.placeholder = '多个';
       }
       else {
-        input.value = pss[0].toString();
+        input.value = o.paragraphSpacing[0].toString();
       }
     }
   }

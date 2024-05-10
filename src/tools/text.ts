@@ -1,5 +1,5 @@
 import Text from '../node/Text';
-import { color2rgbaStr } from '../style/css';
+import { color2hexStr } from '../style/css';
 import { StyleNumValue, StyleUnit, TEXT_ALIGN } from '../style/define';
 import fontInfo from '../style/font';
 
@@ -17,6 +17,7 @@ function putData(
   width: StyleNumValue,
   height: StyleNumValue,
   lh: StyleNumValue,
+  valid: boolean[],
   fontFamily: string[],
   name: string[],
   color: string[],
@@ -29,7 +30,6 @@ function putData(
   obj: any,
 ) {
   let autoLineHeight = false;
-  let valid = false;
   const {
     fontFamily: ff,
     color: c,
@@ -42,38 +42,39 @@ function putData(
   const ff2 = ff.toLowerCase();
   const o = fontInfo.data[ff2];
   if (o) {
-    if (fontFamily.indexOf(ff2) === -1) {
+    if (!fontFamily.includes(ff2)) {
       fontFamily.push(ff2);
       name.push(o.name);
     }
-    valid = true;
+    valid.push(true);
   }
   else {
-    if (fontFamily.indexOf(ff2) === -1) {
+    if (!fontFamily.includes(ff2)) {
       fontFamily.push(ff2);
       name.push(ff2);
     }
+    valid.push(false);
   }
-  const cl = color2rgbaStr(c);
-  if (color.indexOf(cl) === -1) {
+  const cl = color2hexStr(c);
+  if (!color.includes(cl)) {
     color.push(cl);
   }
-  if (fontSize.indexOf(fs) === -1) {
+  if (!fontSize.includes(fs)) {
     fontSize.push(fs);
   }
-  if (letterSpacing.indexOf(ls) === -1) {
+  if (!letterSpacing.includes(ls)) {
     letterSpacing.push(ls);
   }
   if (lh.u === StyleUnit.AUTO) {
     autoLineHeight = true;
   }
-  if (lineHeight.indexOf(lh2) === -1) {
+  if (!lineHeight.includes(lh2)) {
     lineHeight.push(lh2);
   }
-  if (paragraphSpacing.indexOf(ps) === -1) {
+  if (!paragraphSpacing.includes(ps)) {
     paragraphSpacing.push(ps);
   }
-  if (textAlign.indexOf(ta) === -1) {
+  if (!textAlign.includes(ta)) {
     textAlign.push(ta);
   }
   let tb = TEXT_BEHAVIOUR.AUTO;
@@ -85,16 +86,14 @@ function putData(
       tb = TEXT_BEHAVIOUR.FIXED_W;
     }
   }
-  if (textBehaviour.indexOf(tb) === -1) {
+  if (!textBehaviour.includes(tb)) {
     textBehaviour.push(tb);
   }
-  return { autoLineHeight, valid };
+  return { autoLineHeight };
 }
 
 export function getData(nodes: Text[]) {
-  if (!nodes.length) {
-    return;
-  }
+  const valid: boolean[] = [];
   const fontFamily: string[] = [];
   const name: string[] = [];
   const color: string[] = [];
@@ -105,7 +104,6 @@ export function getData(nodes: Text[]) {
   const textAlign: TEXT_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   let autoLineHeight = false;
-  let valid = false;
   for (let i = 0, len = nodes.length; i < len; i++) {
     const { rich, style, computedStyle } = nodes[i];
     const { width, height, lineHeight: lh } = style;
@@ -115,6 +113,7 @@ export function getData(nodes: Text[]) {
           width,
           height,
           lh,
+          valid,
           fontFamily,
           name,
           color,
@@ -127,7 +126,6 @@ export function getData(nodes: Text[]) {
           rich[i],
         );
         autoLineHeight = res.autoLineHeight || autoLineHeight;
-        valid = res.valid || valid;
       }
       continue;
     }
@@ -135,6 +133,7 @@ export function getData(nodes: Text[]) {
       width,
       height,
       lh,
+      valid,
       fontFamily,
       name,
       color,
@@ -147,13 +146,12 @@ export function getData(nodes: Text[]) {
       computedStyle,
     );
     autoLineHeight = res.autoLineHeight || autoLineHeight;
-    valid = res.valid || valid;
   }
-  const { fontWeight, fontWeightList } = getWeight(valid, fontFamily);
+  const { fontWeight, fontWeightList } = getWeight(fontFamily);
   return {
+    valid,
     fontFamily,
     name,
-    valid,
     fontWeight,
     fontWeightList,
     color,
@@ -167,21 +165,26 @@ export function getData(nodes: Text[]) {
   };
 }
 
-function getWeight(valid: boolean, fontFamily: string[]) {
-  let fontWeight = 'Regular'; // 不支持的字体默认Regular
+function getWeight(fontFamily: string[]) {
+  let fontWeight: string[] = [];
   const fontWeightList: Array<{ label: string; value: string }> = [];
-  if (valid && fontFamily.length === 1) {
-    const list = fontInfo.data[fontFamily[0].toLowerCase()].list;
-    for (let i = 0, len = list.length; i < len; i++) {
-      const item = list[i];
-      fontWeightList.push({ label: item.style, value: item.postscriptName });
-      if (item.postscriptName === fontFamily[0].toLowerCase()) {
-        fontWeight = item.style;
+  fontFamily.forEach(ff => {
+    const data = fontInfo.data[ff.toLowerCase()];
+    if (data) {
+      const list = data.list;
+      for (let i = 0, len = list.length; i < len; i++) {
+        const item = list[i];
+        fontWeightList.push({ label: item.style, value: item.postscriptName });
+        if (item.postscriptName === ff.toLowerCase()) {
+          if (!fontWeight.includes(item.style)) {
+            fontWeight.push(item.style);
+          }
+        }
       }
     }
-  }
-  else if (fontFamily.length > 1) {
-    fontWeight = '多种字重';
+  });
+  if (!fontWeight.length) {
+    fontWeight.push('Regular'); // 不支持的字体默认Regular
   }
   return { fontWeight, fontWeightList };
 }
@@ -202,6 +205,7 @@ export function getEditData(node: Text) {
   if (!rich.length) {
     return getData([node]);
   }
+  const valid: boolean[] = [];
   const fontFamily: string[] = [];
   const name: string[] = [];
   const color: string[] = [];
@@ -212,7 +216,6 @@ export function getEditData(node: Text) {
   const textAlign: TEXT_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   let autoLineHeight = false;
-  let valid = false;
   const richList = node.getCursorRich();
   const { width, height, lineHeight: lh } = style;
   for (let i = 0, len = richList.length; i < len; i++) {
@@ -220,6 +223,7 @@ export function getEditData(node: Text) {
       width,
       height,
       lh,
+      valid,
       fontFamily,
       name,
       color,
@@ -232,13 +236,12 @@ export function getEditData(node: Text) {
       richList[i],
     );
     autoLineHeight = res.autoLineHeight || autoLineHeight;
-    valid = res.valid || valid;
   }
-  const { fontWeight, fontWeightList } = getWeight(valid, fontFamily);
+  const { fontWeight, fontWeightList } = getWeight(fontFamily);
   return {
+    valid,
     fontFamily,
     name,
-    valid,
     fontWeight,
     fontWeightList,
     color,
