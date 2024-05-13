@@ -24,7 +24,7 @@ class Panel {
     this.dom = dom;
     this.listener = listener;
 
-    this.basicPanel = new BasicPanel(root, dom);
+    this.basicPanel = new BasicPanel(root, dom, listener);
     this.basicPanel.show(listener.selected);
 
     this.opacityPanel = new OpacityPanel(root, dom);

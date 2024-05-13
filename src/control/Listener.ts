@@ -10,9 +10,10 @@ import Select from './Select';
 import Input from './Input';
 import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
-import history from '../history';
-
-const { History, MoveCommand, ResizeCommand } = history;
+import History from '../history/History';
+import MoveCommand from '../history/MoveCommand';
+import ResizeCommand from '../history/ResizeCommand';
+import { resizeBR, resizeTL } from '../tools/node';
 
 enum State {
   NORMAL = 0,
@@ -37,6 +38,7 @@ export default class Listener extends Event {
   state: State;
   root: Root;
   dom: HTMLElement;
+  history: History;
   metaKey: boolean;
   shiftKey: boolean;
   ctrlKey: boolean;
@@ -56,7 +58,7 @@ export default class Listener extends Event {
   dy: number;
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
-  updateStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
+  modifyStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   originStyle: Style[]; // 同上
@@ -69,6 +71,7 @@ export default class Listener extends Event {
     this.state = State.NORMAL;
     this.root = root;
     this.dom = dom;
+    this.history = new History();
 
     this.metaKey = false;
     this.shiftKey = false;
@@ -90,7 +93,7 @@ export default class Listener extends Event {
     this.dx = 0;
     this.dy = 0;
     this.selected = [];
-    this.updateStyle = [];
+    this.modifyStyle = [];
     this.abcStyle = [];
     this.computedStyle = [];
     this.originStyle = [];
@@ -164,7 +167,7 @@ export default class Listener extends Event {
     const isControl = this.select.isSelectControlDom(target);
     // 操作开始清除
     this.originStyle.splice(0);
-    this.updateStyle.splice(0);
+    this.modifyStyle.splice(0);
     this.dx = this.dy = 0;
     // 点到控制html上
     if (isControl) {
@@ -425,171 +428,32 @@ export default class Listener extends Event {
           this.controlType === 'tl' ||
           this.controlType === 'tr'
         ) {
-          // top为确定值则修改它，还要看height是否是确定值也一并修改
-          if (
-            style.top.u === StyleUnit.PX ||
-            style.top.u === StyleUnit.PERCENT
-          ) {
-            if (style.top.u === StyleUnit.PX) {
-              next.top = computedStyle.top + dy2;
-            }
-            else {
-              next.top =
-                ((computedStyle.top + dy2) * 100) / node.parent!.height + '%';
-            }
-            if (style.height.u === StyleUnit.PX ||
-              // 只有top定位的自动高度文本
-              style.height.u === StyleUnit.AUTO && style.bottom.u === StyleUnit.AUTO) {
-              next.height = computedStyle.height - dy2;
-            }
-            else if (style.height.u === StyleUnit.PERCENT) {
-              next.height =
-                ((computedStyle.height - dy2) * 100) / node.parent!.height + '%';
-            }
-          }
-          // top为自动，高度则为确定值修改，根据bottom定位
-          else if (
-            style.height.u === StyleUnit.PX ||
-            style.height.u === StyleUnit.PERCENT ||
-            // top和height均为auto，只有人工bottom定位文本
-            style.height.u === StyleUnit.AUTO
-          ) {
-            if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
-              next.height = computedStyle.height - dy2;
-            }
-            else {
-              next.height =
-                ((computedStyle.height - dy2) * 100) / node.parent!.height + '%';
-            }
-          }
+          const t = resizeTL(node, style, computedStyle, cssStyle, dx2, 0);
+          Object.assign(next, t);
         }
         else if (
           this.controlType === 'b' ||
           this.controlType === 'bl' ||
           this.controlType === 'br'
         ) {
-          // bottom为确定值则修改它，还要看height是否是确定值也一并修改
-          if (
-            style.bottom.u === StyleUnit.PX ||
-            style.bottom.u === StyleUnit.PERCENT
-          ) {
-            if (style.bottom.u === StyleUnit.PX) {
-              next.bottom = computedStyle.bottom - dy2;
-            }
-            else {
-              next.bottom =
-                ((computedStyle.bottom - dy2) * 100) / node.parent!.height + '%';
-            }
-            if (style.height.u === StyleUnit.PX ||
-              // 只有bottom定位的自动高度文本
-            style.height.u === StyleUnit.AUTO && style.top.u === StyleUnit.AUTO) {
-              next.height = computedStyle.height + dy2;
-            }
-            else if (style.height.u === StyleUnit.PERCENT) {
-              next.height =
-                ((computedStyle.height + dy2) * 100) / node.parent!.height + '%';
-            }
-          }
-          // bottom为自动，高度则为确定值修改，根据top定位
-          else if (
-            style.height.u === StyleUnit.PX ||
-            style.height.u === StyleUnit.PERCENT ||
-            style.height.u === StyleUnit.AUTO
-          ) {
-            if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
-              next.height = computedStyle.height + dy2;
-            }
-            else {
-              next.height =
-                ((computedStyle.height + dy2) * 100) / node.parent!.height + '%';
-            }
-          }
+          const t = resizeBR(node, style, computedStyle, cssStyle, 0, dy2);
+          Object.assign(next, t);
         }
         if (
           this.controlType === 'l' ||
           this.controlType === 'tl' ||
           this.controlType === 'bl'
         ) {
-          // left为确定值则修改它，还要看width是否是确定值也一并修改
-          if (
-            style.left.u === StyleUnit.PX ||
-            style.left.u === StyleUnit.PERCENT
-          ) {
-            if (style.left.u === StyleUnit.PX) {
-              next.left = computedStyle.left + dx2;
-            }
-            else {
-              next.left =
-                ((computedStyle.left + dx2) * 100) / node.parent!.width + '%';
-            }
-            if (style.width.u === StyleUnit.PX ||
-              // 只有left定位的自动宽度文本
-              style.width.u === StyleUnit.AUTO && style.right.u === StyleUnit.AUTO) {
-              next.width = computedStyle.width - dx2;
-            }
-            else if (style.width.u === StyleUnit.PERCENT) {
-              next.width =
-                ((computedStyle.width - dx2) * 100) / node.parent!.width + '%';
-            }
-          }
-          // left为自动，宽度则为确定值修改，根据right定位
-          else if (
-            style.width.u === StyleUnit.PX ||
-            style.width.u === StyleUnit.PERCENT ||
-            // left和width均为auto，只有人工right定位文本
-            style.width.u === StyleUnit.AUTO
-          ) {
-            if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
-              next.width = computedStyle.width - dx2;
-            }
-            else {
-              next.width =
-                ((computedStyle.width - dx2) * 100) / node.parent!.width + '%';
-            }
-          }
+          const t = resizeTL(node, style, computedStyle, cssStyle, 0, dy2);
+          Object.assign(next, t);
         }
         else if (
           this.controlType === 'r' ||
           this.controlType === 'tr' ||
           this.controlType === 'br'
         ) {
-          // right为确定值则修改它，还要看width是否是确定值也一并修改
-          if (
-            style.right.u === StyleUnit.PX ||
-            style.right.u === StyleUnit.PERCENT
-          ) {
-            if (style.right.u === StyleUnit.PX) {
-              next.right = computedStyle.right - dx2;
-            }
-            else {
-              next.right =
-                ((computedStyle.right - dx2) * 100) / node.parent!.width + '%';
-            }
-            if (style.width.u === StyleUnit.PX ||
-              // 只有right定位的自动宽度文本
-              style.width.u === StyleUnit.AUTO && style.left.u === StyleUnit.AUTO) {
-              next.width = computedStyle.width + dx2;
-            }
-            else if (style.width.u === StyleUnit.PERCENT) {
-              next.width =
-                ((computedStyle.width + dx2) * 100) / node.parent!.width + '%';
-            }
-          }
-          // right为自动，宽度则为确定值修改，根据left定位
-          else if (
-            style.width.u === StyleUnit.PX ||
-            style.width.u === StyleUnit.PERCENT ||
-            // right和width均auto，只有自动宽度文本，修改为定宽
-            style.width.u === StyleUnit.AUTO
-          ) {
-            if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
-              next.width = computedStyle.width + dx2;
-            }
-            else {
-              next.width =
-                ((computedStyle.width + dx2) * 100) / node.parent!.width + '%';
-            }
-          }
+          const t = resizeBR(node, style, computedStyle, cssStyle, dx2, 0);
+          Object.assign(next, t);
         }
         node.updateStyle(next);
         Object.keys(next).forEach((k) => {
@@ -597,7 +461,7 @@ export default class Listener extends Event {
           // @ts-ignore
           prev[k] = v;
         });
-        this.updateStyle[i] = { prev, next };
+        this.modifyStyle[i] = { prev, next };
       });
       this.isMouseMove = true;
       this.select.updateSelect(selected);
@@ -642,7 +506,7 @@ export default class Listener extends Event {
               o.translateY = computedStyle.translateY + dy2;
             }
             node.updateStyle(o);
-            this.updateStyle[i] = {
+            this.modifyStyle[i] = {
               prev: {
                 translateX: computedStyle.translateX,
                 translateY: computedStyle.translateY,
@@ -767,9 +631,9 @@ export default class Listener extends Event {
           // 还原最初的translate/TRBL值
           node.endSizeChange(this.originStyle[i]);
           node.checkPosSizeUpward();
-          const o = this.updateStyle[i];
+          const o = this.modifyStyle[i];
           if (o) {
-            History.getInstance().addCommand(new ResizeCommand(node, o));
+            this.history.addCommand(new ResizeCommand(node, o));
           }
         }
       });
@@ -801,7 +665,7 @@ export default class Listener extends Event {
             // 还原最初的translate/TRBL值
             node.endPosChange(this.originStyle[i], dx, dy);
             node.checkPosSizeUpward();
-            History.getInstance().addCommand(new MoveCommand(node, dx, dy));
+            this.history.addCommand(new MoveCommand(node, dx, dy));
           });
         }
       }
@@ -1025,13 +889,13 @@ export default class Listener extends Event {
     // z，undo/redo
     else if (e.keyCode === 90) {
       if (this.metaKey && this.shiftKey) {
-        const c = History.getInstance().redo();
+        const c = this.history.redo();
         if (c) {
           this.updateActive();
         }
       }
       else if (this.metaKey) {
-        const c = History.getInstance().undo();
+        const c = this.history.undo();
         if (c) {
           this.updateActive();
         }
@@ -1081,7 +945,7 @@ export default class Listener extends Event {
     document.removeEventListener('keyup', this.onKeyUp);
 
     this.selected.splice(0);
-    this.updateStyle.splice(0);
+    this.modifyStyle.splice(0);
     this.abcStyle.splice(0);
     this.computedStyle.splice(0);
     this.originStyle.splice(0);

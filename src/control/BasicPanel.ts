@@ -1,6 +1,12 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { toPrecision } from '../math';
+import Listener from './Listener';
+import MoveCommand from '../history/MoveCommand';
+import RotateCommand from '../history/RotateCommand';
+import { resizeBR } from '../tools/node';
+import ResizeCommand from '../history/ResizeCommand';
+import { JStyle } from '../format';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -33,19 +39,202 @@ const html = `
 class BasicPanel {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   panel: HTMLElement;
+  nodes: Node[];
+  data: Array<{ x: number, y: number, angle: number, w: number, h: number }>; // node当前数据，每次input变更则更新
+  silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
+    this.nodes = [];
+    this.data = [];
+    this.silence = false;
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'basic-panel';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    const x = panel.querySelector('.x input') as HTMLInputElement;
+    const y = panel.querySelector('.y input') as HTMLInputElement;
+    const r = panel.querySelector('.r input') as HTMLInputElement;
+    const w = panel.querySelector('.w input') as HTMLInputElement;
+    const h = panel.querySelector('.h input') as HTMLInputElement;
+
+    x.addEventListener('input', (e) => {
+      this.silence = true;
+      this.nodes.forEach((node, i) => {
+        let d = parseFloat(x.value) - this.data[i].x;
+        if (d) {
+          if (listener.shiftKey) {
+            e.preventDefault();
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+            x.value = toPrecision(this.data[i].x + d).toString();
+          }
+          this.data[i].x += d;
+          const style = node.getStyle();
+          node.updateStyle({
+            translateX: node.computedStyle.translateX + d,
+          });
+          // 还原最初的translate/TRBL值
+          node.endPosChange(style, d, 0);
+          node.checkPosSizeUpward();
+          listener.history.addCommand(new MoveCommand(node, d, 0));
+        }
+      });
+      this.silence = false;
+    });
+
+    y.addEventListener('input', (e) => {
+      this.silence = true;
+      this.nodes.forEach((node, i) => {
+        let d = parseFloat(y.value) - this.data[i].y;
+        if (d) {
+          if (listener.shiftKey) {
+            e.preventDefault();
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+            y.value = toPrecision(this.data[i].y + d).toString();
+          }
+          this.data[i].y += d;
+          const style = node.getStyle();
+          node.updateStyle({
+            translateY: node.computedStyle.translateY + d,
+          });
+          // 还原最初的translate/TRBL值
+          node.endPosChange(style, 0, d);
+          node.checkPosSizeUpward();
+          listener.history.addCommand(new MoveCommand(node, 0, d));
+        }
+      });
+      this.silence = false;
+    });
+
+    r.addEventListener('input', (e) => {
+      this.silence = true;
+      this.nodes.forEach((node, i) => {
+        let d = parseFloat(r.value) - this.data[i].angle;
+        if (d) {
+          if (listener.shiftKey) {
+            e.preventDefault();
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+            d = this.data[i].angle + d;
+            r.value = toPrecision(d).toString();
+            this.data[i].angle = d;
+          }
+          else {
+            d = parseFloat(r.value);
+            this.data[i].angle = d;
+          }
+          node.updateStyle({
+            rotateZ: d,
+          });
+          node.checkPosSizeUpward();
+          listener.history.addCommand(new RotateCommand(node, d));
+        }
+      });
+      this.silence = false;
+    });
+
+    w.addEventListener('input', (e) => {
+      this.silence = true;
+      this.nodes.forEach((node, i) => {
+        let d = parseFloat(w.value) - this.data[i].w;
+        if (d) {
+          if (listener.shiftKey) {
+            e.preventDefault();
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+            w.value = toPrecision(this.data[i].w + d).toString();
+          }
+          this.data[i].w += d;
+          const { computedStyle } = node;
+          const style = node.getStyle();
+          const cssStyle = node.getCssStyle();
+          const next = resizeBR(node, style, computedStyle, cssStyle, d, 0);
+          node.updateStyle(next);
+          const prev: Partial<JStyle> = {};
+          Object.keys(next).forEach((k) => {
+            const v = cssStyle[k as keyof JStyle];
+            // @ts-ignore
+            prev[k] = v;
+          });
+          // 还原最初的translate/TRBL值
+          node.endSizeChange(style);
+          node.checkPosSizeUpward();
+          listener.history.addCommand(new ResizeCommand(node, { prev, next }));
+        }
+      });
+      this.silence = false;
+    });
+
+    h.addEventListener('input', (e) => {
+      this.silence = true;
+      this.nodes.forEach((node, i) => {
+        let d = parseFloat(h.value) - this.data[i].h;
+        if (d) {
+          if (listener.shiftKey) {
+            e.preventDefault();
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+            h.value = toPrecision(this.data[i].h + d).toString();
+          }
+          this.data[i].h += d;
+          const { computedStyle } = node;
+          const style = node.getStyle();
+          const cssStyle = node.getCssStyle();
+          const next = resizeBR(node, style, computedStyle, cssStyle, 0, d);
+          node.updateStyle(next);
+          const prev: Partial<JStyle> = {};
+          Object.keys(next).forEach((k) => {
+            const v = cssStyle[k as keyof JStyle];
+            // @ts-ignore
+            prev[k] = v;
+          });
+          // 还原最初的translate/TRBL值
+          node.endSizeChange(style);
+          node.checkPosSizeUpward();
+          listener.history.addCommand(new ResizeCommand(node, { prev, next }));
+        }
+      });
+      this.silence = false;
+    });
+
+    listener.on(Listener.MOVE_NODE, (nodes: Node[]) => {
+      if (this.silence) {
+        return;
+      }
+    });
   }
 
   show(nodes: Node[]) {
+    this.nodes = nodes;
+    this.data = [];
     const panel = this.panel;
     if (!nodes.length) {
       panel.querySelectorAll('label').forEach(item => {
@@ -74,6 +263,7 @@ class BasicPanel {
     nodes.forEach(item => {
       const o = item.getFrameProps();
       const { x, y, angle, w, h } = o;
+      this.data.push(o);
       if (!xs.includes(x)) {
         xs.push(x);
       }
