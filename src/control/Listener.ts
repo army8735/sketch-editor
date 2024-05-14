@@ -665,7 +665,7 @@ export default class Listener extends Event {
             // 还原最初的translate/TRBL值
             node.endPosChange(this.originStyle[i], dx, dy);
             node.checkPosSizeUpward();
-            this.history.addCommand(new MoveCommand(node, dx, dy));
+            this.history.addCommand(new MoveCommand([node], [dx], [dy]));
           });
         }
       }

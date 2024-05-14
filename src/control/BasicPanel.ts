@@ -66,10 +66,20 @@ class BasicPanel {
 
     x.addEventListener('input', (e) => {
       this.silence = true;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const nodes: Node[] = [];
+      const dxs: number[] = [];
+      const dys: number[] = [];
       this.nodes.forEach((node, i) => {
-        let d = parseFloat(x.value) - this.data[i].x;
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(x.value) - this.data[i].x;
+        }
+        else {
+          d = parseFloat(x.value);
+        }
         if (d) {
-          if (listener.shiftKey) {
+          if (!isInput && listener.shiftKey) {
             e.preventDefault();
             if (d > 0) {
               d = 10;
@@ -77,7 +87,9 @@ class BasicPanel {
             else {
               d = -10;
             }
-            x.value = toPrecision(this.data[i].x + d).toString();
+            if(!x.placeholder && !i) {
+              x.value = toPrecision(this.data[i].x + d).toString();
+            }
           }
           this.data[i].x += d;
           const style = node.getStyle();
@@ -87,18 +99,36 @@ class BasicPanel {
           // 还原最初的translate/TRBL值
           node.endPosChange(style, d, 0);
           node.checkPosSizeUpward();
-          listener.history.addCommand(new MoveCommand(node, d, 0));
+          nodes.push(node);
+          dxs.push(d);
+          dys.push(0);
         }
       });
+      if (x.placeholder) {
+        x.value = '';
+      }
+      listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+      listener.select.updateSelect(nodes);
+      listener.emit(Listener.MOVE_NODE, nodes.slice(0));
       this.silence = false;
     });
 
     y.addEventListener('input', (e) => {
       this.silence = true;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const nodes: Node[] = [];
+      const dxs: number[] = [];
+      const dys: number[] = [];
       this.nodes.forEach((node, i) => {
-        let d = parseFloat(y.value) - this.data[i].y;
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(y.value) - this.data[i].y;
+        }
+        else {
+          d = parseFloat(y.value);
+        }
         if (d) {
-          if (listener.shiftKey) {
+          if (!isInput && listener.shiftKey) {
             e.preventDefault();
             if (d > 0) {
               d = 10;
@@ -106,7 +136,9 @@ class BasicPanel {
             else {
               d = -10;
             }
-            y.value = toPrecision(this.data[i].y + d).toString();
+            if(!y.placeholder && !i) {
+              y.value = toPrecision(this.data[i].y + d).toString();
+            }
           }
           this.data[i].y += d;
           const style = node.getStyle();
@@ -116,9 +148,17 @@ class BasicPanel {
           // 还原最初的translate/TRBL值
           node.endPosChange(style, 0, d);
           node.checkPosSizeUpward();
-          listener.history.addCommand(new MoveCommand(node, 0, d));
+          nodes.push(node);
+          dxs.push(0);
+          dys.push(d);
         }
       });
+      if (y.placeholder) {
+        y.value = '';
+      }
+      listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+      listener.select.updateSelect(nodes);
+      listener.emit(Listener.MOVE_NODE, nodes.slice(0));
       this.silence = false;
     });
 
@@ -229,6 +269,13 @@ class BasicPanel {
       if (this.silence) {
         return;
       }
+      this.show(nodes);
+    });
+    listener.on(Listener.RESIZE_NODE, (nodes: Node[]) => {
+      if (this.silence) {
+        return;
+      }
+      this.show(nodes);
     });
   }
 
