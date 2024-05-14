@@ -87,7 +87,7 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if(!x.placeholder && !i) {
+            if (!x.placeholder && !i) {
               x.value = toPrecision(this.data[i].x + d).toString();
             }
           }
@@ -136,7 +136,7 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if(!y.placeholder && !i) {
+            if (!y.placeholder && !i) {
               y.value = toPrecision(this.data[i].y + d).toString();
             }
           }
@@ -164,10 +164,19 @@ class BasicPanel {
 
     r.addEventListener('input', (e) => {
       this.silence = true;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const nodes: Node[] = [];
+      const ns: number[] = [];
       this.nodes.forEach((node, i) => {
-        let d = parseFloat(r.value) - this.data[i].angle;
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(r.value) - this.data[i].angle;
+        }
+        else {
+          d = parseFloat(r.value);
+        }
         if (d) {
-          if (listener.shiftKey) {
+          if (!isInput && listener.shiftKey) {
             e.preventDefault();
             if (d > 0) {
               d = 10;
@@ -175,21 +184,31 @@ class BasicPanel {
             else {
               d = -10;
             }
-            d = this.data[i].angle + d;
-            r.value = toPrecision(d).toString();
-            this.data[i].angle = d;
+            // d = this.data[i].angle + d;
+            if (!r.placeholder && !i) {
+              r.value = toPrecision(this.data[i].angle + d).toString();
+            }
+            // this.data[i].angle = d;
           }
-          else {
-            d = parseFloat(r.value);
-            this.data[i].angle = d;
-          }
+          // else {
+          //   d = parseFloat(r.value);
+          //   this.data[i].angle = d;
+          // }
+          this.data[i].angle += d;
           node.updateStyle({
-            rotateZ: d,
+            rotateZ: node.computedStyle.rotateZ + d,
           });
           node.checkPosSizeUpward();
-          listener.history.addCommand(new RotateCommand(node, d));
+          nodes.push(node);
+          ns.push(d);
         }
       });
+      if (r.placeholder) {
+        r.value = '';
+      }
+      listener.history.addCommand(new RotateCommand(nodes, ns));
+      listener.select.updateSelect(nodes);
+      listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
       this.silence = false;
     });
 
@@ -309,7 +328,7 @@ class BasicPanel {
     const hs: number[] = [];
     nodes.forEach(item => {
       const o = item.getFrameProps();
-      const { x, y, angle, w, h } = o;
+      const { x, y, rotation, w, h } = o;
       this.data.push(o);
       if (!xs.includes(x)) {
         xs.push(x);
@@ -317,8 +336,8 @@ class BasicPanel {
       if (!ys.includes(y)) {
         ys.push(x);
       }
-      if (!rs.includes(angle)) {
-        rs.push(angle);
+      if (!rs.includes(rotation)) {
+        rs.push(rotation);
       }
       if (!ws.includes(w)) {
         ws.push(w);
