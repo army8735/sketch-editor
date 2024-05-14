@@ -214,10 +214,19 @@ class BasicPanel {
 
     w.addEventListener('input', (e) => {
       this.silence = true;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const nodes: Node[] = [];
+      const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
-        let d = parseFloat(w.value) - this.data[i].w;
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(w.value) - this.data[i].w;
+        }
+        else {
+          d = parseFloat(w.value);
+        }
         if (d) {
-          if (listener.shiftKey) {
+          if (!isInput && listener.shiftKey) {
             e.preventDefault();
             if (d > 0) {
               d = 10;
@@ -225,7 +234,9 @@ class BasicPanel {
             else {
               d = -10;
             }
-            w.value = toPrecision(this.data[i].w + d).toString();
+            if (!x.placeholder && !i) {
+              w.value = toPrecision(this.data[i].w + d).toString();
+            }
           }
           this.data[i].w += d;
           const { computedStyle } = node;
@@ -242,16 +253,32 @@ class BasicPanel {
           // 还原最初的translate/TRBL值
           node.endSizeChange(style);
           node.checkPosSizeUpward();
-          listener.history.addCommand(new ResizeCommand(node, { prev, next }));
+          nodes.push(node);
+          styles.push({ prev, next });
         }
       });
+      if (w.placeholder) {
+        w.value = '';
+      }
+      listener.history.addCommand(new ResizeCommand(nodes, styles));
+      listener.select.updateSelect(nodes);
+      listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       this.silence = false;
     });
 
     h.addEventListener('input', (e) => {
       this.silence = true;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const nodes: Node[] = [];
+      const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
-        let d = parseFloat(h.value) - this.data[i].h;
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(h.value) - this.data[i].h;
+        }
+        else {
+          d = parseFloat(h.value);
+        }
         if (d) {
           if (listener.shiftKey) {
             e.preventDefault();
@@ -261,7 +288,9 @@ class BasicPanel {
             else {
               d = -10;
             }
-            h.value = toPrecision(this.data[i].h + d).toString();
+            if (!x.placeholder && !i) {
+              h.value = toPrecision(this.data[i].h + d).toString();
+            }
           }
           this.data[i].h += d;
           const { computedStyle } = node;
@@ -278,9 +307,16 @@ class BasicPanel {
           // 还原最初的translate/TRBL值
           node.endSizeChange(style);
           node.checkPosSizeUpward();
-          listener.history.addCommand(new ResizeCommand(node, { prev, next }));
+          nodes.push(node);
+          styles.push({ prev, next });
         }
       });
+      if (h.placeholder) {
+        h.value = '';
+      }
+      listener.history.addCommand(new ResizeCommand(nodes, styles));
+      listener.select.updateSelect(nodes);
+      listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       this.silence = false;
     });
 
@@ -291,6 +327,12 @@ class BasicPanel {
       this.show(nodes);
     });
     listener.on(Listener.RESIZE_NODE, (nodes: Node[]) => {
+      if (this.silence) {
+        return;
+      }
+      this.show(nodes);
+    });
+    listener.on(Listener.ROTATE_NODE, (nodes: Node[]) => {
       if (this.silence) {
         return;
       }

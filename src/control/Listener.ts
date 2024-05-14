@@ -633,7 +633,7 @@ export default class Listener extends Event {
           node.checkPosSizeUpward();
           const o = this.modifyStyle[i];
           if (o) {
-            this.history.addCommand(new ResizeCommand(node, o));
+            this.history.addCommand(new ResizeCommand([node], [o]));
           }
         }
       });
