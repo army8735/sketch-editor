@@ -125,19 +125,28 @@ class TextPanel {
     const o = text.getData(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
+      // 移除上次可能遗留的无效字体展示
+      const invalid = select.querySelector(':disabled') as HTMLOptionElement;
+      if (invalid) {
+        invalid.remove();
+      }
       const multi = panel.querySelector('.ff .multi') as HTMLElement;
+      const list = select.querySelectorAll('option');
       if (o.fontFamily.length > 1) {
         multi.style.display = 'block';
+        for (let i = 0, len = list.length; i < len; i++) {
+          const option = list[i];
+          if (option.selected) {
+            option.selected = false;
+            break;
+          }
+        }
+        const option = `<option value="" selected="selected" disabled>多种字体</option>`;
+        select.innerHTML += option;
       }
       else {
         multi.style.display = 'none';
-        // 移除上次可能遗留的无效字体展示
-        const invalid = select.querySelector(':disabled') as HTMLOptionElement;
-        if (invalid) {
-          invalid.remove();
-        }
         const { data } = style.font;
-        const list = select.querySelectorAll('option');
         let has = false;
         const ff = o.fontFamily[0];
         for (let i = 0, len = list.length; i < len; i++) {
