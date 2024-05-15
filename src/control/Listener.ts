@@ -959,6 +959,7 @@ export default class Listener extends Event {
   static RESIZE_NODE = 'RESIZE_NODE';
   static MOVE_NODE = 'MOVE_NODE';
   static ROTATE_NODE = 'ROTATE_NODE';
+  static OPACITY_NODE = 'OPACITY_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';

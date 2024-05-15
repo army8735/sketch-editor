@@ -80,14 +80,13 @@ class BasicPanel {
         }
         if (d) {
           if (!isInput && listener.shiftKey) {
-            e.preventDefault();
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!x.placeholder && !i) {
+            if (isInput && !i) {
               x.value = toPrecision(this.data[i].x + d).toString();
             }
           }
@@ -104,12 +103,14 @@ class BasicPanel {
           dys.push(0);
         }
       });
-      if (x.placeholder) {
+      if (!isInput) {
         x.value = '';
       }
-      listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
-      listener.select.updateSelect(nodes);
-      listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+      if (nodes.length) {
+        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+      }
       this.silence = false;
     });
 
@@ -129,14 +130,13 @@ class BasicPanel {
         }
         if (d) {
           if (!isInput && listener.shiftKey) {
-            e.preventDefault();
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!y.placeholder && !i) {
+            if (isInput && !i) {
               y.value = toPrecision(this.data[i].y + d).toString();
             }
           }
@@ -153,12 +153,14 @@ class BasicPanel {
           dys.push(d);
         }
       });
-      if (y.placeholder) {
+      if (!isInput) {
         y.value = '';
       }
-      listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
-      listener.select.updateSelect(nodes);
-      listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+      if (nodes.length) {
+        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+      }
       this.silence = false;
     });
 
@@ -177,23 +179,16 @@ class BasicPanel {
         }
         if (d) {
           if (!isInput && listener.shiftKey) {
-            e.preventDefault();
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            // d = this.data[i].angle + d;
-            if (!r.placeholder && !i) {
+            if (isInput && !i) {
               r.value = toPrecision(this.data[i].angle + d).toString();
             }
-            // this.data[i].angle = d;
           }
-          // else {
-          //   d = parseFloat(r.value);
-          //   this.data[i].angle = d;
-          // }
           this.data[i].angle += d;
           node.updateStyle({
             rotateZ: node.computedStyle.rotateZ + d,
@@ -203,12 +198,14 @@ class BasicPanel {
           ns.push(d);
         }
       });
-      if (r.placeholder) {
+      if (!isInput) {
         r.value = '';
       }
-      listener.history.addCommand(new RotateCommand(nodes, ns));
-      listener.select.updateSelect(nodes);
-      listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
+      if (nodes.length) {
+        listener.history.addCommand(new RotateCommand(nodes, ns));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
+      }
       this.silence = false;
     });
 
@@ -227,14 +224,13 @@ class BasicPanel {
         }
         if (d) {
           if (!isInput && listener.shiftKey) {
-            e.preventDefault();
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!x.placeholder && !i) {
+            if (isInput && !i) {
               w.value = toPrecision(this.data[i].w + d).toString();
             }
           }
@@ -257,12 +253,14 @@ class BasicPanel {
           styles.push({ prev, next });
         }
       });
-      if (w.placeholder) {
+      if (isInput) {
         w.value = '';
       }
-      listener.history.addCommand(new ResizeCommand(nodes, styles));
-      listener.select.updateSelect(nodes);
-      listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+      if (nodes.length) {
+        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+      }
       this.silence = false;
     });
 
@@ -280,15 +278,14 @@ class BasicPanel {
           d = parseFloat(h.value);
         }
         if (d) {
-          if (listener.shiftKey) {
-            e.preventDefault();
+          if (!isInput && listener.shiftKey) {
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!x.placeholder && !i) {
+            if (isInput && !i) {
               h.value = toPrecision(this.data[i].h + d).toString();
             }
           }
@@ -311,12 +308,14 @@ class BasicPanel {
           styles.push({ prev, next });
         }
       });
-      if (h.placeholder) {
+      if (isInput) {
         h.value = '';
       }
-      listener.history.addCommand(new ResizeCommand(nodes, styles));
-      listener.select.updateSelect(nodes);
-      listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+      if (nodes.length) {
+        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+      }
       this.silence = false;
     });
 

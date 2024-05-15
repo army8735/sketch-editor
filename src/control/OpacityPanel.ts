@@ -1,6 +1,8 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { toPrecision } from '../math';
+import Listener from './Listener';
+import OpacityCommand from '../history/OpacityCommand';
 
 const html = `
   <h4 class="panel-title">不透明度</h4>
@@ -14,20 +16,121 @@ const html = `
 class OpacityPanel {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   panel: HTMLElement;
+  nodes: Node[];
+  silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
+    this.nodes = [];
+    this.silence = false;
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'opacity-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    const range = panel.querySelector('input[type=range]') as HTMLInputElement;
+    const number = panel.querySelector('input[type=number]') as HTMLInputElement;
+
+    range.addEventListener('input', (e) => {
+      this.silence = true;
+      const nodes: Node[] = [];
+      const ds: { prev: number, next: number }[] = [];
+      this.nodes.forEach((node) => {
+        const prev = node.computedStyle.opacity;
+        const next = parseFloat(range.value) * 0.01;
+        if (prev !== next) {
+          node.updateStyle({
+            opacity: next,
+          });
+          nodes.push(node);
+          ds.push({ prev, next });
+        }
+      });
+      if (nodes.length) {
+        listener.history.addCommand(new OpacityCommand(nodes, ds));
+        listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
+        number.value = range.value;
+      }
+      this.silence = false;
+    });
+
+    number.addEventListener('input', (e) => {
+      this.silence = true;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const nodes: Node[] = [];
+      const ds: { prev: number, next: number }[] = [];
+      this.nodes.forEach((node, i) => {
+        const prev = node.computedStyle.opacity;
+        let next = parseFloat(number.value) * 0.01;
+        let d = 0;
+        if (isInput) {
+          d = next - prev;
+        }
+        else {
+          d = next;
+        }
+        // 最小值为0，按↓时可能无法触发-1的值，特殊判断
+        if (d || !isInput && !next) {
+          if (!isInput) {
+            if (listener.shiftKey) {
+              if (d > 0) {
+                d = 0.1;
+              }
+              else {
+                d = -0.1;
+              }
+            }
+            else {
+              if (d > 0) {
+                d = 0.01;
+              }
+              else {
+                d = -0.01;
+              }
+            }
+          }
+          next = prev + d;
+          next = Math.max(next, 0);
+          next = Math.min(next, 1);
+          if (isInput && !i) {
+            number.value = toPrecision(next * 100).toString();
+          }
+          if (prev !== next) {
+            node.updateStyle({
+              opacity: next,
+            });
+            nodes.push(node);
+            ds.push({ prev, next });
+          }
+        }
+      });
+      if (!isInput) {
+        number.value = '';
+      }
+      if (nodes.length) {
+        listener.history.addCommand(new OpacityCommand(nodes, ds));
+        listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
+        range.value = number.value;
+      }
+      this.silence = false;
+    });
+
+    listener.on(Listener.OPACITY_NODE, (nodes: Node[]) => {
+      if (this.silence) {
+        return;
+      }
+      this.show(nodes);
+    });
   }
 
   show(nodes: Node[]) {
+    this.nodes = nodes;
     const panel = this.panel;
     if (!nodes.length) {
       panel.style.display = 'none';
