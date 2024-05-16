@@ -2291,8 +2291,8 @@ function genMask(
     multiplyScale(node.tempMatrix, scale);
     if (computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
       const listR = res.list;
-      for (let i = 0, len = listS.length; i < len; i++) {
-        const { bbox, w, h, t } = listS[i];
+      for (let i = 0, len = listT.length; i < len; i++) {
+        const { bbox, w, h, t } = listT[i];
         const tex = createTexture(gl, 0, undefined, w, h);
         if (frameBuffer) {
           gl.framebufferTexture2D(
@@ -2355,7 +2355,7 @@ function genMask(
     }
   }
   // 删除fbo恢复
-  // summary.release();
+  summary.release();
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
   }
@@ -2836,8 +2836,8 @@ export function genOutline(
   const list = canvasCache.list;
   for (let i = 0, len = list.length; i < len; i++) {
     const { x, y, os: { ctx } } = list[i];
-    const dx2 = dx - x;
-    const dy2 = dy - y;
+    const dx2 = -x;
+    const dy2 = -y;
     ctx.fillStyle = '#FFF';
     // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
     for (let i = index, len = index + total + 1; i < len; i++) {
@@ -2912,6 +2912,16 @@ export function genOutline(
       }
     }
   }
+  // list.forEach(item => {
+  //   item.os.canvas.toBlob(blob => {
+  //     if (blob) {
+  //       const img = document.createElement('img');
+  //       img.src = URL.createObjectURL(blob);
+  //       img.setAttribute('name', 'outline ' + node.props.name);
+  //       document.body.appendChild(img);
+  //     }
+  //   });
+  // });
   const target = TextureCache.getInstance(gl, canvasCache, bbox);
   canvasCache.release();
   return target;
