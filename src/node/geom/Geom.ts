@@ -117,6 +117,29 @@ class Geom extends Node {
       if (points && points.length) {
         getPointsRect(points, res);
       }
+      const {
+        strokeWidth,
+        strokeEnable,
+      } = this.computedStyle;
+      let minBorder = 0;
+      strokeWidth.forEach((item, i) => {
+        if (strokeEnable[i]) {
+          minBorder = Math.max(minBorder, item);
+        }
+      });
+      // 特殊检查，比如垂线平线，高宽可能为0，此时bbox
+      const dx = res[2] - res[0];
+      if (dx < minBorder) {
+        const h = minBorder * 0.5;
+        res[0] -= h;
+        res[2] += h;
+      }
+      const dy = res[3] - res[1];
+      if (dy < minBorder) {
+        const h = minBorder * 0.5;
+        res[1] -= h;
+        res[3] += h;
+      }
     }
     return res;
   }

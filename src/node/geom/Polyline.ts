@@ -290,6 +290,7 @@ class Polyline extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = this.computedStyle;
+    const isLine = this.isLine();
     const list = canvasCache.list;
     for (let i = 0, len = list.length; i < len; i++) {
       const { x, y, os: { ctx } } = list[i];
@@ -651,7 +652,9 @@ class Polyline extends Geom {
               if (p === STROKE_POSITION.INSIDE) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.save();
-                ctx2.clip();
+                if (!isLine) {
+                  ctx2.clip();
+                }
                 ctx2.stroke();
                 ctx2.restore();
               }
@@ -659,7 +662,9 @@ class Polyline extends Geom {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
-                ctx2.clip();
+                if (!isLine) {
+                  ctx2.clip();
+                }
                 ctx2.globalCompositeOperation = 'destination-out';
                 ctx2.strokeStyle = '#FFF';
                 ctx2.stroke();
@@ -716,14 +721,18 @@ class Polyline extends Geom {
         }
         if (p === STROKE_POSITION.INSIDE) {
           ctx.save();
-          ctx.clip();
+          if (!isLine) {
+            ctx.clip();
+          }
           ctx.stroke();
           ctx.restore();
         }
         else if (p === STROKE_POSITION.OUTSIDE) {
           ctx2!.stroke();
           ctx2!.save();
-          ctx2!.clip();
+          if (!isLine) {
+            ctx2!.clip();
+          }
           ctx2!.globalCompositeOperation = 'destination-out';
           ctx2!.strokeStyle = '#FFF';
           ctx2!.stroke();
@@ -738,6 +747,15 @@ class Polyline extends Geom {
       // 还原
       ctx.globalCompositeOperation = 'source-over';
     }
+    // list.forEach((item) => {
+    //   item.os.canvas.toBlob(blob => {
+    //     if (blob) {
+    //       const img = document.createElement('img');
+    //       img.src = URL.createObjectURL(blob);
+    //       document.body.appendChild(img);
+    //     }
+    //   });
+    // });
   }
 
   override getFrameProps() {
