@@ -106,7 +106,7 @@ class Geom extends Node {
     return s + '></path></svg>';
   }
 
-  override get rect(): Float64Array {
+  override get rect() {
     let res = this._rect;
     if (!res) {
       res = this._rect = new Float64Array(4);
@@ -141,10 +141,22 @@ class Geom extends Node {
         res[3] += h;
       }
     }
+    return res!;
+  }
+
+  get rectLine() {
+    let res = new Float64Array(4);
+    // 可能不存在
+    this.buildPoints();
+    // 可能矢量编辑过程中超过或不足原本尺寸范围
+    const points = this.points;
+    if (points && points.length) {
+      getPointsRect(points, res);
+    }
     return res;
   }
 
-  override get bbox(): Float64Array {
+  override get bbox() {
     let res = this._bbox;
     if (!res) {
       const rect = this._rect || this.rect;

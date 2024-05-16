@@ -776,10 +776,10 @@ export default class Listener extends Event {
       let sc = 0;
       if (e.deltaY < 0) {
         if (e.deltaY < -400) {
-          sc = 0.1;
+          sc = 0.2;
         }
         else if (e.deltaY < -200) {
-          sc = 0.08;
+          sc = 0.1;
         }
         else if (e.deltaY < -100) {
           sc = 0.05;
@@ -793,10 +793,10 @@ export default class Listener extends Event {
       }
       else if (e.deltaY > 0) {
         if (e.deltaY > 400) {
-          sc = -0.1;
+          sc = -0.2;
         }
         else if (e.deltaY > 200) {
-          sc = -0.08;
+          sc = -0.1;
         }
         else if (e.deltaY > 100) {
           sc = -0.05;
@@ -811,6 +811,10 @@ export default class Listener extends Event {
       const x = (e.pageX - this.originX) * dpi / width;
       const y = (e.pageY - this.originY) * dpi / height;
       let scale = page.getZoom(true);
+      // 最后缩小时防止太快
+      if (scale < 1) {
+        sc *= scale;
+      }
       scale += sc;
       if (scale > 32) {
         scale = 32;

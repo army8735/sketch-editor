@@ -1,6 +1,7 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { identity, multiply, multiplyScale } from '../math/matrix';
+import Polyline from '../node/geom/Polyline';
 
 const html = `
   <span class="l" style="position:absolute;left:-4px;top:0;width:8px;height:100%;transform:scaleX(0.5);cursor:ew-resize;">
@@ -15,11 +16,20 @@ const html = `
   <span class="b" style="position:absolute;left:0;bottom:-4px;width:100%;height:8px;transform:scaleY(0.5);cursor:ns-resize;">
     <b style="position:absolute;left:0;bottom:4px;width:100%;height:0;border-bottom:1px solid #F43;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
   </span>
-  <span class="tl" style="position:absolute;left:0;top:0;width:14px;height:14px;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:translate(-8px,-8px)scale(0.5);cursor:nwse-resize;"></span>
-  <span class="tr" style="position:absolute;right:0;top:0;width:14px;height:14px;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:translate(8px,-8px)scale(0.5);cursor:nesw-resize;"></span>
-  <span class="br" style="position:absolute;right:0;bottom:0;width:14px;height:14px;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:translate(8px,8px)scale(0.5);cursor:nwse-resize;"></span>
-  <span class="bl" style="position:absolute;left:0;bottom:0;width:14px;height:14px;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:translate(-8px,8px)scale(0.5);cursor:nesw-resize;"></span>
+  <span class="tl" style="position:absolute;left:0;top:0;width:14px;height:14px;transform:translate(-50%,-50%)scale(0.5);cursor:nwse-resize;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  </span>
+  <span class="tr" style="position:absolute;right:0;top:0;width:14px;height:14px;transform:translate(50%,-50%)scale(0.5);cursor:nesw-resize;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  </span>
+  <span class="br" style="position:absolute;right:0;bottom:0;width:14px;height:14px;transform:translate(50%,50%)scale(0.5);cursor:nwse-resize;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  </span>
+  <span class="bl" style="position:absolute;left:0;bottom:0;width:14px;height:14px;transform:translate(-50%,50%)scale(0.5);cursor:nesw-resize;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  </span>
 `;
+
 
 export default class Select {
   root: Root;
@@ -40,6 +50,7 @@ export default class Select {
     hover.style.boxSizing = 'border-box';
     hover.style.border = '2px solid #F43';
     hover.style.boxShadow = '0 0 3px rgba(0, 0, 0, 0.5)';
+    hover.style.pointerEvents = 'none';
     dom.appendChild(hover);
     this.select = [];
   }
@@ -63,9 +74,19 @@ export default class Select {
       multiplyScale(t, 1 / dpi);
       matrix = multiply(t, matrix);
     }
-    hover.style.width = (rect[2] - rect[0]) + 'px';
-    hover.style.height = (rect[3] - rect[1]) + 'px';
+    const isLine = node instanceof Polyline && node.isLine();
+    if (isLine) {
+      const rect = node.rectLine;
+      hover.style.width = (rect[2] - rect[0]) + 'px';
+      hover.style.height = (rect[3] - rect[1]) + 'px';
+    }
+    else {
+      hover.style.width = (rect[2] - rect[0]) + 'px';
+      hover.style.height = (rect[3] - rect[1]) + 'px';
+    }
     hover.style.transform = `matrix3d(${matrix.join(',')}`;
+    const scale = 1 / matrix[0];
+    hover.style.borderWidth = scale * 2 + 'px';
   }
 
   isHoverDom(dom: HTMLElement) {
@@ -81,7 +102,6 @@ export default class Select {
       select.style.left = '0px';
       select.style.top = '0px';
       select.style.transformOrigin = '0 0';
-      select.style.boxSizing = 'content-box';
       select.innerHTML = html;
       this.dom.appendChild(select);
       this.select.push(select);
@@ -100,9 +120,27 @@ export default class Select {
         multiplyScale(t, 1 / dpi);
         matrix = multiply(t, matrix);
       }
-      select.style.width = (rect[2] - rect[0]) + 'px';
-      select.style.height = (rect[3] - rect[1]) + 'px';
+      const isLine = item instanceof Polyline && item.isLine();
+      if (isLine) {
+        const rect = item.rectLine;
+        select.style.width = (rect[2] - rect[0]) + 'px';
+        select.style.height = (rect[3] - rect[1]) + 'px';
+      }
+      else {
+        select.style.width = (rect[2] - rect[0]) + 'px';
+        select.style.height = (rect[3] - rect[1]) + 'px';
+      }
       select.style.transform = `matrix3d(${matrix.join(',')}`;
+      const scale = 1 / matrix[0];
+      select.querySelectorAll('.l b, .r b').forEach((item) => {
+        (item as HTMLElement).style.transform = 'scaleX(' + scale + ')';
+      });
+      select.querySelectorAll('.t b, .b b').forEach((item) => {
+        (item as HTMLElement).style.transform = 'scaleY(' + scale + ')';
+      });
+      select.querySelectorAll('.tr b, .tl b, .br b, .bl b').forEach((item) => {
+        (item as HTMLElement).style.transform = 'scale(' + scale + ')';
+      });
     });
   }
 

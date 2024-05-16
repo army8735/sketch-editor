@@ -2196,7 +2196,7 @@ class Node extends Event {
     return m;
   }
 
-  get rect(): Float64Array {
+  get rect() {
     let res = this._rect;
     if (!res) {
       res = this._rect = new Float64Array(4);
@@ -2208,7 +2208,7 @@ class Node extends Event {
     return res;
   }
 
-  get bbox(): Float64Array {
+  get bbox() {
     let res = this._bbox;
     if (!res) {
       const rect = this._rect || this.rect;
@@ -2238,7 +2238,7 @@ class Node extends Event {
     return res;
   }
 
-  get filterBbox(): Float64Array {
+  get filterBbox() {
     let res = this._filterBbox;
     if (!res) {
       const bbox = this._bbox || this.bbox;
