@@ -19,6 +19,7 @@ fetch('./sketch.sketch')
         const root = window.root = sketchEditor.parse(json, canvas, dpi);
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
         let count = 0;
         $canvasC.addEventListener('mousedown', (e) => {
           if (e.button === 1) {
