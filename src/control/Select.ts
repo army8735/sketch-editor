@@ -1,7 +1,9 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { identity, multiply, multiplyScale } from '../math/matrix';
+import Group from '../node/Group';
 import Polyline from '../node/geom/Polyline';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 const html = `
   <span class="l" style="position:absolute;left:-4px;top:0;width:8px;height:100%;transform:scaleX(0.5);cursor:ew-resize;">
@@ -65,10 +67,13 @@ export default class Select {
   }
 
   updateHover(node: Node) {
-    const dpi = this.root.dpi;
+    const root = this.root;
+    const dpi = root.dpi;
     const hover = this.hover;
-    const rect = node._rect || node.rect;
+    let rect = node._rect || node.rect;
     let matrix = node.matrixWorld;
+    if (node.isGroup && node instanceof Group && !(node instanceof ShapeGroup)) {
+    }
     if (dpi !== 1) {
       const t = identity();
       multiplyScale(t, 1 / dpi);
@@ -77,10 +82,14 @@ export default class Select {
     const isLine = node instanceof Polyline && node.isLine();
     if (isLine) {
       const rect = node.rectLine;
+      hover.style.left = rect[0] + 'px';
+      hover.style.top = rect[1] + 'px';
       hover.style.width = (rect[2] - rect[0]) + 'px';
       hover.style.height = (rect[3] - rect[1]) + 'px';
     }
     else {
+      hover.style.left = rect[0] + 'px';
+      hover.style.top = rect[1] + 'px';
       hover.style.width = (rect[2] - rect[0]) + 'px';
       hover.style.height = (rect[3] - rect[1]) + 'px';
     }
@@ -123,10 +132,14 @@ export default class Select {
       const isLine = item instanceof Polyline && item.isLine();
       if (isLine) {
         const rect = item.rectLine;
+        select.style.left = rect[0] + 'px';
+        select.style.top = rect[1] + 'px';
         select.style.width = (rect[2] - rect[0]) + 'px';
         select.style.height = (rect[3] - rect[1]) + 'px';
       }
       else {
+        select.style.left = rect[0] + 'px';
+        select.style.top = rect[1] + 'px';
         select.style.width = (rect[2] - rect[0]) + 'px';
         select.style.height = (rect[3] - rect[1]) + 'px';
       }

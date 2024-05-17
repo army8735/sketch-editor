@@ -50,6 +50,8 @@ export function renderWebgl(
     }
     scale = n;
   }
+  root.scale = scale;
+  root.scaleIndex = scaleIndex;
   // 再普通遍历渲染
   const { imgLoadList } = root;
   const programs = root.programs;

@@ -80,6 +80,8 @@ class Root extends Container implements FrameCallback {
   tileLastIndex: number; // 上次tile绘制到哪个节点，再一帧内没绘完下次再续时节省遍历性能
   tileRemain: boolean; // tile模式是否有因跨帧导致的没绘制完的
   breakMerge: boolean; // 因跨帧渲染导致的没有渲染完成的标识
+  scale: number; // 当前渲染的scale，2的幂次方，render时计算并赋值
+  scaleIndex: number;
 
   constructor(props: RootProps, children: Node[] = []) {
     super(props, children);
@@ -101,6 +103,8 @@ class Root extends Container implements FrameCallback {
     this.tileLastIndex = 0;
     this.tileRemain = false;
     this.breakMerge = false;
+    this.scale = 1;
+    this.scaleIndex = 0;
     // 存所有Page
     this.pageContainer = new Container(
       {
