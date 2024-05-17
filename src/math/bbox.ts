@@ -1,17 +1,43 @@
 import inject from '../util/inject';
 import bezier from './bezier';
+import { calPoint, isE } from './matrix';
 
 export function mergeBbox(
   bbox: Float64Array,
-  a: number,
-  b: number,
-  c: number,
-  d: number,
+  a: number | Float64Array, // target
+  b: number | Float64Array, // matrix
+  c?: number,
+  d?: number,
 ) {
-  bbox[0] = Math.min(bbox[0], a);
-  bbox[1] = Math.min(bbox[1], b);
-  bbox[2] = Math.max(bbox[2], c);
-  bbox[3] = Math.max(bbox[3], d);
+  if (arguments.length === 3) {
+    let [x1, y1, x2, y2] = a as Float64Array;
+    if (!isE(b as Float64Array)) {
+      const t1 = calPoint({ x: x1, y: y1 }, b as Float64Array);
+      const t2 = calPoint({ x: x1, y: y2 }, b as Float64Array);
+      const t3 = calPoint({ x: x2, y: y1 }, b as Float64Array);
+      const t4 = calPoint({ x: x2, y: y2 }, b as Float64Array);
+      x1 = Math.min(t1.x, t2.x, t3.x, t4.x);
+      y1 = Math.min(t1.y, t2.y, t3.y, t4.y);
+      x2 = Math.max(t1.x, t2.x, t3.x, t4.x);
+      y2 = Math.max(t1.y, t2.y, t3.y, t4.y);
+    }
+    bbox[0] = Math.min(bbox[0], x1);
+    bbox[1] = Math.min(bbox[1], y1);
+    bbox[2] = Math.max(bbox[2], x2);
+    bbox[3] = Math.max(bbox[3], y2);
+  }
+  else if (arguments.length === 2) {
+    bbox[0] = Math.min(bbox[0], (a as Float64Array)[0]);
+    bbox[1] = Math.min(bbox[1], (a as Float64Array)[1]);
+    bbox[2] = Math.max(bbox[2], (a as Float64Array)[2]);
+    bbox[3] = Math.max(bbox[3], (a as Float64Array)[3]);
+  }
+  else if (arguments.length === 5) {
+    bbox[0] = Math.min(bbox[0], a as number);
+    bbox[1] = Math.min(bbox[1], b as number);
+    bbox[2] = Math.max(bbox[2], c!);
+    bbox[3] = Math.max(bbox[3], d!);
+  }
 }
 
 function mergeFirst(item: number[], res: Float64Array) {

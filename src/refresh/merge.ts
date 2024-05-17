@@ -44,6 +44,7 @@ import { RefreshLevel } from './level';
 import { Struct } from './struct';
 import TextureCache from './TextureCache';
 import CanvasCache from './CanvasCache';
+import { mergeBbox } from '../math/bbox';
 
 export type Merge = {
   i: number;
@@ -395,24 +396,6 @@ function genBboxTotal(
     }
   }
   return res;
-}
-
-function mergeBbox(bbox: Float64Array, t: Float64Array, matrix: Float64Array) {
-  let [x1, y1, x2, y2] = t;
-  if (!isE(matrix)) {
-    const t1 = calPoint({ x: x1, y: y1 }, matrix);
-    const t2 = calPoint({ x: x1, y: y2 }, matrix);
-    const t3 = calPoint({ x: x2, y: y1 }, matrix);
-    const t4 = calPoint({ x: x2, y: y2 }, matrix);
-    x1 = Math.min(t1.x, t2.x, t3.x, t4.x);
-    y1 = Math.min(t1.y, t2.y, t3.y, t4.y);
-    x2 = Math.max(t1.x, t2.x, t3.x, t4.x);
-    y2 = Math.max(t1.y, t2.y, t3.y, t4.y);
-  }
-  bbox[0] = Math.min(bbox[0], x1);
-  bbox[1] = Math.min(bbox[1], y1);
-  bbox[2] = Math.max(bbox[2], x2);
-  bbox[3] = Math.max(bbox[3], y2);
 }
 
 export function checkInScreen(

@@ -112,6 +112,7 @@ class Node extends Event {
   isContainer = false;
   isSlice = false;
   tileList: Tile[];
+  displayRect: Float64Array | undefined; // hover/select时的，仅group会特殊计算缓存
 
   constructor(props: Props) {
     super();
@@ -514,6 +515,7 @@ class Node extends Event {
 
   calMatrix(lv: RefreshLevel): Float64Array {
     const { style, computedStyle, matrix, transform } = this;
+    this.displayRect = undefined;
     // 每次更新标识且id++，获取matrixWorld或者每帧渲染会置true，首次0时强制进入，虽然布局过程中会调用，防止手动调用不可预期
     if (this.hasCacheMw || !this.localMwId) {
       this.hasCacheMw = false;
@@ -743,6 +745,7 @@ class Node extends Event {
     this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
     this.textureOutline.forEach((item) => item?.release());
+    this.displayRect = undefined;
   }
 
   clearCacheUpward(includeSelf = false) {
