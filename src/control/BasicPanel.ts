@@ -4,9 +4,11 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { resizeBR } from '../tools/node';
+import { getGroupActualRect, resizeBR } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
+import Group from '../node/Group';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -369,13 +371,21 @@ class BasicPanel {
     const hs: number[] = [];
     nodes.forEach(item => {
       const o = item.getFrameProps();
-      const { x, y, rotation, w, h } = o;
+      let { x, y, rotation, w, h } = o;
       this.data.push(o);
+      // 展示的实际尺寸
+      if (item.isGroup && item instanceof Group && !(item instanceof ShapeGroup)) {
+        const t = getGroupActualRect(item);
+        x += t[0];
+        y += t[1];
+        w = t[2] - t[0];
+        h = t[3] - t[1];
+      }
       if (!xs.includes(x)) {
         xs.push(x);
       }
       if (!ys.includes(y)) {
-        ys.push(x);
+        ys.push(y);
       }
       if (!rs.includes(rotation)) {
         rs.push(rotation);
