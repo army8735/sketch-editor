@@ -94,13 +94,13 @@ type Loader = {
 
 class ShapeGroup extends Group {
   props: ShapeGroupProps;
-  points: number[][][];
+  coords: number[][][];
   loaders: Loader[];
 
   constructor(props: ShapeGroupProps, children: Node[]) {
     super(props, children);
     this.props = props;
-    this.points = [];
+    this.coords = [];
     this.loaders = [];
     this.isShapeGroup = true;
   }
@@ -127,11 +127,11 @@ class ShapeGroup extends Group {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    this.points.splice(0);
+    this.coords.splice(0);
   }
 
   override clearPoints() {
-    this.points.splice(0);
+    this.coords.splice(0);
     this._rect = undefined;
     this._bbox = undefined;
     this.clearCache(true);
@@ -147,11 +147,11 @@ class ShapeGroup extends Group {
 
   override calContent(): boolean {
     this.buildPoints();
-    return (this.hasContent = this.points.length > 0);
+    return (this.hasContent = this.coords.length > 0);
   }
 
   buildPoints() {
-    if (this.points.length) {
+    if (this.coords.length) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
@@ -163,15 +163,15 @@ class ShapeGroup extends Group {
       if (!item.computedStyle.visible) {
         continue;
       }
-      let points;
+      let coords;
       // shapeGroup可以包含任意内容，非矢量视作矩形，TODO 文本矢量
       if (item instanceof Polyline || item instanceof ShapeGroup) {
         item.buildPoints();
-        points = item.points;
+        coords = item.coords;
       }
       else {
         const { width, height } = item;
-        points = [
+        coords = [
           [0, 0],
           [width, 0],
           [width, height],
@@ -180,16 +180,16 @@ class ShapeGroup extends Group {
         ];
       }
       const { matrix } = item;
-      if (points && points.length) {
+      if (coords && coords.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
         let p: number[][][];
         if (item instanceof ShapeGroup) {
-          p = points.map((item) =>
+          p = coords.map((item) =>
             scaleUp(applyMatrixPoints(item as number[][], matrix)),
           );
         }
         else {
-          p = [scaleUp(applyMatrixPoints(points as number[][], matrix))];
+          p = [scaleUp(applyMatrixPoints(coords as number[][], matrix))];
         }
         const booleanOperation = item.computedStyle.booleanOperation;
         if (first || !booleanOperation) {
@@ -236,7 +236,7 @@ class ShapeGroup extends Group {
     res.forEach(item => {
       if (item.length > 1) {
         const t = scaleDown(item);
-        this.points.push(t);
+        this.coords.push(t);
       }
     });
   }
@@ -244,7 +244,7 @@ class ShapeGroup extends Group {
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();
-    const points = this.points;
+    const coords = this.coords;
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
@@ -284,7 +284,7 @@ class ShapeGroup extends Group {
         ctx.setLineDash(strokeDasharray);
       }
       ctx.beginPath();
-      points.forEach((item) => {
+      coords.forEach((item) => {
         canvasPolygon(ctx, item, scale, dx2, dy2);
       });
       ctx.closePath();
@@ -331,7 +331,7 @@ class ShapeGroup extends Group {
                   const os = inject.getOffscreenCanvas(w, h);
                   const ctx2 = os.ctx;
                   ctx2.beginPath();
-                  points.forEach((item) => {
+                  coords.forEach((item) => {
                     canvasPolygon(ctx, item, scale, dx2, dy2);
                   });
                   ctx2.closePath();
@@ -454,7 +454,7 @@ class ShapeGroup extends Group {
                 ellipse = inject.getOffscreenCanvas(w, h);
                 const ctx2 = ellipse.ctx;
                 ctx2.beginPath();
-                points.forEach((item) => {
+                coords.forEach((item) => {
                   canvasPolygon(ctx2, item, scale, dx2, dy2);
                 });
                 ctx2.closePath();
@@ -511,7 +511,7 @@ class ShapeGroup extends Group {
         if (hasInnerShadow) {
           ctx.save();
           ctx.beginPath();
-          points.forEach((item) => {
+          coords.forEach((item) => {
             canvasPolygon(ctx, item, scale, dx2, dy2);
           });
           ctx.closePath();
@@ -519,7 +519,7 @@ class ShapeGroup extends Group {
           ctx.fillStyle = '#FFF';
           // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
           ctx.beginPath();
-          points.forEach((item) => {
+          coords.forEach((item) => {
             canvasPolygon(ctx, item, scale, dx2, dy2);
           });
           canvasPolygon(ctx, [
@@ -543,7 +543,7 @@ class ShapeGroup extends Group {
           ctx.restore();
           // 还原给stroke用
           ctx.beginPath();
-          points.forEach((item) => {
+          coords.forEach((item) => {
             canvasPolygon(ctx, item, scale, dx2, dy2);
           });
           ctx.closePath();
@@ -615,7 +615,7 @@ class ShapeGroup extends Group {
               ctx2.lineWidth = strokeWidth[i] * scale;
               ctx2.strokeStyle = '#F00';
               ctx2.beginPath();
-              points.forEach((item) => {
+              coords.forEach((item) => {
                 canvasPolygon(ctx2, item, scale, dx2, dy2);
               });
               ctx2.closePath();
@@ -675,7 +675,7 @@ class ShapeGroup extends Group {
           ctx2.strokeStyle = ctx.strokeStyle;
           ctx2.lineWidth = strokeWidth[i] * 2 * scale;
           ctx2.beginPath();
-          points.forEach((item) => {
+          coords.forEach((item) => {
             canvasPolygon(ctx2!, item, scale, dx2, dy2);
           });
         }
@@ -732,9 +732,9 @@ class ShapeGroup extends Group {
       s += ' transform="' + transform + '"';
     }
     s += '>';
-    const points = this.points || [];
+    const coords = this.coords || [];
     const [dx, dy] = this._rect || this.rect;
-    if (points.length) {
+    if (coords.length) {
       const props = [
         ['d', ''],
         ['fill', '#D8D8D8'],
@@ -742,7 +742,7 @@ class ShapeGroup extends Group {
         ['stroke', '#979797'],
         ['stroke-width', (1 / scale).toString()],
       ];
-      points.forEach(item => {
+      coords.forEach(item => {
         const d = svgPolygon(item, -dx, -dy) + 'Z';
         props[0][1] += d;
       });
@@ -795,15 +795,16 @@ class ShapeGroup extends Group {
     }
   }
 
+  // TODO: 是否需要，以及Group的displayRect设计是否重复
   override get rect(): Float64Array {
     let res = this._rect;
     if (!res) {
       res = this._rect = new Float64Array(4);
       this.buildPoints();
       // 子元素可能因为编辑模式临时超过范围
-      const points = this.points;
-      if (points && points.length) {
-        getShapeGroupRect(points, res);
+      const coords = this.coords;
+      if (coords && coords.length) {
+        getShapeGroupRect(coords, res);
       }
     }
     return res;
@@ -842,8 +843,8 @@ class ShapeGroup extends Group {
       const minY = res[1] - border;
       const maxX = res[2] + border;
       const maxY = res[3] + border;
-      (this.points || []).forEach(points => {
-        const t = lineJoin(res!, border, points, strokeLinejoin, strokeMiterlimit);
+      (this.coords || []).forEach(coords => {
+        const t = lineJoin(res!, border, coords, strokeLinejoin, strokeMiterlimit);
         res![0] = Math.min(res![0], t[0]);
         res![1] = Math.min(res![1], t[1]);
         res![2] = Math.min(res![2], t[2]);

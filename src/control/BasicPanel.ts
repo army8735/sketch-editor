@@ -4,7 +4,7 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getSketchBasic, resizeBR } from '../tools/node';
+import { getBasicInfo, resizeBR } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
 
@@ -374,7 +374,7 @@ class BasicPanel {
     const ws: number[] = [];
     const hs: number[] = [];
     nodes.forEach(item => {
-      const o = getSketchBasic(item);
+      const o = getBasicInfo(item);
       let { x, y, rotation, w, h, dx, dy, dw, dh } = o;
       this.data.push(o);
       if (!xs.includes(x + dx)) {

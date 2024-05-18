@@ -16,48 +16,48 @@ export type Loader = {
 };
 
 class Geom extends Node {
-  coords: Point[];
-  points: number[][];
+  points: Point[];
+  coords: number[][];
   loaders: Loader[];
 
   constructor(props: Props) {
     super(props);
     this.isGeom = true;
     this.loaders = [];
-    this.coords = [];
     this.points = [];
+    this.coords = [];
   }
 
   override lay(data: LayoutData) {
     super.lay(data);
-    this.points.splice(0);
+    this.coords.splice(0);
   }
 
   override calRepaintStyle(lv: RefreshLevel) {
     super.calRepaintStyle(lv);
-    this.points.splice(0);
+    this.coords.splice(0);
     this._rect = undefined;
     this._bbox = undefined;
   }
 
   buildPoints() {
-    if (this.points.length) {
+    if (this.coords.length) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
-    this.points.splice(0);
+    this.coords.splice(0);
   }
 
   override calContent(): boolean {
     this.buildPoints();
-    return (this.hasContent = this.points.length > 1);
+    return (this.hasContent = this.coords.length > 1);
   }
 
   isLine() {
     this.buildPoints();
-    const points = this.points;
+    const coords = this.coords;
     return (
-      points.length === 2 && points[0].length === 2 && points[1].length === 2
+      coords.length === 2 && coords[0].length === 2 && coords[1].length === 2
     );
   }
 
@@ -72,9 +72,9 @@ class Geom extends Node {
   toSvg(scale: number, isClosed = false) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
-    const points = this.points;
+    const coords = this.coords;
     const [dx, dy] = this._rect || this.rect;
-    const d = svgPolygon(points, -dx, -dy) + (isClosed ? 'Z' : '');
+    const d = svgPolygon(coords, -dx, -dy) + (isClosed ? 'Z' : '');
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     const { scaleX, scaleY } = computedStyle;
@@ -113,9 +113,9 @@ class Geom extends Node {
       // 可能不存在
       this.buildPoints();
       // 可能矢量编辑过程中超过或不足原本尺寸范围
-      const points = this.points;
-      if (points && points.length) {
-        getPointsRect(points, res);
+      const coords = this.coords;
+      if (coords && coords.length) {
+        getPointsRect(coords, res);
       }
       const {
         strokeWidth,
@@ -149,9 +149,9 @@ class Geom extends Node {
     // 可能不存在
     this.buildPoints();
     // 可能矢量编辑过程中超过或不足原本尺寸范围
-    const points = this.points;
-    if (points && points.length) {
-      getPointsRect(points, res);
+    const coords = this.coords;
+    if (coords && coords.length) {
+      getPointsRect(coords, res);
     }
     return res;
   }
@@ -188,11 +188,11 @@ class Geom extends Node {
       const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
       if (this.isLine()) {
-        res = this._bbox = lineCap(res, border, this.points, strokeLinecap);
+        res = this._bbox = lineCap(res, border, this.coords, strokeLinecap);
       }
       // 闭合看lineJoin
       else {
-        res = this._bbox = lineJoin(res, border, this.points, strokeLinejoin, strokeMiterlimit);
+        res = this._bbox = lineJoin(res, border, this.coords, strokeLinejoin, strokeMiterlimit);
       }
       res[0] = Math.min(res[0], minX);
       res[1] = Math.min(res[1], minY);

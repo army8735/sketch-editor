@@ -2,7 +2,6 @@ import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../../format';
-import { r2d } from '../../math/geom';
 import { calPoint, inverse4 } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
@@ -34,25 +33,25 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
-    this.coords = clone(props.points || []);
+    this.points = clone(props.points || []);
     this.isPolyline = true;
   }
 
   override buildPoints() {
-    if (this.points.length) {
+    if (this.coords.length) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
     const { width, height } = this;
-    const coords = this.coords;
-    if (!coords.length) {
-      this.points.splice(0);
+    const points = this.points;
+    if (!points.length) {
+      this.coords.splice(0);
       return;
     }
     let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
-    for (let i = 0, len = coords.length; i < len; i++) {
-      const item = coords[i];
+    for (let i = 0, len = points.length; i < len; i++) {
+      const item = points[i];
       item.absX = (item.x || 0) * width;
       item.absY = (item.y || 0) * height;
       if (isCornerPoint(item)) {
@@ -80,16 +79,16 @@ class Polyline extends Geom {
     } | undefined> = [];
     if (hasCorner) {
       // 将圆角点拆分为2个顶点
-      for (let i = 0, len = coords.length; i < len; i++) {
-        const point = coords[i];
+      for (let i = 0, len = points.length; i < len; i++) {
+        const point = points[i];
         if (!isCornerPoint(point)) {
           continue;
         }
         // 观察前后2个顶点的情况
         const prevIdx = i ? i - 1 : len - 1;
         const nextIdx = (i + 1) % len;
-        const prevPoint = coords[prevIdx];
-        const nextPoint = coords[nextIdx];
+        const prevPoint = points[prevIdx];
+        const nextPoint = points[nextIdx];
         let radius = point.cornerRadius;
         // 看前后2点是否也设置了圆角，相邻的圆角强制要求2点之间必须是直线，有一方是曲线的话走离散近似解
         const isPrevCorner = isCornerPoint(prevPoint);
@@ -113,7 +112,7 @@ class Polyline extends Geom {
       }
     }
     // 将圆角的2个点替换掉原本的1个点
-    const temp = clone(coords);
+    const temp = clone(points);
     for (let i = 0, len = temp.length; i < len; i++) {
       const c = cache[i];
       if (c) {
@@ -222,7 +221,7 @@ class Polyline extends Geom {
       }
       res.push(p);
     }
-    this.points.push(...res);
+    this.coords.push(...res);
   }
 
   // deletePoint(point: Point | number) {
@@ -262,7 +261,7 @@ class Polyline extends Geom {
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
     this.buildPoints();
-    const points = this.points;
+    const coords = this.coords;
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
@@ -303,7 +302,7 @@ class Polyline extends Geom {
         ctx.setLineDash(strokeDasharray);
       }
       ctx.beginPath();
-      canvasPolygon(ctx, points, scale, dx2, dy2);
+      canvasPolygon(ctx, coords, scale, dx2, dy2);
       if (this.props.isClosed) {
         ctx.closePath();
       }
@@ -352,7 +351,7 @@ class Polyline extends Geom {
                   const os = inject.getOffscreenCanvas(w, h);
                   const ctx2 = os.ctx;
                   ctx2.beginPath();
-                  canvasPolygon(ctx2, points, scale, dx2, dy2);
+                  canvasPolygon(ctx2, coords, scale, dx2, dy2);
                   if (this.props.isClosed) {
                     ctx2.closePath();
                   }
@@ -477,7 +476,7 @@ class Polyline extends Geom {
                 ellipse = inject.getOffscreenCanvas(w, h);
                 const ctx2 = ellipse.ctx;
                 ctx2.beginPath();
-                canvasPolygon(ctx2, points, scale, dx2, dy2);
+                canvasPolygon(ctx2, coords, scale, dx2, dy2);
                 if (this.props.isClosed) {
                   ctx2.closePath();
                 }
@@ -536,7 +535,7 @@ class Polyline extends Geom {
           // 限制在图形内clip
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, dx2, dy2);
+          canvasPolygon(ctx, coords, scale, dx2, dy2);
           if (this.props.isClosed) {
             ctx.closePath();
           }
@@ -544,7 +543,7 @@ class Polyline extends Geom {
           ctx.fillStyle = '#FFF';
           // 在原本图形基础上，外围扩大n画个边框，这样奇偶使得填充在clip范围外不会显示出来，但shadow却在内可以显示
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, dx2, dy2);
+          canvasPolygon(ctx, coords, scale, dx2, dy2);
           canvasPolygon(
             ctx,
             [
@@ -572,7 +571,7 @@ class Polyline extends Geom {
           ctx.restore();
           // 还原给stroke用
           ctx.beginPath();
-          canvasPolygon(ctx, points, scale, dx2, dy2);
+          canvasPolygon(ctx, coords, scale, dx2, dy2);
           if (this.props.isClosed) {
             ctx.closePath();
           }
@@ -645,7 +644,7 @@ class Polyline extends Geom {
               ctx2.lineWidth = strokeWidth[i] * scale;
               ctx2.strokeStyle = '#FFF';
               ctx2.beginPath();
-              canvasPolygon(ctx2, points, scale, dx2, dy2);
+              canvasPolygon(ctx2, coords, scale, dx2, dy2);
               if (this.props.isClosed) {
                 ctx2.closePath();
               }
@@ -709,7 +708,7 @@ class Polyline extends Geom {
           ctx2.strokeStyle = ctx.strokeStyle;
           ctx2.lineWidth = strokeWidth[i] * 2 * scale;
           ctx2.beginPath();
-          canvasPolygon(ctx2, points, scale, dx2, dy2);
+          canvasPolygon(ctx2, coords, scale, dx2, dy2);
         }
         else {
           ctx.lineWidth = strokeWidth[i] * scale;
@@ -757,59 +756,6 @@ class Polyline extends Geom {
     //   });
     // });
   }
-
-  // override getFrameProps() {
-  //   const res = super.getFrameProps();
-  //   res.isLine = this.isLine();
-  //   this.buildPoints();
-  //   const points = this.props.points;
-  //   if (res.isLine) {
-  //     res.length = Math.sqrt(
-  //       Math.pow(points[1].absX! - points[0].absX!, 2) +
-  //       Math.pow(points[1].absY! - points[0].absY!, 2),
-  //     );
-  //     const dx = points[1].absX! - points[0].absX!;
-  //     if (dx === 0) {
-  //       if (points[1].absY! >= points[0].absY!) {
-  //         res.angle = 90;
-  //       }
-  //       else {
-  //         res.angle = -90;
-  //       }
-  //     }
-  //     else {
-  //       const tan = (points[1].absY! - points[0].absY!) / dx;
-  //       res.angle = r2d(Math.atan(tan));
-  //     }
-  //   }
-  //   const m = res.matrix;
-  //   points.forEach((item) => {
-  //     const p = calPoint(
-  //       { x: item.absX! - res.baseX, y: item.absY! - res.baseY },
-  //       m,
-  //     );
-  //     item.dspX = p.x;
-  //     item.dspY = p.y;
-  //     if (item.hasCurveFrom) {
-  //       const p = calPoint(
-  //         { x: item.absFx! - res.baseX, y: item.absFy! - res.baseY },
-  //         m,
-  //       );
-  //       item.dspFx = p.x;
-  //       item.dspFy = p.y;
-  //     }
-  //     if (item.hasCurveTo) {
-  //       const p = calPoint(
-  //         { x: item.absTx! - res.baseX, y: item.absTy! - res.baseY },
-  //         m,
-  //       );
-  //       item.dspTx = p.x;
-  //       item.dspTy = p.y;
-  //     }
-  //   });
-  //   res.points = points;
-  //   return res;
-  // }
 
   // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
   updatePointsBaseOnAP(points: Point[], matrix: Float64Array) {
@@ -879,7 +825,7 @@ class Polyline extends Geom {
 
   private adjustPoints(dx: number, dy: number) {
     const { width, height } = this;
-    const points = this.props.points;
+    const points = this.points;
     points.forEach((point) => {
       point.x = (point.absX! - dx) / width;
       point.y = (point.absY! - dy) / height;
@@ -921,7 +867,7 @@ class Polyline extends Geom {
     const json = await super.toSketchJson(zip) as SketchFormat.ShapePath;
     json._class = SketchFormat.ClassValue.ShapePath;
     json.isClosed = this.props.isClosed;
-    json.points = this.props.points.map(item => {
+    json.points = this.points.map(item => {
       return {
         _class: 'curvePoint',
         cornerRadius: item.cornerRadius,

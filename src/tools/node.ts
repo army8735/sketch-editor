@@ -632,7 +632,7 @@ export function getGroupActualRect(group: Group) {
   return group.displayRect = res;
 }
 
-export function getSketchBasic(node: Node) {
+export function getBasicInfo(node: Node) {
   const list: Node[] = [node];
   const top = node.artBoard || node.page;
   let parent = node.parent;
@@ -679,36 +679,13 @@ export function getSketchBasic(node: Node) {
     mixBlendMode: computedStyle.mixBlendMode,
     constrainProportions: node.props.constrainProportions,
     matrix: m,
+    displayRect: rect.slice(0),
     isLine: false,
-    points: [] as Point[],
     length: 0,
     angle: 0,
-    displayRect: rect.slice(0),
+    points: [] as Point[],
   };
-  if (node instanceof Geom) {
-    res.isLine = node.isLine();
-    const coords = node.coords;
-    if (res.isLine) {
-      res.length = Math.sqrt(
-        Math.pow(coords[1].absX! - coords[0].absX!, 2) +
-        Math.pow(coords[1].absY! - coords[0].absY!, 2),
-      );
-      const dx = coords[1].absX! - coords[0].absX!;
-      if (dx === 0) {
-        if (coords[1].absY! >= coords[0].absY!) {
-          res.angle = 90;
-        }
-        else {
-          res.angle = -90;
-        }
-      }
-      else {
-        const tan = (coords[1].absY! - coords[0].absY!) / dx;
-        res.angle = r2d(Math.atan(tan));
-      }
-    }
-  }
-  else if (node instanceof Group && !(node instanceof ShapeGroup)) {
+  if (node instanceof Group && !(node instanceof ShapeGroup)) {
     const r = getGroupActualRect(node);
     res.displayRect[0] = r[0];
     res.displayRect[1] = r[1];
@@ -732,6 +709,54 @@ export function getSketchBasic(node: Node) {
     res.dw = w - res.w;
     res.dh = h - res.h;
   }
+  else if (node instanceof Geom) {
+    res.isLine = node.isLine();
+    const points = node.points;
+    if (res.isLine) {
+      res.length = Math.sqrt(
+        Math.pow(points[1].absX! - points[0].absX!, 2) +
+        Math.pow(points[1].absY! - points[0].absY!, 2),
+      );
+      const dx = points[1].absX! - points[0].absX!;
+      if (dx === 0) {
+        if (points[1].absY! >= points[0].absY!) {
+          res.angle = 90;
+        }
+        else {
+          res.angle = -90;
+        }
+      }
+      else {
+        const tan = (points[1].absY! - points[0].absY!) / dx;
+        res.angle = r2d(Math.atan(tan));
+      }
+    }
+    points.forEach(item => {
+      const p = calPoint({
+        x: item.absX! - res.baseX,
+        y: item.absY! - res.baseY,
+      }, m);
+      item.dspX = p.x;
+      item.dspY = p.y;
+      if (item.hasCurveFrom) {
+        const p = calPoint({
+          x: item.absFx! - res.baseX,
+          y: item.absFy! - res.baseY,
+        }, m);
+        item.dspFx = p.x;
+        item.dspFy = p.y;
+      }
+      if (item.hasCurveTo) {
+        const p = calPoint({
+          x: item.absTx! - res.baseX,
+          y: item.absTy! - res.baseY,
+        }, m,);
+        item.dspTx = p.x;
+        item.dspTy = p.y;
+      }
+    });
+    res.points = points;
+  }
   return res;
 }
 
@@ -744,5 +769,5 @@ export default {
   resizeTL,
   resizeBR,
   getGroupActualRect,
-  getSketchBasic,
+  getBasicInfo,
 };

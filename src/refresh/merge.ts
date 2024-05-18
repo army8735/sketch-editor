@@ -2848,17 +2848,17 @@ export function genOutline(
       );
       // 矢量很特殊
       if (node instanceof Polyline) {
-        const points = node.points!;
+        const coords = node.coords!;
         ctx.beginPath();
-        canvasPolygon(ctx, points, scale, dx2, dy2);
+        canvasPolygon(ctx, coords, scale, dx2, dy2);
         ctx.closePath();
         ctx.fill(fillRule);
       }
       // 忽略子节点
       else if (node instanceof ShapeGroup) {
-        const points = node.points!;
+        const coords = node.coords!;
         ctx.beginPath();
-        points.forEach((item) => {
+        coords.forEach((item) => {
           canvasPolygon(ctx, item, scale, dx2, dy2);
         });
         ctx.closePath();
