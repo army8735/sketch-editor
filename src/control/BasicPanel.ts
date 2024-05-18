@@ -4,11 +4,9 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getGroupActualRect, resizeBR } from '../tools/node';
+import { getSketchBasic, resizeBR } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
-import Group from '../node/Group';
-import ShapeGroup from '../node/geom/ShapeGroup';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -44,7 +42,7 @@ class BasicPanel {
   listener: Listener;
   panel: HTMLElement;
   nodes: Node[];
-  data: Array<{ x: number, y: number, angle: number, w: number, h: number }>; // node当前数据，每次input变更则更新
+  data: Array<{ x: number, y: number, angle: number, w: number, h: number, dx: number, dy: number, dw: number, dh: number }>; // node当前数据，每次input变更则更新
   silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -73,9 +71,10 @@ class BasicPanel {
       const dxs: number[] = [];
       const dys: number[] = [];
       this.nodes.forEach((node, i) => {
+        const o = this.data[i];
         let d = 0;
         if (isInput) {
-          d = parseFloat(x.value) - this.data[i].x;
+          d = parseFloat(x.value) - o.x - o.dx;
         }
         else {
           d = parseFloat(x.value);
@@ -89,10 +88,10 @@ class BasicPanel {
               d = -10;
             }
             if (isInput && !i) {
-              x.value = toPrecision(this.data[i].x + d).toString();
+              x.value = toPrecision(o.x + o.dx + d).toString();
             }
           }
-          this.data[i].x += d;
+          o.x += d;
           const style = node.getStyle();
           node.updateStyle({
             translateX: node.computedStyle.translateX + d,
@@ -123,9 +122,10 @@ class BasicPanel {
       const dxs: number[] = [];
       const dys: number[] = [];
       this.nodes.forEach((node, i) => {
+        const o = this.data[i];
         let d = 0;
         if (isInput) {
-          d = parseFloat(y.value) - this.data[i].y;
+          d = parseFloat(y.value) - o.y - o.dy;
         }
         else {
           d = parseFloat(y.value);
@@ -139,10 +139,10 @@ class BasicPanel {
               d = -10;
             }
             if (isInput && !i) {
-              y.value = toPrecision(this.data[i].y + d).toString();
+              y.value = toPrecision(o.y + o.dy + d).toString();
             }
           }
-          this.data[i].y += d;
+          o.y += d;
           const style = node.getStyle();
           node.updateStyle({
             translateY: node.computedStyle.translateY + d,
@@ -172,9 +172,10 @@ class BasicPanel {
       const nodes: Node[] = [];
       const ns: number[] = [];
       this.nodes.forEach((node, i) => {
+        const o = this.data[i];
         let d = 0;
         if (isInput) {
-          d = parseFloat(r.value) - this.data[i].angle;
+          d = parseFloat(r.value) - o.angle;
         }
         else {
           d = parseFloat(r.value);
@@ -188,10 +189,10 @@ class BasicPanel {
               d = -10;
             }
             if (isInput && !i) {
-              r.value = toPrecision(this.data[i].angle + d).toString();
+              r.value = toPrecision(o.angle + d).toString();
             }
           }
-          this.data[i].angle += d;
+          o.angle += d;
           node.updateStyle({
             rotateZ: node.computedStyle.rotateZ + d,
           });
@@ -217,12 +218,13 @@ class BasicPanel {
       const nodes: Node[] = [];
       const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
+        const o = this.data[i];
         let d = 0;
         if (isInput) {
-          d = parseFloat(w.value) - this.data[i].w;
+          d = parseFloat(w.value) - o.w - o.dw;
         }
         else {
-          d = parseFloat(w.value);
+          d = parseFloat(w.value) - o.dw;
         }
         if (d) {
           if (!isInput && listener.shiftKey) {
@@ -233,10 +235,10 @@ class BasicPanel {
               d = -10;
             }
             if (isInput && !i) {
-              w.value = toPrecision(this.data[i].w + d).toString();
+              w.value = toPrecision(o.w + o.dw + d).toString();
             }
           }
-          this.data[i].w += d;
+          o.w += d;
           const { computedStyle } = node;
           const style = node.getStyle();
           const cssStyle = node.getCssStyle();
@@ -272,9 +274,10 @@ class BasicPanel {
       const nodes: Node[] = [];
       const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
+        const o = this.data[i];
         let d = 0;
         if (isInput) {
-          d = parseFloat(h.value) - this.data[i].h;
+          d = parseFloat(h.value) - o.h - o.dh;
         }
         else {
           d = parseFloat(h.value);
@@ -288,10 +291,10 @@ class BasicPanel {
               d = -10;
             }
             if (isInput && !i) {
-              h.value = toPrecision(this.data[i].h + d).toString();
+              h.value = toPrecision(o.h + o.dh + d).toString();
             }
           }
-          this.data[i].h += d;
+          o.h += d;
           const { computedStyle } = node;
           const style = node.getStyle();
           const cssStyle = node.getCssStyle();
@@ -370,31 +373,23 @@ class BasicPanel {
     const ws: number[] = [];
     const hs: number[] = [];
     nodes.forEach(item => {
-      const o = item.getFrameProps();
-      let { x, y, rotation, w, h } = o;
+      const o = getSketchBasic(item);
+      let { x, y, rotation, w, h, dx, dy, dw, dh } = o;
       this.data.push(o);
-      // 展示的实际尺寸
-      if (item.isGroup && item instanceof Group && !(item instanceof ShapeGroup)) {
-        const t = getGroupActualRect(item);
-        x += t[0];
-        y += t[1];
-        w = t[2] - t[0];
-        h = t[3] - t[1];
+      if (!xs.includes(x + dx)) {
+        xs.push(x + dx);
       }
-      if (!xs.includes(x)) {
-        xs.push(x);
-      }
-      if (!ys.includes(y)) {
-        ys.push(y);
+      if (!ys.includes(y + dy)) {
+        ys.push(y + dy);
       }
       if (!rs.includes(rotation)) {
         rs.push(rotation);
       }
-      if (!ws.includes(w)) {
-        ws.push(w);
+      if (!ws.includes(w + dw)) {
+        ws.push(w + dw);
       }
-      if (!hs.includes(h)) {
-        hs.push(h);
+      if (!hs.includes(h + dh)) {
+        hs.push(h + dh);
       }
     });
     const x = panel.querySelector('.x input') as HTMLInputElement;

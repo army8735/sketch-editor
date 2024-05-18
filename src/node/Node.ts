@@ -1602,58 +1602,6 @@ class Node extends Event {
     this.props.name = s;
   }
 
-  getFrameProps() {
-    const list: Node[] = [this];
-    const top = this.artBoard || this.page;
-    let parent = this.parent;
-    while (parent && parent !== top) {
-      list.unshift(parent);
-      parent = parent.parent;
-    }
-    let m = identity();
-    for (let i = 0, len = list.length; i < len; i++) {
-      m = multiply(m, list[i].matrix);
-    }
-    const rect = this._rect || this.rect;
-    const t = calRectPoints(rect[0], rect[1], rect[2], rect[3], m);
-    const x1 = t.x1;
-    const y1 = t.y1;
-    const x2 = t.x2;
-    const y2 = t.y2;
-    const x3 = t.x3;
-    const y3 = t.y3;
-    const x4 = t.x4;
-    const y4 = t.y4;
-    const { width, height, computedStyle } = this;
-    let baseX = 0,
-      baseY = 0;
-    if (!this.artBoard) {
-      baseX = (this.page?.props as PageProps).rule?.baseX || 0;
-      baseY = (this.page?.props as PageProps).rule?.baseY || 0;
-    }
-    return {
-      baseX,
-      baseY,
-      x: Math.min(x1, x2, x3, x4) - baseX,
-      y: Math.min(y1, y2, y3, y4) - baseY,
-      w: rect[2] - rect[0],
-      h: rect[3] - rect[1],
-      width,
-      height,
-      isFlippedHorizontal: computedStyle.scaleX === -1,
-      isFlippedVertical: computedStyle.scaleY === -1,
-      rotation: computedStyle.rotateZ,
-      opacity: computedStyle.opacity,
-      mixBlendMode: computedStyle.mixBlendMode,
-      constrainProportions: this.props.constrainProportions,
-      matrix: m,
-      isLine: false,
-      points: [] as Point[],
-      length: 0,
-      angle: 0,
-    };
-  }
-
   getStructs() {
     if (!this.root) {
       return [];

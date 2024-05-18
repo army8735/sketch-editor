@@ -758,58 +758,58 @@ class Polyline extends Geom {
     // });
   }
 
-  override getFrameProps() {
-    const res = super.getFrameProps();
-    res.isLine = this.isLine();
-    this.buildPoints();
-    const points = this.props.points;
-    if (res.isLine) {
-      res.length = Math.sqrt(
-        Math.pow(points[1].absX! - points[0].absX!, 2) +
-        Math.pow(points[1].absY! - points[0].absY!, 2),
-      );
-      const dx = points[1].absX! - points[0].absX!;
-      if (dx === 0) {
-        if (points[1].absY! >= points[0].absY!) {
-          res.angle = 90;
-        }
-        else {
-          res.angle = -90;
-        }
-      }
-      else {
-        const tan = (points[1].absY! - points[0].absY!) / dx;
-        res.angle = r2d(Math.atan(tan));
-      }
-    }
-    const m = res.matrix;
-    points.forEach((item) => {
-      const p = calPoint(
-        { x: item.absX! - res.baseX, y: item.absY! - res.baseY },
-        m,
-      );
-      item.dspX = p.x;
-      item.dspY = p.y;
-      if (item.hasCurveFrom) {
-        const p = calPoint(
-          { x: item.absFx! - res.baseX, y: item.absFy! - res.baseY },
-          m,
-        );
-        item.dspFx = p.x;
-        item.dspFy = p.y;
-      }
-      if (item.hasCurveTo) {
-        const p = calPoint(
-          { x: item.absTx! - res.baseX, y: item.absTy! - res.baseY },
-          m,
-        );
-        item.dspTx = p.x;
-        item.dspTy = p.y;
-      }
-    });
-    res.points = points;
-    return res;
-  }
+  // override getFrameProps() {
+  //   const res = super.getFrameProps();
+  //   res.isLine = this.isLine();
+  //   this.buildPoints();
+  //   const points = this.props.points;
+  //   if (res.isLine) {
+  //     res.length = Math.sqrt(
+  //       Math.pow(points[1].absX! - points[0].absX!, 2) +
+  //       Math.pow(points[1].absY! - points[0].absY!, 2),
+  //     );
+  //     const dx = points[1].absX! - points[0].absX!;
+  //     if (dx === 0) {
+  //       if (points[1].absY! >= points[0].absY!) {
+  //         res.angle = 90;
+  //       }
+  //       else {
+  //         res.angle = -90;
+  //       }
+  //     }
+  //     else {
+  //       const tan = (points[1].absY! - points[0].absY!) / dx;
+  //       res.angle = r2d(Math.atan(tan));
+  //     }
+  //   }
+  //   const m = res.matrix;
+  //   points.forEach((item) => {
+  //     const p = calPoint(
+  //       { x: item.absX! - res.baseX, y: item.absY! - res.baseY },
+  //       m,
+  //     );
+  //     item.dspX = p.x;
+  //     item.dspY = p.y;
+  //     if (item.hasCurveFrom) {
+  //       const p = calPoint(
+  //         { x: item.absFx! - res.baseX, y: item.absFy! - res.baseY },
+  //         m,
+  //       );
+  //       item.dspFx = p.x;
+  //       item.dspFy = p.y;
+  //     }
+  //     if (item.hasCurveTo) {
+  //       const p = calPoint(
+  //         { x: item.absTx! - res.baseX, y: item.absTy! - res.baseY },
+  //         m,
+  //       );
+  //       item.dspTx = p.x;
+  //       item.dspTy = p.y;
+  //     }
+  //   });
+  //   res.points = points;
+  //   return res;
+  // }
 
   // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
   updatePointsBaseOnAP(points: Point[], matrix: Float64Array) {
@@ -964,67 +964,67 @@ class Polyline extends Geom {
     }
   }
 
-  getAllBezierCurves(): Array<{ x: number; y: number }>[] {
-    const result: Array<{ x: number; y: number }>[] = [];
-    const points = this.getFrameProps().points;
-    const w = this.width;
-    const h = this.height;
-    // 非闭合
-    for (let i = 0; i < points.length - 1; i++) {
-      const curve: Array<{ x: number; y: number }> = [];
-      result.push(curve);
-      curve.push(
-        {
-          x: w * points[i].x,
-          y: h * points[i].y,
-        },
-        {
-          x: w * (points[i].hasCurveFrom ? points[i].fx : points[i].x),
-          y: h * (points[i].hasCurveFrom ? points[i].fy : points[i].y),
-        },
-        {
-          x:
-            w *
-            (points[i + 1].hasCurveFrom ? points[i + 1].tx : points[i + 1].x),
-          y:
-            h *
-            (points[i + 1].hasCurveFrom ? points[i + 1].ty : points[i + 1].y),
-        },
-        {
-          x: w * points[i + 1].x,
-          y: h * points[i + 1].y,
-        },
-      );
-    }
-
-    if (this.props.isClosed) {
-      const index = points.length - 1;
-      result.push([
-        {
-          x: w * points[index].x,
-          y: h * points[index].y,
-        },
-        {
-          x:
-            w *
-            (points[index].hasCurveFrom ? points[index].fx : points[index].x),
-          y:
-            h *
-            (points[index].hasCurveFrom ? points[index].fy : points[index].y),
-        },
-        {
-          x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
-          y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
-        },
-        {
-          x: w * points[0].x,
-          y: h * points[0].y,
-        },
-      ]);
-    }
-
-    return result;
-  }
+  // getAllBezierCurves(): Array<{ x: number; y: number }>[] {
+  //   const result: Array<{ x: number; y: number }>[] = [];
+  //   const points = this.getFrameProps().points;
+  //   const w = this.width;
+  //   const h = this.height;
+  //   // 非闭合
+  //   for (let i = 0; i < points.length - 1; i++) {
+  //     const curve: Array<{ x: number; y: number }> = [];
+  //     result.push(curve);
+  //     curve.push(
+  //       {
+  //         x: w * points[i].x,
+  //         y: h * points[i].y,
+  //       },
+  //       {
+  //         x: w * (points[i].hasCurveFrom ? points[i].fx : points[i].x),
+  //         y: h * (points[i].hasCurveFrom ? points[i].fy : points[i].y),
+  //       },
+  //       {
+  //         x:
+  //           w *
+  //           (points[i + 1].hasCurveFrom ? points[i + 1].tx : points[i + 1].x),
+  //         y:
+  //           h *
+  //           (points[i + 1].hasCurveFrom ? points[i + 1].ty : points[i + 1].y),
+  //       },
+  //       {
+  //         x: w * points[i + 1].x,
+  //         y: h * points[i + 1].y,
+  //       },
+  //     );
+  //   }
+  //
+  //   if (this.props.isClosed) {
+  //     const index = points.length - 1;
+  //     result.push([
+  //       {
+  //         x: w * points[index].x,
+  //         y: h * points[index].y,
+  //       },
+  //       {
+  //         x:
+  //           w *
+  //           (points[index].hasCurveFrom ? points[index].fx : points[index].x),
+  //         y:
+  //           h *
+  //           (points[index].hasCurveFrom ? points[index].fy : points[index].y),
+  //       },
+  //       {
+  //         x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
+  //         y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
+  //       },
+  //       {
+  //         x: w * points[0].x,
+  //         y: h * points[0].y,
+  //       },
+  //     ]);
+  //   }
+  //
+  //   return result;
+  // }
 }
 
 export default Polyline;

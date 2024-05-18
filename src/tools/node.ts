@@ -1,12 +1,14 @@
-import { calPoint, identity, multiply } from '../math/matrix';
+import { calPoint, calRectPoints, identity, multiply } from '../math/matrix';
 import Container from '../node/Container';
 import Group from '../node/Group';
 import Node from '../node/Node';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import { clone } from '../util/util';
-import { JStyle } from '../format';
+import { JStyle, PageProps, Point } from '../format';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import { mergeBbox } from '../math/bbox';
+import Geom from '../node/geom/Geom';
+import { r2d } from '../math/geom';
 
 export enum POSITION {
   UNDER = 0,
@@ -586,7 +588,7 @@ export function getGroupActualRect(group: Group) {
   i++;
   let first = true;
   for (let len = i + struct.total; i < len; i++) {
-    const { node, total, lv } = structs[i];
+    const { node, total } = structs[i];
     const m = node.tempMatrix = multiply(node.parent!.tempMatrix, node.matrix);
     let r: Float64Array;
     if (node.isGroup && node instanceof Group && !(node instanceof ShapeGroup)) {
@@ -630,6 +632,98 @@ export function getGroupActualRect(group: Group) {
   return group.displayRect = res;
 }
 
+export function getSketchBasic(node: Node) {
+  const list: Node[] = [node];
+  const top = node.artBoard || node.page;
+  let parent = node.parent;
+  while (parent && parent !== top) {
+    list.unshift(parent);
+    parent = parent.parent;
+  }
+  let m = identity();
+  for (let i = 0, len = list.length; i < len; i++) {
+    m = multiply(m, list[i].matrix);
+  }
+  const rect = node._rect || node.rect;
+  const t = calRectPoints(rect[0], rect[1], rect[2], rect[3], m);
+  const x1 = t.x1;
+  const y1 = t.y1;
+  const x2 = t.x2;
+  const y2 = t.y2;
+  const x3 = t.x3;
+  const y3 = t.y3;
+  const x4 = t.x4;
+  const y4 = t.y4;
+  const { computedStyle } = node;
+  let baseX = 0,
+    baseY = 0;
+  if (!node.artBoard) {
+    baseX = (node.page?.props as PageProps).rule?.baseX || 0;
+    baseY = (node.page?.props as PageProps).rule?.baseY || 0;
+  }
+  const res = {
+    baseX,
+    baseY,
+    x: Math.min(x1, x2, x3, x4) - baseX,
+    y: Math.min(y1, y2, y3, y4) - baseY,
+    w: rect[2] - rect[0],
+    h: rect[3] - rect[1],
+    dx: 0,
+    dy: 0,
+    dw: 0,
+    dh: 0,
+    isFlippedHorizontal: computedStyle.scaleX === -1,
+    isFlippedVertical: computedStyle.scaleY === -1,
+    rotation: computedStyle.rotateZ,
+    opacity: computedStyle.opacity,
+    mixBlendMode: computedStyle.mixBlendMode,
+    constrainProportions: node.props.constrainProportions,
+    matrix: m,
+    isLine: false,
+    points: [] as Point[],
+    length: 0,
+    angle: 0,
+    displayRect: rect.slice(0),
+  };
+  if (node instanceof Geom) {
+    res.isLine = node.isLine();
+    const coords = node.coords;
+    if (res.isLine) {
+      res.length = Math.sqrt(
+        Math.pow(coords[1].absX! - coords[0].absX!, 2) +
+        Math.pow(coords[1].absY! - coords[0].absY!, 2),
+      );
+      const dx = coords[1].absX! - coords[0].absX!;
+      if (dx === 0) {
+        if (coords[1].absY! >= coords[0].absY!) {
+          res.angle = 90;
+        }
+        else {
+          res.angle = -90;
+        }
+      }
+      else {
+        const tan = (coords[1].absY! - coords[0].absY!) / dx;
+        res.angle = r2d(Math.atan(tan));
+      }
+    }
+  }
+  else if (node instanceof Group && !(node instanceof ShapeGroup)) {
+    const r = getGroupActualRect(node);
+    res.displayRect[0] = r[0];
+    res.displayRect[1] = r[1];
+    res.displayRect[2] = r[2];
+    res.displayRect[3] = r[3];
+    const w = r[2] - r[0];
+    const h = r[3] - r[1];
+    res.dx = r[0];
+    res.dy = r[1];
+    res.dw = w - res.w;
+    res.dh = h - res.h;
+  }
+  return res;
+}
+
 export default {
   moveTo,
   POSITION,
@@ -639,4 +733,5 @@ export default {
   resizeTL,
   resizeBR,
   getGroupActualRect,
+  getSketchBasic,
 };
