@@ -714,10 +714,21 @@ export function getSketchBasic(node: Node) {
     res.displayRect[1] = r[1];
     res.displayRect[2] = r[2];
     res.displayRect[3] = r[3];
+    const t = calRectPoints(r[0], r[1], r[2], r[3], m);
+    const x1 = t.x1;
+    const y1 = t.y1;
+    const x2 = t.x2;
+    const y2 = t.y2;
+    const x3 = t.x3;
+    const y3 = t.y3;
+    const x4 = t.x4;
+    const y4 = t.y4;
+    const x = Math.min(x1, x2, x3, x4) - baseX;
+    const y = Math.min(y1, y2, y3, y4) - baseY;
+    res.dx = x - res.x;
+    res.dy = y - res.y;
     const w = r[2] - r[0];
     const h = r[3] - r[1];
-    res.dx = r[0];
-    res.dy = r[1];
     res.dw = w - res.w;
     res.dh = h - res.h;
   }

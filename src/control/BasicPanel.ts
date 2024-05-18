@@ -263,6 +263,7 @@ class BasicPanel {
       if (nodes.length) {
         listener.history.addCommand(new ResizeCommand(nodes, styles));
         listener.select.updateSelect(nodes);
+        this.show(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }
       this.silence = false;
