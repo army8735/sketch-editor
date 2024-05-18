@@ -43,7 +43,7 @@ class RoundPanel {
     const rs: number[] = [];
     nodes.forEach(item => {
       if (item instanceof Polyline) {
-        item.coords.forEach(point => {
+        item.points.forEach(point => {
           const r = point.cornerRadius;
           if (!rs.includes(r)) {
             rs.push(r);
@@ -53,7 +53,7 @@ class RoundPanel {
       else if (item instanceof ShapeGroup) {
         item.children.forEach(child => {
           if (child instanceof Polyline) {
-            child.coords.forEach(point => {
+            child.points.forEach(point => {
               const r = point.cornerRadius;
               if (!rs.includes(r)) {
                 rs.push(r);
