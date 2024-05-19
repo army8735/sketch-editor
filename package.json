@@ -1,6 +1,6 @@
 {
   "name": "sketch-editor",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "maintainers": [
     {
       "name": "army8735",
@@ -24,7 +24,8 @@
   "dependencies": {
     "@sketch-hq/sketch-file-format-ts": "^6.4.0",
     "jszip": "^3.10.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "vanilla-picker": "^2.12.3"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
