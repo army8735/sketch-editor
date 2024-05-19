@@ -568,70 +568,6 @@ export function resizeBR(node: Node, style: Style, computedStyle: ComputedStyle,
   return next;
 }
 
-// 当group的children有mask时，可能部分节点展示不完全，使得实际看到的rect比group本身尺寸小，sketch显示的即这个小rect
-export function getGroupActualRect(group: Group) {
-  if (group.displayRect) {
-    return group.displayRect;
-  }
-  const res = new Float64Array(4);
-  const root = group.root;
-  if (!root) {
-    return res;
-  }
-  const structs = root.structs;
-  const struct = group.struct;
-  let i = structs.indexOf(struct);
-  if (i < 0) {
-    return res;
-  }
-  group.tempMatrix = identity();
-  i++;
-  let first = true;
-  for (let len = i + struct.total; i < len; i++) {
-    const { node, total } = structs[i];
-    const m = node.tempMatrix = multiply(node.parent!.tempMatrix, node.matrix);
-    let r: Float64Array;
-    if (node.isGroup && node instanceof Group && !(node instanceof ShapeGroup)) {
-      r = getGroupActualRect(node);
-      i += total;
-    }
-    else {
-      r = node._rect || node.rect;
-    }
-    // 首次赋值，否则merge
-    if (first) {
-      let [x1, y1, x2, y2] = r;
-      const t1 = calPoint({ x: x1, y: y1 }, m);
-      const t2 = calPoint({ x: x1, y: y2 }, m);
-      const t3 = calPoint({ x: x2, y: y1 }, m);
-      const t4 = calPoint({ x: x2, y: y2 }, m);
-      x1 = Math.min(t1.x, t2.x, t3.x, t4.x);
-      y1 = Math.min(t1.y, t2.y, t3.y, t4.y);
-      x2 = Math.max(t1.x, t2.x, t3.x, t4.x);
-      y2 = Math.max(t1.y, t2.y, t3.y, t4.y);
-      res[0] = x1;
-      res[1] = y1;
-      res[2] = x2;
-      res[3] = y2;
-    }
-    else {
-      mergeBbox(res, r, m);
-    }
-    first = false;
-    // 遮罩跳过被遮罩节点
-    if (node.computedStyle.maskMode) {
-      let count = 0;
-      let next = node.next;
-      while (next && !next.computedStyle.breakMask) {
-        count++;
-        next = next.next;
-      }
-      i += count;
-    }
-  }
-  return group.displayRect = res;
-}
-
 export function getBasicInfo(node: Node) {
   const list: Node[] = [node];
   const top = node.artBoard || node.page;
@@ -679,37 +615,12 @@ export function getBasicInfo(node: Node) {
     mixBlendMode: computedStyle.mixBlendMode,
     constrainProportions: node.props.constrainProportions,
     matrix: m,
-    displayRect: rect.slice(0),
     isLine: false,
     length: 0,
     angle: 0,
     points: [] as Point[],
   };
-  if (node instanceof Group && !(node instanceof ShapeGroup)) {
-    const r = getGroupActualRect(node);
-    res.displayRect[0] = r[0];
-    res.displayRect[1] = r[1];
-    res.displayRect[2] = r[2];
-    res.displayRect[3] = r[3];
-    const t = calRectPoints(r[0], r[1], r[2], r[3], m);
-    const x1 = t.x1;
-    const y1 = t.y1;
-    const x2 = t.x2;
-    const y2 = t.y2;
-    const x3 = t.x3;
-    const y3 = t.y3;
-    const x4 = t.x4;
-    const y4 = t.y4;
-    const x = Math.min(x1, x2, x3, x4) - baseX;
-    const y = Math.min(y1, y2, y3, y4) - baseY;
-    res.dx = x - res.x;
-    res.dy = y - res.y;
-    const w = r[2] - r[0];
-    const h = r[3] - r[1];
-    res.dw = w - res.w;
-    res.dh = h - res.h;
-  }
-  else if (node instanceof Geom) {
+  if (node instanceof Geom) {
     res.isLine = node.isLine();
     const points = node.points;
     if (res.isLine) {
@@ -768,6 +679,5 @@ export default {
   getWholeBoundingClientRect,
   resizeTL,
   resizeBR,
-  getGroupActualRect,
   getBasicInfo,
 };

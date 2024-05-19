@@ -9,6 +9,7 @@ import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
 import { clone } from '../util/util';
+import { getGroupRect } from '../math/bbox';
 
 const EPS = 1e-2;
 
@@ -282,6 +283,15 @@ class Group extends Container {
         SketchFormat.Bitmap;
     });
     return json;
+  }
+
+  override get rect() {
+    let res = this._rect;
+    if (!res) {
+      res = this._rect = new Float64Array(4);
+      getGroupRect(this, res);
+    }
+    return res;
   }
 
   // 至少1个node进行编组，以第0个位置为基准

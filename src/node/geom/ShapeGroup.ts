@@ -795,7 +795,6 @@ class ShapeGroup extends Group {
     }
   }
 
-  // TODO: 是否需要，以及Group的displayRect设计是否重复
   override get rect(): Float64Array {
     let res = this._rect;
     if (!res) {

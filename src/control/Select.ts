@@ -1,10 +1,7 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { identity, multiply, multiplyScale, multiplyTranslate } from '../math/matrix';
-import Group from '../node/Group';
 import Polyline from '../node/geom/Polyline';
-import ShapeGroup from '../node/geom/ShapeGroup';
-import { getGroupActualRect } from '../tools/node';
 
 const html = `
   <span class="l" style="position:absolute;left:-4px;top:0;width:8px;height:100%;transform:scaleX(0.5);cursor:ew-resize;">
@@ -70,7 +67,7 @@ export default class Select {
     const root = this.root;
     const dpi = root.dpi;
     const hover = this.hover;
-    const rect = node._rect || node.rect;
+    let rect = node._rect || node.rect;
     let matrix = node.matrixWorld;
     if (dpi !== 1) {
       const t = identity();
@@ -79,26 +76,12 @@ export default class Select {
     }
     const isLine = node instanceof Polyline && node.isLine();
     if (isLine) {
-      const rect = node.rectLine;
-      hover.style.width = (rect[2] - rect[0]) + 'px';
-      hover.style.height = (rect[3] - rect[1]) + 'px';
-      if (rect[0] || rect[1]) {
-        multiplyTranslate(matrix, rect[0], rect[1]);
-      }
+      rect = node.rectLine;
     }
-    else {
-      if (node.isGroup && node instanceof Group && !(node instanceof ShapeGroup)) {
-        const r = getGroupActualRect(node);
-        hover.style.width = (r[2] - r[0]) + 'px';
-        hover.style.height = (r[3] - r[1]) + 'px';
-        if (r[0] || r[1]) {
-          multiplyTranslate(matrix, r[0], r[1]);
-        }
-      }
-      else {
-        hover.style.width = (rect[2] - rect[0]) + 'px';
-        hover.style.height = (rect[3] - rect[1]) + 'px';
-      }
+    hover.style.width = (rect[2] - rect[0]) + 'px';
+    hover.style.height = (rect[3] - rect[1]) + 'px';
+    if (rect[0] || rect[1]) {
+      multiplyTranslate(matrix, rect[0], rect[1]);
     }
     hover.style.transform = `matrix3d(${matrix.join(',')}`;
     const scale = 1 / matrix[0];
@@ -129,7 +112,7 @@ export default class Select {
     const dpi = this.root.dpi;
     selected.forEach((item, i) => {
       const select = this.select[i];
-      const rect = item._rect || item.rect;
+      let rect = item._rect || item.rect;
       let matrix = item.matrixWorld;
       if (dpi !== 1) {
         const t = identity();
@@ -138,26 +121,12 @@ export default class Select {
       }
       const isLine = item instanceof Polyline && item.isLine();
       if (isLine) {
-        const rect = item.rectLine;
-        select.style.width = (rect[2] - rect[0]) + 'px';
-        select.style.height = (rect[3] - rect[1]) + 'px';
-        if (rect[0] || rect[1]) {
-          multiplyTranslate(matrix, rect[0], rect[1]);
-        }
+        rect = item.rectLine;
       }
-      else {
-        if (item.isGroup && item instanceof Group && !(item instanceof ShapeGroup)) {
-          const r = getGroupActualRect(item);
-          select.style.width = (r[2] - r[0]) + 'px';
-          select.style.height = (r[3] - r[1]) + 'px';
-          if (r[0] || r[1]) {
-            multiplyTranslate(matrix, r[0], r[1]);
-          }
-        }
-        else {
-          select.style.width = (rect[2] - rect[0]) + 'px';
-          select.style.height = (rect[3] - rect[1]) + 'px';
-        }
+      select.style.width = (rect[2] - rect[0]) + 'px';
+      select.style.height = (rect[3] - rect[1]) + 'px';
+      if (rect[0] || rect[1]) {
+        multiplyTranslate(matrix, rect[0], rect[1]);
       }
       select.style.transform = `matrix3d(${matrix.join(',')}`;
       const scale = 1 / matrix[0];

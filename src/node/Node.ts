@@ -82,13 +82,13 @@ class Node extends Event {
   hasCacheMw: boolean; // 是否计算过世界matrix
   localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
   parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
-  _rect: Float64Array | undefined; // x/y/w/h组成的内容框
-  _bbox: Float64Array | undefined; // 包含边框包围盒
+  _rect: Float64Array | undefined; // 真实内容组成的内容框，group/geom特殊计算
+  _bbox: Float64Array | undefined; // 以rect为基础，包含边框包围盒
   _filterBbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
   _bbox2: Float64Array | undefined; // 扩大取整的bbox
   _filterBbox2: Float64Array | undefined; // 扩大取整的filterBbox
   hasContent: boolean;
-  canvasCache?: CanvasCache; // 先渲染到2d上作为缓存 TODO 超大尺寸分割，分辨率分级
+  canvasCache?: CanvasCache; // 先渲染到2d上作为缓存
   textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
   textureTotal: Array<TextureCache | undefined>; // 局部子树缓存
   textureFilter: Array<TextureCache | undefined>; // 有filter时的缓存
@@ -112,7 +112,6 @@ class Node extends Event {
   isContainer = false;
   isSlice = false;
   tileList: Tile[];
-  displayRect: Float64Array | undefined; // hover/select时的，仅group会特殊计算缓存
 
   constructor(props: Props) {
     super();
@@ -477,7 +476,6 @@ class Node extends Event {
     this._bbox = undefined;
     this._filterBbox = undefined;
     this.tempBbox = undefined;
-    this.displayRect = undefined;
   }
 
   calFilter(lv: RefreshLevel) {
@@ -745,7 +743,6 @@ class Node extends Event {
     this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
     this.textureOutline.forEach((item) => item?.release());
-    this.displayRect = undefined;
   }
 
   clearCacheUpward(includeSelf = false) {
