@@ -24,12 +24,13 @@ class Group extends Container {
 
   override didMountBubble() {
     super.didMountBubble();
-    const rect = this._rect || this.rect;
+    // const rect = this._rect || this.rect;
+    const { width, height } = this;
     const r = this.getChildrenRect(false);
-    if (Math.abs(r.minX - rect[0]) > EPS
-      || Math.abs(r.minY - rect[1]) > EPS
-      || Math.abs(r.maxX - rect[2]) > EPS
-      || Math.abs(r.maxY - rect[3]) > EPS) {
+    if (Math.abs(r.minX) > EPS
+      || Math.abs(r.minY) > EPS
+      || Math.abs(r.maxX - width) > EPS
+      || Math.abs(r.maxY - height) > EPS) {
       // 冒泡过程无需向下检测，直接向上
       this.adjustPosAndSize(r);
     }
@@ -163,11 +164,11 @@ class Group extends Container {
     if (!rectC) {
       rectC = this.getChildrenRect(false);
     }
-    const rect = this._rect || this.rect;
-    const dx1 = rectC.minX - rect[0],
-      dy1 = rectC.minY - rect[1],
-      dx2 = rectC.maxX - rect[2],
-      dy2 = rectC.maxY - rect[3];
+    const { width, height } = this;
+    const dx1 = rectC.minX,
+      dy1 = rectC.minY,
+      dx2 = rectC.maxX - width,
+      dy2 = rectC.maxY - height;
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (Math.abs(dx1) > EPS
       || Math.abs(dy1) > EPS
@@ -175,12 +176,10 @@ class Group extends Container {
       || Math.abs(dy2) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
-      const gw = this.width;
-      const gh = this.height;
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
-        this.adjustPosAndSizeChild(child, dx1, dy1, dx2, dy2, gw, gh);
+        this.adjustPosAndSizeChild(child, dx1, dy1, dx2, dy2, width, height);
       }
       return true;
     }
