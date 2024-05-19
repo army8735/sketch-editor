@@ -14,12 +14,11 @@ module.exports = {
       .mouseButtonDown(2)
       .mouseButtonUp(2)
       .assert.value('#base64', '[1,{"v":26.415353638658953,"u":2},{"v":24.32580139985299,"u":2},{"v":0,"u":2},{"v":0,"u":2},{"v":0,"u":0},{"v":0,"u":0},{"v":0,"u":1},{"v":0,"u":1},176.982869379015,162.98286937901503,0,0,670,818,0,0]')
-      .assert.value('#side .basic-panel .x', '70')
-      .assert.value('#side .basic-panel .y', '-105')
-      .assert.value('#side .basic-panel .r', '0')
-      .assert.value('#side .basic-panel .w', '670')
-      .assert.value('#side .basic-panel .h', '818')
-      .assert.value('#side .basic-panel .h', '818')
+      .assert.value('#side .basic-panel .x input', '70')
+      .assert.value('#side .basic-panel .y input', '-105')
+      .assert.value('#side .basic-panel .r input', '0')
+      .assert.value('#side .basic-panel .w input', '670')
+      .assert.value('#side .basic-panel .h input', '818')
       .end();
   }
 };
