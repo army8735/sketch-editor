@@ -160,62 +160,8 @@ export function getShapeGroupRect(points: number[][][], res?: Float64Array) {
   return res;
 }
 
-export function getGroupRect(group: Node, res?: Float64Array) {
-  res = res || new Float64Array(4);
-  const root = group.root;
-  if (!root) {
-    return res;
-  }
-  const structs = root.structs;
-  const struct = group.struct;
-  let i = structs.indexOf(struct);
-  if (i < 0) {
-    return res;
-  }
-  group.tempMatrix = identity();
-  i++;
-  let first = true;
-  for (let len = i + struct.total; i < len; i++) {
-    const { node, total } = structs[i];
-    const m = node.tempMatrix = multiply(node.parent!.tempMatrix, node.matrix);
-    let r = node._rect || node.rect;
-    // 首次赋值，否则merge
-    if (first) {
-      let [x1, y1, x2, y2] = r;
-      const t1 = calPoint({ x: x1, y: y1 }, m);
-      const t2 = calPoint({ x: x1, y: y2 }, m);
-      const t3 = calPoint({ x: x2, y: y1 }, m);
-      const t4 = calPoint({ x: x2, y: y2 }, m);
-      x1 = Math.min(t1.x, t2.x, t3.x, t4.x);
-      y1 = Math.min(t1.y, t2.y, t3.y, t4.y);
-      x2 = Math.max(t1.x, t2.x, t3.x, t4.x);
-      y2 = Math.max(t1.y, t2.y, t3.y, t4.y);
-      res[0] = x1;
-      res[1] = y1;
-      res[2] = x2;
-      res[3] = y2;
-    }
-    else {
-      mergeBbox(res, r, m);
-    }
-    first = false;
-    // 遮罩跳过被遮罩节点
-    if (node.computedStyle.maskMode) {
-      let count = 0;
-      let next = node.next;
-      while (next && !next.computedStyle.breakMask) {
-        count++;
-        next = next.next;
-      }
-      i += count;
-    }
-  }
-  return res;
-}
-
 export default {
   mergeBbox,
   getPointsRect,
   getShapeGroupRect,
-  getGroupRect,
 };
