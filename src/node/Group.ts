@@ -9,7 +9,7 @@ import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
 import { clone } from '../util/util';
-import { getGroupRect } from '../math/bbox';
+// import { getGroupRect } from '../math/bbox';
 
 const EPS = 1e-2;
 
@@ -24,9 +24,8 @@ class Group extends Container {
 
   override didMountBubble() {
     super.didMountBubble();
-    // const rect = this._rect || this.rect;
     const { width, height } = this;
-    const r = this.getChildrenRect(false);
+    const r = this.getChildrenRect();
     if (Math.abs(r.minX) > EPS
       || Math.abs(r.minY) > EPS
       || Math.abs(r.maxX - width) > EPS
@@ -37,7 +36,7 @@ class Group extends Container {
   }
 
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
-  private getChildrenRect(excludeMask = false) {
+  private getChildrenRect() {
     const { children } = this;
     const rect = {
       minX: 0,
@@ -51,11 +50,17 @@ class Group extends Container {
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       const computedStyle = child.computedStyle;
-      if (isMask && !computedStyle.breakMask && excludeMask) {
+      if (isMask && !computedStyle.breakMask) {
         continue;
       }
       if (computedStyle.maskMode) {
         isMask = true;
+        // 遮罩跳过被遮罩节点
+        let next = child.next;
+        while (next && !next.computedStyle.breakMask) {
+          i++;
+          next = next.next;
+        }
       }
       else if (computedStyle.breakMask) {
         isMask = false;
@@ -162,7 +167,7 @@ class Group extends Container {
     }
     const { children } = this;
     if (!rectC) {
-      rectC = this.getChildrenRect(false);
+      rectC = this.getChildrenRect();
     }
     const { width, height } = this;
     const dx1 = rectC.minX,
@@ -176,9 +181,26 @@ class Group extends Container {
       || Math.abs(dy2) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
+      let isMask = false;
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
+        const computedStyle = child.computedStyle;
+        if (isMask && !computedStyle.breakMask) {
+          continue;
+        }
+        if (computedStyle.maskMode) {
+          isMask = true;
+          // 遮罩跳过被遮罩节点
+          let next = child.next;
+          while (next && !next.computedStyle.breakMask) {
+            i++;
+            next = next.next;
+          }
+        }
+        else if (computedStyle.breakMask) {
+          isMask = false;
+        }
         this.adjustPosAndSizeChild(child, dx1, dy1, dx2, dy2, width, height);
       }
       return true;
@@ -284,14 +306,14 @@ class Group extends Container {
     return json;
   }
 
-  override get rect() {
-    let res = this._rect;
-    if (!res) {
-      res = this._rect = new Float64Array(4);
-      getGroupRect(this, res);
-    }
-    return res;
-  }
+  // override get rect() {
+  //   let res = this._rect;
+  //   if (!res) {
+  //     res = this._rect = new Float64Array(4);
+  //     getGroupRect(this, res);
+  //   }
+  //   return res;
+  // }
 
   // 至少1个node进行编组，以第0个位置为基准
   static group(nodes: Node[], props?: Props) {
