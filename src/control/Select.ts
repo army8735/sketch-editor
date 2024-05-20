@@ -33,12 +33,28 @@ const html = `
 export default class Select {
   root: Root;
   dom: HTMLElement;
+  frame: HTMLElement;
   hover: HTMLElement;
   select: HTMLElement[];
 
   constructor(root: Root, dom: HTMLElement) {
     this.root = root;
     this.dom = dom;
+    const frame = this.frame = document.createElement('div');
+    frame.className = 'frame';
+    frame.style.display = 'none';
+    frame.style.position = 'absolute';
+    frame.style.left = '0px';
+    frame.style.top = '0px';
+    frame.style.width = '1px';
+    frame.style.height = '1px';
+    frame.style.transformOrigin = '0 0';
+    frame.style.boxSizing = 'border-box';
+    frame.style.border = '1px solid rgba(0, 0, 0, 0.1)';
+    frame.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+    frame.style.pointerEvents = 'none';
+    dom.appendChild(frame);
+
     const hover = this.hover = document.createElement('div');
     hover.className = 'hover';
     hover.style.display = 'none';
@@ -51,7 +67,25 @@ export default class Select {
     hover.style.boxShadow = '0 0 3px rgba(0, 0, 0, 0.5)';
     hover.style.pointerEvents = 'none';
     dom.appendChild(hover);
+
     this.select = [];
+  }
+
+  showFrame(x: number, y: number, w: number, h: number) {
+    this.frame.style.display = 'block';
+    this.frame.style.left = x + 'px';
+    this.frame.style.top = y + 'px';
+    this.updateFrame(w, h)
+  }
+
+  updateFrame(w: number, h: number) {
+    this.frame.style.width = Math.abs(w) + 'px';
+    this.frame.style.height = Math.abs(h) + 'px';
+    this.frame.style.transform = `scale(${w >= 0 ? 1 : -1}, ${h >= 0 ? 1 : -1})`;
+  }
+
+  hideFrame() {
+    this.frame.style.display = 'none';
   }
 
   showHover(node: Node) {

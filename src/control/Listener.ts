@@ -56,6 +56,7 @@ export default class Listener extends Event {
   pageTy: number;
   dx: number; // 上次move的px，考虑缩放和dpi
   dy: number;
+  isFrame: boolean; // 点下时是否选中节点，没有则是框选
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
   modifyStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
@@ -92,6 +93,8 @@ export default class Listener extends Event {
     this.pageTy = 0;
     this.dx = 0;
     this.dy = 0;
+    this.isFrame = false;
+
     this.selected = [];
     this.modifyStyle = [];
     this.abcStyle = [];
@@ -168,6 +171,8 @@ export default class Listener extends Event {
     // 操作开始清除
     this.originStyle.splice(0);
     this.modifyStyle.splice(0);
+    this.startX = e.pageX;
+    this.startY = e.pageY;
     this.dx = this.dy = 0;
     // 点到控制html上
     if (isControl) {
@@ -176,8 +181,6 @@ export default class Listener extends Event {
       }
       this.isControl = isControl;
       this.controlType = target.className;
-      this.startX = e.pageX;
-      this.startY = e.pageY;
       this.prepare();
       this.abcStyle = selected.map((item) => {
         // resize画板children的定位尺寸临时变为固定px
@@ -275,6 +278,7 @@ export default class Listener extends Event {
         selected,
         false,
       );
+      this.isFrame = !!node;
       const oldSelected = selected.slice(0);
       if (node) {
         const i = selected.indexOf(node);
@@ -353,6 +357,7 @@ export default class Listener extends Event {
       }
       else {
         this.select.hideSelect();
+        this.select.showFrame(this.startX - this.originX, this.startY - this.originY, 0, 0);
       }
       // 一直点选空白不选节点，防止重复触发
       if (oldSelected.length === 0 && selected.length === 0) {
@@ -480,7 +485,7 @@ export default class Listener extends Event {
         if (this.options.disabled?.move) {
           return;
         }
-        if (selected.length) {
+        if (this.isFrame) {
           // 水平/垂直
           if (this.shiftKey) {
             if (dx2 >= dy2) {
@@ -518,7 +523,7 @@ export default class Listener extends Event {
           this.emit(Listener.MOVE_NODE, selected.slice(0));
         }
         else {
-          // TODO 框选
+          this.select.updateFrame(dx, dy);
         }
       }
       this.isMouseMove = true;
@@ -668,6 +673,7 @@ export default class Listener extends Event {
             this.history.addCommand(new MoveCommand([node], [dx], [dy]));
           });
         }
+        this.select.hideFrame();
       }
     }
     this.isMouseDown = false;
