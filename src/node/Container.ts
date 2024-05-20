@@ -1,6 +1,6 @@
 import * as uuid from 'uuid';
 import { JContainer, JNode, Override, Props } from '../format';
-import { pointInRect } from '../math/geom';
+import { isPolygonOverlapRect, pointInRect } from '../math/geom';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
@@ -8,6 +8,7 @@ import { ComputedStyle } from '../style/define';
 import inject from '../util/inject';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
+import { calRectPoints } from '../math/matrix';
 
 class Container extends Node {
   children: Node[];
@@ -322,11 +323,10 @@ class Container extends Node {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
-      const { computedStyle, rect, matrixWorld } = child;
+      const { computedStyle, matrixWorld } = child;
+      const rect = child._rect || child.rect;
       // 在内部且pointerEvents为true才返回
-      if (
-        pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)
-      ) {
+      if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
         if (child instanceof Container) {
           const res = child.getNodeByPoint(x, y);
           if (res) {
@@ -341,6 +341,39 @@ class Container extends Node {
         }
       }
     }
+  }
+
+  getNodesByFrame(x1: number, y1: number, x2: number, y2: number, isChild = false) {
+    const children = this.children;
+    const res: Node[] = [];
+    for (let i = 0, len = children.length; i < len; i++) {
+      const child = children[i];
+      const { computedStyle, matrixWorld } = child;
+      const rect = child._rect || child.rect;
+      const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
+      if (isPolygonOverlapRect(x1, y1, x2, y2, [
+        { x: box.x1, y: box.y1 },
+        { x: box.x2, y: box.y2 },
+        { x: box.x3, y: box.y3 },
+        { x: box.x4, y: box.y4 },
+      ])) {
+        if (isChild) {
+          if (child instanceof Container) {
+            const t = child.getNodesByFrame(x1, y1, x2, y2, isChild);
+            if (t.length) {
+            res.push(...t);
+            }
+          }
+          else {
+            res.push(child);
+          }
+        }
+        else {
+          res.push(child);
+        }
+      }
+    }
+    return res;
   }
 
   override getStructs() {

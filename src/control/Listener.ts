@@ -278,7 +278,7 @@ export default class Listener extends Event {
         selected,
         false,
       );
-      this.isFrame = !!node;
+      this.isFrame = !node;
       const oldSelected = selected.slice(0);
       if (node) {
         const i = selected.indexOf(node);
@@ -369,6 +369,7 @@ export default class Listener extends Event {
   }
 
   onMouseDown(e: MouseEvent) {
+    e.preventDefault();
     if (this.options.disabled?.select) {
       return;
     }
@@ -386,7 +387,6 @@ export default class Listener extends Event {
         this.startY = e.pageY;
         // 空格按下移动画布
         if (this.spaceKey) {
-          e.preventDefault();
           const o = page.getComputedStyle();
           this.pageTx = o.translateX;
           this.pageTy = o.translateY;
@@ -486,6 +486,30 @@ export default class Listener extends Event {
           return;
         }
         if (this.isFrame) {
+          this.select.updateFrame(dx, dy);
+          const x = (this.startX - this.originX) * dpi;
+          const y = (this.startY - this.originY) * dpi;
+          const res = root.getFrameNodes(x, y, x + dx2, y + dy2, this.metaKey);
+          const old = selected.splice(0);
+          selected.push(...res);
+          // 已选择的没变优化
+          let change = old.length !== selected.length;
+          if (!change) {
+            for (let i = 0, len = old.length; i < len; i++) {
+              if (old[i] !== selected[i]) {
+                change = true;
+              }
+            }
+          }
+          if (change) {
+            this.select.showSelect(selected);
+            this.emit(Listener.SELECT_NODE, selected.slice(0));
+          }
+          else {
+            this.select.updateSelect(selected);
+          }
+        }
+        else {
           // 水平/垂直
           if (this.shiftKey) {
             if (dx2 >= dy2) {
@@ -521,9 +545,6 @@ export default class Listener extends Event {
           });
           this.select.updateSelect(selected);
           this.emit(Listener.MOVE_NODE, selected.slice(0));
-        }
-        else {
-          this.select.updateFrame(dx, dy);
         }
       }
       this.isMouseMove = true;
@@ -661,6 +682,9 @@ export default class Listener extends Event {
         }
         this.input.focus();
       }
+      else if (this.isFrame) {
+        this.select.hideFrame();
+      }
       else {
         const { dx, dy } = this;
         if (dx || dy) {
@@ -673,7 +697,6 @@ export default class Listener extends Event {
             this.history.addCommand(new MoveCommand([node], [dx], [dy]));
           });
         }
-        this.select.hideFrame();
       }
     }
     this.isMouseDown = false;

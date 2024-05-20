@@ -273,8 +273,8 @@ export default class Tree {
     dt.forEach((item) => {
       item.classList.remove('active');
     });
-    if (nodes.length) {
-      const dt = this.dom.querySelector(`dl[uuid="${nodes[0].props.uuid}"] dt`);
+    nodes.forEach(item => {
+      const dt = this.dom.querySelector(`dl[uuid="${item.props.uuid}"] dt`);
       if (dt) {
         let dl = dt.parentElement;
         while (dl) {
@@ -296,6 +296,8 @@ export default class Tree {
         dt.classList.add('active');
         dt.scrollIntoView();
       }
+    });
+    if (nodes.length) {
     }
   }
 }

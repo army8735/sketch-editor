@@ -660,26 +660,6 @@ class Root extends Container implements FrameCallback {
     return this.dpi;
   }
 
-  // @Deprecated
-  getNodeFromCurPage(
-    x: number,
-    y: number,
-    includeGroup = false,
-    includeArtBoard = false,
-    lv?: number,
-  ): Node | undefined {
-    const page = this.lastPage;
-    if (page) {
-      return page.getNodeByPointAndLv(
-        x,
-        y,
-        includeGroup,
-        includeArtBoard,
-        lv === undefined ? lv : lv + 3,
-      );
-    }
-  }
-
   getNode(x: number, y: number, metaKey = false, selected: Node[] = [], isChild = false) {
     if (this.isDestroyed) {
       return;
@@ -748,6 +728,18 @@ class Root extends Container implements FrameCallback {
         }
       }
     }
+  }
+
+  getFrameNodes(x1: number, y1: number, x2: number, y2: number, metaKey = false) {
+    if (this.isDestroyed) {
+      return [] as Node[];
+    }
+    const page = this.lastPage;
+    if (page) {
+      const res = page.getNodesByFrame(x1, y1, x2, y2, metaKey);
+      return res;
+    }
+    return [] as Node[];
   }
 
   zoomTo(scale: number, cx?: number, cy?: number) {

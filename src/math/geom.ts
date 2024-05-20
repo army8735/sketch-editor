@@ -344,6 +344,12 @@ export function isPolygonOverlapRect(
   x1: number, y1: number, x2: number, y2: number,
   points: Array<{ x: number, y: number }>, includeIntersect = false,
 ) {
+  if (x1 > x2) {
+    [x1, x2] = [x2, x1];
+  }
+  if (y1 > y2) {
+    [y1, y2] = [y2, y1];
+  }
   let xa = 0, ya = 0, xb = 0, yb = 0;
   let allInX = true;
   let allInY = true;

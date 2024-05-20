@@ -417,7 +417,7 @@ export function checkInRect(
 ) {
   const box = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
   let { x1, y1, x2, y2, x3, y3, x4, y4 } = box;
-  // box是矩形可以加速，注意可能因为镜像导致坐标顺序颠倒
+  // box是无旋转矩形可以加速，注意可能因为镜像导致坐标顺序颠倒
   if (x1 === x4 && y1 === y2 && x2 === x3 && y3 === y4) {
     if (x1 > x2) {
       [x1, x3] = [x3, x1];
