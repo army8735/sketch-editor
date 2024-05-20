@@ -15,10 +15,12 @@ class History {
 
   addCommand(c: Command) {
     const len = this.commands.length;
+    // 加入一条新命令，如果超过长度限制先入先出老的
     if (len >= this.size) {
       this.commands.slice(0, len - this.size + 1);
     }
     this.commands.push(c);
+    // 新命令清空redo队列
     this.commandsR.splice(0);
   }
 

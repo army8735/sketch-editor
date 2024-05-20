@@ -24,6 +24,7 @@ class MoveCommand extends Command {
         translateX: computedStyle.translateX + dx,
         translateY: computedStyle.translateY + dy,
       });
+      // 结束后特殊检查，translate换算布局，Group约束
       node.endPosChange(originStyle, dx, dy);
       node.checkPosSizeUpward();
     });
