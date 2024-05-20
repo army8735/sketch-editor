@@ -28,9 +28,12 @@ fetch('./sketch.sketch')
           }
           else if (e.button === 2) {
             e.preventDefault();
-            let node = root.getCurPage().children[0];
-            if (node instanceof sketchEditor.node.Container) {
-              node = node.children[0];
+            let node = listener.selected[0];
+            if (!node) {
+              node = root.getCurPage().children[0];
+              if (node instanceof sketchEditor.node.Container) {
+                node = node.children[0];
+              }
             }
             const style = node.style;
             const computedStyle = node.computedStyle;
