@@ -181,26 +181,9 @@ class Group extends Container {
       || Math.abs(dy2) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
-      let isMask = false;
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
-        const computedStyle = child.computedStyle;
-        if (isMask && !computedStyle.breakMask) {
-          continue;
-        }
-        if (computedStyle.maskMode) {
-          isMask = true;
-          // 遮罩跳过被遮罩节点
-          let next = child.next;
-          while (next && !next.computedStyle.breakMask) {
-            i++;
-            next = next.next;
-          }
-        }
-        else if (computedStyle.breakMask) {
-          isMask = false;
-        }
         this.adjustPosAndSizeChild(child, dx1, dy1, dx2, dy2, width, height);
       }
       return true;
