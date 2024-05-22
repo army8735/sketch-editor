@@ -54,6 +54,8 @@ export default {
     return picker;
   },
   hide() {
-    div.style.display = 'none';
+    if (div) {
+      div.style.display = 'none';
+    }
   },
 };

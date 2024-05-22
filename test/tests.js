@@ -1,3 +1,21 @@
+global.document = {
+  createElement() {
+    return {};
+  },
+  documentElement: {
+    firstElementChild: {
+      appendChild() {},
+    },
+  },
+};
+global.navigator = {
+  permissions: {
+    query() {
+      return {};
+    },
+  },
+};
+
 const expect = require('expect.js');
 const sketchEditor = require('../dist/index');
 
