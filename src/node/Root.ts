@@ -429,25 +429,29 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;
         }
+        let cleared = false;
         if (lv & RefreshLevel.MASK) {
           computedStyle.maskMode = style.maskMode.v;
           node.clearMask();
+          cleared = true;
         }
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
         }
-        // mask的任何变更都要清空重绘
-        if (computedStyle.maskMode && !(lv & RefreshLevel.MASK)) {
+        // mask的任何变更都要清空重绘，必须CACHE以上，CACHE是跨帧渲染用级别
+        if (computedStyle.maskMode && !cleared && lv > RefreshLevel.CACHE) {
           node.clearMask();
         }
       }
       node.clearCacheUpward(false);
     }
     // 检查mask影响，这里是作为被遮罩对象存在的关系检查，可能会有连续
-    let mask = node.mask;
-    while (mask) {
-      mask.clearMask();
-      mask = mask.mask;
+    if (lv > RefreshLevel.CACHE) {
+      let mask = node.mask;
+      while (mask) {
+        mask.clearMask();
+        mask = mask.mask;
+      }
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;

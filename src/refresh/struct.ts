@@ -945,7 +945,7 @@ function renderWebglNoTile(
         }
       }
       // 真正的渲染部分
-      if (isInScreen && target && target.available) {
+      if (isInScreen && target?.available) {
         const { mixBlendMode, blur } = computedStyle;
         /**
          * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
@@ -1036,8 +1036,7 @@ function renderWebglNoTile(
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
       if (
-        target &&
-        target.available &&
+        target?.available &&
         target !== node.textureCache[scaleIndex] ||
         computedStyle.maskMode
       ) {

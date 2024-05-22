@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>test</title>
+  <style>
+    canvas {
+      display: block;
+      width: 500px;
+      height: 500px;
+    }
+  </style>
+</head>
+<body>
+<canvas width="1000" height="1000"></canvas>
+<input id="base64" type="text" value=""/>
+<script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
+<script src="../../../dist/index.js"></script>
+<script>
+  let canvas = document.querySelector('canvas');
+  let input = document.querySelector('#base64');
+  sketchEditor.ca.preserveDrawingBuffer = true;
+
+  fetch('./sketch.sketch')
+    .then((res) => {
+      return res.arrayBuffer();
+    })
+    .then((buff) => {
+      sketchEditor
+        .openAndConvertSketchBuffer(buff)
+        .then(json => {
+          const dpi = 2;
+          const root = window.root = sketchEditor.parse(json, canvas, dpi);
+          let count = 0;
+          root.on(sketchEditor.node.Root.REFRESH, () => {
+            count++;
+            if (count === 1) {
+              input.value = canvas.toDataURL();
+            }
+          });
+        });
+    });
+</script>
+</body>
+</html>

@@ -48,7 +48,7 @@
     "rollup-plugin-postcss": "^4.0.2",
     "selenium-server": "^3.141.59",
     "tslib": "^2.6.2",
-    "typescript": "^5.4.2",
+    "typescript": "^5.4.5",
     "webstorm-disable-index": "^1.2.0"
   },
   "main": "dist/index.js",
