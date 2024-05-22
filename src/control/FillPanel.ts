@@ -65,10 +65,20 @@ class FillPanel {
     let prevs: Partial<Style>[];
     let nexts: Partial<Style>[];
 
+    const callback = () => {
+      if (nexts && nexts.length) {
+        listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        nodes = [];
+        prevs = [];
+        nexts = [];
+      }
+    };
+
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
-        const p = picker.show(el);
+        const p = picker.show(el, callback);
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         // 最开始记录nodes/prevs
@@ -117,26 +127,14 @@ class FillPanel {
         };
         p.onDone = () => {
           picker.hide();
-          if (nodes && nodes.length) {
-            listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
-            listener.emit(Listener.FILL_NODE, nodes.slice(0));
-            nodes = [];
-            prevs = [];
-            nexts = [];
-          }
+          callback();
         };
       }
     });
 
     listener.on(Listener.SELECT_NODE, () => {
       picker.hide();
-      if (nodes && nodes.length) {
-        listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
-        nodes = [];
-        prevs = [];
-        nexts = [];
-      }
+      callback();
     });
   }
 

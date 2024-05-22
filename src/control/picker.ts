@@ -22,8 +22,15 @@ document.body.appendChild(div);
 
 let picker: Picker;
 
+let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
+
 export default {
-  show(node: HTMLElement) {
+  show(node: HTMLElement, cb?: () => void) {
+    if (callback) {
+      callback();
+      callback = undefined;
+    }
+    callback = cb;
     const rect = node.getBoundingClientRect();
     div.style.left = rect.left + (rect.right - rect.left) * 0.5 + 'px';
     div.style.top = rect.bottom + 10 + 'px';
@@ -44,5 +51,5 @@ export default {
   },
   hide() {
     div.style.display = 'none';
-  }
+  },
 };
