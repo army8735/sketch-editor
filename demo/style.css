@@ -314,15 +314,6 @@ body {
   display: flex;
   align-items: center;
 }
-.side .fill-panel .line > div > span,
-.side .stroke-panel .line > div > span {
-  margin-top: 2px;
-  width: auto;
-  white-space: nowrap;
-  font-size: 10px;
-  text-align: center;
-  color: #333;
-}
 .side .fill-panel .un-checked,
 .side .stroke-panel .un-checked {
   width: 12px;
@@ -356,6 +347,34 @@ body {
   border-radius: 3px;
   font-size: 11px;
 }
+.side .fill-panel .picker,
+.side .stroke-panel .picker {
+  position: relative;
+  box-sizing: border-box;
+  width: 40px;
+  height: 20px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAJAAAAAAJxsHGAAAAaUlEQVRIDe3QsRHAIAwEQXAz9N8NqganF8IFit7RB9xovHPvPd6/tdZ7ND7R6CTHNB3DMFJD7zBqOoZhpIbeYdR0DFsZ5zmHxy93VV2+5LPWP8sx0usdRk3HMIzU0DuMmo5hGKmhdyvjD7P7CMyQVK4bAAAAAElFTkSuQmCC) repeat left top;
+  background-size: 12px auto;
+  border: 1px solid #CCC;
+  border-radius: 3px;
+}
+.side .fill-panel .picker b,
+.side .stroke-panel .picker b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.side .fill-panel .txt,
+.side .stroke-panel .txt {
+  margin-top: 2px;
+  width: auto;
+  white-space: nowrap;
+  font-size: 10px;
+  text-align: center;
+  color: #333;
+}
 .side .fill-panel .color span,
 .side .stroke-panel .color span {
   text-align: center;
@@ -370,6 +389,10 @@ body {
   border-bottom-left-radius: 3px;
   text-align: right;
   color: #999;
+}
+.side .fill-panel .hex input[type=text],
+.side .stroke-panel .hex input[type=text] {
+  font-family: Menlo, "Courier New", sans-serif;
 }
 .side .fill-panel input[type=text],
 .side .stroke-panel input[type=text] {

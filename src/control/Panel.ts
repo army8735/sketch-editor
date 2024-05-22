@@ -30,10 +30,10 @@ class Panel {
     this.opacityPanel = new OpacityPanel(root, dom, listener);
     this.opacityPanel.show(listener.selected);
 
-    this.roundPanel = new RoundPanel(root, dom);
+    this.roundPanel = new RoundPanel(root, dom, listener);
     this.roundPanel.show(listener.selected);
 
-    this.fillPanel = new FillPanel(root, dom);
+    this.fillPanel = new FillPanel(root, dom, listener);
     this.fillPanel.show(listener.selected);
 
     this.strokePanel = new StrokePanel(root, dom);

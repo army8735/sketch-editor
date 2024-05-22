@@ -1,6 +1,23 @@
 import { isDate, isNil, isObject, isPlainObject } from './type';
 import inject from './inject';
 
+export function extend(target: any, source: any, keys?: Array<string>) {
+  if (source === null || typeof source !== 'object') {
+    return target;
+  }
+  if (!keys) {
+    keys = Object.keys(source);
+  }
+  let i = 0;
+  const len = keys.length;
+  while (i < len) {
+    const k = keys[i];
+    target[k] = source[k];
+    i++;
+  }
+  return target;
+}
+
 export function clone(obj: any) {
   if (isNil(obj) || typeof obj !== 'object') {
     return obj;
@@ -85,6 +102,7 @@ export async function loadLocalFonts() {
 
 export default {
   equal,
+  extend,
   clone,
   renderTemplate,
   loadLocalFonts,

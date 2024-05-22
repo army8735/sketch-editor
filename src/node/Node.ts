@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, JStyle, Override, PageProps, Point, Props } from '../format/';
+import { getDefaultStyle, JNode, JStyle, Override, Props } from '../format/';
 import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -25,7 +25,6 @@ import TextureCache from '../refresh/TextureCache';
 import { calNormalLineHeight, calSize, color2hexStr, equalStyle, normalize, } from '../style/css';
 import {
   BLUR,
-  ColorStop,
   ComputedGradient,
   ComputedPattern,
   ComputedShadow,
@@ -49,6 +48,7 @@ import { LayoutData } from './layout';
 import Page from './Page';
 import SymbolInstance from './SymbolInstance';
 import Tile from '../refresh/Tile';
+import { convert2Css } from '../style/gradient';
 
 let id = 0;
 
@@ -1069,9 +1069,10 @@ class Node extends Event {
     const res: ComputedStyle = Object.assign({}, this.computedStyle);
     res.color = res.color.slice(0);
     res.backgroundColor = res.backgroundColor.slice(0);
-    res.fill = res.fill.slice(0);
-    res.stroke = res.stroke.slice(0);
-    res.shadow = res.shadow.slice(0);
+    res.fill = clone(res.fill);
+    res.stroke = clone(res.stroke);
+    res.shadow = clone(res.shadow);
+    res.innerShadow = clone(res.innerShadow);
     res.fillOpacity = res.fillOpacity.slice(0);
     res.fillEnable = res.fillEnable.slice(0);
     res.fillMode = res.fillMode.slice(0);
@@ -1129,28 +1130,25 @@ class Node extends Event {
             const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
             return `url(${item.url}) ${type} ${item.scale}`;
           }
-          else if (
-            item.t === GRADIENT.LINEAR ||
-            item.t === GRADIENT.RADIAL ||
-            item.t === GRADIENT.CONIC
-          ) {
-            let s = 'linear-gradient';
-            if (item.t === GRADIENT.RADIAL) {
-              s = 'radial-gradient';
-            }
-            else if (item.t === GRADIENT.CONIC) {
-              s = 'conic-gradient';
-            }
-            return `${s}(${item.d.join(' ')}, ${item.stops.map(
-              (stop: ColorStop) => {
-                return (
-                  color2hexStr(stop.color.v) +
-                  ' ' +
-                  stop.offset!.v * 100 +
-                  '%'
-                );
-              },
-            )})`;
+          else if (item.t !== undefined) {
+            return convert2Css(item, this);
+            // let s = 'linear-gradient';
+            // if (item.t === GRADIENT.RADIAL) {
+            //   s = 'radial-gradient';
+            // }
+            // else if (item.t === GRADIENT.CONIC) {
+            //   s = 'conic-gradient';
+            // }
+            // return `${s}(${item.d.join(' ')}, ${item.stops.map(
+            //   (stop: ColorStop) => {
+            //     return (
+            //       color2hexStr(stop.color.v) +
+            //       ' ' +
+            //       stop.offset!.v * 100 +
+            //       '%'
+            //     );
+            //   },
+            // )})`;
           }
           return '';
         }

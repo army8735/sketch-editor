@@ -1,6 +1,6 @@
 import { angleBySides, d2r, r2d } from '../math/geom';
 import { identity, multiplyRotateZ, multiplyScaleY } from '../math/matrix';
-import { clone } from '../util';
+import { clone } from '../util/util';
 import { color2rgbaInt, color2rgbaStr } from './css';
 import { calUnit, ColorStop, ComputedColorStop, ComputedGradient, GRADIENT, StyleUnit } from './define';
 import reg from './reg';
@@ -443,7 +443,8 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     }
   }
   if (t === GRADIENT.LINEAR) {
-    let start: { x: number, y: number }, end: { x: number, y: number };
+    let start: { x: number, y: number },
+      end: { x: number, y: number };
     if (deg <= 90) {
       start = { x: bbox[0], y: bbox[3] };
       end = { x: bbox[2], y: bbox[1] };
@@ -581,6 +582,18 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
         }
       });
       s += color2rgbaStr(color) + ' ' + toPrecision(item.offset! * 100) + '%';
+    });
+    return s + ')';
+  }
+  else if (t === GRADIENT.CONIC) {
+    let s = 'conic-gradient(';
+    stops.forEach((item, i) => {
+      if (i) {
+        s += ', ';
+      }
+      item.color[3] *= opacity;
+      item.color[3] = toPrecision(item.color[3]);
+      s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
     });
     return s + ')';
   }

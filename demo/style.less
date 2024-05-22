@@ -353,15 +353,6 @@ html, body {
           display: flex;
           align-items: center;
         }
-
-        > span {
-          margin-top: 2px;
-          width: auto;
-          white-space: nowrap;
-          font-size: 10px;
-          text-align: center;
-          color: #333;
-        }
       }
     }
 
@@ -398,6 +389,34 @@ html, body {
       font-size: 11px;
     }
 
+    .picker {
+      position: relative;
+      box-sizing: border-box;
+      width: 40px;
+      height: 20px;
+      background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAJAAAAAAJxsHGAAAAaUlEQVRIDe3QsRHAIAwEQXAz9N8NqganF8IFit7RB9xovHPvPd6/tdZ7ND7R6CTHNB3DMFJD7zBqOoZhpIbeYdR0DFsZ5zmHxy93VV2+5LPWP8sx0usdRk3HMIzU0DuMmo5hGKmhdyvjD7P7CMyQVK4bAAAAAElFTkSuQmCC) repeat left top;
+      background-size: 12px auto;
+      border: 1px solid #CCC;
+      border-radius: 3px;
+
+      b {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+      }
+    }
+
+    .txt {
+      margin-top: 2px;
+      width: auto;
+      white-space: nowrap;
+      font-size: 10px;
+      text-align: center;
+      color: #333;
+    }
+
     .color {
       span {
         text-align: center;
@@ -414,6 +433,10 @@ html, body {
         border-bottom-left-radius: 3px;
         text-align: right;
         color: #999;
+      }
+
+      input[type=text] {
+        font-family: Menlo, "Courier New", sans-serif;
       }
     }
 

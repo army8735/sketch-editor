@@ -2,7 +2,8 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import { toPrecision } from '../math';
 import Listener from './Listener';
-import OpacityCommand from '../history/OpacityCommand';
+import { JStyle } from '../format';
+import UpdateStyleCommand from '../history/UpdateStyleCommand';
 
 const html = `
   <h4 class="panel-title">不透明度</h4>
@@ -40,7 +41,8 @@ class OpacityPanel {
     range.addEventListener('input', (e) => {
       this.silence = true;
       const nodes: Node[] = [];
-      const ds: { prev: number, next: number }[] = [];
+      const prevs: Partial<JStyle>[] = [];
+      const nexts: Partial<JStyle>[] = [];
       this.nodes.forEach((node) => {
         const prev = node.computedStyle.opacity;
         const next = parseFloat(range.value) * 0.01;
@@ -49,11 +51,16 @@ class OpacityPanel {
             opacity: next,
           });
           nodes.push(node);
-          ds.push({ prev, next });
+          prevs.push({
+            opacity: prev,
+          });
+          nexts.push({
+            opacity: next,
+          });
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new OpacityCommand(nodes, ds));
+        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
         number.value = range.value;
       }
@@ -64,7 +71,8 @@ class OpacityPanel {
       this.silence = true;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const nodes: Node[] = [];
-      const ds: { prev: number, next: number }[] = [];
+      const prevs: Partial<JStyle>[] = [];
+      const nexts: Partial<JStyle>[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.opacity;
         let next = parseFloat(number.value) * 0.01;
@@ -106,7 +114,12 @@ class OpacityPanel {
               opacity: next,
             });
             nodes.push(node);
-            ds.push({ prev, next });
+            prevs.push({
+              opacity: prev,
+            });
+            nexts.push({
+              opacity: next,
+            });
           }
         }
       });
@@ -114,7 +127,7 @@ class OpacityPanel {
         number.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new OpacityCommand(nodes, ds));
+        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
         range.value = number.value;
       }

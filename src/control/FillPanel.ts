@@ -6,31 +6,38 @@ import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
 import { toPrecision } from '../math';
 import { renderTemplate } from '../util/util';
+import picker from './picker';
+import { color2hexStr, color2rgbaInt, color2rgbaStr } from '../style/css';
+import Listener from './Listener';
+import { clone } from '../util/util';
+import { Style } from '../style/define';
+import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 
 const html = `
   <h4 class="panel-title">填充</h4>
 `;
 
 const single = `
-  <div class="line">
+  <div class="line" title="$\{index}">
     <span class="$\{checked}"></span>
     <div class="color">
-      <input type="color" value="#$\{color}" placeholder="$\{colorM}"/>
-      <span>颜色</span>
+      <span class="picker"><b style="color:#666;text-align:center;line-height:18px;overflow:hidden;text-indent:`
+  + `$\{textIndent};text-shadow:0 0 2px rgba(0, 0, 0, 0.2);background:$\{colorRgb};opacity:$\{opacityFloat}">○○○</b></span>
+      <span class="txt">颜色</span>
     </div>
     <div class="hex">
       <div>
         <span>#</span>
-        <input type="text" value="$\{color}" placeholder="$\{colorM}"/>
+        <input type="text" value="$\{color}" placeholder="$\{colorMulti}"/>
       </div>
-      <span>Hex</span>
+      <span class="txt">Hex</span>
     </div>
     <div class="opacity">
       <div>
-        <input type="number" min="0" max="100" step="1" value="$\{opacity}" placeholder="$\{opacityM}"/>
+        <input type="number" min="0" max="100" step="1" value="$\{opacity}" placeholder="$\{opacityMulti}"/>
         <span>%</span>
       </div>
-      <span>不透明度</span>
+      <span class="txt">不透明度</span>
     </div>
   </div>
 `;
@@ -38,17 +45,99 @@ const single = `
 class FillPanel {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   panel: HTMLElement;
+  nodes: Node[];
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
+    this.nodes = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'fill-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    let nodes: Node[];
+    let prevs: Partial<Style>[];
+    let nexts: Partial<Style>[];
+
+    panel.addEventListener('click', (e) => {
+      const el = e.target as HTMLElement;
+      if (el.tagName === 'B') {
+        const p = picker.show(el);
+        const line = el.parentElement!.parentElement!.parentElement!;
+        const index = parseInt(line.title);
+        // 最开始记录nodes/prevs
+        nodes = [];
+        prevs = [];
+        this.nodes.forEach(node => {
+          const fill = clone(node.style.fill);
+          const fillOpacity = clone(node.style.fillOpacity);
+          nodes.push(node);
+          prevs.push({
+            fill,
+            fillOpacity,
+          });
+        });
+        // 每次变更记录更新nexts
+        p.onChange = (color) => {
+          nexts = [];
+          this.nodes.forEach((node, i) => {
+            const fill = clone(node.style.fill);
+            const rgba = color.rgba.slice(0);
+            rgba[3] = 1;
+            fill[index].v = rgba;
+
+            const fillOpacity = clone(node.style.fillOpacity);
+            fillOpacity[index].v = color.rgba[3];
+
+            if (!i) {
+              const hex = line.querySelector('.hex input') as HTMLInputElement;
+              hex.value = color2hexStr(rgba).slice(0, 7);
+              const b = line.querySelector('.picker b') as HTMLElement;
+              b.style.opacity = String(color.rgba[3]);
+              b.style.background = hex.value;
+              const op = line.querySelector('.opacity input') as HTMLInputElement;
+              op.value = String(toPrecision(color.rgba[3] * 100, 0));
+            }
+
+            nexts.push({
+              fill,
+              fillOpacity,
+            });
+            node.updateFormatStyle({
+              fill,
+              fillOpacity,
+            });
+          });
+        };
+        p.onDone = () => {
+          picker.hide();
+          if (nodes && nodes.length) {
+            listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
+            listener.emit(Listener.FILL_NODE, nodes.slice(0));
+            nodes = [];
+            prevs = [];
+            nexts = [];
+          }
+        };
+      }
+    });
+
+    listener.on(Listener.SELECT_NODE, () => {
+      picker.hide();
+      if (nodes && nodes.length) {
+        listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        nodes = [];
+        prevs = [];
+        nexts = [];
+      }
+    });
   }
 
   show(nodes: Node[]) {
@@ -69,6 +158,7 @@ class FillPanel {
       panel.style.display = 'none';
       return;
     }
+    this.nodes = nodes;
     panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
@@ -120,12 +210,28 @@ class FillPanel {
       else if (e.includes(true)) {
         checked = 'checked';
       }
+      let opacity = 1;
+      let opacityFloat = 1;
+      if (o.length === 1) {
+        opacity = toPrecision(o[0] * 100, 0);
+        opacityFloat = o[0];
+        if (c.length === 1 && c[0].charAt(0) === '#') {
+          const color = color2rgbaInt(c[0]);
+          opacity *= color[3];
+          opacity = toPrecision(opacity, 0);
+          opacityFloat *= color[3];
+        }
+      }
       const s = renderTemplate(single, {
+        index: es.length - 1 - i,
         checked,
-        color: c.length > 1 ? '' : c[0].replace('#', '').toUpperCase(),
-        colorM: c.length > 1 ? '多个' : '',
-        opacity: o.length > 1 ? '' : toPrecision(o[0] * 100, 0),
-        opacityM: o.length > 1 ? '多个' : '',
+        textIndent: c.length > 1 ? 0 : '9999px',
+        color: c.length > 1 ? '#FFFFFF' : c[0].slice(1, 7).toUpperCase(),
+        colorRgb: c.length > 1 ? '#FFFFFF' : (c[0].charAt(0) === '#' ? color2rgbaStr(c[0].slice(0, 7)) : '#FFFFFF'),
+        colorMulti: c.length > 1 ? '多个' : '',
+        opacity,
+        opacityFloat,
+        opacityMulti: o.length > 1 ? '多个' : '',
       });
       this.panel.innerHTML += s;
     }

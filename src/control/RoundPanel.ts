@@ -3,6 +3,7 @@ import Root from '../node/Root';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import { toPrecision } from '../math';
+import Listener from './Listener';
 
 const html = `
   <h4 class="panel-title">圆角</h4>
@@ -16,11 +17,13 @@ const html = `
 class RoundPanel {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   panel: HTMLElement;
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'round-panel';
