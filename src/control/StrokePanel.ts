@@ -5,18 +5,24 @@ import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
 import { toPrecision } from '../math';
-import { renderTemplate } from '../util/util';
+import { clone, renderTemplate } from '../util/util';
+import Listener from './Listener';
+import { Style } from '../style/define';
+import picker from './picker';
+import { color2hexStr, color2rgbaStr } from '../style/css';
+import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 
 const html = `
   <h4 class="panel-title">描边</h4>
 `;
 
 const single = `
-  <div class="line">
+  <div class="line" title="$\{index}">
     <span class="$\{checked}"></span>
     <div class="color">
-      <input type="color" value="#$\{color}" placeholder="$\{colorM}"/>
-      <span>颜色</span>
+      <span class="picker"><b style="color:#666;text-align:center;line-height:18px;overflow:hidden;text-indent:`
+  + `$\{textIndent};text-shadow:0 0 2px rgba(0, 0, 0, 0.2);background:$\{colorRgb};">○○○</b></span>
+      <span class="txt">颜色</span>
     </div>
     <div class="pos $\{position}">
       <div>
@@ -31,7 +37,7 @@ const single = `
     </div>
     <div class="width">
       <div>
-        <input type="number" min="0" max="100" step="1" value="$\{width}" placeholder="$\{widthM}"/>
+        <input type="number" min="0" max="100" step="1" value="$\{width}" placeholder="$\{widthMulti}"/>
         <span></span>
       </div>
       <span>宽度</span>
@@ -42,17 +48,81 @@ const single = `
 class StrokePanel {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   panel: HTMLElement;
+  nodes: Node[];
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
+    this.nodes = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'stroke-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    let nodes: Node[];
+    let prevs: Partial<Style>[];
+    let nexts: Partial<Style>[];
+
+    panel.addEventListener('click', (e) => {
+      const el = e.target as HTMLElement;
+      if (el.tagName === 'B') {
+        const p = picker.show(el);
+        const line = el.parentElement!.parentElement!.parentElement!;
+        const index = parseInt(line.title);
+        // 最开始记录nodes/prevs
+        nodes = [];
+        prevs = [];
+        this.nodes.forEach(node => {
+          const stroke = clone(node.style.stroke);
+          nodes.push(node);
+          prevs.push({
+            stroke,
+          });
+        });
+        // 每次变更记录更新nexts
+        p.onChange = (color) => {
+          nexts = [];
+          this.nodes.forEach((node) => {
+            const stroke = clone(node.style.stroke);
+            const rgba = color.rgba.slice(0);
+            stroke[index].v = rgba;
+
+            nexts.push({
+              stroke,
+            });
+            node.updateFormatStyle({
+              stroke,
+            });
+          });
+        };
+        p.onDone = () => {
+          picker.hide();
+          if (nodes && nodes.length) {
+            listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
+            listener.emit(Listener.FILL_NODE, nodes.slice(0));
+            nodes = [];
+            prevs = [];
+            nexts = [];
+          }
+        };
+      }
+    });
+
+    listener.on(Listener.SELECT_NODE, () => {
+      picker.hide();
+      if (nodes && nodes.length) {
+        listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        nodes = [];
+        prevs = [];
+        nexts = [];
+      }
+    });
   }
 
   show(nodes: Node[]) {
@@ -73,6 +143,7 @@ class StrokePanel {
       panel.style.display = 'none';
       return;
     }
+    this.nodes = nodes;
     panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
@@ -131,11 +202,14 @@ class StrokePanel {
         checked = 'checked';
       }
       const s = renderTemplate(single, {
+        index: es.length - 1 - i,
         checked,
-        color: c.length > 1 ? '' : c[0].replace('#', '').toUpperCase(),
-        colorM: c.length > 1 ? '多个' : '',
+        textIndent: c.length > 1 ? 0 : '9999px',
+        color: c.length > 1 ? '#FFFFFF' : c[0].slice(1, 7).toUpperCase(),
+        colorRgb: c.length > 1 ? '#FFFFFF' : (c[0].charAt(0) === '#' ? color2rgbaStr(c[0].slice(0, 7)) : '#FFFFFF'),
+        colorMulti: c.length > 1 ? '多个' : '',
         width: w.length > 1 ? '' : toPrecision(w[0], 0),
-        widthM: w.length > 1 ? '多个' : '',
+        widthMulti: w.length > 1 ? '多个' : '',
         position: p.length > 1 ? 'multi' : p[0],
       });
       this.panel.innerHTML += s;

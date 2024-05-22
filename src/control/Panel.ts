@@ -36,7 +36,7 @@ class Panel {
     this.fillPanel = new FillPanel(root, dom, listener);
     this.fillPanel.show(listener.selected);
 
-    this.strokePanel = new StrokePanel(root, dom);
+    this.strokePanel = new StrokePanel(root, dom, listener);
     this.strokePanel.show(listener.selected);
 
     this.textPanel = new TextPanel(root, dom);
