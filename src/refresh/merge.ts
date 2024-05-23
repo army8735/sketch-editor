@@ -337,13 +337,7 @@ export function genMerge(
   if (breakMerge && breakMerge.length) {
     root.breakMerge = true;
   }
-  // 未完成的merge，跨帧渲染
-  if (breakMerge && breakMerge.length) {
-    for (let i = 0, len = breakMerge.length; i < len; i++) {
-      root.addUpdate(breakMerge[i].node, [], RefreshLevel.CACHE, false, false, undefined);
-      // update会清空mask的关系，无next计数，导致被遮罩在主循环中被显示出来，这里传lv是CACHE防止清除
-    }
-  }
+  // 未完成的merge，跨帧渲染，等渲染结束再执行操作
   return { mergeRecord, breakMerge };
 }
 
