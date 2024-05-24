@@ -10,7 +10,8 @@
 <div class="wrap">
   <div class="menu">
     <input type="file" title="请选择sketch文件" id="file" accept=".sketch"/>
-    <label><input type="checkbox"/>开启tile</label>
+    <label><input type="checkbox" class="tile"/>开启tile</label>
+    <label><input type="checkbox" class="debug"/>开启debug</label>
     <button id="save">保存</button>
   </div>
   <div class="container">
@@ -32,13 +33,21 @@
     const arr = item.split('=');
     search[arr[0]] = arr[1];
   });
-  const tile = document.querySelector('input[type=checkbox]');
+  const tile = document.querySelector('.menu .tile');
   if (search.tile && search.tile !== 0 && search.tile !== false) {
     sketchEditor.config.tile = true;
     tile.checked = true;
   }
+  const debug = document.querySelector('.menu .debug');
+  if (search.debug) {
+    sketchEditor.config.debug = true;
+    debug.checked = true;
+  }
   tile.addEventListener('change', function() {
-    location.href = '?tile=' + (tile.checked ? '1' : '');
+    location.href = '?tile=' + (tile.checked ? '1' : '') + '&debug=' + (debug.checked ? '1' : '');
+  });
+  debug.addEventListener('change', function() {
+    location.href = '?tile=' + (tile.checked ? '1' : '') + '&debug=' + (debug.checked ? '1' : '');
   });
 
   const $canvasC = document.querySelector('#canvasC');
