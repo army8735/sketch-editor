@@ -415,9 +415,9 @@ const inject = {
           }
         }
         img.src = url;
-        if (config.debug && typeof document !== 'undefined') {
-          document.body.appendChild(img);
-        }
+        // if (config.debug && typeof document !== 'undefined') {
+        //   document.body.appendChild(img);
+        // }
       }
 
       load(url, cache);
