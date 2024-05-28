@@ -52,6 +52,7 @@ import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
+import Group from './Group';
 
 class Root extends Container implements FrameCallback {
   canvas?: HTMLCanvasElement;
@@ -434,6 +435,10 @@ class Root extends Container implements FrameCallback {
           computedStyle.maskMode = style.maskMode.v;
           node.clearMask();
           cleared = true;
+          const p = node.parent;
+          if (p && p.isGroup && p instanceof Group) {
+            p.adjustPosAndSize();
+          }
         }
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
@@ -447,9 +452,15 @@ class Root extends Container implements FrameCallback {
     }
     // 检查mask影响，这里是作为被遮罩对象存在的关系检查，可能会有连续
     let mask = node.mask;
-    while (mask) {
-      mask.clearMask();
-      mask = mask.mask;
+    if (mask) {
+      const p = node.parent;
+      if (p && p.isGroup && p instanceof Group) {
+        p.adjustPosAndSize();
+      }
+      while (mask) {
+        mask.clearMask();
+        mask = mask.mask;
+      }
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;

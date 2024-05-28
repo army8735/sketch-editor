@@ -380,15 +380,6 @@ html, body {
       transform: translateY(4px);
     }
 
-    input[type=color] {
-      flex: 0 0 auto;
-      width: 40px;
-      height: 20px;
-      border: none;
-      border-radius: 3px;
-      font-size: 11px;
-    }
-
     .picker {
       position: relative;
       box-sizing: border-box;
@@ -405,6 +396,8 @@ html, body {
         top: 0;
         width: 100%;
         height: 100%;
+        cursor: default;
+        user-select: none;
       }
     }
 
@@ -606,7 +599,7 @@ html, body {
     .wc {
       margin-bottom: 4px;
 
-      > div {
+      .weight {
         flex: 1;
         display: flex;
         position: relative;
@@ -638,13 +631,30 @@ html, body {
         }
       }
 
-      input[type=color] {
-        margin-left: 10px;
+      .color {
+        margin-left: 5px;
+      }
+
+      .picker {
+        position: relative;
+        box-sizing: border-box;
+        display: block;
         width: 40px;
         height: 20px;
-        border: none;
+        background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAJAAAAAAJxsHGAAAAaUlEQVRIDe3QsRHAIAwEQXAz9N8NqganF8IFit7RB9xovHPvPd6/tdZ7ND7R6CTHNB3DMFJD7zBqOoZhpIbeYdR0DFsZ5zmHxy93VV2+5LPWP8sx0usdRk3HMIzU0DuMmo5hGKmhdyvjD7P7CMyQVK4bAAAAAElFTkSuQmCC) repeat left top;
+        background-size: 12px auto;
+        border: 1px solid #CCC;
         border-radius: 3px;
-        font-size: 11px;
+
+        b {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          cursor: default;
+          user-select: none;
+        }
       }
     }
 

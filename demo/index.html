@@ -93,8 +93,10 @@
         root = sketchEditor.parse(json, canvas, dpi);
 
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
-        sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
-        sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+        root.once('refresh', () => {
+          sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
+          sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+        });
       });
     }
   };
