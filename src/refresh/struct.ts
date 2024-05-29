@@ -54,43 +54,7 @@ export function renderWebgl(
   root.scaleIndex = scaleIndex;
   // 再普通遍历渲染
   const { imgLoadList } = root;
-  const programs = root.programs;
-  const bgColorProgram = programs.bgColorProgram;
-  // 先渲染Page的背景色，默认透明显示外部css白色，当没有Artboard时，Page渲染为浅灰色
   const page = root.lastPage;
-  // page一般都有，防止特殊数据极端情况没有
-  if (page) {
-    const children = page.children,
-      len = children.length;
-    let hasArtboard = false;
-    // 背景色分开来
-    for (let i = 0; i < len; i++) {
-      const artBoard = children[i];
-      if (artBoard instanceof ArtBoard) {
-        hasArtboard = true;
-        break;
-      }
-    }
-    if (hasArtboard) {
-      gl.useProgram(bgColorProgram);
-      const vtPoint = new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]);
-      // 顶点buffer
-      const pointBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-      const a_position = gl.getAttribLocation(bgColorProgram, 'a_position');
-      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(a_position);
-      // color
-      const u_color = gl.getUniformLocation(bgColorProgram, 'u_color');
-      gl.uniform4f(u_color, 0.95, 0.95, 0.95, 1.0);
-      // 渲染并销毁
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      gl.deleteBuffer(pointBuffer);
-      gl.disableVertexAttribArray(a_position);
-      gl.useProgram(programs.program);
-    }
-  }
   if (config.tile) {
     if (page) {
       renderWebglTile(gl, root, scale, scaleIndex);

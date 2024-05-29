@@ -3,7 +3,7 @@ import { color2rgbaInt, color2rgbaStr } from '../style/css';
 
 let div: HTMLElement;
 const html = `
-<span style="position:absolute;left:50%;top:0;border:10px solid transparent;border-bottom-color:#CCC;transform:translate(-50%,-100%)">
+<span style="position:absolute;left:90%;top:0;border:10px solid transparent;border-bottom-color:#CCC;transform:translate(-50%,-100%)">
   <b style="position:absolute;left:0;top:0;border:10px solid transparent;border-bottom-color:#FFF;transform:translate(-10px,-9px)"></b>
 </span>
 `;
@@ -27,12 +27,12 @@ export default {
       div.style.top = '0px';
       div.style.zIndex = '9999';
       div.style.display = 'none';
-      div.style.padding = '10px';
+      div.style.padding = '5px';
       div.style.backgroundColor = '#FFF';
       div.style.border = '1px solid #CCC';
       div.style.borderRadius = '5px';
       div.style.filter = 'drop-shadow(0 0 5px rgba(0, 0, 0, 0.2))';
-      div.style.transform = 'translateX(-50%)';
+      div.style.transform = 'translateX(-90%)';
       div.innerHTML = html;
       document.body.appendChild(div);
     }

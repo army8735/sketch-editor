@@ -5,7 +5,9 @@ import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
 import text, { TEXT_BEHAVIOUR } from '../tools/text';
-import { TEXT_ALIGN } from '../style/define';
+import { Style, TEXT_ALIGN } from '../style/define';
+import Listener from './Listener';
+import picker from './picker';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -16,11 +18,13 @@ const html = `
     <span class="multi">多种字体</span>
   </div>
   <div class="line wc">
-    <div>
+    <div class="weight">
       <select></select>
       <span class="multi">多种字重</span>
     </div>
-    <input type="color"/>
+    <div class="color">
+      <span class="picker"><b style="color:#666;text-align:center;line-height:18px;overflow:hidden;text-shadow:0 0 2px rgba(0, 0, 0, 0.2);">○○○</b></span>
+    </div>
   </div>
   <div class="line num">
     <div class="fs">
@@ -67,18 +71,53 @@ loadLocalFonts().then(res => {
 class TextPanel {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   panel: HTMLElement;
   local = false;
+  nodes: Text[];
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
+    this.nodes = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'text-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    let nodes: Node[];
+    let prevs: Partial<Style>[];
+    let nexts: Partial<Style>[];
+
+    const callback = () => {};
+
+    panel.addEventListener('click', (e) => {
+      const el = e.target as HTMLElement;
+      if (el.tagName === 'B') {
+        const p = picker.show(el, callback);
+        // 最开始记录nodes/prevs
+        nodes = this.nodes.slice(0);
+        prevs = [];
+        nodes.forEach(node => {});
+        // 每次变更记录更新nexts
+        p.onChange = (color) => {
+          nexts = [];
+          console.log(color);
+        };
+        p.onDone = () => {
+          picker.hide();
+          callback();
+        };
+      }
+    });
+
+    listener.on(Listener.SELECT_NODE, () => {
+      picker.hide();
+      callback();
+    });
   }
 
   initLocal() {
@@ -122,6 +161,7 @@ class TextPanel {
       item.placeholder = '';
     });
     const texts = nodes.filter(item => item instanceof Text) as Text[];
+    this.nodes = texts;
     const o = text.getData(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
@@ -191,8 +231,15 @@ class TextPanel {
       }
     }
     {
-      const color = panel.querySelector('input[type=color]') as HTMLInputElement;
-      color.value = o.color[0];
+      const color = panel.querySelector('.color b') as HTMLElement;
+      if (o.color.length > 1) {
+        color.style.background = '#FFF';
+        color.style.textIndent = '0px';
+      }
+      else {
+        color.style.background = o.color[0];
+        color.style.textIndent = '9999px';
+      }
     }
     {
       const input = panel.querySelector('.fs input') as HTMLInputElement;

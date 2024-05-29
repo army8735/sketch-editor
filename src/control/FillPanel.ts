@@ -66,13 +66,14 @@ class FillPanel {
     let nexts: Partial<Style>[];
 
     const callback = () => {
+      // 只有变更才会有next
       if (nexts && nexts.length) {
-        listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
+        listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
         listener.emit(Listener.FILL_NODE, nodes.slice(0));
-        nodes = [];
-        prevs = [];
-        nexts = [];
       }
+      nodes = [];
+      prevs = [];
+      nexts = [];
     };
 
     panel.addEventListener('click', (e) => {
@@ -82,12 +83,11 @@ class FillPanel {
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         // 最开始记录nodes/prevs
-        nodes = [];
+        nodes = this.nodes.slice(0);
         prevs = [];
-        this.nodes.forEach(node => {
+        nodes.forEach(node => {
           const fill = clone(node.style.fill);
           const fillOpacity = clone(node.style.fillOpacity);
-          nodes.push(node);
           prevs.push({
             fill,
             fillOpacity,
@@ -96,7 +96,7 @@ class FillPanel {
         // 每次变更记录更新nexts
         p.onChange = (color) => {
           nexts = [];
-          this.nodes.forEach((node, i) => {
+          nodes.forEach((node, i) => {
             const fill = clone(node.style.fill);
             const rgba = color.rgba.slice(0);
             rgba[3] = 1;

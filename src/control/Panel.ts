@@ -39,7 +39,7 @@ class Panel {
     this.strokePanel = new StrokePanel(root, dom, listener);
     this.strokePanel.show(listener.selected);
 
-    this.textPanel = new TextPanel(root, dom);
+    this.textPanel = new TextPanel(root, dom, listener);
     this.textPanel.show(listener.selected);
 
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
