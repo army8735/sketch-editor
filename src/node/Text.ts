@@ -31,7 +31,7 @@ import {
 import font from '../style/font';
 import Event from '../util/Event';
 import inject, { OffScreen } from '../util/inject';
-import { clone } from '../util/util';
+import { clone, equal } from '../util/util';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
 import Node from './Node';
@@ -243,6 +243,26 @@ class Text extends Node {
     if (rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
+        // 若和上一个相同，进行合并操作
+        if (i) {
+          const prev = rich[i - 1];
+          if (equal(prev, item, [
+            'color',
+            'fontFamily',
+            'fontSize',
+            'letterSpacing',
+            'lineHeight',
+            'textAlign',
+            'textDecoration',
+            'paragraphSpacing',
+          ])) {
+            prev.length += item.length;
+            rich.splice(i, 1);
+            i--;
+            len--;
+            continue;
+          }
+        }
         SET_FONT_INDEX[item.location] = i;
         const family = item.fontFamily.toLowerCase();
         const data = font.data[family];
