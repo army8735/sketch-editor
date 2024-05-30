@@ -13,7 +13,7 @@ let picker: Picker;
 let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
 
 export default {
-  show(node: HTMLElement, cb?: () => void) {
+  show(node: HTMLElement, cb?: () => void, alignRight = false) {
     if (callback) {
       callback();
       callback = undefined;
@@ -38,6 +38,15 @@ export default {
     }
     div.style.left = rect.left + (rect.right - rect.left) * 0.5 + 'px';
     div.style.top = rect.bottom + 10 + 'px';
+    const span = div.querySelector('span')!;
+    if (alignRight) {
+      div.style.transform = 'translateX(-90%)';
+      span.style.left = '90%';
+    }
+    else {
+      div.style.transform = 'translateX(-24%)';
+      span.style.left = '24%';
+    }
     div.style.display = 'block';
     if (!picker) {
       picker = new Picker({

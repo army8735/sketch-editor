@@ -108,7 +108,7 @@ class TextPanel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
-        const p = picker.show(el, callback);
+        const p = picker.show(el, callback, true);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
