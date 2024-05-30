@@ -71,7 +71,7 @@ class StrokePanel {
     const callback = () => {
       if (nexts && nexts.length) {
         listener.history.addCommand(new UpdateFormatStyleCommand(nodes, prevs, nexts));
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
         nodes = [];
         prevs = [];
         nexts = [];

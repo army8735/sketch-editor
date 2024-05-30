@@ -328,6 +328,8 @@ export type Rich = {
   color: number[];
 };
 
+export type UpdateRich = Pick<Rich, 'location' | 'length'> & Partial<Rich>;
+
 export type PolylineProps = Props & {
   points: Point[];
   isClosed: boolean;

@@ -5,9 +5,11 @@ import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
 import text, { TEXT_BEHAVIOUR } from '../tools/text';
-import { Style, TEXT_ALIGN } from '../style/define';
+import { TEXT_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
+import { UpdateRich } from '../format';
+import UpdateRichCommand from '../history/UpdateRichCommand';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -88,11 +90,20 @@ class TextPanel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
-    let nodes: Node[];
-    let prevs: Partial<Style>[];
-    let nexts: Partial<Style>[];
+    let nodes: Text[];
+    let prevs: UpdateRich[][];
+    let nexts: UpdateRich[][];
 
-    const callback = () => {};
+    const callback = () => {
+      // 只有变更才会有next
+      if (nexts && nexts.length) {
+        listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+        listener.emit(Listener.COLOR_NODE, nodes.slice(0));
+      }
+      nodes = [];
+      prevs = [];
+      nexts = [];
+    };
 
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
@@ -101,11 +112,31 @@ class TextPanel {
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
-        nodes.forEach(node => {});
+        nodes.forEach(node => {
+          const prev: UpdateRich[] = [];
+          node.rich.forEach(item => {
+            prev.push({
+              location: item.location,
+              length: item.length,
+              color: item.color,
+            });
+          });
+          prevs.push(prev);
+        });
         // 每次变更记录更新nexts
         p.onChange = (color) => {
           nexts = [];
-          console.log(color);
+          nodes.forEach(node => {
+            const next: UpdateRich[] = [];
+            const o = {
+              location: 0,
+              length: node._content.length,
+              color: color.rgba.slice(0),
+            };
+            next.push(o);
+            nexts.push(next);
+            node.updateRichStyle(o);
+          });
         };
         p.onDone = () => {
           picker.hide();

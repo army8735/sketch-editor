@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
+import { JNode, Override, Rich, TAG_NAME, TextProps, UpdateRich } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -241,28 +241,9 @@ class Text extends Node {
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
     const SET_FONT_INDEX: number[] = [];
     if (rich.length) {
+      this.mergeRich(); // 初始数据合并
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
-        // 若和上一个相同，进行合并操作
-        if (i) {
-          const prev = rich[i - 1];
-          if (equal(prev, item, [
-            'color',
-            'fontFamily',
-            'fontSize',
-            'letterSpacing',
-            'lineHeight',
-            'textAlign',
-            'textDecoration',
-            'paragraphSpacing',
-          ])) {
-            prev.length += item.length;
-            rich.splice(i, 1);
-            i--;
-            len--;
-            continue;
-          }
-        }
         SET_FONT_INDEX[item.location] = i;
         const family = item.fontFamily.toLowerCase();
         const data = font.data[family];
@@ -495,7 +476,8 @@ class Text extends Node {
       if (d) {
         this.width = computedStyle.width = maxW;
         const { left, right } = style;
-        if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {}
+        if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
+        }
         else if (left.u !== StyleUnit.AUTO) {
           computedStyle.right -= d;
         }
@@ -510,7 +492,8 @@ class Text extends Node {
       if (d) {
         this.height = computedStyle.height = h;
         const { top, bottom } = style;
-        if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {}
+        if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+        }
         else if (top.u !== StyleUnit.AUTO) {
           computedStyle.bottom -= d;
         }
@@ -1250,7 +1233,7 @@ class Text extends Node {
   }
 
   // 根据绝对坐标获取光标位置，同时设置开始光标位置
-  setCursorStartByAbsCoord(x: number, y: number) {
+  setCursorStartByAbsCoords(x: number, y: number) {
     const m = this.matrixWorld;
     const im = inverse4(m);
     const local = calPoint({ x, y }, im);
@@ -1287,7 +1270,7 @@ class Text extends Node {
   }
 
   // 设置结束光标位置
-  setCursorEndByAbsCoord(x: number, y: number) {
+  setCursorEndByAbsCoords(x: number, y: number) {
     const m = this.matrixWorld;
     const im = inverse4(m);
     const local = calPoint({ x: x, y: y }, im);
@@ -1403,8 +1386,8 @@ class Text extends Node {
       && !isFixedWidth
       && (
         left.u !== StyleUnit.AUTO
-          && translateX.v
-          && translateX.u === StyleUnit.PERCENT // 一般情况
+        && translateX.v
+        && translateX.u === StyleUnit.PERCENT // 一般情况
         || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边不变
       );
     // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
@@ -1991,7 +1974,7 @@ class Text extends Node {
   }
 
   // 获取光标当前坐标，无视multi，只取开头，没有高度，一般在滚动画布时更新获取新位置
-  getCursorAbsCoord() {
+  getCursorAbsCoords() {
     const m = this.matrixWorld;
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
@@ -2295,6 +2278,7 @@ class Text extends Node {
     this.updateCursorByIndex(start + s.length);
   }
 
+  // 按下回车触发
   enter() {
     const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
@@ -2633,55 +2617,102 @@ class Text extends Node {
     return hasChange;
   }
 
-  private updateRich(item: Rich, style: any) {
+  // 传入location/length，修改范围内的Rich的样式，一般是TextPanel中改选中的如颜色
+  updateRichStyle(payload: UpdateRich) {
+    let { location, length } = payload;
+    const rich = this.rich;
+    for (let i = 0, len = rich.length; i < len; i++) {
+      const item = rich[i];
+      // 修改的location在Rich的范围内命中
+      if (location >= item.location && location < item.location + item.length) {
+        // 不是此Rich的开头，则将前面一部分拆分出去
+        if (location > item.location) {
+          const prev = {
+            ...item,
+            length: location - item.location,
+          };
+          rich.splice(i, 0, prev);
+          i++;
+          len++;
+          item.location += prev.length;
+          item.length -= prev.length;
+        }
+        // 不到此Rich的结尾，则将后面一部分拆分出去，并且标识本次结束循环
+        let shouldBreak = false;
+        if (location + length < item.location + item.length) {
+          const next = {
+            ...item,
+            location: location + length,
+            length: item.location + item.length - location - length,
+          };
+          rich.splice(i + 1, 0, next);
+          item.length -= next.length;
+          shouldBreak = true;
+        }
+        // 可能存在的prev/next操作后（也可能没有），此Rich本身更新
+        this.updateRich(item, payload);
+        if (shouldBreak) {
+          break;
+        }
+        // 如果蔓延到后面的Rich，修改索引继续循环
+        location += item.length;
+        length -= item.length;
+      }
+    }
+    this.mergeRich();
+    this.refresh(RefreshLevel.REFLOW);
+  }
+
+  private updateRich(item: Rich, style: Partial<Rich>) {
     let hasChange = false;
-    if (
-      style.hasOwnProperty('fontFamily') &&
-      style.fontFamily !== item.fontFamily
+    if (style.fontFamily !== undefined
+      && style.fontFamily !== item.fontFamily
     ) {
       item.fontFamily = style.fontFamily;
       hasChange = true;
     }
-    if (style.hasOwnProperty('fontSize') && style.fontSize !== item.fontSize) {
+    if (style.fontSize !== undefined
+      && style.fontSize !== item.fontSize) {
       item.fontSize = style.fontSize;
       hasChange = true;
     }
-    if (style.hasOwnProperty('color')) {
+    if (style.color !== undefined) {
       const c = color2rgbaInt(style.color);
       if (
-        item.color[0] !== c[0] ||
-        item.color[1] !== c[1] ||
-        item.color[2] !== c[2] ||
-        item.color[3] !== c[3]
+        item.color[0] !== c[0]
+        || item.color[1] !== c[1]
+        || item.color[2] !== c[2]
+        || item.color[3] !== c[3]
       ) {
         item.color = c;
         hasChange = true;
       }
     }
-    if (
-      style.hasOwnProperty('letterSpacing') &&
-      style.letterSpacing !== item.letterSpacing
+    if (style.letterSpacing !== undefined
+      && style.letterSpacing !== item.letterSpacing
     ) {
       item.letterSpacing = style.letterSpacing;
       hasChange = true;
     }
-    if (
-      style.hasOwnProperty('lineHeight') &&
-      style.lineHeight !== item.lineHeight
+    if (style.lineHeight !== undefined
+      && style.lineHeight !== item.lineHeight
     ) {
       item.lineHeight = style.lineHeight;
       hasChange = true;
     }
-    if (
-      style.hasOwnProperty('paragraphSpacing') &&
-      style.paragraphSpacing !== item.paragraphSpacing
+    if (style.paragraphSpacing !== undefined
+      && style.paragraphSpacing !== item.paragraphSpacing
     ) {
       item.paragraphSpacing = style.paragraphSpacing;
       hasChange = true;
     }
-    if (style.hasOwnProperty('textAlign') &&
-      style.textAlign !== item.textAlign) {
+    if (style.textAlign !== undefined && style.textAlign !== item.textAlign) {
       item.textAlign = style.textAlign;
+      hasChange = true;
+    }
+    if (style.textDecoration !== undefined
+      && style.textDecoration !== item.textDecoration) {
+      item.textDecoration = style.textDecoration;
       hasChange = true;
     }
     return hasChange;
@@ -2808,17 +2839,26 @@ class Text extends Node {
     this.mergeRich();
   }
 
-  // 合并相同的rich
+  // 合并相邻相同的rich
   private mergeRich() {
     const rich = this.rich;
-    if (!rich.length) {
+    if (!rich.length || rich.length < 2) {
       return false;
     }
     let hasChange = false;
     for (let i = rich.length - 2; i >= 0; i--) {
       const a = rich[i];
       const b = rich[i + 1];
-      if (equalRich(a, b)) {
+      if (equal(a, b, [
+        'color',
+        'fontFamily',
+        'fontSize',
+        'letterSpacing',
+        'lineHeight',
+        'textAlign',
+        'textDecoration',
+        'paragraphSpacing',
+      ])) {
         a.length += b.length;
         rich.splice(i + 1, 1);
         hasChange = true;
@@ -3182,40 +3222,6 @@ class Text extends Node {
   }
 
   static setFontAndLetterSpacing = setFontAndLetterSpacing;
-}
-
-function equalRich(a: Rich, b: Rich) {
-  const keys = [
-    'fontFamily',
-    'fontSize',
-    'lineHeight',
-    'letterSpacing',
-    'paragraphSpacing',
-    'color',
-  ];
-  for (let i = 0, len = keys.length; i < len; i++) {
-    const k = keys[i];
-    // @ts-ignore
-    const oa = a[k];
-    // @ts-ignore
-    const ob = b[k];
-    if (k === 'color') {
-      if (
-        oa[0] !== ob[0] ||
-        oa[1] !== ob[1] ||
-        oa[2] !== ob[2] ||
-        oa[3] !== ob[3]
-      ) {
-        return false;
-      }
-    }
-    else {
-      if (oa !== ob) {
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 function setFontAndLetterSpacing(ctx: CanvasRenderingContext2D, textBox: TextBox, scale: number) {

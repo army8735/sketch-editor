@@ -130,7 +130,7 @@ export default class Input {
 
   update(x: number, y: number) {
     const dpi = this.root.dpi;
-    const p = this.node!.setCursorStartByAbsCoord(x * dpi, y * dpi);
+    const p = this.node!.setCursorStartByAbsCoords(x * dpi, y * dpi);
     this.containerEl.style.left = p.x / dpi + 'px';
     this.containerEl.style.top = p.y / dpi + 'px';
     this.containerEl.style.height = p.h / dpi + 'px';
@@ -159,7 +159,7 @@ export default class Input {
 
   updateCurCursor() {
     const dpi = this.root.dpi;
-    const p = this.node!.getCursorAbsCoord();
+    const p = this.node!.getCursorAbsCoords();
     this.containerEl.style.left = p.x / dpi + 'px';
     this.containerEl.style.top = p.y / dpi + 'px';
   }

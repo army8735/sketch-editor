@@ -295,7 +295,7 @@ export default class Listener extends Event {
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
               text.hideSelectArea();
-              text.setCursorStartByAbsCoord(x, y);
+              text.setCursorStartByAbsCoords(x, y);
               this.input.update(
                 e.pageX - this.originX,
                 e.pageY - this.originY
@@ -478,7 +478,7 @@ export default class Listener extends Event {
         const x = (e.pageX - this.originX) * dpi;
         const y = (e.pageY - this.originY) * dpi;
         const text = selected[0] as Text;
-        text.setCursorEndByAbsCoord(x, y);
+        text.setCursorEndByAbsCoords(x, y);
         this.input.hideCursor();
       }
       else {
@@ -994,6 +994,8 @@ export default class Listener extends Event {
   static ROTATE_NODE = 'ROTATE_NODE';
   static OPACITY_NODE = 'OPACITY_NODE';
   static FILL_NODE = 'FILL_NODE';
+  static STROKE_NODE = 'STROKE_NODE';
+  static COLOR_NODE = 'COLOR_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
