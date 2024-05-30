@@ -1,4 +1,4 @@
-let canvas = document.querySelector('canvas');
+let canvas;
 let input = document.querySelector('#base64');
 sketchEditor.ca.preserveDrawingBuffer = true;
 
@@ -51,7 +51,7 @@ fetch('./sketch.sketch')
       .then(json => {
         const dpi = 2;
         const $canvasC = document.querySelector('#canvasC');
-        const canvas = document.createElement('canvas');
+        canvas = document.createElement('canvas');
         canvas.width = 500 * dpi;
         canvas.height = 500 * dpi;
         $canvasC.appendChild(canvas);
