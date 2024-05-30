@@ -41,6 +41,10 @@ function toStyle() {
   ]);
 }
 
+window.onerror = function(e) {
+  input.value = e.toString();
+}
+
 fetch('./sketch.sketch')
   .then((res) => {
     return res.arrayBuffer();
