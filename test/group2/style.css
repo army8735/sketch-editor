@@ -192,12 +192,6 @@ body {
   width: 500px;
   height: 500px;
 }
-#base64 {
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  z-index: 100;
-}
 .side {
   position: relative;
   z-index: 11;
@@ -666,4 +660,29 @@ body {
   100% {
     visibility: hidden;
   }
+}
+
+#base64 {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+}
+#button1 {
+  position: fixed;
+  left: 200px;
+  bottom: 0;
+  z-index: 100;
+}
+#button2 {
+  position: fixed;
+  left: 250px;
+  bottom: 0;
+  z-index: 100;
+}
+#button3 {
+  position: fixed;
+  left: 300px;
+  bottom: 0;
+  z-index: 100;
 }
