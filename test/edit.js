@@ -37,8 +37,11 @@ function toStyle() {
       ];
     }));
   }
-  else if (nodes.length === 1) {
-    const node = nodes[0];
+  else {
+    let node = nodes[0];
+    if (!node) {
+      node = root.getCurPage().children[0];
+    }
     const style = node.style;
     const computedStyle = node.computedStyle;
     input.value = JSON.stringify([
@@ -73,8 +76,11 @@ function toRich() {
       ];
     }));
   }
-  else if (nodes.length === 1) {
-    const node = nodes[0];
+  else {
+    let node = nodes[0];
+    if (!node) {
+      node = root.getCurPage().children[0];
+    }
     input.value = JSON.stringify([
       count++,
       node.rich,
