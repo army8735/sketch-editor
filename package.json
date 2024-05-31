@@ -34,7 +34,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/uuid": "^9.0.1",
-    "chromedriver": "^124.0.3",
+    "chromedriver": "^125.0.2",
     "expect.js": "^0.3.1",
     "less": "^4.2.0",
     "mocha": "^10.4.0",
