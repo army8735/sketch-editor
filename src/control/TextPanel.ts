@@ -108,6 +108,10 @@ class TextPanel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
+        if (picker.isShow()) {
+          picker.hide();
+          return;
+        }
         const p = picker.show(el, callback, true);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
@@ -142,6 +146,39 @@ class TextPanel {
           picker.hide();
           callback();
         };
+      }
+    });
+
+    // 字体和字重都是select都会触发
+    panel.addEventListener('change', e => {
+      const el = e.target as HTMLElement;
+      if (el.tagName === 'SELECT') {
+        const value = (el as HTMLSelectElement).value;
+        console.log(value);
+        nodes = this.nodes.slice(0);
+        prevs = [];
+        nexts = [];
+        nodes.forEach(node => {
+          const prev: UpdateRich[] = [];
+          node.rich.forEach(item => {
+            prev.push({
+              location: item.location,
+              length: item.length,
+              fontFamily: item.fontFamily,
+            });
+          });
+          prevs.push(prev);
+          const next: UpdateRich[] = [];
+          const o = {
+            location: 0,
+            length: node._content.length,
+            fontFamily: value,
+          };
+          next.push(o);
+          nexts.push(next);
+          node.updateRichStyle(o);
+        });
+        callback();
       }
     });
 

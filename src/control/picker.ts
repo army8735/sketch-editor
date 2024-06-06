@@ -3,7 +3,7 @@ import { color2rgbaInt, color2rgbaStr } from '../style/css';
 
 let div: HTMLElement;
 const html = `
-<span style="position:absolute;left:90%;top:0;border:10px solid transparent;border-bottom-color:#CCC;transform:translate(-50%,-100%)">
+<span style="position:absolute;left:90%;top:0;border:10px solid transparent;border-bottom-color:#CCC;transform:translate(-50%,-100%);pointer-events:none">
   <b style="position:absolute;left:0;top:0;border:10px solid transparent;border-bottom-color:#FFF;transform:translate(-10px,-9px)"></b>
 </span>
 `;
@@ -66,5 +66,11 @@ export default {
     if (div) {
       div.style.display = 'none';
     }
+  },
+  isShow() {
+    if (div) {
+      return div.style.display === 'block';
+    }
+    return false;
   },
 };

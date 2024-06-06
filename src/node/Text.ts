@@ -2622,6 +2622,9 @@ class Text extends Node {
     let { location, length } = payload;
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
+      if (length < 1) {
+        break;
+      }
       const item = rich[i];
       // 修改的location在Rich的范围内命中
       if (location >= item.location && location < item.location + item.length) {
