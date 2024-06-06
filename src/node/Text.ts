@@ -2480,10 +2480,10 @@ class Text extends Node {
     if (style.hasOwnProperty('paragraphSpacing')) {
       style2.paragraphSpacing = style.paragraphSpacing;
     }
-    let hasChange = false;
+    let lv = RefreshLevel.NONE;
     if (rich.length) {
       rich.forEach((item) => {
-        hasChange = this.updateRich(item, style2) || hasChange;
+        lv |= this.updateRich(item, style2);
       });
     }
     this.mergeRich();
@@ -2492,8 +2492,8 @@ class Text extends Node {
     if (keys.length) {
       this.root?.addUpdate(this, keys, undefined, false, false, cb);
     }
-    else if (hasChange) {
-      this.refresh(RefreshLevel.REFLOW, cb);
+    else if (lv) {
+      this.refresh(lv, cb);
     }
     this.afterEdit(payload);
   }
@@ -2506,7 +2506,7 @@ class Text extends Node {
     }
     const payload = this.beforeEdit();
     const { isReversed, start, end } = this.getSortedCursor();
-    let hasChange = false;
+    let lv = RefreshLevel.NONE;
     // 找到所处的rich开始结束范围
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
@@ -2521,13 +2521,14 @@ class Text extends Node {
                 item.location === start &&
                 item.location + item.length === end
               ) {
-                hasChange = this.updateRich(item, style);
+                lv |= this.updateRich(item, style);
               }
               // 选区开头是start则更新，后面新生成一段
               else if (item.location === start) {
                 const n = Object.assign({}, item);
-                hasChange = this.updateRich(item, style);
-                if (hasChange) {
+                const t = this.updateRich(item, style);
+                if (t) {
+                  lv |= t;
                   const length = item.length;
                   item.length = end - start;
                   n.location = end;
@@ -2538,8 +2539,9 @@ class Text extends Node {
               // 选取结尾是end则更新，前面插入一段
               else if (item.location + item.length === end) {
                 const n = Object.assign({}, item);
-                hasChange = this.updateRich(n, style);
-                if (hasChange) {
+                const t = this.updateRich(n, style);
+                if (t) {
+                  lv |= t;
                   item.length = start - item.location;
                   n.location = start;
                   n.length = end - start;
@@ -2549,8 +2551,9 @@ class Text extends Node {
               // 选了中间一段，原有的部分作为开头，后面拆入2段新的
               else {
                 const n = Object.assign({}, item);
-                hasChange = this.updateRich(n, style);
-                if (hasChange) {
+                const t = this.updateRich(n, style);
+                if (t) {
+                  lv |= t;
                   const length = item.length;
                   item.length = start - item.location;
                   n.location = start;
@@ -2569,8 +2572,9 @@ class Text extends Node {
               const item3 = rich[j];
               const last = Object.assign({}, item3);
               // 倒序进行，先从后面更新
-              if (this.updateRich(item3, style)) {
-                hasChange = true;
+              const t = this.updateRich(item3, style);
+              if (t) {
+                lv |= t;
                 if (end < item3.location + item3.length) {
                   last.location = end;
                   last.length = item3.location + item3.length - end;
@@ -2579,10 +2583,11 @@ class Text extends Node {
                 }
               }
               for (let k = i + 1; k < j - 1; k++) {
-                hasChange = this.updateRich(rich[k], style) || hasChange;
+                lv |= this.updateRich(rich[k], style);
               }
-              if (this.updateRich(first, style)) {
-                hasChange = true;
+              const t2 = this.updateRich(first, style);
+              if (t2) {
+                lv |= t2;
                 if (start > item.location) {
                   first.location = start;
                   first.length = item.location + item.length - start;
@@ -2597,7 +2602,7 @@ class Text extends Node {
         break;
       }
     }
-    if (hasChange) {
+    if (lv) {
       // 合并相同的rich段，更新光标位置
       this.mergeRich();
       const parent = this.parent!;
@@ -2614,12 +2619,13 @@ class Text extends Node {
       this.refresh(RefreshLevel.REPAINT, cb);
     }
     this.afterEdit(payload);
-    return hasChange;
+    return lv;
   }
 
   // 传入location/length，修改范围内的Rich的样式，一般是TextPanel中改选中的如颜色
   updateRichStyle(payload: UpdateRich) {
     let { location, length } = payload;
+    let lv = RefreshLevel.NONE;
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
       if (length < 1) {
@@ -2653,7 +2659,7 @@ class Text extends Node {
           shouldBreak = true;
         }
         // 可能存在的prev/next操作后（也可能没有），此Rich本身更新
-        this.updateRich(item, payload);
+        lv |= this.updateRich(item, payload);
         if (shouldBreak) {
           break;
         }
@@ -2663,21 +2669,23 @@ class Text extends Node {
       }
     }
     this.mergeRich();
-    this.refresh(RefreshLevel.REFLOW);
+    if (lv) {
+      this.refresh(lv);
+    }
   }
 
   private updateRich(item: Rich, style: Partial<Rich>) {
-    let hasChange = false;
+    let lv = RefreshLevel.NONE;
     if (style.fontFamily !== undefined
       && style.fontFamily !== item.fontFamily
     ) {
       item.fontFamily = style.fontFamily;
-      hasChange = true;
+      lv |= RefreshLevel.REFLOW;
     }
     if (style.fontSize !== undefined
       && style.fontSize !== item.fontSize) {
       item.fontSize = style.fontSize;
-      hasChange = true;
+      lv |= RefreshLevel.REFLOW;
     }
     if (style.color !== undefined) {
       const c = color2rgbaInt(style.color);
@@ -2688,37 +2696,37 @@ class Text extends Node {
         || item.color[3] !== c[3]
       ) {
         item.color = c;
-        hasChange = true;
+        lv |= RefreshLevel.REPAINT;
       }
     }
     if (style.letterSpacing !== undefined
       && style.letterSpacing !== item.letterSpacing
     ) {
       item.letterSpacing = style.letterSpacing;
-      hasChange = true;
+      lv |= RefreshLevel.REFLOW;
     }
     if (style.lineHeight !== undefined
       && style.lineHeight !== item.lineHeight
     ) {
       item.lineHeight = style.lineHeight;
-      hasChange = true;
+      lv |= RefreshLevel.REFLOW;
     }
     if (style.paragraphSpacing !== undefined
       && style.paragraphSpacing !== item.paragraphSpacing
     ) {
       item.paragraphSpacing = style.paragraphSpacing;
-      hasChange = true;
+      lv |= RefreshLevel.REFLOW;
     }
     if (style.textAlign !== undefined && style.textAlign !== item.textAlign) {
       item.textAlign = style.textAlign;
-      hasChange = true;
+      lv |= RefreshLevel.REFLOW;
     }
     if (style.textDecoration !== undefined
       && style.textDecoration !== item.textDecoration) {
       item.textDecoration = style.textDecoration;
-      hasChange = true;
+      lv |= RefreshLevel.REPAINT;
     }
-    return hasChange;
+    return lv;
   }
 
   // 删除一段文字内容并修改移除对应的rich，一般是选区删除时引发的
@@ -2848,7 +2856,7 @@ class Text extends Node {
     if (!rich.length || rich.length < 2) {
       return false;
     }
-    let hasChange = false;
+    let hasMerge = false;
     for (let i = rich.length - 2; i >= 0; i--) {
       const a = rich[i];
       const b = rich[i + 1];
@@ -2864,10 +2872,10 @@ class Text extends Node {
       ])) {
         a.length += b.length;
         rich.splice(i + 1, 1);
-        hasChange = true;
+        hasMerge = true;
       }
     }
-    return hasChange;
+    return hasMerge;
   }
 
   // 如果end索引大于start，将其对换返回
