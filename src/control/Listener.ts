@@ -122,11 +122,11 @@ export default class Listener extends Event {
     document.addEventListener('keyup', this.onKeyUp.bind(this));
   }
 
-  // 更新dom的位置做原点坐标，拖动时计算用，很少发生，一般首次调用即可，当dom发生变更时主动调用
+  // 更新dom的位置做原点坐标，鼠标按下或touch按下时
   updateOrigin() {
     const o = this.dom.getBoundingClientRect();
-    this.originX = o.left + Math.max(window.scrollX, document.body.scrollLeft, document.documentElement.scrollLeft);
-    this.originY = o.top + Math.max(window.scrollY, document.body.scrollTop, document.documentElement.scrollTop);
+    this.originX = o.left;
+    this.originY = o.top;
   }
 
   active(nodes: Node[]) {
@@ -169,11 +169,10 @@ export default class Listener extends Event {
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
+    this.updateOrigin();
     // 操作开始清除
     this.originStyle.splice(0);
     this.modifyStyle.splice(0);
-    this.startX = e.pageX;
-    this.startY = e.pageY;
     this.dx = this.dy = 0;
     // 点到控制html上
     if (isControl) {
@@ -270,8 +269,8 @@ export default class Listener extends Event {
     else {
       const root = this.root;
       const dpi = root.dpi;
-      const x = (e.pageX - this.originX) * dpi;
-      const y = (e.pageY - this.originY) * dpi;
+      const x = (e.clientX - this.originX) * dpi;
+      const y = (e.clientY - this.originY) * dpi;
       let node = root.getNode(
         x,
         y,
@@ -298,8 +297,8 @@ export default class Listener extends Event {
               text.hideSelectArea();
               text.setCursorStartByAbsCoords(x, y);
               this.input.update(
-                e.pageX - this.originX,
-                e.pageY - this.originY
+                e.clientX - this.originX,
+                e.clientY - this.originY
               );
               this.input.showCursor();
               // 防止触发click事件失焦
@@ -384,8 +383,8 @@ export default class Listener extends Event {
       if (e.button === 0) {
         this.isMouseDown = true;
         this.isMouseMove = false;
-        this.startX = e.pageX;
-        this.startY = e.pageY;
+        this.startX = e.clientX;
+        this.startY = e.clientY;
         // 空格按下移动画布
         if (this.spaceKey) {
           const o = page.getComputedStyle();
@@ -402,18 +401,18 @@ export default class Listener extends Event {
     }
   }
 
-  onMove(e: MouseEvent | Touch) {
+  onMove(e: MouseEvent | Touch, isTouch: boolean) {
     const root = this.root;
     const page = root.getCurPage();
     if (!page) {
       return;
     }
     const dpi = root.dpi;
-    const dx = e.pageX - this.startX;
-    const dy = e.pageY - this.startY;
+    const dx = e.clientX - this.startX;
+    const dy = e.clientY - this.startY;
     const zoom = page.getZoom();
-    let dx2 = this.dx = (dx / zoom) * root.dpi;
-    let dy2 = this.dy = (dy / zoom) * root.dpi;
+    let dx2 = this.dx = (dx / zoom) * dpi;
+    let dy2 = this.dy = (dy / zoom) * dpi;
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
@@ -476,8 +475,8 @@ export default class Listener extends Event {
     // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
     else if (this.isMouseDown) {
       if (this.state === State.EDIT_TEXT) {
-        const x = (e.pageX - this.originX) * dpi;
-        const y = (e.pageY - this.originY) * dpi;
+        const x = (e.clientX - this.originX) * dpi;
+        const y = (e.clientY - this.originY) * dpi;
         const text = selected[0] as Text;
         text.setCursorEndByAbsCoords(x, y);
         this.input.hideCursor();
@@ -550,14 +549,20 @@ export default class Listener extends Event {
       }
       this.isMouseMove = true;
     }
-    // 普通的hover
-    else {
+    // 普通的hover，仅mouseEvent有
+    else if (!isTouch) {
       if (this.options.disabled?.hover) {
         return;
       }
+      // 因为用到offsetXY，避免是其它DOM触发的（如select上的html），防止不正确
+      const target = e.target as HTMLElement;
+      if (target.tagName.toUpperCase() !== 'CANVAS') {
+        return;
+      }
+      // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
       const node = root.getNode(
-        (e.pageX - this.originX) * dpi,
-        (e.pageY - this.originY) * dpi,
+        (e as MouseEvent).offsetX * dpi,
+        (e as MouseEvent).offsetY * dpi,
         this.metaKey,
         selected,
         false,
@@ -589,8 +594,8 @@ export default class Listener extends Event {
         this.isMouseMove = true;
         const page = root.getCurPage();
         if (page) {
-          const dx = e.pageX - this.startX;
-          const dy = e.pageY - this.startY;
+          const dx = e.clientX - this.startX;
+          const dy = e.clientY - this.startY;
           page.updateStyle({
             translateX: this.pageTx + dx,
             translateY: this.pageTy + dy,
@@ -604,9 +609,15 @@ export default class Listener extends Event {
         if (this.options.disabled?.hover) {
           return;
         }
+        // 因为用到offsetXY，避免是其它DOM触发的（如select上的html），防止不正确
+        const target = e.target as HTMLElement;
+        if (target.tagName.toUpperCase() !== 'CANVAS') {
+          return;
+        }
+        // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
         const node = root.getNode(
-          (e.pageX - this.originX) * dpi,
-          (e.pageY - this.originY) * dpi,
+          e.offsetX * dpi,
+          e.offsetY * dpi,
           this.metaKey,
           selected,
           false,
@@ -625,7 +636,7 @@ export default class Listener extends Event {
     }
     // 其它看情况点选
     else {
-      this.onMove(e);
+      this.onMove(e, false);
     }
   }
 
@@ -728,8 +739,8 @@ export default class Listener extends Event {
     const touch = e.touches[0];
     this.isMouseDown = true;
     this.isMouseMove = false;
-    this.startX = touch.pageX;
-    this.startY = touch.pageY;
+    this.startX = touch.clientX;
+    this.startY = touch.clientY;
     const target = e.target as HTMLElement;
     this.onDown(target, touch);
   }
@@ -738,7 +749,7 @@ export default class Listener extends Event {
     if (e.touches.length !== 1) {
       return;
     }
-    this.onMove(e.touches[0]);
+    this.onMove(e.touches[0], true);
   }
 
   onTouchEnd() {
@@ -756,8 +767,8 @@ export default class Listener extends Event {
     }
     const dpi = root.dpi;
     let node = root.getNode(
-      (e.pageX - this.originX) * dpi,
-      (e.pageY - this.originY) * dpi,
+      (e.clientX - this.originX) * dpi,
+      (e.clientY - this.originY) * dpi,
       this.metaKey,
       this.selected,
       true,
@@ -777,8 +788,8 @@ export default class Listener extends Event {
         }
         this.input.show(
           node,
-          e.pageX - this.originX,
-          e.pageY - this.originY,
+          e.clientX - this.originX,
+          e.clientY - this.originY,
         );
         node.hideSelectArea();
         this.state = State.EDIT_TEXT;
@@ -838,8 +849,8 @@ export default class Listener extends Event {
           sc = -0.01;
         }
       }
-      const x = (e.pageX - this.originX) * dpi / width;
-      const y = (e.pageY - this.originY) * dpi / height;
+      const x = (e.clientX - this.originX) * dpi / width;
+      const y = (e.clientY - this.originY) * dpi / height;
       let scale = page.getZoom(true);
       // 最后缩小时防止太快
       if (scale < 1) {
