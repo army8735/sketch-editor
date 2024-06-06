@@ -24,12 +24,13 @@ export type ListenerOptions = {
   disabled?: {
     select?: boolean;
     hover?: boolean;
+    remove?: boolean;
     move?: boolean; // 移动节点
-    resize?: boolean;
+    resize?: boolean; // 节点尺寸
     drag?: boolean; // 拖拽画布
-    scale?: boolean;
-    editText?: boolean;
-    input?: boolean;
+    scale?: boolean; // 缩放画布
+    editText?: boolean; // 进入编辑文字状态如双击
+    input?: boolean; // 输入
   };
 };
 
@@ -879,7 +880,7 @@ export default class Listener extends Event {
     }
     // back
     if (e.keyCode === 8) {
-      if (this.selected.length) {
+      if (this.selected.length && !this.options.disabled?.remove) {
         const list = this.selected.splice(0);
         list.forEach((item) => item.remove());
         this.emit(Listener.REMOVE_NODE, list);
@@ -889,7 +890,7 @@ export default class Listener extends Event {
     // space
     else if (e.keyCode === 32) {
       this.spaceKey = true;
-      if (!this.isMouseDown) {
+      if (!this.isMouseDown && !this.options.disabled?.drag) {
         this.dom.style.cursor = 'grab';
       }
     }
