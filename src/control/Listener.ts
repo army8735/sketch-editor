@@ -122,11 +122,11 @@ export default class Listener extends Event {
     document.addEventListener('keyup', this.onKeyUp.bind(this));
   }
 
-  // 更新dom的位置，拖动时计算用，很少发生，一般首次调用即可
+  // 更新dom的位置做原点坐标，拖动时计算用，很少发生，一般首次调用即可，当dom发生变更时主动调用
   updateOrigin() {
     const o = this.dom.getBoundingClientRect();
-    this.originX = o.left;
-    this.originY = o.top;
+    this.originX = o.left + Math.max(window.scrollX, document.body.scrollLeft, document.documentElement.scrollLeft);
+    this.originY = o.top + Math.max(window.scrollY, document.body.scrollTop, document.documentElement.scrollTop);
   }
 
   active(nodes: Node[]) {
