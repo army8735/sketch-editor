@@ -38,14 +38,14 @@ class Polyline extends Geom {
   }
 
   override buildPoints() {
-    if (this.coords.length) {
+    if (this.coords) {
       return;
     }
     this.textureOutline.forEach((item) => item?.release());
+    this.coords = [];
     const { width, height } = this;
     const points = this.points;
     if (!points.length) {
-      this.coords.splice(0);
       return;
     }
     let hasCorner = false;
@@ -262,6 +262,9 @@ class Polyline extends Geom {
     super.renderCanvas(scale);
     this.buildPoints();
     const coords = this.coords;
+    if (!coords || !coords.length) {
+      return;
+    }
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
