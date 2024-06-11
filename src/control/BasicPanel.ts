@@ -108,7 +108,7 @@ class BasicPanel {
         x.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
       }
@@ -159,7 +159,7 @@ class BasicPanel {
         y.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
       }
@@ -205,7 +205,7 @@ class BasicPanel {
         r.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new RotateCommand(nodes, ns));
+        listener.history.addCommand(new RotateCommand(nodes.slice(0), ns));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
       }
@@ -261,7 +261,7 @@ class BasicPanel {
         w.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
         this.show(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
@@ -318,7 +318,7 @@ class BasicPanel {
         h.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }

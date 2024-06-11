@@ -60,7 +60,7 @@ class OpacityPanel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
+        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
         number.value = range.value;
       }
@@ -127,7 +127,7 @@ class OpacityPanel {
         number.value = '';
       }
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
+        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
         range.value = number.value;
       }

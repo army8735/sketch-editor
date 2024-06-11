@@ -1,6 +1,6 @@
 import Command from './Command';
 import Text from '../node/Text';
-import { Rich, UpdateRich } from '../format';
+import { UpdateRich } from '../format';
 
 class UpdateRichCommand extends Command {
   nodes: Text[];

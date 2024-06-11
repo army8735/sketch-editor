@@ -2622,9 +2622,10 @@ class Text extends Node {
     return lv;
   }
 
-  // 传入location/length，修改范围内的Rich的样式，一般是TextPanel中改选中的如颜色
-  updateRichStyle(payload: UpdateRich) {
-    let { location, length } = payload;
+  // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
+  updateRichStyle(updateRich: UpdateRich) {
+    const payload = this.beforeEdit();
+    let { location, length } = updateRich;
     let lv = RefreshLevel.NONE;
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
@@ -2659,7 +2660,7 @@ class Text extends Node {
           shouldBreak = true;
         }
         // 可能存在的prev/next操作后（也可能没有），此Rich本身更新
-        lv |= this.updateRich(item, payload);
+        lv |= this.updateRich(item, updateRich);
         if (shouldBreak) {
           break;
         }
@@ -2672,6 +2673,7 @@ class Text extends Node {
     if (lv) {
       this.refresh(lv);
     }
+    this.afterEdit(payload);
   }
 
   private updateRich(item: Rich, style: Partial<Rich>) {

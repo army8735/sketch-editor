@@ -98,6 +98,7 @@ class TextPanel {
       // 只有变更才会有next
       if (nexts && nexts.length) {
         listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+        listener.select.updateSelect(nodes);
         listener.emit(Listener.COLOR_NODE, nodes.slice(0));
       }
       nodes = [];
@@ -150,7 +151,7 @@ class TextPanel {
     });
 
     // 字体和字重都是select都会触发
-    panel.addEventListener('change', e => {
+    panel.addEventListener('change', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'SELECT') {
         const value = (el as HTMLSelectElement).value;
@@ -179,6 +180,52 @@ class TextPanel {
         });
         callback();
       }
+    });
+
+    panel.addEventListener('input', (e) => {
+      const input = e.target as HTMLInputElement;
+      const parent = input.parentElement!;
+      let value = parseFloat(input.value);
+      let key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing' | undefined;
+      if (parent.classList.contains('fs')) {
+        key = 'fontSize';
+      }
+      else if (parent.classList.contains('ls')) {
+        key = 'letterSpacing';
+      }
+      else if (parent.classList.contains('lh')) {
+        key = 'lineHeight';
+      }
+      else if (parent.classList.contains('paragraphSpacing')) {
+        key = 'paragraphSpacing';
+      }
+      if (!key) {
+        return;
+      }
+      nodes = this.nodes.slice(0);
+      prevs = [];
+      nexts = [];
+      nodes.forEach(node => {
+        const prev: UpdateRich[] = [];
+        node.rich.forEach(item => {
+          prev.push({
+            location: item.location,
+            length: item.length,
+            [key]: item[key],
+          });
+        });
+        prevs.push(prev);
+        const next: UpdateRich[] = [];
+        const o = {
+          location: 0,
+          length: node._content.length,
+          [key]: value,
+        };
+        next.push(o);
+        nexts.push(next);
+        node.updateRichStyle(o);
+      });
+      callback();
     });
 
     listener.on(Listener.SELECT_NODE, () => {
