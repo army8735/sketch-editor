@@ -17,7 +17,7 @@ const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
  */
 function intersectFn(
   a: { x: number, y: number }[], b: { x: number, y: number }[],
-  eps: number, res: { x: number, y: number, t1: number, t2: number }[],
+  eps: number, eps2: number, res: { x: number, y: number, t1: number, t2: number }[],
 ) {
   const list = [{
     a,
@@ -37,11 +37,8 @@ function intersectFn(
       const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
       const l3 = (bbox2[2] - bbox2[0]) || Number.EPSILON;
       const l4 = (bbox2[3] - bbox2[1]) || Number.EPSILON;
-      const area1 = l1 * l2;
-      const area2 = l3 * l4;
       // 精度到一定程度认为找到了解
-      if (l1 <= eps && l2 <= eps && area1 <= eps &&
-        l3 <= eps && l4 <= eps && area2 <= eps) {
+      if (l1 <= eps && l2 <= eps && l3 <= eps && l4 <= eps) {
         let ta = (t1 + t2) * 0.5;
         let tb = (t3 + t4) * 0.5;
         // 特殊判断，可能在开头/末尾相交，此时t不取中值
@@ -84,8 +81,7 @@ function intersectFn(
       }
       // 双方继续2分
       else {
-        if ((l1 > eps || l2 > eps || area1 > eps) &&
-          (l3 > eps || l4 > eps || area2 > eps)) {
+        if ((l1 > eps || l2 > eps) && (l3 > eps || l4 > eps)) {
           const a1 = sliceBezier(a, 0, 0.5);
           const a2 = sliceBezier(a, 0.5, 1);
           const b1 = sliceBezier(b, 0, 0.5);
@@ -128,7 +124,7 @@ function intersectFn(
           // intersectFn(a2, b2, eps, t1 + (t2 - t1) * 0.5, t2, t3 + (t4 - t3) * 0.5, t4, res);
         }
         // 只有一方的2分
-        else if (l1 > eps || l2 > eps || area1 > eps) {
+        else if (l1 > eps || l2 > eps) {
           const a1 = sliceBezier(a, 0, 0.5);
           const a2 = sliceBezier(a, 0.5, 1);
           list.push({
@@ -151,7 +147,7 @@ function intersectFn(
           // intersectFn(a2, b, eps, t1 + (t2 - t1) * 0.5, t2, t3, t4, res);
         }
         // 另一方的2分
-        else if (l3 > eps || l4 > eps || area2 > eps) {
+        else if (l3 > eps || l4 > eps) {
           const b1 = sliceBezier(b, 0, 0.5);
           const b2 = sliceBezier(b, 0.5, 1);
           list.push({
@@ -182,12 +178,12 @@ function intersectFn(
     }
     return a.t1 - b.t1;
   });
-  // 可能因为精度出现一个交点连续多个解的情况，也可能出现一段曲线重合的情况
+  // 可能因为精度出现一个交点连续多个解的情况，也可能出现一段曲线重合的情况，寻找精度内连续的点，只取首尾2端
   for (let i = res.length - 1; i > 0; i--) {
     const curr = res[i];
     const prev = res[i - 1];
     // 前一个点十分接近当前点，尝试循环看有多少个连续的点很接近
-    if (Math.abs(curr.x - prev.x) <= eps && Math.abs(curr.y - prev.y) <= eps) {
+    if (Math.abs(curr.x - prev.x) <= eps2 && Math.abs(curr.y - prev.y) <= eps2) {
       if (i === 1) {
         if (curr.t1 === 0 || curr.t1 === 1 || curr.t2 === 0 || curr.t2 === 1) {
           res.shift();
@@ -200,13 +196,13 @@ function intersectFn(
         for (let j = i - 1; j > 0; j--) {
           const curr2 = res[j];
           const prev2 = res[j - 1];
-          const tooFar = Math.abs(curr2.x - prev2.x) > eps && Math.abs(curr2.y - prev2.y) > eps;
+          const tooFar = Math.abs(curr2.x - prev2.x) > eps2 && Math.abs(curr2.y - prev2.y) > eps2;
           // 不连续则中断，开始分析；一个交点则首尾点十分靠近，一段曲线则首尾点隔开有距离
           if (tooFar || j === 1) {
-            const index = tooFar ? j : j + 1;
+            const index = tooFar ? j : j - 1;
             const pt = res[index];
-            // 根据几何特性可知相邻的bbox误差最大为eps * 2，误差内认为是一个点
-            if (Math.abs(curr.x - pt.x) <= eps * 2 && Math.abs(curr.y - pt.y) <= eps * 2) {
+            // 根据几何特性可知相邻的bbox误差最大为eps2，误差内认为是一个点
+            if (Math.abs(curr.x - pt.x) <= eps2 && Math.abs(curr.y - pt.y) <= eps2) {
               // 有t=0/1优选首尾，否则取中值
               if (curr.t1 === 0 || curr.t1 === 1 || curr.t2 === 0 || curr.t2 === 1) {
                 res.splice(index, i - index);
@@ -221,7 +217,7 @@ function intersectFn(
             }
             // 否则认为是一段曲线重合，取首尾2点
             else {
-              res.splice(index, i - index - 1);
+              res.splice(index + 1, i - index - 1);
             }
             i = index;
             break;
@@ -230,14 +226,24 @@ function intersectFn(
       }
     }
   }
+  // 首尾2点可能很近
+  // if (res.length === 2) {
+  //   if (Math.abs(res[0].x - res[1].x) <= eps2 && Math.abs(res[0].y - res[1].y) <= eps2) {
+  //     if (res[1].t1 === 1 && res[1].t2 === 1) {
+  //       res.shift();
+  //     }
+  //     else {
+  //       res.pop();
+  //     }
+  //   }
+  // }
   return res;
 }
 
 export function intersectBezier2Bezier2(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number,
-  eps = 1e-4,
-) {
+  eps = 0.1, eps2 = 0.5) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -249,7 +255,7 @@ export function intersectBezier2Bezier2(
       { x: bx2, y: by2 },
       { x: bx3, y: by3 },
     ],
-    eps, res,
+    eps, eps2, res,
   );
   return res;
 }
@@ -257,7 +263,7 @@ export function intersectBezier2Bezier2(
 export function intersectBezier3Bezier3(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
-  eps = 1e-4) {
+  eps = 0.1, eps2 = 0.5) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -271,7 +277,7 @@ export function intersectBezier3Bezier3(
       { x: bx3, y: by3 },
       { x: bx4, y: by4 },
     ],
-    eps, res,
+    eps, eps2, res,
   );
   return res;
 }
@@ -279,7 +285,7 @@ export function intersectBezier3Bezier3(
 export function intersectBezier2Bezier3(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
-  eps = 1e-4) {
+  eps = 0.1, eps2 = 0.5) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -292,7 +298,7 @@ export function intersectBezier2Bezier3(
       { x: bx3, y: by3 },
       { x: bx4, y: by4 },
     ],
-    eps, res,
+    eps, eps2, res,
   );
   return res;
 }
@@ -327,7 +333,7 @@ export function intersectLineLine(
 export function intersectBezier2Line(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number,
-  eps = 1e-4) {
+  eps = 0.1, eps2 = 0.5) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -338,7 +344,7 @@ export function intersectBezier2Line(
       { x: bx1, y: by1 },
       { x: bx2, y: by2 },
     ],
-    eps, res,
+    eps, eps2, res,
   );
   return res;
 }
@@ -346,7 +352,7 @@ export function intersectBezier2Line(
 export function intersectBezier3Line(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
   bx1: number, by1: number, bx2: number, by2: number,
-  eps = 1e-4) {
+  eps = 0.1, eps2 = 0.5) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -358,7 +364,7 @@ export function intersectBezier3Line(
       { x: bx1, y: by1 },
       { x: bx2, y: by2 },
     ],
-    eps, res,
+    eps, eps2, res,
   );
   return res;
 }

@@ -1,7 +1,8 @@
 import isec from '../isec';
 import Point from './Point';
 
-const EPS = 5e-1;
+const EPS = 0.01;
+const EPS2 = 1;
 
 export function getIntersectionLineLine(
   ax1: number,
@@ -59,6 +60,7 @@ export function getIntersectionBezier2Line(
     bx2,
     by2,
     EPS,
+    EPS2,
   );
   if (res.length) {
     return filterIsec(res);
@@ -93,6 +95,7 @@ export function getIntersectionBezier2Bezier2(
     bx3,
     by3,
     EPS,
+    EPS2,
   );
   if (res.length) {
     return filterIsec(res);
@@ -131,6 +134,7 @@ export function getIntersectionBezier2Bezier3(
     bx4,
     by4,
     EPS,
+    EPS2,
   );
   if (res.length) {
     return filterIsec(res);
@@ -165,6 +169,7 @@ export function getIntersectionBezier3Line(
     bx2,
     by2,
     EPS,
+    EPS2,
   );
   if (res.length) {
     return filterIsec(res);
@@ -207,6 +212,7 @@ export function getIntersectionBezier3Bezier3(
     bx4,
     by4,
     EPS,
+    EPS2,
   );
   if (res.length) {
     return filterIsec(res);
