@@ -154,7 +154,6 @@ class TextPanel {
       const el = e.target as HTMLElement;
       if (el.tagName === 'SELECT') {
         const value = (el as HTMLSelectElement).value;
-        console.log(value);
         nodes = this.nodes.slice(0);
         prevs = [];
         nexts = [];
