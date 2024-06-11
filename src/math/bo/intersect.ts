@@ -1,7 +1,7 @@
 import isec from '../isec';
 import Point from './Point';
 
-const EPS = 0.01;
+const EPS = 0.001;
 const EPS2 = 1;
 
 export function getIntersectionLineLine(

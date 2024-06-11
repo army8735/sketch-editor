@@ -226,17 +226,6 @@ function intersectFn(
       }
     }
   }
-  // 首尾2点可能很近
-  // if (res.length === 2) {
-  //   if (Math.abs(res[0].x - res[1].x) <= eps2 && Math.abs(res[0].y - res[1].y) <= eps2) {
-  //     if (res[1].t1 === 1 && res[1].t2 === 1) {
-  //       res.shift();
-  //     }
-  //     else {
-  //       res.pop();
-  //     }
-  //   }
-  // }
   return res;
 }
 

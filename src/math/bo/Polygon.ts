@@ -857,7 +857,9 @@ function findIntersection(
                   }
                 }
                 if (inters.length) {
-                  // console.log('inters', i, inters.length > 1 ? inters : inters[0], '\n', seg.toString(), '\n', item.toString());
+                  // console.log('inters', i, inters.map(item => {
+                  //   return item.point.toString() + ' ' + item.toSource + ',' + item.toClip;
+                  // }), '\n', seg.toString(), '\n', item.toString());
                   const pa = sortIntersection(inters!, !isSourceReverted);
                   // console.log(pa.length === 1 ? pa[0] : pa);
                   const pb = sortIntersection(inters!, isSourceReverted);
