@@ -94,19 +94,22 @@ type Loader = {
 
 class ShapeGroup extends Group {
   props: ShapeGroupProps;
-  coords: number[][][];
+  coords?: number[][][]; // undefined初始化，结果可能是空集合则空数组
   loaders: Loader[];
 
   constructor(props: ShapeGroupProps, children: Node[]) {
     super(props, children);
     this.props = props;
-    this.coords = [];
+    // this.coords = [];
     this.loaders = [];
     this.isShapeGroup = true;
   }
 
   override didMountBubble() {
     this.buildPoints();
+    if (!this.coords?.length) {
+      return;
+    }
     const rect = this._rect || this.rect;
     const { width, height } = this;
     const EPS = Group.EPS;
@@ -127,11 +130,11 @@ class ShapeGroup extends Group {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    this.coords.splice(0);
+    this.coords = undefined;
   }
 
   override clearPoints() {
-    this.coords.splice(0);
+    this.coords = undefined;
     this._rect = undefined;
     this._bbox = undefined;
     this.clearCache(true);
@@ -147,13 +150,14 @@ class ShapeGroup extends Group {
 
   override calContent(): boolean {
     this.buildPoints();
-    return (this.hasContent = this.coords.length > 0);
+    return (this.hasContent = !!this.coords && this.coords.length > 0);
   }
 
   buildPoints() {
-    if (this.coords.length) {
+    if (this.coords) {
       return;
     }
+    this.coords = [];
     this.textureOutline.forEach((item) => item?.release());
     const { children } = this;
     let res: number[][][] = [], first = true;
@@ -236,7 +240,7 @@ class ShapeGroup extends Group {
     res.forEach(item => {
       if (item.length > 1) {
         const t = scaleDown(item);
-        this.coords.push(t);
+        this.coords!.push(t);
       }
     });
   }
@@ -245,6 +249,9 @@ class ShapeGroup extends Group {
     super.renderCanvas(scale);
     this.buildPoints();
     const coords = this.coords;
+    if (!coords || !coords.length) {
+      return;
+    }
     const bbox = this._bbox2 || this.bbox2;
     const x = bbox[0],
       y = bbox[1];
