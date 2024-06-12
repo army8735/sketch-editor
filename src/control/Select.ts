@@ -1,7 +1,8 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { identity, multiply, multiplyScale, multiplyTranslate } from '../math/matrix';
+import { calRectPoints, identity, multiply, multiplyScale, multiplyTranslate } from '../math/matrix';
 import Polyline from '../node/geom/Polyline';
+import { r2d } from '../math/geom';
 
 const html = `
   <span class="l" style="position:absolute;left:-4px;top:0;width:8px;height:100%;transform:scaleX(0.5);cursor:ew-resize;">
@@ -97,7 +98,7 @@ export default class Select {
     this.hover.style.display = 'none';
   }
 
-  updateHover(node: Node) {
+  calRect(node: Node) {
     const root = this.root;
     const dpi = root.dpi;
     const hover = this.hover;
@@ -112,14 +113,85 @@ export default class Select {
     if (isLine) {
       rect = node.rectLine;
     }
-    hover.style.width = (rect[2] - rect[0]) + 'px';
-    hover.style.height = (rect[3] - rect[1]) + 'px';
-    if (rect[0] || rect[1]) {
-      multiplyTranslate(matrix, rect[0], rect[1]);
+    const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
+    const width = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    const height = Math.sqrt(Math.pow(x2 - x3, 2) + Math.pow(y2 - y3, 2));
+    const res = {
+      left: x1,
+      top: y1,
+      width,
+      height,
+      transform: '',
+    };
+    // 水平的特例，分为等效4类
+    if (Math.abs(y2 - y1) < 1e-10) {
+      if (x2 > x1) {
+        if (y3 > y2) {
+          res.transform = 'none';
+        }
+        else {
+          res.transform = 'scaleY(-1)';
+        }
+      }
+      else {
+        if (y3 > y2) {
+          res.transform = 'rotateZ(180deg) scaleY(-1)';
+        }
+        else {
+          res.transform = 'rotateZ(180deg)';
+        }
+      }
+      return res;
     }
-    hover.style.transform = `matrix3d(${matrix.join(',')}`;
-    const scale = 1 / matrix[0];
-    hover.style.borderWidth = scale * 2 + 'px';
+    // 垂直的特例，分为等效4类
+    else if (Math.abs(x2 - x1) < 1e-10) {
+      if (y2 > y1) {
+        if (x3 > x2) {
+          res.transform = 'rotateZ(90deg) scaleY(-1)';
+        }
+        else {
+          res.transform = 'rotateZ(90deg)';
+        }
+      }
+      else {
+        if (x3 > x2) {
+          res.transform = 'rotateZ(270deg)';
+        }
+        else {
+          res.transform = 'rotateZ(270deg) scaleY(-1)';
+        }
+      }
+      return res;
+    }
+    // 普通旋转最终分为等效的4类
+    if (x1 < x2) {
+      const deg = r2d(Math.atan((y2 - y1) / (x2 - x1)));
+      if (y1 < y4) {
+        res.transform = `rotateZ(${deg}deg)`;
+      }
+      else {
+        res.transform = `rotateZ(${deg}deg) scaleY(-1)`;
+      }
+    }
+    else {
+      const deg = r2d(Math.atan((y2 - y1) / (x1 - x2)));
+      if (y1 > y4) {
+        res.transform = `rotateZ(${180 - deg}deg)`;
+      }
+      else {
+        res.transform = `rotateZ(${180 - deg}deg) scaleY(-1)`;
+      }
+    }
+    return res;
+  }
+
+  updateHover(node: Node) {
+    const res = this.calRect(node);
+    this.hover.style.left = res.left + 'px';
+    this.hover.style.top = res.top + 'px';
+    this.hover.style.width = res.width + 'px';
+    this.hover.style.height = res.height + 'px';
+    this.hover.style.transform = res.transform;
   }
 
   isHoverDom(dom: HTMLElement) {
@@ -132,8 +204,6 @@ export default class Select {
       const select = document.createElement('div');
       select.className = 'select';
       select.style.position = 'absolute';
-      select.style.left = '0px';
-      select.style.top = '0px';
       select.style.transformOrigin = '0 0';
       select.innerHTML = html;
       this.dom.appendChild(select);
@@ -143,36 +213,14 @@ export default class Select {
   }
 
   updateSelect(selected: Node[]) {
-    const dpi = this.root.dpi;
     selected.forEach((item, i) => {
+      const res = this.calRect(item);
       const select = this.select[i];
-      let rect = item._rect || item.rect;
-      let matrix = item.matrixWorld;
-      if (dpi !== 1) {
-        const t = identity();
-        multiplyScale(t, 1 / dpi);
-        matrix = multiply(t, matrix);
-      }
-      const isLine = item instanceof Polyline && item.isLine();
-      if (isLine) {
-        rect = item.rectLine;
-      }
-      select.style.width = (rect[2] - rect[0]) + 'px';
-      select.style.height = (rect[3] - rect[1]) + 'px';
-      if (rect[0] || rect[1]) {
-        multiplyTranslate(matrix, rect[0], rect[1]);
-      }
-      select.style.transform = `matrix3d(${matrix.join(',')}`;
-      const scale = 1 / matrix[0];
-      select.querySelectorAll('.l b, .r b').forEach((item) => {
-        (item as HTMLElement).style.transform = 'scaleX(' + scale + ')';
-      });
-      select.querySelectorAll('.t b, .b b').forEach((item) => {
-        (item as HTMLElement).style.transform = 'scaleY(' + scale + ')';
-      });
-      select.querySelectorAll('.tr b, .tl b, .br b, .bl b').forEach((item) => {
-        (item as HTMLElement).style.transform = 'scale(' + scale + ')';
-      });
+      select.style.left = res.left + 'px';
+      select.style.top = res.top + 'px';
+      select.style.width = res.width + 'px';
+      select.style.height = res.height + 'px';
+      select.style.transform = res.transform;
     });
   }
 
