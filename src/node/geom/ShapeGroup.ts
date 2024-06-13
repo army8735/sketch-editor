@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { getDefaultStyle, JNode, JStyle, Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bo from '../../math/bo';
-import { isE } from '../../math/matrix';
+import { calPoint, isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon, svgPolygon } from '../../refresh/paint';
 import { color2rgbaStr } from '../../style/css';
@@ -727,42 +727,102 @@ class ShapeGroup extends Group {
     // });
   }
 
-  toSvg(scale: number) {
+  toSvg(max: number) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
+    const coords = this.coords || [];
+    const matrix = new Float64Array(this.matrixWorld);
+    const absCoords: number[][][] = [];
+    let minX = 0, minY = 0, maxX = 0, maxY = 0;
+    let isFirst = true;
+    coords.forEach((list, i) => {
+      const temp: number[][] = [];
+      list.forEach((item, j) => {
+        if (item.length === 6) {
+          const t1 = calPoint({ x: item[0], y: item[1] }, matrix);
+          const t2 = calPoint({ x: item[2], y: item[3] }, matrix);
+          const t3 = calPoint({ x: item[4], y: item[5] }, matrix);
+          temp.push([t1.x, t1.y, t2.x, t2.y, t3.x, t3.y]);
+          if (isFirst) {
+            isFirst = false;
+            minX = Math.min(t1.x, t2.x, t3.x);
+            minY = Math.min(t1.y, t2.y, t3.y);
+            maxX = Math.max(t1.x, t2.x, t3.x);
+            maxY = Math.max(t1.y, t2.y, t3.y);
+          }
+          else {
+            minX = Math.min(minX, t1.x, t2.x, t3.x);
+            minY = Math.min(minY, t1.y, t2.y, t3.y);
+            maxX = Math.max(maxX, t1.x, t2.x, t3.x);
+            maxY = Math.max(maxY, t1.y, t2.y, t3.y);
+          }
+        }
+        else if (item.length === 4) {
+          const t1 = calPoint({ x: item[0], y: item[1] }, matrix);
+          const t2 = calPoint({ x: item[2], y: item[3] }, matrix);
+          temp.push([t1.x, t1.y, t2.x, t2.y]);
+          if (isFirst) {
+            isFirst = false;
+            minX = Math.min(t1.x, t2.x);
+            minY = Math.min(t1.y, t2.y);
+            maxX = Math.max(t1.x, t2.x);
+            maxY = Math.max(t1.y, t2.y);
+          }
+          else {
+            minX = Math.min(minX, t1.x, t2.x);
+            minY = Math.min(minY, t1.y, t2.y);
+            maxX = Math.max(maxX, t1.x, t2.x);
+            maxY = Math.max(maxY, t1.y, t2.y);
+          }
+        }
+        else if (item.length === 2) {
+          const t = calPoint({ x: item[0], y: item[1] }, matrix);
+          temp.push([t.x, t.y]);
+          if (isFirst) {
+            isFirst = false;
+            minX = t.x;
+            minY = t.y;
+            maxX = t.x;
+            maxY = t.y;
+          }
+          else {
+            minX = Math.min(minX, t.x);
+            minY = Math.min(minY, t.y);
+            maxX = Math.max(maxX, t.x);
+            maxY = Math.max(maxY, t.y);
+          }
+        }
+      });
+      if (temp.length) {
+        absCoords.push(temp);
+      }
+    });
+    const width = maxX - minX;
+    const height = maxY - minY;
+    let scale = 1;
+    if (width >= height) {
+      scale = max / width;
+    }
+    else {
+      scale = max / height;
+    }
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
-    const { scaleX, scaleY } = computedStyle;
-    let transform = '';
-    if (scaleX < 0 && scaleY < 0) {
-      transform += 'scale(-1,-1)';
-    }
-    else if (scaleX < 0) {
-      transform += 'scale(-1,1)';
-    }
-    else if (scaleY < 0) {
-      transform += 'scale(1,-1)';
-    }
-    let s = `<svg width="${this.width}" height="${this.height}"`;
-    if (transform) {
-      s += ' transform="' + transform + '"';
-    }
-    s += '>';
-    const coords = this.coords || [];
-    const [dx, dy] = this._rect || this.rect;
-    if (coords.length) {
+    let s = `<svg width="${width * scale}" height="${height * scale}"><path`;
+    if (absCoords.length) {
       const props = [
         ['d', ''],
         ['fill', '#D8D8D8'],
         ['fill-rule', fillRule],
         ['stroke', '#979797'],
-        ['stroke-width', (1 / scale).toString()],
+        ['stroke-width', 1],
       ];
-      coords.forEach(item => {
-        const d = svgPolygon(item, -dx, -dy) + 'Z';
+      absCoords.forEach(list => {
+        const d = svgPolygon(list.map(item => {
+          return item.map(d => d * scale);
+        }), -minX * scale, -minY * scale) + 'Z';
         props[0][1] += d;
       });
-      s += '<path';
       props.forEach((item) => {
         s += ' ' + item[0] + '="' + item[1] + '"';
       });
