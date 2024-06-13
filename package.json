@@ -8,7 +8,7 @@
     }
   ],
   "scripts": {
-    "build": "rimraf ./types && rimraf ./dist && tsc && rollup -c rollup.config.mjs",
+    "build": "rimraf ./types && rimraf ./dist  && tsc && rollup -c rollup.config.mjs",
     "dev": "rollup -c rollup.dev.config.mjs --watch",
     "test": "mocha test/tests.js -R spec",
     "test1": "nightwatch --group group1 --filter test.js",

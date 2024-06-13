@@ -1,5 +1,6 @@
 let canvas;
 let input = document.querySelector('#base64');
+let sketchEditor = sketchEditor.default
 sketchEditor.ca.preserveDrawingBuffer = true;
 
 let count = 0;
