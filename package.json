@@ -19,13 +19,13 @@
     "url": "git://github.com/army8735/editor.git"
   },
   "peerDependencies": {
-    "pdfjs-dist": "^3.11.174"
+    "pdfjs-dist": "^3.11.174",
+    "vanilla-picker": "^2.12.3"
   },
   "dependencies": {
     "@sketch-hq/sketch-file-format-ts": "^6.5.0",
     "jszip": "^3.10.1",
-    "uuid": "^9.0.0",
-    "vanilla-picker": "^2.12.3"
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",

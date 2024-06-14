@@ -87,21 +87,24 @@ export function renderTemplate(t: string, vars: Record<string, any>) {
 }
 
 export async function loadLocalFonts() {
-  try {
-    const status = await navigator.permissions.query({
+  if (typeof navigator !== 'undefined') {
+    try {
+      const status = await navigator.permissions.query({
+        // @ts-ignore
+        name: 'local-fonts',
+      });
+      if (status.state === 'denied') {
+        inject.error('No Permission.');
+        return [];
+      }
       // @ts-ignore
-      name: 'local-fonts',
-    });
-    if(status.state === 'denied') {
-      inject.error('No Permission.');
+      return await window.queryLocalFonts();
+    } catch (err) {
+      inject.error(err);
       return [];
     }
-    // @ts-ignore
-    return await window.queryLocalFonts();
-  } catch(err) {
-    inject.error(err);
-    return [];
   }
+  return [];
 }
 
 export default {

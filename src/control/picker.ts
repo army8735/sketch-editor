@@ -1,4 +1,3 @@
-import Picker from 'vanilla-picker';
 import { color2rgbaInt, color2rgbaStr } from '../style/css';
 
 let div: HTMLElement;
@@ -8,7 +7,7 @@ const html = `
 </span>
 `;
 
-let picker: Picker;
+let picker: any;
 
 let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
 
@@ -49,7 +48,8 @@ export default {
     }
     div.style.display = 'block';
     if (!picker) {
-      picker = new Picker({
+      // @ts-ignore
+      picker = new window.Picker({
         parent: div,
         popup: false,
       });

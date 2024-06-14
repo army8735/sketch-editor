@@ -43,7 +43,10 @@ const o: any = {
     return this.data.hasOwnProperty(fontFamily);
   },
   async registerLocalFonts(fonts: any) {
-    const cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
+    let cacheInfo: any = {};
+    if (typeof localStorage !== 'undefined') {
+      cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
+    }
     let data: any = cacheInfo.data || {};
     if (!cacheInfo.version || cacheInfo.version < VERSION) {
       data = {};
@@ -214,29 +217,9 @@ const o: any = {
         };
       }
     }
-    localStorage.setItem(KEY_INFO, JSON.stringify({ version: VERSION, data }));
-  },
-  async loadLocalFonts(cb?: (res: boolean) => void) {
-    try {
-      const status = await navigator.permissions.query({
-        // @ts-ignore
-        name: 'local-fonts',
-      });
-      if (status.state === 'denied') {
-        console.error('No Permission.');
-        cb && cb(false);
-        return false;
-      }
-      // @ts-ignore
-      const fonts = await window.queryLocalFonts();
-      o.registerLocalFonts(fonts);
-      cb && cb(true);
-      return true;
-    } catch (err: any) {
-      console.error(err.message);
-      cb && cb(false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(KEY_INFO, JSON.stringify({ version: VERSION, data }));
     }
-    return false;
   },
 };
 

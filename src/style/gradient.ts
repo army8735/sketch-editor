@@ -397,7 +397,7 @@ export function getConic(
     angle = Math.atan(y / x);
   }
   // safari的bug，不是水平右位0而是垂直上，角度需增加90
-  if (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
+  if (typeof navigator !== undefined &&/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
     angle += Math.PI * 0.5;
   }
   const total = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
