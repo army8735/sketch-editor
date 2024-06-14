@@ -528,7 +528,7 @@ class Node extends Event {
     ) {
       optimize = false;
     }
-    // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
+    // 优化计算scale不能为0，无法计算倍数差
     if (optimize) {
       if (lv & RefreshLevel.TRANSLATE_X) {
         const v = calSize(style.translateX, this.width);
@@ -544,36 +544,6 @@ class Node extends Event {
         transform[13] += diff;
         matrix[13] += diff;
       }
-      if (lv & RefreshLevel.SCALE) {
-        if (lv & RefreshLevel.SCALE_X) {
-          const v = style.scaleX.v;
-          const x = v / computedStyle.scaleX;
-          computedStyle.scaleX = v;
-          transform[0] *= x;
-          transform[1] *= x;
-          transform[2] *= x;
-          matrix[0] *= x;
-          matrix[1] *= x;
-          matrix[2] *= x;
-        }
-        if (lv & RefreshLevel.SCALE_Y) {
-          const v = style.scaleY.v;
-          const y = v / computedStyle.scaleY;
-          computedStyle.scaleY = v;
-          transform[4] *= y;
-          transform[5] *= y;
-          transform[6] *= y;
-          matrix[4] *= y;
-          matrix[5] *= y;
-          matrix[6] *= y;
-        }
-        const t = computedStyle.transformOrigin,
-          ox = t[0],
-          oy = t[1];
-        matrix[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
-        matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
-        matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
-      }
       if (lv & RefreshLevel.ROTATE_Z) {
         const v = style.rotateZ.v;
         computedStyle.rotateZ = v;
@@ -582,15 +552,41 @@ class Node extends Event {
           cos = Math.cos(r);
         const x = computedStyle.scaleX,
           y = computedStyle.scaleY;
-        const cx = (matrix[0] = cos * x);
-        const sx = (matrix[1] = sin * x);
-        const sy = (matrix[4] = -sin * y);
-        const cy = (matrix[5] = cos * y);
+        matrix[0] = transform[0] = cos * x;
+        matrix[1] = transform[1] = sin * y;
+        matrix[4] = transform[4] = -sin * x;
+        matrix[5] = transform[5] = cos * y;
         const t = computedStyle.transformOrigin,
           ox = t[0],
           oy = t[1];
-        matrix[12] = transform[12] + ox - cx * ox - oy * sy;
-        matrix[13] = transform[13] + oy - sx * ox - oy * cy;
+        matrix[12] = transform[12] + ox - transform[0] * ox - oy * transform[4];
+        matrix[13] = transform[13] + oy - transform[1] * ox - oy * transform[5];
+      }
+      if (lv & RefreshLevel.SCALE) {
+        if (lv & RefreshLevel.SCALE_X) {
+          const v = style.scaleX.v;
+          const x = v / computedStyle.scaleX;
+          computedStyle.scaleX = v;
+          transform[0] *= x;
+          transform[4] *= x;
+          matrix[0] *= x;
+          matrix[4] *= x;
+        }
+        if (lv & RefreshLevel.SCALE_Y) {
+          const v = style.scaleY.v;
+          const y = v / computedStyle.scaleY;
+          computedStyle.scaleY = v;
+          transform[1] *= y;
+          transform[5] *= y;
+          matrix[1] *= y;
+          matrix[5] *= y;
+        }
+        const t = computedStyle.transformOrigin,
+          ox = t[0],
+          oy = t[1];
+        matrix[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
+        matrix[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
+        matrix[14] = transform[14] - transform[2] * ox - transform[6] * oy;
       }
     }
     // 普通布局或者第一次计算
