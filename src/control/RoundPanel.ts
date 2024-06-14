@@ -30,6 +30,10 @@ class RoundPanel {
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+      this.show(nodes);
+    });
   }
 
   show(nodes: Node[]) {

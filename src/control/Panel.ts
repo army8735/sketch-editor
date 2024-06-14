@@ -41,19 +41,6 @@ class Panel {
 
     this.textPanel = new TextPanel(root, dom, listener);
     this.textPanel.show(listener.selected);
-
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      this.select(nodes);
-    });
-  }
-
-  select(nodes: Node[]) {
-    this.basicPanel.show(nodes);
-    this.opacityPanel.show(nodes);
-    this.roundPanel.show(nodes);
-    this.fillPanel.show(nodes);
-    this.strokePanel.show(nodes);
-    this.textPanel.show(nodes);
   }
 }
 

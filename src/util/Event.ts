@@ -7,7 +7,7 @@ class Event {
     this.__eHash = {};
   }
 
-  on(id: string, handle: (...p: any[]) => void) {
+  on(id: string | string[], handle: (...p: any[]) => void) {
     if (!isFunction(handle)) {
       return;
     }

@@ -134,6 +134,9 @@ class OpacityPanel {
       this.silence = false;
     });
 
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+      this.show(nodes);
+    });
     listener.on(Listener.OPACITY_NODE, (nodes: Node[]) => {
       if (this.silence) {
         return;

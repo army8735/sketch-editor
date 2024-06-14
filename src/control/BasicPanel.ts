@@ -396,19 +396,10 @@ class BasicPanel {
       }
     });
 
-    listener.on(Listener.MOVE_NODE, (nodes: Node[]) => {
-      if (this.silence) {
-        return;
-      }
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
       this.show(nodes);
     });
-    listener.on(Listener.RESIZE_NODE, (nodes: Node[]) => {
-      if (this.silence) {
-        return;
-      }
-      this.show(nodes);
-    });
-    listener.on(Listener.ROTATE_NODE, (nodes: Node[]) => {
+    listener.on([Listener.MOVE_NODE, Listener.RESIZE_NODE, Listener.ROTATE_NODE], (nodes: Node[]) => {
       if (this.silence) {
         return;
       }

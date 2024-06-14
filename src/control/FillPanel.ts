@@ -132,9 +132,14 @@ class FillPanel {
       }
     });
 
-    listener.on(Listener.SELECT_NODE, () => {
-      picker.hide();
-      callback();
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+      if (picker.isShow()) {
+        picker.hide();
+        callback();
+      }
+      else {
+        this.show(nodes);
+      }
     });
   }
 
