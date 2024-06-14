@@ -7,6 +7,7 @@ import RotateCommand from '../history/RotateCommand';
 import { getBasicInfo, resizeBR } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
+import UpdateStyleCommand from '../history/UpdateStyleCommand';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -33,6 +34,8 @@ const html = `
       <input type="number" class="num" step="1" disabled/>
       <span>H</span>
     </label>
+    <span class="fh"></span>
+    <span class="fv"></span>
   </div>
 `;
 
@@ -63,6 +66,8 @@ class BasicPanel {
     const r = panel.querySelector('.r input') as HTMLInputElement;
     const w = panel.querySelector('.w input') as HTMLInputElement;
     const h = panel.querySelector('.h input') as HTMLInputElement;
+    const fh = panel.querySelector('.fh') as HTMLElement;
+    const fv = panel.querySelector('.fv') as HTMLElement;
 
     x.addEventListener('input', (e) => {
       this.silence = true;
@@ -325,6 +330,72 @@ class BasicPanel {
       this.silence = false;
     });
 
+    fh.addEventListener('click', (e) => {
+      if (fh.classList.contains('active')) {
+        fh.classList.remove('active');
+      }
+      else {
+        fh.classList.add('active');
+      }
+      const nodes: Node[] = [];
+      const prevs: Partial<JStyle>[] = [];
+      const nexts: Partial<JStyle>[] = [];
+      this.nodes.forEach((node, i) => {
+        const prev = node.computedStyle.scaleX;
+        const next = fh.classList.contains('active') ? -1 : 1;
+        if (prev !== next) {
+          node.updateStyle({
+            scaleX: next,
+          });
+          nodes.push(node);
+          prevs.push({
+            scaleX: prev,
+          });
+          nexts.push({
+            scaleX: next,
+          });
+        }
+      });
+      if (nodes.length) {
+        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.FLIP_H_NODE, nodes.slice(0));
+      }
+    });
+
+    fv.addEventListener('click', (e) => {
+      if (fv.classList.contains('active')) {
+        fv.classList.remove('active');
+      }
+      else {
+        fv.classList.add('active');
+      }
+      const nodes: Node[] = [];
+      const prevs: Partial<JStyle>[] = [];
+      const nexts: Partial<JStyle>[] = [];
+      this.nodes.forEach((node, i) => {
+        const prev = node.computedStyle.scaleY;
+        const next = fv.classList.contains('active') ? -1 : 1;
+        if (prev !== next) {
+          node.updateStyle({
+            scaleY: next,
+          });
+          nodes.push(node);
+          prevs.push({
+            scaleY: prev,
+          });
+          nexts.push({
+            scaleY: next,
+          });
+        }
+      });
+      if (nodes.length) {
+        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.FLIP_V_NODE, nodes.slice(0));
+      }
+    });
+
     listener.on(Listener.MOVE_NODE, (nodes: Node[]) => {
       if (this.silence) {
         return;
@@ -350,8 +421,9 @@ class BasicPanel {
     this.data = [];
     const panel = this.panel;
     if (!nodes.length) {
-      panel.querySelectorAll('label').forEach(item => {
+      panel.querySelectorAll('label,.fh,.fv').forEach(item => {
         item.classList.add('disabled');
+        item.classList.remove('active');
       });
       panel.querySelectorAll('input').forEach(item => {
         item.disabled = true;
@@ -360,7 +432,7 @@ class BasicPanel {
       });
       return;
     }
-    panel.querySelectorAll('label').forEach(item => {
+    panel.querySelectorAll('label,.fh,.fv').forEach(item => {
       item.classList.remove('disabled');
     });
     panel.querySelectorAll('input').forEach(item => {
@@ -373,9 +445,23 @@ class BasicPanel {
     const rs: number[] = [];
     const ws: number[] = [];
     const hs: number[] = [];
+    const fhs: boolean[] = [];
+    const fvs: boolean[] = [];
     nodes.forEach(item => {
       const o = getBasicInfo(item);
-      let { x, y, rotation, w, h, dx, dy, dw, dh } = o;
+      let {
+        x,
+        y,
+        rotation,
+        w,
+        h,
+        dx,
+        dy,
+        dw,
+        dh,
+        isFlippedHorizontal,
+        isFlippedVertical,
+      } = o;
       this.data.push(o);
       if (!xs.includes(x + dx)) {
         xs.push(x + dx);
@@ -392,12 +478,20 @@ class BasicPanel {
       if (!hs.includes(h + dh)) {
         hs.push(h + dh);
       }
+      if (!fhs.includes(isFlippedHorizontal)) {
+        fhs.push(isFlippedHorizontal);
+      }
+      if (!fvs.includes(isFlippedVertical)) {
+        fvs.push(isFlippedVertical);
+      }
     });
     const x = panel.querySelector('.x input') as HTMLInputElement;
     const y = panel.querySelector('.y input') as HTMLInputElement;
     const r = panel.querySelector('.r input') as HTMLInputElement;
     const w = panel.querySelector('.w input') as HTMLInputElement;
     const h = panel.querySelector('.h input') as HTMLInputElement;
+    const fh = panel.querySelector('.fh') as HTMLElement;
+    const fv = panel.querySelector('.fv') as HTMLElement;
     if (xs.length > 1) {
       x.placeholder = '多个';
     }
@@ -427,6 +521,18 @@ class BasicPanel {
     }
     else {
       h.value = toPrecision(hs[0]).toString();
+    }
+    if (fhs.includes(true)) {
+      fh.classList.add('active');
+    }
+    else {
+      fh.classList.remove('active');
+    }
+    if (fvs.includes(true)) {
+      fv.classList.add('active');
+    }
+    else {
+      fv.classList.remove('active');
     }
   }
 }

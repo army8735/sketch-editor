@@ -1005,6 +1005,8 @@ export default class Listener extends Event {
   static MOVE_NODE = 'MOVE_NODE';
   static ROTATE_NODE = 'ROTATE_NODE';
   static OPACITY_NODE = 'OPACITY_NODE';
+  static FLIP_H_NODE = 'FLIP_H_NODE';
+  static FLIP_V_NODE = 'FLIP_V_NODE';
   static FILL_NODE = 'FILL_NODE';
   static STROKE_NODE = 'STROKE_NODE';
   static COLOR_NODE = 'COLOR_NODE';
