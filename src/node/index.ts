@@ -13,6 +13,7 @@ import Slice from './Slice';
 import SymbolInstance from './SymbolInstance';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
+import parse from './parse';
 
 export default {
   ArtBoard,
@@ -30,4 +31,5 @@ export default {
   Polyline,
   ShapeGroup,
   reflow,
+  parse,
 };

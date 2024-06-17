@@ -140,31 +140,32 @@ class Root extends Container implements FrameCallback {
   appendTo(canvas: HTMLCanvasElement) {
     this.isDestroyed = false;
     this.canvas = canvas;
+    const attributes = Object.assign(ca, (this.props as RootProps).contextAttributes);
     // gl的初始化和配置
-    if (!this.ctx) {
-      let gl: WebGL2RenderingContext | WebGLRenderingContext = canvas.getContext(
-        'webgl2',
-        ca,
-      ) as WebGL2RenderingContext;
-      if (gl) {
-        this.ctx = gl;
-        this.isWebgl2 = true;
-      }
-      else {
-        this.ctx = gl = canvas.getContext('webgl', ca) as WebGLRenderingContext;
-        this.isWebgl2 = false;
-      }
-      if (!gl) {
-        throw new Error('Webgl unsupported!');
-      }
-      config.init(
-        gl.getParameter(gl.MAX_TEXTURE_SIZE),
-        gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
-        gl.getParameter(gl.MAX_VARYING_VECTORS),
-      );
-      this.initShaders(gl);
-      this.tileManager = new TileManager(gl);
+    let gl: WebGL2RenderingContext | WebGLRenderingContext = canvas.getContext('webgl2', attributes) as WebGL2RenderingContext;
+    if (gl) {
+      this.isWebgl2 = true;
     }
+    else {
+      gl = canvas.getContext('webgl', attributes) as WebGLRenderingContext;
+      this.isWebgl2 = false;
+    }
+    if (!gl) {
+      throw new Error('Webgl unsupported!');
+    }
+    this.appendToGl(gl);
+  }
+
+  appendToGl(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+    this.isDestroyed = false;
+    this.ctx = gl;
+    config.init(
+      gl.getParameter(gl.MAX_TEXTURE_SIZE),
+      gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
+      gl.getParameter(gl.MAX_VARYING_VECTORS),
+    );
+    this.initShaders(gl);
+    this.tileManager = new TileManager(gl);
     this.didMount();
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);

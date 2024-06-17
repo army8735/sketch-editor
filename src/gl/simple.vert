@@ -1,5 +1,3 @@
-#version 100
-
 attribute vec2 a_position;
 attribute vec2 a_texCoords;
 varying vec2 v_texCoords;

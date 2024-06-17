@@ -1,5 +1,3 @@
-#version 100
-
 attribute vec2 a_position;
 varying vec2 v_position;
 

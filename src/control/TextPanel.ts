@@ -129,7 +129,7 @@ class TextPanel {
           prevs.push(prev);
         });
         // 每次变更记录更新nexts
-        p.onChange = (color) => {
+        p.onChange = (color: any) => {
           nexts = [];
           nodes.forEach(node => {
             const next: UpdateRich[] = [];

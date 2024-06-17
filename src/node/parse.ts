@@ -127,3 +127,8 @@ function scan(id: string, children: JNode[], hash: Record<string, string>) {
     }
   });
 }
+
+export default {
+  parse,
+  sortSymbolMasters,
+};

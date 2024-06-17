@@ -1,4 +1,4 @@
-import { TAG_NAME, JFile, JSymbolMaster, JLayer } from './format';
+import format, { TAG_NAME, JFile, JSymbolMaster, JLayer } from './format';
 import { openAndConvertSketchBuffer, convertSketch, openAndConvertSketchZip } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -36,13 +36,7 @@ export default {
       options = { dpi: options };
     }
     const { dpi = 1 } = options;
-    const contextAttributes = Object.assign({}, ca);
-    Object.keys(ca).forEach(k => {
-      if (options.hasOwnProperty(k)) {
-        // @ts-ignore
-        contextAttributes[k] = options[k];
-      }
-    });
+    const contextAttributes = Object.assign({}, ca, options);
     const root = new node.Root({
       dpi,
       uuid: json.document.uuid,
@@ -94,4 +88,5 @@ export default {
   config,
   control,
   ca,
+  format,
 };

@@ -95,7 +95,7 @@ class StrokePanel {
           });
         });
         // 每次变更记录更新nexts
-        p.onChange = (color) => {
+        p.onChange = (color: any) => {
           nexts = [];
           this.nodes.forEach((node) => {
             const stroke = clone(node.style.stroke);

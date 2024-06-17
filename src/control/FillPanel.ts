@@ -94,7 +94,7 @@ class FillPanel {
           });
         });
         // 每次变更记录更新nexts
-        p.onChange = (color) => {
+        p.onChange = (color: any) => {
           nexts = [];
           nodes.forEach((node, i) => {
             const fill = clone(node.style.fill);

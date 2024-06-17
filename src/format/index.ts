@@ -267,14 +267,7 @@ export type RootProps = Props & {
   layerTextStyles: {
     uuid: string;
   };
-  contextAttributes: {
-    alpha: boolean;
-    antialias: boolean;
-    premultipliedAlpha: boolean;
-    preserveDrawingBuffer: boolean;
-    depth: boolean;
-    stencil: boolean;
-  },
+  contextAttributes: any,
 };
 
 export type PageProps = Props & {
@@ -397,4 +390,9 @@ export enum POINTS_RADIUS_BEHAVIOUR {
 export type Override = {
   property: string;
   value: string;
+};
+
+export default {
+  TAG_NAME,
+  POINTS_RADIUS_BEHAVIOUR,
 };
