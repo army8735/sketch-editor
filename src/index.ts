@@ -17,26 +17,27 @@ import ca from './gl/ca';
 
 export default {
   version,
-  parse(json: JFile | JLayer, canvasOrRoot?: HTMLCanvasElement | Root, options: {
-    dpi: number,
-  } | number = { dpi: 1 }) {
-    if (arguments.length === 1 || canvasOrRoot instanceof Root) {
-      return parse(json as JLayer, canvasOrRoot as Root);
+  parse(json: JFile | JLayer, options: {
+    dpi?: number,
+    canvas?: HTMLCanvasElement,
+    contextAttributes: any,
+  } | Root) {
+    if (options instanceof Root) {
+      return parse(json as JLayer, options as Root);
     }
     json = json as JFile;
-    canvasOrRoot = canvasOrRoot as HTMLCanvasElement;
-    let { width, height } = canvasOrRoot;
+    let { dpi = 1, canvas } = options;
+    let width = 300, height = 150;
+    if (canvas) {
+      width = canvas.width;
+      height = canvas.height;
+    }
     if (width <= 0) {
       width = 1;
     }
     if (height <= 0) {
       height = 1;
     }
-    if (typeof options === 'number') {
-      options = { dpi: options };
-    }
-    const { dpi = 1 } = options;
-    const contextAttributes = Object.assign({}, ca, options);
     const root = new node.Root({
       dpi,
       uuid: json.document.uuid,
@@ -47,9 +48,11 @@ export default {
         width,
         height,
       },
-      contextAttributes,
+      contextAttributes: Object.assign({}, ca, options.contextAttributes),
     });
-    root.appendTo(canvasOrRoot);
+    if (canvas) {
+      root.appendTo(canvas);
+    }
 
     // symbolMaster优先初始化，其存在于控件页面的直接子节点，以及外部json，先收集起来
     const smList: JSymbolMaster[] = [];

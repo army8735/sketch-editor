@@ -91,7 +91,10 @@
           hideSelect();
         }
         $canvasC.appendChild(canvas);
-        root = sketchEditor.parse(json, canvas, dpi);
+        root = sketchEditor.parse(json, {
+          dpi,
+          canvas,
+        });
 
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         root.once('refresh', () => {
