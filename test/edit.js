@@ -106,7 +106,10 @@ fetch('./sketch.sketch')
         canvas.width = 500 * dpi;
         canvas.height = 500 * dpi;
         $canvasC.appendChild(canvas);
-        root = window.root = sketchEditor.parse(json, canvas, dpi);
+        root = window.root = sketchEditor.parse(json, {
+          canvas,
+          dpi,
+        });
         listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
