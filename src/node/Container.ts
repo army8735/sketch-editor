@@ -109,12 +109,7 @@ class Container extends Node {
     }
     node.willMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      if (!sync && node.page) {
-        node.didMount();
-      }
-      cb && cb(sync);
-    });
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   prependChild(node: Node, cb?: (sync: boolean) => void) {

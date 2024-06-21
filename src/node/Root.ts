@@ -54,6 +54,7 @@ import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
 import Group from './Group';
 import { StyleUnit } from '../style/define';
+import inject from '../util/inject';
 
 class Root extends Container implements FrameCallback {
   canvas?: HTMLCanvasElement;
@@ -162,6 +163,7 @@ class Root extends Container implements FrameCallback {
   appendToGl(gl: WebGL2RenderingContext | WebGLRenderingContext) {
     // 不能重复
     if (this.ctx) {
+      inject.error('Duplicate appendToGl');
       return;
     }
     this.ctx = gl;
@@ -178,6 +180,7 @@ class Root extends Container implements FrameCallback {
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
+    this.didMount();
     // 先设置的page和index，再附加到canvas上，需刷新
     if (this.lastPage) {
       this.addUpdate(this, [], RefreshLevel.REFLOW);

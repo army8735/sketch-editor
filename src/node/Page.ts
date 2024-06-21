@@ -31,7 +31,9 @@ class Page extends Container {
         }
       }
       this.json = undefined;
+      return true;
     }
+    return false;
   }
 
   // 以cx/cy为中心点进行缩放，默认画布50%中心处

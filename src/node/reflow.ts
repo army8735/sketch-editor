@@ -15,6 +15,9 @@ export function checkReflow(node: Node, addDom: boolean, removeDom: boolean) {
       w: parent.width,
       h: parent.height,
     });
+    if (addDom) {
+      node.didMount();
+    }
     node.checkPosSizeUpward();
     node.clearCacheUpward(false);
   }
