@@ -7,12 +7,11 @@ import util from './util';
 import config from './util/config';
 import animation from './animation';
 import node from './node';
-import { parse, sortSymbolMasters } from './node/parse';
+import { parse, sortSymbolMasters } from './node/parser';
 import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
 import control from './control';
 import { version } from '../package.json';
-import Root from './node/Root';
 import ca from './gl/ca';
 
 export default {
@@ -23,10 +22,7 @@ export default {
     dpi?: number,
     canvas?: HTMLCanvasElement,
     contextAttributes: any,
-  } | Root) {
-    if (options instanceof Root) {
-      return parse(json as JLayer, options as Root);
-    }
+  }) {
     json = json as JFile;
     let { width, height, dpi = 1, canvas } = options;
     const style: any = { width, height };

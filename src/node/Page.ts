@@ -11,7 +11,7 @@ import { normalize } from '../style/css';
 import { calMatrix } from '../style/transform';
 import Container from './Container';
 import Node from './Node';
-import { parse } from './parse';
+import { parse } from './parser';
 
 class Page extends Container {
   json?: JPage;
