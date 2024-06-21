@@ -53,6 +53,7 @@ import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
 import Group from './Group';
+import { StyleUnit } from '../style/define';
 
 class Root extends Container implements FrameCallback {
   canvas?: HTMLCanvasElement;
@@ -92,7 +93,7 @@ class Root extends Container implements FrameCallback {
     this.programs = {};
     this.refs = {};
     this.symbolMasters = {};
-    this.structs = this.structure(0);
+    this.structs = [];
     this.isAsyncDraw = false;
     this.task = [];
     this.taskClone = [];
@@ -135,10 +136,12 @@ class Root extends Container implements FrameCallback {
       },
       [],
     );
+    // 先添加上，还没附加到显示的canvas/gl上，不会执行willMount
+    this.appendChild(this.pageContainer);
+    this.appendChild(this.overlay);
   }
 
   appendTo(canvas: HTMLCanvasElement) {
-    this.isDestroyed = false;
     this.canvas = canvas;
     const attributes = Object.assign(ca, (this.props as RootProps).contextAttributes);
     // gl的初始化和配置
@@ -157,7 +160,10 @@ class Root extends Container implements FrameCallback {
   }
 
   appendToGl(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    this.isDestroyed = false;
+    // 不能重复
+    if (this.ctx) {
+      return;
+    }
     this.ctx = gl;
     config.init(
       gl.getParameter(gl.MAX_TEXTURE_SIZE),
@@ -166,13 +172,16 @@ class Root extends Container implements FrameCallback {
     );
     this.initShaders(gl);
     this.tileManager = new TileManager(gl);
-    this.didMount();
+    // 渲染前设置必要的父子兄弟关系和结构
+    this.willMount();
+    this.structs = this.structure(0);
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
-    // this.didMountBubble();
-    this.appendChild(this.pageContainer);
-    this.appendChild(this.overlay);
+    // 先设置的page和index，再附加到canvas上，需刷新
+    if (this.lastPage) {
+      this.addUpdate(this, [], RefreshLevel.REFLOW);
+    }
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
@@ -220,8 +229,26 @@ class Root extends Container implements FrameCallback {
   }
 
   private checkRoot() {
-    this.width = this.computedStyle.width = this.style.width.v as number;
-    this.height = this.computedStyle.height = this.style.height.v as number;
+    const { width, height } = this.style;
+    const canvas = this.canvas;
+    if (width.u === StyleUnit.AUTO) {
+      if (canvas) {
+        width.u = StyleUnit.PX;
+        this.width = this.computedStyle.width = width.v = canvas.width;
+      }
+    }
+    else {
+      this.width = this.computedStyle.width = this.style.width.v as number;
+    }
+    if (height.u === StyleUnit.AUTO) {
+      if (canvas) {
+        height.u = StyleUnit.PX;
+        this.height = this.computedStyle.height = height.v = canvas.height;
+      }
+    }
+    else {
+      this.height = this.computedStyle.height = this.style.height.v as number;
+    }
     this.ctx!.viewport(0, 0, this.width, this.height);
   }
 
@@ -272,7 +299,9 @@ class Root extends Container implements FrameCallback {
     });
     this.overlay.setArtBoard(children);
     // 触发事件告知外部如刷新图层列表
-    this.emit(Event.PAGE_CHANGED, newPage);
+    if (!this.isDestroyed) {
+      this.emit(Event.PAGE_CHANGED, newPage);
+    }
   }
 
   addNewPage(page?: Page, setCurrent = false) {

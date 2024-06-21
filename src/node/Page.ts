@@ -31,7 +31,6 @@ class Page extends Container {
         }
       }
       this.json = undefined;
-      this.didMountBubble();
     }
   }
 

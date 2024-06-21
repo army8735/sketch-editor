@@ -18,6 +18,8 @@ import ca from './gl/ca';
 export default {
   version,
   parse(json: JFile | JLayer, options: {
+    width?: number,
+    height?: number,
     dpi?: number,
     canvas?: HTMLCanvasElement,
     contextAttributes: any,
@@ -26,17 +28,13 @@ export default {
       return parse(json as JLayer, options as Root);
     }
     json = json as JFile;
-    let { dpi = 1, canvas } = options;
-    let width = 300, height = 150;
-    if (canvas) {
-      width = canvas.width;
-      height = canvas.height;
+    let { width, height, dpi = 1, canvas } = options;
+    const style: any = { width, height };
+    if (!width || width <= 0) {
+      style.width = 'auto';
     }
-    if (width <= 0) {
-      width = 1;
-    }
-    if (height <= 0) {
-      height = 1;
+    if (!height || height <= 0) {
+      style.height = 'auto';
     }
     const root = new node.Root({
       dpi,
@@ -44,10 +42,7 @@ export default {
       assets: json.document.assets,
       layerStyles: json.document.layerStyles,
       layerTextStyles: json.document.layerTextStyles,
-      style: {
-        width,
-        height,
-      },
+      style,
       contextAttributes: Object.assign({}, ca, options.contextAttributes),
     });
     if (canvas) {

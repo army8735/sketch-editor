@@ -31,7 +31,10 @@
         .openAndConvertSketchBuffer(buff)
         .then(json => {
           const dpi = 2;
-          const root = window.root = sketchEditor.parse(json, canvas, dpi);
+          const root = window.root = sketchEditor.parse(json, {
+            canvas,
+            dpi,
+          });
           let count = 0;
           root.on(sketchEditor.node.Root.REFRESH, () => {
             count++;

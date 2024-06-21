@@ -21,8 +21,8 @@ class Group extends Container {
     this.fixedPosAndSize = false;
   }
 
-  override didMountBubble() {
-    super.didMountBubble();
+  override didMount() {
+    super.didMount();
     const { width, height } = this;
     const r = this.getChildrenRect();
     if (Math.abs(r.minX) > EPS

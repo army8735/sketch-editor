@@ -105,7 +105,7 @@ class ShapeGroup extends Group {
     this.isShapeGroup = true;
   }
 
-  override didMountBubble() {
+  override didMount() {
     this.buildPoints();
     if (!this.coords?.length) {
       return;

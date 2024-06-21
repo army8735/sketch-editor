@@ -159,7 +159,7 @@ class Node extends Event {
   }
 
   // 添加到dom后标记非销毁状态，和root引用
-  didMount() {
+  willMount() {
     this.isDestroyed = false;
     const parent = this.parent;
     // 只有root没有parent
@@ -184,7 +184,7 @@ class Node extends Event {
     }
   }
 
-  didMountBubble() {
+  didMount() {
   }
 
   lay(data: LayoutData) {
@@ -310,11 +310,11 @@ class Node extends Event {
       cb && cb(true);
       return;
     }
-    node.didMount();
+    node.willMount();
     parent.insertStruct(node, i + 1);
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
       if (!sync && node.page) {
-        node.didMountBubble();
+        node.didMount();
       }
       cb && cb(sync);
     });
@@ -342,11 +342,11 @@ class Node extends Event {
       cb && cb(true);
       return;
     }
-    node.didMount();
+    node.willMount();
     parent.insertStruct(node, i);
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
       if (!sync && node.page) {
-        node.didMountBubble();
+        node.didMount();
       }
       cb && cb(sync);
     });

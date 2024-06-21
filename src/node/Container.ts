@@ -33,19 +33,19 @@ class Container extends Node {
   }
 
   // 添加到dom后isDestroyed状态以及设置父子兄弟关系，有点重复设置，一口气创建/移动一颗子树时需要
-  override didMount() {
-    super.didMount();
+  override willMount() {
+    super.willMount();
     const { children } = this;
     const len = children.length;
     if (len) {
       const first = children[0];
       first.parent = this;
-      first.didMount();
+      first.willMount();
       let last = first;
       for (let i = 1; i < len; i++) {
         const child = children[i];
         child.parent = this;
-        child.didMount();
+        child.willMount();
         last.next = child;
         child.prev = last;
         last = child;
@@ -54,13 +54,13 @@ class Container extends Node {
   }
 
   // 冒泡的didMount
-  override didMountBubble() {
+  override didMount() {
     const { children } = this;
     const len = children.length;
     for (let i = 0; i < len; i++) {
-      children[i].didMountBubble();
+      children[i].didMount();
     }
-    super.didMountBubble();
+    super.didMount();
   }
 
   override lay(data: LayoutData) {
@@ -77,17 +77,17 @@ class Container extends Node {
       });
     }
     // 回溯收集minWidth/minHeight
-    for (let i = 0, len = children.length; i < len; i++) {
-      const child = children[i];
-      computedStyle.minWidth = this.minWidth = Math.max(
-        this.minWidth,
-        child.minWidth,
-      );
-      computedStyle.minHeight = this.minHeight = Math.max(
-        this.minHeight,
-        child.minHeight,
-      );
-    }
+    // for (let i = 0, len = children.length; i < len; i++) {
+    //   const child = children[i];
+    //   computedStyle.minWidth = this.minWidth = Math.max(
+    //     this.minWidth,
+    //     child.minWidth,
+    //   );
+    //   computedStyle.minHeight = this.minHeight = Math.max(
+    //     this.minHeight,
+    //     child.minHeight,
+    //   );
+    // }
   }
 
   appendChild(node: Node, cb?: (sync: boolean) => void) {
@@ -107,11 +107,11 @@ class Container extends Node {
       cb && cb(true);
       return;
     }
-    node.didMount();
+    node.willMount();
     this.insertStruct(node, len);
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
       if (!sync && node.page) {
-        node.didMountBubble();
+        node.didMount();
       }
       cb && cb(sync);
     });
@@ -134,11 +134,11 @@ class Container extends Node {
       cb && cb(true);
       return;
     }
-    node.didMount();
+    node.willMount();
     this.insertStruct(node, 0);
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
       if (!sync && node.page) {
-        node.didMountBubble();
+        node.didMount();
       }
       cb && cb(sync);
     });
