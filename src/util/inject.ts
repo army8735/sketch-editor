@@ -344,7 +344,7 @@ const inject = {
       return;
     }
     else if (!url || !isString(url)) {
-      inject.error('Measure img invalid: ' + url);
+      inject.error('Loadimg failed: ' + url);
       cb &&
       cb({
         state: LOADED,
