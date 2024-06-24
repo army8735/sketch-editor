@@ -3,6 +3,7 @@ import inject from './inject';
 import opentype from './opentype';
 import type from './type';
 import util from './util';
+import config from './config';
 
 export default {
   type,
@@ -10,4 +11,5 @@ export default {
   inject,
   opentype,
   util,
+  config,
 };
