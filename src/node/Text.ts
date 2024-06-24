@@ -848,7 +848,7 @@ class Text extends Node {
                     height: 0,
                     source: undefined,
                   };
-                  inject.measureImg(url, (data: any) => {
+                  inject.loadImg(url, (data: any) => {
                     // 可能会变更，所以加载完后对比下是不是当前最新的
                     if (url === (fill[i] as ComputedPattern)?.url) {
                       loader.loading = false;

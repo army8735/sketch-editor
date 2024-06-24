@@ -134,7 +134,7 @@ class Bitmap extends Node {
         );
       }
       loader.loading = true;
-      inject.measureImg(this._src, (data: any) => {
+      inject.loadImg(this._src, (data: any) => {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if (data.url === this._src) {
           root.imgLoadingCount--;
@@ -439,7 +439,7 @@ class Bitmap extends Node {
                     height: 0,
                     source: undefined,
                   };
-                  inject.measureImg(url, (data: any) => {
+                  inject.loadImg(url, (data: any) => {
                     // 可能会变或者删除，判断一致
                     if (url === (fill[i] as ComputedPattern)?.url) {
                       loader.loading = false;

@@ -50,8 +50,8 @@ function offscreenCanvas(
     if (key) {
       o.setAttribute('key', key);
     }
-    // document.body.appendChild(o);
   }
+  // 字体抗锯齿需要添加到DOM
   document.body.appendChild(o);
   let ctx = o.getContext('2d', contextAttributes);
   if (!ctx) {
@@ -322,7 +322,7 @@ const inject = {
     // @ts-ignore
     MAX_LOAD_NUM = parseInt(v) || 0;
   },
-  measureImg(
+  loadImg(
     url: string | undefined | Array<string>,
     cb?: (cache: any) => void,
   ) {
@@ -334,7 +334,7 @@ const inject = {
       let len = url.length;
       let list: any = [];
       url.forEach((item, i) => {
-        inject.measureImg(item, function (cache: any) {
+        inject.loadImg(item, function (cache: any) {
           list[i] = cache;
           if (++count === len) {
             cb && cb(list);
