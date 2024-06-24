@@ -1,6 +1,6 @@
 let canvas;
 let input = document.querySelector('#base64');
-sketchEditor.ca.preserveDrawingBuffer = true;
+sketchEditor.gl.ca.preserveDrawingBuffer = true;
 
 let count = 0;
 let root;
