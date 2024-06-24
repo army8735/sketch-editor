@@ -1327,8 +1327,7 @@ async function readImageFile(filename: string, opt: Opt) {
     console.error(`image is empty: >>>${filename}<<<`);
     return '';
   }
-  const buffer = new Uint8Array(ab);
-  const blob = new Blob([buffer.buffer]);
+  const blob = new Blob([ab]);
   let img: HTMLImageElement;
   if (filename.endsWith('.pdf')) {
     img = await loadPdf(blob);
