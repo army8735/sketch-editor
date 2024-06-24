@@ -12,7 +12,7 @@ import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
 import control from './control';
 import { version } from '../package.json';
-import ca from './gl/ca';
+import gl from './gl';
 
 export default {
   version,
@@ -39,7 +39,7 @@ export default {
       layerStyles: json.document.layerStyles,
       layerTextStyles: json.document.layerTextStyles,
       style,
-      contextAttributes: Object.assign({}, ca, options.contextAttributes),
+      contextAttributes: Object.assign({}, gl.ca, options.contextAttributes),
     });
     if (canvas) {
       root.appendTo(canvas);
@@ -81,6 +81,6 @@ export default {
   tools,
   config,
   control,
-  ca,
+  gl,
   format,
 };
