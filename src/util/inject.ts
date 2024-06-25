@@ -322,10 +322,7 @@ const inject = {
     // @ts-ignore
     MAX_LOAD_NUM = parseInt(v) || 0;
   },
-  loadImg(
-    url: string | undefined | Array<string>,
-    cb?: (cache: any) => void,
-  ) {
+  loadImg(url: string | undefined | Array<string>, cb?: (cache: any) => void) {
     if (Array.isArray(url)) {
       if (!url.length) {
         return cb && cb(null);
@@ -422,6 +419,19 @@ const inject = {
 
       load(url, cache);
     }
+  },
+  async loadArrayBufferImg(ab: ArrayBuffer): Promise<HTMLImageElement> {
+    const blob = new Blob([ab]);
+    const img = new Image();
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        resolve(img);
+      };
+      img.onerror = (e) => {
+        reject(e);
+      };
+      img.src = URL.createObjectURL(blob);
+    });
   },
   log(s: any) {
     console.log(s);

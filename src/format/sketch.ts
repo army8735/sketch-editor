@@ -1327,13 +1327,12 @@ async function readImageFile(filename: string, opt: Opt) {
     console.error(`image is empty: >>>${filename}<<<`);
     return '';
   }
-  const blob = new Blob([ab]);
   let img: HTMLImageElement;
   if (filename.endsWith('.pdf')) {
-    img = await loadPdf(blob);
+    img = await loadPdf(ab);
   }
   else {
-    img = await loadImg(blob);
+    img = await inject.loadArrayBufferImg(ab);
   }
   opt.imgBlobRecord[filename2] = img.src;
   return img.src;
@@ -1352,11 +1351,12 @@ export async function loadImg(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
-export async function convertPdf(blob: Blob) {
+export async function convertPdf(ab: ArrayBuffer) {
   // @ts-ignore
   const pdfjsLib = window.pdfjsLib;
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.worker.min.js';
+  const blob = new Blob([ab]);
   const url = URL.createObjectURL(blob);
   const task = await pdfjsLib.getDocument(url).promise;
   const page = await task.getPage(1);
@@ -1382,8 +1382,8 @@ export async function convertPdf(blob: Blob) {
   });
 }
 
-export async function loadPdf(blob: Blob): Promise<HTMLImageElement> {
-  const res = await convertPdf(blob);
+export async function loadPdf(ab: ArrayBuffer): Promise<HTMLImageElement> {
+  const res = await convertPdf(ab);
   return await loadImg(res);
 }
 
