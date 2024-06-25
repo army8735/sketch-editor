@@ -1614,6 +1614,8 @@ function genColorByMatrix(
       h,
       t: tex,
     });
+    const pixels = new Uint8Array(w * h * 4);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   }
   return { res, frameBuffer };
 }

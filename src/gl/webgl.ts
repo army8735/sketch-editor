@@ -711,8 +711,12 @@ export function drawColorMatrix(
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, 0);
   // matrix
-  let u_m = gl.getUniformLocation(program, 'u_m');
-  gl.uniform1fv(u_m, new Float32Array(m));
+  // const u_m = gl.getUniformLocation(program, 'u_m');
+  // gl.uniform1fv(u_m, new Float32Array(m));
+  for (let i = 0; i < m.length; i++) {
+    const u_m = gl.getUniformLocation(program, 'u_m' + i);
+    gl.uniform1f(u_m, m[i]);
+  }
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);

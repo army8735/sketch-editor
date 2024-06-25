@@ -235,7 +235,6 @@ class Bitmap extends Node {
         this._src,
       ));
       canvasCache.available = true;
-      // const ctx = canvasCache.offscreen.ctx;
       // 第一张图像才绘制，图片解码到canvas上
       if (canvasCache.getCount(this._src) === 1) {
         const list = canvasCache.list;

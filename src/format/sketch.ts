@@ -38,12 +38,16 @@ export enum ResizingConstraint {
   TOP = 0b100000, // 32
 }
 
-export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
+type ConvertOptions = {
+  imgRefRecord?: Record<string, any>;
+};
+
+export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer, convertOptions?: ConvertOptions) {
   const zipFile = await JSZip.loadAsync(arrayBuffer);
-  return openAndConvertSketchZip(zipFile);
+  return openAndConvertSketchZip(zipFile, convertOptions);
 }
 
-export async function openAndConvertSketchZip(zipFile: JSZip) {
+export async function openAndConvertSketchZip(zipFile: JSZip, convertOptions?: ConvertOptions) {
   const document: SketchFormat.Document = await readJsonFile(
     zipFile,
     'document.json',
@@ -62,6 +66,7 @@ export async function openAndConvertSketchZip(zipFile: JSZip) {
       user,
     },
     zipFile,
+    convertOptions,
   );
 }
 
@@ -76,10 +81,11 @@ async function readJsonFile(zipFile: JSZip, filename: string) {
 type Opt = {
   zipFile?: JSZip;
   user: any;
-  imgBlobRecord: Record<string, string>;
+  imgSrcRecord: Record<string, string>;
+  imgRefRecord?: Record<string, any>;
 };
 
-export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
+export async function convertSketch(json: any, zipFile?: JSZip, convertOptions?: ConvertOptions): Promise<JFile> {
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
@@ -107,7 +113,8 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
   const opt: Opt = {
     zipFile,
     user: json.user,
-    imgBlobRecord: {},
+    imgSrcRecord: {},
+    imgRefRecord: convertOptions?.imgRefRecord,
   };
   // 外部控件
   const symbolMasters: any[] = [];
@@ -1311,8 +1318,8 @@ async function readImageFile(filename: string, opt: Opt) {
   if (!/\.\w+$/.test(filename)) {
     filename = `${filename}.png`;
   }
-  if (opt.imgBlobRecord[filename2]) {
-    return opt.imgBlobRecord[filename2];
+  if (opt.imgSrcRecord.hasOwnProperty(filename2)) {
+    return opt.imgSrcRecord[filename2];
   }
   let file = opt.zipFile.file(filename);
   if (!file) {
@@ -1334,21 +1341,11 @@ async function readImageFile(filename: string, opt: Opt) {
   else {
     img = await inject.loadArrayBufferImg(ab);
   }
-  opt.imgBlobRecord[filename2] = img.src;
-  return img.src;
-}
-
-export async function loadImg(blob: Blob): Promise<HTMLImageElement> {
-  const img = new Image();
-  return new Promise((resolve, reject) => {
-    img.onload = () => {
-      resolve(img);
-    };
-    img.onerror = (e) => {
-      reject(e);
-    };
-    img.src = URL.createObjectURL(blob);
-  });
+  // nodejs环境下，使用node-canvas创建的img无src，暂时用原本url代替
+  const src = img.src || ('blob:file://' + filename2);
+  opt.imgSrcRecord[filename2] = src;
+  opt.imgRefRecord && (opt.imgRefRecord[('blob:file://' + filename2)] = img);
+  return src;
 }
 
 export async function convertPdf(ab: ArrayBuffer) {
@@ -1384,7 +1381,16 @@ export async function convertPdf(ab: ArrayBuffer) {
 
 export async function loadPdf(ab: ArrayBuffer): Promise<HTMLImageElement> {
   const res = await convertPdf(ab);
-  return await loadImg(res);
+  const img = new Image();
+  return new Promise((resolve, reject) => {
+    img.onload = () => {
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      reject(e);
+    };
+    img.src = URL.createObjectURL(res);
+  });
 }
 
 async function readFontFile(filename: string, zipFile: JSZip) {

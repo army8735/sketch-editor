@@ -112,7 +112,7 @@ class Root extends Container implements FrameCallback {
     this.pageContainer = new Container(
       {
         name: 'pageContainer',
-        uuid: '',
+        uuid: 'pageContainer',
         style: {
           width: '100%',
           height: '100%',
@@ -128,7 +128,7 @@ class Root extends Container implements FrameCallback {
     this.overlay = new Overlay(
       {
         name: 'overlay',
-        uuid: '',
+        uuid: 'overlay',
         style: {
           width: '100%',
           height: '100%',
