@@ -193,11 +193,7 @@ const inject = {
     return (SUPPORT_FONT[ff] = false);
   },
   FONT,
-  loadFont(
-    fontFamily: string,
-    url?: string | ((cache: any) => void),
-    cb?: (cache: any) => void,
-  ) {
+  loadFont(fontFamily: string, url?: string | ((cache: any) => void), cb?: (cache: any) => void,) {
     if (isFunction(url)) {
       // @ts-ignore
       cb = url;
@@ -309,6 +305,12 @@ const inject = {
       }
 
       load(fontFamily, url as string, cache);
+    }
+  },
+  loadArrayBufferFont(postscriptName: string, ab: ArrayBuffer) {
+    if (typeof document !== 'undefined' && typeof FontFace !== 'undefined') {
+      const f = new FontFace(postscriptName, ab);
+      document.fonts.add(f);
     }
   },
   IMG,

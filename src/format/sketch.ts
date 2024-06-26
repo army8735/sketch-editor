@@ -1106,7 +1106,7 @@ async function convertItem(
       },
     };
   }
-  console.error(layer);
+  inject.error(layer);
 }
 
 async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
@@ -1325,13 +1325,13 @@ async function readImageFile(filename: string, opt: Opt) {
   if (!file) {
     file = opt.zipFile.file(filename2);
     if (!file) {
-      console.error(`image not exist: >>>${filename}<<<`);
+      inject.error(`image not exist: >>>${filename}<<<`);
       return '';
     }
   }
   const ab = await file.async('arraybuffer');
   if (!ab.byteLength) {
-    console.error(`image is empty: >>>${filename}<<<`);
+    inject.error(`image is empty: >>>${filename}<<<`);
     return '';
   }
   let img: HTMLImageElement;
@@ -1396,7 +1396,7 @@ export async function loadPdf(ab: ArrayBuffer): Promise<HTMLImageElement> {
 async function readFontFile(filename: string, zipFile: JSZip) {
   const file = zipFile.file(filename);
   if (!file) {
-    console.error(`font not exist: >>>${filename}<<<`);
+    inject.error(`font not exist: >>>${filename}<<<`);
     return;
   }
   const ab = await file.async('arraybuffer');
@@ -1404,15 +1404,9 @@ async function readFontFile(filename: string, zipFile: JSZip) {
   if (!data) {
     return;
   }
-  return new Promise((resolve, reject) => {
-    if (typeof document !== 'undefined') {
-      const f = new FontFace(data.postscriptName, ab);
-      document.fonts.add(f);
-      resolve(data.data);
-    }
-    else {
-      reject(data.data);
-    }
+  return new Promise((resolve) => {
+    inject.loadArrayBufferFont(data.postscriptName, ab);
+    resolve(data);
   });
 }
 
