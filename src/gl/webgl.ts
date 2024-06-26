@@ -713,6 +713,7 @@ export function drawColorMatrix(
   // matrix
   // const u_m = gl.getUniformLocation(program, 'u_m');
   // gl.uniform1fv(u_m, new Float32Array(m));
+  // headless-gl的bug，不能传数组
   for (let i = 0; i < m.length; i++) {
     const u_m = gl.getUniformLocation(program, 'u_m' + i);
     gl.uniform1f(u_m, m[i]);

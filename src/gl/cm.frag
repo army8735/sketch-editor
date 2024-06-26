@@ -5,7 +5,7 @@ precision mediump float;
 varying vec2 v_texCoords;
 
 uniform sampler2D u_texture;
-//uniform float u_m20;
+//uniform float u_m[20];
 uniform float u_m0;
 uniform float u_m1;
 uniform float u_m2;
