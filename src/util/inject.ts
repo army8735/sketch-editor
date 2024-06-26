@@ -53,7 +53,7 @@ function offscreenCanvas(
   }
   // 字体抗锯齿需要添加到DOM
   document.body.appendChild(o);
-  let ctx = o.getContext('2d', contextAttributes);
+  const ctx = o.getContext('2d', contextAttributes);
   if (!ctx) {
     inject.error('Total canvas memory use exceeds the maximum limit');
   }
@@ -167,8 +167,8 @@ const inject = {
     if (SUPPORT_FONT.hasOwnProperty(ff)) {
       return SUPPORT_FONT[ff];
     }
-    let canvas = inject.getFontCanvas();
-    let context = canvas.ctx;
+    const canvas = inject.getFontCanvas();
+    const context = canvas.ctx;
     context.textAlign = 'center';
     context.fillStyle = '#000';
     context.textBaseline = 'middle';
@@ -184,7 +184,7 @@ const inject = {
     }
     context.font = '16px ' + ff + ',' + this.defaultFontFamily;
     context.fillText('a', 8, 8);
-    let data = context.getImageData(0, 0, 16, 16).data;
+    const data = context.getImageData(0, 0, 16, 16).data;
     for (let i = 0, len = data.length; i < len; i++) {
       if (defaultFontFamilyData[i] !== data[i]) {
         return (SUPPORT_FONT[ff] = true);
@@ -208,8 +208,8 @@ const inject = {
         return cb && cb(null);
       }
       let count = 0;
-      let len = url.length;
-      let list: any = [];
+      const len = url.length;
+      const list: any = [];
       url.forEach((item, i) => {
         inject.loadFont(item.fontFamily, item.url, function (cache: any) {
           list[i] = cache;
@@ -230,7 +230,7 @@ const inject = {
       });
       return;
     }
-    let cache = (FONT[url as string] = FONT[url as string] || {
+    const cache = (FONT[url as string] = FONT[url as string] || {
       state: INIT,
       task: [],
     });
@@ -257,7 +257,7 @@ const inject = {
           success(url);
         }
         else {
-          let request = new XMLHttpRequest();
+          const request = new XMLHttpRequest();
           request.open('get', url, true);
           request.responseType = 'arraybuffer';
           request.onload = function () {
@@ -273,7 +273,7 @@ const inject = {
         }
 
         function success(ab: ArrayBuffer) {
-          let f = new FontFace(fontFamily, ab);
+          const f = new FontFace(fontFamily, ab);
           f.load()
             .then(function () {
               if (typeof document !== 'undefined') {
@@ -283,13 +283,13 @@ const inject = {
               cache.success = true;
               cache.url = url;
               cache.arrayBuffer = ab;
-              let list = cache.task.splice(0);
+              const list = cache.task.splice(0);
               list.forEach((cb: (cache: any) => void) => cb(cache));
             })
             .catch(error);
           fontCount++;
           if (fontQueue.length) {
-            let o = fontQueue.shift();
+            const o = fontQueue.shift();
             load(o.fontFamily, o.url, FONT[o.url]);
           }
         }
@@ -298,11 +298,11 @@ const inject = {
           cache.state = LOADED;
           cache.success = false;
           cache.url = url;
-          let list = cache.task.splice(0);
+          const list = cache.task.splice(0);
           list.forEach((cb: (cache: any) => void) => cb(cache));
           fontCount--;
           if (fontQueue.length) {
-            let o = fontQueue.shift();
+            const o = fontQueue.shift();
             load(o.fontFamily, o.url, FONT[o.url]);
           }
         }
@@ -325,11 +325,11 @@ const inject = {
   loadImg(url: string | undefined | Array<string>, cb?: (cache: any) => void) {
     if (Array.isArray(url)) {
       if (!url.length) {
-        return cb && cb(null);
+        return cb && cb([]);
       }
       let count = 0;
-      let len = url.length;
-      let list: any = [];
+      const len = url.length;
+      const list: any = [];
       url.forEach((item, i) => {
         inject.loadImg(item, function (cache: any) {
           list[i] = cache;
@@ -350,7 +350,7 @@ const inject = {
       });
       return;
     }
-    let cache = (IMG[url] = IMG[url] || {
+    const cache = (IMG[url] = IMG[url] || {
       state: INIT,
       task: [],
     });
@@ -370,7 +370,7 @@ const inject = {
       imgCount++;
 
       function load(url: string, cache: any) {
-        let img = new Image();
+        const img = new Image();
         img.onload = function () {
           cache.state = LOADED;
           cache.success = true;
@@ -378,13 +378,13 @@ const inject = {
           cache.height = img.height;
           cache.source = img;
           cache.url = url;
-          let list = cache.task.splice(0);
+          const list = cache.task.splice(0);
           list.forEach((cb: (cache: any) => void) => {
             cb(cache);
           });
           imgCount--;
           if (imgQueue.length) {
-            let o = imgQueue.shift();
+            const o = imgQueue.shift();
             load(o, IMG[o]);
           }
         };
@@ -392,16 +392,16 @@ const inject = {
           cache.state = LOADED;
           cache.success = false;
           cache.url = url;
-          let list = cache.task.splice(0);
+          const list = cache.task.splice(0);
           list.forEach((cb: (cache: any) => void) => cb(cache));
           imgCount--;
           if (imgQueue.length) {
-            let o = imgQueue.shift();
+            const o = imgQueue.shift();
             load(o, cache);
           }
         };
         if (url.substr(0, 5) !== 'data:') {
-          let host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+          const host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
           if (host) {
             if (
               typeof location === 'undefined' ||
