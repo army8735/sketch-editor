@@ -710,14 +710,9 @@ export function drawColorMatrix(
   bindTexture(gl, texture, 0);
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, 0);
-  // matrix
-  // const u_m = gl.getUniformLocation(program, 'u_m');
-  // gl.uniform1fv(u_m, new Float32Array(m));
-  // headless-gl的bug，不能传数组
-  for (let i = 0; i < m.length; i++) {
-    const u_m = gl.getUniformLocation(program, 'u_m' + i);
-    gl.uniform1f(u_m, m[i]);
-  }
+  // matrix，headless-gl兼容数组方式
+  const u_m = gl.getUniformLocation(program, 'u_m[0]');
+  gl.uniform1fv(u_m, new Float32Array(m));
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);
