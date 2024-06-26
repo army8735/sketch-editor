@@ -168,7 +168,7 @@ class Group extends Container {
     if (!rectC) {
       rectC = this.getChildrenRect();
     }
-    const { width, height } = this;
+    let { width, height } = this;
     const dx1 = rectC.minX,
       dy1 = rectC.minY,
       dx2 = rectC.maxX - width,
@@ -180,6 +180,8 @@ class Group extends Container {
       || Math.abs(dy2) > EPS) {
       // 先调整自己，之后尺寸更新用新wh
       this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
+      width = this.width;
+      height = this.height;
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
       for (let i = 0, len = children.length; i < len; i++) {
         const child = children[i];
