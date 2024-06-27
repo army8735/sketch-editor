@@ -206,16 +206,6 @@ function getWeight(fontFamily: string[]) {
   return { fontWeight, fontWeightList };
 }
 
-export function getBehaviour(n: number): string {
-  if (n === TEXT_BEHAVIOUR.FIXED_W) {
-    return '自动高度';
-  }
-  if (n === TEXT_BEHAVIOUR.FIXED_W_H) {
-    return '固定尺寸';
-  }
-  return '自动宽度';
-}
-
 export function getEditData(node: Text) {
   const { rich, style } = node;
   // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
@@ -281,5 +271,4 @@ export default {
   SIZE_LIST,
   getData,
   getEditData,
-  getBehaviour,
 };

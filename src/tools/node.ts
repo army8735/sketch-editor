@@ -5,8 +5,6 @@ import Node from '../node/Node';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import { clone } from '../util/util';
 import { JStyle, PageProps, Point } from '../format';
-import ShapeGroup from '../node/geom/ShapeGroup';
-import { mergeBbox } from '../math/bbox';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
 

@@ -94,11 +94,13 @@ class TextPanel {
     let prevs: UpdateRich[][];
     let nexts: UpdateRich[][];
 
-    const callback = () => {
+    const callback = (update = false) => {
       // 只有变更才会有next
       if (nexts && nexts.length) {
         listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
-        listener.select.updateSelect(nodes);
+        if (update) {
+          listener.select.updateSelect(nodes);
+        }
         listener.emit(Listener.COLOR_NODE, nodes.slice(0));
       }
       nodes = [];
@@ -113,7 +115,7 @@ class TextPanel {
           picker.hide();
           return;
         }
-        const p = picker.show(el, callback, true);
+        const p = picker.show(el, 'textPanel', callback, true);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -148,6 +150,14 @@ class TextPanel {
           callback();
         };
       }
+      else if (el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh')) {
+        if (!el.classList.contains('cur')) {
+          nodes = this.nodes.slice(0);
+          nodes.forEach(node => {
+            //
+          });
+        }
+      }
     });
 
     // 字体和字重都是select都会触发
@@ -178,7 +188,7 @@ class TextPanel {
           nexts.push(next);
           node.updateRichStyle(o);
         });
-        callback();
+        callback(true);
       }
     });
 
@@ -225,17 +235,19 @@ class TextPanel {
         nexts.push(next);
         node.updateRichStyle(o);
       });
-      callback();
+      callback(true);
     });
 
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      if (picker.isShow()) {
+      if (picker.isShowFrom('textPanel')) {
         picker.hide();
         callback();
       }
-      else {
-        this.show(nodes);
-      }
+      this.show(nodes);
+    });
+
+    listener.on(Listener.RESIZE_NODE, (nodes: Node[]) => {
+      this.show(nodes);
     });
   }
 

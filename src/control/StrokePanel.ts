@@ -81,7 +81,7 @@ class StrokePanel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
-        const p = picker.show(el, callback);
+        const p = picker.show(el, 'strokePanel', callback);
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         // 最开始记录nodes/prevs
@@ -118,13 +118,11 @@ class StrokePanel {
     });
 
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      if (picker.isShow()) {
+      if (picker.isShowFrom('strokePanel')) {
         picker.hide();
         callback();
       }
-      else {
-        this.show(nodes);
-      }
+      this.show(nodes);
     });
   }
 

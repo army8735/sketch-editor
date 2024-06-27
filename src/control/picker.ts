@@ -8,11 +8,12 @@ const html = `
 `;
 
 let picker: any;
-
+let openFrom: string | undefined;
 let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
 
 export default {
-  show(node: HTMLElement, cb?: () => void, alignRight = false) {
+  show(node: HTMLElement, from?: string, cb?: () => void, alignRight = false) {
+    openFrom = from;
     if (callback) {
       callback();
       callback = undefined;
@@ -70,6 +71,12 @@ export default {
   isShow() {
     if (div) {
       return div.style.display === 'block';
+    }
+    return false;
+  },
+  isShowFrom(from: string) {
+    if (div) {
+      return div.style.display === 'block' && openFrom === from;
     }
     return false;
   },
