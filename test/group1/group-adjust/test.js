@@ -11,6 +11,8 @@ module.exports = {
       .moveToElement('canvas', 10, 10)
       .mouseButtonClick(0)
       .assert.value('input', '{"left":20,"top":20,"right":494,"bottom":448,"width":237,"height":214,"points":[{"x":20,"y":20},{"x":494,"y":20},{"x":494,"y":448},{"x":20,"y":448}]}')
+      .mouseButtonClick(0)
+      .assert.value('input', '{"v":60.33755274261603,"u":2}')
       .end();
   }
 };
