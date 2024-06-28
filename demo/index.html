@@ -69,9 +69,6 @@
           const { clientWidth, clientHeight } = $canvasC;
           canvas.width = clientWidth * dpi;
           canvas.height = clientHeight * dpi;
-          const o = $canvasC.getBoundingClientRect();
-          originX = o.left;
-          originY = o.top;
           if(root) {
             root.updateStyle({
               width: clientWidth * dpi,
@@ -84,11 +81,8 @@
         window.onresize = resize;
         if(root) {
           root.destroy();
-          $page.innerHTML = '';
           root = null;
           $canvasC.innerHTML = '';
-          hideHover();
-          hideSelect();
         }
         $canvasC.appendChild(canvas);
         root = sketchEditor.parse(json, {
