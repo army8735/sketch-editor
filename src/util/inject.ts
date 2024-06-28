@@ -435,6 +435,7 @@ const inject = {
       img.src = URL.createObjectURL(blob);
     });
   },
+  pdfjsLibWorkerSrc: 'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.worker.min.js',
   log(s: any) {
     console.log(s);
   },

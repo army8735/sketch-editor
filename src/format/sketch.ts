@@ -38,16 +38,12 @@ export enum ResizingConstraint {
   TOP = 0b100000, // 32
 }
 
-type ConvertOptions = {
-  imgRefRecord?: Record<string, any>;
-};
-
-export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer, convertOptions?: ConvertOptions) {
+export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
   const zipFile = await JSZip.loadAsync(arrayBuffer);
-  return openAndConvertSketchZip(zipFile, convertOptions);
+  return openAndConvertSketchZip(zipFile);
 }
 
-export async function openAndConvertSketchZip(zipFile: JSZip, convertOptions?: ConvertOptions) {
+export async function openAndConvertSketchZip(zipFile: JSZip) {
   const document: SketchFormat.Document = await readJsonFile(
     zipFile,
     'document.json',
@@ -66,7 +62,6 @@ export async function openAndConvertSketchZip(zipFile: JSZip, convertOptions?: C
       user,
     },
     zipFile,
-    convertOptions,
   );
 }
 
@@ -82,10 +77,9 @@ type Opt = {
   zipFile?: JSZip;
   user: any;
   imgSrcRecord: Record<string, string>;
-  imgRefRecord?: Record<string, any>;
 };
 
-export async function convertSketch(json: any, zipFile?: JSZip, convertOptions?: ConvertOptions): Promise<JFile> {
+export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
@@ -114,7 +108,6 @@ export async function convertSketch(json: any, zipFile?: JSZip, convertOptions?:
     zipFile,
     user: json.user,
     imgSrcRecord: {},
-    imgRefRecord: convertOptions?.imgRefRecord,
   };
   // 外部控件
   const symbolMasters: any[] = [];
@@ -1343,16 +1336,22 @@ async function readImageFile(filename: string, opt: Opt) {
   }
   // nodejs环境下，使用node-canvas创建的img无src，暂时用原本url代替
   const src = img.src || ('blob:file://' + filename2);
+  inject.IMG[src] = {
+    success: true,
+    state: inject.LOADED,
+    width: img.width,
+    height: img.height,
+    source: img,
+    url: src,
+  };
   opt.imgSrcRecord[filename2] = src;
-  opt.imgRefRecord && (opt.imgRefRecord[('blob:file://' + filename2)] = img);
   return src;
 }
 
 export async function convertPdf(ab: ArrayBuffer) {
   // @ts-ignore
   const pdfjsLib = window.pdfjsLib;
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = inject.pdfjsLibWorkerSrc;
   const blob = new Blob([ab]);
   const url = URL.createObjectURL(blob);
   const task = await pdfjsLib.getDocument(url).promise;
