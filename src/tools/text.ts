@@ -2,6 +2,7 @@ import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
 import { StyleNumValue, StyleUnit, TEXT_ALIGN } from '../style/define';
 import fontInfo from '../style/font';
+import { JStyle } from '../format';
 
 export enum TEXT_BEHAVIOUR {
   AUTO = 0,
@@ -266,9 +267,222 @@ export function getEditData(node: Text) {
   };
 }
 
+type UB = {
+  prev: Partial<JStyle>,
+  next: Partial<JStyle>,
+};
+
+export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
+  const prev: Partial<JStyle> = {};
+  const next: Partial<JStyle> = {};
+  const { style, computedStyle, parent } = node;
+  const { left, right, top, bottom, width, height } = style;
+  if (behaviour === TEXT_BEHAVIOUR.AUTO) {
+    // width不自动时设置为auto
+    if (width.u !== StyleUnit.AUTO) {
+      if (width.u === StyleUnit.PX) {
+        prev.width = width.v;
+      }
+      else if (width.u === StyleUnit.PERCENT) {
+        prev.width = width.v * 0.01 + '%';
+      }
+      next.width = 'auto';
+    }
+    // height不自动时设置为auto
+    if (height.u !== StyleUnit.AUTO) {
+      if (height.u === StyleUnit.PX) {
+        prev.height = height.v;
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        prev.height = height.v * 0.01 + '%';
+      }
+      next.height = 'auto';
+    }
+    // 如果left和right都不是auto，需要将一方设置为auto，优先保证px单位，都是px是优先保证left
+    if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
+      if (left.u === StyleUnit.PX) {
+        if (right.u === StyleUnit.PX) {
+          prev.right = right.v;
+        }
+        else if (right.u === StyleUnit.PERCENT) {
+          prev.right = right.v * 0.01 + '%';
+        }
+        next.right = 'auto';
+      }
+      else if (right.u === StyleUnit.PX) {
+        if (left.u === StyleUnit.PERCENT) {
+          prev.left = left.v * 0.01 + '%';
+        }
+        next.left = 'auto';
+      }
+      else {
+        if (right.u === StyleUnit.PERCENT) {
+          prev.right = right.v * 0.01 + '%';
+        }
+        next.right = 'auto';
+      }
+    }
+    // 如果top和bottom都不是auto，需要将一方设置为auto，优先保证px单位，都是px是优先保证top
+    if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+      if (top.u === StyleUnit.PX) {
+        if (bottom.u === StyleUnit.PX) {
+          prev.bottom = bottom.v;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          prev.bottom = bottom.v * 0.01 + '%';
+        }
+        next.bottom = 'auto';
+      }
+      else if (bottom.u === StyleUnit.PX) {
+        if (top.u === StyleUnit.PERCENT) {
+          prev.top = top.v * 0.01 + '%';
+        }
+        next.top = 'auto';
+      }
+      else {
+        if (bottom.u === StyleUnit.PERCENT) {
+          prev.bottom = bottom.v * 0.01 + '%';
+        }
+        next.bottom = 'auto';
+      }
+    }
+  }
+  else if (behaviour === TEXT_BEHAVIOUR.FIXED_W) {
+    // width不固定时设置为固定px，但要排除left和right都是PX的情况
+    if (width.u !== StyleUnit.PX && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
+      if (width.u === StyleUnit.AUTO) {
+        prev.width = 'auto';
+      }
+      else if (width.u === StyleUnit.PERCENT) {
+        prev.width = width.v * 0.01 + '%';
+      }
+      next.width = node.width;
+    }
+    // height不自动时设置为auto
+    if (height.u !== StyleUnit.AUTO) {
+      if (height.u === StyleUnit.PX) {
+        prev.height = height.v;
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        prev.height = height.v * 0.01 + '%';
+      }
+      next.height = 'auto';
+    }
+    // 如果left和right都不是auto，需要将一方设置为auto，优先保证px单位因为那是靠边固定，两边都是px不动
+    if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
+      if (left.u === StyleUnit.PX) {
+        if (right.u === StyleUnit.PERCENT) {
+          prev.right = right.v * 0.01 + '%';
+          next.right = 'auto';
+        }
+      }
+      else if (right.u === StyleUnit.PX) {
+        if (left.u === StyleUnit.PERCENT) {
+          prev.left = right.v * 0.01 + '%';
+          next.left = 'auto';
+        }
+      }
+      else {
+        prev.right = right.v * 0.01 + '%';
+        next.right = 'auto';
+      }
+    }
+    // 如果top和bottom都不是auto，需要将一方设置为auto，优先保证px单位，都是px是优先保证top
+    if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+      if (top.u === StyleUnit.PX) {
+        if (bottom.u === StyleUnit.PX) {
+          prev.bottom = bottom.v;
+        }
+        else if (bottom.u === StyleUnit.PERCENT) {
+          prev.bottom = bottom.v * 0.01 + '%';
+        }
+        next.bottom = 'auto';
+      }
+      else if (bottom.u === StyleUnit.PX) {
+        if (top.u === StyleUnit.PERCENT) {
+          prev.top = top.v * 0.01 + '%';
+        }
+        next.top = 'auto';
+      }
+      else {
+        if (bottom.u === StyleUnit.PERCENT) {
+          prev.bottom = bottom.v * 0.01 + '%';
+        }
+        next.bottom = 'auto';
+      }
+    }
+  }
+  else if (behaviour === TEXT_BEHAVIOUR.FIXED_W_H) {
+    // width不固定时设置为固定px，但要排除left和right都是PX的情况
+    if (width.u !== StyleUnit.PX && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
+      if (width.u === StyleUnit.AUTO) {
+        prev.width = 'auto';
+      }
+      else if (width.u === StyleUnit.PERCENT) {
+        prev.width = width.v * 0.01 + '%';
+      }
+      next.width = node.width;
+    }
+    // height同上
+    if (height.u !== StyleUnit.PX && !(top.u === StyleUnit.PX && bottom.u === StyleUnit.PX)) {
+      if (height.u === StyleUnit.AUTO) {
+        prev.height = 'auto';
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        prev.height = height.v * 0.01 + '%';
+      }
+      next.height = node.height;
+    }
+    // 如果left和right都不是auto，需要将一方设置为auto，优先保证px单位因为那是靠边固定，两边都是px不动
+    if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
+      if (left.u === StyleUnit.PX) {
+        if (right.u === StyleUnit.PERCENT) {
+          prev.right = right.v * 0.01 + '%';
+          next.right = 'auto';
+        }
+      }
+      else if (right.u === StyleUnit.PX) {
+        if (left.u === StyleUnit.PERCENT) {
+          prev.left = right.v * 0.01 + '%';
+          next.left = 'auto';
+        }
+      }
+      else {
+        prev.right = right.v * 0.01 + '%';
+        next.right = 'auto';
+      }
+    }
+    // top和bottom同上
+    if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO && !(top.u === StyleUnit.PX && bottom.u === StyleUnit.PX)) {
+      if (top.u === StyleUnit.PX) {
+        if (bottom.u === StyleUnit.PERCENT) {
+          prev.bottom = bottom.v * 0.01 + '%';
+          next.bottom = 'auto';
+        }
+      }
+      else if (bottom.u === StyleUnit.PX) {
+        if (top.u === StyleUnit.PERCENT) {
+          prev.top = bottom.v * 0.01 + '%';
+          next.top = 'auto';
+        }
+      }
+      else {
+        prev.bottom = bottom.v * 0.01 + '%';
+        next.bottom = 'auto';
+      }
+    }
+  }
+  node.startSizeChange();
+  node.updateStyle(next);
+  node.endSizeChange(node.style);
+  node.checkPosSizeUpward();
+  return { prev, next };
+}
+
 export default {
   TEXT_BEHAVIOUR,
   SIZE_LIST,
   getData,
   getEditData,
+  updateBehaviour,
 };

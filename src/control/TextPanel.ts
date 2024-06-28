@@ -4,12 +4,13 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import text, { TEXT_BEHAVIOUR } from '../tools/text';
+import { TEXT_BEHAVIOUR, getData, updateBehaviour } from '../tools/text';
 import { TEXT_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
-import { UpdateRich } from '../format';
+import { JStyle, UpdateRich } from '../format';
 import UpdateRichCommand from '../history/UpdateRichCommand';
+import BehaviourCommand from '../history/BehaviourCommand';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -113,6 +114,7 @@ class TextPanel {
       if (el.tagName === 'B') {
         if (picker.isShow()) {
           picker.hide();
+          callback();
           return;
         }
         const p = picker.show(el, 'textPanel', callback, true);
@@ -152,10 +154,25 @@ class TextPanel {
       }
       else if (el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh')) {
         if (!el.classList.contains('cur')) {
+          callback();
           nodes = this.nodes.slice(0);
-          nodes.forEach(node => {
-            //
+          let behaviour = TEXT_BEHAVIOUR.AUTO;
+          if (el.classList.contains('fw')) {
+            behaviour = TEXT_BEHAVIOUR.FIXED_W;
+          }
+          else if (el.classList.contains('fwh')) {
+            behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
+          }
+          const ps: Partial<JStyle>[] = [];
+          const ns: Partial<JStyle>[] = [];
+          nodes.forEach(item => {
+            const { prev, next } = updateBehaviour(item, behaviour);
+            ps.push(prev);
+            ns.push(next);
           });
+          listener.history.addCommand(new BehaviourCommand(nodes.slice(0), ps, ns));
+          listener.select.updateSelect(nodes);
+          listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         }
       }
     });
@@ -293,7 +310,7 @@ class TextPanel {
     });
     const texts = nodes.filter(item => item instanceof Text) as Text[];
     this.nodes = texts;
-    const o = text.getData(texts);
+    const o = getData(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       // 移除上次可能遗留的无效字体展示

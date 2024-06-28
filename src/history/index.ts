@@ -5,6 +5,8 @@ import ResizeCommand from './ResizeCommand';
 import RotateCommand from './RotateCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import UpdateFormatStyleCommand from './UpdateFormatStyleCommand';
+import UpdateRichCommand from './UpdateRichCommand';
+import BehaviourCommand from './BehaviourCommand';
 
 export default {
   History,
@@ -14,4 +16,6 @@ export default {
   RotateCommand,
   UpdateStyleCommand,
   UpdateFormatStyleCommand,
+  UpdateRichCommand,
+  BehaviourCommand,
 };
