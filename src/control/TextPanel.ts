@@ -8,9 +8,9 @@ import { TEXT_BEHAVIOUR, getData, updateBehaviour } from '../tools/text';
 import { TEXT_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
-import { JStyle, UpdateRich } from '../format';
+import { UpdateRich } from '../format';
 import UpdateRichCommand from '../history/UpdateRichCommand';
-import BehaviourCommand from '../history/BehaviourCommand';
+import ResizeCommand from '../history/ResizeCommand';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -163,14 +163,8 @@ class TextPanel {
           else if (el.classList.contains('fwh')) {
             behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
           }
-          const ps: Partial<JStyle>[] = [];
-          const ns: Partial<JStyle>[] = [];
-          nodes.forEach(item => {
-            const { prev, next } = updateBehaviour(item, behaviour);
-            ps.push(prev);
-            ns.push(next);
-          });
-          listener.history.addCommand(new BehaviourCommand(nodes.slice(0), ps, ns));
+          const styles = nodes.map(item => updateBehaviour(item, behaviour));
+          listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
           listener.select.updateSelect(nodes);
           listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         }

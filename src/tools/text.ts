@@ -275,7 +275,7 @@ type UB = {
 export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   const prev: Partial<JStyle> = {};
   const next: Partial<JStyle> = {};
-  const { style, computedStyle, parent } = node;
+  const style = node.getStyle();
   const { left, right, top, bottom, width, height } = style;
   if (behaviour === TEXT_BEHAVIOUR.AUTO) {
     // width不自动时设置为auto
@@ -474,8 +474,9 @@ export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   }
   node.startSizeChange();
   node.updateStyle(next);
-  node.endSizeChange(node.style);
+  node.endSizeChange(style);
   node.checkPosSizeUpward();
+  console.log(node.style);
   return { prev, next };
 }
 
