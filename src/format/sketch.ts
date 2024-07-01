@@ -713,7 +713,6 @@ async function convertItem(
     else if (tb === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
       // 啥也不干，等同普通节点的固定宽高
     }
-    console.log(layer.name, left, right, top, bottom, width, height, translateX, translateY)
     const { string, attributes } = layer.attributedString;
     const rich = attributes.length
       ? attributes.map((item: any) => {
