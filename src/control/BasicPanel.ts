@@ -77,19 +77,28 @@ class BasicPanel {
       const dys: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = parseFloat(x.value) - o.x;
-        if (d) {
-          if (!isInput && listener.shiftKey) {
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(x.value) - o.x;
+        }
+        else {
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (x.placeholder) {
+            d = parseFloat(x.value);
+          }
+          else {
+            d = parseFloat(x.value) - o.x;
+          }
+          if (listener.shiftKey) {
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!i) {
-              x.value = toPrecision(o.x + d).toString();
-            }
           }
+        }
+        if (d) {
           o.x += d;
           const style = node.getStyle();
           node.updateStyle({
@@ -107,6 +116,7 @@ class BasicPanel {
         listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+        this.show(nodes);
       }
       this.silence = false;
     });
@@ -119,19 +129,28 @@ class BasicPanel {
       const dys: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = parseFloat(y.value) - o.y;
-        if (d) {
-          if (!isInput && listener.shiftKey) {
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(y.value) - o.y;
+        }
+        else {
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (y.placeholder) {
+            d = parseFloat(y.value);
+          }
+          else {
+            d = parseFloat(y.value) - o.y;
+          }
+          if (listener.shiftKey) {
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!i) {
-              y.value = toPrecision(o.y + d).toString();
-            }
           }
+        }
+        if (d) {
           o.y += d;
           const style = node.getStyle();
           node.updateStyle({
@@ -149,6 +168,7 @@ class BasicPanel {
         listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+        this.show(nodes);
       }
       this.silence = false;
     });
@@ -160,19 +180,28 @@ class BasicPanel {
       const ns: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = parseFloat(r.value) - o.rotation;
-        if (d) {
-          if (!isInput && listener.shiftKey) {
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(r.value) - o.rotation;
+        }
+        else {
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (r.placeholder) {
+            d = parseFloat(r.value);
+          }
+          else {
+            d = parseFloat(r.value) - o.rotation;
+          }
+          if (listener.shiftKey) {
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!i) {
-              r.value = toPrecision(o.rotation + d).toString();
-            }
           }
+        }
+        if (d) {
           o.rotation += d;
           node.updateStyle({
             rotateZ: node.computedStyle.rotateZ + d,
@@ -198,19 +227,28 @@ class BasicPanel {
       const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = parseFloat(w.value) - o.w;
-        if (d) {
-          if (!isInput && listener.shiftKey) {
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(w.value) - o.w;
+        }
+        else {
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (w.placeholder) {
+            d = parseFloat(w.value);
+          }
+          else {
+            d = parseFloat(w.value) - o.w;
+          }
+          if (listener.shiftKey) {
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!i) {
-              w.value = toPrecision(o.w + d).toString();
-            }
           }
+        }
+        if (d) {
           o.w += d;
           const { computedStyle } = node;
           node.startSizeChange();
@@ -234,8 +272,8 @@ class BasicPanel {
       if (nodes.length) {
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
-        this.show(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+        this.show(nodes);
       }
       this.silence = false;
     });
@@ -247,19 +285,28 @@ class BasicPanel {
       const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = parseFloat(h.value) - o.h;
-        if (d) {
-          if (!isInput && listener.shiftKey) {
+        let d = 0;
+        if (isInput) {
+          d = parseFloat(h.value) - o.h;
+        }
+        else {
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (h.placeholder) {
+            d = parseFloat(h.value);
+          }
+          else {
+            d = parseFloat(h.value) - o.h;
+          }
+          if (listener.shiftKey) {
             if (d > 0) {
               d = 10;
             }
             else {
               d = -10;
             }
-            if (!i) {
-              h.value = toPrecision(o.h + d).toString();
-            }
           }
+        }
+        if (d) {
           o.h += d;
           const { computedStyle } = node;
           node.startSizeChange();
@@ -284,6 +331,7 @@ class BasicPanel {
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+        this.show(nodes);
       }
       this.silence = false;
     });

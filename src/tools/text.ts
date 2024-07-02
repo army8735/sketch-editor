@@ -270,11 +270,6 @@ export function getEditData(node: Text) {
   };
 }
 
-type UB = {
-  prev: Partial<JStyle>,
-  next: Partial<JStyle>,
-};
-
 export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   const prev: Partial<JStyle> = {};
   const next: Partial<JStyle> = {};
