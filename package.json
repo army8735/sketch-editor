@@ -12,7 +12,8 @@
     "dev": "rollup -c rollup.dev.config.mjs --watch",
     "test": "mocha test/tests.js -R spec",
     "test1": "nightwatch --group group1 --filter test.js",
-    "test2": "nightwatch --group group2 --filter test.js"
+    "test2": "nightwatch --group group2 --filter test.js",
+    "test3": "nightwatch --group group3 --filter test.js"
   },
   "repository": {
     "type": "git",

@@ -433,7 +433,7 @@ export default class Listener extends Event {
           this.controlType === 'tl' ||
           this.controlType === 'tr'
         ) {
-          const t = resizeTL(node, style, computedStyle, cssStyle, dx2, 0);
+          const t = resizeTL(node, style, computedStyle, dx2, 0);
           Object.assign(next, t);
         }
         else if (
@@ -441,7 +441,7 @@ export default class Listener extends Event {
           this.controlType === 'bl' ||
           this.controlType === 'br'
         ) {
-          const t = resizeBR(node, style, computedStyle, cssStyle, 0, dy2);
+          const t = resizeBR(node, style, computedStyle, 0, dy2);
           Object.assign(next, t);
         }
         if (
@@ -449,7 +449,7 @@ export default class Listener extends Event {
           this.controlType === 'tl' ||
           this.controlType === 'bl'
         ) {
-          const t = resizeTL(node, style, computedStyle, cssStyle, 0, dy2);
+          const t = resizeTL(node, style, computedStyle, 0, dy2);
           Object.assign(next, t);
         }
         else if (
@@ -457,7 +457,7 @@ export default class Listener extends Event {
           this.controlType === 'tr' ||
           this.controlType === 'br'
         ) {
-          const t = resizeBR(node, style, computedStyle, cssStyle, dx2, 0);
+          const t = resizeBR(node, style, computedStyle, dx2, 0);
           Object.assign(next, t);
         }
         node.updateStyle(next);
