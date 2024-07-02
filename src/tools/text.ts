@@ -70,12 +70,15 @@ function putData(
   if (!letterSpacing.includes(ls)) {
     letterSpacing.push(ls);
   }
-  if (!lineHeight.includes(lh2)) {
-    lineHeight.push(lh2);
-  }
   const auto = lh.u === StyleUnit.AUTO;
   if (!autoLineHeight.includes(auto)) {
     autoLineHeight.push(auto);
+  }
+  if (auto && o) {
+    lineHeight.push(fs * o.lhr);
+  }
+  else if (!lineHeight.includes(lh2)) {
+    lineHeight.push(lh2);
   }
   if (!paragraphSpacing.includes(ps)) {
     paragraphSpacing.push(ps);

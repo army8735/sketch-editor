@@ -45,7 +45,7 @@ class BasicPanel {
   listener: Listener;
   panel: HTMLElement;
   nodes: Node[];
-  data: Array<{ x: number, y: number, angle: number, w: number, h: number, dx: number, dy: number, dw: number, dh: number }>; // node当前数据，每次input变更则更新
+  data: Array<{ x: number, y: number, angle: number, w: number, h: number, rotation: number }>; // node当前数据，每次input变更则更新
   silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -77,13 +77,7 @@ class BasicPanel {
       const dys: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = 0;
-        if (isInput) {
-          d = parseFloat(x.value) - o.x - o.dx;
-        }
-        else {
-          d = parseFloat(x.value);
-        }
+        let d = parseFloat(x.value) - o.x;
         if (d) {
           if (!isInput && listener.shiftKey) {
             if (d > 0) {
@@ -92,8 +86,8 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if (isInput && !i) {
-              x.value = toPrecision(o.x + o.dx + d).toString();
+            if (!i) {
+              x.value = toPrecision(o.x + d).toString();
             }
           }
           o.x += d;
@@ -109,9 +103,6 @@ class BasicPanel {
           dys.push(0);
         }
       });
-      if (!isInput) {
-        x.value = '';
-      }
       if (nodes.length) {
         listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
@@ -128,13 +119,7 @@ class BasicPanel {
       const dys: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = 0;
-        if (isInput) {
-          d = parseFloat(y.value) - o.y - o.dy;
-        }
-        else {
-          d = parseFloat(y.value);
-        }
+        let d = parseFloat(y.value) - o.y;
         if (d) {
           if (!isInput && listener.shiftKey) {
             if (d > 0) {
@@ -143,8 +128,8 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if (isInput && !i) {
-              y.value = toPrecision(o.y + o.dy + d).toString();
+            if (!i) {
+              y.value = toPrecision(o.y + d).toString();
             }
           }
           o.y += d;
@@ -160,9 +145,6 @@ class BasicPanel {
           dys.push(d);
         }
       });
-      if (!isInput) {
-        y.value = '';
-      }
       if (nodes.length) {
         listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
@@ -178,13 +160,7 @@ class BasicPanel {
       const ns: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = 0;
-        if (isInput) {
-          d = parseFloat(r.value) - o.angle;
-        }
-        else {
-          d = parseFloat(r.value);
-        }
+        let d = parseFloat(r.value) - o.rotation;
         if (d) {
           if (!isInput && listener.shiftKey) {
             if (d > 0) {
@@ -193,11 +169,11 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if (isInput && !i) {
-              r.value = toPrecision(o.angle + d).toString();
+            if (!i) {
+              r.value = toPrecision(o.rotation + d).toString();
             }
           }
-          o.angle += d;
+          o.rotation += d;
           node.updateStyle({
             rotateZ: node.computedStyle.rotateZ + d,
           });
@@ -206,13 +182,11 @@ class BasicPanel {
           ns.push(d);
         }
       });
-      if (!isInput) {
-        r.value = '';
-      }
       if (nodes.length) {
         listener.history.addCommand(new RotateCommand(nodes.slice(0), ns));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
+        this.show(nodes);
       }
       this.silence = false;
     });
@@ -224,13 +198,7 @@ class BasicPanel {
       const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = 0;
-        if (isInput) {
-          d = parseFloat(w.value) - o.w - o.dw;
-        }
-        else {
-          d = parseFloat(w.value) - o.dw;
-        }
+        let d = parseFloat(w.value) - o.w;
         if (d) {
           if (!isInput && listener.shiftKey) {
             if (d > 0) {
@@ -239,15 +207,16 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if (isInput && !i) {
-              w.value = toPrecision(o.w + o.dw + d).toString();
+            if (!i) {
+              w.value = toPrecision(o.w + d).toString();
             }
           }
           o.w += d;
           const { computedStyle } = node;
+          node.startSizeChange();
           const style = node.getStyle();
           const cssStyle = node.getCssStyle();
-          const next = resizeBR(node, style, computedStyle, cssStyle, d, 0);
+          const next = resizeBR(node, style, computedStyle, d, 0);
           node.updateStyle(next);
           const prev: Partial<JStyle> = {};
           Object.keys(next).forEach((k) => {
@@ -262,9 +231,6 @@ class BasicPanel {
           styles.push({ prev, next });
         }
       });
-      if (isInput) {
-        w.value = '';
-      }
       if (nodes.length) {
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
@@ -281,13 +247,7 @@ class BasicPanel {
       const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
-        let d = 0;
-        if (isInput) {
-          d = parseFloat(h.value) - o.h - o.dh;
-        }
-        else {
-          d = parseFloat(h.value);
-        }
+        let d = parseFloat(h.value) - o.h;
         if (d) {
           if (!isInput && listener.shiftKey) {
             if (d > 0) {
@@ -296,15 +256,16 @@ class BasicPanel {
             else {
               d = -10;
             }
-            if (isInput && !i) {
-              h.value = toPrecision(o.h + o.dh + d).toString();
+            if (!i) {
+              h.value = toPrecision(o.h + d).toString();
             }
           }
           o.h += d;
           const { computedStyle } = node;
+          node.startSizeChange();
           const style = node.getStyle();
           const cssStyle = node.getCssStyle();
-          const next = resizeBR(node, style, computedStyle, cssStyle, 0, d);
+          const next = resizeBR(node, style, computedStyle, 0, d);
           node.updateStyle(next);
           const prev: Partial<JStyle> = {};
           Object.keys(next).forEach((k) => {
@@ -319,9 +280,6 @@ class BasicPanel {
           styles.push({ prev, next });
         }
       });
-      if (isInput) {
-        h.value = '';
-      }
       if (nodes.length) {
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
@@ -446,28 +404,24 @@ class BasicPanel {
         rotation,
         w,
         h,
-        dx,
-        dy,
-        dw,
-        dh,
         isFlippedHorizontal,
         isFlippedVertical,
       } = o;
       this.data.push(o);
-      if (!xs.includes(x + dx)) {
-        xs.push(x + dx);
+      if (!xs.includes(x)) {
+        xs.push(x);
       }
-      if (!ys.includes(y + dy)) {
-        ys.push(y + dy);
+      if (!ys.includes(y)) {
+        ys.push(y);
       }
       if (!rs.includes(rotation)) {
         rs.push(rotation);
       }
-      if (!ws.includes(w + dw)) {
-        ws.push(w + dw);
+      if (!ws.includes(w)) {
+        ws.push(w);
       }
-      if (!hs.includes(h + dh)) {
-        hs.push(h + dh);
+      if (!hs.includes(h)) {
+        hs.push(h);
       }
       if (!fhs.includes(isFlippedHorizontal)) {
         fhs.push(isFlippedHorizontal);

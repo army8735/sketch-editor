@@ -401,7 +401,7 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
   }
 }
 
-export function resizeTL(node: Node, style: Style, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number) {
+export function resizeTL(node: Node, style: Style, computedStyle: ComputedStyle, dx: number, dy: number) {
   const next: Partial<JStyle> = {};
   // left为确定值则修改它，还要看width是否是确定值也一并修改
   if (dx) {
@@ -484,7 +484,7 @@ export function resizeTL(node: Node, style: Style, computedStyle: ComputedStyle,
   return next;
 }
 
-export function resizeBR(node: Node, style: Style, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number) {
+export function resizeBR(node: Node, style: Style, computedStyle: ComputedStyle, dx: number, dy: number) {
   const next: Partial<JStyle> = {};
   // right为确定值则修改它，还要看width是否是确定值也一并修改
   if (dx) {
@@ -602,10 +602,6 @@ export function getBasicInfo(node: Node) {
     y: Math.min(y1, y2, y3, y4) - baseY,
     w: rect[2] - rect[0],
     h: rect[3] - rect[1],
-    dx: 0,
-    dy: 0,
-    dw: 0,
-    dh: 0,
     isFlippedHorizontal: computedStyle.scaleX === -1,
     isFlippedVertical: computedStyle.scaleY === -1,
     rotation: computedStyle.rotateZ,
