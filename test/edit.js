@@ -17,7 +17,7 @@ function toStyle() {
       const style = node.style;
       const computedStyle = node.computedStyle;
       return [
-        count++,
+        count,
         style.left,
         style.right,
         style.top,
@@ -36,6 +36,7 @@ function toStyle() {
         computedStyle.translateY,
       ];
     }));
+    count++;
   }
   else {
     let node = nodes[0];
