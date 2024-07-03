@@ -202,6 +202,7 @@ export function sortTempIndex(nodes: Node[]) {
   });
 }
 
+// 多个节点的BoundingClientRect合集极值
 export function getWholeBoundingClientRect(
   nodes: Node[],
   includeBbox = false,

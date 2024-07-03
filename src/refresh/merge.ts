@@ -38,7 +38,6 @@ import config from '../util/config';
 import { canvasPolygon } from './paint';
 import { color2gl } from '../style/css';
 import { BLUR, ComputedBlur, ComputedShadow, ComputedStyle, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
-import { calMatrixByOrigin } from '../style/transform';
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
 import { Struct } from './struct';
@@ -556,15 +555,7 @@ function genTotal(
     else {
       const parent = node2.parent!;
       opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
-      if (x || y) {
-        const transform = node2.transform;
-        const tfo = computedStyle.transformOrigin;
-        const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
-        matrix = multiply(parent.tempMatrix, m);
-      }
-      else {
-        matrix = multiply(parent.tempMatrix, node2.matrix);
-      }
+      matrix = multiply(parent.tempMatrix, node2.matrix);
     }
     assignMatrix(node2.tempMatrix, matrix);
     let target2 = node2.textureTarget[scaleIndex];
@@ -2054,7 +2045,7 @@ function genMask(
           break;
         }
         // 需要保存引用，当更改时取消mask节点的缓存重新生成
-        if (isFirst) {
+        if (isFirst && lv === lv2) {
           node2.mask = node;
         }
         // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
@@ -2074,31 +2065,15 @@ function genMask(
         let opacity: number,
           matrix: Float64Array;
         if (isFirst) {
-          // 同层级的next作为特殊的局部根节点，注意dx/dy偏移对transformOrigin的影响
+          // 同层级的next作为特殊的局部根节点
           if (lv === lv2) {
             opacity = node2.tempOpacity = computedStyle.opacity;
-            if (x || y) {
-              const transform = node2.transform;
-              const tfo = computedStyle.transformOrigin;
-              const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
-              matrix = multiply(im, m);
-            }
-            else {
-              matrix = multiply(im, node2.matrix);
-            }
+            matrix = multiply(im, node2.matrix);
           }
           else {
             const parent = node2.parent!;
             opacity = node2.tempOpacity = computedStyle.opacity * parent.tempOpacity;
-            if (x || y) {
-              const transform = node2.transform;
-              const tfo = computedStyle.transformOrigin;
-              const m = calMatrixByOrigin(transform, tfo[0] - x, tfo[1] - y);
-              matrix = multiply(parent.tempMatrix, m);
-            }
-            else {
-              matrix = multiply(parent.tempMatrix, node2.matrix);
-            }
+            matrix = multiply(parent.tempMatrix, node2.matrix);
           }
           assignMatrix(node2.tempMatrix, matrix);
         }
