@@ -87,19 +87,15 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
 export function pointInRect(x: number, y: number, x1: number, y1: number, x2: number, y2: number,
                             matrix: Float64Array, includeIntersect: boolean = false) {
   if (matrix && !isE(matrix)) {
-    let t1 = calPoint({ x: x1, y: y1 }, matrix);
-    let xa = t1.x, ya = t1.y;
-    let t2 = calPoint({ x: x2, y: y1 }, matrix);
-    let xb = t2.x, yb = t2.y;
-    let t3 = calPoint({ x: x2, y: y2 }, matrix);
-    let xc = t3.x, yc = t3.y;
-    let t4 = calPoint({ x: x1, y: y2 }, matrix);
-    let xd = t4.x, yd = t4.y;
+    const t1 = calPoint({ x: x1, y: y1 }, matrix);
+    const t2 = calPoint({ x: x2, y: y1 }, matrix);
+    const t3 = calPoint({ x: x2, y: y2 }, matrix);
+    const t4 = calPoint({ x: x1, y: y2 }, matrix);
     return pointInConvexPolygon(x, y, [
-      { x: xa, y: ya },
-      { x: xb, y: yb },
-      { x: xc, y: yc },
-      { x: xd, y: yd },
+      { x: t1.x, y: t1.y },
+      { x: t2.x, y: t2.y },
+      { x: t3.x, y: t3.y },
+      { x: t4.x, y: t4.y },
     ]);
   }
   else if (includeIntersect) {
@@ -159,7 +155,7 @@ export function isRectsOverlap(ax1: number, ay1: number, ax2: number, ay2: numbe
 // 2个矩形是否包含，a包含b
 export function isRectsInside(ax1: number, ay1: number, ax2: number, ay2: number,
                               bx1: number, by1: number, bx2: number, by2: number,
-                              includeIntersect: boolean) {
+                              includeIntersect = false) {
   if (includeIntersect) {
     if (ax1 <= bx1 && ay1 <= by1 && ax2 >= bx2 && ay2 >= by2) {
       return true;

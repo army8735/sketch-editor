@@ -1,10 +1,9 @@
 import * as uuid from 'uuid';
 import { JContainer, JNode, Override, Props } from '../format';
-import { isPolygonOverlapRect, pointInRect } from '../math/geom';
+import { isPolygonOverlapRect, isRectsInside, pointInRect } from '../math/geom';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
-import { ComputedStyle } from '../style/define';
 import inject from '../util/inject';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
@@ -228,6 +227,7 @@ class Container extends Node {
     }
   }
 
+  // 通用方法，根据x/y返回最深的节点，sketch的一些条件过滤逻辑放在上层调用方Root做
   getNodeByPoint(x: number, y: number): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
@@ -241,23 +241,20 @@ class Container extends Node {
           if (res) {
             return res;
           }
-          else if (child.isArtBoard) {
-            return child;
-          }
         }
-        else if (computedStyle.pointerEvents) {
+        if (computedStyle.pointerEvents) {
           return child;
         }
       }
     }
   }
 
-  getNodesByFrame(x1: number, y1: number, x2: number, y2: number, isChild = false) {
+  getNodesByFrame(x1: number, y1: number, x2: number, y2: number, isLeaf = false) {
     const children = this.children;
     const res: Node[] = [];
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
-      const { computedStyle, matrixWorld } = child;
+      const { matrixWorld } = child;
       const rect = child._rect || child.rect;
       const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
       if (isPolygonOverlapRect(x1, y1, x2, y2, [
@@ -266,11 +263,11 @@ class Container extends Node {
         { x: box.x3, y: box.y3 },
         { x: box.x4, y: box.y4 },
       ])) {
-        if (isChild) {
+        if (isLeaf) {
           if (child instanceof Container) {
-            const t = child.getNodesByFrame(x1, y1, x2, y2, isChild);
+            const t = child.getNodesByFrame(x1, y1, x2, y2, isLeaf);
             if (t.length) {
-            res.push(...t);
+              res.push(...t);
             }
           }
           else {
@@ -278,7 +275,14 @@ class Container extends Node {
           }
         }
         else {
-          res.push(child);
+          if (child.isArtBoard) {
+            if (isRectsInside(x1, y1, x2, y2, box.x1, box.y1, box.x3, box.y3)) {
+              res.push(child);
+            }
+          }
+          else {
+            res.push(child);
+          }
         }
       }
     }

@@ -72,10 +72,11 @@ function toRich() {
   if (nodes.length > 1) {
     input.value = JSON.stringify(nodes.map(node => {
       return [
-        count++,
+        count,
         node.rich,
       ];
     }));
+    count++;
   }
   else {
     let node = nodes[0];
@@ -86,6 +87,32 @@ function toRich() {
       count++,
       node.rich,
     ]);
+  }
+}
+
+function toSelect() {
+  const nodes = listener.selected;
+  if (nodes.length > 1) {
+    input.value = JSON.stringify(nodes.map(node => {
+      return [
+        count,
+        node.rich,
+      ];
+    }));
+    count++;
+  }
+  else if (nodes.length) {
+    let node = nodes[0];
+    if (!node) {
+      node = root.getCurPage().children[0];
+    }
+    input.value = JSON.stringify([
+      count++,
+      node.props.name,
+    ]);
+  }
+  else {
+    input.value = '[]';
   }
 }
 
@@ -133,6 +160,9 @@ fetch('./sketch.sketch')
         });
         document.querySelector('#button3').addEventListener('click', () => {
           toRich();
+        });
+        document.querySelector('#button4').addEventListener('click', () => {
+          toSelect();
         });
       });
   });

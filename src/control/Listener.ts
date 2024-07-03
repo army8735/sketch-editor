@@ -278,6 +278,7 @@ export default class Listener extends Event {
         selected,
         false,
       );
+      // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
       const oldSelected = selected.slice(0);
       if (node) {
@@ -489,7 +490,7 @@ export default class Listener extends Event {
           this.select.updateFrame(dx, dy);
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
-          const res = root.getFrameNodes(x, y, x + dx2, y + dy2, this.metaKey);
+          const res = root.getFrameNodes(x, y, x + dx * dpi, y + dy * dpi, this.metaKey);
           const old = selected.splice(0);
           selected.push(...res);
           // 已选择的没变优化

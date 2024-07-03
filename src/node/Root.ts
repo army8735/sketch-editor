@@ -53,6 +53,8 @@ import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
 import Group from './Group';
+import Geom from './geom/Geom';
+import ShapeGroup from './geom/ShapeGroup';
 import { StyleUnit } from '../style/define';
 import inject from '../util/inject';
 
@@ -716,15 +718,34 @@ class Root extends Container implements FrameCallback {
     if (page) {
       const res = page.getNodeByPoint(x, y);
       if (res) {
-        // 按下metaKey，无论是否有选择节点，一定是返回最深的叶子节点
+        // 按下metaKey，需返回最深的叶子节点，但不返回组（变为画板），同时如果是ShapeGroup的子节点需返回ShapeGroup
         if (metaKey) {
+          if (res instanceof Group) {
+            let p = res.parent;
+            while (p && p !== this) {
+              if (p instanceof ArtBoard) {
+                return p;
+              }
+              p = p.parent;
+            }
+            return;
+          }
+          else if (res instanceof Geom) {
+            let p = res.parent;
+            while (p && p !== this) {
+              if (p instanceof ShapeGroup) {
+                return p;
+              }
+              p = p.parent;
+            }
+          }
           return res;
         }
-        // 没按metaKey选不了画板
-        if (res.isArtBoard) {
+        // 没按metaKey选不了组和画板，shapeGroup除外
+        if (res instanceof Container && !(res instanceof ShapeGroup)) {
           return;
         }
-        // 没有选择节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
+        // 点击前没有已选节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
         if (!selected.length) {
           let n = res;
           while (n.struct && n.struct.lv > 3) {
@@ -780,14 +801,13 @@ class Root extends Container implements FrameCallback {
 
   getFrameNodes(x1: number, y1: number, x2: number, y2: number, metaKey = false) {
     if (this.isDestroyed) {
-      return [] as Node[];
+      return [];
     }
     const page = this.lastPage;
     if (page) {
-      const res = page.getNodesByFrame(x1, y1, x2, y2, metaKey);
-      return res;
+      return page.getNodesByFrame(x1, y1, x2, y2, metaKey);
     }
-    return [] as Node[];
+    return [];
   }
 
   zoomTo(scale: number, cx?: number, cy?: number) {
