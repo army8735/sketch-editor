@@ -67,6 +67,7 @@ export default class Listener extends Event {
   originStyle: Style[]; // 同上
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
+  mouseDownArtBoard?: ArtBoard;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -280,8 +281,21 @@ export default class Listener extends Event {
         selected,
         false,
       );
-      if (this.metaKey && node instanceof ArtBoard) {
-        node = undefined;
+      // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
+      if (this.metaKey && node instanceof ArtBoard && selected.indexOf(node) === -1) {
+        // 如果已选的里面有此画板或者属于此画板，要忽略
+        let ignore = false;
+        for (let i = 0, len = selected.length; i < len; i++) {
+          const item = selected[i];
+          if (item === node || item.artBoard === node) {
+            ignore = true;
+            break;
+          }
+        }
+        if (!ignore) {
+          this.mouseDownArtBoard = node;
+          node = undefined;
+        }
       }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
@@ -348,7 +362,7 @@ export default class Listener extends Event {
           const text = selected[0] as Text;
           text.hideSelectArea();
         }
-        else {
+        else if (!this.shiftKey) {
           selected.splice(0);
         }
       }
@@ -363,7 +377,6 @@ export default class Listener extends Event {
       }
       else {
         this.select.hideSelect();
-        // this.select.showFrame(this.startX - this.originX, this.startY - this.originY, 0, 0);
       }
       // 一直点选空白不选节点，防止重复触发
       if (oldSelected.length === 0 && selected.length === 0) {
@@ -733,8 +746,20 @@ export default class Listener extends Event {
         }
       }
     }
+    // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择，shift校验在down时做
+    else if (this.metaKey && this.mouseDownArtBoard) {
+      if (!this.shiftKey) {
+        selected.splice(0);
+      }
+      selected.push(this.mouseDownArtBoard);
+      this.select.hideHover();
+      this.select.showSelect(selected);
+      this.prepare();
+      this.emit(Listener.SELECT_NODE, selected.slice(0));
+    }
     this.isMouseDown = false;
     this.isMouseMove = false;
+    this.mouseDownArtBoard = undefined;
     if (this.spaceKey) {
       if (this.options.disabled?.drag) {
         return;
@@ -796,7 +821,8 @@ export default class Listener extends Event {
       this.selected,
       true,
     );
-    if (node) {
+    // 忽略画板
+    if (node && !(node instanceof ArtBoard)) {
       if (this.selected.length !== 1 || node !== this.selected[0]) {
         if (this.options.disabled?.select) {
           return;
@@ -819,7 +845,7 @@ export default class Listener extends Event {
       }
     }
     else {
-      this.select.hideSelect();
+      // this.select.hideSelect();
     }
   }
 

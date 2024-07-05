@@ -22,13 +22,13 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[]')
+      .assert.value('#base64', '[1]')
 
       .moveToElement('canvas', 200, 200)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[1,"编组 3"]')
+      .assert.value('#base64', '[2,"编组 3"]')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
@@ -39,7 +39,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[2,"1"]')
+      .assert.value('#base64', '[3,"1"]')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
@@ -49,7 +49,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[3,"画板"]')
+      .assert.value('#base64', '[4,"画板"]')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
@@ -59,7 +59,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[4,"3"]')
+      .assert.value('#base64', '[5,"3"]')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
@@ -69,7 +69,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[5,"形状结合"]')
+      .assert.value('#base64', '[6,"形状结合"]')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
@@ -79,7 +79,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
-      .assert.value('#base64', '[6,"画板"]')
+      .assert.value('#base64', '[7,"画板"]')
 
       .end();
   }

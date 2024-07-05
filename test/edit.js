@@ -112,7 +112,7 @@ function toSelect() {
     ]);
   }
   else {
-    input.value = '[]';
+    input.value = '[' + (count++) + ']';
   }
 }
 

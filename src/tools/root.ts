@@ -4,7 +4,6 @@ import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
 import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import Container from '../node/Container';
 
 export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false, selected: Node[] = [], isChild = false) {
   if (root.isDestroyed) {
@@ -37,8 +36,8 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         }
         return res;
       }
-      // 没按metaKey选不了组和画板，shapeGroup除外
-      if (res instanceof Container && !(res instanceof ShapeGroup)) {
+      // 没按metaKey选不了组，shapeGroup除外
+      if (res instanceof Group && !(res instanceof ShapeGroup)) {
         return;
       }
       // 点击前没有已选节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
@@ -50,6 +49,10 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             break;
           }
           n = p;
+        }
+        // 非空画板不能选
+        if (n instanceof ArtBoard && n.children.length) {
+          return;
         }
         return n;
       }
@@ -121,6 +124,10 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
               sel[i] = item.parent as Node;
             }
           });
+        }
+        // 非空画板不能选
+        if (n instanceof ArtBoard && n.children.length) {
+          return;
         }
         return n;
       }
