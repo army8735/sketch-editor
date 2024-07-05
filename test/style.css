@@ -87,16 +87,18 @@ body {
   align-items: center;
   margin: 0;
   font-weight: 400;
-  height: 24px;
+  height: 22px;
+  border: 1px solid transparent;
   border-radius: 3px;
 }
-.tree dt:hover,
-.tree dt .hover {
-  background: #f3f3f3;
+.tree dt:hover {
+  border: 1px solid #F63;
 }
-.tree dt:hover .visible,
-.tree dt .hover .visible {
+.tree dt:hover .visible {
   opacity: 1 !important;
+}
+.tree dt.hover {
+  border: 1px solid #F63;
 }
 .tree dt.active {
   background: #F96;
@@ -151,13 +153,16 @@ body {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAMAAACf4xmcAAAAD1BMVEWLi4tMaXGKioqJiYmKiop7sw+NAAAABHRSTlNAAL+ApmIP8AAAAAlwSFlzAAALEwAACxMBAJqcGAAAAK5JREFUeJzNlFEOwzAIQw32/c880SZNtbCQSZtUf79EYAOwLeHnGHwl8sDgqgSD1ZRkoORYyiUExqJ8iYHhORiADczVe1thOP2qMH6B+YSBdO9F99rwhl3x897pZMgImWk3DXPFVGGYkGN3G1hjFg1uYDa+I3l2kWEMu4Bm7/EktZfzHqQpsFvT7PwUFvrWxRvnE4f8UqwoIDmrdebucWhTv1Scmkhvfbn+ci03sBdSIAnm85J8fwAAAABJRU5ErkJggg==);
 }
 .tree .geom {
+  display: flex;
   width: 16px;
   height: 16px;
+  align-items: center;
+  justify-content: center;
 }
 .tree svg {
   display: block;
   overflow: visible;
-  transform-origin: 0 0;
+  pointer-events: none;
 }
 .tree .visible {
   width: 16px;

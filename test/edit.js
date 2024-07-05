@@ -96,7 +96,7 @@ function toSelect() {
     input.value = JSON.stringify(nodes.map(node => {
       return [
         count,
-        node.rich,
+        node.props.name,
       ];
     }));
     count++;

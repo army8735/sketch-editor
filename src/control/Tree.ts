@@ -44,7 +44,7 @@ function genNodeTree(node: Node) {
   else {
     s += `<span class="type ${type}"></span>`;
   }
-  s += `<span class="name">${node.props.name || ''}</span>`;
+  s += `<span class="name" title="${node.props.name || ''}">${node.props.name || ''}</span>`;
   if (!(node instanceof ArtBoard)) {
     s += `<span class="visible ${node.computedStyle.visible ? 't' : ''}"></span>`;
   }
