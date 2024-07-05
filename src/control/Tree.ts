@@ -39,7 +39,7 @@ function genNodeTree(node: Node) {
   // 特殊的矢量小标预览
   if (node instanceof Geom || node instanceof ShapeGroup) {
     const svg = node.toSvg(12);
-    s += `<span class="geom">` + svg + '</span>';
+    s += `<span class="type geom">` + svg + '</span>';
   }
   else {
     s += `<span class="type ${type}"></span>`;
@@ -186,7 +186,21 @@ export default class Tree {
         if (uuid) {
           const node = root.refs[uuid];
           if (node) {
-            listener.active([node]);
+            // 多选
+            if (listener.metaKey) {
+              const selected = listener.selected.slice(0);
+              const i = selected.indexOf(node);
+              if (i > -1) {
+                selected.splice(i, 1);
+              }
+              else {
+                selected.push(node);
+              }
+              listener.active(selected);
+            }
+            else {
+              listener.active([node]);
+            }
           }
         }
       }

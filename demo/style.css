@@ -175,6 +175,7 @@ body {
 .tree svg {
   display: block;
   overflow: visible;
+  pointer-events: none;
 }
 .tree .visible {
   width: 16px;
