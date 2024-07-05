@@ -280,6 +280,9 @@ export default class Listener extends Event {
         selected,
         false,
       );
+      if (this.metaKey && node instanceof ArtBoard) {
+        node = undefined;
+      }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
       const oldSelected = selected.slice(0);
@@ -360,7 +363,7 @@ export default class Listener extends Event {
       }
       else {
         this.select.hideSelect();
-        this.select.showFrame(this.startX - this.originX, this.startY - this.originY, 0, 0);
+        // this.select.showFrame(this.startX - this.originX, this.startY - this.originY, 0, 0);
       }
       // 一直点选空白不选节点，防止重复触发
       if (oldSelected.length === 0 && selected.length === 0) {
@@ -498,7 +501,12 @@ export default class Listener extends Event {
           return;
         }
         if (this.isFrame) {
-          this.select.updateFrame(dx, dy);
+          if (!this.isMouseMove) {
+            this.select.showFrame(this.startX - this.originX, this.startY - this.originY, dx, dy);
+          }
+          else {
+            this.select.updateFrame(dx, dy);
+          }
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
           const res = root.getFrameNodes(x, y, x + dx * dpi, y + dy * dpi, this.metaKey);
