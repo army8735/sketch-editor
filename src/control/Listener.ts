@@ -14,6 +14,7 @@ import History from '../history/History';
 import MoveCommand from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
+import { getNodeByPoint } from '../tools/root';
 
 enum State {
   NORMAL = 0,
@@ -271,7 +272,8 @@ export default class Listener extends Event {
       const dpi = root.dpi;
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
-      let node = root.getNode(
+      let node = getNodeByPoint(
+        root,
         x,
         y,
         this.metaKey,
@@ -570,7 +572,8 @@ export default class Listener extends Event {
         return;
       }
       // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-      const node = root.getNode(
+      const node = getNodeByPoint(
+        root,
         (e as MouseEvent).offsetX * dpi,
         (e as MouseEvent).offsetY * dpi,
         this.metaKey,
@@ -625,7 +628,8 @@ export default class Listener extends Event {
           return;
         }
         // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-        const node = root.getNode(
+        const node = getNodeByPoint(
+          root,
           e.offsetX * dpi,
           e.offsetY * dpi,
           this.metaKey,
@@ -776,7 +780,8 @@ export default class Listener extends Event {
       return;
     }
     const dpi = root.dpi;
-    let node = root.getNode(
+    let node = getNodeByPoint(
+      root,
       (e.clientX - this.originX) * dpi,
       (e.clientY - this.originY) * dpi,
       this.metaKey,
