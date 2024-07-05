@@ -251,10 +251,10 @@ class BasicPanel {
         if (d) {
           o.w += d;
           const { computedStyle } = node;
-          node.startSizeChange();
           const style = node.getStyle();
+          node.startSizeChange();
           const cssStyle = node.getCssStyle();
-          const next = resizeRight(node, style, computedStyle, d)!;
+          const next = resizeRight(node, node.style, computedStyle, d)!;
           node.updateStyle(next);
           const prev: Partial<JStyle> = {};
           Object.keys(next).forEach((k) => {
@@ -309,10 +309,10 @@ class BasicPanel {
         if (d) {
           o.h += d;
           const { computedStyle } = node;
-          node.startSizeChange();
           const style = node.getStyle();
+          node.startSizeChange();
           const cssStyle = node.getCssStyle();
-          const next = resizeBottom(node, style, computedStyle, d)!;
+          const next = resizeBottom(node, node.style, computedStyle, d)!;
           node.updateStyle(next);
           const prev: Partial<JStyle> = {};
           Object.keys(next).forEach((k) => {
