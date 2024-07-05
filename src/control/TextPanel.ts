@@ -223,6 +223,7 @@ class TextPanel {
       if (!key) {
         return;
       }
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
       nodes = this.nodes.slice(0);
       prevs = [];
       nexts = [];
@@ -407,7 +408,12 @@ class TextPanel {
         input.placeholder = '多个';
       }
       else {
-        input.value = toPrecision(o.lineHeight[0], 0).toString();
+        if (o.autoLineHeight[0]) {
+          input.placeholder = toPrecision(o.lineHeight[0], 0).toString();
+        }
+        else {
+          input.value = toPrecision(o.lineHeight[0], 0).toString();
+        }
       }
     }
     {
