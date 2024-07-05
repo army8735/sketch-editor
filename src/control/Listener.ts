@@ -13,7 +13,7 @@ import { ArtBoardProps, JStyle } from '../format';
 import History from '../history/History';
 import MoveCommand from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
-import { resizeBR, resizeTL } from '../tools/node';
+import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
 
 enum State {
   NORMAL = 0,
@@ -429,37 +429,46 @@ export default class Listener extends Event {
         const { style } = node;
         const computedStyle = this.computedStyle[i];
         const cssStyle = this.cssStyle[i];
+        // 分4个方向上看，每个方向除了拉边还可以拉相邻2个角
         if (
           this.controlType === 't' ||
           this.controlType === 'tl' ||
           this.controlType === 'tr'
         ) {
-          const t = resizeTL(node, style, computedStyle, dx2, 0);
-          Object.assign(next, t);
+          const t = resizeTop(node, style, computedStyle, dy2);
+          if (t) {
+            Object.assign(next, t);
+          }
         }
         else if (
           this.controlType === 'b' ||
           this.controlType === 'bl' ||
           this.controlType === 'br'
         ) {
-          const t = resizeBR(node, style, computedStyle, 0, dy2);
-          Object.assign(next, t);
+          const t = resizeBottom(node, style, computedStyle, dy2);
+          if (t) {
+            Object.assign(next, t);
+          }
         }
         if (
           this.controlType === 'l' ||
           this.controlType === 'tl' ||
           this.controlType === 'bl'
         ) {
-          const t = resizeTL(node, style, computedStyle, 0, dy2);
-          Object.assign(next, t);
+          const t = resizeLeft(node, style, computedStyle, dx2);
+          if (t) {
+            Object.assign(next, t);
+          }
         }
         else if (
           this.controlType === 'r' ||
           this.controlType === 'tr' ||
           this.controlType === 'br'
         ) {
-          const t = resizeBR(node, style, computedStyle, dx2, 0);
-          Object.assign(next, t);
+          const t = resizeRight(node, style, computedStyle, dx2);
+          if (t) {
+            Object.assign(next, t);
+          }
         }
         node.updateStyle(next);
         Object.keys(next).forEach((k) => {

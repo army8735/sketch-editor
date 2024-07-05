@@ -4,7 +4,7 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getBasicInfo, resizeBR } from '../tools/node';
+import { getBasicInfo, resizeBottom, resizeRight } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
@@ -254,7 +254,7 @@ class BasicPanel {
           node.startSizeChange();
           const style = node.getStyle();
           const cssStyle = node.getCssStyle();
-          const next = resizeBR(node, style, computedStyle, d, 0);
+          const next = resizeRight(node, style, computedStyle, d)!;
           node.updateStyle(next);
           const prev: Partial<JStyle> = {};
           Object.keys(next).forEach((k) => {
@@ -312,7 +312,7 @@ class BasicPanel {
           node.startSizeChange();
           const style = node.getStyle();
           const cssStyle = node.getCssStyle();
-          const next = resizeBR(node, style, computedStyle, 0, d);
+          const next = resizeBottom(node, style, computedStyle, d)!;
           node.updateStyle(next);
           const prev: Partial<JStyle> = {};
           Object.keys(next).forEach((k) => {
