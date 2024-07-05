@@ -139,6 +139,7 @@ export default class Tree {
     this.dom.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
+      const isDt = target.tagName.toUpperCase() === 'DT';
       if (classList.contains('arrow')) {
         const dl = target.parentElement!.parentElement!;
         const uuid = dl.getAttribute('uuid');
@@ -174,12 +175,12 @@ export default class Tree {
           }
         }
       }
-      else if (classList.contains('name') || classList.contains('type')) {
+      else if (classList.contains('name') || classList.contains('type') || isDt) {
         const actives = this.dom.querySelectorAll('dt.active');
         actives.forEach((item) => {
           item.classList.remove('active');
         });
-        const dl = target.parentElement!.parentElement!;
+        const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
         const dt = dl.querySelector('dt')!;
         dt.classList.add('active');
         const uuid = dl.getAttribute('uuid');
