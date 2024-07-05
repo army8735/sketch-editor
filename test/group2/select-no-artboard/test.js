@@ -13,6 +13,7 @@ module.exports = {
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[0,"编组 3"]')
+      .assert.cssProperty('#main div.select', 'display', 'block')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
@@ -23,12 +24,14 @@ module.exports = {
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[1]')
+      .assert.cssProperty('#main div.select', 'display', 'none')
 
       .moveToElement('canvas', 200, 200)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[2,"编组 3"]')
+      .assert.cssProperty('#main div.select', 'display', 'block')
 
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
