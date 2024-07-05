@@ -718,7 +718,7 @@ class Root extends Container implements FrameCallback {
     if (page) {
       const res = page.getNodeByPoint(x, y);
       if (res) {
-        // 按下metaKey，需返回最深的叶子节点，但不返回组（变为画板），同时如果是ShapeGroup的子节点需返回ShapeGroup
+        // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回ShapeGroup
         if (metaKey) {
           if (res instanceof Group) {
             let p = res.parent;
@@ -757,21 +757,59 @@ class Root extends Container implements FrameCallback {
           }
           return n;
         }
+        // 双击下钻已选，一定有已选，遍历所有已选看激活的是哪个的儿子
+        else if (isChild) {
+          let n = res;
+          while (n.struct && n.struct.lv > 3) {
+            for (let i = 0; i < selected.length; i++) {
+              const o = selected[i];
+              if (n.parent === o) {
+                return n;
+              }
+            }
+            const p = n.parent!;
+            if (p instanceof ArtBoard) {
+              break;
+            }
+            n = p;
+          }
+          return n;
+        }
         /**
-         * 已有选择节点比较复杂，双击情况下钻isChild为true；
-         * 单击先看已选自己或者它的兄弟，最优先；
-         * 没有则向上递归，看已选的父亲的兄弟，如此循环；
+         * 当前激活的lv和已选的最大lv对比，不一致的话，将大的那个向上取parent，直到一致，
+         * 此时如果2个互为兄弟，则成功返回，否则继续将2个同时向上取parent，继续循环判断兄弟关系，
+         * 直到最上层page下直接子节点，但如果是画板则还是下钻一级，除非空画板
+         * 先看已选自己或者它的兄弟，激活的是已选自己活兄弟最优先，
+         * 没有则向上递归，看已选的父亲和其的兄弟，如此循环，
          * 没有则是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
          */
         else {
-          let n = res;
-          const len = selected.length;
-          while (n.struct && n.struct.lv > 3) {
-            for (let i = 0; i < len; i++) {
-              const o = selected[i];
-              if (isChild && n.parent === o) {
-                return n;
+          let n = res as Node;
+          let sel = selected.slice(0);
+          let lv = n.struct.lv;
+          let max = lv;
+          sel.forEach((item, i) => {
+            // 如果已选比当前的深，向上调整已选为其parent直到lv平级
+            if (item.struct.lv > lv) {
+              while (item.struct.lv > lv) {
+                item = item.parent as Node;
+                sel[i] = item;
               }
+            }
+            // 否则记录下已选中最深的lv（一定比lv小或等于）
+            else {
+              max = Math.max(max, item.struct.lv);
+            }
+          });
+          // 如果已选的都比lv大，说明当前的最深，调整到持平
+          if (max < lv) {
+            while (n.struct.lv > max) {
+              n = n.parent as Node;
+            }
+          }
+          while (n.struct.lv > 3) {
+            for (let i = 0; i < sel.length; i++) {
+              const o = sel[i];
               if (n.isSibling(o) || n === o) {
                 return n;
               }
@@ -781,6 +819,12 @@ class Root extends Container implements FrameCallback {
               break;
             }
             n = p;
+            sel.forEach((item, i) => {
+              // 可能有多个已选，有的层级开始就比较小，需判断一下必须比当前的大才向上调整为parent
+              if (item.struct.lv > n.struct.lv) {
+                sel[i] = item.parent as Node;
+              }
+            });
           }
           return n;
         }

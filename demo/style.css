@@ -102,16 +102,18 @@ body {
   align-items: center;
   margin: 0;
   font-weight: 400;
-  height: 24px;
+  height: 22px;
+  border: 1px solid transparent;
   border-radius: 3px;
 }
-.tree dt:hover,
-.tree dt .hover {
-  background: #f3f3f3;
+.tree dt:hover {
+  border: 1px solid #F63;
 }
-.tree dt:hover .visible,
-.tree dt .hover .visible {
+.tree dt:hover .visible {
   opacity: 1 !important;
+}
+.tree dt.hover {
+  border: 1px solid #F63;
 }
 .tree dt.active {
   background: #F96;

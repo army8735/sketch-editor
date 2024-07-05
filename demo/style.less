@@ -114,15 +114,20 @@ html, body {
     align-items: center;
     margin: 0;
     font-weight: 400;
-    height: 24px;
+    height: 22px;
+    border: 1px solid transparent;
     border-radius: 3px;
 
-    &:hover, .hover {
-      background: #f3f3f3;
+    &:hover {
+      border: 1px solid #F63;
 
       .visible {
         opacity: 1 !important;
       }
+    }
+
+    &.hover {
+      border: 1px solid #F63;
     }
 
     &.active {
