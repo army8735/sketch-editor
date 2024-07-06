@@ -20,8 +20,8 @@ module.exports = {
       .pause(20)
       .click('#button2')
       .assert.value('#base64', '[1,{"v":10,"u":1},{"v":170,"u":1},{"v":10,"u":1},{"v":180,"u":1},{"v":0,"u":0},{"v":0,"u":0},{"v":0,"u":1},{"v":0,"u":1},10,170,10,180,220,210,0,0]')
-      .assert.value('#side .basic-panel .w .number', '220')
-      .assert.value('#side .basic-panel .h .number', '210')
+      .assert.value('#side .basic-panel .w input', '220')
+      .assert.value('#side .basic-panel .h input', '210')
 
       .keys(browser.Keys.META)
       .keys('z')
@@ -29,8 +29,8 @@ module.exports = {
       .pause(20)
       .click('#button2')
       .assert.value('#base64', '[2,{"v":10,"u":1},{"v":190,"u":1},{"v":10,"u":1},{"v":190,"u":1},{"v":0,"u":0},{"v":0,"u":0},{"v":0,"u":1},{"v":0,"u":1},10,190,10,190,200,200,0,0]')
-      .assert.value('#side .basic-panel .w .number', '200')
-      .assert.value('#side .basic-panel .h .number', '200')
+      .assert.value('#side .basic-panel .w input', '200')
+      .assert.value('#side .basic-panel .h input', '200')
 
       .keys(browser.Keys.META)
       .keys(browser.Keys.SHIFT)
@@ -47,8 +47,8 @@ module.exports = {
       .pause(20)
       .click('#button2')
       .assert.value('#base64', '[4,{"v":30,"u":1},{"v":170,"u":1},{"v":20,"u":1},{"v":180,"u":1},{"v":0,"u":0},{"v":0,"u":0},{"v":0,"u":1},{"v":0,"u":1},30,170,20,180,200,200,0,0]')
-      .assert.value('#side .basic-panel .x .number', '30')
-      .assert.value('#side .basic-panel .y .number', '20')
+      .assert.value('#side .basic-panel .x input', '30')
+      .assert.value('#side .basic-panel .y input', '20')
 
       .keys(browser.Keys.META)
       .keys('z')
@@ -56,8 +56,8 @@ module.exports = {
       .pause(20)
       .click('#button2')
       .assert.value('#base64', '[5,{"v":10,"u":1},{"v":170,"u":1},{"v":10,"u":1},{"v":180,"u":1},{"v":0,"u":0},{"v":0,"u":0},{"v":0,"u":1},{"v":0,"u":1},10,170,10,180,220,210,0,0]')
-      .assert.value('#side .basic-panel .x .number', '10')
-      .assert.value('#side .basic-panel .y .number', '10')
+      .assert.value('#side .basic-panel .x input', '10')
+      .assert.value('#side .basic-panel .y input', '10')
 
       .keys(browser.Keys.META)
       .keys(browser.Keys.SHIFT)
