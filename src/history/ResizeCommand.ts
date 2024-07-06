@@ -3,12 +3,10 @@ import Node from '../node/Node';
 import { JStyle } from '../format';
 
 class ResizeCommand extends Command {
-  nodes: Node[];
   styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[];
 
   constructor(nodes: Node[], styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[]) {
-    super();
-    this.nodes = nodes;
+    super(nodes);
     this.styles = styles;
   }
 

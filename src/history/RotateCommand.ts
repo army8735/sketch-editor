@@ -2,12 +2,10 @@ import Command from './Command';
 import Node from '../node/Node';
 
 class RotateCommand extends Command {
-  nodes: Node[];
   ds: number[];
 
   constructor(nodes: Node[], ds: number[]) {
-    super();
-    this.nodes = nodes;
+    super(nodes);
     this.ds = ds;
   }
 

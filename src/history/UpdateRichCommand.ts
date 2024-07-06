@@ -3,13 +3,11 @@ import Text from '../node/Text';
 import { UpdateRich } from '../format';
 
 class UpdateRichCommand extends Command {
-  nodes: Text[];
   prevs: UpdateRich[][];
   nexts: UpdateRich[][];
 
   constructor(nodes: Text[], prevs: UpdateRich[][], nexts: UpdateRich[][]) {
-    super();
-    this.nodes = nodes;
+    super(nodes);
     this.prevs = prevs;
     this.nexts = nexts;
   }
@@ -19,7 +17,7 @@ class UpdateRichCommand extends Command {
     nodes.forEach((node, i) => {
       const next = nexts[i];
       next.forEach(item => {
-        node.updateRichStyle(item);
+        (node as Text).updateRichStyle(item);
       });
     });
   }
@@ -29,7 +27,7 @@ class UpdateRichCommand extends Command {
     nodes.forEach((node, i) => {
       const prev = prevs[i];
       prev.forEach(item => {
-        node.updateRichStyle(item);
+        (node as Text).updateRichStyle(item);
       });
     });
   }

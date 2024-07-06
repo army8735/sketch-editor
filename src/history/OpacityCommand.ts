@@ -2,12 +2,10 @@ import Command from './Command';
 import Node from '../node/Node';
 
 class OpacityCommand extends Command {
-  nodes: Node[];
   ds: { prev: number, next: number }[];
 
   constructor(nodes: Node[], ds: { prev: number, next: number }[]) {
-    super();
-    this.nodes = nodes;
+    super(nodes);
     this.ds = ds;
   }
 

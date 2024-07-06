@@ -3,13 +3,11 @@ import Node from '../node/Node';
 import { JStyle } from '../format';
 
 class UpdateStyleCommand extends Command {
-  nodes: Node[];
   prevs: Partial<JStyle>[];
   nexts: Partial<JStyle>[];
 
   constructor(nodes: Node[], prevs: Partial<JStyle>[], nexts: Partial<JStyle>[]) {
-    super();
-    this.nodes = nodes;
+    super(nodes);
     this.prevs = prevs;
     this.nexts = nexts;
   }

@@ -993,7 +993,7 @@ export default class Listener extends Event {
       }
       if (c) {
         this.updateActive();
-        const nodes = this.selected.slice(0);
+        const nodes = c.nodes.slice(0);
         if (c instanceof MoveCommand) {
           this.emit(Listener.MOVE_NODE, nodes);
         }

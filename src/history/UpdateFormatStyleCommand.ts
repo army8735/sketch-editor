@@ -3,13 +3,11 @@ import Node from '../node/Node';
 import { Style } from '../style/define';
 
 class UpdateFormatStyleCommand extends Command {
-  nodes: Node[];
   prevs: Partial<Style>[];
   nexts: Partial<Style>[];
 
   constructor(nodes: Node[], prevs: Partial<Style>[], nexts: Partial<Style>[]) {
-    super();
-    this.nodes = nodes;
+    super(nodes);
     this.prevs = prevs;
     this.nexts = nexts;
   }

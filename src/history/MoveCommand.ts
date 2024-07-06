@@ -2,12 +2,11 @@ import Command from './Command';
 import Node from '../node/Node';
 
 class MoveCommand extends Command {
-  nodes: Node[];
   dxs: number[];
   dys: number[];
 
   constructor(nodes: Node[], dxs: number[], dys: number[]) {
-    super();
+    super(nodes);
     this.nodes = nodes;
     this.dxs = dxs;
     this.dys = dys;
