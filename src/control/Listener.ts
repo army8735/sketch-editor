@@ -11,8 +11,10 @@ import Input from './Input';
 import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
 import History from '../history/History';
+import Command from '../history/Command';
 import MoveCommand from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
+import RotateCommand from '../history/RotateCommand';
 import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
 import { getNodeByPoint } from '../tools/root';
 
@@ -982,16 +984,24 @@ export default class Listener extends Event {
     }
     // z，undo/redo
     else if (e.keyCode === 90) {
+      let c: Command | undefined;
       if (this.metaKey && this.shiftKey) {
-        const c = this.history.redo();
-        if (c) {
-          this.updateActive();
-        }
+        c = this.history.redo();
       }
       else if (this.metaKey) {
-        const c = this.history.undo();
-        if (c) {
-          this.updateActive();
+        c = this.history.undo();
+      }
+      if (c) {
+        this.updateActive();
+        const nodes = this.selected.slice(0);
+        if (c instanceof MoveCommand) {
+          this.emit(Listener.MOVE_NODE, nodes);
+        }
+        else if (c instanceof ResizeCommand) {
+          this.emit(Listener.RESIZE_NODE, nodes);
+        }
+        else if (c instanceof RotateCommand) {
+          this.emit(Listener.ROTATE_NODE, nodes);
         }
       }
     }
