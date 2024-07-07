@@ -24,7 +24,7 @@ module.exports = {
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[1]')
-      .assert.not.elementPresent('#main div.select')
+      .assert.cssProperty('#main div.select', 'display', 'none')
 
       .moveToElement('canvas', 200, 200)
       .mouseButtonDown(0)

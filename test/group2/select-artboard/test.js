@@ -13,7 +13,7 @@ module.exports = {
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[0]')
-      .assert.not.elementPresent('#main div.select')
+      .assert.cssProperty('#main div.select', 'display', 'none')
 
       .moveToElement('canvas', 220, 20)
       .mouseButtonDown(0)
@@ -46,7 +46,7 @@ module.exports = {
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[4]')
-      .assert.not.elementPresent('#main div.select')
+      .assert.cssProperty('#main div.select', 'display', 'none')
 
       .keys(browser.Keys.META)
       .moveToElement('canvas', 20, 20)

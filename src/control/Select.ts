@@ -215,7 +215,7 @@ export default class Select {
       this.select.style.height = res.height + 'px';
       this.select.style.transform = res.transform;
     }
-    // 多个时表现不一样，忽略了旋转镜像等transform，取所有节点的boundingClientRect全集最大值
+    // 多个时表现不一样，忽略了旋转镜像等transform，取所有节点的boundingClientRect全集
     else if (selected.length > 1) {
       let left = 0, top = 0, right = 0, bottom = 0;
       selected.forEach((item, i) => {
