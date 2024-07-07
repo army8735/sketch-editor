@@ -36,7 +36,7 @@ export default class Select {
   dom: HTMLElement;
   frame: HTMLElement;
   hover: HTMLElement;
-  select: HTMLElement[];
+  select: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement) {
     this.root = root;
@@ -69,14 +69,21 @@ export default class Select {
     hover.style.pointerEvents = 'none';
     dom.appendChild(hover);
 
-    this.select = [];
+    const select = this.select = document.createElement('div');
+    select.className = 'select';
+    select.style.display = 'none';
+    select.style.position = 'absolute';
+    select.style.transformOrigin = '0 0';
+    select.style.pointerEvents = 'none';
+    select.innerHTML = html;
+    dom.appendChild(select);
   }
 
   showFrame(x: number, y: number, w: number, h: number) {
-    this.frame.style.display = 'block';
     this.frame.style.left = x + 'px';
     this.frame.style.top = y + 'px';
-    this.updateFrame(w, h)
+    this.updateFrame(w, h);
+    this.frame.style.display = 'block';
   }
 
   updateFrame(w: number, h: number) {
@@ -90,18 +97,18 @@ export default class Select {
   }
 
   showHover(node: Node) {
-    this.hover.style.display = 'block';
     this.updateHover(node);
+    this.hover.style.display = 'block';
   }
 
   hideHover() {
     this.hover.style.display = 'none';
   }
 
+  // hover/select时单个节点的位置，包含镜像旋转等在内的transform，换算成dom的实际宽高尺寸
   calRect(node: Node) {
     const root = this.root;
     const dpi = root.dpi;
-    const hover = this.hover;
     let rect = node._rect || node.rect;
     let matrix = node.matrixWorld;
     if (dpi !== 1) {
@@ -194,45 +201,57 @@ export default class Select {
     this.hover.style.transform = res.transform;
   }
 
-  isHoverDom(dom: HTMLElement) {
-    return dom === this.hover || dom.parentElement === this.hover || dom.parentElement?.parentElement === this.hover;
-  }
-
   showSelect(selected: Node[]) {
-    this.hideSelect();
-    selected.forEach(() => {
-      const select = document.createElement('div');
-      select.className = 'select';
-      select.style.position = 'absolute';
-      select.style.transformOrigin = '0 0';
-      select.style.pointerEvents = 'none';
-      select.innerHTML = html;
-      this.dom.appendChild(select);
-      this.select.push(select);
-    });
     this.updateSelect(selected);
+    this.select.style.display = 'block';
   }
 
   updateSelect(selected: Node[]) {
-    selected.forEach((item, i) => {
-      const res = this.calRect(item);
-      const select = this.select[i];
-      select.style.left = res.left + 'px';
-      select.style.top = res.top + 'px';
-      select.style.width = res.width + 'px';
-      select.style.height = res.height + 'px';
-      select.style.transform = res.transform;
-    });
+    if (selected.length === 1) {
+      const res = this.calRect(selected[0]);
+      this.select.style.left = res.left + 'px';
+      this.select.style.top = res.top + 'px';
+      this.select.style.width = res.width + 'px';
+      this.select.style.height = res.height + 'px';
+      this.select.style.transform = res.transform;
+    }
+    // 多个时表现不一样，忽略了旋转镜像等transform，取所有节点的boundingClientRect全集最大值
+    else if (selected.length > 1) {
+      let left = 0, top = 0, right = 0, bottom = 0;
+      selected.forEach((item, i) => {
+        const rect = item.getBoundingClientRect();
+        if (i) {
+          left = Math.min(left, rect.left);
+          top = Math.min(top, rect.top);
+          right = Math.max(right, rect.right);
+          bottom = Math.max(bottom, rect.bottom);
+        }
+        else {
+          left = rect.left;
+          top = rect.top;
+          right = rect.right;
+          bottom = rect.bottom;
+        }
+      });
+      const dpi = this.root.dpi;
+      this.select.style.left = left / dpi + 'px';
+      this.select.style.top = top / dpi + 'px';
+      this.select.style.width = (right - left) / dpi + 'px';
+      this.select.style.height = (bottom - top) / dpi + 'px';
+      this.select.style.transform = '';
+    }
   }
 
   hideSelect() {
-    this.select.splice(0).forEach(item => {
-      item.remove();
-    });
+    // this.select.splice(0).forEach(item => {
+    //   item.remove();
+    // });
+    this.select.style.display = 'none';
   }
 
   isSelectControlDom(dom: HTMLElement) {
-    return dom.parentElement && this.select.indexOf(dom.parentElement) > -1;
+    // return dom.parentElement && this.select.indexOf(dom.parentElement) > -1;
+    return dom.parentElement === this.select;
   }
 
   destroy() {
