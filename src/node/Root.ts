@@ -710,17 +710,6 @@ class Root extends Container implements FrameCallback {
     return this.dpi;
   }
 
-  getFrameNodes(x1: number, y1: number, x2: number, y2: number, metaKey = false) {
-    if (this.isDestroyed) {
-      return [];
-    }
-    const page = this.lastPage;
-    if (page) {
-      return page.getNodesByFrame(x1, y1, x2, y2, metaKey);
-    }
-    return [];
-  }
-
   zoomTo(scale: number, cx?: number, cy?: number) {
     this.lastPage?.zoomTo(scale, cx, cy);
   }
