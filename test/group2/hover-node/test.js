@@ -27,7 +27,7 @@ module.exports = {
       .assert.domPropertyEquals('#tree dt.hover .name', 'title', '形状结合')
 
       .keys(browser.Keys.META)
-      .moveToElement('canvas', 31, 321)
+      .moveToElement('canvas', 31, 261)
       .assert.domPropertyEquals('#tree dt.hover .name', 'title', '3')
 
       .moveToElement('canvas', 201, 31)
