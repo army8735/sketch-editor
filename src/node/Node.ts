@@ -61,14 +61,14 @@ class Node extends Event {
   props: Props;
   style: Style;
   computedStyle: ComputedStyle;
-  root: Root | undefined;
-  page: Page | undefined;
-  artBoard: ArtBoard | undefined;
-  symbolInstance: SymbolInstance | undefined;
-  prev: Node | undefined;
-  next: Node | undefined;
-  mask: Node | undefined; // 如果被mask遮罩，指向对方引用
-  parent: Container | undefined;
+  root?: Root;
+  page?: Page;
+  artBoard?: ArtBoard;
+  symbolInstance?: SymbolInstance;
+  prev?: Node;
+  next?: Node;
+  mask?: Node; // 如果被mask遮罩，指向对方引用
+  parent?: Container;
   isDestroyed: boolean;
   struct: Struct;
   refreshLevel: RefreshLevel;
@@ -82,11 +82,11 @@ class Node extends Event {
   hasCacheMw: boolean; // 是否计算过世界matrix
   localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
   parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
-  _rect: Float64Array | undefined; // 真实内容组成的内容框，group/geom特殊计算
-  _bbox: Float64Array | undefined; // 以rect为基础，包含边框包围盒
-  _filterBbox: Float64Array | undefined; // 包含filter/阴影内内容外的包围盒
-  _bbox2: Float64Array | undefined; // 扩大取整的bbox
-  _filterBbox2: Float64Array | undefined; // 扩大取整的filterBbox
+  _rect?: Float64Array; // 真实内容组成的内容框，group/geom特殊计算
+  _bbox?: Float64Array; // 以rect为基础，包含边框包围盒
+  _filterBbox?: Float64Array; // 包含filter/阴影内内容外的包围盒
+  _bbox2?: Float64Array; // 扩大取整的bbox
+  _filterBbox2?: Float64Array; // 扩大取整的filterBbox
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存
   textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
