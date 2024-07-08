@@ -14,7 +14,7 @@ module.exports = {
       .moveToElement('canvas', 31, 221)
       .assert.not.elementPresent('#tree dt.hover')
 
-      .moveToElement('canvas', 31, 321)
+      .moveToElement('canvas', 31, 261)
       .assert.domPropertyEquals('#tree dt.hover .name', 'title', '编组')
 
       .moveToElement('canvas', 131, 131)
