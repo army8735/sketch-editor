@@ -16,7 +16,7 @@ import MoveCommand from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
 import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
-import { getNodeByPoint } from '../tools/root';
+import { getNodeByPoint, getFrameNodes } from '../tools/root';
 
 enum State {
   NORMAL = 0,
@@ -524,7 +524,7 @@ export default class Listener extends Event {
           }
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
-          const res = root.getFrameNodes(x, y, x + dx * dpi, y + dy * dpi, this.metaKey);
+          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, this.metaKey);
           const old = selected.splice(0);
           selected.push(...res);
           // 已选择的没变优化

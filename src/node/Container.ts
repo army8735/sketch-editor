@@ -227,14 +227,14 @@ class Container extends Node {
     }
   }
 
-  // 通用方法，根据x/y返回最深的节点，sketch的一些条件过滤逻辑放在上层调用方Root做
+  // 通用方法，根据x/y返回最深的节点，sketch的一些条件过滤逻辑放在上层做
   getNodeByPoint(x: number, y: number): Node | undefined {
     const children = this.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
       const { computedStyle, matrixWorld } = child;
       const rect = child._rect || child.rect;
-      // 在内部且pointerEvents为true才返回
+      // 在内部且pointerEvents为true才返回，优先看子节点，没有才返回容器（组）
       if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
         if (child instanceof Container) {
           const res = child.getNodeByPoint(x, y);
@@ -249,7 +249,8 @@ class Container extends Node {
     }
   }
 
-  getNodesByFrame(x1: number, y1: number, x2: number, y2: number, isLeaf = false) {
+  // 同上
+  getNodesByFrame(x1: number, y1: number, x2: number, y2: number) {
     const children = this.children;
     const res: Node[] = [];
     for (let i = 0, len = children.length; i < len; i++) {
@@ -263,26 +264,17 @@ class Container extends Node {
         { x: box.x3, y: box.y3 },
         { x: box.x4, y: box.y4 },
       ])) {
-        if (isLeaf) {
-          if (child instanceof Container) {
-            const t = child.getNodesByFrame(x1, y1, x2, y2, isLeaf);
-            if (t.length) {
-              res.push(...t);
-            }
+        if (child instanceof Container) {
+          const t = child.getNodesByFrame(x1, y1, x2, y2);
+          if (t.length) {
+            res.push(...t);
           }
-          else {
+          else if (child.computedStyle.pointerEvents) {
             res.push(child);
           }
         }
-        else {
-          if (child.isArtBoard) {
-            if (isRectsInside(x1, y1, x2, y2, box.x1, box.y1, box.x3, box.y3)) {
-              res.push(child);
-            }
-          }
-          else {
-            res.push(child);
-          }
+        else if (child.computedStyle.pointerEvents) {
+          res.push(child);
         }
       }
     }

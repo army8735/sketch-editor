@@ -4,8 +4,9 @@ import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
 import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
+import Container from '../node/Container';
 
-export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false, selected: Node[] = [], isChild = false) {
+export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false, selected: Node[] = [], isDbl = false) {
   if (root.isDestroyed) {
     return;
   }
@@ -13,7 +14,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   if (page) {
     const res = page.getNodeByPoint(x, y);
     if (res) {
-      // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回ShapeGroup
+      // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回最上层ShapeGroup
       if (metaKey) {
         if (res instanceof Group) {
           let p = res.parent;
@@ -25,18 +26,26 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           }
           return;
         }
-        else if (res instanceof Geom) {
+        // ShapeGroup可能嵌套ShapeGroup，需找到最上层的ShapeGroup返回
+        else if (res instanceof Geom || res instanceof ShapeGroup) {
+          let t: ShapeGroup | undefined;
           let p = res.parent;
           while (p && p !== root) {
             if (p instanceof ShapeGroup) {
-              return p;
+              t = p;
+            }
+            else {
+              break;
             }
             p = p.parent;
+          }
+          if (t) {
+            return t;
           }
         }
         return res;
       }
-      // 没按metaKey选不了组，shapeGroup除外
+      // 选不了组（组本身没内容，选中时肯定是组的空白区域），shapeGroup除外
       if (res instanceof Group && !(res instanceof ShapeGroup)) {
         return;
       }
@@ -57,7 +66,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         return n;
       }
       // 双击下钻已选，一定有已选，遍历所有已选看激活的是哪个的儿子
-      else if (isChild) {
+      else if (isDbl) {
         let n = res;
         while (n.struct && n.struct.lv > 3) {
           for (let i = 0; i < selected.length; i++) {
@@ -146,6 +155,45 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   }
 }
 
+export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2: number, metaKey = false, selected: Node[] = []) {
+  if (root.isDestroyed) {
+    return [];
+  }
+  const page = root.lastPage;
+  if (page) {
+    const res = page.getNodesByFrame(x1, y1, x2, y2);
+    // console.log(res);
+    if (res.length) {
+      // const hash: Record<string, Node> = {};
+      // res.forEach(item => {
+      //   hash[item.props.uuid] = item;
+      // });
+      // 先把矢量过滤成它属于的最上层的ShapeGroup
+      // 按下metaKey，需返回最深的叶子节点，但不返回容器（组、画板），ShapeGroup的子节点需返回ShapeGroup
+      if (metaKey) {
+        const t = res.filter(item => !(item instanceof Container));
+        t.forEach((item, i) => {
+          if (item instanceof Geom) {
+            let p = item.parent;
+            while (p && p !== root) {
+              if (p instanceof ShapeGroup) {
+                t[i] = p;
+              }
+              p = p.parent;
+            }
+          }
+        });
+        return t;
+      }
+      // 和单选一样，先过滤掉
+      // 点击前没有已选节点，是page下直接子节点，画板需要选取完全包含
+      if (!selected.length) {}
+    }
+  }
+  return [];
+}
+
 export default {
   getNodeByPoint,
+  getFrameNodes,
 };
