@@ -50,7 +50,7 @@ export default class Listener extends Event {
   spaceKey: boolean;
   isMouseDown: boolean;
   isMouseMove: boolean;
-  isControl: boolean;
+  isControl: boolean; // resize等操作控制
   controlType: string; // 拖动尺寸dom时节点的class，区分比如左拉还是右拉
   originX: number;
   originY: number;
@@ -537,11 +537,13 @@ export default class Listener extends Event {
             }
           }
           if (change) {
-            this.select.showSelect(selected);
+            if (res.length) {
+              this.select.showSelect(selected);
+            }
+            else {
+              this.select.hideSelect();
+            }
             this.emit(Listener.SELECT_NODE, selected.slice(0));
-          }
-          else {
-            this.select.updateSelect(selected);
           }
         }
         else {
@@ -604,12 +606,12 @@ export default class Listener extends Event {
         false,
       );
       if (node) {
-        if (selected.indexOf(node) === -1) {
+        if (selected.indexOf(node) === -1 && this.select.hoverNode !== node) {
           this.select.showHover(node);
+          this.emit(Listener.HOVER_NODE, node);
         }
-        this.emit(Listener.HOVER_NODE, node);
       }
-      else {
+      else if (this.select.hoverNode) {
         this.select.hideHover();
         this.emit(Listener.UN_HOVER_NODE);
       }
@@ -776,7 +778,7 @@ export default class Listener extends Event {
   onMouseLeave() {
     this.select.hideHover();
     // 离屏需终止当前操作
-    if (this.isControl || this.isMouseMove) {
+    if (this.isMouseDown || this.isControl) {
       this.onMouseUp();
     }
   }

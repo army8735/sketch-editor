@@ -4,7 +4,34 @@ import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
 import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import Container from '../node/Container';
+
+function getTopShapeGroup(node: Geom | ShapeGroup) {
+  const root = node.root;
+  let res: ShapeGroup | undefined;
+  let p = node.parent;
+  while (p && p !== root) {
+    if (p instanceof ShapeGroup) {
+      res = p;
+    }
+    // 除了叶子节点可能是Geom，ShapeGroup嵌套时上层只可能是ShapeGroup，如果不是说明到Group了
+    else {
+      break;
+    }
+    p = p.parent;
+  }
+  return res;
+}
+
+function isArtBoardInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
+  const rect = n.getBoundingClientRect();
+  if (x1 > x2) {
+    [x1, x2] = [x2, x1];
+  }
+  if (y1 > y2) {
+    [y1, y2] = [y2, y1];
+  }
+  return rect.left > x1 && rect.top > y1 && rect.right < x2 && rect.bottom < y2;
+}
 
 export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false, selected: Node[] = [], isDbl = false) {
   if (root.isDestroyed) {
@@ -28,17 +55,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         }
         // ShapeGroup可能嵌套ShapeGroup，需找到最上层的ShapeGroup返回
         else if (res instanceof Geom || res instanceof ShapeGroup) {
-          let t: ShapeGroup | undefined;
-          let p = res.parent;
-          while (p && p !== root) {
-            if (p instanceof ShapeGroup) {
-              t = p;
-            }
-            else {
-              break;
-            }
-            p = p.parent;
-          }
+          let t = getTopShapeGroup(res);
           if (t) {
             return t;
           }
@@ -52,7 +69,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
       // 点击前没有已选节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
       if (!selected.length) {
         let n = res;
-        while (n.struct && n.struct.lv > 3) {
+        while (n && n.struct.lv > 3) {
           const p = n.parent!;
           if (p instanceof ArtBoard) {
             break;
@@ -115,7 +132,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             n = n.parent as Node;
           }
         }
-        while (n.struct.lv > 3) {
+        while (n && n.struct.lv > 3) {
           for (let i = 0; i < sel.length; i++) {
             const o = sel[i];
             if (n.isSibling(o) || n === o) {
@@ -161,33 +178,79 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
   }
   const page = root.lastPage;
   if (page) {
-    const res = page.getNodesByFrame(x1, y1, x2, y2);
-    // console.log(res);
-    if (res.length) {
-      // const hash: Record<string, Node> = {};
-      // res.forEach(item => {
-      //   hash[item.props.uuid] = item;
-      // });
+    const nodes = page.getNodesByFrame(x1, y1, x2, y2);
+    if (nodes.length) {
+      const res: Node[] = [];
       // 先把矢量过滤成它属于的最上层的ShapeGroup
-      // 按下metaKey，需返回最深的叶子节点，但不返回容器（组、画板），ShapeGroup的子节点需返回ShapeGroup
-      if (metaKey) {
-        const t = res.filter(item => !(item instanceof Container));
-        t.forEach((item, i) => {
-          if (item instanceof Geom) {
-            let p = item.parent;
-            while (p && p !== root) {
-              if (p instanceof ShapeGroup) {
-                t[i] = p;
-              }
-              p = p.parent;
+      for (let i = 0, len = nodes.length; i < len; i++) {
+        const item = nodes[i];
+        if (item instanceof Geom || item instanceof ShapeGroup) {
+          let t = getTopShapeGroup(item);
+          if (t) {
+            if (res.indexOf(t) === -1) {
+              res.push(t);
             }
           }
-        });
-        return t;
+          else {
+            res.push(item);
+          }
+        }
+        else {
+          res.push(item);
+        }
       }
-      // 和单选一样，先过滤掉
-      // 点击前没有已选节点，是page下直接子节点，画板需要选取完全包含
-      if (!selected.length) {}
+      // 按下metaKey，需返回最深的叶子节点，但不返回组、画板
+      if (metaKey) {
+        return res.filter(item => {
+          if (item instanceof Group && !(item instanceof ShapeGroup)) {
+            return false;
+          }
+          if (item instanceof ArtBoard) {
+            return false;
+          }
+          return true;
+        });
+      }
+      console.log(res.map(item => item.props.name))
+      // 点击前没有已选节点，是page下直接子节点，忽略Group，如果是画板需要选取完全包含
+      if (!selected.length) {
+        const res2: Node[] = [];
+        outer:
+        for (let i = 0, len = res.length; i < len; i++) {
+          const item = res[i];
+          if (item instanceof Group && !(item instanceof ShapeGroup)) {
+            continue;
+          }
+          if (item instanceof ArtBoard) {
+            if (isArtBoardInFrame(x1, y1, x2, y2, item)) {
+              if (res2.indexOf(item) === -1) {
+                res2.push(item);
+              }
+            }
+            continue;
+          }
+          let n = item;
+          while (n && n.struct.lv > 3) {
+            const p = n.parent!;
+            if (p instanceof ArtBoard) {
+              if (isArtBoardInFrame(x1, y1, x2, y2, p)) {
+                if (res2.indexOf(p) === -1) {
+                  res2.push(p);
+                }
+                continue outer;
+              }
+              else {
+                break;
+              }
+            }
+            n = p;
+          }
+          if (res2.indexOf(n) === -1) {
+            res2.push(n);
+          }
+        } console.warn(res2.map(item => item.props.name))
+        return res2;
+      }
     }
   }
   return [];

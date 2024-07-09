@@ -134,7 +134,7 @@ fetch('./sketch.sketch')
         canvas.width = 500 * dpi;
         canvas.height = 500 * dpi;
         $canvasC.appendChild(canvas);
-        root = window.root = sketchEditor.parse(json, {
+        root = sketchEditor.parse(json, {
           canvas,
           dpi,
         });

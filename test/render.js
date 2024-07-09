@@ -2,6 +2,8 @@ let canvas = document.querySelector('canvas');
 let input = document.querySelector('#base64');
 sketchEditor.gl.ca.preserveDrawingBuffer = true;
 
+let root;
+
 fetch('./sketch.sketch')
   .then((res) => {
     return res.arrayBuffer();
@@ -11,7 +13,7 @@ fetch('./sketch.sketch')
       .openAndConvertSketchBuffer(buff)
       .then(json => {
         const dpi = 2;
-        const root = window.root = sketchEditor.parse(json, {
+        root = window.root = sketchEditor.parse(json, {
           canvas,
           dpi,
         });

@@ -37,6 +37,7 @@ export default class Select {
   frame: HTMLElement;
   hover: HTMLElement;
   select: HTMLElement;
+  hoverNode?: Node;
 
   constructor(root: Root, dom: HTMLElement) {
     this.root = root;
@@ -97,11 +98,13 @@ export default class Select {
   }
 
   showHover(node: Node) {
+    this.hoverNode = node;
     this.updateHover(node);
     this.hover.style.display = 'block';
   }
 
   hideHover() {
+    this.hoverNode = undefined;
     this.hover.style.display = 'none';
   }
 
@@ -243,14 +246,10 @@ export default class Select {
   }
 
   hideSelect() {
-    // this.select.splice(0).forEach(item => {
-    //   item.remove();
-    // });
     this.select.style.display = 'none';
   }
 
   isSelectControlDom(dom: HTMLElement) {
-    // return dom.parentElement && this.select.indexOf(dom.parentElement) > -1;
     return dom.parentElement === this.select;
   }
 
