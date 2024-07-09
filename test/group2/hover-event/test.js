@@ -32,6 +32,12 @@ module.exports = {
       .moveToElement('canvas', 211, 31)
       .assert.value('#base64', '4, hover: 形状结合')
 
+      .moveToElement('canvas', 11, 11)
+      .assert.value('#base64', '5, unHover')
+
+      .moveToElement('canvas', 12, 12)
+      .assert.value('#base64', '5, unHover')
+
       .end();
   }
 };
