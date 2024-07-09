@@ -29,14 +29,14 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[[2,"1"],[2,"2"],[2,"编组"],[2,"形状结合"]]')
 
-      .keys(browser.Keys.META)
-
       .moveToElement('canvas', 10, 10)
       .mouseButtonDown(0)
       .moveToElement('canvas', 320, 320)
       .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[3,"画板"]')
+
+      .keys(browser.Keys.META)
 
       .moveToElement('canvas', 10, 10)
       .mouseButtonDown(0)
