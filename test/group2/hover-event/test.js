@@ -18,19 +18,19 @@ module.exports = {
       .assert.value('#base64', '1, unHover')
 
       .moveToElement('canvas', 31, 261)
-      .assert.value('2, hover: 编组')
+      .assert.value('#base64', '2, hover: 编组')
 
       .moveToElement('canvas', 41, 261)
-      .assert.value('2, hover: 编组')
+      .assert.value('#base64', '2, hover: 编组')
 
       .moveToElement('canvas', 11, 11)
       .assert.value('#base64', '3, unHover')
 
       .moveToElement('canvas', 201, 31)
-      .assert.value('4, hover: 形状结合')
+      .assert.value('#base64', '4, hover: 形状结合')
 
       .moveToElement('canvas', 211, 31)
-      .assert.value('4, hover: 形状结合')
+      .assert.value('#base64', '4, hover: 形状结合')
 
       .end();
   }

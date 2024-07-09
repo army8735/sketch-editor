@@ -172,7 +172,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   }
 }
 
-export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2: number, metaKey = false, selected: Node[] = []) {
+export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2: number, metaKey = false) {
   if (root.isDestroyed) {
     return [];
   }
@@ -211,46 +211,43 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           return true;
         });
       }
-      console.log(res.map(item => item.props.name))
-      // 点击前没有已选节点，是page下直接子节点，忽略Group，如果是画板需要选取完全包含
-      if (!selected.length) {
-        const res2: Node[] = [];
-        outer:
-        for (let i = 0, len = res.length; i < len; i++) {
-          const item = res[i];
-          if (item instanceof Group && !(item instanceof ShapeGroup)) {
-            continue;
-          }
-          if (item instanceof ArtBoard) {
-            if (isArtBoardInFrame(x1, y1, x2, y2, item)) {
-              if (res2.indexOf(item) === -1) {
-                res2.push(item);
-              }
+      // 不按下metaKey，是page下直接子节点，忽略Group，如果是画板需要选取完全包含
+      const res2: Node[] = [];
+      outer:
+      for (let i = 0, len = res.length; i < len; i++) {
+        const item = res[i];
+        if (item instanceof Group && !(item instanceof ShapeGroup)) {
+          continue;
+        }
+        if (item instanceof ArtBoard) {
+          if (isArtBoardInFrame(x1, y1, x2, y2, item)) {
+            if (res2.indexOf(item) === -1) {
+              res2.push(item);
             }
-            continue;
           }
-          let n = item;
-          while (n && n.struct.lv > 3) {
-            const p = n.parent!;
-            if (p instanceof ArtBoard) {
-              if (isArtBoardInFrame(x1, y1, x2, y2, p)) {
-                if (res2.indexOf(p) === -1) {
-                  res2.push(p);
-                }
-                continue outer;
+          continue;
+        }
+        let n = item;
+        while (n && n.struct.lv > 3) {
+          const p = n.parent!;
+          if (p instanceof ArtBoard) {
+            if (isArtBoardInFrame(x1, y1, x2, y2, p)) {
+              if (res2.indexOf(p) === -1) {
+                res2.push(p);
               }
-              else {
-                break;
-              }
+              continue outer;
             }
-            n = p;
+            else {
+              break;
+            }
           }
-          if (res2.indexOf(n) === -1) {
-            res2.push(n);
-          }
-        } console.warn(res2.map(item => item.props.name))
-        return res2;
+          n = p;
+        }
+        if (res2.indexOf(n) === -1) {
+          res2.push(n);
+        }
       }
+      return res2;
     }
   }
   return [];
