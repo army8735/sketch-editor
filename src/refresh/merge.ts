@@ -8,24 +8,14 @@ import {
   drawMbm,
   drawMotion,
   drawRadial,
+  drawShadow,
   drawTextureCache,
   drawTint,
-  drawShadow,
   initShaders,
 } from '../gl/webgl';
 import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
-import {
-  assignMatrix,
-  calPoint,
-  calRectPoints,
-  identity,
-  inverse,
-  isE,
-  multiply,
-  multiplyScale,
-  toE,
-} from '../math/matrix';
+import { assignMatrix, calRectPoints, identity, inverse, multiply, multiplyScale, toE, } from '../math/matrix';
 import Bitmap from '../node/Bitmap';
 import Geom from '../node/geom/Geom';
 import Polyline from '../node/geom/Polyline';
@@ -2091,7 +2081,7 @@ function genMask(
           const { mixBlendMode, blur } = computedStyle;
           // 同主循环的bgBlur
           if (isBgBlur && i > index + total + 1) {
-            const outline = node.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
+            const outline = node2.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
             // outline会覆盖这个值，恶心
             assignMatrix(node2.tempMatrix, matrix);
             genBgBlur(gl, root, summary, matrix, outline, blur, programs, scale, w, h);
