@@ -2107,6 +2107,13 @@ function genMask(
             assignMatrix(node2.tempMatrix, matrix);
             genBgBlur(gl, root, summary, matrix, outline, blur, programs, scale, w, h);
             gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0,
+              gl.TEXTURE_2D,
+              area.t,
+              0,
+            );
             gl.viewport(0, 0, width, height);
           }
           const list2 = target2.list;
