@@ -2198,6 +2198,7 @@ function genMask(
   }
   const maskProgram = programs.maskProgram;
   gl.useProgram(maskProgram);
+  const clipProgram = programs.clipProgram;
   // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
   for (let i = 0, len = listS.length; i < len; i++) {
     const { bbox, w, h, t } = listS[i];
@@ -2216,6 +2217,11 @@ function genMask(
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
     drawMask(gl, maskProgram, listO ? listO[i].t : listM[i].t, t);
+    if (listO) {
+      gl.useProgram(clipProgram);
+      drawMask(gl, clipProgram, listO[i].t, listM[i].t);
+      gl.useProgram(maskProgram);
+    }
     listR.push({
       bbox: bbox.slice(0),
       w,
