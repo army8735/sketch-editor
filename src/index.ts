@@ -21,7 +21,7 @@ export default {
     height?: number,
     dpi?: number,
     canvas?: HTMLCanvasElement,
-    contextAttributes: any,
+    contextAttributes?: any,
   }) {
     json = json as JFile;
     let { width, height, dpi = 1, canvas } = options;
