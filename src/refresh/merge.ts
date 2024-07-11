@@ -2006,7 +2006,6 @@ function genMask(
       listS.push(area);
       const x1 = x2 + j * UNIT,
         y1 = y2 + i * UNIT;
-      const isFirst = !i && !j;
       if (frameBuffer) {
         gl.framebufferTexture2D(
           gl.FRAMEBUFFER,
@@ -2020,6 +2019,28 @@ function genMask(
       else {
         frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
       }
+      // outline如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
+      if (maskMode === MASK.OUTLINE && computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
+        const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
+        drawTextureCache(
+          gl,
+          width * 0.5,
+          height * 0.5,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, width, height]),
+              texture: listM[index].t,
+            },
+          ],
+          0,
+          0,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
+      const isFirst = !i && !j;
       const cx = width * 0.5,
         cy = height * 0.5;
       for (let i = index + total + 1, len = structs.length; i < len; i++) {
@@ -2159,40 +2180,11 @@ function genMask(
       }
     }
   }
-  let res = TextureCache.getEmptyInstance(gl, bbox);
-  const maskProgram = programs.maskProgram;
-  gl.useProgram(maskProgram);
-  // alpha直接应用，汇总乘以mask本身的alpha即可
-  if (maskMode === MASK.ALPHA) {
-    const listR = res.list;
-    for (let i = 0, len = listS.length; i < len; i++) {
-      const { bbox, w, h, t } = listS[i];
-      const tex = createTexture(gl, 0, undefined, w, h);
-      if (frameBuffer) {
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          tex,
-          0,
-        );
-        gl.viewport(0, 0, w, h);
-      }
-      else {
-        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-      }
-      drawMask(gl, maskProgram, listM[i].t, t);
-      listR.push({
-        bbox: bbox.slice(0),
-        w,
-        h,
-        t: tex,
-      });
-    }
-    gl.useProgram(program);
-  }
-  // 轮廓需收集mask的轮廓并渲染出来，作为遮罩应用，再底部叠加自身非轮廓内容
-  else if (maskMode === MASK.OUTLINE) {
+  const res = TextureCache.getEmptyInstance(gl, bbox);
+  const listR = res.list;
+  // 轮廓遮罩需收集轮廓
+  let listO;
+  if (maskMode === MASK.OUTLINE) {
     const outline = node.textureOutline[scale] = genOutline(
       gl,
       node,
@@ -2202,103 +2194,36 @@ function genMask(
       bbox,
       scale,
     );
-    const listO = outline.list;
-    const temp = TextureCache.getEmptyInstance(gl, bbox);
-    const listT = temp.list;
-    // summary的list和outline的list是完全对应的，直接应用mask
-    for (let i = 0, len = listS.length; i < len; i++) {
-      const { bbox, w, h, t } = listS[i];
-      const tex = createTexture(gl, 0, undefined, w, h);
-      if (frameBuffer) {
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          tex,
-          0,
-        );
-        gl.viewport(0, 0, w, h);
-      }
-      else {
-        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-      }
-      drawMask(gl, maskProgram, listO[i].t, t);
-      listT.push({
-        bbox: bbox.slice(0),
-        w,
-        h,
-        t: tex,
-      });
-    }
-    // 将mask本身和生成的mask内容temp绘制到一起，mask可能不可见，轮廓类型不可见就不绘制
-    gl.useProgram(program);
-    toE(node.tempMatrix);
-    multiplyScale(node.tempMatrix, scale);
-    if (computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
-      const listR = res.list;
-      for (let i = 0, len = listT.length; i < len; i++) {
-        const { bbox, w, h, t } = listT[i];
-        const tex = createTexture(gl, 0, undefined, w, h);
-        if (frameBuffer) {
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            tex,
-            0,
-          );
-          gl.viewport(0, 0, w, h);
-        }
-        else {
-          frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-        }
-        drawTextureCache(
-          gl,
-          w * 0.5,
-          h * 0.5,
-          program,
-          [
-            {
-              opacity: 1,
-              bbox: new Float64Array([0, 0, w, h]),
-              texture: listM[i].t,
-            }
-          ],
-          0,
-          0,
-          false,
-          -1, -1, 1, 1,
-        );
-        drawTextureCache(
-          gl,
-          w * 0.5,
-          h * 0.5,
-          program,
-          [
-            {
-              opacity: 1,
-              bbox: new Float64Array([0, 0, w, h]),
-              texture: t,
-            }
-          ],
-          0,
-          0,
-          false,
-          -1, -1, 1, 1,
-        );
-        listR.push({
-          bbox: bbox.slice(0),
-          w,
-          h,
-          t: tex,
-        });
-      }
+    listO = outline.list;
+  }
+  const maskProgram = programs.maskProgram;
+  gl.useProgram(maskProgram);
+  // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
+  for (let i = 0, len = listS.length; i < len; i++) {
+    const { bbox, w, h, t } = listS[i];
+    const tex = createTexture(gl, 0, undefined, w, h);
+    if (frameBuffer) {
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        tex,
+        0,
+      );
+      gl.viewport(0, 0, w, h);
     }
     else {
-      res.release();
-      res = temp;
+      frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
+    drawMask(gl, maskProgram, listO ? listO[i].t : listM[i].t, t);
+    listR.push({
+      bbox: bbox.slice(0),
+      w,
+      h,
+      t: tex,
+    });
   }
+  gl.useProgram(program);
   // 删除fbo恢复
   summary.release();
   if (frameBuffer) {
