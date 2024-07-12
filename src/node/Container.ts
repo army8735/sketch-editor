@@ -227,60 +227,6 @@ class Container extends Node {
     }
   }
 
-  // 通用方法，根据x/y返回最深的节点，sketch的一些条件过滤逻辑放在上层做
-  getNodeByPoint(x: number, y: number): Node | undefined {
-    const children = this.children;
-    for (let i = children.length - 1; i >= 0; i--) {
-      const child = children[i];
-      const { computedStyle, matrixWorld } = child;
-      const rect = child._rect || child.rect;
-      // 在内部且pointerEvents为true才返回，优先看子节点，没有才返回容器（组）
-      if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
-        if (child instanceof Container) {
-          const res = child.getNodeByPoint(x, y);
-          if (res) {
-            return res;
-          }
-        }
-        if (computedStyle.pointerEvents) {
-          return child;
-        }
-      }
-    }
-  }
-
-  // 同上
-  getNodesByFrame(x1: number, y1: number, x2: number, y2: number) {
-    const children = this.children;
-    const res: Node[] = [];
-    for (let i = 0, len = children.length; i < len; i++) {
-      const child = children[i];
-      const { matrixWorld } = child;
-      const rect = child._rect || child.rect;
-      const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
-      if (isPolygonOverlapRect(x1, y1, x2, y2, [
-        { x: box.x1, y: box.y1 },
-        { x: box.x2, y: box.y2 },
-        { x: box.x3, y: box.y3 },
-        { x: box.x4, y: box.y4 },
-      ])) {
-        if (child instanceof Container) {
-          const t = child.getNodesByFrame(x1, y1, x2, y2);
-          if (t.length) {
-            res.push(...t);
-          }
-          else if (child.computedStyle.pointerEvents) {
-            res.push(child);
-          }
-        }
-        else if (child.computedStyle.pointerEvents) {
-          res.push(child);
-        }
-      }
-    }
-    return res;
-  }
-
   override getStructs() {
     if (!this.root) {
       return [];

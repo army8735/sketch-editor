@@ -4,6 +4,10 @@ import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
 import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
+import Container from '../node/Container';
+import Text from '../node/Text';
+import { isPolygonOverlapRect, pointInRect } from '../math/geom';
+import { calRectPoints } from '../math/matrix';
 
 function getTopShapeGroup(node: Geom | ShapeGroup) {
   const root = node.root;
@@ -33,13 +37,67 @@ function isArtBoardInFrame(x1: number, y1: number, x2: number, y2: number, n: No
   return rect.left > x1 && rect.top > y1 && rect.right < x2 && rect.bottom < y2;
 }
 
+function getChildByPoint(parent: Container, x: number, y: number): Node | undefined {
+  const children = parent.children;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+    const { computedStyle, matrixWorld } = child;
+    const rect = child._rect || child.rect;
+    if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
+      if (child instanceof Container) {
+        const res = getChildByPoint(child, x, y);
+        if (res) {
+          return res;
+        }
+        if (child instanceof ArtBoard) {
+          return child;
+        }
+      }
+      else if (computedStyle.pointerEvents) {
+        return child;
+      }
+    }
+  }
+}
+
+function getChildrenByFrame(parent: Container, x1: number, y1: number, x2: number, y2: number) {
+  const children = parent.children;
+  const res: Node[] = [];
+  for (let i = 0, len = children.length; i < len; i++) {
+    const child = children[i];
+    const { matrixWorld } = child;
+    const rect = child._rect || child.rect;
+    const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
+    if (isPolygonOverlapRect(x1, y1, x2, y2, [
+      { x: box.x1, y: box.y1 },
+      { x: box.x2, y: box.y2 },
+      { x: box.x3, y: box.y3 },
+      { x: box.x4, y: box.y4 },
+    ])) {
+      if (child instanceof Container) {
+        const t = getChildrenByFrame(child, x1, y1, x2, y2);
+        if (t.length) {
+          res.push(...t);
+        }
+        else if (child.computedStyle.pointerEvents) {
+          res.push(child);
+        }
+      }
+      else if (child.computedStyle.pointerEvents) {
+        res.push(child);
+      }
+    }
+  }
+  return res;
+}
+
 export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false, selected: Node[] = [], isDbl = false) {
   if (root.isDestroyed) {
     return;
   }
   const page = root.lastPage;
   if (page) {
-    const res = page.getNodeByPoint(x, y);
+    const res = getChildByPoint(page, x, y);
     if (res) {
       // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回最上层ShapeGroup
       if (metaKey) {
@@ -159,8 +217,8 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
       }
     }
     // 没有节点还要检查artBoard的文字标题，在overlay上单独渲染
-    const text = root.overlay.getNodeByPoint(x, y);
-    if (text && text.isText) {
+    const text = getChildByPoint(root.overlay, x, y);
+    if (text && text instanceof Text) {
       const artBoardList = root.overlay.artBoardList;
       for (let i = 0, len = artBoardList.length; i < len; i++) {
         const item = artBoardList[i];
@@ -178,7 +236,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
   }
   const page = root.lastPage;
   if (page) {
-    const nodes = page.getNodesByFrame(x1, y1, x2, y2);
+    const nodes = getChildrenByFrame(page, x1, y1, x2, y2);
     if (nodes.length) {
       const res: Node[] = [];
       // 先把矢量过滤成它属于的最上层的ShapeGroup
