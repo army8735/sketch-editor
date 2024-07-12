@@ -18,22 +18,8 @@ function toStyle() {
       const computedStyle = node.computedStyle;
       return [
         count,
-        style.left,
-        style.right,
-        style.top,
-        style.bottom,
-        style.width,
-        style.height,
-        style.translateX,
-        style.translateY,
-        computedStyle.left,
-        computedStyle.right,
-        computedStyle.top,
-        computedStyle.bottom,
-        computedStyle.width,
-        computedStyle.height,
-        computedStyle.translateX,
-        computedStyle.translateY,
+        style,
+        computedStyle,
       ];
     }));
     count++;
@@ -47,22 +33,8 @@ function toStyle() {
     const computedStyle = node.computedStyle;
     input.value = JSON.stringify([
       count++,
-      style.left,
-      style.right,
-      style.top,
-      style.bottom,
-      style.width,
-      style.height,
-      style.translateX,
-      style.translateY,
-      computedStyle.left,
-      computedStyle.right,
-      computedStyle.top,
-      computedStyle.bottom,
-      computedStyle.width,
-      computedStyle.height,
-      computedStyle.translateX,
-      computedStyle.translateY,
+      style,
+      computedStyle,
     ]);
   }
 }
