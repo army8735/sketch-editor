@@ -324,7 +324,7 @@ class Text extends Node {
       color = color2rgbaStr(first.color);
       textDecoration = first.textDecoration || [];
       if (!lineHeight) {
-        lineHeight = calNormalLineHeight(first);
+        lineHeight = Math.ceil(calNormalLineHeight(first));
         baseline += lineHeight * 0.5;
         contentArea += lineHeight * 0.5;
       }
@@ -337,7 +337,7 @@ class Text extends Node {
       letterSpacing = computedStyle.letterSpacing;
       paragraphSpacing = computedStyle.paragraphSpacing;
       perW = computedStyle.fontWeight * 0.8 + letterSpacing;
-      lineHeight = computedStyle.lineHeight;
+      lineHeight = Math.ceil(computedStyle.lineHeight);
       baseline = getBaseline(computedStyle);
       contentArea = getContentArea(computedStyle);
       fontFamily = computedStyle.fontFamily;
@@ -374,7 +374,7 @@ class Text extends Node {
         color = color2rgbaStr(cur.color);
         textDecoration = cur.textDecoration || [];
         if (!lineHeight) {
-          lineHeight = calNormalLineHeight(cur);
+          lineHeight = Math.ceil(calNormalLineHeight(cur));
           baseline += lineHeight * 0.5;
           contentArea += lineHeight * 0.5;
         }
