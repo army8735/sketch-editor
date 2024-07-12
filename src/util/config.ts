@@ -1,5 +1,3 @@
-import inject from './inject';
-
 let manual = false;
 
 export default {
@@ -24,7 +22,6 @@ export default {
     // 手动事先设置了超限的尺寸需缩小
     else if (maxSize < this.maxTextureSize) {
       this.maxTextureSize = maxSize;
-      inject.warn('maxTextureSize is limited by MAX_TEXTURE_SIZE: ' + maxSize);
     }
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
