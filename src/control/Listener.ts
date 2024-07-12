@@ -8,6 +8,7 @@ import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import Event from '../util/Event';
 import Select from './Select';
 import Input from './Input';
+import State from './State';
 import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
 import History from '../history/History';
@@ -17,11 +18,6 @@ import ResizeCommand from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
 import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
 import { getNodeByPoint, getFrameNodes } from '../tools/root';
-
-enum State {
-  NORMAL = 0,
-  EDIT_TEXT = 1, // 编辑文字进入特殊状态
-}
 
 export type ListenerOptions = {
   disabled?: {

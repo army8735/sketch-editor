@@ -2,15 +2,17 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
 import { toPrecision } from '../math';
-import { loadLocalFonts } from '../util/util';
+import { clone, loadLocalFonts } from '../util/util';
 import style from '../style';
 import { TEXT_BEHAVIOUR, getData, updateBehaviour } from '../tools/text';
-import { TEXT_ALIGN } from '../style/define';
+import { Style, TEXT_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
 import { UpdateRich } from '../format';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import ResizeCommand from '../history/ResizeCommand';
+import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
+import State from './State';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -167,6 +169,47 @@ class TextPanel {
           listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
           listener.select.updateSelect(nodes);
           listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+        }
+      }
+      else if (el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify')) {
+        if (!el.classList.contains('cur')) {
+          callback();
+          nodes = this.nodes.slice(0);
+          prevs = [];
+          nexts = [];
+          let value = TEXT_ALIGN.LEFT;
+          if (el.classList.contains('right')) {
+            value = TEXT_ALIGN.RIGHT;
+          }
+          else if (el.classList.contains('center')) {
+            value = TEXT_ALIGN.CENTER;
+          }
+          else if (el.classList.contains('justify')) {
+            value = TEXT_ALIGN.JUSTIFY;
+          }
+          if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
+            //
+          }
+          else {
+            const prevs: Partial<Style>[] = [];
+            const nexts: Partial<Style>[] = [];
+            nodes.forEach(node => {
+              prevs.push({
+                textAlign: clone(node.style.textAlign),
+              });
+              const textAlign = clone(node.style.textAlign);
+              textAlign.v = value;
+              nexts.push({
+                textAlign,
+              });
+              node.updateFormatStyle({
+                textAlign,
+              });
+            });
+            listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
+          }
+          dom.querySelector('.al .cur')?.classList.remove('cur');
+          el.classList.add('cur');
         }
       }
     });
