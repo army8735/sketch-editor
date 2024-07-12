@@ -10,7 +10,7 @@ class LineBox {
   startEnter: boolean;
   endEnter: boolean;
 
-  constructor(y: number, h: number, index: number, startEnter: boolean) {
+  constructor(y: number, h: number, index: number, startEnter = false, endEnter = false) {
     this.x = 0;
     this.y = y;
     this.w = 0;
@@ -18,7 +18,7 @@ class LineBox {
     this.index = index;
     this.list = [];
     this.startEnter = startEnter;
-    this.endEnter = false;
+    this.endEnter = endEnter;
   }
 
   add(textBox: TextBox) {

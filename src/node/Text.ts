@@ -188,7 +188,6 @@ class Text extends Node {
     this.isText = true;
     this._content = props.content;
     this.rich = props.rich?.slice(0) || [];
-    // this.textBehaviour = props.textBehaviour ?? TEXT_BEHAVIOUR.FLEXIBLE;
     this.lineBoxList = [];
     this.tempCursorX = 0;
     this.currentCursorX = 0;
@@ -209,8 +208,6 @@ class Text extends Node {
   override lay(data: LayoutData) {
     super.lay(data);
     const { rich, style, computedStyle, _content: content, lineBoxList } = this;
-    // const autoW = textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE;
-    // const autoH = textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE;
     const {
       left,
       right,
@@ -447,10 +444,12 @@ class Text extends Node {
       if (newLine) {
         x = 0;
         y += lineBox.lineHeight + paragraphSpacing;
+        i++;
         // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();
-          lineBox = new LineBox(y, lineHeight, i, false);
+          lineBox.endEnter = true;
+          lineBox = new LineBox(y, lineHeight, i, true);
           lineBoxList.push(lineBox);
         }
       }
