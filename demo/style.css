@@ -222,6 +222,9 @@ body {
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
   font-size: 12px;
 }
+.side * {
+  box-sizing: content-box;
+}
 .side .panel-title {
   margin: 0 0 2px;
 }
@@ -330,6 +333,7 @@ body {
 }
 .side .opacity-panel span,
 .side .round-panel span {
+  padding-right: 3px;
   background: #F0F0F0;
   width: 12px;
   height: 20px;
