@@ -131,7 +131,7 @@ function measure(
       hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
       rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
       newLine = false;
-      break;
+      return { hypotheticalNum, rw, newLine };
     }
   }
   // 末尾是英文或数字时，本行前面有空格或者CJK，需要把末尾英文数字放到下一行
@@ -142,12 +142,12 @@ function measure(
         hypotheticalNum = i - start + 1;
         rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
         newLine = true;
-        break;
+        return { hypotheticalNum, rw, newLine };
       }
     }
   }
   // 下一个字符是回车，强制忽略换行，外层循环识别
-  else if (content.charAt(start + hypotheticalNum) === '\n') {
+  if (content.charAt(start + hypotheticalNum) === '\n') {
     newLine = false;
   }
   return { hypotheticalNum, rw, newLine };
@@ -444,12 +444,10 @@ class Text extends Node {
       if (newLine) {
         x = 0;
         y += lineBox.height + paragraphSpacing;
-        i++;
         // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();
-          lineBox.endEnter = true;
-          lineBox = new LineBox(y, lineHeight, i, true);
+          lineBox = new LineBox(y, lineHeight, i, false);
           lineBoxList.push(lineBox);
         }
       }
