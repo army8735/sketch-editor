@@ -386,7 +386,7 @@ class Text extends Node {
       if (content.charAt(i) === '\n') {
         i++;
         x = 0;
-        y += lineHeight + paragraphSpacing;
+        y += lineBox.height + paragraphSpacing;
         lineBox.verticalAlign();
         lineBox.endEnter = true;
         lineBox = new LineBox(y, lineHeight, i, true);
@@ -407,7 +407,7 @@ class Text extends Node {
       const min = ctx.measureText(content.charAt(i)).width;
       if (min > W - x + 1e-10 && x) {
         x = 0;
-        y += lineBox.lineHeight + paragraphSpacing;
+        y += lineBox.height + paragraphSpacing;
         if (i < length) {
           lineBox.verticalAlign();
           lineBox = new LineBox(y, lineHeight, i, false);
@@ -439,11 +439,11 @@ class Text extends Node {
       );
       lineBox.add(textBox);
       i += num;
-      maxW = Math.max(maxW, rw + x);
+      maxW = Math.max(maxW, Math.ceil(rw + x));
       // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
       if (newLine) {
         x = 0;
-        y += lineBox.lineHeight + paragraphSpacing;
+        y += lineBox.height + paragraphSpacing;
         i++;
         // 最后一行对齐外面做
         if (i < length) {
@@ -459,7 +459,7 @@ class Text extends Node {
     }
     // 最后一行对齐，以及最后一行循环里没算要再算一次
     lineBox.verticalAlign();
-    maxW = Math.max(maxW, lineBox.w);
+    maxW = Math.max(maxW, lineBox.width);
     if (letterSpacing && letterSpacing < 0) {
       maxW -= letterSpacing;
     }
@@ -486,7 +486,7 @@ class Text extends Node {
       }
     }
     if (autoH) {
-      const h = lineBox.y + lineBox.lineHeight;
+      const h = lineBox.y + lineBox.height;
       const d = h - this.height;
       if (d) {
         this.height = computedStyle.height = h;
@@ -506,7 +506,7 @@ class Text extends Node {
     if (textAlign === TEXT_ALIGN.CENTER) {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
-        const d = this.width - lineBox.w;
+        const d = this.width - lineBox.width;
         if (d) {
           lineBox.offsetX(d * 0.5);
         }
@@ -515,14 +515,14 @@ class Text extends Node {
     else if (textAlign === TEXT_ALIGN.RIGHT) {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
-        const d = this.width - lineBox.w;
+        const d = this.width - lineBox.width;
         if (d) {
           lineBox.offsetX(d);
         }
       }
     }
     // 垂直对齐偏移
-    const dh = this.height - lineBox.y - lineBox.lineHeight;
+    const dh = this.height - lineBox.y - lineBox.height;
     if (dh) {
       const textVerticalAlign = computedStyle.textVerticalAlign;
       if (textVerticalAlign === TEXT_VERTICAL_ALIGN.MIDDLE) {

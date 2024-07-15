@@ -78,6 +78,14 @@ class LineBox {
     }
     return this.h;
   }
+
+  get width() {
+    return Math.ceil(this.w);
+  }
+
+  get height() {
+    return Math.ceil(this.lineHeight);
+  }
 }
 
 export default LineBox;
