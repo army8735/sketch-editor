@@ -4,6 +4,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import { toPrecision } from '../math';
 import Listener from './Listener';
+import Panel from './Panel';
 
 const html = `
   <h4 class="panel-title">圆角</h4>
@@ -14,16 +15,11 @@ const html = `
   </div>
 `;
 
-class RoundPanel {
-  root: Root;
-  dom: HTMLElement;
-  listener: Listener;
+class RoundPanel extends Panel {
   panel: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    this.root = root;
-    this.dom = dom;
-    this.listener = listener;
+    super(root, dom, listener);
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'round-panel';

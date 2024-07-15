@@ -13,6 +13,7 @@ import UpdateRichCommand from '../history/UpdateRichCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 import State from './State';
+import Panel from './Panel';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -73,18 +74,13 @@ loadLocalFonts().then(res => {
   local = true;
 });
 
-class TextPanel {
-  root: Root;
-  dom: HTMLElement;
-  listener: Listener;
+class TextPanel extends Panel {
   panel: HTMLElement;
   local = false;
   nodes: Text[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    this.root = root;
-    this.dom = dom;
-    this.listener = listener;
+    super(root, dom, listener);
     this.nodes = [];
 
     const panel = this.panel = document.createElement('div');

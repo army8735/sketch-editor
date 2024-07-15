@@ -8,6 +8,7 @@ import { getBasicInfo, resizeBottom, resizeRight } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
+import Panel from './Panel';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -39,20 +40,13 @@ const html = `
   </div>
 `;
 
-class BasicPanel {
-  root: Root;
-  dom: HTMLElement;
-  listener: Listener;
+class BasicPanel extends Panel {
   panel: HTMLElement;
-  nodes: Node[];
   data: Array<{ x: number, y: number, angle: number, w: number, h: number, rotation: number }>; // node当前数据，每次input变更则更新
   silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    this.root = root;
-    this.dom = dom;
-    this.listener = listener;
-    this.nodes = [];
+    super(root, dom, listener);
     this.data = [];
     this.silence = false;
 

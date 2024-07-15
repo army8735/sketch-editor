@@ -4,6 +4,7 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import { JStyle } from '../format';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
+import Panel from './Panel';
 
 const html = `
   <h4 class="panel-title">不透明度</h4>
@@ -14,19 +15,12 @@ const html = `
   </div>
 `;
 
-class OpacityPanel {
-  root: Root;
-  dom: HTMLElement;
-  listener: Listener;
+class OpacityPanel extends Panel {
   panel: HTMLElement;
-  nodes: Node[];
   silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    this.root = root;
-    this.dom = dom;
-    this.listener = listener;
-    this.nodes = [];
+    super(root, dom, listener);
     this.silence = false;
 
     const panel = this.panel = document.createElement('div');

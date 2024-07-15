@@ -12,6 +12,7 @@ import Listener from './Listener';
 import { clone } from '../util/util';
 import { Style } from '../style/define';
 import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
+import Panel from './Panel';
 
 const html = `
   <h4 class="panel-title">填充</h4>
@@ -42,18 +43,11 @@ const single = `
   </div>
 `;
 
-class FillPanel {
-  root: Root;
-  dom: HTMLElement;
-  listener: Listener;
+class FillPanel extends Panel {
   panel: HTMLElement;
-  nodes: Node[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    this.root = root;
-    this.dom = dom;
-    this.listener = listener;
-    this.nodes = [];
+    super(root, dom, listener);
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'fill-panel';

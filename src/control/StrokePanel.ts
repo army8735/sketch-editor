@@ -11,6 +11,7 @@ import { Style } from '../style/define';
 import picker from './picker';
 import { color2hexStr, color2rgbaStr } from '../style/css';
 import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
+import Panel from './Panel';
 
 const html = `
   <h4 class="panel-title">描边</h4>
@@ -45,18 +46,11 @@ const single = `
   </div>
 `;
 
-class StrokePanel {
-  root: Root;
-  dom: HTMLElement;
-  listener: Listener;
+class StrokePanel extends Panel {
   panel: HTMLElement;
-  nodes: Node[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
-    this.root = root;
-    this.dom = dom;
-    this.listener = listener;
-    this.nodes = [];
+    super(root, dom, listener);
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'stroke-panel';
