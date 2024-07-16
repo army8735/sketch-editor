@@ -677,6 +677,10 @@ export default class Listener extends Event {
 
   onMouseUp() {
     const selected = this.selected;
+    // 调整之前锁住的group，结束后统一进行解锁
+    selected.forEach(node => {
+      this.toggleGroup(node, false);
+    });
     if (this.isControl) {
       this.isControl = false;
       // 还原artBoard的children为初始值
@@ -697,8 +701,6 @@ export default class Listener extends Event {
         }
       });
       selected.forEach((node, i) => {
-        // 调整之前锁住的group，结束后统一进行解锁
-        this.toggleGroup(node, false);
         // 有调整尺寸的话，向上检测组的自适应尺寸
         if (this.isMouseMove) {
           // 还原最初的translate/TRBL值
@@ -736,8 +738,6 @@ export default class Listener extends Event {
         const { dx, dy } = this;
         if (dx || dy) {
           selected.forEach((node, i) => {
-            // 调整之前锁住的group，结束后统一进行解锁
-            this.toggleGroup(node, false);
             // 还原最初的translate/TRBL值
             node.endPosChange(this.originStyle[i], dx, dy);
             node.checkPosSizeUpward();

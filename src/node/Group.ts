@@ -23,15 +23,8 @@ class Group extends Container {
 
   override didMount() {
     super.didMount();
-    const { width, height } = this;
-    const r = this.getChildrenRect();
-    if (Math.abs(r.minX) > EPS
-      || Math.abs(r.minY) > EPS
-      || Math.abs(r.maxX - width) > EPS
-      || Math.abs(r.maxY - height) > EPS) {
-      // 冒泡过程无需向下检测，直接向上
-      this.adjustPosAndSize(r);
-    }
+    // 冒泡过程无需向下检测，直接向上
+    this.adjustPosAndSize();
   }
 
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
@@ -155,19 +148,12 @@ class Group extends Container {
   }
 
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
-  override adjustPosAndSize(rectC?: {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-  }) {
+  override adjustPosAndSize() {
     if (this.fixedPosAndSize) {
       return false;
     }
     const { children } = this;
-    if (!rectC) {
-      rectC = this.getChildrenRect();
-    }
+    const rectC = this.getChildrenRect();
     let { width, height } = this;
     const dx1 = rectC.minX,
       dy1 = rectC.minY,
