@@ -9,12 +9,12 @@ import MoveCommand from '../history/MoveCommand';
 const html = `
   <h4 class="panel-title">对齐</h4>
   <div class="line">
-    <span class="left"></span>
-    <span class="center"></span>
-    <span class="right"></span>
-    <span class="top"></span>
-    <span class="middle"></span>
-    <span class="bottom"></span>
+    <span class="left" title="居左"></span>
+    <span class="center" title="左右居中"></span>
+    <span class="right" title="居右"></span>
+    <span class="top" title="居上"></span>
+    <span class="middle" title="上下居中"></span>
+    <span class="bottom" title="居下"></span>
   </div>
 `;
 
