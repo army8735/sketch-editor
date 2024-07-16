@@ -231,6 +231,7 @@ body {
 .side .align-panel {
   margin-bottom: 5px;
   padding: 0 10px 5px;
+  border-bottom: 0.5px solid #CCC;
 }
 .side .align-panel .line {
   display: flex;
