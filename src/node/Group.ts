@@ -148,12 +148,19 @@ class Group extends Container {
   }
 
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
-  override adjustPosAndSize() {
+  override adjustPosAndSize(rectC?: {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  }) {
     if (this.fixedPosAndSize) {
       return false;
     }
     const { children } = this;
-    const rectC = this.getChildrenRect();
+    if (!rectC) {
+      rectC = this.getChildrenRect();
+    }
     let { width, height } = this;
     const dx1 = rectC.minX,
       dy1 = rectC.minY,
