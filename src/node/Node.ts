@@ -474,7 +474,9 @@ class Node extends Event {
     }
     this.clearCache(true);
     this._bbox = undefined;
+    this._bbox2 = undefined;
     this._filterBbox = undefined;
+    this._filterBbox2 = undefined;
     this.tempBbox = undefined;
   }
 
@@ -778,7 +780,9 @@ class Node extends Event {
       while (p && p !== this.root) {
         p._rect = undefined;
         p._bbox = undefined;
+        p._bbox2 = undefined;
         p._filterBbox = undefined;
+        p._filterBbox2 = undefined;
         p.tempBbox = undefined;
         p = p.parent;
       }
