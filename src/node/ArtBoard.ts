@@ -77,28 +77,31 @@ class ArtBoard extends Container {
     gl.disableVertexAttribArray(a_position);
 
     // 阴影部分的计算渲染
-    const bgShadowProgram = programs.bgShadowProgram;
-    gl.useProgram(bgShadowProgram);
-    // 顶点buffer
-    const pointBuffer2 = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer2);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]), gl.STATIC_DRAW);
-    const a_position2 = gl.getAttribLocation(bgShadowProgram, 'a_position');
-    gl.vertexAttribPointer(a_position2, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position2);
-    const u_tl = gl.getUniformLocation(bgShadowProgram, 'u_tl');
-    gl.uniform2f(u_tl, t1.x, t1.y);
-    const u_br = gl.getUniformLocation(bgShadowProgram, 'u_br');
-    gl.uniform2f(u_br, t3.x, t3.y);
-    // color
-    const u_color2 = gl.getUniformLocation(bgShadowProgram, 'u_color');
-    gl.uniform4f(u_color2, 0.0, 0.0, 0.0, 0.2);
-    const u_radius = gl.getUniformLocation(bgShadowProgram, 'u_radius');
-    gl.uniform2f(u_radius, SHADOW_SIZE / cx, SHADOW_SIZE / cy);
-    // 渲染并销毁
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    gl.deleteBuffer(pointBuffer2);
-    gl.disableVertexAttribArray(a_position2);
+    if (t1.x > -1 && t1.y > -1 && t3.x < 1 && t3.y < 1) {
+      const bgShadowProgram = programs.bgShadowProgram;
+      gl.useProgram(bgShadowProgram);
+      // 顶点buffer
+      const pointBuffer2 = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer2);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+      const a_position2 = gl.getAttribLocation(bgShadowProgram, 'a_position');
+      gl.vertexAttribPointer(a_position2, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position2);
+      const u_tl = gl.getUniformLocation(bgShadowProgram, 'u_tl');
+      gl.uniform2f(u_tl, t1.x, t1.y);
+      const u_br = gl.getUniformLocation(bgShadowProgram, 'u_br');
+      gl.uniform2f(u_br, t3.x, t3.y);
+      // color
+      const u_color2 = gl.getUniformLocation(bgShadowProgram, 'u_color');
+      gl.uniform4f(u_color2, 0.0, 0.0, 0.0, 0.2);
+      const u_radius = gl.getUniformLocation(bgShadowProgram, 'u_radius');
+      gl.uniform2f(u_radius, SHADOW_SIZE / cx, SHADOW_SIZE / cy);
+      // 渲染并销毁
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.deleteBuffer(pointBuffer2);
+      gl.disableVertexAttribArray(a_position2);
+    }
+
     gl.useProgram(programs.program);
   }
 

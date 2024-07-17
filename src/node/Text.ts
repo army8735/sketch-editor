@@ -500,22 +500,50 @@ class Text extends Node {
       }
     }
     // 水平非左对齐偏移
-    const textAlign = computedStyle.textAlign;
-    if (textAlign === TEXT_ALIGN.CENTER) {
+    if (rich) {
+      const hash: Record<number, Rich> = {};
+      rich.forEach(item => {
+        hash[item.location] = item;
+      });
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
-        const d = this.width - lineBox.width;
-        if (d) {
-          lineBox.offsetX(d * 0.5);
+        // sketch中每个\n换行都会产生新的rich，行首就是index
+        const r = hash[lineBox.index];
+        if (r) {
+          const textAlign = r.textAlign;
+          if (textAlign === TEXT_ALIGN.CENTER) {
+            const d = this.width - lineBox.width;
+            if (d) {
+              lineBox.offsetX(d * 0.5);
+            }
+          }
+          else if (textAlign === TEXT_ALIGN.RIGHT) {
+            const d = this.width - lineBox.width;
+            if (d) {
+              lineBox.offsetX(d);
+            }
+          }
         }
       }
     }
-    else if (textAlign === TEXT_ALIGN.RIGHT) {
-      for (let i = 0, len = lineBoxList.length; i < len; i++) {
-        const lineBox = lineBoxList[i];
-        const d = this.width - lineBox.width;
-        if (d) {
-          lineBox.offsetX(d);
+    else {
+      const textAlign = computedStyle.textAlign;
+      if (textAlign === TEXT_ALIGN.CENTER) {
+        for (let i = 0, len = lineBoxList.length; i < len; i++) {
+          const lineBox = lineBoxList[i];
+          const d = this.width - lineBox.width;
+          if (d) {
+            lineBox.offsetX(d * 0.5);
+          }
+        }
+      }
+      else if (textAlign === TEXT_ALIGN.RIGHT) {
+        for (let i = 0, len = lineBoxList.length; i < len; i++) {
+          const lineBox = lineBoxList[i];
+          const d = this.width - lineBox.width;
+          if (d) {
+            lineBox.offsetX(d);
+          }
         }
       }
     }
