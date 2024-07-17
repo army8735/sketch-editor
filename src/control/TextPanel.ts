@@ -186,22 +186,28 @@ class TextPanel extends Panel {
         if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
         }
         else {
-          const prevs: Partial<Style>[] = [];
-          const nexts: Partial<Style>[] = [];
           nodes.forEach(node => {
-            prevs.push({
-              textAlign: clone(node.style.textAlign),
+            const prev: UpdateRich[] = [];
+            node.rich.forEach(item => {
+              prev.push({
+                location: item.location,
+                length: item.length,
+                textAlign: item.textAlign,
+              });
             });
-            const textAlign = clone(node.style.textAlign);
-            textAlign.v = value;
-            nexts.push({
-              textAlign,
-            });
-            node.updateFormatStyle({
-              textAlign,
-            });
+            prevs.push(prev);
+            const next: UpdateRich[] = [];
+            const o = {
+              location: 0,
+              length: node._content.length,
+              textAlign: value,
+            };
+            next.push(o);
+            nexts.push(next);
+            node.updateRichStyle(o);
+            listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+            listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
           });
-          listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');
         el.classList.add('cur');
