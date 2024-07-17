@@ -500,28 +500,30 @@ class Text extends Node {
       }
     }
     // 水平非左对齐偏移
-    if (rich) {
+    if (rich && rich.length) {
       const hash: Record<number, Rich> = {};
       rich.forEach(item => {
         hash[item.location] = item;
       });
+      let textAlign = rich[0].textAlign;
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
         // sketch中每个\n换行都会产生新的rich，行首就是index
         const r = hash[lineBox.index];
         if (r) {
-          const textAlign = r.textAlign;
-          if (textAlign === TEXT_ALIGN.CENTER) {
-            const d = this.width - lineBox.width;
-            if (d) {
-              lineBox.offsetX(d * 0.5);
-            }
+          textAlign = r.textAlign;
+        }
+        // 非\n而是布局宽度造成的换行，自动沿用之前的
+        if (textAlign === TEXT_ALIGN.CENTER) {
+          const d = this.width - lineBox.width;
+          if (d) {
+            lineBox.offsetX(d * 0.5);
           }
-          else if (textAlign === TEXT_ALIGN.RIGHT) {
-            const d = this.width - lineBox.width;
-            if (d) {
-              lineBox.offsetX(d);
-            }
+        }
+        else if (textAlign === TEXT_ALIGN.RIGHT) {
+          const d = this.width - lineBox.width;
+          if (d) {
+            lineBox.offsetX(d);
           }
         }
       }
