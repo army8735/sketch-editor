@@ -395,4 +395,5 @@ export type Override = {
 export default {
   TAG_NAME,
   POINTS_RADIUS_BEHAVIOUR,
+  getDefaultStyle,
 };
