@@ -38,10 +38,8 @@ sketchEditor
     });
     
     const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
-    root.once('refresh', () => {
-      sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
-      sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
-    });
+    sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
+    sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
   });
 ```
 
