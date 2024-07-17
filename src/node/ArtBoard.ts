@@ -77,7 +77,17 @@ class ArtBoard extends Container {
     gl.disableVertexAttribArray(a_position);
 
     // 阴影部分的计算渲染
-    if (t1.x > -1 && t1.y > -1 && t3.x < 1 && t3.y < 1) {
+    let shadow = true;
+    if (t1.x <= -1 && t1.y <= -1 && t3.x >= 1 && t3.y >= 1) {
+      shadow = false;
+    }
+    else if (t3.x < -1 - SHADOW_SIZE * 0.5 / cx && t3.y < -1 - SHADOW_SIZE * 0.5 / cy) {
+      shadow = false;
+    }
+    else if (t1.x > 1 + SHADOW_SIZE * 0.5 / cx && t3.y > 1 + SHADOW_SIZE * 0.5 / cy) {
+      shadow = false;
+    }
+    if (shadow) {
       const bgShadowProgram = programs.bgShadowProgram;
       gl.useProgram(bgShadowProgram);
       // 顶点buffer
