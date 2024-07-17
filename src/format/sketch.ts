@@ -1325,9 +1325,10 @@ async function readImageFile(filename: string, opt: Opt) {
   let img: HTMLImageElement;
   if (isPdf) {
     try {
-      img = await loadPdf(ab);
+      img = await inject.loadArrayBufferPdf(ab);
     }
     catch(e) {
+      inject.error(e);
       return '';
     }
   }
@@ -1336,6 +1337,7 @@ async function readImageFile(filename: string, opt: Opt) {
       img = await inject.loadArrayBufferImg(ab);
     }
     catch (e) {
+      inject.error(e);
       return '';
     }
   }
@@ -1351,50 +1353,6 @@ async function readImageFile(filename: string, opt: Opt) {
   };
   opt.imgSrcRecord[filename] = src;
   return src;
-}
-
-export async function convertPdf(ab: ArrayBuffer) {
-  // @ts-ignore
-  const pdfjsLib = window.pdfjsLib;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = inject.pdfjsLibWorkerSrc;
-  const blob = new Blob([ab]);
-  const url = URL.createObjectURL(blob);
-  const task = await pdfjsLib.getDocument(url).promise;
-  const page = await task.getPage(1);
-  const viewport = page.getViewport({ scale: 1 });
-  const canvas = document.createElement('canvas');
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  const ctx = canvas.getContext('2d');
-  await page.render({
-    viewport,
-    canvasContext: ctx,
-    background: 'transparent',
-  }).promise;
-  return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(function (blob) {
-      if (blob) {
-        resolve(blob);
-      }
-      else {
-        reject();
-      }
-    });
-  });
-}
-
-export async function loadPdf(ab: ArrayBuffer): Promise<HTMLImageElement> {
-  const res = await convertPdf(ab);
-  const img = new Image();
-  return new Promise((resolve, reject) => {
-    img.onload = () => {
-      resolve(img);
-    };
-    img.onerror = (e) => {
-      reject(e);
-    };
-    img.src = URL.createObjectURL(res);
-  });
 }
 
 async function readFontFile(filename: string, zipFile: JSZip) {

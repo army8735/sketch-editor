@@ -436,6 +436,45 @@ const inject = {
     });
   },
   pdfjsLibWorkerSrc: 'https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.worker.min.js',
+  async loadArrayBufferPdf(ab: ArrayBuffer): Promise<HTMLImageElement> {
+    // @ts-ignore
+    const pdfjsLib = window.pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = inject.pdfjsLibWorkerSrc;
+    const blob = new Blob([ab]);
+    const url = URL.createObjectURL(blob);
+    const task = await pdfjsLib.getDocument(url).promise;
+    const page = await task.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({
+      viewport,
+      canvasContext: ctx,
+      background: 'transparent',
+    }).promise;
+    const b = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (blob) {
+          resolve(blob);
+        }
+        else {
+          reject();
+        }
+      });
+    });
+    const img = new Image();
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        resolve(img);
+      };
+      img.onerror = (e) => {
+        reject(e);
+      };
+      img.src = URL.createObjectURL(b);
+    });
+  },
   log(s: any) {
     console.log(s);
   },
