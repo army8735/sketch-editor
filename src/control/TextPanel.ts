@@ -93,13 +93,11 @@ class TextPanel extends Panel {
     let prevs: UpdateRich[][];
     let nexts: UpdateRich[][];
 
-    const callback = (update = false) => {
+    // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
+    const callback = () => {
       // 只有变更才会有next
       if (nexts && nexts.length) {
         listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
-        if (update) {
-          listener.select.updateSelect(nodes);
-        }
         listener.emit(Listener.COLOR_NODE, nodes.slice(0));
       }
       nodes = [];
@@ -110,7 +108,9 @@ class TextPanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
-        if (picker.isShow()) {
+        // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
+        e.stopPropagation();
+        if (picker.isShowFrom('textPanel')) {
           picker.hide();
           callback();
           return;
@@ -150,63 +150,61 @@ class TextPanel extends Panel {
           callback();
         };
       }
-      else if (el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh')) {
-        if (!el.classList.contains('cur')) {
-          callback();
-          nodes = this.nodes.slice(0);
-          let behaviour = TEXT_BEHAVIOUR.AUTO;
-          if (el.classList.contains('fw')) {
-            behaviour = TEXT_BEHAVIOUR.FIXED_W;
-          }
-          else if (el.classList.contains('fwh')) {
-            behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
-          }
-          const styles = nodes.map(item => updateBehaviour(item, behaviour));
-          listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
-          listener.select.updateSelect(nodes);
-          listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+      else if ((el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh'))
+        && !el.classList.contains('cur')) {
+        callback();
+        nodes = this.nodes.slice(0);
+        let behaviour = TEXT_BEHAVIOUR.AUTO;
+        if (el.classList.contains('fw')) {
+          behaviour = TEXT_BEHAVIOUR.FIXED_W;
         }
+        else if (el.classList.contains('fwh')) {
+          behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
+        }
+        const styles = nodes.map(item => updateBehaviour(item, behaviour));
+        listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }
-      else if (el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify')) {
-        if (!el.classList.contains('cur')) {
-          callback();
-          nodes = this.nodes.slice(0);
-          prevs = [];
-          nexts = [];
-          let value = TEXT_ALIGN.LEFT;
-          if (el.classList.contains('right')) {
-            value = TEXT_ALIGN.RIGHT;
-          }
-          else if (el.classList.contains('center')) {
-            value = TEXT_ALIGN.CENTER;
-          }
-          else if (el.classList.contains('justify')) {
-            value = TEXT_ALIGN.JUSTIFY;
-          }
-          if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
-            //
-          }
-          else {
-            const prevs: Partial<Style>[] = [];
-            const nexts: Partial<Style>[] = [];
-            nodes.forEach(node => {
-              prevs.push({
-                textAlign: clone(node.style.textAlign),
-              });
-              const textAlign = clone(node.style.textAlign);
-              textAlign.v = value;
-              nexts.push({
-                textAlign,
-              });
-              node.updateFormatStyle({
-                textAlign,
-              });
-            });
-            listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
-          }
-          dom.querySelector('.al .cur')?.classList.remove('cur');
-          el.classList.add('cur');
+      else if ((el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify'))
+        && !el.classList.contains('cur')) {
+        callback();
+        nodes = this.nodes.slice(0);
+        prevs = [];
+        nexts = [];
+        let value = TEXT_ALIGN.LEFT;
+        if (el.classList.contains('right')) {
+          value = TEXT_ALIGN.RIGHT;
         }
+        else if (el.classList.contains('center')) {
+          value = TEXT_ALIGN.CENTER;
+        }
+        else if (el.classList.contains('justify')) {
+          value = TEXT_ALIGN.JUSTIFY;
+        }
+        // 编辑状态下特殊处理
+        if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
+        }
+        else {
+          const prevs: Partial<Style>[] = [];
+          const nexts: Partial<Style>[] = [];
+          nodes.forEach(node => {
+            prevs.push({
+              textAlign: clone(node.style.textAlign),
+            });
+            const textAlign = clone(node.style.textAlign);
+            textAlign.v = value;
+            nexts.push({
+              textAlign,
+            });
+            node.updateFormatStyle({
+              textAlign,
+            });
+          });
+          listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
+        }
+        dom.querySelector('.al .cur')?.classList.remove('cur');
+        el.classList.add('cur');
       }
     });
 
@@ -214,6 +212,7 @@ class TextPanel extends Panel {
     panel.addEventListener('change', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'SELECT') {
+        callback();
         const value = (el as HTMLSelectElement).value;
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -238,7 +237,9 @@ class TextPanel extends Panel {
           nexts.push(next);
           node.updateRichStyle(o);
         });
-        callback(true);
+        listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.FONT_NODE, nodes.slice(0));
       }
     });
 
@@ -286,7 +287,9 @@ class TextPanel extends Panel {
         nexts.push(next);
         node.updateRichStyle(o);
       });
-      callback(true);
+      listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+      listener.select.updateSelect(nodes);
+      listener.emit(Listener.FONT_NODE, nodes.slice(0));
     });
 
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {

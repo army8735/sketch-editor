@@ -35,6 +35,17 @@ export default {
       div.style.transform = 'translateX(-90%)';
       div.innerHTML = html;
       document.body.appendChild(div);
+      // 点击外部自动关闭
+      document.addEventListener('click', (e) => {
+        let p = e.target as (HTMLElement | null);
+        while (p) {
+          if (p === div) {
+            return;
+          }
+          p = p.parentElement;
+        }
+        this.hide();
+      });
     }
     div.style.left = rect.left + (rect.right - rect.left) * 0.5 + 'px';
     div.style.top = rect.bottom + 10 + 'px';
@@ -64,8 +75,12 @@ export default {
     return picker;
   },
   hide() {
-    if (div) {
+    if (div && div.style.display === 'block') {
       div.style.display = 'none';
+      if (callback) {
+        callback();
+        callback = undefined;
+      }
     }
   },
   isShow() {
@@ -75,9 +90,6 @@ export default {
     return false;
   },
   isShowFrom(from: string) {
-    if (div) {
-      return div.style.display === 'block' && openFrom === from;
-    }
-    return false;
+    return this.isShow() && openFrom === from;
   },
 };

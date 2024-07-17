@@ -120,6 +120,7 @@ export function getData(nodes: Text[]) {
   for (let i = 0, len = nodes.length; i < len; i++) {
     const { rich, style, computedStyle } = nodes[i];
     const { left, right, top, bottom, width, height, lineHeight: lh } = style;
+    // 一般都是有rich，除非手动构造数据
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         putData(
@@ -146,6 +147,7 @@ export function getData(nodes: Text[]) {
       }
       continue;
     }
+    // 非富文本
     putData(
       left,
       right,

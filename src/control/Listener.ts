@@ -1067,6 +1067,7 @@ export default class Listener extends Event {
   static FILL_NODE = 'FILL_NODE';
   static STROKE_NODE = 'STROKE_NODE';
   static COLOR_NODE = 'COLOR_NODE';
+  static FONT_NODE = 'FONT_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
