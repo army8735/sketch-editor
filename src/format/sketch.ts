@@ -811,13 +811,6 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
-    // let textBehaviour = TEXT_BEHAVIOUR.FLEXIBLE;
-    // if (layer.textBehaviour === SketchFormat.TextBehaviour.Fixed) {
-    //   textBehaviour = TEXT_BEHAVIOUR.FIXED_WIDTH;
-    // }
-    // else if (layer.textBehaviour === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
-    //   textBehaviour = TEXT_BEHAVIOUR.FIXED_SIZE;
-    // }
     return {
       tagName: TAG_NAME.TEXT,
       props: {
@@ -1307,35 +1300,47 @@ async function readImageFile(filename: string, opt: Opt) {
   if (!filename || !opt.zipFile) {
     return '';
   }
-  const filename2 = filename;
-  if (!/\.\w+$/.test(filename)) {
-    filename = `${filename}.png`;
-  }
-  if (opt.imgSrcRecord.hasOwnProperty(filename2)) {
-    return opt.imgSrcRecord[filename2];
+  if (opt.imgSrcRecord.hasOwnProperty(filename)) {
+    return opt.imgSrcRecord[filename];
   }
   let file = opt.zipFile.file(filename);
   if (!file) {
-    file = opt.zipFile.file(filename2);
+    file = opt.zipFile.file(filename);
     if (!file) {
       inject.error(`image not exist: >>>${filename}<<<`);
       return '';
     }
   }
   const ab = await file.async('arraybuffer');
+  const uint8View = new Uint8Array(ab);
+  let isPdf = false;
+  // https://en.wikipedia.org/wiki/Magic_number_(programming)#Magic_numbers_in_files
+  if (uint8View[0] === 0x25 && uint8View[1] === 0x50 && uint8View[2] === 0x44 && uint8View[3] === 0x46) {
+    isPdf = true;
+  }
   if (!ab.byteLength) {
     inject.error(`image is empty: >>>${filename}<<<`);
     return '';
   }
   let img: HTMLImageElement;
-  if (filename.endsWith('.pdf')) {
-    img = await loadPdf(ab);
+  if (isPdf) {
+    try {
+      img = await loadPdf(ab);
+    }
+    catch(e) {
+      return '';
+    }
   }
   else {
-    img = await inject.loadArrayBufferImg(ab);
+    try {
+      img = await inject.loadArrayBufferImg(ab);
+    }
+    catch (e) {
+      return '';
+    }
   }
   // nodejs环境下，使用node-canvas创建的img无src，暂时用原本url代替
-  const src = img.src || ('blob:file://' + filename2);
+  const src = img.src || ('blob:file://' + filename);
   inject.IMG[src] = {
     success: true,
     state: inject.LOADED,
@@ -1344,7 +1349,7 @@ async function readImageFile(filename: string, opt: Opt) {
     source: img,
     url: src,
   };
-  opt.imgSrcRecord[filename2] = src;
+  opt.imgSrcRecord[filename] = src;
   return src;
 }
 
