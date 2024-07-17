@@ -18,6 +18,7 @@ import ResizeCommand from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
 import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
 import { getNodeByPoint, getFrameNodes } from '../tools/root';
+import UpdateRichCommand from '../history/UpdateRichCommand';
 
 export type ListenerOptions = {
   disabled?: {
@@ -1001,6 +1002,9 @@ export default class Listener extends Event {
         else if (c instanceof RotateCommand) {
           this.emit(Listener.ROTATE_NODE, nodes);
         }
+        else if (c instanceof UpdateRichCommand) {
+          this.emit(Listener.TEXT_NODE, nodes);
+        }
       }
     }
   }
@@ -1066,8 +1070,7 @@ export default class Listener extends Event {
   static FLIP_V_NODE = 'FLIP_V_NODE';
   static FILL_NODE = 'FILL_NODE';
   static STROKE_NODE = 'STROKE_NODE';
-  static COLOR_NODE = 'COLOR_NODE';
-  static FONT_NODE = 'FONT_NODE';
+  static TEXT_NODE = 'TEXT_NODE';
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';

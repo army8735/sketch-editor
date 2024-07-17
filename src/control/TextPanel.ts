@@ -98,7 +98,7 @@ class TextPanel extends Panel {
       // 只有变更才会有next
       if (nexts && nexts.length) {
         listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
-        listener.emit(Listener.COLOR_NODE, nodes.slice(0));
+        listener.emit(Listener.TEXT_NODE, nodes.slice(0));
       }
       nodes = [];
       prevs = [];
@@ -169,9 +169,9 @@ class TextPanel extends Panel {
       else if ((el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify'))
         && !el.classList.contains('cur')) {
         callback();
-        nodes = this.nodes.slice(0);
-        prevs = [];
-        nexts = [];
+        const nodes = this.nodes.slice(0);
+        const prevs: UpdateRich[][] = [];
+        const nexts: UpdateRich[][] = [];
         let value = TEXT_ALIGN.LEFT;
         if (el.classList.contains('right')) {
           value = TEXT_ALIGN.RIGHT;
@@ -205,8 +205,8 @@ class TextPanel extends Panel {
             next.push(o);
             nexts.push(next);
             node.updateRichStyle(o);
-            listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
-            listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
+            listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
+            listener.emit(Listener.TEXT_ALIGN_NODE, nodes);
           });
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');
@@ -220,9 +220,9 @@ class TextPanel extends Panel {
       if (el.tagName === 'SELECT') {
         callback();
         const value = (el as HTMLSelectElement).value;
-        nodes = this.nodes.slice(0);
-        prevs = [];
-        nexts = [];
+        const nodes = this.nodes.slice(0);
+        const prevs: UpdateRich[][] = [];
+        const nexts: UpdateRich[][] = [];
         nodes.forEach(node => {
           const prev: UpdateRich[] = [];
           node.rich.forEach(item => {
@@ -243,9 +243,9 @@ class TextPanel extends Panel {
           nexts.push(next);
           node.updateRichStyle(o);
         });
-        listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+        listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
         listener.select.updateSelect(nodes);
-        listener.emit(Listener.FONT_NODE, nodes.slice(0));
+        listener.emit(Listener.TEXT_NODE, nodes);
       }
     });
 
@@ -270,9 +270,9 @@ class TextPanel extends Panel {
         return;
       }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      nodes = this.nodes.slice(0);
-      prevs = [];
-      nexts = [];
+      const nodes = this.nodes.slice(0);
+      const prevs: UpdateRich[][] = [];
+      const nexts: UpdateRich[][] = [];
       nodes.forEach(node => {
         const prev: UpdateRich[] = [];
         node.rich.forEach(item => {
@@ -293,9 +293,9 @@ class TextPanel extends Panel {
         nexts.push(next);
         node.updateRichStyle(o);
       });
-      listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+      listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
       listener.select.updateSelect(nodes);
-      listener.emit(Listener.FONT_NODE, nodes.slice(0));
+      listener.emit(Listener.TEXT_NODE, nodes);
     });
 
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
@@ -307,6 +307,10 @@ class TextPanel extends Panel {
     });
 
     listener.on(Listener.RESIZE_NODE, (nodes: Node[]) => {
+      this.show(nodes);
+    });
+
+    listener.on(Listener.TEXT_NODE, (nodes: Node[]) => {
       this.show(nodes);
     });
   }
