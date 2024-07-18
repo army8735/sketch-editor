@@ -489,11 +489,11 @@ export default class Listener extends Event {
       // 普通的节点拉伸
       else {
         selected.forEach((node, i) => {
-          // 改变尺寸前置记录操作，注意更新computedStyle，影响计算
+          // 改变尺寸前置记录操作，注意更新computedStyle（startSizeChange变更了），影响计算
           if (!this.isMouseMove) {
             node.startSizeChange();
-            // this.computedStyle[i] = node.getComputedStyle();
-            // this.cssStyle[i] = node.getCssStyle();
+            this.computedStyle[i] = node.getComputedStyle();
+            this.cssStyle[i] = node.getCssStyle();
           }
           const prev: Partial<JStyle> = {};
           const next: Partial<JStyle> = {};
