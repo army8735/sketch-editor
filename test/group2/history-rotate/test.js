@@ -15,7 +15,7 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[1,"矩形"]')
 
-      .keys(browser.Keys.META)
+      // .keys(browser.Keys.META)
       .moveToElement('.tl', 1, 1)
       .mouseButtonDown(0)
       .moveToElement('.tl', 21, 1)
