@@ -267,8 +267,8 @@ export default class Select {
     else {
       (this.select.querySelector('.tl') as HTMLElement).style.cursor = 'nwse-resize';
       (this.select.querySelector('.tr') as HTMLElement).style.cursor = 'nesw-resize';
-      (this.select.querySelector('.bl') as HTMLElement).style.cursor = 'nwse-resize';
-      (this.select.querySelector('.br') as HTMLElement).style.cursor = 'nesw-resize';
+      (this.select.querySelector('.bl') as HTMLElement).style.cursor = 'nesw-resize';
+      (this.select.querySelector('.br') as HTMLElement).style.cursor = 'nwse-resize';
     }
   }
 }
