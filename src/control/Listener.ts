@@ -19,6 +19,9 @@ import RotateCommand from '../history/RotateCommand';
 import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
 import { getNodeByPoint, getFrameNodes } from '../tools/root';
 import UpdateRichCommand from '../history/UpdateRichCommand';
+import { intersectLineLine } from '../math/isec';
+import { angleBySides, r2d } from '../math/geom';
+import { crossProduct } from '../math/vector';
 
 export type ListenerOptions = {
   disabled?: {
@@ -48,6 +51,7 @@ export default class Listener extends Event {
   isMouseDown: boolean;
   isMouseMove: boolean;
   isControl: boolean; // resize等操作控制
+  isRotate: boolean; // 拖转旋转节点
   controlType: string; // 拖动尺寸dom时节点的class，区分比如左拉还是右拉
   originX: number;
   originY: number;
@@ -55,6 +59,8 @@ export default class Listener extends Event {
   startY: number;
   pageTx: number;
   pageTy: number;
+  centerX: number; // 拖转旋转时节点的中心
+  centerY: number;
   dx: number; // 上次move的px，考虑缩放和dpi
   dy: number;
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
@@ -85,6 +91,7 @@ export default class Listener extends Event {
     this.isMouseDown = false;
     this.isMouseMove = false;
     this.isControl = false;
+    this.isRotate = false;
     this.controlType = '';
 
     this.originX = 0;
@@ -93,6 +100,8 @@ export default class Listener extends Event {
     this.startY = 0;
     this.pageTx = 0;
     this.pageTy = 0;
+    this.centerX = 0;
+    this.centerY = 0;
     this.dx = 0;
     this.dy = 0;
     this.isFrame = false;
@@ -171,6 +180,8 @@ export default class Listener extends Event {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
     this.updateOrigin();
+    const root = this.root;
+    const dpi = root.dpi;
     // 操作开始清除
     this.originStyle.splice(0);
     this.modifyStyle.splice(0);
@@ -183,93 +194,104 @@ export default class Listener extends Event {
       this.isControl = isControl;
       this.controlType = target.className;
       this.prepare();
-      this.abcStyle = selected.map((item) => {
-        // resize画板children的定位尺寸临时变为固定px
-        if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
-          return item.children.map((child) => {
-            const { computedStyle, style } = child;
-            const res = {
-              left: clone(style.left),
-              right: clone(style.right),
-              top: clone(style.top),
-              bottom: clone(style.bottom),
-              width: clone(style.width),
-              height: clone(style.height),
-            };
-            // 根据control的类型方向，决定将TRBL某个改为px固定值，对称方向改为auto
-            if (
-              this.controlType === 't' ||
-              this.controlType === 'tl' ||
-              this.controlType === 'tr'
-            ) {
-              if (style.bottom.u !== StyleUnit.PX) {
-                style.bottom.v = computedStyle.bottom;
-                style.bottom.u = StyleUnit.PX;
-              }
-              if (style.top.u !== StyleUnit.AUTO) {
-                style.top.u = StyleUnit.AUTO;
-              }
-            }
-            else if (this.controlType === 'b' ||
-              this.controlType === 'bl' ||
-              this.controlType === 'br') {
-              if (style.top.u !== StyleUnit.PX) {
-                style.top.v = computedStyle.top;
-                style.top.u = StyleUnit.PX;
-              }
-              if (style.bottom.u !== StyleUnit.AUTO) {
-                style.bottom.u = StyleUnit.AUTO;
-              }
-            }
-            if (
-              this.controlType === 'l' ||
-              this.controlType === 'tl' ||
-              this.controlType === 'bl'
-            ) {
-              if (style.right.u !== StyleUnit.PX) {
-                style.right.v = computedStyle.right;
-                style.right.u = StyleUnit.PX;
-              }
-              if (style.left.u !== StyleUnit.AUTO) {
-                style.left.u = StyleUnit.AUTO;
-              }
-            }
-            else if (
-              this.controlType === 'r' ||
-              this.controlType === 'tr' ||
-              this.controlType === 'br'
-            ) {
-              if (style.left.u !== StyleUnit.PX) {
-                style.left.v = computedStyle.left;
-                style.left.u = StyleUnit.PX;
-              }
-              if (style.right.u !== StyleUnit.AUTO) {
-                style.right.u = StyleUnit.AUTO;
-              }
-            }
-            // 尺寸一定会改固定
-            if (style.width.u !== StyleUnit.PX) {
-              style.width.v = computedStyle.width;
-              style.width.u = StyleUnit.PX;
-            }
-            if (style.height.u !== StyleUnit.PX) {
-              style.height.v = computedStyle.height;
-              style.height.u = StyleUnit.PX;
-            }
-            return res;
-          });
-        }
-        return [];
-      });
       if (this.state === State.EDIT_TEXT) {
         this.state = State.NORMAL;
         this.input.hide();
       }
+      // 旋转时记住中心坐标
+      if (selected.length === 1 && this.metaKey && ['tl', 'tr', 'bl', 'br'].indexOf(this.controlType) > -1) {
+        const { points } = selected[0].getBoundingClientRect();
+        const i = intersectLineLine(
+          points[0].x, points[0].y, points[2].x, points[2].y,
+          points[1].x, points[1].y, points[3].x, points[3].y,
+        )!;
+        this.centerX = i.x / dpi + this.originX;
+        this.centerY = i.y / dpi + this.originY;
+        this.isRotate = true;
+      }
+      else {
+        this.abcStyle = selected.map((item) => {
+          // resize画板children的定位尺寸临时变为固定px
+          if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
+            return item.children.map((child) => {
+              const { computedStyle, style } = child;
+              const res = {
+                left: clone(style.left),
+                right: clone(style.right),
+                top: clone(style.top),
+                bottom: clone(style.bottom),
+                width: clone(style.width),
+                height: clone(style.height),
+              };
+              // 根据control的类型方向，决定将TRBL某个改为px固定值，对称方向改为auto
+              if (
+                this.controlType === 't' ||
+                this.controlType === 'tl' ||
+                this.controlType === 'tr'
+              ) {
+                if (style.bottom.u !== StyleUnit.PX) {
+                  style.bottom.v = computedStyle.bottom;
+                  style.bottom.u = StyleUnit.PX;
+                }
+                if (style.top.u !== StyleUnit.AUTO) {
+                  style.top.u = StyleUnit.AUTO;
+                }
+              }
+              else if (this.controlType === 'b' ||
+                this.controlType === 'bl' ||
+                this.controlType === 'br') {
+                if (style.top.u !== StyleUnit.PX) {
+                  style.top.v = computedStyle.top;
+                  style.top.u = StyleUnit.PX;
+                }
+                if (style.bottom.u !== StyleUnit.AUTO) {
+                  style.bottom.u = StyleUnit.AUTO;
+                }
+              }
+              if (
+                this.controlType === 'l' ||
+                this.controlType === 'tl' ||
+                this.controlType === 'bl'
+              ) {
+                if (style.right.u !== StyleUnit.PX) {
+                  style.right.v = computedStyle.right;
+                  style.right.u = StyleUnit.PX;
+                }
+                if (style.left.u !== StyleUnit.AUTO) {
+                  style.left.u = StyleUnit.AUTO;
+                }
+              }
+              else if (
+                this.controlType === 'r' ||
+                this.controlType === 'tr' ||
+                this.controlType === 'br'
+              ) {
+                if (style.left.u !== StyleUnit.PX) {
+                  style.left.v = computedStyle.left;
+                  style.left.u = StyleUnit.PX;
+                }
+                if (style.right.u !== StyleUnit.AUTO) {
+                  style.right.u = StyleUnit.AUTO;
+                }
+              }
+              // 尺寸一定会改固定
+              if (style.width.u !== StyleUnit.PX) {
+                style.width.v = computedStyle.width;
+                style.width.u = StyleUnit.PX;
+              }
+              if (style.height.u !== StyleUnit.PX) {
+                style.height.v = computedStyle.height;
+                style.height.u = StyleUnit.PX;
+              }
+              return res;
+            });
+          }
+          return [];
+        });
+      }
     }
     // 点到canvas上
     else {
-      const root = this.root;
-      const dpi = root.dpi;
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
       let node = getNodeByPoint(
@@ -381,6 +403,10 @@ export default class Listener extends Event {
       if (oldSelected.length === 0 && selected.length === 0) {
         return;
       }
+      // 旋转需记住节点中心坐标
+      if (this.metaKey && selected.length === 1) {
+        this.select.metaKey(true);
+      }
       this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
     }
@@ -434,70 +460,99 @@ export default class Listener extends Event {
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
-      selected.forEach((node, i) => {
-        // 改变尺寸前置记录操作，注意更新computedStyle，影响计算
-        if (!this.isMouseMove) {
-          node.startSizeChange();
-          this.computedStyle[i] = node.getComputedStyle();
-          this.cssStyle[i] = node.getCssStyle();
-        }
-        const prev: Partial<JStyle> = {};
-        const next: Partial<JStyle> = {};
-        const { style } = node;
-        const computedStyle = this.computedStyle[i];
-        const cssStyle = this.cssStyle[i];
-        // 分4个方向上看，每个方向除了拉边还可以拉相邻2个角
-        if (
-          this.controlType === 't' ||
-          this.controlType === 'tl' ||
-          this.controlType === 'tr'
-        ) {
-          const t = resizeTop(node, style, computedStyle, dy2);
-          if (t) {
-            Object.assign(next, t);
-          }
-        }
-        else if (
-          this.controlType === 'b' ||
-          this.controlType === 'bl' ||
-          this.controlType === 'br'
-        ) {
-          const t = resizeBottom(node, style, computedStyle, dy2);
-          if (t) {
-            Object.assign(next, t);
-          }
-        }
-        if (
-          this.controlType === 'l' ||
-          this.controlType === 'tl' ||
-          this.controlType === 'bl'
-        ) {
-          const t = resizeLeft(node, style, computedStyle, dx2);
-          if (t) {
-            Object.assign(next, t);
-          }
-        }
-        else if (
-          this.controlType === 'r' ||
-          this.controlType === 'tr' ||
-          this.controlType === 'br'
-        ) {
-          const t = resizeRight(node, style, computedStyle, dx2);
-          if (t) {
-            Object.assign(next, t);
-          }
-        }
-        node.updateStyle(next);
-        Object.keys(next).forEach((k) => {
-          const v = cssStyle[k as keyof JStyle];
-          // @ts-ignore
-          prev[k] = v;
+      // 特殊单个节点旋转操控，知道节点中心坐标，点击初始坐标，移动后坐标，3点确定三角形，余弦定理求夹角
+      if (this.isRotate) {
+        const cx = this.centerX - this.originX;
+        const cy = this.centerY - this.originY;
+        const ax = this.startX - this.originX;
+        const ay = this.startY - this.originY;
+        const bx = e.clientX - this.originX;
+        const by = e.clientY - this.originY;
+        const r = angleBySides(
+          Math.sqrt(Math.pow(ax - bx, 2) + Math.pow(ay - by, 2)),
+          Math.sqrt(Math.pow(cx - bx, 2) + Math.pow(cy - by, 2)),
+          Math.sqrt(Math.pow(ax - cx, 2) + Math.pow(ay - cy, 2)),
+        );
+        // 知道角度后需确定顺逆时针方向
+        const c = crossProduct(
+          ax - cx, ay - cy,
+          bx - cx, by - cy,
+        );
+        const node = selected[0];
+        const rotateZ = (this.computedStyle[0].rotateZ + r2d(r) * (c >= 0 ? 1 : -1)) % 360;
+        node.updateStyle({
+          rotateZ,
         });
-        this.modifyStyle[i] = { prev, next };
-      });
-      this.isMouseMove = true;
-      this.select.updateSelect(selected);
-      this.emit(Listener.RESIZE_NODE, selected.slice(0));
+        this.select.updateSelect(selected);
+        this.emit(Listener.ROTATE_NODE, selected.slice(0));
+      }
+      // 普通的节点拉伸
+      else {
+        selected.forEach((node, i) => {
+          // 改变尺寸前置记录操作，注意更新computedStyle，影响计算
+          if (!this.isMouseMove) {
+            node.startSizeChange();
+            // this.computedStyle[i] = node.getComputedStyle();
+            // this.cssStyle[i] = node.getCssStyle();
+          }
+          const prev: Partial<JStyle> = {};
+          const next: Partial<JStyle> = {};
+          const { style } = node;
+          const computedStyle = this.computedStyle[i];
+          const cssStyle = this.cssStyle[i];
+          // 分4个方向上看，每个方向除了拉边还可以拉相邻2个角
+          if (
+            this.controlType === 't' ||
+            this.controlType === 'tl' ||
+            this.controlType === 'tr'
+          ) {
+            const t = resizeTop(node, style, computedStyle, dy2);
+            if (t) {
+              Object.assign(next, t);
+            }
+          }
+          else if (
+            this.controlType === 'b' ||
+            this.controlType === 'bl' ||
+            this.controlType === 'br'
+          ) {
+            const t = resizeBottom(node, style, computedStyle, dy2);
+            if (t) {
+              Object.assign(next, t);
+            }
+          }
+          if (
+            this.controlType === 'l' ||
+            this.controlType === 'tl' ||
+            this.controlType === 'bl'
+          ) {
+            const t = resizeLeft(node, style, computedStyle, dx2);
+            if (t) {
+              Object.assign(next, t);
+            }
+          }
+          else if (
+            this.controlType === 'r' ||
+            this.controlType === 'tr' ||
+            this.controlType === 'br'
+          ) {
+            const t = resizeRight(node, style, computedStyle, dx2);
+            if (t) {
+              Object.assign(next, t);
+            }
+          }
+          node.updateStyle(next);
+          Object.keys(next).forEach((k) => {
+            const v = cssStyle[k as keyof JStyle];
+            // @ts-ignore
+            prev[k] = v;
+          });
+          this.modifyStyle[i] = { prev, next };
+        });
+        this.isMouseMove = true;
+        this.select.updateSelect(selected);
+        this.emit(Listener.RESIZE_NODE, selected.slice(0));
+      }
     }
     // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
     else if (this.isMouseDown) {
@@ -591,6 +646,10 @@ export default class Listener extends Event {
       // 因为用到offsetXY，避免是其它DOM触发的（如select上的html），防止不正确
       const target = e.target as HTMLElement;
       if (target.tagName.toUpperCase() !== 'CANVAS') {
+        if (this.select.hoverNode) {
+          this.select.hideHover();
+          this.emit(Listener.UN_HOVER_NODE);
+        }
         return;
       }
       // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
@@ -684,35 +743,50 @@ export default class Listener extends Event {
     });
     if (this.isControl) {
       this.isControl = false;
-      // 还原artBoard的children为初始值
-      this.abcStyle.forEach((item, i) => {
-        if (item.length) {
-          const node = selected[i] as ArtBoard;
-          const children = node.children;
-          item.forEach((abcStyle, i) => {
-            const style = children[i].style;
-            ['left', 'right', 'top', 'bottom', 'width', 'height'].forEach((k) => {
-              const o = abcStyle[k as keyof Style];
-              // @ts-ignore
-              style[k].v = o.v;
-              // @ts-ignore
-              style[k].u = o.u;
-            });
-          });
+      if (this.isRotate) {
+        this.isRotate = false;
+        const node = selected[0];
+        this.history.addCommand(new RotateCommand([node], [node.computedStyle.rotateZ-this.computedStyle[0].rotateZ]));
+        if (!this.metaKey) {
+          this.select.metaKey(false);
         }
-      });
-      selected.forEach((node, i) => {
-        // 有调整尺寸的话，向上检测组的自适应尺寸
+      }
+      else {
+        // 还原artBoard的children为初始值
+        this.abcStyle.forEach((item, i) => {
+          if (item.length) {
+            const node = selected[i] as ArtBoard;
+            const children = node.children;
+            item.forEach((abcStyle, i) => {
+              const style = children[i].style;
+              ['left', 'right', 'top', 'bottom', 'width', 'height'].forEach((k) => {
+                const o = abcStyle[k as keyof Style];
+                // @ts-ignore
+                style[k].v = o.v;
+                // @ts-ignore
+                style[k].u = o.u;
+              });
+            });
+          }
+        });
         if (this.isMouseMove) {
-          // 还原最初的translate/TRBL值
-          node.endSizeChange(this.originStyle[i]);
-          node.checkPosSizeUpward();
-          const o = this.modifyStyle[i];
-          if (o) {
-            this.history.addCommand(new ResizeCommand([node], [o]));
+          const ns: Node[] = [];
+          const ss: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
+          selected.forEach((node, i) => {
+            // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
+            node.endSizeChange(this.originStyle[i]);
+            node.checkPosSizeUpward();
+            const o = this.modifyStyle[i];
+            if (o) {
+              ns.push(node);
+              ss.push(o);
+            }
+          });
+          if (ns.length) {
+            this.history.addCommand(new ResizeCommand(ns, ss));
           }
         }
-      });
+      }
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
@@ -939,6 +1013,9 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
+    if (this.metaKey && this.selected.length === 1) {
+      this.select.metaKey(true);
+    }
     // back
     if (e.keyCode === 8) {
       if (this.selected.length && !this.options.disabled?.remove) {
@@ -1014,6 +1091,9 @@ export default class Listener extends Event {
     this.altKey = e.altKey;
     this.ctrlKey = e.ctrlKey;
     this.shiftKey = e.shiftKey;
+    if (!this.metaKey && !this.isRotate) {
+      this.select.metaKey(false);
+    }
     // space
     if (e.keyCode === 32) {
       this.spaceKey = false;

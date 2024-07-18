@@ -17,17 +17,17 @@ const html = `
   <span class="b" style="position:absolute;left:0;bottom:-4px;width:100%;height:8px;transform:scaleY(0.5);cursor:ns-resize;pointer-events:auto;">
     <b style="position:absolute;left:0;bottom:4px;width:100%;height:0;border-bottom:1px solid #F43;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
   </span>
-  <span class="tl" style="position:absolute;left:0;top:0;width:14px;height:14px;transform:translate(-50%,-50%)scale(0.5);cursor:nwse-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="tl" style="position:absolute;left:0;top:0;width:14px;height:14px;transform:translate(-50%,-50%);cursor:nwse-resize;pointer-events:auto;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
   </span>
-  <span class="tr" style="position:absolute;right:0;top:0;width:14px;height:14px;transform:translate(50%,-50%)scale(0.5);cursor:nesw-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="tr" style="position:absolute;right:0;top:0;width:14px;height:14px;transform:translate(50%,-50%);cursor:nesw-resize;pointer-events:auto;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
   </span>
-  <span class="br" style="position:absolute;right:0;bottom:0;width:14px;height:14px;transform:translate(50%,50%)scale(0.5);cursor:nwse-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="br" style="position:absolute;right:0;bottom:0;width:14px;height:14px;transform:translate(50%,50%);cursor:nwse-resize;pointer-events:auto;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
   </span>
-  <span class="bl" style="position:absolute;left:0;bottom:0;width:14px;height:14px;transform:translate(-50%,50%)scale(0.5);cursor:nesw-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="bl" style="position:absolute;left:0;bottom:0;width:14px;height:14px;transform:translate(-50%,50%);cursor:nesw-resize;pointer-events:auto;">
+    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
   </span>
 `;
 
@@ -256,5 +256,19 @@ export default class Select {
   destroy() {
     this.hover.remove();
     this.hideSelect();
+  }
+
+  metaKey(meta: boolean) {
+    if (meta) {
+      this.select.querySelectorAll('.tl, .tr, .bl, .br').forEach(item => {
+        (item as HTMLElement).style.cursor = 'cell';
+      });
+    }
+    else {
+      (this.select.querySelector('.tl') as HTMLElement).style.cursor = 'nwse-resize';
+      (this.select.querySelector('.tr') as HTMLElement).style.cursor = 'nesw-resize';
+      (this.select.querySelector('.bl') as HTMLElement).style.cursor = 'nwse-resize';
+      (this.select.querySelector('.br') as HTMLElement).style.cursor = 'nesw-resize';
+    }
   }
 }
