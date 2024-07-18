@@ -16,9 +16,9 @@ module.exports = {
       .assert.value('#base64', '[1,"矩形"]')
 
       // .keys(browser.Keys.META)
-      .moveToElement('.tl', 1, 1)
+      .moveToElement('.tl', 5, 5)
       .mouseButtonDown(0)
-      .moveToElement('.tl', 21, 1)
+      .moveToElement('.tl', 21, 5)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
       .pause(20)
@@ -41,9 +41,9 @@ module.exports = {
       .assert.value('#base64', '')
 
       .keys(browser.Keys.META)
-      .moveToElement('.tl', 1, 1)
+      .moveToElement('.tl', 5, 5)
       .mouseButtonDown(0)
-      .moveToElement('.tl', -21, 1)
+      .moveToElement('.tl', -21, 5)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
       .pause(20)
