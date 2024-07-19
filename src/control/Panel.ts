@@ -7,12 +7,14 @@ class Panel {
   dom: HTMLElement;
   listener: Listener;
   nodes: Node[];
+  silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
     this.nodes = [];
+    this.silence = false;
   }
 }
 

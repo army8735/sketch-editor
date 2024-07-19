@@ -16,11 +16,9 @@ const html = `
 
 class OpacityPanel extends Panel {
   panel: HTMLElement;
-  silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
-    this.silence = false;
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'opacity-panel';
@@ -38,7 +36,6 @@ class OpacityPanel extends Panel {
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
-        nodes = [];
         prevs = [];
       }
       nexts = [];
@@ -60,7 +57,7 @@ class OpacityPanel extends Panel {
     });
     range.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new OpacityCommand(nodes.slice(0), prevs.map((prev, i) => ({
+        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
           prev,
           next: nexts[i],
         }))));
@@ -76,7 +73,6 @@ class OpacityPanel extends Panel {
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
-        nodes = [];
         prevs = [];
       }
       nexts = [];
@@ -125,14 +121,14 @@ class OpacityPanel extends Panel {
         }
       });
       if (nodes.length) {
-        this.show(this.nodes);
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
+        this.show(this.nodes);
       }
       this.silence = false;
     });
     number.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new OpacityCommand(nodes.slice(0), prevs.map((prev, i) => ({
+        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
           prev,
           next: nexts[i],
         }))));
@@ -143,6 +139,7 @@ class OpacityPanel extends Panel {
     });
 
     listener.on([Listener.SELECT_NODE, Listener.OPACITY_NODE], (nodes: Node[]) => {
+      // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;
       }

@@ -150,6 +150,7 @@ class TextPanel extends Panel {
           callback();
         };
       }
+      // 尺寸固定模式
       else if ((el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh'))
         && !el.classList.contains('cur')) {
         callback();
@@ -166,6 +167,7 @@ class TextPanel extends Panel {
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }
+      // 左右对齐
       else if ((el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify'))
         && !el.classList.contains('cur')) {
         callback();
@@ -298,19 +300,15 @@ class TextPanel extends Panel {
       listener.emit(Listener.TEXT_NODE, nodes);
     });
 
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      if (picker.isShowFrom('textPanel')) {
-        picker.hide();
-        callback();
-      }
-      this.show(nodes);
-    });
+    // listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+    //   if (picker.isShowFrom('textPanel')) {
+    //     picker.hide();
+    //     callback();
+    //   }
+    //   this.show(nodes);
+    // });
 
-    listener.on(Listener.RESIZE_NODE, (nodes: Node[]) => {
-      this.show(nodes);
-    });
-
-    listener.on(Listener.TEXT_NODE, (nodes: Node[]) => {
+    listener.on([Listener.SELECT_NODE, Listener.RESIZE_NODE, Listener.TEXT_NODE], (nodes: Node[]) => {
       this.show(nodes);
     });
   }

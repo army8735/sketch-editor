@@ -43,12 +43,10 @@ const html = `
 class BasicPanel extends Panel {
   panel: HTMLElement;
   data: Array<{ x: number, y: number, angle: number, w: number, h: number, rotation: number }>; // node当前数据，每次input变更则更新
-  silence: boolean; // input更新触发listener的事件，避免循环侦听更新前静默标识不再侦听
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
     this.data = [];
-    this.silence = false;
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'basic-panel';
@@ -63,12 +61,20 @@ class BasicPanel extends Panel {
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
 
+    let nodes: Node[] = [];
+    let dxs: number[] = [];
+    let dys: number[] = [];
+    let drs: number[] = [];
+    let styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
+
     x.addEventListener('input', (e) => {
       this.silence = true;
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        dxs = [];
+        dys = [];
+      }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes: Node[] = [];
-      const dxs: number[] = [];
-      const dys: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
         let d = 0;
@@ -107,20 +113,29 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
-        listener.select.updateSelect(nodes);
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
         this.show(this.nodes);
       }
       this.silence = false;
     });
+    x.addEventListener('change', (e) => {
+      if (nodes.length) {
+        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        nodes = [];
+        dxs = [];
+        dys = [];
+      }
+    });
 
     y.addEventListener('input', (e) => {
       this.silence = true;
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        dxs = [];
+        dys = [];
+      }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes: Node[] = [];
-      const dxs: number[] = [];
-      const dys: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
         let d = 0;
@@ -159,19 +174,28 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
-        listener.select.updateSelect(nodes);
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
         this.show(this.nodes);
       }
       this.silence = false;
     });
+    y.addEventListener('change', (e) => {
+      if (nodes.length) {
+        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        nodes = [];
+        dxs = [];
+        dys = [];
+      }
+    });
 
     r.addEventListener('input', (e) => {
       this.silence = true;
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        drs = [];
+      }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes: Node[] = [];
-      const ns: number[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
         let d = 0;
@@ -202,23 +226,31 @@ class BasicPanel extends Panel {
           });
           node.checkPosSizeUpward();
           nodes.push(node);
-          ns.push(d);
+          drs.push(d);
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new RotateCommand(nodes.slice(0), ns));
-        listener.select.updateSelect(nodes);
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
         this.show(this.nodes);
       }
       this.silence = false;
     });
+    r.addEventListener('change', (e) => {
+      if (nodes.length) {
+        listener.history.addCommand(new RotateCommand(nodes, drs));
+        nodes = [];
+        drs = [];
+      }
+    });
 
     w.addEventListener('input', (e) => {
       this.silence = true;
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        styles = [];
+      }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes: Node[] = [];
-      const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
         let d = 0;
@@ -264,19 +296,27 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
-        listener.select.updateSelect(nodes);
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         this.show(this.nodes);
       }
       this.silence = false;
     });
+    w.addEventListener('change', (e) => {
+      if (nodes.length) {
+        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        nodes = [];
+        styles = [];
+      }
+    });
 
     h.addEventListener('input', (e) => {
       this.silence = true;
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        styles = [];
+      }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes: Node[] = [];
-      const styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
       this.nodes.forEach((node, i) => {
         const o = this.data[i];
         let d = 0;
@@ -322,12 +362,18 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
-        listener.select.updateSelect(nodes);
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         this.show(this.nodes);
       }
       this.silence = false;
+    });
+    h.addEventListener('change', (e) => {
+      if (nodes.length) {
+        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        nodes = [];
+        styles = [];
+      }
     });
 
     fh.addEventListener('click', (e) => {
@@ -357,8 +403,8 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
-        listener.select.updateSelect(nodes);
+        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_H_NODE, nodes.slice(0));
       }
     });
@@ -390,16 +436,14 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
-        listener.select.updateSelect(nodes);
+        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
+        listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_V_NODE, nodes.slice(0));
       }
     });
 
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      this.show(nodes);
-    });
-    listener.on([Listener.MOVE_NODE, Listener.RESIZE_NODE, Listener.ROTATE_NODE], (nodes: Node[]) => {
+    listener.on([Listener.SELECT_NODE, Listener.MOVE_NODE, Listener.RESIZE_NODE, Listener.ROTATE_NODE], (nodes: Node[]) => {
+      // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;
       }
