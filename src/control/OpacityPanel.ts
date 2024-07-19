@@ -2,8 +2,7 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import { toPrecision } from '../math';
 import Listener from './Listener';
-import { JStyle } from '../format';
-import UpdateStyleCommand from '../history/UpdateStyleCommand';
+import OpacityCommand from '../history/OpacityCommand';
 import Panel from './Panel';
 
 const html = `
@@ -32,11 +31,17 @@ class OpacityPanel extends Panel {
     const range = panel.querySelector('input[type=range]') as HTMLInputElement;
     const number = panel.querySelector('input[type=number]') as HTMLInputElement;
 
+    let nodes: Node[] = [];
+    let prevs: number[] = [];
+    let nexts: number[] = [];
     range.addEventListener('input', (e) => {
-      this.silence = true;
-      const nodes: Node[] = [];
-      const prevs: Partial<JStyle>[] = [];
-      const nexts: Partial<JStyle>[] = [];
+      // 连续多个只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        nodes = [];
+        prevs = [];
+      }
+      nexts = [];
       this.nodes.forEach((node) => {
         const prev = node.computedStyle.opacity;
         const next = parseFloat(range.value) * 0.01;
@@ -44,94 +49,100 @@ class OpacityPanel extends Panel {
           node.updateStyle({
             opacity: next,
           });
-          nodes.push(node);
-          prevs.push({
-            opacity: prev,
-          });
-          nexts.push({
-            opacity: next,
-          });
+          if (isFirst) {
+            nodes.push(node);
+            prevs.push(prev);
+          }
+          nexts.push(next);
         }
       });
+      number.value = range.value;
+    });
+    range.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
+        listener.history.addCommand(new OpacityCommand(nodes.slice(0), prevs.map((prev, i) => ({
+          prev,
+          next: nexts[i],
+        }))));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
-        number.value = range.value;
+        nodes = [];
+        prevs = [];
+        nexts = [];
       }
-      this.silence = false;
     });
 
     number.addEventListener('input', (e) => {
       this.silence = true;
+      // 连续多个只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        nodes = [];
+        prevs = [];
+      }
+      nexts = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes: Node[] = [];
-      const prevs: Partial<JStyle>[] = [];
-      const nexts: Partial<JStyle>[] = [];
       this.nodes.forEach((node, i) => {
-        const prev = node.computedStyle.opacity;
-        let next = parseFloat(number.value) * 0.01;
+        const prev = node.computedStyle.opacity * 100;
+        let next = parseFloat(number.value);
         let d = 0;
         if (isInput) {
           d = next - prev;
         }
         else {
-          d = next;
-        }
-        // 最小值为0，按↓时可能无法触发-1的值，特殊判断
-        if (d || !isInput && !next) {
-          if (!isInput) {
-            if (listener.shiftKey) {
-              if (d > 0) {
-                d = 0.1;
-              }
-              else {
-                d = -0.1;
-              }
+          // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
+          if (next === 0) {
+            next = -1;
+          }
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (number.placeholder) {
+            d = next;
+          }
+          else {
+            d = next - prev;
+          }
+          if (listener.shiftKey) {
+            if (d > 0) {
+              d = 10;
             }
             else {
-              if (d > 0) {
-                d = 0.01;
-              }
-              else {
-                d = -0.01;
-              }
+              d = -10;
             }
           }
+        }
+        // 最小值为0，按↓时可能无法触发-1的值，特殊判断
+        if (d) {
           next = prev + d;
           next = Math.max(next, 0);
-          next = Math.min(next, 1);
-          if (isInput && !i) {
-            number.value = toPrecision(next * 100).toString();
-          }
+          next = Math.min(next, 100);
           if (prev !== next) {
             node.updateStyle({
-              opacity: next,
+              opacity: next * 0.01,
             });
             nodes.push(node);
-            prevs.push({
-              opacity: prev,
-            });
-            nexts.push({
-              opacity: next,
-            });
+            prevs.push(prev * 0.01);
+            nexts.push(next * 0.01);
           }
         }
       });
-      if (!isInput) {
-        number.value = '';
-      }
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes.slice(0), prevs, nexts));
+        this.show(this.nodes);
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
-        range.value = number.value;
       }
       this.silence = false;
     });
-
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      this.show(nodes);
+    number.addEventListener('change', (e) => {
+      if (nodes.length) {
+        listener.history.addCommand(new OpacityCommand(nodes.slice(0), prevs.map((prev, i) => ({
+          prev,
+          next: nexts[i],
+        }))));
+        nodes = [];
+        prevs = [];
+        nexts = [];
+      }
     });
-    listener.on(Listener.OPACITY_NODE, (nodes: Node[]) => {
+
+    listener.on([Listener.SELECT_NODE, Listener.OPACITY_NODE], (nodes: Node[]) => {
       if (this.silence) {
         return;
       }

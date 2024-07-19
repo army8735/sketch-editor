@@ -35,30 +35,36 @@ class Event {
     return this;
   }
 
-  once(id: string, handle: (...p: any[]) => void) {
+  once(id: string | string[], handle: (...p: any[]) => void) {
     if (!isFunction(handle)) {
       return;
     }
-
-    // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-    const cb = () => {
-      handle.apply(this, Array.prototype.slice.call(arguments));
-      this.off(id, cb);
-    };
-
-    cb.__eventCb = handle;
     if (Array.isArray(id)) {
       for (let i = 0, len = id.length; i < len; i++) {
         this.once(id[i], handle);
       }
     }
     else {
-      this.on(id, cb);
+      // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
+      const cb = () => {
+        handle.apply(this, Array.prototype.slice.call(arguments));
+        this.off(id, cb);
+      };
+
+      cb.__eventCb = handle;
+      if (Array.isArray(id)) {
+        for (let i = 0, len = id.length; i < len; i++) {
+          this.once(id[i], handle);
+        }
+      }
+      else {
+        this.on(id, cb);
+      }
     }
     return this;
   }
 
-  off(id: string, handle: (...p: any[]) => void) {
+  off(id: string | string[], handle: (...p: any[]) => void) {
     if (Array.isArray(id)) {
       for (let i = 0, len = id.length; i < len; i++) {
         this.off(id[i], handle);
@@ -86,7 +92,7 @@ class Event {
     return this;
   }
 
-  emit(id: string, ...data: any) {
+  emit(id: string | string[], ...data: any) {
     if (Array.isArray(id)) {
       for (let i = 0, len = id.length; i < len; i++) {
         this.emit(id[i], data);

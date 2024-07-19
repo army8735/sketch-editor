@@ -110,7 +110,7 @@ class BasicPanel extends Panel {
         listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
-        this.show(nodes);
+        this.show(this.nodes);
       }
       this.silence = false;
     });
@@ -162,7 +162,7 @@ class BasicPanel extends Panel {
         listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
-        this.show(nodes);
+        this.show(this.nodes);
       }
       this.silence = false;
     });
@@ -209,7 +209,7 @@ class BasicPanel extends Panel {
         listener.history.addCommand(new RotateCommand(nodes.slice(0), ns));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
-        this.show(nodes);
+        this.show(this.nodes);
       }
       this.silence = false;
     });
@@ -267,7 +267,7 @@ class BasicPanel extends Panel {
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
-        this.show(nodes);
+        this.show(this.nodes);
       }
       this.silence = false;
     });
@@ -325,7 +325,7 @@ class BasicPanel extends Panel {
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
-        this.show(nodes);
+        this.show(this.nodes);
       }
       this.silence = false;
     });

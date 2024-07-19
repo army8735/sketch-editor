@@ -22,6 +22,7 @@ import UpdateRichCommand from '../history/UpdateRichCommand';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
+import OpacityCommand from '../history/OpacityCommand';
 
 export type ListenerOptions = {
   disabled?: {
@@ -1018,7 +1019,8 @@ export default class Listener extends Event {
     }
     // back
     if (e.keyCode === 8) {
-      if (this.selected.length && !this.options.disabled?.remove) {
+      const target = e.target as HTMLElement; // 忽略输入时
+      if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
         const list = this.selected.splice(0);
         list.forEach((item) => item.remove());
         this.emit(Listener.REMOVE_NODE, list);
@@ -1069,18 +1071,21 @@ export default class Listener extends Event {
       }
       if (c) {
         this.updateActive();
-        const nodes = c.nodes.slice(0);
+        // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
-          this.emit(Listener.MOVE_NODE, nodes);
+          this.emit(Listener.MOVE_NODE, this.selected);
         }
         else if (c instanceof ResizeCommand) {
-          this.emit(Listener.RESIZE_NODE, nodes);
+          this.emit(Listener.RESIZE_NODE, this.selected);
         }
         else if (c instanceof RotateCommand) {
-          this.emit(Listener.ROTATE_NODE, nodes);
+          this.emit(Listener.ROTATE_NODE, this.selected);
         }
         else if (c instanceof UpdateRichCommand) {
-          this.emit(Listener.TEXT_NODE, nodes);
+          this.emit(Listener.TEXT_NODE, this.selected);
+        }
+        else if (c instanceof OpacityCommand) {
+          this.emit(Listener.OPACITY_NODE, this.selected);
         }
       }
     }
