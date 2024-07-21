@@ -70,7 +70,7 @@ class OpacityPanel extends Panel {
 
     number.addEventListener('input', (e) => {
       this.silence = true;
-      // 连续多个只有首次记录节点和prev值，但每次都更新next值
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
         prevs = [];
@@ -82,6 +82,8 @@ class OpacityPanel extends Panel {
         let next = parseFloat(number.value);
         let d = 0;
         if (isInput) {
+          next = Math.max(next, 0);
+          next = Math.min(next, 100);
           d = next - prev;
         }
         else {
@@ -104,18 +106,19 @@ class OpacityPanel extends Panel {
               d = -10;
             }
           }
-        }
-        // 最小值为0，按↓时可能无法触发-1的值，特殊判断
-        if (d) {
           next = prev + d;
+        }
+        if (d) {
           next = Math.max(next, 0);
           next = Math.min(next, 100);
           if (prev !== next) {
             node.updateStyle({
               opacity: next * 0.01,
             });
-            nodes.push(node);
-            prevs.push(prev * 0.01);
+            if (isFirst) {
+              nodes.push(node);
+              prevs.push(prev * 0.01);
+            }
             nexts.push(next * 0.01);
           }
         }

@@ -536,7 +536,7 @@ export function resizeLeft(node: Node, style: Style, computedStyle: ComputedStyl
 export function resizeRight(node: Node, style: Style, computedStyle: ComputedStyle, dx: number) {
   if (dx) {
     const next: Partial<JStyle> = {};
-    // right为确定值则修改它，还要看width是否是确定值也一并修改
+    // right为确定值则修改它，还要看width是否是确定值也一并修改，比如右固定宽度
     if (
       style.right.u === StyleUnit.PX ||
       style.right.u === StyleUnit.PERCENT
