@@ -1344,7 +1344,11 @@ class Node extends Event {
    * 根据开始调整时记录的prev样式，还原布局信息到translate上。
    * 还需向上检查组的自适应尺寸，放在外部自己调用check。
    */
-  endSizeChange() {
+  endSizeChange(prev: Style) {
+    const {
+      translateX,
+      translateY,
+    } = prev;
     const {
       style,
       computedStyle,
@@ -1357,8 +1361,6 @@ class Node extends Event {
       right,
       top,
       bottom,
-      translateX,
-      translateY,
     } = style;
     const { width: pw, height: ph } = parent!;
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {

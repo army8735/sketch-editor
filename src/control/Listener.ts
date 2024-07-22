@@ -777,7 +777,7 @@ export default class Listener extends Event {
           const data: ResizeData[] = [];
           selected.forEach((node, i) => {
             // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
-            node.endSizeChange();
+            node.endSizeChange(this.originStyle[i]);
             node.checkPosSizeUpward();
             const rd = this.resizeData[i];
             const cssStyle = this.cssStyle[i];

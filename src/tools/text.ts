@@ -474,7 +474,7 @@ export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   }
   node.startSizeChange();
   node.updateStyle(next);
-  node.endSizeChange();
+  node.endSizeChange(style);
   node.checkPosSizeUpward();
   return { prev, next };
 }

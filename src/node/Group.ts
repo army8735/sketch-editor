@@ -191,9 +191,9 @@ class Group extends Container {
    * 这个检查在初始化也有做，防止人工脏数据，比如组的尺寸和子节点bbox集合不等。
    * 然后执行基类的逻辑，见Node同名方法。
    */
-  override endSizeChange() {
+  override endSizeChange(prev: Style) {
     this.checkPosSizeDownward();
-    super.endSizeChange();
+    super.endSizeChange(prev);
   }
 
   private checkPosSizeDownward() {
