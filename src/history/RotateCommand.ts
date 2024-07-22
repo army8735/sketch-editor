@@ -2,28 +2,28 @@ import Command from './Command';
 import Node from '../node/Node';
 
 class RotateCommand extends Command {
-  ds: number[];
+  data: { prev: number, next: number }[];
 
-  constructor(nodes: Node[], ds: number[]) {
+  constructor(nodes: Node[], data: { prev: number, next: number }[]) {
     super(nodes);
-    this.ds = ds;
+    this.data = data;
   }
 
   execute() {
-    const { nodes, ds } = this;
+    const { nodes, data } = this;
     nodes.forEach((node, i) => {
       node.updateStyle({
-        rotateZ: node.computedStyle.rotateZ + ds[i],
+        rotateZ: data[i].next % 360,
       });
       node.checkPosSizeUpward();
     });
   }
 
   undo() {
-    const { nodes, ds } = this;
+    const { nodes, data } = this;
     nodes.forEach((node, i) => {
       node.updateStyle({
-        rotateZ: node.computedStyle.rotateZ - ds[i],
+        rotateZ: data[i].prev % 360,
       });
       node.checkPosSizeUpward();
     });

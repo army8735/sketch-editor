@@ -23,6 +23,7 @@ import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import OpacityCommand from '../history/OpacityCommand';
+import { MoveData, ResizeData, ResizeStyle } from '../history/type';
 
 export type ListenerOptions = {
   disabled?: {
@@ -67,7 +68,7 @@ export default class Listener extends Event {
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
-  modifyStyle: ({ prev: Partial<JStyle>, next: Partial<JStyle> } | undefined)[]; // 每次变更的style记录，在结束时供history使用
+  resizeData: ResizeData[]; // 每次变更的style记录，在结束时供history使用
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   originStyle: Style[]; // 同上
@@ -108,7 +109,7 @@ export default class Listener extends Event {
     this.isFrame = false;
 
     this.selected = [];
-    this.modifyStyle = [];
+    this.resizeData = [];
     this.abcStyle = [];
     this.computedStyle = [];
     this.originStyle = [];
@@ -185,7 +186,7 @@ export default class Listener extends Event {
     const dpi = root.dpi;
     // 操作开始清除
     this.originStyle.splice(0);
-    this.modifyStyle.splice(0);
+    this.resizeData.splice(0);
     this.dx = this.dy = 0;
     // 点到控制html上
     if (isControl) {
@@ -453,10 +454,10 @@ export default class Listener extends Event {
       return;
     }
     const dpi = root.dpi;
-    const dx = e.clientX - this.startX;
+    const dx = e.clientX - this.startX; // 外部页面单位
     const dy = e.clientY - this.startY;
     const zoom = page.getZoom();
-    let dx2 = this.dx = (dx / zoom) * dpi;
+    let dx2 = this.dx = (dx / zoom) * dpi; // 画布内sketch单位
     let dy2 = this.dy = (dy / zoom) * dpi;
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
@@ -496,8 +497,7 @@ export default class Listener extends Event {
             this.computedStyle[i] = node.getComputedStyle();
             this.cssStyle[i] = node.getCssStyle();
           }
-          const prev: Partial<JStyle> = {};
-          const next: Partial<JStyle> = {};
+          const next: ResizeStyle = {};
           const { style } = node;
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
@@ -543,12 +543,8 @@ export default class Listener extends Event {
             }
           }
           node.updateStyle(next);
-          Object.keys(next).forEach((k) => {
-            const v = cssStyle[k as keyof JStyle];
-            // @ts-ignore
-            prev[k] = v;
-          });
-          this.modifyStyle[i] = { prev, next };
+          // prev原始样式在结束时生成记录
+          this.resizeData[i] = { prev: {}, next };
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -615,23 +611,26 @@ export default class Listener extends Event {
              * 这里用computedStyle的translate差值做计算，得到当前的translate的px值updateStyle给node，
              * 在node的calMatrix那里是优化过的计算方式，只有translate变更的话也是只做差值计算，更快。
              * 需要注意目前matrix的整体计算是将布局信息TRLB换算为translate，因此style上的原始值和更新的这个px值并不一致，
-             * 如果涉及到相关的读取写入话要注意换算，这里没有涉及到，updateStyle会同步将translate写会布局TRLB的style上满足功能要求。
+             * 结束拖动调用endPosChange()将translate写回布局TRLB的style上满足定位要求。
              */
-            const o: any = {};
+            const o: Partial<Pick<JStyle, 'translateX' | 'translateY'>> = {};
             if (dx2) {
               o.translateX = computedStyle.translateX + dx2;
             }
             if (dy2) {
               o.translateY = computedStyle.translateY + dy2;
             }
-            node.updateStyle(o);
-            this.modifyStyle[i] = {
-              prev: {
-                translateX: computedStyle.translateX,
-                translateY: computedStyle.translateY,
-              },
-              next: o,
-            };
+            node.updateStyle({
+              translateX: computedStyle.translateX + dx2,
+              translateY: computedStyle.translateY + dy2,
+            });
+            // this.resizeData[i] = {
+            //   prev: {
+            //     translateX: computedStyle.translateX,
+            //     translateY: computedStyle.translateY,
+            //   },
+            //   next: o,
+            // };
           });
           this.select.updateSelect(selected);
           this.emit(Listener.MOVE_NODE, selected.slice(0));
@@ -747,13 +746,16 @@ export default class Listener extends Event {
       if (this.isRotate) {
         this.isRotate = false;
         const node = selected[0];
-        this.history.addCommand(new RotateCommand([node], [node.computedStyle.rotateZ-this.computedStyle[0].rotateZ]));
+        this.history.addCommand(new RotateCommand([node], [{
+          prev: this.computedStyle[0].rotateZ,
+          next: node.computedStyle.rotateZ,
+        }]));
         if (!this.metaKey) {
           this.select.metaKey(false);
         }
       }
       else {
-        // 还原artBoard的children为初始值
+        // 还原artBoard的children为初始值，只有操作画板时才有，普通节点是空[]
         this.abcStyle.forEach((item, i) => {
           if (item.length) {
             const node = selected[i] as ArtBoard;
@@ -771,20 +773,23 @@ export default class Listener extends Event {
           }
         });
         if (this.isMouseMove) {
-          const ns: Node[] = [];
-          const ss: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
+          const nodes: Node[] = [];
+          const data: ResizeData[] = [];
           selected.forEach((node, i) => {
             // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
-            node.endSizeChange(this.originStyle[i]);
+            node.endSizeChange();
             node.checkPosSizeUpward();
-            const o = this.modifyStyle[i];
-            if (o) {
-              ns.push(node);
-              ss.push(o);
-            }
+            const rd = this.resizeData[i];
+            const cssStyle = this.cssStyle[i];
+            // 原始样式记录
+            (Object.keys(rd.next) as (keyof ResizeStyle)[]).forEach((k) => {
+              rd.prev[k] = cssStyle[k];
+            });
+            nodes.push(node);
+            data.push(rd);
           });
-          if (ns.length) {
-            this.history.addCommand(new ResizeCommand(ns, ss));
+          if (nodes.length) {
+            this.history.addCommand(new ResizeCommand(nodes, data));
           }
         }
       }
@@ -813,12 +818,14 @@ export default class Listener extends Event {
       else {
         const { dx, dy } = this;
         if (dx || dy) {
+          const data: MoveData[] = [];
           selected.forEach((node, i) => {
             // 还原最初的translate/TRBL值
-            node.endPosChange(this.originStyle[i], dx, dy);
+            const md = node.endPosChange(this.originStyle[i], dx, dy);
             node.checkPosSizeUpward();
-            this.history.addCommand(new MoveCommand([node], [dx], [dy]));
+            data.push(md);
           });
+          this.history.addCommand(new MoveCommand(selected.slice(0), data));
         }
       }
     }
@@ -1136,7 +1143,7 @@ export default class Listener extends Event {
     document.removeEventListener('keyup', this.onKeyUp);
 
     this.selected.splice(0);
-    this.modifyStyle.splice(0);
+    this.resizeData.splice(0);
     this.abcStyle.splice(0);
     this.computedStyle.splice(0);
     this.originStyle.splice(0);

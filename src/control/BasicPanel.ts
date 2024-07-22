@@ -9,6 +9,8 @@ import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
 import Panel from './Panel';
+import { MoveData, ResizeData, ResizeStyle } from '../history/type';
+import { ComputedStyle, Style } from '../style/define';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -62,32 +64,37 @@ class BasicPanel extends Panel {
     const fv = panel.querySelector('.fv') as HTMLElement;
 
     let nodes: Node[] = [];
-    let dxs: number[] = [];
-    let dys: number[] = [];
-    let drs: number[] = [];
-    let styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[] = [];
+    let originStyle: Style[] = [];
+    let computedStyle: ComputedStyle[] = [];
+    let cssStyle: JStyle[] = [];
+    let prevNumber: number[] = [];
+    let nextNumber: number[] = [];
+    let resizeStyle: ResizeStyle[] = [];
 
     x.addEventListener('input', (e) => {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
-        dxs = [];
-        dys = [];
+        originStyle = [];
+        computedStyle = [];
+        prevNumber = [];
       }
+      nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const o = this.data[i];
+        const prev = this.data[i].x;
+        let next = parseFloat(x.value);
         let d = 0;
         if (isInput) {
-          d = parseFloat(x.value) - o.x;
+          d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
           if (x.placeholder) {
-            d = parseFloat(x.value);
+            d = next;
           }
           else {
-            d = parseFloat(x.value) - o.x;
+            d = next - prev;
           }
           if (listener.shiftKey) {
             if (d > 0) {
@@ -97,20 +104,19 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          next = prev + d;
         }
-        if (d) {
-          o.x += d;
-          const style = node.getStyle();
-          node.updateStyle({
-            translateX: node.computedStyle.translateX + d,
-          });
-          // 还原最初的translate/TRBL值
-          node.endPosChange(style, d, 0);
-          node.checkPosSizeUpward();
+        if (isFirst) {
           nodes.push(node);
-          dxs.push(d);
-          dys.push(0);
+          originStyle.push(node.getStyle());
+          computedStyle.push(node.getComputedStyle());
+          prevNumber.push(prev);
         }
+        nextNumber.push(next);
+        // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
+        node.updateStyle({
+          translateX: computedStyle[i].translateX + d,
+        });
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
@@ -121,10 +127,18 @@ class BasicPanel extends Panel {
     });
     x.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        const data: MoveData[] = [];
+        nodes.forEach((node, i) => {
+          const md = node.endPosChange(originStyle[i], nextNumber[i] - prevNumber[i], 0);
+          node.checkPosSizeUpward();
+          data.push(md);
+        });
+        listener.history.addCommand(new MoveCommand(nodes, data));
         nodes = [];
-        dxs = [];
-        dys = [];
+        originStyle = [];
+        computedStyle = [];
+        prevNumber = [];
+        nextNumber = [];
       }
     });
 
@@ -132,23 +146,26 @@ class BasicPanel extends Panel {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
-        dxs = [];
-        dys = [];
+        originStyle = [];
+        computedStyle = [];
+        prevNumber = [];
       }
+      nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const o = this.data[i];
+        const prev = this.data[i].y;
+        let next = parseFloat(y.value);
         let d = 0;
         if (isInput) {
-          d = parseFloat(y.value) - o.y;
+          d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
           if (y.placeholder) {
-            d = parseFloat(y.value);
+            d = next;
           }
           else {
-            d = parseFloat(y.value) - o.y;
+            d = next - prev;
           }
           if (listener.shiftKey) {
             if (d > 0) {
@@ -158,20 +175,19 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          next = prev + d;
         }
-        if (d) {
-          o.y += d;
-          const style = node.getStyle();
-          node.updateStyle({
-            translateY: node.computedStyle.translateY + d,
-          });
-          // 还原最初的translate/TRBL值
-          node.endPosChange(style, 0, d);
-          node.checkPosSizeUpward();
+        if (isFirst) {
           nodes.push(node);
-          dxs.push(0);
-          dys.push(d);
+          originStyle.push(node.getStyle());
+          computedStyle.push(node.getComputedStyle());
+          prevNumber.push(prev);
         }
+        // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
+        node.updateStyle({
+          translateY: computedStyle[i].translateY + d,
+        });
+        nextNumber.push(next);
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
@@ -182,10 +198,18 @@ class BasicPanel extends Panel {
     });
     y.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes, dxs, dys));
+        const data: MoveData[] = [];
+        nodes.forEach((node, i) => {
+          const md = node.endPosChange(originStyle[i], 0, nextNumber[i] - prevNumber[i]);
+          node.checkPosSizeUpward();
+          data.push(md);
+        });
+        listener.history.addCommand(new MoveCommand(nodes, data));
         nodes = [];
-        dxs = [];
-        dys = [];
+        originStyle = [];
+        computedStyle = [];
+        prevNumber = [];
+        nextNumber = [];
       }
     });
 
@@ -193,22 +217,25 @@ class BasicPanel extends Panel {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
-        drs = [];
+        computedStyle = [];
+        prevNumber = [];
       }
+      nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const o = this.data[i];
+        const prev = this.data[i].rotation;
+        let next = parseFloat(r.value);
         let d = 0;
         if (isInput) {
-          d = parseFloat(r.value) - o.rotation;
+          d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
           if (r.placeholder) {
-            d = parseFloat(r.value);
+            d = next;
           }
           else {
-            d = parseFloat(r.value) - o.rotation;
+            d = next - prev;
           }
           if (listener.shiftKey) {
             if (d > 0) {
@@ -218,16 +245,17 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          next = prev + d;
         }
-        if (d) {
-          o.rotation += d;
-          node.updateStyle({
-            rotateZ: node.computedStyle.rotateZ + d,
-          });
-          node.checkPosSizeUpward();
+        if (isFirst) {
           nodes.push(node);
-          drs.push(d);
+          computedStyle.push(node.getComputedStyle());
+          prevNumber.push(prev);
         }
+        nextNumber.push(next);
+        node.updateStyle({
+          rotateZ: computedStyle[i].rotateZ + d,
+        });
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
@@ -238,9 +266,14 @@ class BasicPanel extends Panel {
     });
     r.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new RotateCommand(nodes, drs));
+        listener.history.addCommand(new RotateCommand(nodes, prevNumber.map((prev, i) => ({
+          prev,
+          next: nextNumber[i],
+        }))));
         nodes = [];
-        drs = [];
+        computedStyle = [];
+        prevNumber = [];
+        nextNumber = [];
       }
     });
 
@@ -248,22 +281,28 @@ class BasicPanel extends Panel {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
-        styles = [];
+        originStyle = [];
+        computedStyle = [];
+        cssStyle = [];
+        prevNumber = [];
       }
+      nextNumber = [];
+      resizeStyle = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const o = this.data[i];
+        const prev = this.data[i].w;
+        let next = parseFloat(w.value);
         let d = 0;
         if (isInput) {
-          d = parseFloat(w.value) - o.w;
+          d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
           if (w.placeholder) {
-            d = parseFloat(w.value);
+            d = next;
           }
           else {
-            d = parseFloat(w.value) - o.w;
+            d = next - prev;
           }
           if (listener.shiftKey) {
             if (d > 0) {
@@ -273,26 +312,21 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          next = prev + d;
         }
-        if (d) {
-          o.w += d;
-          const { computedStyle } = node;
-          const style = node.getStyle();
-          node.startSizeChange();
-          const cssStyle = node.getCssStyle();
-          const next = resizeRight(node, node.style, computedStyle, d)!;
-          node.updateStyle(next);
-          const prev: Partial<JStyle> = {};
-          Object.keys(next).forEach((k) => {
-            const v = cssStyle[k as keyof JStyle];
-            // @ts-ignore
-            prev[k] = v;
-          });
-          // 还原最初的translate/TRBL值
-          node.endSizeChange(style);
-          node.checkPosSizeUpward();
+        if (isFirst) {
           nodes.push(node);
-          styles.push({ prev, next });
+          originStyle.push(node.getStyle());
+          computedStyle.push(node.getComputedStyle());
+          cssStyle.push(node.getCssStyle());
+          prevNumber.push(prev);
+          node.startSizeChange();
+        }
+        nextNumber.push(next);
+        const t = resizeRight(node, node.style, computedStyle[i], d);
+        if (t) {
+          node.updateStyle(t);
+          resizeStyle[i] = t;
         }
       });
       if (nodes.length) {
@@ -304,9 +338,26 @@ class BasicPanel extends Panel {
     });
     w.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        const data: ResizeData[] = [];
+        nodes.forEach((node, i) => {
+          const prev: ResizeStyle = {};
+          const next = resizeStyle[i];
+          (Object.keys(next) as (keyof ResizeStyle)[]).forEach((k) => {
+            prev[k] = cssStyle[i][k];
+          });
+          data.push({
+            prev,
+            next,
+          });
+        });
+        listener.history.addCommand(new ResizeCommand(nodes, data));
         nodes = [];
-        styles = [];
+        originStyle = [];
+        computedStyle = [];
+        cssStyle = [];
+        prevNumber = [];
+        nextNumber = [];
+        resizeStyle = [];
       }
     });
 
@@ -314,22 +365,28 @@ class BasicPanel extends Panel {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
-        styles = [];
+        originStyle = [];
+        computedStyle = [];
+        cssStyle = [];
+        prevNumber = [];
       }
+      nextNumber = [];
+      resizeStyle = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const o = this.data[i];
+        const prev = this.data[i].h;
+        let next = parseFloat(h.value);
         let d = 0;
         if (isInput) {
-          d = parseFloat(h.value) - o.h;
+          d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
           if (h.placeholder) {
-            d = parseFloat(h.value);
+            d = next;
           }
           else {
-            d = parseFloat(h.value) - o.h;
+            d = next - prev;
           }
           if (listener.shiftKey) {
             if (d > 0) {
@@ -339,27 +396,18 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          next = prev + d;
         }
-        if (d) {
-          o.h += d;
-          const { computedStyle } = node;
-          const style = node.getStyle();
-          node.startSizeChange();
-          const cssStyle = node.getCssStyle();
-          const next = resizeBottom(node, node.style, computedStyle, d)!;
-          node.updateStyle(next);
-          const prev: Partial<JStyle> = {};
-          Object.keys(next).forEach((k) => {
-            const v = cssStyle[k as keyof JStyle];
-            // @ts-ignore
-            prev[k] = v;
-          });
-          // 还原最初的translate/TRBL值
-          node.endSizeChange(style);
-          node.checkPosSizeUpward();
+        if (isFirst) {
           nodes.push(node);
-          styles.push({ prev, next });
+          originStyle.push(node.getStyle());
+          computedStyle.push(node.getComputedStyle());
+          cssStyle.push(node.getCssStyle());
+          prevNumber.push(prev);
+          node.startSizeChange();
         }
+        nextNumber.push(next);
+        const t = resizeBottom(node, node.style, computedStyle[i], d);
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
@@ -370,9 +418,26 @@ class BasicPanel extends Panel {
     });
     h.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new ResizeCommand(nodes, styles));
+        const data: ResizeData[] = [];
+        nodes.forEach((node, i) => {
+          const prev: ResizeStyle = {};
+          const next = resizeStyle[i];
+          (Object.keys(next) as (keyof ResizeStyle)[]).forEach((k) => {
+            prev[k] = cssStyle[i][k];
+          });
+          data.push({
+            prev,
+            next,
+          });
+        });
+        listener.history.addCommand(new ResizeCommand(nodes, data));
         nodes = [];
-        styles = [];
+        originStyle = [];
+        computedStyle = [];
+        cssStyle = [];
+        prevNumber = [];
+        nextNumber = [];
+        resizeStyle = [];
       }
     });
 

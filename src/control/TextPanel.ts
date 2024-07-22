@@ -89,9 +89,9 @@ class TextPanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
-    let nodes: Text[];
-    let prevs: UpdateRich[][];
-    let nexts: UpdateRich[][];
+    let nodes: Text[] = [];
+    let prevs: UpdateRich[][] = [];
+    let nexts: UpdateRich[][] = [];
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const callback = () => {
@@ -216,10 +216,11 @@ class TextPanel extends Panel {
       }
     });
 
-    // 字体和字重都是select都会触发
+    // 字体和字重都是Select都会触发，字号等Input也会触发
     panel.addEventListener('change', (e) => {
       const el = e.target as HTMLElement;
-      if (el.tagName === 'SELECT') {
+      const tagName = el.tagName.toUpperCase();
+      if (tagName === 'SELECT') {
         callback();
         const value = (el as HTMLSelectElement).value;
         const nodes = this.nodes.slice(0);
@@ -249,9 +250,17 @@ class TextPanel extends Panel {
         listener.select.updateSelect(nodes);
         listener.emit(Listener.TEXT_NODE, nodes);
       }
+      else if (tagName === 'INPUT') {}
     });
 
     panel.addEventListener('input', (e) => {
+      this.silence = true;
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
       const input = e.target as HTMLInputElement;
       const parent = input.parentElement!;
       let value = parseFloat(input.value);
@@ -272,10 +281,10 @@ class TextPanel extends Panel {
         return;
       }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const nodes = this.nodes.slice(0);
-      const prevs: UpdateRich[][] = [];
-      const nexts: UpdateRich[][] = [];
-      nodes.forEach(node => {
+      // const nodes = this.nodes.slice(0);
+      // const prevs: UpdateRich[][] = [];
+      // const nexts: UpdateRich[][] = [];
+      this.nodes.forEach(node => {
         const prev: UpdateRich[] = [];
         node.rich.forEach(item => {
           prev.push({
@@ -300,15 +309,11 @@ class TextPanel extends Panel {
       listener.emit(Listener.TEXT_NODE, nodes);
     });
 
-    // listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-    //   if (picker.isShowFrom('textPanel')) {
-    //     picker.hide();
-    //     callback();
-    //   }
-    //   this.show(nodes);
-    // });
-
     listener.on([Listener.SELECT_NODE, Listener.RESIZE_NODE, Listener.TEXT_NODE], (nodes: Node[]) => {
+      // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
+      if (this.silence) {
+        return;
+      }
       this.show(nodes);
     });
   }

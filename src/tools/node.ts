@@ -7,6 +7,7 @@ import { clone } from '../util/util';
 import { JStyle, PageProps, Point } from '../format';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
+import { ResizeStyle } from '../history/type';
 
 export enum POSITION {
   UNDER = 0,
@@ -404,7 +405,7 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
 
 export function resizeTop(node: Node, style: Style, computedStyle: ComputedStyle, dy: number) {
   if (dy) {
-    const next: Partial<JStyle> = {};
+    const next: ResizeStyle = {};
     // top为确定值则修改它，还要看height是否是确定值也一并修改
     if (
       style.top.u === StyleUnit.PX ||
@@ -448,7 +449,7 @@ export function resizeTop(node: Node, style: Style, computedStyle: ComputedStyle
 
 export function resizeBottom(node: Node, style: Style, computedStyle: ComputedStyle, dy: number) {
   if (dy) {
-    const next: Partial<JStyle> = {};
+    const next: ResizeStyle = {};
     // bottom为确定值则修改它，还要看height是否是确定值也一并修改
     if (
       style.bottom.u === StyleUnit.PX ||
@@ -491,7 +492,7 @@ export function resizeBottom(node: Node, style: Style, computedStyle: ComputedSt
 
 export function resizeLeft(node: Node, style: Style, computedStyle: ComputedStyle, dx: number) {
   if (dx) {
-    const next: Partial<JStyle> = {};
+    const next: ResizeStyle = {};
     // left为确定值则修改它，还要看width是否是确定值也一并修改
     if (
       style.left.u === StyleUnit.PX ||
@@ -535,7 +536,7 @@ export function resizeLeft(node: Node, style: Style, computedStyle: ComputedStyl
 
 export function resizeRight(node: Node, style: Style, computedStyle: ComputedStyle, dx: number) {
   if (dx) {
-    const next: Partial<JStyle> = {};
+    const next: ResizeStyle = {};
     // right为确定值则修改它，还要看width是否是确定值也一并修改，比如右固定宽度
     if (
       style.right.u === StyleUnit.PX ||

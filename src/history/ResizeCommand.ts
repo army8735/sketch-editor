@@ -1,33 +1,28 @@
 import Command from './Command';
 import Node from '../node/Node';
 import { JStyle } from '../format';
+import { ResizeData, ResizeStyle } from './type';
 
 class ResizeCommand extends Command {
-  styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[];
+  data: ResizeData[];
 
-  constructor(nodes: Node[], styles: { prev: Partial<JStyle>, next: Partial<JStyle> }[]) {
+  constructor(nodes: Node[], data: ResizeData[]) {
     super(nodes);
-    this.styles = styles;
+    this.data = data;
   }
 
   execute() {
-    const { nodes, styles } = this;
+    const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      const originStyle = node.getStyle();
-      node.startSizeChange();
-      node.updateStyle(styles[i].next);
-      node.endSizeChange(originStyle);
+      node.updateStyle(data[i].next);
       node.checkPosSizeUpward();
     });
   }
 
   undo() {
-    const { nodes, styles } = this;
+    const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      const originStyle = node.getStyle();
-      node.startSizeChange();
-      node.updateStyle(styles[i].prev);
-      node.endSizeChange(originStyle);
+      node.updateStyle(data[i].prev);
       node.checkPosSizeUpward();
     });
   }

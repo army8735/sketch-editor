@@ -49,6 +49,7 @@ import Page from './Page';
 import SymbolInstance from './SymbolInstance';
 import Tile from '../refresh/Tile';
 import { convert2Css } from '../style/gradient';
+import { MoveData } from '../history/type';
 
 let id = 0;
 
@@ -973,8 +974,19 @@ class Node extends Event {
     return keys;
   }
 
+  updateFormatStyle(style: Partial<Style>, cb?: (sync: boolean) => void) {
+    const keys = this.updateFormatStyleData(style);
+    // 无变更
+    if (!keys.length) {
+      cb && cb(true);
+      return { keys, lv: RefreshLevel.NONE };
+    }
+    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    return { keys, lv };
+  }
+
   // 只更新样式不触发刷新
-  updateStyleData(style: any) {
+  updateStyleData(style: Partial<JStyle>) {
     const formatStyle = normalize(style);
     return this.updateFormatStyleData(formatStyle);
   }
@@ -982,17 +994,6 @@ class Node extends Event {
   updateStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
     const formatStyle = normalize(style);
     return this.updateFormatStyle(formatStyle, cb);
-  }
-
-  updateFormatStyle(style: Partial<Style>, cb?: (sync: boolean) => void) {
-    const keys = this.updateFormatStyleData(style);
-    // 无变更
-    if (!keys.length) {
-      cb && cb(true);
-      return { keys };
-    }
-    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb);
-    return { keys, lv };
   }
 
   updateProps(props: any, cb?: (sync: boolean) => void) {
@@ -1343,14 +1344,7 @@ class Node extends Event {
    * 根据开始调整时记录的prev样式，还原布局信息到translate上。
    * 还需向上检查组的自适应尺寸，放在外部自己调用check。
    */
-  endSizeChange(prev?: Style) {
-    if (!prev) {
-      return;
-    }
-    const {
-      translateX,
-      translateY,
-    } = prev;
+  endSizeChange() {
     const {
       style,
       computedStyle,
@@ -1363,6 +1357,8 @@ class Node extends Event {
       right,
       top,
       bottom,
+      translateX,
+      translateY,
     } = style;
     const { width: pw, height: ph } = parent!;
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
@@ -1407,7 +1403,7 @@ class Node extends Event {
     style.translateY.u = translateY.u;
   }
 
-  // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的%（可能）
+  // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的值，返回修改的定位style
   endPosChange(prev: Style, dx: number, dy: number) {
     const { style, computedStyle, parent } = this;
     const {
@@ -1420,46 +1416,72 @@ class Node extends Event {
       bottom,
       left,
     } = style;
+    const res: MoveData = { prevStyle: {}, nextStyle: {}, prevComputedStyle: {}, nextComputedStyle: {}, dx, dy };
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent!;
     if (dx) {
       if (left.u === StyleUnit.PX) {
+        res.prevStyle.left = left.v;
         left.v += dx;
+        res.nextStyle.left = left.v;
       }
       else if (left.u === StyleUnit.PERCENT) {
+        res.prevStyle.left = left.v + '%';
         left.v += dx * 100 / pw;
+        res.nextStyle.left = left.v + '%';
       }
+      res.prevComputedStyle.left = computedStyle.left;
       computedStyle.left += dx;
+      res.nextComputedStyle.left = computedStyle.left;
       if (right.u === StyleUnit.PX) {
+        res.prevStyle.right = right.v;
         right.v -= dx;
+        res.nextStyle.right = right.v;
       }
       else if (right.u === StyleUnit.PERCENT) {
+        res.prevStyle.right = right.v + '%';
         right.v -= dx * 100 / pw;
+        res.nextStyle.right = right.v + '%';
       }
+      res.prevComputedStyle.right = computedStyle.right;
       computedStyle.right -= dx;
       computedStyle.translateX -= dx;
+      res.nextComputedStyle.right = computedStyle.right;
     }
     if (dy) {
       if (top.u === StyleUnit.PX) {
+        res.prevStyle.top = top.v;
         top.v += dy;
+        res.nextStyle.top = top.v;
       }
       else if (top.u === StyleUnit.PERCENT) {
+        res.prevStyle.top = top.v + '%';
         top.v += dy * 100 / ph;
+        res.nextStyle.top = top.v + '%';
       }
+      res.prevComputedStyle.top = computedStyle.top;
       computedStyle.top += dy;
+      res.nextComputedStyle.top = computedStyle.top;
       if (bottom.u === StyleUnit.PX) {
+        res.prevStyle.bottom = bottom.v;
         bottom.v -= dy;
+        res.nextStyle.bottom = bottom.v;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
+        res.prevStyle.bottom = bottom.v + '%';
         bottom.v -= dy * 100 / ph;
+        res.nextStyle.bottom = bottom.v + '%';
       }
+      res.prevComputedStyle.bottom = computedStyle.bottom;
       computedStyle.bottom -= dy;
       computedStyle.translateY -= dy;
+      res.nextComputedStyle.bottom = computedStyle.bottom;
     }
     style.translateX.v = translateX.v;
     style.translateX.u = translateX.u;
     style.translateY.v = translateY.v;
     style.translateY.u = translateY.u;
+    return res;
   }
 
   checkShapeChange() {
