@@ -5,6 +5,7 @@ import Node from '../node/Node';
 import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
 import MoveCommand from '../history/MoveCommand';
+import { MoveData } from '../history/type';
 
 const html = `
   <h4 class="panel-title">对齐</h4>
@@ -39,8 +40,7 @@ class AlignPanel extends Panel {
       }
       const classList = target.classList;
       const nodes: Node[] = [];
-      const dxs: number[] = [];
-      const dys: number[] = [];
+      const data: MoveData[] = [];
       this.nodes.forEach(node => {
         let dx = 0;
         let dy = 0;
@@ -68,21 +68,20 @@ class AlignPanel extends Panel {
         if (dx || dy) {
           const style = node.getStyle();
           node.updateStyle({
-            translateX: node.computedStyle.translateX + dx,
-            translateY: node.computedStyle.translateY + dy,
+            translateX: computedStyle.translateX + dx,
+            translateY: computedStyle.translateY + dy,
           });
           // 还原最初的translate/TRBL值
-          node.endPosChange(style, dx, dy);
+          const md = node.endPosChange(style, dx, dy);
           node.checkPosSizeUpward();
           nodes.push(node);
-          dxs.push(dx);
-          dys.push(dy);
+          data.push(md);
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new MoveCommand(nodes.slice(0), dxs, dys));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
+        listener.history.addCommand(new MoveCommand(nodes, data));
       }
     });
 
