@@ -162,8 +162,8 @@ class TextPanel extends Panel {
         else if (el.classList.contains('fwh')) {
           behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
         }
-        const styles = nodes.map(item => updateBehaviour(item, behaviour));
-        listener.history.addCommand(new ResizeCommand(nodes.slice(0), styles));
+        const data = nodes.map(item => updateBehaviour(item, behaviour));
+        listener.history.addCommand(new ResizeCommand(nodes.slice(0), data));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }
