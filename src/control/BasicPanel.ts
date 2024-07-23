@@ -44,7 +44,8 @@ const html = `
 
 class BasicPanel extends Panel {
   panel: HTMLElement;
-  data: Array<{ x: number, y: number, angle: number, w: number, h: number, rotation: number }>; // node当前数据，每次input变更则更新
+  // node当前数据，每次input变更则更新
+  data: { x: number, y: number, angle: number, w: number, h: number, rotation: number }[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
@@ -81,7 +82,7 @@ class BasicPanel extends Panel {
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = isXOrY ? this.data[i].x : this.data[i].y;
+        const prev = isFirst ? (isXOrY ? this.data[i].x : this.data[i].y) :prevNumber[i];
         let next = parseFloat(isXOrY ? x.value : y.value);
         let d = 0;
         if (isInput) {
@@ -175,7 +176,7 @@ class BasicPanel extends Panel {
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = this.data[i].rotation;
+        const prev = isFirst ? this.data[i].rotation : prevNumber[i];
         let next = parseFloat(r.value);
         let d = 0;
         if (isInput) {
@@ -241,7 +242,7 @@ class BasicPanel extends Panel {
       nextStyle = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = isWOrH ? this.data[i].w : this.data[i].h;
+        const prev = isFirst ? (isWOrH ? this.data[i].w : this.data[i].h) : prevNumber[i];
         let next = parseFloat(isWOrH ? w.value : h.value);
         let d = 0;
         if (isInput) {
@@ -296,7 +297,7 @@ class BasicPanel extends Panel {
           const rd = node.endSizeChange(originStyle[i], nextStyle[i]);
           node.checkPosSizeUpward();
           data.push(rd);
-        }); console.log(nodes,data);
+        });
         listener.history.addCommand(new ResizeCommand(nodes, data));
         nodes = [];
         originStyle = [];
