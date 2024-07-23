@@ -2635,8 +2635,6 @@ class Text extends Node {
       const parent = this.parent!;
       // 手动重新布局，因为要重新生成lineBox和textBox，然后设置光标再刷新
       this.layout({
-        x: 0,
-        y: 0,
         w: parent.width,
         h: parent.height,
       });
