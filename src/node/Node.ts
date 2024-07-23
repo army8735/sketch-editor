@@ -1327,27 +1327,19 @@ class Node extends Event {
     } = style;
     const { width: pw, height: ph } = parent!;
     /**
-     * dSize是更改的样式，并且是调整过translate为0后的，将其复制给默认的nextStyle。
-     * 如果只是改TRBL，那么nextStyle初始值是不对的，因为包含了translate，但是后续会重新计算覆盖；
-     * 如果改了w/h（固定宽高情况），那么初始值就是正确的，后续再增加TRBL值，且prevStyle要加上之前的w/h。
+     * dSize是更改的样式，并且是调整过translate为0后的，将其赋值给初始nextStyle，同时记录prev初始；
+     * 如果有调整translate（仅百分比情况），则修正的同时更新初始值。
      */
     const res: ResizeData = { prevStyle: {}, nextStyle: dSize };
-    if (dSize.width) {
-      if (prev.width.u === StyleUnit.PX) {
-        res.prevStyle.width = prev.width.v;
+    (Object.keys(dSize) as (keyof ResizeStyle)[]).forEach(k => {
+      const o = prev[k];
+      if (o.u === StyleUnit.PX) {
+        res.prevStyle[k] = prev[k].v;
       }
-      else if (prev.width.u === StyleUnit.PERCENT) {
-        res.prevStyle.width = prev.width.v + '%';
+      else if (o.u === StyleUnit.PERCENT) {
+        res.prevStyle[k] = prev[k].v + '%';
       }
-    }
-    if (dSize.height) {
-      if (prev.height.u === StyleUnit.PX) {
-        res.prevStyle.height = prev.height.v;
-      }
-      else if (prev.height.u === StyleUnit.PERCENT) {
-        res.prevStyle.height = prev.height.v + '%';
-      }
-    }
+    });
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       const v = translateX.v * w * 0.01;
       if (left.u === StyleUnit.PX) {
