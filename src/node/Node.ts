@@ -1416,7 +1416,7 @@ class Node extends Event {
       bottom,
       left,
     } = style;
-    const res: MoveData = { prevStyle: {}, nextStyle: {}, prevComputedStyle: {}, nextComputedStyle: {}, dx, dy };
+    const res: MoveData = { prevStyle: {}, nextStyle: {} };
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent!;
     if (dx) {
@@ -1430,9 +1430,7 @@ class Node extends Event {
         left.v += dx * 100 / pw;
         res.nextStyle.left = left.v + '%';
       }
-      res.prevComputedStyle.left = computedStyle.left;
       computedStyle.left += dx;
-      res.nextComputedStyle.left = computedStyle.left;
       if (right.u === StyleUnit.PX) {
         res.prevStyle.right = right.v;
         right.v -= dx;
@@ -1443,10 +1441,8 @@ class Node extends Event {
         right.v -= dx * 100 / pw;
         res.nextStyle.right = right.v + '%';
       }
-      res.prevComputedStyle.right = computedStyle.right;
       computedStyle.right -= dx;
       computedStyle.translateX -= dx;
-      res.nextComputedStyle.right = computedStyle.right;
     }
     if (dy) {
       if (top.u === StyleUnit.PX) {
@@ -1459,9 +1455,7 @@ class Node extends Event {
         top.v += dy * 100 / ph;
         res.nextStyle.top = top.v + '%';
       }
-      res.prevComputedStyle.top = computedStyle.top;
       computedStyle.top += dy;
-      res.nextComputedStyle.top = computedStyle.top;
       if (bottom.u === StyleUnit.PX) {
         res.prevStyle.bottom = bottom.v;
         bottom.v -= dy;
@@ -1472,10 +1466,8 @@ class Node extends Event {
         bottom.v -= dy * 100 / ph;
         res.nextStyle.bottom = bottom.v + '%';
       }
-      res.prevComputedStyle.bottom = computedStyle.bottom;
       computedStyle.bottom -= dy;
       computedStyle.translateY -= dy;
-      res.nextComputedStyle.bottom = computedStyle.bottom;
     }
     style.translateX.v = translateX.v;
     style.translateX.u = translateX.u;

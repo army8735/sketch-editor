@@ -570,8 +570,6 @@ class Root extends Container implements FrameCallback {
   reLayout() {
     this.checkRoot(); // 根节点必须保持和canvas同尺寸
     this.layout({
-      x: 0,
-      y: 0,
       w: this.width,
       h: this.height,
     });
