@@ -1,13 +1,11 @@
 import * as uuid from 'uuid';
 import { JContainer, JNode, Override, Props } from '../format';
-import { isPolygonOverlapRect, isRectsInside, pointInRect } from '../math/geom';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import inject from '../util/inject';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
-import { calRectPoints } from '../math/matrix';
 
 class Container extends Node {
   children: Node[];
