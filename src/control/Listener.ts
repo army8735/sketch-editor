@@ -292,6 +292,17 @@ export default class Listener extends Event {
     }
     // 点到canvas上
     else {
+      // 非按键多选情况下点击框内，视为移动，多选时选框一定是无旋转的
+      if (selected.length > 1 && !this.metaKey && !this.shiftKey) {
+        const x = e.clientX;
+        const y = e.clientY;
+        const rect = this.select.select.getBoundingClientRect();
+        if (x >= rect.left && y >= rect.top && x <= rect.right && y <= rect.bottom) {
+          this.prepare();
+          return;
+        }
+      }
+      // 普通根据点击坐标获取节点逻辑
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
       let node = getNodeByPoint(
@@ -832,6 +843,7 @@ export default class Listener extends Event {
     this.isMouseDown = false;
     this.isMouseMove = false;
     this.mouseDownArtBoard = undefined;
+    this.isFrame = false;
     if (this.spaceKey) {
       if (this.options.disabled?.drag) {
         return;
