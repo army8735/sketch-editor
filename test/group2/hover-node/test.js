@@ -9,9 +9,11 @@ module.exports = {
       .pause(20)
 
       .moveToElement('canvas', 31, 31)
+      .assert.cssProperty('#main div.hover', 'display', 'block')
       .assert.domPropertyEquals('#tree dt.hover .name', 'title', '1')
 
       .moveToElement('canvas', 31, 221)
+      .assert.cssProperty('#main div.hover', 'display', 'none')
       .assert.not.elementPresent('#tree dt.hover')
 
       .moveToElement('canvas', 31, 261)

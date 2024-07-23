@@ -392,7 +392,10 @@ export default class Listener extends Event {
         this.state = State.NORMAL;
         this.input.hide();
       }
-      this.select.hideHover();
+      if (this.select.hoverNode) {
+        this.select.hideHover();
+        this.emit(Listener.UN_HOVER_NODE);
+      }
       if (selected.length) {
         this.select.showSelect(selected);
       }
@@ -653,6 +656,10 @@ export default class Listener extends Event {
         if (selected.indexOf(node) === -1 && this.select.hoverNode !== node) {
           this.select.showHover(node);
           this.emit(Listener.HOVER_NODE, node);
+        }
+        else if (selected.indexOf(node) > -1 && this.select.hoverNode) {
+          this.select.hideHover();
+          this.emit(Listener.UN_HOVER_NODE);
         }
       }
       else if (this.select.hoverNode) {
