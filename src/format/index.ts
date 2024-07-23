@@ -141,8 +141,8 @@ export type JStyle = {
   textAlign: 'left' | 'center' | 'right' | 'justify';
   textVerticalAlign: 'top' | 'middle' | 'bottom';
   textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'>;
-  translateX: number;
-  translateY: number;
+  translateX: string | number;
+  translateY: string | number;
   scaleX: number;
   scaleY: number;
   rotateZ: number;
