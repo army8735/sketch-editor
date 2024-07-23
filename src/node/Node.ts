@@ -1339,6 +1339,10 @@ class Node extends Event {
       else if (o.u === StyleUnit.PERCENT) {
         res.prevStyle[k] = prev[k].v + '%';
       }
+      // text中会出现宽高auto
+      else if (o.u === StyleUnit.AUTO) {
+        res.prevStyle[k] = 'auto';
+      }
     });
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       const v = translateX.v * w * 0.01;
