@@ -3,7 +3,7 @@ import { color2hexStr } from '../style/css';
 import { StyleNumValue, StyleUnit, TEXT_ALIGN } from '../style/define';
 import fontInfo from '../style/font';
 import { JStyle } from '../format';
-import { ResizeData } from '../history/type';
+import { ResizeData, ResizeStyle } from '../history/type';
 
 export enum TEXT_BEHAVIOUR {
   AUTO = 0,
@@ -274,209 +274,128 @@ export function getEditData(node: Text) {
 }
 
 export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
-  const res: ResizeData = { prevStyle: {}, nextStyle: {} };
+  const next: ResizeStyle = {};
   const style = node.getStyle();
   const { left, right, top, bottom, width, height } = style;
   if (behaviour === TEXT_BEHAVIOUR.AUTO) {
     // width不自动时设置为auto
     if (width.u !== StyleUnit.AUTO) {
-      if (width.u === StyleUnit.PX) {
-        res.prevStyle.width = width.v;
-      }
-      else if (width.u === StyleUnit.PERCENT) {
-        res.prevStyle.width = width.v * 0.01 + '%';
-      }
-      res.nextStyle.width = 'auto';
+      next.width = 'auto';
     }
     // height不自动时设置为auto
     if (height.u !== StyleUnit.AUTO) {
-      if (height.u === StyleUnit.PX) {
-        res.prevStyle.height = height.v;
-      }
-      else if (height.u === StyleUnit.PERCENT) {
-        res.prevStyle.height = height.v * 0.01 + '%';
-      }
-      res.nextStyle.height = 'auto';
+      next.height = 'auto';
     }
     // 如果left和right都不是auto，需要将一方设置为auto，优先保证px单位，都是px是优先保证left
     if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO) {
       if (left.u === StyleUnit.PX) {
-        if (right.u === StyleUnit.PX) {
-          res.prevStyle.right = right.v;
-        }
-        else if (right.u === StyleUnit.PERCENT) {
-          res.prevStyle.right = right.v * 0.01 + '%';
-        }
-        res.nextStyle.right = 'auto';
+        next.right = 'auto';
       }
       else if (right.u === StyleUnit.PX) {
-        if (left.u === StyleUnit.PERCENT) {
-          res.prevStyle.left = left.v * 0.01 + '%';
-        }
-        res.nextStyle.left = 'auto';
+        next.left = 'auto';
       }
       else {
-        if (right.u === StyleUnit.PERCENT) {
-          res.prevStyle.right = right.v * 0.01 + '%';
-        }
-        res.nextStyle.right = 'auto';
+        next.right = 'auto';
       }
     }
     // 如果top和bottom都不是auto，需要将一方设置为auto，优先保证px单位，都是px是优先保证top
     if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
       if (top.u === StyleUnit.PX) {
-        if (bottom.u === StyleUnit.PX) {
-          res.prevStyle.bottom = bottom.v;
-        }
-        else if (bottom.u === StyleUnit.PERCENT) {
-          res.prevStyle.bottom = bottom.v * 0.01 + '%';
-        }
-        res.nextStyle.bottom = 'auto';
+        next.bottom = 'auto';
       }
       else if (bottom.u === StyleUnit.PX) {
-        if (top.u === StyleUnit.PERCENT) {
-          res.prevStyle.top = top.v * 0.01 + '%';
-        }
-        res.nextStyle.top = 'auto';
+        next.top = 'auto';
       }
       else {
-        if (bottom.u === StyleUnit.PERCENT) {
-          res.prevStyle.bottom = bottom.v * 0.01 + '%';
-        }
-        res.nextStyle.bottom = 'auto';
+        next.bottom = 'auto';
       }
     }
   }
   else if (behaviour === TEXT_BEHAVIOUR.FIXED_W) {
     // width不固定时设置为固定px，但要排除left和right都是PX的情况
     if (width.u !== StyleUnit.PX && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
-      if (width.u === StyleUnit.AUTO) {
-        res.prevStyle.width = 'auto';
-      }
-      else if (width.u === StyleUnit.PERCENT) {
-        res.prevStyle.width = width.v * 0.01 + '%';
-      }
-      res.nextStyle.width = node.width;
+      next.width = node.width;
     }
     // height不自动时设置为auto
     if (height.u !== StyleUnit.AUTO) {
-      if (height.u === StyleUnit.PX) {
-        res.prevStyle.height = height.v;
-      }
-      else if (height.u === StyleUnit.PERCENT) {
-        res.prevStyle.height = height.v * 0.01 + '%';
-      }
-      res.nextStyle.height = 'auto';
+      next.height = 'auto';
     }
     // 如果left和right都不是auto，需要将一方设置为auto，优先保证px单位因为那是靠边固定，两边都是px不动
     if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
       if (left.u === StyleUnit.PX) {
         if (right.u === StyleUnit.PERCENT) {
-          res.prevStyle.right = right.v * 0.01 + '%';
-          res.nextStyle.right = 'auto';
+          next.right = 'auto';
         }
       }
       else if (right.u === StyleUnit.PX) {
         if (left.u === StyleUnit.PERCENT) {
-          res.prevStyle.left = right.v * 0.01 + '%';
-          res.nextStyle.left = 'auto';
+          next.left = 'auto';
         }
       }
       else {
-        res.prevStyle.right = right.v * 0.01 + '%';
-        res.nextStyle.right = 'auto';
+        next.right = 'auto';
       }
     }
     // 如果top和bottom都不是auto，需要将一方设置为auto，优先保证px单位，都是px是优先保证top
     if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
       if (top.u === StyleUnit.PX) {
-        if (bottom.u === StyleUnit.PX) {
-          res.prevStyle.bottom = bottom.v;
-        }
-        else if (bottom.u === StyleUnit.PERCENT) {
-          res.prevStyle.bottom = bottom.v * 0.01 + '%';
-        }
-        res.nextStyle.bottom = 'auto';
+        next.bottom = 'auto';
       }
       else if (bottom.u === StyleUnit.PX) {
-        if (top.u === StyleUnit.PERCENT) {
-          res.prevStyle.top = top.v * 0.01 + '%';
-        }
-        res.nextStyle.top = 'auto';
+        next.top = 'auto';
       }
       else {
-        if (bottom.u === StyleUnit.PERCENT) {
-          res.prevStyle.bottom = bottom.v * 0.01 + '%';
-        }
-        res.nextStyle.bottom = 'auto';
+        next.bottom = 'auto';
       }
     }
   }
   else if (behaviour === TEXT_BEHAVIOUR.FIXED_W_H) {
     // width不固定时设置为固定px，但要排除left和right都是PX的情况
     if (width.u !== StyleUnit.PX && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
-      if (width.u === StyleUnit.AUTO) {
-        res.prevStyle.width = 'auto';
-      }
-      else if (width.u === StyleUnit.PERCENT) {
-        res.prevStyle.width = width.v * 0.01 + '%';
-      }
-      res.nextStyle.width = node.width;
+      next.width = node.width;
     }
     // height同上
     if (height.u !== StyleUnit.PX && !(top.u === StyleUnit.PX && bottom.u === StyleUnit.PX)) {
-      if (height.u === StyleUnit.AUTO) {
-        res.prevStyle.height = 'auto';
-      }
-      else if (height.u === StyleUnit.PERCENT) {
-        res.prevStyle.height = height.v * 0.01 + '%';
-      }
-      res.nextStyle.height = node.height;
+      next.height = node.height;
     }
     // 如果left和right都不是auto，需要将一方设置为auto，优先保证px单位因为那是靠边固定，两边都是px不动
     if (left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
       if (left.u === StyleUnit.PX) {
         if (right.u === StyleUnit.PERCENT) {
-          res.prevStyle.right = right.v * 0.01 + '%';
-          res.nextStyle.right = 'auto';
+          next.right = 'auto';
         }
       }
       else if (right.u === StyleUnit.PX) {
         if (left.u === StyleUnit.PERCENT) {
-          res.prevStyle.left = right.v * 0.01 + '%';
-          res.nextStyle.left = 'auto';
+          next.left = 'auto';
         }
       }
       else {
-        res.prevStyle.right = right.v * 0.01 + '%';
-        res.nextStyle.right = 'auto';
+        next.right = 'auto';
       }
     }
     // top和bottom同上
     if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO && !(top.u === StyleUnit.PX && bottom.u === StyleUnit.PX)) {
       if (top.u === StyleUnit.PX) {
         if (bottom.u === StyleUnit.PERCENT) {
-          res.prevStyle.bottom = bottom.v * 0.01 + '%';
-          res.nextStyle.bottom = 'auto';
+          next.bottom = 'auto';
         }
       }
       else if (bottom.u === StyleUnit.PX) {
         if (top.u === StyleUnit.PERCENT) {
-          res.prevStyle.top = bottom.v * 0.01 + '%';
-          res.nextStyle.top = 'auto';
+          next.top = 'auto';
         }
       }
       else {
-        res.prevStyle.bottom = bottom.v * 0.01 + '%';
-        res.nextStyle.bottom = 'auto';
+        next.bottom = 'auto';
       }
     }
   }
   node.startSizeChange();
-  node.updateStyle(res.nextStyle);
-  node.endSizeChange(style, res.nextStyle);
+  node.updateStyle(next);
+  const md = node.endSizeChange(style, next);
   node.checkPosSizeUpward();
-  return res;
+  return md;
 }
 
 export default {
