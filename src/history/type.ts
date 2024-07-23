@@ -16,4 +16,4 @@ export type MoveData = {
 
 export type ResizeStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height'>>;
 
-export type ResizeData = { prev: ResizeStyle, next: ResizeStyle };
+export type ResizeData = { prevStyle: ResizeStyle, nextStyle: ResizeStyle };

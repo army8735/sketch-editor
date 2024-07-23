@@ -65,14 +65,13 @@ export default class Listener extends Event {
   centerY: number;
   dx: number; // 上次move的px，考虑缩放和dpi
   dy: number;
+  dSize: ResizeStyle[];
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
-  resizeData: ResizeData[]; // 每次变更的style记录，在结束时供history使用
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   originStyle: Style[]; // 同上
-  cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
   mouseDownArtBoard?: ArtBoard;
 
@@ -106,14 +105,13 @@ export default class Listener extends Event {
     this.centerY = 0;
     this.dx = 0;
     this.dy = 0;
+    this.dSize = [];
     this.isFrame = false;
 
     this.selected = [];
-    this.resizeData = [];
     this.abcStyle = [];
     this.computedStyle = [];
     this.originStyle = [];
-    this.cssStyle = [];
     this.updateOrigin();
 
     this.select = new Select(root, dom);
@@ -168,7 +166,6 @@ export default class Listener extends Event {
     });
     this.computedStyle = selected.map((item) => item.getComputedStyle());
     this.originStyle = selected.map((item) => item.getStyle());
-    this.cssStyle = selected.map((item) => item.getCssStyle());
   }
 
   toggleGroup(node: Node, value = false) {
@@ -186,8 +183,9 @@ export default class Listener extends Event {
     const dpi = root.dpi;
     // 操作开始清除
     this.originStyle.splice(0);
-    this.resizeData.splice(0);
+    this.computedStyle.splice(0);
     this.dx = this.dy = 0;
+    this.dSize.splice(0);
     // 点到控制html上
     if (isControl) {
       if (this.options.disabled?.resize) {
@@ -495,12 +493,10 @@ export default class Listener extends Event {
           if (!this.isMouseMove) {
             node.startSizeChange();
             this.computedStyle[i] = node.getComputedStyle();
-            this.cssStyle[i] = node.getCssStyle();
           }
           const next: ResizeStyle = {};
           const { style } = node;
           const computedStyle = this.computedStyle[i];
-          const cssStyle = this.cssStyle[i];
           // 分4个方向上看，每个方向除了拉边还可以拉相邻2个角
           if (
             this.controlType === 't' ||
@@ -543,8 +539,7 @@ export default class Listener extends Event {
             }
           }
           node.updateStyle(next);
-          // prev原始样式在结束时生成记录
-          this.resizeData[i] = { prev: {}, next };
+          this.dSize[i] = next;
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -624,13 +619,6 @@ export default class Listener extends Event {
               translateX: computedStyle.translateX + dx2,
               translateY: computedStyle.translateY + dy2,
             });
-            // this.resizeData[i] = {
-            //   prev: {
-            //     translateX: computedStyle.translateX,
-            //     translateY: computedStyle.translateY,
-            //   },
-            //   next: o,
-            // };
           });
           this.select.updateSelect(selected);
           this.emit(Listener.MOVE_NODE, selected.slice(0));
@@ -777,14 +765,8 @@ export default class Listener extends Event {
           const data: ResizeData[] = [];
           selected.forEach((node, i) => {
             // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
-            node.endSizeChange(this.originStyle[i]);
+            const rd = node.endSizeChange(this.originStyle[i], this.dSize[i]);
             node.checkPosSizeUpward();
-            const rd = this.resizeData[i];
-            const cssStyle = this.cssStyle[i];
-            // 原始样式记录
-            (Object.keys(rd.next) as (keyof ResizeStyle)[]).forEach((k) => {
-              rd.prev[k] = cssStyle[k];
-            });
             nodes.push(node);
             data.push(rd);
           });
@@ -1143,11 +1125,10 @@ export default class Listener extends Event {
     document.removeEventListener('keyup', this.onKeyUp);
 
     this.selected.splice(0);
-    this.resizeData.splice(0);
     this.abcStyle.splice(0);
     this.computedStyle.splice(0);
     this.originStyle.splice(0);
-    this.cssStyle.splice(0);
+    this.dSize.splice(0);
     this.select.destroy();
   }
 

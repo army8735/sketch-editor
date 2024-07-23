@@ -9,6 +9,7 @@ import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
 import { clone } from '../util/util';
+import { ResizeStyle } from '../history/type';
 
 const EPS = 1e-2;
 
@@ -191,9 +192,9 @@ class Group extends Container {
    * 这个检查在初始化也有做，防止人工脏数据，比如组的尺寸和子节点bbox集合不等。
    * 然后执行基类的逻辑，见Node同名方法。
    */
-  override endSizeChange(prev: Style) {
+  override endSizeChange(prev: Style, dSize: ResizeStyle) {
     this.checkPosSizeDownward();
-    super.endSizeChange(prev);
+    return super.endSizeChange(prev, dSize);
   }
 
   private checkPosSizeDownward() {

@@ -66,12 +66,11 @@ class BasicPanel extends Panel {
     let nodes: Node[] = [];
     let originStyle: Style[] = [];
     let computedStyle: ComputedStyle[] = [];
-    let cssStyle: JStyle[] = [];
     let prevNumber: number[] = [];
     let nextNumber: number[] = [];
-    let resizeStyle: ResizeStyle[] = [];
+    let nextStyle: ResizeStyle[] = [];
 
-    x.addEventListener('input', (e) => {
+    const onInputPos = (e: Event, isXOrY = true) => {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -82,15 +81,15 @@ class BasicPanel extends Panel {
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = this.data[i].x;
-        let next = parseFloat(x.value);
+        const prev = isXOrY ? this.data[i].x : this.data[i].y;
+        let next = parseFloat(isXOrY ? x.value : y.value);
         let d = 0;
         if (isInput) {
           d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
-          if (x.placeholder) {
+          if (isXOrY ? x.placeholder : y.placeholder) {
             d = next;
           }
           else {
@@ -114,9 +113,16 @@ class BasicPanel extends Panel {
         }
         nextNumber.push(next);
         // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
-        node.updateStyle({
-          translateX: computedStyle[i].translateX + d,
-        });
+        if (isXOrY) {
+          node.updateStyle({
+            translateX: computedStyle[i].translateX + d,
+          });
+        }
+        else {
+          node.updateStyle({
+            translateY: computedStyle[i].translateY + d,
+          });
+        }
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
@@ -124,12 +130,15 @@ class BasicPanel extends Panel {
         this.show(this.nodes);
       }
       this.silence = false;
-    });
-    x.addEventListener('change', (e) => {
+    }
+
+    const onChangePos = (isXOrY = true) => {
       if (nodes.length) {
         const data: MoveData[] = [];
         nodes.forEach((node, i) => {
-          const md = node.endPosChange(originStyle[i], nextNumber[i] - prevNumber[i], 0);
+          const md = isXOrY
+            ? node.endPosChange(originStyle[i], nextNumber[i] - prevNumber[i], 0)
+            : node.endPosChange(originStyle[i], 0, nextNumber[i] - prevNumber[i]);
           node.checkPosSizeUpward();
           data.push(md);
         });
@@ -140,77 +149,20 @@ class BasicPanel extends Panel {
         prevNumber = [];
         nextNumber = [];
       }
+    };
+
+    x.addEventListener('input', (e) => {
+      onInputPos(e, true);
+    });
+    x.addEventListener('change', (e) => {
+      onChangePos(true);
     });
 
     y.addEventListener('input', (e) => {
-      this.silence = true;
-      const isFirst = !nodes.length;
-      if (isFirst) {
-        originStyle = [];
-        computedStyle = [];
-        prevNumber = [];
-      }
-      nextNumber = [];
-      const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      this.nodes.forEach((node, i) => {
-        const prev = this.data[i].y;
-        let next = parseFloat(y.value);
-        let d = 0;
-        if (isInput) {
-          d = next - prev;
-        }
-        else {
-          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
-          if (y.placeholder) {
-            d = next;
-          }
-          else {
-            d = next - prev;
-          }
-          if (listener.shiftKey) {
-            if (d > 0) {
-              d = 10;
-            }
-            else {
-              d = -10;
-            }
-          }
-          next = prev + d;
-        }
-        if (isFirst) {
-          nodes.push(node);
-          originStyle.push(node.getStyle());
-          computedStyle.push(node.getComputedStyle());
-          prevNumber.push(prev);
-        }
-        // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
-        node.updateStyle({
-          translateY: computedStyle[i].translateY + d,
-        });
-        nextNumber.push(next);
-      });
-      if (nodes.length) {
-        listener.select.updateSelect(this.nodes);
-        listener.emit(Listener.MOVE_NODE, nodes.slice(0));
-        this.show(this.nodes);
-      }
-      this.silence = false;
+      onInputPos(e, false);
     });
     y.addEventListener('change', (e) => {
-      if (nodes.length) {
-        const data: MoveData[] = [];
-        nodes.forEach((node, i) => {
-          const md = node.endPosChange(originStyle[i], 0, nextNumber[i] - prevNumber[i]);
-          node.checkPosSizeUpward();
-          data.push(md);
-        });
-        listener.history.addCommand(new MoveCommand(nodes, data));
-        nodes = [];
-        originStyle = [];
-        computedStyle = [];
-        prevNumber = [];
-        nextNumber = [];
-      }
+      onChangePos(false);
     });
 
     r.addEventListener('input', (e) => {
@@ -277,28 +229,27 @@ class BasicPanel extends Panel {
       }
     });
 
-    w.addEventListener('input', (e) => {
+    const onInputSize = (e: Event, isWOrH = true) => {
       this.silence = true;
       const isFirst = !nodes.length;
       if (isFirst) {
         originStyle = [];
         computedStyle = [];
-        cssStyle = [];
         prevNumber = [];
       }
       nextNumber = [];
-      resizeStyle = [];
+      nextStyle = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = this.data[i].w;
-        let next = parseFloat(w.value);
+        const prev = isWOrH ? this.data[i].w : this.data[i].h;
+        let next = parseFloat(isWOrH ? w.value : h.value);
         let d = 0;
         if (isInput) {
           d = next - prev;
         }
         else {
           // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
-          if (w.placeholder) {
+          if (isWOrH ? w.placeholder : h.placeholder) {
             d = next;
           }
           else {
@@ -318,15 +269,16 @@ class BasicPanel extends Panel {
           nodes.push(node);
           originStyle.push(node.getStyle());
           computedStyle.push(node.getComputedStyle());
-          cssStyle.push(node.getCssStyle());
           prevNumber.push(prev);
           node.startSizeChange();
         }
         nextNumber.push(next);
-        const t = resizeRight(node, node.style, computedStyle[i], d);
+        const t = isWOrH
+          ? resizeRight(node, node.style, computedStyle[i], d)
+          : resizeBottom(node, node.style, computedStyle[i], d);
         if (t) {
           node.updateStyle(t);
-          resizeStyle[i] = t;
+          nextStyle[i] = t;
         }
       });
       if (nodes.length) {
@@ -335,110 +287,38 @@ class BasicPanel extends Panel {
         this.show(this.nodes);
       }
       this.silence = false;
-    });
-    w.addEventListener('change', (e) => {
+    };
+
+    const onChangeSize = () => {
       if (nodes.length) {
         const data: ResizeData[] = [];
         nodes.forEach((node, i) => {
-          const prev: ResizeStyle = {};
-          const next = resizeStyle[i];
-          (Object.keys(next) as (keyof ResizeStyle)[]).forEach((k) => {
-            prev[k] = cssStyle[i][k];
-          });
-          data.push({
-            prev,
-            next,
-          });
-        });
+          const rd = node.endSizeChange(originStyle[i], nextStyle[i]);
+          node.checkPosSizeUpward();
+          data.push(rd);
+        }); console.log(nodes,data);
         listener.history.addCommand(new ResizeCommand(nodes, data));
         nodes = [];
         originStyle = [];
         computedStyle = [];
-        cssStyle = [];
         prevNumber = [];
         nextNumber = [];
-        resizeStyle = [];
+        nextStyle = [];
       }
+    };
+
+    w.addEventListener('input', (e) => {
+      onInputSize(e, true);
+    });
+    w.addEventListener('change', (e) => {
+      onChangeSize();
     });
 
     h.addEventListener('input', (e) => {
-      this.silence = true;
-      const isFirst = !nodes.length;
-      if (isFirst) {
-        originStyle = [];
-        computedStyle = [];
-        cssStyle = [];
-        prevNumber = [];
-      }
-      nextNumber = [];
-      resizeStyle = [];
-      const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      this.nodes.forEach((node, i) => {
-        const prev = this.data[i].h;
-        let next = parseFloat(h.value);
-        let d = 0;
-        if (isInput) {
-          d = next - prev;
-        }
-        else {
-          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
-          if (h.placeholder) {
-            d = next;
-          }
-          else {
-            d = next - prev;
-          }
-          if (listener.shiftKey) {
-            if (d > 0) {
-              d = 10;
-            }
-            else {
-              d = -10;
-            }
-          }
-          next = prev + d;
-        }
-        if (isFirst) {
-          nodes.push(node);
-          originStyle.push(node.getStyle());
-          computedStyle.push(node.getComputedStyle());
-          cssStyle.push(node.getCssStyle());
-          prevNumber.push(prev);
-          node.startSizeChange();
-        }
-        nextNumber.push(next);
-        const t = resizeBottom(node, node.style, computedStyle[i], d);
-      });
-      if (nodes.length) {
-        listener.select.updateSelect(this.nodes);
-        listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
-        this.show(this.nodes);
-      }
-      this.silence = false;
+      onInputSize(e, false);
     });
     h.addEventListener('change', (e) => {
-      if (nodes.length) {
-        const data: ResizeData[] = [];
-        nodes.forEach((node, i) => {
-          const prev: ResizeStyle = {};
-          const next = resizeStyle[i];
-          (Object.keys(next) as (keyof ResizeStyle)[]).forEach((k) => {
-            prev[k] = cssStyle[i][k];
-          });
-          data.push({
-            prev,
-            next,
-          });
-        });
-        listener.history.addCommand(new ResizeCommand(nodes, data));
-        nodes = [];
-        originStyle = [];
-        computedStyle = [];
-        cssStyle = [];
-        prevNumber = [];
-        nextNumber = [];
-        resizeStyle = [];
-      }
+      onChangeSize();
     });
 
     fh.addEventListener('click', (e) => {

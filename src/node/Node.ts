@@ -49,7 +49,7 @@ import Page from './Page';
 import SymbolInstance from './SymbolInstance';
 import Tile from '../refresh/Tile';
 import { convert2Css } from '../style/gradient';
-import { MoveData } from '../history/type';
+import { MoveData, ResizeData, ResizeStyle } from '../history/type';
 
 let id = 0;
 
@@ -1235,43 +1235,6 @@ class Node extends Event {
     };
   }
 
-  getActualRect() {
-    const bbox = [0, 0, this.width, this.height];
-    const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
-    const x1 = t.x1;
-    const y1 = t.y1;
-    const x2 = t.x2;
-    const y2 = t.y2;
-    const x3 = t.x3;
-    const y3 = t.y3;
-    const x4 = t.x4;
-    const y4 = t.y4;
-    return {
-      left: Math.min(x1, x2, x3, x4),
-      top: Math.min(y1, y2, y3, y4),
-      right: Math.max(x1, x2, x3, x4),
-      bottom: Math.max(y1, y2, y3, y4),
-      points: [
-        {
-          x: x1,
-          y: y1,
-        },
-        {
-          x: x2,
-          y: y2,
-        },
-        {
-          x: x3,
-          y: y3,
-        },
-        {
-          x: x4,
-          y: y4,
-        },
-      ],
-    };
-  }
-
   /**
    * 拖拽开始变更尺寸前预校验，如果style有translate初始值，需要改成普通模式（为0），目前只有Text有且仅值-50%且left是百分比，
    * 但不排除其它节点可能所有一并考虑，left调整到以左侧为基准（translateX从-50%到0，差值重新加到left上），top同理，
@@ -1341,10 +1304,10 @@ class Node extends Event {
 
   /**
    * 参考 startSizeChange()，反向进行，在连续拖拽改变尺寸的过程中，最后结束调用。
-   * 根据开始调整时记录的prev样式，还原布局信息到translate上。
+   * 根据开始调整时记录的prev样式，还原布局信息到translate（仅百分比）上。
    * 还需向上检查组的自适应尺寸，放在外部自己调用check。
    */
-  endSizeChange(prev: Style) {
+  endSizeChange(prev: Style, dSize: ResizeStyle) {
     const {
       translateX,
       translateY,
@@ -1363,20 +1326,50 @@ class Node extends Event {
       bottom,
     } = style;
     const { width: pw, height: ph } = parent!;
+    /**
+     * dSize是更改的样式，并且是调整过translate为0后的，将其复制给默认的nextStyle。
+     * 如果只是改TRBL，那么nextStyle初始值是不对的，因为包含了translate，但是后续会重新计算覆盖；
+     * 如果改了w/h（固定宽高情况），那么初始值就是正确的，后续再增加TRBL值，且prevStyle要加上之前的w/h。
+     */
+    const res: ResizeData = { prevStyle: {}, nextStyle: dSize };
+    if (dSize.width) {
+      if (prev.width.u === StyleUnit.PX) {
+        res.prevStyle.width = prev.width.v;
+      }
+      else if (prev.width.u === StyleUnit.PERCENT) {
+        res.prevStyle.width = prev.width.v + '%';
+      }
+    }
+    if (dSize.height) {
+      if (prev.height.u === StyleUnit.PX) {
+        res.prevStyle.height = prev.height.v;
+      }
+      else if (prev.height.u === StyleUnit.PERCENT) {
+        res.prevStyle.height = prev.height.v + '%';
+      }
+    }
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       const v = translateX.v * w * 0.01;
       if (left.u === StyleUnit.PX) {
+        res.prevStyle.left = prev.left.v;
         left.v -= v;
+        res.nextStyle.left = left.v;
       }
       else if (left.u === StyleUnit.PERCENT) {
+        res.prevStyle.left = prev.left.v + '%';
         left.v -= v * 100 / pw;
+        res.nextStyle.left = left.v + '%';
       }
       computedStyle.left -= v;
       if (right.u === StyleUnit.PX) {
+        res.prevStyle.right = prev.right.v;
         right.v += v;
+        res.nextStyle.right = right.v;
       }
       else if (right.u === StyleUnit.PERCENT) {
+        res.prevStyle.right = prev.right.v + '%';
         right.v += v * 100 / pw;
+        res.nextStyle.right = right.v + '%';
       }
       computedStyle.right += v;
       computedStyle.translateX += v; // start置0了
@@ -1384,17 +1377,25 @@ class Node extends Event {
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       const v = translateY.v * h * 0.01;
       if (top.u === StyleUnit.PX) {
+        res.prevStyle.top = prev.top.v;
         top.v -= v;
+        res.nextStyle.top = top.v;
       }
       else if (style.top.u === StyleUnit.PERCENT) {
+        res.prevStyle.top = prev.top.v + '%';
         top.v -= v * 100 / ph;
+        res.nextStyle.top = top.v + '%';
       }
       computedStyle.top -= v;
       if (bottom.u === StyleUnit.PX) {
+        res.prevStyle.bottom = prev.bottom.v;
         bottom.v += v;
+        res.nextStyle.bottom = bottom.v;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
+        res.prevStyle.bottom = prev.bottom.v + '%';
         bottom.v += v * 100 / ph;
+        res.nextStyle.bottom = bottom.v + '%';
       }
       computedStyle.bottom += v;
       computedStyle.translateY += v;
@@ -1403,6 +1404,7 @@ class Node extends Event {
     style.translateX.u = translateX.u;
     style.translateY.v = translateY.v;
     style.translateY.u = translateY.u;
+    return res;
   }
 
   // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的值，返回修改的定位style
