@@ -81,7 +81,13 @@ class BasicPanel extends Panel {
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = isFirst ? (isXOrY ? this.data[i].x : this.data[i].y) :prevNumber[i];
+        if (isFirst) {
+          nodes.push(node);
+          originStyle.push(node.getStyle());
+          computedStyle.push(node.getComputedStyle());
+          prevNumber.push(isXOrY ? this.data[i].x : this.data[i].y);
+        }
+        const prev = prevNumber[i];
         let next = parseFloat(isXOrY ? x.value : y.value);
         let d = 0;
         if (isInput) {
@@ -104,12 +110,6 @@ class BasicPanel extends Panel {
             }
           }
           next = prev + d;
-        }
-        if (isFirst) {
-          nodes.push(node);
-          originStyle.push(node.getStyle());
-          computedStyle.push(node.getComputedStyle());
-          prevNumber.push(prev);
         }
         nextNumber.push(next);
         // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
@@ -175,7 +175,12 @@ class BasicPanel extends Panel {
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = isFirst ? this.data[i].rotation : prevNumber[i];
+        if (isFirst) {
+          nodes.push(node);
+          computedStyle.push(node.getComputedStyle());
+          prevNumber.push(this.data[i].rotation);
+        }
+        const prev = prevNumber[i];
         let next = parseFloat(r.value);
         let d = 0;
         if (isInput) {
@@ -198,11 +203,6 @@ class BasicPanel extends Panel {
             }
           }
           next = prev + d;
-        }
-        if (isFirst) {
-          nodes.push(node);
-          computedStyle.push(node.getComputedStyle());
-          prevNumber.push(prev);
         }
         nextNumber.push(next);
         node.updateStyle({
@@ -241,7 +241,14 @@ class BasicPanel extends Panel {
       nextStyle = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
-        const prev = isFirst ? (isWOrH ? this.data[i].w : this.data[i].h) : prevNumber[i];
+        if (isFirst) {
+          nodes.push(node);
+          originStyle.push(node.getStyle());
+          computedStyle.push(node.getComputedStyle());
+          prevNumber.push(isWOrH ? this.data[i].w : this.data[i].h);
+          node.startSizeChange();
+        }
+        const prev = prevNumber[i];
         let next = parseFloat(isWOrH ? w.value : h.value);
         let d = 0;
         if (isInput) {
@@ -264,13 +271,6 @@ class BasicPanel extends Panel {
             }
           }
           next = prev + d;
-        }
-        if (isFirst) {
-          nodes.push(node);
-          originStyle.push(node.getStyle());
-          computedStyle.push(node.getComputedStyle());
-          prevNumber.push(prev);
-          node.startSizeChange();
         }
         nextNumber.push(next);
         const t = isWOrH
