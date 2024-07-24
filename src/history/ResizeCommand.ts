@@ -14,7 +14,7 @@ class ResizeCommand extends Command {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.updateStyle(data[i].nextStyle);
+      node.updateStyle(data[i].next);
       node.checkPosSizeUpward();
     });
   }
@@ -22,7 +22,7 @@ class ResizeCommand extends Command {
   undo() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.updateStyle(data[i].prevStyle);
+      node.updateStyle(data[i].prev);
       node.checkPosSizeUpward();
     });
   }

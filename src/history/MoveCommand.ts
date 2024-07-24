@@ -18,7 +18,7 @@ class MoveCommand extends Command {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
       const md = data[i];
-      node.updateStyleData(md.nextStyle);
+      node.updateStyleData(md.next);
       MoveCommand.setComputedStyle(node);
       // 刷新用TRANSFORM强制重新计算calMatrix()
       node.root?.addUpdate(node, [], RefreshLevel.TRANSFORM);
@@ -30,7 +30,7 @@ class MoveCommand extends Command {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
       const md = data[i];
-      node.updateStyleData(md.prevStyle);
+      node.updateStyleData(md.prev);
       MoveCommand.setComputedStyle(node);
       // 刷新用TRANSFORM强制重新计算calMatrix()
       node.root?.addUpdate(node, [], RefreshLevel.TRANSFORM);

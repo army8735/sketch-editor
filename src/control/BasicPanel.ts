@@ -6,7 +6,6 @@ import MoveCommand from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
 import { getBasicInfo, resizeBottom, resizeRight } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
-import { JStyle } from '../format';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
 import Panel from './Panel';
 import { ModifyData, MoveData, ResizeData, ResizeStyle } from '../history/type';

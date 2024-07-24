@@ -1330,42 +1330,42 @@ class Node extends Event {
      * dSize是更改的样式，并且是调整过translate为0后的，将其赋值给初始nextStyle，同时记录prev初始；
      * 如果有调整translate（仅百分比情况），则修正的同时更新初始值。
      */
-    const res: ResizeData = { prevStyle: {}, nextStyle: dSize };
+    const res: ResizeData = { prev: {}, next: dSize };
     (Object.keys(dSize) as (keyof ResizeStyle)[]).forEach(k => {
       const o = prev[k];
       if (o.u === StyleUnit.PX) {
-        res.prevStyle[k] = prev[k].v;
+        res.prev[k] = prev[k].v;
       }
       else if (o.u === StyleUnit.PERCENT) {
-        res.prevStyle[k] = prev[k].v + '%';
+        res.prev[k] = prev[k].v + '%';
       }
       // text中会出现宽高auto
       else if (o.u === StyleUnit.AUTO) {
-        res.prevStyle[k] = 'auto';
+        res.prev[k] = 'auto';
       }
     });
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       const v = translateX.v * w * 0.01;
       if (left.u === StyleUnit.PX) {
-        res.prevStyle.left = prev.left.v;
+        res.prev.left = prev.left.v;
         left.v -= v;
-        res.nextStyle.left = left.v;
+        res.next.left = left.v;
       }
       else if (left.u === StyleUnit.PERCENT) {
-        res.prevStyle.left = prev.left.v + '%';
+        res.prev.left = prev.left.v + '%';
         left.v -= v * 100 / pw;
-        res.nextStyle.left = left.v + '%';
+        res.next.left = left.v + '%';
       }
       computedStyle.left -= v;
       if (right.u === StyleUnit.PX) {
-        res.prevStyle.right = prev.right.v;
+        res.prev.right = prev.right.v;
         right.v += v;
-        res.nextStyle.right = right.v;
+        res.next.right = right.v;
       }
       else if (right.u === StyleUnit.PERCENT) {
-        res.prevStyle.right = prev.right.v + '%';
+        res.prev.right = prev.right.v + '%';
         right.v += v * 100 / pw;
-        res.nextStyle.right = right.v + '%';
+        res.next.right = right.v + '%';
       }
       computedStyle.right += v;
       computedStyle.translateX += v; // start置0了
@@ -1373,25 +1373,25 @@ class Node extends Event {
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       const v = translateY.v * h * 0.01;
       if (top.u === StyleUnit.PX) {
-        res.prevStyle.top = prev.top.v;
+        res.prev.top = prev.top.v;
         top.v -= v;
-        res.nextStyle.top = top.v;
+        res.next.top = top.v;
       }
       else if (style.top.u === StyleUnit.PERCENT) {
-        res.prevStyle.top = prev.top.v + '%';
+        res.prev.top = prev.top.v + '%';
         top.v -= v * 100 / ph;
-        res.nextStyle.top = top.v + '%';
+        res.next.top = top.v + '%';
       }
       computedStyle.top -= v;
       if (bottom.u === StyleUnit.PX) {
-        res.prevStyle.bottom = prev.bottom.v;
+        res.prev.bottom = prev.bottom.v;
         bottom.v += v;
-        res.nextStyle.bottom = bottom.v;
+        res.next.bottom = bottom.v;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
-        res.prevStyle.bottom = prev.bottom.v + '%';
+        res.prev.bottom = prev.bottom.v + '%';
         bottom.v += v * 100 / ph;
-        res.nextStyle.bottom = bottom.v + '%';
+        res.next.bottom = bottom.v + '%';
       }
       computedStyle.bottom += v;
       computedStyle.translateY += v;
@@ -1416,55 +1416,55 @@ class Node extends Event {
       bottom,
       left,
     } = style;
-    const res: MoveData = { prevStyle: {}, nextStyle: {} };
+    const res: MoveData = { prev: {}, next: {} };
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent!;
     if (dx) {
       if (left.u === StyleUnit.PX) {
-        res.prevStyle.left = left.v;
+        res.prev.left = left.v;
         left.v += dx;
-        res.nextStyle.left = left.v;
+        res.next.left = left.v;
       }
       else if (left.u === StyleUnit.PERCENT) {
-        res.prevStyle.left = left.v + '%';
+        res.prev.left = left.v + '%';
         left.v += dx * 100 / pw;
-        res.nextStyle.left = left.v + '%';
+        res.next.left = left.v + '%';
       }
       computedStyle.left += dx;
       if (right.u === StyleUnit.PX) {
-        res.prevStyle.right = right.v;
+        res.prev.right = right.v;
         right.v -= dx;
-        res.nextStyle.right = right.v;
+        res.next.right = right.v;
       }
       else if (right.u === StyleUnit.PERCENT) {
-        res.prevStyle.right = right.v + '%';
+        res.prev.right = right.v + '%';
         right.v -= dx * 100 / pw;
-        res.nextStyle.right = right.v + '%';
+        res.next.right = right.v + '%';
       }
       computedStyle.right -= dx;
       computedStyle.translateX -= dx;
     }
     if (dy) {
       if (top.u === StyleUnit.PX) {
-        res.prevStyle.top = top.v;
+        res.prev.top = top.v;
         top.v += dy;
-        res.nextStyle.top = top.v;
+        res.next.top = top.v;
       }
       else if (top.u === StyleUnit.PERCENT) {
-        res.prevStyle.top = top.v + '%';
+        res.prev.top = top.v + '%';
         top.v += dy * 100 / ph;
-        res.nextStyle.top = top.v + '%';
+        res.next.top = top.v + '%';
       }
       computedStyle.top += dy;
       if (bottom.u === StyleUnit.PX) {
-        res.prevStyle.bottom = bottom.v;
+        res.prev.bottom = bottom.v;
         bottom.v -= dy;
-        res.nextStyle.bottom = bottom.v;
+        res.next.bottom = bottom.v;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
-        res.prevStyle.bottom = bottom.v + '%';
+        res.prev.bottom = bottom.v + '%';
         bottom.v -= dy * 100 / ph;
-        res.nextStyle.bottom = bottom.v + '%';
+        res.next.bottom = bottom.v + '%';
       }
       computedStyle.bottom -= dy;
       computedStyle.translateY -= dy;
