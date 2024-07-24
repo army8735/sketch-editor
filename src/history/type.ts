@@ -11,3 +11,7 @@ export type ResizeData = { prevStyle: ResizeStyle, nextStyle: ResizeStyle };
 export type ModifyStyle = Partial<JStyle>;
 
 export type ModifyData = { prev: ModifyStyle, next: ModifyStyle };
+
+export type VerticalAlignStyle = Pick<JStyle, 'textVerticalAlign'>;
+
+export type VerticalAlignData = { prev: VerticalAlignStyle, next: VerticalAlignStyle };

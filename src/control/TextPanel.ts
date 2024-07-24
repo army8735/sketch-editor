@@ -13,8 +13,8 @@ import UpdateRichCommand from '../history/UpdateRichCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import State from './State';
 import Panel from './Panel';
-import { ModifyData } from '../history/type';
-import UpdateStyleCommand from '../history/UpdateStyleCommand';
+import { ModifyData, VerticalAlignData } from '../history/type';
+import VerticalAlignCommand from '../history/VerticalAlignCommand';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -232,7 +232,7 @@ class TextPanel extends Panel {
         else if (el.classList.contains('bottom')) {
           value = 'bottom';
         }
-        const data: ModifyData[] = [];
+        const data: VerticalAlignData[] = [];
         nodes.forEach(node => {
           const tva = node.computedStyle.textVerticalAlign;
           let prev: 'top' | 'middle' | 'bottom' = 'top';
@@ -250,7 +250,7 @@ class TextPanel extends Panel {
             next: { textVerticalAlign: value },
           });
         });
-        listener.history.addCommand(new UpdateStyleCommand(nodes, data));
+        listener.history.addCommand(new VerticalAlignCommand(nodes, data));
         listener.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         dom.querySelector('.va .cur')?.classList.remove('cur');
         el.classList.add('cur');
@@ -350,7 +350,7 @@ class TextPanel extends Panel {
       listener.emit(Listener.TEXT_NODE, nodes);
     });
 
-    listener.on([Listener.SELECT_NODE, Listener.RESIZE_NODE, Listener.TEXT_NODE], (nodes: Node[]) => {
+    listener.on([Listener.SELECT_NODE, Listener.RESIZE_NODE, Listener.TEXT_NODE, Listener.TEXT_VERTICAL_ALIGN_NODE], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;

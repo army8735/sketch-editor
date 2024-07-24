@@ -24,6 +24,7 @@ import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import OpacityCommand from '../history/OpacityCommand';
 import { MoveData, ResizeData, ResizeStyle } from '../history/type';
+import VerticalAlignCommand from '../history/VerticalAlignCommand';
 
 export type ListenerOptions = {
   disabled?: {
@@ -1081,19 +1082,22 @@ export default class Listener extends Event {
         this.updateActive();
         // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
-          this.emit(Listener.MOVE_NODE, this.selected);
+          this.emit(Listener.MOVE_NODE, this.selected.slice(0));
         }
         else if (c instanceof ResizeCommand) {
-          this.emit(Listener.RESIZE_NODE, this.selected);
+          this.emit(Listener.RESIZE_NODE, this.selected.slice(0));
         }
         else if (c instanceof RotateCommand) {
-          this.emit(Listener.ROTATE_NODE, this.selected);
+          this.emit(Listener.ROTATE_NODE, this.selected.slice(0));
         }
         else if (c instanceof UpdateRichCommand) {
-          this.emit(Listener.TEXT_NODE, this.selected);
+          this.emit(Listener.TEXT_NODE, this.selected.slice(0));
         }
         else if (c instanceof OpacityCommand) {
-          this.emit(Listener.OPACITY_NODE, this.selected);
+          this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof VerticalAlignCommand) {
+          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
         }
       }
     }
