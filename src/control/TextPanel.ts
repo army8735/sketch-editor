@@ -2,18 +2,19 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
 import { toPrecision } from '../math';
-import { clone, loadLocalFonts } from '../util/util';
+import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import { TEXT_BEHAVIOUR, getData, updateBehaviour } from '../tools/text';
-import { Style, TEXT_ALIGN } from '../style/define';
+import { getData, TEXT_BEHAVIOUR, updateBehaviour } from '../tools/text';
+import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
 import { UpdateRich } from '../format';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import ResizeCommand from '../history/ResizeCommand';
-import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 import State from './State';
 import Panel from './Panel';
+import { ModifyData } from '../history/type';
+import UpdateStyleCommand from '../history/UpdateStyleCommand';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -29,7 +30,7 @@ const html = `
       <span class="multi">多种字重</span>
     </div>
     <div class="color">
-      <span class="picker"><b style="color:#666;text-align:center;line-height:18px;overflow:hidden;text-shadow:0 0 2px rgba(0, 0, 0, 0.2);">○○○</b></span>
+      <span class="picker"><b style="">○○○</b></span>
     </div>
   </div>
   <div class="line num">
@@ -59,11 +60,16 @@ const html = `
     <span class="txt"></span>
   </div>
   <div class="line al">
-    <span class="left" title="左对齐"></span>
-    <span class="center" title="居中对齐"></span>
-    <span class="right" title="右对齐"></span>
-    <span class="justify" title="两端对齐"></span>
-  </div>  
+    <span class="left" title="水平左对齐"></span>
+    <span class="center" title="水平居中对齐"></span>
+    <span class="right" title="水平右对齐"></span>
+    <span class="justify" title="水平两端对齐"></span>
+  </div> 
+  <div class="line va">
+    <span class="top" title="垂直上对齐"></span>
+    <span class="middle" title="垂直居中对齐"></span>
+    <span class="bottom" title="垂直下对齐"></span>
+  </div> 
 `;
 
 let local = false;
@@ -94,10 +100,10 @@ class TextPanel extends Panel {
     let nexts: UpdateRich[][] = [];
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
-    const callback = () => {
+    const pickCallback = () => {
       // 只有变更才会有next
       if (nexts && nexts.length) {
-        listener.history.addCommand(new UpdateRichCommand(nodes.slice(0), prevs, nexts));
+        listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
         listener.emit(Listener.TEXT_NODE, nodes.slice(0));
       }
       nodes = [];
@@ -112,10 +118,10 @@ class TextPanel extends Panel {
         e.stopPropagation();
         if (picker.isShowFrom('textPanel')) {
           picker.hide();
-          callback();
+          pickCallback();
           return;
         }
-        const p = picker.show(el, 'textPanel', callback, true);
+        const p = picker.show(el, 'textPanel', pickCallback, true);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -147,13 +153,13 @@ class TextPanel extends Panel {
         };
         p.onDone = () => {
           picker.hide();
-          callback();
+          pickCallback();
         };
       }
       // 尺寸固定模式
       else if ((el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh'))
         && !el.classList.contains('cur')) {
-        callback();
+        pickCallback();
         nodes = this.nodes.slice(0);
         let behaviour = TEXT_BEHAVIOUR.AUTO;
         if (el.classList.contains('fw')) {
@@ -170,7 +176,7 @@ class TextPanel extends Panel {
       // 左右对齐
       else if ((el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify'))
         && !el.classList.contains('cur')) {
-        callback();
+        pickCallback();
         const nodes = this.nodes.slice(0);
         const prevs: UpdateRich[][] = [];
         const nexts: UpdateRich[][] = [];
@@ -208,10 +214,45 @@ class TextPanel extends Panel {
             nexts.push(next);
             node.updateRichStyle(o);
             listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
-            listener.emit(Listener.TEXT_ALIGN_NODE, nodes);
+            listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
           });
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');
+        el.classList.add('cur');
+      }
+      // 上下对齐
+      else if ((el.classList.contains('top') || el.classList.contains('bottom') || el.classList.contains('middle'))
+        && !el.classList.contains('cur')) {
+        pickCallback();
+        const nodes = this.nodes.slice(0);
+        let value: 'top' | 'middle' | 'bottom' = 'top';
+        if (el.classList.contains('middle')) {
+          value = 'middle';
+        }
+        else if (el.classList.contains('bottom')) {
+          value = 'bottom';
+        }
+        const data: ModifyData[] = [];
+        nodes.forEach(node => {
+          const tva = node.computedStyle.textVerticalAlign;
+          let prev: 'top' | 'middle' | 'bottom' = 'top';
+          if (tva === TEXT_VERTICAL_ALIGN.MIDDLE) {
+            prev = 'middle';
+          }
+          else if (tva === TEXT_VERTICAL_ALIGN.BOTTOM) {
+            prev = 'bottom';
+          }
+          node.updateStyle({
+            textVerticalAlign: value,
+          });
+          data.push({
+            prev: { textVerticalAlign: prev },
+            next: { textVerticalAlign: value },
+          });
+        });
+        listener.history.addCommand(new UpdateStyleCommand(nodes, data));
+        listener.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
+        dom.querySelector('.va .cur')?.classList.remove('cur');
         el.classList.add('cur');
       }
     });
@@ -221,7 +262,7 @@ class TextPanel extends Panel {
       const el = e.target as HTMLElement;
       const tagName = el.tagName.toUpperCase();
       if (tagName === 'SELECT') {
-        callback();
+        pickCallback();
         const value = (el as HTMLSelectElement).value;
         const nodes = this.nodes.slice(0);
         const prevs: UpdateRich[][] = [];
@@ -523,6 +564,24 @@ class TextPanel extends Panel {
         }
         else if (ta === TEXT_ALIGN.JUSTIFY) {
           panel.querySelector('.al .justify')!.classList.add('cur');
+        }
+      }
+    }
+    {
+      const span = panel.querySelector('.va .cur') as HTMLElement;
+      if (span) {
+        span.classList.remove('cur');
+      }
+      if (o.textVerticalAlign.length === 1) {
+        const tva = o.textVerticalAlign[0];
+        if (tva === TEXT_VERTICAL_ALIGN.TOP) {
+          panel.querySelector('.va .top')!.classList.add('cur');
+        }
+        else if (tva === TEXT_VERTICAL_ALIGN.MIDDLE) {
+          panel.querySelector('.va .middle')!.classList.add('cur');
+        }
+        else if (tva === TEXT_VERTICAL_ALIGN.BOTTOM) {
+          panel.querySelector('.va .bottom')!.classList.add('cur');
         }
       }
     }

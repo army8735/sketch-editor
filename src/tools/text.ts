@@ -1,6 +1,6 @@
 import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
-import { StyleNumValue, StyleUnit, TEXT_ALIGN } from '../style/define';
+import { StyleNumValue, StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import fontInfo from '../style/font';
 import { JStyle } from '../format';
 import { ResizeData, ResizeStyle } from '../history/type';
@@ -88,7 +88,6 @@ function putData(
     textAlign.push(ta);
   }
   let tb = TEXT_BEHAVIOUR.AUTO;
-
   const autoW = width.u === StyleUnit.AUTO
     && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
   const autoH = height.u === StyleUnit.AUTO
@@ -117,9 +116,13 @@ export function getData(nodes: Text[]) {
   const autoLineHeight: boolean[] = [];
   const paragraphSpacing: number[] = [];
   const textAlign: TEXT_ALIGN[] = [];
+  const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   for (let i = 0, len = nodes.length; i < len; i++) {
     const { rich, style, computedStyle } = nodes[i];
+    if (!textVerticalAlign.includes(computedStyle.textVerticalAlign)) {
+      textVerticalAlign.push(computedStyle.textVerticalAlign);
+    }
     const { left, right, top, bottom, width, height, lineHeight: lh } = style;
     // 一般都是有rich，除非手动构造数据
     if (rich && rich.length) {
@@ -185,6 +188,7 @@ export function getData(nodes: Text[]) {
     letterSpacing,
     paragraphSpacing,
     textAlign,
+    textVerticalAlign,
     textBehaviour,
   };
 }
@@ -229,6 +233,7 @@ export function getEditData(node: Text) {
   const autoLineHeight: boolean[] = [];
   const paragraphSpacing: number[] = [];
   const textAlign: TEXT_ALIGN[] = [];
+  const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [node.computedStyle.textVerticalAlign];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   const richList = node.getCursorRich();
   const { left, right, top, bottom, width, height, lineHeight: lh } = style;
@@ -269,6 +274,7 @@ export function getEditData(node: Text) {
     letterSpacing,
     paragraphSpacing,
     textAlign,
+    textVerticalAlign,
     textBehaviour,
   };
 }

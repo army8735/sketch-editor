@@ -9,7 +9,7 @@ import ResizeCommand from '../history/ResizeCommand';
 import { JStyle } from '../format';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { MoveData, ResizeData, ResizeStyle } from '../history/type';
+import { ModifyData, MoveData, ResizeData, ResizeStyle } from '../history/type';
 import { ComputedStyle, Style } from '../style/define';
 
 const html = `
@@ -330,8 +330,7 @@ class BasicPanel extends Panel {
         fh.classList.add('active');
       }
       const nodes: Node[] = [];
-      const prevs: Partial<JStyle>[] = [];
-      const nexts: Partial<JStyle>[] = [];
+      const data: ModifyData[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.scaleX;
         const next = fh.classList.contains('active') ? -1 : 1;
@@ -340,16 +339,14 @@ class BasicPanel extends Panel {
             scaleX: next,
           });
           nodes.push(node);
-          prevs.push({
-            scaleX: prev,
-          });
-          nexts.push({
-            scaleX: next,
+          data.push({
+            prev: { scaleX: prev },
+            next: { scaleX: next },
           });
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
+        listener.history.addCommand(new UpdateStyleCommand(nodes, data));
         listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_H_NODE, nodes.slice(0));
       }
@@ -363,8 +360,7 @@ class BasicPanel extends Panel {
         fv.classList.add('active');
       }
       const nodes: Node[] = [];
-      const prevs: Partial<JStyle>[] = [];
-      const nexts: Partial<JStyle>[] = [];
+      const data: ModifyData[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.scaleY;
         const next = fv.classList.contains('active') ? -1 : 1;
@@ -373,16 +369,14 @@ class BasicPanel extends Panel {
             scaleY: next,
           });
           nodes.push(node);
-          prevs.push({
-            scaleY: prev,
-          });
-          nexts.push({
-            scaleY: next,
+          data.push({
+            prev: { scaleX: prev },
+            next: { scaleX: next },
           });
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes, prevs, nexts));
+        listener.history.addCommand(new UpdateStyleCommand(nodes, data));
         listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_V_NODE, nodes.slice(0));
       }

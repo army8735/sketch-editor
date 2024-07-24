@@ -39,6 +39,7 @@ export function isReflowKey(k: string): boolean {
     k === 'letterSpacing' ||
     k === 'paragraphSpacing' ||
     k === 'textAlign' ||
+    k === 'textVerticalAlign' ||
     k === 'fontFamily' ||
     k === 'fontSize' ||
     k === 'fontWeight' ||

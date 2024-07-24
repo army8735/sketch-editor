@@ -382,16 +382,16 @@ html, body {
         opacity: 0.5;
 
         &:hover {
-          transform: none;
+          background-color: transparent;
         }
+      }
+
+      &:hover {
+        background-color: #DDD;
       }
 
       &.active {
         background-color: #F96;
-      }
-
-      &:hover {
-        transform: translateY(-1px);
       }
     }
 
@@ -407,16 +407,16 @@ html, body {
         opacity: 0.5;
 
         &:hover {
-          transform: none;
+          background-color: transparent;
         }
+      }
+
+      &:hover {
+        background-color: #DDD;
       }
 
       &.active {
         background-color: #F96;
-      }
-
-      &:hover {
-        transform: translateY(-1px);
       }
     }
   }
@@ -612,7 +612,11 @@ html, body {
           border-radius: 3px;
 
           &:hover {
-            transform: translateY(-1px);
+            background-color: #DDD;
+          }
+
+          &:active {
+            background-color: #CCC;
           }
         }
 
@@ -756,27 +760,32 @@ html, body {
 
       .color {
         margin-left: 5px;
-      }
 
-      .picker {
-        position: relative;
-        box-sizing: border-box;
-        display: block;
-        width: 40px;
-        height: 20px;
-        background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAJAAAAAAJxsHGAAAAaUlEQVRIDe3QsRHAIAwEQXAz9N8NqganF8IFit7RB9xovHPvPd6/tdZ7ND7R6CTHNB3DMFJD7zBqOoZhpIbeYdR0DFsZ5zmHxy93VV2+5LPWP8sx0usdRk3HMIzU0DuMmo5hGKmhdyvjD7P7CMyQVK4bAAAAAElFTkSuQmCC) repeat left top;
-        background-size: 12px auto;
-        border: 1px solid #CCC;
-        border-radius: 3px;
+        .picker {
+          position: relative;
+          box-sizing: border-box;
+          display: block;
+          width: 40px;
+          height: 20px;
+          background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAJAAAAAAJxsHGAAAAaUlEQVRIDe3QsRHAIAwEQXAz9N8NqganF8IFit7RB9xovHPvPd6/tdZ7ND7R6CTHNB3DMFJD7zBqOoZhpIbeYdR0DFsZ5zmHxy93VV2+5LPWP8sx0usdRk3HMIzU0DuMmo5hGKmhdyvjD7P7CMyQVK4bAAAAAElFTkSuQmCC) repeat left top;
+          background-size: 12px auto;
+          border: 1px solid #CCC;
+          border-radius: 3px;
 
-        b {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          cursor: default;
-          user-select: none;
+          b {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+            user-select: none;
+            color:#666;
+            text-align:center;
+            line-height:18px;
+            overflow:hidden;
+            text-shadow:0 0 2px rgba(0, 0, 0, 0.2);
+          }
         }
       }
     }
@@ -831,7 +840,11 @@ html, body {
           border-radius: 3px;
 
           &:hover {
-            transform: translateY(-1px);
+            background-color: #DDD;
+          }
+
+          &:active {
+            background-color: #CCC;
           }
 
           &.auto {
@@ -865,6 +878,7 @@ html, body {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 4px;
       padding: 0 1px;
       height: 20px;
       background: #F0F0F0;
@@ -879,7 +893,11 @@ html, body {
         border-radius: 3px;
 
         &:hover {
-          transform: translateY(-1px);
+          background-color: #DDD;
+        }
+
+        &:active {
+          background-color: #CCC;
         }
 
         &.left {
@@ -896,6 +914,50 @@ html, body {
 
         &.justify {
           background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAElJREFUWEft1dENACAIQ0HYf2j908QBgMRjgTaPFjKaJ5v1g4GXwCpaydFlQAgR0IJxBIoO4ZXRgnEEfMN2AmqIQHsIGRDC/whsISwMIZB9QqIAAAAASUVORK5CYII=);
+        }
+
+        &.cur {
+          background-color: #FFF;
+          box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+      }
+    }
+
+    .va {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1px;
+      height: 20px;
+      background: #F0F0F0;
+      border-radius: 3px;
+
+      span {
+        flex: 1;
+        height: 18px;
+        background-repeat: no-repeat;
+        background-size: auto 16px;
+        background-position: center;
+        border-radius: 3px;
+
+        &:hover {
+          background-color: #DDD;
+        }
+
+        &:active {
+          background-color: #CCC;
+        }
+
+        &.top {
+          background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAL1JREFUWEftltENgCAMROtmOpk6mTqZeolNGgRpAcNP+yNG0nueR+NAnWvorE8O4A58OTA2Duge65cCOBuLc7uXXgpgI6I/HJjCF2sRQoBG7dW4WAOwENH8iKz3FffmKgWQ4ixaBFECEBMvhrACSHF8dw6qXJucsABADKcDBUEkmo8r1sgDA6n7qjc+wgA4ROAkAKDC59lQWgHChiFAVrD1HHAAd8AdcAd4NL9+NLQTqXYSanWS+xzAHejuwAXpUCwhKIoTYAAAAABJRU5ErkJggg==);
+        }
+
+        &.middle {
+          background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAPhJREFUWEftloEKwjAMRLMvm36Z88v0z9SDBkq2lbsGVmEryARr7jV3bTfZ4DEN1rcLINuBpVjoT9nRLMCnKN7N7C2rm6UzcD6A6HnswO1nBT50JpQMoPCr+PwsIjUAfn+omVAAUBsrcxFA+HcEEAAYDkdlUgWIEFFEEsefewD2IGTxDMCWHXTw6rb1dsBrQBT+dx1CrQ7UYaPCRE5aLXivA9hunmqyNjWNBkA1BgBz5rL1GIKVVZkMxDPh0BBuZeSwbdgKqAyhWjD8KPbLZ+hl5KcgnvE6RoewK/CGRA3Vglj0fG9Ef9cB2fO4gmwGqKC1Jl0AwzvwBTTcOiGg2/sLAAAAAElFTkSuQmCC);
+        }
+
+        &.bottom {
+          background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAALtJREFUWEftlmEKgCAMhefN6mZ1srpZ9UJhLKU5JSHmrwLd+/bSZ4EGjzBYnxzgFw5MRLRb91KrA0cUNtcxL7y6RuebA7gD7oA78LUDSD7E7lwIIgQTAkodcOqJsdMUvYBYRRImcUxV11VPjAA8fgGBdwz+DHfUl1MtAMQ4hLwEq8SrrBJKOYhq8RYA6YRJ/A0gfV/rv0Zu3WNvlPZA2u09xbMNlwD4keoFgWO7yGKWU9AL6K7jAO6AO3ACaNkhIaItynUAAAAASUVORK5CYII=);
         }
 
         &.cur {

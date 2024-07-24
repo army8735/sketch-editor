@@ -1,28 +1,26 @@
 import Command from './Command';
 import Node from '../node/Node';
-import { JStyle } from '../format';
+import { ModifyData } from './type';
 
 class UpdateStyleCommand extends Command {
-  prevs: Partial<JStyle>[];
-  nexts: Partial<JStyle>[];
+  data: ModifyData[];
 
-  constructor(nodes: Node[], prevs: Partial<JStyle>[], nexts: Partial<JStyle>[]) {
+  constructor(nodes: Node[], data: ModifyData[]) {
     super(nodes);
-    this.prevs = prevs;
-    this.nexts = nexts;
+    this.data = data;
   }
 
   execute() {
-    const { nodes, nexts } = this;
+    const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.updateStyle(nexts[i]);
+      node.updateStyle(data[i].next);
     });
   }
 
   undo() {
-    const { nodes, prevs } = this;
+    const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.updateStyle(prevs[i]);
+      node.updateStyle(data[i].prev);
     });
   }
 }
