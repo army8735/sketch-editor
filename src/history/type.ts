@@ -1,4 +1,4 @@
-import { JStyle } from '../format';
+import { JStyle, Rich } from '../format';
 
 export type MoveStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom'>>;
 
@@ -15,3 +15,7 @@ export type ModifyData = { prev: ModifyStyle, next: ModifyStyle };
 export type VerticalAlignStyle = Pick<JStyle, 'textVerticalAlign'>;
 
 export type VerticalAlignData = { prev: VerticalAlignStyle, next: VerticalAlignStyle };
+
+export type ModifyRichStyle = Pick<Rich, 'location' | 'length'> & Partial<Rich>;
+
+export type ModifyRichData = { prev: Rich[], next: Rich[] };

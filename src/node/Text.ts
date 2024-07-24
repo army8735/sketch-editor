@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Rich, TAG_NAME, TextProps, UpdateRich } from '../format';
+import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -38,6 +38,7 @@ import Node from './Node';
 import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
+import { ModifyRichStyle } from '../history/type';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -181,7 +182,6 @@ class Text extends Node {
   showSelectArea: boolean;
   asyncRefresh: boolean;
   loaders: Loader[];
-  // textBehaviour: TEXT_BEHAVIOUR;
 
   constructor(props: TextProps) {
     super(props);
@@ -2510,7 +2510,7 @@ class Text extends Node {
     let lv = RefreshLevel.NONE;
     if (rich.length) {
       rich.forEach((item) => {
-        lv |= this.updateRich(item, style2);
+        lv |= this.updateRichItem(item, style2);
       });
     }
     this.mergeRich();
@@ -2548,12 +2548,12 @@ class Text extends Node {
                 item.location === start &&
                 item.location + item.length === end
               ) {
-                lv |= this.updateRich(item, style);
+                lv |= this.updateRichItem(item, style);
               }
               // 选区开头是start则更新，后面新生成一段
               else if (item.location === start) {
                 const n = Object.assign({}, item);
-                const t = this.updateRich(item, style);
+                const t = this.updateRichItem(item, style);
                 if (t) {
                   lv |= t;
                   const length = item.length;
@@ -2566,7 +2566,7 @@ class Text extends Node {
               // 选取结尾是end则更新，前面插入一段
               else if (item.location + item.length === end) {
                 const n = Object.assign({}, item);
-                const t = this.updateRich(n, style);
+                const t = this.updateRichItem(n, style);
                 if (t) {
                   lv |= t;
                   item.length = start - item.location;
@@ -2578,7 +2578,7 @@ class Text extends Node {
               // 选了中间一段，原有的部分作为开头，后面拆入2段新的
               else {
                 const n = Object.assign({}, item);
-                const t = this.updateRich(n, style);
+                const t = this.updateRichItem(n, style);
                 if (t) {
                   lv |= t;
                   const length = item.length;
@@ -2599,7 +2599,7 @@ class Text extends Node {
               const item3 = rich[j];
               const last = Object.assign({}, item3);
               // 倒序进行，先从后面更新
-              const t = this.updateRich(item3, style);
+              const t = this.updateRichItem(item3, style);
               if (t) {
                 lv |= t;
                 if (end < item3.location + item3.length) {
@@ -2610,9 +2610,9 @@ class Text extends Node {
                 }
               }
               for (let k = i + 1; k < j - 1; k++) {
-                lv |= this.updateRich(rich[k], style);
+                lv |= this.updateRichItem(rich[k], style);
               }
-              const t2 = this.updateRich(first, style);
+              const t2 = this.updateRichItem(first, style);
               if (t2) {
                 lv |= t2;
                 if (start > item.location) {
@@ -2647,10 +2647,21 @@ class Text extends Node {
     return lv;
   }
 
+  getRich() {
+    return this.rich.map(item => {
+      return Object.assign({}, item);
+    });
+  }
+
+  setRich(rich: Rich[]) {
+    this.rich = rich;
+    this.root?.addUpdate(this, [], RefreshLevel.REFLOW);
+  }
+
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
-  updateRichStyle(updateRich: UpdateRich) {
+  updateRichStyle(style: ModifyRichStyle) {
     const payload = this.beforeEdit();
-    let { location, length } = updateRich;
+    let { location, length } = style;
     let lv = RefreshLevel.NONE;
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
@@ -2685,7 +2696,7 @@ class Text extends Node {
           shouldBreak = true;
         }
         // 可能存在的prev/next操作后（也可能没有），此Rich本身更新
-        lv |= this.updateRich(item, updateRich);
+        lv |= this.updateRichItem(item, style);
         if (shouldBreak) {
           break;
         }
@@ -2701,16 +2712,13 @@ class Text extends Node {
     this.afterEdit(payload);
   }
 
-  private updateRich(item: Rich, style: Partial<Rich>) {
+  updateRichItem(item: Rich, style: ModifyRichStyle) {
     let lv = RefreshLevel.NONE;
-    if (style.fontFamily !== undefined
-      && style.fontFamily !== item.fontFamily
-    ) {
+    if (style.fontFamily !== undefined && style.fontFamily !== item.fontFamily) {
       item.fontFamily = style.fontFamily;
       lv |= RefreshLevel.REFLOW;
     }
-    if (style.fontSize !== undefined
-      && style.fontSize !== item.fontSize) {
+    if (style.fontSize !== undefined && style.fontSize !== item.fontSize) {
       item.fontSize = style.fontSize;
       lv |= RefreshLevel.REFLOW;
     }
@@ -2723,24 +2731,18 @@ class Text extends Node {
         || item.color[3] !== c[3]
       ) {
         item.color = c;
-        lv |= RefreshLevel.REPAINT;
+        lv |= RefreshLevel.REFLOW;
       }
     }
-    if (style.letterSpacing !== undefined
-      && style.letterSpacing !== item.letterSpacing
-    ) {
+    if (style.letterSpacing !== undefined && style.letterSpacing !== item.letterSpacing) {
       item.letterSpacing = style.letterSpacing;
       lv |= RefreshLevel.REFLOW;
     }
-    if (style.lineHeight !== undefined
-      && style.lineHeight !== item.lineHeight
-    ) {
+    if (style.lineHeight !== undefined && style.lineHeight !== item.lineHeight) {
       item.lineHeight = style.lineHeight;
       lv |= RefreshLevel.REFLOW;
     }
-    if (style.paragraphSpacing !== undefined
-      && style.paragraphSpacing !== item.paragraphSpacing
-    ) {
+    if (style.paragraphSpacing !== undefined && style.paragraphSpacing !== item.paragraphSpacing) {
       item.paragraphSpacing = style.paragraphSpacing;
       lv |= RefreshLevel.REFLOW;
     }
@@ -2748,10 +2750,9 @@ class Text extends Node {
       item.textAlign = style.textAlign;
       lv |= RefreshLevel.REFLOW;
     }
-    if (style.textDecoration !== undefined
-      && style.textDecoration !== item.textDecoration) {
+    if (style.textDecoration !== undefined && style.textDecoration !== item.textDecoration) {
       item.textDecoration = style.textDecoration;
-      lv |= RefreshLevel.REPAINT;
+      lv |= RefreshLevel.REFLOW;
     }
     return lv;
   }

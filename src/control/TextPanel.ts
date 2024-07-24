@@ -8,13 +8,13 @@ import { getData, TEXT_BEHAVIOUR, updateBehaviour } from '../tools/text';
 import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
-import { UpdateRich } from '../format';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import State from './State';
 import Panel from './Panel';
-import { ModifyData, VerticalAlignData } from '../history/type';
+import { ModifyRichData, VerticalAlignData } from '../history/type';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
+import { Rich } from '../format';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -35,7 +35,7 @@ const html = `
   </div>
   <div class="line num">
     <div class="fs">
-      <input type="number" min="1" step="1"/>
+      <input type="number" min="0" step="1"/>
       <span>字号</span>
     </div>
     <div class="ls">
@@ -43,7 +43,7 @@ const html = `
       <span>字距</span>
     </div>
     <div class="lh">
-      <input type="number" min="1" step="1"/>
+      <input type="number" min="0" step="1"/>
       <span>行高</span>
     </div>
     <div class="ps">
@@ -96,15 +96,17 @@ class TextPanel extends Panel {
     this.dom.appendChild(panel);
 
     let nodes: Text[] = [];
-    let prevs: UpdateRich[][] = [];
-    let nexts: UpdateRich[][] = [];
+    let prevs: Rich[][] = [];
+    let nexts: Rich[][] = [];
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = () => {
       // 只有变更才会有next
       if (nexts && nexts.length) {
-        listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
-        listener.emit(Listener.TEXT_NODE, nodes.slice(0));
+        listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        }), UpdateRichCommand.COLOR));
+        listener.emit(Listener.COLOR_NODE, nodes.slice(0));
       }
       nodes = [];
       prevs = [];
@@ -116,39 +118,26 @@ class TextPanel extends Panel {
       if (el.tagName === 'B') {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
+        picker.hide();
         if (picker.isShowFrom('textPanel')) {
-          picker.hide();
           pickCallback();
           return;
         }
         const p = picker.show(el, 'textPanel', pickCallback, true);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
-        prevs = [];
-        nodes.forEach(node => {
-          const prev: UpdateRich[] = [];
-          node.rich.forEach(item => {
-            prev.push({
-              location: item.location,
-              length: item.length,
-              color: item.color,
-            });
-          });
-          prevs.push(prev);
-        });
+        prevs = nodes.map(item => item.getRich());
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
           nexts = [];
           nodes.forEach(node => {
-            const next: UpdateRich[] = [];
             const o = {
               location: 0,
               length: node._content.length,
               color: color.rgba.slice(0),
             };
-            next.push(o);
-            nexts.push(next);
             node.updateRichStyle(o);
+            nexts.push(node.getRich());
           });
         };
         p.onDone = () => {
@@ -178,8 +167,6 @@ class TextPanel extends Panel {
         && !el.classList.contains('cur')) {
         pickCallback();
         const nodes = this.nodes.slice(0);
-        const prevs: UpdateRich[][] = [];
-        const nexts: UpdateRich[][] = [];
         let value = TEXT_ALIGN.LEFT;
         if (el.classList.contains('right')) {
           value = TEXT_ALIGN.RIGHT;
@@ -193,29 +180,20 @@ class TextPanel extends Panel {
         // 编辑状态下特殊处理
         if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
         }
+        // 普通状态
         else {
+          const data: ModifyRichData[] = [];
           nodes.forEach(node => {
-            const prev: UpdateRich[] = [];
-            node.rich.forEach(item => {
-              prev.push({
-                location: item.location,
-                length: item.length,
-                textAlign: item.textAlign,
-              });
-            });
-            prevs.push(prev);
-            const next: UpdateRich[] = [];
-            const o = {
+            const prev = node.getRich();
+            node.updateRichStyle({
               location: 0,
               length: node._content.length,
               textAlign: value,
-            };
-            next.push(o);
-            nexts.push(next);
-            node.updateRichStyle(o);
-            listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
-            listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
+            });
+            data.push({ prev, next: node.getRich() });
           });
+          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.TEXT_ALIGN));
+          listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');
         el.classList.add('cur');
@@ -257,44 +235,9 @@ class TextPanel extends Panel {
       }
     });
 
-    // 字体和字重都是Select都会触发，字号等Input也会触发
-    panel.addEventListener('change', (e) => {
-      const el = e.target as HTMLElement;
-      const tagName = el.tagName.toUpperCase();
-      if (tagName === 'SELECT') {
-        pickCallback();
-        const value = (el as HTMLSelectElement).value;
-        const nodes = this.nodes.slice(0);
-        const prevs: UpdateRich[][] = [];
-        const nexts: UpdateRich[][] = [];
-        nodes.forEach(node => {
-          const prev: UpdateRich[] = [];
-          node.rich.forEach(item => {
-            prev.push({
-              location: item.location,
-              length: item.length,
-              fontFamily: item.fontFamily,
-            });
-          });
-          prevs.push(prev);
-          const next: UpdateRich[] = [];
-          const o = {
-            location: 0,
-            length: node._content.length,
-            fontFamily: value,
-          };
-          next.push(o);
-          nexts.push(next);
-          node.updateRichStyle(o);
-        });
-        listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
-        listener.select.updateSelect(nodes);
-        listener.emit(Listener.TEXT_NODE, nodes);
-      }
-      else if (tagName === 'INPUT') {}
-    });
-
+    let key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing';
     panel.addEventListener('input', (e) => {
+      pickCallback();
       this.silence = true;
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
@@ -305,7 +248,6 @@ class TextPanel extends Panel {
       const input = e.target as HTMLInputElement;
       const parent = input.parentElement!;
       let value = parseFloat(input.value);
-      let key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing' | undefined;
       if (parent.classList.contains('fs')) {
         key = 'fontSize';
       }
@@ -318,39 +260,127 @@ class TextPanel extends Panel {
       else if (parent.classList.contains('paragraphSpacing')) {
         key = 'paragraphSpacing';
       }
-      if (!key) {
-        return;
-      }
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      // const nodes = this.nodes.slice(0);
-      // const prevs: UpdateRich[][] = [];
-      // const nexts: UpdateRich[][] = [];
-      this.nodes.forEach(node => {
-        const prev: UpdateRich[] = [];
-        node.rich.forEach(item => {
-          prev.push({
-            location: item.location,
-            length: item.length,
-            [key]: item[key],
+      this.nodes.forEach((node, i) => {
+        if (isFirst) {
+          nodes.push(node);
+          prevs.push(node.getRich());
+        }
+        // 多个值的情况
+        if (!isInput) {
+          let d = 0;
+          if (input.placeholder) {
+            d = value > 0 ? 1 : -1;
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+          }
+          else {
+            d = value - prevs[0][0][key];
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+          }
+          node.rich.forEach((rich) => {
+            const p = rich[key];
+            let n = p + d;
+            if (key === 'fontSize' || key === 'lineHeight') {
+              n = Math.max(0, n);
+            }
+            node.updateRichStyle({
+              location: rich.location,
+              length: rich.length,
+              [key]: n,
+            });
           });
-        });
-        prevs.push(prev);
-        const next: UpdateRich[] = [];
-        const o = {
-          location: 0,
-          length: node._content.length,
-          [key]: value,
-        };
-        next.push(o);
-        nexts.push(next);
-        node.updateRichStyle(o);
+        }
+        // 单个值比较简单
+        else {
+          node.updateRichStyle({
+            location: 0,
+            length: node._content.length,
+            [key]: value,
+          });
+        }
+        nexts.push(node.getRich());
       });
-      listener.history.addCommand(new UpdateRichCommand(nodes, prevs, nexts));
-      listener.select.updateSelect(nodes);
-      listener.emit(Listener.TEXT_NODE, nodes);
+      if (nodes.length) {
+        listener.select.updateSelect(nodes);
+        if (key === 'fontSize') {
+          listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
+        }
+        else if (key === 'letterSpacing') {
+          listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
+        }
+        else if (key === 'paragraphSpacing') {
+          listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
+        }
+        else if (key === 'lineHeight') {
+          listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
+        }
+        this.show(this.nodes);
+      }
+      this.silence = false;
     });
 
-    listener.on([Listener.SELECT_NODE, Listener.RESIZE_NODE, Listener.TEXT_NODE, Listener.TEXT_VERTICAL_ALIGN_NODE], (nodes: Node[]) => {
+    // 字体和字重是Select会触发，字号等Input也会触发，需要区分
+    panel.addEventListener('change', (e) => {
+      const el = e.target as HTMLElement;
+      const tagName = el.tagName.toUpperCase();
+      if (tagName === 'SELECT') {
+        const value = (el as HTMLSelectElement).value;
+        const nodes = this.nodes.slice(0);
+        const data: ModifyRichData[] = [];
+        nodes.forEach(node => {
+          const prev = node.getRich();
+          node.updateRichStyle({
+            location: 0,
+            length: node._content.length,
+            fontFamily: value,
+          });
+          data.push({ prev, next: node.getRich() });
+        });
+        listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+      }
+      else if (tagName === 'INPUT') {
+        if (nodes.length) {
+          let type = '';
+          if (key == 'fontSize') {
+            type = UpdateRichCommand.FONT_SIZE;
+          }
+          else if (key === 'letterSpacing') {
+            type = UpdateRichCommand.LETTER_SPACING;
+          }
+          else if (key === 'lineHeight') {
+            type = UpdateRichCommand.LINE_HEIGHT;
+          }
+          else if (key === 'paragraphSpacing') {
+            type = UpdateRichCommand.PARAGRAPH_SPACING;
+          }
+          listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
+            return { prev, next: nexts[i] };
+          }), type));
+          nodes = [];
+          prevs = [];
+          nexts = [];
+        }
+      }
+    });
+
+    listener.on([
+      Listener.SELECT_NODE,
+      Listener.RESIZE_NODE,
+      Listener.FONT_SIZE_NODE,
+      Listener.FONT_FAMILY_NODE,
+      Listener.LETTER_SPACING_NODE,
+      Listener.LINE_HEIGHT_NODE,
+      Listener.PARAGRAPH_SPACING_NODE,
+      Listener.COLOR_NODE,
+      Listener.TEXT_ALIGN_NODE,
+      Listener.TEXT_VERTICAL_ALIGN_NODE,
+    ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;
@@ -483,42 +513,51 @@ class TextPanel extends Panel {
     {
       const input = panel.querySelector('.fs input') as HTMLInputElement;
       if (o.fontSize.length > 1) {
+        input.value = '';
         input.placeholder = '多个';
       }
       else {
         input.value = toPrecision(o.fontSize[0], 0).toString();
+        input.placeholder = '';
       }
     }
     {
       const input = panel.querySelector('.ls input') as HTMLInputElement;
       if (o.letterSpacing.length > 1) {
+        input.value = '';
         input.placeholder = '多个';
       }
       else {
         input.value = toPrecision(o.letterSpacing[0], 0).toString();
+        input.placeholder = '';
       }
     }
     {
       const input = panel.querySelector('.lh input') as HTMLInputElement;
       if (o.lineHeight.length > 1) {
+        input.value = '';
         input.placeholder = '多个';
       }
       else {
         if (o.autoLineHeight[0]) {
+          input.value = '';
           input.placeholder = toPrecision(o.lineHeight[0], 0).toString();
         }
         else {
           input.value = toPrecision(o.lineHeight[0], 0).toString();
+          input.placeholder = '';
         }
       }
     }
     {
       const input = panel.querySelector('.ps input') as HTMLInputElement;
       if (o.paragraphSpacing.length > 1) {
+        input.value = '';
         input.placeholder = '多个';
       }
       else {
         input.value = o.paragraphSpacing[0].toString();
+        input.placeholder = '';
       }
     }
     {

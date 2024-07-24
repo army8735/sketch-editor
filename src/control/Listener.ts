@@ -1091,7 +1091,27 @@ export default class Listener extends Event {
           this.emit(Listener.ROTATE_NODE, this.selected.slice(0));
         }
         else if (c instanceof UpdateRichCommand) {
-          this.emit(Listener.TEXT_NODE, this.selected.slice(0));
+          if (c.type === UpdateRichCommand.TEXT_ALIGN) {
+            this.emit(Listener.TEXT_ALIGN_NODE, this.selected.slice(0));
+          }
+          else if (c.type === UpdateRichCommand.COLOR) {
+            this.emit(Listener.COLOR_NODE, this.selected.slice(0));
+          }
+          else if (c.type === UpdateRichCommand.FONT_FAMILY) {
+            this.emit(Listener.FONT_FAMILY_NODE, this.selected.slice(0));
+          }
+          else if (c.type === UpdateRichCommand.FONT_SIZE) {
+            this.emit(Listener.FONT_SIZE_NODE, this.selected.slice(0));
+          }
+          else if (c.type === UpdateRichCommand.LINE_HEIGHT) {
+            this.emit(Listener.LINE_HEIGHT_NODE, this.selected.slice(0));
+          }
+          else if (c.type === UpdateRichCommand.PARAGRAPH_SPACING) {
+            this.emit(Listener.PARAGRAPH_SPACING_NODE, this.selected.slice(0));
+          }
+          else if (c.type === UpdateRichCommand.LETTER_SPACING) {
+            this.emit(Listener.LETTER_SPACING_NODE, this.selected.slice(0));
+          }
         }
         else if (c instanceof OpacityCommand) {
           this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
@@ -1167,6 +1187,12 @@ export default class Listener extends Event {
   static FILL_NODE = 'FILL_NODE';
   static STROKE_NODE = 'STROKE_NODE';
   static TEXT_NODE = 'TEXT_NODE';
+  static FONT_FAMILY_NODE = 'FONT_FAMILY_NODE';
+  static FONT_SIZE_NODE = 'FONT_SIZE_NODE';
+  static LINE_HEIGHT_NODE = 'LINE_HEIGHT_NODE';
+  static LETTER_SPACING_NODE = 'LETTER_SPACING_NODE';
+  static PARAGRAPH_SPACING_NODE = 'PARAGRAPH_SPACING_NODE';
+  static COLOR_NODE = 'COLOR_NODE';
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
