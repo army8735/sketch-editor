@@ -79,7 +79,7 @@ class OpacityPanel extends Panel {
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.opacity * 100;
-        let next = parseFloat(number.value);
+        let next = parseFloat(number.value) || 0;
         let d = 0;
         if (isInput) {
           next = Math.max(next, 0);

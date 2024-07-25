@@ -588,7 +588,9 @@ export function resizeTop(node: Node, d: number) {
   const t = resizeTopOperate(node, node.computedStyle, d);
   if (t) {
     node.updateStyle(t);
-    return node.endSizeChange(originStyle, t);
+    const res = node.endSizeChange(originStyle, t);
+    node.checkPosSizeUpward();
+    return res;
   }
 }
 
@@ -598,7 +600,9 @@ export function resizeBottom(node: Node, d: number) {
   const t = resizeBottomOperate(node, node.computedStyle, d);
   if (t) {
     node.updateStyle(t);
-    return node.endSizeChange(originStyle, t);
+    const res = node.endSizeChange(originStyle, t);
+    node.checkPosSizeUpward();
+    return res;
   }
 }
 
@@ -608,7 +612,9 @@ export function resizeLeft(node: Node, d: number) {
   const t = resizeLeftOperate(node, node.computedStyle, d);
   if (t) {
     node.updateStyle(t);
-    return node.endSizeChange(originStyle, t);
+    const res = node.endSizeChange(originStyle, t);
+    node.checkPosSizeUpward();
+    return res;
   }
 }
 
@@ -618,7 +624,9 @@ export function resizeRight(node: Node, d: number) {
   const t = resizeRightOperate(node, node.computedStyle, d);
   if (t) {
     node.updateStyle(t);
-    return node.endSizeChange(originStyle, t);
+    const res = node.endSizeChange(originStyle, t);
+    node.checkPosSizeUpward();
+    return res;
   }
 }
 

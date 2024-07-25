@@ -19,14 +19,14 @@ import { Rich } from '../format';
 const html = `
   <h4 class="panel-title">字符</h4>
   <div class="line ff">
-    <select class="ff">
+    <select>
       <option value="arial">Arial</option>
     </select>
     <span class="multi">多种字体</span>
   </div>
   <div class="line wc">
     <div class="weight">
-      <select class="w"></select>
+      <select></select>
       <span class="multi">多种字重</span>
     </div>
     <div class="color">
@@ -95,6 +95,13 @@ class TextPanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
+    const fs = panel.querySelector('.fs input') as HTMLInputElement;
+    const ls = panel.querySelector('.ls input') as HTMLInputElement;
+    const lh = panel.querySelector('.lh input') as HTMLInputElement;
+    const ps = panel.querySelector('.ps input') as HTMLInputElement;
+    const ff = panel.querySelector('.ff select') as HTMLSelectElement;
+    const fw = panel.querySelector('.weight select') as HTMLSelectElement;
+
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];
     let nexts: Rich[][] = [];
@@ -106,12 +113,195 @@ class TextPanel extends Panel {
         listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         }), UpdateRichCommand.COLOR));
-        listener.emit(Listener.COLOR_NODE, nodes.slice(0));
       }
       nodes = [];
       prevs = [];
       nexts = [];
     };
+
+    const onInput = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
+      this.silence = true;
+      const input = e.target as HTMLInputElement;
+      const value = parseFloat(input.value) || 0;
+      pickCallback();
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      this.nodes.forEach((node) => {
+        if (isFirst) {
+          nodes.push(node);
+          prevs.push(node.getRich());
+        }
+        // 多个值的情况
+        if (!isInput) {
+          let d = 0;
+          if (input.placeholder) {
+            d = value > 0 ? 1 : -1;
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+          }
+          else {
+            d = value - prevs[0][0][key];
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+          }
+          node.rich.forEach((rich) => {
+            const p = rich[key];
+            let n = p + d;
+            if (key === 'fontSize' || key === 'lineHeight') {
+              n = Math.max(0, n);
+            }
+            node.updateRichStyle({
+              location: rich.location,
+              length: rich.length,
+              [key]: n,
+            });
+          });
+        }
+        // 单个值比较简单
+        else {
+          node.updateRichStyle({
+            location: 0,
+            length: node._content.length,
+            [key]: value,
+          });
+        }
+        nexts.push(node.getRich());
+      });
+      if (nodes.length) {
+        listener.select.updateSelect(nodes);
+        if (key === 'fontSize') {
+          listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
+        }
+        else if (key === 'letterSpacing') {
+          listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
+        }
+        else if (key === 'paragraphSpacing') {
+          listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
+        }
+        else if (key === 'lineHeight') {
+          listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
+        }
+        this.show(this.nodes);
+      }
+      this.silence = false;
+    };
+
+    const onChange = (key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
+      if (nodes.length) {let type = '';
+        if (key == 'fontSize') {
+          type = UpdateRichCommand.FONT_SIZE;
+        }
+        else if (key === 'letterSpacing') {
+          type = UpdateRichCommand.LETTER_SPACING;
+        }
+        else if (key === 'lineHeight') {
+          type = UpdateRichCommand.LINE_HEIGHT;
+        }
+        else if (key === 'paragraphSpacing') {
+          type = UpdateRichCommand.PARAGRAPH_SPACING;
+        }
+        listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        }), type));
+        nodes = [];
+        prevs = [];
+        nexts = [];
+      }
+    };
+
+    fs.addEventListener('input', (e) => {
+      onInput(e, 'fontSize');
+    });
+    ls.addEventListener('input', (e) => {
+      onInput(e, 'letterSpacing');
+    });
+    lh.addEventListener('input', (e) => {
+      onInput(e, 'lineHeight');
+    });
+    ps.addEventListener('input', (e) => {
+      onInput(e, 'paragraphSpacing');
+    });
+    fs.addEventListener('change', (e) => {
+      onChange('fontSize');
+    });
+    ls.addEventListener('change', (e) => {
+      onChange('letterSpacing');
+    });
+    lh.addEventListener('change', (e) => {
+      onChange('lineHeight');
+    });
+    ps.addEventListener('change', (e) => {
+      onChange('paragraphSpacing');
+    });
+
+    const onSelectChange = (e: Event, key: 'fontFamily' | 'fontWeight') => {
+      this.silence = true;
+      const el = e.target as HTMLSelectElement;
+      const value = el.value;
+      const nodes = this.nodes.slice(0);
+      if (key === 'fontFamily') {
+        const { fontWeight, fontWeightList } = getWeight([value]);
+        const select = panel.querySelector('.wc select') as HTMLSelectElement;
+        let s = '';
+        fontWeightList.forEach(item => {
+          s += `<option value="${item.value}">${item.label}</option>`;
+        });
+        select.innerHTML = s;
+        // 暂时切换后统一Regular
+        const list = select.querySelectorAll('option');
+        for (let i = 0, len = list.length; i < len; i++) {
+          const option = list[i];
+          if (option.innerHTML === fontWeight[0]) {
+            option.selected = true;
+            break;
+          }
+        }
+        let ff = select.value;
+        const data: ModifyRichData[] = [];
+        nodes.forEach(node => {
+          const prev = node.getRich();
+          node.updateRichStyle({
+            location: 0,
+            length: node._content.length,
+            fontFamily: ff,
+          });
+          data.push({ prev, next: node.getRich() });
+        });
+        listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+      }
+      else if (key === 'fontWeight') {
+        const data: ModifyRichData[] = [];
+        nodes.forEach(node => {
+          const prev = node.getRich();
+          node.updateRichStyle({
+            location: 0,
+            length: node._content.length,
+            fontFamily: value,
+          });
+          data.push({ prev, next: node.getRich() });
+        });
+        listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+        listener.select.updateSelect(nodes);
+        listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+      }
+      this.silence = false;
+    };
+
+    ff.addEventListener('change', (e) => {
+      onSelectChange(e, 'fontFamily');
+    });
+    fw.addEventListener('change', (e) => {
+      onSelectChange(e, 'fontWeight');
+    });
 
     panel.addEventListener('click', (e) => {
       this.silence = true;
@@ -238,186 +428,6 @@ class TextPanel extends Panel {
       this.silence = false;
     });
 
-    let key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing';
-    panel.addEventListener('input', (e) => {
-      const el = e.target as HTMLElement;
-      const tagName = el.tagName.toUpperCase();
-      // Select也会触发忽略
-      if (tagName !== 'INPUT') {
-        return;
-      }
-      pickCallback();
-      this.silence = true;
-      // 连续多次只有首次记录节点和prev值，但每次都更新next值
-      const isFirst = !nodes.length;
-      if (isFirst) {
-        prevs = [];
-      }
-      nexts = [];
-      const input = e.target as HTMLInputElement;
-      const parent = input.parentElement!;
-      let value = parseFloat(input.value);
-      if (parent.classList.contains('fs')) {
-        key = 'fontSize';
-      }
-      else if (parent.classList.contains('ls')) {
-        key = 'letterSpacing';
-      }
-      else if (parent.classList.contains('lh')) {
-        key = 'lineHeight';
-      }
-      else if (parent.classList.contains('paragraphSpacing')) {
-        key = 'paragraphSpacing';
-      }
-      const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      this.nodes.forEach((node, i) => {
-        if (isFirst) {
-          nodes.push(node);
-          prevs.push(node.getRich());
-        }
-        // 多个值的情况
-        if (!isInput) {
-          let d = 0;
-          if (input.placeholder) {
-            d = value > 0 ? 1 : -1;
-            if (listener.shiftKey) {
-              d *= 10;
-            }
-          }
-          else {
-            d = value - prevs[0][0][key];
-            if (listener.shiftKey) {
-              d *= 10;
-            }
-          }
-          node.rich.forEach((rich) => {
-            const p = rich[key];
-            let n = p + d;
-            if (key === 'fontSize' || key === 'lineHeight') {
-              n = Math.max(0, n);
-            }
-            node.updateRichStyle({
-              location: rich.location,
-              length: rich.length,
-              [key]: n,
-            });
-          });
-        }
-        // 单个值比较简单
-        else {
-          node.updateRichStyle({
-            location: 0,
-            length: node._content.length,
-            [key]: value,
-          });
-        }
-        nexts.push(node.getRich());
-      });
-      if (nodes.length) {
-        listener.select.updateSelect(nodes);
-        if (key === 'fontSize') {
-          listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
-        }
-        else if (key === 'letterSpacing') {
-          listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
-        }
-        else if (key === 'paragraphSpacing') {
-          listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
-        }
-        else if (key === 'lineHeight') {
-          listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
-        }
-        this.show(this.nodes);
-      }
-      this.silence = false;
-    });
-
-    // 字体和字重是Select会触发，字号等Input也会触发，需要区分
-    panel.addEventListener('change', (e) => {
-      this.silence = true;
-      const el = e.target as (HTMLSelectElement | HTMLInputElement);
-      const tagName = el.tagName.toUpperCase();
-      const classList = el.classList;
-      if (tagName === 'SELECT') {
-        const value = el.value;
-        const nodes = this.nodes.slice(0);
-        // 字体
-        if (classList.contains('ff')) {
-          const { fontWeight, fontWeightList } = getWeight([value]);
-          const select = panel.querySelector('.wc select') as HTMLSelectElement;
-          let s = '';
-          fontWeightList.forEach(item => {
-            s += `<option value="${item.value}">${item.label}</option>`;
-          });
-          select.innerHTML = s;
-          // 暂时切换后统一Regular
-          const list = select.querySelectorAll('option');
-          for (let i = 0, len = list.length; i < len; i++) {
-            const option = list[i];
-            if (option.innerHTML === fontWeight[0]) {
-              option.selected = true;
-              break;
-            }
-          }
-          let ff = select.value;
-          const data: ModifyRichData[] = [];
-          nodes.forEach(node => {
-            const prev = node.getRich();
-            node.updateRichStyle({
-              location: 0,
-              length: node._content.length,
-              fontFamily: ff,
-            });
-            data.push({ prev, next: node.getRich() });
-          });
-          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
-          listener.select.updateSelect(nodes);
-          listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
-        }
-        // 字重
-        else if (classList.contains('w')) {
-          const data: ModifyRichData[] = [];
-          nodes.forEach(node => {
-            const prev = node.getRich();
-            node.updateRichStyle({
-              location: 0,
-              length: node._content.length,
-              fontFamily: value,
-            });
-            data.push({ prev, next: node.getRich() });
-          });
-          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
-          listener.select.updateSelect(nodes);
-          listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
-        }
-      }
-      else if (tagName === 'INPUT') {
-        if (nodes.length) {
-          let type = '';
-          if (key == 'fontSize') {
-            type = UpdateRichCommand.FONT_SIZE;
-          }
-          else if (key === 'letterSpacing') {
-            type = UpdateRichCommand.LETTER_SPACING;
-          }
-          else if (key === 'lineHeight') {
-            type = UpdateRichCommand.LINE_HEIGHT;
-          }
-          else if (key === 'paragraphSpacing') {
-            type = UpdateRichCommand.PARAGRAPH_SPACING;
-          }
-          listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
-            return { prev, next: nexts[i] };
-          }), type));
-          nodes = [];
-          prevs = [];
-          nexts = [];
-          this.show(this.nodes);
-        }
-      }
-      this.silence = false;
-    });
-
     listener.on([
       Listener.SELECT_NODE,
       Listener.RESIZE_NODE,
@@ -471,7 +481,7 @@ class TextPanel extends Panel {
     if (!willShow) {
       panel.style.display = 'none';
       return;
-    }
+    } console.log('show')
     this.initLocal();
     panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
@@ -566,7 +576,7 @@ class TextPanel extends Panel {
         input.placeholder = '多个';
       }
       else {
-        input.value = toPrecision(o.fontSize[0], 0).toString();
+        input.value = toPrecision(o.fontSize[0] || 0, 2).toString();
         input.placeholder = '';
       }
     }
@@ -577,7 +587,7 @@ class TextPanel extends Panel {
         input.placeholder = '多个';
       }
       else {
-        input.value = toPrecision(o.letterSpacing[0], 0).toString();
+        input.value = toPrecision(o.letterSpacing[0] || 0, 2).toString();
         input.placeholder = '';
       }
     }
@@ -590,10 +600,10 @@ class TextPanel extends Panel {
       else {
         if (o.autoLineHeight[0]) {
           input.value = '';
-          input.placeholder = toPrecision(o.lineHeight[0], 0).toString();
+          input.placeholder = toPrecision(o.lineHeight[0] || 0, 2).toString();
         }
         else {
-          input.value = toPrecision(o.lineHeight[0], 0).toString();
+          input.value = toPrecision(o.lineHeight[0] || 0, 2).toString();
           input.placeholder = '';
         }
       }
@@ -605,7 +615,7 @@ class TextPanel extends Panel {
         input.placeholder = '多个';
       }
       else {
-        input.value = o.paragraphSpacing[0].toString();
+        input.value = toPrecision(o.paragraphSpacing[0] || 0, 2).toString();
         input.placeholder = '';
       }
     }

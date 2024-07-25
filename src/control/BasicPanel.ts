@@ -88,7 +88,7 @@ class BasicPanel extends Panel {
           prevNumber.push(isXOrY ? this.data[i].x : this.data[i].y);
         }
         const prev = prevNumber[i];
-        let next = parseFloat(isXOrY ? x.value : y.value);
+        let next = parseFloat(isXOrY ? x.value : y.value) || 0;
         let d = 0;
         if (isInput) {
           d = next - prev;
@@ -181,7 +181,7 @@ class BasicPanel extends Panel {
           prevNumber.push(this.data[i].rotation);
         }
         const prev = prevNumber[i];
-        let next = parseFloat(r.value);
+        let next = parseFloat(r.value) || 0;
         let d = 0;
         if (isInput) {
           d = next - prev;
@@ -249,7 +249,7 @@ class BasicPanel extends Panel {
           node.startSizeChange();
         }
         const prev = prevNumber[i];
-        let next = parseFloat(isWOrH ? w.value : h.value);
+        let next = parseFloat(isWOrH ? w.value : h.value) || 0;
         let d = 0;
         if (isInput) {
           d = next - prev;
