@@ -303,7 +303,6 @@ export type SymbolInstanceProps = Props & {
 export type TextProps = Props & {
   content: string;
   rich?: Rich[];
-  // textBehaviour?: TEXT_BEHAVIOUR;
 };
 
 export type Rich = {
