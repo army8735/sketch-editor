@@ -583,10 +583,10 @@ export function resizeRightOperate(node: Node, computedStyle: ComputedStyle, d: 
 }
 
 export function resizeTop(node: Node, d: number) {
-  const originStyle = node.getStyle();
-  node.startSizeChange();
-  const t = resizeTopOperate(node, node.computedStyle, d);
-  if (t) {
+  if (d) {
+    const originStyle = node.getStyle();
+    node.startSizeChange();
+    const t = resizeTopOperate(node, node.computedStyle, d)!;
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
@@ -595,10 +595,10 @@ export function resizeTop(node: Node, d: number) {
 }
 
 export function resizeBottom(node: Node, d: number) {
-  const originStyle = node.getStyle();
-  node.startSizeChange();
-  const t = resizeBottomOperate(node, node.computedStyle, d);
-  if (t) {
+  if (d) {
+    const originStyle = node.getStyle();
+    node.startSizeChange();
+    const t = resizeBottomOperate(node, node.computedStyle, d)!;
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
@@ -607,10 +607,10 @@ export function resizeBottom(node: Node, d: number) {
 }
 
 export function resizeLeft(node: Node, d: number) {
-  const originStyle = node.getStyle();
-  node.startSizeChange();
-  const t = resizeLeftOperate(node, node.computedStyle, d);
-  if (t) {
+  if (d) {
+    const originStyle = node.getStyle();
+    node.startSizeChange();
+    const t = resizeLeftOperate(node, node.computedStyle, d)!;
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
@@ -619,10 +619,10 @@ export function resizeLeft(node: Node, d: number) {
 }
 
 export function resizeRight(node: Node, d: number) {
-  const originStyle = node.getStyle();
-  node.startSizeChange();
-  const t = resizeRightOperate(node, node.computedStyle, d);
-  if (t) {
+  if (d) {
+    const originStyle = node.getStyle();
+    node.startSizeChange();
+    const t = resizeRightOperate(node, node.computedStyle, d)!;
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
