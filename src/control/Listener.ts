@@ -510,7 +510,6 @@ export default class Listener extends Event {
             this.computedStyle[i] = node.getComputedStyle();
           }
           const next: ResizeStyle = {};
-          const { style } = node;
           const computedStyle = this.computedStyle[i];
           // 分4个方向上看，每个方向除了拉边还可以拉相邻2个角
           if (
@@ -518,7 +517,7 @@ export default class Listener extends Event {
             this.controlType === 'tl' ||
             this.controlType === 'tr'
           ) {
-            const t = resizeTop(node, style, computedStyle, dy2);
+            const t = resizeTop(node, computedStyle, dy2);
             if (t) {
               Object.assign(next, t);
             }
@@ -528,7 +527,7 @@ export default class Listener extends Event {
             this.controlType === 'bl' ||
             this.controlType === 'br'
           ) {
-            const t = resizeBottom(node, style, computedStyle, dy2);
+            const t = resizeBottom(node, computedStyle, dy2);
             if (t) {
               Object.assign(next, t);
             }
@@ -538,7 +537,7 @@ export default class Listener extends Event {
             this.controlType === 'tl' ||
             this.controlType === 'bl'
           ) {
-            const t = resizeLeft(node, style, computedStyle, dx2);
+            const t = resizeLeft(node, computedStyle, dx2);
             if (t) {
               Object.assign(next, t);
             }
@@ -548,7 +547,7 @@ export default class Listener extends Event {
             this.controlType === 'tr' ||
             this.controlType === 'br'
           ) {
-            const t = resizeRight(node, style, computedStyle, dx2);
+            const t = resizeRight(node, computedStyle, dx2);
             if (t) {
               Object.assign(next, t);
             }

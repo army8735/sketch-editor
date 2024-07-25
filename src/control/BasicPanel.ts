@@ -274,8 +274,8 @@ class BasicPanel extends Panel {
         }
         nextNumber.push(next);
         const t = isWOrH
-          ? resizeRight(node, node.style, computedStyle[i], d)
-          : resizeBottom(node, node.style, computedStyle[i], d);
+          ? resizeRight(node, computedStyle[i], d)
+          : resizeBottom(node, computedStyle[i], d);
         if (t) {
           node.updateStyle(t);
           nextStyle[i] = t;

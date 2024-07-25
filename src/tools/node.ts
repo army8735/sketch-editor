@@ -403,7 +403,8 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
   }
 }
 
-export function resizeTop(node: Node, style: Style, computedStyle: ComputedStyle, dy: number) {
+export function resizeTop(node: Node, computedStyle: ComputedStyle, dy: number) {
+  const style = node.style;
   if (dy) {
     const next: ResizeStyle = {};
     // top为确定值则修改它，还要看height是否是确定值也一并修改
@@ -447,7 +448,8 @@ export function resizeTop(node: Node, style: Style, computedStyle: ComputedStyle
   }
 }
 
-export function resizeBottom(node: Node, style: Style, computedStyle: ComputedStyle, dy: number) {
+export function resizeBottom(node: Node, computedStyle: ComputedStyle, dy: number) {
+  const style = node.style;
   if (dy) {
     const next: ResizeStyle = {};
     // bottom为确定值则修改它，还要看height是否是确定值也一并修改
@@ -490,7 +492,8 @@ export function resizeBottom(node: Node, style: Style, computedStyle: ComputedSt
   }
 }
 
-export function resizeLeft(node: Node, style: Style, computedStyle: ComputedStyle, dx: number) {
+export function resizeLeft(node: Node, computedStyle: ComputedStyle, dx: number) {
+  const style = node.style;
   if (dx) {
     const next: ResizeStyle = {};
     // left为确定值则修改它，还要看width是否是确定值也一并修改
@@ -534,7 +537,8 @@ export function resizeLeft(node: Node, style: Style, computedStyle: ComputedStyl
   }
 }
 
-export function resizeRight(node: Node, style: Style, computedStyle: ComputedStyle, dx: number) {
+export function resizeRight(node: Node, computedStyle: ComputedStyle, dx: number) {
+  const style = node.style;
   if (dx) {
     const next: ResizeStyle = {};
     // right为确定值则修改它，还要看width是否是确定值也一并修改，比如右固定宽度

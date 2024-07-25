@@ -13,7 +13,7 @@ module.exports = {
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
 
-      .click('.side .align-panel .right')
+      .click('#side .align-panel .right')
       .pause(20)
       .moveToElement('canvas', 20, 20)
       .mouseButtonDown(0)
