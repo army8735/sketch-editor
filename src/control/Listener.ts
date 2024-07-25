@@ -16,7 +16,7 @@ import Command from '../history/Command';
 import MoveCommand from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
-import { resizeTop, resizeBottom, resizeLeft, resizeRight } from '../tools/node';
+import { resizeTopOperate, resizeBottomOperate, resizeLeftOperate, resizeRightOperate } from '../tools/node';
 import { getNodeByPoint, getFrameNodes } from '../tools/root';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import { intersectLineLine } from '../math/isec';
@@ -517,7 +517,7 @@ export default class Listener extends Event {
             this.controlType === 'tl' ||
             this.controlType === 'tr'
           ) {
-            const t = resizeTop(node, computedStyle, dy2);
+            const t = resizeTopOperate(node, computedStyle, dy2);
             if (t) {
               Object.assign(next, t);
             }
@@ -527,7 +527,7 @@ export default class Listener extends Event {
             this.controlType === 'bl' ||
             this.controlType === 'br'
           ) {
-            const t = resizeBottom(node, computedStyle, dy2);
+            const t = resizeBottomOperate(node, computedStyle, dy2);
             if (t) {
               Object.assign(next, t);
             }
@@ -537,7 +537,7 @@ export default class Listener extends Event {
             this.controlType === 'tl' ||
             this.controlType === 'bl'
           ) {
-            const t = resizeLeft(node, computedStyle, dx2);
+            const t = resizeLeftOperate(node, computedStyle, dx2);
             if (t) {
               Object.assign(next, t);
             }
@@ -547,7 +547,7 @@ export default class Listener extends Event {
             this.controlType === 'tr' ||
             this.controlType === 'br'
           ) {
-            const t = resizeRight(node, computedStyle, dx2);
+            const t = resizeRightOperate(node, computedStyle, dx2);
             if (t) {
               Object.assign(next, t);
             }

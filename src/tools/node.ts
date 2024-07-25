@@ -403,9 +403,9 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
   }
 }
 
-export function resizeTop(node: Node, computedStyle: ComputedStyle, dy: number) {
+export function resizeTopOperate(node: Node, computedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (dy) {
+  if (d) {
     const next: ResizeStyle = {};
     // top为确定值则修改它，还要看height是否是确定值也一并修改
     if (
@@ -413,20 +413,20 @@ export function resizeTop(node: Node, computedStyle: ComputedStyle, dy: number) 
       style.top.u === StyleUnit.PERCENT
     ) {
       if (style.top.u === StyleUnit.PX) {
-        next.top = computedStyle.top + dy;
+        next.top = computedStyle.top + d;
       }
       else {
         next.top =
-          ((computedStyle.top + dy) * 100) / node.parent!.height + '%';
+          ((computedStyle.top + d) * 100) / node.parent!.height + '%';
       }
       if (style.height.u === StyleUnit.PX ||
         // 只有top定位的自动高度文本
         style.height.u === StyleUnit.AUTO && style.bottom.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height - dy;
+        next.height = computedStyle.height - d;
       }
       else if (style.height.u === StyleUnit.PERCENT) {
         next.height =
-          ((computedStyle.height - dy) * 100) / node.parent!.height + '%';
+          ((computedStyle.height - d) * 100) / node.parent!.height + '%';
       }
     }
     // top为自动，高度则为确定值修改，根据bottom定位
@@ -437,20 +437,20 @@ export function resizeTop(node: Node, computedStyle: ComputedStyle, dy: number) 
       style.height.u === StyleUnit.AUTO
     ) {
       if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height - dy;
+        next.height = computedStyle.height - d;
       }
       else {
         next.height =
-          ((computedStyle.height - dy) * 100) / node.parent!.height + '%';
+          ((computedStyle.height - d) * 100) / node.parent!.height + '%';
       }
     }
     return next;
   }
 }
 
-export function resizeBottom(node: Node, computedStyle: ComputedStyle, dy: number) {
+export function resizeBottomOperate(node: Node, computedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (dy) {
+  if (d) {
     const next: ResizeStyle = {};
     // bottom为确定值则修改它，还要看height是否是确定值也一并修改
     if (
@@ -458,20 +458,20 @@ export function resizeBottom(node: Node, computedStyle: ComputedStyle, dy: numbe
       style.bottom.u === StyleUnit.PERCENT
     ) {
       if (style.bottom.u === StyleUnit.PX) {
-        next.bottom = computedStyle.bottom - dy;
+        next.bottom = computedStyle.bottom - d;
       }
       else {
         next.bottom =
-          ((computedStyle.bottom - dy) * 100) / node.parent!.height + '%';
+          ((computedStyle.bottom - d) * 100) / node.parent!.height + '%';
       }
       if (style.height.u === StyleUnit.PX ||
         // 只有bottom定位的自动高度文本
         style.height.u === StyleUnit.AUTO && style.top.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height + dy;
+        next.height = computedStyle.height + d;
       }
       else if (style.height.u === StyleUnit.PERCENT) {
         next.height =
-          ((computedStyle.height + dy) * 100) / node.parent!.height + '%';
+          ((computedStyle.height + d) * 100) / node.parent!.height + '%';
       }
     }
     // bottom为自动，高度则为确定值修改，根据top定位
@@ -481,20 +481,20 @@ export function resizeBottom(node: Node, computedStyle: ComputedStyle, dy: numbe
       style.height.u === StyleUnit.AUTO
     ) {
       if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height + dy;
+        next.height = computedStyle.height + d;
       }
       else {
         next.height =
-          ((computedStyle.height + dy) * 100) / node.parent!.height + '%';
+          ((computedStyle.height + d) * 100) / node.parent!.height + '%';
       }
     }
     return next;
   }
 }
 
-export function resizeLeft(node: Node, computedStyle: ComputedStyle, dx: number) {
+export function resizeLeftOperate(node: Node, computedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (dx) {
+  if (d) {
     const next: ResizeStyle = {};
     // left为确定值则修改它，还要看width是否是确定值也一并修改
     if (
@@ -502,20 +502,20 @@ export function resizeLeft(node: Node, computedStyle: ComputedStyle, dx: number)
       style.left.u === StyleUnit.PERCENT
     ) {
       if (style.left.u === StyleUnit.PX) {
-        next.left = computedStyle.left + dx;
+        next.left = computedStyle.left + d;
       }
       else {
         next.left =
-          ((computedStyle.left + dx) * 100) / node.parent!.width + '%';
+          ((computedStyle.left + d) * 100) / node.parent!.width + '%';
       }
       if (style.width.u === StyleUnit.PX ||
         // 只有left定位的自动宽度文本
         style.width.u === StyleUnit.AUTO && style.right.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width - dx;
+        next.width = computedStyle.width - d;
       }
       else if (style.width.u === StyleUnit.PERCENT) {
         next.width =
-          ((computedStyle.width - dx) * 100) / node.parent!.width + '%';
+          ((computedStyle.width - d) * 100) / node.parent!.width + '%';
       }
     }
     // left为自动，宽度则为确定值修改，根据right定位
@@ -526,20 +526,20 @@ export function resizeLeft(node: Node, computedStyle: ComputedStyle, dx: number)
       style.width.u === StyleUnit.AUTO
     ) {
       if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width - dx;
+        next.width = computedStyle.width - d;
       }
       else {
         next.width =
-          ((computedStyle.width - dx) * 100) / node.parent!.width + '%';
+          ((computedStyle.width - d) * 100) / node.parent!.width + '%';
       }
     }
     return next;
   }
 }
 
-export function resizeRight(node: Node, computedStyle: ComputedStyle, dx: number) {
+export function resizeRightOperate(node: Node, computedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (dx) {
+  if (d) {
     const next: ResizeStyle = {};
     // right为确定值则修改它，还要看width是否是确定值也一并修改，比如右固定宽度
     if (
@@ -547,20 +547,20 @@ export function resizeRight(node: Node, computedStyle: ComputedStyle, dx: number
       style.right.u === StyleUnit.PERCENT
     ) {
       if (style.right.u === StyleUnit.PX) {
-        next.right = computedStyle.right - dx;
+        next.right = computedStyle.right - d;
       }
       else {
         next.right =
-          ((computedStyle.right - dx) * 100) / node.parent!.width + '%';
+          ((computedStyle.right - d) * 100) / node.parent!.width + '%';
       }
       if (style.width.u === StyleUnit.PX ||
         // 只有right定位的自动宽度文本
         style.width.u === StyleUnit.AUTO && style.left.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width + dx;
+        next.width = computedStyle.width + d;
       }
       else if (style.width.u === StyleUnit.PERCENT) {
         next.width =
-          ((computedStyle.width + dx) * 100) / node.parent!.width + '%';
+          ((computedStyle.width + d) * 100) / node.parent!.width + '%';
       }
     }
     // right为自动，宽度则为确定值修改，根据left定位
@@ -571,14 +571,54 @@ export function resizeRight(node: Node, computedStyle: ComputedStyle, dx: number
       style.width.u === StyleUnit.AUTO
     ) {
       if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width + dx;
+        next.width = computedStyle.width + d;
       }
       else {
         next.width =
-          ((computedStyle.width + dx) * 100) / node.parent!.width + '%';
+          ((computedStyle.width + d) * 100) / node.parent!.width + '%';
       }
     }
     return next;
+  }
+}
+
+export function resizeTop(node: Node, d: number) {
+  const originStyle = node.getStyle();
+  node.startSizeChange();
+  const t = resizeTopOperate(node, node.computedStyle, d);
+  if (t) {
+    node.updateStyle(t);
+    return node.endSizeChange(originStyle, t);
+  }
+}
+
+export function resizeBottom(node: Node, d: number) {
+  const originStyle = node.getStyle();
+  node.startSizeChange();
+  const t = resizeBottomOperate(node, node.computedStyle, d);
+  if (t) {
+    node.updateStyle(t);
+    return node.endSizeChange(originStyle, t);
+  }
+}
+
+export function resizeLeft(node: Node, d: number) {
+  const originStyle = node.getStyle();
+  node.startSizeChange();
+  const t = resizeLeftOperate(node, node.computedStyle, d);
+  if (t) {
+    node.updateStyle(t);
+    return node.endSizeChange(originStyle, t);
+  }
+}
+
+export function resizeRight(node: Node, d: number) {
+  const originStyle = node.getStyle();
+  node.startSizeChange();
+  const t = resizeRightOperate(node, node.computedStyle, d);
+  if (t) {
+    node.updateStyle(t);
+    return node.endSizeChange(originStyle, t);
   }
 }
 
@@ -687,6 +727,10 @@ export default {
   migrate,
   sortTempIndex,
   getWholeBoundingClientRect,
+  resizeTopOperate,
+  resizeBottomOperate,
+  resizeLeftOperate,
+  resizeRightOperate,
   resizeTop,
   resizeBottom,
   resizeLeft,

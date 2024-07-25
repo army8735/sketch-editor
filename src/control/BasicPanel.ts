@@ -4,7 +4,7 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getBasicInfo, resizeBottom, resizeRight } from '../tools/node';
+import { getBasicInfo, resizeBottomOperate, resizeRightOperate } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
 import Panel from './Panel';
@@ -274,8 +274,8 @@ class BasicPanel extends Panel {
         }
         nextNumber.push(next);
         const t = isWOrH
-          ? resizeRight(node, computedStyle[i], d)
-          : resizeBottom(node, computedStyle[i], d);
+          ? resizeRightOperate(node, computedStyle[i], d)
+          : resizeBottomOperate(node, computedStyle[i], d);
         if (t) {
           node.updateStyle(t);
           nextStyle[i] = t;
