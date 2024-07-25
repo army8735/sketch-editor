@@ -969,7 +969,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
   }
   const lhr =
     (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
-      .lhr || 1.2;
+      .lhr;
   return style.fontSize * lhr;
 }
 

@@ -2,9 +2,9 @@ import { calPoint, calRectPoints, identity, multiply } from '../math/matrix';
 import Container from '../node/Container';
 import Group from '../node/Group';
 import Node from '../node/Node';
-import { ComputedStyle, Style, StyleUnit } from '../style/define';
+import { ComputedStyle, StyleUnit } from '../style/define';
 import { clone } from '../util/util';
-import { JStyle, PageProps, Point } from '../format';
+import { PageProps, Point } from '../format';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
 import { ResizeStyle } from '../history/type';
@@ -630,6 +630,19 @@ export function resizeRight(node: Node, d: number) {
   }
 }
 
+export function move(node: Node, dx: number, dy: number) {
+  const originStyle = node.getStyle();
+  if (dx || dy) {
+    node.updateStyle({
+      translateX: node.computedStyle.translateX + dx,
+      translateY: node.computedStyle.translateY + dy,
+    });
+    const res = node.endPosChange(originStyle, dx, dy);
+    node.checkPosSizeUpward();
+    return res;
+  }
+}
+
 export function getBasicInfo(node: Node) {
   const list: Node[] = [node];
   const top = node.artBoard || node.page;
@@ -743,5 +756,6 @@ export default {
   resizeBottom,
   resizeLeft,
   resizeRight,
+  move,
   getBasicInfo,
 };
