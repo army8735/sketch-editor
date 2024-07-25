@@ -48,7 +48,7 @@ const o: any = {
   hasRegister(fontFamily: string) {
     return this.data.hasOwnProperty(fontFamily);
   },
-  async registerLocalFonts(fonts: any) {
+  async registerLocalFonts(fonts: any[]) {
     let cacheInfo: any = {};
     if (typeof localStorage !== 'undefined') {
       cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
@@ -57,45 +57,43 @@ const o: any = {
     if (!cacheInfo.version || cacheInfo.version < VERSION) {
       data = {};
     }
-    for (let k in fonts) {
-      if (fonts.hasOwnProperty(k)) {
-        const font = fonts[k];
-        const postscriptName = font.postscriptName.toLowerCase();
-        const family = font.family;
-        const familyL = family.toLowerCase();
-        const style = font.style;
-        // localStorage存的是this.info
-        if (data.hasOwnProperty(familyL)) {
-          const o: any = data[familyL];
-          this.info[familyL] = this.info[familyL] || {
-            name: o.name,
-            family: family, // 保持大小写
-            lhr: o.lhr,
-            car: o.car,
-            blr: o.blr,
-            lgr: o.lgr,
-            list: [],
-          };
-        }
-        // 没有cache则用opentype读取
-        if (!this.info.hasOwnProperty(familyL)) {
-          const o: any = (this.info[familyL] = {});
-          const blob = await font.blob();
-          const arrayBuffer = await blob.arrayBuffer();
-          const f: any = opentype.parse(arrayBuffer);
-          if (f && f.name) {
-            o.name =
-              f.name.preferredFamily?.zh ||
-              f.name.preferredFamily?.en ||
-              f.name.fontFamily?.zh;
-          }
-          o.name = o.name || family; // 中文名字
-          o.family = family;
-          const r = this._cal(familyL, f);
-          Object.assign(o, r);
-        }
-        this._register(familyL, style, postscriptName, true);
+    for (let i = 0, len = fonts.length; i < len; i++) {
+      const font = fonts[i];
+      const postscriptName = font.postscriptName.toLowerCase();
+      const family = font.family;
+      const familyL = family.toLowerCase();
+      const style = font.style;
+      // localStorage存的是this.info
+      if (data.hasOwnProperty(familyL)) {
+        const o: any = data[familyL];
+        this.info[familyL] = this.info[familyL] || {
+          name: o.name,
+          family: family, // 保持大小写
+          lhr: o.lhr,
+          car: o.car,
+          blr: o.blr,
+          lgr: o.lgr,
+          list: [],
+        };
       }
+      // 没有cache则用opentype读取
+      if (!this.info.hasOwnProperty(familyL)) {
+        const o: any = (this.info[familyL] = {});
+        const blob = await font.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const f: any = opentype.parse(arrayBuffer);
+        if (f && f.name) {
+          o.name =
+            f.name.preferredFamily?.zh ||
+            f.name.preferredFamily?.en ||
+            f.name.fontFamily?.zh;
+        }
+        o.name = o.name || family; // 中文名字
+        o.family = family;
+        const r = this._cal(familyL, f);
+        Object.assign(o, r);
+      }
+      this._register(familyL, style, postscriptName, true);
     }
     this.updateLocalStorage();
   },
