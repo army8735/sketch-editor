@@ -61,7 +61,7 @@ module.exports = {
       .assert.value('#side .text-panel .lh input', '40')
       .assert.attributeEquals('#side .text-panel .lh input', 'placeholder', '')
 
-      .updateValue('#side .text-panel .lh input', ['', browser.Keys.ENTER])
+      .updateValue('#side .text-panel .lh input', ['0', browser.Keys.ENTER])
       .updateValue('#side .text-panel .fs input', ['20', browser.Keys.ENTER])
       .click('#button3')
       .assert.value('#base64', '[7,[{"location":0,"length":7,"fontFamily":"Helvetica","fontSize":20,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
