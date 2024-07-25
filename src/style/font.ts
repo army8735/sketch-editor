@@ -1,6 +1,6 @@
 import opentype from '../util/opentype';
 
-const arial = {
+const arial: FontData = {
   name: 'Arial',
   family: 'Arial',
   lhr: 1.14990234375, // 默认line-height ratio，(67+1854+434)/2048
@@ -8,25 +8,31 @@ const arial = {
   blr: 0.9052734375, // base-line ratio，1854/2048
   // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048，去掉x-height的一半
   lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
+  list: [
+    {
+      style: 'Regular',
+      postscriptName: 'arial',
+      loaded: true,
+    },
+  ],
 };
 
 const KEY_INFO = 'localFonts'; // 解析过的存本地缓存，解析时间还是有些成本
 const VERSION = 1;
 
-export type fontData = {
+export type FontData = {
   family: string; // 保持大小写
   name: string; // 优先中文
   lhr: number;
   blr: number;
+  car: number;
   lgr: number;
-  list: [
-    {
-      style: string;
-      postscriptName: string;
-      loaded: boolean;
-      url?: string;
-    },
-  ];
+  list: {
+    style: string;
+    postscriptName: string;
+    loaded: boolean;
+    url?: string;
+  }[];
 };
 
 const o: any = {
@@ -184,10 +190,10 @@ const o: any = {
       data: (this.data[familyL] = this.data[postscriptNameL] = info),
     }; // 同个字体族不同postscriptName指向一个引用
   },
-  registerData(data: fontData) {
+  registerData(data: FontData) {
     const familyL = data.family.toLowerCase();
     if (!this.info.hasOwnProperty(familyL)) {
-      this.info[familyL] = data;
+      this.info[familyL] = this.data[familyL] = data;
     }
     if (!this.data.hasOwnProperty(familyL)) {
       data.list.forEach((item) => {

@@ -1,8 +1,9 @@
 import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
-import { StyleNumValue, StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
+import { ComputedStyle, StyleNumValue, StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import fontInfo from '../style/font';
 import { ResizeStyle } from '../history/type';
+import { Rich } from '../format';
 
 export enum TEXT_BEHAVIOUR {
   AUTO = 0,
@@ -33,7 +34,8 @@ function putData(
   paragraphSpacing: number[],
   textAlign: TEXT_ALIGN[],
   textBehaviour: TEXT_BEHAVIOUR[],
-  obj: any,
+  obj: Rich | Pick<ComputedStyle, 'fontFamily' | 'color' | 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing' | 'textAlign'>,
+  isRich = false,
 ) {
   const {
     fontFamily: ff,
@@ -70,7 +72,7 @@ function putData(
   if (!letterSpacing.includes(ls)) {
     letterSpacing.push(ls);
   }
-  const auto = lh.u === StyleUnit.AUTO;
+  const auto = isRich ? lh2 === 0 : lh.u === StyleUnit.AUTO;
   if (!autoLineHeight.includes(auto)) {
     autoLineHeight.push(auto);
   }
@@ -146,6 +148,7 @@ export function getData(nodes: Text[]) {
           textAlign,
           textBehaviour,
           rich[i],
+          true,
         );
       }
       continue;
@@ -257,6 +260,7 @@ export function getEditData(node: Text) {
       textAlign,
       textBehaviour,
       richList[i],
+      true,
     );
   }
   const { fontWeight, fontWeightList } = getWeight(fontFamily);

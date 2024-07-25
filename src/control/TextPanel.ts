@@ -15,6 +15,9 @@ import Panel from './Panel';
 import { ModifyRichData, VerticalAlignData } from '../history/type';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
 import { Rich } from '../format';
+import fontInfo from '../style/font';
+import font from '../style/font';
+import inject from '../util/inject';
 
 const html = `
   <h4 class="panel-title">字符</h4>
@@ -152,7 +155,18 @@ class TextPanel extends Panel {
             }
           }
           node.rich.forEach((rich) => {
-            const p = rich[key];
+            let p = rich[key];
+            // 0表示auto，需从fontFamily何fontSize自动计算
+            if (!p && key === 'lineHeight') {
+              const data = fontInfo.data[rich.fontFamily.toLowerCase()];
+              if (data) {
+                p = rich.fontSize * data.lhr;
+              }
+              // 兜底防止没有
+              else {
+                p = rich.fontSize * (font.data[inject.defaultFontFamily] || font.data.arial).lhr;
+              }
+            }
             let n = p + d;
             if (key === 'fontSize' || key === 'lineHeight') {
               n = Math.max(0, n);
@@ -481,7 +495,7 @@ class TextPanel extends Panel {
     if (!willShow) {
       panel.style.display = 'none';
       return;
-    } console.log('show')
+    }
     this.initLocal();
     panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
