@@ -2,8 +2,7 @@ import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
 import { StyleNumValue, StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import fontInfo from '../style/font';
-import { JStyle } from '../format';
-import { ResizeData, ResizeStyle } from '../history/type';
+import { ResizeStyle } from '../history/type';
 
 export enum TEXT_BEHAVIOUR {
   AUTO = 0,

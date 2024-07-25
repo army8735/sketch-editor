@@ -322,6 +322,7 @@ class BasicPanel extends Panel {
     });
 
     fh.addEventListener('click', (e) => {
+      this.silence = true;
       if (fh.classList.contains('active')) {
         fh.classList.remove('active');
       }
@@ -349,9 +350,11 @@ class BasicPanel extends Panel {
         listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_H_NODE, nodes.slice(0));
       }
+      this.silence = false;
     });
 
     fv.addEventListener('click', (e) => {
+      this.silence = true;
       if (fv.classList.contains('active')) {
         fv.classList.remove('active');
       }
@@ -379,9 +382,17 @@ class BasicPanel extends Panel {
         listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_V_NODE, nodes.slice(0));
       }
+      this.silence = false;
     });
 
-    listener.on([Listener.SELECT_NODE, Listener.MOVE_NODE, Listener.RESIZE_NODE, Listener.ROTATE_NODE], (nodes: Node[]) => {
+    listener.on([
+      Listener.SELECT_NODE,
+      Listener.MOVE_NODE,
+      Listener.RESIZE_NODE,
+      Listener.ROTATE_NODE,
+      Listener.FLIP_H_NODE,
+      Listener.FLIP_V_NODE,
+    ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;

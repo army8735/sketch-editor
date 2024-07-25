@@ -114,6 +114,7 @@ class TextPanel extends Panel {
     };
 
     panel.addEventListener('click', (e) => {
+      this.silence = true;
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
@@ -121,6 +122,7 @@ class TextPanel extends Panel {
         picker.hide();
         if (picker.isShowFrom('textPanel')) {
           pickCallback();
+          this.silence = false;
           return;
         }
         const p = picker.show(el, 'textPanel', pickCallback, true);
@@ -233,10 +235,17 @@ class TextPanel extends Panel {
         dom.querySelector('.va .cur')?.classList.remove('cur');
         el.classList.add('cur');
       }
+      this.silence = false;
     });
 
     let key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing';
     panel.addEventListener('input', (e) => {
+      const el = e.target as HTMLElement;
+      const tagName = el.tagName.toUpperCase();
+      // Select也会触发忽略
+      if (tagName !== 'INPUT') {
+        return;
+      }
       pickCallback();
       this.silence = true;
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
@@ -325,6 +334,7 @@ class TextPanel extends Panel {
 
     // 字体和字重是Select会触发，字号等Input也会触发，需要区分
     panel.addEventListener('change', (e) => {
+      this.silence = true;
       const el = e.target as HTMLElement;
       const tagName = el.tagName.toUpperCase();
       if (tagName === 'SELECT') {
@@ -367,6 +377,8 @@ class TextPanel extends Panel {
           nexts = [];
         }
       }
+      this.show(this.nodes);
+      this.silence = false;
     });
 
     listener.on([
@@ -409,7 +421,7 @@ class TextPanel extends Panel {
     select.innerHTML = s;
   }
 
-  show(nodes: Node[]) {
+  show(nodes: Node[]) { console.log(111)
     const panel = this.panel;
     let willShow = false;
     for (let i = 0, len = nodes.length; i < len; i++) {
