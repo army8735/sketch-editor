@@ -4,7 +4,7 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import { getData, TEXT_BEHAVIOUR, updateBehaviour } from '../tools/text';
+import { getData, getWeight, TEXT_BEHAVIOUR, updateBehaviour } from '../tools/text';
 import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
@@ -19,14 +19,14 @@ import { Rich } from '../format';
 const html = `
   <h4 class="panel-title">字符</h4>
   <div class="line ff">
-    <select>
+    <select class="ff">
       <option value="arial">Arial</option>
     </select>
     <span class="multi">多种字体</span>
   </div>
   <div class="line wc">
     <div class="weight">
-      <select></select>
+      <select class="w"></select>
       <span class="multi">多种字重</span>
     </div>
     <div class="color">
@@ -335,24 +335,61 @@ class TextPanel extends Panel {
     // 字体和字重是Select会触发，字号等Input也会触发，需要区分
     panel.addEventListener('change', (e) => {
       this.silence = true;
-      const el = e.target as HTMLElement;
+      const el = e.target as (HTMLSelectElement | HTMLInputElement);
       const tagName = el.tagName.toUpperCase();
+      const classList = el.classList;
       if (tagName === 'SELECT') {
-        const value = (el as HTMLSelectElement).value;
+        const value = el.value;
         const nodes = this.nodes.slice(0);
-        const data: ModifyRichData[] = [];
-        nodes.forEach(node => {
-          const prev = node.getRich();
-          node.updateRichStyle({
-            location: 0,
-            length: node._content.length,
-            fontFamily: value,
+        // 字体
+        if (classList.contains('ff')) {
+          const { fontWeight, fontWeightList } = getWeight([value]);
+          const select = panel.querySelector('.wc select') as HTMLSelectElement;
+          let s = '';
+          fontWeightList.forEach(item => {
+            s += `<option value="${item.value}">${item.label}</option>`;
           });
-          data.push({ prev, next: node.getRich() });
-        });
-        listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
-        listener.select.updateSelect(nodes);
-        listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+          select.innerHTML = s;
+          // 暂时切换后统一Regular
+          const list = select.querySelectorAll('option');
+          for (let i = 0, len = list.length; i < len; i++) {
+            const option = list[i];
+            if (option.innerHTML === fontWeight[0]) {
+              option.selected = true;
+              break;
+            }
+          }
+          let ff = select.value;
+          const data: ModifyRichData[] = [];
+          nodes.forEach(node => {
+            const prev = node.getRich();
+            node.updateRichStyle({
+              location: 0,
+              length: node._content.length,
+              fontFamily: ff,
+            });
+            data.push({ prev, next: node.getRich() });
+          });
+          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+          listener.select.updateSelect(nodes);
+          listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+        }
+        // 字重
+        else if (classList.contains('w')) {
+          const data: ModifyRichData[] = [];
+          nodes.forEach(node => {
+            const prev = node.getRich();
+            node.updateRichStyle({
+              location: 0,
+              length: node._content.length,
+              fontFamily: value,
+            });
+            data.push({ prev, next: node.getRich() });
+          });
+          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+          listener.select.updateSelect(nodes);
+          listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+        }
       }
       else if (tagName === 'INPUT') {
         if (nodes.length) {
@@ -375,9 +412,9 @@ class TextPanel extends Panel {
           nodes = [];
           prevs = [];
           nexts = [];
+          this.show(this.nodes);
         }
       }
-      this.show(this.nodes);
       this.silence = false;
     });
 
@@ -421,7 +458,7 @@ class TextPanel extends Panel {
     select.innerHTML = s;
   }
 
-  show(nodes: Node[]) { console.log(111)
+  show(nodes: Node[]) {
     const panel = this.panel;
     let willShow = false;
     for (let i = 0, len = nodes.length; i < len; i++) {

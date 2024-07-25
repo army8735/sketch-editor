@@ -192,7 +192,7 @@ export function getData(nodes: Text[]) {
   };
 }
 
-function getWeight(fontFamily: string[]) {
+export function getWeight(fontFamily: string[]) {
   let fontWeight: string[] = [];
   const fontWeightList: Array<{ label: string; value: string }> = [];
   fontFamily.forEach(ff => {
@@ -409,4 +409,5 @@ export default {
   getData,
   getEditData,
   updateBehaviour,
+  getWeight,
 };
