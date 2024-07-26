@@ -2,21 +2,31 @@ let canvas;
 let input = document.querySelector('#base64');
 sketchEditor.gl.ca.preserveDrawingBuffer = true;
 
-// sketchEditor.style.font.registerData({
-//   family: 'Helvetica',
-//   name: 'Helvetica',
-//   lhr: 1.14990234375,
-//   car: 1.14990234375,
-//   blr: 0.919921875,
-//   lgr: 0,
-//   list: [
-//     {
-//       style: 'Regular',
-//       postscriptName: 'helvetica',
-//       loaded: true,
-//     },
-//   ],
-// });
+sketchEditor.style.font.registerData({
+  family: 'Helvetica',
+  name: 'Helvetica',
+  lhr: 1.14990234375,
+  car: 1.14990234375,
+  blr: 0.919921875,
+  lgr: 0,
+  list: [
+    {
+      style: 'Regular',
+      postscriptName: 'helvetica',
+      loaded: true,
+    },
+    {
+      style: 'Bold',
+      postscriptName: 'helvetica-bold',
+      loaded: true,
+    },
+    {
+      style: 'Light',
+      postscriptName: 'helvetica-light',
+      loaded: true,
+    },
+  ],
+});
 
 let count = 0;
 let root;

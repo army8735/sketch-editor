@@ -257,13 +257,13 @@ class TextPanel extends Panel {
 
     const onSelectChange = (e: Event, key: 'fontFamily' | 'fontWeight') => {
       this.silence = true;
-      const el = e.target as HTMLSelectElement;
-      const value = el.value;
+      const select = e.target as HTMLSelectElement;
+      const value = select.value;
       const nodes = this.nodes.slice(0);
       if (key === 'fontFamily') {
         const multi = panel.querySelector('.ff .multi') as HTMLElement;
         multi.style.display = 'none';
-        const fontWeightList = getFontWeightList(value); console.log(fontWeightList)
+        const fontWeightList = getFontWeightList(value);
         const select = panel.querySelector('.wc select') as HTMLSelectElement;
         let s = '';
         fontWeightList.forEach((item) => {
@@ -297,6 +297,10 @@ class TextPanel extends Panel {
       else if (key === 'fontWeight') {
         const multi = panel.querySelector('.wc .multi') as HTMLElement;
         multi.style.display = 'none';
+        const option = select.querySelector(':disabled') as HTMLOptionElement;
+        if (option) {
+          option.remove();
+        }
         const data: ModifyRichData[] = [];
         nodes.forEach(node => {
           const prev = node.getRich();
@@ -512,9 +516,9 @@ class TextPanel extends Panel {
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       // 移除上次可能遗留的无效字体展示
-      const invalid = select.querySelector(':disabled') as HTMLOptionElement;
-      if (invalid) {
-        invalid.remove();
+      const option = select.querySelector(':disabled') as HTMLOptionElement;
+      if (option) {
+        option.remove();
       }
       select.classList.remove('invalid');
       const multi = panel.querySelector('.ff .multi') as HTMLElement;
@@ -546,6 +550,11 @@ class TextPanel extends Panel {
     }
     {
       const select = panel.querySelector('.wc select') as HTMLSelectElement;
+      // 移除上次可能遗留的无效字重展示
+      const option = select.querySelector(':disabled') as HTMLOptionElement;
+      if (option) {
+        option.remove();
+      }
       let s = '';
       o.fontWeightList.forEach(item => {
         s += `<option value="${item.value}">${item.label}</option>`;
@@ -554,11 +563,11 @@ class TextPanel extends Panel {
       const multi = panel.querySelector('.wc .multi') as HTMLElement;
       if (o.fontWeight.length > 1) {
         multi.style.display = 'block';
-        // select.disabled = true;
+        const option = `<option value="" selected="selected" disabled>多种字体</option>`;
+        select.innerHTML += option;
       }
       else {
         multi.style.display = 'none';
-        // select.disabled = false;
         const list = select.querySelectorAll('option');
         for (let i = 0, len = list.length; i < len; i++) {
           const option = list[i];
@@ -568,6 +577,7 @@ class TextPanel extends Panel {
           }
         }
       }
+      select.disabled = !(o.valid.length === 1 && o.valid[0]);
     }
     {
       const color = panel.querySelector('.color b') as HTMLElement;
