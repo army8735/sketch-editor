@@ -1089,6 +1089,10 @@ export default class Listener extends Event {
     }
     // z，undo/redo
     else if (e.keyCode === 90) {
+      // const target = e.target as HTMLElement;
+      // if (target && target.tagName.toUpperCase() === 'INPUT') {
+      //   return;
+      // }
       let c: Command | undefined;
       if (this.metaKey && this.shiftKey) {
         c = this.history.redo();
