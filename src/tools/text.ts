@@ -15,7 +15,7 @@ export const SIZE_LIST = [
   6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 21, 24, 36, 48, 60, 72,
 ];
 
-function putData(
+function putInfo(
   left: StyleNumValue,
   right: StyleNumValue,
   top: StyleNumValue,
@@ -24,10 +24,12 @@ function putData(
   height: StyleNumValue,
   lh: StyleNumValue,
   valid: boolean[],
+  postscriptName: string[],
   fontFamily: string[],
   name: string[],
   color: string[],
   fontSize: number[],
+  fontWeight: string[],
   letterSpacing: number[],
   lineHeight: number[],
   autoLineHeight: boolean[],
@@ -38,7 +40,7 @@ function putData(
   isRich = false,
 ) {
   const {
-    fontFamily: ff,
+    fontFamily: ff, // 其实是postscriptName
     color: c,
     fontSize: fs,
     letterSpacing: ls,
@@ -46,21 +48,39 @@ function putData(
     paragraphSpacing: ps,
     textAlign: ta,
   } = obj;
-  const ff2 = ff.toLowerCase();
-  const o = fontInfo.data[ff2];
-  if (o) {
-    if (!fontFamily.includes(ff2)) {
-      fontFamily.push(ff2);
-      name.push(o.name);
+  const psL = ff.toLowerCase();
+  if (!postscriptName.includes(psL)) {
+    postscriptName.push(psL);
+  }
+  const data = fontInfo.data[psL];
+  if (data) {
+    // 一般都是postscriptName，但可能会出现family，统一换成字体族的名字，去除style后缀
+    if (!fontFamily.includes(data.family)) {
+      fontFamily.push(data.family);
+      name.push(data.name);
     }
-    valid.push(true);
+    if (!valid.includes(true)) {
+      valid.push(true);
+    }
+    const list = data.list;
+    for (let i = 0, len = list.length; i < len; i++) {
+      const item = list[i];
+      if (item.postscriptName === psL) {
+        if (!fontWeight.includes(item.style)) {
+          fontWeight.push(item.style);
+        }
+        break;
+      }
+    }
   }
   else {
-    if (!fontFamily.includes(ff2)) {
-      fontFamily.push(ff2);
-      name.push(ff2);
+    if (!fontFamily.includes(psL)) {
+      fontFamily.push(psL);
+      name.push(psL);
     }
-    valid.push(false);
+    if (!valid.includes(false)) {
+      valid.push(false);
+    }
   }
   const cl = color2hexStr(c);
   if (!color.includes(cl)) {
@@ -76,8 +96,11 @@ function putData(
   if (!autoLineHeight.includes(auto)) {
     autoLineHeight.push(auto);
   }
-  if (auto && o) {
-    lineHeight.push(fs * o.lhr);
+  if (auto && data) {
+    const n = fs * data.lhr;
+    if (!lineHeight.includes(n)) {
+      lineHeight.push(n);
+    }
   }
   else if (!lineHeight.includes(lh2)) {
     lineHeight.push(lh2);
@@ -88,6 +111,20 @@ function putData(
   if (!textAlign.includes(ta)) {
     textAlign.push(ta);
   }
+  const tb = getTextBehaviour(left, right, top, bottom, width, height);
+  if (!textBehaviour.includes(tb)) {
+    textBehaviour.push(tb);
+  }
+}
+
+export function getTextBehaviour(
+  left: StyleNumValue,
+  right: StyleNumValue,
+  top: StyleNumValue,
+  bottom: StyleNumValue,
+  width: StyleNumValue,
+  height: StyleNumValue,
+) {
   let tb = TEXT_BEHAVIOUR.AUTO;
   const autoW = width.u === StyleUnit.AUTO
     && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
@@ -101,13 +138,12 @@ function putData(
   else {
     tb = TEXT_BEHAVIOUR.FIXED_W_H;
   }
-  if (!textBehaviour.includes(tb)) {
-    textBehaviour.push(tb);
-  }
+  return tb;
 }
 
-export function getData(nodes: Text[]) {
+export function getTextInfo(nodes: Text[]) {
   const valid: boolean[] = [];
+  const postscriptName: string[] = [];
   const fontFamily: string[] = [];
   const name: string[] = [];
   const color: string[] = [];
@@ -119,6 +155,7 @@ export function getData(nodes: Text[]) {
   const textAlign: TEXT_ALIGN[] = [];
   const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [];
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
+  const fontWeight: string[] = [];
   for (let i = 0, len = nodes.length; i < len; i++) {
     const { rich, style, computedStyle } = nodes[i];
     if (!textVerticalAlign.includes(computedStyle.textVerticalAlign)) {
@@ -128,7 +165,7 @@ export function getData(nodes: Text[]) {
     // 一般都是有rich，除非手动构造数据
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
-        putData(
+        putInfo(
           left,
           right,
           top,
@@ -137,10 +174,12 @@ export function getData(nodes: Text[]) {
           height,
           lh,
           valid,
+          postscriptName,
           fontFamily,
           name,
           color,
           fontSize,
+          fontWeight,
           letterSpacing,
           lineHeight,
           autoLineHeight,
@@ -154,7 +193,7 @@ export function getData(nodes: Text[]) {
       continue;
     }
     // 非富文本
-    putData(
+    putInfo(
       left,
       right,
       top,
@@ -163,10 +202,12 @@ export function getData(nodes: Text[]) {
       height,
       lh,
       valid,
+      postscriptName,
       fontFamily,
       name,
       color,
       fontSize,
+      fontWeight,
       letterSpacing,
       lineHeight,
       autoLineHeight,
@@ -176,9 +217,14 @@ export function getData(nodes: Text[]) {
       computedStyle,
     );
   }
-  const { fontWeight, fontWeightList } = getWeight(fontFamily);
+  // const { fontWeight, fontWeightList } = getWeight(fontFamily);
+  let fontWeightList: { label: string, value: string  }[] = [];
+  if (fontFamily.length === 1) {
+    fontWeightList = getFontWeightList(fontFamily[0]);
+  }
   return {
     valid,
+    postscriptName,
     fontFamily,
     name,
     fontWeight,
@@ -195,94 +241,85 @@ export function getData(nodes: Text[]) {
   };
 }
 
-export function getWeight(fontFamily: string[]) {
-  let fontWeight: string[] = [];
-  const fontWeightList: Array<{ label: string; value: string }> = [];
-  fontFamily.forEach(ff => {
-    const data = fontInfo.data[ff.toLowerCase()];
-    if (data) {
-      const list = data.list;
-      for (let i = 0, len = list.length; i < len; i++) {
-        const item = list[i];
-        fontWeightList.push({ label: item.style, value: item.postscriptName });
-        if (item.postscriptName === ff.toLowerCase()) {
-          if (!fontWeight.includes(item.style)) {
-            fontWeight.push(item.style);
-          }
-        }
-      }
-    }
-  });
-  if (!fontWeight.length) {
-    fontWeight.push('Regular'); // 不支持的字体默认Regular
+// 传入postscriptName，也可以是fontFamily，同一字体族不同weight的
+export function getFontWeightList(postscriptName: string): { label: string, value: string }[] {
+  const psL = postscriptName.toLowerCase();
+  const data = fontInfo.data[psL];
+  if (data) {
+    return data.list.map((item: any) => {
+      return {
+        label: item.style,
+        value: item.postscriptName,
+      };
+    });
   }
-  return { fontWeight, fontWeightList };
+  return [];
 }
 
-export function getEditData(node: Text) {
-  const { rich, style } = node;
-  // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
-  if (!rich.length) {
-    return getData([node]);
-  }
-  const valid: boolean[] = [];
-  const fontFamily: string[] = [];
-  const name: string[] = [];
-  const color: string[] = [];
-  const fontSize: number[] = [];
-  const letterSpacing: number[] = [];
-  const lineHeight: number[] = [];
-  const autoLineHeight: boolean[] = [];
-  const paragraphSpacing: number[] = [];
-  const textAlign: TEXT_ALIGN[] = [];
-  const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [node.computedStyle.textVerticalAlign];
-  const textBehaviour: TEXT_BEHAVIOUR[] = [];
-  const richList = node.getCursorRich();
-  const { left, right, top, bottom, width, height, lineHeight: lh } = style;
-  for (let i = 0, len = richList.length; i < len; i++) {
-    putData(
-      left,
-      right,
-      top,
-      bottom,
-      width,
-      height,
-      lh,
-      valid,
-      fontFamily,
-      name,
-      color,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      autoLineHeight,
-      paragraphSpacing,
-      textAlign,
-      textBehaviour,
-      richList[i],
-      true,
-    );
-  }
-  const { fontWeight, fontWeightList } = getWeight(fontFamily);
-  return {
-    valid,
-    fontFamily,
-    name,
-    fontWeight,
-    fontWeightList,
-    color,
-    fontSize,
-    autoLineHeight,
-    lineHeight,
-    letterSpacing,
-    paragraphSpacing,
-    textAlign,
-    textVerticalAlign,
-    textBehaviour,
-  };
-}
+// export function getEditTextInfo(node: Text) {
+//   const { rich, style } = node;
+//   // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
+//   if (!rich.length) {
+//     return getTextInfo([node]);
+//   }
+//   const valid: boolean[] = [];
+//   const fontFamily: string[] = [];
+//   const name: string[] = [];
+//   const color: string[] = [];
+//   const fontSize: number[] = [];
+//   const letterSpacing: number[] = [];
+//   const lineHeight: number[] = [];
+//   const autoLineHeight: boolean[] = [];
+//   const paragraphSpacing: number[] = [];
+//   const textAlign: TEXT_ALIGN[] = [];
+//   const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [node.computedStyle.textVerticalAlign];
+//   const textBehaviour: TEXT_BEHAVIOUR[] = [];
+//   const richList = node.getCursorRich();
+//   const { left, right, top, bottom, width, height, lineHeight: lh } = style;
+//   for (let i = 0, len = richList.length; i < len; i++) {
+//     putInfo(
+//       left,
+//       right,
+//       top,
+//       bottom,
+//       width,
+//       height,
+//       lh,
+//       valid,
+//       fontFamily,
+//       name,
+//       color,
+//       fontSize,
+//       letterSpacing,
+//       lineHeight,
+//       autoLineHeight,
+//       paragraphSpacing,
+//       textAlign,
+//       textBehaviour,
+//       richList[i],
+//       true,
+//     );
+//   }
+//   const { fontWeight, fontWeightList } = getWeight(fontFamily);
+//   return {
+//     valid,
+//     fontFamily,
+//     name,
+//     fontWeight,
+//     fontWeightList,
+//     color,
+//     fontSize,
+//     autoLineHeight,
+//     lineHeight,
+//     letterSpacing,
+//     paragraphSpacing,
+//     textAlign,
+//     textVerticalAlign,
+//     textBehaviour,
+//   };
+// }
 
-export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
+export function updateTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   const next: ResizeStyle = {};
   const style = node.getStyle();
   const { left, right, top, bottom, width, height } = style;
@@ -410,8 +447,9 @@ export function updateBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
 export default {
   TEXT_BEHAVIOUR,
   SIZE_LIST,
-  getData,
-  getEditData,
-  updateBehaviour,
-  getWeight,
+  getTextInfo,
+  // getEditTextInfo,
+  getTextBehaviour,
+  updateTextBehaviour,
+  getFontWeightList,
 };

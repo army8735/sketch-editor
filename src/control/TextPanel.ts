@@ -4,7 +4,7 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import { getData, getWeight, TEXT_BEHAVIOUR, updateBehaviour } from '../tools/text';
+import { getTextInfo, getFontWeightList, TEXT_BEHAVIOUR, updateTextBehaviour } from '../tools/text';
 import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
@@ -261,23 +261,25 @@ class TextPanel extends Panel {
       const value = el.value;
       const nodes = this.nodes.slice(0);
       if (key === 'fontFamily') {
-        const { fontWeight, fontWeightList } = getWeight([value]);
+        const multi = panel.querySelector('.ff .multi') as HTMLElement;
+        multi.style.display = 'none';
+        const fontWeightList = getFontWeightList(value); console.log(fontWeightList)
         const select = panel.querySelector('.wc select') as HTMLSelectElement;
         let s = '';
-        fontWeightList.forEach(item => {
+        fontWeightList.forEach((item) => {
           s += `<option value="${item.value}">${item.label}</option>`;
         });
         select.innerHTML = s;
-        // 暂时切换后统一Regular
-        const list = select.querySelectorAll('option');
-        for (let i = 0, len = list.length; i < len; i++) {
-          const option = list[i];
-          if (option.innerHTML === fontWeight[0]) {
-            option.selected = true;
+        // 暂时切换后统一Regular，如果没有则第一个
+        let ff = fontWeightList[0].value;
+        for (let i = 0, len = fontWeightList.length; i < len; i++) {
+          const item = fontWeightList[i];
+          if (item.label.toLowerCase() === 'regular') {
+            ff = item.value;
             break;
           }
         }
-        let ff = select.value;
+        select.value = ff;
         const data: ModifyRichData[] = [];
         nodes.forEach(node => {
           const prev = node.getRich();
@@ -293,6 +295,8 @@ class TextPanel extends Panel {
         listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
       }
       else if (key === 'fontWeight') {
+        const multi = panel.querySelector('.wc .multi') as HTMLElement;
+        multi.style.display = 'none';
         const data: ModifyRichData[] = [];
         nodes.forEach(node => {
           const prev = node.getRich();
@@ -363,7 +367,7 @@ class TextPanel extends Panel {
         else if (el.classList.contains('fwh')) {
           behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
         }
-        const data = nodes.map(item => updateBehaviour(item, behaviour));
+        const data = nodes.map(item => updateTextBehaviour(item, behaviour));
         listener.history.addCommand(new ResizeCommand(nodes.slice(0), data));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
@@ -504,7 +508,7 @@ class TextPanel extends Panel {
     });
     const texts = nodes.filter(item => item instanceof Text) as Text[];
     this.nodes = texts;
-    const o = getData(texts);
+    const o = getTextInfo(texts); console.log(o)
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       // 移除上次可能遗留的无效字体展示
@@ -512,8 +516,10 @@ class TextPanel extends Panel {
       if (invalid) {
         invalid.remove();
       }
+      select.classList.remove('invalid');
       const multi = panel.querySelector('.ff .multi') as HTMLElement;
       const list = select.querySelectorAll('option');
+      // 多种字体
       if (o.fontFamily.length > 1) {
         multi.style.display = 'block';
         for (let i = 0, len = list.length; i < len; i++) {
@@ -528,22 +534,13 @@ class TextPanel extends Panel {
       }
       else {
         multi.style.display = 'none';
-        const { data } = style.font;
-        let has = false;
-        const ff = o.fontFamily[0];
-        for (let i = 0, len = list.length; i < len; i++) {
-          const option = list[i];
-          const o = data[ff];
-          if (o && o.family.toLowerCase() === option.value) {
-            has = true;
-            option.selected = true;
-            break;
-          }
-        }
-        if (!has) {
-          const option = `<option value="${ff}" selected="selected" disabled>${ff}</option>`;
+        if (!o.valid[0]) {
+          const option = `<option value="${o.postscriptName[0].toLowerCase()}" selected="selected" disabled>${o.fontFamily[0]}</option>`;
           select.innerHTML += option;
           select.classList.add('invalid');
+        }
+        else {
+          select.value = o.fontFamily[0].toLowerCase();
         }
       }
     }
@@ -557,11 +554,11 @@ class TextPanel extends Panel {
       const multi = panel.querySelector('.wc .multi') as HTMLElement;
       if (o.fontWeight.length > 1) {
         multi.style.display = 'block';
-        select.disabled = true;
+        // select.disabled = true;
       }
       else {
         multi.style.display = 'none';
-        select.disabled = false;
+        // select.disabled = false;
         const list = select.querySelectorAll('option');
         for (let i = 0, len = list.length; i < len; i++) {
           const option = list[i];

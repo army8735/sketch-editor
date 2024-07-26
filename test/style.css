@@ -605,6 +605,9 @@ body {
   border-radius: 3px;
   font-size: 11px;
 }
+.side .text-panel .ff select.invalid {
+  color: #F33;
+}
 .side .text-panel .ff .multi {
   position: absolute;
   left: 1px;
