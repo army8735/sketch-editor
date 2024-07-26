@@ -191,7 +191,7 @@ const o: any = {
   registerData(data: FontData) {
     const familyL = data.family.toLowerCase();
     if (!this.info.hasOwnProperty(familyL)) {
-      this.info[familyL] = this.data[familyL] = data;
+      this.info[familyL] = data;
     }
     if (!this.data.hasOwnProperty(familyL)) {
       data.list.forEach((item) => {
