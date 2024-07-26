@@ -674,7 +674,7 @@ function resizeHorizontalAspectRatio(node: Node, originComputedStyle: ComputedSt
   if (next.height) {
     if (typeof next.height === 'number') {
       const dh = next.height - originComputedStyle.height;
-      next.width = originComputedStyle.height + dh * 2;
+      next.height = originComputedStyle.height + dh * 2;
     }
     else {
       const ph = node.parent!.height;
