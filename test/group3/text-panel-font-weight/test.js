@@ -15,7 +15,7 @@ module.exports = {
       .assert.cssProperty('#side .text-panel .weight .multi', 'display', 'block')
       .assert.elementPresent('#side .text-panel .weight select option:disabled')
 
-      .updateValue('#side .text-panel .weight .multi', ['Regular'])
+      .updateValue('#side .text-panel .weight select', ['Regular'])
       .pause(20)
       .click('#button3')
       .assert.value('#base64', '[1,[{"location":0,"length":7,"fontFamily":"helvetica","fontSize":24,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
