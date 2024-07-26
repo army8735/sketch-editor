@@ -56,6 +56,7 @@ module.exports = {
       .assert.value('#base64', '[5,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":24,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":37.59765625,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":36,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":70,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
 
       .updateValue('#side .text-panel .lh input', ['40', browser.Keys.ENTER])
+      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[6,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":24,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":40,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":36,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":40,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
       .assert.value('#side .text-panel .lh input', '40')
@@ -63,6 +64,7 @@ module.exports = {
 
       .updateValue('#side .text-panel .lh input', ['0', browser.Keys.ENTER])
       .updateValue('#side .text-panel .fs input', ['20', browser.Keys.ENTER])
+      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[7,[{"location":0,"length":7,"fontFamily":"Helvetica","fontSize":20,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
       .assert.value('#side .text-panel .lh input', '')
