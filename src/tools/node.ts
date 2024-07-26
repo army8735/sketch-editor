@@ -403,190 +403,183 @@ export function appendWithState(child: Node, parent: Container, cb?: () => void)
   }
 }
 
-export function resizeTopOperate(node: Node, computedStyle: ComputedStyle, d: number) {
+export function resizeTopOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (d) {
-    const next: ResizeStyle = {};
-    // top为确定值则修改它，还要看height是否是确定值也一并修改
-    if (
-      style.top.u === StyleUnit.PX ||
-      style.top.u === StyleUnit.PERCENT
-    ) {
-      if (style.top.u === StyleUnit.PX) {
-        next.top = computedStyle.top + d;
-      }
-      else {
-        next.top =
-          ((computedStyle.top + d) * 100) / node.parent!.height + '%';
-      }
-      if (style.height.u === StyleUnit.PX ||
-        // 只有top定位的自动高度文本
-        style.height.u === StyleUnit.AUTO && style.bottom.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height - d;
-      }
-      else if (style.height.u === StyleUnit.PERCENT) {
-        next.height =
-          ((computedStyle.height - d) * 100) / node.parent!.height + '%';
-      }
+  const next: ResizeStyle = {};
+  // top为确定值则修改它，还要看height是否是确定值也一并修改
+  if (
+    style.top.u === StyleUnit.PX ||
+    style.top.u === StyleUnit.PERCENT
+  ) {
+    if (style.top.u === StyleUnit.PX) {
+      next.top = originComputedStyle.top + d;
     }
-    // top为自动，高度则为确定值修改，根据bottom定位
-    else if (
-      style.height.u === StyleUnit.PX ||
-      style.height.u === StyleUnit.PERCENT ||
-      // top和height均为auto，只有人工bottom定位文本
-      style.height.u === StyleUnit.AUTO
-    ) {
-      if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height - d;
-      }
-      else {
-        next.height =
-          ((computedStyle.height - d) * 100) / node.parent!.height + '%';
-      }
+    else {
+      next.top =
+        ((originComputedStyle.top + d) * 100) / node.parent!.height + '%';
     }
-    return next;
+    if (style.height.u === StyleUnit.PX ||
+      // 只有top定位的自动高度文本
+      style.height.u === StyleUnit.AUTO && style.bottom.u === StyleUnit.AUTO) {
+      next.height = originComputedStyle.height - d;
+    }
+    else if (style.height.u === StyleUnit.PERCENT) {
+      next.height =
+        ((originComputedStyle.height - d) * 100) / node.parent!.height + '%';
+    }
   }
+  // top为自动，高度则为确定值修改，根据bottom定位
+  else if (
+    style.height.u === StyleUnit.PX ||
+    style.height.u === StyleUnit.PERCENT ||
+    // top和height均为auto，只有人工bottom定位文本
+    style.height.u === StyleUnit.AUTO
+  ) {
+    if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
+      next.height = originComputedStyle.height - d;
+    }
+    else {
+      next.height =
+        ((originComputedStyle.height - d) * 100) / node.parent!.height + '%';
+    }
+  }
+  return next;
 }
 
-export function resizeBottomOperate(node: Node, computedStyle: ComputedStyle, d: number) {
+export function resizeBottomOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (d) {
-    const next: ResizeStyle = {};
-    // bottom为确定值则修改它，还要看height是否是确定值也一并修改
-    if (
-      style.bottom.u === StyleUnit.PX ||
-      style.bottom.u === StyleUnit.PERCENT
-    ) {
-      if (style.bottom.u === StyleUnit.PX) {
-        next.bottom = computedStyle.bottom - d;
-      }
-      else {
-        next.bottom =
-          ((computedStyle.bottom - d) * 100) / node.parent!.height + '%';
-      }
-      if (style.height.u === StyleUnit.PX ||
-        // 只有bottom定位的自动高度文本
-        style.height.u === StyleUnit.AUTO && style.top.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height + d;
-      }
-      else if (style.height.u === StyleUnit.PERCENT) {
-        next.height =
-          ((computedStyle.height + d) * 100) / node.parent!.height + '%';
-      }
+  const next: ResizeStyle = {};
+  // bottom为确定值则修改它，还要看height是否是确定值也一并修改
+  if (
+    style.bottom.u === StyleUnit.PX ||
+    style.bottom.u === StyleUnit.PERCENT
+  ) {
+    if (style.bottom.u === StyleUnit.PX) {
+      next.bottom = originComputedStyle.bottom - d;
     }
-    // bottom为自动，高度则为确定值修改，根据top定位
-    else if (
-      style.height.u === StyleUnit.PX ||
-      style.height.u === StyleUnit.PERCENT ||
-      style.height.u === StyleUnit.AUTO
-    ) {
-      if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
-        next.height = computedStyle.height + d;
-      }
-      else {
-        next.height =
-          ((computedStyle.height + d) * 100) / node.parent!.height + '%';
-      }
+    else {
+      next.bottom =
+        ((originComputedStyle.bottom - d) * 100) / node.parent!.height + '%';
     }
-    return next;
+    if (style.height.u === StyleUnit.PX ||
+      // 只有bottom定位的自动高度文本
+      style.height.u === StyleUnit.AUTO && style.top.u === StyleUnit.AUTO) {
+      next.height = originComputedStyle.height + d;
+    }
+    else if (style.height.u === StyleUnit.PERCENT) {
+      next.height =
+        ((originComputedStyle.height + d) * 100) / node.parent!.height + '%';
+    }
   }
+  // bottom为自动，高度则为确定值修改，根据top定位
+  else if (
+    style.height.u === StyleUnit.PX ||
+    style.height.u === StyleUnit.PERCENT ||
+    style.height.u === StyleUnit.AUTO
+  ) {
+    if (style.height.u === StyleUnit.PX || style.height.u === StyleUnit.AUTO) {
+      next.height = originComputedStyle.height + d;
+    }
+    else {
+      next.height =
+        ((originComputedStyle.height + d) * 100) / node.parent!.height + '%';
+    }
+  }
+  return next;
 }
 
-export function resizeLeftOperate(node: Node, computedStyle: ComputedStyle, d: number) {
+export function resizeLeftOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (d) {
-    const next: ResizeStyle = {};
-    // left为确定值则修改它，还要看width是否是确定值也一并修改
-    if (
-      style.left.u === StyleUnit.PX ||
-      style.left.u === StyleUnit.PERCENT
-    ) {
-      if (style.left.u === StyleUnit.PX) {
-        next.left = computedStyle.left + d;
-      }
-      else {
-        next.left =
-          ((computedStyle.left + d) * 100) / node.parent!.width + '%';
-      }
-      if (style.width.u === StyleUnit.PX ||
-        // 只有left定位的自动宽度文本
-        style.width.u === StyleUnit.AUTO && style.right.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width - d;
-      }
-      else if (style.width.u === StyleUnit.PERCENT) {
-        next.width =
-          ((computedStyle.width - d) * 100) / node.parent!.width + '%';
-      }
+  const next: ResizeStyle = {};
+  // left为确定值则修改它，还要看width是否是确定值也一并修改
+  if (
+    style.left.u === StyleUnit.PX ||
+    style.left.u === StyleUnit.PERCENT
+  ) {
+    if (style.left.u === StyleUnit.PX) {
+      next.left = originComputedStyle.left + d;
     }
-    // left为自动，宽度则为确定值修改，根据right定位
-    else if (
-      style.width.u === StyleUnit.PX ||
-      style.width.u === StyleUnit.PERCENT ||
-      // left和width均为auto，只有人工right定位文本
-      style.width.u === StyleUnit.AUTO
-    ) {
-      if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width - d;
-      }
-      else {
-        next.width =
-          ((computedStyle.width - d) * 100) / node.parent!.width + '%';
-      }
+    else {
+      next.left =
+        ((originComputedStyle.left + d) * 100) / node.parent!.width + '%';
     }
-    return next;
+    if (style.width.u === StyleUnit.PX ||
+      // 只有left定位的自动宽度文本
+      style.width.u === StyleUnit.AUTO && style.right.u === StyleUnit.AUTO) {
+      next.width = originComputedStyle.width - d;
+    }
+    else if (style.width.u === StyleUnit.PERCENT) {
+      next.width =
+        ((originComputedStyle.width - d) * 100) / node.parent!.width + '%';
+    }
   }
+  // left为自动，宽度则为确定值修改，根据right定位
+  else if (
+    style.width.u === StyleUnit.PX ||
+    style.width.u === StyleUnit.PERCENT ||
+    // left和width均为auto，只有人工right定位文本
+    style.width.u === StyleUnit.AUTO
+  ) {
+    if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
+      next.width = originComputedStyle.width - d;
+    }
+    else {
+      next.width =
+        ((originComputedStyle.width - d) * 100) / node.parent!.width + '%';
+    }
+  }
+  return next;
 }
 
-export function resizeRightOperate(node: Node, computedStyle: ComputedStyle, d: number) {
+export function resizeRightOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
   const style = node.style;
-  if (d) {
-    const next: ResizeStyle = {};
-    // right为确定值则修改它，还要看width是否是确定值也一并修改，比如右固定宽度
-    if (
-      style.right.u === StyleUnit.PX ||
-      style.right.u === StyleUnit.PERCENT
-    ) {
-      if (style.right.u === StyleUnit.PX) {
-        next.right = computedStyle.right - d;
-      }
-      else {
-        next.right =
-          ((computedStyle.right - d) * 100) / node.parent!.width + '%';
-      }
-      if (style.width.u === StyleUnit.PX ||
-        // 只有right定位的自动宽度文本
-        style.width.u === StyleUnit.AUTO && style.left.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width + d;
-      }
-      else if (style.width.u === StyleUnit.PERCENT) {
-        next.width =
-          ((computedStyle.width + d) * 100) / node.parent!.width + '%';
-      }
+  const next: ResizeStyle = {};
+  // right为确定值则修改它，还要看width是否是确定值也一并修改，比如右固定宽度
+  if (
+    style.right.u === StyleUnit.PX ||
+    style.right.u === StyleUnit.PERCENT
+  ) {
+    if (style.right.u === StyleUnit.PX) {
+      next.right = originComputedStyle.right - d;
     }
-    // right为自动，宽度则为确定值修改，根据left定位
-    else if (
-      style.width.u === StyleUnit.PX ||
-      style.width.u === StyleUnit.PERCENT ||
-      // right和width均auto，只有自动宽度文本，修改为定宽
-      style.width.u === StyleUnit.AUTO
-    ) {
-      if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
-        next.width = computedStyle.width + d;
-      }
-      else {
-        next.width =
-          ((computedStyle.width + d) * 100) / node.parent!.width + '%';
-      }
+    else {
+      next.right =
+        ((originComputedStyle.right - d) * 100) / node.parent!.width + '%';
     }
-    return next;
+    if (style.width.u === StyleUnit.PX ||
+      // 只有right定位的自动宽度文本
+      style.width.u === StyleUnit.AUTO && style.left.u === StyleUnit.AUTO) {
+      next.width = originComputedStyle.width + d;
+    }
+    else if (style.width.u === StyleUnit.PERCENT) {
+      next.width =
+        ((originComputedStyle.width + d) * 100) / node.parent!.width + '%';
+    }
   }
+  // right为自动，宽度则为确定值修改，根据left定位
+  else if (
+    style.width.u === StyleUnit.PX ||
+    style.width.u === StyleUnit.PERCENT ||
+    // right和width均auto，只有自动宽度文本，修改为定宽
+    style.width.u === StyleUnit.AUTO
+  ) {
+    if (style.width.u === StyleUnit.PX || style.width.u === StyleUnit.AUTO) {
+      next.width = originComputedStyle.width + d;
+    }
+    else {
+      next.width =
+        ((originComputedStyle.width + d) * 100) / node.parent!.width + '%';
+    }
+  }
+  return next;
 }
 
+// 这4个方向的操作的封装API，不像拖拽或Input输入有中间过程需要优化，封装是一步到位没有中间过程
 export function resizeTop(node: Node, d: number) {
   if (d) {
     const originStyle = node.getStyle();
     node.startSizeChange();
-    const t = resizeTopOperate(node, node.computedStyle, d)!;
+    const t = resizeTopOperate(node, node.computedStyle, d);
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
@@ -594,11 +587,12 @@ export function resizeTop(node: Node, d: number) {
   }
 }
 
+// 这4个方向的操作的封装API，不像拖拽或Input输入有中间过程需要优化，封装是一步到位没有中间过程
 export function resizeBottom(node: Node, d: number) {
   if (d) {
     const originStyle = node.getStyle();
     node.startSizeChange();
-    const t = resizeBottomOperate(node, node.computedStyle, d)!;
+    const t = resizeBottomOperate(node, node.computedStyle, d);
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
@@ -606,11 +600,12 @@ export function resizeBottom(node: Node, d: number) {
   }
 }
 
+// 这4个方向的操作的封装API，不像拖拽或Input输入有中间过程需要优化，封装是一步到位没有中间过程
 export function resizeLeft(node: Node, d: number) {
   if (d) {
     const originStyle = node.getStyle();
     node.startSizeChange();
-    const t = resizeLeftOperate(node, node.computedStyle, d)!;
+    const t = resizeLeftOperate(node, node.computedStyle, d);
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
@@ -618,16 +613,91 @@ export function resizeLeft(node: Node, d: number) {
   }
 }
 
+// 这4个方向的操作的封装API，不像拖拽或Input输入有中间过程需要优化，封装是一步到位没有中间过程
 export function resizeRight(node: Node, d: number) {
   if (d) {
     const originStyle = node.getStyle();
     node.startSizeChange();
-    const t = resizeRightOperate(node, node.computedStyle, d)!;
+    const t = resizeRightOperate(node, node.computedStyle, d);
     node.updateStyle(t);
     const res = node.endSizeChange(originStyle, t);
     node.checkPosSizeUpward();
     return res;
   }
+}
+
+function resizeVerticalAspectRatio(node: Node, originComputedStyle: ComputedStyle, d: number) {
+  // 根据差值d均分至相邻2侧方向，如果是left+right定位则互不干扰，如果是left+width/right+width则width会冲突需要处理
+  const aspectRatio = originComputedStyle.width / originComputedStyle.height;
+  const dx = d * aspectRatio;
+  const nl = resizeLeftOperate(node, originComputedStyle, -dx * 0.5);
+  const nr = resizeRightOperate(node, originComputedStyle, dx * 0.5);
+  const next = Object.assign({}, nl, nr);
+  // 修正width冲突，根据差值计算*2，分px和%
+  if (next.width) {
+    if (typeof next.width === 'number') {
+      const dw = next.width - originComputedStyle.width;
+      next.width = originComputedStyle.width + dw * 2;
+    }
+    else {
+      const pw = node.parent!.width;
+      const w = parseFloat(next.width) * pw * 0.01;
+      const dw = w - originComputedStyle.width;
+      next.width = (originComputedStyle.width + dw * 2) * 100 / pw + '%';
+    }
+  }
+  return next;
+}
+
+export function resizeTopAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
+  // 先获得无宽高比的更新，再修正
+  const next = resizeTopOperate(node, originComputedStyle, d);
+  const t = resizeVerticalAspectRatio(node, originComputedStyle, -d);
+  return Object.assign(next, t);
+}
+
+export function resizeBottomAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
+  // 先获得无宽高比的更新，再修正
+  const next = resizeBottomOperate(node, originComputedStyle, d);
+  const t = resizeVerticalAspectRatio(node, originComputedStyle, d);
+  return Object.assign(next, t);
+}
+
+function resizeHorizontalAspectRatio(node: Node, originComputedStyle: ComputedStyle, d: number) {
+  // 根据差值d均分至相邻2侧方向，如果是left+right定位则互不干扰，如果是left+width/right+width则width会冲突需要处理
+  const aspectRatio = originComputedStyle.width / originComputedStyle.height;
+  const dy = d / aspectRatio;
+  const nt = resizeTopOperate(node, originComputedStyle, -dy * 0.5);
+  const nb = resizeBottomOperate(node, originComputedStyle, dy * 0.5);
+  const next = Object.assign({}, nt, nb);
+  // 修正width冲突，根据差值计算*2，分px和%
+  if (next.height) {
+    if (typeof next.height === 'number') {
+      const dh = next.height - originComputedStyle.height;
+      next.width = originComputedStyle.height + dh * 2;
+    }
+    else {
+      const ph = node.parent!.height;
+      const h = parseFloat(next.height) * ph * 0.01;
+      const dh = h - originComputedStyle.height;
+      next.height = (originComputedStyle.height + dh * 2) * 100 / ph + '%';
+    }
+  }
+  return next;
+}
+
+export function resizeLeftAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
+  // 先获得无宽高比的更新，再修正
+  const next = resizeLeftOperate(node, originComputedStyle, d);
+  const t = resizeHorizontalAspectRatio(node, originComputedStyle, -d);
+  return Object.assign(next, t);
+}
+
+export function resizeRightAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number) {
+  // 先获得无宽高比的更新，再修正
+  const next = resizeRightOperate(node, originComputedStyle, d);
+  const t = resizeHorizontalAspectRatio(node, originComputedStyle, d);
+  return Object.assign(next, t);
 }
 
 export function move(node: Node, dx: number, dy: number) {
@@ -756,6 +826,10 @@ export default {
   resizeBottom,
   resizeLeft,
   resizeRight,
+  resizeTopAspectRatioOperate,
+  resizeBottomAspectRatioOperate,
+  resizeLeftAspectRatioOperate,
+  resizeRightAspectRatioOperate,
   move,
   getBasicInfo,
 };

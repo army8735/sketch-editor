@@ -512,7 +512,7 @@ class TextPanel extends Panel {
     });
     const texts = nodes.filter(item => item instanceof Text) as Text[];
     this.nodes = texts;
-    const o = getTextInfo(texts); console.log(o)
+    const o = getTextInfo(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       // 移除上次可能遗留的无效字体展示

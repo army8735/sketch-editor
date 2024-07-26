@@ -16,7 +16,16 @@ import Command from '../history/Command';
 import MoveCommand from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
-import { resizeTopOperate, resizeBottomOperate, resizeLeftOperate, resizeRightOperate } from '../tools/node';
+import {
+  resizeTopOperate,
+  resizeBottomOperate,
+  resizeLeftOperate,
+  resizeRightOperate,
+  resizeTopAspectRatioOperate,
+  resizeBottomAspectRatioOperate,
+  resizeRightAspectRatioOperate,
+  resizeLeftAspectRatioOperate
+} from '../tools/node';
 import { getNodeByPoint, getFrameNodes } from '../tools/root';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import { intersectLineLine } from '../math/isec';
@@ -511,45 +520,55 @@ export default class Listener extends Event {
           }
           const next: ResizeStyle = {};
           const computedStyle = this.computedStyle[i];
-          // 分4个方向上看，每个方向除了拉边还可以拉相邻2个角
-          if (
-            this.controlType === 't' ||
-            this.controlType === 'tl' ||
-            this.controlType === 'tr'
-          ) {
-            const t = resizeTopOperate(node, computedStyle, dy2);
-            if (t) {
-              Object.assign(next, t);
+          const controlType = this.controlType;
+          // 保持宽高比的拉伸，4个方向和4个角需要单独特殊处理
+          if (this.shiftKey) {
+            if (controlType === 't') {
+              Object.assign(next, resizeTopAspectRatioOperate(node, computedStyle, dy2));
             }
-          }
-          else if (
-            this.controlType === 'b' ||
-            this.controlType === 'bl' ||
-            this.controlType === 'br'
-          ) {
-            const t = resizeBottomOperate(node, computedStyle, dy2);
-            if (t) {
-              Object.assign(next, t);
+            else if (controlType === 'r') {
+              Object.assign(next, resizeRightAspectRatioOperate(node, computedStyle, dx2));
             }
-          }
-          if (
-            this.controlType === 'l' ||
-            this.controlType === 'tl' ||
-            this.controlType === 'bl'
-          ) {
-            const t = resizeLeftOperate(node, computedStyle, dx2);
-            if (t) {
-              Object.assign(next, t);
+            else if (controlType === 'b') {
+              Object.assign(next, resizeBottomAspectRatioOperate(node, computedStyle, dy2));
             }
+            else if (controlType === 'l') {
+              Object.assign(next, resizeLeftAspectRatioOperate(node, computedStyle, dx2));
+            }
+            else if (controlType === 'tl') {}
+            else if (controlType === 'tr') {}
+            else if (controlType === 'bl') {}
+            else if (controlType === 'br') {}
           }
-          else if (
-            this.controlType === 'r' ||
-            this.controlType === 'tr' ||
-            this.controlType === 'br'
-          ) {
-            const t = resizeRightOperate(node, computedStyle, dx2);
-            if (t) {
-              Object.assign(next, t);
+          // 普通的分4个方向上看，4个角则是2个方向的合集，因为相邻方向不干扰，相对方向互斥
+          else {
+            if (
+              controlType === 't' ||
+              controlType === 'tl' ||
+              controlType === 'tr'
+            ) {
+              Object.assign(next, resizeTopOperate(node, computedStyle, dy2));
+            }
+            else if (
+              controlType === 'b' ||
+              controlType === 'bl' ||
+              controlType === 'br'
+            ) {
+              Object.assign(next, resizeBottomOperate(node, computedStyle, dy2));
+            }
+            if (
+              controlType === 'l' ||
+              controlType === 'tl' ||
+              controlType === 'bl'
+            ) {
+              Object.assign(next, resizeLeftOperate(node, computedStyle, dx2));
+            }
+            else if (
+              controlType === 'r' ||
+              controlType === 'tr' ||
+              controlType === 'br'
+            ) {
+              Object.assign(next, resizeRightOperate(node, computedStyle, dx2));
             }
           }
           node.updateStyle(next);
