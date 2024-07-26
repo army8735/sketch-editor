@@ -700,6 +700,54 @@ export function resizeRightAspectRatioOperate(node: Node, originComputedStyle: C
   return Object.assign(next, t);
 }
 
+function getDiagonalAspectRatioIsec(originComputedStyle: ComputedStyle, dx: number, dy: number, isACOrBD = true) {
+  // 视左上角为原点，求对角线的斜率，一定不是特殊垂线或水平线，过原点的为AC，另外一条是BD
+  const { width: x1, height: y1 } = originComputedStyle;
+  let k1 = y1 / x1;
+  if (!isACOrBD) {
+    k1 *= -1;
+  }
+  const k2 = -1 / k1;
+  // 鼠标当前点，求出和对角线的交点
+  const x2 = x1 + dx;
+  const y2 = y1 + dy;
+  const x = (y2 - y1 + k1 * x1 - k2 * x2) / (k1 - k2);
+  const y = k2 * x - k2 * x2 + y2;
+  return { x, y };
+}
+
+export function resizeTopLeftAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number) {
+  const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, true);
+  // 交点和宽高的差值就是要调整改变的值
+  const next = resizeLeftOperate(node, originComputedStyle, x - originComputedStyle.width);
+  Object.assign(next, resizeTopOperate(node, originComputedStyle, y - originComputedStyle.height));
+  return next;
+}
+
+export function resizeTopRightAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number) {
+  const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, false);
+  // 交点和宽高的差值就是要调整改变的值
+  const next = resizeRightOperate(node, originComputedStyle, x - originComputedStyle.width);
+  Object.assign(next, resizeTopOperate(node, originComputedStyle, y - originComputedStyle.height));
+  return next;
+}
+
+export function resizeBottomLeftAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number) {
+  const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, false);
+  // 交点和宽高的差值就是要调整改变的值
+  const next = resizeLeftOperate(node, originComputedStyle, x - originComputedStyle.width);
+  Object.assign(next, resizeBottomOperate(node, originComputedStyle, y - originComputedStyle.height));
+  return next;
+}
+
+export function resizeBottomRightAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number) {
+  const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, true);
+  // 交点和宽高的差值就是要调整改变的值
+  const next = resizeRightOperate(node, originComputedStyle, x - originComputedStyle.width);
+  Object.assign(next, resizeBottomOperate(node, originComputedStyle, y - originComputedStyle.height));
+  return next;
+}
+
 export function move(node: Node, dx: number, dy: number) {
   const originStyle = node.getStyle();
   if (dx || dy) {

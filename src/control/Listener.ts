@@ -24,7 +24,11 @@ import {
   resizeTopAspectRatioOperate,
   resizeBottomAspectRatioOperate,
   resizeRightAspectRatioOperate,
-  resizeLeftAspectRatioOperate
+  resizeLeftAspectRatioOperate,
+  resizeBottomRightAspectRatioOperate,
+  resizeTopLeftAspectRatioOperate,
+  resizeTopRightAspectRatioOperate,
+  resizeBottomLeftAspectRatioOperate,
 } from '../tools/node';
 import { getNodeByPoint, getFrameNodes } from '../tools/root';
 import UpdateRichCommand from '../history/UpdateRichCommand';
@@ -535,10 +539,18 @@ export default class Listener extends Event {
             else if (controlType === 'l') {
               Object.assign(next, resizeLeftAspectRatioOperate(node, computedStyle, dx2));
             }
-            else if (controlType === 'tl') {}
-            else if (controlType === 'tr') {}
-            else if (controlType === 'bl') {}
-            else if (controlType === 'br') {}
+            else if (controlType === 'tl') {
+              Object.assign(next, resizeTopLeftAspectRatioOperate(node, computedStyle, dx2, dy2));
+            }
+            else if (controlType === 'tr') {
+              Object.assign(next, resizeTopRightAspectRatioOperate(node, computedStyle, dx2, dy2));
+            }
+            else if (controlType === 'bl') {
+              Object.assign(next, resizeBottomLeftAspectRatioOperate(node, computedStyle, dx2, dy2));
+            }
+            else if (controlType === 'br') {
+              Object.assign(next, resizeBottomRightAspectRatioOperate(node, computedStyle, dx2, dy2));
+            }
           }
           // 普通的分4个方向上看，4个角则是2个方向的合集，因为相邻方向不干扰，相对方向互斥
           else {
