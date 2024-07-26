@@ -26,6 +26,7 @@ module.exports = {
       .keys('z')
       .keys(browser.Keys.NULL)
       .pause(20)
+      .click('#button3')
       .assert.value('#base64', '[2,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":24,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica-Bold","fontSize":24,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
       .assert.cssProperty('#side .text-panel .weight .multi', 'display', 'block')
       .assert.elementPresent('#side .text-panel .weight select option:disabled')
