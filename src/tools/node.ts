@@ -4,10 +4,9 @@ import Group from '../node/Group';
 import Node from '../node/Node';
 import { ComputedStyle, StyleUnit } from '../style/define';
 import { clone } from '../util/util';
-import { PageProps, Point } from '../format';
+import { PageProps, Point, ResizeStyle } from '../format';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
-import { ResizeStyle } from '../history/type';
 
 export enum POSITION {
   UNDER = 0,
@@ -929,6 +928,10 @@ export default {
   resizeBottomAspectRatioOperate,
   resizeLeftAspectRatioOperate,
   resizeRightAspectRatioOperate,
+  resizeTopLeftAspectRatioOperate,
+  resizeTopRightAspectRatioOperate,
+  resizeBottomLeftAspectRatioOperate,
+  resizeBottomRightAspectRatioOperate,
   move,
   getBasicInfo,
 };

@@ -1,7 +1,6 @@
 import Command from './Command';
 import Node from '../node/Node';
-import { JStyle } from '../format';
-import { ResizeData, ResizeStyle } from './type';
+import { ResizeData } from '../format';
 
 class ResizeCommand extends Command {
   data: ResizeData[];

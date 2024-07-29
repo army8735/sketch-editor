@@ -8,7 +8,7 @@ import { getBasicInfo, resizeBottomOperate, resizeRightOperate } from '../tools/
 import ResizeCommand from '../history/ResizeCommand';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { ModifyData, MoveData, ResizeData, ResizeStyle } from '../history/type';
+import { ModifyData, MoveData, ResizeData, ResizeStyle } from '../format';
 import { ComputedStyle, Style } from '../style/define';
 
 const html = `

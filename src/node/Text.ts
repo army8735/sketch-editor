@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Rich, TAG_NAME, TextProps } from '../format';
+import { JNode, Override, Rich, TAG_NAME, TextProps, ModifyRichStyle } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -38,7 +38,6 @@ import Node from './Node';
 import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
-import { ModifyRichStyle } from '../history/type';
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length

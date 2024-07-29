@@ -1,9 +1,8 @@
 import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
 import { ComputedStyle, StyleNumValue, StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
-import fontInfo from '../style/font';
-import { ResizeStyle } from '../history/type';
-import { Rich } from '../format';
+import fontInfo from '../style/font'
+import { Rich, ResizeStyle } from '../format';
 
 export enum TEXT_BEHAVIOUR {
   AUTO = 0,

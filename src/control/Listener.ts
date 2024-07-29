@@ -36,7 +36,7 @@ import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import OpacityCommand from '../history/OpacityCommand';
-import { MoveData, ResizeData, ResizeStyle } from '../history/type';
+import { MoveData, ResizeData, ResizeStyle } from '../format';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
 
 export type ListenerOptions = {

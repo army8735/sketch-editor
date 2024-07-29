@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, JStyle, Override, Props } from '../format/';
+import { getDefaultStyle, JNode, JStyle, Override, Props, MoveData, ResizeData, ResizeStyle } from '../format';
 import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -49,7 +49,6 @@ import Page from './Page';
 import SymbolInstance from './SymbolInstance';
 import Tile from '../refresh/Tile';
 import { convert2Css } from '../style/gradient';
-import { MoveData, ResizeData, ResizeStyle } from '../history/type';
 
 let id = 0;
 

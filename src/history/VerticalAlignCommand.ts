@@ -1,6 +1,6 @@
 import Command from './Command';
 import Node from '../node/Node';
-import { VerticalAlignData } from './type';
+import { VerticalAlignData } from '../format';
 
 class VerticalAlignCommand extends Command {
   data: VerticalAlignData[];

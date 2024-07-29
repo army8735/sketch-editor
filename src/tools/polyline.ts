@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
-import { Point, POINTS_RADIUS_BEHAVIOUR } from '../format';
+import { Point } from '../format';
 import Polyline from '../node/geom/Polyline';
-import { CORNER_STYLE, CURVE_MODE } from '../style/define';
+import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
 
 export function createLine(x1: number, y1: number, x2: number, y2: number) {
   const w = Math.abs(x1 - x2);

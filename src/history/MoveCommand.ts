@@ -1,7 +1,7 @@
 import Command from './Command';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
-import { MoveData } from './type';
+import { MoveData } from '../format';
 import { StyleUnit } from '../style/define';
 import { calSize } from '../style/css';
 

@@ -1,6 +1,6 @@
 import Command from './Command';
 import Node from '../node/Node';
-import { ModifyData } from './type';
+import { ModifyData } from '../format';
 
 class UpdateStyleCommand extends Command {
   data: ModifyData[];

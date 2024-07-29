@@ -5,7 +5,7 @@ import Node from '../node/Node';
 import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
 import MoveCommand from '../history/MoveCommand';
-import { MoveData } from '../history/type';
+import { MoveData } from '../format';
 
 const html = `
   <h4 class="panel-title">对齐</h4>

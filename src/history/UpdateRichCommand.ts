@@ -1,6 +1,6 @@
 import Command from './Command';
 import Text from '../node/Text';
-import { ModifyRichData } from './type';
+import { ModifyRichData } from '../format';
 
 class UpdateRichCommand extends Command {
   data: ModifyRichData[];
