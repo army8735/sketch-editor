@@ -416,7 +416,9 @@ export function resizeTopOperate(node: Node, originComputedStyle: ComputedStyle,
     else if (style.left.u === StyleUnit.PERCENT) {
       next.top = (originComputedStyle.top + originComputedStyle.height) * 100 / node.parent!.height + '%';
     }
-    Object.assign(next, resizeBottomOperate(node, originComputedStyle, d));
+    const cs = Object.assign({}, originComputedStyle);
+    cs.height = 0;
+    Object.assign(next, resizeBottomOperate(node, cs, d));
     next.scaleY = originComputedStyle.scaleY * -1;
   }
   else {
@@ -469,7 +471,9 @@ export function resizeBottomOperate(node: Node, originComputedStyle: ComputedSty
     else if (style.bottom.u === StyleUnit.PERCENT) {
       next.bottom = (originComputedStyle.bottom + originComputedStyle.height) * 100 / node.parent!.height + '%';
     }
-    Object.assign(next, resizeTopOperate(node, originComputedStyle, d));
+    const cs = Object.assign({}, originComputedStyle);
+    cs.height = 0;
+    Object.assign(next, resizeTopOperate(node, cs, d));
     next.scaleY = originComputedStyle.scaleY * -1;
   }
   else {
@@ -522,7 +526,9 @@ export function resizeLeftOperate(node: Node, originComputedStyle: ComputedStyle
     else if (style.left.u === StyleUnit.PERCENT) {
       next.left = (originComputedStyle.left + originComputedStyle.width) * 100 / node.parent!.width + '%';
     }
-    Object.assign(next, resizeRightOperate(node, originComputedStyle, d));
+    const cs = Object.assign({}, originComputedStyle);
+    cs.width = 0;
+    Object.assign(next, resizeRightOperate(node, cs, d));
     next.scaleX = originComputedStyle.scaleX * -1;
   }
   else {
@@ -576,7 +582,9 @@ export function resizeRightOperate(node: Node, originComputedStyle: ComputedStyl
     else if (style.right.u === StyleUnit.PERCENT) {
       next.right = (originComputedStyle.right + originComputedStyle.width) * 100 / node.parent!.width + '%';
     }
-    Object.assign(next, resizeLeftOperate(node, originComputedStyle, d));
+    const cs = Object.assign({}, originComputedStyle);
+    cs.width = 0;
+    Object.assign(next, resizeLeftOperate(node, cs, d));
     next.scaleX = originComputedStyle.scaleX * -1;
   }
   else {
