@@ -1,6 +1,6 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { calRectPoints, identity, multiply, multiplyScale, multiplyTranslate } from '../math/matrix';
+import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
 import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 
@@ -112,6 +112,7 @@ export default class Select {
   calRect(node: Node) {
     const root = this.root;
     const dpi = root.dpi;
+    const computedStyle = node.computedStyle;
     let rect = node._rect || node.rect;
     let matrix = node.matrixWorld;
     if (dpi !== 1) {
@@ -123,7 +124,19 @@ export default class Select {
     if (isLine) {
       rect = node.rectLine;
     }
-    const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
+    let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
+    if (computedStyle.scaleX === -1) {
+      [x1, x2] = [x2, x1];
+      [y1, y2] = [y2, y1];
+      [x3, x4] = [x4, x3];
+      [y3, y4] = [y4, y3];
+    }
+    if (computedStyle.scaleY === -1) {
+      [x1, x4] = [x4, x1];
+      [y1, y4] = [y4, y1];
+      [x2, x3] = [x3, x2];
+      [y2, y3] = [y3, y2];
+    }
     const width = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     const height = Math.sqrt(Math.pow(x2 - x3, 2) + Math.pow(y2 - y3, 2));
     const res = {
@@ -133,63 +146,22 @@ export default class Select {
       height,
       transform: '',
     };
-    // 水平的特例，分为等效4类
-    if (Math.abs(y2 - y1) < 1e-10) {
-      if (x2 > x1) {
-        if (y3 > y2) {
-          res.transform = 'none';
-        }
-        else {
-          res.transform = 'scaleY(-1)';
-        }
-      }
-      else {
-        if (y3 > y2) {
-          res.transform = 'rotateZ(180deg) scaleY(-1)';
-        }
-        else {
-          res.transform = 'rotateZ(180deg)';
-        }
-      }
-      return res;
-    }
-    // 垂直的特例，分为等效4类
-    else if (Math.abs(x2 - x1) < 1e-10) {
-      if (y2 > y1) {
-        if (x3 > x2) {
-          res.transform = 'rotateZ(90deg) scaleY(-1)';
-        }
-        else {
-          res.transform = 'rotateZ(90deg)';
-        }
-      }
-      else {
-        if (x3 > x2) {
-          res.transform = 'rotateZ(270deg)';
-        }
-        else {
-          res.transform = 'rotateZ(270deg) scaleY(-1)';
-        }
-      }
-      return res;
-    }
-    // 普通旋转最终分为等效的4类
-    if (x1 < x2) {
-      const deg = r2d(Math.atan((y2 - y1) / (x2 - x1)));
-      if (y1 < y4) {
+    if (x2 > x1) {
+      if (y2 !== y1) {
+        const deg = r2d(Math.atan((y2 - y1) / (x2 - x1)));
         res.transform = `rotateZ(${deg}deg)`;
       }
-      else {
-        res.transform = `rotateZ(${deg}deg) scaleY(-1)`;
-      }
+    }
+    else if (x2 < x1) {
+      const deg = r2d(Math.atan((y2 - y1) / (x2 - x1)));
+      res.transform = `rotateZ(${deg + 180}deg)`;
     }
     else {
-      const deg = r2d(Math.atan((y2 - y1) / (x1 - x2)));
-      if (y1 > y4) {
-        res.transform = `rotateZ(${180 - deg}deg)`;
+      if (y2 > y1) {
+        res.transform = `rotateZ(90deg)`;
       }
-      else {
-        res.transform = `rotateZ(${180 - deg}deg) scaleY(-1)`;
+      else if (y2 < y1) {
+        res.transform = `rotateZ(-90deg)`;
       }
     }
     return res;

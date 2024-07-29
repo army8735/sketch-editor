@@ -1333,7 +1333,10 @@ class Node extends Event {
     const res: ResizeData = { prev: {}, next: dSize };
     (Object.keys(dSize) as (keyof ResizeStyle)[]).forEach(k => {
       const o = prev[k];
-      if (o.u === StyleUnit.PX) {
+      if (k === 'scaleX' || k === 'scaleY') {
+        res.prev[k] = prev[k].v;
+      }
+      else if (o.u === StyleUnit.PX || o.u === StyleUnit.NUMBER) {
         res.prev[k] = prev[k].v;
       }
       else if (o.u === StyleUnit.PERCENT) {
