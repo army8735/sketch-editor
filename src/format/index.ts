@@ -3,6 +3,7 @@ import {
   CURVE_MODE,
   TEXT_ALIGN,
   TEXT_DECORATION,
+  POINTS_RADIUS_BEHAVIOUR,
 } from '../style/define';
 
 export type JFile = {
@@ -377,13 +378,6 @@ export enum TAG_NAME {
   POLYLINE = '$polyline',
 }
 
-export enum POINTS_RADIUS_BEHAVIOUR {
-  DISABLED = -1,
-  LEGACY = 0,
-  ROUNDED = 1,
-  SMOOTH = 2,
-}
-
 export type Override = {
   property: string;
   value: string;
@@ -391,6 +385,5 @@ export type Override = {
 
 export default {
   TAG_NAME,
-  POINTS_RADIUS_BEHAVIOUR,
   getDefaultStyle,
 };

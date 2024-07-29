@@ -14,11 +14,10 @@ import {
   JSymbolMaster,
   JText,
   Point,
-  POINTS_RADIUS_BEHAVIOUR,
   Rich,
   TAG_NAME,
 } from './';
-import { TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
+import { TEXT_ALIGN, TEXT_DECORATION, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';

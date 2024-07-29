@@ -480,3 +480,10 @@ export enum TEXT_DECORATION {
   UNDERLINE = 1,
   LINE_THROUGH = 2,
 }
+
+export enum POINTS_RADIUS_BEHAVIOUR {
+  DISABLED = -1,
+  LEGACY = 0,
+  ROUNDED = 1,
+  SMOOTH = 2,
+}
