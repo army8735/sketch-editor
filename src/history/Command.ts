@@ -3,7 +3,7 @@ import Node from '../node/Node';
 abstract class Command {
   nodes: Node[];
 
-  constructor(nodes: Node[]) {
+  protected constructor(nodes: Node[]) {
     this.nodes = nodes;
   }
 
