@@ -383,10 +383,6 @@ export type Override = {
   value: string;
 };
 
-export type MoveStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom'>>;
-
-export type MoveData = { prev: MoveStyle, next: MoveStyle };
-
 export type ResizeStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height' | 'scaleX' | 'scaleY'>>;
 
 export type ResizeData = { prev: ResizeStyle, next: ResizeStyle };

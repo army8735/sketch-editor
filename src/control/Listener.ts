@@ -13,7 +13,7 @@ import { clone } from '../util/util';
 import { ArtBoardProps, JStyle } from '../format';
 import History from '../history/History';
 import Command from '../history/Command';
-import MoveCommand from '../history/MoveCommand';
+import MoveCommand, { MoveData } from '../history/MoveCommand';
 import ResizeCommand from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
 import {
@@ -36,7 +36,7 @@ import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import OpacityCommand from '../history/OpacityCommand';
-import { MoveData, ResizeData, ResizeStyle } from '../format';
+import { ResizeData, ResizeStyle } from '../format';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
 
 export type ListenerOptions = {
@@ -77,7 +77,7 @@ export default class Listener extends Event {
   pageTy: number;
   centerX: number; // 拖转旋转时节点的中心
   centerY: number;
-  dx: number; // 上次move的px，考虑缩放和dpi
+  dx: number; // 每次拖拽的px，考虑缩放和dpi，即为sketch内的单位
   dy: number;
   dSize: ResizeStyle[];
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
@@ -554,32 +554,16 @@ export default class Listener extends Event {
           }
           // 普通的分4个方向上看，4个角则是2个方向的合集，因为相邻方向不干扰，相对方向互斥
           else {
-            if (
-              controlType === 't' ||
-              controlType === 'tl' ||
-              controlType === 'tr'
-            ) {
+            if (controlType === 't' || controlType === 'tl' || controlType === 'tr') {
               Object.assign(next, resizeTopOperate(node, computedStyle, dy2));
             }
-            else if (
-              controlType === 'b' ||
-              controlType === 'bl' ||
-              controlType === 'br'
-            ) {
+            else if (controlType === 'b' || controlType === 'bl' || controlType === 'br') {
               Object.assign(next, resizeBottomOperate(node, computedStyle, dy2));
             }
-            if (
-              controlType === 'l' ||
-              controlType === 'tl' ||
-              controlType === 'bl'
-            ) {
+            if (controlType === 'l' || controlType === 'tl' || controlType === 'bl') {
               Object.assign(next, resizeLeftOperate(node, computedStyle, dx2));
             }
-            else if (
-              controlType === 'r' ||
-              controlType === 'tr' ||
-              controlType === 'br'
-            ) {
+            else if (controlType === 'r' || controlType === 'tr' || controlType === 'br') {
               Object.assign(next, resizeRightOperate(node, computedStyle, dx2));
             }
           }
@@ -810,18 +794,14 @@ export default class Listener extends Event {
           }
         });
         if (this.isMouseMove) {
-          const nodes: Node[] = [];
           const data: ResizeData[] = [];
           selected.forEach((node, i) => {
             // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
             const rd = node.endSizeChange(this.originStyle[i], this.dSize[i]);
             node.checkPosSizeUpward();
-            nodes.push(node);
             data.push(rd);
           });
-          if (nodes.length) {
-            this.history.addCommand(new ResizeCommand(nodes, data));
-          }
+          this.history.addCommand(new ResizeCommand(selected.slice(0), data));
         }
       }
     }
@@ -852,9 +832,9 @@ export default class Listener extends Event {
           const data: MoveData[] = [];
           selected.forEach((node, i) => {
             // 还原最初的translate/TRBL值
-            const md = node.endPosChange(this.originStyle[i], dx, dy);
+            node.endPosChange(this.originStyle[i], dx, dy);
             node.checkPosSizeUpward();
-            data.push(md);
+            data.push({ dx, dy });
           });
           this.history.addCommand(new MoveCommand(selected.slice(0), data));
         }
@@ -874,6 +854,7 @@ export default class Listener extends Event {
     this.isMouseDown = false;
     this.isMouseMove = false;
     this.mouseDownArtBoard = undefined;
+    this.controlType = '';
     this.isFrame = false;
     if (this.spaceKey) {
       if (this.options.disabled?.drag) {

@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, JStyle, Override, Props, MoveData, ResizeData, ResizeStyle } from '../format';
+import { getDefaultStyle, JNode, JStyle, Override, Props, ResizeData, ResizeStyle } from '../format';
 import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -1405,7 +1405,7 @@ class Node extends Event {
     return res;
   }
 
-  // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的值，返回修改的定位style
+  // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的%（可能）
   endPosChange(prev: Style, dx: number, dy: number) {
     const { style, computedStyle, parent } = this;
     const {
@@ -1418,55 +1418,38 @@ class Node extends Event {
       bottom,
       left,
     } = style;
-    const res: MoveData = { prev: {}, next: {} };
     // 一定有parent，不会改root下固定的Container子节点
     const { width: pw, height: ph } = parent!;
     if (dx) {
       if (left.u === StyleUnit.PX) {
-        res.prev.left = left.v;
         left.v += dx;
-        res.next.left = left.v;
       }
       else if (left.u === StyleUnit.PERCENT) {
-        res.prev.left = left.v + '%';
         left.v += dx * 100 / pw;
-        res.next.left = left.v + '%';
       }
       computedStyle.left += dx;
       if (right.u === StyleUnit.PX) {
-        res.prev.right = right.v;
         right.v -= dx;
-        res.next.right = right.v;
       }
       else if (right.u === StyleUnit.PERCENT) {
-        res.prev.right = right.v + '%';
         right.v -= dx * 100 / pw;
-        res.next.right = right.v + '%';
       }
       computedStyle.right -= dx;
       computedStyle.translateX -= dx;
     }
     if (dy) {
       if (top.u === StyleUnit.PX) {
-        res.prev.top = top.v;
         top.v += dy;
-        res.next.top = top.v;
       }
       else if (top.u === StyleUnit.PERCENT) {
-        res.prev.top = top.v + '%';
         top.v += dy * 100 / ph;
-        res.next.top = top.v + '%';
       }
       computedStyle.top += dy;
       if (bottom.u === StyleUnit.PX) {
-        res.prev.bottom = bottom.v;
         bottom.v -= dy;
-        res.next.bottom = bottom.v;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
-        res.prev.bottom = bottom.v + '%';
         bottom.v -= dy * 100 / ph;
-        res.next.bottom = bottom.v + '%';
       }
       computedStyle.bottom -= dy;
       computedStyle.translateY -= dy;
@@ -1475,7 +1458,6 @@ class Node extends Event {
     style.translateX.u = translateX.u;
     style.translateY.v = translateY.v;
     style.translateY.u = translateY.u;
-    return res;
   }
 
   checkShapeChange() {

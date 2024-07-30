@@ -2,13 +2,13 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import { toPrecision } from '../math';
 import Listener from './Listener';
-import MoveCommand from '../history/MoveCommand';
+import MoveCommand, { MoveData } from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
 import { getBasicInfo, resizeBottomOperate, resizeRightOperate } from '../tools/node';
 import ResizeCommand from '../history/ResizeCommand';
 import UpdateStyleCommand from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { ModifyData, MoveData, ResizeData, ResizeStyle } from '../format';
+import { ModifyData, ResizeData, ResizeStyle } from '../format';
 import { ComputedStyle, Style } from '../style/define';
 
 const html = `
@@ -136,11 +136,16 @@ class BasicPanel extends Panel {
       if (nodes.length) {
         const data: MoveData[] = [];
         nodes.forEach((node, i) => {
-          const md = isXOrY
-            ? node.endPosChange(originStyle[i], nextNumber[i] - prevNumber[i], 0)
-            : node.endPosChange(originStyle[i], 0, nextNumber[i] - prevNumber[i]);
+          const d = nextNumber[i] - prevNumber[i];
+          if (isXOrY) {
+            node.endPosChange(originStyle[i], d, 0);
+            data.push({ dx: d, dy: 0 });
+          }
+          else {
+            node.endPosChange(originStyle[i], 0, d);
+            data.push({ dx: 0, dy: d });
+          }
           node.checkPosSizeUpward();
-          data.push(md);
         });
         listener.history.addCommand(new MoveCommand(nodes, data));
         nodes = [];

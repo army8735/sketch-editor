@@ -4,8 +4,7 @@ import Listener from './Listener';
 import Node from '../node/Node';
 import Group from '../node/Group';
 import ArtBoard from '../node/ArtBoard';
-import MoveCommand from '../history/MoveCommand';
-import { MoveData } from '../format';
+import MoveCommand, { MoveData } from '../history/MoveCommand';
 
 const html = `
   <h4 class="panel-title">对齐</h4>
@@ -72,10 +71,10 @@ class AlignPanel extends Panel {
             translateY: computedStyle.translateY + dy,
           });
           // 还原最初的translate/TRBL值
-          const md = node.endPosChange(style, dx, dy);
+          node.endPosChange(style, dx, dy);
           node.checkPosSizeUpward();
           nodes.push(node);
-          data.push(md);
+          data.push({ dx, dy });
         }
       });
       if (nodes.length) {
