@@ -1,26 +1,22 @@
 import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
-import { ComputedStyle, StyleNumValue, StyleUnit, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
+import {
+  ComputedStyle,
+  StyleNumValue,
+  StyleUnit,
+  TEXT_ALIGN,
+  TEXT_BEHAVIOUR,
+  TEXT_VERTICAL_ALIGN
+} from '../style/define';
 import fontInfo from '../style/font'
 import { Rich, ResizeStyle } from '../format';
-
-export enum TEXT_BEHAVIOUR {
-  AUTO = 0,
-  FIXED_W = 1,
-  FIXED_W_H = 2,
-}
 
 export const SIZE_LIST = [
   6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 21, 24, 36, 48, 60, 72,
 ];
 
 function putInfo(
-  left: StyleNumValue,
-  right: StyleNumValue,
-  top: StyleNumValue,
-  bottom: StyleNumValue,
-  width: StyleNumValue,
-  height: StyleNumValue,
+  node: Text,
   lh: StyleNumValue,
   valid: boolean[],
   postscriptName: string[],
@@ -110,20 +106,14 @@ function putInfo(
   if (!textAlign.includes(ta)) {
     textAlign.push(ta);
   }
-  const tb = getTextBehaviour(left, right, top, bottom, width, height);
+  const tb = getTextBehaviour(node);
   if (!textBehaviour.includes(tb)) {
     textBehaviour.push(tb);
   }
 }
 
-export function getTextBehaviour(
-  left: StyleNumValue,
-  right: StyleNumValue,
-  top: StyleNumValue,
-  bottom: StyleNumValue,
-  width: StyleNumValue,
-  height: StyleNumValue,
-) {
+export function getTextBehaviour(node: Text) {
+  const { left, right, top, bottom, width, height } = node.style;
   let tb = TEXT_BEHAVIOUR.AUTO;
   const autoW = width.u === StyleUnit.AUTO
     && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
@@ -156,7 +146,8 @@ export function getTextInfo(nodes: Text[]) {
   const textBehaviour: TEXT_BEHAVIOUR[] = [];
   const fontWeight: string[] = [];
   for (let i = 0, len = nodes.length; i < len; i++) {
-    const { rich, style, computedStyle } = nodes[i];
+    const node = nodes[i];
+    const { rich, style, computedStyle } = node;
     if (!textVerticalAlign.includes(computedStyle.textVerticalAlign)) {
       textVerticalAlign.push(computedStyle.textVerticalAlign);
     }
@@ -165,12 +156,7 @@ export function getTextInfo(nodes: Text[]) {
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         putInfo(
-          left,
-          right,
-          top,
-          bottom,
-          width,
-          height,
+          node,
           lh,
           valid,
           postscriptName,
@@ -193,12 +179,7 @@ export function getTextInfo(nodes: Text[]) {
     }
     // 非富文本
     putInfo(
-      left,
-      right,
-      top,
-      bottom,
-      width,
-      height,
+      node,
       lh,
       valid,
       postscriptName,
@@ -318,7 +299,7 @@ export function getFontWeightList(postscriptName: string): { label: string, valu
 //   };
 // }
 
-export function updateTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
+export function setTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   const next: ResizeStyle = {};
   const style = node.getStyle();
   const { left, right, top, bottom, width, height } = style;
@@ -438,9 +419,8 @@ export function updateTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   }
   node.startSizeChange();
   node.updateStyle(next);
-  const md = node.endSizeChange(style, next);
+  node.endSizeChange(style);
   node.checkPosSizeUpward();
-  return md;
 }
 
 export default {
@@ -449,6 +429,6 @@ export default {
   getTextInfo,
   // getEditTextInfo,
   getTextBehaviour,
-  updateTextBehaviour,
+  setTextBehaviour,
   getFontWeightList,
 };

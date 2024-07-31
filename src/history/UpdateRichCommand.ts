@@ -1,12 +1,17 @@
 import Command from './Command';
 import Text from '../node/Text';
-import { ModifyRichData } from '../format';
+import { Rich } from '../format';
+
+export type UpdateRichData = {
+  prev: Rich[];
+  next: Rich[];
+};
 
 class UpdateRichCommand extends Command {
-  data: ModifyRichData[];
+  data: UpdateRichData[];
   type: string; // 区分text-panel改的类型，比如字体、大小、颜色等等
 
-  constructor(nodes: Text[], data: ModifyRichData[], type: string) {
+  constructor(nodes: Text[], data: UpdateRichData[], type: string) {
     super(nodes);
     this.data = data;
     this.type = type;

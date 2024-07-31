@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, JStyle, Override, Props, ResizeData, ResizeStyle } from '../format';
+import { getDefaultStyle, JNode, JStyle, Override, Props } from '../format';
 import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -1306,7 +1306,7 @@ class Node extends Event {
    * 根据开始调整时记录的prev样式，还原布局信息到translate（仅百分比）上。
    * 还需向上检查组的自适应尺寸，放在外部自己调用check。
    */
-  endSizeChange(prev: Style, dSize: ResizeStyle) {
+  endSizeChange(prev: Style) {
     const {
       translateX,
       translateY,
@@ -1325,49 +1325,20 @@ class Node extends Event {
       bottom,
     } = style;
     const { width: pw, height: ph } = parent!;
-    /**
-     * dSize是更改的样式，并且是调整过translate为0后的，将其赋值给初始nextStyle，同时记录prev初始；
-     * 如果有调整translate（仅百分比情况），则修正的同时更新初始值。
-     */
-    const res: ResizeData = { prev: {}, next: dSize };
-    (Object.keys(dSize) as (keyof ResizeStyle)[]).forEach(k => {
-      const o = prev[k];
-      if (k === 'scaleX' || k === 'scaleY') {
-        res.prev[k] = prev[k].v;
-      }
-      else if (o.u === StyleUnit.PX || o.u === StyleUnit.NUMBER) {
-        res.prev[k] = prev[k].v;
-      }
-      else if (o.u === StyleUnit.PERCENT) {
-        res.prev[k] = prev[k].v + '%';
-      }
-      // text中会出现宽高auto
-      else if (o.u === StyleUnit.AUTO) {
-        res.prev[k] = 'auto';
-      }
-    });
     if (translateX.v && translateX.u === StyleUnit.PERCENT) {
       const v = translateX.v * w * 0.01;
       if (left.u === StyleUnit.PX) {
-        res.prev.left = prev.left.v;
         left.v -= v;
-        res.next.left = left.v;
       }
       else if (left.u === StyleUnit.PERCENT) {
-        res.prev.left = prev.left.v + '%';
         left.v -= v * 100 / pw;
-        res.next.left = left.v + '%';
       }
       computedStyle.left -= v;
       if (right.u === StyleUnit.PX) {
-        res.prev.right = prev.right.v;
         right.v += v;
-        res.next.right = right.v;
       }
       else if (right.u === StyleUnit.PERCENT) {
-        res.prev.right = prev.right.v + '%';
         right.v += v * 100 / pw;
-        res.next.right = right.v + '%';
       }
       computedStyle.right += v;
       computedStyle.translateX += v; // start置0了
@@ -1375,25 +1346,17 @@ class Node extends Event {
     if (translateY.v && translateY.u === StyleUnit.PERCENT) {
       const v = translateY.v * h * 0.01;
       if (top.u === StyleUnit.PX) {
-        res.prev.top = prev.top.v;
         top.v -= v;
-        res.next.top = top.v;
       }
       else if (style.top.u === StyleUnit.PERCENT) {
-        res.prev.top = prev.top.v + '%';
         top.v -= v * 100 / ph;
-        res.next.top = top.v + '%';
       }
       computedStyle.top -= v;
       if (bottom.u === StyleUnit.PX) {
-        res.prev.bottom = prev.bottom.v;
         bottom.v += v;
-        res.next.bottom = bottom.v;
       }
       else if (bottom.u === StyleUnit.PERCENT) {
-        res.prev.bottom = prev.bottom.v + '%';
         bottom.v += v * 100 / ph;
-        res.next.bottom = bottom.v + '%';
       }
       computedStyle.bottom += v;
       computedStyle.translateY += v;
@@ -1402,7 +1365,6 @@ class Node extends Event {
     style.translateX.u = translateX.u;
     style.translateY.v = translateY.v;
     style.translateY.u = translateY.u;
-    return res;
   }
 
   // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的%（可能）

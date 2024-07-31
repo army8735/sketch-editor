@@ -185,28 +185,6 @@ class Group extends Container {
     return false;
   }
 
-  /**
-   * 组调整尺寸reflow后，先检查是否有无效或者需要二次自适应尺寸，
-   * 比如组右下角固定left+top+width+height的矩形，右下拉伸变大应该无效，sketch中交互是拉不动，
-   * 这个检查在初始化也有做，防止人工脏数据，比如组的尺寸和子节点bbox集合不等。
-   * 然后执行基类的逻辑，见Node同名方法。
-   */
-  override endSizeChange(prev: Style, dSize: ResizeStyle) {
-    this.checkPosSizeDownward();
-    return super.endSizeChange(prev, dSize);
-  }
-
-  private checkPosSizeDownward() {
-    const { children } = this;
-    for (let i = 0, len = children.length; i < len; i++) {
-      const child = children[i];
-      if (child instanceof Group) {
-        child.checkPosSizeDownward();
-      }
-    }
-    return this.adjustPosAndSize();
-  }
-
   // 添加一个节点后，可能新节点在原本bbox之外，组需要调整尺寸
   checkPosSizeSelf() {
     if (this.adjustPosAndSize()) {

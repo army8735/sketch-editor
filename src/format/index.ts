@@ -385,19 +385,13 @@ export type Override = {
 
 export type ResizeStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height' | 'scaleX' | 'scaleY'>>;
 
-export type ResizeData = { prev: ResizeStyle, next: ResizeStyle };
-
-export type ModifyStyle = Partial<JStyle>;
-
-export type ModifyData = { prev: ModifyStyle, next: ModifyStyle };
-
 export type VerticalAlignStyle = Pick<JStyle, 'textVerticalAlign'>;
 
-export type VerticalAlignData = { prev: VerticalAlignStyle, next: VerticalAlignStyle };
+export type OpacityStyle = Pick<JStyle, 'opacity'>;
+
+export type RotateZStyle = Pick<JStyle, 'rotateZ'>;
 
 export type ModifyRichStyle = Pick<Rich, 'location' | 'length'> & Partial<Rich>;
-
-export type ModifyRichData = { prev: Rich[], next: Rich[] };
 
 export default {
   TAG_NAME,

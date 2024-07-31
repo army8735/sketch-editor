@@ -5,10 +5,9 @@ import Listener from './Listener';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
 import { getBasicInfo, resizeBottomOperate, resizeRightOperate } from '../tools/node';
-import ResizeCommand from '../history/ResizeCommand';
-import UpdateStyleCommand from '../history/UpdateStyleCommand';
+import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
+import UpdateStyleCommand, { UpdateStyleData } from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { ModifyData, ResizeData, ResizeStyle } from '../format';
 import { ComputedStyle, Style } from '../style/define';
 
 const html = `
@@ -68,7 +67,6 @@ class BasicPanel extends Panel {
     let computedStyle: ComputedStyle[] = [];
     let prevNumber: number[] = [];
     let nextNumber: number[] = [];
-    let nextStyle: ResizeStyle[] = [];
 
     const onInputPos = (e: Event, isXOrY = true) => {
       this.silence = true;
@@ -224,8 +222,12 @@ class BasicPanel extends Panel {
     r.addEventListener('change', (e) => {
       if (nodes.length) {
         listener.history.addCommand(new RotateCommand(nodes, prevNumber.map((prev, i) => ({
-          prev,
-          next: nextNumber[i],
+          prev: {
+            rotateZ: prev,
+          },
+          next: {
+            rotateZ: nextNumber[i],
+          },
         }))));
         nodes = [];
         computedStyle = [];
@@ -243,7 +245,6 @@ class BasicPanel extends Panel {
         prevNumber = [];
       }
       nextNumber = [];
-      nextStyle = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         if (isFirst) {
@@ -283,7 +284,6 @@ class BasicPanel extends Panel {
           : resizeBottomOperate(node, computedStyle[i], d);
         if (t) {
           node.updateStyle(t);
-          nextStyle[i] = t;
         }
       });
       if (nodes.length) {
@@ -294,13 +294,19 @@ class BasicPanel extends Panel {
       this.silence = false;
     };
 
-    const onChangeSize = () => {
+    const onChangeSize = (isWOrH = true) => {
       if (nodes.length) {
         const data: ResizeData[] = [];
         nodes.forEach((node, i) => {
-          const rd = node.endSizeChange(originStyle[i], nextStyle[i]);
+          node.endSizeChange(originStyle[i]);
           node.checkPosSizeUpward();
-          data.push(rd);
+          const d = nextNumber[i] - prevNumber[i];
+          data.push({
+            dx: isWOrH ? d : 0,
+            dy: isWOrH ? 0 : d,
+            controlType: CONTROL_TYPE.BR,
+            aspectRatio: false,
+          });
         });
         listener.history.addCommand(new ResizeCommand(nodes, data));
         nodes = [];
@@ -308,7 +314,6 @@ class BasicPanel extends Panel {
         computedStyle = [];
         prevNumber = [];
         nextNumber = [];
-        nextStyle = [];
       }
     };
 
@@ -335,7 +340,7 @@ class BasicPanel extends Panel {
         fh.classList.add('active');
       }
       const nodes: Node[] = [];
-      const data: ModifyData[] = [];
+      const data: UpdateStyleData[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.scaleX;
         const next = fh.classList.contains('active') ? -1 : 1;
@@ -367,7 +372,7 @@ class BasicPanel extends Panel {
         fv.classList.add('active');
       }
       const nodes: Node[] = [];
-      const data: ModifyData[] = [];
+      const data: UpdateStyleData[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.scaleY;
         const next = fv.classList.contains('active') ? -1 : 1;

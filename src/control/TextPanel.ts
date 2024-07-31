@@ -4,16 +4,15 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import { getTextInfo, getFontWeightList, TEXT_BEHAVIOUR, updateTextBehaviour } from '../tools/text';
-import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
+import { getTextInfo, getFontWeightList, setTextBehaviour } from '../tools/text';
+import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
 import Listener from './Listener';
 import picker from './picker';
-import UpdateRichCommand from '../history/UpdateRichCommand';
-import ResizeCommand from '../history/ResizeCommand';
+import UpdateRichCommand, { UpdateRichData } from '../history/UpdateRichCommand';
 import State from './State';
 import Panel from './Panel';
-import { Rich, ModifyRichData, VerticalAlignData } from '../format';
-import VerticalAlignCommand from '../history/VerticalAlignCommand';
+import { Rich } from '../format';
+import VerticalAlignCommand, { VerticalAlignData } from '../history/VerticalAlignCommand';
 import fontInfo from '../style/font';
 import font from '../style/font';
 import inject from '../util/inject';
@@ -279,7 +278,7 @@ class TextPanel extends Panel {
           }
         }
         select.value = ff;
-        const data: ModifyRichData[] = [];
+        const data: UpdateRichData[] = [];
         nodes.forEach(node => {
           const prev = node.getRich();
           node.updateRichStyle({
@@ -300,7 +299,7 @@ class TextPanel extends Panel {
         if (option) {
           option.remove();
         }
-        const data: ModifyRichData[] = [];
+        const data: UpdateRichData[] = [];
         nodes.forEach(node => {
           const prev = node.getRich();
           node.updateRichStyle({
@@ -363,17 +362,18 @@ class TextPanel extends Panel {
         && !el.classList.contains('cur')) {
         pickCallback();
         nodes = this.nodes.slice(0);
-        let behaviour = TEXT_BEHAVIOUR.AUTO;
+        let next = TEXT_BEHAVIOUR.AUTO;
         if (el.classList.contains('fw')) {
-          behaviour = TEXT_BEHAVIOUR.FIXED_W;
+          next = TEXT_BEHAVIOUR.FIXED_W;
         }
         else if (el.classList.contains('fwh')) {
-          behaviour = TEXT_BEHAVIOUR.FIXED_W_H;
+          next = TEXT_BEHAVIOUR.FIXED_W_H;
         }
-        const data = nodes.map(item => updateTextBehaviour(item, behaviour));
-        listener.history.addCommand(new ResizeCommand(nodes.slice(0), data));
+        nodes.map(item => setTextBehaviour(item, next));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
+        dom.querySelector('.wh .cur')?.classList.remove('cur');
+        el.classList.add('cur');
       }
       // 左右对齐
       else if ((el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify'))
@@ -395,7 +395,7 @@ class TextPanel extends Panel {
         }
         // 普通状态
         else {
-          const data: ModifyRichData[] = [];
+          const data: UpdateRichData[] = [];
           nodes.forEach(node => {
             const prev = node.getRich();
             node.updateRichStyle({
@@ -460,6 +460,7 @@ class TextPanel extends Panel {
       Listener.COLOR_NODE,
       Listener.TEXT_ALIGN_NODE,
       Listener.TEXT_VERTICAL_ALIGN_NODE,
+      Listener.TEXT_BEHAVIOUR_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {

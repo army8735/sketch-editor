@@ -1,5 +1,6 @@
 import Command from './Command';
 import Node from '../node/Node';
+import { ComputedStyle } from '../style/define';
 
 export type MoveData = { dx: number, dy: number };
 
@@ -18,10 +19,7 @@ class MoveCommand extends Command {
       const { dx, dy } = data[i];
       const originStyle = node.getStyle();
       const computedStyle = node.computedStyle;
-      node.updateStyle({
-        translateX: computedStyle.translateX + dx,
-        translateY: computedStyle.translateY + dy,
-      });
+      MoveCommand.updateStyle(node, computedStyle, dx, dy);
       // 结束后特殊检查，translate换算布局，Group约束
       node.endPosChange(originStyle, dx, dy);
       node.checkPosSizeUpward();
@@ -34,13 +32,17 @@ class MoveCommand extends Command {
       const { dx, dy } = data[i];
       const originStyle = node.getStyle();
       const computedStyle = node.computedStyle;
-      node.updateStyle({
-        translateX: computedStyle.translateX - dx,
-        translateY: computedStyle.translateY - dy,
-      });
+      MoveCommand.updateStyle(node, computedStyle, -dx, -dy);
       // 结束后特殊检查，translate换算布局，Group约束
       node.endPosChange(originStyle, -dx, -dy);
       node.checkPosSizeUpward();
+    });
+  }
+
+  static updateStyle(node: Node, computedStyle: ComputedStyle, dx: number, dy: number) {
+    node.updateStyle({
+      translateX: computedStyle.translateX + dx,
+      translateY: computedStyle.translateY + dy,
     });
   }
 }

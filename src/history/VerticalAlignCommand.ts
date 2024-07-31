@@ -1,27 +1,15 @@
-import Command from './Command';
 import Node from '../node/Node';
-import { VerticalAlignData } from '../format';
+import UpdateStyleCommand from './UpdateStyleCommand';
+import { VerticalAlignStyle } from '../format';
 
-class VerticalAlignCommand extends Command {
-  data: VerticalAlignData[];
+export type VerticalAlignData = {
+  prev: VerticalAlignStyle;
+  next: VerticalAlignStyle;
+};
 
+class VerticalAlignCommand extends UpdateStyleCommand {
   constructor(nodes: Node[], data: VerticalAlignData[]) {
-    super(nodes);
-    this.data = data;
-  }
-
-  execute() {
-    const { nodes, data } = this;
-    nodes.forEach((node, i) => {
-      node.updateStyle(data[i].next);
-    });
-  }
-
-  undo() {
-    const { nodes, data } = this;
-    nodes.forEach((node, i) => {
-      node.updateStyle(data[i].prev);
-    });
+    super(nodes, data);
   }
 }
 

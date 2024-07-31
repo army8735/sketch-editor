@@ -57,10 +57,16 @@ class OpacityPanel extends Panel {
     });
     range.addEventListener('change', (e) => {
       if (nodes.length) {
-        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
-          prev,
-          next: nexts[i],
-        }))));
+        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => {
+          return {
+            prev: {
+              opacity: prev,
+            },
+            next: {
+              opacity: nexts[i],
+            },
+          };
+        })));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
         nodes = [];
         prevs = [];
@@ -132,8 +138,12 @@ class OpacityPanel extends Panel {
     number.addEventListener('change', (e) => {
       if (nodes.length) {
         listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
-          prev,
-          next: nexts[i],
+          prev: {
+            opacity: prev,
+          },
+          next: {
+            opacity: nexts[i],
+          },
         }))));
         nodes = [];
         prevs = [];

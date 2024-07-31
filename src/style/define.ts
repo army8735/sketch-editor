@@ -449,9 +449,9 @@ export enum PATTERN_FILL_TYPE {
 }
 
 export enum TEXT_BEHAVIOUR {
-  FLEXIBLE = 0,
-  FIXED_WIDTH = 1,
-  FIXED_SIZE = 2,
+  AUTO = 0,
+  FIXED_W = 1,
+  FIXED_W_H = 2,
 }
 
 export default {

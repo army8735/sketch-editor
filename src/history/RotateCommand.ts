@@ -1,32 +1,15 @@
-import Command from './Command';
 import Node from '../node/Node';
+import UpdateStyleCommand from './UpdateStyleCommand';
+import { RotateZStyle } from '../format';
 
-class RotateCommand extends Command {
-  data: { prev: number, next: number }[];
+export type RotateData = {
+  prev: RotateZStyle;
+  next: RotateZStyle;
+};
 
-  constructor(nodes: Node[], data: { prev: number, next: number }[]) {
-    super(nodes);
-    this.data = data;
-  }
-
-  execute() {
-    const { nodes, data } = this;
-    nodes.forEach((node, i) => {
-      node.updateStyle({
-        rotateZ: data[i].next % 360,
-      });
-      node.checkPosSizeUpward();
-    });
-  }
-
-  undo() {
-    const { nodes, data } = this;
-    nodes.forEach((node, i) => {
-      node.updateStyle({
-        rotateZ: data[i].prev % 360,
-      });
-      node.checkPosSizeUpward();
-    });
+class RotateCommand extends UpdateStyleCommand {
+  constructor(nodes: Node[], data: RotateData[]) {
+    super(nodes, data);
   }
 }
 

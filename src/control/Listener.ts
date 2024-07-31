@@ -10,34 +10,20 @@ import Select from './Select';
 import Input from './Input';
 import State from './State';
 import { clone } from '../util/util';
-import { ArtBoardProps, JStyle } from '../format';
+import { ArtBoardProps } from '../format';
 import History from '../history/History';
 import Command from '../history/Command';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
-import ResizeCommand from '../history/ResizeCommand';
+import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
-import {
-  resizeTopOperate,
-  resizeBottomOperate,
-  resizeLeftOperate,
-  resizeRightOperate,
-  resizeTopAspectRatioOperate,
-  resizeBottomAspectRatioOperate,
-  resizeRightAspectRatioOperate,
-  resizeLeftAspectRatioOperate,
-  resizeBottomRightAspectRatioOperate,
-  resizeTopLeftAspectRatioOperate,
-  resizeTopRightAspectRatioOperate,
-  resizeBottomLeftAspectRatioOperate,
-} from '../tools/node';
-import { getNodeByPoint, getFrameNodes } from '../tools/root';
+import { getFrameNodes, getNodeByPoint } from '../tools/root';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import OpacityCommand from '../history/OpacityCommand';
-import { ResizeData, ResizeStyle } from '../format';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
+import TextBehaviourCommand from '../history/TextBehaviourCommand';
 
 export type ListenerOptions = {
   disabled?: {
@@ -68,7 +54,7 @@ export default class Listener extends Event {
   isMouseMove: boolean;
   isControl: boolean; // resize等操作控制
   isRotate: boolean; // 拖转旋转节点
-  controlType: string; // 拖动尺寸dom时节点的class，区分比如左拉还是右拉
+  controlType: CONTROL_TYPE; // 拖动尺寸dom时节点的class，区分比如左拉还是右拉
   originX: number;
   originY: number;
   startX: number;
@@ -79,7 +65,6 @@ export default class Listener extends Event {
   centerY: number;
   dx: number; // 每次拖拽的px，考虑缩放和dpi，即为sketch内的单位
   dy: number;
-  dSize: ResizeStyle[];
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
   select: Select; // 展示的选框dom
   selected: Node[]; // 已选的节点们
@@ -107,7 +92,7 @@ export default class Listener extends Event {
     this.isMouseMove = false;
     this.isControl = false;
     this.isRotate = false;
-    this.controlType = '';
+    this.controlType = CONTROL_TYPE.T;
 
     this.originX = 0;
     this.originY = 0;
@@ -119,7 +104,6 @@ export default class Listener extends Event {
     this.centerY = 0;
     this.dx = 0;
     this.dy = 0;
-    this.dSize = [];
     this.isFrame = false;
 
     this.selected = [];
@@ -199,21 +183,30 @@ export default class Listener extends Event {
     this.originStyle.splice(0);
     this.computedStyle.splice(0);
     this.dx = this.dy = 0;
-    this.dSize.splice(0);
     // 点到控制html上
     if (isControl) {
       if (this.options.disabled?.resize) {
         return;
       }
       this.isControl = isControl;
-      this.controlType = target.className;
+      const controlType = this.controlType = {
+        't': CONTROL_TYPE.T,
+        'r': CONTROL_TYPE.R,
+        'b': CONTROL_TYPE.B,
+        'l': CONTROL_TYPE.L,
+        'tl': CONTROL_TYPE.TL,
+        'tr': CONTROL_TYPE.TR,
+        'bl': CONTROL_TYPE.BL,
+        'br': CONTROL_TYPE.BR,
+      }[target.className]!;
       this.prepare();
       if (this.state === State.EDIT_TEXT) {
         this.state = State.NORMAL;
         this.input.hide();
       }
       // 旋转时记住中心坐标
-      if (selected.length === 1 && this.metaKey && ['tl', 'tr', 'bl', 'br'].indexOf(this.controlType) > -1) {
+      if (selected.length === 1 && this.metaKey
+        && [CONTROL_TYPE.TL, CONTROL_TYPE.TR, CONTROL_TYPE.BL, CONTROL_TYPE.BR].indexOf(controlType) > -1) {
         const { points } = selected[0].getBoundingClientRect();
         const i = intersectLineLine(
           points[0].x, points[0].y, points[2].x, points[2].y,
@@ -238,11 +231,7 @@ export default class Listener extends Event {
                 height: clone(style.height),
               };
               // 根据control的类型方向，决定将TRBL某个改为px固定值，对称方向改为auto
-              if (
-                this.controlType === 't' ||
-                this.controlType === 'tl' ||
-                this.controlType === 'tr'
-              ) {
+              if (controlType === CONTROL_TYPE.T || controlType === CONTROL_TYPE.TL || controlType === CONTROL_TYPE.TR) {
                 if (style.bottom.u !== StyleUnit.PX) {
                   style.bottom.v = computedStyle.bottom;
                   style.bottom.u = StyleUnit.PX;
@@ -251,9 +240,7 @@ export default class Listener extends Event {
                   style.top.u = StyleUnit.AUTO;
                 }
               }
-              else if (this.controlType === 'b' ||
-                this.controlType === 'bl' ||
-                this.controlType === 'br') {
+              else if (controlType === CONTROL_TYPE.B || controlType === CONTROL_TYPE.BL || controlType === CONTROL_TYPE.BR) {
                 if (style.top.u !== StyleUnit.PX) {
                   style.top.v = computedStyle.top;
                   style.top.u = StyleUnit.PX;
@@ -262,11 +249,7 @@ export default class Listener extends Event {
                   style.bottom.u = StyleUnit.AUTO;
                 }
               }
-              if (
-                this.controlType === 'l' ||
-                this.controlType === 'tl' ||
-                this.controlType === 'bl'
-              ) {
+              if (controlType === CONTROL_TYPE.L || controlType === CONTROL_TYPE.TL || controlType === CONTROL_TYPE.BL) {
                 if (style.right.u !== StyleUnit.PX) {
                   style.right.v = computedStyle.right;
                   style.right.u = StyleUnit.PX;
@@ -275,11 +258,7 @@ export default class Listener extends Event {
                   style.left.u = StyleUnit.AUTO;
                 }
               }
-              else if (
-                this.controlType === 'r' ||
-                this.controlType === 'tr' ||
-                this.controlType === 'br'
-              ) {
+              else if (controlType === CONTROL_TYPE.R || controlType === CONTROL_TYPE.TR || controlType === CONTROL_TYPE.BR) {
                 if (style.left.u !== StyleUnit.PX) {
                   style.left.v = computedStyle.left;
                   style.left.u = StyleUnit.PX;
@@ -483,8 +462,8 @@ export default class Listener extends Event {
     const dx = e.clientX - this.startX; // 外部页面单位
     const dy = e.clientY - this.startY;
     const zoom = page.getZoom();
-    let dx2 = this.dx = (dx / zoom) * dpi; // 画布内sketch单位
-    let dy2 = this.dy = (dy / zoom) * dpi;
+    let dx2 = this.dx = Math.round((dx / zoom) * dpi); // 画布内sketch单位
+    let dy2 = this.dy = Math.round((dy / zoom) * dpi);
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
@@ -522,53 +501,9 @@ export default class Listener extends Event {
             node.startSizeChange();
             this.computedStyle[i] = node.getComputedStyle();
           }
-          const next: ResizeStyle = {};
           const computedStyle = this.computedStyle[i];
           const controlType = this.controlType;
-          // 保持宽高比的拉伸，4个方向和4个角需要单独特殊处理
-          if (this.shiftKey) {
-            if (controlType === 't') {
-              Object.assign(next, resizeTopAspectRatioOperate(node, computedStyle, dy2));
-            }
-            else if (controlType === 'r') {
-              Object.assign(next, resizeRightAspectRatioOperate(node, computedStyle, dx2));
-            }
-            else if (controlType === 'b') {
-              Object.assign(next, resizeBottomAspectRatioOperate(node, computedStyle, dy2));
-            }
-            else if (controlType === 'l') {
-              Object.assign(next, resizeLeftAspectRatioOperate(node, computedStyle, dx2));
-            }
-            else if (controlType === 'tl') {
-              Object.assign(next, resizeTopLeftAspectRatioOperate(node, computedStyle, dx2, dy2));
-            }
-            else if (controlType === 'tr') {
-              Object.assign(next, resizeTopRightAspectRatioOperate(node, computedStyle, dx2, dy2));
-            }
-            else if (controlType === 'bl') {
-              Object.assign(next, resizeBottomLeftAspectRatioOperate(node, computedStyle, dx2, dy2));
-            }
-            else if (controlType === 'br') {
-              Object.assign(next, resizeBottomRightAspectRatioOperate(node, computedStyle, dx2, dy2));
-            }
-          }
-          // 普通的分4个方向上看，4个角则是2个方向的合集，因为相邻方向不干扰，相对方向互斥
-          else {
-            if (controlType === 't' || controlType === 'tl' || controlType === 'tr') {
-              Object.assign(next, resizeTopOperate(node, computedStyle, dy2));
-            }
-            else if (controlType === 'b' || controlType === 'bl' || controlType === 'br') {
-              Object.assign(next, resizeBottomOperate(node, computedStyle, dy2));
-            }
-            if (controlType === 'l' || controlType === 'tl' || controlType === 'bl') {
-              Object.assign(next, resizeLeftOperate(node, computedStyle, dx2));
-            }
-            else if (controlType === 'r' || controlType === 'tr' || controlType === 'br') {
-              Object.assign(next, resizeRightOperate(node, computedStyle, dx2));
-            }
-          }
-          node.updateStyle(next);
-          this.dSize[i] = next;
+          ResizeCommand.updateStyle(node, computedStyle, dx2, dy2, controlType, this.shiftKey);
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -637,17 +572,7 @@ export default class Listener extends Event {
              * 需要注意目前matrix的整体计算是将布局信息TRLB换算为translate，因此style上的原始值和更新的这个px值并不一致，
              * 结束拖动调用endPosChange()将translate写回布局TRLB的style上满足定位要求。
              */
-            const o: Partial<Pick<JStyle, 'translateX' | 'translateY'>> = {};
-            if (dx2) {
-              o.translateX = computedStyle.translateX + dx2;
-            }
-            if (dy2) {
-              o.translateY = computedStyle.translateY + dy2;
-            }
-            node.updateStyle({
-              translateX: computedStyle.translateX + dx2,
-              translateY: computedStyle.translateY + dy2,
-            });
+            MoveCommand.updateStyle(node, computedStyle, dx2, dy2);
           });
           this.select.updateSelect(selected);
           this.emit(Listener.MOVE_NODE, selected.slice(0));
@@ -768,14 +693,19 @@ export default class Listener extends Event {
         this.isRotate = false;
         const node = selected[0];
         this.history.addCommand(new RotateCommand([node], [{
-          prev: this.computedStyle[0].rotateZ,
-          next: node.computedStyle.rotateZ,
+          prev: {
+            rotateZ: this.computedStyle[0].rotateZ,
+          },
+          next: {
+            rotateZ: node.computedStyle.rotateZ,
+          },
         }]));
         if (!this.metaKey) {
           this.select.metaKey(false);
         }
       }
       else {
+        const { dx, dy } = this;
         // 还原artBoard的children为初始值，只有操作画板时才有，普通节点是空[]
         this.abcStyle.forEach((item, i) => {
           if (item.length) {
@@ -793,13 +723,22 @@ export default class Listener extends Event {
             });
           }
         });
-        if (this.isMouseMove) {
+        if (this.isMouseMove && (dx || dy)) {
+          const controlType = this.controlType;
           const data: ResizeData[] = [];
           selected.forEach((node, i) => {
             // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
-            const rd = node.endSizeChange(this.originStyle[i], this.dSize[i]);
+            node.endSizeChange(this.originStyle[i]);
             node.checkPosSizeUpward();
-            data.push(rd);
+            const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey };
+            const originStyle = this.originStyle[i];
+            if (originStyle.width.u === StyleUnit.AUTO) {
+              r.widthFromAuto = true;
+            }
+            if (originStyle.height.u === StyleUnit.AUTO) {
+              r.heightFromAuto = true;
+            }
+            data.push(r);
           });
           this.history.addCommand(new ResizeCommand(selected.slice(0), data));
         }
@@ -854,7 +793,6 @@ export default class Listener extends Event {
     this.isMouseDown = false;
     this.isMouseMove = false;
     this.mouseDownArtBoard = undefined;
-    this.controlType = '';
     this.isFrame = false;
     if (this.spaceKey) {
       if (this.options.disabled?.drag) {
@@ -939,9 +877,6 @@ export default class Listener extends Event {
         node.hideSelectArea();
         this.state = State.EDIT_TEXT;
       }
-    }
-    else {
-      // this.select.hideSelect();
     }
   }
 
@@ -1105,6 +1040,15 @@ export default class Listener extends Event {
         else if (c instanceof RotateCommand) {
           this.emit(Listener.ROTATE_NODE, this.selected.slice(0));
         }
+        else if (c instanceof TextBehaviourCommand) {
+          this.emit(Listener.TEXT_BEHAVIOUR_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof OpacityCommand) {
+          this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof VerticalAlignCommand) {
+          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
+        }
         else if (c instanceof UpdateRichCommand) {
           if (c.type === UpdateRichCommand.TEXT_ALIGN) {
             this.emit(Listener.TEXT_ALIGN_NODE, this.selected.slice(0));
@@ -1127,12 +1071,6 @@ export default class Listener extends Event {
           else if (c.type === UpdateRichCommand.LETTER_SPACING) {
             this.emit(Listener.LETTER_SPACING_NODE, this.selected.slice(0));
           }
-        }
-        else if (c instanceof OpacityCommand) {
-          this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
-        }
-        else if (c instanceof VerticalAlignCommand) {
-          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
         }
       }
     }
@@ -1186,7 +1124,6 @@ export default class Listener extends Event {
     this.abcStyle.splice(0);
     this.computedStyle.splice(0);
     this.originStyle.splice(0);
-    this.dSize.splice(0);
     this.select.destroy();
   }
 
@@ -1201,7 +1138,6 @@ export default class Listener extends Event {
   static FLIP_V_NODE = 'FLIP_V_NODE';
   static FILL_NODE = 'FILL_NODE';
   static STROKE_NODE = 'STROKE_NODE';
-  static TEXT_NODE = 'TEXT_NODE';
   static FONT_FAMILY_NODE = 'FONT_FAMILY_NODE';
   static FONT_SIZE_NODE = 'FONT_SIZE_NODE';
   static LINE_HEIGHT_NODE = 'LINE_HEIGHT_NODE';
@@ -1210,6 +1146,7 @@ export default class Listener extends Event {
   static COLOR_NODE = 'COLOR_NODE';
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
+  static TEXT_BEHAVIOUR_NODE = 'TEXT_BEHAVIOUR_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
