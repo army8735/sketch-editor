@@ -396,7 +396,7 @@ class TextPanel extends Panel {
             rd.heightToAuto = true;
           }
           else if (next === TEXT_BEHAVIOUR.FIXED_W) {
-            rd.widthToAuto = true;
+            rd.heightToAuto = true;
           }
           data.push(rd);
         });
