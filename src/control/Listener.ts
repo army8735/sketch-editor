@@ -23,7 +23,6 @@ import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import OpacityCommand from '../history/OpacityCommand';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
-import TextBehaviourCommand from '../history/TextBehaviourCommand';
 
 export type ListenerOptions = {
   disabled?: {
@@ -1039,9 +1038,6 @@ export default class Listener extends Event {
         }
         else if (c instanceof RotateCommand) {
           this.emit(Listener.ROTATE_NODE, this.selected.slice(0));
-        }
-        else if (c instanceof TextBehaviourCommand) {
-          this.emit(Listener.TEXT_BEHAVIOUR_NODE, this.selected.slice(0));
         }
         else if (c instanceof OpacityCommand) {
           this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
