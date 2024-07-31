@@ -16,13 +16,13 @@ import Command from '../history/Command';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getFrameNodes, getNodeByPoint } from '../tools/root';
 import UpdateRichCommand from '../history/UpdateRichCommand';
+import OpacityCommand from '../history/OpacityCommand';
+import VerticalAlignCommand from '../history/VerticalAlignCommand';
+import { getFrameNodes, getNodeByPoint } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
-import OpacityCommand from '../history/OpacityCommand';
-import VerticalAlignCommand from '../history/VerticalAlignCommand';
 
 export type ListenerOptions = {
   disabled?: {
@@ -1142,7 +1142,6 @@ export default class Listener extends Event {
   static COLOR_NODE = 'COLOR_NODE';
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
-  static TEXT_BEHAVIOUR_NODE = 'TEXT_BEHAVIOUR_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';

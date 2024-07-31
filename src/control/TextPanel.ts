@@ -4,15 +4,16 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import { loadLocalFonts } from '../util/util';
 import style from '../style';
-import { getTextInfo, getFontWeightList, setTextBehaviour } from '../tools/text';
-import { TEXT_ALIGN, TEXT_VERTICAL_ALIGN, TEXT_BEHAVIOUR } from '../style/define';
+import { getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
+import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
+import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
+import UpdateRichCommand, { UpdateRichData } from '../history/UpdateRichCommand';
+import VerticalAlignCommand, { VerticalAlignData } from '../history/VerticalAlignCommand';
 import Listener from './Listener';
 import picker from './picker';
-import UpdateRichCommand, { UpdateRichData } from '../history/UpdateRichCommand';
 import State from './State';
 import Panel from './Panel';
 import { Rich } from '../format';
-import VerticalAlignCommand, { VerticalAlignData } from '../history/VerticalAlignCommand';
 import fontInfo from '../style/font';
 import font from '../style/font';
 import inject from '../util/inject';
@@ -206,7 +207,8 @@ class TextPanel extends Panel {
     };
 
     const onChange = (key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
-      if (nodes.length) {let type = '';
+      if (nodes.length) {
+        let type = '';
         if (key == 'fontSize') {
           type = UpdateRichCommand.FONT_SIZE;
         }
@@ -369,7 +371,36 @@ class TextPanel extends Panel {
         else if (el.classList.contains('fwh')) {
           next = TEXT_BEHAVIOUR.FIXED_W_H;
         }
-        nodes.map(item => setTextBehaviour(item, next));
+        const data: ResizeData[] = [];
+        nodes.map(item => {
+          const { width, height } = item;
+          const tb = getTextBehaviour(item);
+          setTextBehaviour(item, next);
+          const dx = item.width - width;
+          const dy = item.height - height;
+          const rd: ResizeData = {
+            dx,
+            dy,
+            controlType: CONTROL_TYPE.BR,
+            aspectRatio: false,
+          };
+          if (tb === TEXT_BEHAVIOUR.AUTO) {
+            rd.widthFromAuto = true;
+            rd.heightFromAuto = true;
+          }
+          else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
+            rd.heightFromAuto = true;
+          }
+          if (next === TEXT_BEHAVIOUR.AUTO) {
+            rd.widthToAuto = true;
+            rd.heightToAuto = true;
+          }
+          else if (next === TEXT_BEHAVIOUR.FIXED_W) {
+            rd.widthToAuto = true;
+          }
+          data.push(rd);
+        });
+        listener.history.addCommand(new ResizeCommand(nodes, data));
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         dom.querySelector('.wh .cur')?.classList.remove('cur');
@@ -460,7 +491,6 @@ class TextPanel extends Panel {
       Listener.COLOR_NODE,
       Listener.TEXT_ALIGN_NODE,
       Listener.TEXT_VERTICAL_ALIGN_NODE,
-      Listener.TEXT_BEHAVIOUR_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {

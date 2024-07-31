@@ -21,8 +21,10 @@ export type ResizeData = {
   dy: number;
   controlType: CONTROL_TYPE;
   aspectRatio: boolean;
-  widthFromAuto?: boolean; // text的尺寸可能初始是auto，拉伸后变数值
+  widthFromAuto?: boolean; // Text的尺寸可能初始是auto，拉伸后变数值；也可能TextBehaviour改变
   heightFromAuto?: boolean;
+  widthToAuto?: boolean; // TextBehaviour可能改变成auto
+  heightToAuto?: boolean;
 };
 
 export enum CONTROL_TYPE {
@@ -47,12 +49,11 @@ class ResizeCommand extends Command {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      const { dx, dy, controlType, aspectRatio } = data[i];
+      const { dx, dy, controlType, aspectRatio, widthToAuto, heightToAuto } = data[i];
       const originStyle = node.getStyle();
       node.startSizeChange();
       const computedStyle = node.getComputedStyle();
-      // 拉伸一定是变为非auto
-      ResizeCommand.updateStyle(node, computedStyle, dx, dy, controlType, aspectRatio, false, false);
+      ResizeCommand.updateStyle(node, computedStyle, dx, dy, controlType, aspectRatio, widthToAuto, heightToAuto);
       node.endSizeChange(originStyle);
       node.checkPosSizeUpward();
     });
@@ -71,7 +72,7 @@ class ResizeCommand extends Command {
     });
   }
 
-  static updateStyle(node: Node, computedStyle: ComputedStyle, dx: number, dy: number, controlType: CONTROL_TYPE, aspectRatio: boolean, widthFromAuto = false, heightFromAuto = false) {
+  static updateStyle(node: Node, computedStyle: ComputedStyle, dx: number, dy: number, controlType: CONTROL_TYPE, aspectRatio: boolean, widthAuto = false, heightAuto = false) {
     const next: ResizeStyle = {};
     // 保持宽高比的拉伸，4个方向和4个角需要单独特殊处理
     if (aspectRatio) {
@@ -115,10 +116,10 @@ class ResizeCommand extends Command {
         Object.assign(next, resizeRightOperate(node, computedStyle, dx));
       }
     }
-    if (widthFromAuto) {
+    if (widthAuto) {
       next.width = 'auto';
     }
-    if (heightFromAuto) {
+    if (heightAuto) {
       next.height = 'auto';
     }
     node.updateStyle(next);
