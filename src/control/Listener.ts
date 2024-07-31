@@ -1015,16 +1015,16 @@ export default class Listener extends Event {
       }
     }
     // z，undo/redo
-    else if (e.keyCode === 90) {
-      // const target = e.target as HTMLElement;
-      // if (target && target.tagName.toUpperCase() === 'INPUT') {
-      //   return;
-      // }
+    else if (e.keyCode === 90 && this.metaKey) {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName.toUpperCase() === 'INPUT') {
+        e.preventDefault();
+      }
       let c: Command | undefined;
-      if (this.metaKey && this.shiftKey) {
+      if (this.shiftKey) {
         c = this.history.redo();
       }
-      else if (this.metaKey) {
+      else {
         c = this.history.undo();
       }
       if (c) {

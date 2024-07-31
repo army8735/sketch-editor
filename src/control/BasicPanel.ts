@@ -1,5 +1,6 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
+import Text from '../node/Text';
 import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -8,7 +9,8 @@ import { getBasicInfo, resizeBottomOperate, resizeRightOperate } from '../tools/
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import UpdateStyleCommand, { UpdateStyleData } from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { ComputedStyle, Style } from '../style/define';
+import { ComputedStyle, Style, TEXT_BEHAVIOUR } from '../style/define';
+import { getTextBehaviour } from '../tools/text';
 
 const html = `
   <h4 class="panel-title">基本</h4>
@@ -67,6 +69,8 @@ class BasicPanel extends Panel {
     let computedStyle: ComputedStyle[] = [];
     let prevNumber: number[] = [];
     let nextNumber: number[] = [];
+    let widthAuto: boolean[] = [];
+    let heightAuto: boolean[] = [];
 
     const onInputPos = (e: Event, isXOrY = true) => {
       this.silence = true;
@@ -243,6 +247,8 @@ class BasicPanel extends Panel {
         originStyle = [];
         computedStyle = [];
         prevNumber = [];
+        widthAuto = [];
+        heightAuto = [];
       }
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
@@ -252,6 +258,24 @@ class BasicPanel extends Panel {
           originStyle.push(node.getStyle());
           computedStyle.push(node.getComputedStyle());
           prevNumber.push(isWOrH ? this.data[i].w : this.data[i].h);
+          if (node instanceof Text) {
+            const tb = getTextBehaviour(node);
+            if (tb === TEXT_BEHAVIOUR.AUTO) {
+              if (isWOrH) {
+                widthAuto.push(true);
+              }
+              else {
+                heightAuto.push(true);
+              }
+            }
+            else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
+              if (!isWOrH) {
+                heightAuto.push(true);
+              }
+            }
+          }
+          widthAuto[i] = widthAuto[i] || false;
+          heightAuto[i] = heightAuto[i] || false;
           node.startSizeChange();
         }
         const prev = prevNumber[i];
@@ -301,12 +325,17 @@ class BasicPanel extends Panel {
           node.endSizeChange(originStyle[i]);
           node.checkPosSizeUpward();
           const d = nextNumber[i] - prevNumber[i];
-          data.push({
+          const rd: ResizeData = {
             dx: isWOrH ? d : 0,
             dy: isWOrH ? 0 : d,
-            controlType: CONTROL_TYPE.BR,
+            controlType: isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B,
             aspectRatio: false,
-          });
+          };
+          if (node instanceof Text) {
+            rd.widthFromAuto = widthAuto[i];
+            rd.heightFromAuto = heightAuto[i];
+          } console.log(rd);
+          data.push(rd);
         });
         listener.history.addCommand(new ResizeCommand(nodes, data));
         nodes = [];
@@ -314,6 +343,8 @@ class BasicPanel extends Panel {
         computedStyle = [];
         prevNumber = [];
         nextNumber = [];
+        widthAuto = [];
+        heightAuto = [];
       }
     };
 
@@ -321,14 +352,14 @@ class BasicPanel extends Panel {
       onInputSize(e, true);
     });
     w.addEventListener('change', (e) => {
-      onChangeSize();
+      onChangeSize(true);
     });
 
     h.addEventListener('input', (e) => {
       onInputSize(e, false);
     });
     h.addEventListener('change', (e) => {
-      onChangeSize();
+      onChangeSize(false);
     });
 
     fh.addEventListener('click', (e) => {
