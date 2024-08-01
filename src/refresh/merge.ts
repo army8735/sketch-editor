@@ -207,7 +207,7 @@ export function genMerge(
     const item = mergeList[j];
     const { i, total, node } = item;
     // 曾经求过merge汇总但因为可视范围外没展示的，且没有变更过的省略计算，但需要统计嵌套关系
-    const isNew = (item.isNew = !node.tempBbox);
+    const isNew = item.isNew = !node.tempBbox;
     node.tempBbox = genBboxTotal(
       structs,
       node,

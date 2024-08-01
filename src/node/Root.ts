@@ -81,7 +81,7 @@ class Root extends Container implements FrameCallback {
   imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
   firstDraw: boolean;
   tileManager?: TileManager;
-  tileRecord: Node[]; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
+  tileRecord: Record<string, Node>; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
   tileLastIndex: number; // 上次tile绘制到哪个节点，再一帧内没绘完下次再续时节省遍历性能
   tileRemain: boolean; // tile模式是否有因跨帧导致的没绘制完的
   breakMerge: boolean; // 因跨帧渲染导致的没有渲染完成的标识
@@ -106,7 +106,7 @@ class Root extends Container implements FrameCallback {
     this.imgLoadingCount = 0;
     this.imgLoadList = [];
     this.firstDraw = true;
-    this.tileRecord = [];
+    this.tileRecord = {};
     this.tileLastIndex = 0;
     this.tileRemain = false;
     this.breakMerge = false;
@@ -381,7 +381,7 @@ class Root extends Container implements FrameCallback {
       }
     }
     if (addDom || removeDom) {
-      lv |= RefreshLevel.REFLOW;
+      lv |= RefreshLevel.REFLOW | RefreshLevel.REBUILD;
     }
     const res = this.calUpdate(node, lv, keys, addDom, removeDom);
     // 有tile时重置关联的tile，为了清空上一次绘制的tile的内容让其重绘
@@ -394,7 +394,7 @@ class Root extends Container implements FrameCallback {
       }
       // 移动元素或者添加时，需要清空新的位置所占的tile区域，记录下来在渲染最初做
       if (lv & RefreshLevel.TRANSLATE) {
-        this.tileRecord[node.uuid] = node;
+        this.tileRecord[node.props.uuid] = node;
       }
     }
     if (res) {
@@ -430,10 +430,6 @@ class Root extends Container implements FrameCallback {
     addDom: boolean,
     removeDom: boolean,
   ): boolean {
-    // 防御一下
-    if (addDom || removeDom) {
-      lv |= RefreshLevel.REFLOW;
-    }
     if (lv === RefreshLevel.NONE || this.isDestroyed) {
       return false;
     }
@@ -502,14 +498,6 @@ class Root extends Container implements FrameCallback {
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;
     this.rl |= lv;
-    if (addDom || removeDom) {
-      this.rl |= RefreshLevel.REBUILD;
-    }
-    // 自己不可见且没改变visible无需刷新
-    const visible = node.computedStyle.visible;
-    if (!visible && keys.indexOf('visible') < 0) {
-      return false;
-    }
     // 父级不可见无需刷新
     let parent = node.parent;
     while (parent) {

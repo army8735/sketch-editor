@@ -50,10 +50,7 @@ import SymbolInstance from './SymbolInstance';
 import Tile from '../refresh/Tile';
 import { convert2Css } from '../style/gradient';
 
-let id = 0;
-
 class Node extends Event {
-  uuid: number;
   width: number;
   height: number;
   minWidth: number; // 最小尺寸限制，当子节点有固定尺寸或者子节点还是组递归有固定时，最小限制不能调整
@@ -115,7 +112,6 @@ class Node extends Event {
 
   constructor(props: Props) {
     super();
-    this.uuid = id++;
     this.props = props;
     this.props.uuid = this.props.uuid || uuid.v4();
     this.style = normalize(getDefaultStyle(props.style));
@@ -655,6 +651,7 @@ class Node extends Event {
     computedStyle.opacity = style.opacity.v;
   }
 
+  // 是否有内容，由各个子类自己实现
   calContent(): boolean {
     return (this.hasContent = false);
   }
@@ -2044,7 +2041,7 @@ class Node extends Event {
       cache = this.hasCacheMw,
       parent = node.parent,
       index = -1;
-    const pList: Array<Container> = [];
+    const pList: Container[] = [];
     while (parent) {
       pList.push(parent);
       // 父级变更过后id就会对不上，但首次初始化后是一致的，防止初始化后立刻调用所以要多判断下

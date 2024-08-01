@@ -188,8 +188,9 @@ function renderWebglTile(
     y2 = last.bbox[3];
   }
   // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld/filterBbox不能用老的
-  for (let i = 0, len = tileRecord.length; i < len; i++) {
-    const node = tileRecord[i];
+  const keys = Object.keys(tileRecord);
+  for (let i = 0, len = keys.length; i < len; i++) {
+    const node = tileRecord[keys[i]];
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
       const m = node.matrixWorld;
       const bbox = node.filterBbox;
@@ -217,7 +218,7 @@ function renderWebglTile(
       }
     }
   }
-  tileRecord.splice(0);
+  root.tileRecord = {};
   const startTime = Date.now();
   // 新生成的merge也影响tile，需清空重绘
   const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
