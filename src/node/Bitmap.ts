@@ -785,7 +785,7 @@ class Bitmap extends Node {
         this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = target;
         return;
       }
-      const uuid = String(this.root!.uuid);
+      const uuid = this.root!.props.uuid;
       if (TextureCache.hasImgInstance(uuid, this._src)) {
         this.textureCache[scaleIndex] =
           this.textureTarget[scaleIndex] =
@@ -823,7 +823,7 @@ class Bitmap extends Node {
     if (this.onlyImg) {
       if (includeSelf) {
         this.textureCache.forEach((item) =>
-          item?.releaseImg(String(this.root!.uuid), this._src),
+          item?.releaseImg(this.root!.props.uuid, this._src),
         );
       }
       this.textureTarget.splice(0);

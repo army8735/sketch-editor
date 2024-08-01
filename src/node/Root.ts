@@ -89,8 +89,6 @@ class Root extends Container implements FrameCallback {
   scaleIndex: number;
 
   constructor(props: RootProps, children: Node[] = []) {
-    props.name = props.name || 'root';
-    props.uuid = props.uuid || 'root';
     super(props, children);
     // 初始化的数据
     this.dpi = props.dpi;
