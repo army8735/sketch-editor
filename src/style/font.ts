@@ -1,4 +1,5 @@
 import opentype from '../util/opentype';
+import inject from '../util/inject';
 
 const arial: FontData = {
   name: 'Arial',
@@ -115,21 +116,19 @@ const o: any = {
     if (!family || !style || !postscriptName) {
       return;
     }
-    const familyL = family.toLowerCase();
     const postscriptNameL = postscriptName.toLowerCase();
-    // 没注册才注册
+    if (this.hasRegister(postscriptNameL)) {
+      return;
+    }
+    const familyL = family.toLowerCase();
     if (!this.info.hasOwnProperty(familyL)) {
-      this.info[familyL] = o;
       const r = this._cal(familyL, f);
       Object.assign(o, r);
-      this._register(familyL, style, postscriptNameL, true);
-      this.updateLocalStorage();
+      o.list = [];
+      this.info[familyL] = o;
     }
-    return Object.assign({
-      postscriptName,
-      family,
-      style,
-    }, this.info[familyL]);
+    this._register(family, style, postscriptName, true);
+    inject.loadArrayBufferFont(postscriptName, ab);
   },
   _cal(family: string, f: any) {
     let spread = 0;

@@ -1361,34 +1361,19 @@ async function readFontFile(filename: string, zipFile: JSZip) {
     return;
   }
   const ab = await file.async('arraybuffer');
-  const data = font.registerAb(ab);
-  if (!data) {
-    return;
-  }
-  return new Promise((resolve) => {
-    inject.loadArrayBufferFont(data.postscriptName, ab);
-    resolve(data);
-  });
+  font.registerAb(ab);
 }
 
 async function readNetFont(url: string, postscriptName: string) {
   if (font.hasRegister(postscriptName)) {
     return;
   }
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     fetch(url).then((res) => res.arrayBuffer()).then(ab => {
-      if (font.hasRegister(postscriptName)) {
-        return;
-      }
-      const data = font.registerAb(ab);
-      if (typeof document !== 'undefined') {
-        const f = new FontFace(postscriptName, ab);
-        document.fonts.add(f);
-        resolve(data.data);
-      }
-      else {
-        reject(data.data);
-      }
+      font.registerAb(ab);
+      resolve();
+    }).catch(() => {
+      reject();
     });
   });
 }
