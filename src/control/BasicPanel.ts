@@ -334,7 +334,7 @@ class BasicPanel extends Panel {
           if (node instanceof Text) {
             rd.widthFromAuto = widthAuto[i];
             rd.heightFromAuto = heightAuto[i];
-          } console.log(rd);
+          }
           data.push(rd);
         });
         listener.history.addCommand(new ResizeCommand(nodes, data));
