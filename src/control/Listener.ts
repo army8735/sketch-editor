@@ -896,35 +896,40 @@ export default class Listener extends Event {
       if (this.options.disabled?.scale) {
         return;
       }
+      let deltaY = e.deltaY;
+      // 来源于手势，数值和滚轮比会很小
+      if (e.ctrlKey && !e.metaKey) {
+        deltaY *= 50;
+      }
       let sc = 0;
-      if (e.deltaY < 0) {
-        if (e.deltaY < -400) {
+      if (deltaY < 0) {
+        if (deltaY < -300) {
           sc = 0.2;
         }
-        else if (e.deltaY < -200) {
+        else if (deltaY < -200) {
           sc = 0.1;
         }
-        else if (e.deltaY < -100) {
+        else if (deltaY < -100) {
           sc = 0.05;
         }
-        else if (e.deltaY < -50) {
+        else if (deltaY < -50) {
           sc = 0.02;
         }
         else {
           sc = 0.01;
         }
       }
-      else if (e.deltaY > 0) {
-        if (e.deltaY > 400) {
+      else if (deltaY > 0) {
+        if (deltaY > 300) {
           sc = -0.2;
         }
-        else if (e.deltaY > 200) {
+        else if (deltaY > 200) {
           sc = -0.1;
         }
-        else if (e.deltaY > 100) {
+        else if (deltaY > 100) {
           sc = -0.05;
         }
-        else if (e.deltaY > 50) {
+        else if (deltaY > 50) {
           sc = -0.02;
         }
         else {
