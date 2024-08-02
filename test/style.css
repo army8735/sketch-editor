@@ -43,17 +43,29 @@ body {
   overflow-y: scroll;
   list-style: none;
 }
-.page li {
-  display: flex;
-  align-items: center;
-  padding: 0 4px;
-  height: 24px;
-  font-size: 14px;
-  border-radius: 5px;
-  cursor: default;
+.page ul {
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
 }
-.page li.current {
-  background: #FA8;
+.page li {
+  display: block;
+  box-sizing: border-box;
+  padding: 0 4px;
+  height: 22px;
+  line-height: 22px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page li.hover,
+.page li:hover {
+  border: 1px solid #F63;
+}
+.page li.active {
+  background: #F96;
 }
 .tree {
   position: absolute;
