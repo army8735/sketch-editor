@@ -974,8 +974,8 @@ export default class Listener extends Event {
     if (this.metaKey && this.selected.length === 1) {
       this.select.metaKey(true);
     }
-    // back
-    if (e.keyCode === 8) {
+    // backspace
+    if (e.keyCode === 8 || e.keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
         const nodes = this.selected.splice(0);
@@ -1046,6 +1046,9 @@ export default class Listener extends Event {
         }
         else if (c instanceof ResizeCommand) {
           this.emit(Listener.RESIZE_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof RemoveCommand) {
+          this.emit(Listener.REMOVE_NODE, this.shiftKey ? [] : this.selected.slice(0));
         }
         else if (c instanceof RotateCommand) {
           this.emit(Listener.ROTATE_NODE, this.selected.slice(0));

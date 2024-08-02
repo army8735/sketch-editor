@@ -50,7 +50,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
-      .keys(browser.Keys.DELETE)
+      .keys(browser.Keys.BACK_SPACE)
       .keys(browser.Keys.NULL)
       .moveToElement('canvas', 120, 120)
       .mouseButtonDown(0)
