@@ -1049,11 +1049,13 @@ export default class Listener extends Event {
         }
         else if (c instanceof RemoveCommand) {
           if (this.shiftKey) {
+            this.selected = [];
+            this.select.hideSelect();
             this.emit(Listener.REMOVE_NODE, c.nodes.slice(0));
           }
           else {
-            this.selected = c.nodes;
-            this.select.showSelect(c.nodes);
+            this.selected = c.nodes.slice(0);
+            this.select.showSelect(this.selected);
             this.emit(Listener.ADD_NODE, c.nodes.slice(0));
           }
         }
