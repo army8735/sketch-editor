@@ -369,6 +369,7 @@ function createPolyline(
   return new Polyline({
     uuid: uuid.v4(),
     name,
+    index: 0,
     style: {
       left: x,
       top: y,

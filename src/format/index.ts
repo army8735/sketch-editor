@@ -249,7 +249,8 @@ export type Props = {
   name?: string;
   uuid: string;
   sourceUuid?: string;
-  style: Partial<JStyle>;
+  index: number;
+  style?: Partial<JStyle>;
   constrainProportions?: boolean;
   isLocked?: boolean;
   isExpanded?: boolean;

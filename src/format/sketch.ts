@@ -112,12 +112,13 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
   const symbolMasters: any[] = [];
   const foreignSymbols = json.document?.foreignSymbols || [];
   for (let i = 0, len = foreignSymbols.length; i < len; i++) {
-    symbolMasters[i] = await convertItem(foreignSymbols[i].symbolMaster, opt, W, H);
+    symbolMasters[i] = await convertItem(foreignSymbols[i].symbolMaster, (i + 1) / (len + 1), opt, W, H);
   }
-  const pages: any[] = [];
+  const pages: JPage[] = [];
   if (json.pages) {
+    const len = json.pages.length;
     for (let i = 0, len = json.pages.length; i < len; i++) {
-      pages[i] = await convertPage(json.pages[i], opt);
+      pages[i] = await convertPage(json.pages[i], (i + 1) / (len + 1), opt);
     }
   }
   const document = json.document;
@@ -140,10 +141,10 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
   };
 }
 
-async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
+async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Promise<JPage> {
   const children: (JNode | undefined)[] = [];
   for (let i = 0, len = page.layers.length; i < len; i++) {
-    const res = await convertItem(page.layers[i], opt, W, H);
+    const res = await convertItem(page.layers[i], (i + 1) / (len + 1), opt, W, H);
     children.push(res);
   }
   let x = 0,
@@ -168,6 +169,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
     props: {
       uuid: page.do_objectID,
       name: page.name,
+      index,
       constrainProportions: page.frame.constrainProportions,
       rule: {
         baseX: page.horizontalRulerData.base,
@@ -193,6 +195,7 @@ async function convertPage(page: SketchFormat.Page, opt: Opt): Promise<JPage> {
 
 async function convertItem(
   layer: SketchFormat.AnyLayer,
+  index: number,
   opt: Opt,
   w: number,
   h: number,
@@ -243,8 +246,10 @@ async function convertItem(
     || layer._class === SketchFormat.ClassValue.SymbolMaster) {
     const children: (JNode | undefined)[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
-      const res = await convertItem(layer.layers[i], opt, width as number, height as number);
-      children.push(res);
+      const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, width as number, height as number);
+      if (res) {
+        children.push(res);
+      }
     }
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
@@ -523,6 +528,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
         symbolId: layer.symbolID,
         overrideValues: layer.overrideValues.map(item => {
@@ -565,8 +571,10 @@ async function convertItem(
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children: (JNode | undefined)[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
-      const res = await convertItem(layer.layers[i], opt, layer.frame.width, layer.frame.height);
-      children.push(res);
+      const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
+      if (res) {
+        children.push(res);
+      }
     }
     const {
       fill,
@@ -578,6 +586,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
         style: {
           left,
@@ -641,6 +650,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
         style: {
           left,
@@ -815,8 +825,8 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
-        // textBehaviour,
         styleId,
         style: {
           left,
@@ -934,6 +944,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
         points,
         isClosed: layer.isClosed,
@@ -1008,14 +1019,17 @@ async function convertItem(
     } = await geomStyle(layer, opt);
     const children: (JNode | undefined)[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
-      const res = await convertItem(layer.layers[i], opt, layer.frame.width, layer.frame.height);
-      children.push(res);
+      const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
+      if (res) {
+        children.push(res);
+      }
     }
     return {
       tagName: TAG_NAME.SHAPE_GROUP,
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
         styleId,
         style: {
@@ -1070,6 +1084,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        index,
         constrainProportions,
         style: {
           left,

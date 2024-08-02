@@ -53,8 +53,6 @@ import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
 import Group from './Group';
-import Geom from './geom/Geom';
-import ShapeGroup from './geom/ShapeGroup';
 import { StyleUnit } from '../style/define';
 import inject from '../util/inject';
 
@@ -115,6 +113,7 @@ class Root extends Container implements FrameCallback {
       {
         name: 'pageContainer',
         uuid: 'pageContainer',
+        index: 0,
         style: {
           width: '100%',
           height: '100%',
@@ -131,6 +130,7 @@ class Root extends Container implements FrameCallback {
       {
         name: 'overlay',
         uuid: 'overlay',
+        index: 1,
         style: {
           width: '100%',
           height: '100%',
@@ -309,36 +309,37 @@ class Root extends Container implements FrameCallback {
     }
   }
 
-  addNewPage(page?: Page, setCurrent = false) {
-    const pageContainer = this.pageContainer;
-    if (!page) {
-      page = new Page(
-        {
-          uuid: uuid.v4(),
-          name: '页面 ' + (pageContainer.children.length + 1),
-          style: {
-            width: 100,
-            height: 100,
-            visible: false,
-            transformOrigin: [0, 0],
-            pointerEvents: false,
-          },
-          rule: {
-            baseX: 0,
-            baseY: 0,
-          },
-          isLocked: false,
-          isExpanded: false,
-        },
-        [],
-      );
-    }
-    pageContainer.appendChild(page);
-    if (setCurrent) {
-      this.setCurPage(page);
-    }
-    return page;
-  }
+  // addNewPage(page?: Page, setCurrent = false) {
+  //   const pageContainer = this.pageContainer;
+  //   if (!page) {
+  //     page = new Page(
+  //       {
+  //         uuid: uuid.v4(),
+  //         name: '页面 ' + (pageContainer.children.length + 1),
+  //         index: 1,
+  //         style: {
+  //           width: 100,
+  //           height: 100,
+  //           visible: false,
+  //           transformOrigin: [0, 0],
+  //           pointerEvents: false,
+  //         },
+  //         rule: {
+  //           baseX: 0,
+  //           baseY: 0,
+  //         },
+  //         isLocked: false,
+  //         isExpanded: false,
+  //       },
+  //       [],
+  //     );
+  //   }
+  //   pageContainer.appendChild(page);
+  //   if (setCurrent) {
+  //     this.setCurPage(page);
+  //   }
+  //   return page;
+  // }
 
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新

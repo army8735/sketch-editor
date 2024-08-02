@@ -17,6 +17,7 @@ class Overlay extends Container {
       {
         name: 'overlay-artBoards',
         uuid: '',
+        index: 0,
         style: {
           width: '100%',
           height: '100%',
@@ -29,7 +30,7 @@ class Overlay extends Container {
     this.artBoardList = [];
   }
 
-  setArtBoard(list: Array<ArtBoard>) {
+  setArtBoard(list: ArtBoard[]) {
     this.artBoards.clearChildren();
     this.artBoardList.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
@@ -39,6 +40,7 @@ class Overlay extends Container {
       const text = new Text({
         name,
         uuid: '',
+        index: 0,
         style: {
           fontSize: 24,
           color,

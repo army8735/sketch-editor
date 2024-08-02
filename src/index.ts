@@ -35,6 +35,7 @@ export default {
     const root = new node.Root({
       dpi,
       uuid: json.document.uuid,
+      index: 0,
       assets: json.document.assets,
       layerStyles: json.document.layerStyles,
       layerTextStyles: json.document.layerTextStyles,
