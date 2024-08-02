@@ -25,6 +25,7 @@ import { getFrameNodes, getNodeByPoint } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
+import picker from './picker';
 
 export type ListenerOptions = {
   disabled?: {
@@ -1014,9 +1015,13 @@ export default class Listener extends Event {
         this.state = State.NORMAL;
         this.input.hide();
       }
+      else if (picker.isShow()) {
+        picker.hide();
+      }
       else {
         this.selected.splice(0);
         this.select.hideSelect();
+        this.select.hideHover();
         this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
     }
