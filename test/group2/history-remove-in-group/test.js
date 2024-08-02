@@ -40,7 +40,7 @@ module.exports = {
       .assert.elementPresent('#tree .active')
       .assert.domPropertyEquals('#tree dt.active .name', 'title', '矩形2')
 
-      .keys(browser.Keys.ESC)
+      .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .pause(20)
       .moveToElement('canvas', 20, 20)
