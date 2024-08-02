@@ -1048,7 +1048,13 @@ export default class Listener extends Event {
           this.emit(Listener.RESIZE_NODE, this.selected.slice(0));
         }
         else if (c instanceof RemoveCommand) {
-          this.emit(Listener.REMOVE_NODE, this.shiftKey ? [] : this.selected.slice(0));
+          if (this.shiftKey) {
+            this.emit(Listener.REMOVE_NODE, c.nodes.slice(0));
+          }
+          else {
+            this.emit(Listener.ADD_NODE, c.nodes.slice(0));
+            this.select.showSelect(c.nodes);
+          }
         }
         else if (c instanceof RotateCommand) {
           this.emit(Listener.ROTATE_NODE, this.selected.slice(0));
@@ -1157,6 +1163,7 @@ export default class Listener extends Event {
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
+  static ADD_NODE = 'ADD_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }

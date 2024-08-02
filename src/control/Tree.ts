@@ -135,6 +135,29 @@ export default class Tree {
         }
       });
     });
+    listener.on(Listener.ADD_NODE, (nodes: Node[]) => {
+      nodes.forEach((item) => {
+        const res = genNodeTree(item);
+        const dd = document.createElement('dd');
+        dd.appendChild(res);
+        const prev = item.prev?.props.uuid;
+        if (prev) {
+          const dl = this.dom.querySelector(`dl[uuid="${prev}"]`);
+          if (dl) {
+            const sibling = dl.parentElement!;
+            sibling.before(dd);
+          }
+        }
+        else {
+          const uuid = item.parent!.props.uuid;
+          const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            dl.appendChild(dd);
+          }
+        }
+      });
+      this.select(nodes);
+    });
 
     this.dom.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
