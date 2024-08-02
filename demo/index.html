@@ -16,7 +16,7 @@
   </div>
   <div class="container">
     <div class="list">
-      <ul class="page" id="page"></ul>
+      <div class="page" id="page"></div>
       <div class="tree" id="tree"></div>
     </div>
     <div class="main" id="main">
@@ -91,7 +91,7 @@
         });
 
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
-        sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
       });
     }

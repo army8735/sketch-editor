@@ -137,7 +137,7 @@ fetch('./sketch.sketch')
           dpi,
         });
         listener = sketchEditor.control.initCanvasControl(root, $canvasC);
-        sketchEditor.control.initTreeList(root, document.querySelector('#tree'), listener);
+        sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
 
         $canvasC.addEventListener('mousedown', (e) => {

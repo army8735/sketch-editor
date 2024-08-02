@@ -11,6 +11,11 @@ import FillPanel from './FillPanel';
 import StrokePanel from './StrokePanel';
 import TextPanel from './TextPanel';
 import AlignPanel from './AlignPanel';
+import PageList from './PageList';
+
+export function initPageList(root: Root, dom: HTMLElement) {
+  return new PageList(root, dom);
+}
 
 /**
  * 所有控制相关的都在这里，传入渲染根节点，和容器DOM，需要DOM是absolute/relative，
@@ -20,7 +25,7 @@ export function initCanvasControl(root: Root, dom: HTMLElement, options?: Listen
   return new Listener(root, dom, options);
 }
 
-export function initTreeList(root: Root, dom: HTMLElement, listener: Listener) {
+export function initTree(root: Root, dom: HTMLElement, listener: Listener) {
   return new Tree(root, dom, listener);
 }
 
@@ -59,9 +64,11 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
 
 export default {
   initCanvasControl,
-  initTreeList,
+  initPageList,
+  initTree,
   initPanel,
   Listener,
+  PageList,
   Tree,
   Select,
   Input,

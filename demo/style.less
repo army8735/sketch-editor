@@ -62,17 +62,32 @@ html, body {
   overflow-y: scroll;
   list-style: none;
 
-  li {
-    display: flex;
-    align-items: center;
-    padding: 0 4px;
-    height: 24px;
-    font-size: 14px;
-    border-radius: 5px;
-    cursor: default;
+  ul {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+    font-size: 12px;
+  }
 
-    &.current {
-      background: #FA8;
+  li {
+    display: block;
+    box-sizing: border-box;
+    padding: 0 4px;
+    height: 22px;
+    line-height: 22px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &.hover, &:hover {
+      border: 1px solid #F63;
+    }
+
+    &.active {
+      background: #F96;
     }
   }
 }
