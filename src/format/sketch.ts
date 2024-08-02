@@ -116,7 +116,6 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
   }
   const pages: JPage[] = [];
   if (json.pages) {
-    const len = json.pages.length;
     for (let i = 0, len = json.pages.length; i < len; i++) {
       pages[i] = await convertPage(json.pages[i], (i + 1) / (len + 1), opt);
     }
@@ -138,7 +137,7 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
     pages,
     currentPageIndex: json.document?.currentPageIndex || 0,
     symbolMasters,
-  };
+  } as JFile;
 }
 
 async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Promise<JPage> {

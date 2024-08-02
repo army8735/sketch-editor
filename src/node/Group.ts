@@ -1,10 +1,9 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Props, TAG_NAME, ResizeStyle } from '../format';
-import { calRectPoints } from '../math/matrix';
+import { JNode, Override, Props, TAG_NAME } from '../format';
 import { RefreshLevel } from '../refresh/level';
-import { StyleUnit, Style, } from '../style/define';
+import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
@@ -25,59 +24,6 @@ class Group extends Container {
     super.didMount();
     // 冒泡过程无需向下检测，直接向上
     this.adjustPosAndSize();
-  }
-
-  // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
-  private getChildrenRect() {
-    const { children } = this;
-    const rect = {
-      minX: 0,
-      minY: 0,
-      maxX: 0,
-      maxY: 0,
-    };
-    let isMask = false;
-    let first = true;
-    // 注意要考虑mask和breakMask，被遮罩的都忽略
-    for (let i = 0, len = children.length; i < len; i++) {
-      const child = children[i];
-      const computedStyle = child.computedStyle;
-      if (isMask && !computedStyle.breakMask) {
-        continue;
-      }
-      if (computedStyle.maskMode) {
-        isMask = true;
-        // 遮罩跳过被遮罩节点
-        let next = child.next;
-        while (next && !next.computedStyle.breakMask) {
-          i++;
-          next = next.next;
-        }
-      }
-      else if (computedStyle.breakMask) {
-        isMask = false;
-      }
-      const r = child._rect || child.rect;
-      const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(r[0], r[1], r[2], r[3], child.matrix);
-      const minX = Math.min(x1, x2, x3, x4);
-      const minY = Math.min(y1, y2, y3, y4);
-      const maxX = Math.max(x1, x2, x3, x4);
-      const maxY = Math.max(y1, y2, y3, y4);
-      if (first) {
-        first = false;
-        rect.minX = minX;
-        rect.minY = minY;
-        rect.maxX = maxX;
-        rect.maxY = maxY;
-      }
-      else {
-        rect.minX = Math.min(rect.minX, minX);
-        rect.minY = Math.min(rect.minY, minY);
-        rect.maxX = Math.max(rect.maxX, maxX);
-        rect.maxY = Math.max(rect.maxY, maxY);
-      }
-    }
-    return rect;
   }
 
   // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更

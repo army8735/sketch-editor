@@ -1,4 +1,5 @@
 import Node from '../node/Node';
+import Container from '../node/Container';
 import Root from '../node/Root';
 import Page from '../node/Page';
 import Text from '../node/Text';
@@ -15,6 +16,7 @@ import History from '../history/History';
 import Command from '../history/Command';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
+import RemoveCommand, { RemoveData } from '../history/RemoveCommand';
 import RotateCommand from '../history/RotateCommand';
 import UpdateRichCommand from '../history/UpdateRichCommand';
 import OpacityCommand from '../history/OpacityCommand';
@@ -975,9 +977,13 @@ export default class Listener extends Event {
     if (e.keyCode === 8) {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
-        const list = this.selected.splice(0);
-        list.forEach((item) => item.remove());
-        this.emit(Listener.REMOVE_NODE, list);
+        const nodes = this.selected.splice(0);
+        const data: RemoveData[] = [];
+        nodes.forEach((item) => {
+          data.push(RemoveCommand.operate(item));
+        });
+        this.history.addCommand(new RemoveCommand(nodes, data));
+        this.emit(Listener.REMOVE_NODE, nodes.slice(0));
         this.select.hideSelect();
       }
     }

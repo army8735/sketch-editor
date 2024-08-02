@@ -6,6 +6,7 @@ import { Struct } from '../refresh/struct';
 import inject from '../util/inject';
 import { clone } from '../util/util';
 import { LayoutData } from './layout';
+import { calRectPoints } from '../math/matrix';
 
 class Container extends Node {
   children: Node[];
@@ -83,6 +84,62 @@ class Container extends Node {
     //     child.minHeight,
     //   );
     // }
+  }
+
+  // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
+  getChildrenRect(ignore?: Node) {
+    const { children } = this;
+    const rect = {
+      minX: 0,
+      minY: 0,
+      maxX: 0,
+      maxY: 0,
+    };
+    let isMask = false;
+    let first = true;
+    // 注意要考虑mask和breakMask，被遮罩的都忽略
+    for (let i = 0, len = children.length; i < len; i++) {
+      const child = children[i];
+      const computedStyle = child.computedStyle;
+      if (isMask && !computedStyle.breakMask) {
+        continue;
+      }
+      if (computedStyle.maskMode) {
+        isMask = true;
+        // 遮罩跳过被遮罩节点
+        let next = child.next;
+        while (next && !next.computedStyle.breakMask) {
+          i++;
+          next = next.next;
+        }
+      }
+      else if (computedStyle.breakMask) {
+        isMask = false;
+      }
+      if (ignore === child) {
+        continue;
+      }
+      const r = child._rect || child.rect;
+      const { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(r[0], r[1], r[2], r[3], child.matrix);
+      const minX = Math.min(x1, x2, x3, x4);
+      const minY = Math.min(y1, y2, y3, y4);
+      const maxX = Math.max(x1, x2, x3, x4);
+      const maxY = Math.max(y1, y2, y3, y4);
+      if (first) {
+        first = false;
+        rect.minX = minX;
+        rect.minY = minY;
+        rect.maxX = maxX;
+        rect.maxY = maxY;
+      }
+      else {
+        rect.minX = Math.min(rect.minX, minX);
+        rect.minY = Math.min(rect.minY, minY);
+        rect.maxX = Math.max(rect.maxX, maxX);
+        rect.maxY = Math.max(rect.maxY, maxY);
+      }
+    }
+    return rect;
   }
 
   appendChild(node: Node, cb?: (sync: boolean) => void) {
