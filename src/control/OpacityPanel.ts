@@ -151,12 +151,22 @@ class OpacityPanel extends Panel {
       }
     });
 
-    listener.on([Listener.SELECT_NODE, Listener.OPACITY_NODE], (nodes: Node[]) => {
+    listener.on([
+      Listener.SELECT_NODE,
+      Listener.OPACITY_NODE,
+      Listener.ADD_NODE,
+    ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;
       }
       this.show(nodes);
+    });
+    listener.on(Listener.REMOVE_NODE, () => {
+      if (this.silence) {
+        return;
+      }
+      this.show([]);
     });
   }
 

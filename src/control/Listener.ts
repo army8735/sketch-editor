@@ -983,9 +983,9 @@ export default class Listener extends Event {
         nodes.forEach((item) => {
           data.push(RemoveCommand.operate(item));
         });
+        this.select.hideSelect();
         this.history.addCommand(new RemoveCommand(nodes, data));
         this.emit(Listener.REMOVE_NODE, nodes.slice(0));
-        this.select.hideSelect();
       }
     }
     // space
@@ -1052,9 +1052,9 @@ export default class Listener extends Event {
             this.emit(Listener.REMOVE_NODE, c.nodes.slice(0));
           }
           else {
-            this.emit(Listener.ADD_NODE, c.nodes.slice(0));
             this.selected = c.nodes;
             this.select.showSelect(c.nodes);
+            this.emit(Listener.ADD_NODE, c.nodes.slice(0));
           }
         }
         else if (c instanceof RotateCommand) {

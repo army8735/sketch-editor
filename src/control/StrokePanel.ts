@@ -111,12 +111,21 @@ class StrokePanel extends Panel {
       }
     });
 
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+    listener.on([
+      Listener.SELECT_NODE,
+      Listener.ADD_NODE,
+    ], (nodes: Node[]) => {
       if (picker.isShowFrom('strokePanel')) {
         picker.hide();
         callback();
       }
       this.show(nodes);
+    });
+    listener.on(Listener.REMOVE_NODE, () => {
+      if (this.silence) {
+        return;
+      }
+      this.show([]);
     });
   }
 

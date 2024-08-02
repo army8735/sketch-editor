@@ -491,12 +491,19 @@ class TextPanel extends Panel {
       Listener.COLOR_NODE,
       Listener.TEXT_ALIGN_NODE,
       Listener.TEXT_VERTICAL_ALIGN_NODE,
+      Listener.ADD_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
         return;
       }
       this.show(nodes);
+    });
+    listener.on(Listener.REMOVE_NODE, () => {
+      if (this.silence) {
+        return;
+      }
+      this.show([]);
     });
   }
 
