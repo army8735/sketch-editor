@@ -1053,6 +1053,7 @@ export default class Listener extends Event {
           }
           else {
             this.emit(Listener.ADD_NODE, c.nodes.slice(0));
+            this.selected = c.nodes;
             this.select.showSelect(c.nodes);
           }
         }
