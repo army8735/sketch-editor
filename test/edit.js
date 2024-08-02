@@ -136,6 +136,7 @@ fetch('./sketch.sketch')
           canvas,
           dpi,
         });
+        sketchEditor.control.initPageList(root, document.querySelector('#page'));
         listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
