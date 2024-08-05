@@ -944,9 +944,13 @@ function renderWebglNoTile(
             h: H,
             t: resTexture,
           });
+          const isPagTex = resTexture === pageTexture;
           genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
-          // blur过程会销毁掉原本的bg纹理
+          // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
           resTexture = wrap.list[0].t;
+          if (isPagTex) {
+            pageTexture = resTexture;
+          }
           gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
           gl.viewport(0, 0, W, H);
           gl.framebufferTexture2D(
@@ -1108,7 +1112,7 @@ function drawArtBoard2Page(gl: WebGLRenderingContext | WebGL2RenderingContext, p
       {
         opacity: 1,
         bbox: new Float64Array([0, 0, W, H]),
-        texture: artBoardTexture!,
+        texture: artBoardTexture,
       },
     ],
     0,
@@ -1116,13 +1120,6 @@ function drawArtBoard2Page(gl: WebGLRenderingContext | WebGL2RenderingContext, p
     false,
     -1, -1, 1, 1,
   );
-  gl.deleteTexture(artBoardTexture!);
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    pageTexture,
-    0,
-  );
+  gl.deleteTexture(artBoardTexture);
   return pageTexture;
 }
