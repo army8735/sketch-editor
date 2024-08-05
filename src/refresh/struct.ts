@@ -35,7 +35,7 @@ export function renderWebgl(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
 ) {
-  // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增
+  // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增，这里已经考虑了dpi在内
   let scale = root.getCurPageZoom(),
     scaleIndex = 0;
   if (scale <= 1) {

@@ -2019,13 +2019,15 @@ function genMask(
       else {
         frameBuffer = genFrameBufferWithTexture(gl, t, width, height);
       }
+      const cx = width * 0.5,
+        cy = height * 0.5;
       // outline如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
       if (maskMode === MASK.OUTLINE && computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
         const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
         drawTextureCache(
           gl,
-          width * 0.5,
-          height * 0.5,
+          cx,
+          cy,
           program,
           [
             {
@@ -2040,9 +2042,8 @@ function genMask(
           -1, -1, 1, 1,
         );
       }
+      // 后续兄弟节点遍历
       const isFirst = !i && !j;
-      const cx = width * 0.5,
-        cy = height * 0.5;
       for (let i = index + total + 1, len = structs.length; i < len; i++) {
         const { node: node2, lv: lv2, total: total2, next: next2 } = structs[i];
         const computedStyle = node2.computedStyle;
@@ -2132,10 +2133,10 @@ function genMask(
                     tex,
                     0,
                   );
-                  gl.viewport(0, 0, w, h);
+                  gl.viewport(0, 0, width, height);
                 }
                 else {
-                  frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+                  frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
                 }
               }
               // 有无mbm都复用这段逻辑
