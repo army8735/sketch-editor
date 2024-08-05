@@ -77,8 +77,8 @@ function offscreenCanvas(
   };
 }
 
-const SUPPORT_FONT: any = {};
-let defaultFontFamilyData: any;
+const SUPPORT_FONT: Record<string, boolean> = {};
+let defaultFontFamilyData: Uint8ClampedArray;
 
 const IMG: any = {};
 const INIT = 0;
