@@ -504,9 +504,11 @@ class Node extends Event {
     // repaint已经做了
     if (lv < RefreshLevel.REPAINT) {
       this._filterBbox = undefined;
+      this._filterBbox2 = undefined;
       this.tempBbox = undefined;
       this.textureFilter.forEach((item) => item?.release());
       this.textureMask.forEach((item) => item?.release());
+      this.resetTextureTarget();
     }
   }
 

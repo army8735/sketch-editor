@@ -382,7 +382,7 @@ class Root extends Container implements FrameCallback {
     if (addDom || removeDom) {
       lv |= RefreshLevel.REFLOW | RefreshLevel.REBUILD;
     }
-    const res = this.calUpdate(node, lv, keys, addDom, removeDom);
+    const res = this.calUpdate(node, lv, addDom, removeDom);
     // 有tile时重置关联的tile，为了清空上一次绘制的tile的内容让其重绘
     if (lv && config.tile && !this.firstDraw && node.page && !node.isPage) {
       let p = node;
@@ -425,7 +425,6 @@ class Root extends Container implements FrameCallback {
   private calUpdate(
     node: Node,
     lv: RefreshLevel,
-    keys: string[],
     addDom: boolean,
     removeDom: boolean,
   ): boolean {

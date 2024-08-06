@@ -2,6 +2,10 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Listener from './Listener';
 import Panel from './Panel';
+import { ShadowStyle } from '../format';
+import UpdateShadowCommand from '../history/UpdateShadowCommand';
+import picker from './picker';
+import { color2hexStr } from '../style/css';
 
 const html = `
   <dt class="panel-title">阴影</dt>
@@ -58,9 +62,78 @@ class ShadowPanel extends Panel {
     this.dom.appendChild(panel);
 
     let nodes: Node[] = [];
+    let prevs: ShadowStyle[] = [];
+    let nexts: ShadowStyle[] = [];
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
-    const pickCallback = () => {};
+    const pickCallback = () => {
+      // 只有变更才会有next
+      if (nexts && nexts.length) {
+        listener.history.addCommand(new UpdateShadowCommand(nodes, prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        })));
+      }
+      nodes = [];
+      prevs = [];
+      nexts = [];
+    };
+
+    panel.addEventListener('click', (e) => {
+      const el = e.target as HTMLElement;
+      if (el.tagName === 'B') {
+        // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
+        e.stopPropagation();
+        picker.hide();
+        if (picker.isShowFrom('shadowPanel')) {
+          pickCallback();
+          this.silence = false;
+          return;
+        }
+        const p = picker.show(el, 'shadowPanel', pickCallback);
+        // 最开始记录nodes/prevs
+        nodes = this.nodes.slice(0);
+        prevs = [];
+        nodes.forEach(item => {
+          const { shadow, shadowEnable } = item.getCssStyle();
+          prevs.push({
+            shadow,
+            shadowEnable,
+          });
+        });
+        // 每次变更记录更新nexts
+        p.onChange = (color: any) => {
+          nexts = [];
+          const s = color2hexStr(color.rgba);
+          nodes.forEach(node => {
+            const { shadow, shadowEnable } = node.getCssStyle();
+            shadow.forEach((item, i) => {
+              const arr= item.split(' ');
+              arr[0] = s;
+              shadow[i] = arr.join(' ');
+            });
+            const o = {
+              shadow,
+              shadowEnable,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
+          });
+        };
+        p.onDone = () => {
+          picker.hide();
+          pickCallback();
+        };
+      }
+    });
+
+    panel.addEventListener('input', (e) => {
+      this.silence = true;
+      pickCallback();
+      const input = e.target as HTMLInputElement;
+      const value = parseFloat(input.value) || 0;
+    });
+
+    panel.addEventListener('change', (e) => {})
 
     listener.on([
       Listener.SELECT_NODE,

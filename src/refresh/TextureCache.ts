@@ -15,7 +15,6 @@ const HASH: Record<string, Record<string, {
 class TextureCache {
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   available: boolean;
-  // texture:  WebGLTexture;
   bbox: Float64Array;
   list: {
     bbox: Float64Array;
@@ -28,7 +27,6 @@ class TextureCache {
   constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache) {
     this.gl = gl;
     this.available = true;
-    // this.texture = texture;
     this.bbox = bbox.slice(0);
     const maxX = bbox[2], maxY = bbox[3];
     this.list = [];

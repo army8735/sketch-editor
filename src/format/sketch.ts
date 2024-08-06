@@ -499,7 +499,7 @@ async function convertItem(
         Math.floor(item.color.blue * 255),
         item.color.alpha,
       ];
-      shadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
+      shadow.push(`${color2hexStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} `);
       shadowEnable.push(item.isEnabled);
     });
   }
@@ -512,7 +512,7 @@ async function convertItem(
         Math.floor(item.color.blue * 255),
         item.color.alpha,
       ];
-      innerShadow.push(`${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} ${color2hexStr(color)}`);
+      innerShadow.push(`${color2hexStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread}`);
       innerShadowEnable.push(item.isEnabled);
     });
   }

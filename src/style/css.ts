@@ -795,8 +795,8 @@ export function equalStyle(k: string, a: Style, b: Style) {
       return false;
     }
     for (let i = 0, len = av.length; i < len; i++) {
-      const ai = av[i];
-      const bi = bv[i];
+      const ai = av[i].v;
+      const bi = bv[i].v;
       if (ai.x.v !== bi.x.v || ai.x.u !== bi.x.u ||
         ai.y.v !== bi.y.v || ai.y.u !== bi.y.u ||
         ai.blur.v !== bi.blur.v || ai.blur.u !== bi.blur.u ||

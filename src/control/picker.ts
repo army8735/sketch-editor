@@ -67,9 +67,7 @@ export default {
       });
     }
     const color = node.style.backgroundColor;
-    const opacity = parseFloat(node.style.opacity);
     const rgba = color2rgbaInt(color);
-    rgba[3] *= opacity;
     picker.setColor(color2rgbaStr(rgba), true);
     picker.show();
     return picker;
