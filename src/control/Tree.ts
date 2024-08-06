@@ -46,6 +46,9 @@ function genNodeTree(node: Node) {
   }
   s += `<span class="name" title="${node.props.name || ''}">${node.props.name || ''}</span>`;
   if (!(node instanceof ArtBoard)) {
+    if (node.props.isLocked) {
+      s += `<span class="lock"></span>`;
+    }
     s += `<span class="visible ${node.computedStyle.visible ? 't' : ''}"></span>`;
   }
   dt.innerHTML = s;

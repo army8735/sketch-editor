@@ -97,8 +97,23 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   }
   const page = root.lastPage;
   if (page) {
-    const res = getChildByPoint(page, x, y);
+    let res = getChildByPoint(page, x, y);
     if (res) {
+      // 如果节点锁定，需向上递归非锁定的parent
+      let temp = res;
+      let lock: Node | undefined = temp.props.isLocked ? temp : undefined;
+      while (temp && temp.struct.lv > 3) {
+        temp = temp.parent!;
+        if (temp.props.isLocked) {
+          lock = temp;
+        }
+      }
+      if (lock) {
+        if (lock.struct.lv <= 3) {
+          return;
+        }
+        res = lock.parent!;
+      }
       // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回最上层ShapeGroup
       if (metaKey) {
         if (res instanceof Group) {
