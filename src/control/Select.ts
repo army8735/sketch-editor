@@ -5,29 +5,29 @@ import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 
 const html = `
-  <span class="l" style="position:absolute;left:-4px;top:0;width:8px;height:100%;transform:scaleX(0.5);cursor:ew-resize;pointer-events:auto;">
-    <b style="position:absolute;left:4px;top:0;width:0;height:100%;border-left:1px solid #F43;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="l">
+    <b></b>
   </span>
-  <span class="t" style="position:absolute;left:0;top:-4px;width:100%;height:8px;transform:scaleY(0.5);cursor:ns-resize;pointer-events:auto;">
-    <b style="position:absolute;left:0;top:4px;width:100%;height:0;border-top:1px solid #F43;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="t">
+    <b></b>
   </span>
-  <span class="r" style="position:absolute;top:0;right:-4px;width:8px;height:100%;transform:scaleX(0.5);cursor:ew-resize;pointer-events:auto;">
-    <b style="position:absolute;right:4px;top:0;width:0;height:100%;border-right:1px solid #F43;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="r">
+    <b></b>
   </span>
-  <span class="b" style="position:absolute;left:0;bottom:-4px;width:100%;height:8px;transform:scaleY(0.5);cursor:ns-resize;pointer-events:auto;">
-    <b style="position:absolute;left:0;bottom:4px;width:100%;height:0;border-bottom:1px solid #F43;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;"></b>
+  <span class="b">
+    <b></b>
   </span>
-  <span class="tl" style="position:absolute;left:0;top:0;width:14px;height:14px;transform:translate(-50%,-50%);cursor:nwse-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
+  <span class="tl">
+    <b></b>
   </span>
-  <span class="tr" style="position:absolute;right:0;top:0;width:14px;height:14px;transform:translate(50%,-50%);cursor:nesw-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
+  <span class="tr">
+    <b></b>
   </span>
-  <span class="br" style="position:absolute;right:0;bottom:0;width:14px;height:14px;transform:translate(50%,50%);cursor:nwse-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
+  <span class="br">
+    <b></b>
   </span>
-  <span class="bl" style="position:absolute;left:0;bottom:0;width:14px;height:14px;transform:translate(-50%,50%);cursor:nesw-resize;pointer-events:auto;">
-    <b style="position:absolute;box-sizing:border-box;width:100%;height:100%;border:1px solid #999;background:#FFF;box-shadow:0 0 4px rgba(0,0,0,0.5);transform:scale(0.5);pointer-events:none;"></b>
+  <span class="bl">
+    <b></b>
   </span>
 `;
 
@@ -45,37 +45,16 @@ export default class Select {
     const frame = this.frame = document.createElement('div');
     frame.className = 'frame';
     frame.style.display = 'none';
-    frame.style.position = 'absolute';
-    frame.style.left = '0px';
-    frame.style.top = '0px';
-    frame.style.width = '1px';
-    frame.style.height = '1px';
-    frame.style.transformOrigin = '0 0';
-    frame.style.boxSizing = 'border-box';
-    frame.style.border = '1px solid rgba(0, 0, 0, 0.1)';
-    frame.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-    frame.style.pointerEvents = 'none';
     dom.appendChild(frame);
 
     const hover = this.hover = document.createElement('div');
     hover.className = 'hover';
     hover.style.display = 'none';
-    hover.style.position = 'absolute';
-    hover.style.left = '0px';
-    hover.style.top = '0px';
-    hover.style.transformOrigin = '0 0';
-    hover.style.boxSizing = 'border-box';
-    hover.style.border = '2px solid #F43';
-    hover.style.boxShadow = '0 0 3px rgba(0, 0, 0, 0.5)';
-    hover.style.pointerEvents = 'none';
     dom.appendChild(hover);
 
     const select = this.select = document.createElement('div');
     select.className = 'select';
     select.style.display = 'none';
-    select.style.position = 'absolute';
-    select.style.transformOrigin = '0 0';
-    select.style.pointerEvents = 'none';
     select.innerHTML = html;
     dom.appendChild(select);
   }

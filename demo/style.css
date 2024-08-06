@@ -224,6 +224,197 @@ body {
   width: 100%;
   height: 100%;
 }
+.main .hover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  border: 2px solid #F43;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.main .frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.main .select {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.main .select .l {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  transform: scaleX(0.5);
+  cursor: ew-resize;
+  pointer-events: auto;
+}
+.main .select .l b {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 0;
+  height: 100%;
+  border-left: 1px solid #F43;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.main .select .t {
+  position: absolute;
+  left: 0;
+  top: -4px;
+  width: 100%;
+  height: 8px;
+  transform: scaleY(0.5);
+  cursor: ns-resize;
+  pointer-events: auto;
+}
+.main .select .t b {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 100%;
+  height: 0;
+  border-top: 1px solid #F43;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.main .select .r {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  transform: scaleX(0.5);
+  cursor: ew-resize;
+  pointer-events: auto;
+}
+.main .select .r b {
+  position: absolute;
+  right: 4px;
+  top: 0;
+  width: 0;
+  height: 100%;
+  border-right: 1px solid #F43;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.main .select .b {
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 8px;
+  transform: scaleY(0.5);
+  cursor: ns-resize;
+  pointer-events: auto;
+}
+.main .select .b b {
+  position: absolute;
+  left: 0;
+  bottom: 4px;
+  width: 100%;
+  height: 0;
+  border-bottom: 1px solid #F43;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.main .select .tl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  cursor: nwse-resize;
+  pointer-events: auto;
+}
+.main .select .tl b {
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: scale(0.5);
+  pointer-events: none;
+}
+.main .select .tr {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  transform: translate(50%, -50%);
+  cursor: nesw-resize;
+  pointer-events: auto;
+}
+.main .select .tr b {
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: scale(0.5);
+  pointer-events: none;
+}
+.main .select .br {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  transform: translate(50%, 50%);
+  cursor: nwse-resize;
+  pointer-events: auto;
+}
+.main .select .br b {
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: scale(0.5);
+  pointer-events: none;
+}
+.main .select .bl {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, 50%);
+  cursor: nesw-resize;
+  pointer-events: auto;
+}
+.main .select .bl b {
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #999;
+  background: #FFF;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transform: scale(0.5);
+  pointer-events: none;
+}
 .side {
   position: relative;
   z-index: 11;
@@ -867,6 +1058,14 @@ body {
   font-size: 11px;
   justify-content: space-between;
 }
+.side .shadow-panel .line > div {
+  display: flex;
+  flex-direction: column;
+}
+.side .shadow-panel .line > div > div {
+  display: flex;
+  align-items: center;
+}
 .side .shadow-panel .un-checked {
   width: 12px;
   height: 12px;
@@ -880,6 +1079,61 @@ body {
   background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAGKADAAQAAAABAAAAGAAAAADB/VeXAAACMklEQVRIDbWWz2sTQRTHv7PZaTfYHLzpvRYkBz14UfxFqKeeSvFnqgd/JEEFRS8iRfEXXoSCgtraetGL/4AHkQgieAmoSFSkd882LRubWdf3Nplk11k0ZtcHk5n33rzPe/ODnQh0xAdEozJ2Er5/gkx5aiPa12e/QvPqEGIx9/DrggAISVD+WS1t3uiJ1lNSC6wnF7+a8eX0uvnP3yyuPF04lycKzGS2WK6MnaJtmU9edQxBiJLV2fMYbwomOk+LMHygyUQ6ADdT8pzgX29LBCP3FJGbrQVNbp+M+JjNCQaWocIxOIevAvZQ0IanLhmsgRPIvUUMH5iJAP3V7xGdlYESyF2H4By8EoH5ay6aTy5HbLEJ7PxujNx+HTR76z4jQO7cD+fINb7hPV+rCfd+Bd5SrWfrjIwVONM3INZvCFq2dBf2tolukNwxBad48zf4D7gPTsP78rY7Lzyww4oxtjLIHr8DlxwiI+EcvRWFqzW4c2egPr0xQrVBLJc3BR8lbbC3jCNbvkenk9Em4KfXBovQglWL4GehPr7qzYsZhSLaXvXhJdzHF9tQHcDJwnBPwX107q9wDjcSsFHVnptJ2MFCq3EXzoML6UdiE3BgbBKGL16AeveiH3Yw54+HHCShg9R3vvnsOtT7/irXFfAhN0hJ9D3SsJh+hbeoHuNIy1S3+A1Ni2ZwiC34WWuUR2lj03qPdRq/mptbGrf49ecHmrqqdiXv248+s7tfrGAl/+Fvyy9N0bde6toDwgAAAABJRU5ErkJggg==) no-repeat center;
   background-size: contain;
   transform: translateY(4px);
+}
+.side .shadow-panel .multi-checked {
+  width: 12px;
+  height: 12px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAGKADAAQAAAABAAAAGAAAAADB/VeXAAABLUlEQVRIDWNkgIL/DAyMnzPUUhj+/08GCmkDMQ9Mjkj6C1DdVQZGxrm8M27NYWRgABoJNBREfE3TlPzL+HsJkOsE4lMO/u9j/s8awz3r+nMmkMupazjIeYxOIDNBZjN+ylBLBQbLLMpdjcUERsY0JmiYY5GlghAwPpmAxoAilFZAG2QBqamFFMfwgCygKRj6FrCghw+Ljh0DR3QLA6OgBLoUXv7/9y8YfiytYfhz5RCKOowgIsdwkIkgB4H0ogMMC9AVUMrHsADkTZB3SQWwIELXx/gpXRVc6qFLUIuP4QNqGQwzZ3hYAKqJaAW+gILoKq1MB5nNBKpDaWYB0GxGULX2OV1lD6iao65F//fxzrzjwgSq/UEVNJDaRz0LIJU+yGxwqwJkMNgnNGi2AACn3l2PYicOrQAAAABJRU5ErkJggg==) no-repeat center;
+  background-size: contain;
+  transform: translateY(4px);
+}
+.side .shadow-panel .picker {
+  position: relative;
+  box-sizing: border-box;
+  width: 40px;
+  height: 20px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJKADAAQAAAABAAAAJAAAAAAJxsHGAAAAaUlEQVRIDe3QsRHAIAwEQXAz9N8NqganF8IFit7RB9xovHPvPd6/tdZ7ND7R6CTHNB3DMFJD7zBqOoZhpIbeYdR0DFsZ5zmHxy93VV2+5LPWP8sx0usdRk3HMIzU0DuMmo5hGKmhdyvjD7P7CMyQVK4bAAAAAElFTkSuQmCC) repeat left top;
+  background-size: 12px auto;
+  border: 1px solid #CCC;
+  border-radius: 3px;
+}
+.side .shadow-panel .picker b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  line-height: 18px;
+  text-align: center;
+  text-indent: 100%;
+  color: #666;
+  cursor: default;
+  border-radius: 2px;
+  user-select: none;
+  overflow: hidden;
+}
+.side .shadow-panel .picker b.multi {
+  text-indent: 0;
+  background: #FFF;
+}
+.side .shadow-panel input[type=number] {
+  margin: 0;
+  padding: 0 5px;
+  box-sizing: border-box;
+  width: 38px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: #F0F0F0;
+  font-size: 11px;
+}
+.side .shadow-panel .txt {
+  margin-top: 2px;
+  width: auto;
+  white-space: nowrap;
+  font-size: 10px;
+  text-align: center;
+  color: #333;
 }
 @keyframes blink {
   0% {

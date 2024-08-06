@@ -28,6 +28,9 @@ import { crossProduct } from '../math/vector';
 import picker from './picker';
 
 export type ListenerOptions = {
+  enabled?: {
+    selectWithMeta?: boolean; // 初始状态hover/select时强制按下meta
+  };
   disabled?: {
     select?: boolean;
     hover?: boolean;
@@ -304,7 +307,7 @@ export default class Listener extends Event {
         root,
         x,
         y,
-        this.metaKey,
+        this.metaKey || this.options.enabled?.selectWithMeta,
         selected,
         false,
       );
@@ -601,7 +604,7 @@ export default class Listener extends Event {
         root,
         (e as MouseEvent).offsetX * dpi,
         (e as MouseEvent).offsetY * dpi,
-        this.metaKey,
+        this.metaKey || this.options.enabled?.selectWithMeta,
         selected,
         false,
       );
@@ -661,7 +664,7 @@ export default class Listener extends Event {
           root,
           e.offsetX * dpi,
           e.offsetY * dpi,
-          this.metaKey,
+          this.metaKey || this.options.enabled?.selectWithMeta,
           selected,
           false,
         );
@@ -853,7 +856,7 @@ export default class Listener extends Event {
       root,
       (e.clientX - this.originX) * dpi,
       (e.clientY - this.originY) * dpi,
-      this.metaKey,
+      this.metaKey || this.options.enabled?.selectWithMeta,
       this.selected,
       true,
     );

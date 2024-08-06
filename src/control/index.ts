@@ -12,6 +12,7 @@ import StrokePanel from './StrokePanel';
 import TextPanel from './TextPanel';
 import AlignPanel from './AlignPanel';
 import PageList from './PageList';
+import ShadowPanel from './ShadowPanel';
 
 export function initPageList(root: Root, dom: HTMLElement) {
   return new PageList(root, dom);
@@ -50,6 +51,9 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
 
   const textPanel = new TextPanel(root, dom, listener);
   textPanel.show(listener.selected);
+
+  const shadowPanel = new ShadowPanel(root, dom, listener);
+  shadowPanel.show(listener.selected);
 
   return {
     alignPanel,
