@@ -45,21 +45,26 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
   }
   // 利用小数索引找到正确的位置
   const children = parent.children;
-  for (let i = 0, len = children.length; i < len; i++) {
-    const child = children[i];
-    // 开头位置特殊判断
-    if (!i && node.props.index < child.props.index) {
-      child.insertBefore(node);
-      break;
-    }
-    else if (node.props.index > child.props.index) {
-      child.insertAfter(node);
-      break;
-    }
-    // 直到最后也没有
-    else if (i === len - 1) {
-      parent.appendChild(node);
-      break;
+  if (!children.length) {
+    parent.appendChild(node);
+  }
+  else {
+    for (let i = 0, len = children.length; i < len; i++) {
+      const child = children[i];
+      // 开头位置特殊判断
+      if (!i && node.props.index < child.props.index) {
+        child.insertBefore(node);
+        break;
+      }
+      else if (node.props.index > child.props.index) {
+        child.insertAfter(node);
+        break;
+      }
+      // 直到最后也没有
+      else if (i === len - 1) {
+        parent.appendChild(node);
+        break;
+      }
     }
   }
   // 还原style原本的单位，需要重算一遍数值不能直接用已有的，因为%的情况parent可能发生了尺寸变化

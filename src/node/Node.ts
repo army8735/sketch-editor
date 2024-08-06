@@ -1117,6 +1117,9 @@ class Node extends Event {
       'color',
       'luminosity',
     ][res.mixBlendMode];
+    ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach(k => {
+      res[k] = res[k].slice(0);
+    });
     ['fill', 'stroke'].forEach((k) => {
       res[k] = res[k].map((item: any) => {
         if (Array.isArray(item)) {
