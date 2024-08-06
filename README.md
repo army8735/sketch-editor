@@ -26,6 +26,8 @@ sketchEditor
   .openAndConvertSketchBuffer(arrayBuffer)
   .then(json => {
     const dpi = 2;
+    
+    // 渲染
     const $canvasC = document.querySelector('#canvas-container');
     const { clientWidth, clientHeight } = $canvasC;
     const canvas = document.createElement('canvas');
@@ -37,6 +39,8 @@ sketchEditor
       canvas,
     });
     
+    // 可选控制
+    sketchEditor.control.initPageList(root, document.querySelector('#page');
     const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
     sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
     sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
