@@ -50,7 +50,7 @@ function toStyle() {
     }));
     count++;
   }
-  else {
+  else if (nodes.length) {
     let node = nodes[0];
     if (!node) {
       node = root.getCurPage().children[0];
@@ -76,7 +76,7 @@ function toRich() {
     }));
     count++;
   }
-  else {
+  else if (nodes.length) {
     let node = nodes[0];
     if (!node) {
       node = root.getCurPage().children[0];
