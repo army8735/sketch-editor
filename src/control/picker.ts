@@ -67,8 +67,7 @@ export default {
       });
     }
     const color = node.style.backgroundColor;
-    const rgba = color2rgbaInt(color);
-    picker.setColor(color2rgbaStr(rgba), true);
+    picker.setColor(color, true);
     picker.show();
     return picker;
   },
