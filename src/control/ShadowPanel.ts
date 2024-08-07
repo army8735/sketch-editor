@@ -5,7 +5,8 @@ import Panel from './Panel';
 import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
-import { color2hexStr } from '../style/css';
+import { color2rgbaStr } from '../style/css';
+import { toPrecision } from '../math';
 
 const html = `
   <dt class="panel-title">阴影<b class="add"></b></dt>
@@ -23,7 +24,7 @@ function renderItem(
   spread: number,
 ) {
   return `<div class="line" title="${index}">
-    <span class="${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
+    <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker">
         <b class="pick-btn ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
@@ -103,7 +104,7 @@ class ShadowPanel extends Panel {
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
           nexts = [];
-          const s = color2hexStr(color.rgba);
+          const s = color2rgbaStr(color.rgba);
           nodes.forEach(node => {
             const { shadow, shadowEnable } = node.getCssStyle();
             shadow.forEach((item, i) => {
@@ -129,9 +130,9 @@ class ShadowPanel extends Panel {
       }
       else if (classList.contains('add')) {
         this.silence = true;
-        nodes = this.nodes.slice(0);
-        prevs = [];
-        nexts = [];
+        const nodes = this.nodes.slice(0);
+        const prevs: ShadowStyle[] = [];
+        const nexts: ShadowStyle[] = [];
         nodes.forEach(node => {
           const { shadow, shadowEnable } = node.getCssStyle();
           prevs.push({
@@ -157,9 +158,45 @@ class ShadowPanel extends Panel {
             next: nexts[i],
           };
         })));
-        nodes = [];
-        prevs = [];
-        nexts = [];
+        this.silence = false;
+      }
+      else if (classList.contains('enabled')) {
+        const el = e.target as HTMLElement;
+        const index = parseInt(el.parentElement!.title);
+        this.silence = true;
+        const nodes = this.nodes.slice(0);
+        const prevs: ShadowStyle[] = [];
+        const nexts: ShadowStyle[] = [];
+        let value = false;
+        if (classList.contains('multi-checked') || classList.contains('un-checked')) {
+          value = true;
+        }
+        nodes.forEach(node => {
+          const { shadow, shadowEnable } = node.getCssStyle();
+          prevs.push({
+            shadow,
+            shadowEnable,
+          });
+          const s = shadow.slice(0);
+          const se = shadowEnable.slice(0);
+          if (se[index] !== undefined) {
+            se[index] = value;
+          }
+          const o = {
+            shadow: s,
+            shadowEnable: se,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        this.show(nodes);
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+        listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
+          return {
+            prev,
+            next: nexts[i],
+          };
+        })));
         this.silence = false;
       }
     });
@@ -225,6 +262,9 @@ class ShadowPanel extends Panel {
             p = parseFloat(prevs[0].shadow[index].split(' ')[type]);
           }
           value = p + d;
+          if (!input.placeholder) {
+            input.value = toPrecision(value).toString();
+          }
         }
         else {
           // 直接有value
