@@ -3,12 +3,12 @@ import Root from '../node/Root';
 import Listener from './Listener';
 import Panel from './Panel';
 import { ShadowStyle } from '../format';
-import UpdateShadowCommand from '../history/UpdateShadowCommand';
+import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
 import { color2hexStr } from '../style/css';
 
 const html = `
-  <dt class="panel-title">阴影</dt>
+  <dt class="panel-title">阴影<b class="add"></b></dt>
 `;
 
 function renderItem(
@@ -26,7 +26,7 @@ function renderItem(
     <span class="${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker">
-        <b class="${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
+        <b class="pick-btn ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
       </span>
       <span class="txt">颜色</span>
     </div>
@@ -43,7 +43,7 @@ function renderItem(
       <span class="txt">模糊</span>
     </div>
     <div>
-      <input class="spread" type="number" min="0" step="1" value="${spread}" readonly="readonly"/>
+      <input class="spread" type="number" min="0" step="1" value="${spread}" readonly="readonly" disabled="disabled"/>
       <span class="txt">扩展</span>
     </div>
   </div>`;
@@ -69,7 +69,7 @@ class ShadowPanel extends Panel {
     const pickCallback = () => {
       // 只有变更才会有next
       if (nexts && nexts.length) {
-        listener.history.addCommand(new UpdateShadowCommand(nodes, prevs.map((prev, i) => {
+        listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         })));
       }
@@ -80,14 +80,13 @@ class ShadowPanel extends Panel {
 
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
-      if (el.tagName === 'B') {
-        this.silence = true;
+      const classList = el.classList;
+      if (classList.contains('pick-btn')) {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
         if (picker.isShowFrom('shadowPanel')) {
           picker.hide();
           pickCallback();
-          this.silence = false;
           return;
         }
         const p = picker.show(el, 'shadowPanel', pickCallback);
@@ -119,11 +118,49 @@ class ShadowPanel extends Panel {
             nexts.push(o);
             node.updateStyle(o);
           });
+          if (nodes.length) {
+            listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+          }
         };
         p.onDone = () => {
           picker.hide();
           pickCallback();
         };
+      }
+      else if (classList.contains('add')) {
+        this.silence = true;
+        nodes = this.nodes.slice(0);
+        prevs = [];
+        nexts = [];
+        nodes.forEach(node => {
+          const { shadow, shadowEnable } = node.getCssStyle();
+          prevs.push({
+            shadow,
+            shadowEnable,
+          });
+          const s = shadow.slice(0);
+          const se = shadowEnable.slice(0);
+          s.push('rgba(0,0,0,0.5) 0 2 4 0');
+          se.push(true);
+          const o = {
+            shadow: s,
+            shadowEnable: se,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        this.show(nodes);
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+        listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
+          return {
+            prev,
+            next: nexts[i],
+          };
+        })));
+        nodes = [];
+        prevs = [];
+        nexts = [];
+        this.silence = false;
       }
     });
 
@@ -197,11 +234,15 @@ class ShadowPanel extends Panel {
         o.shadow[index] = arr.join(' ');
         node.updateStyle(o);
       });
+      if (nodes.length) {
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+      }
+      this.silence = false;
     });
 
     panel.addEventListener('change', (e) => {
       if (nexts.length) {
-        listener.history.addCommand(new UpdateShadowCommand(nodes, prevs.map((prev, i) => {
+        listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
           return {
             prev,
             next: nexts[i],
@@ -216,6 +257,7 @@ class ShadowPanel extends Panel {
     listener.on([
       Listener.SELECT_NODE,
       Listener.ADD_NODE,
+      Listener.SHADOW_NODE,
     ], (nodes: Node[]) => {
       if (this.silence) {
         return;

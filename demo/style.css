@@ -435,8 +435,25 @@ body {
   box-sizing: content-box;
 }
 .side .panel-title {
+  position: relative;
   margin: 0 0 2px;
   font-weight: 700;
+  line-height: 18px;
+}
+.side .panel-title .add {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACPTkDJAAAAWklEQVRYCe3UQQoAIAhEUeuYHbBzVvshUAMXfaGNZMgjNSMQQCAnMHf5OeHo4cpHhTSAAALlAu0yzqkFI94dImflAqopT45V7NGSd8v/AA0gUC4gR4MkAl8JLKW6A7xz+XhTAAAAAElFTkSuQmCC) no-repeat center;
+  background-size: contain;
+}
+.side .panel-title .add:hover {
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+}
+.side .panel-title .add:active {
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 .side .align-panel {
   margin-bottom: 5px;

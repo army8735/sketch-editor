@@ -67,7 +67,10 @@ export default {
       });
     }
     const color = node.style.backgroundColor;
-    picker.setColor(color, true);
+    const opacity = parseFloat(node.style.opacity);
+    const rgba = color2rgbaInt(color);
+    rgba[3] *= isNaN(opacity) ? 1 : opacity;
+    picker.setColor(color2rgbaStr(rgba), true);
     picker.show();
     return picker;
   },

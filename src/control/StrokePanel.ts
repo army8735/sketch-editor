@@ -22,7 +22,7 @@ const single = `
     <span class="$\{checked}"></span>
     <div class="color">
       <span class="picker"><b style="color:#666;text-align:center;line-height:18px;overflow:hidden;text-indent:`
-  + `$\{textIndent};text-shadow:0 0 2px rgba(0, 0, 0, 0.2);background:$\{colorRgb};">○○○</b></span>
+  + `$\{textIndent};text-shadow:0 0 2px rgba(0, 0, 0, 0.2);background:$\{color};">○○○</b></span>
       <span class="txt">颜色</span>
     </div>
     <div class="pos $\{position}">
@@ -209,8 +209,7 @@ class StrokePanel extends Panel {
         index: es.length - 1 - i,
         checked,
         textIndent: c.length > 1 ? 0 : '9999px',
-        color: c.length > 1 ? '#FFFFFF' : c[0].slice(1, 7).toUpperCase(),
-        colorRgb: c.length > 1 ? '#FFFFFF' : (c[0].charAt(0) === '#' ? color2rgbaStr(c[0].slice(0, 7)) : '#FFFFFF'),
+        color: c.length > 1 ? '#FFFFFF' : c[0],
         colorMulti: c.length > 1 ? '多个' : '',
         width: w.length > 1 ? '' : toPrecision(w[0], 0),
         widthMulti: w.length > 1 ? '多个' : '',

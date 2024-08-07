@@ -7,10 +7,10 @@ export type ShadowData = {
   next: ShadowStyle,
 };
 
-class UpdateShadowCommand extends UpdateStyleCommand {
+class ShadowCommand extends UpdateStyleCommand {
   constructor(nodes: Node[], data: ShadowData[]) {
     super(nodes, data);
   }
 }
 
-export default UpdateShadowCommand;
+export default ShadowCommand;

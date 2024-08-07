@@ -26,6 +26,7 @@ import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import picker from './picker';
+import ShadowCommand from '../history/ShadowCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1073,6 +1074,9 @@ export default class Listener extends Event {
         else if (c instanceof OpacityCommand) {
           this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
         }
+        else if (c instanceof ShadowCommand) {
+          this.emit(Listener.SHADOW_NODE, this.selected.slice(0));
+        }
         else if (c instanceof VerticalAlignCommand) {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
         }
@@ -1173,6 +1177,7 @@ export default class Listener extends Event {
   static COLOR_NODE = 'COLOR_NODE';
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
+  static SHADOW_NODE = 'SHADOW_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ADD_NODE = 'ADD_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
