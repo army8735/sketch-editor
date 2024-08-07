@@ -6,6 +6,7 @@ import terser from '@rollup/plugin-terser';
 import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import glslify from 'rollup-plugin-glslify';
+import postcss from 'rollup-plugin-postcss';
 
 const publicConfig = {
   format: 'umd',
@@ -68,6 +69,18 @@ export default [
       del({
         targets: 'types',
         hook: 'buildEnd',
+      }),
+    ],
+  },
+  {
+    input: 'src/style.less',
+    output: {
+      file: 'dist/style.css',
+      sourcemap: true,
+    },
+    plugins: [
+      postcss({
+        extract: true,
       }),
     ],
   },

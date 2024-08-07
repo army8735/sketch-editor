@@ -32,9 +32,9 @@ export default [
     ],
   },
   {
-    input: 'demo/style.less',
+    input: 'src/style.less',
     output: {
-      file: 'demo/style.css',
+      file: 'dist/style.css',
       sourcemap: true,
     },
     plugins: [
