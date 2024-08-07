@@ -63,6 +63,9 @@ function toStyle() {
       computedStyle,
     ]);
   }
+  else {
+    input.value = '[' + (count++) + ']';
+  }
 }
 
 function toRich() {
@@ -85,6 +88,9 @@ function toRich() {
       count++,
       node.rich,
     ]);
+  }
+  else {
+    input.value = '[' + (count++) + ']';
   }
 }
 
