@@ -38,7 +38,7 @@ module.exports = {
 
       .click('#side .shadow-panel .line[title="0"] .pick-btn')
       .pause(20)
-      .updateValue('.picker_editor input', ['#0000FFFF', browser.Keys.ENTER])
+      .updateValue('.picker_editor input', '#0000FFFF')
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .pause(20)
