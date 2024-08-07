@@ -18,10 +18,14 @@ function renderItem(
   enable: boolean,
   multiColor: boolean,
   color: string,
-  x: number,
-  y: number,
-  blur: number,
-  spread: number,
+  multiX: boolean,
+  x: string,
+  multiY: boolean,
+  y: string,
+  multiBlur: boolean,
+  blur: string,
+  multiSpread: boolean,
+  spread: string,
 ) {
   return `<div class="line" title="${index}">
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
@@ -32,19 +36,19 @@ function renderItem(
       <span class="txt">颜色</span>
     </div>
     <div>
-      <input class="x" type="number" step="1" value="${x}"/>
+      <input class="x" type="number" step="1" value="${multiX ? '' : x}" placeholder="${multiX ? '多个' : ''}"/>
       <span class="txt">X</span>
     </div>
     <div>
-      <input class="y" type="number" step="1" value="${y}"/>
+      <input class="y" type="number" step="1" value="${multiY ? '' : y}" placeholder="${multiY ? '多个' : ''}"/>
       <span class="txt">Y</span>
     </div>
     <div>
-      <input class="blur" type="number" min="0" step="1" value="${blur}"/>
+      <input class="blur" type="number" min="0" step="1" value="${multiBlur ? '' : blur}" placeholder="${multiBlur ? '多个' : ''}"/>
       <span class="txt">模糊</span>
     </div>
     <div>
-      <input class="spread" type="number" min="0" step="1" value="${spread}" readonly="readonly" disabled="disabled"/>
+      <input class="spread" type="number" min="0" step="1" value="${multiSpread ? '' : spread}" placeholder="${multiSpread ? '多个' : ''}" readonly="readonly" disabled="disabled"/>
       <span class="txt">扩展</span>
     </div>
   </div>`;
@@ -340,20 +344,46 @@ class ShadowPanel extends Panel {
           o.push(item);
         }
       });
-    });
+    }); console.log(shadowList)
     shadowList.forEach((shadow, i) => {
       const shadowEnable = shadowEnableList[i];
-      const data = shadow[0].split(' ');
+      const color: string[] = [];
+      const x: string[] = [];
+      const y: string[] = [];
+      const blur: string[] = [];
+      const spread: string[] = [];
+      shadow.forEach(item => {
+        const data = item.split(' ');
+        if (!color.includes(data[0])) {
+          color.push(data[0]);
+        }
+        if (!x.includes(data[1])) {
+          x.push(data[1]);
+        }
+        if (!y.includes(data[2])) {
+          y.push(data[2]);
+        }
+        if (!blur.includes(data[3])) {
+          blur.push(data[3]);
+        }
+        if (!spread.includes(data[4])) {
+          spread.push(data[4]);
+        }
+      });
       panel.innerHTML += renderItem(
         i,
         shadowEnable.length > 1,
         shadowEnable[0],
-        shadow.length > 1,
-        data[0],
-        parseFloat(data[1]),
-        parseFloat(data[2]),
-        parseFloat(data[3]),
-        parseFloat(data[4]),
+        color.length > 1,
+        color[0],
+        x.length > 1,
+        x[0],
+        y.length > 1,
+        y[0],
+        blur.length > 1,
+        blur[0],
+        spread.length > 1,
+        spread[0],
       );
     });
   }
