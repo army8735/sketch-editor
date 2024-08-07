@@ -351,7 +351,7 @@ class ShadowPanel extends Panel {
           o.push(item);
         }
       });
-    }); console.log(shadowList)
+    });
     shadowList.forEach((shadow, i) => {
       const shadowEnable = shadowEnableList[i];
       const color: string[] = [];

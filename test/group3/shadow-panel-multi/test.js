@@ -38,6 +38,8 @@ module.exports = {
       .click('#side .shadow-panel .line[title="0"] .blur')
       .keys(browser.Keys.ARROW_DOWN)
       .keys(browser.Keys.NULL)
+      .pause(20)
+      .click('#button2')
       .assert.value('#side .shadow-panel .line[title="0"] .x', '')
       .assert.value('#side .shadow-panel .line[title="0"] .y', '')
       .assert.value('#side .shadow-panel .line[title="0"] .blur', '')
