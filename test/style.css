@@ -15,28 +15,29 @@
   left: 0;
   bottom: 0;
   z-index: 100;
+  pointer-events: none;
 }
 #button1 {
   position: fixed;
-  right: 0;
-  bottom: 0;
+  left: 0;
+  bottom: 30px;
   z-index: 100;
 }
 #button2 {
   position: fixed;
-  right: 30px;
-  bottom: 0;
+  left: 30px;
+  bottom: 30px;
   z-index: 100;
 }
 #button3 {
   position: fixed;
-  right: 60px;
-  bottom: 0;
+  left: 60px;
+  bottom: 30px;
   z-index: 100;
 }
 #button4 {
   position: fixed;
-  right: 90px;
-  bottom: 0;
+  left: 90px;
+  bottom: 30px;
   z-index: 100;
 }
