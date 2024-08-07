@@ -27,28 +27,29 @@ function renderItem(
   multiSpread: boolean,
   spread: string,
 ) {
+  const readOnly = (multiEnable || !enable) ? 'readonly="readonly"' : '';
   return `<div class="line" title="${index}">
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
-      <span class="picker">
+      <span class="picker ${readOnly ? 'read-only' : ''}">
         <b class="pick-btn ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
       </span>
       <span class="txt">颜色</span>
     </div>
     <div>
-      <input class="x" type="number" step="1" value="${multiX ? '' : x}" placeholder="${multiX ? '多个' : ''}"/>
+      <input class="x" type="number" step="1" value="${multiX ? '' : x}" placeholder="${multiX ? '多个' : ''}" ${readOnly}/>
       <span class="txt">X</span>
     </div>
     <div>
-      <input class="y" type="number" step="1" value="${multiY ? '' : y}" placeholder="${multiY ? '多个' : ''}"/>
+      <input class="y" type="number" step="1" value="${multiY ? '' : y}" placeholder="${multiY ? '多个' : ''}" ${readOnly}/>
       <span class="txt">Y</span>
     </div>
     <div>
-      <input class="blur" type="number" min="0" step="1" value="${multiBlur ? '' : blur}" placeholder="${multiBlur ? '多个' : ''}"/>
+      <input class="blur" type="number" min="0" step="1" value="${multiBlur ? '' : blur}" placeholder="${multiBlur ? '多个' : ''}" ${readOnly}/>
       <span class="txt">模糊</span>
     </div>
     <div>
-      <input class="spread" type="number" min="0" step="1" value="${multiSpread ? '' : spread}" placeholder="${multiSpread ? '多个' : ''}" readonly="readonly" disabled="disabled"/>
+      <input class="spread" type="number" min="0" step="1" value="${multiSpread ? '' : spread}" placeholder="${multiSpread ? '多个' : ''}" readonly="readonly"/>
       <span class="txt">扩展</span>
     </div>
   </div>`;
@@ -89,6 +90,9 @@ class ShadowPanel extends Panel {
       if (classList.contains('pick-btn')) {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
+        if (el.parentElement!.classList.contains('read-only')) {
+          return;
+        }
         if (picker.isShowFrom('shadowPanel')) {
           picker.hide();
           pickCallback();
@@ -269,9 +273,12 @@ class ShadowPanel extends Panel {
           if (!input.placeholder) {
             input.value = toPrecision(value).toString();
           }
+          else {
+            input.value = '';
+          }
         }
         else {
-          // 直接有value
+          input.placeholder = '';
         }
         const arr = o.shadow[index].split(' ');
         arr[type] = value.toString();
