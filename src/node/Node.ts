@@ -22,7 +22,7 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import TextureCache from '../refresh/TextureCache';
-import { calNormalLineHeight, calSize, color2hexStr, equalStyle, normalize, } from '../style/css';
+import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, normalize, } from '../style/css';
 import {
   BLUR,
   ComputedGradient,
@@ -1096,8 +1096,8 @@ class Node extends Event {
         res[k] = o.v + '%';
       }
     });
-    res.color = color2hexStr(res.color);
-    res.backgroundColor = color2hexStr(res.backgroundColor);
+    res.color = color2rgbaStr(res.color);
+    res.backgroundColor = color2rgbaStr(res.backgroundColor);
     res.fontStyle = ['normal', 'italic', 'oblique'][res.fontStyle];
     res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
     res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
@@ -1125,7 +1125,7 @@ class Node extends Event {
     ['fill', 'stroke'].forEach((k) => {
       res[k] = res[k].map((item: any) => {
         if (Array.isArray(item)) {
-          return color2hexStr(item);
+          return color2rgbaStr(item);
         }
         else {
           if (item.url) {
@@ -1144,7 +1144,7 @@ class Node extends Event {
             // return `${s}(${item.d.join(' ')}, ${item.stops.map(
             //   (stop: ColorStop) => {
             //     return (
-            //       color2hexStr(stop.color.v) +
+            //       color2rgbaStr(stop.color.v) +
             //       ' ' +
             //       stop.offset!.v * 100 +
             //       '%'
@@ -1169,7 +1169,7 @@ class Node extends Event {
       ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
       '(' + res.blur.v + ')';
     res.shadow = res.shadow.map((item: ComputedShadow) => {
-      return `${color2hexStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
+      return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
     });
     const tfo = style.transformOrigin;
     res.transformOrigin = res.transformOrigin.map((item: number, i: number) => {

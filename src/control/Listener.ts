@@ -40,7 +40,7 @@ export type ListenerOptions = {
     drag?: boolean; // 拖拽画布
     scale?: boolean; // 缩放画布
     editText?: boolean; // 进入编辑文字状态如双击
-    input?: boolean; // 输入
+    inputText?: boolean; // 编辑输入文字
   };
 };
 
@@ -752,7 +752,7 @@ export default class Listener extends Event {
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
       if (this.state === State.EDIT_TEXT) {
-        if (this.options.disabled?.input) {
+        if (this.options.disabled?.inputText) {
           return;
         }
         const text = selected[0] as Text;

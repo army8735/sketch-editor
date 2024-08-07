@@ -43,7 +43,7 @@ function renderItem(
       <span class="txt">模糊</span>
     </div>
     <div>
-      <input class="spread" type="number" min="0" step="1" value="${spread}"/>
+      <input class="spread" type="number" min="0" step="1" value="${spread}" readonly="readonly"/>
       <span class="txt">扩展</span>
     </div>
   </div>`;
@@ -81,10 +81,11 @@ class ShadowPanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       if (el.tagName === 'B') {
+        this.silence = true;
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
-        picker.hide();
         if (picker.isShowFrom('shadowPanel')) {
+          picker.hide();
           pickCallback();
           this.silence = false;
           return;
@@ -93,8 +94,8 @@ class ShadowPanel extends Panel {
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
-        nodes.forEach(item => {
-          const { shadow, shadowEnable } = item.getCssStyle();
+        nodes.forEach(node => {
+          const { shadow, shadowEnable } = node.getCssStyle();
           prevs.push({
             shadow,
             shadowEnable,
@@ -130,10 +131,87 @@ class ShadowPanel extends Panel {
       this.silence = true;
       pickCallback();
       const input = e.target as HTMLInputElement;
-      const value = parseFloat(input.value) || 0;
+      const index = parseInt((input.parentElement!.parentElement as HTMLElement).title);
+      const classList = input.classList;
+      let type = 1; // x
+      if (classList.contains('y')) {
+        type = 2;
+      }
+      else if (classList.contains('blur')) {
+        type = 3;
+      }
+      else if (classList.contains('spread')) {
+        type = 4;
+      }
+      let value = parseFloat(input.value) || 0;
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      let p: number;
+      this.nodes.forEach((node, i) => {
+        if (isFirst) {
+          nodes.push(node);
+          const { shadow, shadowEnable } = node.getCssStyle();
+          prevs.push({
+            shadow,
+            shadowEnable,
+          });
+        }
+        const o = {
+          shadow: prevs[i].shadow.slice(0),
+          shadowEnable: prevs[i].shadowEnable.slice(0),
+        };
+        nexts.push(o);
+        if (!isInput) {
+          let d = 0;
+          if (input.placeholder) {
+            d = value > 0 ? 1 : -1;
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+          }
+          else {
+            // 只计算一次，没有多个值直接用第一个即可
+            if (p === undefined) {
+              p = parseFloat(prevs[0].shadow[index].split(' ')[type]);
+            }
+            d = value - p;
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+          }
+          if (p === undefined) {
+            p = parseFloat(prevs[0].shadow[index].split(' ')[type]);
+          }
+          value = p + d;
+        }
+        else {
+          // 直接有value
+        }
+        const arr = o.shadow[index].split(' ');
+        arr[type] = value.toString();
+        o.shadow[index] = arr.join(' ');
+        node.updateStyle(o);
+      });
     });
 
-    panel.addEventListener('change', (e) => {})
+    panel.addEventListener('change', (e) => {
+      if (nexts.length) {
+        listener.history.addCommand(new UpdateShadowCommand(nodes, prevs.map((prev, i) => {
+          return {
+            prev,
+            next: nexts[i],
+          };
+        })));
+      }
+      nodes = [];
+      prevs = [];
+      nexts = [];
+    });
 
     listener.on([
       Listener.SELECT_NODE,

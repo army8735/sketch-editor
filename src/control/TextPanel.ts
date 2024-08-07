@@ -138,7 +138,7 @@ class TextPanel extends Panel {
           nodes.push(node);
           prevs.push(node.getRich());
         }
-        // 多个值的情况
+        // 按上下可能是多个值的情况
         if (!isInput) {
           let d = 0;
           if (input.placeholder) {
@@ -177,7 +177,7 @@ class TextPanel extends Panel {
             });
           });
         }
-        // 单个值比较简单
+        // 输入统一改为单个值比较简单
         else {
           node.updateRichStyle({
             location: 0,
@@ -331,8 +331,8 @@ class TextPanel extends Panel {
       if (el.tagName === 'B') {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
-        picker.hide();
         if (picker.isShowFrom('textPanel')) {
+          picker.hide();
           pickCallback();
           this.silence = false;
           return;

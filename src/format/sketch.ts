@@ -1,6 +1,6 @@
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import JSZip from 'jszip';
-import { color2hexStr } from '../style/css';
+import { color2rgbaStr } from '../style/css';
 import {
   JArtBoard,
   JBitmap,
@@ -499,7 +499,7 @@ async function convertItem(
         Math.floor(item.color.blue * 255),
         item.color.alpha,
       ];
-      shadow.push(`${color2hexStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} `);
+      shadow.push(`${color2rgbaStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} `);
       shadowEnable.push(item.isEnabled);
     });
   }
@@ -512,7 +512,7 @@ async function convertItem(
         Math.floor(item.color.blue * 255),
         item.color.alpha,
       ];
-      innerShadow.push(`${color2hexStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread}`);
+      innerShadow.push(`${color2rgbaStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread}`);
       innerShadowEnable.push(item.isEnabled);
     });
   }
@@ -1142,7 +1142,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         const from = parseStrPoint(g.from);
         const to = parseStrPoint(g.to);
         const stops = g.stops.map((item) => {
-          const color = color2hexStr([
+          const color = color2rgbaStr([
             Math.floor(item.color.red * 255),
             Math.floor(item.color.green * 255),
             Math.floor(item.color.blue * 255),
@@ -1201,7 +1201,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         const from = parseStrPoint(g.from);
         const to = parseStrPoint(g.to);
         const stops = g.stops.map((item) => {
-          const color = color2hexStr([
+          const color = color2rgbaStr([
             Math.floor(item.color.red * 255),
             Math.floor(item.color.green * 255),
             Math.floor(item.color.blue * 255),
