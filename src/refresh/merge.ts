@@ -2453,7 +2453,7 @@ export function genBgBlur(
     gl.viewport(0, 0, w, h);
     drawMask(gl, maskProgram, listO2[i], t);
     gl.deleteTexture(t);
-    // gl.deleteTexture(listO2[i]); // 先不删，后面还要用到
+    gl.deleteTexture(listO2[i]);
     item.t = tex;
   }
   // {
@@ -2500,8 +2500,65 @@ export function genBgBlur(
       }
     }
   }
-  // 原本背景则用扩充好的outline作为clip裁剪掉重合
+  // 原本背景则用outline作为clip裁剪掉重合，同样需要先扩展outline和bg一样大
+  gl.useProgram(program);
+  const listO3: WebGLTexture[] = [];
   const listT = target.list;
+  for (let i = 0, len = listT.length; i < len; i++) {
+    const { bbox, w, h, t } = listT[i];
+    const cx = w * 0.5,
+      cy = h * 0.5;
+    const tex = createTexture(gl, 0, undefined, w, h);
+    listO3.push(tex);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex,
+      0,
+    );
+    gl.viewport(0, 0, w, h);
+    for (let j = 0, len = listO.length; j < len; j++) {
+      const { bbox: bbox2, t: t2 } = listO[j];
+      if (checkInRect(bbox2, matrix,
+        bbox[0] * scale, bbox[1] * scale,
+        (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale)) {
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              matrix,
+              bbox: bbox2,
+              texture: t2,
+            },
+          ],
+          -bbox[0] * scale,
+          -bbox[1] * scale,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
+    }
+    // const pixels = new Uint8Array(w * h * 4);
+    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    // const os = inject.getOffscreenCanvas(w, h);
+    // const id = os.ctx.getImageData(0, 0, w, h);
+    // for (let i = 0, len = w * h * 4; i < len ;i++) {
+    //   id.data[i] = pixels[i];
+    // }
+    // os.ctx.putImageData(id, 0, 0);
+    // const img = document.createElement('img');
+    // img.setAttribute('name', 'o2' + i);
+    // os.canvas.toBlob(blob => {
+    //   img.src = URL.createObjectURL(blob!);
+    //   document.body.appendChild(img);
+    // });
+  }
+  // 开始clip过程，去掉outline重合
   const clipProgram = programs.clipProgram;
   gl.useProgram(clipProgram);
   for (let i = 0, len = listT.length; i < len; i++) {
@@ -2516,9 +2573,9 @@ export function genBgBlur(
       0,
     );
     gl.viewport(0, 0, w, h);
-    drawMask(gl, clipProgram, listO2[i], t);
+    drawMask(gl, clipProgram, listO3[i], t);
     gl.deleteTexture(t);
-    gl.deleteTexture(listO2[i]); // 使用过2次后面没用了
+    gl.deleteTexture(listO3[i]);
     item.t = tex;
     // const pixels = new Uint8Array(w * h * 4);
     // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
