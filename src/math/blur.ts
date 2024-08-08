@@ -39,6 +39,9 @@ export function outerSizeByD(d: number) {
  * @param d
  */
 export function gaussianWeight(sigma: number, d: number) {
+  if (sigma <= 0 || d <= 0) {
+    return [1];
+  }
   const list: number[] = [];
   const len = Math.floor(d * 0.5);
   let total = 0;

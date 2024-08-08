@@ -1188,6 +1188,14 @@ function genGaussBlur(
   return res;
 }
 
+function toFloat(n: number) {
+  const str = n.toString();
+  if (str.indexOf('.') > -1) {
+    return str;
+  }
+  return str + '.0';
+}
+
 function genGaussShader(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   programs: Record<string, WebGLProgram>,
@@ -1204,10 +1212,10 @@ function genGaussShader(
   for (let i = 0; i < r; i++) {
     // u_direction传入基数为100，因此相邻的像素点间隔百分之一
     let c = (r - i) * 0.01;
-    frag += `gl_FragColor += limit(v_texCoords + vec2(-${c}, -${c}) * u_direction, ${weights[i]});
-      gl_FragColor += limit(v_texCoords + vec2(${c}, ${c}) * u_direction, ${weights[i]});\n`;
+    frag += `gl_FragColor += limit(v_texCoords + vec2(-${c}, -${c}) * u_direction, ${toFloat(weights[i])});
+      gl_FragColor += limit(v_texCoords + vec2(${c}, ${c}) * u_direction, ${toFloat(weights[i])});\n`;
   }
-  frag += `gl_FragColor += limit(v_texCoords, ${weights[r]});`;
+  frag += `gl_FragColor += limit(v_texCoords, ${toFloat(weights[r])});`;
   frag = gaussFrag.replace('placeholder;', frag);
   return (programs[key] = initShaders(gl, simpleVert, frag));
 }
@@ -2340,13 +2348,12 @@ export function genBgBlur(
   H: number,
 ) {
   const program = programs.program;
-  // 先背景blur
+  // 先背景blur，有可能blur为0
   const bg = genGaussBlur(gl, root, target, blur.radius, W, H, scale);
   const listB = bg.list;
   const listO = outline.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   // {
-  //   const arr: HTMLImageElement[] = [];
   //   listB.forEach((item, i) => {
   //     const { w, h, t } = item;
   //     frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
@@ -2359,25 +2366,14 @@ export function genBgBlur(
   //     }
   //     os.ctx.putImageData(id, 0, 0);
   //     const img = document.createElement('img');
-  //     img.setAttribute('name', i.toString());
+  //     img.setAttribute('name', 'b' + i);
   //     os.canvas.toBlob(blob => {
   //       img.src = URL.createObjectURL(blob!);
-  //       img.style.width = w * 0.5 + 'px';
-  //       img.style.height = h * 0.5 + 'px';
-  //       arr.push(img);
-  //       if (arr.length === listB.length) {
-  //         arr.sort((a, b) => {
-  //           return parseInt(a.getAttribute('name')!)
-  //             - parseInt(b.getAttribute('name')!);
-  //         });
-  //         arr.forEach(img => {
-  //           document.body.appendChild(img);
-  //         });
-  //       }
+  //       document.body.appendChild(img);
+  //       os.release();
   //     });
   //   });
   // }
-  // const arr: HTMLImageElement[] = [];
   // outline扩展和背景blur一样大，方便后续mask
   const listO2: WebGLTexture[] = [];
   for (let i = 0, len = listB.length; i < len; i++) {
@@ -2433,24 +2429,14 @@ export function genBgBlur(
     // }
     // os.ctx.putImageData(id, 0, 0);
     // const img = document.createElement('img');
-    // img.setAttribute('name', i.toString());
+    // img.setAttribute('name', 'o' + i);
     // os.canvas.toBlob(blob => {
     //   img.src = URL.createObjectURL(blob!);
-    //   img.style.width = w * 0.5 + 'px';
-    //   img.style.height = h * 0.5 + 'px';
-    //   arr.push(img);
-    //   if (arr.length === listB.length) {
-    //     arr.sort((a, b) => {
-    //       return parseInt(a.getAttribute('name')!)
-    //         - parseInt(b.getAttribute('name')!);
-    //     });
-    //     arr.forEach(img => {
-    //       document.body.appendChild(img);
-    //     });
-    //   }
+    //   document.body.appendChild(img);
+    //   os.release();
     // });
   }
-  // 应用mask，将模糊的背景用outline作为mask保留重合
+  // 应用mask，将模糊的背景用扩展好的outline作为mask保留重合
   const maskProgram = programs.maskProgram;
   gl.useProgram(maskProgram);
   for (let i = 0, len = listB.length; i < len; i++) {
@@ -2467,11 +2453,10 @@ export function genBgBlur(
     gl.viewport(0, 0, w, h);
     drawMask(gl, maskProgram, listO2[i], t);
     gl.deleteTexture(t);
-    gl.deleteTexture(listO2[i]);
+    // gl.deleteTexture(listO2[i]); // 先不删，后面还要用到
     item.t = tex;
   }
   // {
-  //   const arr: HTMLImageElement[] = [];
   //   listB.forEach((item, i) => {
   //     const { w, h, t } = item;
   //     frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
@@ -2484,32 +2469,22 @@ export function genBgBlur(
   //     }
   //     os.ctx.putImageData(id, 0, 0);
   //     const img = document.createElement('img');
-  //     img.setAttribute('name', i.toString());
+  //     img.setAttribute('name', 'm' + i);
   //     os.canvas.toBlob(blob => {
   //       img.src = URL.createObjectURL(blob!);
-  //       img.style.width = w * 0.5 + 'px';
-  //       img.style.height = h * 0.5 + 'px';
-  //       arr.push(img);
-  //       if (arr.length === listB.length) {
-  //         arr.sort((a, b) => {
-  //           return parseInt(a.getAttribute('name')!)
-  //             - parseInt(b.getAttribute('name')!);
-  //         });
-  //         arr.forEach(img => {
-  //           document.body.appendChild(img);
-  //         });
-  //       }
+  //       document.body.appendChild(img);
+  //       os.release();
   //     });
   //   });
   // }
-  // 可能存在的饱和度 TODO 没生效
+  // 可能存在的饱和度
   if (blur.saturation !== undefined && blur.saturation !== 1) {
     const t = genColorMatrix(
       gl,
       root,
-      bg,
+      bg || target,
       0,
-      blur.saturation!,
+      blur.saturation,
       1,
       1,
       W,
@@ -2525,80 +2500,10 @@ export function genBgBlur(
       }
     }
   }
-  // 原本背景则用outline作为clip裁剪掉重合，同样需要先扩展outline和bg一样大
-  // const arr2: HTMLImageElement[] = [];
-  gl.useProgram(program);
-  const listO3: WebGLTexture[] = [];
+  // 原本背景则用扩充好的outline作为clip裁剪掉重合
   const listT = target.list;
-  for (let i = 0, len = listT.length; i < len; i++) {
-    const { bbox, w, h, t } = listT[i];
-    const cx = w * 0.5,
-      cy = h * 0.5;
-    const tex = createTexture(gl, 0, undefined, w, h);
-    listO3.push(tex);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex,
-      0,
-    );
-    gl.viewport(0, 0, w, h);
-    for (let j = 0, len = listO.length; j < len; j++) {
-      const { bbox: bbox2, t: t2 } = listO[j];
-      if (checkInRect(bbox2, matrix,
-        bbox[0] * scale, bbox[1] * scale,
-        (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale)) {
-        drawTextureCache(
-          gl,
-          cx,
-          cy,
-          program,
-          [
-            {
-              opacity: 1,
-              matrix,
-              bbox: bbox2,
-              texture: t2,
-            },
-          ],
-          -bbox[0] * scale,
-          -bbox[1] * scale,
-          false,
-          -1, -1, 1, 1,
-        );
-      }
-    }
-    // const pixels = new Uint8Array(w * h * 4);
-    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // const os = inject.getOffscreenCanvas(w, h);
-    // const id = os.ctx.getImageData(0, 0, w, h);
-    // for (let i = 0, len = w * h * 4; i < len ;i++) {
-    //   id.data[i] = pixels[i];
-    // }
-    // os.ctx.putImageData(id, 0, 0);
-    // const img = document.createElement('img');
-    // img.setAttribute('name', i.toString());
-    // os.canvas.toBlob(blob => {
-    //   img.src = URL.createObjectURL(blob!);
-    //   img.style.width = w * 0.5 + 'px';
-    //   img.style.height = h * 0.5 + 'px';
-    //   arr2.push(img);
-    //   if (arr2.length === listT.length) {
-    //     arr2.sort((a, b) => {
-    //       return parseInt(a.getAttribute('name')!)
-    //         - parseInt(b.getAttribute('name')!);
-    //     });
-    //     arr2.forEach(img => {
-    //       document.body.appendChild(img);
-    //     });
-    //   }
-    // });
-  }
-  // 开始clip过程，去掉outline重合
   const clipProgram = programs.clipProgram;
   gl.useProgram(clipProgram);
-  // const arr3: HTMLImageElement[] = [];
   for (let i = 0, len = listT.length; i < len; i++) {
     const item = listT[i];
     const { w, h, t } = item;
@@ -2611,9 +2516,9 @@ export function genBgBlur(
       0,
     );
     gl.viewport(0, 0, w, h);
-    drawMask(gl, clipProgram, listO3[i], t);
+    drawMask(gl, clipProgram, listO2[i], t);
     gl.deleteTexture(t);
-    gl.deleteTexture(listO3[i]);
+    gl.deleteTexture(listO2[i]); // 使用过2次后面没用了
     item.t = tex;
     // const pixels = new Uint8Array(w * h * 4);
     // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -2624,21 +2529,11 @@ export function genBgBlur(
     // }
     // os.ctx.putImageData(id, 0, 0);
     // const img = document.createElement('img');
-    // img.setAttribute('name', i.toString());
+    // img.setAttribute('name', 'c' + i);
     // os.canvas.toBlob(blob => {
     //   img.src = URL.createObjectURL(blob!);
-    //   img.style.width = w * 0.5 + 'px';
-    //   img.style.height = h * 0.5 + 'px';
-    //   arr3.push(img);
-    //   if (arr3.length === listT.length) {
-    //     arr3.sort((a, b) => {
-    //       return parseInt(a.getAttribute('name')!)
-    //         - parseInt(b.getAttribute('name')!);
-    //     });
-    //     arr3.forEach(img => {
-    //       document.body.appendChild(img);
-    //     });
-    //   }
+    //   document.body.appendChild(img);
+    //   os.release();
     // });
   }
   // 原始纹理上绘入结果，即root或者局部根节点
