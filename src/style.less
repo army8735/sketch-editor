@@ -552,19 +552,26 @@ html, body {
       background: none;
       border: none;
       font-size: 11px;
-      z-index: 10;
     }
 
     .unit {
       position: absolute;
       top: 0;
-      right: 2px;
+      right: 0;
+      padding: 0 2px;
       width: 12px;
       height: 100%;
+      background: #F0F0F0;
       line-height: 20px;
       text-align: center;
       font-size: 11px;
       pointer-events: none;
+    }
+
+    &:hover {
+      .unit {
+        visibility: hidden;
+      }
     }
   }
 
