@@ -89,4 +89,6 @@ export default {
   FillPanel,
   StrokePanel,
   TextPanel,
+  ShadowPanel,
+  BlurPanel,
 };

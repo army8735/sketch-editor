@@ -1,8 +1,8 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import { Style } from '../style/define';
 
-class UpdateFormatStyleCommand extends Command {
+class UpdateFormatStyleCommand extends AbstractCommand {
   prevs: Partial<Style>[];
   nexts: Partial<Style>[];
 

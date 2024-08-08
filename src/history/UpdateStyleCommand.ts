@@ -1,4 +1,4 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import { JStyle } from '../format';
 
@@ -7,7 +7,7 @@ export type UpdateStyleData = {
   next: Partial<JStyle>;
 };
 
-class UpdateStyleCommand extends Command {
+class UpdateStyleCommand extends AbstractCommand {
   data: UpdateStyleData[];
 
   constructor(nodes: Node[], data: UpdateStyleData[]) {

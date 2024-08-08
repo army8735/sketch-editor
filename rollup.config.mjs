@@ -84,4 +84,17 @@ export default [
       }),
     ],
   },
+  {
+    input: 'src/style.less',
+    output: {
+      file: 'dist/style.min.css',
+      sourcemap: true,
+    },
+    plugins: [
+      postcss({
+        extract: true,
+        minimize: true,
+      }),
+    ],
+  },
 ];

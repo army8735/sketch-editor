@@ -1,10 +1,10 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 
 let history: History | undefined;
 
 class History {
-  commands: Command[]; // undoList
-  commandsR: Command[]; // redoList
+  commands: AbstractCommand[]; // undoList
+  commandsR: AbstractCommand[]; // redoList
   readonly size: number;
 
   constructor(size = 100) {
@@ -13,7 +13,7 @@ class History {
     this.size = size;
   }
 
-  addCommand(c: Command) {
+  addCommand(c: AbstractCommand) {
     const len = this.commands.length;
     // 加入一条新命令，如果超过长度限制先入先出老的
     if (len >= this.size) {

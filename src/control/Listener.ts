@@ -13,7 +13,7 @@ import State from './State';
 import { clone } from '../util/util';
 import { ArtBoardProps } from '../format';
 import History from '../history/History';
-import Command from '../history/Command';
+import AbstractCommand from '../history/AbstractCommand';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RemoveCommand, { RemoveData } from '../history/RemoveCommand';
@@ -27,6 +27,7 @@ import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
 import picker from './picker';
 import ShadowCommand from '../history/ShadowCommand';
+import BlurCommand from '../history/BlurCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1040,7 +1041,7 @@ export default class Listener extends Event {
       if (target && target.tagName.toUpperCase() === 'INPUT') {
         e.preventDefault();
       }
-      let c: Command | undefined;
+      let c: AbstractCommand | undefined;
       if (this.shiftKey) {
         c = this.history.redo();
       }
@@ -1076,6 +1077,9 @@ export default class Listener extends Event {
         }
         else if (c instanceof ShadowCommand) {
           this.emit(Listener.SHADOW_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof BlurCommand) {
+          this.emit(Listener.BLUR_NODE, this.selected.slice(0));
         }
         else if (c instanceof VerticalAlignCommand) {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
@@ -1178,6 +1182,7 @@ export default class Listener extends Event {
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
   static SHADOW_NODE = 'SHADOW_NODE';
+  static BLUR_NODE = `BLUR_NODE`;
   static REMOVE_NODE = 'REMOVE_NODE';
   static ADD_NODE = 'ADD_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';

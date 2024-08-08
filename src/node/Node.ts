@@ -22,7 +22,7 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import TextureCache from '../refresh/TextureCache';
-import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, normalize, } from '../style/css';
+import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, getCssBlur, normalize, } from '../style/css';
 import {
   BLUR,
   ComputedGradient,
@@ -1166,24 +1166,7 @@ class Node extends Event {
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
       [computedStyle.booleanOperation];
     const blur = computedStyle.blur;
-    res.blur =
-      ['none', 'gauss', 'motion', 'zoom', 'background'][blur.t] +
-      '(' + blur.radius + ')';
-    if (blur.t === BLUR.MOTION) {
-      res.blur += ` angle(${blur.angle || 0})`;
-    }
-    else if (blur.t === BLUR.RADIAL) {
-      const p = (blur.center || []).map(item => {
-        return item * 100 + '%';
-      });
-      while (p.length < 2) {
-        p.push('50%');
-      }
-      res.blur += ` center(${p.join(', ')})`;
-    }
-    else if (blur.t === BLUR.BACKGROUND) {
-      res.blur += ` saturation(${(blur.saturation || 0) % 100}%)`;
-    }
+    res.blur = getCssBlur(blur.t, blur.radius, blur.angle, blur.center, blur.saturation);
     res.shadow = computedStyle.shadow.map((item: ComputedShadow) => {
       return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
     });

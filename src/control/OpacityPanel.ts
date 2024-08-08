@@ -56,6 +56,7 @@ class OpacityPanel extends Panel {
         }
       });
       number.value = range.value;
+      number.placeholder = '';
     });
     range.addEventListener('change', (e) => {
       if (nodes.length) {

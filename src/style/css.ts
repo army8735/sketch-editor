@@ -1007,6 +1007,29 @@ export function calSize(v: StyleNumValue, p: number): number {
   return 0;
 }
 
+export function getCssBlur(t: BLUR, radius: number, angle?: number, center?: [number, number], saturation?: number) {
+  if (t === BLUR.NONE) {
+    return 'none';
+  }
+  let s = ['none', 'gauss', 'motion', 'zoom', 'background'][t] + `(${radius})`;
+  if (t === BLUR.MOTION) {
+    s += ` angle(${angle || 0})`;
+  }
+  else if (t === BLUR.RADIAL) {
+    const p = (center || []).map(item => {
+      return item * 100 + '%';
+    });
+    while (p.length < 2) {
+      p.push('50%');
+    }
+    s += ` center(${p.join(', ')})`;
+  }
+  else if (t === BLUR.BACKGROUND) {
+    s += ` saturation(${(saturation || 0) % 100}%)`;
+  }
+  return s;
+}
+
 export default {
   normalize,
   equalStyle,
@@ -1019,4 +1042,5 @@ export default {
   getBaseline,
   getContentArea,
   calSize,
+  getCssBlur,
 };

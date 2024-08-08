@@ -394,6 +394,8 @@ export type RotateZStyle = Pick<JStyle, 'rotateZ'>;
 
 export type ShadowStyle = Pick<JStyle, 'shadow' | 'shadowEnable'>;
 
+export type BlurStyle = Pick<JStyle, 'blur'>;
+
 export type ModifyRichStyle = Pick<Rich, 'location' | 'length'> & Partial<Rich>;
 
 export default {

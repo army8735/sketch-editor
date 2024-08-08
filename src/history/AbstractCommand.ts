@@ -1,6 +1,6 @@
 import Node from '../node/Node';
 
-abstract class Command {
+abstract class AbstractCommand {
   nodes: Node[];
 
   protected constructor(nodes: Node[]) {
@@ -12,4 +12,4 @@ abstract class Command {
   abstract undo(): void;
 }
 
-export default Command;
+export default AbstractCommand;

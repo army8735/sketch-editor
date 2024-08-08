@@ -1,4 +1,4 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import { appendWithPosAndSize} from '../tools/container';
@@ -9,7 +9,7 @@ export type RemoveData = {
   parent: Container;
 };
 
-class RemoveCommand extends Command {
+class RemoveCommand extends AbstractCommand {
   data: RemoveData[];
 
   constructor(nodes: Node[], data: RemoveData[]) {

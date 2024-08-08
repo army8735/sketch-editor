@@ -1,4 +1,4 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import { ComputedStyle } from '../style/define';import {
   resizeBottomAspectRatioOperate,
@@ -38,7 +38,7 @@ export enum CONTROL_TYPE {
   BR,
 }
 
-class ResizeCommand extends Command {
+class ResizeCommand extends AbstractCommand {
   data: ResizeData[];
 
   constructor(nodes: Node[], data: ResizeData[]) {

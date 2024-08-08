@@ -1,5 +1,5 @@
 import History from './History';
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import MoveCommand from './MoveCommand';
 import ResizeCommand from './ResizeCommand';
 import RemoveCommand from './RemoveCommand';
@@ -10,7 +10,7 @@ import UpdateRichCommand from './UpdateRichCommand';
 
 export default {
   History,
-  Command,
+  AbstractCommand,
   MoveCommand,
   ResizeCommand,
   RemoveCommand,

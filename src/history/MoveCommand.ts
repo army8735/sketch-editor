@@ -1,10 +1,10 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import { ComputedStyle } from '../style/define';
 
 export type MoveData = { dx: number, dy: number };
 
-class MoveCommand extends Command {
+class MoveCommand extends AbstractCommand {
   data: MoveData[];
 
   constructor(nodes: Node[], data: MoveData[]) {

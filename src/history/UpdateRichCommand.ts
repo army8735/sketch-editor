@@ -1,4 +1,4 @@
-import Command from './Command';
+import AbstractCommand from './AbstractCommand';
 import Text from '../node/Text';
 import { Rich } from '../format';
 
@@ -7,7 +7,7 @@ export type UpdateRichData = {
   next: Rich[];
 };
 
-class UpdateRichCommand extends Command {
+class UpdateRichCommand extends AbstractCommand {
   data: UpdateRichData[];
   type: string; // 区分text-panel改的类型，比如字体、大小、颜色等等
 
