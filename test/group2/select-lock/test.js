@@ -22,6 +22,10 @@ module.exports = {
       .moveToElement('canvas', 140, 20)
       .assert.elementPresent('#tree .hover')
 
+      .moveToElement('canvas', 50, 280)
+      .assert.elementPresent('#tree .hover')
+      .assert.domPropertyEquals('#tree dt.hover .name', 'title', '5')
+
       .end();
   }
 };
