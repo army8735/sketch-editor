@@ -1084,8 +1084,8 @@ class Node extends Event {
   }
 
   getCssStyle() {
-    const res: any = Object.assign({}, this.computedStyle);
-    const style = this.style;
+    const res: any = {};
+    const { style, computedStyle } = this;
     // %单位转换
     ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY'].forEach((k) => {
       const o: any = style[k as keyof JStyle];
@@ -1096,11 +1096,11 @@ class Node extends Event {
         res[k] = o.v + '%';
       }
     });
-    res.color = color2rgbaStr(res.color);
-    res.backgroundColor = color2rgbaStr(res.backgroundColor);
-    res.fontStyle = ['normal', 'italic', 'oblique'][res.fontStyle];
-    res.textAlign = ['left', 'center', 'right', 'justify'][res.textAlign];
-    res.textVerticalAlign = ['top', 'middle', 'bottom'][res.textVerticalAlign];
+    res.color = color2rgbaStr(computedStyle.color);
+    res.backgroundColor = color2rgbaStr(computedStyle.backgroundColor);
+    res.fontStyle = ['normal', 'italic', 'oblique'][computedStyle.fontStyle];
+    res.textAlign = ['left', 'center', 'right', 'justify'][computedStyle.textAlign];
+    res.textVerticalAlign = ['top', 'middle', 'bottom'][computedStyle.textVerticalAlign];
     res.mixBlendMode = [
       'normal',
       'multiply',
@@ -1118,12 +1118,12 @@ class Node extends Event {
       'saturation',
       'color',
       'luminosity',
-    ][res.mixBlendMode];
-    ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach(k => {
-      res[k] = res[k].slice(0);
+    ][computedStyle.mixBlendMode];
+    ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach((k) => {
+      res[k] = computedStyle[k as 'shadowEnable' | 'strokeEnable' | 'fillEnable' | 'fillOpacity' | 'strokeWidth'].slice(0);
     });
     ['fill', 'stroke'].forEach((k) => {
-      res[k] = res[k].map((item: any) => {
+      res[k] = computedStyle[k as 'fill' | 'stroke'].map((item: any) => {
         if (Array.isArray(item)) {
           return color2rgbaStr(item);
         }
@@ -1156,23 +1156,39 @@ class Node extends Event {
         }
       });
     });
-    res.strokeLinecap = ['butt', 'round', 'square'][res.strokeLinecap];
-    res.strokeLinejoin = ['miter', 'round', 'bevel'][res.strokeLinejoin];
-    res.strokePosition = res.strokePosition.map((item: STROKE_POSITION) => {
+    res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
+    res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
+    res.strokePosition = computedStyle.strokePosition.map((item: STROKE_POSITION) => {
       return ['center', 'inside', 'outside'][item];
     });
-    res.maskMode = ['none', 'outline', 'alpha'][res.maskMode];
-    res.fillRule = ['nonzero', 'evenodd'][res.fillRule];
+    res.maskMode = ['none', 'outline', 'alpha'][computedStyle.maskMode];
+    res.fillRule = ['nonzero', 'evenodd'][computedStyle.fillRule];
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
-      [res.booleanOperation];
+      [computedStyle.booleanOperation];
+    const blur = computedStyle.blur;
     res.blur =
-      ['none', 'gauss', 'motion', 'zoom', 'background'][res.blur.t] +
-      '(' + res.blur.v + ')';
-    res.shadow = res.shadow.map((item: ComputedShadow) => {
+      ['none', 'gauss', 'motion', 'zoom', 'background'][blur.t] +
+      '(' + blur.radius + ')';
+    if (blur.t === BLUR.MOTION) {
+      res.blur += ` angle(${blur.angle || 0})`;
+    }
+    else if (blur.t === BLUR.RADIAL) {
+      const p = (blur.center || []).map(item => {
+        return item * 100 + '%';
+      });
+      while (p.length < 2) {
+        p.push('50%');
+      }
+      res.blur += ` center(${p.join(', ')})`;
+    }
+    else if (blur.t === BLUR.BACKGROUND) {
+      res.blur += ` saturation(${(blur.saturation || 0) % 100}%)`;
+    }
+    res.shadow = computedStyle.shadow.map((item: ComputedShadow) => {
       return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
     });
     const tfo = style.transformOrigin;
-    res.transformOrigin = res.transformOrigin.map((item: number, i: number) => {
+    res.transformOrigin = computedStyle.transformOrigin.map((item: number, i: number) => {
       const o = tfo[i];
       if (o.u === StyleUnit.PERCENT) {
         return o.v + '%';

@@ -536,6 +536,38 @@ html, body {
     }
   }
 
+  .input-unit {
+    position: relative;
+    width: 60px;
+    height: 20px;
+    background: #F0F0F0;
+    border-radius: 3px;
+    font-size: 11px;
+
+    input {
+      position: relative;
+      padding: 0 0 0 5px;
+      width: 55px;
+      height: 100%;
+      background: none;
+      border: none;
+      font-size: 11px;
+      z-index: 10;
+    }
+
+    .unit {
+      position: absolute;
+      top: 0;
+      right: 2px;
+      width: 12px;
+      height: 100%;
+      line-height: 20px;
+      text-align: center;
+      font-size: 11px;
+      pointer-events: none;
+    }
+  }
+
   .align-panel {
     margin-bottom: 5px;
     padding: 0 10px 5px;
@@ -606,17 +638,9 @@ html, body {
       margin-bottom: 3px;
     }
 
-    label {
-      display: inline-flex;
-      justify-content: space-between;
-      align-items: center;
+    .input-unit {
       margin-left: 10px;
-      width: 65px;
-      padding: 0 5px 0 0;
-      background: #F0F0F0;
-      border-radius: 3px;
-      font-family: Menlo, "Courier New", sans-serif;
-      font-size: 10px;
+      width: 70px;
 
       &.disabled {
         opacity: 0.5;
@@ -625,16 +649,10 @@ html, body {
       &:first-child {
         margin-left: 0;
       }
-    }
 
-    .num {
-      margin: 0;
-      padding: 0 0 0 5px;
-      width: 55px;
-      height: 20px;
-      border: none;
-      background: transparent;
-      font-size: 11px;
+      input {
+        width: 65px;
+      }
     }
 
     .fh {
@@ -700,28 +718,7 @@ html, body {
 
     input[type=range] {
       flex: 1;
-    }
-
-    input[type=number] {
-      margin: 0 0 0 5px;
-      padding: 0 5px;
-      width: 40px;
-      height: 20px;
-      border: none;
-      border-top-left-radius: 3px;
-      border-bottom-left-radius: 3px;
-      background: #F0F0F0;
-      font-size: 11px;
-    }
-
-    span {
-      padding-right: 3px;
-      background: #F0F0F0;
-      width: 12px;
-      height: 20px;
-      line-height: 20px;
-      border-top-right-radius: 3px;
-      border-bottom-right-radius: 3px;
+      margin-right: 5px;
     }
   }
 
@@ -1359,9 +1356,10 @@ html, body {
       font-size: 11px;
     }
 
-    .val, .t2 div, .t4 div .con {
+    .val, .t2 .con, .t4 .con {
       display: flex;
       align-items: center;
+      position: relative;
     }
 
     button {
@@ -1388,28 +1386,7 @@ html, body {
 
     input[type=range] {
       flex: 1;
-    }
-
-    input[type=number] {
-      margin: 0 0 0 5px;
-      padding: 0 0 0 5px;
-      width: 40px;
-      height: 20px;
-      border: none;
-      border-top-left-radius: 3px;
-      border-bottom-left-radius: 3px;
-      background: #F0F0F0;
-      font-size: 11px;
-    }
-
-    span {
-      padding-right: 3px;
-      background: #F0F0F0;
-      width: 12px;
-      height: 20px;
-      line-height: 20px;
-      border-top-right-radius: 3px;
-      border-bottom-right-radius: 3px;
+      margin-right: 5px;
     }
   }
 }

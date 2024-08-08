@@ -15,28 +15,28 @@ import { getTextBehaviour } from '../tools/text';
 const html = `
   <h4 class="panel-title">基本</h4>
   <div class="line">
-    <label class="x">
-      <input type="number" class="num" step="1" disabled/>
-      <span>X</span>
-    </label>
-    <label class="y">
-      <input type="number" class="num" step="1" disabled/>
-      <span>Y</span>
-    </label>
-    <label class="r">
-      <input type="number" class="num" step="1" disabled/>
-      <span>°</span>
-    </label>
+    <div class="input-unit">
+      <input type="number" class="x" step="1"/>
+      <span class="unit">X</span>
+    </div>
+    <div class="input-unit">
+      <input type="number" class="y" step="1"/>
+      <span class="unit">Y</span>
+    </div>
+    <div class="input-unit">
+      <input type="number" class="r" step="1"/>
+      <span class="unit">°</span>
+    </div>
   </div>
   <div class="line">
-    <label class="w">
-      <input type="number" class="num" step="1" disabled/>
-      <span>W</span>
-    </label>
-    <label class="h">
-      <input type="number" class="num" step="1" disabled/>
-      <span>H</span>
-    </label>
+    <div class="input-unit">
+      <input type="number" class="w" step="1"/>
+      <span class="unit">W</span>
+    </div>
+    <div class="input-unit">
+      <input type="number" class="h" step="1"/>
+      <span class="unit">H</span>
+    </div>
     <span class="fh"></span>
     <span class="fv"></span>
   </div>
@@ -56,11 +56,11 @@ class BasicPanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
-    const x = panel.querySelector('.x input') as HTMLInputElement;
-    const y = panel.querySelector('.y input') as HTMLInputElement;
-    const r = panel.querySelector('.r input') as HTMLInputElement;
-    const w = panel.querySelector('.w input') as HTMLInputElement;
-    const h = panel.querySelector('.h input') as HTMLInputElement;
+    const x = panel.querySelector('.x') as HTMLInputElement;
+    const y = panel.querySelector('.y') as HTMLInputElement;
+    const r = panel.querySelector('.r') as HTMLInputElement;
+    const w = panel.querySelector('.w') as HTMLInputElement;
+    const h = panel.querySelector('.h') as HTMLInputElement;
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
 
@@ -454,7 +454,7 @@ class BasicPanel extends Panel {
     this.data = [];
     const panel = this.panel;
     if (!nodes.length) {
-      panel.querySelectorAll('label,.fh,.fv').forEach(item => {
+      panel.querySelectorAll('.input-unit,.fh,.fv').forEach(item => {
         item.classList.add('disabled');
         item.classList.remove('active');
       });
@@ -465,7 +465,7 @@ class BasicPanel extends Panel {
       });
       return;
     }
-    panel.querySelectorAll('label,.fh,.fv').forEach(item => {
+    panel.querySelectorAll('.input-unit,.fh,.fv').forEach(item => {
       item.classList.remove('disabled');
     });
     panel.querySelectorAll('input').forEach(item => {
@@ -514,11 +514,11 @@ class BasicPanel extends Panel {
         fvs.push(isFlippedVertical);
       }
     });
-    const x = panel.querySelector('.x input') as HTMLInputElement;
-    const y = panel.querySelector('.y input') as HTMLInputElement;
-    const r = panel.querySelector('.r input') as HTMLInputElement;
-    const w = panel.querySelector('.w input') as HTMLInputElement;
-    const h = panel.querySelector('.h input') as HTMLInputElement;
+    const x = panel.querySelector('.x') as HTMLInputElement;
+    const y = panel.querySelector('.y') as HTMLInputElement;
+    const r = panel.querySelector('.r') as HTMLInputElement;
+    const w = panel.querySelector('.w') as HTMLInputElement;
+    const h = panel.querySelector('.h') as HTMLInputElement;
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
     if (xs.length > 1) {

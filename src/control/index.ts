@@ -13,6 +13,7 @@ import TextPanel from './TextPanel';
 import AlignPanel from './AlignPanel';
 import PageList from './PageList';
 import ShadowPanel from './ShadowPanel';
+import BlurPanel from './BlurPanel';
 
 export function initPageList(root: Root, dom: HTMLElement) {
   return new PageList(root, dom);
@@ -55,6 +56,9 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
   const shadowPanel = new ShadowPanel(root, dom, listener);
   shadowPanel.show(listener.selected);
 
+  const blurPanel = new BlurPanel(root, dom, listener);
+  blurPanel.show(listener.selected);
+
   return {
     alignPanel,
     basicPanel,
@@ -63,6 +67,8 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
     fillPanel,
     strokePanel,
     textPanel,
+    shadowPanel,
+    blurPanel,
   };
 }
 

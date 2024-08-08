@@ -10,8 +10,10 @@ const html = `
   <h4 class="panel-title">圆角</h4>
   <div class="line">
     <input type="range" min="0" max="100" step="1"/>
-    <input type="number" min="0" max="100" step="1"/>
-    <span></span>
+    <div class="input-unit">
+      <input type="number" min="0" max="100" step="1"/>
+      <span class="unit">%</span>
+    </div>
   </div>
 `;
 
