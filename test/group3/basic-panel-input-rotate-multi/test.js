@@ -16,7 +16,7 @@ module.exports = {
       .assert.value('#side .basic-panel .r', '')
       .assert.attributeEquals('#side .basic-panel .r', 'placeholder', '多个')
 
-      .click('#side .basic-panel .r input')
+      .click('#side .basic-panel .r')
       .keys(browser.Keys.ARROW_UP)
       .keys(browser.Keys.NULL)
       .pause(20)
