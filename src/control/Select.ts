@@ -206,7 +206,8 @@ export default class Select {
 
   destroy() {
     this.hover.remove();
-    this.hideSelect();
+    this.select.remove();
+    this.frame.remove();
   }
 
   metaKey(meta: boolean) {
