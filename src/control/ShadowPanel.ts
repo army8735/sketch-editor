@@ -280,10 +280,12 @@ class ShadowPanel extends Panel {
         else {
           input.placeholder = '';
         }
-        const arr = o.shadow[index].split(' ');
-        arr[type] = value.toString();
-        o.shadow[index] = arr.join(' ');
-        node.updateStyle(o);
+        if (o.shadow[index]) {
+          const arr = o.shadow[index].split(' ');
+          arr[type] = value.toString();
+          o.shadow[index] = arr.join(' ');
+          node.updateStyle(o);
+        }
       });
       if (nodes.length) {
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));

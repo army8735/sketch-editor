@@ -516,6 +516,24 @@ html, body {
         box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
       }
     }
+
+    .del {
+      position: absolute;
+      top: 1px;
+      right: 0;
+      width: 16px;
+      height: 16px;
+      background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACPTkDJAAAA2klEQVRYCWNgGAUjPQQYSQiAUqBaQyLVXwaqaydGLRMxishQ858MPSNUC7Y0UAYMCwMahccFoLldyGbTKg0g24HMJiltLAPqBGFKAV5z6B0CGJ4ZdQA5ITAfGI7zMMKSgWEOUGwhELNikcMpxIJTBrcEOw4pkMUkWQ4yh5wQwGE/ecKjDhgNgQEPAXKyYSKO9J4CFf+NQx6rMDkO+InVJAYGkiyGmTHgUTDgDsAXBe+AwSQExNRoE4DMwgqYsYpCBJ8BKU0g5sSjhhgpkOWgiuoFMYpH1Yy8EAAAP8MVKj2tBCkAAAAASUVORK5CYII=) no-repeat center;
+      background-size: contain;
+
+      &:hover {
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+      }
+
+      &:active {
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+      }
+    }
   }
 
   .align-panel {
@@ -1325,6 +1343,73 @@ html, body {
       font-size: 10px;
       text-align: center;
       color: #333;
+    }
+  }
+
+  .blur-panel {
+    margin-bottom: 5px;
+    padding: 0 10px 5px;
+    border-bottom: 0.5px solid #CCC;
+
+    select {
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: none;
+      font-size: 11px;
+    }
+
+    .val, .t2 div, .t4 div .con {
+      display: flex;
+      align-items: center;
+    }
+
+    button {
+      display: block;
+      box-sizing: border-box;
+      margin: 5px auto 0;
+      width: 100%;
+      line-height: 18px;
+      font-size: 11px;
+      background: #FFF;
+      border: 1px solid #CCC;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+      &:disabled {
+        opacity: 0.5;
+      }
+    }
+
+    .intro {
+      text-indent: 4px;
+      font-size: 11px;
+    }
+
+    input[type=range] {
+      flex: 1;
+    }
+
+    input[type=number] {
+      margin: 0 0 0 5px;
+      padding: 0 0 0 5px;
+      width: 40px;
+      height: 20px;
+      border: none;
+      border-top-left-radius: 3px;
+      border-bottom-left-radius: 3px;
+      background: #F0F0F0;
+      font-size: 11px;
+    }
+
+    span {
+      padding-right: 3px;
+      background: #F0F0F0;
+      width: 12px;
+      height: 20px;
+      line-height: 20px;
+      border-top-right-radius: 3px;
+      border-bottom-right-radius: 3px;
     }
   }
 }
