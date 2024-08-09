@@ -9,7 +9,7 @@ import BlurCommand from '../history/BlurCommand';
 import { toPrecision } from '../math';
 
 const html = `
-  <div class="panel-title">模糊<b class="del"></b></div>
+  <div class="panel-title">模糊<b class="btn"></b></div>
   <select>
     <option value="${BLUR.GAUSSIAN}">高斯模糊</option>
     <option value="${BLUR.MOTION}">动感模糊</option>
@@ -52,6 +52,8 @@ const html = `
 
 class BlurPanel extends Panel {
   panel: HTMLElement;
+  btn: HTMLElement;
+  select: HTMLSelectElement;
   radiusRange: HTMLInputElement;
   radiusNumber: HTMLInputElement;
   angleRange: HTMLInputElement;
@@ -68,7 +70,8 @@ class BlurPanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
-    const select = this.panel.querySelector('select')!;
+    const btn = this.btn = panel.querySelector('.btn') as HTMLElement;
+    const select = this.select = panel.querySelector('select')!;
     const radiusRange = this.radiusRange = panel.querySelector('.radius .range') as HTMLInputElement;
     const radiusNumber = this.radiusNumber = panel.querySelector('.radius .number') as HTMLInputElement;
     const angleRange = this.angleRange = panel.querySelector('.angle .range') as HTMLInputElement;
@@ -79,6 +82,38 @@ class BlurPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: BlurStyle[] = [];
     let nexts: BlurStyle[] = [];
+
+    btn.addEventListener('click', () => {
+      const isAdd = btn.classList.contains('add');
+      if (isAdd) {
+        btn.classList.remove('add');
+        btn.classList.add('del');
+      }
+      else {
+        btn.classList.add('add');
+        btn.classList.remove('del');
+      }
+      nodes = [];
+      prevs = [];
+      nexts = [];
+      this.nodes.forEach(node => {
+        nodes.push(node);
+        prevs.push({
+          blur: node.getCssStyle().blur,
+        });
+        const blur = node.computedStyle.blur;
+        // 默认删除，如果是添加则改变
+        let next = {
+          blur: 'none',
+        };
+        if (isAdd) {
+          next.blur = getCssBlur(BLUR.GAUSSIAN, 4, 0, [0.5, 0.5], 1);
+        }
+        nexts.push(next);
+        node.updateStyle(next);
+      });
+      onChange();
+    });
 
     select.addEventListener('change', () => {
       const value = parseInt(select.value) as BLUR;
@@ -302,6 +337,9 @@ class BlurPanel extends Panel {
     const saturationList: number[] = [];
     nodes.forEach(node => {
       const blur = node.computedStyle.blur;
+      if (blur.t === BLUR.NONE) {
+        return;
+      }
       if (!typeList.includes(blur.t)) {
         typeList.push(blur.t);
       }
@@ -315,9 +353,18 @@ class BlurPanel extends Panel {
         saturationList.push(blur.saturation);
       }
     });
-    panel.querySelectorAll('div.t2,div.t3,div.t4').forEach(item => {
-      (item as HTMLDivElement).style.display = 'none';
+    panel.querySelectorAll('select,div.type').forEach(item => {
+      (item as HTMLElement).style.display = 'none';
     });
+    if (!typeList.length) {
+      this.btn.classList.remove('del');
+      this.btn.classList.add('add');
+      return;
+    }
+    this.btn.classList.remove('add');
+    this.btn.classList.add('del');
+    this.select.style.display = 'block';
+    (panel.querySelector('div.radius') as HTMLDivElement).style.display = 'block';
     if (typeList.length > 1) {
       disabled.style.display = 'block';
       select.value = BLUR.NONE.toString();
