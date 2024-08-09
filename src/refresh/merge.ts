@@ -1266,7 +1266,7 @@ function genMotionBlur(
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
-    const tex = drawMotion(gl, programMotion, t, spread * 0.5 * scale, radian, w, h);
+    const tex = drawMotion(gl, programMotion, t, kernelSize(sigma * scale), radian, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1325,7 +1325,7 @@ function genMotionBlur(
       }
       if (hasDraw) {
         gl.useProgram(programMotion);
-        item.t = drawMotion(gl, programMotion, t, spread * 0.5 * scale, radian, w, h);
+        item.t = drawMotion(gl, programMotion, t, kernelSize(sigma * scale), radian, w, h);
       }
       gl.deleteTexture(t);
     }

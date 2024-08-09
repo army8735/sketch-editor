@@ -19,5 +19,5 @@ void main(void) {
     vec2 bias = u_velocity * (float(i) / float(k) - 0.5);
     color += texture2D(u_texture, v_texCoords + bias);
   }
-  gl_FragColor = color / float(u_kernel);
+  gl_FragColor = color / float(k);
 }

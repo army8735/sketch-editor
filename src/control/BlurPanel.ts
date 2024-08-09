@@ -336,8 +336,8 @@ class BlurPanel extends Panel {
       this.radiusNumber.placeholder = '多个';
     }
     else {
-      this.radiusRange.value = (radiusList[0] || 0).toString();
-      this.radiusNumber.value = (radiusList[0] || 0).toString();
+      this.radiusRange.value = toPrecision(radiusList[0] || 0, 0).toString();
+      this.radiusNumber.value = toPrecision(radiusList[0] || 0, 0).toString();
       this.radiusNumber.placeholder = '';
     }
     if (angleList.length > 1) {
@@ -346,8 +346,8 @@ class BlurPanel extends Panel {
       this.angleNumber.placeholder = '多个';
     }
     else {
-      this.angleRange.value = (angleList[0] || 0).toString();
-      this.angleNumber.value = (angleList[0] || 0).toString();
+      this.angleRange.value = toPrecision(angleList[0] || 0, 0).toString();
+      this.angleNumber.value = toPrecision(angleList[0] || 0, 0).toString();
       this.angleNumber.placeholder = '';
     }
     if (saturationList.length > 1) {
@@ -356,8 +356,8 @@ class BlurPanel extends Panel {
       this.saturationNumber.placeholder = '多个';
     }
     else {
-      this.saturationRange.value = ((saturationList[0] || 0) * 100 - 100).toString();
-      this.saturationNumber.value = ((saturationList[0] || 0) * 100 - 100).toString();
+      this.saturationRange.value = toPrecision((saturationList[0] || 0) * 100 - 100, 0).toString();
+      this.saturationNumber.value = toPrecision((saturationList[0] || 0) * 100 - 100, 0).toString();
       this.saturationNumber.placeholder = '';
     }
   }

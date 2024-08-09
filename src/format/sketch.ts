@@ -463,7 +463,8 @@ async function convertItem(
       blur = `radial(${b.radius}px) center(${p[0]}, ${p[1]})`;
     }
     else if (type === SketchFormat.BlurType.Motion) {
-      blur = `motion(${b.radius}px) angle(${b.motionAngle || 0})`;
+      blur = `motion(${b.radius}px) angle(${(b.motionAngle || 0) * -1})`;
+      console.log(b.motionAngle, blur)
     }
   }
   // 颜色调整
