@@ -39,6 +39,7 @@ module.exports = {
       .assert.value('#side .blur-panel .radius .range', '5')
       .assert.value('#side .blur-panel .radius .number', '5')
 
+      .click('#side .blur-panel .radius .number')
       .keys(browser.Keys.SHIFT)
       .keys(browser.Keys.ARROW_UP)
       .keys(browser.Keys.NULL)
@@ -48,6 +49,7 @@ module.exports = {
       .assert.value('#side .blur-panel .radius .range', '15')
       .assert.value('#side .blur-panel .radius .number', '15')
 
+      .click('#side .blur-panel .radius .number')
       .keys(browser.Keys.ARROW_DOWN)
       .keys(browser.Keys.NULL)
       .pause(20)
