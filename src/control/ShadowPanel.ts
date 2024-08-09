@@ -9,7 +9,7 @@ import { color2rgbaStr } from '../style/css';
 import { toPrecision } from '../math';
 
 const html = `
-  <dt class="panel-title">阴影<b class="add"></b></dt>
+  <dt class="panel-title">阴影<b class="btn add"></b></dt>
 `;
 
 function renderItem(
