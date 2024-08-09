@@ -127,48 +127,52 @@ class BlurPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      const value = parseFloat(radiusNumber.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         const blur = node.computedStyle.blur;
         const prev = blur.radius;
+        let next = value;
         if (isFirst && blur.t !== BLUR.NONE) {
           nodes.push(node);
           prevs.push({
             blur: node.getCssStyle().blur,
           });
         }
-        let value = parseFloat(radiusNumber.value) || 0;
         if (!isInput) {
           let d = 0;
           if (radiusNumber.placeholder) {
-            d = value > 0 ? 1 : -1;
+            d = next > 0 ? 1 : -1;
             if (listener.shiftKey) {
               d *= 10;
             }
+            next = Math.min(50, Math.max(0, prev + d));
             radiusNumber.value = '';
           }
           else {
-            d = value - prev;
+            d = next - prev;
             if (listener.shiftKey) {
               d *= 10;
             }
-            value = prev + d;
-            radiusNumber.value = toPrecision(value).toString();
+            next = Math.min(50, Math.max(0, prev + d));
+            radiusNumber.value = toPrecision(next).toString();
           }
         }
         else {
           radiusNumber.placeholder = '';
         }
         if (blur.t !== BLUR.NONE) {
-          const next = { blur: getCssBlur(blur.t, value, blur.angle, blur.center, blur.saturation) };
-          nexts.push(next);
-          node.updateStyle(next);
+          const o = {
+            blur: getCssBlur(blur.t, next, blur.angle, blur.center, blur.saturation),
+          };
+          nexts.push(o);
+          node.updateStyle(o);
         }
       });
+      radiusRange.value = value.toString();
       if (nodes.length) {
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
       }
-      radiusRange.value = (parseFloat(radiusNumber.value) || 0).toString();
       this.silence = false;
     });
     radiusNumber.addEventListener('change', onChange);
