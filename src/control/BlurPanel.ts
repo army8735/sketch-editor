@@ -68,6 +68,7 @@ class BlurPanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
+    const select = this.panel.querySelector('select')!;
     const radiusRange = this.radiusRange = panel.querySelector('.radius .range') as HTMLInputElement;
     const radiusNumber = this.radiusNumber = panel.querySelector('.radius .number') as HTMLInputElement;
     const angleRange = this.angleRange = panel.querySelector('.angle .range') as HTMLInputElement;
@@ -78,6 +79,33 @@ class BlurPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: BlurStyle[] = [];
     let nexts: BlurStyle[] = [];
+
+    select.addEventListener('change', () => {
+      const value = parseInt(select.value) as BLUR;
+      panel.querySelectorAll('div.t2,div.t3,div.t4').forEach(item => {
+        (item as HTMLDivElement).style.display = 'none';
+      });
+      const div = panel.querySelector(`div.t${value}`) as HTMLDivElement;
+      if (div) {
+        div.style.display = 'block';
+      }
+      nodes = [];
+      prevs = [];
+      nexts = [];
+      this.nodes.forEach(node => {
+        nodes.push(node);
+        prevs.push({
+          blur: node.getCssStyle().blur,
+        });
+        const blur = node.computedStyle.blur;
+        const next = {
+          blur: getCssBlur(value, blur.radius, blur.angle, blur.center, blur.saturation),
+        };
+        nexts.push(next);
+        node.updateStyle(next);
+      });
+      onChange();
+    });
 
     const onRangeInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'radius' | 'angle' | 'saturation') => {
       const value = range.value;
