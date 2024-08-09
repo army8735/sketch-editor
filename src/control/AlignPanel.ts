@@ -84,8 +84,17 @@ class AlignPanel extends Panel {
       }
     });
 
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+    listener.on([
+      Listener.SELECT_NODE,
+      Listener.ADD_NODE,
+    ], (nodes: Node[]) => {
       this.show(nodes);
+    });
+    listener.on(Listener.REMOVE_NODE, () => {
+      if (this.silence) {
+        return;
+      }
+      this.show([]);
     });
   }
 

@@ -112,6 +112,7 @@ class BlurPanel extends Panel {
         nexts.push(next);
         node.updateStyle(next);
       });
+      this.show(this.nodes);
       onChange();
     });
 
@@ -260,7 +261,7 @@ class BlurPanel extends Panel {
         nexts.push(o!);
         node.updateStyle(o!);
       });
-      range.value = value.toString();
+      range.value = number.value || '0';
       if (nodes.length) {
         listener.emit(Listener.BLUR_NODE, nodes.slice(0));
       }
