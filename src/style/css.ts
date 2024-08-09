@@ -1011,7 +1011,7 @@ export function getCssBlur(t: BLUR, radius: number, angle?: number, center?: [nu
   if (t === BLUR.NONE) {
     return 'none';
   }
-  let s = ['none', 'gauss', 'motion', 'zoom', 'background'][t] + `(${radius})`;
+  let s = ['none', 'gauss', 'motion', 'radial', 'background'][t] + `(${radius})`;
   if (t === BLUR.MOTION) {
     s += ` angle(${angle || 0})`;
   }

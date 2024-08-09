@@ -28,9 +28,9 @@ const html = `
   <div class="type t${BLUR.MOTION} angle">
     <div class="intro">角度</div>
     <div class="con">
-      <input class="range" type="range" min="-180" max="100" step="1"/>
+      <input class="range" type="range" min="-180" max="180" step="1"/>
       <div class="input-unit">
-        <input class="number" type="number" min="180" max="100" step="1"/>
+        <input class="number" type="number" min="-180" max="180" step="1"/>
         <span class="unit">°</span>
       </div>
     </div>
@@ -79,6 +79,122 @@ class BlurPanel extends Panel {
     let prevs: BlurStyle[] = [];
     let nexts: BlurStyle[] = [];
 
+    const onRangeInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'radius' | 'angle' | 'saturation') => {
+      const value = range.value;
+      const v = parseFloat(value);
+      // 连续多个只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
+      this.nodes.forEach((node) => {
+        if (isFirst) {
+          nodes.push(node);
+          prevs.push({
+            blur: node.getCssStyle().blur,
+          });
+        }
+        const blur = node.computedStyle.blur;
+        let next: BlurStyle;
+        if (type === 'radius') {
+          next = {
+            blur: getCssBlur(blur.t, v, blur.angle, blur.center, blur.saturation),
+          };
+        }
+        else if (type === 'angle') {
+          next = {
+            blur: getCssBlur(blur.t, blur.radius, v, blur.center, blur.saturation),
+          };
+        }
+        else if (type === 'saturation') {
+          next = {
+            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, toPrecision((v + 100) * 0.01)),
+          };
+        }
+        nexts.push(next!);
+        node.updateStyle(next!);
+        number.value = value;
+        number.placeholder = '';
+      });
+    };
+
+    const onNumberInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'radius' | 'angle' | 'saturation', isInput: boolean, max: number, min: number) => {
+      this.silence = true;
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
+      const value = parseFloat(number.value) || 0;
+      this.nodes.forEach((node) => {
+        const blur = node.computedStyle.blur;
+        if (blur.t === BLUR.NONE) {
+          return;
+        }
+        let prev = blur.radius;
+        if (type === 'angle') {
+          prev = blur.angle!;
+        }
+        else if (type === 'saturation') {
+          prev = blur.saturation! * 100 - 100;
+        }
+        let next = value;
+        if (isFirst) {
+          nodes.push(node);
+          prevs.push({
+            blur: node.getCssStyle().blur,
+          });
+        }
+        if (!isInput) {
+          let d = 0;
+          if (number.placeholder) {
+            d = next > 0 ? 1 : -1;
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+            next = Math.min(max, Math.max(min, prev + d));
+            number.value = '';
+          }
+          else {
+            d = next - prev;
+            if (listener.shiftKey) {
+              d *= 10;
+            }
+            next = Math.min(max, Math.max(min, prev + d));
+            number.value = toPrecision(next).toString();
+          }
+        }
+        else {
+          number.placeholder = '';
+        }
+        let o: BlurStyle;
+        if (type === 'radius') {
+          o = {
+            blur: getCssBlur(blur.t, next, blur.angle, blur.center, blur.saturation),
+          };
+        }
+        else if (type === 'angle') {
+          o = {
+            blur: getCssBlur(blur.t, blur.radius, next, blur.center, blur.saturation),
+          };
+        }
+        else if (type === 'saturation') {
+          o = {
+            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, toPrecision((next + 100) * 0.01)),
+          };
+        }
+        nexts.push(o!);
+        node.updateStyle(o!);
+      });
+      range.value = value.toString();
+      if (nodes.length) {
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+      }
+      this.silence = false;
+    };
+
     const onChange = () => {
       if (nodes.length) {
         listener.history.addCommand(new BlurCommand(nodes, prevs.map((prev, i) => {
@@ -95,87 +211,34 @@ class BlurPanel extends Panel {
     };
 
     radiusRange.addEventListener('input', () => {
-      // 连续多个只有首次记录节点和prev值，但每次都更新next值
-      const isFirst = !nodes.length;
-      if (isFirst) {
-        prevs = [];
-      }
-      nexts = [];
-      const value = radiusRange.value;
-      this.nodes.forEach((node) => {
-        if (isFirst) {
-          nodes.push(node);
-          prevs.push({
-            blur: node.getCssStyle().blur,
-          });
-        }
-        const blur = node.computedStyle.blur;
-        const next = { blur: getCssBlur(blur.t, parseFloat(value), blur.angle, blur.center, blur.saturation) };
-        nexts.push(next);
-        node.updateStyle(next);
-      });
-      radiusNumber.value = value;
-      radiusNumber.placeholder = '';
+      onRangeInput(radiusRange, radiusNumber, 'radius');
     });
     radiusRange.addEventListener('change', onChange);
 
     radiusNumber.addEventListener('input', (e) => {
-      this.silence = true;
-      // 连续多次只有首次记录节点和prev值，但每次都更新next值
-      const isFirst = !nodes.length;
-      if (isFirst) {
-        prevs = [];
-      }
-      nexts = [];
-      const value = parseFloat(radiusNumber.value) || 0;
-      const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      this.nodes.forEach((node, i) => {
-        const blur = node.computedStyle.blur;
-        const prev = blur.radius;
-        let next = value;
-        if (isFirst && blur.t !== BLUR.NONE) {
-          nodes.push(node);
-          prevs.push({
-            blur: node.getCssStyle().blur,
-          });
-        }
-        if (!isInput) {
-          let d = 0;
-          if (radiusNumber.placeholder) {
-            d = next > 0 ? 1 : -1;
-            if (listener.shiftKey) {
-              d *= 10;
-            }
-            next = Math.min(50, Math.max(0, prev + d));
-            radiusNumber.value = '';
-          }
-          else {
-            d = next - prev;
-            if (listener.shiftKey) {
-              d *= 10;
-            }
-            next = Math.min(50, Math.max(0, prev + d));
-            radiusNumber.value = toPrecision(next).toString();
-          }
-        }
-        else {
-          radiusNumber.placeholder = '';
-        }
-        if (blur.t !== BLUR.NONE) {
-          const o = {
-            blur: getCssBlur(blur.t, next, blur.angle, blur.center, blur.saturation),
-          };
-          nexts.push(o);
-          node.updateStyle(o);
-        }
-      });
-      radiusRange.value = value.toString();
-      if (nodes.length) {
-        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
-      }
-      this.silence = false;
+      onNumberInput(radiusRange, radiusNumber, 'radius', e instanceof InputEvent, 50, 0);
     });
     radiusNumber.addEventListener('change', onChange);
+
+    angleRange.addEventListener('input', () => {
+      onRangeInput(angleRange, angleNumber, 'angle');
+    });
+    angleRange.addEventListener('change', onChange);
+
+    angleNumber.addEventListener('input', (e) => {
+      onNumberInput(angleRange, angleNumber, 'angle', e instanceof InputEvent, 180, -180);
+    });
+    angleNumber.addEventListener('change', onChange);
+
+    saturationRange.addEventListener('input', () => {
+      onRangeInput(saturationRange, saturationNumber, 'saturation');
+    });
+    saturationRange.addEventListener('change', onChange);
+
+    saturationNumber.addEventListener('input', (e) => {
+      onNumberInput(saturationRange, saturationNumber, 'saturation', e instanceof InputEvent, 100, -100);
+    });
+    saturationNumber.addEventListener('change', onChange);
 
     listener.on([
       Listener.SELECT_NODE,
