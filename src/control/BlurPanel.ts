@@ -116,6 +116,7 @@ class BlurPanel extends Panel {
     });
 
     select.addEventListener('change', () => {
+      this.silence = true;
       const value = parseInt(select.value) as BLUR;
       panel.querySelectorAll('div.t2,div.t3,div.t4').forEach(item => {
         (item as HTMLDivElement).style.display = 'none';
@@ -139,10 +140,14 @@ class BlurPanel extends Panel {
         nexts.push(next);
         node.updateStyle(next);
       });
+      listener.emit(Listener.BLUR_NODE, nodes.slice(0));
       onChange();
+      this.show(this.nodes);
+      this.silence = false;
     });
 
     const onRangeInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'radius' | 'angle' | 'saturation') => {
+      this.silence = true;
       const value = range.value;
       const v = parseFloat(value);
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
@@ -180,6 +185,10 @@ class BlurPanel extends Panel {
         number.value = value;
         number.placeholder = '';
       });
+      if (nodes.length) {
+        listener.emit(Listener.BLUR_NODE, nodes.slice(0));
+      }
+      this.silence = false;
     };
 
     const onNumberInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'radius' | 'angle' | 'saturation', isInput: boolean, max: number, min: number) => {
@@ -253,7 +262,7 @@ class BlurPanel extends Panel {
       });
       range.value = value.toString();
       if (nodes.length) {
-        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+        listener.emit(Listener.BLUR_NODE, nodes.slice(0));
       }
       this.silence = false;
     };
@@ -266,7 +275,6 @@ class BlurPanel extends Panel {
             next: nexts[i],
           };
         })));
-        listener.emit(Listener.BLUR_NODE, nodes.slice(0));
       }
       nodes = [];
       prevs = [];
