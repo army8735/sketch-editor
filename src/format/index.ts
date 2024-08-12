@@ -177,10 +177,10 @@ export type JStyle = {
   shadowEnable: boolean[];
   innerShadow: string[];
   innerShadowEnable: boolean[];
-  hueRotate: number;
-  saturate: number;
-  brightness: number;
-  contrast: number;
+  hueRotate: number | string;
+  saturate: number | string;
+  brightness: number | string;
+  contrast: number | string;
 };
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
@@ -395,6 +395,8 @@ export type RotateZStyle = Pick<JStyle, 'rotateZ'>;
 export type ShadowStyle = Pick<JStyle, 'shadow' | 'shadowEnable'>;
 
 export type BlurStyle = Pick<JStyle, 'blur'>;
+
+export type ColorAdjustStyle = Pick<JStyle, 'hueRotate' | 'saturate' | 'brightness' | 'contrast'>;
 
 export type ModifyRichStyle = Pick<Rich, 'location' | 'length'> & Partial<Rich>;
 

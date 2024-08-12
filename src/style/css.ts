@@ -608,7 +608,7 @@ export function normalize(style: any): Style {
           n.u = StyleUnit.DEG;
         }
       }
-      if (k !== 'hueRotate') {
+      else {
         if (n.u !== StyleUnit.PERCENT) {
           n.v *= 100;
           n.u = StyleUnit.PERCENT;

@@ -1182,7 +1182,8 @@ export default class Listener extends Event {
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
   static SHADOW_NODE = 'SHADOW_NODE';
-  static BLUR_NODE = `BLUR_NODE`;
+  static BLUR_NODE = 'BLUR_NODE';
+  static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ADD_NODE = 'ADD_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';

@@ -183,9 +183,9 @@ class BlurPanel extends Panel {
         }
         nexts.push(next!);
         node.updateStyle(next!);
-        number.value = value;
-        number.placeholder = '';
       });
+      number.value = value;
+      number.placeholder = '';
       if (nodes.length) {
         listener.emit(Listener.BLUR_NODE, nodes.slice(0));
       }
@@ -200,11 +200,17 @@ class BlurPanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      const value = parseFloat(number.value) || 0;
+      const v = parseFloat(number.value) || 0;
       this.nodes.forEach((node) => {
         const blur = node.computedStyle.blur;
         if (blur.t === BLUR.NONE) {
           return;
+        }
+        if (isFirst) {
+          nodes.push(node);
+          prevs.push({
+            blur: node.getCssStyle().blur,
+          });
         }
         let prev = blur.radius;
         if (type === 'angle') {
@@ -213,13 +219,7 @@ class BlurPanel extends Panel {
         else if (type === 'saturation') {
           prev = blur.saturation! * 100 - 100;
         }
-        let next = value;
-        if (isFirst) {
-          nodes.push(node);
-          prevs.push({
-            blur: node.getCssStyle().blur,
-          });
-        }
+        let next = v;
         if (!isInput) {
           let d = 0;
           if (number.placeholder) {

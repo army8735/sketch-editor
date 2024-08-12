@@ -1178,6 +1178,10 @@ class Node extends Event {
       }
       return item;
     });
+    res.hueRotate = computedStyle.hueRotate;
+    res.saturate = computedStyle.saturate * 100 + '%';
+    res.brightness = computedStyle.brightness * 100 + '%';
+    res.contrast = computedStyle.contrast * 100 + '%';
     return res as JStyle;
   }
 
