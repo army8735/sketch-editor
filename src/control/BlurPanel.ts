@@ -6,7 +6,6 @@ import { BLUR } from '../style/define';
 import { BlurStyle } from '../format';
 import { getCssBlur } from '../style/css';
 import BlurCommand from '../history/BlurCommand';
-import { toPrecision } from '../math';
 
 const html = `
   <div class="panel-title">模糊<b class="btn"></b></div>
@@ -178,7 +177,7 @@ class BlurPanel extends Panel {
         }
         else if (type === 'saturation') {
           next = {
-            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, toPrecision((v + 100) * 0.01)),
+            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, (v + 100) * 0.01),
           };
         }
         nexts.push(next!);
@@ -227,7 +226,7 @@ class BlurPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
+            next = Math.min(max, Math.max(min, Math.round(prev + d)));
             number.value = '';
           }
           else {
@@ -235,7 +234,7 @@ class BlurPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
+            next = Math.min(max, Math.max(min, Math.round(prev + d)));
             if (!i) {
               number.value = next.toString();
             }
@@ -257,7 +256,7 @@ class BlurPanel extends Panel {
         }
         else if (type === 'saturation') {
           o = {
-            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, toPrecision((next + 100) * 0.01)),
+            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, (next + 100) * 0.01),
           };
         }
         nexts.push(o!);
@@ -394,7 +393,7 @@ class BlurPanel extends Panel {
       this.radiusNumber.placeholder = '多个';
     }
     else {
-      const v = toPrecision(radiusList[0] || 0, 0).toString();
+      const v = Math.round(radiusList[0] || 0).toString();
       this.radiusRange.value = v;
       this.radiusNumber.value = v;
       this.radiusNumber.placeholder = '';
@@ -405,7 +404,7 @@ class BlurPanel extends Panel {
       this.angleNumber.placeholder = '多个';
     }
     else {
-      const v = toPrecision(angleList[0] || 0, 0).toString();
+      const v = Math.round(angleList[0] || 0).toString();
       this.angleRange.value = v;
       this.angleNumber.value = v;
       this.angleNumber.placeholder = '';
@@ -416,7 +415,7 @@ class BlurPanel extends Panel {
       this.saturationNumber.placeholder = '多个';
     }
     else {
-      const v = toPrecision((saturationList[0] || 0) * 100 - 100, 0).toString();
+      const v = Math.round((saturationList[0] || 0) * 100 - 100).toString();
       this.saturationRange.value = v;
       this.saturationNumber.value = v;
       this.saturationNumber.placeholder = '';

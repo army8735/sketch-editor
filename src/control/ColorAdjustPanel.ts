@@ -3,7 +3,6 @@ import Root from '../node/Root';
 import Panel from './Panel';
 import Listener from './Listener';
 import Bitmap from '../node/Bitmap';
-import { toPrecision } from '../math';
 import { ColorAdjustStyle } from '../format';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
 
@@ -155,6 +154,9 @@ class ColorAdjustPanel extends Panel {
         }
         else if (type === 'contrast') {
           prev = computedStyle.contrast * 100 - 100;
+          if (prev > 0) {
+            prev /= 3;
+          }
         }
         let next = v;
         if (!isInput) {
@@ -164,7 +166,7 @@ class ColorAdjustPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
+            next = Math.min(max, Math.max(min, Math.round(prev + d)));
             number.value = '';
           }
           else {
@@ -172,7 +174,7 @@ class ColorAdjustPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
+            next = Math.min(max, Math.max(min, Math.round(prev + d)));
             if (!i) {
               number.value = next.toString();
             }
@@ -186,7 +188,7 @@ class ColorAdjustPanel extends Panel {
           saturate: type === 'saturate' ? (next + 100 + '%') : saturate,
           brightness: type === 'brightness' ? (next + 100 + '%') : brightness,
           contrast: type === 'contrast' ? ((next > 0 ? (next * 3 + 100) : (next + 100)) + '%'): contrast,
-        }; console.log(prev, v, next, o.contrast);
+        };
         nexts.push(o);
         node.updateStyle(o);
       });
@@ -216,7 +218,7 @@ class ColorAdjustPanel extends Panel {
     });
     hueRotateRange.addEventListener('change', onChange);
 
-    hueRotateNumber.addEventListener('change', (e) => {
+    hueRotateNumber.addEventListener('input', (e) => {
       onNumberInput(hueRotateRange, hueRotateNumber, 'hueRotate', e instanceof InputEvent, 180, -180);
     });
     hueRotateNumber.addEventListener('change', onChange);
@@ -226,7 +228,7 @@ class ColorAdjustPanel extends Panel {
     });
     saturateRange.addEventListener('change', onChange);
 
-    saturateNumber.addEventListener('change', (e) => {
+    saturateNumber.addEventListener('input', (e) => {
       onNumberInput(saturateRange, saturateNumber, 'saturate', e instanceof InputEvent, 100, -100);
     });
     saturateNumber.addEventListener('change', onChange);
@@ -236,7 +238,7 @@ class ColorAdjustPanel extends Panel {
     });
     brightnessRange.addEventListener('change', onChange);
 
-    brightnessNumber.addEventListener('change', (e) => {
+    brightnessNumber.addEventListener('input', (e) => {
       onNumberInput(brightnessRange, brightnessNumber, 'brightness', e instanceof InputEvent, 100, -100);
     });
     brightnessNumber.addEventListener('change', onChange);
@@ -246,7 +248,7 @@ class ColorAdjustPanel extends Panel {
     });
     contrastRange.addEventListener('change', onChange);
 
-    contrastNumber.addEventListener('change', (e) => {
+    contrastNumber.addEventListener('input', (e) => {
       onNumberInput(contrastRange, contrastNumber, 'contrast', e instanceof InputEvent, 100, -100);
     });
     contrastNumber.addEventListener('change', onChange);
@@ -310,7 +312,7 @@ class ColorAdjustPanel extends Panel {
       this.hueRotateNumber.placeholder = '多个';
     }
     else {
-      const v = toPrecision(hueRotateList[0] || 0, 0).toString();
+      const v = Math.round(hueRotateList[0] || 0).toString();
       this.hueRotateRange.value = v;
       this.hueRotateNumber.value = v;
       this.hueRotateNumber.placeholder = '';
@@ -321,7 +323,7 @@ class ColorAdjustPanel extends Panel {
       this.saturateNumber.placeholder = '多个';
     }
     else {
-      const v = toPrecision((saturateList[0] || 0) * 100 - 100, 0).toString();
+      const v = Math.round((saturateList[0] || 0) * 100 - 100).toString();
       this.saturateRange.value = v;
       this.saturateNumber.value = v;
       this.saturateNumber.placeholder = '';
@@ -332,7 +334,7 @@ class ColorAdjustPanel extends Panel {
       this.brightnessNumber.placeholder = '多个';
     }
     else {
-      const v = toPrecision((brightnessList[0] || 0) * 100 - 100, 0).toString();
+      const v = Math.round((brightnessList[0] || 0) * 100 - 100).toString();
       this.brightnessRange.value = v;
       this.brightnessNumber.value = v;
       this.brightnessNumber.placeholder = '';
@@ -344,7 +346,7 @@ class ColorAdjustPanel extends Panel {
     }
     else {
       let n = (contrastList[0] || 0) * 100 - 100;
-      const v = toPrecision(n > 0 ? n / 3 : n, 0).toString();
+      const v = Math.round(n > 0 ? n / 3 : n).toString();
       this.contrastRange.value = v;
       this.contrastNumber.value = v;
       this.contrastNumber.placeholder = '';
