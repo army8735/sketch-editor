@@ -28,6 +28,7 @@ import { crossProduct } from '../math/vector';
 import picker from './picker';
 import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
+import ColorAdjustCommand from '../history/ColorAdjustCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1080,6 +1081,9 @@ export default class Listener extends Event {
         }
         else if (c instanceof BlurCommand) {
           this.emit(Listener.BLUR_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof ColorAdjustCommand) {
+          this.emit(Listener.COLOR_ADJUST_NODE, this.selected.slice(0));
         }
         else if (c instanceof VerticalAlignCommand) {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));

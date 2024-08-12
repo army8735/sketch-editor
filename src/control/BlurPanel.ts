@@ -201,7 +201,7 @@ class BlurPanel extends Panel {
       }
       nexts = [];
       const v = parseFloat(number.value) || 0;
-      this.nodes.forEach((node) => {
+      this.nodes.forEach((node, i) => {
         const blur = node.computedStyle.blur;
         if (blur.t === BLUR.NONE) {
           return;
@@ -227,7 +227,7 @@ class BlurPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, prev + d));
+            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
             number.value = '';
           }
           else {
@@ -235,11 +235,13 @@ class BlurPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, prev + d));
-            number.value = toPrecision(next).toString();
+            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
+            if (!i) {
+              number.value = next.toString();
+            }
           }
         }
-        else {
+        else if (!i) {
           number.placeholder = '';
         }
         let o: BlurStyle;

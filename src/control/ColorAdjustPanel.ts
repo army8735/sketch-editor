@@ -131,7 +131,7 @@ class ColorAdjustPanel extends Panel {
       }
       nexts = [];
       const v = parseFloat(number.value) || 0;
-      this.nodes.forEach((node) => {
+      this.nodes.forEach((node, i) => {
         const { hueRotate, saturate, brightness, contrast } = node.getCssStyle();
         if (isFirst) {
           nodes.push(node);
@@ -148,13 +148,13 @@ class ColorAdjustPanel extends Panel {
           prev = computedStyle.hueRotate;
         }
         else if (type === 'saturate') {
-          prev = computedStyle.saturate;
+          prev = computedStyle.saturate * 100 - 100;
         }
         else if (type === 'brightness') {
-          prev = computedStyle.brightness;
+          prev = computedStyle.brightness * 100 - 100;
         }
         else if (type === 'contrast') {
-          prev = computedStyle.contrast;
+          prev = computedStyle.contrast * 100 - 100;
         }
         let next = v;
         if (!isInput) {
@@ -164,7 +164,7 @@ class ColorAdjustPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, prev + d));
+            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
             number.value = '';
           }
           else {
@@ -172,11 +172,13 @@ class ColorAdjustPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
-            next = Math.min(max, Math.max(min, prev + d));
-            number.value = toPrecision(next).toString();
+            next = Math.min(max, Math.max(min, toPrecision(prev + d)));
+            if (!i) {
+              number.value = next.toString();
+            }
           }
         }
-        else {
+        else if (!i) {
           number.placeholder = '';
         }
         const o: ColorAdjustStyle = {
@@ -184,7 +186,7 @@ class ColorAdjustPanel extends Panel {
           saturate: type === 'saturate' ? (next + 100 + '%') : saturate,
           brightness: type === 'brightness' ? (next + 100 + '%') : brightness,
           contrast: type === 'contrast' ? ((next > 0 ? (next * 3 + 100) : (next + 100)) + '%'): contrast,
-        };
+        }; console.log(prev, v, next, o.contrast);
         nexts.push(o);
         node.updateStyle(o);
       });
@@ -225,7 +227,7 @@ class ColorAdjustPanel extends Panel {
     saturateRange.addEventListener('change', onChange);
 
     saturateNumber.addEventListener('change', (e) => {
-      onNumberInput(saturateRange, saturateNumber, 'saturate', e instanceof InputEvent, 100, 0);
+      onNumberInput(saturateRange, saturateNumber, 'saturate', e instanceof InputEvent, 100, -100);
     });
     saturateNumber.addEventListener('change', onChange);
 
@@ -235,7 +237,7 @@ class ColorAdjustPanel extends Panel {
     brightnessRange.addEventListener('change', onChange);
 
     brightnessNumber.addEventListener('change', (e) => {
-      onNumberInput(brightnessRange, brightnessNumber, 'brightness', e instanceof InputEvent, 100, 0);
+      onNumberInput(brightnessRange, brightnessNumber, 'brightness', e instanceof InputEvent, 100, -100);
     });
     brightnessNumber.addEventListener('change', onChange);
 
@@ -245,7 +247,7 @@ class ColorAdjustPanel extends Panel {
     contrastRange.addEventListener('change', onChange);
 
     contrastNumber.addEventListener('change', (e) => {
-      onNumberInput(contrastRange, contrastNumber, 'contrast', e instanceof InputEvent, 100, 0);
+      onNumberInput(contrastRange, contrastNumber, 'contrast', e instanceof InputEvent, 100, -100);
     });
     contrastNumber.addEventListener('change', onChange);
 
