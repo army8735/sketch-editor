@@ -1491,24 +1491,24 @@ function genColorMatrix(
   gl.useProgram(cmProgram);
   let res: TextureCache = textureTarget;
   let frameBuffer: WebGLFramebuffer | undefined;
-  if (hueRotate) {
-    const rotation = d2r(hueRotate % 360);
-    const cosR = Math.cos(rotation);
-    const sinR = Math.sin(rotation);
-    const m = [
-      0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0,
-      0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
-      0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
-      0, 0, 0, 1, 0,
-    ];
-    const old = res;
-    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
-    res = t.res;
-    frameBuffer = t.frameBuffer;
-    if (old !== textureTarget) {
-      old.release();
-    }
-  }
+  // if (hueRotate) {
+  //   const rotation = d2r(hueRotate % 360);
+  //   const cosR = Math.cos(rotation);
+  //   const sinR = Math.sin(rotation);
+  //   const m = [
+  //     0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0,
+  //     0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
+  //     0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
+  //     0, 0, 0, 1, 0,
+  //   ];
+  //   const old = res;
+  //   const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+  //   res = t.res;
+  //   frameBuffer = t.frameBuffer;
+  //   if (old !== textureTarget) {
+  //     old.release();
+  //   }
+  // }
   // if (saturate !== 1) {
   //   const m = [
   //     0.213 + 0.787 * saturate, 0.715 - 0.715 * saturate, 0.072 - 0.072 * saturate, 0, 0,
@@ -1524,7 +1524,16 @@ function genColorMatrix(
   //     old.release();
   //   }
   // }
-  if (saturate !== 1 || brightness !== 1 || contrast !== 1) {
+  if (hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1) {
+    const rotation = d2r(hueRotate % 360);
+    const cosR = Math.cos(rotation);
+    const sinR = Math.sin(rotation);
+    const mh = hueRotate ? new Float64Array([
+      0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0,
+      0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0,
+      0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0,
+      0, 0, 0, 1,
+    ]) : identity();
     const s = saturate;
     const lr = 0.213;
     const lg = 0.715;
@@ -1532,12 +1541,12 @@ function genColorMatrix(
     const sr = (1 - s) * lr;
     const sg = (1 - s) * lg;
     const sb = (1 - s) * lb;
-    // const ms = [
-    //   sr + s, sg, sb, 0, 0,
-    //   sr, sg + s, sb, 0, 0,
-    //   sr, sg, sb + s, 0, 0,
-    //   0, 0, 0, 1, 0,
-    // ];
+    const ms = saturate !== 1 ? new Float64Array([
+      sr + s, sg, sb, 0,
+      sr, sg + s, sb, 0,
+      sr, sg, sb + s, 0,
+      0, 0, 0, 1,
+    ]) : identity();
     const b = brightness - 1;
     // const mb = [
     //   1, 0, 0, 0, b,
@@ -1548,22 +1557,38 @@ function genColorMatrix(
     // ];
     const c = contrast;
     const d = (1 - c) * 0.5;
-    // const mc = [
-    //   c, 0, 0, 0, d,
-    //   0, c, 0, 0, d,
-    //   0, 0, c, 0, d,
-    //   0, 0, 0, 1, 0,
-    //   0, 0, 0, 0, 1,
+    // const mc = new Float64Array([
+    //   c, 0, 0, 0,
+    //   0, c, 0, 0,
+    //   0, 0, c, 0,
+    //   0, 0, 0, 1,
+    // ]);
+    // 不是简单的mh * ms * mb * mc，第5行是加法（b+d），https://stackoverflow.com/questions/49796623/how-to-implement-a-color-matrix-filter-in-a-glsl-shader
+    const m = multiply(mh, ms);
+    if (c !== 1) {
+      m[0] *= c;
+      m[1] *= c;
+      m[2] *= c;
+      m[4] *= c;
+      m[5] *= c;
+      m[6] *= c;
+      m[8] *= c;
+      m[9] *= c;
+      m[10] *= c;
+    }
+    // const m = [
+    //   c * (sr + s), c * sg,       c * sb,       0,
+    //   c * sr,       c * (sg + s), c * sb,       0,
+    //   c * sr,       c * sg,       c * (sb + s), 0,
+    //   0,            0,            0,            1,
     // ];
-    // 不是简单的ms * mb * mc，第5行是加法，https://stackoverflow.com/questions/49796623/how-to-implement-a-color-matrix-filter-in-a-glsl-shader
-    const m = [
-      c * (sr + s), c * sg,       c * sb,       0, b + d,
-      c * sr,       c * (sg + s), c * sb,       0, b + d,
-      c * sr,       c * sg,       c * (sb + s), 0, b + d,
-      0,            0,            0,            1, 0,
-    ];
     const old = res;
-    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+    const t = genColorByMatrix(gl, cmProgram, old, [
+      m[0], m[1], m[2], m[3], b + d,
+      m[4], m[5], m[6], m[7], b + d,
+      m[8], m[9], m[10], m[11], b + d,
+      0, 0, 0, 1,
+    ], frameBuffer);
     res = t.res;
     frameBuffer = t.frameBuffer;
     if (old !== textureTarget) {
