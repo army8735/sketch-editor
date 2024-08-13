@@ -1474,6 +1474,7 @@ function genRadialBlur(
   return res;
 }
 
+// https://docs.rainmeter.net/tips/colormatrix-guide/
 function genColorMatrix(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
@@ -1495,11 +1496,10 @@ function genColorMatrix(
     const cosR = Math.cos(rotation);
     const sinR = Math.sin(rotation);
     const m = [
-      0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0,
-      0, 0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.14, 0.072 - cosR * 0.072 - sinR * 0.283,
-      0, 0, 0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715,
-      0.072 + cosR * 0.928 + sinR * 0.072, 0, 0, 0,
-      0, 0, 1, 0,
+      0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0,
+      0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
+      0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
+      0, 0, 0, 1, 0,
     ];
     const old = res;
     const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
@@ -1509,48 +1509,58 @@ function genColorMatrix(
       old.release();
     }
   }
-  if (saturate !== 1) {
+  // if (saturate !== 1) {
+  //   const m = [
+  //     0.213 + 0.787 * saturate, 0.715 - 0.715 * saturate, 0.072 - 0.072 * saturate, 0, 0,
+  //     0.213 - 0.213 * saturate, 0.715 + 0.285 * saturate, 0.072 - 0.072 * saturate, 0, 0,
+  //     0.213 - 0.213 * saturate, 0.715 - 0.715 * saturate, 0.072 + 0.928 * saturate, 0, 0,
+  //     0, 0, 0, 1, 0,
+  //   ];
+  //   const old = res;
+  //   const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
+  //   res = t.res;
+  //   frameBuffer = t.frameBuffer;
+  //   if (old !== textureTarget) {
+  //     old.release();
+  //   }
+  // }
+  if (saturate !== 1 || brightness !== 1 || contrast !== 1) {
+    const s = saturate;
+    const lr = 0.213;
+    const lg = 0.715;
+    const lb = 0.072;
+    const sr = (1 - s) * lr;
+    const sg = (1 - s) * lg;
+    const sb = (1 - s) * lb;
+    // const ms = [
+    //   sr + s, sg, sb, 0, 0,
+    //   sr, sg + s, sb, 0, 0,
+    //   sr, sg, sb + s, 0, 0,
+    //   0, 0, 0, 1, 0,
+    // ];
+    const b = brightness - 1;
+    // const mb = [
+    //   1, 0, 0, 0, b,
+    //   0, 1, 0, 0, b,
+    //   0, 0, 1, 0, b,
+    //   0, 0, 0, 1, 0,
+    //   0, 0, 0, 0, 1,
+    // ];
+    const c = contrast;
+    const d = (1 - c) * 0.5;
+    // const mc = [
+    //   c, 0, 0, 0, d,
+    //   0, c, 0, 0, d,
+    //   0, 0, c, 0, d,
+    //   0, 0, 0, 1, 0,
+    //   0, 0, 0, 0, 1,
+    // ];
+    // 不是简单的ms * mb * mc，第5行是加法，https://stackoverflow.com/questions/49796623/how-to-implement-a-color-matrix-filter-in-a-glsl-shader
     const m = [
-      0.213 + 0.787 * saturate, 0.715 - 0.715 * saturate, 0.072 - 0.072 * saturate, 0,
-      0, 0.213 - 0.213 * saturate, 0.715 + 0.285 * saturate, 0.072 - 0.072 * saturate,
-      0, 0, 0.213 - 0.213 * saturate, 0.715 - 0.715 * saturate,
-      0.072 + 0.928 * saturate, 0, 0, 0,
-      0, 0, 1, 0,
-    ];
-    const old = res;
-    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
-    res = t.res;
-    frameBuffer = t.frameBuffer;
-    if (old !== textureTarget) {
-      old.release();
-    }
-  }
-  if (brightness !== 1) {
-    const b = brightness;
-    const m = [
-      1, 0, 0, 0,
-      b - 1, 0, 1, 0,
-      0, b - 1, 0, 0,
-      1, 0, b - 1, 0,
-      0, 0, 1, 0,
-    ];
-    const old = res;
-    const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
-    res = t.res;
-    frameBuffer = t.frameBuffer;
-    if (old !== textureTarget) {
-      old.release();
-    }
-  }
-  if (contrast !== 1) {
-    const a = contrast;
-    const o = -0.5 * a + 0.5;
-    const m = [
-      a, 0, 0, 0,
-      o, 0, a, 0,
-      0, o, 0, 0,
-      a, 0, o, 0,
-      0, 0, 1, 0,
+      c * (sr + s), c * sg,       c * sb,       0, b + d,
+      c * sr,       c * (sg + s), c * sb,       0, b + d,
+      c * sr,       c * sg,       c * (sb + s), 0, b + d,
+      0,            0,            0,            1, 0,
     ];
     const old = res;
     const t = genColorByMatrix(gl, cmProgram, old, m, frameBuffer);
