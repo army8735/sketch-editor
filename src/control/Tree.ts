@@ -11,6 +11,7 @@ import Text from '../node/Text';
 import Slice from '../node/Slice';
 import Container from '../node/Container';
 import Listener from './Listener';
+import config from '../util/config';
 
 function genNodeTree(node: Node, lv: number) {
   const type = getNodeType(node);
@@ -37,7 +38,7 @@ function genNodeTree(node: Node, lv: number) {
   dl.setAttribute('uuid', node.props.uuid);
   const dt = document.createElement('dt');
   if (lv > 3) {
-    dt.style.paddingLeft = (lv - 3) * 10 + 'px';
+    dt.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
   }
   // 特殊的矢量小标预览
   if (node instanceof Geom || node instanceof ShapeGroup) {

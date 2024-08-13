@@ -26,4 +26,5 @@ export default {
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
   },
+  treeLvPadding: 10,
 };
