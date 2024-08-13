@@ -14,7 +14,7 @@ import { ComputedStyle } from '../style/define';import {
   resizeTopOperate,
   resizeTopRightAspectRatioOperate,
 } from '../tools/node';
-import { ResizeStyle } from '../format';
+import { JStyle, ResizeStyle } from '../format';
 
 export type ResizeData = {
   dx: number;
@@ -53,7 +53,8 @@ class ResizeCommand extends AbstractCommand {
       const originStyle = node.getStyle();
       node.startSizeChange();
       const computedStyle = node.getComputedStyle();
-      ResizeCommand.updateStyle(node, computedStyle, dx, dy, controlType, aspectRatio, widthToAuto, heightToAuto);
+      const cssStyle = node.getCssStyle();
+      ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx, dy, controlType, aspectRatio, widthToAuto, heightToAuto);
       node.endSizeChange(originStyle);
       node.checkPosSizeUpward();
     });
@@ -66,13 +67,14 @@ class ResizeCommand extends AbstractCommand {
       const originStyle = node.getStyle();
       node.startSizeChange();
       const computedStyle = node.getComputedStyle();
-      ResizeCommand.updateStyle(node, computedStyle, -dx, -dy, controlType, aspectRatio, widthFromAuto, heightFromAuto);
+      const cssStyle = node.getCssStyle();
+      ResizeCommand.updateStyle(node, computedStyle, cssStyle, -dx, -dy, controlType, aspectRatio, widthFromAuto, heightFromAuto);
       node.endSizeChange(originStyle);
       node.checkPosSizeUpward();
     });
   }
 
-  static updateStyle(node: Node, computedStyle: ComputedStyle, dx: number, dy: number, controlType: CONTROL_TYPE, aspectRatio: boolean, widthAuto = false, heightAuto = false) {
+  static updateStyle(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE, aspectRatio: boolean, widthAuto = false, heightAuto = false) {
     const next: ResizeStyle = {};
     // 保持宽高比的拉伸，4个方向和4个角需要单独特殊处理
     if (aspectRatio) {
@@ -103,6 +105,26 @@ class ResizeCommand extends AbstractCommand {
     }
     // 普通的分4个方向上看，4个角则是2个方向的合集，因为相邻方向不干扰，相对方向互斥
     else {
+      /**
+       * 由于保持宽高比的存在，可能在调整过程中切换shift键，按下无需关心，因为不保持是保持的子集，
+       * 如果从保持换到不保持，四条边在保持时会更改相邻两侧的定位尺寸，不保持需改回来。
+       */
+      if (controlType === CONTROL_TYPE.L || controlType === CONTROL_TYPE.R) {
+        if (computedStyle.height !== node.computedStyle.height) {
+          next.top = cssStyle.top;
+          next.bottom = cssStyle.bottom;
+          next.height = cssStyle.height;
+          next.scaleY = cssStyle.scaleY;
+        }
+      }
+      else if (controlType === CONTROL_TYPE.T || controlType === CONTROL_TYPE.B) {
+        if (computedStyle.width !== node.computedStyle.width) {
+          next.left = cssStyle.left;
+          next.right = cssStyle.right;
+          next.width = cssStyle.width;
+          next.scaleX = cssStyle.scaleX;
+        }
+      }
       if (controlType === CONTROL_TYPE.T || controlType === CONTROL_TYPE.TL || controlType === CONTROL_TYPE.TR) {
         Object.assign(next, resizeTopOperate(node, computedStyle, dy));
       }

@@ -11,7 +11,7 @@ import Select from './Select';
 import Input from './Input';
 import State from './State';
 import { clone } from '../util/util';
-import { ArtBoardProps } from '../format';
+import { ArtBoardProps, JStyle } from '../format';
 import History from '../history/History';
 import AbstractCommand from '../history/AbstractCommand';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -79,6 +79,7 @@ export default class Listener extends Event {
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
   originStyle: Style[]; // 同上
+  cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
   mouseDownArtBoard?: ArtBoard;
 
@@ -118,6 +119,7 @@ export default class Listener extends Event {
     this.abcStyle = [];
     this.computedStyle = [];
     this.originStyle = [];
+    this.cssStyle = [];
     this.updateOrigin();
 
     this.select = new Select(root, dom);
@@ -189,6 +191,7 @@ export default class Listener extends Event {
     const dpi = root.dpi;
     // 操作开始清除
     this.originStyle.splice(0);
+    this.cssStyle.splice(0);
     this.computedStyle.splice(0);
     this.dx = this.dy = 0;
     // 点到控制html上
@@ -508,10 +511,12 @@ export default class Listener extends Event {
           if (!this.isMouseMove) {
             node.startSizeChange();
             this.computedStyle[i] = node.getComputedStyle();
+            this.cssStyle[i] = node.getCssStyle();
           }
           const computedStyle = this.computedStyle[i];
+          const cssStyle = this.cssStyle[i];
           const controlType = this.controlType;
-          ResizeCommand.updateStyle(node, computedStyle, dx2, dy2, controlType, this.shiftKey);
+          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey);
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -1163,6 +1168,7 @@ export default class Listener extends Event {
     this.abcStyle.splice(0);
     this.computedStyle.splice(0);
     this.originStyle.splice(0);
+    this.cssStyle.splice(0);
     this.select.destroy();
   }
 

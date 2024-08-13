@@ -1087,13 +1087,16 @@ class Node extends Event {
     const res: any = {};
     const { style, computedStyle } = this;
     // %单位转换
-    ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY'].forEach((k) => {
+    ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
       const o: any = style[k as keyof JStyle];
       if (o.u === StyleUnit.AUTO) {
         res[k] = 'auto';
       }
       else if (o.u === StyleUnit.PERCENT) {
         res[k] = o.v + '%';
+      }
+      else if (o.u === StyleUnit.PX || o.u === StyleUnit.NUMBER || o.u === StyleUnit.DEG) {
+        res[k] = o.v;
       }
     });
     res.color = color2rgbaStr(computedStyle.color);
