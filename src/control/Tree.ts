@@ -12,10 +12,10 @@ import Slice from '../node/Slice';
 import Container from '../node/Container';
 import Listener from './Listener';
 
-function genNodeTree(node: Node) {
+function genNodeTree(node: Node, lv: number) {
   const type = getNodeType(node);
   const dl = document.createElement('dl');
-  const classNames = ['layer'];
+  const classNames = ['layer', 'lv' + lv];
   if (node instanceof SymbolInstance) {
     classNames.push('symbol-instance');
   }
@@ -36,6 +36,9 @@ function genNodeTree(node: Node) {
   dl.className = classNames.join(' ');
   dl.setAttribute('uuid', node.props.uuid);
   const dt = document.createElement('dt');
+  if (lv > 3) {
+    dt.style.paddingLeft = (lv - 3) * 10 + 'px';
+  }
   // 特殊的矢量小标预览
   if (node instanceof Geom || node instanceof ShapeGroup) {
     const svg = node.toSvg(12);
@@ -59,7 +62,7 @@ function genNodeTree(node: Node) {
     if (children.length) {
       for (let i = children.length - 1; i >= 0; i--) {
         const dd = document.createElement('dd');
-        dd.appendChild(genNodeTree(children[i]));
+        dd.appendChild(genNodeTree(children[i], lv + 1));
         dl.appendChild(dd);
       }
     }
@@ -140,7 +143,7 @@ export default class Tree {
     });
     listener.on(Listener.ADD_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
-        const res = genNodeTree(item);
+        const res = genNodeTree(item, item.struct.lv);
         const dd = document.createElement('dd');
         dd.appendChild(res);
         const prev = item.prev?.props.uuid;
@@ -265,7 +268,8 @@ export default class Tree {
       }
       const fragment = new DocumentFragment();
       for (let i = children.length - 1; i >= 0; i--) {
-        fragment.appendChild(genNodeTree(children[i]));
+        const child = children[i];
+        fragment.appendChild(genNodeTree(child, child.struct.lv));
       }
       this.dom.appendChild(fragment);
     }
