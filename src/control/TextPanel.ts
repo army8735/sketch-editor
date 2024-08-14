@@ -383,6 +383,7 @@ class TextPanel extends Panel {
             dy,
             controlType: CONTROL_TYPE.BR,
             aspectRatio: false,
+            fromCenter: false,
           };
           if (tb === TEXT_BEHAVIOUR.AUTO) {
             rd.widthFromAuto = true;
