@@ -149,19 +149,12 @@ export function genMerge(
           node.resetTextureTarget();
         }
       }
-    }
-    // 兄弟连续的mask，后面的不生效，除非有breakMask
-    if (needMask && !breakMask) {
-      let prev = node.prev;
-      while (prev) {
-        if (prev.computedStyle.maskMode) {
+      // 兄弟连续的mask，前面的不生效，等同有breakMask
+      const next = node.next;
+      if (next) {
+        if (next.computedStyle.maskMode || next.computedStyle.breakMask) {
           needMask = false;
-          break;
         }
-        if (prev.computedStyle.breakMask) {
-          break;
-        }
-        prev = prev.prev;
       }
     }
     const needColor =
@@ -2098,10 +2091,6 @@ function genMask(
         else if (i === len || (computedStyle.breakMask && lv === lv2)) {
           node.struct.next = i - index - total - 1;
           break;
-        }
-        // 需要保存引用，当更改时取消mask节点的缓存重新生成
-        if (isFirst && lv === lv2) {
-          node2.mask = node;
         }
         // 这里和主循环类似，不可见或透明考虑跳过，但mask和背景模糊特殊对待
         const { shouldIgnore, isBgBlur } = shouldIgnoreAndIsBgBlur(

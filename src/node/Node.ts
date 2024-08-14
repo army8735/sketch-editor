@@ -441,8 +441,6 @@ class Node extends Event {
     computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
-    computedStyle.maskMode = style.maskMode.v;
-    computedStyle.breakMask = style.breakMask.v;
     computedStyle.innerShadow = style.innerShadow.map((item) => {
       const v = item.v;
       return {
@@ -468,12 +466,66 @@ class Node extends Event {
     if (lv & RefreshLevel.REFLOW_FILTER) {
       this.calFilter(lv);
     }
+    if (lv & (RefreshLevel.MASK | RefreshLevel.REFLOW | RefreshLevel.REPAINT)) {
+      this.calMask();
+    }
     this.clearCache(true);
     this._bbox = undefined;
     this._bbox2 = undefined;
     this._filterBbox = undefined;
     this._filterBbox2 = undefined;
     this.tempBbox = undefined;
+  }
+
+  calMask() {
+    const { style, computedStyle } = this;
+    computedStyle.maskMode = style.maskMode.v;
+    computedStyle.breakMask = style.breakMask.v;
+    // append时还得看prev的情况，如果自己也是mask，后续会修正
+    let prev = this.prev;
+    if (prev && !computedStyle.breakMask) {
+      if (prev.computedStyle.maskMode) {
+        this.mask = prev;
+      }
+      else if (prev.mask) {
+        this.mask = prev.mask;
+      }
+    }
+    if (computedStyle.maskMode) {
+      // mask不能同时被mask
+      this.mask = undefined;
+      let next = this.next;
+      while (next) {
+        // 初始连续mask的情况，next的computedStyle还未生成，紧接着后续节点自己calMask()会修正
+        if (next.computedStyle.maskMode) {
+          next.mask = this;
+          break;
+        }
+        if (next.computedStyle.breakMask) {
+          break;
+        }
+        // 本身是mask的话，忽略breakMask，后续肯定都是自己的遮罩对象
+        next.mask = this;
+        next = next.next;
+      }
+    }
+    else {
+      // 不是mask的话，要看本身是否被遮罩，决定next是否有被遮罩
+      let target = computedStyle.breakMask ? undefined : this.mask;
+      this.mask = target;
+      let next = this.next;
+      while (next) {
+        if (next.computedStyle.maskMode) {
+          next.mask = target;
+          break;
+        }
+        if (next.computedStyle.breakMask) {
+          break;
+        }
+        next.mask = target;
+        next = next.next;
+      }
+    }
   }
 
   calFilter(lv: RefreshLevel) {
@@ -763,16 +815,6 @@ class Node extends Event {
   clearMask(upwards = true) {
     this.textureMask.forEach((item) => item?.release());
     this.resetTextureTarget();
-    this.struct.next = 0;
-    // 原本指向mask的引用也需清除
-    let next = this.next;
-    while (next) {
-      if (next.computedStyle.breakMask || next.computedStyle.maskMode) {
-        break;
-      }
-      next.mask = undefined;
-      next = next.next;
-    }
     // mask切换影响父级组的bbox
     if (upwards) {
       let p = this.parent;

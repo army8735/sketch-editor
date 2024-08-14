@@ -470,6 +470,7 @@ class Root extends Container implements FrameCallback {
           if (p && p.isGroup && p instanceof Group) {
             p.adjustPosAndSize();
           }
+          node.calMask();
         }
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
@@ -481,17 +482,14 @@ class Root extends Container implements FrameCallback {
       }
       node.clearCacheUpward(false);
     }
-    // 检查mask影响，这里是作为被遮罩对象存在的关系检查，可能会有连续
+    // 检查mask影响，这里是作为被遮罩对象存在的关系检查，不会有连续，mask不能同时被mask
     let mask = node.mask;
     if (mask) {
       const p = node.parent;
       if (p && p.isGroup && p instanceof Group) {
         p.adjustPosAndSize();
       }
-      while (mask) {
-        mask.clearMask();
-        mask = mask.mask;
-      }
+      mask.clearMask();
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;
