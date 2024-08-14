@@ -33,6 +33,7 @@ import ColorAdjustCommand from '../history/ColorAdjustCommand';
 export type ListenerOptions = {
   enabled?: {
     selectWithMeta?: boolean; // 初始状态hover/select时强制按下meta
+    resizeWithAlt?: boolean; // 拖拽尺寸时强制按下alt
   };
   disabled?: {
     select?: boolean;
@@ -516,7 +517,7 @@ export default class Listener extends Event {
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
           const controlType = this.controlType;
-          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey);
+          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey, this.altKey);
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -743,7 +744,7 @@ export default class Listener extends Event {
             // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
             node.endSizeChange(this.originStyle[i]);
             node.checkPosSizeUpward();
-            const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey };
+            const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: this.altKey };
             const originStyle = this.originStyle[i];
             if (originStyle.width.u === StyleUnit.AUTO) {
               r.widthFromAuto = true;
