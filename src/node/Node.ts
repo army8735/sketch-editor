@@ -441,6 +441,9 @@ class Node extends Event {
     computedStyle.booleanOperation = style.booleanOperation.v;
     computedStyle.mixBlendMode = style.mixBlendMode.v;
     computedStyle.pointerEvents = style.pointerEvents.v;
+    if (lv & (RefreshLevel.MASK | RefreshLevel.REFLOW | RefreshLevel.REPAINT)) {
+      this.calMask();
+    }
     computedStyle.innerShadow = style.innerShadow.map((item) => {
       const v = item.v;
       return {
@@ -465,9 +468,6 @@ class Node extends Event {
     }
     if (lv & RefreshLevel.REFLOW_FILTER) {
       this.calFilter(lv);
-    }
-    if (lv & (RefreshLevel.MASK | RefreshLevel.REFLOW | RefreshLevel.REPAINT)) {
-      this.calMask();
     }
     this.clearCache(true);
     this._bbox = undefined;
