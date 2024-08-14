@@ -330,6 +330,7 @@ class BasicPanel extends Panel {
             dy: isWOrH ? 0 : d,
             controlType: isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B,
             aspectRatio: false,
+            fromCenter: false,
           };
           if (node instanceof Text) {
             rd.widthFromAuto = widthAuto[i];

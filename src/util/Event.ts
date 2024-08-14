@@ -115,15 +115,15 @@ class Event {
     return this;
   }
 
-  static REFRESH = 'refresh';
-  static REFRESH_COMPLETE = 'refreshComplete';
-  static DID_ADD_DOM = 'didAddDom';
-  static WILL_REMOVE_DOM = 'willRemoveDom';
-  static PAGE_CHANGED = 'pageChanged';
-  static STYLE_CHANGED = 'styleChanged';
-  static DID_ADD_PAGE = 'didAddPage';
-  static WILL_REMOVE_PAGE = 'willRemovePage';
-  static UPDATE_CURSOR = 'updateCursor';
+  static REFRESH = 'REFRESH';
+  static REFRESH_COMPLETE = 'REFRESH_COMPLETE';
+  static DID_ADD_DOM = 'DID_ADD_DOM';
+  static WILL_REMOVE_DOM = 'WILL_REMOVE_DOM';
+  static PAGE_CHANGED = 'PAGE_CHANGED';
+  static STYLE_CHANGED = 'STYLE_CHANGED';
+  static DID_ADD_PAGE = 'DID_ADD_PAGE';
+  static WILL_REMOVE_PAGE = 'WILL_REMOVE_PAGE';
+  static UPDATE_CURSOR = 'UPDATE_CURSOR';
 }
 
 export default Event;
