@@ -53,6 +53,7 @@ class Polygon {
             ? [endPoint, startPoint]
             : [startPoint, endPoint];
           seg = new Segment(coords, index);
+          segments.push(seg);
         }
         // 曲线需确保x单调性，如果非单调，则切割为单调的多条
         else if (l === 4) {
@@ -105,17 +106,21 @@ class Polygon {
             let coords = Point.compare(startPoint, p2)
               ? [p2, p1, startPoint]
               : [startPoint, p1, p2];
-            segments.push(new Segment(coords, index));
+            if (!startPoint.equal(p2)) {
+              segments.push(new Segment(coords, index));
+            }
             coords = Point.compare(p2, endPoint)
               ? [endPoint, p3, p2]
               : [p2, p3, endPoint];
-            seg = new Segment(coords, index);
+            if (!endPoint.equal(p2)) {
+              segments.push(new Segment(coords, index));
+            }
           }
           else {
             const coords = Point.compare(startPoint, endPoint)
               ? [endPoint, cPoint, startPoint]
               : [startPoint, cPoint, endPoint];
-            seg = new Segment(coords, index);
+            segments.push(new Segment(coords, index));
           }
         }
         // 3阶可能有2个单调改变t点
@@ -177,7 +182,9 @@ class Polygon {
               const coords = Point.compare(lastPoint, p3)
                 ? [p3, p2, p1, lastPoint]
                 : [lastPoint, p1, p2, p3];
-              segments.push(new Segment(coords, index));
+              if (!lastPoint.equal(p3)) {
+                segments.push(new Segment(coords, index));
+              }
               lastT = t;
               lastPoint = p3;
             });
@@ -199,16 +206,17 @@ class Polygon {
             const coords = Point.compare(lastPoint, endPoint)
               ? [endPoint, p2, p1, lastPoint]
               : [lastPoint, p1, p2, endPoint];
-            seg = new Segment(coords, index);
+            if (!lastPoint.equal(endPoint)) {
+              segments.push(new Segment(coords, index));
+            }
           }
           else {
             const coords = Point.compare(startPoint, endPoint)
               ? [endPoint, cPoint2, cPoint1, startPoint]
               : [startPoint, cPoint1, cPoint2, endPoint];
-            seg = new Segment(coords, index);
+            segments.push(new Segment(coords, index));
           }
         }
-        segments.push(seg!);
         // 终点是下条边的起点
         startPoint = endPoint;
       }
