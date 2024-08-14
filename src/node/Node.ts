@@ -1285,8 +1285,8 @@ class Node extends Event {
   }
 
   /**
-   * 拖拽开始变更尺寸前预校验，如果style有translate初始值，需要改成普通模式（为0），目前只有Text有且仅值-50%且left是百分比，
-   * 但不排除其它节点可能所有一并考虑，left调整到以左侧为基准（translateX从-50%到0，差值重新加到left上），top同理，
+   * 拖拽开始变更尺寸前预校验，如果style有translate初始值，需要改成普通模式（为0），比如Text和固定尺寸的节点，
+   * left调整到以左侧为基准（translateX从-50%到0，差值重新加到left上），top同理，
    * 如此才能防止拉伸时（如往右）以自身中心点为原点左右一起变化，拖拽结束后再重置回去（translateX重新-50%，left也重算）。
    * right/bottom一般情况不用关心，因为如果是left+right说明Text是固定尺寸width无效且无translateX，但为了扩展兼容一并考虑，
    * 只有left百分比+translateX-50%需要，width可能固定也可能自动不用考虑只需看当前计算好的width值。
@@ -1804,7 +1804,7 @@ class Node extends Event {
           isEnabled: true,
           brightness: brightness - 1,
           contrast,
-          hue: hueRotate,
+          hue: d2r(hueRotate),
           saturation: saturate,
         },
         contextSettings: {
