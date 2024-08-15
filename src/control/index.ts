@@ -96,4 +96,6 @@ export default {
   TextPanel,
   ShadowPanel,
   BlurPanel,
+  AlignPanel,
+  ColorAdjustPanel,
 };

@@ -567,14 +567,40 @@ function resizeVerticalAspectRatio(node: Node, originComputedStyle: ComputedStyl
 export function resizeTopAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number, fromCenter = false) {
   // 先获得无宽高比的更新，再修正
   const next = resizeTopOperate(node, originComputedStyle, d);
-  const t = resizeVerticalAspectRatio(node, originComputedStyle, -d);
+  // 中心拉伸对面
+  if (fromCenter) {
+    const b = resizeBottomOperate(node, originComputedStyle, -d);
+    if (b.height) {
+      if (typeof b.height === 'number') {
+        b.height = originComputedStyle.height - d * 2;
+      }
+      else {
+        b.height = (originComputedStyle.height - d * 2) * 100 / node.parent!.height + '%';
+      }
+    }
+    Object.assign(next, b);
+  }
+  const t = resizeVerticalAspectRatio(node, originComputedStyle, fromCenter ? -d * 2 : -d);
   return Object.assign(next, t);
 }
 
 export function resizeBottomAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number, fromCenter = false) {
   // 先获得无宽高比的更新，再修正
   const next = resizeBottomOperate(node, originComputedStyle, d);
-  const t = resizeVerticalAspectRatio(node, originComputedStyle, d);
+  // 中心拉伸对面
+  if (fromCenter) {
+    const t = resizeTopOperate(node, originComputedStyle, -d);
+    if (t.height) {
+      if (typeof t.height === 'number') {
+        t.height = originComputedStyle.height + d * 2;
+      }
+      else {
+        t.height = (originComputedStyle.height + d * 2) * 100 / node.parent!.height + '%';
+      }
+    }
+    Object.assign(next, t);
+  }
+  const t = resizeVerticalAspectRatio(node, originComputedStyle, fromCenter ? d * 2 : d);
   return Object.assign(next, t);
 }
 
@@ -604,14 +630,40 @@ function resizeHorizontalAspectRatio(node: Node, originComputedStyle: ComputedSt
 export function resizeLeftAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number, fromCenter = false) {
   // 先获得无宽高比的更新，再修正
   const next = resizeLeftOperate(node, originComputedStyle, d);
-  const t = resizeHorizontalAspectRatio(node, originComputedStyle, -d);
+  // 中心拉伸对面
+  if (fromCenter) {
+    const r = resizeRightOperate(node, originComputedStyle, -d);
+    if (r.width) {
+      if (typeof r.width === 'number') {
+        r.width = originComputedStyle.width - d * 2;
+      }
+      else {
+        r.width = (originComputedStyle.width - d * 2) * 100 / node.parent!.width + '%';
+      }
+    }
+    Object.assign(next, r);
+  }
+  const t = resizeHorizontalAspectRatio(node, originComputedStyle, fromCenter ? -d * 2: -d);
   return Object.assign(next, t);
 }
 
 export function resizeRightAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, d: number, fromCenter = false) {
   // 先获得无宽高比的更新，再修正
   const next = resizeRightOperate(node, originComputedStyle, d);
-  const t = resizeHorizontalAspectRatio(node, originComputedStyle, d);
+  // 中心拉伸对面
+  if (fromCenter) {
+    const l = resizeLeftOperate(node, originComputedStyle, -d);
+    if (l.width) {
+      if (typeof l.width === 'number') {
+        l.width = originComputedStyle.width + d * 2;
+      }
+      else {
+        l.width = (originComputedStyle.width + d * 2) * 100 / node.parent!.width + '%';
+      }
+    }
+    Object.assign(next, l);
+  }
+  const t = resizeHorizontalAspectRatio(node, originComputedStyle, fromCenter ? d * 2 : d);
   return Object.assign(next, t);
 }
 
@@ -634,32 +686,32 @@ function getDiagonalAspectRatioIsec(originComputedStyle: ComputedStyle, dx: numb
 export function resizeTopLeftAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, fromCenter = false) {
   const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, true);
   // 交点和宽高的差值就是要调整改变的值
-  const next = resizeLeftOperate(node, originComputedStyle, x - originComputedStyle.width);
-  Object.assign(next, resizeTopOperate(node, originComputedStyle, y - originComputedStyle.height));
+  const next = resizeLeftOperate(node, originComputedStyle, x - originComputedStyle.width, fromCenter);
+  Object.assign(next, resizeTopOperate(node, originComputedStyle, y - originComputedStyle.height, fromCenter));
   return next;
 }
 
 export function resizeTopRightAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, fromCenter = false) {
   const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, false);
   // 交点和宽高的差值就是要调整改变的值
-  const next = resizeRightOperate(node, originComputedStyle, x - originComputedStyle.width);
-  Object.assign(next, resizeTopOperate(node, originComputedStyle, y - originComputedStyle.height));
+  const next = resizeRightOperate(node, originComputedStyle, x - originComputedStyle.width, fromCenter);
+  Object.assign(next, resizeTopOperate(node, originComputedStyle, y - originComputedStyle.height, fromCenter));
   return next;
 }
 
 export function resizeBottomLeftAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, fromCenter = false) {
   const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, false);
   // 交点和宽高的差值就是要调整改变的值
-  const next = resizeLeftOperate(node, originComputedStyle, x - originComputedStyle.width);
-  Object.assign(next, resizeBottomOperate(node, originComputedStyle, y - originComputedStyle.height));
+  const next = resizeLeftOperate(node, originComputedStyle, x - originComputedStyle.width, fromCenter);
+  Object.assign(next, resizeBottomOperate(node, originComputedStyle, y - originComputedStyle.height, fromCenter));
   return next;
 }
 
 export function resizeBottomRightAspectRatioOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, fromCenter = false) {
   const { x, y } = getDiagonalAspectRatioIsec(originComputedStyle, dx, dy, true);
   // 交点和宽高的差值就是要调整改变的值
-  const next = resizeRightOperate(node, originComputedStyle, x - originComputedStyle.width);
-  Object.assign(next, resizeBottomOperate(node, originComputedStyle, y - originComputedStyle.height));
+  const next = resizeRightOperate(node, originComputedStyle, x - originComputedStyle.width, fromCenter);
+  Object.assign(next, resizeBottomOperate(node, originComputedStyle, y - originComputedStyle.height, fromCenter));
   return next;
 }
 

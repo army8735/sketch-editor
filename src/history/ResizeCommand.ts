@@ -76,7 +76,17 @@ class ResizeCommand extends AbstractCommand {
   }
 
   static updateStyle(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE, aspectRatio: boolean, fromCenter: boolean, widthAuto = false, heightAuto = false) {
-    const next: ResizeStyle = {};
+    // 由于保持宽高比/中心点调整的存在，可能在调整过程中切换shift/alt键，所以初始化都是原始样式以便切换后恢复
+    const next: ResizeStyle = {
+      left: cssStyle.left,
+      right: cssStyle.right,
+      top: cssStyle.top,
+      bottom: cssStyle.bottom,
+      width: cssStyle.width,
+      height: cssStyle.height,
+      scaleX: cssStyle.scaleX,
+      scaleY: cssStyle.scaleY,
+    };
     // 保持宽高比的拉伸，4个方向和4个角需要单独特殊处理
     if (aspectRatio) {
       if (controlType === CONTROL_TYPE.T) {
@@ -106,24 +116,6 @@ class ResizeCommand extends AbstractCommand {
     }
     // 普通的分4个方向上看，4个角则是2个方向的合集，因为相邻方向不干扰，相对方向互斥
     else {
-      /**
-       * 由于保持宽高比/中心点调整的存在，可能在调整过程中切换shift/alt键，
-       * 按下无需关心，因为不保持是保持的子集，普通是中心点的子集，
-       * 如果从保持换到不保持，四条边在保持时会更改相邻两侧的定位尺寸，不保持需改回来，
-       * 如果从中心换到非中心，四条边会更改对面的定位尺寸，非中心需改回来。
-       */
-      if (computedStyle.height !== node.computedStyle.height) {
-        next.top = cssStyle.top;
-        next.bottom = cssStyle.bottom;
-        next.height = cssStyle.height;
-        next.scaleY = cssStyle.scaleY;
-      }
-      if (computedStyle.width !== node.computedStyle.width) {
-        next.left = cssStyle.left;
-        next.right = cssStyle.right;
-        next.width = cssStyle.width;
-        next.scaleX = cssStyle.scaleX;
-      }
       if (controlType === CONTROL_TYPE.T || controlType === CONTROL_TYPE.TL || controlType === CONTROL_TYPE.TR) {
         Object.assign(next, resizeTopOperate(node, computedStyle, dy, fromCenter));
       }
