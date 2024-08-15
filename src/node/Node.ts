@@ -1960,7 +1960,7 @@ class Node extends Event {
       };
     });
     if (blur.t === BLUR.GAUSSIAN || blur.t === BLUR.MOTION || blur.t === BLUR.BACKGROUND || blur.t === BLUR.RADIAL) {
-      let center = '';
+      let center: string;
       if (blur.center) {
         center = '{' + blur.center.join(', ') + '}';
       }

@@ -3,7 +3,6 @@ import Container from '../node/Container';
 import Group from '../node/Group';
 import Node from '../node/Node';
 import { ComputedStyle, StyleUnit } from '../style/define';
-import { clone } from '../util/util';
 import { PageProps, Point, ResizeStyle } from '../format';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
@@ -722,9 +721,8 @@ export function move(node: Node, dx: number, dy: number) {
       translateX: node.computedStyle.translateX + dx,
       translateY: node.computedStyle.translateY + dy,
     });
-    const res = node.endPosChange(originStyle, dx, dy);
+    node.endPosChange(originStyle, dx, dy);
     node.checkPosSizeUpward();
-    return res;
   }
 }
 
