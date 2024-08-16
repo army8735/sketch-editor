@@ -31,7 +31,7 @@ function renderItem(
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
+        <b class="pick ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
       </span>
       <span class="txt">颜色</span>
     </div>
@@ -86,7 +86,7 @@ class ShadowPanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const classList = el.classList;
-      if (el.tagName.toUpperCase() === 'B') {
+      if (classList.contains('pick')) {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
         if (el.parentElement!.classList.contains('read-only')) {
