@@ -77,15 +77,6 @@ export function equal(a: any, b: any, keys?: string[]) {
   return a === b;
 }
 
-export function renderTemplate(t: string, vars: Record<string, any>) {
-  return t.replace(/\${([\w$-]+)}/g, function($0, $1) {
-    if (vars.hasOwnProperty($1)) {
-      return vars[$1];
-    }
-    return '';
-  });
-}
-
 export async function loadLocalFonts() {
   if (typeof navigator !== 'undefined') {
     try {
@@ -111,6 +102,5 @@ export default {
   equal,
   extend,
   clone,
-  renderTemplate,
   loadLocalFonts,
 };

@@ -4,8 +4,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
-import { toPrecision } from '../math';
-import { clone, renderTemplate } from '../util/util';
+import { clone } from '../util/util';
 import Listener from './Listener';
 import { Style } from '../style/define';
 import picker from './picker';
@@ -17,34 +16,44 @@ const html = `
   <h4 class="panel-title">描边</h4>
 `;
 
-const single = `
-  <div class="line" title="$\{index}">
-    <span class="$\{checked}"></span>
+function renderItem(
+  index: number,
+  multiEnable: boolean,
+  enable: boolean,
+  multiColor: boolean,
+  color: string,
+  position: string,
+  multiWidth: boolean,
+  width: number,
+) {
+  const readOnly = (multiEnable || !enable) ? 'readonly="readonly"' : '';
+  return `<div class="line" title="${index}">
+    <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
-      <span class="picker"><b style="color:#666;text-align:center;line-height:18px;overflow:hidden;text-indent:`
-  + `$\{textIndent};text-shadow:0 0 2px rgba(0, 0, 0, 0.2);background:$\{color};">○○○</b></span>
+      <span class="picker-btn ${readOnly ? 'read-only' : ''}">
+        <b class="${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
+      </span>
       <span class="txt">颜色</span>
     </div>
-    <div class="pos $\{position}">
+    <div class="pos ${position}">
       <div>
         <span class="inside" title="内部"></span>
         <span class="center" title="中间"></span>
         <span class="outside" title="外部"></span>
       </div>
-      <span class="inside">内部</span>
-      <span class="center">中间</span>
-      <span class="outside">外部</span>
-      <span class="multi">多个</span>
+      <span class="txt inside">内部</span>
+      <span class="txt center">中间</span>
+      <span class="txt outside">外部</span>
+      <span class="txt multi">多个</span>
     </div>
     <div class="width">
-      <div>
-        <input type="number" min="0" max="100" step="1" value="$\{width}" placeholder="$\{widthMulti}"/>
-        <span></span>
+      <div class="input-unit">
+        <input type="number" min="0" max="100" step="1" value="${multiWidth ? '' : width}" placeholder="${multiWidth ? '多个' : ''}"/>
       </div>
-      <span>宽度</span>
+      <span class="txt">宽度</span>
     </div>
-  </div>
-`;
+  </div>`;
+}
 
 class StrokePanel extends Panel {
   panel: HTMLElement;
@@ -198,24 +207,7 @@ class StrokePanel extends Panel {
       const c = cs[i];
       const w = ws[i];
       const p = ps[i];
-      let checked = 'un-checked';
-      if (e.length > 1) {
-        checked = 'multi-checked';
-      }
-      else if (e.includes(true)) {
-        checked = 'checked';
-      }
-      const s = renderTemplate(single, {
-        index: es.length - 1 - i,
-        checked,
-        textIndent: c.length > 1 ? 0 : '9999px',
-        color: c.length > 1 ? '#FFFFFF' : c[0],
-        colorMulti: c.length > 1 ? '多个' : '',
-        width: w.length > 1 ? '' : toPrecision(w[0], 0),
-        widthMulti: w.length > 1 ? '多个' : '',
-        position: p.length > 1 ? 'multi' : p[0],
-      });
-      this.panel.innerHTML += s;
+      this.panel.innerHTML += renderItem(i, e.length > 1, e[0], c.length > 1, c[0], p[0], w.length > 1, w[0]);
     }
   }
 }
