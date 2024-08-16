@@ -1,6 +1,5 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { toPrecision } from '../math';
 import Listener from './Listener';
 import OpacityCommand from '../history/OpacityCommand';
 import Panel from './Panel';
@@ -55,6 +54,7 @@ class OpacityPanel extends Panel {
           nexts.push(next);
         }
       });
+      range.style.setProperty('--p', range.value);
       number.value = range.value;
       number.placeholder = '';
     });
@@ -94,6 +94,9 @@ class OpacityPanel extends Panel {
           next = Math.max(next, 0);
           next = Math.min(next, 100);
           d = next - prev;
+          if (!i) {
+            number.placeholder = '';
+          }
         }
         else {
           // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
@@ -116,10 +119,13 @@ class OpacityPanel extends Panel {
             }
           }
           next = prev + d;
-        }
-        if (d) {
           next = Math.max(next, 0);
           next = Math.min(next, 100);
+          if (!i) {
+            number.value = number.placeholder ? '' : next.toString();
+          }
+        }
+        if (d) {
           if (prev !== next) {
             node.updateStyle({
               opacity: next * 0.01,
@@ -132,9 +138,10 @@ class OpacityPanel extends Panel {
           }
         }
       });
+      range.value = number.value || '0';
+      range.style.setProperty('--p', range.value);
       if (nodes.length) {
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
-        this.show(this.nodes);
       }
       this.silence = false;
     });
@@ -197,12 +204,14 @@ class OpacityPanel extends Panel {
     const n = panel.querySelector('input[type=number]') as HTMLInputElement;
     if (as.length > 1) {
       r.value = '0';
+      r.style.setProperty('--p', '0');
       n.placeholder = '多个';
     }
     else {
-      const a = toPrecision(as[0] * 100, 0);
-      r.value = a.toString();
-      n.value = a.toString();
+      const a = Math.round(as[0] * 100).toString();
+      r.value = a;
+      r.style.setProperty('--p', a);
+      n.value = a;
     }
   }
 }

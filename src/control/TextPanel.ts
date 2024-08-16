@@ -32,7 +32,7 @@ const html = `
       <span class="multi">多种字重</span>
     </div>
     <div class="color">
-      <span class="picker"><b style="">○○○</b></span>
+      <span class="picker-btn"><b>○○○</b></span>
     </div>
   </div>
   <div class="line num">
@@ -620,12 +620,12 @@ class TextPanel extends Panel {
     {
       const color = panel.querySelector('.color b') as HTMLElement;
       if (o.color.length > 1) {
-        color.style.background = '#FFF';
-        color.style.textIndent = '0px';
+        color.style.background = '';
+        color.classList.add('multi');
       }
       else {
         color.style.background = o.color[0];
-        color.style.textIndent = '9999px';
+        color.classList.remove('multi');
       }
     }
     {

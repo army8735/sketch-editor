@@ -533,9 +533,9 @@ class Node extends Event {
     const blur = style.blur.v;
     computedStyle.blur = {
       t: blur.t,
-      radius: blur.radius?.v,
+      radius: blur.radius?.v || 0,
       center: blur.center ? blur.center.map(item => item.v * 0.01) as [number, number] : [0.5, 0.5],
-      saturation: (blur.saturation?.v ?? 0) * 0.01,
+      saturation: (blur.saturation?.v ?? 100) * 0.01,
       angle: blur.angle ? blur.angle.v : 0,
     };
     computedStyle.shadow = style.shadow.map((item) => {

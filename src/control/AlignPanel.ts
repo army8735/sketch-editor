@@ -7,7 +7,6 @@ import ArtBoard from '../node/ArtBoard';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 
 const html = `
-  <h4 class="panel-title">对齐</h4>
   <div class="line">
     <span class="left" title="居左"></span>
     <span class="center" title="左右居中"></span>

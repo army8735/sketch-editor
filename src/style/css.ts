@@ -1025,7 +1025,7 @@ export function getCssBlur(t: BLUR, radius: number, angle?: number, center?: [nu
     s += ` center(${p.join(', ')})`;
   }
   else if (t === BLUR.BACKGROUND) {
-    s += ` saturation(${(saturation || 0) * 100}%)`;
+    s += ` saturation(${(saturation === undefined ? 1 : saturation) * 100}%)`;
   }
   return s;
 }

@@ -10,42 +10,34 @@ const html = `
   <div class="panel-title">颜色调整</div>
   <div class="line hue">
     <div class="intro">色相</div>
-    <div class="con">
-      <input class="range" type="range" min="-180" max="180" step="1"/>
-      <div class="input-unit">
-        <input class="number" type="number" min="-180" max="180" step="1"/>
-        <span class="unit">°</span>
-      </div>
+    <input class="range" type="range" min="-180" max="180" step="1"/>
+    <div class="input-unit">
+      <input class="number" type="number" min="-180" max="180" step="1"/>
+      <span class="unit">°</span>
     </div>
   </div>
   <div class="line saturate">
     <div class="intro">饱和度</div>
-    <div class="con">
-      <input class="range" type="range" min="-100" max="100" step="1"/>
-      <div class="input-unit">
-        <input class="number" type="number" min="-100" max="100" step="1"/>
-        <span class="unit">%</span>
-      </div>
+    <input class="range" type="range" min="-100" max="100" step="1"/>
+    <div class="input-unit">
+      <input class="number" type="number" min="-100" max="100" step="1"/>
+      <span class="unit">%</span>
     </div>
   </div>
   <div class="line brightness">
     <div class="intro">亮度</div>
-    <div class="con">
-      <input class="range" type="range" min="-100" max="100" step="1"/>
-      <div class="input-unit">
-        <input class="number" type="number" min="-100" max="100" step="1"/>
-        <span class="unit">%</span>
-      </div>
+    <input class="range" type="range" min="-100" max="100" step="1"/>
+    <div class="input-unit">
+      <input class="number" type="number" min="-100" max="100" step="1"/>
+      <span class="unit">%</span>
     </div>
   </div>
   <div class="line contrast">
     <div class="intro">对比度</div>
-    <div class="con">
-      <input class="range" type="range" min="-100" max="100" step="1"/>
-      <div class="input-unit">
-        <input class="number" type="number" min="-100" max="100" step="1"/>
-        <span class="unit">%</span>
-      </div>
+    <input class="range" type="range" min="-100" max="100" step="1"/>
+    <div class="input-unit">
+      <input class="number" type="number" min="-100" max="100" step="1"/>
+      <span class="unit">%</span>
     </div>
   </div>
 `;
@@ -86,7 +78,7 @@ class ColorAdjustPanel extends Panel {
     const onRangeInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'hueRotate' | 'saturate' | 'brightness' | 'contrast') => {
       this.silence = true;
       const value = range.value;
-      const v = parseFloat(value);
+      const n = parseFloat(value);
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -105,14 +97,23 @@ class ColorAdjustPanel extends Panel {
           });
         }
         let next: ColorAdjustStyle = {
-          hueRotate: type === 'hueRotate' ? v : hueRotate,
-          saturate: type === 'saturate' ? (v + 100 + '%'): saturate,
-          brightness: type === 'brightness' ? (v + 100 + '%'): brightness,
-          contrast: type === 'contrast' ? ((v > 0 ? (v * 3 + 100) : (v + 100)) + '%'): contrast,
+          hueRotate: type === 'hueRotate' ? n : hueRotate,
+          saturate: type === 'saturate' ? (n + 100 + '%'): saturate,
+          brightness: type === 'brightness' ? (n + 100 + '%'): brightness,
+          contrast: type === 'contrast' ? ((n > 0 ? (n * 3 + 100) : (n + 100)) + '%'): contrast,
         };
         nexts.push(next);
         node.updateStyle(next);
       });
+      if (type === 'hueRotate') {
+        range.style.setProperty('--p', ((n + 180) * 100 / 360).toString());
+      }
+      else if (type === 'saturate' || type === 'brightness') {
+        range.style.setProperty('--p', ((n + 100) * 0.5).toString());
+      }
+      else if (type === 'contrast') {
+        range.style.setProperty('--p', ((n + 100) * 0.5).toString());
+      }
       number.value = value;
       number.placeholder = '';
       if (nodes.length) {
@@ -193,6 +194,18 @@ class ColorAdjustPanel extends Panel {
         node.updateStyle(o);
       });
       range.value = number.value || '0';
+      if (!number.placeholder) {
+        const n = parseFloat(range.value);
+        if (type === 'hueRotate') {
+          range.style.setProperty('--p', ((n + 180) * 100 / 360).toString());
+        }
+        else if (type === 'saturate' || type === 'brightness') {
+          range.style.setProperty('--p', ((n + 100) * 0.5).toString());
+        }
+        else if (type === 'contrast') {
+          range.style.setProperty('--p', ((n + 100) * 0.5).toString());
+        }
+      }
       if (nodes.length) {
         listener.emit(Listener.COLOR_ADJUST_NODE, nodes.slice(0));
       }
@@ -308,46 +321,62 @@ class ColorAdjustPanel extends Panel {
     });
     if (hueRotateList.length > 1) {
       this.hueRotateRange.value = '0';
+      this.hueRotateRange.style.setProperty('--p', '50');
       this.hueRotateNumber.value = '';
       this.hueRotateNumber.placeholder = '多个';
     }
     else {
-      const v = Math.round(hueRotateList[0] || 0).toString();
+      const n = Math.round(hueRotateList[0] || 0);
+      const v = n.toString();
       this.hueRotateRange.value = v;
+      this.hueRotateRange.style.setProperty('--p', ((n + 180) * 100 / 360).toString());
       this.hueRotateNumber.value = v;
       this.hueRotateNumber.placeholder = '';
     }
     if (saturateList.length > 1) {
       this.saturateRange.value = '0';
+      this.saturateRange.style.setProperty('--p', '50');
       this.saturateNumber.value = '';
       this.saturateNumber.placeholder = '多个';
     }
     else {
-      const v = Math.round((saturateList[0] || 0) * 100 - 100).toString();
+      const n = Math.round((saturateList[0] || 0) * 100 - 100);
+      const v = n.toString();
       this.saturateRange.value = v;
+      this.saturateRange.style.setProperty('--p', ((n + 100) * 0.5).toString());
       this.saturateNumber.value = v;
       this.saturateNumber.placeholder = '';
     }
     if (brightnessList.length > 1) {
       this.brightnessRange.value = '0';
+      this.brightnessRange.style.setProperty('--p', '50');
       this.brightnessNumber.value = '';
       this.brightnessNumber.placeholder = '多个';
     }
     else {
-      const v = Math.round((brightnessList[0] || 0) * 100 - 100).toString();
+      const n = Math.round((brightnessList[0] || 0) * 100 - 100);
+      const v = n.toString();
       this.brightnessRange.value = v;
+      this.brightnessRange.style.setProperty('--p', ((n + 100) * 0.5).toString());
       this.brightnessNumber.value = v;
       this.brightnessNumber.placeholder = '';
     }
     if (contrastList.length > 1) {
       this.contrastRange.value = '0';
+      this.contrastRange.style.setProperty('--p', '50');
       this.contrastNumber.value = '';
       this.contrastNumber.placeholder = '多个';
     }
     else {
-      let n = (contrastList[0] || 0) * 100 - 100;
+      const n = (contrastList[0] || 0) * 100 - 100;
       const v = Math.round(n > 0 ? n / 3 : n).toString();
       this.contrastRange.value = v;
+      if (n > 0) {
+        this.contrastRange.style.setProperty('--p', ((n / 3) * 0.5 + 50).toString());
+      }
+      else {
+        this.contrastRange.style.setProperty('--p', ((n + 100) * 0.5).toString());
+      }
       this.contrastNumber.value = v;
       this.contrastNumber.placeholder = '';
     }

@@ -31,8 +31,8 @@ function renderItem(
   return `<div class="line" title="${index}">
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
-      <span class="picker ${readOnly ? 'read-only' : ''}">
-        <b class="pick-btn ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
+      <span class="picker-btn ${readOnly ? 'read-only' : ''}">
+        <b class="${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
       </span>
       <span class="txt">颜色</span>
     </div>

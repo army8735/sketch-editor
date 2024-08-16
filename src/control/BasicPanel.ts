@@ -13,7 +13,6 @@ import { ComputedStyle, Style, TEXT_BEHAVIOUR } from '../style/define';
 import { getTextBehaviour } from '../tools/text';
 
 const html = `
-  <h4 class="panel-title">基本</h4>
   <div class="line">
     <div class="input-unit">
       <input type="number" class="x" step="1"/>

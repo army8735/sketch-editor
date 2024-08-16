@@ -149,7 +149,7 @@ class BlurPanel extends Panel {
     const onRangeInput = (range: HTMLInputElement, number: HTMLInputElement, type: 'radius' | 'angle' | 'saturation') => {
       this.silence = true;
       const value = range.value;
-      const v = parseFloat(value);
+      const n = parseFloat(value);
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -167,22 +167,31 @@ class BlurPanel extends Panel {
         let next: BlurStyle;
         if (type === 'radius') {
           next = {
-            blur: getCssBlur(blur.t, v, blur.angle, blur.center, blur.saturation),
+            blur: getCssBlur(blur.t, n, blur.angle, blur.center, blur.saturation),
           };
         }
         else if (type === 'angle') {
           next = {
-            blur: getCssBlur(blur.t, blur.radius, v, blur.center, blur.saturation),
+            blur: getCssBlur(blur.t, blur.radius, n, blur.center, blur.saturation),
           };
         }
         else if (type === 'saturation') {
           next = {
-            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, (v + 100) * 0.01),
+            blur: getCssBlur(blur.t, blur.radius, blur.angle, blur.center, (n + 100) * 0.01),
           };
         }
         nexts.push(next!);
         node.updateStyle(next!);
       });
+      if (type === 'radius') {
+        range.style.setProperty('--p', (n * 2).toString());
+      }
+      else if (type === 'angle') {
+        range.style.setProperty('--p', ((n + 180) * 100 / 360).toString());
+      }
+      else if (type === 'saturation') {
+        range.style.setProperty('--p', ((n + 100) * 0.5).toString());
+      }
       number.value = value;
       number.placeholder = '';
       if (nodes.length) {
@@ -199,7 +208,7 @@ class BlurPanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      const v = parseFloat(number.value) || 0;
+      const n = parseFloat(number.value) || 0;
       this.nodes.forEach((node, i) => {
         const blur = node.computedStyle.blur;
         if (blur.t === BLUR.NONE) {
@@ -218,7 +227,7 @@ class BlurPanel extends Panel {
         else if (type === 'saturation') {
           prev = blur.saturation! * 100 - 100;
         }
-        let next = v;
+        let next = n;
         if (!isInput) {
           let d = 0;
           if (number.placeholder) {
@@ -263,6 +272,18 @@ class BlurPanel extends Panel {
         node.updateStyle(o!);
       });
       range.value = number.value || '0';
+      if (!number.placeholder) {
+        const n = parseFloat(range.value);
+        if (type === 'radius') {
+          range.style.setProperty('--p', (n * 2).toString());
+        }
+        else if (type === 'angle') {
+          range.style.setProperty('--p', ((n + 180) * 100 / 360).toString());
+        }
+        else if (type === 'saturation') {
+          range.style.setProperty('--p', ((n + 100) * 0.5).toString());
+        }
+      }
       if (nodes.length) {
         listener.emit(Listener.BLUR_NODE, nodes.slice(0));
       }
@@ -389,34 +410,43 @@ class BlurPanel extends Panel {
     }
     if (radiusList.length > 1) {
       this.radiusRange.value = '0';
+      this.radiusRange.style.setProperty('--p', '0');
       this.radiusNumber.value = '';
       this.radiusNumber.placeholder = '多个';
     }
     else {
-      const v = Math.round(radiusList[0] || 0).toString();
+      const n = Math.round(radiusList[0] || 0);
+      const v = n.toString();
+      this.radiusRange.style.setProperty('--p', (n * 2).toString());
       this.radiusRange.value = v;
       this.radiusNumber.value = v;
       this.radiusNumber.placeholder = '';
     }
     if (angleList.length > 1) {
       this.angleRange.value = '0';
+      this.radiusRange.style.setProperty('--p', '50');
       this.angleNumber.value = '';
       this.angleNumber.placeholder = '多个';
     }
     else {
-      const v = Math.round(angleList[0] || 0).toString();
+      const n = Math.round(angleList[0] || 0);
+      const v = n.toString();
       this.angleRange.value = v;
+      this.angleRange.style.setProperty('--p', ((n + 180) * 100 / 360).toString());
       this.angleNumber.value = v;
       this.angleNumber.placeholder = '';
     }
     if (saturationList.length > 1) {
       this.saturationRange.value = '0';
+      this.saturationRange.style.setProperty('--p', '50');
       this.saturationNumber.value = '';
       this.saturationNumber.placeholder = '多个';
     }
     else {
-      const v = Math.round((saturationList[0] || 0) * 100 - 100).toString();
+      const n = Math.round((saturationList[0] || 0) * 100 - 100);
+      const v = n.toString();
       this.saturationRange.value = v;
+      this.saturationRange.style.setProperty('--p', ((n + 100) * 0.5).toString());
       this.saturationNumber.value = v;
       this.saturationNumber.placeholder = '';
     }
