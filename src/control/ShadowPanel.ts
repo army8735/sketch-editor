@@ -86,10 +86,10 @@ class ShadowPanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const classList = el.classList;
-      if (classList.contains('picker-btn')) {
+      if (el.tagName.toUpperCase() === 'B') {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
-        if (classList.contains('read-only')) {
+        if (el.parentElement!.classList.contains('read-only')) {
           return;
         }
         if (picker.isShowFrom('shadowPanel')) {
@@ -232,7 +232,6 @@ class ShadowPanel extends Panel {
       }
       nexts = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      let p: number;
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);
