@@ -6,7 +6,6 @@ import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
 import { color2rgbaStr } from '../style/css';
-import { toPrecision } from '../math';
 
 const html = `
   <dt class="panel-title">阴影<b class="btn add"></b></dt>
@@ -87,10 +86,10 @@ class ShadowPanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const classList = el.classList;
-      if (classList.contains('pick-btn')) {
+      if (classList.contains('picker-btn')) {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
-        if (el.parentElement!.classList.contains('read-only')) {
+        if (classList.contains('read-only')) {
           return;
         }
         if (picker.isShowFrom('shadowPanel')) {
@@ -225,7 +224,7 @@ class ShadowPanel extends Panel {
       else if (classList.contains('spread')) {
         type = 4;
       }
-      let value = parseFloat(input.value) || 0;
+      const n = parseFloat(input.value) || 0;
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -248,30 +247,25 @@ class ShadowPanel extends Panel {
           shadowEnable: prevs[i].shadowEnable.slice(0),
         };
         nexts.push(o);
+        const p = parseFloat(prevs[i].shadow[index].split(' ')[type]);
+        let next = n;
         if (!isInput) {
           let d = 0;
           if (input.placeholder) {
-            d = value > 0 ? 1 : -1;
+            d = n > 0 ? 1 : -1;
             if (listener.shiftKey) {
               d *= 10;
             }
           }
           else {
-            // 只计算一次，没有多个值直接用第一个即可
-            if (p === undefined) {
-              p = parseFloat(prevs[0].shadow[index].split(' ')[type]);
-            }
-            d = value - p;
+            d = n - p;
             if (listener.shiftKey) {
               d *= 10;
             }
           }
-          if (p === undefined) {
-            p = parseFloat(prevs[0].shadow[index].split(' ')[type]);
-          }
-          value = p + d;
+          next = p + d;
           if (!input.placeholder) {
-            input.value = toPrecision(value).toString();
+            input.value = Math.round(next).toString();
           }
           else {
             input.value = '';
@@ -282,7 +276,7 @@ class ShadowPanel extends Panel {
         }
         if (o.shadow[index]) {
           const arr = o.shadow[index].split(' ');
-          arr[type] = value.toString();
+          arr[type] = next.toString();
           o.shadow[index] = arr.join(' ');
           node.updateStyle(o);
         }
@@ -329,7 +323,9 @@ class ShadowPanel extends Panel {
     this.nodes = nodes;
     const panel = this.panel;
     // 老的清除
-    this.panel.innerHTML = '';
+    this.panel.querySelectorAll('.line').forEach(item => {
+      item.remove();
+    });
     if (!nodes.length) {
       panel.style.display = 'none';
       return;
