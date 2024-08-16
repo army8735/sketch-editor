@@ -130,7 +130,7 @@ class ColorAdjustPanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      const v = parseFloat(number.value) || 0;
+      const n = parseFloat(number.value) || 0;
       this.nodes.forEach((node, i) => {
         const { hueRotate, saturate, brightness, contrast } = node.getCssStyle();
         if (isFirst) {
@@ -159,7 +159,7 @@ class ColorAdjustPanel extends Panel {
             prev /= 3;
           }
         }
-        let next = v;
+        let next = n;
         if (!isInput) {
           let d = 0;
           if (number.placeholder) {
