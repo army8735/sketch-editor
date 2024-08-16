@@ -121,7 +121,7 @@ class OpacityPanel extends Panel {
           }
           next = prev + d;
           next = Math.max(next, 0);
-          next = Math.min(next, 100); console.log(i, prev, d, next);
+          next = Math.min(next, 100);
           if (!i) {
             number.value = number.placeholder ? '' : next.toString();
           }

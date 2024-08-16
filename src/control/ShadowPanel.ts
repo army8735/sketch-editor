@@ -329,9 +329,7 @@ class ShadowPanel extends Panel {
     this.nodes = nodes;
     const panel = this.panel;
     // 老的清除
-    this.panel.querySelectorAll('.line').forEach(item => {
-      item.remove();
-    });
+    this.panel.innerHTML = '';
     if (!nodes.length) {
       panel.style.display = 'none';
       return;
