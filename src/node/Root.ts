@@ -190,11 +190,7 @@ class Root extends Container implements FrameCallback {
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
-    const program = (this.programs.program = initShaders(
-      gl,
-      mainVert,
-      mainFrag,
-    ));
+    const program = (this.programs.program = initShaders(gl, mainVert, mainFrag));
     this.programs.bgColorProgram = initShaders(gl, bgColorVert, bgColorFrag);
     this.programs.bgShadowProgram = initShaders(gl, bgShadowVert, bgShadowFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
@@ -215,16 +211,8 @@ class Root extends Container implements FrameCallback {
     this.programs.saturationProgram = initShaders(gl, simpleVert, saturationFrag);
     this.programs.colorProgram = initShaders(gl, simpleVert, colorFrag);
     this.programs.luminosityProgram = initShaders(gl, simpleVert, luminosityFrag);
-    this.programs.dropShadowProgram = initShaders(
-      gl,
-      simpleVert,
-      dropShadowFrag,
-    );
-    this.programs.innerShadowProgram = initShaders(
-      gl,
-      simpleVert,
-      innerShadowFrag,
-    );
+    this.programs.dropShadowProgram = initShaders(gl, simpleVert, dropShadowFrag);
+    this.programs.innerShadowProgram = initShaders(gl, simpleVert, innerShadowFrag);
     this.programs.tintProgram = initShaders(gl, simpleVert, tintFrag);
     this.programs.cmProgram = initShaders(gl, simpleVert, cmFrag);
     this.programs.motionProgram = initShaders(gl, simpleVert, motionFrag);
@@ -574,39 +562,34 @@ class Root extends Container implements FrameCallback {
     this.taskClone.splice(0);
     const { ctx: gl, programs } = this;
     if (gl) {
-      [
-        'program',
-        'bgColorProgram',
-        'bgShadowProgram',
-        'simpleProgram',
-        'maskProgram',
-        'clipProgram',
-        'multiplyProgram',
-        'screenProgram',
-        'overlayProgram',
-        'darkenProgram',
-        'lightenProgram',
-        'colorDodgeProgram',
-        'colorBurnProgram',
-        'hardLightProgram',
-        'softLightProgram',
-        'differenceProgram',
-        'exclusionProgram',
-        'hueProgram',
-        'saturationProgram',
-        'colorProgram',
-        'luminosityProgram',
-        'dropShadowProgram',
-        'innerShadowProgram',
-        'tintProgram',
-        'cmProgram',
-        'motionProgram',
-        'radialProgram',
-        'tileProgram',
-      ].forEach(k => {
-        const p = programs[k];
-        gl.deleteProgram(p);
-      });
+      gl.deleteProgram(programs.program);
+      gl.deleteProgram(programs.bgColorProgram);
+      gl.deleteProgram(programs.bgShadowProgram);
+      gl.deleteProgram(programs.simpleProgram);
+      gl.deleteProgram(programs.maskProgram);
+      gl.deleteProgram(programs.clipProgram);
+      gl.deleteProgram(programs.multiplyProgram);
+      gl.deleteProgram(programs.screenProgram);
+      gl.deleteProgram(programs.overlayProgram);
+      gl.deleteProgram(programs.darkenProgram);
+      gl.deleteProgram(programs.lightenProgram);
+      gl.deleteProgram(programs.colorDodgeProgram);
+      gl.deleteProgram(programs.colorBurnProgram);
+      gl.deleteProgram(programs.hardLightProgram);
+      gl.deleteProgram(programs.softLightProgram);
+      gl.deleteProgram(programs.differenceProgram);
+      gl.deleteProgram(programs.exclusionProgram);
+      gl.deleteProgram(programs.hueProgram);
+      gl.deleteProgram(programs.saturationProgram);
+      gl.deleteProgram(programs.colorProgram);
+      gl.deleteProgram(programs.luminosityProgram);
+      gl.deleteProgram(programs.dropShadowProgram);
+      gl.deleteProgram(programs.innerShadowProgram);
+      gl.deleteProgram(programs.tintProgram);
+      gl.deleteProgram(programs.cmProgram);
+      gl.deleteProgram(programs.motionProgram);
+      gl.deleteProgram(programs.radialProgram);
+      gl.deleteProgram(programs.tileProgram);
       for (let k in gl) {
         if (k.indexOf('programGauss,') === 0) {
           const p = programs[k];
