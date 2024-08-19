@@ -5,10 +5,11 @@ import Panel from './Panel';
 import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
-import { color2rgbaStr } from '../style/css';
+import { color2rgbaStr, getCssShadow } from '../style/css';
+import { ComputedShadow } from '../style/define';
 
 const html = `
-  <dt class="panel-title">阴影<b class="btn add"></b></dt>
+  <div class="panel-title">阴影<b class="btn del"></b><b class="btn add"></b></div>
 `;
 
 function renderItem(
@@ -18,13 +19,13 @@ function renderItem(
   multiColor: boolean,
   color: string,
   multiX: boolean,
-  x: string,
+  x: number,
   multiY: boolean,
-  y: string,
+  y: number,
   multiBlur: boolean,
-  blur: string,
+  blur: number,
   multiSpread: boolean,
-  spread: string,
+  spread: number,
 ) {
   const readOnly = (multiEnable || !enable) ? 'readonly="readonly"' : '';
   return `<div class="line" title="${index}">
@@ -102,25 +103,27 @@ class ShadowPanel extends Panel {
         nodes = this.nodes.slice(0);
         prevs = [];
         nodes.forEach(node => {
-          const { shadow, shadowEnable } = node.getCssStyle();
+          const { shadow, shadowEnable } = node.getComputedStyle();
+          const cssShadow = shadow.map(item => getCssShadow(item));
           prevs.push({
-            shadow,
+            shadow: cssShadow,
             shadowEnable,
           });
         });
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
           nexts = [];
-          const s = color2rgbaStr(color.rgba);
           nodes.forEach(node => {
-            const { shadow, shadowEnable } = node.getCssStyle();
-            shadow.forEach((item, i) => {
-              const arr= item.split(' ');
-              arr[0] = s;
-              shadow[i] = arr.join(' ');
-            });
+            const { shadow, shadowEnable } = node.getComputedStyle();
+            const cssShadow = shadow.map(item => getCssShadow({
+              color: color.rgba,
+              x: item.x,
+              y: item.y,
+              blur: item.blur,
+              spread: item.spread,
+            }));
             const o = {
-              shadow,
+              shadow: cssShadow,
               shadowEnable,
             };
             nexts.push(o);
@@ -141,12 +144,13 @@ class ShadowPanel extends Panel {
         const prevs: ShadowStyle[] = [];
         const nexts: ShadowStyle[] = [];
         nodes.forEach(node => {
-          const { shadow, shadowEnable } = node.getCssStyle();
+          const { shadow, shadowEnable } = node.getComputedStyle();
+          const cssShadow = shadow.map(item => getCssShadow(item));
           prevs.push({
-            shadow,
+            shadow: cssShadow,
             shadowEnable,
           });
-          const s = shadow.slice(0);
+          const s = cssShadow.slice(0);
           const se = shadowEnable.slice(0);
           s.push('rgba(0,0,0,0.5) 0 2 4 0');
           se.push(true);
@@ -156,6 +160,53 @@ class ShadowPanel extends Panel {
           };
           nexts.push(o);
           node.updateStyle(o);
+        });
+        this.show(nodes);
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+        listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
+          return {
+            prev,
+            next: nexts[i],
+          };
+        })));
+        this.silence = false;
+      }
+      else if (classList.contains('del')) {
+        this.silence = true;
+        const nodes = this.nodes.slice(0);
+        const prevs: ShadowStyle[] = [];
+        const nexts: ShadowStyle[] = [];
+        let len = 0;
+        nodes.forEach(node => {
+          const { shadow, shadowEnable } = node.getComputedStyle();
+          const cssShadow = shadow.map(item => getCssShadow(item));
+          len = Math.max(len, shadowEnable.length);
+          prevs.push({
+            shadow: cssShadow,
+            shadowEnable,
+          });
+          nexts.push({
+            shadow: cssShadow.slice(0),
+            shadowEnable: shadowEnable.slice(0),
+          });
+        });
+        // 先按第几个shadow维度循环
+        outer:
+        for (let i = len - 1; i >= 0; i--) {
+          for (let j = 0, len = nexts.length; j < len; j++) {
+            const { shadowEnable } = nexts[j];
+            // 如果有启用的，这第i个shadow不能删除
+            if (shadowEnable[i]) {
+              continue outer;
+            }
+          }
+          nexts.forEach(item => {
+            item.shadow.splice(i, 1);
+            item.shadowEnable.splice(i, 1);
+          });
+        }
+        nodes.forEach((node, i) => {
+          node.updateStyle(nexts[i]);
         });
         this.show(nodes);
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
@@ -179,12 +230,13 @@ class ShadowPanel extends Panel {
           value = true;
         }
         nodes.forEach(node => {
-          const { shadow, shadowEnable } = node.getCssStyle();
+          const { shadow, shadowEnable } = node.getComputedStyle();
+          const cssShadow = shadow.map(item => getCssShadow(item));
           prevs.push({
-            shadow,
+            shadow: cssShadow,
             shadowEnable,
           });
-          const s = shadow.slice(0);
+          const s = cssShadow.slice(0);
           const se = shadowEnable.slice(0);
           if (se[index] !== undefined) {
             se[index] = value;
@@ -235,9 +287,10 @@ class ShadowPanel extends Panel {
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);
-          const { shadow, shadowEnable } = node.getCssStyle();
+          const { shadow, shadowEnable } = node.getComputedStyle();
+          const cssShadow = shadow.map(item => getCssShadow(item));
           prevs.push({
-            shadow,
+            shadow: cssShadow,
             shadowEnable,
           });
         }
@@ -331,9 +384,9 @@ class ShadowPanel extends Panel {
     }
     panel.style.display = 'block';
     const shadowEnableList: boolean[][] = [];
-    const shadowList: string[][] = [];
+    const shadowList: ComputedShadow[][] = [];
     nodes.forEach(node => {
-      const { shadow, shadowEnable } = node.getCssStyle();
+      const { shadow, shadowEnable } = node.getComputedStyle();
       shadowEnable.forEach((item, i) => {
         const o = shadowEnableList[i] = shadowEnableList[i] || [];
         if (!o.includes(item)) {
@@ -347,29 +400,32 @@ class ShadowPanel extends Panel {
         }
       });
     });
-    shadowList.forEach((shadow, i) => {
+    let showDel = false;
+    for (let i = shadowList.length - 1; i >= 0; i--) {
+      const shadow = shadowList[i];
       const shadowEnable = shadowEnableList[i];
       const color: string[] = [];
-      const x: string[] = [];
-      const y: string[] = [];
-      const blur: string[] = [];
-      const spread: string[] = [];
+      const x: number[] = [];
+      const y: number[] = [];
+      const blur: number[] = [];
+      const spread: number[] = [];
       shadow.forEach(item => {
-        const data = item.split(' ');
-        if (!color.includes(data[0])) {
-          color.push(data[0]);
+        const data = item;
+        const c = color2rgbaStr(data.color);
+        if (!color.includes(c)) {
+          color.push(c);
         }
-        if (!x.includes(data[1])) {
-          x.push(data[1]);
+        if (!x.includes(data.x)) {
+          x.push(data.x);
         }
-        if (!y.includes(data[2])) {
-          y.push(data[2]);
+        if (!y.includes(data.y)) {
+          y.push(data.y);
         }
-        if (!blur.includes(data[3])) {
-          blur.push(data[3]);
+        if (!blur.includes(data.blur)) {
+          blur.push(data.blur);
         }
-        if (!spread.includes(data[4])) {
-          spread.push(data[4]);
+        if (!spread.includes(data.spread)) {
+          spread.push(data.spread);
         }
       });
       panel.innerHTML += renderItem(
@@ -387,7 +443,12 @@ class ShadowPanel extends Panel {
         spread.length > 1,
         spread[0],
       );
-    });
+      if (shadowEnable.length === 1 && !shadowEnable[0]) {
+        showDel = true;
+      }
+    }
+    const btn = this.panel.querySelector('.del') as HTMLElement;
+    btn.style.display = showDel ? 'block' : 'none';
   }
 }
 

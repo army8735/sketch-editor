@@ -22,7 +22,15 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import TextureCache from '../refresh/TextureCache';
-import { calNormalLineHeight, calSize, color2rgbaStr, equalStyle, getCssBlur, normalize, } from '../style/css';
+import {
+  calNormalLineHeight,
+  calSize,
+  color2rgbaStr,
+  equalStyle,
+  getCssBlur,
+  getCssShadow,
+  normalize,
+} from '../style/css';
 import {
   BLUR,
   ComputedGradient,
@@ -1212,9 +1220,7 @@ class Node extends Event {
       [computedStyle.booleanOperation];
     const blur = computedStyle.blur;
     res.blur = getCssBlur(blur.t, blur.radius, blur.angle, blur.center, blur.saturation);
-    res.shadow = computedStyle.shadow.map((item: ComputedShadow) => {
-      return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
-    });
+    res.shadow = computedStyle.shadow.map((item: ComputedShadow) => getCssShadow(item));
     const tfo = style.transformOrigin;
     res.transformOrigin = computedStyle.transformOrigin.map((item: number, i: number) => {
       const o = tfo[i];

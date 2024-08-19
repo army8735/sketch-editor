@@ -4,7 +4,7 @@ import { isNil, isString } from '../util/type';
 import {
   BLUR,
   BOOLEAN_OPERATION,
-  calUnit,
+  calUnit, ComputedShadow,
   ComputedStyle,
   FILL_RULE,
   FONT_STYLE,
@@ -1030,6 +1030,10 @@ export function getCssBlur(t: BLUR, radius: number, angle?: number, center?: [nu
   return s;
 }
 
+export function getCssShadow(item: ComputedShadow) {
+  return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
+}
+
 export default {
   normalize,
   equalStyle,
@@ -1043,4 +1047,5 @@ export default {
   getContentArea,
   calSize,
   getCssBlur,
+  getCssShadow,
 };
