@@ -237,6 +237,62 @@ export default class Tree {
       }
     });
 
+    const onChange = (target: HTMLInputElement) => {
+      const v = target.value;
+      const uuid = target.parentElement!.parentElement!.getAttribute('uuid')!;
+      const node = root.refs[uuid];
+      if (node) {
+        node.props.name = v;
+      }
+      const name = target.nextSibling as HTMLElement;
+      name.innerText = v;
+      target.remove();
+      name.style.display = 'block';
+    };
+
+    this.dom.addEventListener('dblclick', (e) => {
+      const target = e.target as HTMLElement;
+      const classList = target.classList;
+      if (classList.contains('name')) {
+        target.style.display = 'none';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = target.innerText;
+        target.parentElement!.insertBefore(input, target);
+        input.focus();
+
+        let did = false;
+
+        input.onblur = () => {
+          if (!did) {
+            did = true;
+            onChange(input);
+          }
+        };
+        input.onkeydown = (e) => {
+          if (e.keyCode === 27) {
+            e.stopPropagation();
+            if (!did) {
+              did = true;
+              onChange(input);
+            }
+          }
+          else if (e.keyCode === 13) {
+            if (!did) {
+              did = true;
+              onChange(input);
+            }
+          }
+        };
+        input.onchange = () => {
+          if (!did) {
+            did = true;
+            onChange(input);
+          }
+        };
+      }
+    });
+
     this.dom.addEventListener('mousemove', (e) => {
       let target = e.target as HTMLElement;
       if (target.nodeName === 'SPAN') {
