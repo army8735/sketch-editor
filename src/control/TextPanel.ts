@@ -19,7 +19,7 @@ import font from '../style/font';
 import inject from '../util/inject';
 
 const html = `
-  <h4 class="panel-title">字符</h4>
+  <h4 class="panel-title">字符<b class="btn arrow"></b></h4>
   <div class="line ff">
     <select>
       <option value="arial">Arial</option>
@@ -32,7 +32,7 @@ const html = `
       <span class="multi">多种字重</span>
     </div>
     <div class="color">
-      <span class="picker-btn"><b>○○○</b></span>
+      <span class="picker-btn"><b class="pick">○○○</b></span>
     </div>
   </div>
   <div class="line num">
@@ -74,6 +74,8 @@ const html = `
   </div> 
 `;
 
+const KEY_INFO = 'textPanelFold';
+
 let local = false;
 loadLocalFonts().then(res => {
   local = true;
@@ -96,6 +98,11 @@ class TextPanel extends Panel {
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+
+    const fold = localStorage.getItem(KEY_INFO);
+    if (fold === '1') {
+      panel.classList.add('fold');
+    }
 
     const fs = panel.querySelector('.fs input') as HTMLInputElement;
     const ls = panel.querySelector('.ls input') as HTMLInputElement;
@@ -328,7 +335,8 @@ class TextPanel extends Panel {
     panel.addEventListener('click', (e) => {
       this.silence = true;
       const el = e.target as HTMLElement;
-      if (el.tagName === 'B') {
+      const classList = el.classList;
+      if (classList.contains('pick')) {
         // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
         e.stopPropagation();
         if (picker.isShowFrom('textPanel')) {
@@ -359,16 +367,26 @@ class TextPanel extends Panel {
           pickCallback();
         };
       }
+      else if (classList.contains('arrow')) {
+        if (panel.classList.contains('fold')) {
+          panel.classList.remove('fold');
+          localStorage.removeItem(KEY_INFO);
+        }
+        else {
+          panel.classList.add('fold');
+          localStorage.setItem(KEY_INFO, '1');
+        }
+      }
       // 尺寸固定模式
-      else if ((el.classList.contains('auto') || el.classList.contains('fw') || el.classList.contains('fwh'))
-        && !el.classList.contains('cur')) {
+      else if ((classList.contains('auto') || classList.contains('fw') || classList.contains('fwh'))
+        && !classList.contains('cur')) {
         pickCallback();
         nodes = this.nodes.slice(0);
         let next = TEXT_BEHAVIOUR.AUTO;
-        if (el.classList.contains('fw')) {
+        if (classList.contains('fw')) {
           next = TEXT_BEHAVIOUR.FIXED_W;
         }
-        else if (el.classList.contains('fwh')) {
+        else if (classList.contains('fwh')) {
           next = TEXT_BEHAVIOUR.FIXED_W_H;
         }
         const data: ResizeData[] = [];
@@ -405,21 +423,21 @@ class TextPanel extends Panel {
         listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         dom.querySelector('.wh .cur')?.classList.remove('cur');
-        el.classList.add('cur');
+        classList.add('cur');
       }
       // 左右对齐
-      else if ((el.classList.contains('left') || el.classList.contains('right') || el.classList.contains('center') || el.classList.contains('justify'))
-        && !el.classList.contains('cur')) {
+      else if ((classList.contains('left') || classList.contains('right') || classList.contains('center') || el.classList.contains('justify'))
+        && !classList.contains('cur')) {
         pickCallback();
         const nodes = this.nodes.slice(0);
         let value = TEXT_ALIGN.LEFT;
-        if (el.classList.contains('right')) {
+        if (classList.contains('right')) {
           value = TEXT_ALIGN.RIGHT;
         }
-        else if (el.classList.contains('center')) {
+        else if (classList.contains('center')) {
           value = TEXT_ALIGN.CENTER;
         }
-        else if (el.classList.contains('justify')) {
+        else if (classList.contains('justify')) {
           value = TEXT_ALIGN.JUSTIFY;
         }
         // 编辑状态下特殊处理
@@ -441,18 +459,18 @@ class TextPanel extends Panel {
           listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');
-        el.classList.add('cur');
+        classList.add('cur');
       }
       // 上下对齐
-      else if ((el.classList.contains('top') || el.classList.contains('bottom') || el.classList.contains('middle'))
-        && !el.classList.contains('cur')) {
+      else if ((classList.contains('top') || classList.contains('bottom') || classList.contains('middle'))
+        && !classList.contains('cur')) {
         pickCallback();
         const nodes = this.nodes.slice(0);
         let value: 'top' | 'middle' | 'bottom' = 'top';
-        if (el.classList.contains('middle')) {
+        if (classList.contains('middle')) {
           value = 'middle';
         }
-        else if (el.classList.contains('bottom')) {
+        else if (classList.contains('bottom')) {
           value = 'bottom';
         }
         const data: VerticalAlignData[] = [];
@@ -476,7 +494,7 @@ class TextPanel extends Panel {
         listener.history.addCommand(new VerticalAlignCommand(nodes, data));
         listener.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         dom.querySelector('.va .cur')?.classList.remove('cur');
-        el.classList.add('cur');
+        classList.add('cur');
       }
       this.silence = false;
     });
