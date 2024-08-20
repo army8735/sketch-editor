@@ -585,6 +585,7 @@ class Root extends Container implements FrameCallback {
       gl.deleteProgram(programs.luminosityProgram);
       gl.deleteProgram(programs.dropShadowProgram);
       gl.deleteProgram(programs.innerShadowProgram);
+      gl.deleteProgram(programs.gaussBlurProgram);
       gl.deleteProgram(programs.tintProgram);
       gl.deleteProgram(programs.cmProgram);
       gl.deleteProgram(programs.motionProgram);

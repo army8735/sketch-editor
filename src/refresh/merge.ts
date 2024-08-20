@@ -1,5 +1,5 @@
 import gaussFrag from '../gl/gauss.frag';
-import simpleVert from '../gl/simple.vert';
+import gaussVert from '../gl/gauss.vert';
 import {
   createTexture,
   drawColorMatrix,
@@ -1098,8 +1098,10 @@ function genGaussBlur(
   const listT = temp.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
+  const sigma2 = sigma * scale;
+  const d2 = kernelSize(sigma2);
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
-  const programGauss = genGaussShader(gl, programs, sigma * scale, kernelSize(sigma * scale));
+  const programGauss = genGaussShader(gl, programs, sigma2, d2);
   gl.useProgram(programGauss);
   const res = TextureCache.getEmptyInstance(gl, bboxR);
   const listR = res.list;
@@ -1200,17 +1202,16 @@ function genGaussShader(
     return programs[key];
   }
   const weights = gaussianWeight(sigma, d);
-  let frag = '';
+  let frag = 'gl_FragColor += ';
   const r = Math.floor(d * 0.5);
   for (let i = 0; i < r; i++) {
     // u_direction传入基数为100，因此相邻的像素点间隔百分之一
     let c = (r - i) * 0.01;
-    frag += `gl_FragColor += limit(v_texCoords + vec2(-${c}, -${c}) * u_direction, ${toFloat(weights[i])});
-      gl_FragColor += limit(v_texCoords + vec2(${c}, ${c}) * u_direction, ${toFloat(weights[i])});\n`;
+    frag += `b(${c},${toFloat(weights[i])})+`;
   }
-  frag += `gl_FragColor += limit(v_texCoords, ${toFloat(weights[r])});`;
+  frag += `a(t,${toFloat(weights[r])});`;
   frag = gaussFrag.replace('placeholder;', frag);
-  return (programs[key] = initShaders(gl, simpleVert, frag));
+  return (programs[key] = initShaders(gl, gaussVert, frag));
 }
 
 /**
