@@ -601,6 +601,7 @@ class Text extends Node {
           let textBox = list[cursor.startTextBox];
           let x1 = textBox.x * scale + dx2;
           ctx.font = textBox.font;
+          ctx.letterSpacing = textBox.letterSpacing + 'px';
           x1 +=
             ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
             scale;
@@ -634,6 +635,7 @@ class Text extends Node {
           if (textBox) {
             let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
+            ctx.letterSpacing = textBox.letterSpacing + 'px';
             x1 +=
               ctx.measureText(textBox.str.slice(0, startString)).width * scale;
             ctx.fillRect(
@@ -662,6 +664,7 @@ class Text extends Node {
           if (textBox) {
             let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
+            ctx.letterSpacing = textBox.letterSpacing + 'px';
             let x2 =
               ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx2;
             ctx.fillRect(x1, lineBox.y * scale + dy2, x2, lineBox.lineHeight * scale);
@@ -2387,7 +2390,8 @@ class Text extends Node {
     else {
       cursor.startString = 0;
     }
-    outer: for (let i = 0, len = list.length; i < len; i++) {
+    outer:
+    for (let i = 0, len = list.length; i < len; i++) {
       const { x, w, str, font, letterSpacing } = list[i];
       // x位于哪个textBox上，注意开头结尾
       if (
@@ -2404,7 +2408,7 @@ class Text extends Node {
         const ctx = inject.getFontCanvas().ctx;
         ctx.font = font;
         // @ts-ignore
-        ctx.letterSpacing = letterSpacing;
+        ctx.letterSpacing = letterSpacing + 'px';
         let start = 0,
           end = str.length;
         while (start < end) {
