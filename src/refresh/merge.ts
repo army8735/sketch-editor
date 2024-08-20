@@ -1202,7 +1202,7 @@ function genGaussShader(
     return programs[key];
   }
   const weights = gaussianWeight(sigma, d);
-  let frag = 'gl_FragColor += ';
+  let frag = 'gl_FragColor+=';
   const r = Math.floor(d * 0.5);
   for (let i = 0; i < r; i++) {
     // u_direction传入基数为100，因此相邻的像素点间隔百分之一

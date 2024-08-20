@@ -11,8 +11,8 @@ vec4 a(vec2 coords, float weight) {
 }
 
 vec4 b(float offset, float weight) {
-  return a(t + vec2(-offset, -offset) * u_direction, weight)
-    + a(t + vec2(offset, offset) * u_direction, weight);
+  return a(t - offset * u_direction, weight)
+    + a(t + offset * u_direction, weight);
 }
 
 void main() {

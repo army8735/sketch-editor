@@ -423,13 +423,13 @@ export function drawGauss(
    */
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   const u_direction = gl.getUniformLocation(program, 'u_direction');
-  const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收
   const max = 100 / Math.max(width, height);
   const ratio = width / height;
   let tex1 = texture;
+  let tex2 = createTexture(gl, 0, undefined, width, height);
+  let tex3 = createTexture(gl, 0, undefined, width, height);
   for (let i = 0; i < 3; i++) {
     // tex1到tex2
-    let tex2 = createTexture(gl, 1, undefined, width, height);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -446,8 +446,7 @@ export function drawGauss(
     }
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    // tex2到tex1
-    let tex3 = createTexture(gl, 0, undefined, width, height);
+    // tex2到tex3
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -455,17 +454,16 @@ export function drawGauss(
       tex3,
       0,
     );
-    bindTexture(gl, tex2, 1);
+    bindTexture(gl, tex2, 0);
     if (width >= height) {
       gl.uniform2f(u_direction, 0, max * ratio);
     }
     else {
       gl.uniform2f(u_direction, 0, max);
     }
-    gl.uniform1i(u_texture, 1);
+    gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    recycle.push(tex1);
-    recycle.push(tex2);
+    // 循环，tex1的原始传入不能改变，tex3变成tex1作为新的输入
     tex1 = tex3;
   }
   // 回收
@@ -473,13 +471,8 @@ export function drawGauss(
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  recycle.forEach((item) => {
-    // 传入的原始不回收，交由外部控制
-    if (item !== texture) {
-      gl.deleteTexture(item);
-    }
-  });
-  return tex1;
+  gl.deleteTexture(tex2);
+  return tex3;
 }
 
 export function drawMotion(
