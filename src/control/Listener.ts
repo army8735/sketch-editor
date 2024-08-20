@@ -891,6 +891,7 @@ export default class Listener extends Event {
         node.hideSelectArea();
         this.state = State.EDIT_TEXT;
       }
+      this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
   }
 

@@ -1888,7 +1888,7 @@ class Text extends Node {
       const ctx = inject.getFontCanvas().ctx;
       ctx.font = textBox.font;
       // @ts-ignore
-      ctx.letterSpacing = textBox.letterSpacing;
+      ctx.letterSpacing = textBox.letterSpacing + 'px';
       const str = textBox.str;
       const w = ctx.measureText(str.slice(0, cursor.startString)).width;
       this.tempCursorX = this.currentCursorX = textBox.x + w;
@@ -2242,7 +2242,7 @@ class Text extends Node {
       const ctx = inject.getFontCanvas().ctx;
       ctx.font = textBox.font;
       // @ts-ignore
-      ctx.letterSpacing = textBox.letterSpacing;
+      ctx.letterSpacing = textBox.letterSpacing + 'px';
       const str = textBox.str;
       const w = ctx.measureText(str.slice(0, cursor.startString)).width;
       this.tempCursorX = this.currentCursorX = textBox.x + w;

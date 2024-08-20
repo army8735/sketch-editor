@@ -152,6 +152,10 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             if (n.parent === o) {
               return n;
             }
+            // 点的是已选叶子结点情况
+            if (n === o && !(o instanceof Container)) {
+              return n;
+            }
           }
           const p = n.parent!;
           if (p instanceof ArtBoard) {
