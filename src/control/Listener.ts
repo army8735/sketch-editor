@@ -791,6 +791,12 @@ export default class Listener extends Event {
           });
           this.history.addCommand(new MoveCommand(selected.slice(0), data));
         }
+        // 就算没移动也要还原，因为可能是移动后恢复原位，或者translate单位改变
+        else {
+          selected.forEach((node, i) => {
+            node.endPosChange(this.originStyle[i], dx, dy);
+          });
+        }
       }
     }
     // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择，shift校验在down时做
