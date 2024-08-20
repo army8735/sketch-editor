@@ -437,6 +437,8 @@ export function drawGauss(
       tex2,
       0,
     );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     bindTexture(gl, tex1, 0);
     if (width >= height) {
       gl.uniform2f(u_direction, max, 0);
@@ -454,6 +456,8 @@ export function drawGauss(
       tex3,
       0,
     );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     bindTexture(gl, tex2, 0);
     if (width >= height) {
       gl.uniform2f(u_direction, 0, max * ratio);
