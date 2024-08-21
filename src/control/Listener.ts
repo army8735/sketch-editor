@@ -683,7 +683,7 @@ export default class Listener extends Event {
           }
           this.emit(Listener.HOVER_NODE, node);
         }
-        else {
+        else if (this.select.hoverNode) {
           this.select.hideHover();
           this.emit(Listener.UN_HOVER_NODE);
         }
@@ -826,8 +826,10 @@ export default class Listener extends Event {
   }
 
   onMouseLeave() {
-    this.select.hideHover();
-    this.emit(Listener.UN_HOVER_NODE);
+    if (this.select.hoverNode) {
+      this.select.hideHover();
+      this.emit(Listener.UN_HOVER_NODE);
+    }
     // 离屏需终止当前操作
     if (this.isMouseDown || this.isControl) {
       this.onMouseUp();
