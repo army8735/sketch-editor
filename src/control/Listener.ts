@@ -827,6 +827,7 @@ export default class Listener extends Event {
 
   onMouseLeave() {
     this.select.hideHover();
+    this.emit(Listener.UN_HOVER_NODE);
     // 离屏需终止当前操作
     if (this.isMouseDown || this.isControl) {
       this.onMouseUp();
