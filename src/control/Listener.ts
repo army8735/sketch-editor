@@ -737,24 +737,28 @@ export default class Listener extends Event {
             });
           }
         });
-        if (this.isMouseMove && (dx || dy)) {
+        if (this.isMouseMove) {
           const controlType = this.controlType;
           const data: ResizeData[] = [];
           selected.forEach((node, i) => {
-            // 有调整尺寸的话，还原最初的translate/TRBL值，向上检测组的自适应尺寸
+            // 还原最初的translate/TRBL值，就算没移动也要还原，因为可能是移动后恢复原位，或者translate单位改变
             node.endSizeChange(this.originStyle[i]);
-            node.checkPosSizeUpward();
-            const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: this.altKey };
-            const originStyle = this.originStyle[i];
-            if (originStyle.width.u === StyleUnit.AUTO) {
-              r.widthFromAuto = true;
+            if (dx || dy) {
+              node.checkPosSizeUpward();
+              const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: this.altKey };
+              const originStyle = this.originStyle[i];
+              if (originStyle.width.u === StyleUnit.AUTO) {
+                r.widthFromAuto = true;
+              }
+              if (originStyle.height.u === StyleUnit.AUTO) {
+                r.heightFromAuto = true;
+              }
+              data.push(r);
             }
-            if (originStyle.height.u === StyleUnit.AUTO) {
-              r.heightFromAuto = true;
-            }
-            data.push(r);
           });
-          this.history.addCommand(new ResizeCommand(selected.slice(0), data));
+          if (data.length) {
+            this.history.addCommand(new ResizeCommand(selected.slice(0), data));
+          }
         }
       }
     }
@@ -781,21 +785,17 @@ export default class Listener extends Event {
       }
       else {
         const { dx, dy } = this;
-        if (dx || dy) {
-          const data: MoveData[] = [];
-          selected.forEach((node, i) => {
-            // 还原最初的translate/TRBL值
-            node.endPosChange(this.originStyle[i], dx, dy);
+        const data: MoveData[] = [];
+        selected.forEach((node, i) => {
+          // 还原最初的translate/TRBL值，就算没移动也要还原，因为可能是移动后恢复原位，或者translate单位改变
+          node.endPosChange(this.originStyle[i], dx, dy);
+          if (dx || dy) {
             node.checkPosSizeUpward();
             data.push({ dx, dy });
-          });
+          }
+        });
+        if (data.length) {
           this.history.addCommand(new MoveCommand(selected.slice(0), data));
-        }
-        // 就算没移动也要还原，因为可能是移动后恢复原位，或者translate单位改变
-        else {
-          selected.forEach((node, i) => {
-            node.endPosChange(this.originStyle[i], dx, dy);
-          });
         }
       }
     }
