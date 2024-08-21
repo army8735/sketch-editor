@@ -78,15 +78,12 @@ const KEY_INFO = 'textPanelFold';
 
 let local = false;
 loadLocalFonts().then(res => {
-  local = true;
   style.font.registerLocalFonts(res);
-}).catch(() => {
   local = true;
 });
 
 class TextPanel extends Panel {
   panel: HTMLElement;
-  local = false;
   nodes: Text[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -526,11 +523,7 @@ class TextPanel extends Panel {
     });
   }
 
-  initLocal() {
-    if (this.local || !local) {
-      return;
-    }
-    this.local = true;
+  initFontList() {
     const { info } = style.font;
     let s = '';
     for (let i in info) {
@@ -560,7 +553,10 @@ class TextPanel extends Panel {
       panel.style.display = 'none';
       return;
     }
-    this.initLocal();
+    if (local) {
+      local = false;
+      this.initFontList();
+    }
     panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
