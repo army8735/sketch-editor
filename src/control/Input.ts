@@ -1,20 +1,20 @@
 import Text from '../node/Text';
 import Root from '../node/Root';
-import Select from './Select';
+import Listener from './Listener';
 
 export default class Input {
   root: Root;
   dom: HTMLElement;
-  select: Select;
+  listener: Listener;
   containerEl: HTMLDivElement;
   inputEl: HTMLInputElement;
   cursorEl: HTMLDivElement;
   node?: Text;
 
-  constructor(root: Root, dom: HTMLElement, select: Select) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
-    this.select = select;
+    this.listener = listener;
 
     const containerEl = this.containerEl = document.createElement('div');
     containerEl.style.position = 'absolute';
@@ -46,14 +46,16 @@ export default class Input {
           setTimeout(() => {
             this.node!.enter();
             this.updateCurCursor();
-            this.select.updateSelect([this.node!]);
-          }, 1);
+            this.listener.select.updateSelect([this.node!]);
+            this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+          }, 0);
         }
         else if (keyCode === 8) {
           e.stopPropagation();
           this.node!.delete();
           this.updateCurCursor();
-          this.select.updateSelect([this.node]);
+          this.listener.select.updateSelect([this.node]);
+          this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
         }
         else if (keyCode >= 37 && keyCode <= 40) {
           this.node.moveCursor(keyCode);
@@ -63,16 +65,15 @@ export default class Input {
     });
     // @ts-ignore
     inputEl.addEventListener('input', (e: InputEvent) => {
-      if (!isIme) {
-        if (this.node) {
-          const s = e.data;
-          if (s) {
-            this.node.input(s);
-            this.updateCurCursor();
-            this.showCursor();
-            inputEl.value = '';
-            this.select.updateSelect([this.node]);
-          }
+      if (!isIme && this.node) {
+        const s = e.data;
+        if (s) {
+          this.node.input(s);
+          this.updateCurCursor();
+          this.showCursor();
+          inputEl.value = '';
+          this.listener.select.updateSelect([this.node]);
+          this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
         }
       }
     });
@@ -87,7 +88,8 @@ export default class Input {
         this.updateCurCursor();
         this.showCursor();
         inputEl.value = '';
-        this.select.updateSelect([this.node]);
+        this.listener.select.updateSelect([this.node]);
+        this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
       }
     });
 

@@ -1,5 +1,4 @@
 import Node from '../node/Node';
-import Container from '../node/Container';
 import Root from '../node/Root';
 import Page from '../node/Page';
 import Text from '../node/Text';
@@ -124,7 +123,7 @@ export default class Listener extends Event {
     this.updateOrigin();
 
     this.select = new Select(root, dom);
-    this.input = new Input(root, dom, this.select);
+    this.input = new Input(root, dom, this);
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
     dom.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -1202,6 +1201,7 @@ export default class Listener extends Event {
   static COLOR_NODE = 'COLOR_NODE';
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
+  static TEXT_CONTENT_NODE = 'TEXT_CONTENT_NODE';
   static SHADOW_NODE = 'SHADOW_NODE';
   static BLUR_NODE = 'BLUR_NODE';
   static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';
