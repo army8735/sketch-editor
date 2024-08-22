@@ -1233,10 +1233,14 @@ function genMotionBlur(
   const spread = outerSizeByD(d);
   const bboxS = textureTarget.bbox;
   const bboxR = bboxS.slice(0);
-  bboxR[0] -= spread;
-  bboxR[1] -= spread;
-  bboxR[2] += spread;
-  bboxR[3] += spread;
+  const sin = Math.sin(radian);
+  const cos = Math.cos(radian);
+  const spreadY = Math.abs(Math.ceil(sin * spread));
+  const spreadX = Math.abs(Math.ceil(cos * spread));
+  bboxR[0] -= spreadX;
+  bboxR[1] -= spreadY;
+  bboxR[2] += spreadX;
+  bboxR[3] += spreadY;
   // 写到一个扩展好尺寸的tex中方便后续处理
   const x = bboxR[0],
     y = bboxR[1];
@@ -1252,6 +1256,8 @@ function genMotionBlur(
   const listT = temp.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
+  const sigma2 = sigma * scale;
+  const d2 = kernelSize(sigma2);
   // 迭代运动模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const programMotion = programs.motionProgram;
   gl.useProgram(programMotion);
@@ -1260,7 +1266,7 @@ function genMotionBlur(
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
-    const tex = drawMotion(gl, programMotion, t, kernelSize(sigma * scale), radian, w, h);
+    const tex = drawMotion(gl, programMotion, t, d2, radian, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1319,7 +1325,7 @@ function genMotionBlur(
       }
       if (hasDraw) {
         gl.useProgram(programMotion);
-        item.t = drawMotion(gl, programMotion, t, kernelSize(sigma * scale), radian, w, h);
+        item.t = drawMotion(gl, programMotion, t, d2, radian, w, h);
       }
       gl.deleteTexture(t);
     }

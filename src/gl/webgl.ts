@@ -486,8 +486,8 @@ export function drawMotion(
   texture: WebGLTexture,
   kernel: number,
   radian: number,
-  w: number,
-  h: number,
+  width: number,
+  height: number,
 ) {
   const { vtPoint, vtTex } = getSingleCoords();
   // 顶点buffer
@@ -507,41 +507,37 @@ export function drawMotion(
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
-  const sin = Math.sin(radian) * kernel / h;
-  const cos = Math.cos(radian) * kernel / w;
+  const sin = Math.sin(radian) * kernel / height;
+  const cos = Math.cos(radian) * kernel / width;
   const u_velocity = gl.getUniformLocation(program, 'u_velocity');
   gl.uniform2f(u_velocity, cos, sin);
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
   // 类似高斯模糊，但不拆分xy，直接一起固定执行
-  let res = texture;
-  const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收
+  let tex1 = texture;
+  let tex2 = createTexture(gl, 0, undefined, width, height);
+  let tex3 = createTexture(gl, 0, undefined, width, height);
   for (let i = 0; i < 3; i++) {
-    const t = createTexture(gl, 0, undefined, w, h);
+    // tex1到tex2
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
       gl.TEXTURE_2D,
-      t,
+      [tex2, tex3, tex2][i],
       0,
     );
-    bindTexture(gl, res, 0);
-    const u_texture = gl.getUniformLocation(program, 'u_texture');
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    bindTexture(gl, [tex1, tex2, tex3][i], 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    recycle.push(res);
-    res = t;
   }
   // 销毁
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  recycle.forEach((item) => {
-    // 传入的原始不回收，交由外部控制
-    if (item !== texture) {
-      gl.deleteTexture(item);
-    }
-  });
-  return res;
+  gl.deleteTexture(tex3);
+  return tex2;
 }
 
 export function drawRadial(
@@ -551,8 +547,8 @@ export function drawRadial(
   ratio: number,
   kernel: number,
   center: [number, number],
-  w: number,
-  h: number,
+  width: number,
+  height: number,
 ) {
   const { vtPoint, vtTex } = getSingleCoords();
   // 顶点buffer
@@ -580,7 +576,7 @@ export function drawRadial(
   let res = texture;
   const recycle: WebGLTexture[] = []; // 3次过程中新生成的中间纹理需要回收，先1次
   for (let i = 0; i < 1; i++) {
-    const t = createTexture(gl, 0, undefined, w, h);
+    const t = createTexture(gl, 0, undefined, width, height);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
