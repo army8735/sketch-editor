@@ -516,7 +516,7 @@ export default class Listener extends Event {
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
           const controlType = this.controlType;
-          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey, this.altKey);
+          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey, this.altKey || this.options.enabled?.resizeWithAlt);
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -744,7 +744,7 @@ export default class Listener extends Event {
             node.endSizeChange(this.originStyle[i]);
             if (dx || dy) {
               node.checkPosSizeUpward();
-              const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: this.altKey };
+              const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: this.altKey || this.options.enabled?.resizeWithAlt };
               const originStyle = this.originStyle[i];
               if (originStyle.width.u === StyleUnit.AUTO) {
                 r.widthFromAuto = true;
