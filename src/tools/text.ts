@@ -150,7 +150,7 @@ export function getTextInfo(nodes: Text[]) {
     if (!textVerticalAlign.includes(computedStyle.textVerticalAlign)) {
       textVerticalAlign.push(computedStyle.textVerticalAlign);
     }
-    const { left, right, top, bottom, width, height, lineHeight: lh } = style;
+    const { lineHeight: lh } = style;
     // 一般都是有rich，除非手动构造数据
     if (rich && rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {

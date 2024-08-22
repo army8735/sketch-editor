@@ -49,7 +49,10 @@ const o: any = {
   hasRegister(fontFamily: string) {
     return this.data.hasOwnProperty(fontFamily);
   },
-  async registerLocalFonts(fonts: any[]) {
+  async registerLocalFonts(fonts?: any[]) {
+    if (!fonts) {
+      fonts = await inject.loadLocalFonts() || [];
+    }
     let cacheInfo: any = {};
     if (typeof localStorage !== 'undefined') {
       cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
@@ -58,8 +61,8 @@ const o: any = {
     if (!cacheInfo.version || cacheInfo.version < VERSION) {
       data = {};
     }
-    for (let i = 0, len = fonts.length; i < len; i++) {
-      const font = fonts[i];
+    for (let i = 0, len = fonts!.length; i < len; i++) {
+      const font = fonts![i];
       const postscriptName = font.postscriptName;
       const family = font.family;
       const style = font.style;

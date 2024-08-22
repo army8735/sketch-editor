@@ -51,9 +51,7 @@
     location.href = '?tile=' + (tile.checked ? '1' : '') + '&debug=' + (debug.checked ? '1' : '');
   });
 
-  sketchEditor.util.inject.loadLocalFonts().then(res => {
-    sketchEditor.style.font.registerLocalFonts(res);
-  });
+  sketchEditor.style.font.registerLocalFonts();
 
   const $canvasC = document.querySelector('#canvasC');
   const dpi = 2;

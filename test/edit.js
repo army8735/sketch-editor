@@ -12,17 +12,17 @@ sketchEditor.style.font.registerData({
   list: [
     {
       style: 'Regular',
-      postscriptName: 'helvetica',
+      postscriptName: 'Helvetica',
       loaded: true,
     },
     {
       style: 'Bold',
-      postscriptName: 'helvetica-bold',
+      postscriptName: 'Helvetica-Bold',
       loaded: true,
     },
     {
       style: 'Light',
-      postscriptName: 'helvetica-light',
+      postscriptName: 'Helvetica-Light',
       loaded: true,
     },
   ],
