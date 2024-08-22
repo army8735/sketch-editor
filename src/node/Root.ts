@@ -227,20 +227,20 @@ class Root extends Container implements FrameCallback {
     if (width.u === StyleUnit.AUTO) {
       if (canvas) {
         width.u = StyleUnit.PX;
-        this.width = this.computedStyle.width = width.v = canvas.width;
+        this.width = this.computedStyle.width = width.v = Math.max(1, canvas.width);
       }
     }
     else {
-      this.width = this.computedStyle.width = this.style.width.v as number;
+      this.width = this.computedStyle.width = Math.max(1, this.style.width.v as number);
     }
     if (height.u === StyleUnit.AUTO) {
       if (canvas) {
         height.u = StyleUnit.PX;
-        this.height = this.computedStyle.height = height.v = canvas.height;
+        this.height = this.computedStyle.height = height.v = Math.max(1, canvas.height);
       }
     }
     else {
-      this.height = this.computedStyle.height = this.style.height.v as number;
+      this.height = this.computedStyle.height = Math.max(1, this.style.height.v as number);
     }
     this.ctx!.viewport(0, 0, this.width, this.height);
   }

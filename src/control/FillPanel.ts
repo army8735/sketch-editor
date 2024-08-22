@@ -8,7 +8,7 @@ import { toPrecision } from '../math';
 import picker from './picker';
 import { color2hexStr, color2rgbaInt, color2rgbaStr } from '../style/css';
 import Listener from './Listener';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 import { Style } from '../style/define';
 import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 import Panel from './Panel';

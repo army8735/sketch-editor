@@ -149,7 +149,7 @@ const inject = {
       return o instanceof WebGLTexture;
     }
   },
-  defaultFontFamily: 'arial',
+  defaultFontFamily: 'Arial',
   getFontCanvas() {
     return inject.getOffscreenCanvas(
       16,
@@ -474,6 +474,26 @@ const inject = {
       };
       img.src = URL.createObjectURL(b);
     });
+  },
+  async loadLocalFonts() {
+    if (typeof navigator !== 'undefined') {
+      try {
+        const status = await navigator.permissions.query({
+          // @ts-ignore
+          name: 'local-fonts',
+        });
+        if (status.state === 'denied') {
+          inject.error('No Permission.');
+          return [];
+        }
+        // @ts-ignore
+        return await window.queryLocalFonts();
+      } catch (err) {
+        inject.error(err);
+        return [];
+      }
+    }
+    return [];
   },
   log(s: any) {
     console.log(s);

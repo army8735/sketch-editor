@@ -4,7 +4,7 @@ import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import inject from '../util/inject';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
 

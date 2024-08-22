@@ -50,7 +50,7 @@ import {
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ, calTransformByMatrixAndOrigin } from '../style/transform';
 import Event from '../util/Event';
-import { clone, equal } from '../util/util';
+import { clone, equal } from '../util/type';
 import ArtBoard from './ArtBoard';
 import { LayoutData } from './layout';
 import Page from './Page';

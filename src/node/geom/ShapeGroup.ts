@@ -23,7 +23,7 @@ import {
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
-import { clone } from '../../util/util';
+import { clone } from '../../util/type';
 import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';

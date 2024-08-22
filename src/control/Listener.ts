@@ -9,7 +9,7 @@ import Event from '../util/Event';
 import Select from './Select';
 import Input from './Input';
 import State from './State';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 import { ArtBoardProps, JStyle } from '../format';
 import History from '../history/History';
 import AbstractCommand from '../history/AbstractCommand';

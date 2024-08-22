@@ -20,7 +20,7 @@ import {
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
-import { clone } from '../../util/util';
+import { clone } from '../../util/type';
 import Geom from './Geom';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';

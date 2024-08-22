@@ -1,7 +1,7 @@
 import opentype from '../util/opentype';
 import inject from '../util/inject';
 
-const arial: FontData = {
+const Arial: FontData = {
   name: 'Arial',
   family: 'Arial',
   lhr: 1.14990234375, // 默认line-height ratio，(67+1854+434)/2048
@@ -12,14 +12,14 @@ const arial: FontData = {
   list: [
     {
       style: 'Regular',
-      postscriptName: 'arial',
+      postscriptName: 'Arial',
       loaded: true,
     },
   ],
 };
 
 const KEY_INFO = 'localFonts'; // 解析过的存本地缓存，解析时间还是有些成本
-const VERSION = 1;
+const VERSION = 2;
 
 export type FontData = {
   family: string; // 保持大小写
@@ -40,11 +40,11 @@ const o: any = {
   KEY_INFO,
   info: {
     // family为key的信息，同一系列共享
-    arial,
+    Arial,
   },
   data: {
     // postscriptName/family为key，和info同引用，方便使用
-    arial,
+    Arial,
   },
   hasRegister(fontFamily: string) {
     return this.data.hasOwnProperty(fontFamily);
@@ -60,14 +60,13 @@ const o: any = {
     }
     for (let i = 0, len = fonts.length; i < len; i++) {
       const font = fonts[i];
-      const postscriptName = font.postscriptName.toLowerCase();
+      const postscriptName = font.postscriptName;
       const family = font.family;
-      const familyL = family.toLowerCase();
       const style = font.style;
       // localStorage存的是this.info
-      if (data.hasOwnProperty(familyL)) {
-        const o: any = data[familyL];
-        this.info[familyL] = this.info[familyL] || {
+      if (data.hasOwnProperty(family)) {
+        const o: any = data[family];
+        this.info[family] = this.info[family] || {
           name: o.name,
           family: family, // 保持大小写
           lhr: o.lhr,
@@ -78,8 +77,8 @@ const o: any = {
         };
       }
       // 没有cache则用opentype读取
-      if (!this.info.hasOwnProperty(familyL)) {
-        const o: any = (this.info[familyL] = {});
+      if (!this.info.hasOwnProperty(family)) {
+        const o: any = (this.info[family] = {});
         const blob = await font.blob();
         const arrayBuffer = await blob.arrayBuffer();
         const f: any = opentype.parse(arrayBuffer);
@@ -91,10 +90,10 @@ const o: any = {
         }
         o.name = o.name || family; // 中文名字
         o.family = family;
-        const r = this._cal(familyL, f);
+        const r = this._cal(family, f);
         Object.assign(o, r);
       }
-      this._register(familyL, style, postscriptName, true);
+      this._register(family, style, postscriptName, true);
     }
     this.updateLocalStorage();
   },
@@ -116,16 +115,14 @@ const o: any = {
     if (!family || !style || !postscriptName) {
       return;
     }
-    const postscriptNameL = postscriptName.toLowerCase();
-    if (this.hasRegister(postscriptNameL)) {
+    if (this.hasRegister(postscriptName)) {
       return;
     }
-    const familyL = family.toLowerCase();
-    if (!this.info.hasOwnProperty(familyL)) {
-      const r = this._cal(familyL, f);
+    if (!this.info.hasOwnProperty(family)) {
+      const r = this._cal(family, f);
       Object.assign(o, r);
       o.list = [];
-      this.info[familyL] = o;
+      this.info[family] = o;
     }
     this._register(family, style, postscriptName, true);
     inject.loadArrayBufferFont(postscriptName, ab);
@@ -156,14 +153,12 @@ const o: any = {
     loaded: boolean,
     url?: string,
   ) {
-    const familyL = family.toLowerCase();
-    const postscriptNameL = postscriptName.toLowerCase();
-    const info = this.info[familyL];
+    const info = this.info[family];
     const list = (info.list = info.list || []);
     let has = false;
     for (let i = 0, len = list.length; i < len; i++) {
       const item = list[i];
-      if (item.postscriptName === postscriptNameL) {
+      if (item.postscriptName === postscriptName) {
         has = true;
         if (loaded) {
           item.loaded = true;
@@ -174,28 +169,26 @@ const o: any = {
     if (!has) {
       list.push({
         style,
-        postscriptName: postscriptNameL,
+        postscriptName,
         loaded,
         url,
       });
     }
     return {
       family: family,
-      familyL: familyL,
       postscriptName: postscriptName,
-      postscriptNameL: postscriptNameL,
-      data: (this.data[familyL] = this.data[postscriptNameL] = info),
+      data: (this.data[family] = this.data[postscriptName] = info),
     }; // 同个字体族不同postscriptName指向一个引用
   },
   registerData(data: FontData) {
-    const familyL = data.family.toLowerCase();
-    if (!this.info.hasOwnProperty(familyL)) {
-      this.info[familyL] = data;
+    const family = data.family;
+    if (!this.info.hasOwnProperty(family)) {
+      this.info[family] = data;
     }
-    if (!this.data.hasOwnProperty(familyL)) {
+    if (!this.data.hasOwnProperty(family)) {
       data.list.forEach((item) => {
         this._register(
-          familyL,
+          family,
           item.style,
           item.postscriptName,
           item.loaded,

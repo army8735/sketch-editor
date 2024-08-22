@@ -2,7 +2,7 @@ import * as uuid from 'uuid';
 import { JNode, Override, SymbolInstanceProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import Group from './Group';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 
 class SymbolInstance extends Group {
   symbolMaster: SymbolMaster;

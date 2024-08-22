@@ -968,7 +968,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
     ff = calFontFamily(style.fontFamily);
   }
   const lhr =
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.Arial || {})
       .lhr;
   return style.fontSize * lhr;
 }
@@ -982,7 +982,7 @@ export function getBaseline(style: ComputedStyle | Rich, lineHeight?: number) {
   const ff = calFontFamily(style.fontFamily);
   const normal = calNormalLineHeight(style, ff);
   const blr =
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.Arial || {})
       .blr || 1;
   return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * blr;
 }
@@ -992,7 +992,7 @@ export function getContentArea(style: ComputedStyle | Rich, lineHeight?: number)
   const ff = calFontFamily(style.fontFamily);
   const normal = calNormalLineHeight(style, ff);
   const car =
-    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.arial)
+    (font.data[ff] || font.data[inject.defaultFontFamily] || font.data.Arial || {})
       .car || 1;
   return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * car;
 }

@@ -3,7 +3,7 @@ import { JNode, Override, SymbolMasterProps, TAG_NAME } from '../format';
 import ArtBoard from './ArtBoard';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 
 class SymbolMaster extends ArtBoard {
   symbolInstances: SymbolInstance[];

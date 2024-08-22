@@ -1,6 +1,6 @@
 import Node from '../node/Node';
 import Container from '../node/Container';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 import { StyleUnit } from '../style/define';
 import { RemoveData } from '../history/RemoveCommand';
 

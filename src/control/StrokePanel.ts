@@ -4,7 +4,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 import Listener from './Listener';
 import { Style } from '../style/define';
 import picker from './picker';

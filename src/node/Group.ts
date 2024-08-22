@@ -7,7 +7,7 @@ import { StyleUnit } from '../style/define';
 import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 
 const EPS = 1e-2;
 

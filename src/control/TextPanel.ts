@@ -2,7 +2,6 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
 import { toPrecision } from '../math';
-import { loadLocalFonts } from '../util/util';
 import style from '../style';
 import { getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
 import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
@@ -76,11 +75,11 @@ const html = `
 
 const KEY_INFO = 'textPanelFold';
 
-let local = false;
-loadLocalFonts().then(res => {
-  style.font.registerLocalFonts(res);
-  local = true;
-});
+// let local = false;
+// loadLocalFonts().then(res => {
+//   style.font.registerLocalFonts(res);
+//   local = true;
+// });
 
 class TextPanel extends Panel {
   panel: HTMLElement;
@@ -95,6 +94,7 @@ class TextPanel extends Panel {
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+    this.initFontList();
 
     const fold = localStorage.getItem(KEY_INFO);
     if (fold === '1') {
@@ -161,7 +161,7 @@ class TextPanel extends Panel {
             let p = rich[key];
             // 0表示auto，需从fontFamily何fontSize自动计算
             if (!p && key === 'lineHeight') {
-              const data = fontInfo.data[rich.fontFamily.toLowerCase()];
+              const data = fontInfo.data[rich.fontFamily];
               if (data) {
                 p = rich.fontSize * data.lhr;
               }
@@ -553,10 +553,6 @@ class TextPanel extends Panel {
       panel.style.display = 'none';
       return;
     }
-    if (local) {
-      local = false;
-      this.initFontList();
-    }
     panel.style.display = 'block';
     panel.querySelectorAll('input').forEach(item => {
       item.disabled = false;
@@ -591,12 +587,12 @@ class TextPanel extends Panel {
       else {
         multi.style.display = 'none';
         if (!o.valid[0]) {
-          const option = `<option value="${o.postscriptName[0].toLowerCase()}" selected="selected" disabled>${o.fontFamily[0]}</option>`;
+          const option = `<option value="${o.postscriptName[0]}" selected="selected" disabled>${o.fontFamily[0]}</option>`;
           select.innerHTML += option;
           select.classList.add('invalid');
         }
         else {
-          select.value = o.fontFamily[0].toLowerCase();
+          select.value = o.fontFamily[0];
         }
       }
     }

@@ -20,7 +20,7 @@ import {
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
 import inject, { OffScreen } from '../util/inject';
-import { clone } from '../util/util';
+import { clone } from '../util/type';
 import Node from './Node';
 
 type Loader = {

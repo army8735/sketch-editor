@@ -43,11 +43,10 @@ function putInfo(
     paragraphSpacing: ps,
     textAlign: ta,
   } = obj;
-  const psL = ff.toLowerCase();
-  if (!postscriptName.includes(psL)) {
-    postscriptName.push(psL);
+  if (!postscriptName.includes(ff)) {
+    postscriptName.push(ff);
   }
-  const data = fontInfo.data[psL];
+  const data = fontInfo.data[ff];
   if (data) {
     // 一般都是postscriptName，但可能会出现family，统一换成字体族的名字，去除style后缀
     if (!fontFamily.includes(data.family)) {
@@ -60,7 +59,7 @@ function putInfo(
     const list = data.list;
     for (let i = 0, len = list.length; i < len; i++) {
       const item = list[i];
-      if (item.postscriptName === psL) {
+      if (item.postscriptName === ff) {
         if (!fontWeight.includes(item.style)) {
           fontWeight.push(item.style);
         }
@@ -69,9 +68,9 @@ function putInfo(
     }
   }
   else {
-    if (!fontFamily.includes(psL)) {
-      fontFamily.push(psL);
-      name.push(psL);
+    if (!fontFamily.includes(ff)) {
+      fontFamily.push(ff);
+      name.push(ff);
     }
     if (!valid.includes(false)) {
       valid.push(false);
@@ -223,8 +222,7 @@ export function getTextInfo(nodes: Text[]) {
 
 // 传入postscriptName，也可以是fontFamily，同一字体族不同weight的
 export function getFontWeightList(postscriptName: string): { label: string, value: string }[] {
-  const psL = postscriptName.toLowerCase();
-  const data = fontInfo.data[psL];
+  const data = fontInfo.data[postscriptName];
   if (data) {
     return data.list.map((item: any) => {
       return {

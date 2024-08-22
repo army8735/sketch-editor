@@ -31,7 +31,7 @@ import {
 import font from '../style/font';
 import Event from '../util/Event';
 import inject, { OffScreen } from '../util/inject';
-import { clone, equal } from '../util/util';
+import { clone, equal } from '../util/type';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
 import Node from './Node';
@@ -241,7 +241,7 @@ class Text extends Node {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
         SET_FONT_INDEX[item.location] = i;
-        const family = item.fontFamily.toLowerCase();
+        const family = item.fontFamily;
         const data = font.data[family];
         if (data) {
           const list = data.list || [];
@@ -256,7 +256,7 @@ class Text extends Node {
                     cache.success &&
                     rich &&
                     rich[i] &&
-                    rich[i].fontFamily.toLowerCase() === family
+                    rich[i].fontFamily === family
                   ) {
                     if (this.asyncRefresh) {
                       return;
@@ -267,7 +267,7 @@ class Text extends Node {
                         cache.success &&
                         rich &&
                         rich[i] &&
-                        rich[i].fontFamily.toLowerCase() === family
+                        rich[i].fontFamily === family
                       ) {
                         this.asyncRefresh = false;
                         this.refresh(RefreshLevel.REFLOW);
@@ -283,7 +283,7 @@ class Text extends Node {
       }
     }
     else {
-      const family = computedStyle.fontFamily.toLowerCase();
+      const family = computedStyle.fontFamily;
       const data = font.data[family];
       if (data) {
         const list = data.list || [];
@@ -297,7 +297,7 @@ class Text extends Node {
                 if (
                   cache.success &&
                   !rich.length &&
-                  computedStyle.fontFamily.toLowerCase() === family
+                  computedStyle.fontFamily === family
                 ) {
                   this.refresh(RefreshLevel.REFLOW);
                 }
@@ -3216,8 +3216,8 @@ class Text extends Node {
         lineBox.list.forEach(textBox => {
           const { fontFamily, fontSize, lineHeight, str, font: f } = textBox;
           let normal = lineHeight;
-          if (font.hasRegister(fontFamily.toLowerCase())) {
-            const fontData = font.data[fontFamily.toLowerCase()];
+          if (font.hasRegister(fontFamily)) {
+            const fontData = font.data[fontFamily];
             normal = fontData.lhr * fontSize;
           }
           else {
