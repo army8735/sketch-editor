@@ -102,7 +102,6 @@ export function normalize(style: any): Style {
       v: fontFamily
         .toString()
         .trim()
-        .toLowerCase()
         .replace(/['"]/g, '')
         .replace(/\s*,\s*/g, ','),
       u: StyleUnit.STRING,
@@ -955,7 +954,7 @@ export function setFontStyle(style: ComputedStyle | Rich) {
 export function calFontFamily(fontFamily: string) {
   const ff = fontFamily.split(/\s*,\s*/);
   for (let i = 0, len = ff.length; i < len; i++) {
-    let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '').toLowerCase();
+    let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
     if (font.hasRegister(item) || inject.checkSupportFontFamily(item)) {
       return item;
     }

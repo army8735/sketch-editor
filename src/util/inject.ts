@@ -159,7 +159,6 @@ const inject = {
     );
   },
   checkSupportFontFamily(ff: string) {
-    ff = ff.toLowerCase();
     // 强制arial兜底
     if (ff === this.defaultFontFamily) {
       return true;
