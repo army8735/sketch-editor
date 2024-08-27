@@ -2,7 +2,7 @@
 precision mediump float;
 #endif
 
-varying vec2 t;
+varying vec2 v_texCoords;
 uniform sampler2D u_texture;
 uniform vec2 u_direction;
 
@@ -11,8 +11,8 @@ vec4 a(vec2 coords, float weight) {
 }
 
 vec4 b(float offset, float weight) {
-  return a(t - offset * u_direction, weight)
-    + a(t + offset * u_direction, weight);
+  return a(v_texCoords - offset * u_direction, weight)
+    + a(v_texCoords + offset * u_direction, weight);
 }
 
 void main() {

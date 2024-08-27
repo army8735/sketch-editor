@@ -1,5 +1,5 @@
 import gaussFrag from '../gl/gauss.frag';
-import gaussVert from '../gl/gauss.vert';
+import simpleVert from '../gl/simple.vert';
 import {
   createTexture,
   drawColorMatrix,
@@ -1209,9 +1209,9 @@ function genGaussShader(
     let c = (r - i) * 0.01;
     frag += `b(${c},${toFloat(weights[i])})+`;
   }
-  frag += `a(t,${toFloat(weights[r])});`;
+  frag += `a(v_texCoords,${toFloat(weights[r])});`;
   frag = gaussFrag.replace('placeholder;', frag);
-  return (programs[key] = initShaders(gl, gaussVert, frag));
+  return (programs[key] = initShaders(gl, simpleVert, frag));
 }
 
 /**
