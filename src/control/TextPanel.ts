@@ -523,11 +523,21 @@ class TextPanel extends Panel {
     });
   }
 
-  initFontList() {
+  initFontList(names?: string[]) {
+    let hash: Record<string, boolean> | undefined;
+    if (names && names.length) {
+      hash = {};
+      names.forEach((name) => {
+        hash![name] = true;
+      });
+    }
     const { info } = style.font;
     let s = '';
     for (let i in info) {
       if (info.hasOwnProperty(i)) {
+        if (hash && !hash.hasOwnProperty(i)) {
+          continue;
+        }
         const item = info[i];
         const list = item.list || [];
         if (list.length) {
