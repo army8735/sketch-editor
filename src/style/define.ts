@@ -339,8 +339,8 @@ export type ComputedStyle = {
 
 export enum TEXT_ALIGN {
   LEFT = 0,
-  CENTER = 1,
-  RIGHT = 2,
+  RIGHT = 1,
+  CENTER = 2,
   JUSTIFY = 3,
 }
 
