@@ -106,9 +106,11 @@ export default class Input {
     cursorEl.animate([
       {
         visibility: 'visible',
+        borderColor: '#000',
       },
       {
         visibility: 'visible',
+        borderColor: '#FFF',
       },
       {
         visibility: 'hidden',

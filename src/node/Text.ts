@@ -2293,12 +2293,9 @@ class Text extends Node {
     if (isMulti) {
       this.cursor.isMulti = false;
       this.showSelectArea = false;
-      // 肯定小于，多加一层防守
-      if (start < end) {
-        this.cutRich(start, end);
-        const c = this._content;
-        this._content = c.slice(0, start) + c.slice(end);
-      }
+      this.cutRich(start, end);
+      const c = this._content;
+      this._content = c.slice(0, start) + c.slice(end);
     }
     // 传入style说明是插入一段新Rich
     if (style) {
@@ -2330,12 +2327,9 @@ class Text extends Node {
     if (isMulti) {
       this.cursor.isMulti = false;
       this.showSelectArea = false;
-      // 肯定小于，多加一层防守
-      if (start < end) {
-        this.cutRich(start, end);
-        const c = this._content;
-        this._content = c.slice(0, start) + c.slice(end);
-      }
+      this.cutRich(start, end);
+      const c = this._content;
+      this._content = c.slice(0, start) + c.slice(end);
     }
     this.expandRich(start, 1);
     const c = this._content;
@@ -2368,17 +2362,12 @@ class Text extends Node {
     const payload = this.beforeEdit();
     if (isMulti) {
       this.cursor.isMulti = false;
-      // 肯定小于，多加一层防守
-      if (start < end) {
-        this.cutRich(start, end);
-        this._content = c.slice(0, start) + c.slice(end);
-        this.updateCursorByIndex(start);
-      }
+      this.cutRich(start, end);
+      this._content = c.slice(0, start) + c.slice(end);
     }
     else {
       this.cutRich(start - 1, start);
       this._content = c.slice(0, start - 1) + c.slice(start);
-      this.updateCursorByIndex(start - 1);
     }
     this.root?.addUpdate(
       this,
@@ -2389,6 +2378,12 @@ class Text extends Node {
       undefined,
     );
     this.afterEdit(payload);
+    if (isMulti) {
+      this.updateCursorByIndex(start);
+    }
+    else {
+      this.updateCursorByIndex(start - 1);
+    }
   }
 
   // 给定相对x坐标获取光标位置，y已知传入lineBox
