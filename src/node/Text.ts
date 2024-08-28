@@ -1411,7 +1411,6 @@ class Text extends Node {
     const isFixedWidth = left.u !== StyleUnit.AUTO && right.u !== StyleUnit.AUTO
       || width.u !== StyleUnit.AUTO;
     const isLeft = textAlign.v === TEXT_ALIGN.LEFT
-      // && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
       && !isFixedWidth
       && (
         left.u !== StyleUnit.AUTO
@@ -1421,18 +1420,15 @@ class Text extends Node {
       );
     // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
     const isCenter = textAlign.v === TEXT_ALIGN.CENTER
-      // && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
       && !isFixedWidth
       && (translateX.v !== -50 || translateX.u !== StyleUnit.PERCENT);
     // right比较绕，定宽或者右定位都无效，提取规则发现需要right为auto
     const isRight = textAlign.v === TEXT_ALIGN.RIGHT
-      // && textBehaviour === TEXT_BEHAVIOUR.FLEXIBLE
       && right.u === StyleUnit.AUTO;
     // 同水平
     const isFixedHeight = top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO
       || height.u !== StyleUnit.AUTO;
     const isTop = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.TOP
-      // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
       && (
         top.u !== StyleUnit.AUTO
@@ -1441,11 +1437,9 @@ class Text extends Node {
         || bottom.u !== StyleUnit.AUTO
       );
     const isMiddle = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.MIDDLE
-      // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
       && (translateY.v !== -50 || translateY.u !== StyleUnit.PERCENT);
     const isBottom = textVerticalAlign.v === TEXT_VERTICAL_ALIGN.BOTTOM
-      // && textBehaviour !== TEXT_BEHAVIOUR.FIXED_SIZE
       && !isFixedHeight
       && bottom.u === StyleUnit.AUTO;
     const { width: pw, height: ph } = parent;
@@ -1463,6 +1457,7 @@ class Text extends Node {
         && !!translateX.v
         && translateX.u === StyleUnit.PERCENT) {
         impact = true;
+        computedStyle.left += tx;
         if (left.u === StyleUnit.PX) {
           left.v += tx;
         }
@@ -1470,6 +1465,7 @@ class Text extends Node {
           left.v += tx * 100 / pw;
         }
         // 可能是auto，自动宽度，也可能人工数据
+        computedStyle.right -= tx;
         if (right.u === StyleUnit.PX) {
           right.v -= tx;
         }
@@ -1479,8 +1475,10 @@ class Text extends Node {
       }
       else if (right.u !== StyleUnit.AUTO) {
         impact = true;
-        left.v = computedStyle.left + tx;
+        computedStyle.left += tx;
+        left.v = computedStyle.left;
         left.u = StyleUnit.PX;
+        computedStyle.right -= tx;
         right.v = 0;
         right.u = StyleUnit.AUTO;
       }
@@ -1491,6 +1489,8 @@ class Text extends Node {
       if (translateX.u === StyleUnit.AUTO || translateX.u === StyleUnit.PX) {
         impact = true;
         const dx = w * 0.5 - translateX.v;
+        computedStyle.left += dx;
+        computedStyle.right -= dx;
         // 左右互斥出现，否则是定宽了
         if (left.u === StyleUnit.PX) {
           left.v += dx;
@@ -1514,21 +1514,23 @@ class Text extends Node {
       else if (translateX.u === StyleUnit.PERCENT) {
         if (translateX.v !== -50) {
           impact = true;
-          const tx = w * 0.5 - translateX.v * w;
+          const dx = w * 0.5 - translateX.v * w;
+          computedStyle.left += dx;
+          computedStyle.right -= dx;
           if (left.u === StyleUnit.PX) {
-            left.v += tx;
+            left.v += dx;
             translateX.v = -50;
           }
           else if (left.u === StyleUnit.PERCENT) {
-            left.v += tx * 100 / pw;
+            left.v += dx * 100 / pw;
             translateX.v = -50;
           }
           else if (right.u === StyleUnit.PX) {
-            right.v += tx;
+            right.v += dx;
             translateX.v = 50;
           }
           else if (right.u === StyleUnit.PERCENT) {
-            right.v += tx * 100 / pw;
+            right.v += dx * 100 / pw;
             translateX.v = 50;
           }
         }
@@ -1536,13 +1538,15 @@ class Text extends Node {
     }
     else if (isRight) {
       impact = true;
+      computedStyle.left += tx;
       // 有left时right一定是auto，改成left是auto且right是固定
       if (left.u !== StyleUnit.AUTO) {
         left.v = 0;
         left.u = StyleUnit.AUTO;
       }
       // right变为固定值+translate归零，虽然tx是px时无需关心，但统一逻辑最后还原
-      right.v = computedStyle.right - tx;
+      computedStyle.right -= tx;
+      right.v = computedStyle.right;
       right.u = StyleUnit.PX;
       translateX.v = 0;
     }
@@ -1559,6 +1563,7 @@ class Text extends Node {
         && !!translateY.v
         && translateY.u === StyleUnit.PERCENT) {
         impact = true;
+        computedStyle.top += ty;
         if (top.u === StyleUnit.PX) {
           top.v += ty;
         }
@@ -1566,6 +1571,7 @@ class Text extends Node {
           top.v += ty * 100 / ph;
         }
         // 可能是auto，自动宽度，也可能人工数据
+        computedStyle.bottom -= ty;
         if (bottom.u === StyleUnit.PX) {
           bottom.v -= ty;
         }
@@ -1575,8 +1581,10 @@ class Text extends Node {
       }
       else if (bottom.u !== StyleUnit.AUTO) {
         impact = true;
-        top.v = computedStyle.top + ty;
+        computedStyle.top += ty;
+        top.v = computedStyle.top;
         top.u = StyleUnit.PX;
+        computedStyle.bottom -= ty;
         bottom.v = 0;
         bottom.u = StyleUnit.AUTO;
       }
@@ -1586,6 +1594,8 @@ class Text extends Node {
       if (translateY.u === StyleUnit.AUTO || translateY.u === StyleUnit.PX) {
         impact = true;
         const dy = h * 0.5 - translateY.v;
+        computedStyle.top += dy;
+        computedStyle.bottom -= dy;
         if (top.u === StyleUnit.PX) {
           top.v += dy;
           translateY.v = -50;
@@ -1608,6 +1618,8 @@ class Text extends Node {
         if (translateY.v !== -50) {
           impact = true;
           const dy = h * 0.5 - translateY.v * h;
+          computedStyle.top += dy;
+          computedStyle.bottom -= dy;
           if (top.u === StyleUnit.PX) {
             top.v += dy;
             translateY.v = -50;
@@ -1630,11 +1642,13 @@ class Text extends Node {
     }
     else if (isBottom) {
       impact = true;
+      computedStyle.top += ty;
       if (top.u !== StyleUnit.AUTO) {
         top.v = 0;
         top.u = StyleUnit.AUTO;
       }
-      bottom.v = computedStyle.bottom - ty;
+      computedStyle.bottom -= ty;
+      bottom.v = computedStyle.bottom;
       bottom.u = StyleUnit.PX;
       translateY.v = 0;
     }
@@ -1778,6 +1792,7 @@ class Text extends Node {
       else if (left.u === StyleUnit.PERCENT) {
         style.left.v = computedStyle.left * 100 / pw;
       }
+      style.left.u = left.u;
       computedStyle.right += tx;
       if (right.u === StyleUnit.AUTO) {
         style.right.v = 0;
