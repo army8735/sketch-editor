@@ -524,19 +524,27 @@ class TextPanel extends Panel {
   }
 
   initFontList(names?: string[]) {
-    let hash: Record<string, boolean> | undefined;
+    const { info, data } = style.font;
+    const hash: Record<string, boolean> = {};
     if (names && names.length) {
-      hash = {};
       names.forEach((name) => {
-        hash![name] = true;
+        // family
+        if (info.hasOwnProperty(name)) {
+          hash[name] = true;
+        }
+        // postscriptName
+        else if (data.hasOwnProperty(name)) {
+          hash[data[name].family] = true;
+        }
       });
     }
-    const { info } = style.font;
     let s = '';
     for (let i in info) {
       if (info.hasOwnProperty(i)) {
-        if (hash && !hash.hasOwnProperty(i)) {
-          continue;
+        if (names && names.length) {
+          if (!hash.hasOwnProperty(i)) {
+            continue;
+          }
         }
         const item = info[i];
         const list = item.list || [];

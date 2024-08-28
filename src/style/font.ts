@@ -36,18 +36,17 @@ export type FontData = {
   }[];
 };
 
-const o: any = {
+// family为key的信息，同一系列共享
+const info: Record<string, FontData> = { Arial };
+// postscriptName/family为key，和info同引用，方便使用
+const data: Record<string, FontData> = { Arial };
+
+const o = {
   KEY_INFO,
-  info: {
-    // family为key的信息，同一系列共享
-    Arial,
-  },
-  data: {
-    // postscriptName/family为key，和info同引用，方便使用
-    Arial,
-  },
+  info,
+  data,
   hasRegister(fontFamily: string) {
-    return this.data.hasOwnProperty(fontFamily);
+    return data.hasOwnProperty(fontFamily);
   },
   async registerLocalFonts(fonts?: any[]) {
     if (!fonts) {
@@ -57,9 +56,9 @@ const o: any = {
     if (typeof localStorage !== 'undefined') {
       cacheInfo = JSON.parse(localStorage.getItem(KEY_INFO) || '{}');
     }
-    let data: any = cacheInfo.data || {};
+    let cache: any = cacheInfo.data || {};
     if (!cacheInfo.version || cacheInfo.version < VERSION) {
-      data = {};
+      cache = {};
     }
     for (let i = 0, len = fonts!.length; i < len; i++) {
       const font = fonts![i];
@@ -67,9 +66,9 @@ const o: any = {
       const family = font.family;
       const style = font.style;
       // localStorage存的是this.info
-      if (data.hasOwnProperty(family)) {
-        const o: any = data[family];
-        this.info[family] = this.info[family] || {
+      if (cache.hasOwnProperty(family)) {
+        const o: any = cache[family];
+        info[family] = info[family] || {
           name: o.name,
           family: family, // 保持大小写
           lhr: o.lhr,
@@ -80,8 +79,16 @@ const o: any = {
         };
       }
       // 没有cache则用opentype读取
-      if (!this.info.hasOwnProperty(family)) {
-        const o: any = (this.info[family] = {});
+      if (!info.hasOwnProperty(family)) {
+        const o = info[family] = {
+          name: '',
+          family: '',
+          lhr: 0,
+          car: 0,
+          blr: 0,
+          lgr: 0,
+          list: [],
+        };
         const blob = await font.blob();
         const arrayBuffer = await blob.arrayBuffer();
         const f: any = opentype.parse(arrayBuffer);
@@ -121,11 +128,11 @@ const o: any = {
     if (this.hasRegister(postscriptName)) {
       return;
     }
-    if (!this.info.hasOwnProperty(family)) {
+    if (!info.hasOwnProperty(family)) {
       const r = this._cal(family, f);
       Object.assign(o, r);
       o.list = [];
-      this.info[family] = o;
+      info[family] = o;
     }
     this._register(family, style, postscriptName, true);
     inject.loadArrayBufferFont(postscriptName, ab);
@@ -156,8 +163,8 @@ const o: any = {
     loaded: boolean,
     url?: string,
   ) {
-    const info = this.info[family];
-    const list = (info.list = info.list || []);
+    const o = info[family];
+    const list = o.list = (o.list || []);
     let has = false;
     for (let i = 0, len = list.length; i < len; i++) {
       const item = list[i];
@@ -180,16 +187,16 @@ const o: any = {
     return {
       family: family,
       postscriptName: postscriptName,
-      data: (this.data[family] = this.data[postscriptName] = info),
+      data: (data[family] = data[postscriptName] = o),
     }; // 同个字体族不同postscriptName指向一个引用
   },
-  registerData(data: FontData) {
-    const family = data.family;
-    if (!this.info.hasOwnProperty(family)) {
-      this.info[family] = data;
+  registerData(fd: FontData) {
+    const family = fd.family;
+    if (!info.hasOwnProperty(family)) {
+      info[family] = fd;
     }
-    if (!this.data.hasOwnProperty(family)) {
-      data.list.forEach((item) => {
+    if (!data.hasOwnProperty(family)) {
+      fd.list.forEach((item) => {
         this._register(
           family,
           item.style,
@@ -202,12 +209,11 @@ const o: any = {
     }
   },
   updateLocalStorage() {
-    const data: any = {};
-    const info = this.info;
+    const cache: any = {};
     for (let i in info) {
       if (info.hasOwnProperty(i)) {
         const o = info[i];
-        data[i] = {
+        cache[i] = {
           name: o.name,
           lhr: o.lhr,
           car: o.car,
@@ -217,7 +223,7 @@ const o: any = {
       }
     }
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(KEY_INFO, JSON.stringify({ version: VERSION, data }));
+      localStorage.setItem(KEY_INFO, JSON.stringify({ version: VERSION, data: cache }));
     }
   },
 };
