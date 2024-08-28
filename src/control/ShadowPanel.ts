@@ -98,6 +98,7 @@ class ShadowPanel extends Panel {
           pickCallback();
           return;
         }
+        const index = parseInt(el.parentElement!.parentElement!.parentElement!.title);
         const p = picker.show(el, 'shadowPanel', pickCallback);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
@@ -115,13 +116,20 @@ class ShadowPanel extends Panel {
           nexts = [];
           nodes.forEach(node => {
             const { shadow, shadowEnable } = node.getComputedStyle();
-            const cssShadow = shadow.map(item => getCssShadow({
-              color: color.rgba,
-              x: item.x,
-              y: item.y,
-              blur: item.blur,
-              spread: item.spread,
-            }));
+            const cssShadow = shadow.map((item, i) => {
+              if (i === index) {
+                return getCssShadow({
+                  color: color.rgba,
+                  x: item.x,
+                  y: item.y,
+                  blur: item.blur,
+                  spread: item.spread,
+                });
+              }
+              else {
+                return getCssShadow(item);
+              }
+            });
             const o = {
               shadow: cssShadow,
               shadowEnable,
@@ -219,7 +227,6 @@ class ShadowPanel extends Panel {
         this.silence = false;
       }
       else if (classList.contains('enabled')) {
-        const el = e.target as HTMLElement;
         const index = parseInt(el.parentElement!.title);
         this.silence = true;
         const nodes = this.nodes.slice(0);
