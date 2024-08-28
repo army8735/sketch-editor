@@ -3158,6 +3158,9 @@ class Text extends Node {
                 SketchFormat.TextHorizontalAlignment.Centered,
                 SketchFormat.TextHorizontalAlignment.Justified,
               ][item.textAlign || 0],
+              minimumLineHeight: item.lineHeight,
+              maximumLineHeight: item.lineHeight,
+              paragraphSpacing: item.paragraphSpacing,
             },
             underlineStyle: item.textDecoration.indexOf(TEXT_DECORATION.UNDERLINE) > -1 ?
               SketchFormat.UnderlineStyle.Underlined :
