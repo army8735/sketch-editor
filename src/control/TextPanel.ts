@@ -75,12 +75,6 @@ const html = `
 
 const KEY_INFO = 'textPanelFold';
 
-// let local = false;
-// loadLocalFonts().then(res => {
-//   style.font.registerLocalFonts(res);
-//   local = true;
-// });
-
 class TextPanel extends Panel {
   panel: HTMLElement;
   nodes: Text[];

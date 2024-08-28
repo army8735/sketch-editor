@@ -354,10 +354,6 @@ class Text extends Node {
     const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
     const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
     while (i < length) {
-      // 定高超过不显示也无需定位
-      if (!autoH && y >= H) {
-        break;
-      }
       const setFontIndex = SET_FONT_INDEX[i];
       // 每串富文本重置font测量
       if (i && setFontIndex) {
