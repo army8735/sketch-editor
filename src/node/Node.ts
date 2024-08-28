@@ -1837,6 +1837,8 @@ class Node extends Event {
         stops: [],
       };
       let fillType = SketchFormat.FillType.Color;
+      let patternFillType: any = SketchFormat.PatternFillType.Tile;
+      let patternTileScale = 1;
       let image: SketchFormat.FileRef | undefined;
       // 纯色
       if (Array.isArray(f)) {
@@ -1848,6 +1850,8 @@ class Node extends Event {
         if ((f as ComputedPattern).url) {
           f = f as ComputedPattern;
           fillType = SketchFormat.FillType.Pattern;
+          patternFillType = f.type;
+          patternTileScale = f.scale;
           const imagesZip = zip.folder('images');
           if (imagesZip) {
             const res = await fetch(f.url);
@@ -1882,7 +1886,7 @@ class Node extends Event {
             });
           });
         }
-      }
+      } console.log(f);
       return {
         _class: 'fill',
         isEnabled: computedStyle.fillEnable[i],
@@ -1890,8 +1894,8 @@ class Node extends Event {
         fillType,
         noiseIndex: 0,
         noiseIntensity: 0,
-        patternFillType: SketchFormat.PatternFillType.Tile,
-        patternTileScale: 1,
+        patternFillType,
+        patternTileScale,
         gradient,
         image,
         contextSettings: {
