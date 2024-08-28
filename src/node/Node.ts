@@ -1886,7 +1886,7 @@ class Node extends Event {
             });
           });
         }
-      } console.log(f);
+      }
       return {
         _class: 'fill',
         isEnabled: computedStyle.fillEnable[i],
