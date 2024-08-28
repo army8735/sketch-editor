@@ -1,6 +1,7 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
+import Group from '../node/Group';
 import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -80,6 +81,7 @@ class BasicPanel extends Panel {
         prevNumber = [];
       }
       nextNumber = [];
+      const value = parseFloat(isXOrY ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         if (isFirst) {
@@ -89,7 +91,7 @@ class BasicPanel extends Panel {
           prevNumber.push(isXOrY ? this.data[i].x : this.data[i].y);
         }
         const prev = prevNumber[i];
-        let next = parseFloat(isXOrY ? x.value : y.value) || 0;
+        let next = value;
         let d = 0;
         if (isInput) {
           d = next - prev;
@@ -250,6 +252,7 @@ class BasicPanel extends Panel {
         heightAuto = [];
       }
       nextNumber = [];
+      const value = parseFloat(isWOrH ? w.value : h.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         if (isFirst) {
@@ -276,9 +279,13 @@ class BasicPanel extends Panel {
           widthAuto[i] = widthAuto[i] || false;
           heightAuto[i] = heightAuto[i] || false;
           node.startSizeChange();
+          const p = node.parent;
+          if (p && p.isGroup && p instanceof Group) {
+            p.fixedPosAndSize = true;
+          }
         }
         const prev = prevNumber[i];
-        let next = parseFloat(isWOrH ? w.value : h.value) || 0;
+        let next = value;
         let d = 0;
         if (isInput) {
           d = next - prev;
@@ -321,6 +328,10 @@ class BasicPanel extends Panel {
       if (nodes.length) {
         const data: ResizeData[] = [];
         nodes.forEach((node, i) => {
+          const p = node.parent;
+          if (p && p.isGroup && p instanceof Group) {
+            p.fixedPosAndSize = false;
+          }
           node.endSizeChange(originStyle[i]);
           node.checkPosSizeUpward();
           const d = nextNumber[i] - prevNumber[i];
