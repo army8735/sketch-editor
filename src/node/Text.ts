@@ -989,7 +989,7 @@ class Text extends Node {
               textBox.str,
               textBox.x * scale + dx2,
               (textBox.y + textBox.baseline) * scale + dy2,
-            ); console.log(textDecoration)
+            );
             if (textDecoration.length) {
               textDecoration.forEach(item => {
                 if (item === TEXT_DECORATION.UNDERLINE) {
@@ -1627,7 +1627,11 @@ class Text extends Node {
       bottom.u = StyleUnit.PX;
       translateY.v = 0;
     }
-    if (height.u !== StyleUnit.AUTO) {}
+    // if (height.u !== StyleUnit.AUTO) {
+    //   impact = true;
+    //   height.v = 0;
+    //   height.u = StyleUnit.AUTO;
+    // }
     // 无影响则返回空，结束无需还原
     if (!impact) {
       return;
@@ -1677,6 +1681,7 @@ class Text extends Node {
       right,
       top,
       bottom,
+      height,
       translateX,
       translateY,
     } = prev;
@@ -1871,6 +1876,10 @@ class Text extends Node {
       style.translateY.v = translateY.v;
       style.translateY.u = translateY.u;
     }
+    // if (height.u !== StyleUnit.AUTO) {
+    //   style.height.v = height.v;
+    //   style.height.u = height.u;
+    // }
   }
 
   // 根据字符串索引更新光标
