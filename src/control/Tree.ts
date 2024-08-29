@@ -207,11 +207,15 @@ export default class Tree {
       }
       else if (classList.contains('name') || classList.contains('type') || isDt) {
         const actives = this.dom.querySelectorAll('dt.active');
+        const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
+        const dt = dl.querySelector('dt')!;
+        if (actives.length === 1 && actives[0] === dt) {
+          return;
+        }
+        listener.input.hide();
         actives.forEach((item) => {
           item.classList.remove('active');
         });
-        const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
-        const dt = dl.querySelector('dt')!;
         dt.classList.add('active');
         const uuid = dl.getAttribute('uuid');
         if (uuid) {
