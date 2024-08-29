@@ -566,19 +566,19 @@ function genTotal(
           if (checkInRect(bbox2, matrix, x, y, w, h)) {
             if (!t) {
               t = rect.t = createTexture(gl, 0, undefined, w, h);
-              if (frameBuffer) {
-                gl.framebufferTexture2D(
-                  gl.FRAMEBUFFER,
-                  gl.COLOR_ATTACHMENT0,
-                  gl.TEXTURE_2D,
-                  t,
-                  0,
-                );
-                gl.viewport(0, 0, w, h);
-              }
-              else {
-                frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
-              }
+            }
+            if (frameBuffer) {
+              gl.framebufferTexture2D(
+                gl.FRAMEBUFFER,
+                gl.COLOR_ATTACHMENT0,
+                gl.TEXTURE_2D,
+                t,
+                0,
+              );
+              gl.viewport(0, 0, w, h);
+            }
+            else {
+              frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
             }
             let tex: WebGLTexture | undefined;
             // 有mbm先将本节点内容绘制到同尺寸纹理上
