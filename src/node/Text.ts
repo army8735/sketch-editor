@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Rich, TAG_NAME, TextProps, ModifyRichStyle } from '../format';
+import { JNode, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -714,26 +714,6 @@ class Text extends Node {
               textBox.x * scale + dx,
               (textBox.y + textBox.baseline) * scale + dy,
             );
-            if (textDecoration.length) {
-              textDecoration.forEach(item => {
-                if (item === TEXT_DECORATION.UNDERLINE) {
-                  ctx.fillRect(
-                    textBox.x * scale + dx,
-                    (textBox.y + textBox.contentArea - 1.5) * scale + dy,
-                    textBox.w * scale,
-                    3 * scale,
-                  );
-                }
-                else if (item === TEXT_DECORATION.LINE_THROUGH) {
-                  ctx.fillRect(
-                    textBox.x * scale + dx,
-                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
-                    textBox.w * scale,
-                    3 * scale,
-                  );
-                }
-              });
-            }
           }
           else {
             ctx.strokeText(
@@ -741,26 +721,26 @@ class Text extends Node {
               textBox.x * scale + dx,
               (textBox.y + textBox.baseline) * scale + dy,
             );
-            if (textDecoration.length) {
-              textDecoration.forEach(item => {
-                if (item === TEXT_DECORATION.UNDERLINE) {
-                  ctx.strokeRect(
-                    textBox.x * scale + dx,
-                    (textBox.y + textBox.contentArea - 1.5) * scale + dy,
-                    textBox.w * scale,
-                    3 * scale,
-                  );
-                }
-                else if (item === TEXT_DECORATION.LINE_THROUGH) {
-                  ctx.strokeRect(
-                    textBox.x * scale + dx,
-                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
-                    textBox.w * scale,
-                    3 * scale,
-                  );
-                }
-              });
-            }
+          }
+          if (textDecoration.length) {
+            textDecoration.forEach(item => {
+              if (item === TEXT_DECORATION.UNDERLINE) {
+                ctx.strokeRect(
+                  textBox.x * scale + dx,
+                  (textBox.y + textBox.contentArea - 4) * scale + dy,
+                  textBox.w * scale,
+                  3 * scale,
+                );
+              }
+              else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                ctx.strokeRect(
+                  textBox.x * scale + dx,
+                  (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
+                  textBox.w * scale,
+                  3 * scale,
+                );
+              }
+            });
           }
         }
       }
@@ -1009,13 +989,13 @@ class Text extends Node {
               textBox.str,
               textBox.x * scale + dx2,
               (textBox.y + textBox.baseline) * scale + dy2,
-            );
+            ); console.log(textDecoration)
             if (textDecoration.length) {
               textDecoration.forEach(item => {
                 if (item === TEXT_DECORATION.UNDERLINE) {
                   ctx.fillRect(
                     textBox.x * scale + dx2,
-                    (textBox.y + textBox.contentArea - 1.5) * scale + dy2,
+                    (textBox.y + textBox.contentArea - 4) * scale + dy2,
                     textBox.w * scale,
                     3 * scale,
                   );
@@ -1383,7 +1363,6 @@ class Text extends Node {
       computedStyle,
       parent,
       isDestroyed,
-      // textBehaviour,
       width: w,
       height: h,
     } = this;
@@ -1648,6 +1627,7 @@ class Text extends Node {
       bottom.u = StyleUnit.PX;
       translateY.v = 0;
     }
+    if (height.u !== StyleUnit.AUTO) {}
     // 无影响则返回空，结束无需还原
     if (!impact) {
       return;
@@ -3187,11 +3167,37 @@ class Text extends Node {
     else {
       json.textBehaviour = SketchFormat.TextBehaviour.FixedWidthAndHeight;
     }
-    // json.textBehaviour = [
-    //   SketchFormat.TextBehaviour.Flexible,
-    //   SketchFormat.TextBehaviour.Fixed,
-    //   SketchFormat.TextBehaviour.FixedWidthAndHeight,
-    // ][this.textBehaviour || 0];
+    const computedStyle = this.computedStyle;
+    json.style!.textStyle = {
+      _class: 'textStyle',
+      verticalAlignment: [
+        SketchFormat.TextVerticalAlignment.Top,
+        SketchFormat.TextVerticalAlignment.Middle,
+        SketchFormat.TextVerticalAlignment.Bottom,
+      ][computedStyle.textVerticalAlign],
+      encodedAttributes: {
+        paragraphStyle: {
+          _class: 'paragraphStyle',
+          alignment: [
+            SketchFormat.TextHorizontalAlignment.Left,
+            SketchFormat.TextHorizontalAlignment.Right,
+            SketchFormat.TextHorizontalAlignment.Centered,
+            SketchFormat.TextHorizontalAlignment.Justified,
+            SketchFormat.TextHorizontalAlignment.Natural,
+          ][computedStyle.textAlign],
+        },
+        underlineStyle: computedStyle.textDecoration.includes(TEXT_DECORATION.UNDERLINE) ? SketchFormat.UnderlineStyle.Underlined : SketchFormat.UnderlineStyle.None,
+        strikethroughStyle: computedStyle.textDecoration.includes(TEXT_DECORATION.LINE_THROUGH) ? SketchFormat.StrikethroughStyle.Strikethrough : SketchFormat.StrikethroughStyle.None,
+        kerning: computedStyle.letterSpacing,
+        MSAttributedStringFontAttribute: {
+          _class: 'fontDescriptor',
+          attributes: {
+            name: computedStyle.fontFamily,
+            size: computedStyle.fontSize,
+          },
+        },
+      },
+    };
     return json;
   }
 

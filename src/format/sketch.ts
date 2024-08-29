@@ -779,22 +779,18 @@ async function convertItem(
       layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const alignment = paragraphStyle?.alignment;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
+    const { underlineStyle = 0, strikethroughStyle = 0, kerning: letterSpacing = 0, MSAttributedStringColorAttribute } = layer.style?.textStyle?.encodedAttributes || {};
     const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
     const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
     const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
     const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
-    if (layer.style?.textStyle?.encodedAttributes.underlineStyle !== SketchFormat.UnderlineStyle.None) {
+    if (underlineStyle !== SketchFormat.UnderlineStyle.None) {
       textDecoration.push('underline');
     }
-    if (layer.style?.textStyle?.encodedAttributes.strikethroughStyle !== SketchFormat.StrikethroughStyle.None) {
+    if (underlineStyle && strikethroughStyle !== SketchFormat.StrikethroughStyle.None) {
       textDecoration.push('lineThrough');
     }
-    const letterSpacing =
-      layer.style?.textStyle?.encodedAttributes?.kerning || 0;
     const paragraphSpacing = paragraphStyle?.paragraphSpacing || 0;
-    const MSAttributedStringColorAttribute =
-      layer.style?.textStyle?.encodedAttributes
-        ?.MSAttributedStringColorAttribute;
     const color = MSAttributedStringColorAttribute
       ? [
         Math.floor(MSAttributedStringColorAttribute.red * 255),
