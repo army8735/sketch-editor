@@ -480,13 +480,12 @@ function genTotal(
   const list = res.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   const UNIT = config.maxTextureSize;
-  const listRect: { x: number, y: number }[] = [];
+  const listRect: { x: number, y: number, w: number, h: number, bbox: Float64Array, t?: WebGLTexture }[] = [];
   // 要先按整数创建纹理块，再反向计算bbox（真实尺寸/scale），创建完再重新遍历按节点顺序渲染，因为有bgBlur存在
   for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
     for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
       const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
       const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
-      const t = createTexture(gl, 0, undefined, width, height);
       const x0 = x + j * UNIT / scale,
         y0 = y + i * UNIT / scale;
       const w0 = width / scale,
@@ -497,16 +496,10 @@ function genTotal(
         x0 + w0,
         y0 + h0,
       ]);
-      list.push({
-        bbox,
-        w: width,
-        h: height,
-        t,
-      });
-      // checkInRect用
+      // checkInRect用，同时真实渲染时才创建纹理，防止空白区域浪费显存，最后过滤
       const x1 = x2 + j * UNIT,
         y1 = y2 + i * UNIT;
-      listRect.push({ x: x1, y: y1 });
+      listRect.push({ x: x1, y: y1, w: width, h: height, bbox });
     }
   }
   // 再外循环按节点序，内循环按分块，确保节点序内容先渲染，从而正确生成分块的bgBlur
@@ -561,29 +554,32 @@ function genTotal(
       }
       const list2 = target2.list;
       // 内循环目标分块
-      for (let j = 0, len = list.length; j < len; j++) {
-        const area = list[j];
+      for (let j = 0, len = listRect.length; j < len; j++) {
         const rect = listRect[j];
-        const { w, h, t } = area;
-        if (frameBuffer) {
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            t,
-            0,
-          );
-          gl.viewport(0, 0, w, h);
-        }
-        else {
-          frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
-        }
+        const { x, y, w, h } = rect;
+        let t = rect.t;
         const cx = w * 0.5,
           cy = h * 0.5;
         // 再循环当前target的分块
         for (let k = 0, len = list2.length; k < len; k++) {
           const { bbox: bbox2, t: t2 } = list2[k];
-          if (checkInRect(bbox2, matrix, rect.x, rect.y, w, h)) {
+          if (checkInRect(bbox2, matrix, x, y, w, h)) {
+            if (!t) {
+              t = rect.t = createTexture(gl, 0, undefined, w, h);
+              if (frameBuffer) {
+                gl.framebufferTexture2D(
+                  gl.FRAMEBUFFER,
+                  gl.COLOR_ATTACHMENT0,
+                  gl.TEXTURE_2D,
+                  t,
+                  0,
+                );
+                gl.viewport(0, 0, w, h);
+              }
+              else {
+                frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
+              }
+            }
             let tex: WebGLTexture | undefined;
             // 有mbm先将本节点内容绘制到同尺寸纹理上
             if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
@@ -617,7 +613,7 @@ function genTotal(
             );
             // 这里才是真正生成mbm
             if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
-              area.t = genMbm(
+              rect.t = genMbm(
                 gl,
                 t,
                 tex,
@@ -645,7 +641,19 @@ function genTotal(
     }
   }
   // 删除fbo恢复
-  releaseFrameBuffer(gl, frameBuffer!, W, H);
+  if (frameBuffer) {
+    releaseFrameBuffer(gl, frameBuffer, W, H);
+  }
+  listRect.forEach(item => {
+    if (item.t) {
+      list.push({
+        bbox: item.bbox,
+        w: item.w,
+        h: item.h,
+        t: item.t,
+      });
+    }
+  });
   return res;
 }
 
@@ -1702,6 +1710,7 @@ function genShadow(
   const bboxS = textureTarget.bbox;
   const bboxR2 = bboxS.slice(0);
   const sb = [0, 0, 0, 0];
+  const sbList: number[][] = [];
   const data: number[] = [];
   for (let i = 0, len = shadow.length; i < len; i++) {
     const item = shadow[i];
@@ -1710,10 +1719,15 @@ function genShadow(
     data.push(spread);
     // 除了模糊增量还需考虑偏移增量
     if (item.x || item.y || spread) {
-      sb[0] = Math.min(sb[0], item.x - spread);
-      sb[1] = Math.min(sb[1], item.y - spread);
-      sb[2] = Math.max(sb[2], item.x + spread);
-      sb[3] = Math.max(sb[3], item.y + spread);
+      const x1 = item.x - spread;
+      const y1 = item.y - spread;
+      const x2 = item.x + spread;
+      const y2 = item.y + spread;
+      sbList.push([x1, y1, x2, y2]);
+      sb[0] = Math.min(sb[0], x1);
+      sb[1] = Math.min(sb[1], y1);
+      sb[2] = Math.max(sb[2], x2);
+      sb[3] = Math.max(sb[3], y2);
     }
   }
   bboxR2[0] += sb[0];
@@ -1737,17 +1751,30 @@ function genShadow(
     for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
       const width = j === len2 - 1 ? (w2 - j * UNIT) : UNIT;
       const height = i === len - 1 ? (h2 - i * UNIT) : UNIT;
-      const t = createTexture(gl, 0, undefined, width, height);
       const x0 = x + j * UNIT / scale,
         y0 = y + i * UNIT / scale;
       const w0 = width / scale,
         h0 = height / scale;
+      // 可能shadow和原图位置差非常远，中间出现空白无内容，无需生成纹理
+      let isEmpty = true;
+      for (let k = 0, len = sbList.length; k < len; k++) {
+        const sb = sbList[k];
+        if (isRectsOverlap(bboxS[0], bboxS[1], bboxS[2], bboxS[3], x0, y0, x0 + w0, y0 + h0)
+          || isRectsOverlap(sb[0], sb[1], sb[2], sb[3], x0, y0, x0 + w0, y0 + h0)) {
+          isEmpty = false;
+          break;
+        }
+      }
+      if (isEmpty) {
+        continue;
+      }
       const bbox = new Float64Array([
         x0,
         y0,
         x0 + w0,
         y0 + h0,
       ]);
+      const t = createTexture(gl, 0, undefined, width, height);
       listR2.push({
         bbox,
         w: width,
@@ -1817,8 +1844,10 @@ function genShadow(
     if (blur) {
       const sigma = blur * 0.5;
       const d = kernelSize(sigma);
+      const sigma2 = sigma * scale;
+      const d2 = kernelSize(sigma2);
       const spread = outerSizeByD(d);
-      const programGauss = genGaussShader(gl, programs, sigma * scale, kernelSize(sigma * scale));
+      const programGauss = genGaussShader(gl, programs, sigma2, d2);
       gl.useProgram(programGauss);
       const temp = TextureCache.getEmptyInstance(gl, bboxR);
       const listT = temp.list;

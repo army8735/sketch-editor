@@ -37,20 +37,16 @@ function renderItem(
       <span class="txt">颜色</span>
     </div>
     <div>
-      <input class="x" type="number" step="1" value="${multiX ? '' : x}" placeholder="${multiX ? '多个' : ''}" ${readOnly}/>
+      <input class="x" type="number" min="-500000" max="500000" step="1" value="${multiX ? '' : x}" placeholder="${multiX ? '多个' : ''}" ${readOnly}/>
       <span class="txt">X</span>
     </div>
     <div>
-      <input class="y" type="number" step="1" value="${multiY ? '' : y}" placeholder="${multiY ? '多个' : ''}" ${readOnly}/>
+      <input class="y" type="number" min="-500000" max="500000" step="1" value="${multiY ? '' : y}" placeholder="${multiY ? '多个' : ''}" ${readOnly}/>
       <span class="txt">Y</span>
     </div>
     <div>
-      <input class="blur" type="number" min="0" step="1" value="${multiBlur ? '' : blur}" placeholder="${multiBlur ? '多个' : ''}" ${readOnly}/>
+      <input class="blur" type="number" min="0" max="50" step="1" value="${multiBlur ? '' : blur}" placeholder="${multiBlur ? '多个' : ''}" ${readOnly}/>
       <span class="txt">模糊</span>
-    </div>
-    <div>
-      <input class="spread" type="number" min="0" step="1" value="${multiSpread ? '' : spread}" placeholder="${multiSpread ? '多个' : ''}" readonly="readonly"/>
-      <span class="txt">扩展</span>
     </div>
   </div>`;
 }

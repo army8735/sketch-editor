@@ -932,21 +932,16 @@ export function color2gl(color: string | number[]): number[] {
 }
 
 export function setFontStyle(style: ComputedStyle | Rich) {
-  const fontSize = style.fontSize || 0;
+  const fontSize = style.fontSize || 16;
   let fontFamily = style.fontFamily || inject.defaultFontFamily;
   // fontFamily += ',' + 'pingfangsc-regular';
   if (/[\s.,/\\]/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
   return (
-    (style.fontStyle || '') +
-    ' ' +
-    (style.fontWeight || '400') +
-    ' ' +
-    fontSize +
-    'px/' +
-    fontSize +
-    'px ' +
+    // (style.fontStyle || '') + ' ' +
+    // (style.fontWeight || '400') + ' ' +
+    fontSize + 'px ' +
     fontFamily
   );
 }

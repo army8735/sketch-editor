@@ -100,25 +100,7 @@ export type JStyle = {
   visible: boolean;
   fontFamily: string;
   fontSize: number;
-  fontWeight:
-    | 100
-    | 200
-    | 300
-    | 400
-    | 500
-    | 600
-    | 700
-    | 800
-    | 900
-    | 'thin'
-    | 'lighter'
-    | 'light'
-    | 'normal'
-    | 'medium'
-    | 'semiBold'
-    | 'bold'
-    | 'extraBold'
-    | 'black';
+  fontWeight: number | string;
   fontStyle: 'normal' | 'italic' | 'oblique';
   backgroundColor: string | number[];
   color: string | number[];
@@ -312,7 +294,7 @@ export type Rich = {
   length: number;
   fontFamily: string;
   fontSize: number;
-  fontWeight: number; // 用不到，只会改postscriptName
+  fontWeight: number | string; // 用不到，只会改postscriptName
   fontStyle: string; // 同
   lineHeight: number;
   textAlign: TEXT_ALIGN;
