@@ -278,6 +278,7 @@ class TextPanel extends Panel {
           }
         }
         select.value = ff;
+        select.disabled = false;
         const data: UpdateRichData[] = [];
         nodes.forEach(node => {
           const prev = node.getRich();
@@ -580,30 +581,34 @@ class TextPanel extends Panel {
       if (option) {
         option.remove();
       }
-      select.classList.remove('invalid');
       const multi = panel.querySelector('.ff .multi') as HTMLElement;
       const list = select.querySelectorAll('option');
+      for (let i = 0, len = list.length; i < len; i++) {
+        const option = list[i];
+        if (option.selected) {
+          option.selected = false;
+          break;
+        }
+      }
       // 多种字体
       if (o.fontFamily.length > 1) {
+        multi.innerText = '多种字体';
         multi.style.display = 'block';
-        for (let i = 0, len = list.length; i < len; i++) {
-          const option = list[i];
-          if (option.selected) {
-            option.selected = false;
-            break;
-          }
-        }
+        multi.classList.remove('invalid');
         const option = `<option value="" selected="selected" disabled>多种字体</option>`;
         select.innerHTML += option;
       }
       else {
-        multi.style.display = 'none';
         if (!o.valid[0]) {
+          multi.innerText = o.fontFamily[0];
+          multi.classList.add('invalid');
+          multi.style.display = 'block';
           const option = `<option value="${o.postscriptName[0]}" selected="selected" disabled>${o.fontFamily[0]}</option>`;
           select.innerHTML += option;
-          select.classList.add('invalid');
         }
         else {
+          multi.style.display = 'none';
+          multi.classList.remove('invalid');
           select.value = o.fontFamily[0];
         }
       }
