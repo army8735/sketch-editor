@@ -1,6 +1,14 @@
 import { createTexture } from '../gl/webgl';
 import CanvasCache from './CanvasCache';
 
+export type SubTexture = {
+  bbox: Float64Array;
+  w: number;
+  h: number;
+  t: WebGLTexture;
+  tc?: { x1: number, y1: number, x3: number, y3: number },
+};
+
 const HASH: Record<string, Record<string, {
   value: {
     x: number;
@@ -16,13 +24,7 @@ class TextureCache {
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   available: boolean;
   bbox: Float64Array;
-  list: {
-    bbox: Float64Array;
-    w: number;
-    h: number;
-    t: WebGLTexture;
-    tc?: { x1: number, y1: number, x3: number, y3: number },
-  }[];
+  list: SubTexture[];
 
   constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache) {
     this.gl = gl;

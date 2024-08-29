@@ -31,7 +31,7 @@ import { BLUR, ComputedBlur, ComputedShadow, ComputedStyle, FILL_RULE, MASK, MIX
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
 import { Struct } from './struct';
-import TextureCache from './TextureCache';
+import TextureCache, { SubTexture } from './TextureCache';
 import CanvasCache from './CanvasCache';
 import { mergeBbox } from '../math/bbox';
 
@@ -434,6 +434,13 @@ function genNextCount(
   }
 }
 
+type ListRect = Omit<SubTexture, 't'> & {
+  x: number;
+  y: number;
+  t?: WebGLTexture;
+  ref?: SubTexture;
+};
+
 function genTotal(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
@@ -480,7 +487,7 @@ function genTotal(
   const list = res.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   const UNIT = config.maxTextureSize;
-  const listRect: { x: number, y: number, w: number, h: number, bbox: Float64Array, t?: WebGLTexture }[] = [];
+  const listRect: ListRect[] = [];
   // 要先按整数创建纹理块，再反向计算bbox（真实尺寸/scale），创建完再重新遍历按节点顺序渲染，因为有bgBlur存在
   for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
     for (let j = 0, len2 = Math.ceil(w2 / UNIT); j < len2; j++) {
@@ -544,10 +551,30 @@ function genTotal(
       const { mixBlendMode, blur } = computedStyle;
       // 同主循环的bgBlur，先提取总的outline，在分块渲染时每块单独对背景blur
       if (isBgBlur && i > index) {
-        const outline = node.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
+        const outline = node2.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
         // outline会覆盖这个值，恶心
         assignMatrix(node2.tempMatrix, matrix);
+        list.splice(0);
+        listRect.forEach(item => {
+          if (item.t) {
+            const st = {
+              bbox: item.bbox,
+              w: item.w,
+              h: item.h,
+              t: item.t,
+            };
+            item.ref = st; // 生成blur可能会被删除，需要还原回来
+            list.push(st);
+          }
+        });
         genBgBlur(gl, root, res, matrix, outline, blur, programs, scale, w, h);
+        listRect.forEach(item => {
+          if (item.ref) {
+            item.t = item.ref.t;
+            item.ref = undefined;
+          }
+        });
+        list.splice(0);
         if (frameBuffer) {
           gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
         }
@@ -644,6 +671,7 @@ function genTotal(
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
   }
+  // 赋给结果，这样可能存在的空白区域无纹理
   listRect.forEach(item => {
     if (item.t) {
       list.push({
