@@ -1753,7 +1753,7 @@ function genShadow(
       const y1 = item.y - spread;
       const x2 = item.x + spread;
       const y2 = item.y + spread;
-      sbList.push([x1, y1, x2, y2]);
+      sbList.push([x1, y1, x2 + (bboxS[2] - bboxS[0]), y2 + (bboxS[3] - bboxS[1])]);
       sb[0] = Math.min(sb[0], x1);
       sb[1] = Math.min(sb[1], y1);
       sb[2] = Math.max(sb[2], x2);
