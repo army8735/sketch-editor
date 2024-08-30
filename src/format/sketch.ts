@@ -722,7 +722,7 @@ async function convertItem(
       // 啥也不干，等同普通节点的固定宽高
     }
     const { string, attributes } = layer.attributedString;
-    const rich = attributes.length
+    const rich: Rich[] = attributes.length
       ? attributes.map((item: any) => {
         const {
           location,
@@ -767,17 +767,17 @@ async function convertItem(
             Math.floor(blue * 255),
             alpha,
           ],
-        } as Rich;
+        };
       })
-      : undefined;
+      : [];
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
         ?.attributes;
-    const fontSize = MSAttributedStringFontAttribute?.size || inject.defaultFontSize;
-    const fontFamily = MSAttributedStringFontAttribute?.name || inject.defaultFontFamily;
+    const fontSize = MSAttributedStringFontAttribute?.size || rich[0]?.fontSize || inject.defaultFontSize;
+    const fontFamily = MSAttributedStringFontAttribute?.name || rich[0]?.fontFamily || inject.defaultFontFamily;
     const paragraphStyle =
       layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
-    const alignment = paragraphStyle?.alignment;
+    const alignment = paragraphStyle?.alignment ?? rich[0]?.textAlign;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const { underlineStyle = 0, strikethroughStyle = 0, kerning: letterSpacing = 0, MSAttributedStringColorAttribute } = layer.style?.textStyle?.encodedAttributes || {};
     const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
@@ -798,7 +798,7 @@ async function convertItem(
         Math.floor(MSAttributedStringColorAttribute.blue * 255),
         MSAttributedStringColorAttribute.alpha,
       ]
-      : [0, 0, 0, 1];
+      : (rich[0]?.color || [0, 0, 0, 1]);
     const {
       fill,
       fillEnable,
