@@ -352,7 +352,7 @@ class Text extends Node {
     lineBoxList.push(lineBox);
     // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
     const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
-    const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
+    // const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
     while (i < length) {
       const setFontIndex = SET_FONT_INDEX[i];
       // 每串富文本重置font测量

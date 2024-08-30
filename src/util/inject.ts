@@ -268,11 +268,11 @@ const inject = {
         }
 
         function success(ab: ArrayBuffer) {
-          const f = new FontFace(fontFamily, ab);
-          f.load()
+          const ff = new FontFace(fontFamily, ab);
+          ff.load()
             .then(function () {
               if (typeof document !== 'undefined') {
-                document.fonts.add(f);
+                document.fonts.add(ff);
               }
               cache.state = LOADED;
               cache.success = true;
@@ -306,10 +306,16 @@ const inject = {
       load(fontFamily, url as string, cache);
     }
   },
-  loadArrayBufferFont(postscriptName: string, ab: ArrayBuffer) {
+  addArrayBufferFont(postscriptName: string, ab: ArrayBuffer) {
     if (typeof document !== 'undefined' && typeof FontFace !== 'undefined') {
-      const f = new FontFace(postscriptName, ab);
-      document.fonts.add(f);
+      const ff = new FontFace(postscriptName, ab);
+      document.fonts.add(ff);
+    }
+  },
+  addLocalFont(postscriptName: string) {
+    if (typeof document !== 'undefined' && typeof FontFace !== 'undefined') {
+      const ff = new FontFace(postscriptName, `local(${postscriptName}`);
+      document.fonts.add(ff);
     }
   },
   IMG,

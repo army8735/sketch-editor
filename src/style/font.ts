@@ -65,6 +65,7 @@ const o = {
       const postscriptName = font.postscriptName;
       const family = font.family;
       const style = font.style;
+      inject.addLocalFont(postscriptName); // windows上需要注册
       // localStorage存的是this.info
       if (cache.hasOwnProperty(family)) {
         const o: any = cache[family];
@@ -135,7 +136,7 @@ const o = {
       info[family] = o;
     }
     this._register(family, style, postscriptName, true);
-    inject.loadArrayBufferFont(postscriptName, ab);
+    inject.addArrayBufferFont(postscriptName, ab);
   },
   _cal(family: string, f: any) {
     let spread = 0;
