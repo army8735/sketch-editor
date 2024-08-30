@@ -150,6 +150,7 @@ const inject = {
     }
   },
   defaultFontFamily: 'Arial',
+  defaultFontSize: 16,
   getFontCanvas() {
     return inject.getOffscreenCanvas(
       16,

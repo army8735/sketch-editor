@@ -2825,8 +2825,8 @@ class Text extends Node {
       {
         location: start,
         length,
-        fontFamily: 'arial',
-        fontSize: 16,
+        fontFamily: inject.defaultFontFamily,
+        fontSize: inject.defaultFontSize,
         fontWeight: 400,
         fontStyle: 'normal',
         letterSpacing: 0,

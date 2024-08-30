@@ -729,7 +729,7 @@ async function convertItem(
           length,
           attributes: {
             MSAttributedStringFontAttribute: {
-              attributes: { name = inject.defaultFontFamily, size: fontSize = 16 } = {},
+              attributes: { name = inject.defaultFontFamily, size: fontSize = inject.defaultFontSize } = {},
             } = {},
             MSAttributedStringColorAttribute: { red = 0, green = 0, blue = 0, alpha = 1 } = {},
             kerning = 0,
@@ -773,7 +773,7 @@ async function convertItem(
     const MSAttributedStringFontAttribute =
       layer.style?.textStyle?.encodedAttributes?.MSAttributedStringFontAttribute
         ?.attributes;
-    const fontSize = MSAttributedStringFontAttribute?.size || 16;
+    const fontSize = MSAttributedStringFontAttribute?.size || inject.defaultFontSize;
     const fontFamily = MSAttributedStringFontAttribute?.name || inject.defaultFontFamily;
     const paragraphStyle =
       layer.style?.textStyle?.encodedAttributes?.paragraphStyle;

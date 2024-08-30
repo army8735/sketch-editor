@@ -108,7 +108,7 @@ const o = {
     }
     this.updateLocalStorage();
   },
-  registerAb(ab: ArrayBuffer) {
+  registerAb(ab: ArrayBuffer, focus = false) {
     const o: any = {};
     const f: any = opentype.parse(ab);
     if (f && f.name) {
@@ -126,7 +126,7 @@ const o = {
     if (!family || !style || !postscriptName) {
       return;
     }
-    if (this.hasRegister(postscriptName)) {
+    if (this.hasRegister(postscriptName) && !focus) {
       return;
     }
     if (!info.hasOwnProperty(family)) {

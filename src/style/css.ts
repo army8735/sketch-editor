@@ -109,9 +109,9 @@ export function normalize(style: any): Style {
   }
   const fontSize = style.fontSize;
   if (!isNil(fontSize)) {
-    let n = calUnit(fontSize || 16, true);
+    let n = calUnit(fontSize || inject.defaultFontSize, true);
     if (n.v <= 0) {
-      n.v = 16;
+      n.v = inject.defaultFontSize;
     }
     res.fontSize = n;
   }
@@ -932,7 +932,7 @@ export function color2gl(color: string | number[]): number[] {
 }
 
 export function setFontStyle(style: ComputedStyle | Rich) {
-  const fontSize = style.fontSize || 16;
+  const fontSize = style.fontSize || inject.defaultFontSize;
   let fontFamily = style.fontFamily || inject.defaultFontFamily;
   // fontFamily += ',' + 'pingfangsc-regular';
   if (/[\s.,/\\]/.test(fontFamily)) {
