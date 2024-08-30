@@ -51,6 +51,7 @@
     location.href = '?tile=' + (tile.checked ? '1' : '') + '&debug=' + (debug.checked ? '1' : '');
   });
 
+  sketchEditor.config.MAX_TEXTURE_SIZE = 4096;
   sketchEditor.style.font.registerLocalFonts();
 
   const $canvasC = document.querySelector('#canvasC');
