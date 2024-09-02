@@ -2805,7 +2805,23 @@ class Text extends Node {
   // 输入文字后扩展所在位置的rich
   private expandRich(start: number, length: number) {
     const rich = this.rich;
+    // 空内容下，start会是0
     if (!rich.length) {
+      const computedStyle = this.computedStyle;
+      rich.push({
+        location: start,
+        length,
+        fontFamily: computedStyle.fontFamily,
+        fontSize: computedStyle.fontSize,
+        fontWeight: 400,
+        fontStyle: 'normal',
+        letterSpacing: computedStyle.letterSpacing,
+        textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][computedStyle.textAlign],
+        textDecoration: computedStyle.textDecoration,
+        lineHeight: computedStyle.lineHeight,
+        paragraphSpacing: computedStyle.paragraphSpacing,
+        color: computedStyle.color,
+      });
       return;
     }
     for (let i = 0, len = rich.length; i < len; i++) {
@@ -2821,20 +2837,21 @@ class Text extends Node {
   }
 
   private insertRich(style: Partial<Rich>, start: number, length: number) {
+    const computedStyle = this.computedStyle;
     const st = Object.assign(
       {
         location: start,
         length,
-        fontFamily: inject.defaultFontFamily,
-        fontSize: inject.defaultFontSize,
+        fontFamily: computedStyle.fontFamily,
+        fontSize: computedStyle.fontSize,
         fontWeight: 400,
         fontStyle: 'normal',
-        letterSpacing: 0,
-        textAlign: TEXT_ALIGN.LEFT,
-        textDecoration: [],
-        lineHeight: 0,
-        paragraphSpacing: 0,
-        color: [0, 0, 0, 1],
+        letterSpacing: computedStyle.letterSpacing,
+        textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][computedStyle.textAlign],
+        textDecoration: computedStyle.textDecoration,
+        lineHeight: computedStyle.lineHeight,
+        paragraphSpacing: computedStyle.paragraphSpacing,
+        color: computedStyle.color,
       },
       style,
     );
