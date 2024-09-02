@@ -17,7 +17,7 @@ import {
   Rich,
   TAG_NAME,
 } from './';
-import { TEXT_ALIGN, TEXT_DECORATION, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
+import { POINTS_RADIUS_BEHAVIOUR, TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
@@ -799,6 +799,33 @@ async function convertItem(
         MSAttributedStringColorAttribute.alpha,
       ]
       : (rich[0]?.color || [0, 0, 0, 1]);
+    // 脏数据没有rich更新不了样式
+    if (string.length && !rich.length) {
+      rich.push({
+        location: 0,
+        length: string.length,
+        fontFamily,
+        fontSize,
+        fontWeight: 400,
+        fontStyle: 'normal',
+        letterSpacing,
+        textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
+        textDecoration: textDecoration.map(item => {
+          if (item === 'underline') {
+            return TEXT_DECORATION.UNDERLINE;
+          }
+          else if (item === 'lineThrough') {
+            return TEXT_DECORATION.LINE_THROUGH;
+          }
+          else {
+            return TEXT_DECORATION.NONE;
+          }
+        }),
+        lineHeight: typeof lineHeight === 'number' ? lineHeight : 0,
+        paragraphSpacing,
+        color,
+      });
+    }
     const {
       fill,
       fillEnable,
