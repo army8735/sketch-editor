@@ -2810,7 +2810,7 @@ class Text extends Node {
     }
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
-      if (item.location <= start && item.location + item.length > start) {
+      if (item.location <= start && (item.location + item.length > start || i === len - 1)) {
         item.length += length;
         for (let j = i + 1; j < len; j++) {
           rich[j].location += length;

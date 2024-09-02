@@ -800,31 +800,34 @@ async function convertItem(
       ]
       : (rich[0]?.color || [0, 0, 0, 1]);
     // 脏数据没有rich更新不了样式
-    if (string.length && !rich.length) {
-      rich.push({
-        location: 0,
-        length: string.length,
-        fontFamily,
-        fontSize,
-        fontWeight: 400,
-        fontStyle: 'normal',
-        letterSpacing,
-        textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
-        textDecoration: textDecoration.map(item => {
-          if (item === 'underline') {
-            return TEXT_DECORATION.UNDERLINE;
-          }
-          else if (item === 'lineThrough') {
-            return TEXT_DECORATION.LINE_THROUGH;
-          }
-          else {
-            return TEXT_DECORATION.NONE;
-          }
-        }),
-        lineHeight: typeof lineHeight === 'number' ? lineHeight : 0,
-        paragraphSpacing,
-        color,
-      });
+    if (string.length) {
+      const last = rich[rich.length - 1];
+      if (!rich.length || last.location + last.length < string.length) {
+        rich.push({
+          location: last ? last.location + last.length : 0,
+          length: last ? string.length - last.location - last.length : string.length,
+          fontFamily,
+          fontSize,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          letterSpacing,
+          textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
+          textDecoration: textDecoration.map(item => {
+            if (item === 'underline') {
+              return TEXT_DECORATION.UNDERLINE;
+            }
+            else if (item === 'lineThrough') {
+              return TEXT_DECORATION.LINE_THROUGH;
+            }
+            else {
+              return TEXT_DECORATION.NONE;
+            }
+          }),
+          lineHeight: typeof lineHeight === 'number' ? lineHeight : 0,
+          paragraphSpacing,
+          color,
+        });
+      }
     }
     const {
       fill,
