@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
+import { JNode, JStyle, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -234,10 +234,11 @@ class Text extends Node {
     let maxW = 0;
     let x = 0,
       y = 0;
+    // 初始数据合并校验
+    this.mergeRich();
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
     const SET_FONT_INDEX: number[] = [];
     if (rich.length) {
-      this.mergeRich(); // 初始数据合并
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
         SET_FONT_INDEX[item.location] = i;
@@ -2465,7 +2466,7 @@ class Text extends Node {
     return { x: rx, y: ry, h: rh };
   }
 
-  updateTextStyle(style: any, cb?: (sync: boolean) => void) {
+  updateTextStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
     const payload = this.beforeEdit();
     const rich = this.rich;
     // 转成rich的
@@ -2485,7 +2486,7 @@ class Text extends Node {
       }
     }
     if (style.hasOwnProperty('color')) {
-      style2.color = color2rgbaInt(style.color);
+      style2.color = color2rgbaInt(style.color || '#000');
     }
     if (style.hasOwnProperty('fontFamily')) {
       style2.fontFamily = style.fontFamily;
@@ -2893,17 +2894,70 @@ class Text extends Node {
     this.mergeRich();
   }
 
-  // 合并相邻相同的rich
+  // 合并相邻相同的rich，排序以及校验，防止脏数据
   private mergeRich() {
-    const rich = this.rich;
-    if (!rich.length || rich.length < 2) {
-      return false;
-    }
+    const { rich, _content: content, style } = this;
+    rich.sort((a, b) => {
+      return a.location - b.location;
+    });
     let hasMerge = false;
+    const dft = {
+      fontFamily: style.fontFamily.v,
+      fontSize: style.fontSize.v,
+      fontWeight: 400,
+      fontStyle: 'normal',
+      letterSpacing: style.letterSpacing.v,
+      textAlign: style.textAlign.v,
+      textDecoration: style.textDecoration.map(item => item.v),
+      lineHeight: style.lineHeight.v,
+      paragraphSpacing: style.paragraphSpacing.v,
+      color: style.color.v,
+    };
+    if (content.length) {
+      let last = rich[rich.length - 1];
+      if (!rich.length || last.location + last.length < content.length) {
+        rich.push({
+          location: last ? last.location + last.length : 0,
+          length: last ? content.length - last.location - last.length : content.length,
+          ...dft,
+        });
+        hasMerge = true;
+      }
+      last = rich[rich.length - 1];
+      if (last.location + last.length > content.length) {
+        last.length = content.length - last.location;
+        hasMerge = true;
+      }
+      const first = rich[0];
+      if (first.location > 0) {
+        rich.unshift({
+          location: 0,
+          length: first.location,
+          ...dft,
+        });
+        hasMerge = true;
+      }
+    }
     for (let i = rich.length - 2; i >= 0; i--) {
       const a = rich[i];
       const b = rich[i + 1];
-      if (equal(a, b, [
+      const pn = a.location + a.length;
+      if (pn !== b.location) {
+        if (pn < b.location) {
+          rich.splice(i + 1, 0, {
+            location: pn,
+            length: b.location - pn,
+            ...dft,
+          });
+          i += 2;
+        }
+        else {
+          const d = a.location + a.length - b.location;
+          b.location -= d;
+          b.length -= d;
+        }
+      }
+      else if (equal(a, b, [
         'color',
         'fontFamily',
         'fontSize',
