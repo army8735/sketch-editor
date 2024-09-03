@@ -495,6 +495,7 @@ class TextPanel extends Panel {
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         dom.querySelector('.wh .cur')?.classList.remove('cur');
         classList.add('cur');
+        dom.querySelector('.wh .txt')!.innerHTML = el.title;
       }
       // 左右对齐
       else if ((classList.contains('left') || classList.contains('right') || classList.contains('center') || el.classList.contains('justify'))
