@@ -37,8 +37,8 @@ const html = `
       <input type="number" class="h" step="1"/>
       <span class="unit">H</span>
     </div>
-    <span class="fh"></span>
-    <span class="fv"></span>
+    <span class="fh" title="水平翻转"></span>
+    <span class="fv" title="垂直翻转"></span>
   </div>
 `;
 
