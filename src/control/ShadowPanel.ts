@@ -279,7 +279,10 @@ class ShadowPanel extends Panel {
       else if (classList.contains('spread')) {
         type = 4;
       }
-      const n = parseFloat(input.value) || 0;
+      let n = parseFloat(input.value) || 0;
+      if (n > 500000 || n < -500000) {
+        n = 0;
+      }
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
