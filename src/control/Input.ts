@@ -45,21 +45,25 @@ export default class Input {
           // 回车等候一下让input先触发，输入法状态不会触发
           setTimeout(() => {
             this.node!.enter();
-            this.updateCurCursor();
-            this.listener.select.updateSelect([this.node!]);
-            this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+            this.updateCursor();
+            listener.select.updateSelect([this.node!]);
+            listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+            listener.emit(Listener.CURSOR_NODE, [this.node]);
           }, 0);
         }
         else if (keyCode === 8) {
           e.stopPropagation();
           this.node!.delete();
-          this.updateCurCursor();
-          this.listener.select.updateSelect([this.node]);
-          this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+          this.updateCursor();
+          listener.select.updateSelect([this.node]);
+          listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+          listener.emit(Listener.CURSOR_NODE, [this.node]);
         }
         else if (keyCode >= 37 && keyCode <= 40) {
-          this.node.moveCursor(keyCode);
-          this.updateCurCursor();
+          const p = this.node.moveCursor(keyCode);
+          this.updateCursor(p);
+          this.showCursor();
+          listener.emit(Listener.CURSOR_NODE, [this.node]);
         }
       }
     });
@@ -69,7 +73,7 @@ export default class Input {
         const s = e.data;
         if (s) {
           this.node.input(s);
-          this.updateCurCursor();
+          this.updateCursor();
           this.showCursor();
           inputEl.value = '';
           this.listener.select.updateSelect([this.node]);
@@ -85,11 +89,12 @@ export default class Input {
       if (this.node) {
         const s = e.data;
         this.node.input(s);
-        this.updateCurCursor();
+        this.updateCursor();
         this.showCursor();
         inputEl.value = '';
         this.listener.select.updateSelect([this.node]);
         this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+        listener.emit(Listener.CURSOR_NODE, [this.node]);
       }
     });
 
@@ -161,11 +166,14 @@ export default class Input {
     this.cursorEl.style.opacity = '0';
   }
 
-  updateCurCursor() {
-    const dpi = this.root.dpi;
-    const p = this.node!.getCursorAbsCoords();
-    this.containerEl.style.left = p.x / dpi + 'px';
-    this.containerEl.style.top = p.y / dpi + 'px';
+  updateCursor(p?: { x: number, y: number, h: number }) {
+    p = p || this.node!.getCursorAbsCoords();
+    if (p) {
+      const dpi = this.root.dpi;
+      this.containerEl.style.left = p.x / dpi + 'px';
+      this.containerEl.style.top = p.y / dpi + 'px';
+      this.containerEl.style.height = p.h / dpi + 'px';
+    }
   }
 
   destroy() {

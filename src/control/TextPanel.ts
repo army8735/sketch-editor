@@ -3,7 +3,7 @@ import Root from '../node/Root';
 import Text from '../node/Text';
 import { toPrecision } from '../math';
 import style from '../style';
-import { getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
+import { getEditTextInfo, getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
 import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import UpdateRichCommand, { UpdateRichData } from '../history/UpdateRichCommand';
@@ -581,6 +581,7 @@ class TextPanel extends Panel {
       Listener.TEXT_ALIGN_NODE,
       Listener.TEXT_VERTICAL_ALIGN_NODE,
       Listener.ADD_NODE,
+      Listener.CURSOR_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
@@ -651,7 +652,8 @@ class TextPanel extends Panel {
     });
     const texts = nodes.filter(item => item instanceof Text) as Text[];
     this.nodes = texts;
-    const o = getTextInfo(texts);
+    const isEditText = this.listener.state === State.EDIT_TEXT && nodes.length === 1;
+    const o = isEditText ? getEditTextInfo(texts[0]) : getTextInfo(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       // 移除上次可能遗留的无效字体展示
@@ -732,6 +734,7 @@ class TextPanel extends Panel {
         color.style.background = o.color[0];
         color.classList.remove('multi');
       }
+      color.setAttribute('color', o.color[0]);
     }
     {
       const input = panel.querySelector('.fs input') as HTMLInputElement;

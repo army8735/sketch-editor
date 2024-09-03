@@ -196,7 +196,6 @@ export function getTextInfo(nodes: Text[]) {
       computedStyle,
     );
   }
-  // const { fontWeight, fontWeightList } = getWeight(fontFamily);
   let fontWeightList: { label: string, value: string  }[] = [];
   if (fontFamily.length === 1) {
     fontWeightList = getFontWeightList(fontFamily[0]);
@@ -234,68 +233,66 @@ export function getFontWeightList(postscriptName: string): { label: string, valu
   return [];
 }
 
-// export function getEditTextInfo(node: Text) {
-//   const { rich, style } = node;
-//   // 一般不可能，有内容都会有个rich内容，这里兜个底，只有1个rich也复用逻辑
-//   if (!rich.length) {
-//     return getTextInfo([node]);
-//   }
-//   const valid: boolean[] = [];
-//   const fontFamily: string[] = [];
-//   const name: string[] = [];
-//   const color: string[] = [];
-//   const fontSize: number[] = [];
-//   const letterSpacing: number[] = [];
-//   const lineHeight: number[] = [];
-//   const autoLineHeight: boolean[] = [];
-//   const paragraphSpacing: number[] = [];
-//   const textAlign: TEXT_ALIGN[] = [];
-//   const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [node.computedStyle.textVerticalAlign];
-//   const textBehaviour: TEXT_BEHAVIOUR[] = [];
-//   const richList = node.getCursorRich();
-//   const { left, right, top, bottom, width, height, lineHeight: lh } = style;
-//   for (let i = 0, len = richList.length; i < len; i++) {
-//     putInfo(
-//       left,
-//       right,
-//       top,
-//       bottom,
-//       width,
-//       height,
-//       lh,
-//       valid,
-//       fontFamily,
-//       name,
-//       color,
-//       fontSize,
-//       letterSpacing,
-//       lineHeight,
-//       autoLineHeight,
-//       paragraphSpacing,
-//       textAlign,
-//       textBehaviour,
-//       richList[i],
-//       true,
-//     );
-//   }
-//   const { fontWeight, fontWeightList } = getWeight(fontFamily);
-//   return {
-//     valid,
-//     fontFamily,
-//     name,
-//     fontWeight,
-//     fontWeightList,
-//     color,
-//     fontSize,
-//     autoLineHeight,
-//     lineHeight,
-//     letterSpacing,
-//     paragraphSpacing,
-//     textAlign,
-//     textVerticalAlign,
-//     textBehaviour,
-//   };
-// }
+export function getEditTextInfo(node: Text) {
+  const valid: boolean[] = [];
+  const postscriptName: string[] = [];
+  const fontFamily: string[] = [];
+  const name: string[] = [];
+  const color: string[] = [];
+  const fontSize: number[] = [];
+  const letterSpacing: number[] = [];
+  const lineHeight: number[] = [];
+  const autoLineHeight: boolean[] = [];
+  const paragraphSpacing: number[] = [];
+  const textAlign: TEXT_ALIGN[] = [];
+  const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [node.computedStyle.textVerticalAlign];
+  const textBehaviour: TEXT_BEHAVIOUR[] = [];
+  const fontWeight: string[] = [];
+  const richList = node.getCursorRich();
+  const { lineHeight: lh } = node.style;
+  for (let i = 0, len = richList.length; i < len; i++) {
+    putInfo(
+      node,
+      lh,
+      valid,
+      postscriptName,
+      fontFamily,
+      name,
+      color,
+      fontSize,
+      fontWeight,
+      letterSpacing,
+      lineHeight,
+      autoLineHeight,
+      paragraphSpacing,
+      textAlign,
+      textBehaviour,
+      richList[i],
+      true,
+    );
+  }
+  let fontWeightList: { label: string, value: string  }[] = [];
+  if (fontFamily.length === 1) {
+    fontWeightList = getFontWeightList(fontFamily[0]);
+  }
+  return {
+    valid,
+    postscriptName,
+    fontFamily,
+    name,
+    fontWeight,
+    fontWeightList,
+    color,
+    fontSize,
+    autoLineHeight,
+    lineHeight,
+    letterSpacing,
+    paragraphSpacing,
+    textAlign,
+    textVerticalAlign,
+    textBehaviour,
+  };
+}
 
 export function setTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   const next: ResizeStyle = {};
@@ -425,7 +422,7 @@ export default {
   TEXT_BEHAVIOUR,
   SIZE_LIST,
   getTextInfo,
-  // getEditTextInfo,
+  getEditTextInfo,
   getTextBehaviour,
   setTextBehaviour,
   getFontWeightList,

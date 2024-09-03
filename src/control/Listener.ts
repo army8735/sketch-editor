@@ -351,16 +351,14 @@ export default class Listener extends Event {
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
               text.hideSelectArea();
-              text.setCursorStartByAbsCoords(x, y);
-              this.input.update(
-                e.clientX - this.originX,
-                e.clientY - this.originY
-              );
+              const p = text.setCursorStartByAbsCoords(x, y);
+              this.input.updateCursor(p);
               this.input.showCursor();
               // 防止触发click事件失焦
               if (e instanceof MouseEvent) {
                 e.preventDefault();
               }
+              this.emit(Listener.CURSOR_NODE, selected.slice(0));
               return;
             }
             // 唯一已选节点继续点击，不触发选择事件
@@ -529,8 +527,19 @@ export default class Listener extends Event {
         const x = (e.clientX - this.originX) * dpi;
         const y = (e.clientY - this.originY) * dpi;
         const text = selected[0] as Text;
+        const { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, endString } = text.cursor;
         text.setCursorEndByAbsCoords(x, y);
         this.input.hideCursor();
+        const cursor = text.cursor;
+        if (isMulti !== cursor.isMulti
+          || startLineBox !== cursor.startLineBox
+          || startTextBox !== cursor.startTextBox
+          || startString !== cursor.startString
+          || endLineBox !== cursor.endLineBox
+          || endTextBox !== cursor.endTextBox
+          || endString !== cursor.endString) {
+          this.emit(Listener.CURSOR_NODE, selected.slice(0));
+        }
       }
       else {
         if (this.options.disabled?.move) {
@@ -771,7 +780,7 @@ export default class Listener extends Event {
         const multi = text.checkCursorMulti();
         // 可能框选的文字为空不是多选，需取消
         if (!multi) {
-          this.input.updateCurCursor();
+          this.input.updateCursor();
           this.input.showCursor();
         }
         else {
@@ -1153,7 +1162,7 @@ export default class Listener extends Event {
 
   updateInput() {
     if (this.state === State.EDIT_TEXT) {
-      this.input.updateCurCursor();
+      this.input.updateCursor();
     }
   }
 
@@ -1202,6 +1211,7 @@ export default class Listener extends Event {
   static TEXT_ALIGN_NODE = 'TEXT_ALIGN_NODE';
   static TEXT_VERTICAL_ALIGN_NODE = 'TEXT_VERTICAL_ALIGN_NODE';
   static TEXT_CONTENT_NODE = 'TEXT_CONTENT_NODE';
+  static CURSOR_NODE = 'CURSOR_NODE';
   static SHADOW_NODE = 'SHADOW_NODE';
   static BLUR_NODE = 'BLUR_NODE';
   static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';

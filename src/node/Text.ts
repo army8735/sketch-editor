@@ -505,7 +505,7 @@ class Text extends Node {
       let textAlign = rich[0].textAlign;
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
-        // sketch中每个\n换行都会产生新的rich，行首就是index
+        // sketch中每个\n换行且不同对齐都会产生新的rich，行首就是index
         const r = hash[lineBox.index];
         if (r) {
           textAlign = r.textAlign;
@@ -518,27 +518,6 @@ class Text extends Node {
           }
         }
         else if (textAlign === TEXT_ALIGN.RIGHT) {
-          const d = this.width - lineBox.width;
-          if (d) {
-            lineBox.offsetX(d);
-          }
-        }
-      }
-    }
-    else {
-      const textAlign = computedStyle.textAlign;
-      if (textAlign === TEXT_ALIGN.CENTER) {
-        for (let i = 0, len = lineBoxList.length; i < len; i++) {
-          const lineBox = lineBoxList[i];
-          const d = this.width - lineBox.width;
-          if (d) {
-            lineBox.offsetX(d * 0.5);
-          }
-        }
-      }
-      else if (textAlign === TEXT_ALIGN.RIGHT) {
-        for (let i = 0, len = lineBoxList.length; i < len; i++) {
-          const lineBox = lineBoxList[i];
           const d = this.width - lineBox.width;
           if (d) {
             lineBox.offsetX(d);
@@ -1298,12 +1277,11 @@ class Text extends Node {
           cursor.endTextBox !== j ||
           cursor.endString !== k
         ) {
-          // 还要检查首尾，相同时不是多选
+          // 还要检查首尾，相同时不渲染底色选项
           const isMulti =
             cursor.startLineBox !== cursor.endLineBox ||
             cursor.startTextBox !== cursor.endTextBox ||
             cursor.startString !== cursor.endString;
-          cursor.isMulti = isMulti;
           this.showSelectArea = isMulti;
           this.root?.addUpdate(
             this,
@@ -1911,12 +1889,11 @@ class Text extends Node {
       }
     }
     const p = calPoint({ x: this.tempCursorX, y: lineBox.y }, matrixWorld);
-    this.root?.emit(
-      Event.UPDATE_CURSOR,
-      p.x,
-      p.y,
-      lineBox.lineHeight * matrixWorld[0],
-    );
+    return {
+      x: p.x,
+      y: p.y,
+      h: lineBox.lineHeight * matrixWorld[0],
+    };
   }
 
   private setCursorByIndex(index: number, isEnd = false) {
@@ -2004,13 +1981,17 @@ class Text extends Node {
     return cursor.isMulti;
   }
 
-  // 获取光标当前坐标，无视multi，只取开头，没有高度，一般在滚动画布时更新获取新位置
+  // 获取光标当前坐标，无视multi，只取开头，一般在滚动画布时更新获取新位置
   getCursorAbsCoords() {
     const m = this.matrixWorld;
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
+    if (cursor.isMulti) {
+      return;
+    }
     const lineBox = lineBoxList[cursor.startLineBox];
     const list = lineBox.list;
+    const rh = lineBox.lineHeight;
     // 空行
     if (!list.length) {
       const textAlign = this.computedStyle.textAlign;
@@ -2021,31 +2002,51 @@ class Text extends Node {
       else if (textAlign === TEXT_ALIGN.RIGHT) {
         x = this.width;
       }
-      return calPoint({ x, y: lineBox.y }, m);
+      const p = calPoint({ x, y: lineBox.y }, m);
+      return {
+        x: p.x,
+        y: p.y,
+        h: rh * m[0],
+      };
     }
-    return calPoint({ x: this.currentCursorX, y: lineBox.y }, m);
+    const p = calPoint({ x: this.currentCursorX, y: lineBox.y }, m);
+    return {
+      x: p.x,
+      y: p.y,
+      h: rh * m[0],
+    };
   }
 
-  // 上下左右按键移动光标，上下保持当前x，左右则更新
+  // 上下左右按键移动光标，上下保持当前x（tempCursorX），左右则更新
   moveCursor(code: number) {
-    const m = this.matrixWorld;
+    const matrix = this.matrixWorld;
     // 先求得当前光标位置在字符串的索引
     const cursor = this.cursor;
-    let { startLineBox: i, startTextBox: j, startString: k } = cursor;
+    const sorted = this.getSortedCursor();
+    let { startLineBox: i, startTextBox: j, startString: k } = sorted;
     let lineBoxList = this.lineBoxList;
     let lineBox = lineBoxList[i];
     let list = lineBox.list;
     let textBox = list[j];
-    const pos = textBox ? textBox.index + k : lineBox.index + k; // 空行时k就是0
+    let pos = textBox ? (textBox.index + k) : (lineBox.index + k); // 空行时k就是0
+    // multi原地取消多选
+    if (cursor.isMulti) {
+      cursor.isMulti = false;
+      this.showSelectArea = false;
+      this.refresh();
+      // 左上光标到开头，右下到结尾
+      if (code === 39 || code === 40) {
+        const { endLineBox: l, endTextBox: m, endString: n } = sorted;
+        lineBox = lineBoxList[l];
+        list = lineBox.list;
+        textBox = list[m];
+        pos = textBox ? (textBox.index + n) : (lineBox.index + n);
+      }
+      // 更新会把当前值赋给start
+      return this.updateCursorByIndex(pos);
+    }
     // 左
     if (code === 37) {
-      if (cursor.isMulti) {
-        cursor.isMulti = false;
-        this.showSelectArea = false;
-        this.refresh();
-        this.updateCursorByIndex(pos);
-        return;
-      }
       if (pos === 0) {
         return;
       }
@@ -2065,8 +2066,7 @@ class Text extends Node {
             cursor.startTextBox = j = list.length - 1;
             // 看是否是enter，决定是否到末尾
             textBox = list[j];
-            cursor.startString =
-              textBox.str.length - (lineBox.endEnter ? 0 : 1);
+            cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
           }
         }
         // 非行开头到上个textBox末尾
@@ -2084,12 +2084,6 @@ class Text extends Node {
     // 上
     else if (code === 38) {
       if (pos === 0) {
-        if (cursor.isMulti) {
-          cursor.isMulti = false;
-          this.showSelectArea = false;
-          this.refresh();
-          this.updateCursorByIndex(pos);
-        }
         return;
       }
       if (cursor.isMulti) {
@@ -2108,34 +2102,16 @@ class Text extends Node {
         lineBox = lineBoxList[--i];
         cursor.startLineBox = i;
         const res = this.getCursorByLocalX(this.tempCursorX, lineBox, false);
-        const p = calPoint({ x: res.x, y: res.y }, m);
-        this.root?.emit(
-          Event.UPDATE_CURSOR,
-          p.x,
-          p.y,
-          lineBox.lineHeight * m[0],
-        );
-        return;
+        const p = calPoint({ x: res.x, y: res.y }, matrix);
+        return {
+          x: p.x,
+          y: p.y,
+          h: lineBox.lineHeight * matrix[0],
+        };
       }
     }
     // 右
     else if (code === 39) {
-      if (cursor.isMulti) {
-        cursor.isMulti = false;
-        this.showSelectArea = false;
-        cursor.startLineBox = cursor.endLineBox;
-        cursor.startTextBox = cursor.endTextBox;
-        cursor.startString = cursor.endString;
-        this.refresh();
-        lineBox = lineBoxList[cursor.startLineBox];
-        list = lineBox.list;
-        textBox = list[cursor.startTextBox];
-        const p = textBox
-          ? textBox.index + cursor.startString
-          : lineBox.index + cursor.startString;
-        this.updateCursorByIndex(p);
-        return;
-      }
       if (pos === this._content.length) {
         return;
       }
@@ -2208,18 +2184,7 @@ class Text extends Node {
     // 下
     else if (code === 40) {
       if (pos === this._content.length) {
-        if (cursor.isMulti) {
-          cursor.isMulti = false;
-          this.showSelectArea = false;
-          this.refresh();
-          this.updateCursorByIndex(pos);
-        }
         return;
-      }
-      if (cursor.isMulti) {
-        cursor.isMulti = false;
-        this.showSelectArea = false;
-        this.refresh();
       }
       // 最后一行到末尾
       if (i === lineBoxList.length - 1) {
@@ -2232,17 +2197,15 @@ class Text extends Node {
         lineBox = lineBoxList[++i];
         cursor.startLineBox = i;
         const res = this.getCursorByLocalX(this.tempCursorX, lineBox, false);
-        const p = calPoint({ x: res.x, y: res.y }, m);
-        this.root?.emit(
-          Event.UPDATE_CURSOR,
-          p.x,
-          p.y,
-          lineBox.lineHeight * m[0],
-        );
-        return;
+        const p = calPoint({ x: res.x, y: res.y }, matrix);
+        return {
+          x: p.x,
+          y: p.y,
+          h: lineBox.lineHeight * matrix[0],
+        };
       }
     }
-    // 左右和特殊情况的上下，前面计算了cursorIndex的位置，据此获取光标位置，并记录x
+    // 左右和特殊情况的上下（到行首行尾），前面计算了cursorIndex的位置，据此获取光标位置，并记录x
     if (textBox) {
       const ctx = inject.getFontCanvas().ctx;
       ctx.font = textBox.font;
@@ -2264,8 +2227,12 @@ class Text extends Node {
         this.tempCursorX = this.currentCursorX = 0;
       }
     }
-    const p = calPoint({ x: this.tempCursorX, y: lineBox.y }, m);
-    this.root?.emit(Event.UPDATE_CURSOR, p.x, p.y, lineBox.lineHeight * m[0]);
+    const p = calPoint({ x: this.currentCursorX, y: lineBox.y }, matrix);
+    return {
+      x: p.x,
+      y: p.y,
+      h: lineBox.lineHeight * matrix[0],
+    };
   }
 
   /**
@@ -2392,8 +2359,8 @@ class Text extends Node {
       const { x, w, str, font, letterSpacing } = list[i];
       // x位于哪个textBox上，注意开头结尾
       if (
-        (!i && localX <= x + w) ||
-        (localX >= x && localX <= x + w) ||
+        (!i && localX < x) ||
+        (localX >= x && localX < x + w) ||
         i === len - 1
       ) {
         if (isEnd) {
@@ -2451,6 +2418,22 @@ class Text extends Node {
             rx = x + w;
             break outer;
           }
+        }
+      }
+    }
+    // 如果处在相邻的2个textBox，都设置到后面那个
+    const ti = isEnd ? cursor.endTextBox : cursor.startTextBox;
+    if (ti < list.length - 1) {
+      const textBox = list[ti];
+      const si = isEnd ? cursor.endString : cursor.startString;
+      if (si === textBox.str.length) {
+        if (isEnd) {
+          cursor.endTextBox++;
+          cursor.endString = 0;
+        }
+        else {
+          cursor.startTextBox++;
+          cursor.startString = 0;
         }
       }
     }
@@ -2964,21 +2947,22 @@ class Text extends Node {
   // 返回光标所在的Rich数据列表
   getCursorRich() {
     const { rich, lineBoxList } = this;
-    if (!rich.length) {
-      return [];
-    }
-    if (rich.length === 1) {
-      return [rich[0]];
-    }
     const res: Rich[] = [];
-    // 字符索引对应的rich快速查找
-    const RICH_INDEX: Rich[] = [];
-    for (let i = 0, len = rich.length; i < len; i++) {
-      const item = rich[i];
-      const { location, length } = item;
-      for (let i = location, len = location + length; i < len; i++) {
-        RICH_INDEX[i] = item;
+    function get2(t: number, i = 0, j = rich.length - 1) {
+      while (i < j) {
+        const m = Math.floor((i + j) * 0.5);
+        const r = rich[m];
+        if (r.location < t && r.location + r.length >= t) {
+          return r;
+        }
+        if (r.location >= t) {
+          j = Math.min(m, j - 1);
+        }
+        else {
+          i = Math.max(m, i + 1);
+        }
       }
+      return rich[i];
     }
     const {
       isMulti,
@@ -3023,26 +3007,22 @@ class Text extends Node {
         }
       }
     }
-    // 单光标位置
-    else {
+    // 单光标位置，以光标之前的字符为准，另外多选可能选取为空，也视为单选情况
+    if (!isMulti || !res.length) {
       const lineBox = lineBoxList[startLineBox];
       const list = lineBox.list;
       // 空行
       if (!list.length) {
-        const r = RICH_INDEX[lineBox.index];
+        const r = get2(lineBox.index);
         if (res.indexOf(r) === -1) {
           res.push(r);
         }
       }
       else {
-        // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首
-        const i =
-          startString === 0 && startTextBox > 0
-            ? startTextBox - 1
-            : startTextBox;
-        const textBox = list[i];
-        const r = RICH_INDEX[textBox.index];
-        if (r && res.indexOf(r) === -1) {
+        // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首取当前的用+1来hack
+        const textBox = list[startTextBox];
+        const r = get2(textBox.index + (startTextBox + startString === 0 ? 1 : startString));
+        if (res.indexOf(r) === -1) {
           res.push(r);
         }
       }
