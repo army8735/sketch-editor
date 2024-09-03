@@ -1760,6 +1760,9 @@ function genShadow(
       sb[3] = Math.max(sb[3], y2);
     }
   }
+  if (!sbList.length) {
+    return;
+  }
   bboxR2[0] += sb[0];
   bboxR2[1] += sb[1];
   bboxR2[2] += sb[2];
