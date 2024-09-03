@@ -380,7 +380,7 @@ export type BlurStyle = Pick<JStyle, 'blur'>;
 
 export type ColorAdjustStyle = Pick<JStyle, 'hueRotate' | 'saturate' | 'brightness' | 'contrast'>;
 
-export type ModifyRichStyle = Pick<Rich, 'location' | 'length'> & Partial<Rich>;
+export type ModifyRichStyle = Partial<Omit<Rich, 'location' | 'length'>>;
 
 export default {
   TAG_NAME,

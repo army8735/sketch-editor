@@ -181,6 +181,7 @@ class Text extends Node {
   showSelectArea: boolean;
   asyncRefresh: boolean;
   loaders: Loader[];
+  inputStyle?: ModifyRichStyle; // 编辑状态时未选择文字，改变样式临时存储，在输入时使用此样式
 
   constructor(props: TextProps) {
     super(props);
@@ -2272,7 +2273,7 @@ class Text extends Node {
    * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
    * 不会出现仅右百分比的情况，所有改变处理都一样
    */
-  input(s: string, style?: Partial<Rich>) {
+  input(s: string, style?: ModifyRichStyle) {
     const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
@@ -2524,128 +2525,6 @@ class Text extends Node {
     this.afterEdit(payload);
   }
 
-  updateTextRangeStyle(style: any, cb?: (sync: boolean) => void) {
-    const { cursor, rich } = this;
-    // 正常情况不会出现光标单选
-    if (!cursor.isMulti || !rich.length) {
-      return false;
-    }
-    const payload = this.beforeEdit();
-    const { isReversed, start, end } = this.getSortedCursor();
-    let lv = RefreshLevel.NONE;
-    // 找到所处的rich开始结束范围
-    for (let i = 0, len = rich.length; i < len; i++) {
-      const item = rich[i];
-      if (item.location + item.length > start) {
-        for (let j = len - 1; j >= i; j--) {
-          const item2 = rich[j];
-          if (item2.location < end) {
-            // 同一个rich拆分为2段或者3段或者不拆分，在中间就是3段，索引靠近首尾一侧拆2段，全相等不拆分
-            if (i === j) {
-              // 整个rich恰好被选中
-              if (
-                item.location === start &&
-                item.location + item.length === end
-              ) {
-                lv |= this.updateRichItem(item, style);
-              }
-              // 选区开头是start则更新，后面新生成一段
-              else if (item.location === start) {
-                const n = Object.assign({}, item);
-                const t = this.updateRichItem(item, style);
-                if (t) {
-                  lv |= t;
-                  const length = item.length;
-                  item.length = end - start;
-                  n.location = end;
-                  n.length = length - item.length;
-                  rich.splice(i + 1, 0, n);
-                }
-              }
-              // 选取结尾是end则更新，前面插入一段
-              else if (item.location + item.length === end) {
-                const n = Object.assign({}, item);
-                const t = this.updateRichItem(n, style);
-                if (t) {
-                  lv |= t;
-                  item.length = start - item.location;
-                  n.location = start;
-                  n.length = end - start;
-                  rich.splice(i + 1, 0, n);
-                }
-              }
-              // 选了中间一段，原有的部分作为开头，后面拆入2段新的
-              else {
-                const n = Object.assign({}, item);
-                const t = this.updateRichItem(n, style);
-                if (t) {
-                  lv |= t;
-                  const length = item.length;
-                  item.length = start - item.location;
-                  n.location = start;
-                  n.length = end - start;
-                  rich.splice(i + 1, 0, n);
-                  const n2 = Object.assign({}, item);
-                  n2.location = end;
-                  n2.length = length - item.length - n.length;
-                  rich.splice(i + 2, 0, n2);
-                }
-              }
-            }
-            // 跨rich段，开头结尾的rich除了检测更新样式外，还要看是否造成了分割，中间部分的只需检查更新即可
-            else {
-              const first = Object.assign({}, item);
-              const item3 = rich[j];
-              const last = Object.assign({}, item3);
-              // 倒序进行，先从后面更新
-              const t = this.updateRichItem(item3, style);
-              if (t) {
-                lv |= t;
-                if (end < item3.location + item3.length) {
-                  last.location = end;
-                  last.length = item3.location + item3.length - end;
-                  item3.length = end - item3.location;
-                  rich.splice(j + 1, 0, last);
-                }
-              }
-              for (let k = i + 1; k < j - 1; k++) {
-                lv |= this.updateRichItem(rich[k], style);
-              }
-              const t2 = this.updateRichItem(first, style);
-              if (t2) {
-                lv |= t2;
-                if (start > item.location) {
-                  first.location = start;
-                  first.length = item.location + item.length - start;
-                  item.length = start - item.location;
-                  rich.splice(i + 1, 0, first);
-                }
-              }
-            }
-            break;
-          }
-        }
-        break;
-      }
-    }
-    if (lv) {
-      // 合并相同的rich段，更新光标位置
-      this.mergeRich();
-      const parent = this.parent!;
-      // 手动重新布局，因为要重新生成lineBox和textBox，然后设置光标再刷新
-      this.layout({
-        w: parent.width,
-        h: parent.height,
-      });
-      this.clearCacheUpward(false);
-      this.setCursorByIndex(isReversed ? end : start, false);
-      this.setCursorByIndex(isReversed ? start : end, true);
-      this.refresh(RefreshLevel.REPAINT, cb);
-    }
-    this.afterEdit(payload);
-    return lv;
-  }
-
   getRich() {
     return this.rich.map(item => {
       return Object.assign({}, item);
@@ -2653,14 +2532,15 @@ class Text extends Node {
   }
 
   setRich(rich: Rich[]) {
+    const payload = this.beforeEdit();
     this.rich = rich;
     this.root?.addUpdate(this, [], RefreshLevel.REFLOW);
+    this.afterEdit(payload);
   }
 
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
-  updateRichStyle(style: ModifyRichStyle) {
+  updateRangeStyle(location: number, length: number, style: ModifyRichStyle) {
     const payload = this.beforeEdit();
-    let { location, length } = style;
     let lv = RefreshLevel.NONE;
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
@@ -2837,7 +2717,7 @@ class Text extends Node {
     }
   }
 
-  private insertRich(style: Partial<Rich>, start: number, length: number) {
+  private insertRich(style: ModifyRichStyle, start: number, length: number) {
     const computedStyle = this.computedStyle;
     const st = Object.assign(
       {
@@ -2898,6 +2778,9 @@ class Text extends Node {
   private mergeRich() {
     const { rich, _content: content, style } = this;
     rich.sort((a, b) => {
+      if (a.location === b.location) {
+        return a.length - b.length;
+      }
       return a.location - b.location;
     });
     let hasMerge = false;
@@ -2911,7 +2794,7 @@ class Text extends Node {
       textDecoration: style.textDecoration.map(item => item.v),
       lineHeight: style.lineHeight.v,
       paragraphSpacing: style.paragraphSpacing.v,
-      color: style.color.v,
+      color: style.color.v.slice(0),
     };
     if (content.length) {
       let last = rich[rich.length - 1];
@@ -2941,6 +2824,15 @@ class Text extends Node {
     for (let i = rich.length - 2; i >= 0; i--) {
       const a = rich[i];
       const b = rich[i + 1];
+      if (!b.length) {
+        rich.splice(i + 1, 1);
+        continue;
+      }
+      if (!a.length) {
+        rich.splice(i, 1);
+        i++;
+        continue;
+      }
       const pn = a.location + a.length;
       if (pn !== b.location) {
         if (pn < b.location) {
@@ -2975,8 +2867,17 @@ class Text extends Node {
     return hasMerge;
   }
 
+  setInputStyle(style?: ModifyRichStyle) {
+    if (!style) {
+      this.inputStyle = undefined;
+    }
+    else {
+      this.inputStyle = { ...this.inputStyle, ...style };
+    }
+  }
+
   // 如果end索引大于start，将其对换返回
-  private getSortedCursor() {
+  getSortedCursor() {
     let {
       isMulti,
       startLineBox,

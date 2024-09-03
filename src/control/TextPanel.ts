@@ -109,7 +109,7 @@ class TextPanel extends Panel {
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = () => {
       // 只有变更才会有next
-      if (nexts && nexts.length) {
+      if (nodes.length && nexts.length) {
         listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         }), UpdateRichCommand.COLOR));
@@ -131,60 +131,89 @@ class TextPanel extends Panel {
       }
       nexts = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      this.nodes.forEach((node) => {
-        if (isFirst) {
-          nodes.push(node);
-          prevs.push(node.getRich());
-        }
-        // 按上下可能是多个值的情况
-        if (!isInput) {
-          let d = 0;
-          if (input.placeholder) {
-            d = value > 0 ? 1 : -1;
-            if (listener.shiftKey) {
-              d *= 10;
+      if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
+        const node = this.nodes[0];
+        const cursor = node.getSortedCursor();
+        if (cursor.isMulti) {
+          if (isFirst) {
+            nodes.push(node);
+            prevs.push(node.getRich());
+          }
+          // 按上下可能是多个值的情况
+          if (!isInput) {
+            let d = 0;
+            if (input.placeholder) {
+              d = value > 0 ? 1 : -1;
+              if (listener.shiftKey) {
+                d *= 10;
+              }
             }
+            else {
+              d = value - prevs[0][0][key];
+              if (listener.shiftKey) {
+                d *= 10;
+              }
+            }
+            let { start, end } = cursor;
+            node.rich.forEach(rich => {
+              if (rich.location < end && rich.location + rich.length > start) {
+                const location = Math.max(rich.location, start);
+                const len = Math.min(rich.length, end - rich.location) - (location - rich.location);
+                node.updateRangeStyle(location, len, {
+                  [key]: getRichKeyValue(rich, key, d),
+                });
+              }
+            });
           }
           else {
-            d = value - prevs[0][0][key];
-            if (listener.shiftKey) {
-              d *= 10;
-            }
-          }
-          node.rich.forEach((rich) => {
-            let p = rich[key];
-            // 0表示auto，需从fontFamily何fontSize自动计算
-            if (!p && key === 'lineHeight') {
-              const data = fontInfo.data[rich.fontFamily];
-              if (data) {
-                p = rich.fontSize * data.lhr;
-              }
-              // 兜底防止没有
-              else {
-                p = rich.fontSize * (font.data[inject.defaultFontFamily] || font.data.arial).lhr;
-              }
-            }
-            let n = p + d;
-            if (key === 'fontSize' || key === 'lineHeight') {
-              n = Math.max(0, n);
-            }
-            node.updateRichStyle({
-              location: rich.location,
-              length: rich.length,
-              [key]: n,
+            node.updateRangeStyle(cursor.startString, cursor.endTextBox - cursor.startString, {
+              [key]: value,
             });
-          });
+          }
+          nexts.push(node.getRich());
         }
-        // 输入统一改为单个值比较简单
         else {
-          node.updateRichStyle({
-            location: 0,
-            length: node._content.length,
+          node.setInputStyle({
             [key]: value,
           });
         }
-        nexts.push(node.getRich());
-      });
+      }
+      else {
+        this.nodes.forEach((node) => {
+          if (isFirst) {
+            nodes.push(node);
+            prevs.push(node.getRich());
+          }
+          // 按上下可能是多个值的情况
+          if (!isInput) {
+            let d = 0;
+            if (input.placeholder) {
+              d = value > 0 ? 1 : -1;
+              if (listener.shiftKey) {
+                d *= 10;
+              }
+            }
+            else {
+              d = value - prevs[0][0][key];
+              if (listener.shiftKey) {
+                d *= 10;
+              }
+            }
+            node.rich.forEach((rich) => {
+              node.updateRangeStyle(rich.location, rich.length, {
+                [key]: getRichKeyValue(rich, key, d),
+              });
+            });
+          }
+          // 输入统一改为单个值比较简单
+          else {
+            node.updateRangeStyle(0, node._content.length, {
+              [key]: value,
+            });
+          }
+          nexts.push(node.getRich());
+        });
+      }
       if (nodes.length) {
         listener.select.updateSelect(nodes);
         if (key === 'fontSize') {
@@ -280,18 +309,36 @@ class TextPanel extends Panel {
         select.value = ff;
         select.disabled = false;
         const data: UpdateRichData[] = [];
-        nodes.forEach(node => {
-          const prev = node.getRich();
-          node.updateRichStyle({
-            location: 0,
-            length: node._content.length,
-            fontFamily: ff,
+        if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
+          const node = nodes[0];
+          const cursor = node.getSortedCursor();
+          if (cursor.isMulti) {
+            const prev = node.getRich();
+            node.updateRangeStyle(cursor.start, cursor.end - cursor.start, {
+              fontFamily: ff,
+            });
+            data.push({ prev, next: node.getRich() });
+          }
+          else {
+            node.setInputStyle({
+              fontFamily: ff,
+            });
+          }
+        }
+        else {
+          nodes.forEach(node => {
+            const prev = node.getRich();
+            node.updateRangeStyle(0, node._content.length, {
+              fontFamily: ff,
+            });
+            data.push({ prev, next: node.getRich() });
           });
-          data.push({ prev, next: node.getRich() });
-        });
-        listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
-        listener.select.updateSelect(nodes);
-        listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+        }
+        if (data.length) {
+          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+          listener.select.updateSelect(nodes);
+          listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+        }
       }
       else if (key === 'fontWeight') {
         const multi = panel.querySelector('.wc .multi') as HTMLElement;
@@ -301,18 +348,36 @@ class TextPanel extends Panel {
           option.remove();
         }
         const data: UpdateRichData[] = [];
-        nodes.forEach(node => {
-          const prev = node.getRich();
-          node.updateRichStyle({
-            location: 0,
-            length: node._content.length,
-            fontFamily: value,
+        if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
+          const node = nodes[0];
+          const cursor = node.getSortedCursor();
+          if (cursor.isMulti) {
+            const prev = node.getRich();
+            node.updateRangeStyle(cursor.start, cursor.end - cursor.start, {
+              fontFamily: value,
+            });
+            data.push({ prev, next: node.getRich() });
+          }
+          else {
+            node.setInputStyle({
+              fontFamily: value,
+            });
+          }
+        }
+        else {
+          nodes.forEach(node => {
+            const prev = node.getRich();
+            node.updateRangeStyle(0, node._content.length, {
+              fontFamily: value,
+            });
+            data.push({ prev, next: node.getRich() });
           });
-          data.push({ prev, next: node.getRich() });
-        });
-        listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
-        listener.select.updateSelect(nodes);
-        listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+        }
+        if (data.length) {
+          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+          listener.select.updateSelect(nodes);
+          listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+        }
       }
       this.silence = false;
     };
@@ -344,15 +409,29 @@ class TextPanel extends Panel {
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
           nexts = [];
-          nodes.forEach(node => {
-            const o = {
-              location: 0,
-              length: node._content.length,
-              color: color.rgba.slice(0),
-            };
-            node.updateRichStyle(o);
-            nexts.push(node.getRich());
-          });
+          if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
+            const node = nodes[0];
+            const cursor = node.getSortedCursor();
+            if (cursor.isMulti) {
+              node.updateRangeStyle(cursor.start, cursor.end - cursor.start, {
+                color: color.rgba.slice(0),
+              });
+              nexts.push(node.getRich());
+            }
+            else {
+              node.setInputStyle({
+                color: color.rgba.slice(0),
+              });
+            }
+          }
+          else {
+            nodes.forEach(node => {
+              node.updateRangeStyle(0, node._content.length, {
+                color: color.rgba.slice(0),
+              });
+              nexts.push(node.getRich());
+            });
+          }
         };
         p.onDone = () => {
           picker.hide();
@@ -440,9 +519,7 @@ class TextPanel extends Panel {
           const data: UpdateRichData[] = [];
           nodes.forEach(node => {
             const prev = node.getRich();
-            node.updateRichStyle({
-              location: 0,
-              length: node._content.length,
+            node.updateRangeStyle(0, node._content.length, {
               textAlign: value,
             });
             data.push({ prev, next: node.getRich() });
@@ -770,6 +847,26 @@ class TextPanel extends Panel {
       }
     }
   }
+}
+
+function getRichKeyValue(rich: Rich, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing', d: number) {
+  let p = rich[key];
+  // 0表示auto，需从fontFamily何fontSize自动计算
+  if (!p && key === 'lineHeight') {
+    const data = fontInfo.data[rich.fontFamily];
+    if (data) {
+      p = rich.fontSize * data.lhr;
+    }
+    // 兜底防止没有
+    else {
+      p = rich.fontSize * (font.data[inject.defaultFontFamily] || font.data.arial).lhr;
+    }
+  }
+  let n = p + d;
+  if (key === 'fontSize' || key === 'lineHeight') {
+    n = Math.max(0, n);
+  }
+  return n;
 }
 
 export default TextPanel;
