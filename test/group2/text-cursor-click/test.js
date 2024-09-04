@@ -11,6 +11,7 @@ module.exports = {
       .moveToElement('canvas', 30, 30)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
+      .pause(20)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .assert.elementPresent('#main div.input')
