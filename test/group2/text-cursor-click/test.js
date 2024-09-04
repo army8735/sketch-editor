@@ -9,11 +9,7 @@ module.exports = {
       .pause(20)
 
       .moveToElement('canvas', 30, 30)
-      .mouseButtonDown(0)
-      .mouseButtonUp(0)
-      .pause(20)
-      .mouseButtonDown(0)
-      .mouseButtonUp(0)
+      .doubleClick()
       .assert.elementPresent('#main div.input')
       .assert.cssProperty('#main div.input', 'opacity', '1')
       .assert.cssProperty('#main div.input', 'left', '40.043px')

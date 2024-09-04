@@ -258,6 +258,7 @@ export default class Tree {
       const target = e.target as HTMLElement;
       const classList = target.classList;
       if (classList.contains('name')) {
+        listener.input.hide();
         target.style.display = 'none';
         const input = document.createElement('input');
         input.type = 'text';
