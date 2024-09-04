@@ -506,9 +506,11 @@ class Text extends Node {
       for (let i = 0, len = lineBoxList.length; i < len; i++) {
         const lineBox = lineBoxList[i];
         // sketch中每个\n换行且不同对齐都会产生新的rich，行首就是index
-        const r = hash[lineBox.index];
-        if (r) {
-          textAlign = r.textAlign;
+        if (lineBox.startEnter || !lineBox.index) {
+          const r = hash[lineBox.index];
+          if (r) {
+            textAlign = r.textAlign;
+          }
         }
         // 非\n而是布局宽度造成的换行，自动沿用之前的
         if (textAlign === TEXT_ALIGN.CENTER) {
@@ -2779,6 +2781,7 @@ class Text extends Node {
       paragraphSpacing: style.paragraphSpacing.v,
       color: style.color.v.slice(0),
     };
+    // 首尾索引不合法
     if (content.length) {
       let last = rich[rich.length - 1];
       if (!rich.length || last.location + last.length < content.length) {
@@ -2817,6 +2820,7 @@ class Text extends Node {
         continue;
       }
       const pn = a.location + a.length;
+      // 索引不连续的脏数据处理，分断开和重合2种情况
       if (pn !== b.location) {
         if (pn < b.location) {
           rich.splice(i + 1, 0, {
@@ -2830,21 +2834,27 @@ class Text extends Node {
           const d = a.location + a.length - b.location;
           b.location -= d;
           b.length -= d;
+          i++;
         }
+        hasMerge = true;
+        continue;
       }
-      else if (equal(a, b, [
+      // textAlign是个特殊对比，如果不是\n换行导致的不一样需修正一致
+      if (equal(a, b, [
         'color',
         'fontFamily',
         'fontSize',
         'letterSpacing',
         'lineHeight',
-        'textAlign',
+        // 'textAlign',
         'textDecoration',
         'paragraphSpacing',
       ])) {
-        a.length += b.length;
-        rich.splice(i + 1, 1);
-        hasMerge = true;
+        if (a.textAlign === b.textAlign || content.charAt(b.location - 1) !== '\n') {
+          a.length += b.length;
+          rich.splice(i + 1, 1);
+          hasMerge = true;
+        }
       }
     }
     return hasMerge;

@@ -77,7 +77,6 @@ export function genMerge(
     }
     const {
       maskMode,
-      breakMask,
       opacity,
       shadow,
       shadowEnable,

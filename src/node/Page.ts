@@ -24,8 +24,8 @@ class Page extends Container {
 
   initIfNot() {
     if (this.json) {
-      for (let i = 0, len = this.json.children.length; i < len; i++) {
-        const res = parse(this.json.children[i], this.root!);
+      for (let i = 0, children = this.json.children, len = children.length; i < len; i++) {
+        const res = parse(children[i], this.root!);
         if (res) {
           this.appendChild(res);
         }
