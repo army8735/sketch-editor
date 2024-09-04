@@ -530,6 +530,9 @@ class TextPanel extends Panel {
           if (end < 0) {
             end = content.length;
           }
+          else {
+            end++;
+          }
           const prev = node.getRich();
           node.updateRangeStyle(start, end - start, {
             textAlign: value,
