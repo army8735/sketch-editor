@@ -1865,7 +1865,7 @@ class Text extends Node {
   }
 
   // 根据字符串索引更新光标
-  private updateCursorByIndex(index: number) {
+  updateCursorByIndex(index: number) {
     const { lineBox, textBox } = this.setCursorByIndex(index, false);
     const { cursor, matrixWorld } = this;
     // 是否空行
@@ -2918,6 +2918,11 @@ class Text extends Node {
         [startString, endString] = [endString, startString];
         isReversed = true;
       }
+    }
+    else {
+      endLineBox = startLineBox;
+      endTextBox = startTextBox;
+      endString = startString;
     }
     const lineBoxList = this.lineBoxList;
     let start = 0;

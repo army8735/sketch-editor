@@ -1134,6 +1134,15 @@ export default class Listener extends Event {
           else if (c.type === UpdateRichCommand.LETTER_SPACING) {
             this.emit(Listener.LETTER_SPACING_NODE, this.selected.slice(0));
           }
+          // 更新光标
+          if (this.state === State.EDIT_TEXT && this.selected.length === 1) {
+            const node = this.selected[0] as Text;
+            const { isMulti, start } = node.getSortedCursor();
+            if (!isMulti) {
+              const p = node.updateCursorByIndex(start);
+              this.input.updateCursor(p);
+            }
+          }
         }
       }
     }

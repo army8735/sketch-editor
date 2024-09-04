@@ -512,12 +512,36 @@ class TextPanel extends Panel {
         else if (classList.contains('justify')) {
           value = TEXT_ALIGN.JUSTIFY;
         }
-        // 编辑状态下特殊处理
+        const data: UpdateRichData[] = [];
+        // 编辑状态下特殊处理，只有\n造成的lineBox才会局部生效，否则向首尾扩展直至整个text
         if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
+          const node = nodes[0];
+          const { content } = node;
+          const cursor = node.getSortedCursor();
+          let { start, end } = cursor;
+          start = content.lastIndexOf('\n', start);
+          if (start < 0) {
+            start = 0;
+          }
+          else {
+            start++;
+          }
+          end = content.indexOf('\n', end);
+          if (end < 0) {
+            end = content.length;
+          }
+          const prev = node.getRich();
+          node.updateRangeStyle(start, end - start, {
+            textAlign: value,
+          });
+          data.push({ prev, next: node.getRich() });
+          if (!cursor.isMulti) {
+            const p = node.updateCursorByIndex(cursor.start);
+            listener.input.updateCursor(p);
+          }
         }
         // 普通状态
         else {
-          const data: UpdateRichData[] = [];
           nodes.forEach(node => {
             const prev = node.getRich();
             node.updateRangeStyle(0, node._content.length, {
@@ -525,6 +549,8 @@ class TextPanel extends Panel {
             });
             data.push({ prev, next: node.getRich() });
           });
+        }
+        if (data.length) {
           listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.TEXT_ALIGN));
           listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
         }
