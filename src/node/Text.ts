@@ -29,7 +29,6 @@ import {
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
 import font from '../style/font';
-import Event from '../util/Event';
 import inject, { OffScreen } from '../util/inject';
 import { clone, equal } from '../util/type';
 import { LayoutData } from './layout';
@@ -161,6 +160,8 @@ export type Cursor = {
   endTextBox: number;
   startString: number; // 位于textBox中字符串的索引
   endString: number;
+  start: number;
+  end: number; // 整个字符串的索引
 };
 
 type Loader = {
@@ -178,7 +179,6 @@ class Text extends Node {
   tempCursorX: number; // 上一次手动指定的光标x相对坐标，键盘上下移动时保持定位
   currentCursorX: number; // 当前光标x相对坐标，滚动画布时需要获取这个缓存
   cursor: Cursor; // 光标信息
-  showSelectArea: boolean;
   asyncRefresh: boolean;
   loaders: Loader[];
   inputStyle?: ModifyRichStyle; // 编辑状态时未选择文字，改变样式临时存储，在输入时使用此样式
@@ -199,8 +199,9 @@ class Text extends Node {
       endTextBox: 0,
       startString: 0,
       endString: 0,
+      start: 0,
+      end: 0,
     };
-    this.showSelectArea = false;
     this.asyncRefresh = false;
     this.loaders = [];
   }
@@ -565,31 +566,37 @@ class Text extends Node {
     const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
     canvasCache.available = true;
     const list = canvasCache.list;
+    const {
+      isMulti,
+      startLineBox,
+      startTextBox,
+      startString,
+      endLineBox,
+      endTextBox,
+      endString,
+      start,
+      end,
+    } = this.getSortedCursor();
     // 如果处于选择范围状态，渲染背景
-    if (this.showSelectArea) {
+    if (isMulti && start !== end) {
       for (let i = 0, len = list.length; i < len; i++) {
         const { x, y, os: { ctx } } = list[i];
         const dx2 = -x;
         const dy2 = -y;
         ctx.fillStyle = '#f4d3c1';
-        const cursor = this.cursor;
         // 单行多行区分开
-        if (cursor.startLineBox === cursor.endLineBox) {
-          const lineBox = lineBoxList[cursor.startLineBox];
+        if (startLineBox === endLineBox) {
+          const lineBox = lineBoxList[startLineBox];
           const list = lineBox.list;
-          let textBox = list[cursor.startTextBox];
+          let textBox = list[startTextBox];
           let x1 = textBox.x * scale + dx2;
           ctx.font = textBox.font;
           ctx.letterSpacing = textBox.letterSpacing + 'px';
-          x1 +=
-            ctx.measureText(textBox.str.slice(0, cursor.startString)).width *
-            scale;
-          textBox = list[cursor.endTextBox];
+          x1 += ctx.measureText(textBox.str.slice(0, startString)).width * scale;
+          textBox = list[endTextBox];
           let x2 = textBox.x * scale + dx2;
           ctx.font = textBox.font;
-          x2 +=
-            ctx.measureText(textBox.str.slice(0, cursor.endString)).width * scale;
-          // 反向api自动支持了
+          x2 += ctx.measureText(textBox.str.slice(0, endString)).width * scale;
           ctx.fillRect(
             x1,
             lineBox.y * scale + dy2,
@@ -598,15 +605,6 @@ class Text extends Node {
           );
         }
         else {
-          // 可能end会大于start，渲染需要排好顺序，这里只需考虑跨行顺序，同行进不来
-          const {
-            startLineBox,
-            startTextBox,
-            startString,
-            endLineBox,
-            endTextBox,
-            endString,
-          } = this.getSortedCursor();
           // 先首行
           let lineBox = lineBoxList[startLineBox];
           let list = lineBox.list;
@@ -615,8 +613,7 @@ class Text extends Node {
             let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
             ctx.letterSpacing = textBox.letterSpacing + 'px';
-            x1 +=
-              ctx.measureText(textBox.str.slice(0, startString)).width * scale;
+            x1 += ctx.measureText(textBox.str.slice(0, startString)).width * scale;
             ctx.fillRect(
               x1,
               lineBox.y * scale + dy2,
@@ -644,8 +641,7 @@ class Text extends Node {
             let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
             ctx.letterSpacing = textBox.letterSpacing + 'px';
-            let x2 =
-              ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx2;
+            let x2 = ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx2;
             ctx.fillRect(x1, lineBox.y * scale + dy2, x2, lineBox.lineHeight * scale);
           }
         }
@@ -846,14 +842,7 @@ class Text extends Node {
                         loader.width = data.width;
                         loader.height = data.height;
                         if (!this.isDestroyed) {
-                          this.root!.addUpdate(
-                            this,
-                            [],
-                            RefreshLevel.REPAINT,
-                            false,
-                            false,
-                            undefined,
-                          );
+                          this.refresh();
                         }
                       }
                       else {
@@ -1220,7 +1209,7 @@ class Text extends Node {
     }
   }
 
-  // 根据绝对坐标获取光标位置，同时设置开始光标位置
+  // 根据绝对坐标获取光标位置，同时设置开始光标位置，单个光标复用，end被同步为start
   setCursorStartByAbsCoords(x: number, y: number) {
     const m = this.matrixWorld;
     const im = inverse4(m);
@@ -1264,7 +1253,7 @@ class Text extends Node {
     const local = calPoint({ x: x, y: y }, im);
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
-    const { endLineBox: i, endTextBox: j, endString: k } = cursor;
+    const { end } = cursor;
     cursor.isMulti = true;
     const len = lineBoxList.length;
     for (let m = 0; m < len; m++) {
@@ -1274,25 +1263,8 @@ class Text extends Node {
         cursor.endLineBox = m;
         this.getCursorByLocalX(local.x, lineBox, true);
         // 变化需要更新渲染
-        if (
-          cursor.endLineBox !== i ||
-          cursor.endTextBox !== j ||
-          cursor.endString !== k
-        ) {
-          // 还要检查首尾，相同时不渲染底色选项
-          const isMulti =
-            cursor.startLineBox !== cursor.endLineBox ||
-            cursor.startTextBox !== cursor.endTextBox ||
-            cursor.startString !== cursor.endString;
-          this.showSelectArea = isMulti;
-          this.root?.addUpdate(
-            this,
-            [],
-            RefreshLevel.REPAINT,
-            false,
-            false,
-            undefined,
-          );
+        if (cursor.end !== end) {
+          this.refresh();
         }
         return;
       }
@@ -1302,34 +1274,18 @@ class Text extends Node {
     cursor.endLineBox = len - 1;
     this.getCursorByLocalX(this.width, lineBox, true);
     // 变化需要更新渲染
-    if (
-      cursor.endLineBox !== i ||
-      cursor.endTextBox !== j ||
-      cursor.endString !== k
-    ) {
-      this.showSelectArea = true;
-      this.root?.addUpdate(
-        this,
-        [],
-        RefreshLevel.REPAINT,
-        false,
-        false,
-        undefined,
-      );
+    if (cursor.end !== end) {
+      this.refresh();
     }
   }
 
-  hideSelectArea() {
-    if (this.showSelectArea) {
-      this.showSelectArea = false;
-      this.root?.addUpdate(
-        this,
-        [],
-        RefreshLevel.REPAINT,
-        false,
-        false,
-        undefined,
-      );
+  resetCursor() {
+    const cursor = this.cursor;
+    if (cursor.isMulti) {
+      cursor.isMulti = false;
+      if (cursor.start !== cursor.end) {
+        this.refresh();
+      }
     }
   }
 
@@ -1898,9 +1854,15 @@ class Text extends Node {
     };
   }
 
-  private setCursorByIndex(index: number, isEnd = false) {
+  setCursorByIndex(index: number, isEnd = false) {
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
+    if (isEnd) {
+      cursor.end = index;
+    }
+    else {
+      cursor.start = index;
+    }
     for (let i = 0, len = lineBoxList.length; i < len; i++) {
       const lineBox = lineBoxList[i];
       const list = lineBox.list;
@@ -1971,13 +1933,8 @@ class Text extends Node {
   checkCursorMulti() {
     const cursor = this.cursor;
     if (cursor.isMulti) {
-      if (
-        cursor.startLineBox === cursor.endLineBox &&
-        cursor.startTextBox === cursor.endTextBox &&
-        cursor.startString === cursor.endString
-      ) {
+      if (cursor.start === cursor.end) {
         cursor.isMulti = false;
-        this.showSelectArea = false;
       }
     }
     return cursor.isMulti;
@@ -2034,8 +1991,9 @@ class Text extends Node {
     // multi原地取消多选
     if (cursor.isMulti) {
       cursor.isMulti = false;
-      this.showSelectArea = false;
-      this.refresh();
+      if (cursor.start !== cursor.end) {
+        this.refresh();
+      }
       // 左上光标到开头，右下到结尾
       if (code === 39 || code === 40) {
         const { endLineBox: l, endTextBox: m, endString: n } = sorted;
@@ -2063,12 +2021,14 @@ class Text extends Node {
           if (!list.length) {
             cursor.startTextBox = 0;
             cursor.startString = 0;
+            cursor.start = lineBox.index;
           }
           else {
             cursor.startTextBox = j = list.length - 1;
             // 看是否是enter，决定是否到末尾
             textBox = list[j];
             cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
+            cursor.start = textBox.index + cursor.startString;
           }
         }
         // 非行开头到上个textBox末尾
@@ -2076,11 +2036,13 @@ class Text extends Node {
           cursor.startTextBox = --j;
           textBox = list[j];
           cursor.startString = textBox.str.length - 1;
+          cursor.start = textBox.index + cursor.startString;
         }
       }
       // textBox内容中
       else {
         cursor.startString = --k;
+        cursor.start = textBox.index + cursor.startString;
       }
     }
     // 上
@@ -2090,7 +2052,6 @@ class Text extends Node {
       }
       if (cursor.isMulti) {
         cursor.isMulti = false;
-        this.showSelectArea = false;
         this.refresh();
       }
       // 第一行到开头
@@ -2098,6 +2059,7 @@ class Text extends Node {
         cursor.startTextBox = 0;
         textBox = list[0];
         cursor.startString = 0;
+        cursor.start = 0;
       }
       // 向上一行找最接近的，保持当前的x，直接返回结果
       else {
@@ -2128,6 +2090,7 @@ class Text extends Node {
         lineBox = lineBoxList[i];
         list = lineBox.list;
         textBox = list[0];
+        cursor.start = textBox.index;
       }
       // 已经到行末尾，自动换行用鼠标也能点到末尾，下行一定有内容不可能是enter
       else if (j === list.length - 1 && k === textBox.str.length) {
@@ -2137,12 +2100,14 @@ class Text extends Node {
         lineBox = lineBoxList[i];
         list = lineBox.list;
         textBox = list[0];
+        cursor.start = textBox.index;
       }
       // 已经到textBox末尾（行中非行尾），等同于next的开头
       else if (k === textBox.str.length) {
         cursor.startTextBox = ++j;
         textBox = list[j];
         cursor.startString = 1;
+        cursor.start = textBox.index + 1;
         // 歧义的原因，可能此时已经到了行尾（最后一个textBox只有1个字符，光标算作prev的末尾时右移），如果不是enter要视作下行开头
         if (j === list.length - 1 && textBox.str.length === 1) {
           if (!lineBox.endEnter && i < lineBoxList.length - 1) {
@@ -2152,6 +2117,7 @@ class Text extends Node {
             cursor.startTextBox = j = 0;
             textBox = list[j];
             cursor.startString = 0;
+            cursor.start = textBox.index;
           }
         }
       }
@@ -2161,6 +2127,7 @@ class Text extends Node {
         if (j === list.length - 1) {
           if (lineBox.endEnter || i === lineBoxList.length - 1) {
             cursor.startString++;
+            cursor.start = textBox.index + cursor.startString;
           }
           else {
             cursor.startLineBox = ++i;
@@ -2169,6 +2136,7 @@ class Text extends Node {
             cursor.startTextBox = j = 0;
             textBox = list[j];
             cursor.startString = 0;
+            cursor.start = textBox.index;
           }
         }
         // 非行末尾到下个textBox开头
@@ -2176,11 +2144,13 @@ class Text extends Node {
           cursor.startTextBox = ++j;
           textBox = list[j];
           cursor.startString = 0;
+          cursor.start = textBox.index;
         }
       }
       // textBox非末尾
       else {
         cursor.startString = ++k;
+        cursor.start = textBox.index + cursor.startString;
       }
     }
     // 下
@@ -2193,6 +2163,7 @@ class Text extends Node {
         cursor.startTextBox = j = list.length - 1;
         textBox = list[j];
         cursor.startString = textBox ? textBox.str.length : 0;
+        cursor.start = textBox.index + cursor.startString;
       }
       // 向下一行找最接近的，保持当前的x，直接返回结果
       else {
@@ -2248,7 +2219,6 @@ class Text extends Node {
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
       this.cursor.isMulti = false;
-      this.showSelectArea = false;
       this.cutRich(start, end);
       const c = this._content;
       this._content = c.slice(0, start) + c.slice(end);
@@ -2263,14 +2233,7 @@ class Text extends Node {
     }
     const c = this._content;
     this._content = c.slice(0, start) + s + c.slice(start);
-    this.root?.addUpdate(
-      this,
-      [],
-      RefreshLevel.REFLOW,
-      false,
-      false,
-      undefined,
-    );
+    this.refresh(RefreshLevel.REFLOW);
     this.afterEdit(payload);
     this.updateCursorByIndex(start + s.length);
   }
@@ -2282,7 +2245,6 @@ class Text extends Node {
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
       this.cursor.isMulti = false;
-      this.showSelectArea = false;
       this.cutRich(start, end);
       const c = this._content;
       this._content = c.slice(0, start) + c.slice(end);
@@ -2290,14 +2252,7 @@ class Text extends Node {
     this.expandRich(start, 1);
     const c = this._content;
     this._content = c.slice(0, start) + '\n' + c.slice(start);
-    this.root?.addUpdate(
-      this,
-      [],
-      RefreshLevel.REFLOW,
-      false,
-      false,
-      undefined,
-    );
+    this.refresh(RefreshLevel.REFLOW);
     this.afterEdit(payload);
     this.updateCursorByIndex(start + 1);
   }
@@ -2314,7 +2269,6 @@ class Text extends Node {
     if (!start) {
       return;
     }
-    this.showSelectArea = false;
     const payload = this.beforeEdit();
     if (isMulti) {
       this.cursor.isMulti = false;
@@ -2325,14 +2279,7 @@ class Text extends Node {
       this.cutRich(start - 1, start);
       this._content = c.slice(0, start - 1) + c.slice(start);
     }
-    this.root?.addUpdate(
-      this,
-      [],
-      RefreshLevel.REFLOW,
-      false,
-      false,
-      undefined,
-    );
+    this.refresh(RefreshLevel.REFLOW);
     this.afterEdit(payload);
     if (isMulti) {
       this.updateCursorByIndex(start);
@@ -2351,14 +2298,15 @@ class Text extends Node {
       rh = lineBox.lineHeight;
     // 可能空行，先赋值默认0，再循环2分查找
     if (isEnd) {
-      cursor.endString = 0;
+      cursor.endString = cursor.end = 0;
     }
     else {
-      cursor.startString = 0;
+      cursor.startString = cursor.start = 0;
     }
     outer:
     for (let i = 0, len = list.length; i < len; i++) {
-      const { x, w, str, font, letterSpacing } = list[i];
+      const textBox = list[i];
+      const { x, w, str, font, letterSpacing } = textBox;
       // x位于哪个textBox上，注意开头结尾
       if (
         (!i && localX < x) ||
@@ -2386,18 +2334,22 @@ class Text extends Node {
               rx = x + w2;
               if (isEnd) {
                 cursor.endString = end;
+                cursor.end = textBox.index + end;
               }
               else {
                 cursor.startString = end;
+                cursor.start = textBox.index + end;
               }
             }
             else {
               rx = x + w1;
               if (isEnd) {
                 cursor.endString = start;
+                cursor.end = textBox.index + start;
               }
               else {
                 cursor.startString = start;
+                cursor.start = textBox.index + start;
               }
             }
             break outer;
@@ -2413,9 +2365,11 @@ class Text extends Node {
           else {
             if (isEnd) {
               cursor.endString = mid;
+              cursor.end = textBox.index + mid;;
             }
             else {
               cursor.startString = mid;
+              cursor.start = textBox.index + mid;
             }
             rx = x + w;
             break outer;
@@ -2432,10 +2386,12 @@ class Text extends Node {
         if (isEnd) {
           cursor.endTextBox++;
           cursor.endString = 0;
+          cursor.end = list[ti + 1].index;
         }
         else {
           cursor.startTextBox++;
           cursor.startString = 0;
+          cursor.start = list[ti + 1].index;
         }
       }
     }
@@ -2452,63 +2408,63 @@ class Text extends Node {
     return { x: rx, y: ry, h: rh };
   }
 
-  updateTextStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
-    const payload = this.beforeEdit();
-    const rich = this.rich;
-    // 转成rich的
-    const style2: any = {};
-    if (style.hasOwnProperty('textAlign')) {
-      if (style.textAlign === 'center') {
-        style2.textAlign = TEXT_ALIGN.CENTER;
-      }
-      else if (style.textAlign === 'right') {
-        style2.textAlign = TEXT_ALIGN.RIGHT;
-      }
-      else if (style.textAlign === 'justify') {
-        style2.textAlign = TEXT_ALIGN.JUSTIFY;
-      }
-      else {
-        style2.textAlign = TEXT_ALIGN.LEFT;
-      }
-    }
-    if (style.hasOwnProperty('color')) {
-      style2.color = color2rgbaInt(style.color || '#000');
-    }
-    if (style.hasOwnProperty('fontFamily')) {
-      style2.fontFamily = style.fontFamily;
-    }
-    if (style.hasOwnProperty('fontSize')) {
-      style2.fontSize = style.fontSize;
-    }
-    if (style.hasOwnProperty('letterSpacing')) {
-      style2.letterSpacing = style.letterSpacing;
-    }
-    if (style.hasOwnProperty('textDecoration')) {
-      style2.textDecoration = style.textDecoration;
-    }
-    if (style.hasOwnProperty('lineHeight')) {
-      style2.lineHeight = style.lineHeight;
-    }
-    if (style.hasOwnProperty('paragraphSpacing')) {
-      style2.paragraphSpacing = style.paragraphSpacing;
-    }
-    let lv = RefreshLevel.NONE;
-    if (rich.length) {
-      rich.forEach((item) => {
-        lv |= this.updateRichItem(item, style2);
-      });
-    }
-    this.mergeRich();
-    // 防止rich变更但整体没有变更结果不刷新
-    const keys = this.updateStyleData(style);
-    if (keys.length) {
-      this.root?.addUpdate(this, keys, undefined, false, false, cb);
-    }
-    else if (lv) {
-      this.refresh(lv, cb);
-    }
-    this.afterEdit(payload);
-  }
+  // updateTextStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
+  //   const payload = this.beforeEdit();
+  //   const rich = this.rich;
+  //   // 转成rich的
+  //   const style2: any = {};
+  //   if (style.hasOwnProperty('textAlign')) {
+  //     if (style.textAlign === 'center') {
+  //       style2.textAlign = TEXT_ALIGN.CENTER;
+  //     }
+  //     else if (style.textAlign === 'right') {
+  //       style2.textAlign = TEXT_ALIGN.RIGHT;
+  //     }
+  //     else if (style.textAlign === 'justify') {
+  //       style2.textAlign = TEXT_ALIGN.JUSTIFY;
+  //     }
+  //     else {
+  //       style2.textAlign = TEXT_ALIGN.LEFT;
+  //     }
+  //   }
+  //   if (style.hasOwnProperty('color')) {
+  //     style2.color = color2rgbaInt(style.color || '#000');
+  //   }
+  //   if (style.hasOwnProperty('fontFamily')) {
+  //     style2.fontFamily = style.fontFamily;
+  //   }
+  //   if (style.hasOwnProperty('fontSize')) {
+  //     style2.fontSize = style.fontSize;
+  //   }
+  //   if (style.hasOwnProperty('letterSpacing')) {
+  //     style2.letterSpacing = style.letterSpacing;
+  //   }
+  //   if (style.hasOwnProperty('textDecoration')) {
+  //     style2.textDecoration = style.textDecoration;
+  //   }
+  //   if (style.hasOwnProperty('lineHeight')) {
+  //     style2.lineHeight = style.lineHeight;
+  //   }
+  //   if (style.hasOwnProperty('paragraphSpacing')) {
+  //     style2.paragraphSpacing = style.paragraphSpacing;
+  //   }
+  //   let lv = RefreshLevel.NONE;
+  //   if (rich.length) {
+  //     rich.forEach((item) => {
+  //       lv |= this.updateRichItem(item, style2);
+  //     });
+  //   }
+  //   this.mergeRich();
+  //   // 防止rich变更但整体没有变更结果不刷新
+  //   const keys = this.updateStyleData(style);
+  //   if (keys.length) {
+  //     this.root?.addUpdate(this, keys, undefined, false, false, cb);
+  //   }
+  //   else if (lv) {
+  //     this.refresh(lv, cb);
+  //   }
+  //   this.afterEdit(payload);
+  // }
 
   getRich() {
     return this.rich.map(item => {
@@ -2519,7 +2475,7 @@ class Text extends Node {
   setRich(rich: Rich[]) {
     const payload = this.beforeEdit();
     this.rich = rich;
-    this.root?.addUpdate(this, [], RefreshLevel.REFLOW);
+    this.refresh(RefreshLevel.REFLOW);
     this.afterEdit(payload);
   }
 
@@ -2879,11 +2835,12 @@ class Text extends Node {
       endLineBox,
       endTextBox,
       endString,
+      start,
+      end,
     } = this.cursor;
     let isReversed = false;
     if (isMulti) {
-      // 确保先后顺序，
-      if (startLineBox > endLineBox) {
+      if (start > end) {
         [
           startLineBox,
           startTextBox,
@@ -2901,49 +2858,12 @@ class Text extends Node {
         ];
         isReversed = true;
       }
-      else if (startLineBox === endLineBox && startTextBox > endTextBox) {
-        [startTextBox, startString, endTextBox, endString] = [
-          endTextBox,
-          endString,
-          startTextBox,
-          startString,
-        ];
-        isReversed = true;
-      }
-      else if (
-        startLineBox === endLineBox &&
-        startTextBox === endTextBox &&
-        startString > endString
-      ) {
-        [startString, endString] = [endString, startString];
-        isReversed = true;
-      }
     }
     else {
       endLineBox = startLineBox;
       endTextBox = startTextBox;
       endString = startString;
-    }
-    const lineBoxList = this.lineBoxList;
-    let start = 0;
-    let lineBox = lineBoxList[startLineBox];
-    let list = lineBox.list;
-    if (!list.length) {
-      start = lineBox.index;
-    }
-    else {
-      const textBox = list[startTextBox];
-      start = textBox.index + startString;
-    }
-    let end = 0;
-    lineBox = lineBoxList[endLineBox];
-    list = lineBox.list;
-    if (!list.length) {
-      end = lineBox.index;
-    }
-    else {
-      const textBox = list[endTextBox];
-      end = textBox.index + endString;
+      end = start;
     }
     return {
       isMulti,
@@ -2979,38 +2899,16 @@ class Text extends Node {
       }
       return rich[i];
     }
-    const {
+    let {
       isMulti,
       startLineBox,
       startTextBox,
       startString,
-      endLineBox,
-      endTextBox,
-      endString,
+      start,
+      end,
     } = this.getSortedCursor();
     // 多选区域
     if (isMulti) {
-      let start = 0;
-      let end = 0;
-      // 获取开头结尾的字符串索引
-      let lineBox = lineBoxList[startLineBox];
-      let list = lineBox.list;
-      if (!list) {
-        start = lineBox.index;
-      }
-      else {
-        const textBox = list[startTextBox];
-        start = textBox.index + startString;
-      }
-      lineBox = lineBoxList[endLineBox];
-      list = lineBox.list;
-      if (!list) {
-        end = lineBox.index;
-      }
-      else {
-        const textBox = list[endTextBox];
-        end = textBox.index + endString;
-      }
       // 从start到end（不含）的rich存入
       for (let i = 0, len = rich.length; i < len; i++) {
         const r = rich[i];
@@ -3185,14 +3083,7 @@ class Text extends Node {
     if (v !== this._content) {
       const payload = this.beforeEdit();
       this._content = v;
-      this.root?.addUpdate(
-        this,
-        [],
-        RefreshLevel.REFLOW,
-        false,
-        false,
-        undefined,
-      );
+      this.refresh(RefreshLevel.REFLOW);
       this.afterEdit(payload);
     }
   }

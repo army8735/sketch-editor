@@ -350,7 +350,7 @@ export default class Listener extends Event {
             // 持续编辑更新文本的编辑光标并提前退出
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
-              text.hideSelectArea();
+              text.resetCursor();
               const p = text.setCursorStartByAbsCoords(x, y);
               this.input.updateCursor(p);
               this.input.showCursor();
@@ -394,7 +394,7 @@ export default class Listener extends Event {
         // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
         if (this.state === State.EDIT_TEXT) {
           const text = selected[0] as Text;
-          text.hideSelectArea();
+          text.resetCursor();
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -527,17 +527,11 @@ export default class Listener extends Event {
         const x = (e.clientX - this.originX) * dpi;
         const y = (e.clientY - this.originY) * dpi;
         const text = selected[0] as Text;
-        const { isMulti, startLineBox, startTextBox, startString, endLineBox, endTextBox, endString } = text.cursor;
+        const { isMulti, start, end } = text.cursor;
         text.setCursorEndByAbsCoords(x, y);
         this.input.hideCursor();
         const cursor = text.cursor;
-        if (isMulti !== cursor.isMulti
-          || startLineBox !== cursor.startLineBox
-          || startTextBox !== cursor.startTextBox
-          || startString !== cursor.startString
-          || endLineBox !== cursor.endLineBox
-          || endTextBox !== cursor.endTextBox
-          || endString !== cursor.endString) {
+        if (isMulti !== cursor.isMulti || start !== cursor.start || end !== cursor.end) {
           this.emit(Listener.CURSOR_NODE, selected.slice(0));
         }
       }
@@ -905,7 +899,6 @@ export default class Listener extends Event {
           e.clientX - this.originX,
           e.clientY - this.originY,
         );
-        node.hideSelectArea();
         this.state = State.EDIT_TEXT;
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
@@ -1047,6 +1040,7 @@ export default class Listener extends Event {
     // esc，编辑文字回到普通，普通取消选择
     else if (e.keyCode === 27) {
       if (this.state === State.EDIT_TEXT) {
+        (this.selected[0] as Text).resetCursor();
         this.state = State.NORMAL;
         this.input.hide();
       }

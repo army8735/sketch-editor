@@ -133,8 +133,8 @@ class TextPanel extends Panel {
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
         const node = this.nodes[0];
-        const cursor = node.getSortedCursor();
-        if (cursor.isMulti) {
+        const { isMulti, start, end } = node.getSortedCursor();
+        if (isMulti) {
           if (isFirst) {
             nodes.push(node);
             prevs.push(node.getRich());
@@ -154,7 +154,6 @@ class TextPanel extends Panel {
                 d *= 10;
               }
             }
-            let { start, end } = cursor;
             node.rich.forEach(rich => {
               if (rich.location < end && rich.location + rich.length > start) {
                 const location = Math.max(rich.location, start);
@@ -166,11 +165,13 @@ class TextPanel extends Panel {
             });
           }
           else {
-            node.updateRangeStyle(cursor.startString, cursor.endTextBox - cursor.startString, {
+            node.updateRangeStyle(start, end - start, {
               [key]: value,
             });
           }
           nexts.push(node.getRich());
+          node.setCursorByIndex(start);
+          node.setCursorByIndex(end, true);
         }
         else {
           node.setInputStyle({
@@ -311,13 +312,15 @@ class TextPanel extends Panel {
         const data: UpdateRichData[] = [];
         if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
           const node = nodes[0];
-          const cursor = node.getSortedCursor();
-          if (cursor.isMulti) {
+          const { isMulti, start, end } = node.getSortedCursor();
+          if (isMulti) {
             const prev = node.getRich();
-            node.updateRangeStyle(cursor.start, cursor.end - cursor.start, {
+            node.updateRangeStyle(start, end - start, {
               fontFamily: ff,
             });
             data.push({ prev, next: node.getRich() });
+            node.setCursorByIndex(start);
+            node.setCursorByIndex(end, true);
           }
           else {
             node.setInputStyle({
@@ -350,13 +353,15 @@ class TextPanel extends Panel {
         const data: UpdateRichData[] = [];
         if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
           const node = nodes[0];
-          const cursor = node.getSortedCursor();
-          if (cursor.isMulti) {
+          const { isMulti, start, end } = node.getSortedCursor();
+          if (isMulti) {
             const prev = node.getRich();
-            node.updateRangeStyle(cursor.start, cursor.end - cursor.start, {
+            node.updateRangeStyle(start, end - start, {
               fontFamily: value,
             });
             data.push({ prev, next: node.getRich() });
+            node.setCursorByIndex(start);
+            node.setCursorByIndex(end, true);
           }
           else {
             node.setInputStyle({
@@ -411,12 +416,14 @@ class TextPanel extends Panel {
           nexts = [];
           if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
             const node = nodes[0];
-            const cursor = node.getSortedCursor();
-            if (cursor.isMulti) {
-              node.updateRangeStyle(cursor.start, cursor.end - cursor.start, {
+            const { isMulti, start, end } = node.getSortedCursor();
+            if (isMulti) {
+              node.updateRangeStyle(start, end - start, {
                 color: color.rgba.slice(0),
               });
               nexts.push(node.getRich());
+              node.setCursorByIndex(start);
+              node.setCursorByIndex(end, true);
             }
             else {
               node.setInputStyle({
@@ -518,7 +525,7 @@ class TextPanel extends Panel {
           const node = nodes[0];
           const { content } = node;
           const cursor = node.getSortedCursor();
-          let { start, end } = cursor;
+          let { isMulti, start, end } = cursor;
           start = content.lastIndexOf('\n', start);
           if (start < 0) {
             start = 0;
@@ -538,7 +545,11 @@ class TextPanel extends Panel {
             textAlign: value,
           });
           data.push({ prev, next: node.getRich() });
-          if (!cursor.isMulti) {
+          if (isMulti) {
+            node.setCursorByIndex(start);
+            node.setCursorByIndex(end, true);
+          }
+          else {
             const p = node.updateCursorByIndex(cursor.start);
             listener.input.updateCursor(p);
           }
