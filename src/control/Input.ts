@@ -17,6 +17,7 @@ export default class Input {
     this.listener = listener;
 
     const containerEl = this.containerEl = document.createElement('div');
+    containerEl.className = 'input';
     containerEl.style.position = 'absolute';
     containerEl.style.pointerEvents = 'none';
     containerEl.style.opacity = '0';
