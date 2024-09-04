@@ -205,6 +205,7 @@ export default class Tree {
           }
         }
       }
+      else if (classList.contains('lock')) {}
       else if (classList.contains('name') || classList.contains('type') || isDt) {
         const actives = this.dom.querySelectorAll('dt.active');
         const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
@@ -212,7 +213,6 @@ export default class Tree {
         if (actives.length === 1 && actives[0] === dt) {
           return;
         }
-        listener.input.hide();
         actives.forEach((item) => {
           item.classList.remove('active');
         });
@@ -238,6 +238,9 @@ export default class Tree {
             }
           }
         }
+      }
+      else {
+        listener.active([]);
       }
     });
 

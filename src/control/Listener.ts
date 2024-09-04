@@ -150,6 +150,7 @@ export default class Listener extends Event {
   active(nodes: Node[]) {
     this.selected.splice(0);
     this.selected.push(...nodes);
+    this.input.hide();
     this.updateActive();
     this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
