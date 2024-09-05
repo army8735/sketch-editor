@@ -42,6 +42,8 @@ module.exports = {
       .keys(browser.Keys.DELETE)
       .keys(browser.Keys.NULL)
       .pause(20)
+      .click('#button1')
+      .assert.value('#base64', '')
       .moveToElement('canvas', 300, 300)
       .mouseButtonDown(0)
       .moveToElement('canvas', 20, 20)
