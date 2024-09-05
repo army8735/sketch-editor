@@ -1,6 +1,7 @@
 import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
+import Group from '../node/Group';
 import { appendWithPosAndSize} from '../tools/container';
 
 export type RemoveData = {
@@ -38,10 +39,12 @@ class RemoveCommand extends AbstractCommand {
       y: node.computedStyle.top,
       parent,
     };
-    // 可能造成了parent尺寸变化，需修正
-    const rect = parent.getChildrenRect(node);
-    o.x -= rect.minX;
-    o.y -= rect.minY;
+    // 可能造成了parent尺寸变化，需修正，比如被删除节点删除后使得父Group的左上原点变化，删除记录的绝对x/y要考虑
+    if (parent.isGroup && parent instanceof Group) {
+      const rect = parent.getChildrenRect(node);
+      o.x -= rect.minX;
+      o.y -= rect.minY;
+    }
     node.remove();
     return o;
   }
