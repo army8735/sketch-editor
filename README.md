@@ -40,8 +40,8 @@ sketchEditor
     });
     
     // 可选控制
-    sketchEditor.control.initPageList(root, document.querySelector('#page');
     const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
+    sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
     sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
     sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
   });
