@@ -996,6 +996,7 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
+    const isWin = typeof navigator !== 'undefined' && /win/i.test(navigator.platform);
     if (this.metaKey && this.selected.length === 1) {
       this.select.metaKey(true);
     }
@@ -1055,7 +1056,7 @@ export default class Listener extends Event {
       }
     }
     // z，undo/redo
-    else if (e.keyCode === 90 && this.metaKey) {
+    else if (e.keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
       const target = e.target as HTMLElement;
       if (target && target.tagName.toUpperCase() === 'INPUT') {
         e.preventDefault();
