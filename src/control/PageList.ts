@@ -1,18 +1,20 @@
 import Root from '../node/Root';
 import Page from '../node/Page';
+import Listener from './Listener';
 
 export default class PageList {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
 
     const page = root.getCurPage();
     const pageContainer = root.pageContainer;
     const ul = document.createElement('ul');
-    let s = '';
     pageContainer.children.forEach(item => {
       const li = document.createElement('li');
       li.title = item.props.name || '';
@@ -26,9 +28,10 @@ export default class PageList {
     dom.innerHTML = '';
     dom.appendChild(ul);
 
-    ul.addEventListener('click', e => {
+    dom.addEventListener('click', e => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
+      listener.input.hide();
       if (!classList.contains('active')) {
         ul.querySelector('.active')?.classList.remove('active');
         classList.add('active');
@@ -39,12 +42,11 @@ export default class PageList {
             const i = pageContainer.children.indexOf(page);
             if (i > -1) {
               root.setPageIndex(i);
+              listener.active([]);
             }
           }
         }
       }
     });
-
-    root.on(Root.PAGE_CHANGED, (page: Page) => {});
   }
 };

@@ -166,10 +166,11 @@ export default class Tree {
       this.select(nodes);
     });
 
-    this.dom.addEventListener('click', (e) => {
+    dom.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
       const isDt = target.tagName.toUpperCase() === 'DT';
+      listener.input.hide();
       if (classList.contains('arrow')) {
         const dl = target.parentElement!.parentElement!;
         const uuid = dl.getAttribute('uuid');
@@ -257,7 +258,7 @@ export default class Tree {
       name.style.display = 'block';
     };
 
-    this.dom.addEventListener('dblclick', (e) => {
+    dom.addEventListener('dblclick', (e) => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
       if (classList.contains('name')) {
@@ -301,7 +302,7 @@ export default class Tree {
       }
     });
 
-    this.dom.addEventListener('mousemove', (e) => {
+    dom.addEventListener('mousemove', (e) => {
       let target = e.target as HTMLElement;
       if (target.nodeName === 'SPAN') {
         target = target.parentElement!;

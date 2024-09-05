@@ -16,8 +16,8 @@ import ShadowPanel from './ShadowPanel';
 import BlurPanel from './BlurPanel';
 import ColorAdjustPanel from './ColorAdjustPanel';
 
-export function initPageList(root: Root, dom: HTMLElement) {
-  return new PageList(root, dom);
+export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
+  return new PageList(root, dom, listener);
 }
 
 /**

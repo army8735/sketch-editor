@@ -291,10 +291,7 @@ class Root extends Container implements FrameCallback {
       }
     });
     this.overlay.setArtBoard(children);
-    // 触发事件告知外部如刷新图层列表
-    if (!this.isDestroyed) {
-      this.emit(Event.PAGE_CHANGED, newPage);
-    }
+    return newPage;
   }
 
   // addNewPage(page?: Page, setCurrent = false) {
