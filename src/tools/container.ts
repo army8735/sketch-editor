@@ -42,7 +42,7 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
   style.height = {
     v: computedStyle.height,
     u: StyleUnit.PX,
-  }
+  };
   // 利用小数索引找到正确的位置
   const children = parent.children;
   if (!children.length) {
@@ -51,13 +51,8 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
   else {
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
-      // 开头位置特殊判断
-      if (!i && node.props.index < child.props.index) {
+      if (node.props.index < child.props.index) {
         child.insertBefore(node);
-        break;
-      }
-      else if (node.props.index > child.props.index) {
-        child.insertAfter(node);
         break;
       }
       // 直到最后也没有

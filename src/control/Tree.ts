@@ -107,11 +107,13 @@ export default class Tree {
   root: Root;
   dom: HTMLElement;
   listener: Listener;
+  silence: boolean;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
+    this.silence = false;
 
     // 可能存在，如果不存在就侦听改变，切换页面同样侦听
     const page = root.getCurPage();
@@ -164,6 +166,7 @@ export default class Tree {
     });
 
     dom.addEventListener('click', (e) => {
+      this.silence = true;
       const target = e.target as HTMLElement;
       const classList = target.classList;
       const isDt = target.tagName.toUpperCase() === 'DT';
@@ -239,6 +242,7 @@ export default class Tree {
       else {
         listener.active([]);
       }
+      this.silence = false;
     });
 
     const onChange = (target: HTMLInputElement) => {
@@ -321,8 +325,11 @@ export default class Tree {
 
   init() {
     this.dom.innerHTML = '';
+    const dl = document.createElement('dl');
+    this.dom.appendChild(dl);
     const page = this.root.getCurPage();
     if (page) {
+      dl.setAttribute('uuid', page.props.uuid);
       const children = page.children;
       if (!children.length) {
         return;
@@ -330,9 +337,12 @@ export default class Tree {
       const fragment = new DocumentFragment();
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i];
-        fragment.appendChild(genNodeTree(child, child.struct.lv));
+        const res = genNodeTree(child, child.struct.lv);
+        const dd = document.createElement('dd');
+        dd.appendChild(res);
+        fragment.appendChild(dd);
       }
-      this.dom.appendChild(fragment);
+      dl.appendChild(fragment);
     }
   }
 
@@ -383,7 +393,10 @@ export default class Tree {
           dl = dl.parentElement;
         }
         dt.classList.add('active');
-        dt.scrollIntoView();
+        if (!this.silence) {
+          // @ts-ignore
+          dt.scrollIntoViewIfNeeded ? dt.scrollIntoViewIfNeeded() : dt.scrollIntoView();
+        }
       }
     });
     if (nodes.length) {
