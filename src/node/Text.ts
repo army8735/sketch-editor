@@ -1221,7 +1221,7 @@ class Text extends Node {
     for (let i = 0; i < len; i++) {
       const lineBox = lineBoxList[i];
       // 确定y在哪一行后
-      if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
+      if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.lineHeight) {
         cursor.startLineBox = i;
         const res = this.getCursorByLocalX(local.x, lineBox, false);
         this.tempCursorX = this.currentCursorX = res.x;
@@ -1259,7 +1259,7 @@ class Text extends Node {
     for (let m = 0; m < len; m++) {
       const lineBox = lineBoxList[m];
       // 确定y在哪一行后
-      if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.h) {
+      if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.lineHeight) {
         cursor.endLineBox = m;
         this.getCursorByLocalX(local.x, lineBox, true);
         // 变化需要更新渲染
