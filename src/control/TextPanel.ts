@@ -789,7 +789,7 @@ class TextPanel extends Panel {
         color.style.background = o.color[0];
         color.classList.remove('multi');
       }
-      color.setAttribute('color', o.color[0]);
+      color.setAttribute('title', o.color[0]);
     }
     {
       const input = panel.querySelector('.fs input') as HTMLInputElement;

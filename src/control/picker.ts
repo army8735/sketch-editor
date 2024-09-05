@@ -66,7 +66,7 @@ export default {
         popup: false,
       });
     }
-    const color = node.getAttribute('color') || '';
+    const color = node.getAttribute('title') || '';
     const opacity = parseFloat(node.style.opacity);
     const rgba = color2rgbaInt(color);
     rgba[3] *= isNaN(opacity) ? 1 : opacity;
