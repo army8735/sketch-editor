@@ -7,7 +7,6 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(20)
-      .keys(browser.Keys.META)
       .moveToElement('canvas', 50, 50)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
@@ -35,6 +34,7 @@ module.exports = {
       .assert.elementPresent('#tree span.name[title="1"]')
       .keys(browser.Keys.EASCAPE)
       .keys(browser.Keys.NULL)
+      .pause(20)
 
       .moveToElement('canvas', 50, 150)
       .mouseButtonDown(0)
@@ -63,6 +63,7 @@ module.exports = {
       .assert.elementPresent('#tree span.name[title="2"]')
       .keys(browser.Keys.EASCAPE)
       .keys(browser.Keys.NULL)
+      .pause(20)
 
       .moveToElement('canvas', 50, 280)
       .mouseButtonDown(0)
