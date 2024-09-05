@@ -167,7 +167,6 @@ export default class Tree {
       const target = e.target as HTMLElement;
       const classList = target.classList;
       const isDt = target.tagName.toUpperCase() === 'DT';
-      listener.input.hide();
       if (classList.contains('arrow')) {
         const dl = target.parentElement!.parentElement!;
         const uuid = dl.getAttribute('uuid');
@@ -259,7 +258,6 @@ export default class Tree {
       const target = e.target as HTMLElement;
       const classList = target.classList;
       if (classList.contains('name')) {
-        listener.input.hide();
         target.style.display = 'none';
         const input = document.createElement('input');
         input.type = 'text';

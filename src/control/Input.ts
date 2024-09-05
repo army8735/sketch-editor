@@ -1,6 +1,7 @@
 import Text from '../node/Text';
 import Root from '../node/Root';
 import Listener from './Listener';
+import State from './State';
 
 export default class Input {
   root: Root;
@@ -10,11 +11,13 @@ export default class Input {
   inputEl: HTMLInputElement;
   cursorEl: HTMLDivElement;
   node?: Text;
+  ignoreBlur: HTMLElement[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
+    this.ignoreBlur = [];
 
     const containerEl = this.containerEl = document.createElement('div');
     containerEl.className = 'input';
@@ -68,10 +71,10 @@ export default class Input {
         }
       }
     });
-    // @ts-ignore
-    inputEl.addEventListener('input', (e: InputEvent) => {
+
+    inputEl.addEventListener('input', (e) => {
       if (!isIme && this.node) {
-        const s = e.data;
+        const s = (e as InputEvent).data;
         if (s) {
           this.node.input(s);
           this.updateCursor();
@@ -128,13 +131,35 @@ export default class Input {
       duration: 800,
       iterations: Infinity,
     });
+
+    // 点击外部自动取消focus输入状态，除非画布自身（listener内逻辑控制），除非textPanel
+    document.addEventListener('click', (e) => {
+      if (listener.state === State.EDIT_TEXT) {
+        let target = e.target as HTMLElement;
+        let p = target as HTMLElement | null;
+        while (p) {
+          if (p === listener.dom || this.ignoreBlur.includes(p)) {
+            // 防止来源input无法聚焦
+            if (target.tagName.toUpperCase() !== 'INPUT') {
+              this.focus();
+            }
+            return;
+          }
+          p = p.parentElement;
+        }
+        listener.state = State.NORMAL;
+        this.hideCursor();
+        this.node?.resetCursor();
+        this.node?.refresh();
+      }
+    });
   }
 
   show(node: Text, x: number, y: number) {
     this.node = node;
     this.update(x, y);
     this.containerEl.style.opacity = '1';
-    this.inputEl.focus();
+    this.focus();
     this.showCursor();
   }
 

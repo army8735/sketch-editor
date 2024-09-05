@@ -14,6 +14,7 @@ module.exports = {
       .assert.cssProperty('#main div.input', 'opacity', '1')
       .assert.cssProperty('#main div.input', 'left', '40.043px')
       .assert.cssProperty('#main div.input', 'top', '0px')
+      .assert.domPropertyEquals('#side .text-panel .pick', 'color', '#000000')
 
       .moveToElement('canvas', 70, 30)
       .mouseButtonDown(0)
@@ -21,6 +22,7 @@ module.exports = {
       .assert.cssProperty('#main div.input', 'opacity', '1')
       .assert.cssProperty('#main div.input', 'left', '80.0859px')
       .assert.cssProperty('#main div.input', 'top', '0px')
+      .assert.domPropertyEquals('#side .text-panel .pick', 'color', '#ff4242')
 
       .moveToElement('canvas', 90, 30)
       .mouseButtonDown(0)

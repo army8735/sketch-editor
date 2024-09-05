@@ -31,7 +31,6 @@ export default class PageList {
     dom.addEventListener('click', e => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
-      listener.input.hide();
       if (!classList.contains('active')) {
         ul.querySelector('.active')?.classList.remove('active');
         classList.add('active');

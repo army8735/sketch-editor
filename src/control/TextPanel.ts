@@ -88,6 +88,7 @@ class TextPanel extends Panel {
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
+    listener.input.ignoreBlur.push(panel);
     this.initFontList();
 
     const fold = localStorage.getItem(KEY_INFO);
@@ -258,6 +259,12 @@ class TextPanel extends Panel {
       }
     };
 
+    const onBlur = () => {
+      if (listener.state === State.EDIT_TEXT) {
+        listener.input.focus();
+      }
+    };
+
     fs.addEventListener('input', (e) => {
       onInput(e, 'fontSize');
     });
@@ -282,6 +289,10 @@ class TextPanel extends Panel {
     ps.addEventListener('change', (e) => {
       onChange('paragraphSpacing');
     });
+    fs.addEventListener('blur', onBlur);
+    ls.addEventListener('blur', onBlur);
+    lh.addEventListener('blur', onBlur);
+    ps.addEventListener('blur', onBlur);
 
     const onSelectChange = (e: Event, key: 'fontFamily' | 'fontWeight') => {
       this.silence = true;
@@ -408,6 +419,10 @@ class TextPanel extends Panel {
           return;
         }
         const p = picker.show(el, 'textPanel', pickCallback, true);
+        const pDom = p.domElement.parentElement!;
+        if (!listener.input.ignoreBlur.includes(pDom)) {
+          listener.input.ignoreBlur.push(pDom);
+        }
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = nodes.map(item => item.getRich());

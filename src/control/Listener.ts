@@ -355,10 +355,6 @@ export default class Listener extends Event {
               const p = text.setCursorStartByAbsCoords(x, y);
               this.input.updateCursor(p);
               this.input.showCursor();
-              // 防止触发click事件失焦
-              if (e instanceof MouseEvent) {
-                e.preventDefault();
-              }
               this.emit(Listener.CURSOR_NODE, selected.slice(0));
               return;
             }
@@ -430,7 +426,7 @@ export default class Listener extends Event {
   }
 
   onMouseDown(e: MouseEvent) {
-    e.preventDefault();
+    // e.preventDefault();
     if (this.options.disabled?.select) {
       return;
     }
@@ -1038,15 +1034,18 @@ export default class Listener extends Event {
         this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
     }
-    // esc，编辑文字回到普通，普通取消选择
+    // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
     else if (e.keyCode === 27) {
-      if (this.state === State.EDIT_TEXT) {
+      if (picker.isShow()) {
+        picker.hide();
+        if (this.state === State.EDIT_TEXT) {
+          this.input.focus();
+        }
+      }
+      else if (this.state === State.EDIT_TEXT) {
         (this.selected[0] as Text).resetCursor();
         this.state = State.NORMAL;
         this.input.hide();
-      }
-      else if (picker.isShow()) {
-        picker.hide();
       }
       else {
         this.selected.splice(0);
