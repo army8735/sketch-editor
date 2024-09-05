@@ -339,9 +339,9 @@ export default class Listener extends Event {
       const oldSelected = selected.slice(0);
       if (node) {
         const i = selected.indexOf(node);
-        // 点选已有节点
+        // 点选已有节点，当编辑text且shift且点击当前text时，是选区
         if (i > -1) {
-          if (this.shiftKey) {
+          if (this.shiftKey && (this.state !== State.EDIT_TEXT || selected[0] !== node)) {
             // 已选唯一相同节点，按shift不消失，是水平/垂直移动
             if (selected.length !== 1 || selected[0] !== node) {
               selected.splice(i, 1);
@@ -352,9 +352,14 @@ export default class Listener extends Event {
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
               text.resetCursor();
-              const p = text.setCursorStartByAbsCoords(x, y);
-              this.input.updateCursor(p);
-              this.input.showCursor();
+              const p = this.shiftKey ? text.setCursorEndByAbsCoords(x, y) : text.setCursorStartByAbsCoords(x, y);
+              if (this.shiftKey) {
+                this.input.hideCursor();
+              }
+              else {
+                this.input.updateCursor(p);
+                this.input.showCursor();
+              }
               this.emit(Listener.CURSOR_NODE, selected.slice(0));
               return;
             }

@@ -239,7 +239,7 @@ class Text extends Node {
     // 初始数据合并校验
     this.mergeRich();
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
-    const SET_FONT_INDEX: number[] = [];
+    const SET_FONT_INDEX: Record<number, number> = {};
     if (rich.length) {
       for (let i = 0, len = rich.length; i < len; i++) {
         const item = rich[i];
@@ -617,7 +617,7 @@ class Text extends Node {
             ctx.fillRect(
               x1,
               lineBox.y * scale + dy2,
-              lineBox.w * scale - x1,
+              lineBox.w * scale + dx2 - x1,
               lineBox.lineHeight * scale,
             );
           }
@@ -641,8 +641,8 @@ class Text extends Node {
             let x1 = textBox.x * scale + dx2;
             ctx.font = textBox.font;
             ctx.letterSpacing = textBox.letterSpacing + 'px';
-            let x2 = ctx.measureText(textBox.str.slice(0, endString)).width * scale + dx2;
-            ctx.fillRect(x1, lineBox.y * scale + dy2, x2, lineBox.lineHeight * scale);
+            x1 += ctx.measureText(textBox.str.slice(0, endString)).width * scale;
+            ctx.fillRect(lineBox.x * scale + dx2, lineBox.y * scale + dy2, x1 - (lineBox.x + dx2) * scale, lineBox.lineHeight * scale);
           }
         }
       }
@@ -921,23 +921,6 @@ class Text extends Node {
       }
       // 普通颜色
       else {
-        // 富文本记录索引开始对应的颜色
-        if (rich.length) {
-          for (let i = 0, len = rich.length; i < len; i++) {
-            const item = rich[i];
-            SET_COLOR_INDEX.push({
-              index: item.location,
-              color: color2rgbaStr(item.color),
-            });
-          }
-          const first = rich[0];
-          color = color2rgbaStr(first.color);
-        }
-        // 非富默认颜色
-        else {
-          color = color2rgbaStr(computedStyle.color);
-          ctx.fillStyle = color;
-        }
         for (let i = 0, len = lineBoxList.length; i < len; i++) {
           const lineBox = lineBoxList[i];
           // 固定尺寸超过则overflow: hidden
@@ -949,14 +932,8 @@ class Text extends Node {
           for (let i = 0; i < len; i++) {
             const textBox = list[i];
             const textDecoration = textBox.textDecoration;
-            // textBox的分隔一定是按rich的，用字符索引来获取颜色
-            const index = textBox.index;
-            if (SET_COLOR_INDEX.length && index >= SET_COLOR_INDEX[0].index) {
-              const cur = SET_COLOR_INDEX.shift()!;
-              color = color2rgbaStr(cur.color);
-              ctx.fillStyle = color;
-            }
             setFontAndLetterSpacing(ctx, textBox, scale);
+            ctx.fillStyle = textBox.color;
             ctx.fillText(
               textBox.str,
               textBox.x * scale + dx2,
@@ -1256,27 +1233,38 @@ class Text extends Node {
     const { end } = cursor;
     cursor.isMulti = true;
     const len = lineBoxList.length;
-    for (let m = 0; m < len; m++) {
-      const lineBox = lineBoxList[m];
+    for (let i = 0; i < len; i++) {
+      const lineBox = lineBoxList[i];
       // 确定y在哪一行后
       if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.lineHeight) {
-        cursor.endLineBox = m;
-        this.getCursorByLocalX(local.x, lineBox, true);
+        cursor.endLineBox = i;
+        const res = this.getCursorByLocalX(local.x, lineBox, true);
         // 变化需要更新渲染
         if (cursor.end !== end) {
           this.refresh();
         }
-        return;
+        const p = calPoint({ x: res.x, y: res.y }, m);
+        return {
+          x: p.x,
+          y: p.y,
+          h: res.h * m[0],
+        };
       }
     }
     // 找不到认为是最后一行末尾
     const lineBox = lineBoxList[len - 1];
     cursor.endLineBox = len - 1;
-    this.getCursorByLocalX(this.width, lineBox, true);
+    const res = this.getCursorByLocalX(this.width, lineBox, true);
     // 变化需要更新渲染
     if (cursor.end !== end) {
       this.refresh();
     }
+    const p = calPoint({ x: res.x, y: res.y }, m);
+    return {
+      x: p.x,
+      y: p.y,
+      h: res.h * m[0],
+    };
   }
 
   resetCursor() {
@@ -2845,16 +2833,20 @@ class Text extends Node {
           startLineBox,
           startTextBox,
           startString,
+          start,
           endLineBox,
           endTextBox,
           endString,
+          end,
         ] = [
           endLineBox,
           endTextBox,
           endString,
+          end,
           startLineBox,
           startTextBox,
           startString,
+          start,
         ];
         isReversed = true;
       }
