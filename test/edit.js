@@ -120,6 +120,32 @@ function toSelect() {
   }
 }
 
+function toContent() {
+  const nodes = listener.selected;
+  if (nodes.length > 1) {
+    input.value = JSON.stringify(nodes.map(node => {
+      return [
+        count,
+        node.content,
+      ];
+    }));
+    count++;
+  }
+  else if (nodes.length) {
+    let node = nodes[0];
+    if (!node) {
+      node = root.getCurPage().children[0];
+    }
+    input.value = JSON.stringify([
+      count++,
+      node.content,
+    ]);
+  }
+  else {
+    input.value = '[' + (count++) + ']';
+  }
+}
+
 window.onerror = function(e) {
   input.value = e.toString();
 }
@@ -161,6 +187,7 @@ fetch('./sketch.sketch')
         const button2 = document.querySelector('#button2');
         const button3 = document.querySelector('#button3');
         const button4 = document.querySelector('#button4');
+        const button5 = document.querySelector('#button5');
         if (button1) {
           button1.addEventListener('click', () => {
             toDataURL();
@@ -179,6 +206,11 @@ fetch('./sketch.sketch')
         if (button4) {
           button4.addEventListener('click', () => {
             toSelect();
+          });
+        }
+        if (button5) {
+          button5.addEventListener('click', () => {
+            toContent();
           });
         }
       });

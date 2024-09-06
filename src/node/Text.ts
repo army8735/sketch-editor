@@ -2623,7 +2623,7 @@ class Text extends Node {
 
   // 输入文字后扩展所在位置的rich
   private expandRich(start: number, length: number) {
-    const rich = this.rich;
+    const { rich, _content: content } = this;
     // 空内容下，start会是0
     if (!rich.length) {
       const computedStyle = this.computedStyle;
@@ -2643,17 +2643,24 @@ class Text extends Node {
       });
       return;
     }
-    // 处在两个location之间的，以前一个样式为准，\n分割的话点击首尾的start不同需特殊处理行头
+    start = Math.max(0, start);
+    // 处在两个location之间的，以前一个样式为准，\n分割的话点击首尾的start不同需特殊处理行头，只考虑行首即可因为点不到\n后面（lineBox不包含\n）
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
-      if (item.location <= start && (item.location + item.length > start || i === len - 1)) {
+      // 用<=start防止开头0时无法命中，另外\n换行点行首也会命中；>=start则命中交界处的前一个
+      if (item.location <= start && item.location + item.length >= start) {
+        if (start === item.location + item.length && content.charAt(start - 1) === '\n') {
+          continue;
+        }
         item.length += length;
         for (let j = i + 1; j < len; j++) {
           rich[j].location += length;
         }
-        break;
+        return;
       }
     }
+    // 兜底末尾
+    rich[rich.length - 1].length += length;
   }
 
   private insertRich(style: ModifyRichStyle, start: number, length: number) {
