@@ -143,7 +143,7 @@ export default class Input {
         while (p) {
           if (p === listener.dom || this.ignoreBlur.includes(p)) {
             // 防止来源input无法聚焦
-            if (target.tagName.toUpperCase() !== 'INPUT') {
+            if (!['INPUT', 'SELECT'].includes(target.tagName.toUpperCase())) {
               this.focus();
             }
             return;

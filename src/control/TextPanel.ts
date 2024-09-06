@@ -310,7 +310,7 @@ class TextPanel extends Panel {
         });
         select.innerHTML = s;
         // 暂时切换后统一Regular，如果没有则第一个
-        let ff = fontWeightList[0].value;
+        let ff = fontWeightList.length ? fontWeightList[0].value : '';
         for (let i = 0, len = fontWeightList.length; i < len; i++) {
           const item = fontWeightList[i];
           if (item.label.toLowerCase() === 'regular') {
@@ -654,30 +654,46 @@ class TextPanel extends Panel {
 
   initFontList(names?: string[]) {
     const { info, data } = style.font;
-    const hash: Record<string, boolean> = {};
+    let s = '';
     if (names && names.length) {
+      const hash: Record<string, boolean> = {};
       names.forEach((name) => {
-        // family
-        if (info.hasOwnProperty(name)) {
-          hash[name] = true;
+        const item = data[name];
+        if (item) {
+          if (hash[item.name || name]) {
+            return;
+          }
+          hash[item.name || name] = true;
+          const list = item.list || [];
+          // 优先regular，找不到兜底
+          for (let j = 0; j < list.length; j++) {
+            const item2 = list[j];
+            if (item2.style.toLowerCase() === 'regular') {
+              s += `<option value="${item2.postscriptName}">${item.name || name}</option>`;
+              return;
+            }
+          }
+          s += `<option value="${name}">${item.name || name}</option>`;
         }
-        // postscriptName
-        else if (data.hasOwnProperty(name)) {
-          hash[data[name].family] = true;
+        else {
+          s += `<option value="${name}">${name}</option>`;
         }
       });
     }
-    let s = '';
-    for (let i in info) {
-      if (info.hasOwnProperty(i)) {
-        if (names && names.length) {
-          if (!hash.hasOwnProperty(i)) {
-            continue;
+    else {
+      outer:
+      for (let i in info) {
+        if (info.hasOwnProperty(i)) {
+          const item = info[i];
+          const list = item.list || [];
+          // 优先regular，找不到兜底
+          for (let j = 0; j < list.length; j++) {
+            const item2 = list[j];
+            if (item2.style.toLowerCase() === 'regular') {
+              s += `<option value="${item2.postscriptName}">${item.name || i}</option>`;
+              continue outer;
+            }
           }
-        }
-        const item = info[i];
-        const list = item.list || [];
-        if (list.length) {
           s += `<option value="${i}">${item.name || i}</option>`;
         }
       }
@@ -738,13 +754,26 @@ class TextPanel extends Panel {
           multi.innerText = o.fontFamily[0];
           multi.classList.add('invalid');
           multi.style.display = 'block';
-          const option = `<option value="${o.postscriptName[0]}" selected="selected" disabled>${o.fontFamily[0]}</option>`;
-          select.innerHTML += option;
+          const option = select.querySelector(`option[value="${o.postscriptName[0]}"]`);
+          // 有可能手动initFontList了一个不可用的字体（特殊需求）已有，此时不添加不可选的选项展示
+          if (!option) {
+            const s = `<option value="${o.postscriptName[0]}" selected="selected" disabled>${o.fontFamily[0]}</option>`;
+            select.innerHTML += s;
+          }
+          else {
+            select.value = o.postscriptName[0];
+          }
         }
         else {
           multi.style.display = 'none';
           multi.classList.remove('invalid');
-          select.value = o.fontFamily[0];
+          const option = select.querySelector(`option[value="${o.postscriptName[0]}"]`);
+          // 有可能手动initFontList没包含但此字体可用，添加之
+          if (!option) {
+            const s = `<option value="${o.postscriptName[0]}">${o.fontFamily[0]}</option>`;
+            select.innerHTML += s;
+          }
+          select.value = o.postscriptName[0];
         }
       }
     }
