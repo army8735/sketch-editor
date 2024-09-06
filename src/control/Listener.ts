@@ -219,7 +219,7 @@ export default class Listener extends Event {
         this.input.hide();
       }
       // 旋转时记住中心坐标
-      if (selected.length === 1 && this.metaKey
+      if (selected.length === 1 && (this.metaKey || isWin && this.ctrlKey)
         && [CONTROL_TYPE.TL, CONTROL_TYPE.TR, CONTROL_TYPE.BL, CONTROL_TYPE.BR].indexOf(controlType) > -1) {
         const { points } = selected[0].getBoundingClientRect();
         const i = intersectLineLine(
@@ -300,7 +300,7 @@ export default class Listener extends Event {
     // 点到canvas上
     else {
       // 非按键多选情况下点击框内，视为移动，多选时选框一定是无旋转的
-      if (selected.length > 1 && !this.metaKey && !this.shiftKey) {
+      if (selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
         const x = e.clientX;
         const y = e.clientY;
         const rect = this.select.select.getBoundingClientRect();
@@ -316,12 +316,12 @@ export default class Listener extends Event {
         root,
         x,
         y,
-        this.metaKey || this.options.enabled?.selectWithMeta,
+        (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
         selected,
         false,
       );
       // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
-      if (this.metaKey && node instanceof ArtBoard && selected.indexOf(node) === -1) {
+      if ((this.metaKey || isWin && this.ctrlKey) && node instanceof ArtBoard && selected.indexOf(node) === -1) {
         // 如果已选的里面有此画板或者属于此画板，要忽略
         let ignore = false;
         for (let i = 0, len = selected.length; i < len; i++) {
@@ -424,7 +424,7 @@ export default class Listener extends Event {
         return;
       }
       // 旋转需记住节点中心坐标
-      if (this.metaKey && selected.length === 1) {
+      if ((this.metaKey || isWin && this.ctrlKey) && selected.length === 1) {
         this.select.metaKey(true);
       }
       this.prepare();
@@ -552,7 +552,7 @@ export default class Listener extends Event {
           }
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
-          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, this.metaKey);
+          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, (this.metaKey || isWin && this.ctrlKey));
           const old = selected.splice(0);
           selected.push(...res);
           // 已选择的没变优化
@@ -619,7 +619,7 @@ export default class Listener extends Event {
         root,
         (e as MouseEvent).offsetX * dpi,
         (e as MouseEvent).offsetY * dpi,
-        this.metaKey || this.options.enabled?.selectWithMeta,
+        (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
         selected,
         false,
       );
@@ -679,7 +679,7 @@ export default class Listener extends Event {
           root,
           e.offsetX * dpi,
           e.offsetY * dpi,
-          this.metaKey || this.options.enabled?.selectWithMeta,
+          (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
           selected,
           false,
         );
@@ -720,7 +720,7 @@ export default class Listener extends Event {
             rotateZ: node.computedStyle.rotateZ,
           },
         }]));
-        if (!this.metaKey) {
+        if (!(this.metaKey || isWin && this.ctrlKey)) {
           this.select.metaKey(false);
         }
       }
@@ -806,7 +806,7 @@ export default class Listener extends Event {
       }
     }
     // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择，shift校验在down时做
-    else if (this.metaKey && this.mouseDownArtBoard) {
+    else if ((this.metaKey || isWin && this.ctrlKey) && this.mouseDownArtBoard) {
       if (!this.shiftKey) {
         selected.splice(0);
       }
@@ -880,7 +880,7 @@ export default class Listener extends Event {
       root,
       (e.clientX - this.originX) * dpi,
       (e.clientY - this.originY) * dpi,
-      this.metaKey || this.options.enabled?.selectWithMeta,
+      (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
       this.selected,
       true,
     );
@@ -1003,7 +1003,7 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    if (this.metaKey && this.selected.length === 1) {
+    if ((this.metaKey || isWin && this.ctrlKey) && this.selected.length === 1) {
       this.select.metaKey(true);
     }
     // backspace
@@ -1154,7 +1154,7 @@ export default class Listener extends Event {
     this.altKey = e.altKey;
     this.ctrlKey = e.ctrlKey;
     this.shiftKey = e.shiftKey;
-    if (!this.metaKey && !this.isRotate) {
+    if (!(this.metaKey || isWin && this.ctrlKey) && !this.isRotate) {
       this.select.metaKey(false);
     }
     // space
