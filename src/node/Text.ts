@@ -2210,26 +2210,32 @@ class Text extends Node {
    * 其它几种都不需要：左右百分比定宽、左固定、右固定、左百分比+定宽，
    * 不会出现仅右百分比的情况，所有改变处理都一样
    */
-  input(s: string, style?: ModifyRichStyle) {
+  input(s: string) {
     const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
-    // 选择区域特殊情况，先删除掉这一段文字
+    let c = this._content;
+    // 选择区域特殊情况，先删除掉这一段文字，还要使用选区开头的样式
     if (isMulti) {
+      const r = this.getCursorRich();
       this.cursor.isMulti = false;
-      this.cutRich(start, end);
-      const c = this._content;
       this._content = c.slice(0, start) + c.slice(end);
+      this.cutRich(start, end);
+      c = this._content;
+      this._content = c.slice(0, start) + s + c.slice(start);
+      this.insertRich(r[0], start, s.length);
     }
-    // 传入style说明是插入一段新Rich
-    if (style) {
-      this.insertRich(style, start, s.length);
+    // 有新增的输入样式
+    else if (this.inputStyle) {
+      const r = this.getCursorRich();
+      this._content = c.slice(0, start) + s + c.slice(start);
+      this.insertRich(Object.assign({}, r[0], this.inputStyle), start, s.length);
+      this.inputStyle = undefined;
     }
     // 否则是在当前Rich上增加内容
     else {
+      this._content = c.slice(0, start) + s + c.slice(start);
       this.expandRich(start, s.length);
     }
-    const c = this._content;
-    this._content = c.slice(0, start) + s + c.slice(start);
     this.refresh(RefreshLevel.REFLOW);
     this.afterEdit(payload);
     this.updateCursorByIndex(start + s.length);
@@ -2255,7 +2261,7 @@ class Text extends Node {
   }
 
   // 按下delete键触发
-  delete() {
+  delete(isDeleteKey = false) {
     const c = this._content;
     // 没内容没法删
     if (!c) {
@@ -2263,22 +2269,30 @@ class Text extends Node {
     }
     const { isMulti, start, end } = this.getSortedCursor();
     // 开头也没法删
-    if (!start) {
+    if (start < 1 && !isMulti) {
+      return;
+    }
+    // 结尾delete键没法删
+    else if (start === c.length && isDeleteKey) {
       return;
     }
     const payload = this.beforeEdit();
     if (isMulti) {
       this.cursor.isMulti = false;
-      this.cutRich(start, end);
       this._content = c.slice(0, start) + c.slice(end);
+      this.cutRich(start, end);
+    }
+    else if (isDeleteKey) {
+      this._content = c.slice(0, start) + c.slice(start + 1);
+      this.cutRich(start, start + 1);
     }
     else {
-      this.cutRich(start - 1, start);
       this._content = c.slice(0, start - 1) + c.slice(start);
+      this.cutRich(start - 1, start);
     }
     this.refresh(RefreshLevel.REFLOW);
     this.afterEdit(payload);
-    if (isMulti) {
+    if (isMulti || isDeleteKey) {
       this.updateCursorByIndex(start);
     }
     else {
@@ -2394,6 +2408,14 @@ class Text extends Node {
     }
     // 空行特殊判断对齐方式
     if (!list.length) {
+      if (isEnd) {
+        cursor.endString = 0;
+        cursor.end = lineBox.index;
+      }
+      else {
+        cursor.startString = 0;
+        cursor.start = lineBox.index;
+      }
       const textAlign = this.computedStyle.textAlign;
       if (textAlign === TEXT_ALIGN.CENTER) {
         rx = this.width * 0.5;
@@ -2598,21 +2620,28 @@ class Text extends Node {
         // 跨多个选区
         else {
           item.length = start - item.location;
-          for (let j = i + 1; j < len; j++) {
+          for (let j = i + 1, len = rich.length; j < len; j++) {
             const item2 = rich[j];
-            if (item2.location <= end && item2.location + item2.length > end) {
-              item2.length = end - item2.location;
-              item2.location = item.location + item.length;
+            if (item2.location <= end && (item2.location + item2.length > end || j === len - 1)) {
+              item2.length -= end - item2.location;
+              item2.location -= count;
+              // 后续的偏移
+              for (let k = j + 1, len = rich.length; k < len; k++) {
+                rich[k].location -= count;
+              }
               // 开始和结束的rich中间有的话删除
               if (i < j - 1) {
                 rich.splice(i + 1, j - i + 1);
               }
-              // 后续的偏移
-              for (let k = j + 1; k < len; k++) {
-                rich[k].location -= count;
+              // end是末尾时会遇到
+              if (!item2.length) {
+                rich.splice(j, 1);
               }
               break;
             }
+          }
+          if (!item.length) {
+            rich.splice(i, 1);
           }
         }
         break;
@@ -2683,7 +2712,6 @@ class Text extends Node {
       style,
     );
     st.color = color2rgbaInt(st.color);
-    // 防止被style中脏数据覆盖
     st.location = start;
     st.length = length;
     const rich = this.rich;
@@ -2898,6 +2926,9 @@ class Text extends Node {
   getCursorRich() {
     const { rich, lineBoxList } = this;
     const res: Rich[] = [];
+    if (!rich.length) {
+      return res;
+    }
     function get2(t: number, i = 0, j = rich.length - 1) {
       while (i < j) {
         const m = Math.floor((i + j) * 0.5);
@@ -2942,15 +2973,15 @@ class Text extends Node {
       // 空行
       if (!list.length) {
         const r = get2(lineBox.index);
-        if (res.indexOf(r) === -1) {
+        if (r && res.indexOf(r) === -1) {
           res.push(r);
         }
       }
       else {
-        // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首取当前的用+1来hack
+        // 如果光标在textBox的开头，要取前一个的，除非当前textBox是行首取当前的
         const textBox = list[startTextBox];
         const r = get2(textBox.index + (startTextBox + startString === 0 ? 1 : startString));
-        if (res.indexOf(r) === -1) {
+        if (r && res.indexOf(r) === -1) {
           res.push(r);
         }
       }

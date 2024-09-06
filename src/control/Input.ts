@@ -49,15 +49,17 @@ export default class Input {
           // 回车等候一下让input先触发，输入法状态不会触发
           setTimeout(() => {
             this.node!.enter();
+            this.showCursor();
             this.updateCursor();
             listener.select.updateSelect([this.node!]);
             listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
             listener.emit(Listener.CURSOR_NODE, [this.node]);
           }, 0);
         }
-        else if (keyCode === 8) {
+        else if (keyCode === 8 || keyCode === 46) {
           e.stopPropagation();
-          this.node!.delete();
+          this.node!.delete(keyCode === 46);
+          this.showCursor();
           this.updateCursor();
           listener.select.updateSelect([this.node]);
           listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
@@ -65,6 +67,7 @@ export default class Input {
         }
         else if (keyCode >= 37 && keyCode <= 40) {
           const p = this.node.moveCursor(keyCode);
+          this.showCursor();
           this.updateCursor(p);
           this.showCursor();
           listener.emit(Listener.CURSOR_NODE, [this.node]);
