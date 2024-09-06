@@ -132,7 +132,7 @@ export default class Input {
       iterations: Infinity,
     });
 
-    // 点击外部自动取消focus输入状态，除非画布自身（listener内逻辑控制），除非textPanel
+    // 点击外部会blur，当来自画布自身且编辑态需自动focus，还有来自textPanel（ignoreBlur）
     document.addEventListener('click', (e) => {
       if (listener.state === State.EDIT_TEXT) {
         let target = e.target as HTMLElement;
@@ -174,6 +174,7 @@ export default class Input {
   hide() {
     this.containerEl.style.opacity = '0';
     this.inputEl.blur();
+    this.node = undefined;
   }
 
   focus() {
@@ -188,6 +189,7 @@ export default class Input {
     this.cursorEl.style.opacity = '1';
   }
 
+  // 选区时隐藏光标但还是focus状态（外部控制）
   hideCursor() {
     this.cursorEl.style.opacity = '0';
   }
