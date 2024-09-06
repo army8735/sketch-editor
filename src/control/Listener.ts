@@ -47,6 +47,8 @@ export type ListenerOptions = {
   };
 };
 
+const isWin = typeof navigator !== 'undefined' && /win/i.test(navigator.platform);
+
 export default class Listener extends Event {
   options: ListenerOptions;
   state: State;
@@ -1001,7 +1003,6 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    const isWin = typeof navigator !== 'undefined' && /win/i.test(navigator.platform);
     if (this.metaKey && this.selected.length === 1) {
       this.select.metaKey(true);
     }

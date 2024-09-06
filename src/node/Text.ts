@@ -1193,6 +1193,7 @@ class Text extends Node {
     const local = calPoint({ x, y }, im);
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
+    const start = cursor.start;
     cursor.isMulti = false;
     const len = lineBoxList.length;
     for (let i = 0; i < len; i++) {
@@ -1215,6 +1216,10 @@ class Text extends Node {
     cursor.startLineBox = len - 1;
     const res = this.getCursorByLocalX(this.width, lineBox, false);
     this.tempCursorX = this.currentCursorX = res.x;
+    // 点在老的地方不清空，防止连续点击同一位置
+    if (cursor.start !== start) {
+      this.inputStyle = undefined;
+    }
     const p = calPoint({ x: res.x, y: res.y }, m);
     return {
       x: p.x,
@@ -1230,7 +1235,7 @@ class Text extends Node {
     const local = calPoint({ x: x, y: y }, im);
     const lineBoxList = this.lineBoxList;
     const cursor = this.cursor;
-    const { end } = cursor;
+    const end = cursor.end;
     cursor.isMulti = true;
     const len = lineBoxList.length;
     for (let i = 0; i < len; i++) {
@@ -1258,6 +1263,10 @@ class Text extends Node {
     // 变化需要更新渲染
     if (cursor.end !== end) {
       this.refresh();
+    }
+    // 多选区清空输入的新样式，如果在原地轻微移动不改变end则保持panel设置的新样式，防止手抖
+    if (cursor.end !== cursor.start) {
+      this.inputStyle = undefined;
     }
     const p = calPoint({ x: res.x, y: res.y }, m);
     return {
@@ -2634,6 +2643,7 @@ class Text extends Node {
       });
       return;
     }
+    // 处在两个location之间的，以前一个样式为准，\n分割的话点击首尾的start不同需特殊处理行头
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
       if (item.location <= start && (item.location + item.length > start || i === len - 1)) {
@@ -2799,6 +2809,12 @@ class Text extends Node {
           rich.splice(i + 1, 1);
           hasMerge = true;
         }
+      }
+      // 如果\n单独形成样式，合并它（操作\n前后字符情况下会出现），因为它无意义
+      else if (b.length === 1 && content.charAt(b.location) === '\n') {
+        a.length += b.length;
+        rich.splice(i + 1, 1);
+        hasMerge = true;
       }
     }
     return hasMerge;
