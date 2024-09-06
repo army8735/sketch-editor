@@ -2631,7 +2631,7 @@ class Text extends Node {
               }
               // 开始和结束的rich中间有的话删除
               if (i < j - 1) {
-                rich.splice(i + 1, j - i + 1);
+                rich.splice(i + 1, j - i - 1);
               }
               // end是末尾时会遇到
               if (!item2.length) {
