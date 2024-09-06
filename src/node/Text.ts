@@ -2269,7 +2269,7 @@ class Text extends Node {
     }
     const { isMulti, start, end } = this.getSortedCursor();
     // 开头backspace没法删
-    if (start < 1 && (!isMulti || !isDeleteKey)) {
+    if (start < 1 && !isMulti && !isDeleteKey) {
       return;
     }
     // 结尾delete键没法删
