@@ -108,7 +108,7 @@ const o = {
     }
     this.updateLocalStorage();
   },
-  registerAb(ab: ArrayBuffer, focus = false) {
+  registerAb(ab: ArrayBuffer) {
     const o: any = {};
     const f: any = opentype.parse(ab);
     if (f && f.name) {
@@ -126,9 +126,6 @@ const o = {
     if (!family || !style || !postscriptName) {
       return;
     }
-    if (this.hasRegister(postscriptName) && !focus) {
-      return;
-    }
     if (!info.hasOwnProperty(family)) {
       const r = this._cal(family, f);
       Object.assign(o, r);
@@ -138,7 +135,7 @@ const o = {
     this._register(family, style, postscriptName, true);
     inject.addArrayBufferFont(postscriptName, ab);
   },
-  _cal(family: string, f: any) {
+  _cal(family: string, f: { ascent: number, descent: number, lineGap: number, emSquare: number }) {
     let spread = 0;
     // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
     // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大

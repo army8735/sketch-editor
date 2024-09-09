@@ -310,7 +310,7 @@ class TextPanel extends Panel {
         });
         select.innerHTML = s;
         // 暂时切换后统一Regular，如果没有则第一个
-        let ff = fontWeightList.length ? fontWeightList[0].value : '';
+        let ff = fontWeightList.length ? fontWeightList[0].value : value;
         for (let i = 0, len = fontWeightList.length; i < len; i++) {
           const item = fontWeightList[i];
           if (item.label.toLowerCase() === 'regular') {
@@ -318,7 +318,6 @@ class TextPanel extends Panel {
             break;
           }
         }
-        select.value = ff;
         select.disabled = false;
         const data: UpdateRichData[] = [];
         if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
@@ -660,40 +659,24 @@ class TextPanel extends Panel {
       names.forEach((name) => {
         const item = data[name];
         if (item) {
-          if (hash[item.name || name]) {
+          if (hash[item.name]) {
             return;
           }
-          hash[item.name || name] = true;
-          const list = item.list || [];
-          // 优先regular，找不到兜底
-          for (let j = 0; j < list.length; j++) {
-            const item2 = list[j];
-            if (item2.style.toLowerCase() === 'regular') {
-              s += `<option value="${item2.postscriptName}">${item.name || name}</option>`;
-              return;
-            }
-          }
-          s += `<option value="${name}">${item.name || name}</option>`;
+          hash[item.name] = true;
+          s += `<option value="${name}">${item.name}</option>`;
         }
         else {
+          if (hash[name]) {
+            return;
+          }
           s += `<option value="${name}">${name}</option>`;
         }
       });
     }
     else {
-      outer:
       for (let i in info) {
         if (info.hasOwnProperty(i)) {
           const item = info[i];
-          const list = item.list || [];
-          // 优先regular，找不到兜底
-          for (let j = 0; j < list.length; j++) {
-            const item2 = list[j];
-            if (item2.style.toLowerCase() === 'regular') {
-              s += `<option value="${item2.postscriptName}">${item.name || i}</option>`;
-              continue outer;
-            }
-          }
           s += `<option value="${i}">${item.name || i}</option>`;
         }
       }
