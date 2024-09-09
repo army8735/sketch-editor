@@ -2901,10 +2901,11 @@ class Text extends Node {
     if (!rich.length) {
       rich.push(st);
       return;
-    }
+    } console.log(start)
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
-      if (item.location <= start && item.location + item.length > start) {
+      if (item.location <= start && item.location + item.length >= start) {
+        console.log('a', i, item);
         // 后续偏移
         for (let j = i + 1; j < len; j++) {
           rich[j].location += length;
@@ -2914,7 +2915,7 @@ class Text extends Node {
           rich.splice(i, 0, st);
           item.location += length;
         }
-        else {
+        else if (item.location + item.length > start) {
           const copy = clone(item);
           item.length = start - item.location;
           copy.location = start + length;
