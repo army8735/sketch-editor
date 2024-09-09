@@ -1206,6 +1206,10 @@ class Text extends Node {
         cursor.endString = cursor.startString;
         cursor.end = cursor.start;
         this.tempCursorX = this.currentCursorX = res.x;
+        // 点在老的地方不清空，防止连续点击同一位置
+        if (cursor.start !== start) {
+          this.inputStyle = undefined;
+        }
         const p = calPoint({ x: res.x, y: res.y }, m);
         return {
           x: p.x,
@@ -2012,6 +2016,7 @@ class Text extends Node {
         textBox = list[m];
         pos = textBox ? (textBox.index + n) : (lineBox.index + n);
       }
+      this.inputStyle = undefined;
       // 更新会把当前值赋给start
       return this.updateCursorByIndex(pos);
     }
@@ -2134,6 +2139,7 @@ class Text extends Node {
         if (isEnd) {
           this.refresh();
         }
+        this.inputStyle = undefined;
         const p = calPoint({ x: res.x, y: res.y }, matrix);
         return {
           x: p.x,
@@ -2347,6 +2353,7 @@ class Text extends Node {
         if (isEnd) {
           this.refresh();
         }
+        this.inputStyle = undefined;
         const p = calPoint({ x: res.x, y: res.y }, matrix);
         return {
           x: p.x,
@@ -2380,6 +2387,7 @@ class Text extends Node {
     if (isEnd) {
       this.refresh();
     }
+    this.inputStyle = undefined;
     const p = calPoint({ x: this.currentCursorX, y: lineBox.y }, matrix);
     return {
       x: p.x,
@@ -2426,6 +2434,7 @@ class Text extends Node {
 
   // 按下回车触发
   enter() {
+    this.inputStyle = undefined;
     const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
@@ -2445,6 +2454,7 @@ class Text extends Node {
 
   // 按下delete键触发
   delete(isDeleteKey = false) {
+    this.inputStyle = undefined;
     const c = this._content;
     // 没内容没法删
     if (!c) {
@@ -2923,7 +2933,7 @@ class Text extends Node {
         fontWeight: 400,
         fontStyle: 'normal',
         letterSpacing: computedStyle.letterSpacing,
-        textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][computedStyle.textAlign],
+        textAlign: computedStyle.textAlign,
         textDecoration: computedStyle.textDecoration,
         lineHeight: computedStyle.lineHeight,
         paragraphSpacing: computedStyle.paragraphSpacing,
@@ -2950,6 +2960,9 @@ class Text extends Node {
         if (item.location === start) {
           rich.splice(i, 0, st);
           item.location += length;
+        }
+        else if (item.location + item.length === start) {
+          rich.splice(i + 1, 0, st);
         }
         else if (item.location + item.length > start) {
           const copy = clone(item);

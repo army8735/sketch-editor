@@ -217,6 +217,8 @@ export default class Listener extends Event {
       if (this.state === State.EDIT_TEXT) {
         this.state = State.NORMAL;
         this.input.hide();
+        (selected[0] as Text).resetCursor();
+        (selected[0] as Text).inputStyle = undefined;
       }
       // 旋转时记住中心坐标
       if (selected.length === 1 && (this.metaKey || isWin && this.ctrlKey)
@@ -355,13 +357,19 @@ export default class Listener extends Event {
               const text = selected[0] as Text;
               if (this.shiftKey) {
                 text.setCursorEndByAbsCoords(x, y);
+                text.inputStyle = undefined;
                 this.input.hideCursor();
               }
               else {
+                const { isMulti, start } = text.cursor;
                 text.resetCursor();
                 const p = text.setCursorStartByAbsCoords(x, y);
                 this.input.updateCursor(p);
                 this.input.showCursor();
+                // 没有变化不触发事件
+                if (text.cursor.isMulti === isMulti && text.cursor.start === start) {
+                  return;
+                }
               }
               this.emit(Listener.CURSOR_NODE, selected.slice(0));
               return;
@@ -400,16 +408,19 @@ export default class Listener extends Event {
         if (this.state === State.EDIT_TEXT) {
           const text = selected[0] as Text;
           text.resetCursor();
+          text.inputStyle = undefined;
+          this.state = State.NORMAL;
+          this.input.hide();
         }
         else if (!this.shiftKey) {
           selected.splice(0);
         }
       }
       // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
-      if (this.state === State.EDIT_TEXT) {
-        this.state = State.NORMAL;
-        this.input.hide();
-      }
+      // if (this.state === State.EDIT_TEXT) {
+      //   this.state = State.NORMAL;
+      //   this.input.hide();
+      // }
       if (this.select.hoverNode) {
         this.select.hideHover();
         this.emit(Listener.UN_HOVER_NODE);
@@ -1052,7 +1063,9 @@ export default class Listener extends Event {
         }
       }
       else if (this.state === State.EDIT_TEXT) {
-        (this.selected[0] as Text).resetCursor();
+        const text = this.selected[0] as Text;
+        text.resetCursor();
+        text.inputStyle = undefined;
         this.state = State.NORMAL;
         this.input.hide();
       }

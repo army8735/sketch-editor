@@ -13,9 +13,10 @@ import picker from './picker';
 import State from './State';
 import Panel from './Panel';
 import { Rich } from '../format';
-import fontInfo from '../style/font';
+import fontInfo, { FontData } from '../style/font';
 import font from '../style/font';
 import inject from '../util/inject';
+import { color2hexStr } from '../style/css';
 
 const html = `
   <h4 class="panel-title">字符<b class="btn arrow"></b></h4>
@@ -102,6 +103,7 @@ class TextPanel extends Panel {
     const ps = panel.querySelector('.ps input') as HTMLInputElement;
     const ff = panel.querySelector('.ff select') as HTMLSelectElement;
     const fw = panel.querySelector('.weight select') as HTMLSelectElement;
+    const btn = panel.querySelector('.picker-btn b') as HTMLElement;
 
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];
@@ -428,6 +430,7 @@ class TextPanel extends Panel {
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
           nexts = [];
+          btn.title = btn.style.background = color2hexStr(color.rgba);
           if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
             const node = nodes[0];
             const { isMulti, start, end } = node.getSortedCursor();
@@ -651,26 +654,18 @@ class TextPanel extends Panel {
     });
   }
 
-  initFontList(names?: string[]) {
-    const { info, data } = style.font;
+  initFontList(custom?: Pick<FontData, 'name' | 'family' | 'list'>[]) {
+    const { info } = style.font;
     let s = '';
-    if (names && names.length) {
-      const hash: Record<string, boolean> = {};
-      names.forEach((name) => {
-        const item = data[name];
-        if (item) {
-          if (hash[item.name]) {
-            return;
-          }
-          hash[item.name] = true;
-          s += `<option value="${name}">${item.name}</option>`;
-        }
-        else {
-          if (hash[name]) {
-            return;
-          }
-          s += `<option value="${name}">${name}</option>`;
-        }
+    if (custom && custom.length) {
+      // 用默认的Arial数据兜底，加载后注册覆盖
+      const Arial = info.Arail;
+      custom.forEach((item) => {
+        font.registerData({
+          ...Arial,
+          ...item,
+        });
+        s += `<option value="${item.family}">${item.name}</option>`;
       });
     }
     else {
