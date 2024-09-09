@@ -354,12 +354,8 @@ export default class Listener extends Event {
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
               if (this.shiftKey) {
-                const end = text.cursor.end;
                 text.setCursorEndByAbsCoords(x, y);
                 this.input.hideCursor();
-                if (end !== text.cursor.end) {
-                  text.refresh();
-                }
               }
               else {
                 text.resetCursor();

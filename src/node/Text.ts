@@ -1985,19 +1985,21 @@ class Text extends Node {
   }
 
   // 上下左右按键移动光标，上下保持当前x（tempCursorX），左右则更新
-  moveCursor(code: number, shift = false) {
+  moveCursor(code: number, isEnd = false) {
     const matrix = this.matrixWorld;
     // 先求得当前光标位置在字符串的索引
     const cursor = this.cursor;
     const sorted = this.getSortedCursor();
-    let { startLineBox: i, startTextBox: j, startString: k } = sorted;
+    let i = isEnd ? sorted.endLineBox : sorted.startLineBox;
+    let j = isEnd ? sorted.endTextBox : sorted.startTextBox;
+    let k = isEnd ? sorted.endString : sorted.startString;
     let lineBoxList = this.lineBoxList;
     let lineBox = lineBoxList[i];
     let list = lineBox.list;
     let textBox = list[j];
-    let pos = textBox ? (textBox.index + k) : (lineBox.index + k); // 空行时k就是0
+    let pos = isEnd ? sorted.end : sorted.start;
     // multi移动光标原地取消多选
-    if (cursor.isMulti && !shift) {
+    if (cursor.isMulti && !isEnd) {
       cursor.isMulti = false;
       if (cursor.start !== cursor.end) {
         this.refresh();
@@ -2013,7 +2015,7 @@ class Text extends Node {
       // 更新会把当前值赋给start
       return this.updateCursorByIndex(pos);
     }
-    else if (shift) {
+    else if (isEnd) {
       cursor.isMulti = true;
     }
     // 左
@@ -2025,35 +2027,75 @@ class Text extends Node {
       if (k === 0) {
         // 行开头要到上行末尾
         if (j === 0) {
-          cursor.startLineBox = --i;
+          if (isEnd) {
+            cursor.endLineBox = --i;
+          }
+          else {
+            cursor.startLineBox = --i;
+          }
           lineBox = lineBoxList[i];
           list = lineBox.list;
           // 防止上一行是空行
           if (!list.length) {
-            cursor.startTextBox = 0;
-            cursor.startString = 0;
-            cursor.start = lineBox.index;
+            if (isEnd) {
+              cursor.endTextBox = 0;
+              cursor.endString = 0;
+              cursor.end = lineBox.index;
+            }
+            else {
+              cursor.startTextBox = 0;
+              cursor.startString = 0;
+              cursor.start = lineBox.index;
+            }
           }
           else {
-            cursor.startTextBox = j = list.length - 1;
+            if (isEnd) {
+              cursor.endTextBox = j = list.length - 1;
+            }
+            else {
+              cursor.startTextBox = j = list.length - 1;
+            }
             // 看是否是enter，决定是否到末尾
             textBox = list[j];
-            cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
-            cursor.start = textBox.index + cursor.startString;
+            if (isEnd) {
+              cursor.endString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
+              cursor.end = textBox.index + cursor.endString;
+            }
+            else {
+              cursor.startString = textBox.str.length - (lineBox.endEnter ? 0 : 1);
+              cursor.start = textBox.index + cursor.startString;
+            }
           }
         }
         // 非行开头到上个textBox末尾
         else {
-          cursor.startTextBox = --j;
+          if (isEnd) {
+            cursor.endTextBox = --j;
+          }
+          else {
+            cursor.startTextBox = --j;
+          }
           textBox = list[j];
-          cursor.startString = textBox.str.length - 1;
-          cursor.start = textBox.index + cursor.startString;
+          if (isEnd) {
+            cursor.endString = textBox.str.length - 1;
+            cursor.end = textBox.index + cursor.endString;
+          }
+          else {
+            cursor.startString = textBox.str.length - 1;
+            cursor.start = textBox.index + cursor.startString;
+          }
         }
       }
       // textBox内容中
       else {
-        cursor.startString = --k;
-        cursor.start = textBox.index + cursor.startString;
+        if (isEnd) {
+          cursor.endString = --k;
+          cursor.end = textBox.index + cursor.endString;
+        }
+        else {
+          cursor.startString = --k;
+          cursor.start = textBox.index + cursor.startString;
+        }
       }
     }
     // 上
@@ -2063,16 +2105,35 @@ class Text extends Node {
       }
       // 第一行到开头
       if (i === 0) {
-        cursor.startTextBox = 0;
+        if (isEnd) {
+          cursor.endTextBox = 0;
+        }
+        else {
+          cursor.startTextBox = 0;
+        }
         textBox = list[0];
-        cursor.startString = 0;
-        cursor.start = 0;
+        if (isEnd) {
+          cursor.endString = 0;
+          cursor.end = 0;
+        }
+        else {
+          cursor.startString = 0;
+          cursor.start = 0;
+        }
       }
       // 向上一行找最接近的，保持当前的x，直接返回结果
       else {
         lineBox = lineBoxList[--i];
-        cursor.startLineBox = i;
-        const res = this.getCursorByLocalX(this.tempCursorX, lineBox, false);
+        if (isEnd) {
+          cursor.endLineBox = i;
+        }
+        else {
+          cursor.startLineBox = i;
+        }
+        const res = this.getCursorByLocalX(this.tempCursorX, lineBox, isEnd);
+        if (isEnd) {
+          this.refresh();
+        }
         const p = calPoint({ x: res.x, y: res.y }, matrix);
         return {
           x: p.x,
@@ -2091,40 +2152,91 @@ class Text extends Node {
         !textBox ||
         (j === list.length - 1 && k === textBox.str.length && lineBox.endEnter)
       ) {
-        cursor.startLineBox = ++i;
-        cursor.startTextBox = 0;
-        cursor.startString = 0;
+        if (isEnd) {
+          cursor.endLineBox = ++i;
+          cursor.endTextBox = 0;
+          cursor.endString = 0;
+        }
+        else {
+          cursor.startLineBox = ++i;
+          cursor.startTextBox = 0;
+          cursor.startString = 0;
+        }
         lineBox = lineBoxList[i];
         list = lineBox.list;
         textBox = list[0];
-        cursor.start = textBox.index;
+        if (isEnd) {
+          cursor.end = textBox.index;
+        }
+        else {
+          cursor.start = textBox.index;
+        }
       }
-      // 已经到行末尾，自动换行用鼠标也能点到末尾，下行一定有内容不可能是enter
+      // 已经到行末尾，自动换行用鼠标也能点到末尾但按键统一下行，下行一定不是空行
       else if (j === list.length - 1 && k === textBox.str.length) {
-        cursor.startLineBox = ++i;
-        cursor.startTextBox = 0;
-        cursor.startString = 1;
+        if (isEnd) {
+          cursor.endLineBox = ++i;
+          cursor.endTextBox = 0;
+          cursor.endString = 1;
+        }
+        else {
+          cursor.startLineBox = ++i;
+          cursor.startTextBox = 0;
+          cursor.startString = 1;
+        }
         lineBox = lineBoxList[i];
         list = lineBox.list;
         textBox = list[0];
-        cursor.start = textBox.index;
+        if (isEnd) {
+          cursor.end = textBox.index + 1;
+        }
+        else {
+          cursor.start = textBox.index + 1;
+        }
       }
       // 已经到textBox末尾（行中非行尾），等同于next的开头
       else if (k === textBox.str.length) {
-        cursor.startTextBox = ++j;
+        if (isEnd) {
+          cursor.endTextBox = ++j;
+        }
+        else {
+          cursor.startTextBox = ++j;
+        }
         textBox = list[j];
-        cursor.startString = 1;
-        cursor.start = textBox.index + 1;
+        if (isEnd) {
+          cursor.endString = 1;
+          cursor.end = textBox.index + 1;
+        }
+        else {
+          cursor.startString = 1;
+          cursor.start = textBox.index + 1;
+        }
         // 歧义的原因，可能此时已经到了行尾（最后一个textBox只有1个字符，光标算作prev的末尾时右移），如果不是enter要视作下行开头
         if (j === list.length - 1 && textBox.str.length === 1) {
           if (!lineBox.endEnter && i < lineBoxList.length - 1) {
-            cursor.startLineBox = ++i;
+            if (isEnd) {
+              cursor.endLineBox = ++i;
+            }
+            else {
+              cursor.startLineBox = ++i;
+            }
             lineBox = lineBoxList[i];
             list = lineBox.list;
-            cursor.startTextBox = j = 0;
+            if (isEnd) {
+              cursor.endTextBox = j = 0;
+            }
+            else {
+              cursor.startTextBox = j = 0;
+            }
             textBox = list[j];
-            cursor.startString = 0;
-            cursor.start = textBox.index;
+            if (isEnd) {
+              cursor.endString = 0;
+              cursor.end = textBox.index;
+            }
+            else {
+              cursor.startString = 0;
+              cursor.start = textBox.index;
+            }
           }
         }
       }
@@ -2133,31 +2245,70 @@ class Text extends Node {
         // 行末尾特殊检查是否是回车导致的换行，回车停留在末尾，否则到下行开头，最后一行也停留
         if (j === list.length - 1) {
           if (lineBox.endEnter || i === lineBoxList.length - 1) {
-            cursor.startString++;
-            cursor.start = textBox.index + cursor.startString;
+            if (isEnd) {
+              cursor.endString++;
+              cursor.end = textBox.index + cursor.endString;
+            }
+            else {
+              cursor.startString++;
+              cursor.start = textBox.index + cursor.startString;
+            }
           }
           else {
-            cursor.startLineBox = ++i;
+            if (isEnd) {
+              cursor.endLineBox = ++i;
+            }
+            else {
+              cursor.startLineBox = ++i;
+            }
             lineBox = lineBoxList[i];
             list = lineBox.list;
-            cursor.startTextBox = j = 0;
+            if (isEnd) {
+              cursor.endTextBox = j = 0;
+            }
+            else {
+              cursor.startTextBox = j = 0;
+            }
             textBox = list[j];
-            cursor.startString = 0;
-            cursor.start = textBox.index;
+            if (isEnd) {
+              cursor.endString = 0;
+              cursor.end = textBox.index;
+            }
+            else {
+              cursor.startString = 0;
+              cursor.start = textBox.index;
+            }
           }
         }
         // 非行末尾到下个textBox开头
         else {
-          cursor.startTextBox = ++j;
+          if (isEnd) {
+            cursor.endTextBox = ++j;
+          }
+          else {
+            cursor.startTextBox = ++j;
+          }
           textBox = list[j];
-          cursor.startString = 0;
-          cursor.start = textBox.index;
+          if (isEnd) {
+            cursor.endString = 0;
+            cursor.end = textBox.index;
+          }
+          else {
+            cursor.startString = 0;
+            cursor.start = textBox.index;
+          }
         }
       }
       // textBox非末尾
       else {
-        cursor.startString = ++k;
-        cursor.start = textBox.index + cursor.startString;
+        if (isEnd) {
+          cursor.endString = ++k;
+          cursor.end = textBox.index + cursor.endString;
+        }
+        else {
+          cursor.startString = ++k;
+          cursor.start = textBox.index + cursor.startString;
+        }
       }
     }
     // 下
@@ -2167,16 +2318,35 @@ class Text extends Node {
       }
       // 最后一行到末尾
       if (i === lineBoxList.length - 1) {
-        cursor.startTextBox = j = list.length - 1;
+        if (isEnd) {
+          cursor.endTextBox = j = list.length - 1;
+        }
+        else {
+          cursor.startTextBox = j = list.length - 1;
+        }
         textBox = list[j];
-        cursor.startString = textBox ? textBox.str.length : 0;
-        cursor.start = textBox.index + cursor.startString;
+        if (isEnd) {
+          cursor.endString = textBox ? textBox.str.length : 0;
+          cursor.end = textBox.index + cursor.endString;
+        }
+        else {
+          cursor.startString = textBox ? textBox.str.length : 0;
+          cursor.start = textBox.index + cursor.startString;
+        }
       }
       // 向下一行找最接近的，保持当前的x，直接返回结果
       else {
         lineBox = lineBoxList[++i];
-        cursor.startLineBox = i;
-        const res = this.getCursorByLocalX(this.tempCursorX, lineBox, false);
+        if (isEnd) {
+          cursor.endLineBox = i;
+        }
+        else {
+          cursor.startLineBox = i;
+        }
+        const res = this.getCursorByLocalX(this.tempCursorX, lineBox, isEnd);
+        if (isEnd) {
+          this.refresh();
+        }
         const p = calPoint({ x: res.x, y: res.y }, matrix);
         return {
           x: p.x,
@@ -2206,6 +2376,9 @@ class Text extends Node {
       else {
         this.tempCursorX = this.currentCursorX = 0;
       }
+    }
+    if (isEnd) {
+      this.refresh();
     }
     const p = calPoint({ x: this.currentCursorX, y: lineBox.y }, matrix);
     return {
