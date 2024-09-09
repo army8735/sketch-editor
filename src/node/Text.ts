@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, JStyle, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
+import { JNode, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -2731,6 +2731,43 @@ class Text extends Node {
     if (lv) {
       this.refresh(lv);
     }
+    // 开头同时更新节点本身默认样式
+    if (location === 0) {
+      if (style.fontFamily !== undefined) {
+        this.style.fontFamily.v = style.fontFamily;
+      }
+      if (style.fontSize !== undefined) {
+        this.style.fontSize.v = style.fontSize;
+      }
+      if (style.color !== undefined) {
+        this.style.color.v = color2rgbaInt(style.color);
+      }
+      if (style.letterSpacing !== undefined) {
+        this.style.letterSpacing.v = style.letterSpacing;
+      }
+      if (style.lineHeight !== undefined) {
+        if (style.lineHeight === 0) {
+          this.style.lineHeight.v = 0;
+          this.style.lineHeight.u = StyleUnit.AUTO;
+        }
+        else {
+          this.style.lineHeight.v = style.lineHeight;
+          this.style.lineHeight.u = StyleUnit.PX;
+        }
+      }
+      if (style.paragraphSpacing !== undefined) {
+        this.style.paragraphSpacing.v = style.paragraphSpacing;
+      }
+      if (style.textAlign !== undefined) {
+        this.style.textAlign.v = style.textAlign;
+      }
+      if (style.textDecoration !== undefined) {
+        this.style.textDecoration = style.textDecoration.map(item => ({
+          v: item,
+          u: StyleUnit.NUMBER,
+        }));
+      }
+    }
     this.afterEdit(payload);
   }
 
@@ -2901,11 +2938,10 @@ class Text extends Node {
     if (!rich.length) {
       rich.push(st);
       return;
-    } console.log(start)
+    }
     for (let i = 0, len = rich.length; i < len; i++) {
       const item = rich[i];
       if (item.location <= start && item.location + item.length >= start) {
-        console.log('a', i, item);
         // 后续偏移
         for (let j = i + 1; j < len; j++) {
           rich[j].location += length;
