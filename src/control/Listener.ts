@@ -353,12 +353,17 @@ export default class Listener extends Event {
             // 持续编辑更新文本的编辑光标并提前退出
             if (this.state === State.EDIT_TEXT) {
               const text = selected[0] as Text;
-              text.resetCursor();
-              const p = this.shiftKey ? text.setCursorEndByAbsCoords(x, y) : text.setCursorStartByAbsCoords(x, y);
               if (this.shiftKey) {
+                const end = text.cursor.end;
+                text.setCursorEndByAbsCoords(x, y);
                 this.input.hideCursor();
+                if (end !== text.cursor.end) {
+                  text.refresh();
+                }
               }
               else {
+                text.resetCursor();
+                const p = text.setCursorStartByAbsCoords(x, y);
                 this.input.updateCursor(p);
                 this.input.showCursor();
               }
@@ -1006,8 +1011,9 @@ export default class Listener extends Event {
     if ((this.metaKey || isWin && this.ctrlKey) && this.selected.length === 1) {
       this.select.metaKey(true);
     }
+    const keyCode = e.keyCode;
     // backspace
-    if (e.keyCode === 8 || e.keyCode === 46) {
+    if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
         const nodes = this.selected.splice(0);
@@ -1021,14 +1027,14 @@ export default class Listener extends Event {
       }
     }
     // space
-    else if (e.keyCode === 32) {
+    else if (keyCode === 32) {
       this.spaceKey = true;
       if (!this.isMouseDown && !this.options.disabled?.drag) {
         this.dom.style.cursor = 'grab';
       }
     }
     // option+esc
-    else if (e.keyCode === 27 && this.altKey) {
+    else if (keyCode === 27 && this.altKey) {
       if (this.selected.length) {
         let node = this.selected[0];
         if (node instanceof Page || node instanceof Root || node instanceof ArtBoard) {
@@ -1042,7 +1048,7 @@ export default class Listener extends Event {
       }
     }
     // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
-    else if (e.keyCode === 27) {
+    else if (keyCode === 27) {
       if (picker.isShow()) {
         picker.hide();
         if (this.state === State.EDIT_TEXT) {
@@ -1061,8 +1067,10 @@ export default class Listener extends Event {
         this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
     }
+    // 移动
+    else if (keyCode >= 37 && keyCode <= 40) {}
     // z，undo/redo
-    else if (e.keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
+    else if (keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
       const target = e.target as HTMLElement;
       if (target && target.tagName.toUpperCase() === 'INPUT') {
         e.preventDefault();

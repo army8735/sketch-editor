@@ -66,10 +66,15 @@ export default class Input {
           listener.emit(Listener.CURSOR_NODE, [this.node]);
         }
         else if (keyCode >= 37 && keyCode <= 40) {
-          const p = this.node.moveCursor(keyCode);
-          this.showCursor();
-          this.updateCursor(p);
-          this.showCursor();
+          e.stopPropagation();
+          const p = this.node.moveCursor(keyCode, e.shiftKey);
+          if (e.shiftKey) {
+            this.hideCursor();
+          }
+          else {
+            this.showCursor();
+            this.updateCursor(p);
+          }
           listener.emit(Listener.CURSOR_NODE, [this.node]);
         }
       }

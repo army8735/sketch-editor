@@ -1200,8 +1200,11 @@ class Text extends Node {
       const lineBox = lineBoxList[i];
       // 确定y在哪一行后
       if (local.y >= lineBox.y && local.y < lineBox.y + lineBox.lineHeight) {
-        cursor.startLineBox = i;
+        cursor.startLineBox = cursor.endLineBox = i;
         const res = this.getCursorByLocalX(local.x, lineBox, false);
+        cursor.endTextBox = cursor.startTextBox;
+        cursor.endString = cursor.startString;
+        cursor.end = cursor.start;
         this.tempCursorX = this.currentCursorX = res.x;
         const p = calPoint({ x: res.x, y: res.y }, m);
         return {
@@ -1213,8 +1216,11 @@ class Text extends Node {
     }
     // 找不到认为是最后一行末尾
     const lineBox = lineBoxList[len - 1];
-    cursor.startLineBox = len - 1;
+    cursor.startLineBox = cursor.endLineBox = len - 1;
     const res = this.getCursorByLocalX(this.width, lineBox, false);
+    cursor.endTextBox = cursor.startTextBox;
+    cursor.endString = cursor.startString;
+    cursor.end = cursor.start;
     this.tempCursorX = this.currentCursorX = res.x;
     // 点在老的地方不清空，防止连续点击同一位置
     if (cursor.start !== start) {
@@ -1228,7 +1234,7 @@ class Text extends Node {
     };
   }
 
-  // 设置结束光标位置
+  // 设置结束光标位置，多选时用
   setCursorEndByAbsCoords(x: number, y: number) {
     const m = this.matrixWorld;
     const im = inverse4(m);
@@ -1276,12 +1282,17 @@ class Text extends Node {
     };
   }
 
+  // 重置为非multi，如有需要刷新取消选区
   resetCursor() {
     const cursor = this.cursor;
     if (cursor.isMulti) {
       cursor.isMulti = false;
       if (cursor.start !== cursor.end) {
         this.refresh();
+        cursor.endLineBox = cursor.startLineBox;
+        cursor.endTextBox = cursor.startTextBox;
+        cursor.endString = cursor.startString;
+        cursor.end = cursor.start;
       }
     }
   }
@@ -1974,7 +1985,7 @@ class Text extends Node {
   }
 
   // 上下左右按键移动光标，上下保持当前x（tempCursorX），左右则更新
-  moveCursor(code: number) {
+  moveCursor(code: number, shift = false) {
     const matrix = this.matrixWorld;
     // 先求得当前光标位置在字符串的索引
     const cursor = this.cursor;
@@ -1985,8 +1996,8 @@ class Text extends Node {
     let list = lineBox.list;
     let textBox = list[j];
     let pos = textBox ? (textBox.index + k) : (lineBox.index + k); // 空行时k就是0
-    // multi原地取消多选
-    if (cursor.isMulti) {
+    // multi移动光标原地取消多选
+    if (cursor.isMulti && !shift) {
       cursor.isMulti = false;
       if (cursor.start !== cursor.end) {
         this.refresh();
@@ -2001,6 +2012,9 @@ class Text extends Node {
       }
       // 更新会把当前值赋给start
       return this.updateCursorByIndex(pos);
+    }
+    else if (shift) {
+      cursor.isMulti = true;
     }
     // 左
     if (code === 37) {
@@ -2046,10 +2060,6 @@ class Text extends Node {
     else if (code === 38) {
       if (pos === 0) {
         return;
-      }
-      if (cursor.isMulti) {
-        cursor.isMulti = false;
-        this.refresh();
       }
       // 第一行到开头
       if (i === 0) {

@@ -122,7 +122,6 @@ class Event {
   static STYLE_CHANGED = 'STYLE_CHANGED';
   static DID_ADD_PAGE = 'DID_ADD_PAGE';
   static WILL_REMOVE_PAGE = 'WILL_REMOVE_PAGE';
-  static UPDATE_CURSOR = 'UPDATE_CURSOR';
 }
 
 export default Event;
