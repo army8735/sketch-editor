@@ -12,6 +12,8 @@ module.exports = {
       .mouseButtonUp(0)
       .click('#button3')
       .assert.value('#base64', '[0,[{"location":0,"length":3,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .click('#button5')
+      .assert.value('#base64', '[1,"123"]')
 
       .moveToElement('canvas', 300, 30)
       .doubleClick()
@@ -33,13 +35,17 @@ module.exports = {
       .assert.cssProperty('#main div.input', 'opacity', '1')
       .assert.cssProperty('#main div.input', 'left', '143.477px')
       .click('#button3')
-      .assert.value('#base64', '[1,[{"location":0,"length":5,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .assert.value('#base64', '[2,[{"location":0,"length":5,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .click('#button5')
+      .assert.value('#base64', '[3,"12345"]')
 
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
       .click('#button3')
-      .assert.value('#base64', '[2,[{"location":0,"length":3,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .assert.value('#base64', '[4,[{"location":0,"length":3,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .click('#button5')
+      .assert.value('#base64', '[5,"123"]')
 
       .moveToElement('canvas', 300, 30)
       .doubleClick()
@@ -52,7 +58,9 @@ module.exports = {
       .keys('z')
       .keys(browser.Keys.NULL)
       .click('#button3')
-      .assert.value('#base64', '[3,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .assert.value('#base64', '[6,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .click('#button5')
+      .assert.value('#base64', '[7,"1234"]')
 
       .moveToElement('canvas', 300, 30)
       .doubleClick()
@@ -64,8 +72,9 @@ module.exports = {
       .keys(browser.Keys.NULL)
       .assert.cssProperty('#main div.input', 'opacity', '0')
       .click('#button3')
-      .assert.value('#base64', '[4,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
-
+      .assert.value('#base64', '[8,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":48,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[0,0,0,1]}]]')
+      .click('#button5')
+      .assert.value('#base64', '[9,"1234"]')
 
       .end();
   }
