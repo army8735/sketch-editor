@@ -3,6 +3,7 @@ import MoveCommand from './MoveCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import ResizeCommand from './ResizeCommand';
 import config from '../util/config';
+import UpdateRichCommand from './UpdateRichCommand';
 
 let history: History | undefined;
 
@@ -31,6 +32,24 @@ function compare(a: AbstractCommand, b: AbstractCommand) {
         || ia.widthToAuto !== ib.widthToAuto
         || ia.heightToAuto !== ib.heightToAuto) {
         return false;
+      }
+    }
+  }
+  if (a instanceof UpdateRichCommand) {
+    if (a.type !== (b as UpdateRichCommand).type) {
+      return false;
+    }
+    const da = a.data, db = (b as UpdateRichCommand).data;
+    for (let i = 0, len = da.length; i < len; i++) {
+      const ia = da[i], ib = db[i];
+      if (ia.prev.length !== ib.prev.length) {
+        return false;
+      }
+      for (let j = 0; j < ia.prev.length; j++) {
+        const ra = ia.prev[j], rb = ib.prev[j];
+        if (ra.location !== rb.location || ra.length !== rb.length) {
+          return false;
+        }
       }
     }
   }
@@ -77,6 +96,12 @@ class History {
           last.data.forEach((item, i) => {
             item.dx += data[i].dx;
             item.dy += data[i].dy;
+          });
+        }
+        else if (last instanceof UpdateRichCommand) {
+          const data = (c as UpdateRichCommand).data;
+          last.data.forEach((item, i) => {
+            item.next = data[i].next;
           });
         }
         // 没命中合并的走后续普通流程
