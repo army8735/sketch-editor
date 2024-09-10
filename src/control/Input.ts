@@ -2,6 +2,7 @@ import Text from '../node/Text';
 import Root from '../node/Root';
 import Listener from './Listener';
 import State from './State';
+import UpdateTextCommand from '../history/UpdateTextCommand';
 
 export default class Input {
   root: Root;
@@ -46,24 +47,45 @@ export default class Input {
       const keyCode = e.keyCode;
       if (this.node) {
         if (keyCode === 13) {
-          // 回车等候一下让input先触发，输入法状态不会触发
-          setTimeout(() => {
-            this.node!.enter();
-            this.showCursor();
-            this.updateCursor();
-            listener.select.updateSelect([this.node!]);
-            listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
-            listener.emit(Listener.CURSOR_NODE, [this.node]);
-          }, 0);
+          const content = this.node._content;
+          const rich = this.node.getRich();
+          this.node.enter();
+          this.showCursor();
+          this.updateCursor();
+          listener.select.updateSelect([this.node]);
+          listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+          listener.emit(Listener.CURSOR_NODE, [this.node]);
+          this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+            prev: {
+              content,
+              rich,
+            },
+            next: {
+              content: this.node._content,
+              rich: this.node.getRich(),
+            },
+          }]));
         }
         else if (keyCode === 8 || keyCode === 46) {
           e.stopPropagation();
+          const content = this.node._content;
+          const rich = this.node.getRich();
           this.node!.delete(keyCode === 46);
           this.showCursor();
           this.updateCursor();
           listener.select.updateSelect([this.node]);
           listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
           listener.emit(Listener.CURSOR_NODE, [this.node]);
+          this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+            prev: {
+              content,
+              rich,
+            },
+            next: {
+              content: this.node._content,
+              rich: this.node.getRich(),
+            },
+          }]));
         }
         else if (keyCode >= 37 && keyCode <= 40) {
           e.stopPropagation();
@@ -84,12 +106,24 @@ export default class Input {
       if (!isIme && this.node) {
         const s = (e as InputEvent).data;
         if (s) {
+          const content = this.node._content;
+          const rich = this.node.getRich();
           this.node.input(s);
           this.updateCursor();
           this.showCursor();
           inputEl.value = '';
           this.listener.select.updateSelect([this.node]);
           this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
+          this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+            prev: {
+              content,
+              rich,
+            },
+            next: {
+              content: this.node._content,
+              rich: this.node.getRich(),
+            },
+          }]));
         }
       }
     });
@@ -98,8 +132,10 @@ export default class Input {
     });
     inputEl.addEventListener('compositionend', (e) => {
       isIme = false;
-      if (this.node) {
-        const s = e.data;
+      const s = e.data;
+      if (this.node && s) {
+        const content = this.node._content;
+        const rich = this.node.getRich();
         this.node.input(s);
         this.updateCursor();
         this.showCursor();
@@ -107,6 +143,16 @@ export default class Input {
         this.listener.select.updateSelect([this.node]);
         this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
         listener.emit(Listener.CURSOR_NODE, [this.node]);
+        this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+          prev: {
+            content,
+            rich,
+          },
+          next: {
+            content: this.node._content,
+            rich: this.node.getRich(),
+          },
+        }]));
       }
     });
 

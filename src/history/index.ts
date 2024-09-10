@@ -10,6 +10,7 @@ import ColorAdjustCommand from './ColorAdjustCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import UpdateFormatStyleCommand from './UpdateFormatStyleCommand';
 import UpdateRichCommand from './UpdateRichCommand';
+import UpdateTextCommand from './UpdateTextCommand';
 
 export default {
   History,
@@ -24,4 +25,5 @@ export default {
   UpdateStyleCommand,
   UpdateFormatStyleCommand,
   UpdateRichCommand,
+  UpdateTextCommand,
 };

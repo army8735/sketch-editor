@@ -2,8 +2,9 @@ import AbstractCommand from './AbstractCommand';
 import MoveCommand from './MoveCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import ResizeCommand from './ResizeCommand';
-import config from '../util/config';
 import UpdateRichCommand from './UpdateRichCommand';
+import UpdateTextCommand from './UpdateTextCommand';
+import config from '../util/config';
 
 let history: History | undefined;
 
@@ -73,10 +74,12 @@ class History {
     // 新命令清空redo队列
     this.commandsR.splice(0);
     const len = this.commands.length;
-    // 非独立命令要考虑合并
-    if (!independence && len > 0 && (Date.now() - this.lastTime < config.historyTime)) {
+    // 非独立命令要考虑合并，除了文字输入不看时间间隔外，其它都要；文字输入外部控制independence（blur后再focus第一次）
+    if (!independence && len > 0) {
       const last = this.commands[len - 1];
-      if (compare(last, c)) {
+      const isInTime = Date.now() - this.lastTime < config.historyTime;
+      const isEditText = last instanceof UpdateTextCommand && c instanceof UpdateTextCommand;
+      if ((isInTime || isEditText) && compare(last, c)) {
         let hasMerge = true;
         if (last instanceof MoveCommand) {
           const data = (c as MoveCommand).data;
@@ -100,6 +103,12 @@ class History {
         }
         else if (last instanceof UpdateRichCommand) {
           const data = (c as UpdateRichCommand).data;
+          last.data.forEach((item, i) => {
+            item.next = data[i].next;
+          });
+        }
+        else if (last instanceof UpdateTextCommand) {
+          const data = (c as UpdateTextCommand).data;
           last.data.forEach((item, i) => {
             item.next = data[i].next;
           });

@@ -31,7 +31,7 @@ export type FontData = {
   list: {
     style: string;
     postscriptName: string;
-    loaded: boolean;
+    loaded?: boolean;
     url?: string;
   }[];
 };
@@ -158,7 +158,7 @@ const o = {
     family: string,
     style: string,
     postscriptName: string,
-    loaded: boolean,
+    loaded?: boolean,
     url?: string,
   ) {
     const o = info[family];

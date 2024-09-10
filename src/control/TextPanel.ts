@@ -664,7 +664,7 @@ class TextPanel extends Panel {
     let s = '';
     if (custom && custom.length) {
       // 用默认的Arial数据兜底，加载后注册覆盖
-      const Arial = info.Arail;
+      const Arial = info.Arial;
       custom.forEach((item) => {
         font.registerData({
           ...Arial,
