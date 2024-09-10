@@ -1,8 +1,8 @@
 import AbstractCommand from './AbstractCommand';
 import MoveCommand from './MoveCommand';
-import config from '../util/config';
-import RotateCommand from './RotateCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
+import ResizeCommand from './ResizeCommand';
+import config from '../util/config';
 
 let history: History | undefined;
 
@@ -17,6 +17,21 @@ function compare(a: AbstractCommand, b: AbstractCommand) {
   for (let i = 0, len = na.length; i < len; i++) {
     if (na[i] !== nb[i]) {
       return false;
+    }
+  }
+  if (a instanceof ResizeCommand) {
+    const da = a.data, db = (b as ResizeCommand).data;
+    for (let i = 0, len = da.length; i < len; i++) {
+      const ia = da[i], ib = db[i];
+      if (ia.controlType !== ib.controlType
+        || ia.aspectRatio !== ib.aspectRatio
+        || ia.fromCenter !== ib.fromCenter
+        || ia.widthFromAuto !== ib.widthFromAuto
+        || ia.heightFromAuto !== ib.heightFromAuto
+        || ia.widthToAuto !== ib.widthToAuto
+        || ia.heightToAuto !== ib.heightToAuto) {
+        return false;
+      }
     }
   }
   return true;
@@ -55,6 +70,13 @@ class History {
           const data = (c as UpdateStyleCommand).data;
           last.data.forEach((item, i) => {
             item.next = data[i].next;
+          });
+        }
+        else if (last instanceof ResizeCommand) {
+          const data = (c as ResizeCommand).data;
+          last.data.forEach((item, i) => {
+            item.dx += data[i].dx;
+            item.dy += data[i].dy;
           });
         }
         // 没命中合并的走后续普通流程
