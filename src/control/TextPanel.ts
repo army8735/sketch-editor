@@ -458,10 +458,8 @@ class TextPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
-          // 新插入样式
-          else {
-            btn.title = btn.style.background = color2hexStr(color.rgba);
-          }
+          // 新插入样式时无法触发COLOR_NODE更新
+          btn.title = btn.style.background = color2hexStr(color.rgba);
         };
         p.onDone = () => {
           picker.hide();
