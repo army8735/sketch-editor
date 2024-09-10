@@ -103,7 +103,6 @@ class TextPanel extends Panel {
     const ps = panel.querySelector('.ps input') as HTMLInputElement;
     const ff = panel.querySelector('.ff select') as HTMLSelectElement;
     const fw = panel.querySelector('.weight select') as HTMLSelectElement;
-    const btn = panel.querySelector('.picker-btn b') as HTMLElement;
 
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];
@@ -429,6 +428,7 @@ class TextPanel extends Panel {
         prevs = nodes.map(item => item.getRich());
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
+          this.silence = true;
           nexts = [];
           if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
             const node = nodes[0];
@@ -459,7 +459,8 @@ class TextPanel extends Panel {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
           // 新插入样式时无法触发COLOR_NODE更新
-          btn.title = btn.style.background = color2hexStr(color.rgba);
+          el.title = el.style.background = color2hexStr(color.rgba);
+          this.silence = false;
         };
         p.onDone = () => {
           picker.hide();

@@ -5,7 +5,7 @@ import Panel from './Panel';
 import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
-import { color2rgbaStr, getCssShadow } from '../style/css';
+import { color2hexStr, color2rgbaStr, getCssShadow } from '../style/css';
 import { ComputedShadow } from '../style/define';
 
 const html = `
@@ -109,6 +109,7 @@ class ShadowPanel extends Panel {
         });
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
+          this.silence = true;
           nexts = [];
           nodes.forEach(node => {
             const { shadow, shadowEnable } = node.getComputedStyle();
@@ -136,6 +137,8 @@ class ShadowPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
           }
+          el.title = el.style.background = color2hexStr(color.rgba);
+          this.silence = false;
         };
         p.onDone = () => {
           picker.hide();
