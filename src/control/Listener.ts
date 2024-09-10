@@ -28,6 +28,7 @@ import picker from './picker';
 import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
+import UpdateTextCommand from '../history/UpdateTextCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1155,10 +1156,28 @@ export default class Listener extends Event {
           // 更新光标
           if (this.state === State.EDIT_TEXT && this.selected.length === 1) {
             const node = this.selected[0] as Text;
-            const { isMulti, start } = node.getSortedCursor();
-            if (!isMulti) {
-              const p = node.updateCursorByIndex(start);
-              this.input.updateCursor(p);
+            if (node === this.selected[0]) {
+              const { isMulti, start } = node.getSortedCursor();
+              if (!isMulti) {
+                const p = node.updateCursorByIndex(start);
+                this.input.updateCursor(p);
+                this.input.showCursor();
+              }
+              this.input.focus();
+            }
+          }
+        }
+        else if (c instanceof UpdateTextCommand) {
+          if (this.state === State.EDIT_TEXT && this.selected.length === 1) {
+            const node = this.selected[0] as Text;
+            if (node === this.selected[0]) {
+              const { isMulti, start } = node.getSortedCursor();
+              if (!isMulti) {
+                const p = node.updateCursorByIndex(start);
+                this.input.updateCursor(p);
+                this.input.showCursor();
+              }
+              this.input.focus();
             }
           }
         }

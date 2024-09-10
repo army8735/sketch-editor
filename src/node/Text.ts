@@ -2696,6 +2696,10 @@ class Text extends Node {
     this.afterEdit(payload);
   }
 
+  getCursor() {
+    return Object.assign({}, this.cursor);
+  }
+
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
   updateRangeStyle(location: number, length: number, st: ModifyRichStyle) {
     const payload = this.beforeEdit();

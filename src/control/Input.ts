@@ -13,12 +13,14 @@ export default class Input {
   cursorEl: HTMLDivElement;
   node?: Text;
   ignoreBlur: HTMLElement[];
+  hasBlur: boolean; // blur后再输入，UpdateText命令强制独立不合并，输入后取消
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
     this.ignoreBlur = [];
+    this.hasBlur = true;
 
     const containerEl = this.containerEl = document.createElement('div');
     containerEl.className = 'input';
@@ -49,6 +51,7 @@ export default class Input {
         if (keyCode === 13) {
           const content = this.node._content;
           const rich = this.node.getRich();
+          const cursor = this.node.getCursor();
           this.node.enter();
           this.showCursor();
           this.updateCursor();
@@ -59,17 +62,21 @@ export default class Input {
             prev: {
               content,
               rich,
+              cursor,
             },
             next: {
               content: this.node._content,
               rich: this.node.getRich(),
+              cursor: this.node.getCursor(),
             },
-          }]));
+          }]), this.hasBlur);
+          this.hasBlur = false;
         }
         else if (keyCode === 8 || keyCode === 46) {
           e.stopPropagation();
           const content = this.node._content;
           const rich = this.node.getRich();
+          const cursor = this.node.getCursor();
           this.node!.delete(keyCode === 46);
           this.showCursor();
           this.updateCursor();
@@ -80,12 +87,15 @@ export default class Input {
             prev: {
               content,
               rich,
+              cursor,
             },
             next: {
               content: this.node._content,
               rich: this.node.getRich(),
+              cursor: this.node.getCursor(),
             },
-          }]));
+          }]), this.hasBlur);
+          this.hasBlur = false;
         }
         else if (keyCode >= 37 && keyCode <= 40) {
           e.stopPropagation();
@@ -108,6 +118,7 @@ export default class Input {
         if (s) {
           const content = this.node._content;
           const rich = this.node.getRich();
+          const cursor = this.node.getCursor();
           this.node.input(s);
           this.updateCursor();
           this.showCursor();
@@ -118,12 +129,15 @@ export default class Input {
             prev: {
               content,
               rich,
+              cursor,
             },
             next: {
               content: this.node._content,
               rich: this.node.getRich(),
+              cursor: this.node.getCursor(),
             },
-          }]));
+          }]), this.hasBlur);
+          this.hasBlur = false;
         }
       }
     });
@@ -136,6 +150,7 @@ export default class Input {
       if (this.node && s) {
         const content = this.node._content;
         const rich = this.node.getRich();
+        const cursor = this.node.getCursor();
         this.node.input(s);
         this.updateCursor();
         this.showCursor();
@@ -147,12 +162,15 @@ export default class Input {
           prev: {
             content,
             rich,
+            cursor,
           },
           next: {
             content: this.node._content,
             rich: this.node.getRich(),
+            cursor: this.node.getCursor(),
           },
-        }]));
+        }]), this.hasBlur);
+        this.hasBlur = false;
       }
     });
 
@@ -227,7 +245,7 @@ export default class Input {
 
   hide() {
     this.containerEl.style.opacity = '0';
-    this.inputEl.blur();
+    this.blur();
     this.node = undefined;
   }
 
@@ -237,6 +255,7 @@ export default class Input {
 
   blur() {
     this.inputEl.blur();
+    this.hasBlur = true;
   }
 
   showCursor() {
