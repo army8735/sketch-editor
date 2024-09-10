@@ -103,6 +103,7 @@ class TextPanel extends Panel {
     const ps = panel.querySelector('.ps input') as HTMLInputElement;
     const ff = panel.querySelector('.ff select') as HTMLSelectElement;
     const fw = panel.querySelector('.weight select') as HTMLSelectElement;
+    const btn = panel.querySelector('.picker-btn b') as HTMLElement;
 
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];
@@ -456,6 +457,10 @@ class TextPanel extends Panel {
           }
           if (nodes.length) {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
+          }
+          // 新插入样式
+          else {
+            btn.title = btn.style.background = color2hexStr(color.rgba);
           }
         };
         p.onDone = () => {
