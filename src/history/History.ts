@@ -74,7 +74,7 @@ class History {
     // 新命令清空redo队列
     this.commandsR.splice(0);
     const len = this.commands.length;
-    // 非独立命令要考虑合并，除了文字输入不看时间间隔外，其它都要；文字输入外部控制independence（blur后再focus第一次）
+    // 非独立命令要考虑合并，除了文字输入不看时间间隔外，其它都要；文字输入外部控制independence（blur后再focus输入视为独立不合并）
     if (!independence && len > 0) {
       const last = this.commands[len - 1];
       const isInTime = Date.now() - this.lastTime < config.historyTime;

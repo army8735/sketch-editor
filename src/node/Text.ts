@@ -346,6 +346,11 @@ class Text extends Node {
       fontSize = computedStyle.fontSize;
       color = color2rgbaStr(computedStyle.color);
       textDecoration = computedStyle.textDecoration || [];
+      if (!lineHeight) {
+        lineHeight = calNormalLineHeight(computedStyle);
+        baseline += lineHeight * 0.5;
+        contentArea += lineHeight * 0.5;
+      }
       ctx.font = setFontStyle(computedStyle);
       // @ts-ignore
       ctx.letterSpacing = letterSpacing + 'px';
@@ -2692,9 +2697,49 @@ class Text extends Node {
   }
 
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
-  updateRangeStyle(location: number, length: number, style: ModifyRichStyle) {
+  updateRangeStyle(location: number, length: number, st: ModifyRichStyle) {
     const payload = this.beforeEdit();
     let lv = RefreshLevel.NONE;
+    // 开头同时更新节点本身默认样式
+    if (location === 0) {
+      const { style, computedStyle } = this;
+      if (st.fontFamily !== undefined) {
+        style.fontFamily.v = computedStyle.fontFamily = st.fontFamily;
+      }
+      if (st.fontSize !== undefined) {
+        style.fontSize.v = computedStyle.fontSize = st.fontSize;
+      }
+      if (st.color !== undefined) {
+        style.color.v = computedStyle.color = color2rgbaInt(st.color);
+      }
+      if (st.letterSpacing !== undefined) {
+        style.letterSpacing.v = computedStyle.letterSpacing = st.letterSpacing;
+      }
+      if (st.lineHeight !== undefined) {
+        if (st.lineHeight === 0) {
+          style.lineHeight.v = 0;
+          style.lineHeight.u = StyleUnit.AUTO;
+          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+        }
+        else {
+          style.lineHeight.v = computedStyle.lineHeight = st.lineHeight;
+          style.lineHeight.u = StyleUnit.PX;
+        }
+      }
+      if (st.paragraphSpacing !== undefined) {
+        style.paragraphSpacing.v = computedStyle.paragraphSpacing = st.paragraphSpacing;
+      }
+      if (st.textAlign !== undefined) {
+        style.textAlign.v = computedStyle.textAlign = st.textAlign;
+      }
+      if (st.textDecoration !== undefined) {
+        style.textDecoration = st.textDecoration.map(item => ({
+          v: item,
+          u: StyleUnit.NUMBER,
+        }));
+        computedStyle.textDecoration = st.textDecoration.slice(0);
+      }
+    }
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
       if (length < 1) {
@@ -2728,7 +2773,7 @@ class Text extends Node {
           shouldBreak = true;
         }
         // 可能存在的prev/next操作后（也可能没有），此Rich本身更新
-        lv |= this.updateRichItem(item, style);
+        lv |= this.updateRichItem(item, st);
         if (shouldBreak) {
           break;
         }
@@ -2740,43 +2785,6 @@ class Text extends Node {
     this.mergeRich();
     if (lv) {
       this.refresh(lv);
-    }
-    // 开头同时更新节点本身默认样式
-    if (location === 0) {
-      if (style.fontFamily !== undefined) {
-        this.style.fontFamily.v = style.fontFamily;
-      }
-      if (style.fontSize !== undefined) {
-        this.style.fontSize.v = style.fontSize;
-      }
-      if (style.color !== undefined) {
-        this.style.color.v = color2rgbaInt(style.color);
-      }
-      if (style.letterSpacing !== undefined) {
-        this.style.letterSpacing.v = style.letterSpacing;
-      }
-      if (style.lineHeight !== undefined) {
-        if (style.lineHeight === 0) {
-          this.style.lineHeight.v = 0;
-          this.style.lineHeight.u = StyleUnit.AUTO;
-        }
-        else {
-          this.style.lineHeight.v = style.lineHeight;
-          this.style.lineHeight.u = StyleUnit.PX;
-        }
-      }
-      if (style.paragraphSpacing !== undefined) {
-        this.style.paragraphSpacing.v = style.paragraphSpacing;
-      }
-      if (style.textAlign !== undefined) {
-        this.style.textAlign.v = style.textAlign;
-      }
-      if (style.textDecoration !== undefined) {
-        this.style.textDecoration = style.textDecoration.map(item => ({
-          v: item,
-          u: StyleUnit.NUMBER,
-        }));
-      }
     }
     this.afterEdit(payload);
   }
