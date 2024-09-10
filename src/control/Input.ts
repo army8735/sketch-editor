@@ -223,6 +223,7 @@ export default class Input {
         this.hideCursor();
         this.node?.resetCursor();
         this.node?.refresh();
+        this.hasBlur = true;
       }
     });
   }
