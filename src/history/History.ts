@@ -1,27 +1,78 @@
 import AbstractCommand from './AbstractCommand';
+import MoveCommand from './MoveCommand';
+import config from '../util/config';
+import RotateCommand from './RotateCommand';
+import UpdateStyleCommand from './UpdateStyleCommand';
 
 let history: History | undefined;
+
+function compare(a: AbstractCommand, b: AbstractCommand) {
+  if (a.constructor !== b.constructor) {
+    return false;
+  }
+  const na = a.nodes, nb = b.nodes;
+  if (na.length !== nb.length) {
+    return false;
+  }
+  for (let i = 0, len = na.length; i < len; i++) {
+    if (na[i] !== nb[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 class History {
   commands: AbstractCommand[]; // undoList
   commandsR: AbstractCommand[]; // redoList
   readonly size: number;
+  lastTime: number;
 
   constructor(size = 100) {
     this.commands = [];
     this.commandsR = [];
-    this.size = size;
+    this.size = Math.max(1, size);
+    this.lastTime = 0;
   }
 
-  addCommand(c: AbstractCommand) {
+  addCommand(c: AbstractCommand, independence = false) {
+    // 新命令清空redo队列
+    this.commandsR.splice(0);
     const len = this.commands.length;
+    // 非独立命令要考虑合并
+    if (!independence && len > 0 && (Date.now() - this.lastTime < config.historyTime)) {
+      const last = this.commands[len - 1];
+      if (compare(last, c)) {
+        let hasMerge = true;
+        if (last instanceof MoveCommand) {
+          const data = (c as MoveCommand).data;
+          last.data.forEach((item, i) => {
+            item.dx += data[i].dx;
+            item.dy += data[i].dy;
+          });
+        }
+        else if (last instanceof UpdateStyleCommand) {
+          const data = (c as UpdateStyleCommand).data;
+          last.data.forEach((item, i) => {
+            item.next = data[i].next;
+          });
+        }
+        // 没命中合并的走后续普通流程
+        else {
+          hasMerge = false;
+        }
+        if (hasMerge) {
+          this.lastTime = Date.now();
+          return;
+        }
+      }
+    }
+    this.lastTime = Date.now();
     // 加入一条新命令，如果超过长度限制先入先出老的
     if (len >= this.size) {
       this.commands.slice(0, len - this.size + 1);
     }
     this.commands.push(c);
-    // 新命令清空redo队列
-    this.commandsR.splice(0);
   }
 
   undo() {

@@ -1,6 +1,7 @@
 let canvas;
 let input = document.querySelector('#base64');
 sketchEditor.gl.ca.preserveDrawingBuffer = true;
+sketchEditor.config.historyTime = 0;
 
 sketchEditor.style.font.registerData({
   family: 'Helvetica',

@@ -731,7 +731,7 @@ export default class Listener extends Event {
           next: {
             rotateZ: node.computedStyle.rotateZ,
           },
-        }]));
+        }]), true);
         if (!(this.metaKey || isWin && this.ctrlKey)) {
           this.select.metaKey(false);
         }
@@ -775,7 +775,7 @@ export default class Listener extends Event {
             }
           });
           if (data.length) {
-            this.history.addCommand(new ResizeCommand(selected.slice(0), data));
+            this.history.addCommand(new ResizeCommand(selected.slice(0), data), true);
           }
         }
       }
@@ -813,7 +813,7 @@ export default class Listener extends Event {
           }
         });
         if (data.length) {
-          this.history.addCommand(new MoveCommand(selected.slice(0), data));
+          this.history.addCommand(new MoveCommand(selected.slice(0), data), true);
         }
       }
     }

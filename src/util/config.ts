@@ -3,9 +3,9 @@ let manual = false;
 export default {
   debug: false,
   offscreenCanvas: false,
-  tile: false,
-  deltaTime: 8,
-  maxTextureSize: 8192,
+  tile: false, // 是否开启tile优化
+  deltaTime: 8, // 跨帧渲染，单帧渲染过程超过值时停止在下一帧继续
+  maxTextureSize: 8192, // 纹理块尺寸限制
   get MAX_TEXTURE_SIZE() {
     return this.maxTextureSize;
   },
@@ -26,5 +26,6 @@ export default {
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
   },
-  treeLvPadding: 16,
+  treeLvPadding: 16, // 节点tree列表每级缩进px
+  historyTime: 1000, // 添加历史记录时命令之间是否合并的时间差阈值
 };
