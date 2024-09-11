@@ -29,6 +29,7 @@ const html = `
   <span class="bl">
     <b></b>
   </span>
+  <div class="sub"></div>
 `;
 
 export default class Select {
@@ -161,8 +162,11 @@ export default class Select {
   }
 
   updateSelect(selected: Node[]) {
+    const sub = this.select.querySelector('.sub') as HTMLElement;
     if (selected.length === 1) {
+      sub.innerHTML = '';
       const res = this.calRect(selected[0]);
+      this.select.classList.remove('multi');
       this.select.style.left = res.left + 'px';
       this.select.style.top = res.top + 'px';
       this.select.style.width = res.width + 'px';
@@ -171,9 +175,14 @@ export default class Select {
     }
     // 多个时表现不一样，忽略了旋转镜像等transform，取所有节点的boundingClientRect全集
     else if (selected.length > 1) {
+      this.select.classList.add('multi');
       let left = 0, top = 0, right = 0, bottom = 0;
+      const rects: { left: number, top: number, right: number, bottom: number }[] = [];
       selected.forEach((item, i) => {
         const rect = item.getBoundingClientRect();
+        rects.push({
+          left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom,
+        });
         if (i) {
           left = Math.min(left, rect.left);
           top = Math.min(top, rect.top);
@@ -193,6 +202,15 @@ export default class Select {
       this.select.style.width = (right - left) / dpi + 'px';
       this.select.style.height = (bottom - top) / dpi + 'px';
       this.select.style.transform = '';
+      // 多选更新每个节点的小框
+      let s = '';
+      rects.forEach(item => {
+        s += `<div style="left:${(item.left-left)/dpi}px;top:${(item.top-top)/dpi}px;width:${(item.right-item.left)/dpi}px;height:${(item.bottom-item.top)/dpi}px"></div>`;
+      });
+      const sub = this.select.querySelector('.sub') as HTMLElement;
+      if (sub.innerHTML !== s) {
+        sub.innerHTML = s;
+      }
     }
   }
 

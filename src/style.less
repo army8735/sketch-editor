@@ -304,6 +304,23 @@ html, body {
     transform-origin: 0 0;
     pointer-events: none;
 
+    &.multi {
+      .t b, .r b, .b b, .l b {
+        border-color: #999;
+      }
+
+      .sub {
+        position: absolute;
+
+        div {
+          position: absolute;
+          box-sizing: border-box;
+          border: 0.5px solid #F43;
+          pointer-events: none;
+        }
+      }
+    }
+
     .l {
       position: absolute;
       left: -4px;
