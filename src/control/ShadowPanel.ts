@@ -404,9 +404,8 @@ class ShadowPanel extends Panel {
       });
       shadow.forEach((item, i) => {
         const o = shadowList[i] = shadowList[i] || [];
-        if (!o.includes(item)) {
-          o.push(item);
-        }
+        // 对象一定引用不同，具体值是否相等后续判断
+        o.push(item);
       });
     });
     let showDel = false;
@@ -419,22 +418,21 @@ class ShadowPanel extends Panel {
       const blur: number[] = [];
       const spread: number[] = [];
       shadow.forEach(item => {
-        const data = item;
-        const c = color2rgbaStr(data.color);
+        const c = color2rgbaStr(item.color);
         if (!color.includes(c)) {
           color.push(c);
         }
-        if (!x.includes(data.x)) {
-          x.push(data.x);
+        if (!x.includes(item.x)) {
+          x.push(item.x);
         }
-        if (!y.includes(data.y)) {
-          y.push(data.y);
+        if (!y.includes(item.y)) {
+          y.push(item.y);
         }
-        if (!blur.includes(data.blur)) {
-          blur.push(data.blur);
+        if (!blur.includes(item.blur)) {
+          blur.push(item.blur);
         }
-        if (!spread.includes(data.spread)) {
-          spread.push(data.spread);
+        if (!spread.includes(item.spread)) {
+          spread.push(item.spread);
         }
       });
       panel.innerHTML += renderItem(

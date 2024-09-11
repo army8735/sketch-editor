@@ -410,8 +410,7 @@ export function getConic(
   };
 }
 
-export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
-  const { bbox, width, height } = node;
+export function convert2Css(g: ComputedGradient, width = 100, height = 100) {
   const { t, d, stops } = g;
   let [x1, y1, x2, y2] = d;
   x1 *= width;
@@ -446,20 +445,20 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
     let start: { x: number, y: number },
       end: { x: number, y: number };
     if (deg <= 90) {
-      start = { x: bbox[0], y: bbox[3] };
-      end = { x: bbox[2], y: bbox[1] };
+      start = { x: 0, y: height };
+      end = { x: width, y: 0 };
     }
     else if (deg <= 180) {
-      start = { x: bbox[0], y: bbox[1] };
-      end = { x: bbox[2], y: bbox[3] };
+      start = { x: 0, y: 0 };
+      end = { x: width, y: height };
     }
     else if (deg <= 270) {
-      start = { x: bbox[2], y: bbox[1] };
-      end = { x: bbox[0], y: bbox[3] };
+      start = { x: width, y: 0 };
+      end = { x: 0, y: height };
     }
     else {
-      start = { x: bbox[2], y: bbox[3] };
-      end = { x: bbox[0], y: bbox[1] };
+      start = { x: width, y: height };
+      end = { x: 0, y: 0 };
     }
     let a = Math.sqrt(Math.pow(y2 - start.y, 2) + Math.pow(x2 - start.x, 2));
     let b = Math.sqrt(Math.pow(y1 - start.y, 2) + Math.pow(x1 - start.x, 2));
@@ -553,7 +552,6 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
       if (i) {
         s += ', ';
       }
-      item.color[3] *= opacity;
       item.color[3] = toPrecision(item.color[3]);
       s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
     });
@@ -575,7 +573,7 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
       }
       const color = item.color.map((c, i) => {
         if (i === 3) {
-          return toPrecision(c * opacity);
+          return toPrecision(c);
         }
         else {
           return Math.min(255, Math.floor(c * ratio));
@@ -591,12 +589,12 @@ export function convert2Css(g: ComputedGradient, node: Node, opacity = 1) {
       if (i) {
         s += ', ';
       }
-      item.color[3] *= opacity;
       item.color[3] = toPrecision(item.color[3]);
       s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
     });
     return s + ')';
   }
+  return '';
 }
 
 export default {

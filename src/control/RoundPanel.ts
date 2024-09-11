@@ -13,7 +13,6 @@ const html = `
     <input type="range" min="0" max="100" step="1"/>
     <div class="input-unit">
       <input type="number" min="0" max="100" step="1"/>
-      <span class="unit">%</span>
     </div>
   </div>
 `;

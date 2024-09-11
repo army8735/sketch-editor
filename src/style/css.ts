@@ -4,7 +4,10 @@ import { isNil, isString } from '../util/type';
 import {
   BLUR,
   BOOLEAN_OPERATION,
-  calUnit, ComputedShadow,
+  calUnit,
+  ComputedGradient,
+  ComputedPattern,
+  ComputedShadow,
   ComputedStyle,
   FILL_RULE,
   FONT_STYLE,
@@ -22,7 +25,7 @@ import {
   TEXT_VERTICAL_ALIGN,
 } from './define';
 import font from './font';
-import { parseGradient } from './gradient';
+import { convert2Css, parseGradient } from './gradient';
 import reg from './reg';
 
 function compatibleTransform(k: string, v: StyleNumValue) {
@@ -889,7 +892,7 @@ export function color2rgbaStr(color: string | number[]): string {
 }
 
 function toHex(n: number) {
-  let r = n.toString(16);
+  let r = n.toString(16).toUpperCase();
   if (r.length === 1) {
     r = '0' + r;
   }
@@ -1028,6 +1031,18 @@ export function getCssShadow(item: ComputedShadow) {
   return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
 }
 
+export function getCssFill(item: number[] | ComputedPattern | ComputedGradient, width?: number, height?: number) {
+  if (Array.isArray(item)) {
+    return color2rgbaStr(item);
+  }
+  const p = item as ComputedPattern;
+  if (p.url !== undefined) {
+    const type = ['tile', 'fill', 'stretch', 'fit'][p.type];
+    return `url(${p.url}) ${type} ${p.scale}`;
+  }
+  return convert2Css(item as ComputedGradient, width, height);
+}
+
 export default {
   normalize,
   equalStyle,
@@ -1042,4 +1057,5 @@ export default {
   calSize,
   getCssBlur,
   getCssShadow,
+  getCssFill,
 };

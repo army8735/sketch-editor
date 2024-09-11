@@ -28,6 +28,7 @@ import {
   color2rgbaStr,
   equalStyle,
   getCssBlur,
+  getCssFill,
   getCssShadow,
   normalize,
 } from '../style/css';
@@ -1149,6 +1150,7 @@ class Node extends Event {
         res[k] = o.v;
       }
     });
+    res.opacity = computedStyle.opacity;
     res.color = color2rgbaStr(computedStyle.color);
     res.backgroundColor = color2rgbaStr(computedStyle.backgroundColor);
     res.fontStyle = ['normal', 'italic', 'oblique'][computedStyle.fontStyle];
@@ -1175,40 +1177,11 @@ class Node extends Event {
     ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach((k) => {
       res[k] = computedStyle[k as 'shadowEnable' | 'strokeEnable' | 'fillEnable' | 'fillOpacity' | 'strokeWidth'].slice(0);
     });
-    ['fill', 'stroke'].forEach((k) => {
-      res[k] = computedStyle[k as 'fill' | 'stroke'].map((item: any) => {
-        if (Array.isArray(item)) {
-          return color2rgbaStr(item);
-        }
-        else {
-          if (item.url) {
-            const type = ['tile', 'fill', 'stretch', 'fit'][item.type];
-            return `url(${item.url}) ${type} ${item.scale}`;
-          }
-          else if (item.t !== undefined) {
-            return convert2Css(item, this);
-            // let s = 'linear-gradient';
-            // if (item.t === GRADIENT.RADIAL) {
-            //   s = 'radial-gradient';
-            // }
-            // else if (item.t === GRADIENT.CONIC) {
-            //   s = 'conic-gradient';
-            // }
-            // return `${s}(${item.d.join(' ')}, ${item.stops.map(
-            //   (stop: ColorStop) => {
-            //     return (
-            //       color2rgbaStr(stop.color.v) +
-            //       ' ' +
-            //       stop.offset!.v * 100 +
-            //       '%'
-            //     );
-            //   },
-            // )})`;
-          }
-          return '';
-        }
-      });
-    });
+    res.fill = computedStyle.fill.map(item => getCssFill(item, this.width, this.height));
+    res.fillOpacity = computedStyle.fillOpacity.slice(0);
+    res.fillEnable = computedStyle.fillEnable.slice(0);
+    res.stroke = computedStyle.stroke.map(item => getCssFill(item, this.width, this.height));
+    res.strokeEnable = computedStyle.strokeEnable.slice(0);
     res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
     res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
     res.strokePosition = computedStyle.strokePosition.map((item: STROKE_POSITION) => {

@@ -6,10 +6,10 @@ import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
 import { toPrecision } from '../math';
 import picker from './picker';
-import { color2hexStr, color2rgbaInt, color2rgbaStr } from '../style/css';
+import { color2hexStr, color2rgbaStr, getCssFill } from '../style/css';
 import Listener from './Listener';
 import { clone } from '../util/type';
-import { Style } from '../style/define';
+import { ComputedGradient, ComputedPattern, GRADIENT, Style } from '../style/define';
 import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 import Panel from './Panel';
 
@@ -21,26 +21,76 @@ function renderItem(
   index: number,
   multiEnable: boolean,
   enable: boolean,
-  multiColor: boolean,
-  color: string,
   multiOpacity: boolean,
   opacity: number,
+  fillColor: string[],
+  fillPattern: ComputedPattern[],
+  fillGradient: ComputedGradient[],
+  width: number,
+  height: number,
 ) {
-  const readOnly = (multiEnable || !enable) ? 'readonly="readonly"' : '';
+  const multiColor = fillColor.length > 1;
+  const multiPattern = fillPattern.length > 1;
+  const multiGradient = fillGradient.length > 1;
+  const multiFill = (fillColor.length ? 1 : 0) + (fillPattern.length ? 1 : 0) + (fillGradient.length ? 1 : 0) > 1;
+  const multi = multiFill || multiColor || multiPattern || multiGradient;
+  const readOnly = (multiEnable || !enable || multiPattern || multiGradient) ? 'readonly="readonly"' : '';
+  let background = '';
+  let txt1 = '';
+  let txt2 = '';
+  if (multiFill) {
+    txt1 = '多个';
+  }
+  else if (fillColor.length) {
+    txt1 = '颜色';
+    txt2 = 'Hex';
+    if (fillColor.length === 1) {
+      background = fillColor[0];
+    }
+  }
+  else if (fillPattern.length) {
+    txt1 = '图像';
+    txt2 = '显示';
+    if (fillPattern.length === 1) {
+      background = getCssFill(fillPattern[0]); console.log(background);
+    }
+  }
+  else if (fillGradient.length) {
+    txt1 = '渐变';
+    txt2 = '类型';
+    if (fillGradient.length === 1) {
+      background = getCssFill(fillGradient[0], width, height);
+    }
+  }
   return `<div class="line" title="${index}">
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
+        <b class="${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}">○○○</b>
       </span>
-      <span class="txt">颜色</span>
+      <span class="txt">${txt1}</span>
     </div>
     <div class="hex">
-      <div>
+      <div class="color ${(fillPattern.length || fillGradient.length) ? 'hide' : ''}">
         <span>#</span>
-        <input type="text" value="${multiColor ? '' : color2hexStr(color).slice(1)}" placeholder="${multiColor ? '多个' : ''}"/>
+        <input type="text" value="${multiColor ? '' : color2hexStr(fillColor[0]).slice(1)}" placeholder="${multiColor ? '多个' : ''}"/>
       </div>
-      <span class="txt">Hex</span>
+      <div class="pattern ${(fillColor.length || fillGradient.length) ? 'hide' : ''}">
+        <select>
+          <option value="">填充</option>
+          <option value="">适应</option>
+          <option value="">拉伸</option>
+          <option value="">平铺</option>
+        </select>
+      </div>
+      <div class="gradient ${(fillColor.length || fillPattern.length) ? 'hide' : ''}">
+        <select>
+          <option value="${GRADIENT.LINEAR}">线性</option>
+          <option value="${GRADIENT.RADIAL}">径向</option>
+          <option value="${GRADIENT.CONIC}">角度</option>
+        </select>
+      </div>
+      <span class="txt">${txt2}</span>
     </div>
     <div class="opacity">
       <div class="input-unit">
@@ -177,41 +227,107 @@ class FillPanel extends Panel {
     }
     this.nodes = nodes;
     panel.style.display = 'block';
-    const es: boolean[][] = [];
-    const cs: string[][] = [];
-    const os: number[][] = [];
+    const fillList: (number[] | ComputedGradient | ComputedPattern)[][] = [];
+    const fillEnableList: boolean[][] = [];
+    const fillOpacityList: number[][] = [];
     nodes.forEach(node => {
       if (node instanceof Polyline
         || node instanceof ShapeGroup
         || node instanceof Text
         || node instanceof Bitmap
       ) {
-        const style = node.getCssStyle();
-        style.fill.forEach((item, i) => {
-          const e = es[i] = es[i] || [];
-          if (!e.includes(style.fillEnable[i])) {
-            e.push(style.fillEnable[i]);
+        const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+        fill.forEach((item, i) => {
+          const o = fillList[i] = fillList[i] || [];
+          // 对象一定引用不同，具体值是否相等后续判断
+          o.push(item);
+        });
+        fillEnable.forEach((item, i) => {
+          const o = fillEnableList[i] = fillEnableList[i] || [];
+          if (!o.includes(item)) {
+            o.push(item);
           }
-          const c = cs[i] = cs[i] || [];
-          if (!c.includes(item as string)) {
-            c.push(item as string);
-          }
-          const o = os[i] = os[i] || [];
-          if (!o.includes(style.fillOpacity[i])) {
-            o.push(style.fillOpacity[i]);
+        });
+        fillOpacity.forEach((item, i) => {
+          const o = fillOpacityList[i] = fillOpacityList[i] || [];
+          if (!o.includes(item)) {
+            o.push(item);
           }
         });
       }
     });
-    for (let i = es.length - 1; i >= 0; i--) {
-      const e = es[i];
-      // 理论不会空，兜底防止bug
-      if (!e.length) {
-        return;
-      }
-      const c = cs[i];
-      const o = os[i];
-      this.panel.innerHTML += renderItem(i, e.length > 1, e[0], c.length > 1, c[0], o.length > 1, o[0]);
+    for (let i = fillList.length - 1; i >= 0; i--) {
+      const fill = fillList[i];
+      const fillEnable = fillEnableList[i];
+      const fillOpacity = fillOpacityList[i];
+      const fillColor: string[] = [];
+      const fillPattern: ComputedPattern[] = [];
+      const fillGradient: ComputedGradient[] = [];
+      fill.forEach(item => {
+        if (Array.isArray(item)) {
+          const c = color2rgbaStr(item);
+          if (!fillColor.includes(c)) {
+            fillColor.push(c);
+          }
+          return;
+        }
+        const p = item as ComputedPattern;
+        if (p.url !== undefined) {
+          for (let i = 0, len = fillPattern.length; i < len; i++) {
+            const o = fillPattern[i];
+            if (o.url === p.url && o.type === p.type && o.scale === p.scale) {
+              return;
+            }
+          }
+          fillPattern.push(p);
+          return;
+        }
+        const g = item as ComputedGradient;
+        outer:
+        for (let i = 0, len = fillGradient.length; i < len; i++) {
+          const o = fillGradient[i];
+          if (o.t !== g.t) {
+            continue;
+          }
+          if (o.d.length !== g.d.length) {
+            continue;
+          }
+          for (let j = o.d.length - 1; j >= 0; j--) {
+            if (o.d[j] !== g.d[j]) {
+              continue outer;
+            }
+          }
+          if (o.stops.length !== g.stops.length) {
+            continue;
+          }
+          for (let j = o.stops.length - 1; j >= 0; j--) {
+            const a = o.stops[j];
+            const b = g.stops[j];
+            if (a.color[0] !== b.color[0]
+              || a.color[1] !== b.color[1]
+              || a.color[2] !== b.color[2]
+              || a.color[3] !== b.color[3]
+              || a.offset !== b.offset) {
+              continue outer;
+            }
+          }
+          // 找到相等的就不添加
+          return;
+        }
+        fillGradient.push(g);
+      });
+      panel.innerHTML += renderItem(
+        i,
+        fillEnable.length > 1,
+        fillEnable[0],
+        fillOpacity.length > 1,
+        fillOpacity[0],
+        fillColor,
+        fillPattern,
+        fillGradient,
+        nodes[i].width,
+        nodes[i].height,
+      );
     }
   }
 }
