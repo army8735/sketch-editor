@@ -17,6 +17,7 @@ const html = `
   <span class="b">
     <b></b>
   </span>
+  <div class="sub"></div>
   <span class="tl">
     <b></b>
   </span>
@@ -29,7 +30,6 @@ const html = `
   <span class="bl">
     <b></b>
   </span>
-  <div class="sub"></div>
 `;
 
 export default class Select {
