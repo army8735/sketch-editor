@@ -48,6 +48,14 @@ module.exports = {
       .keys(browser.Keys.ESCAPE)
       .assert.cssProperty('#main div.input', 'opacity', '0')
 
+      .moveToElement('canvas', 30, 30)
+      .doubleClick()
+      .assert.cssProperty('#main div.input', 'opacity', '1')
+      .moveToElement('canvas', 30, 300)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
+      .assert.cssProperty('#main div.input', 'opacity', '0')
+
       .end();
   }
 };
