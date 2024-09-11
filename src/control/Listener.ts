@@ -410,18 +410,16 @@ export default class Listener extends Event {
           const text = selected[0] as Text;
           text.resetCursor();
           text.inputStyle = undefined;
-          this.state = State.NORMAL;
-          this.input.hide();
         }
         else if (!this.shiftKey) {
           selected.splice(0);
         }
       }
       // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
-      // if (this.state === State.EDIT_TEXT) {
-      //   this.state = State.NORMAL;
-      //   this.input.hide();
-      // }
+      if (this.state === State.EDIT_TEXT) {
+        this.state = State.NORMAL;
+        this.input.hide();
+      }
       if (this.select.hoverNode) {
         this.select.hideHover();
         this.emit(Listener.UN_HOVER_NODE);
