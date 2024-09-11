@@ -143,25 +143,26 @@ class TextPanel extends Panel {
           }
           // 按上下可能是多个值的情况
           if (!isInput) {
-            let d = 0;
-            if (input.placeholder) {
-              d = value > 0 ? 1 : -1;
-              if (listener.shiftKey) {
-                d *= 10;
-              }
-            }
-            else {
-              d = value - prevs[0][0][key];
-              if (listener.shiftKey) {
-                d *= 10;
-              }
-            }
-            node.rich.forEach(rich => {
+            node.rich.forEach((rich, i) => {
               if (rich.location < end && rich.location + rich.length > start) {
+                let d = 0;
+                if (input.placeholder) {
+                  d = value > 0 ? 1 : -1;
+                  if (listener.shiftKey) {
+                    d *= 10;
+                  }
+                }
+                else {
+                  d = value - prevs[0][i][key];
+                  if (listener.shiftKey) {
+                    d *= 10;
+                  }
+                }
                 const location = Math.max(rich.location, start);
                 const len = Math.min(rich.length, end - rich.location) - (location - rich.location);
+                const v = getRichKeyValue(rich, key, d);
                 node.updateRangeStyle(location, len, {
-                  [key]: getRichKeyValue(rich, key, d),
+                  [key]: v,
                 });
               }
             });

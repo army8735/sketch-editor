@@ -130,7 +130,7 @@ const o = {
       const r = this._cal(family, f);
       Object.assign(o, r);
       o.list = [];
-      info[family] = o;
+      info[family] = data[family] = o;
     }
     this._register(family, style, postscriptName, true);
     inject.addArrayBufferFont(postscriptName, ab);
@@ -191,20 +191,17 @@ const o = {
   registerData(fd: FontData) {
     const family = fd.family;
     if (!info.hasOwnProperty(family)) {
-      info[family] = fd;
+      info[family] = data[family] = fd;
     }
-    if (!data.hasOwnProperty(family)) {
-      fd.list.forEach((item) => {
-        this._register(
-          family,
-          item.style,
-          item.postscriptName,
-          item.loaded,
-          item.url,
-        );
-      });
-      this.updateLocalStorage();
-    }
+    fd.list.forEach((item) => {
+      this._register(
+        family,
+        item.style,
+        item.postscriptName,
+        item.loaded,
+        item.url,
+      );
+    });
   },
   updateLocalStorage() {
     const cache: any = {};

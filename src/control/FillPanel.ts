@@ -52,7 +52,7 @@ function renderItem(
     txt1 = '图像';
     txt2 = '显示';
     if (fillPattern.length === 1) {
-      background = getCssFill(fillPattern[0]); console.log(background);
+      background = getCssFill(fillPattern[0]);
     }
   }
   else if (fillGradient.length) {
