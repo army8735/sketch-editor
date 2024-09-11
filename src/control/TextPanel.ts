@@ -549,7 +549,12 @@ class TextPanel extends Panel {
           const { content } = node;
           const cursor = node.getSortedCursor();
           let { isMulti, start, end } = cursor;
-          start = content.lastIndexOf('\n', start);
+          if (content.charAt(start) === '\n') {
+            start = content.lastIndexOf('\n', start - 1);
+          }
+          else {
+            start = content.lastIndexOf('\n', start);
+          }
           if (start < 0) {
             start = 0;
           }
