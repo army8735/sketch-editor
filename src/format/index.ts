@@ -382,6 +382,8 @@ export type ColorAdjustStyle = Pick<JStyle, 'hueRotate' | 'saturate' | 'brightne
 
 export type ModifyRichStyle = Partial<Omit<Rich, 'location' | 'length'>>;
 
+export type FillStyle = Pick<JStyle, 'fill' | 'fillOpacity' | 'fillEnable'>;
+
 export default {
   TAG_NAME,
   getDefaultStyle,

@@ -4,14 +4,13 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
-import { toPrecision } from '../math';
 import picker from './picker';
 import { color2hexStr, color2rgbaStr, getCssFill } from '../style/css';
 import Listener from './Listener';
-import { clone } from '../util/type';
-import { ComputedGradient, ComputedPattern, GRADIENT, Style } from '../style/define';
-import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
+import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '../style/define';
 import Panel from './Panel';
+import { FillStyle } from '../format';
+import FillCommand from '../history/FillCommand';
 
 const html = `
   <h4 class="panel-title">填充</h4>
@@ -34,10 +33,11 @@ function renderItem(
   const multiGradient = fillGradient.length > 1;
   const multiFill = (fillColor.length ? 1 : 0) + (fillPattern.length ? 1 : 0) + (fillGradient.length ? 1 : 0) > 1;
   const multi = multiFill || multiColor || multiPattern || multiGradient;
-  const readOnly = (multiEnable || !enable || multiPattern || multiGradient) ? 'readonly="readonly"' : '';
+  const readOnly = (multiEnable || !enable || multiFill || multiPattern || multiGradient || fillPattern.length || fillGradient.length) ? 'readonly="readonly"' : '';
   let background = '';
-  let txt1 = '';
-  let txt2 = '';
+  let txt1 = ' ';
+  let txt2 = ' ';
+  let txt3 = '多种';
   if (multiFill) {
     txt1 = '多个';
   }
@@ -54,6 +54,15 @@ function renderItem(
     if (fillPattern.length === 1) {
       background = getCssFill(fillPattern[0]);
     }
+    else {
+      txt3 = ['填充', '适应', '拉伸', '平铺'][fillPattern[0].type];
+      for (let i = 1, len = fillPattern.length; i < len; i++) {
+        if (fillPattern[i].type !== fillPattern[0].type) {
+          txt3 = '多个';
+          break;
+        }
+      }
+    }
   }
   else if (fillGradient.length) {
     txt1 = '渐变';
@@ -61,12 +70,21 @@ function renderItem(
     if (fillGradient.length === 1) {
       background = getCssFill(fillGradient[0], width, height);
     }
+    else {
+      txt3 = ['线性', '径向', '角度'][fillGradient[0].t];
+      for (let i = 1, len = fillGradient.length; i < len; i++) {
+        if (fillGradient[i].t !== fillGradient[0].t) {
+          txt3 = '多个';
+          break;
+        }
+      }
+    }
   }
   return `<div class="line" title="${index}">
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}">○○○</b>
+        <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}" title="${background}">○○○</b>
       </span>
       <span class="txt">${txt1}</span>
     </div>
@@ -75,19 +93,24 @@ function renderItem(
         <span>#</span>
         <input type="text" value="${multiColor ? '' : color2hexStr(fillColor[0]).slice(1)}" placeholder="${multiColor ? '多个' : ''}"/>
       </div>
-      <div class="pattern ${(fillColor.length || fillGradient.length) ? 'hide' : ''}">
-        <select>
-          <option value="">填充</option>
-          <option value="">适应</option>
-          <option value="">拉伸</option>
-          <option value="">平铺</option>
+      <div class="pattern ${(fillColor.length || fillGradient.length || multiPattern) ? 'hide' : ''}">
+        <select disabled="disabled">
+          <option value="${PATTERN_FILL_TYPE.FILL}" ${fillPattern[0]?.type === PATTERN_FILL_TYPE.FILL ? 'selected="selected"' : ''}>填充</option>
+          <option value="${PATTERN_FILL_TYPE.FIT}" ${fillPattern[0]?.type === PATTERN_FILL_TYPE.FIT ? 'selected="selected"' : ''}>适应</option>
+          <option value="${PATTERN_FILL_TYPE.STRETCH}" ${fillPattern[0]?.type === PATTERN_FILL_TYPE.STRETCH ? 'selected="selected"' : ''}>拉伸</option>
+          <option value="${PATTERN_FILL_TYPE.TILE}" ${fillPattern[0]?.type === PATTERN_FILL_TYPE.TILE ? 'selected="selected"' : ''}>平铺</option>
         </select>
       </div>
-      <div class="gradient ${(fillColor.length || fillPattern.length) ? 'hide' : ''}">
-        <select>
-          <option value="${GRADIENT.LINEAR}">线性</option>
-          <option value="${GRADIENT.RADIAL}">径向</option>
-          <option value="${GRADIENT.CONIC}">角度</option>
+      <div class="gradient ${(fillColor.length || fillPattern.length || multiGradient) ? 'hide' : ''}">
+        <select disabled="disabled">
+          <option value="${GRADIENT.LINEAR}" ${fillGradient[0]?.t === GRADIENT.LINEAR ? 'selected="selected"' : ''}>线性</option>
+          <option value="${GRADIENT.RADIAL}" ${fillGradient[0]?.t === GRADIENT.RADIAL ? 'selected="selected"' : ''}>径向</option>
+          <option value="${GRADIENT.CONIC}" ${fillGradient[0]?.t === GRADIENT.CONIC ? 'selected="selected"' : ''}>角度</option>
+        </select>
+      </div>
+      <div class="multi-type ${multiFill || multiPattern || multiGradient ? '' : 'hide'}">
+        <select disabled="disabled">
+          <option>${txt3}</option>
         </select>
       </div>
       <span class="txt">${txt2}</span>
@@ -114,15 +137,16 @@ class FillPanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
-    let nodes: Node[];
-    let prevs: Partial<Style>[];
-    let nexts: Partial<Style>[];
+    let nodes: Node[] = [];
+    let prevs: FillStyle[] = [];
+    let nexts: FillStyle[] = [];
 
-    const callback = () => {
+    const pickCallback = () => {
       // 只有变更才会有next
-      if (nexts && nexts.length) {
-        listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+      if (nexts.length) {
+        listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        })));
       }
       nodes = [];
       prevs = [];
@@ -131,67 +155,203 @@ class FillPanel extends Panel {
 
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
-      if (el.tagName === 'B') {
-        const p = picker.show(el, 'fillPanel', callback);
+      const classList = el.classList;
+      if (classList.contains('pick')) {
+        // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
+        e.stopPropagation();
+        if (el.parentElement!.classList.contains('read-only')) {
+          return;
+        }
+        if (picker.isShowFrom('fillPanel')) {
+          picker.hide();
+          pickCallback();
+          return;
+        }
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
+        const p = picker.show(el, 'shadowPanel', pickCallback);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
         nodes.forEach(node => {
-          const fill = clone(node.style.fill);
-          const fillOpacity = clone(node.style.fillOpacity);
+          const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+          const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
           prevs.push({
-            fill,
+            fill: cssFill,
             fillOpacity,
+            fillEnable,
           });
         });
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
+          this.silence = true;
           nexts = [];
-          nodes.forEach((node, i) => {
-            const fill = clone(node.style.fill);
-            const rgba = color.rgba.slice(0);
-            rgba[3] = 1;
-            fill[index].v = rgba;
-
-            const fillOpacity = clone(node.style.fillOpacity);
-            fillOpacity[index].v = color.rgba[3];
-
-            if (!i) {
-              const hex = line.querySelector('.hex input') as HTMLInputElement;
-              hex.value = color2hexStr(rgba).slice(0, 7);
-              const b = line.querySelector('.picker b') as HTMLElement;
-              b.style.opacity = String(color.rgba[3]);
-              b.style.background = hex.value;
-              const op = line.querySelector('.opacity input') as HTMLInputElement;
-              op.value = String(toPrecision(color.rgba[3] * 100, 0));
-            }
-
-            nexts.push({
-              fill,
-              fillOpacity,
+          nodes.forEach((node) => {
+            const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+            const cssFill = fill.map((item, i) => {
+              if (i === index) {
+                return getCssFill(color.rgba, node.width, node.height);
+              }
+              else {
+                return getCssFill(item, node.width, node.height);
+              }
             });
-            node.updateFormatStyle({
-              fill,
+            const o = {
+              fill: cssFill,
               fillOpacity,
-            });
+              fillEnable,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
           });
+          if (nodes.length) {
+            listener.emit(Listener.FILL_NODE, nodes.slice(0));
+          }
+          const c = color2hexStr(color.rgba);
+          el.title = el.style.background = c;
+          (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
+          this.silence = false;
         };
         p.onDone = () => {
           picker.hide();
-          callback();
+          pickCallback();
         };
       }
+      else if (classList.contains('enabled')) {
+        this.silence = true;
+        const index = parseInt(el.parentElement!.title);
+        const nodes = this.nodes.slice(0);
+        const prevs: FillStyle[] = [];
+        const nexts: FillStyle[] = [];
+        let value = false;
+        if (classList.contains('multi-checked') || classList.contains('un-checked')) {
+          value = true;
+        }
+        nodes.forEach(node => {
+          const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+          const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+          prevs.push({
+            fill: cssFill,
+            fillOpacity,
+            fillEnable,
+          });
+          const f = cssFill.slice(0);
+          const fe = fillEnable.slice(0);
+          const fo = fillOpacity.slice(0);
+          if (fe[index] !== undefined) {
+            fe[index] = value;
+          }
+          const o = {
+            fill: f,
+            fillEnable: fe,
+            fillOpacity: fo,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        classList.remove('multi-checked');
+        if (value) {
+          classList.remove('un-checked');
+          classList.add('checked');
+        }
+        else {
+          classList.remove('checked');
+          classList.add('un-checked');
+        }
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        })));
+        this.silence = false;
+      }
     });
+
+    panel.addEventListener('input', (e) => {
+      this.silence = true;
+      pickCallback();
+      const input = e.target as HTMLInputElement;
+      const index = parseInt((input.parentElement!.parentElement!.parentElement!).title);
+      const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      this.nodes.forEach((node, i) => {
+        if (isFirst) {
+          nodes.push(node);
+          const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+          const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+          prevs.push({
+            fill: cssFill,
+            fillOpacity,
+            fillEnable,
+          });
+        }
+        const o = {
+          fill: prevs[i].fill.slice(0),
+          fillOpacity: prevs[i].fillOpacity.slice(0),
+          fillEnable: prevs[i].fillEnable.slice(0),
+        };
+        nexts.push(o);
+        const prev = prevs[i].fillOpacity[index] * 100;
+        let next = n;
+        let d = 0;
+        if (isInput) {
+          d = next - prev;
+          if (!i) {
+            input.placeholder = '';
+          }
+        }
+        else {
+          // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
+          if (next === 0) {
+            next = -1;
+          }
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (input.placeholder) {
+            d = next;
+          }
+          else {
+            d = next - prev;
+          }
+          if (listener.shiftKey) {
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+          }
+          next = prev + d;
+          next = Math.max(next, 0);
+          next = Math.min(next, 100);
+          if (!i) {
+            input.value = input.placeholder ? '' : next.toString();
+          }
+        }
+        if (d) {
+          o.fillOpacity[index] = next * 0.01;
+          node.updateStyle(o);
+        }
+      });
+      if (nodes.length) {
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+      }
+      this.silence = false;
+    });
+
+    panel.addEventListener('change', pickCallback);
 
     listener.on([
       Listener.SELECT_NODE,
       Listener.ADD_NODE,
+      Listener.FILL_NODE,
     ], (nodes: Node[]) => {
-      if (picker.isShowFrom('fillPanel')) {
-        picker.hide();
-        callback();
+      if (this.silence) {
+        return;
       }
       this.show(nodes);
     });

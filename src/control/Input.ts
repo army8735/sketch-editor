@@ -2,7 +2,7 @@ import Text from '../node/Text';
 import Root from '../node/Root';
 import Listener from './Listener';
 import State from './State';
-import UpdateTextCommand from '../history/UpdateTextCommand';
+import TextCommand from '../history/TextCommand';
 
 export default class Input {
   root: Root;
@@ -58,7 +58,7 @@ export default class Input {
           listener.select.updateSelect([this.node]);
           listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
           listener.emit(Listener.CURSOR_NODE, [this.node]);
-          this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+          this.listener.history.addCommand(new TextCommand([this.node], [{
             prev: {
               content,
               rich,
@@ -83,7 +83,7 @@ export default class Input {
           listener.select.updateSelect([this.node]);
           listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
           listener.emit(Listener.CURSOR_NODE, [this.node]);
-          this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+          this.listener.history.addCommand(new TextCommand([this.node], [{
             prev: {
               content,
               rich,
@@ -125,7 +125,7 @@ export default class Input {
           inputEl.value = '';
           this.listener.select.updateSelect([this.node]);
           this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
-          this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+          this.listener.history.addCommand(new TextCommand([this.node], [{
             prev: {
               content,
               rich,
@@ -158,7 +158,7 @@ export default class Input {
         this.listener.select.updateSelect([this.node]);
         this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
         listener.emit(Listener.CURSOR_NODE, [this.node]);
-        this.listener.history.addCommand(new UpdateTextCommand([this.node], [{
+        this.listener.history.addCommand(new TextCommand([this.node], [{
           prev: {
             content,
             rich,

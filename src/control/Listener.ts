@@ -17,7 +17,7 @@ import MoveCommand, { MoveData } from '../history/MoveCommand';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RemoveCommand, { RemoveData } from '../history/RemoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import UpdateRichCommand from '../history/UpdateRichCommand';
+import RichCommand from '../history/RichCommand';
 import OpacityCommand from '../history/OpacityCommand';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
 import { getFrameNodes, getNodeByPoint } from '../tools/root';
@@ -28,7 +28,8 @@ import picker from './picker';
 import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
-import UpdateTextCommand from '../history/UpdateTextCommand';
+import TextCommand from '../history/TextCommand';
+import FillCommand from '../history/FillCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1129,26 +1130,29 @@ export default class Listener extends Event {
         else if (c instanceof VerticalAlignCommand) {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
         }
-        else if (c instanceof UpdateRichCommand) {
-          if (c.type === UpdateRichCommand.TEXT_ALIGN) {
+        else if (c instanceof FillCommand) {
+          this.emit(Listener.FILL_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof RichCommand) {
+          if (c.type === RichCommand.TEXT_ALIGN) {
             this.emit(Listener.TEXT_ALIGN_NODE, this.selected.slice(0));
           }
-          else if (c.type === UpdateRichCommand.COLOR) {
+          else if (c.type === RichCommand.COLOR) {
             this.emit(Listener.COLOR_NODE, this.selected.slice(0));
           }
-          else if (c.type === UpdateRichCommand.FONT_FAMILY) {
+          else if (c.type === RichCommand.FONT_FAMILY) {
             this.emit(Listener.FONT_FAMILY_NODE, this.selected.slice(0));
           }
-          else if (c.type === UpdateRichCommand.FONT_SIZE) {
+          else if (c.type === RichCommand.FONT_SIZE) {
             this.emit(Listener.FONT_SIZE_NODE, this.selected.slice(0));
           }
-          else if (c.type === UpdateRichCommand.LINE_HEIGHT) {
+          else if (c.type === RichCommand.LINE_HEIGHT) {
             this.emit(Listener.LINE_HEIGHT_NODE, this.selected.slice(0));
           }
-          else if (c.type === UpdateRichCommand.PARAGRAPH_SPACING) {
+          else if (c.type === RichCommand.PARAGRAPH_SPACING) {
             this.emit(Listener.PARAGRAPH_SPACING_NODE, this.selected.slice(0));
           }
-          else if (c.type === UpdateRichCommand.LETTER_SPACING) {
+          else if (c.type === RichCommand.LETTER_SPACING) {
             this.emit(Listener.LETTER_SPACING_NODE, this.selected.slice(0));
           }
           // 更新光标
@@ -1165,7 +1169,7 @@ export default class Listener extends Event {
             }
           }
         }
-        else if (c instanceof UpdateTextCommand) {
+        else if (c instanceof TextCommand) {
           if (this.state === State.EDIT_TEXT && this.selected.length === 1) {
             const node = this.selected[0] as Text;
             if (node === this.selected[0]) {

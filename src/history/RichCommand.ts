@@ -2,16 +2,16 @@ import AbstractCommand from './AbstractCommand';
 import Text from '../node/Text';
 import { Rich } from '../format';
 
-export type UpdateRichData = {
+export type RichData = {
   prev: Rich[];
   next: Rich[];
 };
 
-class UpdateRichCommand extends AbstractCommand {
-  data: UpdateRichData[];
+class RichCommand extends AbstractCommand {
+  data: RichData[];
   type: string; // 区分text-panel改的类型，比如字体、大小、颜色等等
 
-  constructor(nodes: Text[], data: UpdateRichData[], type: string) {
+  constructor(nodes: Text[], data: RichData[], type: string) {
     super(nodes);
     this.data = data;
     this.type = type;
@@ -40,4 +40,4 @@ class UpdateRichCommand extends AbstractCommand {
   static TEXT_ALIGN = 'TEXT_ALIGN';
 }
 
-export default UpdateRichCommand;
+export default RichCommand;

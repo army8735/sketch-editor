@@ -676,7 +676,7 @@ function getBlendMode(blend: string) {
   return v;
 }
 
-export function equalStyle(k: string, a: Style, b: Style) {
+export function equalStyle(k: string, a: Partial<Style>, b: Partial<Style>) {
   // @ts-ignore
   const av = a[k];
   // @ts-ignore

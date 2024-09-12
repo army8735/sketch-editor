@@ -86,14 +86,12 @@ class OpacityPanel extends Panel {
       }
       nexts = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const n = parseFloat(number.value) || 0;
+      const n = Math.min(100, Math.max(0, parseFloat(number.value) || 0));
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.opacity * 100;
         let next = n;
         let d = 0;
         if (isInput) {
-          next = Math.max(next, 0);
-          next = Math.min(next, 100);
           d = next - prev;
           if (!i) {
             number.placeholder = '';
@@ -126,17 +124,15 @@ class OpacityPanel extends Panel {
             number.value = number.placeholder ? '' : next.toString();
           }
         }
-        if (d) {
-          if (prev !== next) {
-            node.updateStyle({
-              opacity: next * 0.01,
-            });
-            if (isFirst) {
-              nodes.push(node);
-              prevs.push(prev * 0.01);
-            }
-            nexts.push(next * 0.01);
+        if (d && prev !== next) {
+          node.updateStyle({
+            opacity: next * 0.01,
+          });
+          if (isFirst) {
+            nodes.push(node);
+            prevs.push(prev * 0.01);
           }
+          nexts.push(next * 0.01);
         }
       });
       range.value = number.value || '0';

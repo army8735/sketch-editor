@@ -2,7 +2,7 @@ import AbstractCommand from './AbstractCommand';
 import Text, { Cursor } from '../node/Text';
 import { Rich } from '../format';
 
-export type UpdateTextData = {
+export type TextData = {
   prev: {
     content: string;
     rich: Rich[];
@@ -15,10 +15,10 @@ export type UpdateTextData = {
   };
 };
 
-class UpdateTextCommand extends AbstractCommand {
-  data: UpdateTextData[];
+class TextCommand extends AbstractCommand {
+  data: TextData[];
 
-  constructor(nodes: Text[], data: UpdateTextData[]) {
+  constructor(nodes: Text[], data: TextData[]) {
     super(nodes);
     this.data = data;
   }
@@ -42,4 +42,4 @@ class UpdateTextCommand extends AbstractCommand {
   }
 }
 
-export default UpdateTextCommand;
+export default TextCommand;

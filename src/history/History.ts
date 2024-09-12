@@ -2,8 +2,8 @@ import AbstractCommand from './AbstractCommand';
 import MoveCommand from './MoveCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import ResizeCommand from './ResizeCommand';
-import UpdateRichCommand from './UpdateRichCommand';
-import UpdateTextCommand from './UpdateTextCommand';
+import RichCommand from './RichCommand';
+import TextCommand from './TextCommand';
 import config from '../util/config';
 
 let history: History | undefined;
@@ -36,11 +36,11 @@ function compare(a: AbstractCommand, b: AbstractCommand) {
       }
     }
   }
-  if (a instanceof UpdateRichCommand) {
-    if (a.type !== (b as UpdateRichCommand).type) {
+  if (a instanceof RichCommand) {
+    if (a.type !== (b as RichCommand).type) {
       return false;
     }
-    const da = a.data, db = (b as UpdateRichCommand).data;
+    const da = a.data, db = (b as RichCommand).data;
     for (let i = 0, len = da.length; i < len; i++) {
       const ia = da[i], ib = db[i];
       if (ia.prev.length !== ib.prev.length) {
@@ -78,7 +78,7 @@ class History {
     if (!independence && len > 0) {
       const last = this.commands[len - 1];
       const isInTime = Date.now() - this.lastTime < config.historyTime;
-      const isEditText = last instanceof UpdateTextCommand && c instanceof UpdateTextCommand;
+      const isEditText = last instanceof TextCommand && c instanceof TextCommand;
       if ((isInTime || isEditText) && compare(last, c)) {
         let hasMerge = true;
         if (last instanceof MoveCommand) {
@@ -101,14 +101,14 @@ class History {
             item.dy += data[i].dy;
           });
         }
-        else if (last instanceof UpdateRichCommand) {
-          const data = (c as UpdateRichCommand).data;
+        else if (last instanceof RichCommand) {
+          const data = (c as RichCommand).data;
           last.data.forEach((item, i) => {
             item.next = data[i].next;
           });
         }
-        else if (last instanceof UpdateTextCommand) {
-          const data = (c as UpdateTextCommand).data;
+        else if (last instanceof TextCommand) {
+          const data = (c as TextCommand).data;
           last.data.forEach((item, i) => {
             item.next = data[i].next;
           });

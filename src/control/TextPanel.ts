@@ -6,7 +6,7 @@ import style from '../style';
 import { getEditTextInfo, getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
 import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
-import UpdateRichCommand, { UpdateRichData } from '../history/UpdateRichCommand';
+import RichCommand, { RichData } from '../history/RichCommand';
 import VerticalAlignCommand, { VerticalAlignData } from '../history/VerticalAlignCommand';
 import Listener from './Listener';
 import picker from './picker';
@@ -112,9 +112,9 @@ class TextPanel extends Panel {
     const pickCallback = () => {
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
-        listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
+        listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
-        }), UpdateRichCommand.COLOR));
+        }), RichCommand.COLOR));
       }
       nodes = [];
       prevs = [];
@@ -241,18 +241,18 @@ class TextPanel extends Panel {
       if (nodes.length) {
         let type = '';
         if (key == 'fontSize') {
-          type = UpdateRichCommand.FONT_SIZE;
+          type = RichCommand.FONT_SIZE;
         }
         else if (key === 'letterSpacing') {
-          type = UpdateRichCommand.LETTER_SPACING;
+          type = RichCommand.LETTER_SPACING;
         }
         else if (key === 'lineHeight') {
-          type = UpdateRichCommand.LINE_HEIGHT;
+          type = RichCommand.LINE_HEIGHT;
         }
         else if (key === 'paragraphSpacing') {
-          type = UpdateRichCommand.PARAGRAPH_SPACING;
+          type = RichCommand.PARAGRAPH_SPACING;
         }
-        listener.history.addCommand(new UpdateRichCommand(nodes, prevs.map((prev, i) => {
+        listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         }), type));
         nodes = [];
@@ -321,7 +321,7 @@ class TextPanel extends Panel {
           }
         }
         select.disabled = false;
-        const data: UpdateRichData[] = [];
+        const data: RichData[] = [];
         if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
           const node = nodes[0];
           const { isMulti, start, end } = node.getSortedCursor();
@@ -350,7 +350,7 @@ class TextPanel extends Panel {
           });
         }
         if (data.length) {
-          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+          listener.history.addCommand(new RichCommand(nodes, data, RichCommand.FONT_FAMILY));
           listener.select.updateSelect(nodes);
           listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
         }
@@ -362,7 +362,7 @@ class TextPanel extends Panel {
         if (option) {
           option.remove();
         }
-        const data: UpdateRichData[] = [];
+        const data: RichData[] = [];
         if (listener.state === State.EDIT_TEXT && this.nodes.length === 1) {
           const node = nodes[0];
           const { isMulti, start, end } = node.getSortedCursor();
@@ -391,7 +391,7 @@ class TextPanel extends Panel {
           });
         }
         if (data.length) {
-          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.FONT_FAMILY));
+          listener.history.addCommand(new RichCommand(nodes, data, RichCommand.FONT_FAMILY));
           listener.select.updateSelect(nodes);
           listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
         }
@@ -542,7 +542,7 @@ class TextPanel extends Panel {
         else if (classList.contains('justify')) {
           value = TEXT_ALIGN.JUSTIFY;
         }
-        const data: UpdateRichData[] = [];
+        const data: RichData[] = [];
         // 编辑状态下特殊处理，只有\n造成的lineBox才会局部生效，否则向首尾扩展直至整个text
         if (nodes.length === 1 && listener.state === State.EDIT_TEXT) {
           const node = nodes[0];
@@ -593,7 +593,7 @@ class TextPanel extends Panel {
           });
         }
         if (data.length) {
-          listener.history.addCommand(new UpdateRichCommand(nodes, data, UpdateRichCommand.TEXT_ALIGN));
+          listener.history.addCommand(new RichCommand(nodes, data, RichCommand.TEXT_ALIGN));
           listener.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');

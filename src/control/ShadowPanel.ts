@@ -70,7 +70,7 @@ class ShadowPanel extends Panel {
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = () => {
       // 只有变更才会有next
-      if (nexts && nexts.length) {
+      if (nexts.length) {
         listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         })));
@@ -115,13 +115,9 @@ class ShadowPanel extends Panel {
             const { shadow, shadowEnable } = node.getComputedStyle();
             const cssShadow = shadow.map((item, i) => {
               if (i === index) {
-                return getCssShadow({
+                return getCssShadow(Object.assign(item, {
                   color: color.rgba,
-                  x: item.x,
-                  y: item.y,
-                  blur: item.blur,
-                  spread: item.spread,
-                });
+                }));
               }
               else {
                 return getCssShadow(item);
@@ -226,8 +222,8 @@ class ShadowPanel extends Panel {
         this.silence = false;
       }
       else if (classList.contains('enabled')) {
-        const index = parseInt(el.parentElement!.title);
         this.silence = true;
+        const index = parseInt(el.parentElement!.title);
         const nodes = this.nodes.slice(0);
         const prevs: ShadowStyle[] = [];
         const nexts: ShadowStyle[] = [];
@@ -254,13 +250,18 @@ class ShadowPanel extends Panel {
           nexts.push(o);
           node.updateStyle(o);
         });
-        this.show(nodes);
+        classList.remove('multi-checked');
+        if (value) {
+          classList.remove('un-checked');
+          classList.add('checked');
+        }
+        else {
+          classList.remove('checked');
+          classList.add('un-checked');
+        }
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
-          return {
-            prev,
-            next: nexts[i],
-          };
+          return { prev, next: nexts[i] };
         })));
         this.silence = false;
       }
@@ -270,7 +271,7 @@ class ShadowPanel extends Panel {
       this.silence = true;
       pickCallback();
       const input = e.target as HTMLInputElement;
-      const index = parseInt((input.parentElement!.parentElement as HTMLElement).title);
+      const index = parseInt((input.parentElement!.parentElement!).title);
       const classList = input.classList;
       let type = 1; // x
       if (classList.contains('y')) {
@@ -282,10 +283,7 @@ class ShadowPanel extends Panel {
       else if (classList.contains('spread')) {
         type = 4;
       }
-      let n = parseFloat(input.value) || 0;
-      if (n > 500000 || n < -500000) {
-        n = 0;
-      }
+      const n = Math.min(500000, Math.max(-500000, parseFloat(input.value) || 0));
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -348,19 +346,7 @@ class ShadowPanel extends Panel {
       this.silence = false;
     });
 
-    panel.addEventListener('change', (e) => {
-      if (nexts.length) {
-        listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
-          return {
-            prev,
-            next: nexts[i],
-          };
-        })));
-      }
-      nodes = [];
-      prevs = [];
-      nexts = [];
-    });
+    panel.addEventListener('change', pickCallback);
 
     listener.on([
       Listener.SELECT_NODE,

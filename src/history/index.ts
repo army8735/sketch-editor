@@ -9,8 +9,9 @@ import ShadowCommand from './ShadowCommand';
 import ColorAdjustCommand from './ColorAdjustCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import UpdateFormatStyleCommand from './UpdateFormatStyleCommand';
-import UpdateRichCommand from './UpdateRichCommand';
-import UpdateTextCommand from './UpdateTextCommand';
+import RichCommand from './RichCommand';
+import TextCommand from './TextCommand';
+import FillCommand from './FillCommand';
 
 export default {
   History,
@@ -24,6 +25,7 @@ export default {
   ColorAdjustCommand,
   UpdateStyleCommand,
   UpdateFormatStyleCommand,
-  UpdateRichCommand,
-  UpdateTextCommand,
+  RichCommand,
+  TextCommand,
+  FillCommand,
 };
