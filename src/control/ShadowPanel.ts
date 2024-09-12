@@ -223,7 +223,8 @@ class ShadowPanel extends Panel {
       }
       else if (classList.contains('enabled')) {
         this.silence = true;
-        const index = parseInt(el.parentElement!.title);
+        const line = el.parentElement!;
+        const index = parseInt(line.title);
         const nodes = this.nodes.slice(0);
         const prevs: ShadowStyle[] = [];
         const nexts: ShadowStyle[] = [];
@@ -254,10 +255,16 @@ class ShadowPanel extends Panel {
         if (value) {
           classList.remove('un-checked');
           classList.add('checked');
+          line.querySelectorAll('input:read-only').forEach((item) => {
+            (item as HTMLInputElement).readOnly = false;
+          });
         }
         else {
           classList.remove('checked');
           classList.add('un-checked');
+          line.querySelectorAll('input').forEach(item => {
+            (item as HTMLInputElement).readOnly = true;
+          });
         }
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
