@@ -5,7 +5,7 @@ import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
 import picker from './picker';
-import { color2hexStr, color2rgbaStr, getCssFill } from '../style/css';
+import { color2hexStr, color2rgbaInt, color2rgbaStr, getCssFill } from '../style/css';
 import Listener from './Listener';
 import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '../style/define';
 import Panel from './Panel';
@@ -91,7 +91,7 @@ function renderItem(
     <div class="hex">
       <div class="color ${(fillPattern.length || fillGradient.length) ? 'hide' : ''}">
         <span>#</span>
-        <input type="text" value="${multiColor ? '' : color2hexStr(fillColor[0]).slice(1)}" placeholder="${multiColor ? '多个' : ''}"/>
+        <input type="text" value="${multiColor ? '' : color2hexStr(fillColor[0]).slice(1)}" placeholder="${multiColor ? '多个' : ''}" maxlength="8"/>
       </div>
       <div class="pattern ${(fillColor.length || fillGradient.length || multiPattern) ? 'hide' : ''}">
         <select disabled="disabled">
@@ -219,7 +219,8 @@ class FillPanel extends Panel {
       }
       else if (classList.contains('enabled')) {
         this.silence = true;
-        const index = parseInt(el.parentElement!.title);
+        const line = el.parentElement!;
+        const index = parseInt(line.title);
         const nodes = this.nodes.slice(0);
         const prevs: FillStyle[] = [];
         const nexts: FillStyle[] = [];
@@ -253,10 +254,16 @@ class FillPanel extends Panel {
         if (value) {
           classList.remove('un-checked');
           classList.add('checked');
+          line.querySelectorAll('input:read-only').forEach((item) => {
+            (item as HTMLInputElement).readOnly = false;
+          });
         }
         else {
           classList.remove('checked');
           classList.add('un-checked');
+          line.querySelectorAll('input').forEach(item => {
+            (item as HTMLInputElement).readOnly = true;
+          });
         }
         listener.emit(Listener.FILL_NODE, nodes.slice(0));
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
@@ -266,77 +273,125 @@ class FillPanel extends Panel {
       }
     });
 
+    // 颜色input防止无效输入，undo/redo干扰输入
+    panel.addEventListener('keydown', (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.tagName.toUpperCase() === 'INPUT' && target.type === 'text') {
+        const keyCode = e.keyCode;
+        if (e.metaKey || listener.isWin && e.ctrlKey) {
+        }
+        else if (keyCode >= 48 && keyCode <= 57
+          || keyCode >= 37 && keyCode <= 40
+          || keyCode >= 65 && keyCode <= 90
+          || keyCode === 8
+          || keyCode === 46
+          || keyCode === 27
+          || keyCode === 13) {}
+        else {
+          e.preventDefault();
+        }
+      }
+    });
+
     panel.addEventListener('input', (e) => {
       this.silence = true;
-      pickCallback();
       const input = e.target as HTMLInputElement;
-      const index = parseInt((input.parentElement!.parentElement!.parentElement!).title);
-      const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+      const line = input.parentElement!.parentElement!.parentElement!;
+      const index = parseInt(line.title);
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
         prevs = [];
       }
       nexts = [];
-      const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      this.nodes.forEach((node, i) => {
-        if (isFirst) {
-          nodes.push(node);
-          const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-          const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
-          prevs.push({
-            fill: cssFill,
-            fillOpacity,
-            fillEnable,
-          });
-        }
-        const o = {
-          fill: prevs[i].fill.slice(0),
-          fillOpacity: prevs[i].fillOpacity.slice(0),
-          fillEnable: prevs[i].fillEnable.slice(0),
-        };
-        nexts.push(o);
-        const prev = prevs[i].fillOpacity[index] * 100;
-        let next = n;
-        let d = 0;
-        if (isInput) {
-          d = next - prev;
-          if (!i) {
-            input.placeholder = '';
+      if (input.type === 'text') {
+        const value = color2rgbaInt(input.value);
+        this.nodes.forEach((node, i) => {
+          if (isFirst) {
+            nodes.push(node);
+            const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+            const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+            prevs.push({
+              fill: cssFill,
+              fillOpacity,
+              fillEnable,
+            });
           }
-        }
-        else {
-          // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
-          if (next === 0) {
-            next = -1;
+          const o = {
+            fill: prevs[i].fill.slice(0),
+            fillOpacity: prevs[i].fillOpacity.slice(0),
+            fillEnable: prevs[i].fillEnable.slice(0),
+          };
+          nexts.push(o);
+          o.fill[index] = value;
+          node.updateStyle(o);
+        });
+        input.placeholder = '';
+        const b = line.querySelector('.picker-btn b') as HTMLElement;
+        b.title = b.style.background = color2rgbaStr(value);
+      }
+      else if (input.type === 'number') {
+        const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+        const isInput = e instanceof InputEvent; // 上下键还是真正输入
+        this.nodes.forEach((node, i) => {
+          if (isFirst) {
+            nodes.push(node);
+            const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+            const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+            prevs.push({
+              fill: cssFill,
+              fillOpacity,
+              fillEnable,
+            });
           }
-          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
-          if (input.placeholder) {
-            d = next;
+          const o = {
+            fill: prevs[i].fill.slice(0),
+            fillOpacity: prevs[i].fillOpacity.slice(0),
+            fillEnable: prevs[i].fillEnable.slice(0),
+          };
+          nexts.push(o);
+          const prev = prevs[i].fillOpacity[index] * 100;
+          let next = n;
+          let d = 0;
+          if (isInput) {
+            d = next - prev;
+            if (!i) {
+              input.placeholder = '';
+            }
           }
           else {
-            d = next - prev;
-          }
-          if (listener.shiftKey) {
-            if (d > 0) {
-              d = 10;
+            // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
+            if (next === 0) {
+              next = -1;
+            }
+            // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+            if (input.placeholder) {
+              d = next;
             }
             else {
-              d = -10;
+              d = next - prev;
+            }
+            if (listener.shiftKey) {
+              if (d > 0) {
+                d = 10;
+              }
+              else {
+                d = -10;
+              }
+            }
+            next = prev + d;
+            next = Math.max(next, 0);
+            next = Math.min(next, 100);
+            if (!i) {
+              input.value = input.placeholder ? '' : next.toString();
             }
           }
-          next = prev + d;
-          next = Math.max(next, 0);
-          next = Math.min(next, 100);
-          if (!i) {
-            input.value = input.placeholder ? '' : next.toString();
+          if (d) {
+            o.fillOpacity[index] = next * 0.01;
+            node.updateStyle(o);
           }
-        }
-        if (d) {
-          o.fillOpacity[index] = next * 0.01;
-          node.updateStyle(o);
-        }
-      });
+        });
+      }
       if (nodes.length) {
         listener.emit(Listener.FILL_NODE, nodes.slice(0));
       }

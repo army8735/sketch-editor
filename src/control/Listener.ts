@@ -86,6 +86,7 @@ export default class Listener extends Event {
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
   mouseDownArtBoard?: ArtBoard;
+  isWin = isWin;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();

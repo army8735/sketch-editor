@@ -125,7 +125,6 @@ class TextPanel extends Panel {
       this.silence = true;
       const input = e.target as HTMLInputElement;
       const value = parseFloat(input.value) || 0;
-      pickCallback();
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -481,7 +480,6 @@ class TextPanel extends Panel {
       // 尺寸固定模式
       else if ((classList.contains('auto') || classList.contains('fw') || classList.contains('fwh'))
         && !classList.contains('cur')) {
-        pickCallback();
         nodes = this.nodes.slice(0);
         let next = TEXT_BEHAVIOUR.AUTO;
         if (classList.contains('fw')) {
@@ -530,7 +528,6 @@ class TextPanel extends Panel {
       // 左右对齐
       else if ((classList.contains('left') || classList.contains('right') || classList.contains('center') || el.classList.contains('justify'))
         && !classList.contains('cur')) {
-        pickCallback();
         const nodes = this.nodes.slice(0);
         let value = TEXT_ALIGN.LEFT;
         if (classList.contains('right')) {

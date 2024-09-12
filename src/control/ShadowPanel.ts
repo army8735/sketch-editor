@@ -276,7 +276,6 @@ class ShadowPanel extends Panel {
 
     panel.addEventListener('input', (e) => {
       this.silence = true;
-      pickCallback();
       const input = e.target as HTMLInputElement;
       const index = parseInt((input.parentElement!.parentElement!).title);
       const classList = input.classList;
