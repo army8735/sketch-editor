@@ -1,12 +1,14 @@
+import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { ArtBoardProps, JNode, Props, TAG_NAME } from '../format';
+import { ArtBoardProps, JNode, Override, Props, TAG_NAME } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoints } from '../math/matrix';
 import { color2gl } from '../style/css';
 import Container from './Container';
 import Node from './Node';
 import Tile from '../refresh/Tile';
+import { clone } from '../util/type';
 
 const SHADOW_SIZE = 8;
 
@@ -192,6 +194,16 @@ class ArtBoard extends Container {
     gl.deleteBuffer(pointBuffer2);
     gl.disableVertexAttribArray(a_position2);
     gl.useProgram(programs.program);
+  }
+
+  override clone(override?: Record<string, Override>) {
+    const props = clone(this.props);
+    props.uuid = uuid.v4();
+    props.sourceUuid = this.props.uuid;
+    const res = new ArtBoard(props, this.children.map(item => item.clone(override)));
+    res.style = clone(this.style);
+    res.computedStyle = clone(this.computedStyle);
+    return res;
   }
 
   override toJson(): JNode {
