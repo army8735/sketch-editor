@@ -242,7 +242,8 @@ class Root extends Container implements FrameCallback {
     else {
       this.height = this.computedStyle.height = Math.max(1, this.style.height.v as number);
     }
-    this.ctx!.viewport(0, 0, this.width, this.height);
+    // 一般情况肯定有，但新建的未添加canvas直接调用toSketchJson会没有
+    this.ctx?.viewport(0, 0, this.width, this.height);
   }
 
   setJPages(jPages: JPage[]) {
@@ -682,6 +683,12 @@ class Root extends Container implements FrameCallback {
   }
 
   async toSketchFile(filter?: (node: Node) => boolean): Promise<JSZip> {
+    if (this.isDestroyed) {
+      // 离屏情况特殊处理
+      this.willMount();
+      this.reLayout();
+      this.didMount();
+    }
     const zip = new JSZip();
     const pagesZip = zip.folder('pages');
     const imagesZip = zip.folder('images');
