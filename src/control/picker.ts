@@ -14,6 +14,7 @@ let callback: (() => void) | undefined; // 多个panel共用一个picker，新�
 export default {
   show(node: HTMLElement, from?: string, cb?: () => void, alignRight = false) {
     openFrom = from;
+    // 已经显示了，之前遗留的回调直接先执行
     if (callback) {
       callback();
       callback = undefined;

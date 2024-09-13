@@ -164,12 +164,11 @@ class FillPanel extends Panel {
         }
         if (picker.isShowFrom('fillPanel')) {
           picker.hide();
-          pickCallback();
           return;
         }
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
-        const p = picker.show(el, 'shadowPanel', pickCallback);
+        const p = picker.show(el, 'fillPanel', pickCallback);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];

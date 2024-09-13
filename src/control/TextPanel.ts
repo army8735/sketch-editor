@@ -406,7 +406,6 @@ class TextPanel extends Panel {
     });
 
     panel.addEventListener('click', (e) => {
-      this.silence = true;
       const el = e.target as HTMLElement;
       const classList = el.classList;
       if (classList.contains('pick')) {
@@ -414,8 +413,6 @@ class TextPanel extends Panel {
         e.stopPropagation();
         if (picker.isShowFrom('textPanel')) {
           picker.hide();
-          pickCallback();
-          this.silence = false;
           return;
         }
         const p = picker.show(el, 'textPanel', pickCallback, true);
@@ -631,7 +628,6 @@ class TextPanel extends Panel {
         dom.querySelector('.va .cur')?.classList.remove('cur');
         classList.add('cur');
       }
-      this.silence = false;
     });
 
     listener.on([

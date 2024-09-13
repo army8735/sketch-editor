@@ -91,7 +91,6 @@ class ShadowPanel extends Panel {
         }
         if (picker.isShowFrom('shadowPanel')) {
           picker.hide();
-          pickCallback();
           return;
         }
         const index = parseInt(el.parentElement!.parentElement!.parentElement!.title);

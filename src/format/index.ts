@@ -384,6 +384,8 @@ export type ModifyRichStyle = Partial<Omit<Rich, 'location' | 'length'>>;
 
 export type FillStyle = Pick<JStyle, 'fill' | 'fillOpacity' | 'fillEnable'>;
 
+export type StrokeStyle = Pick<JStyle, 'stroke' | 'strokeEnable' | 'strokePosition' | 'strokeWidth'>;
+
 export default {
   TAG_NAME,
   getDefaultStyle,
