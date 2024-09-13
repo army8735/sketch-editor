@@ -30,6 +30,7 @@ import BlurCommand from '../history/BlurCommand';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
 import TextCommand from '../history/TextCommand';
 import FillCommand from '../history/FillCommand';
+import StrokeCommand from '../history/StrokeCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1133,6 +1134,9 @@ export default class Listener extends Event {
         }
         else if (c instanceof FillCommand) {
           this.emit(Listener.FILL_NODE, this.selected.slice(0));
+        }
+        else if (c instanceof StrokeCommand) {
+          this.emit(Listener.STROKE_NODE, this.selected.slice(0));
         }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {

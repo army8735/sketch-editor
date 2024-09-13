@@ -4,12 +4,10 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
-import { clone } from '../util/type';
-import Listener from './Listener';
-import { Style } from '../style/define';
 import picker from './picker';
-import { color2hexStr, color2rgbaStr } from '../style/css';
-import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
+import Listener from './Listener';
+import { ComputedGradient, ComputedPattern } from '../style/define';
+import { color2hexStr, color2rgbaStr, getCssFill, getCssStrokePosition } from '../style/css';
 import Panel from './Panel';
 import { StrokeStyle } from '../format';
 import StrokeCommand from '../history/StrokeCommand';
@@ -20,37 +18,73 @@ const html = `
 
 function renderItem(
   index: number,
-  multiEnable: boolean,
-  enable: boolean,
-  multiColor: boolean,
-  color: string,
-  position: string,
-  multiWidth: boolean,
+  multiStrokeEnable: boolean,
+  strokeEnable: boolean,
+  multiStrokePosition: boolean,
+  strokePosition: string,
+  multiStrokeWidth: boolean,
+  strokeWidth: number,
+  strokeColor: string[],
+  strokePattern: ComputedPattern[],
+  strokeGradient: ComputedGradient[],
   width: number,
+  height: number,
 ) {
-  const readOnly = (multiEnable || !enable) ? 'readonly="readonly"' : '';
+  const multiColor = strokeColor.length > 1;
+  const multiPattern = strokePattern.length > 1;
+  const multiGradient = strokeGradient.length > 1;
+  const multiStroke = (strokeColor.length ? 1 : 0) + (strokePattern.length ? 1 : 0) + (strokeGradient.length ? 1 : 0) > 1;
+  const multi = multiStroke || multiColor || multiPattern || multiGradient;
+  const readOnly = (multiStrokeEnable || !strokeEnable || multiStroke || multiPattern || multiGradient || strokePattern.length || strokeGradient.length) ? 'readonly="readonly"' : '';
+  let background = '';
+  let txt1 = ' ';
+  if (multiStroke) {
+    txt1 = '多个';
+  }
+  else if (strokeColor.length) {
+    txt1 = '颜色';
+    if (strokeColor.length === 1) {
+      background = strokeColor[0];
+    }
+  }
+  else if (strokePattern.length) {
+    txt1 = '图像';
+    if (strokePattern.length === 1) {
+      background = getCssFill(strokePattern[0]);
+    }
+  }
+  else if (strokeGradient.length) {
+    txt1 = '渐变';
+    if (strokeGradient.length === 1) {
+      background = getCssFill(strokeGradient[0], width, height);
+    }
+  }
+  let txt2 = ' ';
+  if (multiStrokePosition) {
+    txt2 = '多种';
+  }
+  else {
+    txt2 = { inside: '内部', center: '中间', outside: '外部' } [strokePosition]!;
+  }
   return `<div class="line" title="${index}">
-    <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
+    <span class="enabled ${multiStrokeEnable ? 'multi-checked' : (strokeEnable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
+        <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}" title="${background}">○○○</b>
       </span>
-      <span class="txt">颜色</span>
+      <span class="txt">${txt1}</span>
     </div>
-    <div class="pos ${position}">
+    <div class="pos">
       <div>
-        <span class="inside" title="内部"></span>
-        <span class="center" title="中间"></span>
-        <span class="outside" title="外部"></span>
+        <span class="p inside ${!multiStrokePosition && strokePosition === 'inside' ? 'cur' : ''}" title="内部"></span>
+        <span class="p center ${!multiStrokePosition && strokePosition === 'center' ? 'cur' : ''}" title="中间"></span>
+        <span class="p outside ${!multiStrokePosition && strokePosition === 'outside' ? 'cur' : ''}" title="外部"></span>
       </div>
-      <span class="txt inside">内部</span>
-      <span class="txt center">中间</span>
-      <span class="txt outside">外部</span>
-      <span class="txt multi">多个</span>
+      <span class="txt">${txt2}</span>
     </div>
     <div class="width">
       <div class="input-unit">
-        <input type="number" min="0" max="100" step="1" value="${multiWidth ? '' : width}" placeholder="${multiWidth ? '多个' : ''}"/>
+        <input type="number" min="0" max="100" step="1" value="${multiStrokeWidth ? '' : strokeWidth}" placeholder="${multiStrokeWidth ? '多个' : ''}"/>
       </div>
       <span class="txt">宽度</span>
     </div>
@@ -97,49 +131,179 @@ class StrokePanel extends Panel {
           picker.hide();
           return;
         }
-        const p = picker.show(el, 'strokePanel', pickCallback);
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
+        const p = picker.show(el, 'strokePanel', pickCallback);
         // 最开始记录nodes/prevs
-        nodes = [];
+        nodes = this.nodes.slice(0);
         prevs = [];
-        this.nodes.forEach(node => {
-          // const stroke = clone(node.style.stroke);
-          // nodes.push(node);
-          // prevs.push({
-          //   stroke,
-          // });
+        nodes.forEach(node => {
+          const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+          const cssStroke = stroke.map(item => getCssFill(item, node.width, node.height));
+          prevs.push({
+            stroke: cssStroke,
+            strokeEnable,
+            strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+            strokeWidth,
+          });
         });
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
+          this.silence = true;
           nexts = [];
           this.nodes.forEach((node) => {
-            // const stroke = clone(node.style.stroke);
-            // const rgba = color.rgba.slice(0);
-            // stroke[index].v = rgba;
-            //
-            // nexts.push({
-            //   stroke,
-            // });
-            // node.updateFormatStyle({
-            //   stroke,
-            // });
+            const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+            const cssStroke = stroke.map((item, i) => {
+              if (i === index) {
+                return getCssFill(color.rgba, node.width, node.height);
+              }
+              else {
+                return getCssFill(item, node.width, node.height);
+              }
+            });
+            const o = {
+              stroke: cssStroke,
+              strokeEnable,
+              strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+              strokeWidth,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
           });
+          if (nodes.length) {
+            listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+          }
+          const c = color2hexStr(color.rgba);
+          el.title = el.style.background = c;
+          this.silence = false;
         };
         p.onDone = () => {
           picker.hide();
-          pickCallback();
         };
       }
+      else if (classList.contains('enabled')) {
+        this.silence = true;
+        const line = el.parentElement!;
+        const index = parseInt(line.title);
+        const nodes = this.nodes.slice(0);
+        const prevs: StrokeStyle[] = [];
+        const nexts: StrokeStyle[] = [];
+        let value = false;
+        if (classList.contains('multi-checked') || classList.contains('un-checked')) {
+          value = true;
+        }
+        nodes.forEach(node => {
+          const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+          const cssStroke = stroke.map(item => getCssFill(item, node.width, node.height));
+          prevs.push({
+            stroke: cssStroke,
+            strokeEnable,
+            strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+            strokeWidth,
+          });
+          const s = cssStroke.slice(0);
+          const se = strokeEnable.slice(0);
+          const sp = strokePosition.map(item => getCssStrokePosition(item));
+          const sw = strokeWidth.slice(0);
+          if (se[index] !== undefined) {
+            se[index] = value;
+          }
+          const o = {
+            stroke: s,
+            strokeEnable: se,
+            strokePosition: sp,
+            strokeWidth: sw,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        classList.remove('multi-checked');
+        if (value) {
+          classList.remove('un-checked');
+          classList.add('checked');
+          line.querySelectorAll('input:read-only').forEach((item) => {
+            (item as HTMLInputElement).readOnly = false;
+          });
+        }
+        else {
+          classList.remove('checked');
+          classList.add('un-checked');
+          line.querySelectorAll('input').forEach(item => {
+            (item as HTMLInputElement).readOnly = true;
+          });
+        }
+        if (nodes.length) {
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+          listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
+            return { prev, next: nexts[i] };
+          })));
+        }
+        this.silence = false;
+      }
+      else if (classList.contains('p') && !classList.contains('cur')) {
+        this.silence = true;
+        el.parentElement!.querySelector('.cur')!.classList.remove('cur');
+        el.classList.add('cur');
+        const line = el.parentElement!.parentElement!.parentElement!;
+        const index = parseInt(line.title);
+        const nodes = this.nodes.slice(0);
+        const prevs: StrokeStyle[] = [];
+        const nexts: StrokeStyle[] = [];
+        let value: 'inside' | 'center' | 'outside' = 'inside';
+        if (classList.contains('center')) {
+          value = 'center';
+        }
+        else if (classList.contains('outside')) {
+          value = 'outside';
+        }
+        nodes.forEach(node => {
+          const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+          const cssStroke = stroke.map(item => getCssFill(item, node.width, node.height));
+          prevs.push({
+            stroke: cssStroke,
+            strokeEnable,
+            strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+            strokeWidth,
+          });
+          const s = cssStroke.slice(0);
+          const se = strokeEnable.slice(0);
+          const sp = strokePosition.map(item => getCssStrokePosition(item));
+          const sw = strokeWidth.slice(0);
+          if (sp[index] !== undefined) {
+            sp[index] = value;
+          }
+          const o = {
+            stroke: s,
+            strokeEnable: se,
+            strokePosition: sp,
+            strokeWidth: sw,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        if (nodes.length) {
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+          listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
+            return { prev, next: nexts[i] };
+          })));
+        }
+        this.silence = false;
+      }
     });
+
+    panel.addEventListener('input', (e) => {
+
+    });
+
+    panel.addEventListener('change', pickCallback);
 
     listener.on([
       Listener.SELECT_NODE,
       Listener.ADD_NODE,
+      Listener.STROKE_NODE,
     ], (nodes: Node[]) => {
-      if (picker.isShowFrom('strokePanel')) {
-        picker.hide();
-        pickCallback();
+      if (this.silence) {
+        return;
       }
       this.show(nodes);
     });
@@ -153,74 +317,132 @@ class StrokePanel extends Panel {
 
   show(nodes: Node[]) {
     const panel = this.panel;
-    let willShow = false;
-    for (let i = 0, len = nodes.length; i < len; i++) {
-      const item = nodes[i];
+    // 老的清除
+    this.panel.querySelectorAll('.line').forEach(item => {
+      item.remove();
+    });
+    this.nodes = nodes.filter(item => {
       if (item instanceof Polyline
         || item instanceof ShapeGroup
         || item instanceof Text
         || item instanceof Bitmap
       ) {
-        willShow = true;
-        break;
+        return true;
       }
-    }
-    if (!willShow) {
+      return false;
+    });
+    if (!this.nodes.length) {
       panel.style.display = 'none';
       return;
     }
-    this.nodes = nodes;
     panel.style.display = 'block';
-    panel.querySelectorAll('input').forEach(item => {
-      item.disabled = false;
-      item.placeholder = '';
-      item.value = '';
+    const strokeList: (number[] | ComputedGradient | ComputedPattern)[][] = [];
+    const strokeEnableList: boolean[][] = [];
+    const strokePositionList: string[][] = [];
+    const strokeWidthList: number[][] = [];
+    this.nodes.forEach(node => {
+      const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+      stroke.forEach((item, i) => {
+        const o = strokeList[i] = strokeList[i] || [];
+        // 对象一定引用不同，具体值是否相等后续判断
+        o.push(item);
+      });
+      strokeEnable.forEach((item, i) => {
+        const o = strokeEnableList[i] = strokeEnableList[i] || [];
+        if (!o.includes(item)) {
+          o.push(item);
+        }
+      });
+      strokePosition.forEach((item, i) => {
+        const o = strokePositionList[i] = strokePositionList[i] || [];
+        const v = getCssStrokePosition(item);
+        if (!o.includes(v)) {
+          o.push(v);
+        }
+      });
+      strokeWidth.forEach((item, i) => {
+        const o = strokeWidthList[i] = strokeWidthList[i] || [];
+        if (!o.includes(item)) {
+          o.push(item);
+        }
+      });
     });
-    const es: boolean[][] = [];
-    const cs: string[][] = [];
-    const ws: number[][] = [];
-    const ps: string[][] = [];
-    nodes.forEach(node => {
-      if (node instanceof Polyline
-        || node instanceof ShapeGroup
-        || node instanceof Text
-        || node instanceof Bitmap
-      ) {
-        const style = node.getCssStyle();
-        style.stroke.forEach((item, i) => {
-          const e = es[i] = es[i] || [];
-          if (!e.includes(style.strokeEnable[i])) {
-            e.push(style.strokeEnable[i]);
+    for (let i = strokeList.length - 1; i >= 0; i--) {
+      const stroke = strokeList[i];
+      const strokeEnable = strokeEnableList[i];
+      const strokePosition = strokePositionList[i];
+      const strokeWidth = strokeWidthList[i];
+      // stroke有3种
+      const strokeColor: string[] = [];
+      const strokePattern: ComputedPattern[] = [];
+      const strokeGradient: ComputedGradient[] = [];
+      stroke.forEach(item => {
+        if (Array.isArray(item)) {
+          const c = color2rgbaStr(item);
+          if (!strokeColor.includes(c)) {
+            strokeColor.push(c);
           }
-          const c = cs[i] = cs[i] || [];
-          if (!c.includes(item as string)) {
-            c.push(item as string);
+          return;
+        }
+        const p = item as ComputedPattern;
+        if (p.url !== undefined) {
+          for (let i = 0, len = strokePattern.length; i < len; i++) {
+            const o = strokePattern[i];
+            if (o.url === p.url && o.type === p.type && o.scale === p.scale) {
+              return;
+            }
           }
-          const w = ws[i] = ws[i] || [];
-          if (!w.includes(style.strokeWidth[i])) {
-            w.push(style.strokeWidth[i]);
+          strokePattern.push(p);
+          return;
+        }
+        const g = item as ComputedGradient;
+        outer:
+        for (let i = 0, len = strokeGradient.length; i < len; i++) {
+          const o = strokeGradient[i];
+          if (o.t !== g.t) {
+            continue;
           }
-          const p = ps[i] = ps[i] || [];
-          if (!p.includes(style.strokePosition[i])) {
-            p.push(style.strokePosition[i]);
+          if (o.d.length !== g.d.length) {
+            continue;
           }
-        });
-      }
-    });
-    // 老的清除
-    this.panel.querySelectorAll('.line').forEach(item => {
-      item.remove();
-    });
-    for (let i = es.length - 1; i >= 0; i--) {
-      const e = es[i];
-      // 理论不会空，兜底防止bug
-      if (!e.length) {
-        return;
-      }
-      const c = cs[i];
-      const w = ws[i];
-      const p = ps[i];
-      this.panel.innerHTML += renderItem(i, e.length > 1, e[0], c.length > 1, c[0], p[0], w.length > 1, w[0]);
+          for (let j = o.d.length - 1; j >= 0; j--) {
+            if (o.d[j] !== g.d[j]) {
+              continue outer;
+            }
+          }
+          if (o.stops.length !== g.stops.length) {
+            continue;
+          }
+          for (let j = o.stops.length - 1; j >= 0; j--) {
+            const a = o.stops[j];
+            const b = g.stops[j];
+            if (a.color[0] !== b.color[0]
+              || a.color[1] !== b.color[1]
+              || a.color[2] !== b.color[2]
+              || a.color[3] !== b.color[3]
+              || a.offset !== b.offset) {
+              continue outer;
+            }
+          }
+          // 找到相等的就不添加
+          return;
+        }
+        strokeGradient.push(g);
+      });
+      panel.innerHTML += renderItem(
+        i,
+        strokeEnable.length > 1,
+        strokeEnable[0],
+        strokePosition.length > 1,
+        strokePosition[0],
+        strokeWidth.length > 1,
+        strokeWidth[0],
+        strokeColor,
+        strokePattern,
+        strokeGradient,
+        this.nodes[0].width,
+        this.nodes[0].height,
+      );
     }
   }
 }

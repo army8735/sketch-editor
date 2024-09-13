@@ -137,7 +137,6 @@ class ShadowPanel extends Panel {
         };
         p.onDone = () => {
           picker.hide();
-          pickCallback();
         };
       }
       else if (classList.contains('add')) {

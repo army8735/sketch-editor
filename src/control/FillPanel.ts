@@ -18,10 +18,10 @@ const html = `
 
 function renderItem(
   index: number,
-  multiEnable: boolean,
-  enable: boolean,
-  multiOpacity: boolean,
-  opacity: number,
+  multiFillEnable: boolean,
+  fillEnable: boolean,
+  multiFillOpacity: boolean,
+  fillOpacity: number,
   fillColor: string[],
   fillPattern: ComputedPattern[],
   fillGradient: ComputedGradient[],
@@ -33,7 +33,7 @@ function renderItem(
   const multiGradient = fillGradient.length > 1;
   const multiFill = (fillColor.length ? 1 : 0) + (fillPattern.length ? 1 : 0) + (fillGradient.length ? 1 : 0) > 1;
   const multi = multiFill || multiColor || multiPattern || multiGradient;
-  const readOnly = (multiEnable || !enable || multiFill || multiPattern || multiGradient || fillPattern.length || fillGradient.length) ? 'readonly="readonly"' : '';
+  const readOnly = (multiFillEnable || !fillEnable || multiFill || multiPattern || multiGradient || fillPattern.length || fillGradient.length) ? 'readonly="readonly"' : '';
   let background = '';
   let txt1 = ' ';
   let txt2 = ' ';
@@ -51,11 +51,11 @@ function renderItem(
   else if (fillPattern.length) {
     txt1 = '图像';
     txt2 = '显示';
+    txt3 = ['填充', '适应', '拉伸', '平铺'][fillPattern[0].type];
     if (fillPattern.length === 1) {
       background = getCssFill(fillPattern[0]);
     }
     else {
-      txt3 = ['填充', '适应', '拉伸', '平铺'][fillPattern[0].type];
       for (let i = 1, len = fillPattern.length; i < len; i++) {
         if (fillPattern[i].type !== fillPattern[0].type) {
           txt3 = '多个';
@@ -67,11 +67,11 @@ function renderItem(
   else if (fillGradient.length) {
     txt1 = '渐变';
     txt2 = '类型';
+    txt3 = ['线性', '径向', '角度'][fillGradient[0].t];
     if (fillGradient.length === 1) {
       background = getCssFill(fillGradient[0], width, height);
     }
     else {
-      txt3 = ['线性', '径向', '角度'][fillGradient[0].t];
       for (let i = 1, len = fillGradient.length; i < len; i++) {
         if (fillGradient[i].t !== fillGradient[0].t) {
           txt3 = '多个';
@@ -81,7 +81,7 @@ function renderItem(
     }
   }
   return `<div class="line" title="${index}">
-    <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
+    <span class="enabled ${multiFillEnable ? 'multi-checked' : (fillEnable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
         <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}" title="${background}">○○○</b>
@@ -117,7 +117,7 @@ function renderItem(
     </div>
     <div class="opacity">
       <div class="input-unit">
-        <input type="number" min="0" max="100" step="1" value="${multiOpacity ? '' : opacity * 100}" placeholder="${multiOpacity ? '多个' : ''}"/>
+        <input type="number" min="0" max="100" step="1" value="${multiFillOpacity ? '' : fillOpacity * 100}" placeholder="${multiFillOpacity ? '多个' : ''}"/>
         <span class="unit">%</span>
       </div>
       <span class="txt">不透明度</span>
@@ -213,7 +213,6 @@ class FillPanel extends Panel {
         };
         p.onDone = () => {
           picker.hide();
-          pickCallback();
         };
       }
       else if (classList.contains('enabled')) {
@@ -264,10 +263,12 @@ class FillPanel extends Panel {
             (item as HTMLInputElement).readOnly = true;
           });
         }
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
-        listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-          return { prev, next: nexts[i] };
-        })));
+        if (nodes.length) {
+          listener.emit(Listener.FILL_NODE, nodes.slice(0));
+          listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+            return { prev, next: nexts[i] };
+          })));
+        }
         this.silence = false;
       }
     });
@@ -467,6 +468,7 @@ class FillPanel extends Panel {
       const fill = fillList[i];
       const fillEnable = fillEnableList[i];
       const fillOpacity = fillOpacityList[i];
+      // fill有3种
       const fillColor: string[] = [];
       const fillPattern: ComputedPattern[] = [];
       const fillGradient: ComputedGradient[] = [];
@@ -532,8 +534,8 @@ class FillPanel extends Panel {
         fillColor,
         fillPattern,
         fillGradient,
-        nodes[i].width,
-        nodes[i].height,
+        this.nodes[0].width,
+        this.nodes[0].height,
       );
     }
   }

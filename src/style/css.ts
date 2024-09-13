@@ -1043,6 +1043,10 @@ export function getCssFill(item: number[] | ComputedPattern | ComputedGradient, 
   return convert2Css(item as ComputedGradient, width, height);
 }
 
+export function getCssStrokePosition(o: STROKE_POSITION) {
+  return (['center', 'inside', 'outside'][o] || 'inside') as 'center' | 'inside' | 'outside';
+}
+
 export default {
   normalize,
   equalStyle,
@@ -1058,4 +1062,5 @@ export default {
   getCssBlur,
   getCssShadow,
   getCssFill,
+  getCssStrokePosition,
 };

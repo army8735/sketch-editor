@@ -30,6 +30,7 @@ import {
   getCssBlur,
   getCssFill,
   getCssShadow,
+  getCssStrokePosition,
   normalize,
 } from '../style/css';
 import {
@@ -1182,9 +1183,7 @@ class Node extends Event {
     res.stroke = computedStyle.stroke.map(item => getCssFill(item, this.width, this.height));
     res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
     res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
-    res.strokePosition = computedStyle.strokePosition.map((item: STROKE_POSITION) => {
-      return ['center', 'inside', 'outside'][item];
-    });
+    res.strokePosition = computedStyle.strokePosition.map(item => getCssStrokePosition(item));
     res.maskMode = ['none', 'outline', 'alpha'][computedStyle.maskMode];
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
       [computedStyle.booleanOperation];

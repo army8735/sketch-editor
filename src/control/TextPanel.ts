@@ -461,7 +461,6 @@ class TextPanel extends Panel {
         };
         p.onDone = () => {
           picker.hide();
-          pickCallback();
         };
       }
       else if (classList.contains('arrow')) {

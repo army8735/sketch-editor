@@ -1005,6 +1005,11 @@ html, body {
           &:active {
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
           }
+
+          &.cur {
+            background-color: #FFF;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+          }
         }
 
         .outside {
@@ -1017,53 +1022,6 @@ html, body {
 
         .inside {
           background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACPTkDJAAAAeUlEQVRYCe2WQQ7AIAgEbdPP8iKe216RwwZNGg6OJw1K2FkjjsE4ncAVAbj7G9dmNsVjbGWu8t4rif7YSwHS4+zdrgXqLrVb8FRUKQXqfIVgOwEKgAAEIACBUi+ovOmqJ6hYuwXTfyAr3e2CWbHK206AArJdrM8j8AENhxr2/E/PWwAAAABJRU5ErkJggg==);
-        }
-      }
-
-      span.multi {
-        color: #999;
-      }
-
-      > span {
-        display: none;
-      }
-
-      &.outside {
-        div .outside {
-          background-color: #FFF;
-          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-
-        > span.outside {
-          display: block;
-        }
-      }
-
-      &.center {
-        div .center {
-          background-color: #FFF;
-          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-
-        > span.center {
-          display: block;
-        }
-      }
-
-      &.inside {
-        div .inside {
-          background-color: #FFF;
-          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-
-        > span.inside {
-          display: block;
-        }
-      }
-
-      &.multi {
-        > span.multi {
-          display: block;
         }
       }
     }
