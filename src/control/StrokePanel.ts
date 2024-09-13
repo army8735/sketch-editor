@@ -11,6 +11,8 @@ import picker from './picker';
 import { color2hexStr, color2rgbaStr } from '../style/css';
 import UpdateFormatStyleCommand from '../history/UpdateFormatStyleCommand';
 import Panel from './Panel';
+import { StrokeStyle } from '../format';
+import StrokeCommand from '../history/StrokeCommand';
 
 const html = `
   <h4 class="panel-title">描边</h4>
@@ -67,55 +69,66 @@ class StrokePanel extends Panel {
     panel.innerHTML = html;
     this.dom.appendChild(panel);
 
-    let nodes: Node[];
-    let prevs: Partial<Style>[];
-    let nexts: Partial<Style>[];
+    let nodes: Node[] = [];
+    let prevs: StrokeStyle[] = [];
+    let nexts: StrokeStyle[] = [];
 
-    const callback = () => {
+    const pickCallback = () => {
       if (nexts && nexts.length) {
-        listener.history.addCommand(new UpdateFormatStyleCommand(nodes.slice(0), prevs, nexts));
-        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
-        nodes = [];
-        prevs = [];
-        nexts = [];
+        listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        })));
       }
+      nodes = [];
+      prevs = [];
+      nexts = [];
     };
 
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
-      if (el.tagName === 'B') {
-        const p = picker.show(el, 'strokePanel', callback);
+      const classList = el.classList;
+      if (classList.contains('pick')) {
+        // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
+        e.stopPropagation();
+        if (el.parentElement!.classList.contains('read-only')) {
+          return;
+        }
+        if (picker.isShowFrom('strokePanel')) {
+          picker.hide();
+          return;
+        }
+        const p = picker.show(el, 'strokePanel', pickCallback);
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         // 最开始记录nodes/prevs
         nodes = [];
         prevs = [];
         this.nodes.forEach(node => {
-          const stroke = clone(node.style.stroke);
-          nodes.push(node);
-          prevs.push({
-            stroke,
-          });
+          // const stroke = clone(node.style.stroke);
+          // nodes.push(node);
+          // prevs.push({
+          //   stroke,
+          // });
         });
         // 每次变更记录更新nexts
         p.onChange = (color: any) => {
           nexts = [];
           this.nodes.forEach((node) => {
-            const stroke = clone(node.style.stroke);
-            const rgba = color.rgba.slice(0);
-            stroke[index].v = rgba;
-
-            nexts.push({
-              stroke,
-            });
-            node.updateFormatStyle({
-              stroke,
-            });
+            // const stroke = clone(node.style.stroke);
+            // const rgba = color.rgba.slice(0);
+            // stroke[index].v = rgba;
+            //
+            // nexts.push({
+            //   stroke,
+            // });
+            // node.updateFormatStyle({
+            //   stroke,
+            // });
           });
         };
         p.onDone = () => {
           picker.hide();
-          callback();
+          pickCallback();
         };
       }
     });
@@ -126,7 +139,7 @@ class StrokePanel extends Panel {
     ], (nodes: Node[]) => {
       if (picker.isShowFrom('strokePanel')) {
         picker.hide();
-        callback();
+        pickCallback();
       }
       this.show(nodes);
     });
