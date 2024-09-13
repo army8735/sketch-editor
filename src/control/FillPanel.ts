@@ -425,52 +425,43 @@ class FillPanel extends Panel {
     this.panel.querySelectorAll('.line').forEach(item => {
       item.remove();
     });
-    let willShow = false;
-    for (let i = 0, len = nodes.length; i < len; i++) {
-      const item = nodes[i];
+    this.nodes = nodes.filter(item => {
       if (item instanceof Polyline
         || item instanceof ShapeGroup
         || item instanceof Text
         || item instanceof Bitmap
       ) {
-        willShow = true;
-        break;
+        return true;
       }
-    }
-    if (!willShow) {
+      return false;
+    });
+    if (!this.nodes.length) {
       panel.style.display = 'none';
       return;
     }
-    this.nodes = nodes;
     panel.style.display = 'block';
     const fillList: (number[] | ComputedGradient | ComputedPattern)[][] = [];
     const fillEnableList: boolean[][] = [];
     const fillOpacityList: number[][] = [];
-    nodes.forEach(node => {
-      if (node instanceof Polyline
-        || node instanceof ShapeGroup
-        || node instanceof Text
-        || node instanceof Bitmap
-      ) {
-        const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-        fill.forEach((item, i) => {
-          const o = fillList[i] = fillList[i] || [];
-          // 对象一定引用不同，具体值是否相等后续判断
+    this.nodes.forEach(node => {
+      const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+      fill.forEach((item, i) => {
+        const o = fillList[i] = fillList[i] || [];
+        // 对象一定引用不同，具体值是否相等后续判断
+        o.push(item);
+      });
+      fillEnable.forEach((item, i) => {
+        const o = fillEnableList[i] = fillEnableList[i] || [];
+        if (!o.includes(item)) {
           o.push(item);
-        });
-        fillEnable.forEach((item, i) => {
-          const o = fillEnableList[i] = fillEnableList[i] || [];
-          if (!o.includes(item)) {
-            o.push(item);
-          }
-        });
-        fillOpacity.forEach((item, i) => {
-          const o = fillOpacityList[i] = fillOpacityList[i] || [];
-          if (!o.includes(item)) {
-            o.push(item);
-          }
-        });
-      }
+        }
+      });
+      fillOpacity.forEach((item, i) => {
+        const o = fillOpacityList[i] = fillOpacityList[i] || [];
+        if (!o.includes(item)) {
+          o.push(item);
+        }
+      });
     });
     for (let i = fillList.length - 1; i >= 0; i--) {
       const fill = fillList[i];
