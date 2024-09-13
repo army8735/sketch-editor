@@ -242,7 +242,7 @@ class StrokePanel extends Panel {
       }
       else if (classList.contains('p') && !classList.contains('cur')) {
         this.silence = true;
-        el.parentElement!.querySelector('.cur')!.classList.remove('cur');
+        el.parentElement!.querySelector('.cur')?.classList.remove('cur');
         el.classList.add('cur');
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
