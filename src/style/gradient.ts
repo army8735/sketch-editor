@@ -410,7 +410,7 @@ export function getConic(
   };
 }
 
-export function convert2Css(g: ComputedGradient, width = 100, height = 100) {
+export function convert2Css(g: ComputedGradient, width = 100, height = 100, standard = false) {
   const { t, d, stops } = g;
   let [x1, y1, x2, y2] = d;
   x1 *= width;
@@ -547,11 +547,16 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100) {
         item.offset! = (item.offset! * (c - p1)) / (c - p1 - p2);
       });
     }
-    let s = `linear-gradient(${toPrecision(deg)}deg, `;
-    list.forEach((item, i) => {
-      if (i) {
-        s += ', ';
-      }
+    let s = 'linear-gradient(';
+    // 标准css用deg方向等，自己用sketch的2点式
+    if (standard) {
+      s += toPrecision(deg) + 'deg';
+    }
+    else {
+      s += d.join(' ');
+    }
+    list.forEach((item) => {
+      s += ', ';
       item.color[3] = toPrecision(item.color[3]);
       s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
     });

@@ -7,7 +7,7 @@ import Bitmap from '../node/Bitmap';
 import picker from './picker';
 import Listener from './Listener';
 import { ComputedGradient, ComputedPattern } from '../style/define';
-import { color2hexStr, color2rgbaStr, getCssFill, getCssStrokePosition } from '../style/css';
+import { color2hexStr, color2rgbaStr, getCssFillStroke, getCssStrokePosition } from '../style/css';
 import Panel from './Panel';
 import { StrokeStyle } from '../format';
 import StrokeCommand from '../history/StrokeCommand';
@@ -50,13 +50,13 @@ function renderItem(
   else if (strokePattern.length) {
     txt1 = '图像';
     if (strokePattern.length === 1) {
-      background = getCssFill(strokePattern[0]);
+      background = getCssFillStroke(strokePattern[0], width, height, true);
     }
   }
   else if (strokeGradient.length) {
     txt1 = '渐变';
     if (strokeGradient.length === 1) {
-      background = getCssFill(strokeGradient[0], width, height);
+      background = getCssFillStroke(strokeGradient[0], width, height, true);
     }
   }
   let txt2 = ' ';
@@ -139,7 +139,7 @@ class StrokePanel extends Panel {
         prevs = [];
         nodes.forEach(node => {
           const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
-          const cssStroke = stroke.map(item => getCssFill(item, node.width, node.height));
+          const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
           prevs.push({
             stroke: cssStroke,
             strokeEnable,
@@ -155,10 +155,10 @@ class StrokePanel extends Panel {
             const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
             const cssStroke = stroke.map((item, i) => {
               if (i === index) {
-                return getCssFill(color.rgba, node.width, node.height);
+                return getCssFillStroke(color.rgba, node.width, node.height);
               }
               else {
-                return getCssFill(item, node.width, node.height);
+                return getCssFillStroke(item, node.width, node.height);
               }
             });
             const o = {
@@ -194,7 +194,7 @@ class StrokePanel extends Panel {
         }
         nodes.forEach(node => {
           const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
-          const cssStroke = stroke.map(item => getCssFill(item, node.width, node.height));
+          const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
           prevs.push({
             stroke: cssStroke,
             strokeEnable,
@@ -258,7 +258,7 @@ class StrokePanel extends Panel {
         }
         nodes.forEach(node => {
           const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
-          const cssStroke = stroke.map(item => getCssFill(item, node.width, node.height));
+          const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
           prevs.push({
             stroke: cssStroke,
             strokeEnable,
@@ -292,7 +292,82 @@ class StrokePanel extends Panel {
     });
 
     panel.addEventListener('input', (e) => {
-
+      this.silence = true;
+      const input = e.target as HTMLInputElement;
+      const line = input.parentElement!.parentElement!.parentElement!;
+      const index = parseInt(line.title);
+      // 连续多次只有首次记录节点和prev值，但每次都更新next值
+      const isFirst = !nodes.length;
+      if (isFirst) {
+        prevs = [];
+      }
+      nexts = [];
+      const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      this.nodes.forEach((node, i) => {
+        if (isFirst) {
+          nodes.push(node);
+          const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+          const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
+          prevs.push({
+            stroke: cssStroke,
+            strokeEnable,
+            strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+            strokeWidth,
+          });
+        }
+        const o = {
+          stroke: prevs[i].stroke.slice(0),
+          strokeEnable: prevs[i].strokeEnable.slice(0),
+          strokePosition: prevs[i].strokePosition.slice(0),
+          strokeWidth: prevs[i].strokeWidth.slice(0),
+        };
+        nexts.push(o);
+        const prev = prevs[i].strokeWidth[index];
+        let next = n;
+        let d = 0;
+        if (isInput) {
+          d = next - prev;
+          if (!i) {
+            input.placeholder = '';
+          }
+        }
+        else {
+          // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
+          if (next === 0) {
+            next = -1;
+          }
+          // 多个的时候有placeholder无值，差值就是1或-1；单个则是值本身
+          if (input.placeholder) {
+            d = next;
+          }
+          else {
+            d = next - prev;
+          }
+          if (listener.shiftKey) {
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+          }
+          next = prev + d;
+          next = Math.max(next, 0);
+          next = Math.min(next, 100);
+          if (!i) {
+            input.value = input.placeholder ? '' : next.toString();
+          }
+        }
+        if (d) {
+          o.strokeWidth[index] = next;
+          node.updateStyle(o);
+        }
+      });
+      if (nodes.length) {
+        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+      }
+      this.silence = false;
     });
 
     panel.addEventListener('change', pickCallback);

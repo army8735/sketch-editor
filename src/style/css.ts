@@ -184,7 +184,7 @@ export function normalize(style: any): Style {
   }
   const fill = style.fill;
   if (!isNil(fill)) {
-    res.fill = fill.map((item: any) => {
+    res.fill = fill.map((item: string | number[]) => {
       if (isString(item)) {
         if (isGradient(item as string)) {
           const v = parseGradient(item as string);
@@ -196,7 +196,7 @@ export function normalize(style: any): Style {
           const v = reg.img.exec(item as string);
           if (v) {
             let type = PATTERN_FILL_TYPE.TILE;
-            const s = item.replace(v[0], '');
+            const s = (item as string).replace(v[0], '');
             if (s.indexOf('fill') > -1) {
               type = PATTERN_FILL_TYPE.FILL;
             }
@@ -248,13 +248,41 @@ export function normalize(style: any): Style {
   }
   const stroke = style.stroke;
   if (!isNil(stroke)) {
-    res.stroke = stroke.map((item: any) => {
-      if (isString(item) && isGradient(item as string)) {
-        return { v: parseGradient(item as string), u: StyleUnit.GRADIENT };
+    res.stroke = stroke.map((item: string | number[]) => {
+      if (isString(item)) {
+        if (isGradient(item as string)) {
+          const v = parseGradient(item as string);
+          if (v) {
+            return { v, u: StyleUnit.GRADIENT };
+          }
+        }
+        else if (reg.img.test(item as string)) {
+          const v = reg.img.exec(item as string);
+          if (v) {
+            let type = PATTERN_FILL_TYPE.TILE;
+            const s = (item as string).replace(v[0], '');
+            if (s.indexOf('fill') > -1) {
+              type = PATTERN_FILL_TYPE.FILL;
+            }
+            else if (s.indexOf('stretch') > -1) {
+              type = PATTERN_FILL_TYPE.STRETCH;
+            }
+            else if (s.indexOf('fit') > -1) {
+              type = PATTERN_FILL_TYPE.FIT;
+            }
+            let scale;
+            const v2 = /([\d.]+)%/.exec(s);
+            if (v2) {
+              scale = {
+                v: parseFloat(v2[1]),
+                u: StyleUnit.PERCENT,
+              };
+            }
+            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+          }
+        }
       }
-      else {
-        return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
-      }
+      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
     });
   }
   const strokeEnable = style.strokeEnable;
@@ -1031,7 +1059,7 @@ export function getCssShadow(item: ComputedShadow) {
   return `${color2rgbaStr(item.color)} ${item.x} ${item.y} ${item.blur} ${item.spread}`;
 }
 
-export function getCssFill(item: number[] | ComputedPattern | ComputedGradient, width?: number, height?: number) {
+export function getCssFillStroke(item: number[] | ComputedPattern | ComputedGradient, width?: number, height?: number, standard = false) {
   if (Array.isArray(item)) {
     return color2rgbaStr(item);
   }
@@ -1040,7 +1068,7 @@ export function getCssFill(item: number[] | ComputedPattern | ComputedGradient, 
     const type = ['tile', 'fill', 'stretch', 'fit'][p.type];
     return `url(${p.url}) ${type} ${p.scale}`;
   }
-  return convert2Css(item as ComputedGradient, width, height);
+  return convert2Css(item as ComputedGradient, width, height, standard);
 }
 
 export function getCssStrokePosition(o: STROKE_POSITION) {
@@ -1061,6 +1089,6 @@ export default {
   calSize,
   getCssBlur,
   getCssShadow,
-  getCssFill,
+  getCssFillStroke,
   getCssStrokePosition,
 };

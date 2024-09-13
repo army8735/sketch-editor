@@ -5,7 +5,7 @@ import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
 import picker from './picker';
-import { color2hexStr, color2rgbaInt, color2rgbaStr, getCssFill } from '../style/css';
+import { color2hexStr, color2rgbaInt, color2rgbaStr, getCssFillStroke } from '../style/css';
 import Listener from './Listener';
 import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '../style/define';
 import Panel from './Panel';
@@ -53,7 +53,7 @@ function renderItem(
     txt2 = '显示';
     txt3 = ['填充', '适应', '拉伸', '平铺'][fillPattern[0].type];
     if (fillPattern.length === 1) {
-      background = getCssFill(fillPattern[0]);
+      background = getCssFillStroke(fillPattern[0], width, height, true);
     }
     else {
       for (let i = 1, len = fillPattern.length; i < len; i++) {
@@ -69,7 +69,7 @@ function renderItem(
     txt2 = '类型';
     txt3 = ['线性', '径向', '角度'][fillGradient[0].t];
     if (fillGradient.length === 1) {
-      background = getCssFill(fillGradient[0], width, height);
+      background = getCssFillStroke(fillGradient[0], width, height, true);
     }
     else {
       for (let i = 1, len = fillGradient.length; i < len; i++) {
@@ -174,7 +174,7 @@ class FillPanel extends Panel {
         prevs = [];
         nodes.forEach(node => {
           const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-          const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+          const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
           prevs.push({
             fill: cssFill,
             fillOpacity,
@@ -189,10 +189,10 @@ class FillPanel extends Panel {
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
             const cssFill = fill.map((item, i) => {
               if (i === index) {
-                return getCssFill(color.rgba, node.width, node.height);
+                return getCssFillStroke(color.rgba, node.width, node.height);
               }
               else {
-                return getCssFill(item, node.width, node.height);
+                return getCssFillStroke(item, node.width, node.height);
               }
             });
             const o = {
@@ -228,7 +228,7 @@ class FillPanel extends Panel {
         }
         nodes.forEach(node => {
           const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-          const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+          const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
           prevs.push({
             fill: cssFill,
             fillOpacity,
@@ -312,7 +312,7 @@ class FillPanel extends Panel {
           if (isFirst) {
             nodes.push(node);
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-            const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+            const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
             prevs.push({
               fill: cssFill,
               fillOpacity,
@@ -339,7 +339,7 @@ class FillPanel extends Panel {
           if (isFirst) {
             nodes.push(node);
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-            const cssFill = fill.map(item => getCssFill(item, node.width, node.height));
+            const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
             prevs.push({
               fill: cssFill,
               fillOpacity,

@@ -28,7 +28,7 @@ import {
   color2rgbaStr,
   equalStyle,
   getCssBlur,
-  getCssFill,
+  getCssFillStroke,
   getCssShadow,
   getCssStrokePosition,
   normalize,
@@ -1178,9 +1178,9 @@ class Node extends Event {
     ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach((k) => {
       res[k] = computedStyle[k as 'shadowEnable' | 'strokeEnable' | 'fillEnable' | 'fillOpacity' | 'strokeWidth'].slice(0);
     });
-    res.fill = computedStyle.fill.map(item => getCssFill(item, this.width, this.height));
+    res.fill = computedStyle.fill.map(item => getCssFillStroke(item, this.width, this.height));
     res.fillRule = ['nonzero', 'evenodd'][computedStyle.fillRule];
-    res.stroke = computedStyle.stroke.map(item => getCssFill(item, this.width, this.height));
+    res.stroke = computedStyle.stroke.map(item => getCssFillStroke(item, this.width, this.height));
     res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
     res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
     res.strokePosition = computedStyle.strokePosition.map(item => getCssStrokePosition(item));
