@@ -156,7 +156,7 @@ export default class Listener extends Event {
   active(nodes: Node[]) {
     this.selected.splice(0);
     this.selected.push(...nodes);
-    this.input.hide();
+    // this.input.hide();
     this.updateActive();
     this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
@@ -222,6 +222,7 @@ export default class Listener extends Event {
         this.state = State.NORMAL;
         this.input.hide();
         (selected[0] as Text).resetCursor();
+        (selected[0] as Text).afterEdit();
         (selected[0] as Text).inputStyle = undefined;
       }
       // 旋转时记住中心坐标
@@ -410,9 +411,9 @@ export default class Listener extends Event {
       else {
         // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
         if (this.state === State.EDIT_TEXT) {
-          const text = selected[0] as Text;
-          text.resetCursor();
-          text.inputStyle = undefined;
+          // const text = selected[0] as Text;
+          // text.resetCursor();
+          // text.inputStyle = undefined;
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -420,6 +421,10 @@ export default class Listener extends Event {
       }
       // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
       if (this.state === State.EDIT_TEXT) {
+        const text = selected[0] as Text;
+        text.resetCursor();
+        text.afterEdit();
+        text.inputStyle = undefined;
         this.state = State.NORMAL;
         this.input.hide();
       }
@@ -927,6 +932,7 @@ export default class Listener extends Event {
           e.clientY - this.originY,
         );
         this.state = State.EDIT_TEXT;
+        node.beforeEdit();
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
@@ -1076,6 +1082,7 @@ export default class Listener extends Event {
       else if (this.state === State.EDIT_TEXT) {
         const text = this.selected[0] as Text;
         text.resetCursor();
+        text.afterEdit();
         text.inputStyle = undefined;
         this.state = State.NORMAL;
         this.input.hide();

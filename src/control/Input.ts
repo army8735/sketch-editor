@@ -182,10 +182,11 @@ export default class Input {
           p = p.parentElement;
         }
         listener.state = State.NORMAL;
-        this.hideCursor();
-        this.node?.resetCursor();
-        this.node?.refresh();
-        this.hasBlur = true;
+        const node = this.node!;
+        node.resetCursor();
+        node.afterEdit();
+        node.inputStyle = undefined;
+        this.hide();
       }
     });
   }

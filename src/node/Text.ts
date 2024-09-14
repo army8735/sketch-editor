@@ -38,6 +38,17 @@ import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
 
+export type EditStyle = {
+  isLeft: boolean;
+  isCenter: boolean;
+  isRight: boolean;
+  isTop: boolean;
+  isMiddle: boolean;
+  isBottom: boolean;
+  isFixedHeight: boolean;
+  prev: Style;
+};
+
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
  * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
@@ -182,6 +193,7 @@ class Text extends Node {
   asyncRefresh: boolean;
   loaders: Loader[];
   inputStyle?: ModifyRichStyle; // 编辑状态时未选择文字，改变样式临时存储，在输入时使用此样式
+  editStyle?: EditStyle; // 进入编辑时改变布局置空translate防止位置变化，固定宽高也要显示全文本
 
   constructor(props: TextProps) {
     super(props);
@@ -1312,7 +1324,7 @@ class Text extends Node {
    * 一般状态下左对齐，将left变为px绝对值，这样内容改变重新排版的时候x坐标就不变，结束后还原回来。
    * 首要考虑textAlign，它的优先级高于对应方位的布局信息（比如居右对齐即便left是px都忽略，强制右侧对齐，视觉不懂css布局）。
    */
-  private beforeEdit() {
+  beforeEdit() {
     const {
       style,
       computedStyle,
@@ -1346,7 +1358,7 @@ class Text extends Node {
         left.u !== StyleUnit.AUTO
         && translateX.v
         && translateX.u === StyleUnit.PERCENT // 一般情况
-        || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边不变
+        || right.u !== StyleUnit.AUTO // 特殊情况，虽然right定位了，但是左对齐，视觉只会认为应该右边变
       );
     // 类似left，但考虑translate是否-50%，一般都是，除非人工脏数据
     const isCenter = textAlign.v === TEXT_ALIGN.CENTER
@@ -1582,37 +1594,45 @@ class Text extends Node {
       bottom.u = StyleUnit.PX;
       translateY.v = 0;
     }
-    // if (height.u !== StyleUnit.AUTO) {
-    //   impact = true;
-    //   height.v = 0;
-    //   height.u = StyleUnit.AUTO;
-    // }
+    if (isFixedHeight) {
+      impact = true;
+      if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+        if (isBottom) {
+          this.updateStyle({
+            top: 'auto',
+          });
+        }
+        else {
+          this.updateStyle({
+            bottom: 'auto',
+          });
+        }
+      }
+      else if (height.u !== StyleUnit.AUTO) {
+        this.updateStyle({
+          height: 'auto',
+        });
+      }
+    }
     // 无影响则返回空，结束无需还原
     if (!impact) {
       return;
     }
-    return {
+    return this.editStyle = {
       isLeft,
       isCenter,
       isRight,
       isTop,
       isMiddle,
       isBottom,
+      isFixedHeight,
       prev,
     };
   }
 
   // 和beforeEdit()对应，可能prev为空即无需关心样式还原问题。
-  private afterEdit(payload?: {
-    isLeft: boolean,
-    isCenter: boolean,
-    isRight: boolean,
-    isTop: boolean,
-    isMiddle: boolean,
-    isBottom: boolean,
-    prev: Style,
-  }) {
-    if (!payload) {
+  afterEdit() {
+    if (!this.editStyle) {
       return;
     }
     const {
@@ -1622,8 +1642,9 @@ class Text extends Node {
       isTop,
       isMiddle,
       isBottom,
+      isFixedHeight,
       prev,
-    } = payload;
+    } = this.editStyle;
     const {
       style,
       computedStyle,
@@ -1831,10 +1852,46 @@ class Text extends Node {
       style.translateY.v = translateY.v;
       style.translateY.u = translateY.u;
     }
-    // if (height.u !== StyleUnit.AUTO) {
-    //   style.height.v = height.v;
-    //   style.height.u = height.u;
-    // }
+    if (isFixedHeight) {
+      if (prev.top.u !== StyleUnit.AUTO && prev.bottom.u !== StyleUnit.AUTO) {
+        if (isBottom) {
+          if (prev.top.u === StyleUnit.PERCENT) {
+            this.updateStyle({
+              top: prev.top.v + '%',
+            });
+          }
+          else {
+            this.updateStyle({
+              top: prev.top.v,
+            });
+          }
+        }
+        else {
+          if (prev.bottom.u === StyleUnit.PERCENT) {
+            this.updateStyle({
+              bottom: prev.bottom.v + '%',
+            });
+          }
+          else {
+            this.updateStyle({
+              bottom: prev.bottom.v,
+            });
+          }
+        }
+      }
+      else if (prev.height.u !== StyleUnit.AUTO) {
+        if (prev.height.u === StyleUnit.PERCENT) {
+          this.updateStyle({
+            height: prev.height.v + '%',
+          });
+        }
+        else {
+          this.updateStyle({
+            height: prev.height.v + '%',
+          });
+        }
+      }
+    }
   }
 
   // 根据字符串索引更新光标
@@ -2407,7 +2464,6 @@ class Text extends Node {
    * 不会出现仅右百分比的情况，所有改变处理都一样
    */
   input(s: string) {
-    const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     let c = this._content;
     // 选择区域特殊情况，先删除掉这一段文字，还要使用选区开头的样式
@@ -2433,14 +2489,12 @@ class Text extends Node {
       this.expandRich(start, s.length);
     }
     this.refresh(RefreshLevel.REFLOW);
-    this.afterEdit(payload);
     this.updateCursorByIndex(start + s.length);
   }
 
   // 按下回车触发
   enter() {
     this.inputStyle = undefined;
-    const payload = this.beforeEdit();
     const { isMulti, start, end } = this.getSortedCursor();
     // 选择区域特殊情况，先删除掉这一段文字
     if (isMulti) {
@@ -2453,7 +2507,6 @@ class Text extends Node {
     const c = this._content;
     this._content = c.slice(0, start) + '\n' + c.slice(start);
     this.refresh(RefreshLevel.REFLOW);
-    this.afterEdit(payload);
     this.updateCursorByIndex(start + 1);
   }
 
@@ -2474,7 +2527,6 @@ class Text extends Node {
     else if (start === c.length && isDeleteKey) {
       return;
     }
-    const payload = this.beforeEdit();
     if (isMulti) {
       this.cursor.isMulti = false;
       this._content = c.slice(0, start) + c.slice(end);
@@ -2489,7 +2541,6 @@ class Text extends Node {
       this.cutRich(start - 1, start);
     }
     this.refresh(RefreshLevel.REFLOW);
-    this.afterEdit(payload);
     if (isMulti || isDeleteKey) {
       this.updateCursorByIndex(start);
     }
@@ -2690,10 +2741,8 @@ class Text extends Node {
   }
 
   setRich(rich: Rich[]) {
-    const payload = this.beforeEdit();
     this.rich = rich;
     this.refresh(RefreshLevel.REFLOW);
-    this.afterEdit(payload);
   }
 
   getCursor() {
@@ -2702,7 +2751,6 @@ class Text extends Node {
 
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
   updateRangeStyle(location: number, length: number, st: ModifyRichStyle) {
-    const payload = this.beforeEdit();
     let lv = RefreshLevel.NONE;
     // 开头同时更新节点本身默认样式
     if (location === 0) {
@@ -2790,7 +2838,6 @@ class Text extends Node {
     if (lv) {
       this.refresh(lv);
     }
-    this.afterEdit(payload);
   }
 
   updateRichItem(item: Rich, style: ModifyRichStyle) {
@@ -3372,10 +3419,8 @@ class Text extends Node {
 
   set content(v: string) {
     if (v !== this._content) {
-      const payload = this.beforeEdit();
       this._content = v;
       this.refresh(RefreshLevel.REFLOW);
-      this.afterEdit(payload);
     }
   }
 
