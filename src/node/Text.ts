@@ -1595,24 +1595,24 @@ class Text extends Node {
       translateY.v = 0;
     }
     if (isFixedHeight) {
-      impact = true;
-      if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
-        if (isBottom) {
-          this.updateStyle({
-            top: 'auto',
-          });
-        }
-        else {
-          this.updateStyle({
-            bottom: 'auto',
-          });
-        }
-      }
-      else if (height.u !== StyleUnit.AUTO) {
-        this.updateStyle({
-          height: 'auto',
-        });
-      }
+      // impact = true;
+      // if (top.u !== StyleUnit.AUTO && bottom.u !== StyleUnit.AUTO) {
+      //   if (isBottom) {
+      //     this.updateStyle({
+      //       top: 'auto',
+      //     });
+      //   }
+      //   else {
+      //     this.updateStyle({
+      //       bottom: 'auto',
+      //     });
+      //   }
+      // }
+      // else if (height.u !== StyleUnit.AUTO) {
+      //   this.updateStyle({
+      //     height: 'auto',
+      //   });
+      // }
     }
     // 无影响则返回空，结束无需还原
     if (!impact) {
@@ -2675,64 +2675,6 @@ class Text extends Node {
     }
     return { x: rx, y: ry, h: rh };
   }
-
-  // updateTextStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
-  //   const payload = this.beforeEdit();
-  //   const rich = this.rich;
-  //   // 转成rich的
-  //   const style2: any = {};
-  //   if (style.hasOwnProperty('textAlign')) {
-  //     if (style.textAlign === 'center') {
-  //       style2.textAlign = TEXT_ALIGN.CENTER;
-  //     }
-  //     else if (style.textAlign === 'right') {
-  //       style2.textAlign = TEXT_ALIGN.RIGHT;
-  //     }
-  //     else if (style.textAlign === 'justify') {
-  //       style2.textAlign = TEXT_ALIGN.JUSTIFY;
-  //     }
-  //     else {
-  //       style2.textAlign = TEXT_ALIGN.LEFT;
-  //     }
-  //   }
-  //   if (style.hasOwnProperty('color')) {
-  //     style2.color = color2rgbaInt(style.color || '#000');
-  //   }
-  //   if (style.hasOwnProperty('fontFamily')) {
-  //     style2.fontFamily = style.fontFamily;
-  //   }
-  //   if (style.hasOwnProperty('fontSize')) {
-  //     style2.fontSize = style.fontSize;
-  //   }
-  //   if (style.hasOwnProperty('letterSpacing')) {
-  //     style2.letterSpacing = style.letterSpacing;
-  //   }
-  //   if (style.hasOwnProperty('textDecoration')) {
-  //     style2.textDecoration = style.textDecoration;
-  //   }
-  //   if (style.hasOwnProperty('lineHeight')) {
-  //     style2.lineHeight = style.lineHeight;
-  //   }
-  //   if (style.hasOwnProperty('paragraphSpacing')) {
-  //     style2.paragraphSpacing = style.paragraphSpacing;
-  //   }
-  //   let lv = RefreshLevel.NONE;
-  //   if (rich.length) {
-  //     rich.forEach((item) => {
-  //       lv |= this.updateRichItem(item, style2);
-  //     });
-  //   }
-  //   this.mergeRich();
-  //   // 防止rich变更但整体没有变更结果不刷新
-  //   const keys = this.updateStyleData(style);
-  //   if (keys.length) {
-  //     this.root?.addUpdate(this, keys, undefined, false, false, cb);
-  //   }
-  //   else if (lv) {
-  //     this.refresh(lv, cb);
-  //   }
-  //   this.afterEdit(payload);
-  // }
 
   getRich() {
     return this.rich.map(item => {
