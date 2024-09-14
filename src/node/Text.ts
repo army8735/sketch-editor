@@ -1853,44 +1853,44 @@ class Text extends Node {
       style.translateY.u = translateY.u;
     }
     if (isFixedHeight) {
-      if (prev.top.u !== StyleUnit.AUTO && prev.bottom.u !== StyleUnit.AUTO) {
-        if (isBottom) {
-          if (prev.top.u === StyleUnit.PERCENT) {
-            this.updateStyle({
-              top: prev.top.v + '%',
-            });
-          }
-          else {
-            this.updateStyle({
-              top: prev.top.v,
-            });
-          }
-        }
-        else {
-          if (prev.bottom.u === StyleUnit.PERCENT) {
-            this.updateStyle({
-              bottom: prev.bottom.v + '%',
-            });
-          }
-          else {
-            this.updateStyle({
-              bottom: prev.bottom.v,
-            });
-          }
-        }
-      }
-      else if (prev.height.u !== StyleUnit.AUTO) {
-        if (prev.height.u === StyleUnit.PERCENT) {
-          this.updateStyle({
-            height: prev.height.v + '%',
-          });
-        }
-        else {
-          this.updateStyle({
-            height: prev.height.v + '%',
-          });
-        }
-      }
+      // if (prev.top.u !== StyleUnit.AUTO && prev.bottom.u !== StyleUnit.AUTO) {
+      //   if (isBottom) {
+      //     if (prev.top.u === StyleUnit.PERCENT) {
+      //       this.updateStyle({
+      //         top: prev.top.v + '%',
+      //       });
+      //     }
+      //     else {
+      //       this.updateStyle({
+      //         top: prev.top.v,
+      //       });
+      //     }
+      //   }
+      //   else {
+      //     if (prev.bottom.u === StyleUnit.PERCENT) {
+      //       this.updateStyle({
+      //         bottom: prev.bottom.v + '%',
+      //       });
+      //     }
+      //     else {
+      //       this.updateStyle({
+      //         bottom: prev.bottom.v,
+      //       });
+      //     }
+      //   }
+      // }
+      // else if (prev.height.u !== StyleUnit.AUTO) {
+      //   if (prev.height.u === StyleUnit.PERCENT) {
+      //     this.updateStyle({
+      //       height: prev.height.v + '%',
+      //     });
+      //   }
+      //   else {
+      //     this.updateStyle({
+      //       height: prev.height.v + '%',
+      //     });
+      //   }
+      // }
     }
   }
 
