@@ -194,7 +194,6 @@ export default class Input {
   show(node: Text, x: number, y: number) {
     this.node = node;
     this.update(x, y);
-    this.containerEl.style.opacity = '1';
     this.focus();
     this.showCursor();
   }
@@ -208,7 +207,7 @@ export default class Input {
   }
 
   hide() {
-    this.containerEl.style.opacity = '0';
+    this.hideCursor();
     this.blur();
     this.node = undefined;
   }
@@ -223,12 +222,12 @@ export default class Input {
   }
 
   showCursor() {
-    this.cursorEl.style.opacity = '1';
+    this.containerEl.style.opacity = '1';
   }
 
   // 选区时隐藏光标但还是focus状态（外部控制）
   hideCursor() {
-    this.cursorEl.style.opacity = '0';
+    this.containerEl.style.opacity = '0';
   }
 
   updateCursor(p?: { x: number, y: number, h: number }) {
