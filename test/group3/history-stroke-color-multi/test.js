@@ -17,7 +17,7 @@ module.exports = {
       .assert.domPropertyEquals('#side .stroke-panel .line[title="0"] .width input', 'placeholder', '多个')
       .assert.domPropertyEquals('#side .stroke-panel .line[title="0"] .color .picker-btn b', 'title', '')
       .assert.cssClassPresent('#side .stroke-panel .line[title="0"] .enabled', 'multi-checked')
-      .assert.elementPresent('#side .stroke-panel .line[title="0"] .pos .cur')
+      .assert.not.elementPresent('#side .stroke-panel .line[title="0"] .pos .cur')
 
       .click('#side .stroke-panel .line[title="0"] .enabled')
       .click('#button2')
