@@ -1244,7 +1244,13 @@ function genGaussShader(
   for (let i = 0; i < r; i++) {
     // u_direction传入基数为100，因此相邻的像素点间隔百分之一
     let c = (r - i) * 0.01;
-    frag += `b(${c},${toFloat(weights[i])})+`;
+    frag += `b(${toFloat(c)},${toFloat(weights[i])})`;
+    if (i && !(i % 100)) { // 太长的表达式会卡死
+      frag += ';gl_FragColor+=';
+    }
+    else {
+      frag += '+';
+    }
   }
   frag += `a(v_texCoords,${toFloat(weights[r])});`;
   frag = gaussFrag.replace('placeholder;', frag);
