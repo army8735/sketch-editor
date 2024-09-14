@@ -44,58 +44,54 @@ export default class Input {
     inputEl.spellcheck = false;
     containerEl.appendChild(inputEl);
 
+    const onCallback = (cb: () => void) => {
+      if (this.node) {
+        const content = this.node._content;
+        const rich = this.node.getRich();
+        const cursor = this.node.getCursor();
+        cb();
+        this.updateCursor();
+        this.showCursor();
+        inputEl.value = '';
+        this.listener.select.updateSelect([this.node]);
+        listener.emit([Listener.TEXT_CONTENT_NODE, Listener.CURSOR_NODE], [this.node]);
+        this.listener.history.addCommand(new TextCommand([this.node], [{
+          prev: {
+            content,
+            rich,
+            cursor,
+          },
+          next: {
+            content: this.node._content,
+            rich: this.node.getRich(),
+            cursor: this.node.getCursor(),
+          },
+        }]), this.hasBlur);
+        this.hasBlur = false;
+      }
+    };
+    const onInput = (s: string) => {
+      if (s) {
+        onCallback(() => {
+          this.node?.input(s);
+        });
+      }
+    };
+
     let isIme = false;
     inputEl.addEventListener('keydown', (e) => {
       const keyCode = e.keyCode;
       if (this.node) {
         if (keyCode === 13) {
-          const content = this.node._content;
-          const rich = this.node.getRich();
-          const cursor = this.node.getCursor();
-          this.node.enter();
-          this.showCursor();
-          this.updateCursor();
-          listener.select.updateSelect([this.node]);
-          listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
-          listener.emit(Listener.CURSOR_NODE, [this.node]);
-          this.listener.history.addCommand(new TextCommand([this.node], [{
-            prev: {
-              content,
-              rich,
-              cursor,
-            },
-            next: {
-              content: this.node._content,
-              rich: this.node.getRich(),
-              cursor: this.node.getCursor(),
-            },
-          }]), this.hasBlur);
-          this.hasBlur = false;
+          onCallback(() => {
+            this.node?.enter();
+          });
         }
         else if (keyCode === 8 || keyCode === 46) {
           e.stopPropagation();
-          const content = this.node._content;
-          const rich = this.node.getRich();
-          const cursor = this.node.getCursor();
-          this.node!.delete(keyCode === 46);
-          this.showCursor();
-          this.updateCursor();
-          listener.select.updateSelect([this.node]);
-          listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
-          listener.emit(Listener.CURSOR_NODE, [this.node]);
-          this.listener.history.addCommand(new TextCommand([this.node], [{
-            prev: {
-              content,
-              rich,
-              cursor,
-            },
-            next: {
-              content: this.node._content,
-              rich: this.node.getRich(),
-              cursor: this.node.getCursor(),
-            },
-          }]), this.hasBlur);
-          this.hasBlur = false;
+          onCallback(() => {
+            this.node?.delete(keyCode === 46);
+          });
         }
         else if (keyCode >= 37 && keyCode <= 40) {
           e.stopPropagation();
@@ -112,33 +108,21 @@ export default class Input {
       }
     });
 
+
+
     inputEl.addEventListener('input', (e) => {
-      if (!isIme && this.node) {
+      if (!isIme) {
         const s = (e as InputEvent).data;
         if (s) {
-          const content = this.node._content;
-          const rich = this.node.getRich();
-          const cursor = this.node.getCursor();
-          this.node.input(s);
-          this.updateCursor();
-          this.showCursor();
-          inputEl.value = '';
-          this.listener.select.updateSelect([this.node]);
-          this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
-          this.listener.history.addCommand(new TextCommand([this.node], [{
-            prev: {
-              content,
-              rich,
-              cursor,
-            },
-            next: {
-              content: this.node._content,
-              rich: this.node.getRich(),
-              cursor: this.node.getCursor(),
-            },
-          }]), this.hasBlur);
-          this.hasBlur = false;
+          onInput(s);
         }
+      }
+    });
+    inputEl.addEventListener('paste', (e) => {
+      e.stopPropagation(); // 不冒泡更上层的粘贴元素
+      const s = e.clipboardData?.getData('text');
+      if (s) {
+        onInput(s);
       }
     });
     inputEl.addEventListener('compositionstart', (e) => {
@@ -147,30 +131,8 @@ export default class Input {
     inputEl.addEventListener('compositionend', (e) => {
       isIme = false;
       const s = e.data;
-      if (this.node && s) {
-        const content = this.node._content;
-        const rich = this.node.getRich();
-        const cursor = this.node.getCursor();
-        this.node.input(s);
-        this.updateCursor();
-        this.showCursor();
-        inputEl.value = '';
-        this.listener.select.updateSelect([this.node]);
-        this.listener.emit(Listener.TEXT_CONTENT_NODE, [this.node]);
-        listener.emit(Listener.CURSOR_NODE, [this.node]);
-        this.listener.history.addCommand(new TextCommand([this.node], [{
-          prev: {
-            content,
-            rich,
-            cursor,
-          },
-          next: {
-            content: this.node._content,
-            rich: this.node.getRich(),
-            cursor: this.node.getCursor(),
-          },
-        }]), this.hasBlur);
-        this.hasBlur = false;
+      if (s) {
+        onInput(s);
       }
     });
 
