@@ -16,7 +16,7 @@ module.exports = {
       .assert.value('#side .fill-panel .line[title="0"] .hex input', '')
       .assert.domPropertyEquals('#side .fill-panel .line[title="0"] .hex input', 'placeholder', '多个')
       .assert.domPropertyEquals('#side .fill-panel .line[title="0"] .color .picker-btn b', 'title', '')
-      .assert.cssClassPresent('#side .fill-panel .line[title="0"] .color .picker-btn b', 'read-only')
+      .assert.cssClassPresent('#side .fill-panel .line[title="0"] .color .picker-btn b', 'pick multi')
       .assert.cssClassPresent('#side .fill-panel .line[title="0"] .color .enable', 'multi-checked')
 
       .click('#side .fill-panel .line[title="0"] .enabled')
