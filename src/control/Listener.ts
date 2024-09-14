@@ -507,13 +507,22 @@ export default class Listener extends Event {
           Math.sqrt(Math.pow(cx - bx, 2) + Math.pow(cy - by, 2)),
           Math.sqrt(Math.pow(ax - cx, 2) + Math.pow(ay - cy, 2)),
         );
+        let deg = r2d(r);
         // 知道角度后需确定顺逆时针方向
         const c = crossProduct(
           ax - cx, ay - cy,
           bx - cx, by - cy,
         );
+        if (this.shiftKey) {
+          for (let i = 0; i <= 180; i+= 15) {
+            if (Math.abs(deg - i) <= 7.5) {
+              deg = i;
+              break;
+            }
+          }
+        }
         const node = selected[0];
-        const rotateZ = (this.computedStyle[0].rotateZ + r2d(r) * (c >= 0 ? 1 : -1)) % 360;
+        const rotateZ = (this.computedStyle[0].rotateZ + deg * (c >= 0 ? 1 : -1)) % 360;
         node.updateStyle({
           rotateZ,
         });
