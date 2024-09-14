@@ -16,7 +16,7 @@ import { Rich } from '../format';
 import fontInfo, { FontData } from '../style/font';
 import font from '../style/font';
 import inject from '../util/inject';
-import { color2hexStr } from '../style/css';
+import { color2rgbaStr } from '../style/css';
 
 const html = `
   <h4 class="panel-title">字符<b class="btn arrow"></b></h4>
@@ -456,7 +456,7 @@ class TextPanel extends Panel {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
           // 新插入样式时无法触发COLOR_NODE更新
-          el.title = el.style.background = color2hexStr(color.rgba);
+          el.title = el.style.background = color2rgbaStr(color.rgba);
           this.silence = false;
         };
         p.onDone = () => {

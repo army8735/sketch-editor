@@ -88,8 +88,8 @@ function renderItem(
       </span>
       <span class="txt">${txt1}</span>
     </div>
-    <div class="hex">
-      <div class="color ${(fillPattern.length || fillGradient.length) ? 'hide' : ''}">
+    <div class="value">
+      <div class="hex ${(fillPattern.length || fillGradient.length) ? 'hide' : ''}">
         <span>#</span>
         <input type="text" value="${multiColor ? '' : color2hexStr(fillColor[0]).slice(1)}" placeholder="${multiColor ? '多个' : ''}" maxlength="8"/>
       </div>
@@ -206,9 +206,9 @@ class FillPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.FILL_NODE, nodes.slice(0));
           }
-          const c = color2hexStr(color.rgba);
+          const c = color2rgbaStr(color.rgba);
           el.title = el.style.background = c;
-          (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
+          (line.querySelector('.hex input') as HTMLInputElement).value = color2hexStr(color.rgba).slice(1);
           this.silence = false;
         };
         p.onDone = () => {

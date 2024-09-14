@@ -5,7 +5,7 @@ import Panel from './Panel';
 import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
-import { color2hexStr, color2rgbaStr, getCssShadow } from '../style/css';
+import { color2rgbaStr, getCssShadow } from '../style/css';
 import { ComputedShadow } from '../style/define';
 
 const html = `
@@ -132,7 +132,7 @@ class ShadowPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
           }
-          el.title = el.style.background = color2hexStr(color.rgba);
+          el.title = el.style.background = color2rgbaStr(color.rgba);
           this.silence = false;
         };
         p.onDone = () => {
