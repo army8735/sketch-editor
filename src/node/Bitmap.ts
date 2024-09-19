@@ -786,6 +786,11 @@ class Bitmap extends Node {
         return;
       }
       const uuid = this.root!.props.uuid;
+      const rect = (this._rect || this.rect).slice(0);
+      rect[0] = Math.floor(rect[0]);
+      rect[1] = Math.floor(rect[1]);
+      rect[2] = Math.ceil(rect[2]);
+      rect[3] = Math.ceil(rect[3]);
       if (TextureCache.hasImgInstance(uuid, this._src)) {
         this.textureCache[scaleIndex] =
           this.textureTarget[scaleIndex] =
@@ -794,7 +799,7 @@ class Bitmap extends Node {
                 uuid,
                 gl,
                 this._src,
-                (this._rect || this.rect).slice(0),
+                rect,
               );
         return;
       }
@@ -808,7 +813,7 @@ class Bitmap extends Node {
                 uuid,
                 gl,
                 this._src,
-                (this._rect || this.rect).slice(0),
+                rect,
                 canvasCache,
               );
         canvasCache.releaseImg(this._src);
