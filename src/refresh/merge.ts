@@ -2,6 +2,7 @@ import gaussFrag from '../gl/gauss.frag';
 import simpleVert from '../gl/simple.vert';
 import {
   createTexture,
+  drawBox,
   drawColorMatrix,
   drawGauss,
   drawMask,
@@ -13,7 +14,7 @@ import {
   drawTint,
   initShaders,
 } from '../gl/webgl';
-import { gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
+import { boxesForGauss, gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 import { assignMatrix, calRectPoints, identity, inverse, multiply, multiplyScale, toE, } from '../math/matrix';
 import Bitmap from '../node/Bitmap';
@@ -1136,16 +1137,22 @@ function genGaussBlur(
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
   const sigma2 = sigma * scale;
-  const d2 = kernelSize(sigma2);
+  // const d2 = kernelSize(sigma2);
+  const boxes = boxesForGauss(sigma2 * 0.5);
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
-  const programGauss = genGaussShader(gl, programs, sigma2, d2);
-  gl.useProgram(programGauss);
+  const programBox = programs.boxProgram;
+  // const programGauss = genGaussShader(gl, programs, sigma2, d2);
+  gl.useProgram(programBox);
   const res = TextureCache.getEmptyInstance(gl, bboxR);
   const listR = res.list;
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
-    const tex = drawGauss(gl, programGauss, t, w, h);
+    // const p1 = performance.now();
+    const tex = drawBox(gl, programBox, t, w, h, boxes);
+    // const pixels = new Uint8Array(w * h * 4);
+    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    // console.log(performance.now() - p1);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1205,8 +1212,8 @@ function genGaussBlur(
       }
       // 一定会有，没有就是计算错了，这里预防下
       if (hasDraw) {
-        gl.useProgram(programGauss);
-        item.t = drawGauss(gl, programGauss, t, w, h);
+        gl.useProgram(programBox);
+        item.t = drawBox(gl, programBox, t, w, h, boxes);
       }
       gl.deleteTexture(t);
     }

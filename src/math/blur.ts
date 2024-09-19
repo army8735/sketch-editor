@@ -12,9 +12,9 @@ export function kernelSize(sigma: number) {
   if (d < 2) {
     d = 2;
   }
-  if (d % 2 === 0) {
-    d++;
-  }
+  // if (d % 2 === 0) {
+  //   d++;
+  // }
   return d;
 }
 
@@ -64,9 +64,27 @@ export function gaussianWeight(sigma: number, d: number) {
   return list;
 }
 
+export function boxesForGauss(sigma: number, n = 3) {
+  const wIdeal = Math.sqrt((12 * sigma * sigma / n) + 1);  // Ideal averaging filter width
+  let wl = Math.floor(wIdeal);
+  if (wl % 2 == 0) {
+    wl--;
+  }
+  const wu = wl + 2;
+
+  const mIdeal = (12 * sigma * sigma - n * wl * wl - 4 * n * wl - 3 * n) / (-4 * wl - 4);
+  const m = Math.round(mIdeal);
+  // var sigmaActual = Math.sqrt( (m*wl*wl + (n-m)*wu*wu - n)/12 );
+
+  const sizes = [];
+  for (let i = 0; i < n; i++) sizes.push(i < m ? wl : wu);
+  return sizes;
+}
+
 export default {
   kernelSize,
   outerSize,
   outerSizeByD,
   gaussianWeight,
+  boxesForGauss,
 };

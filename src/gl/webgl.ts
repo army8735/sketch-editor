@@ -480,6 +480,83 @@ export function drawGauss(
   return tex3;
 }
 
+export function drawBox(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: WebGLProgram,
+  texture: WebGLTexture,
+  width: number,
+  height: number,
+  boxes: number[],
+) {
+  const { vtPoint, vtTex } = getSingleCoords();
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  const texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 方框模糊设置宽高方向等
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
+  const u_pw = gl.getUniformLocation(program, 'u_pw');
+  const u_ph = gl.getUniformLocation(program, 'u_ph');
+  gl.uniform1f(u_pw, 2 / width);
+  gl.uniform1f(u_ph, 2 / height);
+  const u_direction = gl.getUniformLocation(program, 'u_direction');
+  const u_r = gl.getUniformLocation(program, 'u_r');
+  let tex1 = texture;
+  let tex2 = createTexture(gl, 0, undefined, width, height);
+  let tex3 = createTexture(gl, 0, undefined, width, height);
+  for (let i = 0, len = boxes.length; i < len; i++) {
+    const d = boxes[i];
+    const r = (d - 1) >> 1;
+    gl.uniform1i(u_r, r);
+    // tex1到tex2
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex2,
+      0,
+    );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    bindTexture(gl, tex1, 0);
+    gl.uniform1i(u_texture, 0);
+    gl.uniform1i(u_direction, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // tex2到tex3
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex3,
+      0,
+    );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    bindTexture(gl, tex2, 0);
+    gl.uniform1i(u_direction, 1);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // 循环，tex1的原始传入不能改变，tex3变成tex1作为新的输入
+    tex1 = tex3;
+  }
+  // 回收
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.deleteTexture(tex2);
+  return tex3;
+}
+
 export function drawMotion(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   program: WebGLProgram,
