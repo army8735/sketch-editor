@@ -81,10 +81,17 @@ export function boxesForGauss(sigma: number, n = 3) {
   return sizes;
 }
 
+export function dualKawase(sigma: number) {
+  const passes = Math.max(1, Math.round(4 / 3 * Math.log(sigma)));
+  const distance = Math.pow(0.4538, passes) * sigma;
+  return { passes, distance };
+}
+
 export default {
   kernelSize,
   outerSize,
   outerSizeByD,
   gaussianWeight,
   boxesForGauss,
+  dualKawase,
 };

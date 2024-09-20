@@ -350,11 +350,9 @@ export function getSingleCoords() {
   return { vtPoint, vtTex };
 }
 
-export function drawMask(
+export function preSingle(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   program: WebGLProgram,
-  mask: WebGLTexture,
-  summary: WebGLTexture,
 ) {
   const { vtPoint, vtTex } = getSingleCoords();
   // 顶点buffer
@@ -371,6 +369,16 @@ export function drawMask(
   const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
+  return { pointBuffer, a_position, texBuffer, a_texCoords };
+}
+
+export function drawMask(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: WebGLProgram,
+  mask: WebGLTexture,
+  summary: WebGLTexture,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 纹理单元
   bindTexture(gl, mask, 0);
   bindTexture(gl, summary, 1);
@@ -401,21 +409,7 @@ export function drawGauss(
   width: number,
   height: number,
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   /**
    * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
    * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
@@ -488,27 +482,13 @@ export function drawBox(
   height: number,
   boxes: number[],
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 方框模糊设置宽高方向等
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   const u_pw = gl.getUniformLocation(program, 'u_pw');
   const u_ph = gl.getUniformLocation(program, 'u_ph');
-  gl.uniform1f(u_pw, 2 / width);
-  gl.uniform1f(u_ph, 2 / height);
+  gl.uniform1f(u_pw, 1 / width);
+  gl.uniform1f(u_ph, 1 / height);
   const u_direction = gl.getUniformLocation(program, 'u_direction');
   const u_r = gl.getUniformLocation(program, 'u_r');
   let tex1 = texture;
@@ -557,6 +537,18 @@ export function drawBox(
   return tex3;
 }
 
+export function drawDual(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  program: WebGLProgram,
+  texture: WebGLTexture,
+  width: number,
+  height: number,
+  passes: number,
+  distance: number,
+) {
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
+}
+
 export function drawMotion(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   program: WebGLProgram,
@@ -566,21 +558,7 @@ export function drawMotion(
   width: number,
   height: number,
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
@@ -627,21 +605,7 @@ export function drawRadial(
   width: number,
   height: number,
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 参数
   const u_kernel = gl.getUniformLocation(program, 'u_kernel');
   gl.uniform1i(u_kernel, kernel);
@@ -687,24 +651,8 @@ export function drawShadow(
   program: WebGLProgram,
   texture: WebGLTexture,
   color: number[],
-  w: number,
-  h: number,
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 纹理单元
   bindTexture(gl, texture, 0);
   const u_texture = gl.getUniformLocation(program, 'u_texture');
@@ -713,7 +661,12 @@ export function drawShadow(
   const u_color = gl.getUniformLocation(program, 'u_color');
   const a = color[3];
   gl.uniform4f(u_color, color[0] * a, color[1] * a, color[2] * a, a);
+  // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
 }
 
 export const drawMbm = drawMask;
@@ -725,21 +678,7 @@ export function drawTint(
   tint: number[],
   opacity: number,
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 纹理单元
   bindTexture(gl, texture, 0);
   const u_texture = gl.getUniformLocation(program, 'u_texture');
@@ -762,21 +701,7 @@ export function drawColorMatrix(
   texture: WebGLTexture,
   m: number[],
 ) {
-  const { vtPoint, vtTex } = getSingleCoords();
-  // 顶点buffer
-  const pointBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_position);
-  // 纹理buffer
-  const texBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-  const a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_texCoords);
+  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 纹理单元
   bindTexture(gl, texture, 0);
   const u_texture = gl.getUniformLocation(program, 'u_texture');

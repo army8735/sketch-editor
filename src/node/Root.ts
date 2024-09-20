@@ -592,12 +592,12 @@ class Root extends Container implements FrameCallback {
       gl.deleteProgram(programs.motionProgram);
       gl.deleteProgram(programs.radialProgram);
       gl.deleteProgram(programs.tileProgram);
-      // for (let k in gl) {
-      //   if (k.indexOf('programGauss,') === 0) {
-      //     const p = programs[k];
-      //     gl.deleteProgram(p);
-      //   }
-      // }
+      for (let k in gl) {
+        if (k.indexOf('programGauss,') === 0) {
+          const p = programs[k];
+          gl.deleteProgram(p);
+        }
+      }
       gl.bindTexture(gl.TEXTURE_2D, null);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     }

@@ -1138,7 +1138,7 @@ function genGaussBlur(
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
   const sigma2 = sigma * scale;
   // const d2 = kernelSize(sigma2);
-  const boxes = boxesForGauss(sigma2 * 0.5);
+  const boxes = boxesForGauss(sigma2);
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const programBox = programs.boxProgram;
   // const programGauss = genGaussShader(gl, programs, sigma2, d2);
@@ -1152,7 +1152,7 @@ function genGaussBlur(
     const tex = drawBox(gl, programBox, t, w, h, boxes);
     // const pixels = new Uint8Array(w * h * 4);
     // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // console.log(performance.now() - p1);
+    // console.log(boxes, performance.now() - p1);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1876,7 +1876,7 @@ function genShadow(
         tex,
         0,
       );
-      drawShadow(gl, dropShadowProgram, t, color2gl(color), w, h);
+      drawShadow(gl, dropShadowProgram, t, color2gl(color));
       listR.push({
         bbox: b,
         w,
@@ -1892,7 +1892,7 @@ function genShadow(
       const sigma2 = sigma * scale;
       // const d2 = kernelSize(sigma2);
       const spread = outerSizeByD(d);
-      const boxes = boxesForGauss(sigma2 * 0.5);
+      const boxes = boxesForGauss(sigma2);
       const programBox = programs.boxProgram;
       // const programGauss = genGaussShader(gl, programs, sigma2, d2);
       gl.useProgram(programBox);
