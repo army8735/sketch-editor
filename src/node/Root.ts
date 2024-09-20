@@ -31,6 +31,8 @@ import mainVert from '../gl/main.vert';
 import mainFrag from '../gl/main.frag';
 import maskFrag from '../gl/mask.frag';
 import boxFrag from '../gl/box.frag';
+// import dualVert from '../gl/dual.vert';
+// import dualFrag from '../gl/dual.frag';
 import motionFrag from '../gl/motion.frag';
 import radialFrag from '../gl/radial.frag';
 import simpleVert from '../gl/simple.vert';
@@ -217,6 +219,7 @@ class Root extends Container implements FrameCallback {
     this.programs.tintProgram = initShaders(gl, simpleVert, tintFrag);
     this.programs.cmProgram = initShaders(gl, simpleVert, cmFrag);
     this.programs.boxProgram = initShaders(gl, simpleVert, boxFrag);
+    // this.programs.dualProgram = initShaders(gl, dualVert, dualFrag);
     this.programs.motionProgram = initShaders(gl, simpleVert, motionFrag);
     this.programs.radialProgram = initShaders(gl, simpleVert, radialFrag);
     this.programs.tileProgram = initShaders(gl, tileVert, tileFrag);
@@ -589,6 +592,7 @@ class Root extends Container implements FrameCallback {
       gl.deleteProgram(programs.tintProgram);
       gl.deleteProgram(programs.cmProgram);
       gl.deleteProgram(programs.boxProgram);
+      // gl.deleteProgram(programs.dualProgram);
       gl.deleteProgram(programs.motionProgram);
       gl.deleteProgram(programs.radialProgram);
       gl.deleteProgram(programs.tileProgram);

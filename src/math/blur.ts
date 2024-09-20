@@ -81,6 +81,7 @@ export function boxesForGauss(sigma: number, n = 3) {
   return sizes;
 }
 
+// https://github.com/servo/webrender/issues/2821#issuecomment-413756425
 export function dualKawase(sigma: number) {
   const passes = Math.max(1, Math.round(4 / 3 * Math.log(sigma)));
   const distance = Math.pow(0.4538, passes) * sigma;

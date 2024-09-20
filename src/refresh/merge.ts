@@ -4,6 +4,7 @@ import {
   createTexture,
   drawBox,
   drawColorMatrix,
+  drawDual,
   drawGauss,
   drawMask,
   drawMbm,
@@ -14,7 +15,7 @@ import {
   drawTint,
   initShaders,
 } from '../gl/webgl';
-import { boxesForGauss, gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
+import { boxesForGauss, dualKawase, gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 import { assignMatrix, calRectPoints, identity, inverse, multiply, multiplyScale, toE, } from '../math/matrix';
 import Bitmap from '../node/Bitmap';
@@ -1150,9 +1151,9 @@ function genGaussBlur(
     gl.viewport(0, 0, w, h);
     // const p1 = performance.now();
     const tex = drawBox(gl, programBox, t, w, h, boxes);
-    // const pixels = new Uint8Array(w * h * 4);
-    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // console.log(boxes, performance.now() - p1);
+    // const pixels = new Uint8Array(4);
+    // gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    // console.log(boxes, w, h, performance.now() - p1);
     listR.push({
       bbox: bbox.slice(0),
       w,

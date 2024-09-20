@@ -547,6 +547,55 @@ export function drawDual(
   distance: number,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
+  const u_x = gl.getUniformLocation(program, 'u_x');
+  const u_y = gl.getUniformLocation(program, 'u_y');
+  const u_scale = gl.getUniformLocation(program, 'u_scale');
+  let tex1 = texture;
+  let tex2 = createTexture(gl, 0, undefined, width, height);
+  let tex3 = createTexture(gl, 0, undefined, width, height);
+  gl.uniform1f(u_x, distance / width);
+  gl.uniform1f(u_y, distance / height);
+  // 先向下缩放
+  for (let i = 0; i < passes; i++) {
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex2,
+      0,
+    );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    bindTexture(gl, i ? tex3 : tex1, 0);
+    gl.uniform1i(u_texture, 0);
+    gl.uniform1f(u_scale, -Math.pow(2, -(i + 1)));
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    [tex2, tex3] = [tex3, tex2];
+  }
+  for (let i = 0; i < passes; i++) {
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      tex2,
+      0,
+    );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    bindTexture(gl, tex3, 0);
+    gl.uniform1i(u_texture, 0);
+    gl.uniform1f(u_scale, Math.pow(2, -(passes - i - 1)));
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    [tex2, tex3] = [tex3, tex2];
+  }
+  // 回收
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.deleteTexture(tex2);
+  return tex3;
 }
 
 export function drawMotion(
