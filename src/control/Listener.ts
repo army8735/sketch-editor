@@ -1036,11 +1036,22 @@ export default class Listener extends Event {
       this.select.metaKey(true);
     }
     const keyCode = e.keyCode;
-    // backspace
+    // backspace/delete
     if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
-        const nodes = this.selected.splice(0);
+        const nodes = this.selected.splice(0).map(item => {
+          let p = item;
+          while (p) {
+            if (p.parent && p.parent.isGroup && p.parent instanceof Group && p.parent.children.length === 1) {
+              p = p.parent;
+            }
+            else {
+              break;
+            }
+          }
+          return p;
+        });
         const data: RemoveData[] = [];
         nodes.forEach((item) => {
           data.push(RemoveCommand.operate(item));
