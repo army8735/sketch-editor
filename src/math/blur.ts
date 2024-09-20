@@ -12,9 +12,9 @@ export function kernelSize(sigma: number) {
   if (d < 2) {
     d = 2;
   }
-  // if (d % 2 === 0) {
-  //   d++;
-  // }
+  if (d % 2 === 0) {
+    d++;
+  }
   return d;
 }
 
