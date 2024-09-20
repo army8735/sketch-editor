@@ -1138,7 +1138,7 @@ function genGaussBlur(
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
   const sigma2 = sigma * scale;
   // const d2 = kernelSize(sigma2);
-  const boxes = boxesForGauss(sigma2);
+  const boxes = boxesForGauss(sigma2 * 0.5);
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const programBox = programs.boxProgram;
   // const programGauss = genGaussShader(gl, programs, sigma2, d2);
@@ -1892,7 +1892,7 @@ function genShadow(
       const sigma2 = sigma * scale;
       // const d2 = kernelSize(sigma2);
       const spread = outerSizeByD(d);
-      const boxes = boxesForGauss(sigma2);
+      const boxes = boxesForGauss(sigma2 * 0.5);
       const programBox = programs.boxProgram;
       // const programGauss = genGaussShader(gl, programs, sigma2, d2);
       gl.useProgram(programBox);

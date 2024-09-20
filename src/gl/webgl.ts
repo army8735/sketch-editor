@@ -487,8 +487,8 @@ export function drawBox(
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   const u_pw = gl.getUniformLocation(program, 'u_pw');
   const u_ph = gl.getUniformLocation(program, 'u_ph');
-  gl.uniform1f(u_pw, 1 / width);
-  gl.uniform1f(u_ph, 1 / height);
+  gl.uniform1f(u_pw, 2 / width);
+  gl.uniform1f(u_ph, 2 / height);
   const u_direction = gl.getUniformLocation(program, 'u_direction');
   const u_r = gl.getUniformLocation(program, 'u_r');
   let tex1 = texture;
