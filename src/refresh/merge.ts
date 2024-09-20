@@ -1890,16 +1890,18 @@ function genShadow(
       const sigma = blur * 0.5;
       const d = kernelSize(sigma);
       const sigma2 = sigma * scale;
-      const d2 = kernelSize(sigma2);
+      // const d2 = kernelSize(sigma2);
       const spread = outerSizeByD(d);
-      const programGauss = genGaussShader(gl, programs, sigma2, d2);
-      gl.useProgram(programGauss);
+      const boxes = boxesForGauss(sigma2 * 0.5);
+      const programBox = programs.boxProgram;
+      // const programGauss = genGaussShader(gl, programs, sigma2, d2);
+      gl.useProgram(programBox);
       const temp = TextureCache.getEmptyInstance(gl, bboxR);
       const listT = temp.list;
       for (let i = 0, len = listR.length; i < len; i++) {
         const { bbox, w, h, t } = listR[i];
         gl.viewport(0, 0, w, h);
-        const tex = drawGauss(gl, programGauss, t, w, h);
+        const tex = drawBox(gl, programBox, t, w, h, boxes);
         listT.push({
           bbox: bbox.slice(0),
           w,
@@ -1949,8 +1951,8 @@ function genShadow(
             }
           }
           if (hasDraw) {
-            gl.useProgram(programGauss);
-            item.t = drawGauss(gl, programGauss, t, w, h);
+            gl.useProgram(programBox);
+            item.t = drawBox(gl, programBox, t, w, h, boxes);
           }
           gl.deleteTexture(t);
         }
