@@ -1,8 +1,6 @@
 /**
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
  * 根据模糊参数sigma求卷积核尺寸
- * @param sigma
- * @returns {number}
  */
 export function kernelSize(sigma: number) {
   if (sigma <= 0) {
@@ -64,6 +62,7 @@ export function gaussianWeight(sigma: number, d: number) {
   return list;
 }
 
+// https://blog.ivank.net/fastest-gaussian-blur.html
 export function boxesForGauss(sigma: number, n = 3) {
   const wIdeal = Math.sqrt((12 * sigma * sigma / n) + 1);  // Ideal averaging filter width
   let wl = Math.floor(wIdeal);

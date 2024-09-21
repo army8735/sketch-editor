@@ -487,8 +487,8 @@ export function drawBox(
   const u_texture = gl.getUniformLocation(program, 'u_texture');
   const u_pw = gl.getUniformLocation(program, 'u_pw');
   const u_ph = gl.getUniformLocation(program, 'u_ph');
-  gl.uniform1f(u_pw, 2 / width);
-  gl.uniform1f(u_ph, 2 / height);
+  gl.uniform1f(u_pw, 1 / width);
+  gl.uniform1f(u_ph, 1 / height);
   const u_direction = gl.getUniformLocation(program, 'u_direction');
   const u_r = gl.getUniformLocation(program, 'u_r');
   let tex1 = texture;
@@ -543,59 +543,35 @@ export function drawDual(
   texture: WebGLTexture,
   width: number,
   height: number,
-  passes: number,
-  distance: number,
+  w: number,
+  h: number,
+  distance = 1,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
-  const u_texture = gl.getUniformLocation(program, 'u_texture');
+  // const w = Math.ceil(width * 0.5);
+  // const h = Math.ceil(height * 0.5);
   const u_x = gl.getUniformLocation(program, 'u_x');
   const u_y = gl.getUniformLocation(program, 'u_y');
-  const u_scale = gl.getUniformLocation(program, 'u_scale');
-  let tex1 = texture;
-  let tex2 = createTexture(gl, 0, undefined, width, height);
-  let tex3 = createTexture(gl, 0, undefined, width, height);
   gl.uniform1f(u_x, distance / width);
   gl.uniform1f(u_y, distance / height);
-  // 先向下缩放
-  for (let i = 0; i < passes; i++) {
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex2,
-      0,
-    );
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    bindTexture(gl, i ? tex3 : tex1, 0);
-    gl.uniform1i(u_texture, 0);
-    gl.uniform1f(u_scale, -Math.pow(2, -(i + 1)));
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    [tex2, tex3] = [tex3, tex2];
-  }
-  for (let i = 0; i < passes; i++) {
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex2,
-      0,
-    );
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    bindTexture(gl, tex3, 0);
-    gl.uniform1i(u_texture, 0);
-    gl.uniform1f(u_scale, Math.pow(2, -(passes - i - 1)));
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    [tex2, tex3] = [tex3, tex2];
-  }
+  const tex = createTexture(gl, 0, undefined, w, h);
+  const u_texture = gl.getUniformLocation(program, 'u_texture');
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    tex,
+    0,
+  );
+  bindTexture(gl, texture, 0);
+  gl.uniform1i(u_texture, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   // 回收
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  gl.deleteTexture(tex2);
-  return tex3;
+  return tex;
 }
 
 export function drawMotion(
