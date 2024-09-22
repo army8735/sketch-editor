@@ -1143,112 +1143,32 @@ function genGaussBlur(
    * 7*7高斯核则缩放0.5进行，即用dual先缩小一次，再一半的模糊，再dual放大
    * https://www.intel.com/content/www/us/en/developer/articles/technical/an-investigation-of-fast-real-time-gpu-based-image-blur-algorithms.html
    * 由于这里使用的是均值box模糊模拟，核大小和高斯模糊核不一样，最终算出挡4px（无高清缩放）以上核才会需要
-   * 17*17内核则缩放0.25，对应16px
+   * 17*17内核则缩放0.25，对应16px，规律是4^n-1，最大4次缩放
   */
-  let scaleDown = 1;
-  if (sigma2 >= 16) {
-    scaleDown = 0.25;
+  let dualTimes = 0;
+  if (sigma2 >= 256) {
+    dualTimes = 4;
+  }
+  else if (sigma2 >= 64) {
+    dualTimes = 3;
+  }
+  else if (sigma2 >= 16) {
+    dualTimes = 2;
   }
   else if (sigma2 >= 4) {
-    scaleDown = 0.5;
+    dualTimes = 1;
   }
-  const boxes = boxesForGauss(sigma2 * scaleDown);
+  const boxes = boxesForGauss(sigma2 * Math.pow(0.5, dualTimes));
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
-  const programBox = programs.boxProgram;
-  const programDualDown = programs.dualDownProgram;
-  const programDualUp = programs.dualUpProgram;
   const res = TextureCache.getEmptyInstance(gl, bboxR);
   const listR = res.list;
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
-    const w2 = Math.ceil(w * 0.5);
-    const h2 = Math.ceil(h * 0.5);
-    const w3 = Math.ceil(w2 * 0.5);
-    const h3 = Math.ceil(h2 * 0.5);
-    // console.log(scaleDown, sigma2, d2, w, h, w2, h2);
-    // const p1 = performance.now();
-    let t2: WebGLTexture | undefined = undefined;
-    if (scaleDown < 1) {
-      gl.useProgram(programDualDown);
-      gl.viewport(0, 0, w2, h2);
-      t2 = drawDual(gl, programDualDown, t, w, h, w2, h2);
-      if (scaleDown < 0.5) {
-        gl.viewport(0, 0, w3, h3);
-        const temp = t2;
-        t2 = drawDual(gl, programDualDown, temp, w2, h2, w3, h3);
-        gl.deleteTexture(temp);
-      }
-      // const pixels = new Uint8Array(w2 * h2 * 4);
-      // gl.readPixels(0, 0, w2, h2, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      // const os = inject.getOffscreenCanvas(w2, h2);
-      // const id = os.ctx.getImageData(0, 0, w2, h2);
-      // for (let i = 0, len = w2 * h2 * 4; i < len ;i++) {
-      //   id.data[i] = pixels[i];
-      // }
-      // os.ctx.putImageData(id, 0, 0);
-      // const img = document.createElement('img');
-      // img.setAttribute('name', 'down');
-      // os.canvas.toBlob(blob => {
-      //   img.src = URL.createObjectURL(blob!);
-      //   document.body.appendChild(img);
-      //   os.release();
-      // });
-    }
-    gl.useProgram(programBox);
-    let tex: WebGLTexture;
-    // 没有缩放
-    if (!t2) {
-      gl.viewport(0, 0, w, h);
-      tex = drawBox(gl, programBox, t, w, h, boxes);
-    }
-    else {
-      if (scaleDown < 0.5) {
-        gl.viewport(0, 0, w3, h3);
-        tex = drawBox(gl, programBox, t2, w3, h3, boxes);
-        gl.deleteTexture(t2);
-        gl.useProgram(programDualUp);
-        gl.viewport(0, 0, w2, h2);
-        t2 = tex;
-        tex = drawDual(gl, programDualUp, t2, w3, h3, w2, h2);
-        gl.deleteTexture(t2);
-      }
-      else {
-        gl.viewport(0, 0, w2, h2);
-        tex = drawBox(gl, programBox, t2, w2, h2, boxes);
-        gl.deleteTexture(t2);
-        gl.useProgram(programDualUp);
-      }
-      gl.viewport(0, 0, w, h);
-      t2 = tex!;
-      tex = drawDual(gl, programDualUp, t2, w2, h2, w, h);
-      gl.deleteTexture(t2);
-      // {
-      //   const pixels = new Uint8Array(w * h * 4);
-      //   gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      //   const os = inject.getOffscreenCanvas(w, h);
-      //   const id = os.ctx.getImageData(0, 0, w, h);
-      //   for (let i = 0, len = w * h * 4; i < len ;i++) {
-      //     id.data[i] = pixels[i];
-      //   }
-      //   os.ctx.putImageData(id, 0, 0);
-      //   const img = document.createElement('img');
-      //   img.setAttribute('name', 'up');
-      //   os.canvas.toBlob(blob => {
-      //     img.src = URL.createObjectURL(blob!);
-      //     document.body.appendChild(img);
-      //     os.release();
-      //   });
-      // }
-    }
-    gl.viewport(0, 0, w, h);
-    // const pixels = new Uint8Array(4);
-    // gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // console.log(boxes, w, h, performance.now() - p1);
     listR.push({
       bbox: bbox.slice(0),
       w,
       h,
-      t: tex,
+      t: genScaleGaussBlur(gl, root, boxes, dualTimes, t, w, h),
     });
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
@@ -1303,10 +1223,9 @@ function genGaussBlur(
       }
       // 一定会有，没有就是计算错了，这里预防下
       if (hasDraw) {
-        gl.useProgram(programBox);
-        item.t = drawBox(gl, programBox, t, w, h, boxes);
+        item.t = genScaleGaussBlur(gl, root, boxes, dualTimes, t, w, h);
+        gl.deleteTexture(t);
       }
-      gl.deleteTexture(t);
     }
     // 所有相邻部分回填
     drawInOverlay(gl, program, scale, res, listO, bboxR, spread);
@@ -1316,6 +1235,65 @@ function genGaussBlur(
   gl.useProgram(program);
   releaseFrameBuffer(gl, frameBuffer!, W, H);
   return res;
+}
+
+function genScaleGaussBlur(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  boxes: number[],
+  dualTimes: number,
+  t: WebGLTexture,
+  w: number,
+  h: number,
+) {
+  const programs = root.programs;
+  const programBox = programs.boxProgram;
+  const programDualDown = programs.dualDownProgram;
+  const programDualUp = programs.dualUpProgram;
+  let w1 = w, h1 = h;
+  let t2: WebGLTexture | undefined = undefined;
+  // const p1 = performance.now();
+  if (dualTimes) {
+    gl.useProgram(programDualDown);
+    t2 = t;
+    for (let i = 1; i <= dualTimes; i++) {
+      const w2 = Math.ceil(w * Math.pow(0.5, i));
+      const h2 = Math.ceil(h * Math.pow(0.5, i));
+      gl.viewport(0, 0, w2, h2);
+      const temp = t2;
+      t2 = drawDual(gl, programDualDown, temp, w1, h1, w2, h2);
+      if (temp !== t) {
+        gl.deleteTexture(temp);
+      }
+      w1 = w2;
+      h1 = h2;
+    }
+  }
+  // 无论是否缩小都复用box产生模糊
+  gl.useProgram(programBox);
+  gl.viewport(0, 0, w1, h1);
+  let tex = drawBox(gl, programBox, t2 || t, w1, h1, boxes);
+  // 可能再放大dualTimes次
+  if (dualTimes) {
+    gl.useProgram(programDualUp);
+    t2 = tex;
+    for (let i = dualTimes - 1; i >= 0; i--) {
+      const w2 = Math.ceil(w * Math.pow(0.5, i));
+      const h2 = Math.ceil(h * Math.pow(0.5, i));
+      gl.viewport(0, 0, w2, h2);
+      const temp = t2;
+      t2 = drawDual(gl, programDualUp, temp, w1, h1, w2, h2);
+      gl.deleteTexture(temp);
+      w1 = w2;
+      h1 = h2;
+    }
+    tex = t2;
+  }
+  gl.viewport(0, 0, w, h);
+  // const pixels = new Uint8Array(w * h);
+  // gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  // console.log(performance.now() - p1);
+  return tex;
 }
 
 function toFloat(n: number) {
