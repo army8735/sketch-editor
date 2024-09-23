@@ -187,9 +187,9 @@ class Root extends Container implements FrameCallback {
     this.reLayout();
     this.didMount();
     // 先设置的page和index，再附加到canvas上，需刷新
-    if (this.lastPage) {
+    // if (this.lastPage) {
       this.addUpdate(this, [], RefreshLevel.REFLOW);
-    }
+    // }
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {

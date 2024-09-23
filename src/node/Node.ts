@@ -58,7 +58,6 @@ import { LayoutData } from './layout';
 import Page from './Page';
 import SymbolInstance from './SymbolInstance';
 import Tile from '../refresh/Tile';
-import { convert2Css } from '../style/gradient';
 
 class Node extends Event {
   width: number;

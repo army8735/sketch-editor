@@ -16,14 +16,14 @@ void main() {
   float total = 1.0;
   if (u_r == 0) {
     if (u_direction == 0) {
-      color += texture2D(u_texture, vec2(v_texCoords.x + u_pw * 0.5, v_texCoords.y));
-      color += texture2D(u_texture, vec2(v_texCoords.x - u_pw * 0.5, v_texCoords.y));
+      color += texture2D(u_texture, vec2(v_texCoords.x + u_pw, v_texCoords.y)) * 0.125;
+      color += texture2D(u_texture, vec2(v_texCoords.x - u_pw, v_texCoords.y)) * 0.125;
     }
     else {
-      color += texture2D(u_texture, vec2(v_texCoords.x, v_texCoords.y + u_ph * 0.5));
-      color += texture2D(u_texture, vec2(v_texCoords.x, v_texCoords.y - u_ph * 0.5));
+      color += texture2D(u_texture, vec2(v_texCoords.x, v_texCoords.y + u_ph)) * 0.125;
+      color += texture2D(u_texture, vec2(v_texCoords.x, v_texCoords.y - u_ph)) * 0.125;
     }
-    total += 2.0;
+    total += 0.25;
   }
   else {
     for (int i = 1; i < MAX_KERNEL_SIZE; i++) {
