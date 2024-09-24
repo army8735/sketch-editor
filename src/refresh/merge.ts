@@ -1143,7 +1143,7 @@ function genGaussBlur(
    * 7*7高斯核则缩放0.5进行，即用dual先缩小一次，再一半的模糊，再dual放大
    * https://www.intel.com/content/www/us/en/developer/articles/technical/an-investigation-of-fast-real-time-gpu-based-image-blur-algorithms.html
    * 由于这里使用的是均值box模糊模拟，核大小和高斯模糊核不一样，最终算出挡4px（无高清缩放）以上核才会需要
-   * 17*17内核则缩放0.25，对应16px，规律是4^n-1，最大4次缩放
+   * 17*17内核则缩放0.25，对应16px，规律是4^n，最大4次缩放
   */
   let dualTimes = 0;
   if (sigma2 >= 256) {

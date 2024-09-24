@@ -63,8 +63,10 @@ export default class Listener extends Event {
   ctrlKey: boolean;
   altKey: boolean;
   spaceKey: boolean;
+  middleKey: boolean;
   isMouseDown: boolean;
   isMouseMove: boolean;
+  button: number;
   isControl: boolean; // resize等操作控制
   isRotate: boolean; // 拖转旋转节点
   controlType: CONTROL_TYPE; // 拖动尺寸dom时节点的class，区分比如左拉还是右拉
@@ -102,9 +104,11 @@ export default class Listener extends Event {
     this.ctrlKey = false;
     this.altKey = false;
     this.spaceKey = false;
+    this.middleKey = false;
 
     this.isMouseDown = false;
     this.isMouseMove = false;
+    this.button = 0;
     this.isControl = false;
     this.isRotate = false;
     this.controlType = CONTROL_TYPE.T;
@@ -453,7 +457,8 @@ export default class Listener extends Event {
 
   onMouseDown(e: MouseEvent) {
     // e.preventDefault();
-    if (this.options.disabled?.select) {
+    // 只认第一个按下的键，防止重复冲突
+    if (this.options.disabled?.select || this.isMouseDown) {
       return;
     }
     const root = this.root;
@@ -461,26 +466,29 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    // 左键
-    if (e.button === 0 || e.button === 2) {
-      if (e.button === 0) {
-        this.isMouseDown = true;
-        this.isMouseMove = false;
-        this.startX = e.clientX;
-        this.startY = e.clientY;
-        // 空格按下移动画布
-        if (this.spaceKey) {
-          const o = page.getComputedStyle();
-          this.pageTx = o.translateX;
-          this.pageTy = o.translateY;
-          this.dom.style.cursor = 'grabbing';
-        }
-      }
-      // 普通按下是选择节点或者编辑文本
-      if (!this.spaceKey) {
-        const target = e.target as HTMLElement;
-        this.onDown(target, e);
-      }
+    this.button = e.button;
+    // 右键菜单
+    if (e.button === 2) {
+      return;
+    }
+    this.isMouseDown = true;
+    this.isMouseMove = false;
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+    if (e.button === 1) {
+      this.middleKey = true;
+    }
+    // 空格或中间移动画布
+    if (e.button === 0 && this.spaceKey || this.middleKey) {
+      const o = page.getComputedStyle();
+      this.pageTx = o.translateX;
+      this.pageTy = o.translateY;
+      this.dom.style.cursor = 'grabbing';
+    }
+    // 普通按下是选择节点或者编辑文本
+    else if (!this.spaceKey) {
+      const target = e.target as HTMLElement;
+      this.onDown(target, e);
     }
   }
 
@@ -672,8 +680,8 @@ export default class Listener extends Event {
     const root = this.root;
     const dpi = root.dpi;
     const selected = this.selected;
-    // 空格拖拽画布
-    if (this.spaceKey) {
+    // 空格或中键拖拽画布
+    if (this.spaceKey || this.middleKey) {
       if (this.isMouseDown) {
         if (this.options.disabled?.drag) {
           return;
@@ -729,7 +737,11 @@ export default class Listener extends Event {
     }
   }
 
-  onMouseUp() {
+  onMouseUp(e?: MouseEvent) {
+    // 限制了只能按下一个鼠标键防止冲突
+    if (e && e.button !== this.button) {
+      return;
+    }
     const selected = this.selected;
     // 调整之前锁住的group，结束后统一进行解锁
     selected.forEach(node => {
@@ -848,7 +860,8 @@ export default class Listener extends Event {
     this.isMouseMove = false;
     this.mouseDownArtBoard = undefined;
     this.isFrame = false;
-    if (this.spaceKey) {
+    this.middleKey = false;
+    if (this.spaceKey || this.middleKey) {
       if (this.options.disabled?.drag) {
         return;
       }

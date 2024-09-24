@@ -468,7 +468,7 @@ class Root extends Container implements FrameCallback {
           computedStyle.breakMask = style.breakMask.v;
         }
         // mask的任何变更都要清空重绘，必须CACHE以上，CACHE是跨帧渲染用级别
-        if (computedStyle.maskMode && !cleared) {
+        if (computedStyle.maskMode && !cleared && lv > RefreshLevel.CACHE) {
           node.clearMask();
         }
       }
