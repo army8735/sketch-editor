@@ -7,7 +7,8 @@ import { appendWithPosAndSize} from '../tools/container';
 export type RemoveData = {
   x: number; // 位置即computedStyle的left/top，但删除节点会使得parent组的尺寸变化，left/top会不准确，记录时需修正
   y: number;
-  parent: Container;
+  parent: Container; // undo时添加需要父元素
+  selected?: Node; // 删除组下唯一元素时视为删除组，undo时需要select此元素而不是组
 };
 
 class RemoveCommand extends AbstractCommand {

@@ -141,7 +141,7 @@ export default class Tree {
         }
       });
     });
-    listener.on(Listener.ADD_NODE, (nodes: Node[]) => {
+    listener.on(Listener.ADD_NODE, (nodes: Node[], selected?: Node[]) => {
       nodes.forEach((item) => {
         const res = genNodeTree(item, item.struct.lv);
         const dd = document.createElement('dd');
@@ -162,7 +162,7 @@ export default class Tree {
           }
         }
       });
-      this.select(nodes);
+      this.select(selected || nodes);
     });
 
     dom.addEventListener('click', (e) => {

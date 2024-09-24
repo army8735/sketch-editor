@@ -1040,6 +1040,7 @@ export default class Listener extends Event {
     if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
+        const sel = this.selected.slice(0);
         const nodes = this.selected.splice(0).map(item => {
           let p = item;
           while (p) {
@@ -1053,8 +1054,17 @@ export default class Listener extends Event {
           return p;
         });
         const data: RemoveData[] = [];
-        nodes.forEach((item) => {
-          data.push(RemoveCommand.operate(item));
+        nodes.forEach((item, i) => {
+          const o = RemoveCommand.operate(item);
+          if (item !== sel[i]) {
+            data.push({
+              ...o,
+              selected: sel[i],
+            });
+          }
+          else {
+            data.push(o);
+          }
         });
         this.select.hideSelect();
         this.history.addCommand(new RemoveCommand(nodes, data));
@@ -1136,9 +1146,11 @@ export default class Listener extends Event {
             this.emit(Listener.REMOVE_NODE, c.nodes.slice(0));
           }
           else {
-            this.selected = c.nodes.slice(0);
+            this.selected = c.nodes.map((item, i) => {
+              return c.data[i].selected || item;
+            });
             this.select.showSelect(this.selected);
-            this.emit(Listener.ADD_NODE, c.nodes.slice(0));
+            this.emit(Listener.ADD_NODE, c.nodes.slice(0), this.selected.slice(0));
           }
         }
         else if (c instanceof RotateCommand) {
