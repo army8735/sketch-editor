@@ -346,7 +346,18 @@ export default class Listener extends Event {
       // 特殊的选择非空画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
       if (node instanceof ArtBoard && node.children.length && selected.indexOf(node) === -1) {
         if (meta) {
-          this.mouseDownArtBoard = node;
+          // 如果已选的里面有此画板或者属于此画板，要忽略
+          let ignore = false;
+          for (let i = 0, len = selected.length; i < len; i++) {
+            const item = selected[i];
+            if (item === node || item.artBoard === node) {
+              ignore = true;
+              break;
+            }
+          }
+          if (!ignore) {
+            this.mouseDownArtBoard = node;
+          }
         }
         node = undefined;
       }
