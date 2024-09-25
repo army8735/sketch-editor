@@ -1394,6 +1394,10 @@ class Node extends Event {
   // 移动过程是用translate加速，结束后要更新TRBL的位置以便后续定位，还要还原translate为原本的%（可能）
   endPosChange(prev: Style, dx: number, dy: number) {
     const { style, computedStyle, parent } = this;
+    // 未添加到dom
+    if (!parent) {
+      return;
+    }
     const {
       translateX,
       translateY,
@@ -1405,7 +1409,7 @@ class Node extends Event {
       left,
     } = style;
     // 一定有parent，不会改root下固定的Container子节点
-    const { width: pw, height: ph } = parent!;
+    const { width: pw, height: ph } = parent;
     if (dx) {
       if (left.u === StyleUnit.PX) {
         left.v += dx;

@@ -194,6 +194,23 @@ export default class Listener extends Event {
     }
   }
 
+  // 封装getNodeByPoint，一般情况选择画板忽略
+  getNode(x: number, y: number, isDbl = false) {
+    const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
+    let node = getNodeByPoint(
+      this.root,
+      x,
+      y,
+      meta,
+      this.selected,
+      isDbl,
+    );
+    if (node instanceof ArtBoard && node.children.length && !meta) {
+      node = undefined;
+    }
+    return node;
+  }
+
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
@@ -205,8 +222,9 @@ export default class Listener extends Event {
     this.cssStyle.splice(0);
     this.computedStyle.splice(0);
     this.dx = this.dy = 0;
+    const isButtonRight = e instanceof MouseEvent && e.button === 2;
     // 点到控制html上
-    if (isControl) {
+    if (isControl && !isButtonRight) {
       if (this.options.disabled?.resize) {
         return;
       }
@@ -311,7 +329,7 @@ export default class Listener extends Event {
     // 点到canvas上
     else {
       // 非按键多选情况下点击框内，视为移动，多选时选框一定是无旋转的
-      if (selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
+      if (!isButtonRight && selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
         const x = e.clientX;
         const y = e.clientY;
         const rect = this.select.select.getBoundingClientRect();
@@ -323,29 +341,14 @@ export default class Listener extends Event {
       // 普通根据点击坐标获取节点逻辑
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
-      let node = getNodeByPoint(
-        root,
-        x,
-        y,
-        (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
-        selected,
-        false,
-      );
-      // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
-      if ((this.metaKey || isWin && this.ctrlKey) && node instanceof ArtBoard && selected.indexOf(node) === -1) {
-        // 如果已选的里面有此画板或者属于此画板，要忽略
-        let ignore = false;
-        for (let i = 0, len = selected.length; i < len; i++) {
-          const item = selected[i];
-          if (item === node || item.artBoard === node) {
-            ignore = true;
-            break;
-          }
-        }
-        if (!ignore) {
+      const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
+      let node = this.getNode(x, y);
+      // 特殊的选择非空画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
+      if (node instanceof ArtBoard && node.children.length && selected.indexOf(node) === -1) {
+        if (meta) {
           this.mouseDownArtBoard = node;
-          node = undefined;
         }
+        node = undefined;
       }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
@@ -467,8 +470,27 @@ export default class Listener extends Event {
       return;
     }
     this.button = e.button;
-    // 右键菜单
+    // 右键菜单，忽略meta按下
     if (e.button === 2) {
+      if (this.metaKey || isWin && this.ctrlKey || this.state === State.EDIT_TEXT) {
+        return;
+      }
+      // const dpi = root.dpi;
+      // const x = (e.clientX - this.originX) * dpi;
+      // const y = (e.clientY - this.originY) * dpi;
+      // const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
+      // let node = getNodeByPoint(
+      //   root,
+      //   x,
+      //   y,
+      //   meta,
+      //   this.selected,
+      //   false,
+      // );
+      // if (node instanceof ArtBoard && node.children.length && !meta) {
+      //   node = undefined;
+      // }
+      // console.log(node);
       return;
     }
     this.isMouseDown = true;
@@ -650,14 +672,11 @@ export default class Listener extends Event {
         }
         return;
       }
+      const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
       // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-      const node = getNodeByPoint(
-        root,
+      let node = this.getNode(
         (e as MouseEvent).offsetX * dpi,
         (e as MouseEvent).offsetY * dpi,
-        (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
-        selected,
-        false,
       );
       if (node) {
         if (selected.indexOf(node) === -1 && this.select.hoverNode !== node) {
@@ -711,13 +730,9 @@ export default class Listener extends Event {
           return;
         }
         // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-        const node = getNodeByPoint(
-          root,
+        let node = this.getNode(
           e.offsetX * dpi,
           e.offsetY * dpi,
-          (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
-          selected,
-          false,
         );
         if (node) {
           if (selected.indexOf(node) === -1) {
@@ -846,7 +861,7 @@ export default class Listener extends Event {
       }
     }
     // 特殊的选择画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择，shift校验在down时做
-    else if ((this.metaKey || isWin && this.ctrlKey) && this.mouseDownArtBoard) {
+    else if (this.mouseDownArtBoard) {
       if (!this.shiftKey) {
         selected.splice(0);
       }
@@ -917,12 +932,9 @@ export default class Listener extends Event {
       return;
     }
     const dpi = root.dpi;
-    let node = getNodeByPoint(
-      root,
+    let node = this.getNode(
       (e.clientX - this.originX) * dpi,
       (e.clientY - this.originY) * dpi,
-      (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta,
-      this.selected,
       true,
     );
     // 忽略画板

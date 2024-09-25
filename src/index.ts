@@ -22,14 +22,14 @@ export default {
     dpi?: number,
     canvas?: HTMLCanvasElement,
     contextAttributes?: any,
-  }) {
+  } = {}) {
     json = json as JFile;
     let { width, height, dpi = 1, canvas } = options;
     const style: any = { width, height };
-    if (!width || width <= 0) {
+    if (!width || width < 1) {
       style.width = 'auto';
     }
-    if (!height || height <= 0) {
+    if (!height || height < 1) {
       style.height = 'auto';
     }
     const root = new node.Root({

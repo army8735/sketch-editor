@@ -138,9 +138,9 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           n = p;
         }
         // 非空画板不能选
-        if (n instanceof ArtBoard && n.children.length) {
-          return;
-        }
+        // if (n instanceof ArtBoard && n.children.length) {
+        //   return;
+        // }
         return n;
       }
       // 双击下钻已选，一定有已选，遍历所有已选看激活的是哪个的儿子
@@ -217,9 +217,9 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           });
         }
         // 非空画板不能选
-        if (n instanceof ArtBoard && n.children.length) {
-          return;
-        }
+        // if (n instanceof ArtBoard && n.children.length) {
+        //   return;
+        // }
         return n;
       }
     }
