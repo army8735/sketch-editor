@@ -303,7 +303,11 @@ class Node extends Event {
     node.parent = parent;
     node.prev = this;
     if (this.next) {
+      node.props.index = (this.next.props.index + this.props.index) * 0.5;
       this.next.prev = node;
+    }
+    else {
+      node.props.index = (this.props.index + 1) * 0.5;
     }
     node.next = this.next;
     this.next = node;
@@ -335,7 +339,11 @@ class Node extends Event {
     node.parent = parent;
     node.prev = this.prev;
     if (this.prev) {
+      node.props.index = (this.prev.props.index + this.props.index) * 0.5;
       this.prev.next = node;
+    }
+    else {
+      node.props.index = this.props.index * 0.5;
     }
     node.next = this;
     this.prev = node;

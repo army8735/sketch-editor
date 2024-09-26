@@ -150,6 +150,10 @@ class Container extends Node {
       const last = children[children.length - 1];
       last.next = node;
       node.prev = last;
+      node.props.index = (last.props.index + 1) * 0.5;
+    }
+    else {
+      node.props.index = 0.5;
     }
     node.parent = this;
     node.root = root;
@@ -172,6 +176,10 @@ class Container extends Node {
       const first = children[0];
       first.next = node;
       node.prev = first;
+      node.props.index = first.props.index * 0.5;
+    }
+    else {
+      node.props.index = 0.5;
     }
     node.parent = this;
     node.root = root;
