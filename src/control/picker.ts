@@ -23,17 +23,7 @@ export default {
     const rect = node.getBoundingClientRect();
     if (!div) {
       div = document.createElement('div');
-      div.style.position = 'absolute';
-      div.style.left = '0px';
-      div.style.top = '0px';
-      div.style.zIndex = '9999';
-      div.style.display = 'none';
-      div.style.padding = '5px';
-      div.style.backgroundColor = '#FFF';
-      div.style.border = '1px solid #CCC';
-      div.style.borderRadius = '5px';
-      div.style.filter = 'drop-shadow(0 0 5px rgba(0, 0, 0, 0.2))';
-      div.style.transform = 'translateX(-90%)';
+      div.className = 'sketch-editor-picker';
       div.innerHTML = html;
       document.body.appendChild(div);
       // 点击外部自动关闭

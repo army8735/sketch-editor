@@ -11,6 +11,13 @@ import Input from './Input';
 import State from './State';
 import { clone } from '../util/type';
 import { ArtBoardProps, JStyle } from '../format';
+import { getFrameNodes, getNodeByPoint } from '../tools/root';
+import { group, unGroup } from '../tools/group';
+import { intersectLineLine } from '../math/isec';
+import { angleBySides, r2d } from '../math/geom';
+import { crossProduct } from '../math/vector';
+import picker from './picker';
+import contextMenu from './contextMenu';
 import History from '../history/History';
 import AbstractCommand from '../history/AbstractCommand';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -20,11 +27,6 @@ import RotateCommand from '../history/RotateCommand';
 import RichCommand from '../history/RichCommand';
 import OpacityCommand from '../history/OpacityCommand';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
-import { getFrameNodes, getNodeByPoint } from '../tools/root';
-import { intersectLineLine } from '../math/isec';
-import { angleBySides, r2d } from '../math/geom';
-import { crossProduct } from '../math/vector';
-import picker from './picker';
 import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
@@ -244,9 +246,10 @@ export default class Listener extends Event {
       if (this.state === State.EDIT_TEXT) {
         this.state = State.NORMAL;
         this.input.hide();
-        (selected[0] as Text).resetCursor();
-        (selected[0] as Text).afterEdit();
-        (selected[0] as Text).inputStyle = undefined;
+        const text = selected[0] as Text;
+        text.resetCursor();
+        text.afterEdit();
+        text.inputStyle = undefined;
       }
       // 旋转时记住中心坐标
       if (selected.length === 1 && (this.metaKey || isWin && this.ctrlKey)
@@ -493,6 +496,7 @@ export default class Listener extends Event {
       const target = e.target as HTMLElement;
       // 复用普通左键选择的部分逻辑
       this.onDown(target, e);
+      contextMenu.showCanvas(e.pageX, e.pageY, this);
       return;
     }
     this.isMouseDown = true;
@@ -612,7 +616,8 @@ export default class Listener extends Event {
           }
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
-          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, (this.metaKey || isWin && this.ctrlKey));
+          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi,
+            (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta);
           const old = selected.splice(0);
           selected.push(...res);
           // 已选择的没变优化
@@ -674,7 +679,6 @@ export default class Listener extends Event {
         }
         return;
       }
-      const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
       // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
       let node = this.getNode(
         (e as MouseEvent).offsetX * dpi,
@@ -1050,6 +1054,56 @@ export default class Listener extends Event {
     this.updateInput();
   }
 
+  scale(upOrDown = false) {
+    const root = this.root;
+    const page = root.getCurPage();
+    if (!page) {
+      return;
+    }
+    let scale = page.getZoom(true);
+    if (upOrDown) {
+      scale *= 2;
+    }
+    else {
+      scale *= 0.5;
+    }
+    if (scale > 32) {
+      scale = 32;
+    }
+    else if (scale < 0.01) {
+      scale = 0.01;
+    }
+    root.zoomTo(scale, 0.5, 0.5);
+    this.updateSelected();
+    this.emit(Listener.ZOOM_PAGE, scale);
+  }
+
+  selectAll() {
+    const root = this.root;
+    const page = root.getCurPage();
+    if (!page) {
+      return;
+    }
+    const res = getFrameNodes(root, 0, 0, root.width, root.height,
+      (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta);
+    this.select.showSelect(res);
+    this.emit(Listener.SELECT_NODE, res.slice(0));
+  }
+
+  group() {
+    if (this.selected.length) {
+      const res = group(this.selected);
+      this.emit(Listener.GROUP_NODE, res);
+    }
+  }
+
+  unGroup() {
+    if (this.selected.length === 1 && this.selected[0] instanceof Group) {
+      const res = unGroup(this.selected[0]);
+      this.emit(Listener.UN_GROUP_NODE, res, this.selected[0]);
+    }
+  }
+
   onKeyDown(e: KeyboardEvent) {
     this.metaKey = e.metaKey;
     this.altKey = e.altKey;
@@ -1287,7 +1341,7 @@ export default class Listener extends Event {
 
   onContextMenu(e: MouseEvent) {
     e.preventDefault();
-    this.emit(Listener.CONTEXT_MENU, e);
+    // this.emit(Listener.CONTEXT_MENU, e);
   }
 
   destroy() {
@@ -1298,7 +1352,7 @@ export default class Listener extends Event {
     this.dom.removeEventListener('click', this.onClick);
     this.dom.removeEventListener('dblclick', this.onDblClick);
     this.dom.removeEventListener('wheel', this.onWheel);
-    this.dom.removeEventListener('contextmenu', this.onContextMenu);
+    // this.dom.removeEventListener('contextmenu', this.onContextMenu);
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
 
@@ -1336,6 +1390,8 @@ export default class Listener extends Event {
   static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ADD_NODE = 'ADD_NODE';
+  static GROUP_NODE = 'GROUP_NODE';
+  static UN_GROUP_NODE = 'UN_GROUP_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }

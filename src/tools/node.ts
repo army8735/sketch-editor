@@ -6,6 +6,7 @@ import { ComputedStyle, StyleUnit } from '../style/define';
 import { PageProps, Point, ResizeStyle } from '../format';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
+import Page from '../node/Page';
 
 export enum POSITION {
   UNDER = 0,
@@ -54,7 +55,7 @@ export function getPosOnPage(node: Node) {
   if (!node.page) {
     throw new Error('Node not on a Page');
   }
-  if (node.isPage) {
+  if (node.isPage && node instanceof Page) {
     return { x: 0, y: 0 };
   }
   const page = node.page;
@@ -68,11 +69,7 @@ export function getPosOnPage(node: Node) {
   while (list.length) {
     m = multiply(m, list.pop()!.matrix);
   }
-  // 自己节点只考虑translate影响，忽略rotate，而本身又没有scale，迁移到别的父节点只需关注x/y变化
-  const i = identity();
-  i[12] = node.computedStyle.translateX;
-  i[13] = node.computedStyle.translateY;
-  m = multiply(m, i);
+  // 自己节点无需考虑translate，只有text才会有，且这里计算是为了和page比较差值然后布局，所以必须不考虑
   return calPoint({ x: 0, y: 0 }, m);
 }
 
@@ -81,6 +78,9 @@ export function getPosOnPage(node: Node) {
  * 先记录下node当前的绝对坐标和尺寸和旋转，然后转换style到以parent为新父元素下并保持单位不变
  */
 export function migrate(parent: Node, node: Node) {
+  if (node.parent === parent) {
+    return;
+  }
   const width = parent.width;
   const height = parent.height;
   const { x, y } = getPosOnPage(parent);

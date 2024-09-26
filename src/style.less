@@ -1404,3 +1404,56 @@ html, body {
     }
   }
 }
+
+.sketch-editor-picker, .sketch-editor-context-menu {
+  position: absolute;
+  z-index: 9999;
+  padding: 5px;
+  background: #FFF;
+  border: 1px solid #CCC;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.sketch-editor-context-menu {
+  font-size: 14px;
+  cursor: default;
+
+  .item {
+    padding: 2px 5px;
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(51, 102, 255, 0.1);
+    }
+  }
+
+  .split {
+    margin: 5px 0;
+    border-top: 1px solid #CCC;
+  }
+
+  &.empty {
+    .group, .un-group {
+      display: none;
+    }
+  }
+
+  &.single {
+    .un-group, .scale-up, .scale-down, .select-all, .split {
+      display: none;
+    }
+  }
+
+  &.single-group {
+    .scale-up, .scale-down, .select-all, .split {
+      display: none;
+    }
+  }
+
+  &.multi {
+    .scale-up, .scale-down, .select-all, .split {
+      display: none;
+    }
+  }
+}

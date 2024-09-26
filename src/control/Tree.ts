@@ -164,6 +164,16 @@ export default class Tree {
       });
       this.select(selected || nodes);
     });
+    listener.on(Listener.GROUP_NODE, (node: Group) => {
+      console.log(node);
+    });
+    listener.on(Listener.UN_GROUP_NODE, (nodes: Node[], group: Group) => {
+      console.log(nodes, group);
+    });
+
+    dom.addEventListener('selectstart', (e) => {
+      e.preventDefault();
+    });
 
     dom.addEventListener('click', (e) => {
       this.silence = true;
