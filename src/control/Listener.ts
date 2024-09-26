@@ -357,9 +357,12 @@ export default class Listener extends Event {
           }
           if (!ignore) {
             this.mouseDownArtBoard = node;
+            node = undefined;
           }
         }
-        node = undefined;
+        else {
+          node = undefined;
+        }
       }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
