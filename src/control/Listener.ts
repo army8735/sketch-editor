@@ -222,6 +222,7 @@ export default class Listener extends Event {
     this.cssStyle.splice(0);
     this.computedStyle.splice(0);
     this.dx = this.dy = 0;
+    // 右键复用普通左键点击的部分逻辑，但要区分
     const isButtonRight = e instanceof MouseEvent && e.button === 2;
     // 点到控制html上
     if (isControl && !isButtonRight) {
@@ -489,22 +490,9 @@ export default class Listener extends Event {
       if (this.metaKey || isWin && this.ctrlKey || this.state === State.EDIT_TEXT) {
         return;
       }
-      // const dpi = root.dpi;
-      // const x = (e.clientX - this.originX) * dpi;
-      // const y = (e.clientY - this.originY) * dpi;
-      // const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
-      // let node = getNodeByPoint(
-      //   root,
-      //   x,
-      //   y,
-      //   meta,
-      //   this.selected,
-      //   false,
-      // );
-      // if (node instanceof ArtBoard && node.children.length && !meta) {
-      //   node = undefined;
-      // }
-      // console.log(node);
+      const target = e.target as HTMLElement;
+      // 复用普通左键选择的部分逻辑
+      this.onDown(target, e);
       return;
     }
     this.isMouseDown = true;
