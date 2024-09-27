@@ -50,7 +50,7 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
   }
 }
 
-// 获取节点相对于其所在Page的坐标，左上角原点不考虑旋转，Page本身返回0,0
+// 获取节点相对于其所在Page的坐标，Page本身返回0,0
 export function getPosOnPage(node: Node) {
   if (!node.page) {
     throw new Error('Node not on a Page');
@@ -58,6 +58,7 @@ export function getPosOnPage(node: Node) {
   if (node.isPage && node instanceof Page) {
     return { x: 0, y: 0 };
   }
+  // 从自己parent开始到page，累计matrix，不包含自己
   const page = node.page;
   let p = node.parent;
   const list: Node[] = [];
@@ -69,8 +70,9 @@ export function getPosOnPage(node: Node) {
   while (list.length) {
     m = multiply(m, list.pop()!.matrix);
   }
-  // 自己节点无需考虑translate，只有text才会有，且这里计算是为了和page比较差值然后布局，所以必须不考虑
-  return calPoint({ x: 0, y: 0 }, m);
+  // 自己节点无需考虑rotate和translate，只用加上left/top即可
+  const pt = calPoint({ x: 0, y: 0 }, m);
+  return { x: pt.x + node.computedStyle.left, y: pt.y + node.computedStyle.top };
 }
 
 /**
@@ -123,23 +125,23 @@ export function migrate(parent: Node, node: Node) {
   }
   // 左右都不固定
   else {
-    const left = x1 - x;
+    const left = x1 + x;
     // 仅固定宽度，以中心点占left的百分比，或者文字只有left百分比无right
     if (
       widthConstraint ||
       (style.left.u === StyleUnit.PERCENT && style.right.u === StyleUnit.AUTO)
     ) {
-      style.left.v = ((left + node.width * 0.5) * 100) / width;
+      style.left.v = left * 100 / width;
     }
     // 左右皆为百分比
     else {
-      style.left.v = (left * 100) / width;
+      style.left.v = left * 100 / width;
       style.right.v = ((width - left - node.width) * 100) / width;
     }
   }
   // top
   if (topConstraint) {
-    const top = y1 - y;
+    const top = y1 + y;
     style.top.v = top;
     // top+bottom忽略height
     if (bottomConstraint) {
@@ -173,11 +175,11 @@ export function migrate(parent: Node, node: Node) {
       heightConstraint ||
       (style.top.u === StyleUnit.PERCENT && style.bottom.u === StyleUnit.AUTO)
     ) {
-      style.top.v = ((top + node.height * 0.5) * 100) / height;
+      style.top.v = top * 100 / height;
     }
     // 左右皆为百分比
     else {
-      style.top.v = (top * 100) / height;
+      style.top.v = top * 100 / height;
       style.bottom.v = ((height - top - node.height) * 100) / height;
     }
   }

@@ -54,6 +54,7 @@ export function unGroup(group: Group) {
     inject.error('Can not unGroup a destroyed Node');
     return;
   }
+  group.fixedPosAndSize = true;
   const parent = group.parent;
   if (parent instanceof Group) {
     parent.fixedPosAndSize = true;
@@ -70,6 +71,7 @@ export function unGroup(group: Group) {
   if (parent instanceof Group) {
     parent.fixedPosAndSize = false;
   }
+  group.fixedPosAndSize = false;
   group.remove();
   return children;
 }
