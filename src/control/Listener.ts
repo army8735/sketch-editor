@@ -333,7 +333,7 @@ export default class Listener extends Event {
     // 点到canvas上
     else {
       // 非按键多选情况下点击框内，视为移动，多选时选框一定是无旋转的
-      if (!isButtonRight && selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
+      if (selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
         const x = e.clientX;
         const y = e.clientY;
         const rect = this.select.select.getBoundingClientRect();
@@ -1093,7 +1093,13 @@ export default class Listener extends Event {
   group() {
     if (this.selected.length) {
       const res = group(this.selected);
-      this.emit(Listener.GROUP_NODE, res);
+      if (res) {
+        this.emit(Listener.GROUP_NODE, res, this.selected.slice(0));
+        this.selected.splice(0);
+        this.selected.push(res);
+        this.select.updateSelect(this.selected);
+        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+      }
     }
   }
 

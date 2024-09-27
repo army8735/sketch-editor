@@ -19,9 +19,11 @@ export default {
       canvasDiv = document.createElement('div');
       canvasDiv.innerHTML = htmlCanvas;
       document.body.appendChild(canvasDiv);
-      // 点击自动关闭
+      // 点击自动关闭，外部或者子项都可，但点自身不关闭，因为有padding或者不可点击的项视为点自己
       document.addEventListener('click', (e) => {
-        this.hide();
+        if (e.target !== canvasDiv) {
+          this.hide();
+        }
       });
       canvasDiv.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;

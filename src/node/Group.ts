@@ -4,7 +4,6 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Props, TAG_NAME } from '../format';
 import { RefreshLevel } from '../refresh/level';
 import { StyleUnit } from '../style/define';
-import { migrate, sortTempIndex } from '../tools/node';
 import Container from './Container';
 import Node from './Node';
 import { clone } from '../util/type';

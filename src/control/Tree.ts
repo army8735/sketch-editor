@@ -13,10 +13,10 @@ import Container from '../node/Container';
 import Listener from './Listener';
 import config from '../util/config';
 
-function genNodeTree(node: Node, lv: number) {
+function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
   const dl = document.createElement('dl');
-  const classNames = ['layer', 'lv' + lv];
+  const classNames = ['layer'];
   if (node instanceof SymbolInstance) {
     classNames.push('symbol-instance');
   }
@@ -36,6 +36,7 @@ function genNodeTree(node: Node, lv: number) {
   }
   dl.className = classNames.join(' ');
   dl.setAttribute('uuid', node.props.uuid);
+  dl.setAttribute('lv', lv.toString());
   const dt = document.createElement('dt');
   if (lv > 3) {
     dt.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
@@ -57,6 +58,9 @@ function genNodeTree(node: Node, lv: number) {
   }
   dt.innerHTML = s;
   dl.appendChild(dt);
+  if (ignoreChild) {
+    return dl;
+  }
   // 递归children
   if (node instanceof Container) {
     const children = node.children;
@@ -164,11 +168,81 @@ export default class Tree {
       });
       this.select(selected || nodes);
     });
-    listener.on(Listener.GROUP_NODE, (node: Group) => {
-      console.log(node);
+    listener.on(Listener.GROUP_NODE, (group: Group, nodes: Node[]) => {
+      const res = genNodeTree(group, group.struct.lv, true);
+      const dd = document.createElement('dd');
+      dd.appendChild(res);
+      nodes.reverse().forEach(item => {
+        const uuid = item.props.uuid;
+        const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+        if (dl) {
+          // 本身lv变化
+          const lv = item.struct.lv;
+          dl.classList.remove('lv' + (lv - 1));
+          dl.classList.add('lv' + lv);
+          const dt2 = dl.querySelector('dt')!;
+          dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+          const list = dl.querySelectorAll('dl');
+          // 所有子节点
+          list.forEach(item => {
+            const dt3 = item.firstChild as HTMLElement;
+            const lv = item.getAttribute('lv')!;
+            item.setAttribute('lv', (+lv + 1).toString());
+            dt3.style.paddingLeft = (+lv + 1 - 3) * config.treeLvPadding + 'px';
+          });
+          res.appendChild(dl.parentElement!);
+        }
+      }); console.log(res.classList)
+      const prev = group.prev?.props.uuid;
+      if (prev) {
+        const dl = this.dom.querySelector(`dl[uuid="${prev}"]`);
+        if (dl) {
+          const sibling = dl.parentElement!;
+          sibling.before(dd);
+        }
+      }
+      else {
+        const uuid = group.parent!.props.uuid;
+        const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+        if (dl) {
+          dl.appendChild(dd);
+        }
+      }
     });
     listener.on(Listener.UN_GROUP_NODE, (nodes: Node[], group: Group) => {
-      console.log(nodes, group);
+      const uuid = group.props.uuid;
+      if (uuid) {
+        const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+        if (dl) {
+          const dd = dl.parentElement!;
+          const fragment = document.createDocumentFragment();
+          nodes.reverse().forEach(item => {
+            const uuid2 = item.props.uuid;
+            if (uuid2) {
+              const dl2 = this.dom.querySelector(`dl[uuid="${uuid2}"]`);
+              if (dl2) {
+                // 本身lv变化
+                const lv = item.struct.lv;
+                dl2.classList.remove('lv' + (lv + 1));
+                dl2.classList.add('lv' + lv);
+                const dt2 = dl2.querySelector('dt')!;
+                dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+                const list = dl2.querySelectorAll('dl');
+                // 所有子节点
+                list.forEach(item => {
+                  const dt3 = item.firstChild as HTMLElement;
+                  const lv = item.getAttribute('lv')!;
+                  item.setAttribute('lv', (+lv - 1).toString());
+                  dt3.style.paddingLeft = (+lv - 1 - 3) * config.treeLvPadding + 'px';
+                });
+                fragment.appendChild(dl2.parentElement!);
+              }
+            }
+          });
+          dd.before(fragment);
+          dd.remove();
+        }
+      }
     });
 
     dom.addEventListener('selectstart', (e) => {
@@ -385,23 +459,23 @@ export default class Tree {
     nodes.forEach(item => {
       const dt = this.dom.querySelector(`dl[uuid="${item.props.uuid}"] dt`);
       if (dt) {
-        let dl = dt.parentElement;
-        while (dl) {
-          if (dl.nodeName === 'DL') {
-            dl.classList.add('expand');
-            const uuid = dl.getAttribute('uuid');
-            if (uuid) {
-              const node = this.root.refs[uuid];
-              if (node) {
-                node.props.isExpanded = true;
-              }
-            }
-          }
-          if (dl === this.dom) {
-            break;
-          }
-          dl = dl.parentElement;
-        }
+        // let dl = dt.parentElement;
+        // while (dl) {
+        //   if (dl.nodeName === 'DL') {
+        //     dl.classList.add('expand');
+        //     const uuid = dl.getAttribute('uuid');
+        //     if (uuid) {
+        //       const node = this.root.refs[uuid];
+        //       if (node) {
+        //         node.props.isExpanded = true;
+        //       }
+        //     }
+        //   }
+        //   if (dl === this.dom) {
+        //     break;
+        //   }
+        //   dl = dl.parentElement;
+        // }
         dt.classList.add('active');
         if (!this.silence) {
           // @ts-ignore
