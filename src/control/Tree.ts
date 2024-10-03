@@ -12,6 +12,7 @@ import Slice from '../node/Slice';
 import Container from '../node/Container';
 import Listener from './Listener';
 import config from '../util/config';
+import contextMenu from './contextMenu';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -138,7 +139,7 @@ export default class Tree {
       nodes.forEach((item) => {
         const uuid = item.props.uuid;
         if (uuid) {
-          const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             dl.parentElement!.remove();
           }
@@ -152,7 +153,7 @@ export default class Tree {
         dd.appendChild(res);
         const prev = item.prev?.props.uuid;
         if (prev) {
-          const dl = this.dom.querySelector(`dl[uuid="${prev}"]`);
+          const dl = dom.querySelector(`dl[uuid="${prev}"]`);
           if (dl) {
             const sibling = dl.parentElement!;
             sibling.before(dd);
@@ -160,7 +161,7 @@ export default class Tree {
         }
         else {
           const uuid = item.parent!.props.uuid;
-          const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             dl.appendChild(dd);
           }
@@ -174,7 +175,7 @@ export default class Tree {
       dd.appendChild(res);
       nodes.reverse().forEach(item => {
         const uuid = item.props.uuid;
-        const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
         if (dl) {
           // 本身lv变化
           const lv = item.struct.lv;
@@ -192,10 +193,10 @@ export default class Tree {
           });
           res.appendChild(dl.parentElement!);
         }
-      }); console.log(res.classList)
+      });
       const prev = group.prev?.props.uuid;
       if (prev) {
-        const dl = this.dom.querySelector(`dl[uuid="${prev}"]`);
+        const dl = dom.querySelector(`dl[uuid="${prev}"]`);
         if (dl) {
           const sibling = dl.parentElement!;
           sibling.before(dd);
@@ -203,7 +204,7 @@ export default class Tree {
       }
       else {
         const uuid = group.parent!.props.uuid;
-        const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
         if (dl) {
           dl.appendChild(dd);
         }
@@ -212,14 +213,14 @@ export default class Tree {
     listener.on(Listener.UN_GROUP_NODE, (nodes: Node[], group: Group) => {
       const uuid = group.props.uuid;
       if (uuid) {
-        const dl = this.dom.querySelector(`dl[uuid="${uuid}"]`);
+        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
         if (dl) {
           const dd = dl.parentElement!;
           const fragment = document.createDocumentFragment();
           nodes.reverse().forEach(item => {
             const uuid2 = item.props.uuid;
             if (uuid2) {
-              const dl2 = this.dom.querySelector(`dl[uuid="${uuid2}"]`);
+              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
               if (dl2) {
                 // 本身lv变化
                 const lv = item.struct.lv;
@@ -248,6 +249,39 @@ export default class Tree {
     dom.addEventListener('selectstart', (e) => {
       e.preventDefault();
     });
+
+    const onActive = (dl: HTMLElement) => {
+      const dt = dl.querySelector('dt')!;
+      const actives = dom.querySelectorAll('dt.active');
+      if (actives.length === 1 && actives[0] === dt) {
+        return;
+      }
+      actives.forEach((item) => {
+        item.classList.remove('active');
+      });
+      dt.classList.add('active');
+      const uuid = dl.getAttribute('uuid');
+      if (uuid) {
+        const node = root.refs[uuid];
+        if (node) {
+          // 多选
+          if (listener.metaKey) {
+            const selected = listener.selected.slice(0);
+            const i = selected.indexOf(node);
+            if (i > -1) {
+              selected.splice(i, 1);
+            }
+            else {
+              selected.push(node);
+            }
+            listener.active(selected);
+          }
+          else {
+            listener.active([node]);
+          }
+        }
+      }
+    };
 
     dom.addEventListener('click', (e) => {
       this.silence = true;
@@ -291,37 +325,8 @@ export default class Tree {
       }
       else if (classList.contains('lock')) {}
       else if (classList.contains('name') || classList.contains('type') || isDt) {
-        const actives = this.dom.querySelectorAll('dt.active');
         const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
-        const dt = dl.querySelector('dt')!;
-        if (actives.length === 1 && actives[0] === dt) {
-          return;
-        }
-        actives.forEach((item) => {
-          item.classList.remove('active');
-        });
-        dt.classList.add('active');
-        const uuid = dl.getAttribute('uuid');
-        if (uuid) {
-          const node = root.refs[uuid];
-          if (node) {
-            // 多选
-            if (listener.metaKey) {
-              const selected = listener.selected.slice(0);
-              const i = selected.indexOf(node);
-              if (i > -1) {
-                selected.splice(i, 1);
-              }
-              else {
-                selected.push(node);
-              }
-              listener.active(selected);
-            }
-            else {
-              listener.active([node]);
-            }
-          }
-        }
+        onActive(dl);
       }
       else {
         listener.active([]);
@@ -402,8 +407,22 @@ export default class Tree {
       listener.select.hideHover();
     });
 
-    this.dom.addEventListener('mouseleave', () => {
+    dom.addEventListener('mouseleave', () => {
       listener.select.hideHover();
+    });
+
+    dom.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.silence = true;
+      const target = e.target as HTMLElement;
+      const classList = target.classList;
+      const isDt = target.tagName.toUpperCase() === 'DT';
+      if (classList.contains('name') || classList.contains('type') || isDt) {
+        const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
+        onActive(dl);
+      }
+      this.silence = false;
+      contextMenu.showTree(e.pageX, e.pageY, this.listener);
     });
   }
 
@@ -451,7 +470,7 @@ export default class Tree {
     }
   }
 
-  select(nodes: Node[]) {
+  select(nodes: Node[], expand = false) {
     const dt = this.dom.querySelectorAll('dt.active');
     dt.forEach((item) => {
       item.classList.remove('active');
@@ -459,23 +478,25 @@ export default class Tree {
     nodes.forEach(item => {
       const dt = this.dom.querySelector(`dl[uuid="${item.props.uuid}"] dt`);
       if (dt) {
-        // let dl = dt.parentElement;
-        // while (dl) {
-        //   if (dl.nodeName === 'DL') {
-        //     dl.classList.add('expand');
-        //     const uuid = dl.getAttribute('uuid');
-        //     if (uuid) {
-        //       const node = this.root.refs[uuid];
-        //       if (node) {
-        //         node.props.isExpanded = true;
-        //       }
-        //     }
-        //   }
-        //   if (dl === this.dom) {
-        //     break;
-        //   }
-        //   dl = dl.parentElement;
-        // }
+        if (expand) {
+          let dl = dt.parentElement;
+          while (dl) {
+            if (dl.nodeName === 'DL') {
+              dl.classList.add('expand');
+              const uuid = dl.getAttribute('uuid');
+              if (uuid) {
+                const node = this.root.refs[uuid];
+                if (node) {
+                  node.props.isExpanded = true;
+                }
+              }
+            }
+            if (dl === this.dom) {
+              break;
+            }
+            dl = dl.parentElement;
+          }
+        }
         dt.classList.add('active');
         if (!this.silence) {
           // @ts-ignore
@@ -483,7 +504,5 @@ export default class Tree {
         }
       }
     });
-    if (nodes.length) {
-    }
   }
 }

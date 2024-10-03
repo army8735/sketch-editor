@@ -1358,7 +1358,7 @@ export default class Listener extends Event {
     this.dom.removeEventListener('click', this.onClick);
     this.dom.removeEventListener('dblclick', this.onDblClick);
     this.dom.removeEventListener('wheel', this.onWheel);
-    // this.dom.removeEventListener('contextmenu', this.onContextMenu);
+    this.dom.removeEventListener('contextmenu', this.onContextMenu);
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
 

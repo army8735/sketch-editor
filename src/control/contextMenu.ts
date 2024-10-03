@@ -64,6 +64,9 @@ export default {
     canvasDiv.style.top = y + 'px';
     canvasDiv.style.display = 'block';
   },
+  showTree(x: number, y: number, listener: Listener) {
+    this.showCanvas(x, y, listener);
+  },
   hide() {
     if (canvasDiv && canvasDiv.style.display === 'block') {
       canvasDiv.style.display = 'none';
