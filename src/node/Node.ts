@@ -1212,13 +1212,16 @@ class Node extends Event {
     return res as JStyle;
   }
 
-  getBoundingClientRect(includeBbox: boolean = false, excludeRotate = false) {
-    const bbox = includeBbox
+  getBoundingClientRect(opt?: {
+    includeBbox?: boolean,
+    excludeRotate?: boolean,
+  }) {
+    const bbox = opt?.includeBbox
       ? this._bbox || this.bbox
       : this._rect || this.rect;
     let t;
     // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
-    if (excludeRotate && !this.isPage) {
+    if (opt?.excludeRotate && !this.isPage) {
       const parent = this.parent!;
       const i = identity();
       const matrix = this.matrix;

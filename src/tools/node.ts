@@ -1,4 +1,4 @@
-import { calPoint, calRectPoints, identity, multiply } from '../math/matrix';
+import { calPoint, calRectPoints, identity, multiply, multiplyRotateZ } from '../math/matrix';
 import Container from '../node/Container';
 import Group from '../node/Group';
 import Node from '../node/Node';
@@ -7,6 +7,7 @@ import { PageProps, Point, ResizeStyle } from '../format';
 import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
 import Page from '../node/Page';
+import { calMatrixByOrigin } from '../style/transform';
 
 export enum POSITION {
   UNDER = 0,
@@ -50,15 +51,15 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
   }
 }
 
-// 获取节点相对于其所在Page的坐标，Page本身返回0,0
-export function getPosOnPage(node: Node) {
+// 获取节点相对于其所在Page的坐标、旋转，Page本身返回0
+export function getLocationOnPage(node: Node) {
   if (!node.page) {
     throw new Error('Node not on a Page');
   }
   if (node.isPage && node instanceof Page) {
-    return { x: 0, y: 0 };
+    return { x: 0, y: 0, r: 0 };
   }
-  // 从自己parent开始到page，累计matrix，不包含自己
+  // 从自己开始向上到page，累计matrix
   const page = node.page;
   let p = node.parent;
   const list: Node[] = [];
@@ -70,9 +71,20 @@ export function getPosOnPage(node: Node) {
   while (list.length) {
     m = multiply(m, list.pop()!.matrix);
   }
-  // 自己节点无需考虑rotate和translate，只用加上left/top即可
+  m = multiply(m, node.matrix);
+  // 根据m[0]求cos，相对于Page的旋转角度，然后逆向旋转得出真正的布局位置
+  const r = Math.acos(m[0]);
+  const i = identity();
+  multiplyRotateZ(i, -r);
+  const tfo = node.computedStyle.transformOrigin;
+  const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
+  m = multiply(m, t);
   const pt = calPoint({ x: 0, y: 0 }, m);
-  return { x: pt.x + node.computedStyle.left, y: pt.y + node.computedStyle.top };
+  return {
+    x: pt.x,
+    y: pt.y,
+    r,
+  }
 }
 
 /**
@@ -85,8 +97,8 @@ export function migrate(parent: Node, node: Node) {
   }
   const width = parent.width;
   const height = parent.height;
-  const { x, y } = getPosOnPage(parent);
-  const { x: x1, y: y1 } = getPosOnPage(node);
+  const { x, y, r } = getLocationOnPage(parent);
+  const { x: x1, y: y1, r: r1 } = getLocationOnPage(node);
   const style = node.style;
   // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
   const leftConstraint = style.left.u === StyleUnit.PX;
@@ -183,6 +195,7 @@ export function migrate(parent: Node, node: Node) {
       style.bottom.v = ((height - top - node.height) * 100) / height;
     }
   }
+  style.rotateZ.v = r2d(r1 - r);
 }
 
 export function sortTempIndex(nodes: Node[]) {
@@ -206,15 +219,17 @@ export function sortTempIndex(nodes: Node[]) {
 // 多个节点的BoundingClientRect合集极值
 export function getWholeBoundingClientRect(
   nodes: Node[],
-  includeBbox = false,
-  excludeRotate = false,
+  opt?: {
+    includeBbox?: boolean,
+    excludeRotate?: boolean,
+  },
 ) {
   if (!nodes.length) {
     return;
   }
-  const rect = nodes[0].getBoundingClientRect(includeBbox, excludeRotate);
+  const rect = nodes[0].getBoundingClientRect(opt);
   for (let i = 1, len = nodes.length; i < len; i++) {
-    const r = nodes[i].getBoundingClientRect(includeBbox, excludeRotate);
+    const r = nodes[i].getBoundingClientRect(opt);
     rect.left = Math.min(rect.left, r.left);
     rect.right = Math.max(rect.right, r.right);
     rect.top = Math.min(rect.top, r.top);

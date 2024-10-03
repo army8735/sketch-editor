@@ -505,4 +505,11 @@ export default {
   multiplyTfo,
   multiply,
   multiplyRef,
+  multiplyTranslate,
+  multiplyTranslateX,
+  multiplyTranslateY,
+  multiplyRotateZ,
+  multiplyScale,
+  multiplyScaleX,
+  multiplyScaleY
 };
