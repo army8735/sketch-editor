@@ -250,7 +250,7 @@ export default class Tree {
       e.preventDefault();
     });
 
-    const onActive = (dl: HTMLElement) => {
+    const onActive = (dl: HTMLElement, isRightButton = false) => {
       const dt = dl.querySelector('dt')!;
       const actives = dom.querySelectorAll('dt.active');
       if (actives.length === 1 && actives[0] === dt) {
@@ -264,8 +264,17 @@ export default class Tree {
       if (uuid) {
         const node = root.refs[uuid];
         if (node) {
+          // 特殊右键规则，只增不减
+          if (isRightButton) {
+            const selected = listener.selected.slice(0);
+            const i = selected.indexOf(node);
+            if (i === -1) {
+              selected.push(node);
+              listener.active(selected);
+            }
+          }
           // 多选
-          if (listener.metaKey) {
+          else if (listener.metaKey) {
             const selected = listener.selected.slice(0);
             const i = selected.indexOf(node);
             if (i > -1) {
@@ -419,7 +428,7 @@ export default class Tree {
       const isDt = target.tagName.toUpperCase() === 'DT';
       if (classList.contains('name') || classList.contains('type') || isDt) {
         const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
-        onActive(dl);
+        onActive(dl, true);
       }
       this.silence = false;
       contextMenu.showTree(e.pageX, e.pageY, this.listener);

@@ -1434,30 +1434,54 @@ html, body {
   }
 
   &.empty {
-    .group, .un-group {
+    .group, .un-group, .split1, .mask, .ignore-mask {
       display: none;
     }
   }
 
   &.single {
-    .un-group, .scale-up, .scale-down, .select-all, .split {
+    .un-group, .scale-up, .scale-down, .select-all, .split2 {
       display: none;
     }
   }
 
   &.single-group {
-    .scale-up, .scale-down, .select-all, .split {
+    .scale-up, .scale-down, .select-all, .split2 {
       display: none;
     }
   }
 
   &.multi {
-    .scale-up, .scale-down, .select-all, .split {
+    .scale-up, .scale-down, .select-all, .split2 {
       display: none;
     }
     .un-group {
       opacity: 0.3;
       pointer-events: none;
+    }
+  }
+
+  .mask {
+    span {
+      display: none;
+      margin-right: 2px;
+    }
+  }
+
+  &.mask {
+    .mask span {
+      display: inline-block;
+    }
+  }
+
+  &.mask-conflict {
+    .mask {
+      pointer-events: none;
+      opacity: 0.3;
+
+      span {
+        display: inline-block;
+      }
     }
   }
 }

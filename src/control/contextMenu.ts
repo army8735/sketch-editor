@@ -8,7 +8,10 @@ const htmlCanvas = `
   <div class="item group">编组选择对象</div>
   <div class="item un-group">解除编组</div>
   <div class="item select-all">选择全部</div>
-  <div class="split"></div>
+  <div class="split split1"></div>
+  <div class="item mask"><span>✅</span>用作蒙版</div>
+  <div class="item ignore-mask">忽略底层蒙版</div>
+  <div class="split split2"></div>
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
 `;
@@ -59,6 +62,14 @@ export default {
     }
     else {
       classList.add('empty');
+    }
+    let hasMask = nodes.filter(item => item.computedStyle.maskMode);
+    console.log(hasMask);
+    if (hasMask.length === nodes.length) {
+      classList.add('mask');
+    }
+    else if (hasMask.length) {
+      classList.add('mask-conflict');
     }
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';
