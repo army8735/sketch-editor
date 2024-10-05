@@ -1110,6 +1110,50 @@ export default class Listener extends Event {
     }
   }
 
+  mask() {
+    if (this.selected.length) {
+      this.selected.forEach(item => {
+        item.updateStyle({
+          maskMode: 'outline',
+        });
+      });
+      this.emit(Listener.MASK_NODE, this.selected.slice(0), 'outline');
+    }
+  }
+
+  unMask() {
+    if (this.selected.length) {
+      this.selected.forEach(item => {
+        item.updateStyle({
+          maskMode: 'none',
+        });
+      });
+      this.emit(Listener.MASK_NODE, this.selected.slice(0), 'none');
+    }
+  }
+
+  breakMask() {
+    if (this.selected.length) {
+      this.selected.forEach(item => {
+        item.updateStyle({
+          breakMask: true,
+        });
+      });
+      this.emit(Listener.BREAK_MASK_NODE, this.selected.slice(0), true);
+    }
+  }
+
+  unBreakMask() {
+    if (this.selected.length) {
+      this.selected.forEach(item => {
+        item.updateStyle({
+          breakMask: false,
+        });
+      });
+      this.emit(Listener.BREAK_MASK_NODE, this.selected.slice(0), false);
+    }
+  }
+
   onKeyDown(e: KeyboardEvent) {
     this.metaKey = e.metaKey;
     this.altKey = e.altKey;
@@ -1398,6 +1442,8 @@ export default class Listener extends Event {
   static ADD_NODE = 'ADD_NODE';
   static GROUP_NODE = 'GROUP_NODE';
   static UN_GROUP_NODE = 'UN_GROUP_NODE';
+  static MASK_NODE = 'MASK_NODE';
+  static BREAK_MASK_NODE = 'BREAK_MASK_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }

@@ -43,6 +43,22 @@ export default {
         else if (classList.contains('scale-up') || classList.contains('scale-down')) {
           listener.scale(classList.contains('scale-up'));
         }
+        else if (classList.contains('mask')) {
+          if (canvasDiv.classList.contains('msk')) {
+            listener.unMask();
+          }
+          else {
+            listener.mask();
+          }
+        }
+        else if (classList.contains('break-mask')) {
+          if (canvasDiv.classList.contains('brk-msk')) {
+            listener.unBreakMask();
+          }
+          else {
+            listener.breakMask();
+          }
+        }
       });
     }
     canvasDiv.className = 'sketch-editor-context-menu';
@@ -66,19 +82,19 @@ export default {
     let hasMask = nodes.filter(item => item.computedStyle.maskMode);
     if (hasMask.length) {
       if (hasMask.length === nodes.length) {
-        classList.add('mask');
+        classList.add('msk');
       }
       else {
-        classList.add('mask-conflict');
+        classList.add('msk-conflict');
       }
     }
     let hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);
     if (hasBreakMask.length) {
       if (hasBreakMask.length === nodes.length) {
-        classList.add('break-mask');
+        classList.add('brk-msk');
       }
       else {
-        classList.add('break-mask-conflict');
+        classList.add('brk-msk-conflict');
       }
     }
     canvasDiv.style.left = x + 'px';
