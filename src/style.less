@@ -1434,7 +1434,7 @@ html, body {
   }
 
   &.empty {
-    .group, .un-group, .split1, .mask, .ignore-mask {
+    .group, .un-group, .split1, .mask, .break-mask {
       display: none;
     }
   }
@@ -1461,7 +1461,7 @@ html, body {
     }
   }
 
-  .mask {
+  .mask, .break-mask {
     span {
       display: none;
       margin-right: 2px;
@@ -1476,6 +1476,23 @@ html, body {
 
   &.mask-conflict {
     .mask {
+      pointer-events: none;
+      opacity: 0.3;
+
+      span {
+        display: inline-block;
+      }
+    }
+  }
+
+  &.break-mask {
+    .break-mask span {
+      display: inline-block;
+    }
+  }
+
+  &.break-mask-conflict {
+    .break-mask {
       pointer-events: none;
       opacity: 0.3;
 

@@ -10,7 +10,7 @@ const htmlCanvas = `
   <div class="item select-all">选择全部</div>
   <div class="split split1"></div>
   <div class="item mask"><span>✅</span>用作蒙版</div>
-  <div class="item ignore-mask">忽略底层蒙版</div>
+  <div class="item break-mask"><span>✅</span>忽略底层蒙版</div>
   <div class="split split2"></div>
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
@@ -64,12 +64,22 @@ export default {
       classList.add('empty');
     }
     let hasMask = nodes.filter(item => item.computedStyle.maskMode);
-    console.log(hasMask);
-    if (hasMask.length === nodes.length) {
-      classList.add('mask');
+    if (hasMask.length) {
+      if (hasMask.length === nodes.length) {
+        classList.add('mask');
+      }
+      else {
+        classList.add('mask-conflict');
+      }
     }
-    else if (hasMask.length) {
-      classList.add('mask-conflict');
+    let hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);
+    if (hasBreakMask.length) {
+      if (hasBreakMask.length === nodes.length) {
+        classList.add('break-mask');
+      }
+      else {
+        classList.add('break-mask-conflict');
+      }
     }
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';
