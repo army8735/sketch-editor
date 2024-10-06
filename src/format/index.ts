@@ -386,6 +386,10 @@ export type FillStyle = Pick<JStyle, 'fill' | 'fillOpacity' | 'fillEnable'>;
 
 export type StrokeStyle = Pick<JStyle, 'stroke' | 'strokeEnable' | 'strokePosition' | 'strokeWidth'>;
 
+export type MaskModeStyle = Pick<JStyle, 'maskMode'>;
+
+export type BreakMaskStyle = Pick<JStyle, 'breakMask'>;
+
 export default {
   TAG_NAME,
   getDefaultStyle,

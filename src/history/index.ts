@@ -7,6 +7,8 @@ import RotateCommand from './RotateCommand';
 import BlurCommand from './BlurCommand';
 import ShadowCommand from './ShadowCommand';
 import ColorAdjustCommand from './ColorAdjustCommand';
+import MaskModeCommand from './MaskModeCommand';
+import BreakMaskCommand from './BreakMaskCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import UpdateFormatStyleCommand from './UpdateFormatStyleCommand';
 import RichCommand from './RichCommand';
@@ -23,6 +25,8 @@ export default {
   BlurCommand,
   ShadowCommand,
   ColorAdjustCommand,
+  MaskModeCommand,
+  BreakMaskCommand,
   UpdateStyleCommand,
   UpdateFormatStyleCommand,
   RichCommand,

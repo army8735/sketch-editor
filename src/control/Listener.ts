@@ -10,7 +10,7 @@ import Select from './Select';
 import Input from './Input';
 import State from './State';
 import { clone } from '../util/type';
-import { ArtBoardProps, JStyle } from '../format';
+import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle } from '../format';
 import { getFrameNodes, getNodeByPoint } from '../tools/root';
 import { group, unGroup } from '../tools/group';
 import { intersectLineLine } from '../math/isec';
@@ -33,6 +33,8 @@ import ColorAdjustCommand from '../history/ColorAdjustCommand';
 import TextCommand from '../history/TextCommand';
 import FillCommand from '../history/FillCommand';
 import StrokeCommand from '../history/StrokeCommand';
+import MaskModeCommand from '../history/MaskModeCommand';
+import BreakMaskCommand from '../history/BreakMaskCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1112,44 +1114,94 @@ export default class Listener extends Event {
 
   mask() {
     if (this.selected.length) {
+      const prevs: MaskModeStyle[] = [];
       this.selected.forEach(item => {
+        const maskMode = ['none', 'outline', 'alpha'][item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+        prevs.push({
+          maskMode,
+        });
         item.updateStyle({
           maskMode: 'outline',
         });
       });
+      this.history.addCommand(new MaskModeCommand(this.selected.slice(0), prevs.map(prev => {
+        return {
+          prev,
+          next: {
+            maskMode: 'outline',
+          },
+        };
+      })));
       this.emit(Listener.MASK_NODE, this.selected.slice(0), 'outline');
     }
   }
 
   unMask() {
     if (this.selected.length) {
+      const prevs: MaskModeStyle[] = [];
       this.selected.forEach(item => {
+        const maskMode = ['none', 'outline', 'alpha'][item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+        prevs.push({
+          maskMode,
+        });
         item.updateStyle({
           maskMode: 'none',
         });
       });
+      this.history.addCommand(new MaskModeCommand(this.selected.slice(0), prevs.map(prev => {
+        return {
+          prev,
+          next: {
+            maskMode: 'none',
+          },
+        };
+      })));
       this.emit(Listener.MASK_NODE, this.selected.slice(0), 'none');
     }
   }
 
   breakMask() {
     if (this.selected.length) {
+      const prevs: BreakMaskStyle[] = [];
       this.selected.forEach(item => {
+        prevs.push({
+          breakMask: item.computedStyle.breakMask,
+        });
         item.updateStyle({
           breakMask: true,
         });
       });
+      this.history.addCommand(new BreakMaskCommand(this.selected.slice(0), prevs.map(prev => {
+        return {
+          prev,
+          next: {
+            breakMask: true,
+          },
+        };
+      })));
       this.emit(Listener.BREAK_MASK_NODE, this.selected.slice(0), true);
     }
   }
 
   unBreakMask() {
     if (this.selected.length) {
+      const prevs: BreakMaskStyle[] = [];
       this.selected.forEach(item => {
+        prevs.push({
+          breakMask: item.computedStyle.breakMask,
+        });
         item.updateStyle({
           breakMask: false,
         });
       });
+      this.history.addCommand(new BreakMaskCommand(this.selected.slice(0), prevs.map(prev => {
+        return {
+          prev,
+          next: {
+            breakMask: false,
+          },
+        };
+      })));
       this.emit(Listener.BREAK_MASK_NODE, this.selected.slice(0), false);
     }
   }
