@@ -264,14 +264,15 @@ export default class Tree {
       if (uuid) {
         const node = root.refs[uuid];
         if (node) {
-          // 特殊右键规则，只增不减
+          // 特殊右键规则，已选不减
           if (isRightButton) {
             const selected = listener.selected.slice(0);
             const i = selected.indexOf(node);
             if (i === -1) {
-              selected.push(node);
-              listener.active(selected);
+              selected.splice(0);
             }
+            selected.push(node);
+            listener.active(selected);
           }
           // 多选
           else if (listener.metaKey) {
