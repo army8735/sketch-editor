@@ -1112,27 +1112,28 @@ export default class Listener extends Event {
     }
   }
 
-  mask() {
+  mask(isAlpha = false) {
     if (this.selected.length) {
       const prevs: MaskModeStyle[] = [];
+      const maskMode = isAlpha ? 'alpha' : 'outline';
       this.selected.forEach(item => {
         const maskMode = ['none', 'outline', 'alpha'][item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
         prevs.push({
           maskMode,
         });
         item.updateStyle({
-          maskMode: 'outline',
+          maskMode,
         });
       });
       this.history.addCommand(new MaskModeCommand(this.selected.slice(0), prevs.map(prev => {
         return {
           prev,
           next: {
-            maskMode: 'outline',
+            maskMode,
           },
         };
       })));
-      this.emit(Listener.MASK_NODE, this.selected.slice(0), 'outline');
+      this.emit(Listener.MASK_NODE, this.selected.slice(0), maskMode);
     }
   }
 

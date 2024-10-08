@@ -49,12 +49,20 @@ export default {
         else if (classList.contains('scale-up') || classList.contains('scale-down')) {
           listener.scale(classList.contains('scale-up'));
         }
-        else if (classList.contains('mask')) {
+        else if (classList.contains('mask') || classList.contains('outline-mask')) {
           if (canvasDiv.classList.contains('outline') || canvasDiv.classList.contains('alpha')) {
             listener.unMask();
           }
           else {
             listener.mask();
+          }
+        }
+        else if (classList.contains('alpha-mask')) {
+          if (canvasDiv.classList.contains('outline') || canvasDiv.classList.contains('alpha')) {
+            listener.unMask();
+          }
+          else {
+            listener.mask(true);
           }
         }
         else if (classList.contains('break-mask')) {
