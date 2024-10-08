@@ -1,6 +1,6 @@
-import Node from '../node/Node';
 import Group from '../node/Group';
 import Listener from './Listener';
+import { MASK } from '../style/define';
 
 let canvasDiv: HTMLElement;
 
@@ -9,8 +9,14 @@ const htmlCanvas = `
   <div class="item un-group">解除编组</div>
   <div class="item select-all">选择全部</div>
   <div class="split split1"></div>
-  <div class="item mask"><span>✅</span>用作蒙版</div>
-  <div class="item break-mask"><span>✅</span>忽略底层蒙版</div>
+  <div class="item mask">
+    <span class="checked">✅</span>用作蒙版 <b class="arrow"></b>
+    <div class="sub">
+      <div class="item outline-mask"><span class="checked">✅</span>轮廓模版</div>
+      <div class="item alpha-mask"><span class="checked">✅</span>透明度模版</div>
+    </div>
+  </div>
+  <div class="item break-mask"><span class="checked">✅</span>忽略底层蒙版</div>
   <div class="split split2"></div>
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
@@ -44,7 +50,7 @@ export default {
           listener.scale(classList.contains('scale-up'));
         }
         else if (classList.contains('mask')) {
-          if (canvasDiv.classList.contains('msk')) {
+          if (canvasDiv.classList.contains('outline') || canvasDiv.classList.contains('alpha')) {
             listener.unMask();
           }
           else {
@@ -52,7 +58,7 @@ export default {
           }
         }
         else if (classList.contains('break-mask')) {
-          if (canvasDiv.classList.contains('brk-msk')) {
+          if (canvasDiv.classList.contains('break')) {
             listener.unBreakMask();
           }
           else {
@@ -81,21 +87,17 @@ export default {
     }
     let hasMask = nodes.filter(item => item.computedStyle.maskMode);
     if (hasMask.length) {
-      if (hasMask.length === nodes.length) {
-        classList.add('msk');
+      let outline = nodes.filter(item => item.computedStyle.maskMode === MASK.OUTLINE);
+      if (outline.length) {
+        classList.add('outline');
       }
       else {
-        classList.add('msk-conflict');
+        classList.add('alpha');
       }
     }
     let hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);
     if (hasBreakMask.length) {
-      if (hasBreakMask.length === nodes.length) {
-        classList.add('brk-msk');
-      }
-      else {
-        classList.add('brk-msk-conflict');
-      }
+      classList.add('break');
     }
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';

@@ -1417,15 +1417,45 @@ html, body {
 
 .sketch-editor-context-menu {
   font-size: 14px;
+  line-height: 20px;
   cursor: default;
 
   .item {
+    position: relative;
+    display: flex;
+    align-items: center;
     padding: 2px 5px;
     border-radius: 3px;
 
     &:hover {
       background: rgba(51, 102, 255, 0.1);
+
+      .sub {
+        display: block;
+      }
     }
+
+    .arrow {
+      display: block;
+      width: 20px;
+      height: 20px;
+      background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACPTkDJAAABPUlEQVRYCe3Vu0oDURDG8TURSSHGK0HEKIIIFoLi5QlSi8+QNk8QsfTyCD6RhVgYtLAJBEWEEFDECxiU/D+xcmE5MytW54MfC7t7dibD2U2SxMQJxAnECdgnsMuSOobsS9MrhtOnMs9McXUPIyjhFJ9wp2hc+c79N9jBEhZwgS+4Ym1ARXq4xjYWsYxzuCbhaYBaySMusYUqVqEm+jDF24CKPEPj38Q81qAmPhCcPA2oyCtUdB1qYgNnCJ5E3gaolWhjXqGGMu5xi6AUgu7KvmmUyw3oWV20EBzrd+D3g8c40YQ24gMOob0RnDxfs3Gq7GMOGruKP8EUbwOTVFHxWdzB/MtZ8x1PA9OsVPEKOjjCC1yx7oEJqhxgBm2cQK+iO9bXsE+lFbzh+OfI4X+jpvVPGBMnECcQJ/AnExgA04MvsW58RIQAAAAASUVORK5CYII=) no-repeat center;
+      background-size: 16px auto;
+    }
+  }
+
+  .sub {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    padding: 5px;
+    background: #FFF;
+    border: 1px solid #CCC;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    transform: translateY(-50%);
+    white-space: nowrap;
   }
 
   .split {
@@ -1461,44 +1491,28 @@ html, body {
     }
   }
 
-  .mask, .break-mask {
-    span {
-      display: none;
-      margin-right: 2px;
-    }
+  .checked {
+    display: none;
+    margin-right: 2px;
   }
 
-  &.msk {
-    .mask span {
-      display: inline-block;
-    }
-  }
-
-  &.msk-conflict {
-    .mask {
-      pointer-events: none;
-      opacity: 0.3;
-
-      span {
-        display: inline-block;
-      }
+  &.outline, &.alpha {
+    .mask>.checked {
+      display: block;
     }
   }
 
   &.brk-msk {
-    .break-mask span {
-      display: inline-block;
+    .break-mask .checked {
+      display: block;
     }
   }
 
-  &.brk-msk-conflict {
-    .break-mask {
-      pointer-events: none;
-      opacity: 0.3;
+  &.outline .outline-mask .checked {
+    display: block;
+  }
 
-      span {
-        display: inline-block;
-      }
-    }
+  &.alpha .alpha-mask .checked {
+    display: block;
   }
 }
