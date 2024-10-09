@@ -403,8 +403,6 @@ class FillPanel extends Panel {
     panel.addEventListener('change', pickCallback);
 
     listener.on([
-      Listener.SELECT_NODE,
-      Listener.ADD_NODE,
       Listener.FILL_NODE,
     ], (nodes: Node[]) => {
       if (this.silence) {
@@ -412,15 +410,9 @@ class FillPanel extends Panel {
       }
       this.show(nodes);
     });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
-    });
   }
 
-  show(nodes: Node[]) {
+  override show(nodes: Node[]) {
     const panel = this.panel;
     // 老的清除
     this.panel.querySelectorAll('.line').forEach(item => {

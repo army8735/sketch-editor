@@ -267,8 +267,6 @@ class ColorAdjustPanel extends Panel {
     contrastNumber.addEventListener('change', onChange);
 
     listener.on([
-      Listener.SELECT_NODE,
-      Listener.ADD_NODE,
       Listener.COLOR_ADJUST_NODE,
     ], (nodes: Node[]) => {
       if (this.silence) {
@@ -276,15 +274,9 @@ class ColorAdjustPanel extends Panel {
       }
       this.show(nodes);
     });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
-    });
   }
 
-  show(nodes: Node[]) {
+  override show(nodes: Node[]) {
     const panel = this.panel;
     let willShow = false;
     for (let i = 0, len = nodes.length; i < len; i++) {

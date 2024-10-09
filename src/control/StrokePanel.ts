@@ -373,20 +373,12 @@ class StrokePanel extends Panel {
     panel.addEventListener('change', pickCallback);
 
     listener.on([
-      Listener.SELECT_NODE,
-      Listener.ADD_NODE,
       Listener.STROKE_NODE,
     ], (nodes: Node[]) => {
       if (this.silence) {
         return;
       }
       this.show(nodes);
-    });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
     });
   }
 

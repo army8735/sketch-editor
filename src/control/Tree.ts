@@ -211,6 +211,7 @@ export default class Tree {
           }
         }
       });
+      this.select(groups);
     });
     listener.on(Listener.UN_GROUP_NODE, (nodes: Node[][], groups: Group[]) => {
       nodes.forEach((items, i) => {
@@ -248,6 +249,11 @@ export default class Tree {
           }
         }
       });
+      const list: Node[] = [];
+      nodes.forEach(item => {
+        list.push(...item);
+      });
+      this.select(list);
     });
 
     dom.addEventListener('selectstart', (e) => {

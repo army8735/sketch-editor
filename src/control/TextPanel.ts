@@ -630,7 +630,6 @@ class TextPanel extends Panel {
     });
 
     listener.on([
-      Listener.SELECT_NODE,
       Listener.RESIZE_NODE,
       Listener.FONT_SIZE_NODE,
       Listener.FONT_FAMILY_NODE,
@@ -640,7 +639,6 @@ class TextPanel extends Panel {
       Listener.COLOR_NODE,
       Listener.TEXT_ALIGN_NODE,
       Listener.TEXT_VERTICAL_ALIGN_NODE,
-      Listener.ADD_NODE,
       Listener.CURSOR_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
@@ -648,12 +646,6 @@ class TextPanel extends Panel {
         return;
       }
       this.show(nodes);
-    });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
     });
   }
 

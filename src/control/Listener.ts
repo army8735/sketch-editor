@@ -1376,19 +1376,34 @@ export default class Listener extends Event {
         else if (c instanceof StrokeCommand) {
           this.emit(Listener.STROKE_NODE, nodes);
         }
+        // 编组之类强制更新并选择节点
         else if (c instanceof GroupCommand) {
           if (this.shiftKey) {
+            this.selected.splice(0);
+            this.selected.push(c.group);
+            this.select.showSelect(this.selected);
             this.emit(Listener.GROUP_NODE, [c.group], [c.nodes.slice(0)]);
           }
           else {
+            this.selected.splice(0);
+            this.selected.push(...c.nodes);
+            this.select.showSelect(this.selected);
             this.emit(Listener.UN_GROUP_NODE, [c.nodes.slice(0)], [c.group]);
           }
         }
         else if (c instanceof UnGroupCommand) {
           if (this.shiftKey) {
+            this.selected.splice(0);
+            c.nodes.forEach((item, i) => {
+              this.selected.push(...c.data[i].children);
+            });
+            this.select.showSelect(this.selected);
             this.emit(Listener.UN_GROUP_NODE, c.nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
           }
           else {
+            this.selected.splice(0);
+            this.selected.push(...c.nodes);
+            this.select.showSelect(this.selected);
             this.emit(Listener.GROUP_NODE, c.nodes.slice(0), c.data.map(item => item.children.slice(0)));
           }
         }

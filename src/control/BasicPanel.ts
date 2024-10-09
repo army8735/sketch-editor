@@ -438,13 +438,11 @@ class BasicPanel extends Panel {
     });
 
     listener.on([
-      Listener.SELECT_NODE,
       Listener.MOVE_NODE,
       Listener.RESIZE_NODE,
       Listener.ROTATE_NODE,
       Listener.FLIP_H_NODE,
       Listener.FLIP_V_NODE,
-      Listener.ADD_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
@@ -452,15 +450,9 @@ class BasicPanel extends Panel {
       }
       this.show(nodes);
     });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
-    });
   }
 
-  show(nodes: Node[]) {
+  override show(nodes: Node[]) {
     this.nodes = nodes;
     this.data = [];
     const panel = this.panel;

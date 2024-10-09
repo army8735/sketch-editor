@@ -335,8 +335,6 @@ class BlurPanel extends Panel {
     saturationNumber.addEventListener('change', onChange);
 
     listener.on([
-      Listener.SELECT_NODE,
-      Listener.ADD_NODE,
       Listener.BLUR_NODE,
     ], (nodes: Node[]) => {
       if (this.silence) {
@@ -344,15 +342,9 @@ class BlurPanel extends Panel {
       }
       this.show(nodes);
     });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
-    });
   }
 
-  show(nodes: Node[]) {
+  override show(nodes: Node[]) {
     this.nodes = nodes;
     const panel = this.panel;
     if (!nodes.length) {

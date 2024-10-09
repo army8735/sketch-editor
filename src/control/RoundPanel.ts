@@ -28,22 +28,6 @@ class RoundPanel extends Panel {
     panel.style.display = 'none';
     panel.innerHTML = html;
     this.dom.appendChild(panel);
-
-    listener.on([
-      Listener.SELECT_NODE,
-      Listener.ADD_NODE,
-    ], (nodes: Node[]) => {
-      if (this.silence) {
-        return;
-      }
-      this.show(nodes);
-    });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
-    });
   }
 
   show(nodes: Node[]) {

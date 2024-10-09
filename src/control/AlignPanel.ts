@@ -82,22 +82,9 @@ class AlignPanel extends Panel {
         listener.history.addCommand(new MoveCommand(nodes, data));
       }
     });
-
-    listener.on([
-      Listener.SELECT_NODE,
-      Listener.ADD_NODE,
-    ], (nodes: Node[]) => {
-      this.show(nodes);
-    });
-    listener.on(Listener.REMOVE_NODE, () => {
-      if (this.silence) {
-        return;
-      }
-      this.show([]);
-    });
   }
 
-  show(nodes: Node[]) {
+  override show(nodes: Node[]) {
     const panel = this.panel;
     const ns: Node[] = [];
     nodes.forEach((node: Node) => {
