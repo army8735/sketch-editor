@@ -52,6 +52,7 @@ export type ListenerOptions = {
     scale?: boolean; // 缩放画布
     editText?: boolean; // 进入编辑文字状态如双击
     inputText?: boolean; // 编辑输入文字
+    contextMenu?: boolean; // 右键菜单
   };
 };
 
@@ -493,7 +494,7 @@ export default class Listener extends Event {
     this.button = e.button;
     // 右键菜单，忽略meta按下
     if (e.button === 2) {
-      if (this.metaKey || isWin && this.ctrlKey || this.state === State.EDIT_TEXT) {
+      if (this.metaKey || isWin && this.ctrlKey || this.state === State.EDIT_TEXT || this.options.disabled?.contextMenu) {
         return;
       }
       const target = e.target as HTMLElement;

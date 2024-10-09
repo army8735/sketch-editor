@@ -432,6 +432,9 @@ export default class Tree {
     });
 
     dom.addEventListener('contextmenu', (e) => {
+      if (listener.options.disabled?.contextMenu) {
+        return;
+      }
       e.preventDefault();
       this.silence = true;
       const target = e.target as HTMLElement;
