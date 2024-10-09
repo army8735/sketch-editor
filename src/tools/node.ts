@@ -8,7 +8,7 @@ import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
 import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
-import { length, projection } from '../math/vector';
+import { includedAngle, length, projection } from '../math/vector';
 
 export enum POSITION {
   UNDER = 0,
@@ -134,6 +134,7 @@ export function migrate(parent: Node, node: Node) {
   const p2 = calPoint({ x: 0, y: parent.height }, mp);
   const v1 = { x: p1.x - p0.x, y: p1.y - p0.y };
   const v2 = { x: p2.x - p0.x, y: p2.y - p0.y };
+  // console.log('v1', v1, v2);
   // 再求得node的matrix，并相对于parent取消旋转后的左上顶点位置
   const mn = getMatrixOnPage(node);
   const rn = Math.acos(mn[0]);
@@ -143,13 +144,32 @@ export function migrate(parent: Node, node: Node) {
   const tfo = node.computedStyle.transformOrigin;
   const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
   const m = multiply(mn, t);
-  // node顶点和parent的顶点组成的向量，在2条矢量上的投影距离就是left和top
-  const p = calPoint({ x: 0, y: 0 }, m);
+  // node顶点和parent的顶点组成的向量，在2条矢量上的投影距离就是left和top，要考虑去除如Text自身的translate
+  const p = calPoint({ x: -node.computedStyle.translateX, y: -node.computedStyle.translateY }, m);
+  // console.log(p);
   const v = { x: p.x - p0.x, y: p.y - p0.y };
   const v3 = projection(v.x, v.y, v1.x, v1.y);
   const v4 = projection(v.x, v.y, v2.x, v2.y);
-  const x = length(v3.x, v3.y);
-  const y = length(v4.x, v4.y);
+  // console.log('v3', v3, v4);
+  // 看这个向量和那2条矢量之间的夹角，判断x/y的正负号
+  let x = length(v3.x, v3.y);
+  let y = length(v4.x, v4.y);
+  // console.log(x, y);
+  const angle1 = includedAngle(v.x, v.y, v1.x, v1.y);
+  const angle2 = includedAngle(v.x, v.y, v2.x, v2.y);
+  const rt = Math.PI * 0.5;
+  if (angle1 <= rt && angle2 <= rt) {}
+  else if (angle1 <= rt) {
+    y = -y;
+  }
+  else if (angle2 <= rt) {
+    x = -x;
+  }
+  else {
+    x = -x;
+    y = -y;
+  }
+  // console.log(x, y);
   const style = node.style;
   // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
   const leftConstraint = style.left.u === StyleUnit.PX;

@@ -1097,11 +1097,12 @@ export default class Listener extends Event {
     if (this.selected.length) {
       const { data, group } = GroupCommand.operate(this.selected);
       if (group) {
+        const nodes = this.selected.slice(0);
         this.selected.splice(0);
         this.selected.push(group);
         this.select.updateSelect(this.selected);
-        this.history.addCommand(new GroupCommand(this.selected.slice(0), data, group));
-        this.emit(Listener.GROUP_NODE, group, group.children.slice(0));
+        this.history.addCommand(new GroupCommand(nodes, data, group));
+        this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
       }
     }
   }
@@ -1376,16 +1377,19 @@ export default class Listener extends Event {
           this.emit(Listener.STROKE_NODE, nodes);
         }
         else if (c instanceof GroupCommand) {
-          this.emit(Listener.GROUP_NODE, c.group, nodes);
+          if (this.shiftKey) {
+            this.emit(Listener.GROUP_NODE, [c.group], [c.nodes.slice(0)]);
+          }
+          else {
+            this.emit(Listener.UN_GROUP_NODE, [c.nodes.slice(0)], [c.group]);
+          }
         }
         else if (c instanceof UnGroupCommand) {
           if (this.shiftKey) {
             this.emit(Listener.UN_GROUP_NODE, c.nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
           }
           else {
-            c.nodes.forEach((item, i) => {
-              this.emit(Listener.GROUP_NODE, item, c.data[i].children.slice(0));
-            });
+            this.emit(Listener.GROUP_NODE, c.nodes.slice(0), c.data.map(item => item.children.slice(0)));
           }
         }
         else if (c instanceof MaskModeCommand) {

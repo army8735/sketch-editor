@@ -3,7 +3,6 @@ export function dotProduct(x1: number, y1: number, x2: number, y2: number) {
   return x1 * x2 + y1 * y2;
 }
 
-
 export function dotProduct3(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number) {
   return x1 * x2 + y1 * y2 + z1 * z2;
 }
@@ -28,6 +27,11 @@ export function projection(x1: number, y1: number, x2: number, y2: number) {
   const x = p * x2 / len;
   const y = p * y2 / len;
   return { x, y };
+}
+
+// a和b夹角
+export function includedAngle(x1: number, y1: number, x2: number, y2: number) {
+  return Math.acos(dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2))) || 0;
 }
 
 // 向量长度
@@ -126,6 +130,7 @@ export default {
   crossProduct,
   crossProduct3,
   projection,
+  includedAngle,
   length,
   length3,
   unitize,

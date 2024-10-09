@@ -169,46 +169,48 @@ export default class Tree {
       });
       this.select(selected || nodes);
     });
-    listener.on(Listener.GROUP_NODE, (group: Group, nodes: Node[]) => {
-      const res = genNodeTree(group, group.struct.lv, true);
-      const dd = document.createElement('dd');
-      dd.appendChild(res);
-      nodes.reverse().forEach(item => {
-        const uuid = item.props.uuid;
-        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-        if (dl) {
-          // 本身lv变化
-          const lv = item.struct.lv;
-          dl.classList.remove('lv' + (lv - 1));
-          dl.classList.add('lv' + lv);
-          const dt2 = dl.querySelector('dt')!;
-          dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-          const list = dl.querySelectorAll('dl');
-          // 所有子节点
-          list.forEach(item => {
-            const dt3 = item.firstChild as HTMLElement;
-            const lv = item.getAttribute('lv')!;
-            item.setAttribute('lv', (+lv + 1).toString());
-            dt3.style.paddingLeft = (+lv + 1 - 3) * config.treeLvPadding + 'px';
-          });
-          res.appendChild(dl.parentElement!);
+    listener.on(Listener.GROUP_NODE, (groups: Group[], nodes: Node[][]) => {
+      groups.forEach((group, i) => {
+        const res = genNodeTree(group, group.struct.lv, true);
+        const dd = document.createElement('dd');
+        dd.appendChild(res);
+        nodes[i].reverse().forEach(item => {
+          const uuid = item.props.uuid;
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            // 本身lv变化
+            const lv = item.struct.lv;
+            dl.classList.remove('lv' + (lv - 1));
+            dl.classList.add('lv' + lv);
+            const dt2 = dl.querySelector('dt')!;
+            dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+            const list = dl.querySelectorAll('dl');
+            // 所有子节点
+            list.forEach(item => {
+              const dt3 = item.firstChild as HTMLElement;
+              const lv = item.getAttribute('lv')!;
+              item.setAttribute('lv', (+lv + 1).toString());
+              dt3.style.paddingLeft = (+lv + 1 - 3) * config.treeLvPadding + 'px';
+            });
+            res.appendChild(dl.parentElement!);
+          }
+        });
+        const prev = group.prev?.props.uuid;
+        if (prev) {
+          const dl = dom.querySelector(`dl[uuid="${prev}"]`);
+          if (dl) {
+            const sibling = dl.parentElement!;
+            sibling.before(dd);
+          }
+        }
+        else {
+          const uuid = group.parent!.props.uuid;
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            dl.appendChild(dd);
+          }
         }
       });
-      const prev = group.prev?.props.uuid;
-      if (prev) {
-        const dl = dom.querySelector(`dl[uuid="${prev}"]`);
-        if (dl) {
-          const sibling = dl.parentElement!;
-          sibling.before(dd);
-        }
-      }
-      else {
-        const uuid = group.parent!.props.uuid;
-        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-        if (dl) {
-          dl.appendChild(dd);
-        }
-      }
     });
     listener.on(Listener.UN_GROUP_NODE, (nodes: Node[][], groups: Group[]) => {
       nodes.forEach((items, i) => {

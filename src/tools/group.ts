@@ -16,28 +16,20 @@ export function group(nodes: Node[], group?: Group) {
   if (parent instanceof Group) {
     parent.fixedPosAndSize = true;
   }
-  // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
-  const p = Object.assign(
-    {
-      uuid: uuid.v4(),
-      name: '编组',
-      style: {
-        left: '0%',
-        top: '0%',
-        right: '0%',
-        bottom: '0%',
+  if (!group) {
+    // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
+    const p = Object.assign(
+      {
+        uuid: uuid.v4(),
+        name: '编组',
+        style: {
+          left: '0%',
+          top: '0%',
+          right: '0%',
+          bottom: '0%',
+        },
       },
-    },
-  );
-  if (group) {
-    group.updateStyle({
-      left: '0%',
-      top: '0%',
-      right: '0%',
-      bottom: '0%',
-    });
-  }
-  else {
+    );
     group = new Group(p, []);
   }
   group.fixedPosAndSize = true;
