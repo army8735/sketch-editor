@@ -210,40 +210,42 @@ export default class Tree {
         }
       }
     });
-    listener.on(Listener.UN_GROUP_NODE, (nodes: Node[], group: Group) => {
-      const uuid = group.props.uuid;
-      if (uuid) {
-        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-        if (dl) {
-          const dd = dl.parentElement!;
-          const fragment = document.createDocumentFragment();
-          nodes.reverse().forEach(item => {
-            const uuid2 = item.props.uuid;
-            if (uuid2) {
-              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
-              if (dl2) {
-                // 本身lv变化
-                const lv = item.struct.lv;
-                dl2.classList.remove('lv' + (lv + 1));
-                dl2.classList.add('lv' + lv);
-                const dt2 = dl2.querySelector('dt')!;
-                dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-                const list = dl2.querySelectorAll('dl');
-                // 所有子节点
-                list.forEach(item => {
-                  const dt3 = item.firstChild as HTMLElement;
-                  const lv = item.getAttribute('lv')!;
-                  item.setAttribute('lv', (+lv - 1).toString());
-                  dt3.style.paddingLeft = (+lv - 1 - 3) * config.treeLvPadding + 'px';
-                });
-                fragment.appendChild(dl2.parentElement!);
+    listener.on(Listener.UN_GROUP_NODE, (nodes: Node[][], groups: Group[]) => {
+      nodes.forEach((items, i) => {
+        const uuid = groups[i].props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            const dd = dl.parentElement!;
+            const fragment = document.createDocumentFragment();
+            items.reverse().forEach(item => {
+              const uuid2 = item.props.uuid;
+              if (uuid2) {
+                const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+                if (dl2) {
+                  // 本身lv变化
+                  const lv = item.struct.lv;
+                  dl2.classList.remove('lv' + (lv + 1));
+                  dl2.classList.add('lv' + lv);
+                  const dt2 = dl2.querySelector('dt')!;
+                  dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+                  const list = dl2.querySelectorAll('dl');
+                  // 所有子节点
+                  list.forEach(item => {
+                    const dt3 = item.firstChild as HTMLElement;
+                    const lv = item.getAttribute('lv')!;
+                    item.setAttribute('lv', (+lv - 1).toString());
+                    dt3.style.paddingLeft = (+lv - 1 - 3) * config.treeLvPadding + 'px';
+                  });
+                  fragment.appendChild(dl2.parentElement!);
+                }
               }
-            }
-          });
-          dd.before(fragment);
-          dd.remove();
+            });
+            dd.before(fragment);
+            dd.remove();
+          }
         }
-      }
+      });
     });
 
     dom.addEventListener('selectstart', (e) => {
@@ -270,8 +272,8 @@ export default class Tree {
             const i = selected.indexOf(node);
             if (i === -1) {
               selected.splice(0);
+              selected.push(node);
             }
-            selected.push(node);
             listener.active(selected);
           }
           // 多选
