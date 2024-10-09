@@ -5,7 +5,7 @@ import { migrate, sortTempIndex } from './node';
 import inject from '../util/inject';
 
 // 至少1个node进行编组，以第0个位置为基准
-export function group(nodes: Node[]) {
+export function group(nodes: Node[], group?: Group) {
   if (!nodes.length) {
     return;
   }
@@ -15,10 +15,6 @@ export function group(nodes: Node[]) {
   // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
   if (parent instanceof Group) {
     parent.fixedPosAndSize = true;
-  }
-  for (let i = 0, len = nodes.length; i < len; i++) {
-    const item = nodes[i];
-    migrate(parent, item);
   }
   // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
   const p = Object.assign(
@@ -33,10 +29,24 @@ export function group(nodes: Node[]) {
       },
     },
   );
-  const group = new Group(p, []);
+  if (group) {
+    group.updateStyle({
+      left: '0%',
+      top: '0%',
+      right: '0%',
+      bottom: '0%',
+    });
+  }
+  else {
+    group = new Group(p, []);
+  }
   group.fixedPosAndSize = true;
   // 插入到first的后面
   first.insertAfter(group);
+  for (let i = 0, len = nodes.length; i < len; i++) {
+    const item = nodes[i];
+    migrate(group, item);
+  }
   // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
   for (let i = 0, len = nodes.length; i < len; i++) {
     group.appendChild(nodes[i]);
@@ -73,7 +83,10 @@ export function unGroup(group: Group) {
   }
   group.fixedPosAndSize = false;
   group.remove();
-  return children;
+  return {
+    children,
+    parent,
+  };
 }
 
 export default {

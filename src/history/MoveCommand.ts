@@ -9,7 +9,6 @@ class MoveCommand extends AbstractCommand {
 
   constructor(nodes: Node[], data: MoveData[]) {
     super(nodes);
-    this.nodes = nodes;
     this.data = data;
   }
 

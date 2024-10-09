@@ -21,6 +21,15 @@ export function crossProduct3(x1: number, y1: number, z1: number, x2: number, y2
   };
 }
 
+// a在b上的投影
+export function projection(x1: number, y1: number, x2: number, y2: number) {
+  const p = dotProduct(x1, y1, x2, y2);
+  const len = Math.pow(x2, 2) + Math.pow(y2, 2);
+  const x = p * x2 / len;
+  const y = p * y2 / len;
+  return { x, y };
+}
+
 // 向量长度
 export function length(x: number, y: number) {
   return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
@@ -116,6 +125,7 @@ export default {
   dotProduct3,
   crossProduct,
   crossProduct3,
+  projection,
   length,
   length3,
   unitize,

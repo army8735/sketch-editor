@@ -8,6 +8,7 @@ import Geom from '../node/geom/Geom';
 import { r2d } from '../math/geom';
 import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
+import { length, projection } from '../math/vector';
 
 export enum POSITION {
   UNDER = 0,
@@ -71,20 +72,48 @@ export function getLocationOnPage(node: Node) {
   while (list.length) {
     m = multiply(m, list.pop()!.matrix);
   }
+  const tfo = node.computedStyle.transformOrigin;
   m = multiply(m, node.matrix);
+  // 先求考虑旋转的位置
+  const p1 = calPoint({ x: 0, y: 0 }, m);
   // 根据m[0]求cos，相对于Page的旋转角度，然后逆向旋转得出真正的布局位置
   const r = Math.acos(m[0]);
+  // 反向旋转，即没有旋转的位置
   const i = identity();
   multiplyRotateZ(i, -r);
-  const tfo = node.computedStyle.transformOrigin;
   const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
   m = multiply(m, t);
-  const pt = calPoint({ x: 0, y: 0 }, m);
+  const p2 = calPoint({ x: 0, y: 0 }, m);
   return {
-    x: pt.x,
-    y: pt.y,
+    x: p2.x,
+    y: p2.y,
     r,
+    dx: p2.x - p1.x,
+    dy: p2.y - p1.y,
   }
+}
+
+export function getMatrixOnPage(node: Node) {
+  if (!node.page) {
+    throw new Error('Node not on a Page');
+  }
+  if (node.isPage && node instanceof Page) {
+    return identity();
+  }
+  // 从自己开始向上到page，累计matrix
+  const page = node.page;
+  let p = node.parent;
+  const list: Node[] = [];
+  while (p && p !== page) {
+    list.push(p);
+    p = p.parent;
+  }
+  let m = identity();
+  while (list.length) {
+    m = multiply(m, list.pop()!.matrix);
+  }
+  m = multiply(m, node.matrix);
+  return m;
 }
 
 /**
@@ -97,8 +126,30 @@ export function migrate(parent: Node, node: Node) {
   }
   const width = parent.width;
   const height = parent.height;
-  const { x, y, r } = getLocationOnPage(parent);
-  const { x: x1, y: y1, r: r1 } = getLocationOnPage(node);
+  // 先求得parent的matrix，和左上顶点的2条边的矢量
+  const mp = getMatrixOnPage(parent);
+  const rp = Math.acos(mp[0]);
+  const p0 = calPoint({ x: 0, y: 0 }, mp);
+  const p1 = calPoint({ x: parent.width, y: 0 }, mp);
+  const p2 = calPoint({ x: 0, y: parent.height }, mp);
+  const v1 = { x: p1.x - p0.x, y: p1.y - p0.y };
+  const v2 = { x: p2.x - p0.x, y: p2.y - p0.y };
+  // 再求得node的matrix，并相对于parent取消旋转后的左上顶点位置
+  const mn = getMatrixOnPage(node);
+  const rn = Math.acos(mn[0]);
+  const r = rn - rp;
+  const i = identity();
+  multiplyRotateZ(i, -r);
+  const tfo = node.computedStyle.transformOrigin;
+  const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
+  const m = multiply(mn, t);
+  // node顶点和parent的顶点组成的向量，在2条矢量上的投影距离就是left和top
+  const p = calPoint({ x: 0, y: 0 }, m);
+  const v = { x: p.x - p0.x, y: p.y - p0.y };
+  const v3 = projection(v.x, v.y, v1.x, v1.y);
+  const v4 = projection(v.x, v.y, v2.x, v2.y);
+  const x = length(v3.x, v3.y);
+  const y = length(v4.x, v4.y);
   const style = node.style;
   // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
   const leftConstraint = style.left.u === StyleUnit.PX;
@@ -109,11 +160,10 @@ export function migrate(parent: Node, node: Node) {
   const heightConstraint = style.height.u === StyleUnit.PX;
   // left
   if (leftConstraint) {
-    const left = x1 - x;
-    style.left.v = left;
+    style.left.v = x;
     // left+right忽略width
     if (rightConstraint) {
-      style.right.v = width - left - node.width;
+      style.right.v = width - x - node.width;
     }
     // left+width
     else if (widthConstraint) {
@@ -121,11 +171,12 @@ export function migrate(parent: Node, node: Node) {
     }
     // 仅left，right是百分比忽略width
     else {
-      style.right.v = ((width - left - node.width) * 100) / width;
+      style.right.v = ((width - x - node.width) * 100) / width;
     }
   }
   // right
   else if (rightConstraint) {
+    style.right.v = width - x - node.width;
     // right+width
     if (widthConstraint) {
       // 默认left就是auto啥也不做
@@ -137,27 +188,25 @@ export function migrate(parent: Node, node: Node) {
   }
   // 左右都不固定
   else {
-    const left = x1 + x;
     // 仅固定宽度，以中心点占left的百分比，或者文字只有left百分比无right
     if (
       widthConstraint ||
       (style.left.u === StyleUnit.PERCENT && style.right.u === StyleUnit.AUTO)
     ) {
-      style.left.v = left * 100 / width;
+      style.left.v = x * 100 / width;
     }
     // 左右皆为百分比
     else {
-      style.left.v = left * 100 / width;
-      style.right.v = ((width - left - node.width) * 100) / width;
+      style.left.v = x * 100 / width;
+      style.right.v = ((width - x - node.width) * 100) / width;
     }
   }
   // top
   if (topConstraint) {
-    const top = y1 + y;
-    style.top.v = top;
+    style.top.v = y;
     // top+bottom忽略height
     if (bottomConstraint) {
-      style.bottom.v = height - top - node.height;
+      style.bottom.v = height - y - node.height;
     }
     // top+height
     else if (heightConstraint) {
@@ -165,11 +214,12 @@ export function migrate(parent: Node, node: Node) {
     }
     // 仅top，bottom是百分比忽略height
     else {
-      style.bottom.v = ((height - top - node.height) * 100) / height;
+      style.bottom.v = ((height - y - node.height) * 100) / height;
     }
   }
   // bottom
   else if (bottomConstraint) {
+    style.bottom.v = height - y - node.height;
     // bottom+height
     if (heightConstraint) {
       // 默认top就是auto啥也不做
@@ -181,25 +231,24 @@ export function migrate(parent: Node, node: Node) {
   }
   // 上下都不固定
   else {
-    const top = y1 - y;
     // 仅固定宽度，以中心点占top的百分比，或者文字只有top百分比无bottom
     if (
       heightConstraint ||
       (style.top.u === StyleUnit.PERCENT && style.bottom.u === StyleUnit.AUTO)
     ) {
-      style.top.v = top * 100 / height;
+      style.top.v = y * 100 / height;
     }
     // 左右皆为百分比
     else {
-      style.top.v = top * 100 / height;
-      style.bottom.v = ((height - top - node.height) * 100) / height;
+      style.top.v = y * 100 / height;
+      style.bottom.v = ((height - y - node.height) * 100) / height;
     }
   }
-  style.rotateZ.v = r2d(r1 - r);
+  style.rotateZ.v = r2d(r);
 }
 
 export function sortTempIndex(nodes: Node[]) {
-  if (!nodes.length) {
+  if (!nodes.length || !nodes[0].root) {
     return;
   }
   const structs = nodes[0].root!.structs;

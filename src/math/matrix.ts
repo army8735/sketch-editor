@@ -499,6 +499,7 @@ export default {
   toE,
   assignMatrix,
   inverse,
+  inverse4,
   calPoint,
   calRectPoints,
   tfoMultiply,

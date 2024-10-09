@@ -12,7 +12,6 @@ import State from './State';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle } from '../format';
 import { getFrameNodes, getNodeByPoint } from '../tools/root';
-import { group, unGroup } from '../tools/group';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
@@ -35,6 +34,8 @@ import FillCommand from '../history/FillCommand';
 import StrokeCommand from '../history/StrokeCommand';
 import MaskModeCommand from '../history/MaskModeCommand';
 import BreakMaskCommand from '../history/BreakMaskCommand';
+import GroupCommand from '../history/GroupCommand';
+import UnGroupCommand from '../history/UnGroupCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1094,21 +1095,33 @@ export default class Listener extends Event {
 
   group() {
     if (this.selected.length) {
-      const res = group(this.selected);
-      if (res) {
-        this.emit(Listener.GROUP_NODE, res, this.selected.slice(0));
+      const { data, group } = GroupCommand.operate(this.selected);
+      if (group) {
         this.selected.splice(0);
-        this.selected.push(res);
+        this.selected.push(group);
         this.select.updateSelect(this.selected);
-        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+        this.history.addCommand(new GroupCommand(this.selected.slice(0), data, group));
+        this.emit(Listener.GROUP_NODE, group, group.children.slice(0));
       }
     }
   }
 
   unGroup() {
-    if (this.selected.length === 1 && this.selected[0] instanceof Group) {
-      const res = unGroup(this.selected[0]);
-      this.emit(Listener.UN_GROUP_NODE, res, this.selected[0]);
+    const groups = this.selected.filter(item => item instanceof Group);
+    if (groups.length) {
+      const res = UnGroupCommand.operate(groups);
+      this.selected.splice(0);
+      res.forEach(item => {
+        this.selected.push(...item.children);
+      });
+      this.select.updateSelect(this.selected);
+      this.history.addCommand(new UnGroupCommand(groups.slice(0), res.map(item => {
+        return {
+          parent: item.parent,
+          children: item.children,
+        }
+      })));
+      this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups);
     }
   }
 
@@ -1316,16 +1329,17 @@ export default class Listener extends Event {
       }
       if (c) {
         this.updateActive();
+        const nodes = this.selected.slice(0);
         // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
-          this.emit(Listener.MOVE_NODE, this.selected.slice(0));
+          this.emit(Listener.MOVE_NODE, nodes);
         }
         else if (c instanceof ResizeCommand) {
-          this.emit(Listener.RESIZE_NODE, this.selected.slice(0));
+          this.emit(Listener.RESIZE_NODE, nodes);
         }
         else if (c instanceof RemoveCommand) {
           if (this.shiftKey) {
-            this.selected = [];
+            this.selected.splice(0);
             this.select.hideSelect();
             this.emit(Listener.REMOVE_NODE, c.nodes.slice(0));
           }
@@ -1338,77 +1352,94 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof RotateCommand) {
-          this.emit(Listener.ROTATE_NODE, this.selected.slice(0));
+          this.emit(Listener.ROTATE_NODE, nodes);
         }
         else if (c instanceof OpacityCommand) {
-          this.emit(Listener.OPACITY_NODE, this.selected.slice(0));
+          this.emit(Listener.OPACITY_NODE, nodes);
         }
         else if (c instanceof ShadowCommand) {
-          this.emit(Listener.SHADOW_NODE, this.selected.slice(0));
+          this.emit(Listener.SHADOW_NODE, nodes);
         }
         else if (c instanceof BlurCommand) {
-          this.emit(Listener.BLUR_NODE, this.selected.slice(0));
+          this.emit(Listener.BLUR_NODE, nodes);
         }
         else if (c instanceof ColorAdjustCommand) {
-          this.emit(Listener.COLOR_ADJUST_NODE, this.selected.slice(0));
+          this.emit(Listener.COLOR_ADJUST_NODE, nodes);
         }
         else if (c instanceof VerticalAlignCommand) {
-          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, this.selected.slice(0));
+          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes);
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, this.selected.slice(0));
+          this.emit(Listener.FILL_NODE, nodes);
         }
         else if (c instanceof StrokeCommand) {
-          this.emit(Listener.STROKE_NODE, this.selected.slice(0));
+          this.emit(Listener.STROKE_NODE, nodes);
+        }
+        else if (c instanceof GroupCommand) {
+          this.emit(Listener.GROUP_NODE, c.group, nodes);
+        }
+        else if (c instanceof UnGroupCommand) {
+          if (this.shiftKey) {
+            this.emit(Listener.UN_GROUP_NODE, c.nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
+          }
+          else {
+            c.nodes.forEach((item, i) => {
+              this.emit(Listener.GROUP_NODE, item, c.data[i].children.slice(0));
+            });
+          }
+        }
+        else if (c instanceof MaskModeCommand) {
+          const maskMode = ['none', 'outline', 'alpha'][nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+          this.emit(Listener.MASK_NODE, nodes, maskMode);
+        }
+        else if (c instanceof BreakMaskCommand) {
+          const breakMask = nodes[0].computedStyle.breakMask;
+          this.emit(Listener.BREAK_MASK_NODE, nodes, breakMask);
         }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {
-            this.emit(Listener.TEXT_ALIGN_NODE, this.selected.slice(0));
+            this.emit(Listener.TEXT_ALIGN_NODE, nodes);
           }
           else if (c.type === RichCommand.COLOR) {
-            this.emit(Listener.COLOR_NODE, this.selected.slice(0));
+            this.emit(Listener.COLOR_NODE, nodes);
           }
           else if (c.type === RichCommand.FONT_FAMILY) {
-            this.emit(Listener.FONT_FAMILY_NODE, this.selected.slice(0));
+            this.emit(Listener.FONT_FAMILY_NODE, nodes);
           }
           else if (c.type === RichCommand.FONT_SIZE) {
-            this.emit(Listener.FONT_SIZE_NODE, this.selected.slice(0));
+            this.emit(Listener.FONT_SIZE_NODE, nodes);
           }
           else if (c.type === RichCommand.LINE_HEIGHT) {
-            this.emit(Listener.LINE_HEIGHT_NODE, this.selected.slice(0));
+            this.emit(Listener.LINE_HEIGHT_NODE, nodes);
           }
           else if (c.type === RichCommand.PARAGRAPH_SPACING) {
-            this.emit(Listener.PARAGRAPH_SPACING_NODE, this.selected.slice(0));
+            this.emit(Listener.PARAGRAPH_SPACING_NODE, nodes);
           }
           else if (c.type === RichCommand.LETTER_SPACING) {
-            this.emit(Listener.LETTER_SPACING_NODE, this.selected.slice(0));
+            this.emit(Listener.LETTER_SPACING_NODE, nodes);
           }
           // 更新光标
-          if (this.state === State.EDIT_TEXT && this.selected.length === 1) {
-            const node = this.selected[0] as Text;
-            if (node === this.selected[0]) {
-              const { isMulti, start } = node.getSortedCursor();
-              if (!isMulti) {
-                const p = node.updateCursorByIndex(start);
-                this.input.updateCursor(p);
-                this.input.showCursor();
-              }
-              this.input.focus();
+          if (this.state === State.EDIT_TEXT && nodes.length === 1) {
+            const node = nodes[0] as Text;
+            const { isMulti, start } = node.getSortedCursor();
+            if (!isMulti) {
+              const p = node.updateCursorByIndex(start);
+              this.input.updateCursor(p);
+              this.input.showCursor();
             }
+            this.input.focus();
           }
         }
         else if (c instanceof TextCommand) {
-          if (this.state === State.EDIT_TEXT && this.selected.length === 1) {
-            const node = this.selected[0] as Text;
-            if (node === this.selected[0]) {
-              const { isMulti, start } = node.getSortedCursor();
-              if (!isMulti) {
-                const p = node.updateCursorByIndex(start);
-                this.input.updateCursor(p);
-                this.input.showCursor();
-              }
-              this.input.focus();
+          if (this.state === State.EDIT_TEXT && nodes.length === 1) {
+            const node = nodes[0] as Text;
+            const { isMulti, start } = node.getSortedCursor();
+            if (!isMulti) {
+              const p = node.updateCursorByIndex(start);
+              this.input.updateCursor(p);
+              this.input.showCursor();
             }
+            this.input.focus();
           }
         }
       }

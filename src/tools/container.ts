@@ -43,25 +43,7 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
     v: computedStyle.height,
     u: StyleUnit.PX,
   };
-  // 利用小数索引找到正确的位置
-  const children = parent.children;
-  if (!children.length) {
-    parent.appendChild(node);
-  }
-  else {
-    for (let i = 0, len = children.length; i < len; i++) {
-      const child = children[i];
-      if (node.props.index < child.props.index) {
-        child.insertBefore(node);
-        break;
-      }
-      // 直到最后也没有
-      else if (i === len - 1) {
-        parent.appendChild(node);
-        break;
-      }
-    }
-  }
+  appendWithIndex(parent, node);
   // 还原style原本的单位，需要重算一遍数值不能直接用已有的，因为%的情况parent可能发生了尺寸变化
   if (left.u === StyleUnit.PERCENT) {
     style.left = {
@@ -173,6 +155,29 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
   }
 }
 
+export function appendWithIndex(parent: Container, node: Node) {
+  // 利用小数索引找到正确的位置
+  const children = parent.children;
+  if (!children.length) {
+    parent.appendChild(node);
+  }
+  else {
+    for (let i = 0, len = children.length; i < len; i++) {
+      const child = children[i];
+      if (node.props.index < child.props.index) {
+        child.insertBefore(node);
+        break;
+      }
+      // 直到最后也没有
+      else if (i === len - 1) {
+        parent.appendChild(node);
+        break;
+      }
+    }
+  }
+}
+
 export default {
   appendWithPosAndSize,
+  appendWithIndex,
 };
