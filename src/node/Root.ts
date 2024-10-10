@@ -456,7 +456,7 @@ class Root extends Container implements FrameCallback {
         let cleared = false;
         if (lv & RefreshLevel.MASK) {
           computedStyle.maskMode = style.maskMode.v;
-          node.clearMask();
+          node.clearMask(true);
           cleared = true;
           const p = node.parent;
           if (p && p.isGroup && p instanceof Group) {
@@ -466,10 +466,22 @@ class Root extends Container implements FrameCallback {
         }
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
+          // breakMask向前查找重置mask
+          let prev = node.prev;
+          while (prev) {
+            if (prev.computedStyle.maskMode) {
+              prev.clearMask(true);
+              break;
+            }
+            if (prev.computedStyle.breakMask) {
+              break;
+            }
+            prev = prev.prev;
+          }
         }
         // mask的任何变更都要清空重绘，必须CACHE以上，CACHE是跨帧渲染用级别
         if (computedStyle.maskMode && !cleared && lv > RefreshLevel.CACHE) {
-          node.clearMask();
+          node.clearMask(true);
         }
       }
       node.clearCacheUpward(false);

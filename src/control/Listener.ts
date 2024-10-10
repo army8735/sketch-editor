@@ -1331,7 +1331,7 @@ export default class Listener extends Event {
       }
       if (c) {
         this.updateActive();
-        const nodes = this.selected.slice(0);
+        const nodes = c.nodes.slice(0);
         // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
           this.emit(Listener.MOVE_NODE, nodes);
@@ -1343,14 +1343,14 @@ export default class Listener extends Event {
           if (this.shiftKey) {
             this.selected.splice(0);
             this.select.hideSelect();
-            this.emit(Listener.REMOVE_NODE, c.nodes.slice(0));
+            this.emit(Listener.REMOVE_NODE, nodes);
           }
           else {
-            this.selected = c.nodes.map((item, i) => {
+            this.selected = nodes.map((item, i) => {
               return c.data[i].selected || item;
             });
             this.select.showSelect(this.selected);
-            this.emit(Listener.ADD_NODE, c.nodes.slice(0), this.selected.slice(0));
+            this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
           }
         }
         else if (c instanceof RotateCommand) {
@@ -1383,38 +1383,38 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.selected.push(c.group);
             this.select.showSelect(this.selected);
-            this.emit(Listener.GROUP_NODE, [c.group], [c.nodes.slice(0)]);
+            this.emit(Listener.GROUP_NODE, [c.group], [nodes]);
           }
           else {
             this.selected.splice(0);
-            this.selected.push(...c.nodes);
+            this.selected.push(...nodes);
             this.select.showSelect(this.selected);
-            this.emit(Listener.UN_GROUP_NODE, [c.nodes.slice(0)], [c.group]);
+            this.emit(Listener.UN_GROUP_NODE, [nodes], [c.group]);
           }
         }
         else if (c instanceof UnGroupCommand) {
           if (this.shiftKey) {
             this.selected.splice(0);
-            c.nodes.forEach((item, i) => {
+            nodes.forEach((item, i) => {
               this.selected.push(...c.data[i].children);
             });
             this.select.showSelect(this.selected);
-            this.emit(Listener.UN_GROUP_NODE, c.nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
+            this.emit(Listener.UN_GROUP_NODE, nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
           }
           else {
             this.selected.splice(0);
-            this.selected.push(...c.nodes);
+            this.selected.push(...nodes);
             this.select.showSelect(this.selected);
-            this.emit(Listener.GROUP_NODE, c.nodes.slice(0), c.data.map(item => item.children.slice(0)));
+            this.emit(Listener.GROUP_NODE, nodes.slice(0), c.data.map(item => item.children.slice(0)));
           }
         }
         else if (c instanceof MaskModeCommand) {
-          const maskMode = ['none', 'outline', 'alpha'][c.nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
-          this.emit(Listener.MASK_NODE, c.nodes.slice(0), maskMode);
+          const maskMode = ['none', 'outline', 'alpha'][nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+          this.emit(Listener.MASK_NODE, nodes.slice(0), maskMode);
         }
         else if (c instanceof BreakMaskCommand) {
-          const breakMask = c.nodes[0].computedStyle.breakMask;
-          this.emit(Listener.BREAK_MASK_NODE, c.nodes.slice(0), breakMask);
+          const breakMask = nodes[0].computedStyle.breakMask;
+          this.emit(Listener.BREAK_MASK_NODE, nodes, breakMask);
         }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {

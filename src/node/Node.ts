@@ -832,6 +832,7 @@ class Node extends Event {
   clearMask(upwards = true) {
     this.textureMask.forEach((item) => item?.release());
     this.resetTextureTarget();
+    this.struct.next = 0;
     // mask切换影响父级组的bbox
     if (upwards) {
       let p = this.parent;

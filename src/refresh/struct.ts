@@ -1013,7 +1013,7 @@ function renderWebglNoTile(
       if (
         target?.available &&
         target !== node.textureCache[scaleIndex] ||
-        computedStyle.maskMode
+        computedStyle.maskMode // mask图片还未加载完成没有可渲染的内容也要跳过
       ) {
         i += total + next;
       }
