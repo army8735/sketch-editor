@@ -50,7 +50,7 @@ export default {
           listener.scale(classList.contains('scale-up'));
         }
         else if (classList.contains('mask') || classList.contains('outline-mask')) {
-          if (canvasDiv.classList.contains('outline') || canvasDiv.classList.contains('alpha')) {
+          if (canvasDiv.classList.contains('outline')) {
             listener.unMask();
           }
           else {
@@ -58,7 +58,7 @@ export default {
           }
         }
         else if (classList.contains('alpha-mask')) {
-          if (canvasDiv.classList.contains('outline') || canvasDiv.classList.contains('alpha')) {
+          if (canvasDiv.classList.contains('alpha')) {
             listener.unMask();
           }
           else {

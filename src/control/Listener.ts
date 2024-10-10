@@ -1132,9 +1132,9 @@ export default class Listener extends Event {
       const prevs: MaskModeStyle[] = [];
       const maskMode = isAlpha ? 'alpha' : 'outline';
       this.selected.forEach(item => {
-        const maskMode = ['none', 'outline', 'alpha'][item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+        const prev = ['none', 'outline', 'alpha'][item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
         prevs.push({
-          maskMode,
+          maskMode: prev,
         });
         item.updateStyle({
           maskMode,
@@ -1409,12 +1409,12 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof MaskModeCommand) {
-          const maskMode = ['none', 'outline', 'alpha'][nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
-          this.emit(Listener.MASK_NODE, nodes, maskMode);
+          const maskMode = ['none', 'outline', 'alpha'][c.nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+          this.emit(Listener.MASK_NODE, c.nodes.slice(0), maskMode);
         }
         else if (c instanceof BreakMaskCommand) {
-          const breakMask = nodes[0].computedStyle.breakMask;
-          this.emit(Listener.BREAK_MASK_NODE, nodes, breakMask);
+          const breakMask = c.nodes[0].computedStyle.breakMask;
+          this.emit(Listener.BREAK_MASK_NODE, c.nodes.slice(0), breakMask);
         }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {
