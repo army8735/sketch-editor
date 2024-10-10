@@ -93,14 +93,12 @@ class Event {
   }
 
   emit(id: string | string[], ...data: any) {
-    if (Array.isArray(id)) {
-      for (let i = 0, len = id.length; i < len; i++) {
-        this.emit(id[i], data[0]);
-      }
+    if (!Array.isArray(id)) {
+      id = [id];
     }
-    else {
-      if (this.__eHash.hasOwnProperty(id)) {
-        let list = this.__eHash[id];
+    id.forEach((item) => {
+      if (item && this.__eHash.hasOwnProperty(item)) {
+        let list = this.__eHash[item];
         if (list.length) {
           list = list.slice();
           for (let i = 0, len = list.length; i < len; i++) {
@@ -111,7 +109,7 @@ class Event {
           }
         }
       }
-    }
+    });
     return this;
   }
 
