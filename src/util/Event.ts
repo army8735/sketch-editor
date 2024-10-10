@@ -95,7 +95,7 @@ class Event {
   emit(id: string | string[], ...data: any) {
     if (Array.isArray(id)) {
       for (let i = 0, len = id.length; i < len; i++) {
-        this.emit(id[i], data);
+        this.emit(id[i], data[0]);
       }
     }
     else {

@@ -13,6 +13,7 @@
     <label><input type="checkbox" class="tile"/>开启tile</label>
     <label><input type="checkbox" class="debug"/>开启debug</label>
     <button id="save">保存</button>
+    <div class="version"></div>
   </div>
   <div class="container">
     <div class="list">
@@ -50,6 +51,8 @@
   debug.addEventListener('change', function() {
     location.href = '?tile=' + (tile.checked ? '1' : '') + '&debug=' + (debug.checked ? '1' : '');
   });
+
+  document.querySelector('.version').innerText = sketchEditor.version;
 
   sketchEditor.config.MAX_TEXTURE_SIZE = 4096;
   sketchEditor.style.font.registerLocalFonts();

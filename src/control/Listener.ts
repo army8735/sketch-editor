@@ -46,9 +46,9 @@ export type ListenerOptions = {
     resizeWithAlt?: boolean; // 拖拽尺寸时强制按下alt
   };
   disabled?: {
-    select?: boolean;
-    hover?: boolean;
-    remove?: boolean;
+    select?: boolean; // 选择节点
+    hover?: boolean; // hover节点
+    remove?: boolean; // 删除节点
     move?: boolean; // 移动节点
     resize?: boolean; // 节点尺寸
     drag?: boolean; // 拖拽画布
