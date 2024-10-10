@@ -255,6 +255,42 @@ export default class Tree {
       });
       this.select(list);
     });
+    listener.on(Listener.MASK_NODE, (nodes: Node[], maskMode: string) => {
+      nodes.forEach(item => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            let dd = dl.parentElement!;
+            let next = item.next;
+            while (next) {
+              if (next.computedStyle.breakMask || next.computedStyle.maskMode) {
+                break;
+              }
+              dd = dd.previousElementSibling as HTMLElement;
+              const dt = dd.firstElementChild!.firstElementChild as HTMLElement;
+              const mask = dt.querySelector('.mask');
+              if (maskMode === 'none') {
+                if (mask) {
+                  mask.remove();
+                }
+              }
+              else {
+                if (!mask) {
+                  const span = document.createElement('span');
+                  span.classList.add('mask');
+                  dt.prepend(span);
+                }
+              }
+              next = next.next;
+            }
+          }
+        }
+      });
+    });
+    listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[][]) => {
+      console.log(nodes);
+    });
 
     dom.addEventListener('selectstart', (e) => {
       e.preventDefault();
