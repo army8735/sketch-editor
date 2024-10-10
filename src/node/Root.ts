@@ -466,6 +466,7 @@ class Root extends Container implements FrameCallback {
         }
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
+          node.calMask();
           // breakMask向前查找重置mask
           let prev = node.prev;
           while (prev) {

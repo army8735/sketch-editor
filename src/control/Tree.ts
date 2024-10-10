@@ -263,6 +263,7 @@ export default class Tree {
           if (dl) {
             let dd = dl.parentElement!;
             let next = item.next;
+            // 将后续节点的显示被遮罩箭头改变
             while (next) {
               if (next.computedStyle.breakMask || next.computedStyle.maskMode) {
                 break;
@@ -288,8 +289,54 @@ export default class Tree {
         }
       });
     });
-    listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[][]) => {
-      console.log(nodes);
+    listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[], breakMask: boolean) => {
+      nodes.forEach(item => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            // 先改变自己的显示被遮罩箭头
+            const dt = dl.firstElementChild as HTMLElement;
+            const mask = dt.querySelector('.mask');
+            if (breakMask) {
+              if (mask) {
+                mask.remove();
+              }
+            }
+            else if (item.mask) {
+              if (!mask) {
+                const span = document.createElement('span');
+                span.classList.add('mask');
+                dt.prepend(span);
+              }
+            }
+            // 后续节点的
+            let dd = dl.parentElement!;
+            let next = item.next;
+            while (next) {
+              if (next.computedStyle.breakMask || next.computedStyle.maskMode) {
+                break;
+              }
+              dd = dd.previousElementSibling as HTMLElement;
+              const dt = dd.firstElementChild!.firstElementChild as HTMLElement;
+              const mask = dt.querySelector('.mask');
+              if (breakMask) {
+                if (mask) {
+                  mask.remove();
+                }
+              }
+              else {
+                if (!mask) {
+                  const span = document.createElement('span');
+                  span.classList.add('mask');
+                  dt.prepend(span);
+                }
+              }
+              next = next.next;
+            }
+          }
+        }
+      });
     });
 
     dom.addEventListener('selectstart', (e) => {
