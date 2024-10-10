@@ -11,6 +11,7 @@ import { parse, sortSymbolMasters } from './node/parser';
 import SymbolMaster from './node/SymbolMaster';
 import tools from './tools';
 import control from './control';
+import history from './history';
 import { version } from '../package.json';
 import gl from './gl';
 
@@ -82,6 +83,7 @@ export default {
   tools,
   config,
   control,
+  history,
   gl,
   format,
 };
