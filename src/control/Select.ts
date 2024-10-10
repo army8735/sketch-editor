@@ -165,8 +165,14 @@ export default class Select {
     const sub = this.select.querySelector('.sub') as HTMLElement;
     if (selected.length === 1) {
       sub.innerHTML = '';
-      const res = this.calRect(selected[0]);
       this.select.classList.remove('multi');
+      if (selected[0].computedStyle.visible) {
+        this.select.classList.remove('hide');
+      }
+      else {
+        this.select.classList.add('hide');
+      }
+      const res = this.calRect(selected[0]);
       this.select.style.left = res.left + 'px';
       this.select.style.top = res.top + 'px';
       this.select.style.width = res.width + 'px';
@@ -177,11 +183,15 @@ export default class Select {
     else if (selected.length > 1) {
       this.select.classList.add('multi');
       let left = 0, top = 0, right = 0, bottom = 0;
-      const rects: { left: number, top: number, right: number, bottom: number }[] = [];
+      const rects: { left: number, top: number, right: number, bottom: number, visible: boolean }[] = [];
       selected.forEach((item, i) => {
         const rect = item.getBoundingClientRect();
         rects.push({
-          left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom,
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          visible: item.computedStyle.visible,
         });
         if (i) {
           left = Math.min(left, rect.left);
@@ -205,7 +215,7 @@ export default class Select {
       // 多选更新每个节点的小框
       let s = '';
       rects.forEach(item => {
-        s += `<div style="left:${(item.left-left)/dpi}px;top:${(item.top-top)/dpi}px;width:${(item.right-item.left)/dpi}px;height:${(item.bottom-item.top)/dpi}px"></div>`;
+        s += `<div style="left:${(item.left-left)/dpi}px;top:${(item.top-top)/dpi}px;width:${(item.right-item.left)/dpi}px;height:${(item.bottom-item.top)/dpi}px;${item.visible ? '' : 'border-style:dashed;'}"></div>`;
       });
       const sub = this.select.querySelector('.sub') as HTMLElement;
       if (sub.innerHTML !== s) {

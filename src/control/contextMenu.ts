@@ -18,6 +18,11 @@ const htmlCanvas = `
   </div>
   <div class="item break-mask"><span class="checked">✅</span>忽略底层蒙版</div>
   <div class="split split2"></div>
+  <div class="item lock">锁定<span></span>个图层</div>
+  <div class="item un-lock">解锁<span></span>个图层</div>
+  <div class="item hide">隐藏<span></span>个图层</div>
+  <div class="item show">显示<span></span>个图层</div>
+  <div class="split split3"></div>
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
 `;
@@ -31,6 +36,11 @@ export default {
       // 点击自动关闭，外部或者子项都可，但点自身不关闭，因为有padding或者不可点击的项视为点自己
       document.addEventListener('click', (e) => {
         if (e.target !== canvasDiv) {
+          this.hide();
+        }
+      });
+      document.addEventListener('visibilitychange', (e) => {
+        if (document.visibilityState === 'hidden') {
           this.hide();
         }
       });
@@ -73,6 +83,18 @@ export default {
             listener.breakMask();
           }
         }
+        else if (classList.contains('lock')) {
+          listener.lock();
+        }
+        else if (classList.contains('un-lock')) {
+          listener.unLock();
+        }
+        else if (classList.contains('hide')) {
+          listener.hide();
+        }
+        else if (classList.contains('show')) {
+          listener.show();
+        }
       });
     }
     canvasDiv.className = 'sketch-editor-context-menu';
@@ -106,6 +128,22 @@ export default {
     let hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);
     if (hasBreakMask.length) {
       classList.add('break');
+    }
+    let hasLocked = nodes.filter(item => item.props.isLocked);
+    if (hasLocked.length === nodes.length) {
+      classList.add('locked');
+      canvasDiv.querySelector('.un-lock span')!.innerHTML = hasLocked.length.toString();
+    }
+    else {
+      canvasDiv.querySelector('.lock span')!.innerHTML = nodes.length.toString();
+    }
+    let hasHidden = nodes.filter(item => !item.computedStyle.visible);
+    if (hasHidden.length === nodes.length) {
+      classList.add('hidden');
+      canvasDiv.querySelector('.show span')!.innerHTML = hasLocked.length.toString();
+    }
+    else {
+      canvasDiv.querySelector('.hide span')!.innerHTML = nodes.length.toString();
     }
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';

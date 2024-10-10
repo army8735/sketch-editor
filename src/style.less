@@ -321,6 +321,21 @@ html, body {
       }
     }
 
+    &.hide {
+      .t b {
+        border-top-style: dashed;
+      }
+      .r b {
+        border-right-style: dashed;
+      }
+      .b b {
+        border-bottom-style: dashed;
+      }
+      .l b {
+        border-left-style: dashed;
+      }
+    }
+
     .l {
       position: absolute;
       left: -2px;
@@ -1416,7 +1431,7 @@ html, body {
 }
 
 .sketch-editor-context-menu {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 20px;
   cursor: default;
 
@@ -1424,7 +1439,7 @@ html, body {
     position: relative;
     display: flex;
     align-items: center;
-    padding: 2px 5px;
+    margin: 4px 8px;
     border-radius: 3px;
 
     &:hover {
@@ -1459,31 +1474,31 @@ html, body {
   }
 
   .split {
-    margin: 5px 0;
+    margin: 6px 8px;
     border-top: 1px solid #CCC;
     pointer-events: none;
   }
 
   &.empty {
-    .group, .un-group, .split1, .mask, .break-mask {
+    .group, .un-group, .split1, .split2, .lock, .un-lock, .hide, .show, .mask, .break-mask {
       display: none;
     }
   }
 
   &.single {
-    .un-group, .scale-up, .scale-down, .select-all, .split2 {
+    .un-group, .scale-up, .scale-down, .select-all, .split3 {
       display: none;
     }
   }
 
   &.single-group {
-    .scale-up, .scale-down, .select-all, .split2 {
+    .scale-up, .scale-down, .select-all, .split3 {
       display: none;
     }
   }
 
   &.multi {
-    .scale-up, .scale-down, .select-all, .split2 {
+    .scale-up, .scale-down, .select-all, .split3 {
       display: none;
     }
     .un-group {
@@ -1516,5 +1531,29 @@ html, body {
 
   &.alpha .alpha-mask .checked {
     display: block;
+  }
+
+  .un-lock, .show {
+    display: none;
+  }
+
+  &.locked {
+    .un-lock {
+      display: block;
+    }
+
+    .lock {
+      display: none;
+    }
+  }
+
+  &.hidden {
+    .show {
+      display: block;
+    }
+
+    .hide {
+      display: none;
+    }
   }
 }

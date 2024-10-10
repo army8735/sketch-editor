@@ -1222,6 +1222,42 @@ export default class Listener extends Event {
     }
   }
 
+  lock(nodes = this.selected) {
+    if (nodes.length) {
+      nodes.forEach(item => {
+        item.props.isLocked = true;
+      });
+    }
+  }
+
+  unLock(nodes = this.selected) {
+    if (nodes.length) {
+      nodes.forEach(item => {
+        item.props.isLocked = false;
+      });
+    }
+  }
+
+  hide(nodes = this.selected) {
+    if (nodes.length) {
+      nodes.forEach(item => {
+        item.updateStyle({
+          visible: false,
+        });
+      });
+    }
+  }
+
+  show(nodes = this.selected) {
+    if (nodes.length) {
+      nodes.forEach(item => {
+        item.updateStyle({
+          visible: true,
+        });
+      });
+    }
+  }
+
   onKeyDown(e: KeyboardEvent) {
     this.metaKey = e.metaKey;
     this.altKey = e.altKey;

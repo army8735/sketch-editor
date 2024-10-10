@@ -426,7 +426,17 @@ export default class Tree {
           }
         }
       }
-      else if (classList.contains('lock')) {}
+      else if (classList.contains('lock')) {
+        const dl = target.parentElement!.parentElement!;
+        const uuid = dl.getAttribute('uuid');
+        if (uuid) {
+          const node = root.refs[uuid];
+          if (node) {
+            node.props.isLocked = false;
+          }
+        }
+        target.remove();
+      }
       else if (classList.contains('name') || classList.contains('type') || isDt) {
         const dl = isDt ? target.parentElement! : target.parentElement!.parentElement!;
         onActive(dl);

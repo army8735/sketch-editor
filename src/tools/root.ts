@@ -68,6 +68,9 @@ function getChildrenByFrame(parent: Container, x1: number, y1: number, x2: numbe
   const res: Node[] = [];
   for (let i = 0, len = children.length; i < len; i++) {
     const child = children[i];
+    if (child.props.isLocked) {
+      continue;
+    }
     const { matrixWorld } = child;
     const rect = child._rect || child.rect;
     const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
