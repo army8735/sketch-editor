@@ -13,6 +13,7 @@ import Container from '../node/Container';
 import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
+import { MASK } from '../style/define';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -255,7 +256,7 @@ export default class Tree {
       });
       this.select(list);
     });
-    listener.on(Listener.MASK_NODE, (nodes: Node[], maskMode: string) => {
+    listener.on(Listener.MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
         const uuid = item.props.uuid;
         if (uuid) {
@@ -271,7 +272,7 @@ export default class Tree {
               dd = dd.previousElementSibling as HTMLElement;
               const dt = dd.firstElementChild!.firstElementChild as HTMLElement;
               const mask = dt.querySelector('.mask');
-              if (maskMode === 'none') {
+              if (item.computedStyle.maskMode === MASK.NONE) {
                 if (mask) {
                   mask.remove();
                 }
@@ -289,7 +290,7 @@ export default class Tree {
         }
       });
     });
-    listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[], breakMask: boolean) => {
+    listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
         const uuid = item.props.uuid;
         if (uuid) {
@@ -298,7 +299,7 @@ export default class Tree {
             // 先改变自己的显示被遮罩箭头
             const dt = dl.firstElementChild as HTMLElement;
             const mask = dt.querySelector('.mask');
-            if (breakMask) {
+            if (item.computedStyle.breakMask) {
               if (mask) {
                 mask.remove();
               }
@@ -320,7 +321,7 @@ export default class Tree {
               dd = dd.previousElementSibling as HTMLElement;
               const dt = dd.firstElementChild!.firstElementChild as HTMLElement;
               const mask = dt.querySelector('.mask');
-              if (breakMask) {
+              if (item.computedStyle.breakMask) {
                 if (mask) {
                   mask.remove();
                 }
@@ -333,6 +334,59 @@ export default class Tree {
                 }
               }
               next = next.next;
+            }
+          }
+        }
+      });
+    });
+    listener.on(Listener.RENAME_NODE, (nodes: Node[]) => {
+      nodes.forEach((item) => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            (dl.querySelector('span.name') as HTMLElement).innerText = item.props.name || '';
+          }
+        }
+      });
+    });
+    listener.on(Listener.LOCK_NODE, (nodes: Node[]) => {
+      nodes.forEach((item) => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            const dt = dl.firstElementChild as HTMLElement;
+            const lock = dt.querySelector('.lock');
+            if (item.props.isLocked) {
+              if (!lock) {
+                const span = document.createElement('span');
+                span.classList.add('lock');
+                (dt.querySelector('.name') as HTMLElement).after(span);
+              }
+            }
+            else {
+              if (lock) {
+                lock.remove();
+              }
+            }
+          }
+        }
+      });
+    });
+    listener.on(Listener.VISIBLE_NODE, (nodes: Node[]) => {
+      nodes.forEach((item) => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            const visible = dl.querySelector('.visible') as HTMLElement;
+            const classList = visible.classList;
+            if (item.computedStyle.visible) {
+              classList.add('t');
+            }
+            else {
+              classList.remove('t');
             }
           }
         }
@@ -413,16 +467,7 @@ export default class Tree {
         if (uuid) {
           const node = root.refs[uuid];
           if (node) {
-            const isVisible = node.computedStyle.visible;
-            node.updateStyle({
-              visible: !isVisible,
-            });
-            if (isVisible) {
-              classList.remove('t');
-            }
-            else {
-              classList.add('t');
-            }
+            listener.visible(!classList.contains('t'), [node]);
           }
         }
       }
@@ -431,9 +476,7 @@ export default class Tree {
         const uuid = dl.getAttribute('uuid');
         if (uuid) {
           const node = root.refs[uuid];
-          if (node) {
-            node.props.isLocked = false;
-          }
+          listener.lock(false, [node]);
         }
         target.remove();
       }
@@ -451,13 +494,12 @@ export default class Tree {
       const v = target.value;
       const uuid = target.parentElement!.parentElement!.getAttribute('uuid')!;
       const node = root.refs[uuid];
-      if (node) {
-        node.props.name = v;
-      }
       const name = target.nextSibling as HTMLElement;
-      name.innerText = v;
       target.remove();
       name.style.display = 'block';
+      if (node) {
+        listener.rename([node], [v]);
+      }
     };
 
     dom.addEventListener('dblclick', (e) => {

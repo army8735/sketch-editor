@@ -61,39 +61,39 @@ export default {
         }
         else if (classList.contains('mask') || classList.contains('outline-mask')) {
           if (canvasDiv.classList.contains('outline')) {
-            listener.unMask();
+            listener.mask('none');
           }
           else {
-            listener.mask();
+            listener.mask('outline');
           }
         }
         else if (classList.contains('alpha-mask')) {
           if (canvasDiv.classList.contains('alpha')) {
-            listener.unMask();
+            listener.mask('none');
           }
           else {
-            listener.mask(true);
+            listener.mask('alpha');
           }
         }
         else if (classList.contains('break-mask')) {
           if (canvasDiv.classList.contains('break')) {
-            listener.unBreakMask();
+            listener.breakMask(false);
           }
           else {
-            listener.breakMask();
+            listener.breakMask(true);
           }
         }
         else if (classList.contains('lock')) {
-          listener.lock();
+          listener.lock(true);
         }
         else if (classList.contains('un-lock')) {
-          listener.unLock();
+          listener.lock(false);
         }
         else if (classList.contains('hide')) {
-          listener.hide();
+          listener.visible(false);
         }
         else if (classList.contains('show')) {
-          listener.show();
+          listener.visible(true);
         }
       });
     }
@@ -140,7 +140,7 @@ export default {
     let hasHidden = nodes.filter(item => !item.computedStyle.visible);
     if (hasHidden.length === nodes.length) {
       classList.add('hidden');
-      canvasDiv.querySelector('.show span')!.innerHTML = hasLocked.length.toString();
+      canvasDiv.querySelector('.show span')!.innerHTML = hasHidden.length.toString();
     }
     else {
       canvasDiv.querySelector('.hide span')!.innerHTML = nodes.length.toString();

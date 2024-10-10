@@ -10,12 +10,15 @@ import ColorAdjustCommand from './ColorAdjustCommand';
 import FillCommand from './FillCommand';
 import MaskModeCommand from './MaskModeCommand';
 import BreakMaskCommand from './BreakMaskCommand';
+import VisibleCommand from './VisibleCommand';
 import UpdateStyleCommand from './UpdateStyleCommand';
 import UpdateFormatStyleCommand from './UpdateFormatStyleCommand';
 import RichCommand from './RichCommand';
 import TextCommand from './TextCommand';
 import GroupCommand from './GroupCommand';
 import UnGroupCommand from './UnGroupCommand';
+import RenameCommand from './RenameCommand';
+import LockCommand from './LockCommand';
 
 export default {
   History,
@@ -30,10 +33,13 @@ export default {
   FillCommand,
   MaskModeCommand,
   BreakMaskCommand,
+  VisibleCommand,
   UpdateStyleCommand,
   UpdateFormatStyleCommand,
   RichCommand,
   TextCommand,
   GroupCommand,
   UnGroupCommand,
+  RenameCommand,
+  LockCommand,
 };

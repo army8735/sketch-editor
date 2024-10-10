@@ -390,6 +390,8 @@ export type MaskModeStyle = Pick<JStyle, 'maskMode'>;
 
 export type BreakMaskStyle = Pick<JStyle, 'breakMask'>;
 
+export type VisibleStyle = Pick<JStyle, 'visible'>;
+
 export default {
   TAG_NAME,
   getDefaultStyle,
