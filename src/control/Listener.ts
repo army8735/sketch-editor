@@ -1213,6 +1213,7 @@ export default class Listener extends Event {
           },
         };
       })));
+      this.updateActive();
       this.emit(Listener.VISIBLE_NODE, nodes.slice(0));
     }
   }
@@ -1471,8 +1472,13 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof RenameCommand) {
-          const names = c.data.map(item => this.shiftKey ? item.next : item.prev);
-          this.emit(Listener.RENAME_NODE, nodes, names);
+          this.emit(Listener.RENAME_NODE, nodes);
+        }
+        else if (c instanceof LockCommand) {
+          this.emit(Listener.LOCK_NODE, nodes);
+        }
+        else if (c instanceof VisibleCommand) {
+          this.emit(Listener.VISIBLE_NODE, nodes);
         }
       }
     }
