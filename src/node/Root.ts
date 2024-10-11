@@ -500,9 +500,12 @@ class Root extends Container implements FrameCallback {
     node.refreshLevel |= lv;
     this.rl |= lv;
     // 父级不可见无需刷新，忽略breakMerge的CACHE强制要求刷新，否则无法触发REFRESH_COMPLETE
+    if (lv & RefreshLevel.CACHE) {
+      return true;
+    }
     let parent = node.parent;
     while (parent) {
-      if (!parent.computedStyle.visible && !(lv & RefreshLevel.CACHE)) {
+      if (!parent.computedStyle.visible) {
         return false;
       }
       parent = parent.parent;
