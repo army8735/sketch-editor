@@ -499,10 +499,10 @@ class Root extends Container implements FrameCallback {
     // 记录节点的刷新等级，以及本帧最大刷新等级
     node.refreshLevel |= lv;
     this.rl |= lv;
-    // 父级不可见无需刷新
+    // 父级不可见无需刷新，忽略breakMerge的CACHE强制要求刷新，否则无法触发REFRESH_COMPLETE
     let parent = node.parent;
     while (parent) {
-      if (!parent.computedStyle.visible) {
+      if (!parent.computedStyle.visible && !(lv & RefreshLevel.CACHE)) {
         return false;
       }
       parent = parent.parent;
