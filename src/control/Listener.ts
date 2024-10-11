@@ -169,7 +169,6 @@ export default class Listener extends Event {
   active(nodes: Node[]) {
     this.selected.splice(0);
     this.selected.push(...nodes);
-    // this.input.hide();
     this.updateActive();
     this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
@@ -1093,7 +1092,7 @@ export default class Listener extends Event {
     }
     const res = getFrameNodes(root, 0, 0, root.width, root.height,
       (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta);
-    this.select.showSelect(res);
+    this.active(res);
     this.emit(Listener.SELECT_NODE, res.slice(0));
   }
 
@@ -1339,8 +1338,12 @@ export default class Listener extends Event {
         c = this.history.undo();
       }
       if (c) {
-        this.updateActive();
         const nodes = c.nodes.slice(0);
+        if (!(c instanceof RemoveCommand) && !(c instanceof GroupCommand)) {
+          this.selected.splice(0);
+          this.selected.push(...nodes);
+          this.updateActive();
+        }
         // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
           this.emit(Listener.MOVE_NODE, nodes);
@@ -1358,7 +1361,7 @@ export default class Listener extends Event {
             this.selected = nodes.map((item, i) => {
               return c.data[i].selected || item;
             });
-            this.select.showSelect(this.selected);
+            this.updateActive();
             this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
           }
         }
@@ -1391,13 +1394,13 @@ export default class Listener extends Event {
           if (this.shiftKey) {
             this.selected.splice(0);
             this.selected.push(c.group);
-            this.select.showSelect(this.selected);
+            this.updateActive();
             this.emit(Listener.GROUP_NODE, [c.group], [nodes]);
           }
           else {
             this.selected.splice(0);
             this.selected.push(...nodes);
-            this.select.showSelect(this.selected);
+            this.updateActive();
             this.emit(Listener.UN_GROUP_NODE, [nodes], [c.group]);
           }
         }
@@ -1407,13 +1410,13 @@ export default class Listener extends Event {
             nodes.forEach((item, i) => {
               this.selected.push(...c.data[i].children);
             });
-            this.select.showSelect(this.selected);
+            this.updateActive();
             this.emit(Listener.UN_GROUP_NODE, nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
           }
           else {
             this.selected.splice(0);
             this.selected.push(...nodes);
-            this.select.showSelect(this.selected);
+            this.updateActive();
             this.emit(Listener.GROUP_NODE, nodes.slice(0), c.data.map(item => item.children.slice(0)));
           }
         }
