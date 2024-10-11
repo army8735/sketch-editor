@@ -1,3 +1,5 @@
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import Node from './Node';
 import { JNode, Props, TAG_NAME } from '../format';
 
@@ -15,6 +17,12 @@ class Slice extends Node {
     const res = super.toJson();
     res.tagName = TAG_NAME.SLICE;
     return res;
+  }
+
+  override async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean): Promise<SketchFormat.Slice> {
+    const json = await super.toSketchJson(zip, filter) as SketchFormat.Slice;
+    json._class = SketchFormat.ClassValue.Slice;
+    return json;
   }
 }
 
