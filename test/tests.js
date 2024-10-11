@@ -147,6 +147,18 @@ describe('Event', function() {
     event.emit(['name', 'name2']);
     expect(count).to.eql(2);
   });
+  it('emit array params', function() {
+    let event = new sketchEditor.util.Event();
+    let s = '';
+    event.on('name', function(p) {
+      s += p[0];
+    });
+    event.on('name2', function(p) {
+      s += p[0];
+    });
+    event.emit(['name', 'name2'], ['a']);
+    expect(s).to.eql('aa');
+  });
   it('off array', function() {
     let event = new sketchEditor.util.Event();
     let count = 0;
