@@ -2,8 +2,8 @@ import {
   calPoint,
   calRectPoints,
   identity,
-  isE,
   multiply,
+  multiplyRef,
   multiplyRotateZ,
   multiplyScaleX,
   multiplyScaleY
@@ -70,26 +70,10 @@ function getMatrixNoFlip(node: Node) {
   const transform = node.transform;
   m[12] = transform[12];
   m[13] = transform[13];
-  if (scaleX !== 1) {
-    if (isE(transform)) {
-      transform[0] = scaleX;
-    }
-    else {
-      multiplyScaleX(transform, scaleX);
-    }
-  }
-  if (scaleY !== 1) {
-    if (isE(transform)) {
-      transform[5] = scaleY;
-    }
-    else {
-      multiplyScaleY(transform, scaleY);
-    }
-  }
   if (rotateZ) {
-    multiplyRotateZ(transform, d2r(rotateZ));
+    multiplyRotateZ(m, d2r(rotateZ));
   }
-  return calMatrixByOrigin(transform, tfo[0], tfo[1]);
+  return calMatrixByOrigin(m, tfo[0], tfo[1]);
 }
 
 // 获取节点相对于其所在Page的matrix，Page本身返回E，注意忽略镜像
@@ -147,8 +131,19 @@ export function migrate(parent: Node, node: Node) {
   }
   const width = parent.width;
   const height = parent.height;
-  // 先求得parent的matrix，和左上顶点的2条边的矢量
+  // 先求得parent的matrix，和左上顶点的2条边的矢量，要特殊忽略掉parent的镜像，用模拟反向镜像做
   const mp = getMatrixOnPage(parent);
+  // const { scaleX, scaleY } = parent.computedStyle;
+  // if (scaleX < 0) {
+  //   const i = identity();
+  //   multiplyScaleX(i, scaleX);
+  //   multiplyRef(mp, i);
+  // }
+  // if (scaleY < 0) {
+  //   const i = identity();
+  //   multiplyScaleY(i, scaleY);
+  //   multiplyRef(mp, i);
+  // }
   const rp = Math.acos(mp[0]);
   const p0 = calPoint({ x: 0, y: 0 }, mp);
   const p1 = calPoint({ x: parent.width, y: 0 }, mp);
@@ -158,7 +153,7 @@ export function migrate(parent: Node, node: Node) {
   // console.log('v1', v1, v2);
   // 再求得node的matrix，并相对于parent取消旋转后的左上顶点位置，也忽略镜像
   const i = identity();
-  const flipN = getFlipOnPage(node); console.log(node.props.name, flipN)
+  const flipN = getFlipOnPage(node);
   if (flipN.x !== 1) {
     multiplyScaleX(i, flipN.x);
   }
