@@ -1,11 +1,20 @@
-import { calPoint, calRectPoints, identity, multiply, multiplyRotateZ } from '../math/matrix';
+import {
+  calPoint,
+  calRectPoints,
+  identity,
+  isE,
+  multiply,
+  multiplyRotateZ,
+  multiplyScaleX,
+  multiplyScaleY
+} from '../math/matrix';
 import Container from '../node/Container';
 import Group from '../node/Group';
 import Node from '../node/Node';
 import { ComputedStyle, StyleUnit } from '../style/define';
 import { PageProps, Point, ResizeStyle } from '../format';
 import Geom from '../node/geom/Geom';
-import { r2d } from '../math/geom';
+import { d2r, r2d } from '../math/geom';
 import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
@@ -52,48 +61,39 @@ export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
   }
 }
 
-// 获取节点相对于其所在Page的坐标、旋转，Page本身返回0
-export function getLocationOnPage(node: Node) {
-  if (!node.page) {
-    throw new Error('Node not on a Page');
+function getMatrixNoFlip(node: Node) {
+  const { scaleX, scaleY, rotateZ, transformOrigin: tfo } = node.computedStyle;
+  if (scaleX >= 0 || scaleY >= 0) {
+    return node.matrix;
   }
-  if (node.isPage && node instanceof Page) {
-    return { x: 0, y: 0, r: 0 };
+  const m = identity();
+  const transform = node.transform;
+  m[12] = transform[12];
+  m[13] = transform[13];
+  if (scaleX !== 1) {
+    if (isE(transform)) {
+      transform[0] = scaleX;
+    }
+    else {
+      multiplyScaleX(transform, scaleX);
+    }
   }
-  // 从自己开始向上到page，累计matrix
-  const page = node.page;
-  let p = node.parent;
-  const list: Node[] = [];
-  while (p && p !== page) {
-    list.push(p);
-    p = p.parent;
+  if (scaleY !== 1) {
+    if (isE(transform)) {
+      transform[5] = scaleY;
+    }
+    else {
+      multiplyScaleY(transform, scaleY);
+    }
   }
-  let m = identity();
-  while (list.length) {
-    m = multiply(m, list.pop()!.matrix);
+  if (rotateZ) {
+    multiplyRotateZ(transform, d2r(rotateZ));
   }
-  const tfo = node.computedStyle.transformOrigin;
-  m = multiply(m, node.matrix);
-  // 先求考虑旋转的位置
-  const p1 = calPoint({ x: 0, y: 0 }, m);
-  // 根据m[0]求cos，相对于Page的旋转角度，然后逆向旋转得出真正的布局位置
-  const r = Math.acos(m[0]);
-  // 反向旋转，即没有旋转的位置
-  const i = identity();
-  multiplyRotateZ(i, -r);
-  const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
-  m = multiply(m, t);
-  const p2 = calPoint({ x: 0, y: 0 }, m);
-  return {
-    x: p2.x,
-    y: p2.y,
-    r,
-    dx: p2.x - p1.x,
-    dy: p2.y - p1.y,
-  }
+  return calMatrixByOrigin(transform, tfo[0], tfo[1]);
 }
 
-export function getMatrixOnPage(node: Node) {
+// 获取节点相对于其所在Page的matrix，Page本身返回E，注意忽略镜像
+export function getMatrixOnPage(node: Node, ignoreFlip = false) {
   if (!node.page) {
     throw new Error('Node not on a Page');
   }
@@ -110,15 +110,36 @@ export function getMatrixOnPage(node: Node) {
   }
   let m = identity();
   while (list.length) {
-    m = multiply(m, list.pop()!.matrix);
+    const n = list.pop()!;
+    m = multiply(m, ignoreFlip ? getMatrixNoFlip(n) : n.matrix);
   }
-  m = multiply(m, node.matrix);
+  m = multiply(m, ignoreFlip ? getMatrixNoFlip(node) : node.matrix);
   return m;
+}
+
+// 获取节点相对于其所在Page的x/y镜像，Page本身返回1
+export function getFlipOnPage(node: Node) {
+  if (!node.page) {
+    throw new Error('Node not on a Page');
+  }
+  if (node.isPage && node instanceof Page) {
+    return { x: 1, y: 1 };
+  }
+  let x = node.computedStyle.scaleX, y = node.computedStyle.scaleY;
+  // 从自己开始向上到page，累计matrix
+  const page = node.page;
+  let p = node.parent;
+  while (p && p !== page) {
+    x *= p.computedStyle.scaleX;
+    y *= p.computedStyle.scaleY;
+    p = p.parent;
+  }
+  return { x, y };
 }
 
 /**
  * 将node迁移到parent下的尺寸和位置，并不是真正移动dom，移动权和最终位置交给外部控制
- * 先记录下node当前的绝对坐标和尺寸和旋转，然后转换style到以parent为新父元素下并保持单位不变
+ * 先记录下node当前的绝对坐标和尺寸和旋转镜像，然后转换style到以parent为新父元素下并保持单位不变
  */
 export function migrate(parent: Node, node: Node) {
   if (node.parent === parent) {
@@ -135,11 +156,18 @@ export function migrate(parent: Node, node: Node) {
   const v1 = { x: p1.x - p0.x, y: p1.y - p0.y };
   const v2 = { x: p2.x - p0.x, y: p2.y - p0.y };
   // console.log('v1', v1, v2);
-  // 再求得node的matrix，并相对于parent取消旋转后的左上顶点位置
-  const mn = getMatrixOnPage(node);
+  // 再求得node的matrix，并相对于parent取消旋转后的左上顶点位置，也忽略镜像
+  const i = identity();
+  const flipN = getFlipOnPage(node); console.log(node.props.name, flipN)
+  if (flipN.x !== 1) {
+    multiplyScaleX(i, flipN.x);
+  }
+  if (flipN.y !== 1) {
+    multiplyScaleX(i, flipN.y);
+  }
+  const mn = getMatrixOnPage(node, true);
   const rn = Math.acos(mn[0]);
   const r = rn - rp;
-  const i = identity();
   multiplyRotateZ(i, -r);
   const tfo = node.computedStyle.transformOrigin;
   const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
@@ -265,6 +293,8 @@ export function migrate(parent: Node, node: Node) {
     }
   }
   style.rotateZ.v = r2d(r);
+  style.scaleX.v = flipN.x;
+  style.scaleY.v = flipN.y;
 }
 
 export function sortTempIndex(nodes: Node[]) {
