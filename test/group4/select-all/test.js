@@ -26,7 +26,7 @@ module.exports = {
       .assert.elementPresent('.sketch-editor-context-menu')
       .moveToElement('.sketch-editor-context-menu .select-all', 10, 10)
       .click('#button4')
-      .assert.value('#base64', '[0,"矩形"]')
+      .assert.value('#base64', '[2,"矩形"]')
 
       .end();
   }
