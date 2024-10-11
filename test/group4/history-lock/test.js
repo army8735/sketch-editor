@@ -12,7 +12,7 @@ module.exports = {
       .mouseButtonUp(2)
       .assert.elementPresent('.sketch-editor-context-menu')
       .assert.containsText('.sketch-editor-context-menu .lock span', '1')
-      .moveToElement('.sketch-editor-context-menu .lock', 10, 10)
+      .moveToElement('.sketch-editor-context-menu .lock span', 10, 10)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .pause(20)
