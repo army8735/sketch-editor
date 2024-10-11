@@ -22,7 +22,7 @@ module.exports = {
       .mouseButtonDown(2)
       .mouseButtonUp(2)
       .assert.containsText('.sketch-editor-context-menu .hide span', '2')
-      .moveToElement('.sketch-editor-context-menu .hide', 10, 10)
+      .moveToElement('.sketch-editor-context-menu .hide span', 10, 10)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .pause(20)

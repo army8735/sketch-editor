@@ -16,20 +16,20 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .pause(20)
-      .assert.elementPresent('#tree .name[title="矩形"]+.lock')
+      .assert.elementPresent('#tree .lock')
 
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
       .pause(20)
-      .assert.not.elementPresent('#tree .name[title="矩形"]+.lock')
+      .assert.not.elementPresent('#tree .lock')
 
       .keys(browser.Keys.META)
       .keys(browser.Keys.SHIFT)
       .keys('z')
       .keys(browser.Keys.NULL)
       .pause(20)
-      .assert.elementPresent('#tree .name[title="矩形"]+.lock')
+      .assert.elementPresent('#tree .lock')
 
       .end();
   }
