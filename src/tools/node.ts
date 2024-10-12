@@ -123,7 +123,12 @@ export function getFlipOnPage(node: Node) {
 
 /**
  * 将node迁移到parent下的尺寸和位置，并不是真正移动dom，移动权和最终位置交给外部控制
- * 先记录下node当前的绝对坐标和尺寸和旋转镜像，然后转换style到以parent为新父元素下并保持单位不变
+ * 记录下node和parent相对于page的坐标旋转镜像，然后转换style到以parent为新父元素下并保持单位不变
+ * 1. parent需要保留旋转镜像，并记录下来相对于page的旋转rp，和自身的镜像scaleX/scaleY（非相对于page）
+ * 2. node移动前需算出相对于page的旋转和镜像，记录为rn和flipN
+ * 3. node要移动到parent下，旋转是相对于parent的旋转，因此本身旋转角度是r=rn-rp，先转至相对于parent无旋转即-r
+ * 4. 如果parent自身有镜像scaleX/scaleY，node移动后等于跟随其镜像，移动前node需要反向下否则会计算显示错误
+ * 5. 计算node原点相对于parent原点的left/top，用向量投影算，再用向量夹角算正负号
  */
 export function migrate(parent: Node, node: Node) {
   if (node.parent === parent) {
@@ -131,27 +136,32 @@ export function migrate(parent: Node, node: Node) {
   }
   const width = parent.width;
   const height = parent.height;
-  // 先求得parent的matrix，和左上顶点的2条边的矢量，要特殊忽略掉parent的镜像，用模拟反向镜像做
+  // 先求得parent的matrix，旋转和左上顶点的2条边的矢量，要特殊忽略掉parent的镜像，用模拟反向镜像做
   const mp = getMatrixOnPage(parent);
-  // const { scaleX, scaleY } = parent.computedStyle;
-  // if (scaleX < 0) {
-  //   const i = identity();
-  //   multiplyScaleX(i, scaleX);
-  //   multiplyRef(mp, i);
-  // }
-  // if (scaleY < 0) {
-  //   const i = identity();
-  //   multiplyScaleY(i, scaleY);
-  //   multiplyRef(mp, i);
-  // }
-  const rp = Math.acos(mp[0]);
+  const { scaleX, scaleY } = parent.computedStyle;
+  let rp = 0;
+  // parent自身有镜像的话，旋转角度计算还得排除掉
+  if (scaleX !== 1) {
+    const i = identity();
+    if (scaleX !== 1) {
+      multiplyScaleX(i, scaleX);
+    }
+    const tfo = parent.computedStyle.transformOrigin;
+    const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
+    const m = multiply(mp, t);
+    rp = Math.acos(m[0]);
+  }
+  else {
+    rp = Math.acos(mp[0]);
+  }
+  // const rp = Math.acos(mp[0]);
   const p0 = calPoint({ x: 0, y: 0 }, mp);
   const p1 = calPoint({ x: parent.width, y: 0 }, mp);
   const p2 = calPoint({ x: 0, y: parent.height }, mp);
   const v1 = { x: p1.x - p0.x, y: p1.y - p0.y };
   const v2 = { x: p2.x - p0.x, y: p2.y - p0.y };
   // console.log('v1', v1, v2);
-  // 再求得node的matrix，并相对于parent取消旋转后的左上顶点位置，也忽略镜像
+  // 再求得node的matrix，并相对于parent取消旋转和镜像
   const i = identity();
   const flipN = getFlipOnPage(node);
   if (flipN.x !== 1) {
@@ -163,7 +173,15 @@ export function migrate(parent: Node, node: Node) {
   const mn = getMatrixOnPage(node, true);
   const rn = Math.acos(mn[0]);
   const r = rn - rp;
+  // console.log(r2d(rp), r2d(rn), r2d(r))
   multiplyRotateZ(i, -r);
+  // 如果parent有镜像，node要先跟随它，否则迁移后会显示反了
+  if (scaleX !== 1) {
+    multiplyScaleX(i, scaleX);
+  }
+  if (scaleY !== 1) {
+    multiplyScaleY(i, scaleY);
+  }
   const tfo = node.computedStyle.transformOrigin;
   const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
   const m = multiply(mn, t);
@@ -288,8 +306,8 @@ export function migrate(parent: Node, node: Node) {
     }
   }
   style.rotateZ.v = r2d(r);
-  style.scaleX.v = flipN.x;
-  style.scaleY.v = flipN.y;
+  style.scaleX.v = flipN.x * scaleX;
+  style.scaleY.v = flipN.y * scaleY;
 }
 
 export function sortTempIndex(nodes: Node[]) {
