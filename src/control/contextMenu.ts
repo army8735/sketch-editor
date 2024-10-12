@@ -1,6 +1,7 @@
 import Group from '../node/Group';
 import Listener from './Listener';
 import { MASK } from '../style/define';
+import { version } from '../../package.json';
 
 let canvasDiv: HTMLElement;
 
@@ -8,14 +9,14 @@ const htmlCanvas = `
   <div class="item group">编组选择对象</div>
   <div class="item un-group">解除编组</div>
   <div class="item select-all">选择全部</div>
-  <div class="split split1"></div>
+  <div class="split"></div>
   <div class="item remove">删除</div>
-  <div class="split split2"></div>
+  <div class="split"></div>
   <div class="item lock">锁定<span></span>个图层</div>
   <div class="item un-lock">解锁<span></span>个图层</div>
   <div class="item hide">隐藏<span></span>个图层</div>
   <div class="item show">显示<span></span>个图层</div>
-  <div class="split split3"></div>
+  <div class="split"></div>
   <div class="item mask">
     <span class="checked">✅</span>用作蒙版 <b class="arrow"></b>
     <div class="sub">
@@ -24,9 +25,11 @@ const htmlCanvas = `
     </div>
   </div>
   <div class="item break-mask"><span class="checked">✅</span>忽略底层蒙版</div>
-  <div class="split split4"></div>
+  <div class="split"></div>
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
+  <div class="split"></div>
+  <div class="item version">内核 ${version}</div>
 `;
 
 export default {

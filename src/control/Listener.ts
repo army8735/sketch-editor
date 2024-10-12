@@ -1258,7 +1258,8 @@ export default class Listener extends Event {
 
   remove(nodes = this.selected) {
     if (nodes.length) {
-      const nodes2 = nodes.map(item => {
+      const sel = nodes.slice(0);
+      const nodes2 = nodes.splice(0).map(item => {
         let p = item;
         while (p) {
           if (p.parent && p.parent.isGroup && p.parent instanceof Group && p.parent.children.length === 1) {
@@ -1273,10 +1274,10 @@ export default class Listener extends Event {
       const data: RemoveData[] = [];
       nodes2.forEach((item, i) => {
         const o = RemoveCommand.operate(item);
-        if (item !== nodes[i]) {
+        if (item !== sel[i]) {
           data.push({
             ...o,
-            selected: nodes[i],
+            selected: sel[i],
           });
         }
         else {
@@ -1306,9 +1307,7 @@ export default class Listener extends Event {
     if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
-        const sel = this.selected.slice(0);
-        this.selected.splice(0);
-        this.remove(sel);
+        this.remove();
       }
     }
     // space

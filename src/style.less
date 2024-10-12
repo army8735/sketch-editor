@@ -1491,7 +1491,7 @@ html, body {
   }
 
   .split {
-    margin: 6px 8px;
+    margin: -1px 8px;
     border-top: 1px solid #CCC;
     pointer-events: none;
   }
@@ -1506,6 +1506,11 @@ html, body {
     span {
       pointer-events: none;
     }
+  }
+
+  .version {
+    opacity: 0.3;
+    pointer-events: none;
   }
 
   &.outline, &.alpha {
@@ -1553,25 +1558,25 @@ html, body {
   }
 
   &.empty {
-    .group, .un-group, .split1, .split2, .split3, .lock, .un-lock, .hide, .show, .mask, .break-mask {
+    .group, .un-group, .lock, .un-lock, .hide, .show, .mask, .break-mask {
       display: none;
     }
   }
 
   &.single {
-    .un-group, .scale-up, .scale-down, .select-all, .split4 {
+    .un-group, .scale-up, .scale-down, .select-all {
       display: none;
     }
   }
 
   &.single-group {
-    .scale-up, .scale-down, .select-all, .split4 {
+    .scale-up, .scale-down, .select-all {
       display: none;
     }
   }
 
   &.multi {
-    .scale-up, .scale-down, .select-all, .split4 {
+    .scale-up, .scale-down, .select-all {
       display: none;
     }
     .un-group {
