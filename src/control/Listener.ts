@@ -1256,6 +1256,39 @@ export default class Listener extends Event {
     this.emit(Listener.RENAME_NODE, nodes.slice(0));
   }
 
+  remove(nodes = this.selected) {
+    if (nodes.length) {
+      const nodes2 = nodes.map(item => {
+        let p = item;
+        while (p) {
+          if (p.parent && p.parent.isGroup && p.parent instanceof Group && p.parent.children.length === 1) {
+            p = p.parent;
+          }
+          else {
+            break;
+          }
+        }
+        return p;
+      });
+      const data: RemoveData[] = [];
+      nodes2.forEach((item, i) => {
+        const o = RemoveCommand.operate(item);
+        if (item !== nodes[i]) {
+          data.push({
+            ...o,
+            selected: nodes[i],
+          });
+        }
+        else {
+          data.push(o);
+        }
+      });
+      this.select.hideSelect();
+      this.history.addCommand(new RemoveCommand(nodes2, data));
+      this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
+    }
+  }
+
   onKeyDown(e: KeyboardEvent) {
     this.metaKey = e.metaKey;
     this.altKey = e.altKey;
@@ -1274,34 +1307,8 @@ export default class Listener extends Event {
       const target = e.target as HTMLElement; // 忽略输入时
       if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
         const sel = this.selected.slice(0);
-        const nodes = this.selected.splice(0).map(item => {
-          let p = item;
-          while (p) {
-            if (p.parent && p.parent.isGroup && p.parent instanceof Group && p.parent.children.length === 1) {
-              p = p.parent;
-            }
-            else {
-              break;
-            }
-          }
-          return p;
-        });
-        const data: RemoveData[] = [];
-        nodes.forEach((item, i) => {
-          const o = RemoveCommand.operate(item);
-          if (item !== sel[i]) {
-            data.push({
-              ...o,
-              selected: sel[i],
-            });
-          }
-          else {
-            data.push(o);
-          }
-        });
-        this.select.hideSelect();
-        this.history.addCommand(new RemoveCommand(nodes, data));
-        this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+        this.selected.splice(0);
+        this.remove(sel);
       }
     }
     // space
