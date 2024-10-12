@@ -98,6 +98,7 @@ export default class Listener extends Event {
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
   mouseDownArtBoard?: ArtBoard;
+  mouseDown2ArtBoard?: Node;
   isWin = isWin;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
@@ -354,7 +355,7 @@ export default class Listener extends Event {
       const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
       let node = this.getNode(x, y);
       // 特殊的选择非空画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
-      if (node instanceof ArtBoard && node.children.length && selected.indexOf(node) === -1) {
+      if (node instanceof ArtBoard && node.children.length && !selected.includes(node)) {
         if (meta) {
           // 如果已选的里面有此画板或者属于此画板，要忽略
           let ignore = false;
@@ -377,6 +378,11 @@ export default class Listener extends Event {
       // 看是否是overlay上的画板名
       else if (!node) {
         node = getOverlayArtBoardByPoint(root, x, y);
+      }
+      // 已选画板的情况，如果点下其内元素，暂时视为选择画板看后续移动，如果不移动，则onUp时选择此节点
+      else if (node.artBoard && selected.includes(node.artBoard)) {
+        this.mouseDown2ArtBoard = node;
+        node = node.artBoard;
       }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
@@ -417,6 +423,10 @@ export default class Listener extends Event {
             // 唯一已选节点继续点击，不触发选择事件
             if (selected.length === 1 && selected[0] === node) {
               this.prepare();
+              if (this.select.hoverNode) {
+                this.select.hideHover();
+                this.emit(Listener.UN_HOVER_NODE);
+              }
               return;
             }
             selected.splice(0);
@@ -889,9 +899,19 @@ export default class Listener extends Event {
       this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
     }
+    // 同上，不过shift时无法选择，因为其位于所选画板内部
+    else if (this.mouseDown2ArtBoard && !this.shiftKey) {
+      selected.splice(0);
+      selected.push(this.mouseDown2ArtBoard);
+      this.select.hideHover();
+      this.select.showSelect(selected);
+      this.prepare();
+      this.emit(Listener.SELECT_NODE, selected.slice(0));
+    }
     this.isMouseDown = false;
     this.isMouseMove = false;
     this.mouseDownArtBoard = undefined;
+    this.mouseDown2ArtBoard = undefined;
     this.isFrame = false;
     this.middleKey = false;
     if (this.spaceKey || this.middleKey) {
