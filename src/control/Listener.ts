@@ -11,7 +11,7 @@ import Input from './Input';
 import State from './State';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle } from '../format';
-import { getFrameNodes, getNodeByPoint } from '../tools/root';
+import { getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
@@ -374,6 +374,10 @@ export default class Listener extends Event {
           node = undefined;
         }
       }
+      // 看是否是overlay上的画板名
+      else if (!node) {
+        node = getOverlayArtBoardByPoint(root, x, y);
+      }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;
       const oldSelected = selected.slice(0);
@@ -686,10 +690,12 @@ export default class Listener extends Event {
         return;
       }
       // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-      let node = this.getNode(
-        (e as MouseEvent).offsetX * dpi,
-        (e as MouseEvent).offsetY * dpi,
-      );
+      const x = (e as MouseEvent).offsetX * dpi;
+      const y = (e as MouseEvent).offsetY * dpi;
+      let node = this.getNode(x, y);
+      if (!node) {
+        node = getOverlayArtBoardByPoint(root, x, y);
+      }
       if (node) {
         if (selected.indexOf(node) === -1 && this.select.hoverNode !== node) {
           this.select.showHover(node);

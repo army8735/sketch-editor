@@ -226,15 +226,21 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         return n;
       }
     }
-    // 没有节点还要检查artBoard的文字标题，在overlay上单独渲染
-    const text = getChildByPoint(root.overlay, x, y);
-    if (text && text instanceof Text) {
-      const artBoardList = root.overlay.artBoardList;
-      for (let i = 0, len = artBoardList.length; i < len; i++) {
-        const item = artBoardList[i];
-        if (item.text === text) {
-          return item.artBoard;
-        }
+  }
+}
+
+export function getOverlayNodeByPoint(root: Root, x: number, y: number) {
+  return getChildByPoint(root.overlay, x, y);
+}
+
+export function getOverlayArtBoardByPoint(root: Root, x: number, y: number) {
+  const n = getOverlayNodeByPoint(root, x, y);
+  if (n && n instanceof Text) {
+    const artBoardList = root.overlay.artBoardList;
+    for (let i = 0, len = artBoardList.length; i < len; i++) {
+      const item = artBoardList[i];
+      if (item.text === n) {
+        return item.artBoard;
       }
     }
   }
@@ -323,5 +329,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
 
 export default {
   getNodeByPoint,
+  getOverlayNodeByPoint,
+  getOverlayArtBoardByPoint,
   getFrameNodes,
 };
