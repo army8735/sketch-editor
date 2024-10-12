@@ -29,24 +29,27 @@ const htmlCanvas = `
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
   <div class="split"></div>
-  <div class="item version">内核 ${version}</div>
+  <div class="item version">版本 ${version}</div>
 `;
 
 export default {
   showCanvas(x: number, y: number, listener: Listener) {
     if (!canvasDiv) {
       canvasDiv = document.createElement('div');
-      canvasDiv.innerHTML = htmlCanvas;
       document.body.appendChild(canvasDiv);
       // 点击自动关闭，外部或者子项都可，但点自身不关闭，因为有padding或者不可点击的项视为点自己
       document.addEventListener('click', (e) => {
         if (e.target !== canvasDiv) {
-          this.hide();
+          if (this.hide()) {
+            listener.emit(Listener.CONTEXT_MENU, false);
+          }
         }
       });
       document.addEventListener('visibilitychange', (e) => {
         if (document.visibilityState === 'hidden') {
-          this.hide();
+          if (this.hide()) {
+            listener.emit(Listener.CONTEXT_MENU, false);
+          }
         }
       });
       canvasDiv.addEventListener('click', (e) => {
@@ -105,6 +108,7 @@ export default {
         }
       });
     }
+    canvasDiv.innerHTML = htmlCanvas;
     canvasDiv.className = 'sketch-editor-context-menu';
     const classList = canvasDiv.classList;
     const nodes = listener.selected;
@@ -156,6 +160,7 @@ export default {
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';
     canvasDiv.style.display = 'block';
+    listener.emit(Listener.CONTEXT_MENU, true);
   },
   showTree(x: number, y: number, listener: Listener) {
     this.showCanvas(x, y, listener);
@@ -163,6 +168,9 @@ export default {
   hide() {
     if (canvasDiv && canvasDiv.style.display === 'block') {
       canvasDiv.style.display = 'none';
+      return true;
     }
+    return false;
   },
+  custom() {},
 };

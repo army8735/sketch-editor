@@ -18,6 +18,8 @@ module.exports = {
       .mouseButtonUp(2)
       .assert.elementPresent('.sketch-editor-context-menu')
       .moveToElement('.sketch-editor-context-menu .remove', 10, 10)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
       .click('#button4')
       .assert.value('#base64', '[1]')
 

@@ -15,6 +15,8 @@ import PageList from './PageList';
 import ShadowPanel from './ShadowPanel';
 import BlurPanel from './BlurPanel';
 import ColorAdjustPanel from './ColorAdjustPanel';
+import picker from './picker';
+import contextMenu from './contextMenu';
 
 export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
   return new PageList(root, dom, listener);
@@ -98,4 +100,6 @@ export default {
   BlurPanel,
   AlignPanel,
   ColorAdjustPanel,
+  picker,
+  contextMenu,
 };
