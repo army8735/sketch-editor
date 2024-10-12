@@ -174,6 +174,19 @@ export function getColorStop(
   return list;
 }
 
+export function isGradient(s: string) {
+  if (reg.gradient.test(s)) {
+    let gradient = reg.gradient.exec(s);
+    if (
+      gradient &&
+      ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function parseGradient(s: string) {
   const gradient = reg.gradient.exec(s);
   if (gradient) {
@@ -183,7 +196,7 @@ export function parseGradient(s: string) {
       conic: GRADIENT.CONIC,
     }[gradient[1].toLowerCase()]!;
     let d: number[];
-    if (t === GRADIENT.LINEAR || t === GRADIENT.CONIC) {
+    if (t === GRADIENT.LINEAR) {
       const points =
         /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(
           gradient[2],
@@ -217,6 +230,9 @@ export function parseGradient(s: string) {
       else {
         return;
       }
+    }
+    else if (t === GRADIENT.CONIC) {
+      d = [];
     }
     const v =
       gradient[2].match(

@@ -154,7 +154,6 @@ export function migrate(parent: Node, node: Node) {
   else {
     rp = Math.acos(mp[0]);
   }
-  // const rp = Math.acos(mp[0]);
   const p0 = calPoint({ x: 0, y: 0 }, mp);
   const p1 = calPoint({ x: parent.width, y: 0 }, mp);
   const p2 = calPoint({ x: 0, y: parent.height }, mp);

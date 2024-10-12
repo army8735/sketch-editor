@@ -25,7 +25,7 @@ import {
   TEXT_VERTICAL_ALIGN,
 } from './define';
 import font from './font';
-import { convert2Css, parseGradient } from './gradient';
+import { convert2Css, isGradient, parseGradient } from './gradient';
 import reg from './reg';
 
 function compatibleTransform(k: string, v: StyleNumValue) {
@@ -42,19 +42,6 @@ function compatibleTransform(k: string, v: StyleNumValue) {
       v.u = StyleUnit.DEG;
     }
   }
-}
-
-export function isGradient(s: string) {
-  if (reg.gradient.test(s)) {
-    let gradient = reg.gradient.exec(s);
-    if (
-      gradient &&
-      ['linear', 'radial', 'conic'].indexOf(gradient[1].toLowerCase()) > -1
-    ) {
-      return true;
-    }
-  }
-  return false;
 }
 
 export function normalize(style: any): Style {
