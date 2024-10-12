@@ -41,14 +41,14 @@ export default {
       document.addEventListener('click', (e) => {
         if (e.target !== canvasDiv) {
           if (this.hide()) {
-            listener.emit(Listener.CONTEXT_MENU, false);
+            listener.emit(Listener.CONTEXT_MENU, false, canvasDiv);
           }
         }
       });
       document.addEventListener('visibilitychange', (e) => {
         if (document.visibilityState === 'hidden') {
           if (this.hide()) {
-            listener.emit(Listener.CONTEXT_MENU, false);
+            listener.emit(Listener.CONTEXT_MENU, false, canvasDiv);
           }
         }
       });
@@ -160,7 +160,7 @@ export default {
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';
     canvasDiv.style.display = 'block';
-    listener.emit(Listener.CONTEXT_MENU, true);
+    listener.emit(Listener.CONTEXT_MENU, true, canvasDiv);
   },
   showTree(x: number, y: number, listener: Listener) {
     this.showCanvas(x, y, listener);
@@ -172,5 +172,4 @@ export default {
     }
     return false;
   },
-  custom() {},
 };
