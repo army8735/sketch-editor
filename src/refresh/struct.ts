@@ -194,12 +194,15 @@ function renderWebglTile(
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
       const m = node.matrixWorld;
       const bbox = node.filterBbox;
+      // console.log(node.props.name, x1, y1, x2, y2, m.join(','))
       if (checkInRect(bbox, m, x1, y1, x2, y2)) {
         const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
+        // console.log('in', sb)
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bbox = tile.bbox;
-          if (tile.count && isPolygonOverlapRect(
+          // console.log(j, bbox.join(','), tile.count)
+          if (isPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -249,7 +252,7 @@ function renderWebglTile(
   }
   const overlay = root.overlay;
   let hasRemain = false;
-  // console.error('complete', complete)
+  // console.error('complete', complete, root.tileLastIndex)
   // 非完备，遍历节点渲染到Tile上
   if (!complete) {
     let firstDraw = true;
@@ -285,7 +288,7 @@ function renderWebglTile(
         }
       }
     }
-    // 循环非overlay的节点
+    // 循环非overlay的节点，依旧是从上帧没画完的开始
     for (let i = root.tileLastIndex, len = structs.length; i < len; i++) {
       const { node, total, next } = structs[i];
       // tile不收集overlay的东西
@@ -388,6 +391,7 @@ function renderWebglTile(
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bboxT = tile.bbox;
+          // console.log(j, tile.complete, tile.has(node))
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
           if (tile.complete || tile.has(node) || !isPolygonOverlapRect(
             bboxT[0], bboxT[1], bboxT[2], bboxT[3],
