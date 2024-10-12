@@ -857,10 +857,12 @@ export function move(node: Node, dx: number, dy: number) {
 export function getBasicInfo(node: Node) {
   const list: Node[] = [node];
   const top = node.artBoard || node.page;
-  let parent = node.parent;
-  while (parent && parent !== top) {
-    list.unshift(parent);
-    parent = parent.parent;
+  if (node !== top) {
+    let parent = node.parent;
+    while (parent && parent !== top) {
+      list.unshift(parent);
+      parent = parent.parent;
+    }
   }
   let m = identity();
   for (let i = 0, len = list.length; i < len; i++) {

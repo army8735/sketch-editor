@@ -213,7 +213,7 @@ export default class Listener extends Event {
       this.selected,
       isDbl,
     );
-    if (node instanceof ArtBoard && node.children.length && !meta) {
+    if (node instanceof ArtBoard && node.children.length && !meta && !this.selected.includes(node)) {
       node = undefined;
     }
     return node;
