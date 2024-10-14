@@ -187,9 +187,7 @@ class Root extends Container implements FrameCallback {
     this.reLayout();
     this.didMount();
     // 先设置的page和index，再附加到canvas上，需刷新
-    // if (this.lastPage) {
-      this.addUpdate(this, [], RefreshLevel.REFLOW);
-    // }
+    this.addUpdate(this, [], RefreshLevel.REFLOW);
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
@@ -384,7 +382,7 @@ class Root extends Container implements FrameCallback {
         p = p.parent!;
       }
       // 移动元素或者添加时，需要清空新的位置所占的tile区域，记录下来在渲染最初做
-      if (lv & RefreshLevel.TRANSLATE) {
+      if (lv & RefreshLevel.TRANSLATE || addDom) {
         this.tileRecord[node.props.uuid] = node;
       }
     }

@@ -100,7 +100,7 @@ class Tile {
   }
 
   toString() {
-    return this.uuid + ': '
+    return this.uuid + ': ' + this.available + ',' + this.complete + '; '
       + this.x + ',' + this.y + ',' + (this.x + UNIT) + ',' + (this.y + UNIT)
       + '; ' + this.bbox.map(item => Math.round(item)).join(',');
   }

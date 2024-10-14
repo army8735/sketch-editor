@@ -187,6 +187,9 @@ function renderWebglTile(
     x2 = last.bbox[2];
     y2 = last.bbox[3];
   }
+  // merge提前算，因为有hasContent计算
+  const startTime = Date.now();
+  const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
   // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld/filterBbox不能用老的
   const keys = Object.keys(tileRecord);
   for (let i = 0, len = keys.length; i < len; i++) {
@@ -222,9 +225,7 @@ function renderWebglTile(
     }
   }
   root.tileRecord = {};
-  const startTime = Date.now();
   // 新生成的merge也影响tile，需清空重绘
-  const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
   for (let i = 0, len = mergeRecord.length; i < len; i++) {
     const { bbox, m } = mergeRecord[i];
     if (checkInRect(bbox, m, x1, y1, x2, y2)) {

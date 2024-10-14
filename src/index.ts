@@ -1,4 +1,4 @@
-import format, { TAG_NAME, JFile, JSymbolMaster, JLayer } from './format';
+import format, { TAG_NAME, JFile, JSymbolMaster, JLayer, JStyle } from './format';
 import { openAndConvertSketchBuffer, convertSketch, openAndConvertSketchZip } from './format/sketch';
 import refresh from './refresh';
 import style from './style';
@@ -25,8 +25,8 @@ export default {
     contextAttributes?: any,
   } = {}) {
     json = json as JFile;
-    let { width, height, dpi = 1, canvas } = options;
-    const style: any = { width, height };
+    let { width = 0, height = 0, dpi = 1, canvas } = options;
+    const style: Pick<JStyle, 'width' | 'height'> = { width, height };
     if (!width || width < 1) {
       style.width = 'auto';
     }
