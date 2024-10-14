@@ -197,8 +197,7 @@ function renderWebglTile(
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
       const m = node.matrixWorld;
       const bbox = node.filterBbox;
-      // console.log(node.props.name, x1, y1, x2, y2, m.join(','))
-      if (checkInRect(bbox, m, x1, y1, x2, y2)) {
+      if (checkInRect(bbox, m, x1, y1, x2 - x1, y2 - y1)) {
         const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
         // console.log('in', sb)
         for (let j = 0, len = tileList.length; j < len; j++) {
