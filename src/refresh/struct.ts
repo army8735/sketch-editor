@@ -227,7 +227,7 @@ function renderWebglTile(
   // 新生成的merge也影响tile，需清空重绘
   for (let i = 0, len = mergeRecord.length; i < len; i++) {
     const { bbox, m } = mergeRecord[i];
-    if (checkInRect(bbox, m, x1, y1, x2, y2)) {
+    if (checkInRect(bbox, m, x1, y1, x2 - x1, y2 - y1)) {
       const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
       for (let j = 0, len = tileList.length; j < len; j++) {
         const tile = tileList[j];
