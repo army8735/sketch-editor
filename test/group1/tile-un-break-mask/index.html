@@ -18,12 +18,16 @@
 <script src="../../../dist/index.js"></script>
 <script>
   sketchEditor.config.tile = true;
+  sketchEditor.config.debug = true;
 </script>
 <script src="../../render.js"></script>
 <script>
   setTimeout(function() {
     const p = root.getCurPage();
-    p.children[1].remove();
+    const n = p.children[1];
+    n.updateStyle({
+      breakMask: false,
+    });
   }, 200);
 </script>
 </body>

@@ -1055,7 +1055,7 @@ class Node extends Event {
   }
 
   updateProps(props: any, cb?: (sync: boolean) => void) {
-    const keys: Array<string> = [];
+    const keys: string[] = [];
     for (let k in props) {
       if (props.hasOwnProperty(k)) {
         // @ts-ignore

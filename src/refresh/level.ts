@@ -22,6 +22,7 @@ export enum RefreshLevel {
   REFLOW_OPACITY =   0b010000010000000, // 8320
   REFLOW_FILTER =    0b010000100000000, // 8448
   REBUILD =          0b100000000000000, // 16384
+  FULL =             0b111111111111111,
 }
 
 export function isReflow(lv: number): boolean {

@@ -218,7 +218,7 @@ export function genMerge(
     const item = mergeList[j];
     const { node, isTop, i, lv, total } = item;
     if (isTop) {
-      if (checkInRect(node.tempBbox!, node.matrixWorld, x1, y1, x2, y2)) {
+      if (checkInRect(node.tempBbox!, node.matrixWorld, x1, y1, x2 - x1, y2 - y1)) {
         // 检查子节点中是否有因为可视范围外暂时忽略的，全部标记valid，这个循环会把数据集中到最上层subList，后面反正不再用了
         setValid(item);
         // 如果是mask，还要看其是否影响被遮罩的merge，可能被遮罩在屏幕外面不可见

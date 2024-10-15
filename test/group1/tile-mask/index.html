@@ -23,14 +23,11 @@
 <script>
   setTimeout(function() {
     const p = root.getCurPage();
-    const clone = p.children[0].clone();
-    clone.updateStyle({
-      left: '-20%',
-      top: '180%',
-      bottom: '-200%',
+    const n = p.children[0];
+    n.updateStyle({
+      maskMode: 'outline',
     });
-    p.appendChild(clone);
-  }, 300);
+  }, 200);
 </script>
 </body>
 </html>

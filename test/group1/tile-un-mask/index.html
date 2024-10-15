@@ -23,7 +23,10 @@
 <script>
   setTimeout(function() {
     const p = root.getCurPage();
-    p.children[1].remove();
+    const n = p.children[0];
+    n.updateStyle({
+      maskMode: 'none',
+    });
   }, 200);
 </script>
 </body>

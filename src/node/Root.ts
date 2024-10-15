@@ -55,8 +55,7 @@ import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
-import Group from './Group';
-import { StyleUnit } from '../style/define';
+import { MASK, StyleUnit } from '../style/define';
 import inject from '../util/inject';
 
 class Root extends Container implements FrameCallback {
@@ -83,6 +82,7 @@ class Root extends Container implements FrameCallback {
   firstDraw: boolean;
   tileManager?: TileManager;
   tileRecord: Record<string, Node>; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
+                                    // 原则是更新时计算之前在哪些tile并刷新tile，之后影响的先记录在渲染前再计算
   tileLastIndex: number; // 上次tile绘制到哪个节点，再一帧内没绘完下次再续时节省遍历性能
   tileRemain: boolean; // tile模式是否有因跨帧导致的没绘制完的
   breakMerge: boolean; // 因跨帧渲染导致的没有渲染完成的标识
@@ -299,38 +299,6 @@ class Root extends Container implements FrameCallback {
     return newPage;
   }
 
-  // addNewPage(page?: Page, setCurrent = false) {
-  //   const pageContainer = this.pageContainer;
-  //   if (!page) {
-  //     page = new Page(
-  //       {
-  //         uuid: uuid.v4(),
-  //         name: '页面 ' + (pageContainer.children.length + 1),
-  //         index: 1,
-  //         style: {
-  //           width: 100,
-  //           height: 100,
-  //           visible: false,
-  //           transformOrigin: [0, 0],
-  //           pointerEvents: false,
-  //         },
-  //         rule: {
-  //           baseX: 0,
-  //           baseY: 0,
-  //         },
-  //         isLocked: false,
-  //         isExpanded: false,
-  //       },
-  //       [],
-  //     );
-  //   }
-  //   pageContainer.appendChild(page);
-  //   if (setCurrent) {
-  //     this.setCurPage(page);
-  //   }
-  //   return page;
-  // }
-
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
@@ -364,28 +332,17 @@ class Root extends Container implements FrameCallback {
       }
       else {
         this.emit(Event.WILL_REMOVE_DOM, node);
-        // 移除的同时重置关联tile
-        const list = node.cleanTile();
-        Tile.clean(list);
+        // 可能刚添加的就删除了，不会影响tile
+        const uuid = node.props.uuid;
+        if (uuid && this.tileRecord[uuid]) {
+          delete this.tileRecord[uuid];
+        }
       }
     }
     if (addDom || removeDom) {
       lv |= RefreshLevel.REFLOW | RefreshLevel.REBUILD;
     }
     const res = this.calUpdate(node, lv, addDom, removeDom);
-    // 有tile时重置关联的tile，为了清空上一次绘制的tile的内容让其重绘
-    if (lv && config.tile && !this.firstDraw && node.page && !node.isPage) {
-      let p = node;
-      while (p && p.page && !p.isPage) {
-        const list = p.cleanTile();
-        Tile.clean(list);
-        p = p.parent!;
-      }
-      // 移动元素或者添加时，需要清空新的位置所占的tile区域，记录下来在渲染最初做
-      if (lv & RefreshLevel.TRANSLATE || addDom) {
-        this.tileRecord[node.props.uuid] = node;
-      }
-    }
     if (res) {
       this.asyncDraw(cb);
     }
@@ -421,6 +378,15 @@ class Root extends Container implements FrameCallback {
     if (lv === RefreshLevel.NONE || this.isDestroyed) {
       return false;
     }
+    // tile开启，发生变化的先向上遍历parent，清空所在的tile，用hash记录每帧加速
+    const isTile = config.tile && !this.firstDraw && node.page && !node.isPage;
+    if (isTile && lv > RefreshLevel.CACHE) {
+      let p: Node | undefined = node;
+      while (p && p.page && !p.isPage) {
+        Tile.clean(p.cleanTile());
+        p = p.parent;
+      }
+    }
     // reflow/repaint/<repaint分级
     const isRf = isReflow(lv);
     if (isRf) {
@@ -430,6 +396,10 @@ class Root extends Container implements FrameCallback {
       }
       else {
         checkReflow(node, addDom, removeDom);
+        // 新增节点渲染前计算影响tile
+        if (isTile && addDom) {
+          this.tileRecord[node.props.uuid] = node;
+        }
       }
     }
     else {
@@ -442,11 +412,22 @@ class Root extends Container implements FrameCallback {
         if (lv & RefreshLevel.TRANSFORM_ALL) {
           node.calMatrix(lv);
         }
+        // 区域变化渲染前计算影响tile
+        if (lv & (RefreshLevel.TRANSLATE | RefreshLevel.ROTATE_Z)) {
+          node.checkPosSizeUpward();
+          if (isTile) {
+            this.tileRecord[node.props.uuid] = node;
+          }
+        }
         if (lv & RefreshLevel.OPACITY) {
           node.calOpacity();
         }
         if (lv & RefreshLevel.FILTER) {
           node.calFilter(lv);
+          // 部分filter也会有渲染尺寸变化影响tile
+          if (isTile) {
+            this.tileRecord[node.props.uuid] = node;
+          }
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
           computedStyle.mixBlendMode = style.mixBlendMode.v;
@@ -456,29 +437,72 @@ class Root extends Container implements FrameCallback {
           computedStyle.maskMode = style.maskMode.v;
           node.clearMask(true);
           cleared = true;
-          const p = node.parent;
-          if (p && p.isGroup && p instanceof Group) {
-            p.adjustPosAndSize();
-          }
+          node.checkPosSizeUpward();
           node.calMask();
+          // mask取消之前被遮罩的next等同于新增；mask新设的话等同于next删除
+          if (isTile) {
+            let next = node.next;
+            while (next && !next.computedStyle.breakMask && next.computedStyle.maskMode === MASK.NONE) {
+              if (computedStyle.maskMode !== MASK.NONE) {
+                Tile.clean(next.cleanTile());
+              }
+              else {
+                this.tileRecord[next.props.uuid] = next;
+              }
+              next = next.next;
+            }
+            // 不用递归向上检查mask，变化的话mask会重新merge不变范围
+          }
         }
         if (lv & RefreshLevel.BREAK_MASK) {
           computedStyle.breakMask = style.breakMask.v;
+          const oldMask = node.mask;
           node.calMask();
-          // breakMask向前查找重置mask
-          let prev = node.prev;
-          while (prev) {
-            if (prev.computedStyle.maskMode) {
-              prev.clearMask(true);
-              break;
+          const newMask = node.mask;
+          // breakMask向前查找重置mask，必须是有效的，即设置为true时之前要有mask引用
+          if (computedStyle.breakMask && oldMask) {
+            oldMask.clearMask(true);
+            oldMask.checkPosSizeUpward();
+            // oldMask作用的节点和node作用的节点，原本就不展示不影响tile
+            if (isTile && !computedStyle.maskMode) {
+              this.tileRecord[node.props.uuid] = node;
+              let next = node.next;
+              while (next && !next.computedStyle.breakMask && next.computedStyle.maskMode === MASK.NONE) {
+                this.tileRecord[next.props.uuid] = next;
+                next = next.next;
+              }
             }
-            if (prev.computedStyle.breakMask) {
-              break;
+          }
+          // 取消的话如果前面有mask才会有效即有newMask节点
+          else if (!computedStyle.breakMask && newMask) {
+            if (isTile && !computedStyle.maskMode) {
+              Tile.clean(node.cleanTile());
+              let next = node.next;
+              while (next && !next.computedStyle.breakMask && next.computedStyle.maskMode === MASK.NONE) {
+                Tile.clean(next.cleanTile());
+                next = next.next;
+              }
             }
-            prev = prev.prev;
+          }
+          // 无效的视为无刷新
+          else {
+            lv = lv & (RefreshLevel.FULL ^ RefreshLevel.BREAK_MASK);
+          }
+          if (!computedStyle.breakMask || oldMask) {
+            let prev = node.prev;
+            while (prev) {
+              if (prev.computedStyle.maskMode) {
+                prev.clearMask(true);
+                break;
+              }
+              if (prev.computedStyle.breakMask) {
+                break;
+              }
+              prev = prev.prev;
+            }
           }
         }
-        // mask的任何变更都要清空重绘，必须CACHE以上，CACHE是跨帧渲染用级别
+        // mask的任何其它变更都要清空重绘，必须CACHE以上，CACHE是跨帧渲染用级别
         if (computedStyle.maskMode && !cleared && lv > RefreshLevel.CACHE) {
           node.clearMask(true);
         }
@@ -487,11 +511,8 @@ class Root extends Container implements FrameCallback {
     }
     // 检查mask影响，这里是作为被遮罩对象存在的关系检查，不会有连续，mask不能同时被mask
     let mask = node.mask;
-    if (mask) {
-      const p = node.parent;
-      if (p && p.isGroup && p instanceof Group) {
-        p.adjustPosAndSize();
-      }
+    if (mask && lv > RefreshLevel.CACHE && !(lv & RefreshLevel.MASK) && !(lv & RefreshLevel.BREAK_MASK)) {
+      mask.checkPosSizeUpward();
       mask.clearMask();
     }
     // 记录节点的刷新等级，以及本帧最大刷新等级
@@ -508,7 +529,7 @@ class Root extends Container implements FrameCallback {
       }
       parent = parent.parent;
     }
-    return true;
+    return lv > RefreshLevel.NONE;
   }
 
   asyncDraw(cb?: (sync: boolean) => void) {
