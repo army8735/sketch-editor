@@ -415,12 +415,14 @@ function renderWebglTile(
             continue;
           }
           const count = tile.count;
-          // 记录节点和tile的关系
-          if (!node.isPage) {
-            node.addTile(tile);
-            tile.add(node);
-          }
+          // 记录节点和tile的关系，发生变化清空所在tile
+          node.addTile(tile);
+          tile.add(node);
           if (!shouldRender && !node.isArtBoard) {
+            continue;
+          }
+          // 画板缘故可能tile在画板之外
+          if (tile.x1 > 1 || tile.y1 > 1 || tile.x2 < -1 || tile.y2 < -1) {
             continue;
           }
           if (firstDraw) {
