@@ -378,14 +378,10 @@ class Root extends Container implements FrameCallback {
     if (lv === RefreshLevel.NONE || this.isDestroyed) {
       return false;
     }
-    // tile开启，发生变化的先向上遍历parent，清空所在的tile，用hash记录每帧加速
+    // tile开启，发生变化的先向上遍历parent，清空所在的tile，不用向上，如果父级有merge在渲染时会重置
     const isTile = config.tile && !this.firstDraw && !node.isPage;
     if (isTile && lv > RefreshLevel.CACHE) {
-      let p: Node | undefined = node;
-      while (p && !p.isPage) {
-        Tile.clean(p.cleanTile());
-        p = p.parent;
-      }
+      Tile.clean(node.cleanTile());
     }
     // reflow/repaint/<repaint分级
     const isRf = isReflow(lv);
