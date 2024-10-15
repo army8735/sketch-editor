@@ -342,7 +342,7 @@ function renderWebglTile(
         imgLoadList.push(node as Bitmap);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
-      if (isInScreen && !node.isPage) {
+      if (isInScreen && !node.isPage && node.page) {
         if (!firstDraw && (Date.now() - startTime) > config.deltaTime) {
           hasRemain = true;
           root.tileLastIndex = i;
@@ -416,8 +416,10 @@ function renderWebglTile(
           }
           const count = tile.count;
           // 记录节点和tile的关系，发生变化清空所在tile
-          node.addTile(tile);
-          tile.add(node);
+          if (!node.isPage && node.page) {
+            node.addTile(tile);
+            tile.add(node);
+          }
           if (!shouldRender && !node.isArtBoard) {
             continue;
           }
@@ -510,7 +512,7 @@ function renderWebglTile(
                 continue;
               }
               // tile循环第一次，即第0个tile时计算避免重复
-              coords2[i] = coords2[i] || bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
+              coords2[k] = coords2[k] || bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
               drawTextureCache(
                 gl,
                 cx2,
@@ -520,7 +522,7 @@ function renderWebglTile(
                   {
                     opacity,
                     bbox, // 无用有coords
-                    coords: coords2[i],
+                    coords: coords2[k],
                     texture: t,
                   },
                 ],
