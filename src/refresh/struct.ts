@@ -342,7 +342,7 @@ function renderWebglTile(
         imgLoadList.push(node as Bitmap);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
-      if (isInScreen && !node.isPage && node.page) {
+      if (isInScreen && !node.isPage) {
         if (!firstDraw && (Date.now() - startTime) > config.deltaTime) {
           hasRemain = true;
           root.tileLastIndex = i;
@@ -392,6 +392,13 @@ function renderWebglTile(
           const tile = tileList[j];
           const bboxT = tile.bbox;
           // console.log(j, tile.complete, tile.has(node))
+          if (node.isArtBoard) {
+            artBoardIndex[i + total + next] = node as ArtBoard;
+            tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
+            tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
+            tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
+            tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
+          }
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
           if (tile.complete || tile.has(node) || !isPolygonOverlapRect(
             bboxT[0], bboxT[1], bboxT[2], bboxT[3],
@@ -409,7 +416,7 @@ function renderWebglTile(
           }
           const count = tile.count;
           // 记录节点和tile的关系
-          if (!node.isPage && node.page) {
+          if (!node.isPage) {
             node.addTile(tile);
             tile.add(node);
           }
@@ -441,17 +448,9 @@ function renderWebglTile(
           // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
           if (node.isArtBoard) {
             (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
-            if (total + next) {
-              artBoardIndex[i + total + next] = node as ArtBoard;
-              tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
-              tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
-              tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
-              tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
-              // console.log(i, j, ab!, tile.x1, tile.y1, tile.x2, tile.y2)
-            }
             continue;
           }
-          if (isBgBlur) {
+          if (isBgBlur && i) {
           }
           let tex: WebGLTexture | undefined;
           // 有mbm先将本节点内容绘制到和root同尺寸纹理上
@@ -490,8 +489,8 @@ function renderWebglTile(
           }
           // >1个时分块，每块都要单独计算坐标值
           else if (list.length > 1) {
-            for (let i = 0, len = list.length; i < len; i++) {
-              const { bbox, t } = list[i];
+            for (let k = 0, len = list.length; k < len; k++) {
+              const { bbox, t } = list[k];
               const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
               // 再次判断，节点可能有多区块，每个区块不一定都在对应tile上
               if (!isPolygonOverlapRect(
