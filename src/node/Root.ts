@@ -379,10 +379,10 @@ class Root extends Container implements FrameCallback {
       return false;
     }
     // tile开启，发生变化的先向上遍历parent，清空所在的tile，用hash记录每帧加速
-    const isTile = config.tile && !this.firstDraw && node.page && !node.isPage;
+    const isTile = config.tile && !this.firstDraw && !node.isPage;
     if (isTile && lv > RefreshLevel.CACHE) {
       let p: Node | undefined = node;
-      while (p && p.page && !p.isPage) {
+      while (p && !p.isPage) {
         Tile.clean(p.cleanTile());
         p = p.parent;
       }
