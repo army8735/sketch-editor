@@ -263,28 +263,13 @@ function renderWebglTile(
     const cx2 = W2 * 0.5;
     // 续上帧没画完的情况时，可能跳过了画布的裁剪逻辑，需补上
     if (root.tileLastIndex) {
-      const { node, total, next } = structs[root.tileLastIndex];
+      const { node } = structs[root.tileLastIndex];
       const artBoard = node.artBoard;
-      if (artBoard && node !== artBoard && total + next) {
-        artBoardIndex[root.tileLastIndex + total + next] = artBoard;
-        let m = multiply(im, node._matrixWorld || node.matrixWorld);
-        const factor = scaleB * dpi;
-        if (factor !== 1) {
-          const t = identity();
-          multiplyScale(t, factor);
-          m = multiply(t, m);
-        }
-        const bbox = artBoard._bbox || artBoard.bbox;
-        const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
-        for (let j = 0, len = tileList.length; j < len; j++) {
-          const tile = tileList[j];
-          // 不用再算是否在tile了，上一帧算过了
-          if (tile.has(artBoard)) {
-            tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
-            tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
-            tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
-            tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
-          }
+      if (artBoard && node !== artBoard) {
+        const { total, next } = artBoard.struct;
+        if (total + next) {
+          const i = structs.indexOf(artBoard.struct);
+          artBoardIndex[i + total + next] = artBoard;
         }
       }
     }
@@ -406,16 +391,16 @@ function renderWebglTile(
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
         const isArtBoard = node instanceof ArtBoard;
         if (isArtBoard) {
-          const bbox = node._bbox || node.bbox;
+          const bbox = node._filterBbox || node.filterBbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
+          artBoardIndex[i + total + next] = node;
         }
-        // console.warn(node.props.name, coords, bbox.join(','), sb);
+        // console.warn(i, node.props.name, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bboxT = tile.bbox;
           // console.log(j, tile.complete, tile.has(node))
           if (isArtBoard) {
-            artBoardIndex[i + total + next] = node;
             tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
             tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
             tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
