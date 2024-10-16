@@ -10,6 +10,7 @@ class Tile {
   count: number; // tile目前已绘多少节点
   nodes: Node[];
   complete: boolean; // 是否绘制完备所有节点
+  needClear: boolean; // 是否需要清除重绘
   x: number;
   y: number;
   size: number;
@@ -31,6 +32,7 @@ class Tile {
     this.available = false;
     this.complete = false;
     this.count = 0;
+    this.needClear = false;
     this.nodes = [];
     this.x = x;
     this.y = y;
@@ -52,7 +54,10 @@ class Tile {
 
   // 引用清空，重绘清空为防止多次无效在第一次绘制时候做
   clean() {
-    this.count = 0;
+    if (this.count) {
+      this.count = 0;
+      this.needClear = true;
+    }
     this.complete = false;
     const list = this.nodes.splice(0);
     list.forEach(item => item.removeTile(this));

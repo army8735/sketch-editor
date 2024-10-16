@@ -266,7 +266,7 @@ function renderWebglTile(
       const { node, total, next } = structs[root.tileLastIndex];
       const artBoard = node.artBoard;
       if (artBoard && node !== artBoard && total + next) {
-        artBoardIndex[root.tileLastIndex + total + next] = artBoard as ArtBoard;
+        artBoardIndex[root.tileLastIndex + total + next] = artBoard;
         let m = multiply(im, node._matrixWorld || node.matrixWorld);
         const factor = scaleB * dpi;
         if (factor !== 1) {
@@ -291,7 +291,8 @@ function renderWebglTile(
     // 先把空tile清空，可能是原本有内容的变为空了
     for (let i = 0, len = tileList.length; i < len; i++) {
       const tile = tileList[i];
-      if (!tile.count && !tile.complete && tile.texture) {
+      if (!tile.count && !tile.complete && tile.texture && tile.needClear) {
+        tile.needClear = false;
         if (!resFrameBuffer) {
           resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2, W2);
         }
@@ -414,7 +415,7 @@ function renderWebglTile(
           const bboxT = tile.bbox;
           // console.log(j, tile.complete, tile.has(node))
           if (isArtBoard) {
-            artBoardIndex[i + total + next] = node as ArtBoard;
+            artBoardIndex[i + total + next] = node;
             tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
             tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
             tile.x2 = (ab!.x3 - tile.x * factor - cx2) / cx2;
@@ -470,7 +471,7 @@ function renderWebglTile(
           }
           // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
           if (isArtBoard) {
-            (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
+            node.renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
             continue;
           }
           if (isBgBlur && i) {
@@ -916,9 +917,9 @@ function renderWebglNoTile(
       if (isInScreen) {
         // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
         if (node instanceof ArtBoard) {
-          (node as ArtBoard).renderBgc(gl, cx, cy);
+          node.renderBgc(gl, cx, cy);
           if (total + next) {
-            artBoardIndex[i + total + next] = node as ArtBoard;
+            artBoardIndex[i + total + next] = node;
             const bbox = node._bbox || node.bbox;
             const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
             x1 = (ab.x1 - cx) / cx;
