@@ -288,6 +288,26 @@ function renderWebglTile(
         }
       }
     }
+    // 先把空tile清空，可能是原本有内容的变为空了
+    for (let i = 0, len = tileList.length; i < len; i++) {
+      const tile = tileList[i];
+      if (!tile.count) {
+        if (!resFrameBuffer) {
+          resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2, W2);
+        }
+        else {
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tile.texture!,
+            0,
+          );
+        }
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+    }
     // 循环非overlay的节点，依旧是从上帧没画完的开始
     for (let i = root.tileLastIndex, len = structs.length; i < len; i++) {
       const { node, total, next } = structs[i];
@@ -342,7 +362,7 @@ function renderWebglTile(
         imgLoadList.push(node as Bitmap);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
-      if (isInScreen && !node.isPage && node.page) {
+      if (isInScreen) {
         if (!firstDraw && (Date.now() - startTime) > config.deltaTime) {
           hasRemain = true;
           root.tileLastIndex = i;
@@ -400,7 +420,7 @@ function renderWebglTile(
             tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
           }
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
-          if (tile.complete || tile.has(node) || !isPolygonOverlapRect(
+          if (!node.hasContent || tile.complete || tile.has(node) || !isPolygonOverlapRect(
             bboxT[0], bboxT[1], bboxT[2], bboxT[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -414,7 +434,6 @@ function renderWebglTile(
           )) {
             continue;
           }
-          const count = tile.count;
           // 记录节点和tile的关系，发生变化清空所在tile
           node.addTile(tile);
           tile.add(node);
@@ -443,6 +462,7 @@ function renderWebglTile(
             );
           }
           // 第一次绘制要清空
+          const count = tile.count;
           if (count === 0) {
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);

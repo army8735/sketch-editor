@@ -813,17 +813,12 @@ class Node extends Event {
 
   clearCacheUpward(includeSelf = false) {
     let parent = this.parent;
-    let first = true;
-    let last: Node | undefined; // mask可能是多个不同层级的mask，一棵子树可能都指向它，避免连续重复
     while (parent) {
       parent.tempBbox = undefined;
       parent.clearCache(includeSelf);
       let mask = parent.mask;
-      while (mask && mask !== last) {
-        mask.clearMask(first);
-        last = mask;
-        mask = mask.mask;
-        first = false; // 避免每次向上递归清除时，内部再递归清除一次
+      if (mask) {
+        mask.clearMask();
       }
       parent = parent.parent;
     }
