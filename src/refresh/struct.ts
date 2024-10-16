@@ -416,10 +416,8 @@ function renderWebglTile(
           }
           const count = tile.count;
           // 记录节点和tile的关系，发生变化清空所在tile
-          if (!node.isPage && node.page) {
-            node.addTile(tile);
-            tile.add(node);
-          }
+          node.addTile(tile);
+          tile.add(node);
           if (!shouldRender && !node.isArtBoard) {
             continue;
           }
