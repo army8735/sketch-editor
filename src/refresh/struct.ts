@@ -291,7 +291,7 @@ function renderWebglTile(
     // 先把空tile清空，可能是原本有内容的变为空了
     for (let i = 0, len = tileList.length; i < len; i++) {
       const tile = tileList[i];
-      if (!tile.count) {
+      if (!tile.count && !tile.complete && tile.texture) {
         if (!resFrameBuffer) {
           resFrameBuffer = genFrameBufferWithTexture(gl, tile.texture, W2, W2);
         }
@@ -403,7 +403,8 @@ function renderWebglTile(
           t4: { x: number, y: number },
         }[] = [];
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
-        if (node.isArtBoard) {
+        const isArtBoard = node instanceof ArtBoard;
+        if (isArtBoard) {
           const bbox = node._bbox || node.bbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
         }
@@ -412,7 +413,7 @@ function renderWebglTile(
           const tile = tileList[j];
           const bboxT = tile.bbox;
           // console.log(j, tile.complete, tile.has(node))
-          if (node.isArtBoard) {
+          if (isArtBoard) {
             artBoardIndex[i + total + next] = node as ArtBoard;
             tile.x1 = (ab!.x1 - tile.x * factor - cx2) / cx2;
             tile.y1 = (ab!.y1 - tile.y * factor - cx2) / cx2;
@@ -420,7 +421,7 @@ function renderWebglTile(
             tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
           }
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
-          if (!node.hasContent || tile.complete || tile.has(node) || !isPolygonOverlapRect(
+          if ((!node.hasContent && !isArtBoard) || tile.complete || tile.has(node) || !isPolygonOverlapRect(
             bboxT[0], bboxT[1], bboxT[2], bboxT[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -437,7 +438,7 @@ function renderWebglTile(
           // 记录节点和tile的关系，发生变化清空所在tile
           node.addTile(tile);
           tile.add(node);
-          if (!shouldRender && !node.isArtBoard) {
+          if (!shouldRender && !isArtBoard) {
             continue;
           }
           // 画板缘故可能tile在画板之外
@@ -468,7 +469,7 @@ function renderWebglTile(
             gl.clear(gl.COLOR_BUFFER_BIT);
           }
           // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
-          if (node.isArtBoard) {
+          if (isArtBoard) {
             (node as ArtBoard).renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
             continue;
           }
@@ -914,7 +915,7 @@ function renderWebglNoTile(
       // 画布和Page的FBO切换检测
       if (isInScreen) {
         // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
-        if (node.isArtBoard) {
+        if (node instanceof ArtBoard) {
           (node as ArtBoard).renderBgc(gl, cx, cy);
           if (total + next) {
             artBoardIndex[i + total + next] = node as ArtBoard;

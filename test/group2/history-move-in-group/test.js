@@ -8,6 +8,7 @@ module.exports = {
       .waitForElementVisible('body', 1000)
       .pause(20)
       .keys(browser.Keys.META)
+      .pause(20)
       .moveToElement('canvas', 120, 120)
       .pause(20)
       .mouseButtonDown(0)
