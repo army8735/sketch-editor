@@ -391,7 +391,7 @@ function renderWebglTile(
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
         const isArtBoard = node instanceof ArtBoard;
         if (isArtBoard) {
-          const bbox = node._filterBbox || node.filterBbox;
+          const bbox = node._bbox || node.bbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
           artBoardIndex[i + total + next] = node;
         }
