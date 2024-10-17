@@ -43,6 +43,7 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   if (lv > 3) {
     dt.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
   }
+  dt.title = node.props.name || '';
   // 特殊的矢量小标预览
   if (node instanceof Geom || node instanceof ShapeGroup) {
     const svg = node.toSvg(12);
