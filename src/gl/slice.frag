@@ -11,8 +11,8 @@ uniform float u_width;
 uniform float u_height;
 
 void main() {
-  if (v_position.x >= u_x1 - u_width && v_position.x <= u_x1 + u_width && v_position.y >= u_y1 - u_height && v_position.y <= u_y2 + u_height) {
-    if (v_position.y < u_y1 + u_height || v_position.y > u_y2 - u_height) {
+  if (v_position.x >= u_x1 && v_position.x <= u_x1 + u_width * 2.0 && v_position.y >= u_y1 && v_position.y <= u_y2) {
+    if (v_position.y <= u_y1 + u_height * 2.0 || v_position.y >= u_y2 - u_height * 2.0) {
       gl_FragColor += vec4(0.0, 0.0, 0.0, 0.2);
     }
     else {
@@ -23,8 +23,8 @@ void main() {
       }
     }
   }
-  if (v_position.x >= u_x2 - u_width && v_position.x <= u_x2 + u_width && v_position.y >= u_y1 - u_height && v_position.y <= u_y2 + u_height) {
-    if (v_position.y < u_y1 + u_height || v_position.y > u_y2 - u_height) {
+  if (v_position.x >= u_x2 - u_width * 2.0 && v_position.x <= u_x2 && v_position.y >= u_y1 && v_position.y <= u_y2) {
+    if (v_position.y < u_y1 + u_height * 2.0 || v_position.y > u_y2 - u_height * 2.0) {
       gl_FragColor += vec4(0.0, 0.0, 0.0, 0.2);
     }
     else {
@@ -35,8 +35,8 @@ void main() {
       }
     }
   }
-  if (v_position.y >= u_y1 - u_height && v_position.y <= u_y1 + u_height && v_position.x >= u_x1 + u_width && v_position.x <= u_x2 - u_width) {
-    if (v_position.x < u_x1 + u_width || v_position.x > u_x2 - u_width) {
+  if (v_position.y >= u_y1 && v_position.y <= u_y1 + u_height * 2.0 && v_position.x >= u_x1 + u_width * 2.0 && v_position.x <= u_x2 - u_width * 2.0) {
+    if (v_position.x < u_x1 + u_width * 4.0 || v_position.x > u_x2 - u_width * 4.0) {
       gl_FragColor += vec4(0.0, 0.0, 0.0, 0.2);
     }
     else {
@@ -47,8 +47,8 @@ void main() {
       }
     }
   }
-  if (v_position.y >= u_y2 - u_height && v_position.y <= u_y2 + u_height && v_position.x >= u_x1 + u_width && v_position.x <= u_x2 - u_width) {
-    if (v_position.x < u_x1 + u_width || v_position.x > u_x2 - u_width) {
+  if (v_position.y >= u_y2 - u_height * 2.0 && v_position.y <= u_y2 && v_position.x >= u_x1 + u_width * 2.0 && v_position.x <= u_x2 - u_width * 2.0) {
+    if (v_position.x < u_x1 + u_width * 4.0 || v_position.x > u_x2 - u_width * 4.0) {
       gl_FragColor += vec4(0.0, 0.0, 0.0, 0.2);
     }
     else {
