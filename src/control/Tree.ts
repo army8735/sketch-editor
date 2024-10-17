@@ -18,7 +18,7 @@ import { MASK } from '../style/define';
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
   const dl = document.createElement('dl');
-  const classNames = ['layer'];
+  const classNames = ['layer', 'lv' + lv];
   if (node instanceof SymbolInstance) {
     classNames.push('symbol-instance');
   }
@@ -43,7 +43,6 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   if (lv > 3) {
     dt.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
   }
-  dt.title = node.props.name || '';
   // 特殊的矢量小标预览
   if (node instanceof Geom || node instanceof ShapeGroup) {
     const svg = node.toSvg(12);
