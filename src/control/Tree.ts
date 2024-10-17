@@ -18,7 +18,7 @@ import { MASK } from '../style/define';
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
   const dl = document.createElement('dl');
-  const classNames = ['layer', 'lv' + lv];
+  const classNames = ['layer'];
   if (node instanceof SymbolInstance) {
     classNames.push('symbol-instance');
   }
@@ -181,8 +181,6 @@ export default class Tree {
           if (dl) {
             // 本身lv变化
             const lv = item.struct.lv;
-            dl.classList.remove('lv' + (lv - 1));
-            dl.classList.add('lv' + lv);
             dl.setAttribute('lv', lv.toString());
             const dt2 = dl.querySelector('dt')!;
             dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
@@ -230,8 +228,6 @@ export default class Tree {
                 if (dl2) {
                   // 本身lv变化
                   const lv = item.struct.lv;
-                  dl2.classList.remove('lv' + (lv + 1));
-                  dl2.classList.add('lv' + lv);
                   dl2.setAttribute('lv', lv.toString());
                   const dt2 = dl2.querySelector('dt')!;
                   dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
@@ -402,9 +398,6 @@ export default class Tree {
           if (dl) {
             // 本身lv变化
             const lv = item.struct.lv;
-            dl.classList.remove('lv' + (lv - 1));
-            dl.classList.remove('lv' + (lv + 1));
-            dl.classList.add('lv' + lv);
             dl.setAttribute('lv', lv.toString());
             const dt = dl.querySelector('dt')!;
             dt.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
