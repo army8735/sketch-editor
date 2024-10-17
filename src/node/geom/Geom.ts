@@ -134,8 +134,8 @@ class Geom extends Node {
         }
       }
     });
-    const width = maxX - minX;
-    const height = maxY - minY;
+    const width = (maxX - minX) || 1;
+    const height = (maxY - minY) || 1;
     let scale = 1;
     if (width >= height) {
       scale = max / width;
@@ -143,9 +143,12 @@ class Geom extends Node {
     else {
       scale = max / height;
     }
-    const d = svgPolygon(absCoords.map(item => {
+    let d = svgPolygon(absCoords.map(item => {
       return item.map(d => d * scale);
-    }), -minX * scale, -minY * scale) + (isClosed ? 'Z' : '');
+    }), -minX * scale, -minY * scale);
+    if (d && isClosed) {
+      d += 'Z';
+    }
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
     const props = [
