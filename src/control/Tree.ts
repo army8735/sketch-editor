@@ -392,6 +392,48 @@ export default class Tree {
         }
       });
     });
+    listener.on(Listener.ART_BOAND_NODE, (nodes: Node[]) => {
+      nodes.forEach((item) => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            // 本身lv变化
+            const lv = item.struct.lv;
+            dl.classList.remove('lv' + (lv - 1));
+            dl.classList.remove('lv' + (lv + 1));
+            dl.classList.add('lv' + lv);
+            const dt = dl.querySelector('dt')!;
+            dt.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+            const dd = dl.parentElement!;
+            dd.remove();
+            const prev = item.prev;
+            const next = item.next;
+            if (prev) {
+              const uuid2 = prev.props.uuid;
+              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+              if (dl2) {
+                dl2.parentElement!.before(dd);
+              }
+            }
+            else if (next) { console.log(next)
+              const uuid2 = next.props.uuid;
+              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+              if (dl2) {
+                dl2.parentElement!.after(dd);
+              }
+            }
+            else {
+              const uuid2 = item.parent!.props.uuid;
+              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+              if (dl2) {
+                dl2.parentElement!.appendChild(dd);
+              }
+            }
+          }
+        }
+      });
+    });
 
     dom.addEventListener('selectstart', (e) => {
       e.preventDefault();

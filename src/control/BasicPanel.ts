@@ -115,16 +115,17 @@ class BasicPanel extends Panel {
           next = prev + d;
         }
         nextNumber.push(next);
+        const oldAb = node.artBoard;
+        let ab;
         // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
         if (isXOrY) {
-          node.updateStyle({
-            translateX: computedStyle[i].translateX + d,
-          });
+          ab = MoveCommand.update(node, computedStyle[i], d, 0);
         }
         else {
-          node.updateStyle({
-            translateY: computedStyle[i].translateY + d,
-          });
+          ab = MoveCommand.update(node, computedStyle[i], 0, d);
+        }
+        if (oldAb !== ab) {
+          listener.emit(Listener.ART_BOAND_NODE, [node]);
         }
       });
       if (nodes.length) {

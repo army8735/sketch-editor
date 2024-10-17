@@ -876,7 +876,7 @@ class Node extends Event {
       cb && cb(true);
       return;
     }
-    parent!.deleteStruct(this);
+    parent?.deleteStruct(this);
     root!.addUpdate(this, [], RefreshLevel.REFLOW, false, true, cb);
   }
 

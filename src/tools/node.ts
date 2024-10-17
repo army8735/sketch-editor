@@ -18,47 +18,84 @@ import { d2r, r2d } from '../math/geom';
 import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
+import inject from '../util/inject';
 
-export enum POSITION {
-  UNDER = 0,
-  BEFORE = 1,
-  AFTER = 2,
+enum POSITION {
+  APPEND = 0,
+  PREPEND = 1,
+  BEFORE = 2,
+  AFTER = 3,
 }
 
-export function moveTo(nodes: Node[], target: Node, position = POSITION.UNDER) {
+function moveTo(nodes: Node[], target: Node, position = POSITION.APPEND) {
   if (!nodes.length) {
     return;
   }
-  if (target.isDestroyed) {
-    throw new Error('Can not moveTo a destroyed Node');
-  }
   if (nodes.indexOf(target) > -1) {
-    throw new Error('Can not moveTo self');
+    inject.error('Can not moveTo self');
+    return;
   }
-  const parent = target.parent!;
+  const parent = target.parent;
+  const artBoard = target.artBoard;
   // 可能移动的parent就是本来的parent，只是children顺序变更，防止迁移后remove造成尺寸变化，计算失效
   if (parent instanceof Group) {
     parent.fixedPosAndSize = true;
   }
   for (let i = 0, len = nodes.length; i < len; i++) {
     const item = nodes[i];
-    migrate(parent, item);
     if (position === POSITION.BEFORE) {
+      if (parent) {
+        migrate(parent, item);
+      }
       target.insertBefore(item);
+      const prev = target.prev;
+      item.props.index = ((prev?.props.index || 0) + target.props.index) * 0.5;
     }
     else if (position === POSITION.AFTER) {
+      if (parent) {
+        migrate(parent, item);
+      }
       target.insertAfter(item);
+      const next = target.next;
+      item.props.index = ((next?.props.index || 1) + target.props.index) * 0.5;
     }
     // 默认under
     else if (target instanceof Container) {
-      (target as Container).appendChild(item);
+      migrate(target, item);
+      if (position === POSITION.PREPEND) {
+        target.prependChild(item);
+        const next = item.next;
+        item.props.index = (next?.props.index || 1) * 0.5;
+      }
+      else {
+        target.appendChild(item);
+        const prev = item.prev;
+        item.props.index = ((prev?.props.index || 0) + 1) * 0.5;
+      }
     }
+    item.artBoard = artBoard;
   }
   if (parent instanceof Group) {
     parent.fixedPosAndSize = false;
     // 手动检查尺寸变化
     parent.checkPosSizeSelf();
   }
+}
+
+export function moveAppend(nodes: Node[], target: Node) {
+  moveTo(nodes, target, POSITION.APPEND);
+}
+
+export function movePrepend(nodes: Node[], target: Node) {
+  moveTo(nodes, target, POSITION.PREPEND);
+}
+
+export function moveAfter(nodes: Node[], target: Node) {
+  moveTo(nodes, target, POSITION.AFTER);
+}
+
+export function moveBefore(nodes: Node[], target: Node) {
+  moveTo(nodes, target, POSITION.BEFORE);
 }
 
 function getMatrixNoFlip(node: Node) {
@@ -141,11 +178,9 @@ export function migrate(parent: Node, node: Node) {
   const { scaleX, scaleY } = parent.computedStyle;
   let rp = 0;
   // parent自身有镜像的话，旋转角度计算还得排除掉
-  if (scaleX !== 1) {
+  if (scaleX === -1) {
     const i = identity();
-    if (scaleX !== 1) {
-      multiplyScaleX(i, scaleX);
-    }
+    multiplyScaleX(i, scaleX);
     const tfo = parent.computedStyle.transformOrigin;
     const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
     const m = multiply(mp, t);
@@ -175,10 +210,10 @@ export function migrate(parent: Node, node: Node) {
   // console.log(r2d(rp), r2d(rn), r2d(r))
   multiplyRotateZ(i, -r);
   // 如果parent有镜像，node要先跟随它，否则迁移后会显示反了
-  if (scaleX !== 1) {
+  if (scaleX === -1) {
     multiplyScaleX(i, scaleX);
   }
-  if (scaleY !== 1) {
+  if (scaleY === -1) {
     multiplyScaleY(i, scaleY);
   }
   const tfo = node.computedStyle.transformOrigin;
@@ -305,8 +340,8 @@ export function migrate(parent: Node, node: Node) {
     }
   }
   style.rotateZ.v = r2d(r);
-  style.scaleX.v = flipN.x * scaleX;
-  style.scaleY.v = flipN.y * scaleY;
+  style.scaleX.v = flipN.x * (scaleX === -1 ? -1 : 1);
+  style.scaleY.v = flipN.y * (scaleY === -1 ? -1 : 1);
 }
 
 export function sortTempIndex(nodes: Node[]) {
@@ -956,8 +991,10 @@ export function getBasicInfo(node: Node) {
 }
 
 export default {
-  moveTo,
-  POSITION,
+  moveAppend,
+  movePrepend,
+  moveAfter,
+  moveBefore,
   migrate,
   sortTempIndex,
   getWholeBoundingClientRect,

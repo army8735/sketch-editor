@@ -927,6 +927,7 @@ function renderWebglNoTile(
           imgLoadList.push(node as Bitmap);
         }
       }
+      // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2)
       // 真正的渲染部分
       if (isInScreen && target?.available) {
         const { mixBlendMode, blur } = computedStyle;

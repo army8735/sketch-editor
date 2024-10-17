@@ -677,7 +677,11 @@ export default class Listener extends Event {
              * 需要注意目前matrix的整体计算是将布局信息TRLB换算为translate，因此style上的原始值和更新的这个px值并不一致，
              * 结束拖动调用endPosChange()将translate写回布局TRLB的style上满足定位要求。
              */
-            MoveCommand.updateStyle(node, computedStyle, dx2, dy2);
+            const oldAb = node.artBoard;
+            const ab = MoveCommand.update(node, computedStyle, dx2, dy2);
+            if (oldAb !== ab) {
+              this.emit(Listener.ART_BOAND_NODE, [node]);
+            }
           });
           this.select.updateSelect(selected);
           this.emit(Listener.MOVE_NODE, selected.slice(0));
@@ -1604,6 +1608,7 @@ export default class Listener extends Event {
   static RENAME_NODE = 'RENAME_NODE';
   static LOCK_NODE = 'LOCK_NODE';
   static VISIBLE_NODE = 'VISIBLE_NODE';
+  static ART_BOAND_NODE = 'ART_BOAND_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }

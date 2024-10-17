@@ -81,7 +81,11 @@
         }
 
         resize();
-        window.onresize = resize;
+        let timeout;
+        window.onresize = () => {
+          clearTimeout(timeout);
+          timeout = setTimeout(resize, 20);
+        };
         if(root) {
           root.destroy();
           root = null;
