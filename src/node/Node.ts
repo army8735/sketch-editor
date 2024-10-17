@@ -1216,8 +1216,8 @@ class Node extends Event {
       ? this._bbox || this.bbox
       : this._rect || this.rect;
     let t;
-    // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix，注意排除Page
-    if (opt?.excludeRotate && !this.isPage) {
+    // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix
+    if (opt?.excludeRotate && this.computedStyle.rotateZ) {
       const parent = this.parent!;
       const i = identity();
       const matrix = this.matrix;

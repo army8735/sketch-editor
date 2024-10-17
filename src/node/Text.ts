@@ -579,7 +579,7 @@ class Text extends Node {
       dy = -y * scale;
     w *= scale;
     h *= scale;
-    const { rich, computedStyle, lineBoxList } = this;
+    const { computedStyle, lineBoxList } = this;
     const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
     canvasCache.available = true;
     const list = canvasCache.list;

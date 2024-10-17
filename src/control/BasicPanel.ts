@@ -2,6 +2,7 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
 import Group from '../node/Group';
+import Slice from '../node/Slice';
 import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -537,6 +538,7 @@ class BasicPanel extends Panel {
     else {
       y.value = toPrecision(ys[0]).toString();
     }
+    r.disabled = nodes.filter(item => item.isSlice && item instanceof Slice).length > 0;
     if (rs.length > 1) {
       r.placeholder = '多个';
     }

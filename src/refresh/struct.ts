@@ -5,6 +5,7 @@ import Container from '../node/Container';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
+import Slice from '../node/Slice';
 import { MASK, MIX_BLEND_MODE } from '../style/define';
 import config from '../util/config';
 import {
@@ -389,7 +390,7 @@ function renderWebglTile(
           t4: { x: number, y: number },
         }[] = [];
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
-        const isArtBoard = node instanceof ArtBoard;
+        const isArtBoard = node.isArtBoard && node instanceof ArtBoard;
         if (isArtBoard) {
           const bbox = node._bbox || node.bbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
@@ -681,23 +682,22 @@ function renderWebglTile(
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_position);
     // 边宽
-    const r = 1 / Math.min(cx, cy);
-    const u_width = gl.getUniformLocation(tileProgram, 'width');
-    gl.uniform1f(u_width, r);
-    const u_height = gl.getUniformLocation(tileProgram, 'height');
-    gl.uniform1f(u_height, r * cx / cy);
+    const u_width = gl.getUniformLocation(tileProgram, 'u_width');
+    gl.uniform1f(u_width, 1 / cx);
+    const u_height = gl.getUniformLocation(tileProgram, 'u_height');
+    gl.uniform1f(u_height, 1 / cy);
     // 遍历每个渲染
     for (let i = 0, len = tileList.length; i < len; i++) {
       const tile = tileList[i];
-      const u_x1 = gl.getUniformLocation(tileProgram, 'x1');
+      const u_x1 = gl.getUniformLocation(tileProgram, 'u_x1');
       gl.uniform1f(u_x1, (tile.bbox[0] - cx) / cx);
-      const u_y1 = gl.getUniformLocation(tileProgram, 'y1');
+      const u_y1 = gl.getUniformLocation(tileProgram, 'u_y1');
       gl.uniform1f(u_y1, (cy - tile.bbox[3]) / cy);
-      const u_x2 = gl.getUniformLocation(tileProgram, 'x2');
+      const u_x2 = gl.getUniformLocation(tileProgram, 'u_x2');
       gl.uniform1f(u_x2, (tile.bbox[2] - cx) / cx);
-      const u_y2 = gl.getUniformLocation(tileProgram, 'y2');
+      const u_y2 = gl.getUniformLocation(tileProgram, 'u_y2');
       gl.uniform1f(u_y2, (cy - tile.bbox[1]) / cy);
-      const u_count = gl.getUniformLocation(tileProgram, 'count');
+      const u_count = gl.getUniformLocation(tileProgram, 'u_count');
       gl.uniform1i(u_count, tile.count);
       // 渲染并销毁
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -707,48 +707,7 @@ function renderWebglTile(
     gl.useProgram(program);
   }
   // overlay的内容在tile之上单独渲染
-  overlay.update();
-  for (let i = structs.indexOf(overlay.struct), len = structs.length; i < len; i++) {
-    const { node } = structs[i];
-    // 继承父的opacity和matrix，仍然要注意root没有parent
-    const { parent, textureTarget } = node;
-    calWorldMatrixAndOpacity(node, i, parent);
-    // 计算后的世界坐标结果
-    const opacity = node._opacity;
-    const matrix = node._matrixWorld;
-    let target = textureTarget[0];
-    if (!target && node.hasContent) {
-      node.genTexture(gl, 1, 0);
-      target = textureTarget[0];
-    }
-    if (target && target.available) {
-      const isInScreen = checkInScreen(target.bbox, matrix, W, H);
-      if (isInScreen) {
-        const list = target.list;
-        for (let i = 0, len = list.length; i < len; i++) {
-          const { bbox, t } = list[i];
-          drawTextureCache(
-            gl,
-            cx,
-            cy,
-            program,
-            [
-              {
-                opacity,
-                matrix,
-                bbox: bbox,
-                texture: t,
-              },
-            ],
-            0,
-            0,
-            true,
-            -1, -1, 1, 1,
-          );
-        }
-      }
-    }
-  }
+  renderOverlay(gl, cx, cy, W, H, root, true);
   // 因性能限制原因没有绘制完全的情况，下一帧继续
   if (hasRemain) {
     root.tileRemain = true;
@@ -806,7 +765,6 @@ function renderWebglNoTile(
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 一般都存在，除非root改逻辑在只有自己的时候进行渲染，进入overlay后就是上层自定义内容而非sketch内容了
   const overlay = root.overlay;
-  let isOverlay = false;
   const program = programs.program;
   gl.useProgram(programs.program);
   let x1 = -1, y1 = -1, x2 = 1, y2 = 1;
@@ -815,8 +773,7 @@ function renderWebglNoTile(
     const { node, total, next } = structs[i];
     // 特殊的工具覆盖层，如画板名称，同步更新translate直接跟着画板位置刷新
     if (overlay === node) {
-      overlay.update();
-      isOverlay = true;
+      break;
     }
     // 不可见和透明的跳过，但要排除mask，有背景模糊的合法节点如果是透明也不能跳过，mask和背景模糊互斥，优先mask
     const computedStyle = node.computedStyle;
@@ -841,206 +798,169 @@ function renderWebglNoTile(
     // 计算后的世界坐标结果
     const opacity = node._opacity;
     const matrix = node._matrixWorld;
-    // overlay上的没有高清要忽略
-    if (isOverlay) {
-      let target = textureTarget[0];
-      if (!target && node.hasContent) {
-        node.genTexture(gl, 1, 0);
-        target = textureTarget[0];
-      }
-      if (target && target.available) {
-        const isInScreen = checkInScreen(target.bbox, matrix, W, H);
-        if (isInScreen) {
-          const list = target.list;
-          for (let i = 0, len = list.length; i < len; i++) {
-            const { bbox, t } = list[i];
-            drawTextureCache(
-              gl,
-              cx,
-              cy,
-              program,
-              [
-                {
-                  opacity,
-                  matrix,
-                  bbox: bbox,
-                  texture: t,
-                },
-              ],
-              0,
-              0,
-              false,
-              -1, -1, 1, 1,
-            );
-          }
-        }
+    let target = textureTarget[scaleIndex],
+      isInScreen = false;
+    // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
+    if (target && target.available) {
+      isInScreen = checkInScreen(target.bbox, matrix, W, H);
+    }
+    // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
+    else {
+      isInScreen = checkInScreen(
+        node._filterBbox || node.filterBbox, // 检测用原始的渲染用取整的
+        matrix,
+        W,
+        H,
+      );
+      // 单个的alpha蒙版不渲染
+      if (isInScreen && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
+        node.genTexture(gl, scale, scaleIndex);
+        target = textureTarget[scaleIndex];
       }
     }
-    // 真正的Page内容有高清考虑
-    else {
-      let target = textureTarget[scaleIndex],
-        isInScreen = false;
-      // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
-      if (target && target.available) {
-        isInScreen = checkInScreen(target.bbox, matrix, W, H);
+    // 画布和Page的FBO切换检测
+    if (isInScreen) {
+      // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
+      if (node.isArtBoard && node instanceof ArtBoard) {
+        node.renderBgc(gl, cx, cy);
+        if (total + next) {
+          artBoardIndex[i + total + next] = node;
+          const bbox = node._bbox || node.bbox;
+          const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+          x1 = (ab.x1 - cx) / cx;
+          y1 = (ab.y1 - cy) / cy;
+          x2 = (ab.x3 - cx) / cx;
+          y2 = (ab.y3 - cy) / cy;
+          artBoardTexture = createTexture(gl, 0, undefined, W, H);
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            artBoardTexture,
+            0,
+          );
+          resTexture = artBoardTexture;
+        }
       }
-      // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
-      else {
-        isInScreen = checkInScreen(
-          node._filterBbox || node.filterBbox, // 检测用原始的渲染用取整的
-          matrix,
+      // 图片检查内容加载计数器
+      if (node.isBitmap && (node as Bitmap).checkLoader()) {
+        imgLoadList.push(node as Bitmap);
+      }
+    }
+    // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2)
+    // 真正的渲染部分
+    if (isInScreen && target?.available) {
+      const { mixBlendMode, blur } = computedStyle;
+      /**
+       * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
+       * 先进行模糊/饱和度调整，再替换回主画布区域。
+       * sketch中group无法设置，只能对单个节点（包括ShapeGroup）的轮廓进行类似轮廓蒙版的重合裁剪，
+       * 并且它的text也无法设置，这里考虑增加text的支持，因为轮廓比较容易实现
+       */
+      if (isBgBlur && i) {
+        const outline = node.textureOutline[scale] = genOutline(
+          gl,
+          node,
+          structs,
+          i,
+          total,
+          target.bbox,
+          scale,
+        );
+        const w = W / root.dpi;
+        const h = H / root.dpi;
+        // 包装画布bg为TextureCache，默认画布不会超过尺寸限制，即便超过手动设置的，也不会超过系统
+        const wrap = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, w, h]));
+        wrap.list.push({
+          bbox: new Float64Array([0, 0, w, h]),
+          w: W,
+          h: H,
+          t: resTexture,
+        });
+        const isPagTex = resTexture === pageTexture;
+        genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
+        // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
+        resTexture = wrap.list[0].t;
+        if (isPagTex) {
+          pageTexture = resTexture;
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
+        gl.viewport(0, 0, W, H);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          resTexture,
+          0,
+        );
+      }
+      // 有mbm先将本节点内容绘制到和root同尺寸纹理上
+      let tex: WebGLTexture | undefined;
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+        tex = createTexture(gl, 0, undefined, W, H);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+      }
+      // 有无mbm都复用这段逻辑
+      const list = target.list;
+      for (let i = 0, len = list.length; i < len; i++) {
+        const { bbox, t } = list[i];
+        drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity,
+              matrix,
+              bbox,
+              texture: t,
+            },
+          ],
+          0,
+          0,
+          false,
+          x1, y1, x2, y2,
+        );
+      }
+      // 这里才是真正生成mbm
+      if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
+        resTexture = genMbm(
+          gl,
+          resTexture,
+          tex!,
+          mixBlendMode,
+          programs,
           W,
           H,
         );
-        // 单个的alpha蒙版不渲染
-        if (isInScreen && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
-          node.genTexture(gl, scale, scaleIndex);
-          target = textureTarget[scaleIndex];
-        }
-      }
-      // 画布和Page的FBO切换检测
-      if (isInScreen) {
-        // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
-        if (node instanceof ArtBoard) {
-          node.renderBgc(gl, cx, cy);
-          if (total + next) {
-            artBoardIndex[i + total + next] = node;
-            const bbox = node._bbox || node.bbox;
-            const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
-            x1 = (ab.x1 - cx) / cx;
-            y1 = (ab.y1 - cy) / cy;
-            x2 = (ab.x3 - cx) / cx;
-            y2 = (ab.y3 - cy) / cy;
-            artBoardTexture = createTexture(gl, 0, undefined, W, H);
-            gl.framebufferTexture2D(
-              gl.FRAMEBUFFER,
-              gl.COLOR_ATTACHMENT0,
-              gl.TEXTURE_2D,
-              artBoardTexture,
-              0,
-            );
-            resTexture = artBoardTexture;
-          }
-        }
-        // 图片检查内容加载计数器
-        if (node.isBitmap && (node as Bitmap).checkLoader()) {
-          imgLoadList.push(node as Bitmap);
-        }
-      }
-      // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2)
-      // 真正的渲染部分
-      if (isInScreen && target?.available) {
-        const { mixBlendMode, blur } = computedStyle;
-        /**
-         * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
-         * 先进行模糊/饱和度调整，再替换回主画布区域。
-         * sketch中group无法设置，只能对单个节点（包括ShapeGroup）的轮廓进行类似轮廓蒙版的重合裁剪，
-         * 并且它的text也无法设置，这里考虑增加text的支持，因为轮廓比较容易实现
-         */
-        if (isBgBlur && i) {
-          const outline = node.textureOutline[scale] = genOutline(
-            gl,
-            node,
-            structs,
-            i,
-            total,
-            target.bbox,
-            scale,
-          );
-          const w = W / root.dpi;
-          const h = H / root.dpi;
-          // 包装画布bg为TextureCache，默认画布不会超过尺寸限制，即便超过手动设置的，也不会超过系统
-          const wrap = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, w, h]));
-          wrap.list.push({
-            bbox: new Float64Array([0, 0, w, h]),
-            w: W,
-            h: H,
-            t: resTexture,
-          });
-          const isPagTex = resTexture === pageTexture;
-          genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
-          // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
-          resTexture = wrap.list[0].t;
-          if (isPagTex) {
-            pageTexture = resTexture;
-          }
-          gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
-          gl.viewport(0, 0, W, H);
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            resTexture,
-            0,
-          );
-        }
-        // 有mbm先将本节点内容绘制到和root同尺寸纹理上
-        let tex: WebGLTexture | undefined;
-        if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
-          tex = createTexture(gl, 0, undefined, W, H);
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            tex,
-            0,
-          );
-        }
-        // 有无mbm都复用这段逻辑
-        const list = target.list;
-        for (let i = 0, len = list.length; i < len; i++) {
-          const { bbox, t } = list[i];
-          drawTextureCache(
-            gl,
-            cx,
-            cy,
-            program,
-            [
-              {
-                opacity,
-                matrix,
-                bbox,
-                texture: t,
-              },
-            ],
-            0,
-            0,
-            false,
-            x1, y1, x2, y2,
-          );
-        }
-        // 这里才是真正生成mbm
-        if (mixBlendMode !== MIX_BLEND_MODE.NORMAL) {
-          resTexture = genMbm(
-            gl,
-            resTexture,
-            tex!,
-            mixBlendMode,
-            programs,
-            W,
-            H,
-          );
-        }
-      }
-      // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
-      if (
-        target?.available &&
-        target !== node.textureCache[scaleIndex] ||
-        computedStyle.maskMode // mask图片还未加载完成没有可渲染的内容也要跳过
-      ) {
-        i += total + next;
-      }
-      else if (node.isShapeGroup) {
-        i += total;
-      }
-      // 在画布end处重置clip
-      if (artBoardIndex[i]) {
-        x1 = y1 = -1;
-        x2 = y2 = 1;
-        resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
       }
     }
+    // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
+    if (
+      target?.available &&
+      target !== node.textureCache[scaleIndex] ||
+      computedStyle.maskMode // mask图片还未加载完成没有可渲染的内容也要跳过
+    ) {
+      i += total + next;
+    }
+    else if (node.isShapeGroup) {
+      i += total;
+    }
+    // 在画布end处重置clip
+    if (artBoardIndex[i]) {
+      x1 = y1 = -1;
+      x2 = y2 = 1;
+      resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
+    }
   }
+  renderOverlay(gl, cx, cy, W, H, root, false);
   // 最后将离屏frameBuffer绘入画布
   releaseFrameBuffer(gl, resFrameBuffer, W, H);
   drawTextureCache(
@@ -1108,7 +1028,13 @@ function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
   }
 }
 
-function drawArtBoard2Page(gl: WebGLRenderingContext | WebGL2RenderingContext, program: WebGLProgram, cx: number, cy: number, W: number, H: number, pageTexture: WebGLTexture, artBoardTexture: WebGLTexture) {
+function drawArtBoard2Page(
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  program: WebGLProgram,
+  cx: number, cy: number, W: number, H: number,
+  pageTexture: WebGLTexture,
+  artBoardTexture: WebGLTexture,
+) {
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
     gl.COLOR_ATTACHMENT0,
@@ -1135,4 +1061,102 @@ function drawArtBoard2Page(gl: WebGLRenderingContext | WebGL2RenderingContext, p
   );
   gl.deleteTexture(artBoardTexture);
   return pageTexture;
+}
+
+function renderOverlay(
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  cx: number, cy: number, W: number, H: number,
+  root: Root,
+  flipY: boolean,
+) {
+  const { overlay, structs, programs } = root;
+  overlay.update();
+  const start = structs.indexOf(overlay.struct);
+  const program = programs.program;
+  // artboard的名字
+  for (let i = start, len = structs.length; i < len; i++) {
+    const { node } = structs[i];
+    const { parent, textureTarget } = node;
+    calWorldMatrixAndOpacity(node, i, parent);
+    const opacity = node._opacity;
+    const matrix = node._matrixWorld;
+    let target = textureTarget[0];
+    if (!target && node.hasContent) {
+      node.genTexture(gl, 1, 0);
+      target = textureTarget[0];
+    }
+    if (target && target.available) {
+      const isInScreen = checkInScreen(target.bbox, matrix, W, H);
+      if (isInScreen) {
+        const list = target.list;
+        for (let i = 0, len = list.length; i < len; i++) {
+          const { bbox, t } = list[i];
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity,
+                matrix,
+                bbox: bbox,
+                texture: t,
+              },
+            ],
+            0,
+            0,
+            flipY,
+            -1, -1, 1, 1,
+          );
+        }
+      }
+    }
+  }
+  // slice盖在最上面
+  const sliceProgram = programs.sliceProgram;
+  gl.useProgram(sliceProgram);
+  // 顶点buffer
+  const pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(sliceProgram, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 边宽
+  const u_width = gl.getUniformLocation(sliceProgram, 'u_width');
+  gl.uniform1f(u_width, 1 / cx);
+  const u_height = gl.getUniformLocation(sliceProgram, 'u_height');
+  gl.uniform1f(u_height, 1 / cy);
+  for (let i = 0; i < start; i++) {
+    const { node } = structs[i];
+    if (node.isSlice && node instanceof Slice) {
+      const matrix = node._matrixWorld;
+      const bbox = node._rect || node.rect;
+      const isInScreen = checkInScreen(bbox, matrix, W, H);
+      if (isInScreen) {
+        const r = node.getBoundingClientRect({
+          excludeRotate: true
+        });
+        const u_x1 = gl.getUniformLocation(sliceProgram, 'u_x1');
+        gl.uniform1f(u_x1, (r.left - cx) / cx);
+        const u_x2 = gl.getUniformLocation(sliceProgram, 'u_x2');
+        gl.uniform1f(u_x2, (r.right - cx) / cx);
+        const u_y1 = gl.getUniformLocation(sliceProgram, 'u_y1');
+        const u_y2 = gl.getUniformLocation(sliceProgram, 'u_y2');
+        if (flipY) {
+          gl.uniform1f(u_y2, (cy - r.top) / cy);
+          gl.uniform1f(u_y1, (cy - r.bottom) / cy);
+        }
+        else {
+          gl.uniform1f(u_y1, (r.top - cy) / cy);
+          gl.uniform1f(u_y2, (r.bottom - cy) / cy);
+        }
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+    }
+  }
+  gl.deleteBuffer(pointBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.useProgram(program);
 }

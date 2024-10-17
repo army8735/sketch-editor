@@ -9,9 +9,9 @@ import { calPoint } from '../../math/matrix';
 
 class Overlay extends Container {
   artBoards: Container;
-  artBoardList: Array<{ artBoard: ArtBoard; text: Text }>;
+  artBoardList: { artBoard: ArtBoard; text: Text }[];
 
-  constructor(props: Props, children: Array<Node>) {
+  constructor(props: Props, children: Node[]) {
     super(props, children);
     this.artBoards = new Container(
       {

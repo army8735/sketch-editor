@@ -40,6 +40,7 @@ import simpleFrag from '../gl/simple.frag';
 import tintFrag from '../gl/tint.frag';
 import tileVert from '../gl/tile.vert';
 import tileFrag from '../gl/tile.frag';
+import sliceFrag from '../gl/slice.frag';
 import { initShaders } from '../gl/webgl';
 import config from '../util/config';
 import Tile from '../refresh/Tile';
@@ -57,6 +58,7 @@ import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
 import { MASK, StyleUnit } from '../style/define';
 import inject from '../util/inject';
+import slice from './Slice';
 
 class Root extends Container implements FrameCallback {
   canvas?: HTMLCanvasElement;
@@ -222,6 +224,7 @@ class Root extends Container implements FrameCallback {
     this.programs.motionProgram = initShaders(gl, simpleVert, motionFrag);
     this.programs.radialProgram = initShaders(gl, simpleVert, radialFrag);
     this.programs.tileProgram = initShaders(gl, tileVert, tileFrag);
+    this.programs.sliceProgram = initShaders(gl, tileVert, sliceFrag);
     gl.useProgram(program);
   }
 
@@ -629,6 +632,7 @@ class Root extends Container implements FrameCallback {
       gl.deleteProgram(programs.motionProgram);
       gl.deleteProgram(programs.radialProgram);
       gl.deleteProgram(programs.tileProgram);
+      gl.deleteProgram(programs.sliceProgram);
       for (let k in gl) {
         if (k.indexOf('programGauss,') === 0) {
           const p = programs[k];

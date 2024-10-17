@@ -4,6 +4,7 @@ import Page from '../node/Page';
 import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
+import Slice from '../node/Slice';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import Event from '../util/Event';
 import Select from './Select';
@@ -260,6 +261,7 @@ export default class Listener extends Event {
       }
       // 旋转时记住中心坐标
       if (selected.length === 1 && (this.metaKey || isWin && this.ctrlKey)
+        && !selected[0].isSlice && !(selected[0] instanceof Slice)
         && [CONTROL_TYPE.TL, CONTROL_TYPE.TR, CONTROL_TYPE.BL, CONTROL_TYPE.BR].indexOf(controlType) > -1) {
         const { points } = selected[0].getBoundingClientRect();
         const i = intersectLineLine(
@@ -1303,7 +1305,8 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    if ((this.metaKey || isWin && this.ctrlKey) && this.selected.length === 1) {
+    if ((this.metaKey || isWin && this.ctrlKey) && this.selected.length === 1
+      && !this.selected[0].isSlice && !(this.selected[0] instanceof Slice)) {
       this.select.metaKey(true);
     }
     const keyCode = e.keyCode;

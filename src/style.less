@@ -614,6 +614,14 @@ html, body {
       &::placeholder {
         color: rgba(0, 0, 0, 0.3);
       }
+
+      &:disabled {
+        opacity: 0.3;
+
+        &+.unit {
+          opacity: 0.3;
+        }
+      }
     }
 
     .unit {
