@@ -390,7 +390,7 @@ export default class Tree {
         }
       });
     });
-    listener.on(Listener.ART_BOAND_NODE, (nodes: Node[]) => {
+    listener.on(Listener.ART_BOARD_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const uuid = item.props.uuid;
         if (uuid) {

@@ -13,6 +13,7 @@ import UpdateStyleCommand, { UpdateStyleData } from '../history/UpdateStyleComma
 import Panel from './Panel';
 import { ComputedStyle, Style, TEXT_BEHAVIOUR } from '../style/define';
 import { getTextBehaviour } from '../tools/text';
+import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
 
 const html = `
   <div class="line">
@@ -34,6 +35,7 @@ const html = `
       <input type="number" class="w" step="1"/>
       <span class="unit">W</span>
     </div>
+    <div class="cp"></div>
     <div class="input-unit">
       <input type="number" class="h" step="1"/>
       <span class="unit">H</span>
@@ -62,6 +64,7 @@ class BasicPanel extends Panel {
     const r = panel.querySelector('.r') as HTMLInputElement;
     const w = panel.querySelector('.w') as HTMLInputElement;
     const h = panel.querySelector('.h') as HTMLInputElement;
+    const cp = panel.querySelector('.cp') as HTMLElement;
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
 
@@ -126,7 +129,7 @@ class BasicPanel extends Panel {
           ab = MoveCommand.update(node, computedStyle[i], 0, d);
         }
         if (oldAb !== ab) {
-          listener.emit(Listener.ART_BOAND_NODE, [node]);
+          listener.emit(Listener.ART_BOARD_NODE, [node]);
         }
       });
       if (nodes.length) {
@@ -375,6 +378,35 @@ class BasicPanel extends Panel {
       onChangeSize(false);
     });
 
+    cp.addEventListener('click', (e) => {
+      this.silence = true;
+      if (cp.classList.contains('active')) {
+        cp.classList.remove('active');
+      }
+      else {
+        cp.classList.add('active');
+      }
+      const nodes: Node[] = [];
+      const data: ConstrainProportionData[] = [];
+      this.nodes.forEach((node) => {
+        const prev = !!node.props.constrainProportions;
+        const next = cp.classList.contains('active');
+        if (prev !== next) {
+          node.props.constrainProportions = next;
+          nodes.push(node);
+          data.push({
+            prev,
+            next,
+          });
+        }
+      });
+      if (nodes.length) {
+        listener.history.addCommand(new ConstrainProportionCommand(nodes, data));
+        listener.emit(Listener.CONSTRAIN_PROPORTION_NODE, nodes.slice(0));
+      }
+      this.silence = false;
+    });
+
     fh.addEventListener('click', (e) => {
       this.silence = true;
       if (fh.classList.contains('active')) {
@@ -445,6 +477,7 @@ class BasicPanel extends Panel {
       Listener.ROTATE_NODE,
       Listener.FLIP_H_NODE,
       Listener.FLIP_V_NODE,
+      Listener.CONSTRAIN_PROPORTION_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
@@ -459,7 +492,7 @@ class BasicPanel extends Panel {
     this.data = [];
     const panel = this.panel;
     if (!nodes.length) {
-      panel.querySelectorAll('.input-unit,.fh,.fv').forEach(item => {
+      panel.querySelectorAll('.input-unit,.cp,.fh,.fv').forEach(item => {
         item.classList.add('disabled');
         item.classList.remove('active');
       });
@@ -470,7 +503,7 @@ class BasicPanel extends Panel {
       });
       return;
     }
-    panel.querySelectorAll('.input-unit,.fh,.fv').forEach(item => {
+    panel.querySelectorAll('.input-unit,.cp,.fh,.fv').forEach(item => {
       item.classList.remove('disabled');
     });
     panel.querySelectorAll('input').forEach(item => {
@@ -483,6 +516,7 @@ class BasicPanel extends Panel {
     const rs: number[] = [];
     const ws: number[] = [];
     const hs: number[] = [];
+    const cps: boolean[] = [];
     const fhs: boolean[] = [];
     const fvs: boolean[] = [];
     nodes.forEach(item => {
@@ -495,6 +529,7 @@ class BasicPanel extends Panel {
         h,
         isFlippedHorizontal,
         isFlippedVertical,
+        constrainProportions,
       } = o;
       this.data.push(o);
       if (!xs.includes(x)) {
@@ -512,6 +547,9 @@ class BasicPanel extends Panel {
       if (!hs.includes(h)) {
         hs.push(h);
       }
+      if (!cps.includes(constrainProportions)) {
+        cps.push(constrainProportions);
+      }
       if (!fhs.includes(isFlippedHorizontal)) {
         fhs.push(isFlippedHorizontal);
       }
@@ -524,6 +562,7 @@ class BasicPanel extends Panel {
     const r = panel.querySelector('.r') as HTMLInputElement;
     const w = panel.querySelector('.w') as HTMLInputElement;
     const h = panel.querySelector('.h') as HTMLInputElement;
+    const cp = panel.querySelector('.cp') as HTMLElement;
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
     if (xs.length > 1) {
@@ -556,6 +595,12 @@ class BasicPanel extends Panel {
     }
     else {
       h.value = toPrecision(hs[0]).toString();
+    }
+    if (cps.length > 1 || cps[0]) {
+      cp.classList.add('active');
+    }
+    else {
+      cp.classList.remove('active');
     }
     if (fhs.includes(true)) {
       fh.classList.add('active');

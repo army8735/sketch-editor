@@ -251,4 +251,8 @@ export default class Select {
       (this.select.querySelector('.br') as HTMLElement).style.cursor = 'nwse-resize';
     }
   }
+
+  getAspectRatio() {
+    return this.select.offsetWidth / this.select.offsetHeight;
+  }
 }

@@ -19,6 +19,7 @@ import GroupCommand from './GroupCommand';
 import UnGroupCommand from './UnGroupCommand';
 import RenameCommand from './RenameCommand';
 import LockCommand from './LockCommand';
+import ConstrainProportionCommand from './ConstrainProportionCommand';
 
 export default {
   History,
@@ -42,4 +43,5 @@ export default {
   UnGroupCommand,
   RenameCommand,
   LockCommand,
+  ConstrainProportionCommand,
 };

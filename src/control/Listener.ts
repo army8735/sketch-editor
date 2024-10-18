@@ -86,8 +86,9 @@ export default class Listener extends Event {
   startY: number;
   pageTx: number;
   pageTy: number;
-  centerX: number; // 拖转旋转时节点的中心
+  centerX: number; // 单个节点拖转旋转时节点的中心
   centerY: number;
+  aspectRatio: number; // 多个节点拉伸时最初的选框比例
   dx: number; // 每次拖拽的px，考虑缩放和dpi，即为sketch内的单位
   dy: number;
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
@@ -132,6 +133,7 @@ export default class Listener extends Event {
     this.pageTy = 0;
     this.centerX = 0;
     this.centerY = 0;
+    this.aspectRatio = 1;
     this.dx = 0;
     this.dy = 0;
     this.isFrame = false;
@@ -340,6 +342,10 @@ export default class Listener extends Event {
           }
           return [];
         });
+        // 多个节点保持宽高比拉伸时，按对角线统一
+        if (selected.length > 1) {
+          this.aspectRatio = this.select.getAspectRatio();
+        }
       }
     }
     // 点到canvas上
@@ -600,6 +606,21 @@ export default class Listener extends Event {
       }
       // 普通的节点拉伸
       else {
+        let shift = this.shiftKey;
+        if (!shift) {
+          // 有一个是固定宽高比的，整体都是
+          for (let i = 0, len = selected.length; i < len; i++) {
+            if (selected[i].props.constrainProportions) {
+              shift = true;
+              break;
+            }
+          }
+        }
+        // 多个节点保持宽高比拉伸时，按对角线统一
+        if (selected.length > 1) {
+          const r = dx / dy;
+          if (r !== this.aspectRatio) {}
+        }
         selected.forEach((node, i) => {
           // 改变尺寸前置记录操作，注意更新computedStyle（startSizeChange变更了），影响计算
           if (!this.isMouseMove) {
@@ -614,7 +635,7 @@ export default class Listener extends Event {
           if (this.options.enabled?.resizeWithAlt) {
             alt = !alt;
           }
-          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey, alt);
+          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -695,7 +716,7 @@ export default class Listener extends Event {
             const oldAb = node.artBoard;
             const ab = MoveCommand.update(node, computedStyle, dx2, dy2);
             if (oldAb !== ab) {
-              this.emit(Listener.ART_BOAND_NODE, [node]);
+              this.emit(Listener.ART_BOARD_NODE, [node]);
             }
           });
           this.select.updateSelect(selected);
@@ -711,7 +732,7 @@ export default class Listener extends Event {
       }
       // 因为用到offsetXY，避免是其它DOM触发的（如select上的html），防止不正确
       const target = e.target as HTMLElement;
-      if (target.tagName.toUpperCase() !== 'CANVAS') {
+      if (target.tagName.toUpperCase() !== 'CANVAS' && target !== this.dom) {
         if (this.select.hoverNode) {
           this.select.hideHover();
           this.emit(Listener.UN_HOVER_NODE);
@@ -719,26 +740,11 @@ export default class Listener extends Event {
         return;
       }
       // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-      const x = (e as MouseEvent).offsetX * dpi;
-      const y = (e as MouseEvent).offsetY * dpi;
-      let node = this.getNode(x, y);
-      if (!node) {
-        node = getOverlayArtBoardByPoint(root, x, y);
-      }
-      if (node) {
-        if (selected.indexOf(node) === -1 && this.select.hoverNode !== node) {
-          this.select.showHover(node);
-          this.emit(Listener.HOVER_NODE, node);
-        }
-        else if (selected.indexOf(node) > -1 && this.select.hoverNode) {
-          this.select.hideHover();
-          this.emit(Listener.UN_HOVER_NODE);
-        }
-      }
-      else if (this.select.hoverNode) {
-        this.select.hideHover();
-        this.emit(Listener.UN_HOVER_NODE);
-      }
+      this.startX = (e as MouseEvent).offsetX;
+      this.startY = (e as MouseEvent).offsetY;
+      const x = this.startX * dpi;
+      const y = this.startY * dpi;
+      this.hover(x, y);
     }
   }
 
@@ -1316,7 +1322,30 @@ export default class Listener extends Event {
     }
   }
 
+  hover(x: number, y: number) {
+    let node = this.getNode(x, y);
+    if (!node) {
+      node = getOverlayArtBoardByPoint(this.root, x, y);
+    }
+    if (node) {
+      if (this.selected.indexOf(node) === -1 && this.select.hoverNode !== node) {
+        this.select.showHover(node);
+        this.emit(Listener.HOVER_NODE, node);
+      }
+      else if (this.selected.indexOf(node) > -1 && this.select.hoverNode) {
+        this.select.hideHover();
+        this.emit(Listener.UN_HOVER_NODE);
+      }
+    }
+    else if (this.select.hoverNode) {
+      this.select.hideHover();
+      this.emit(Listener.UN_HOVER_NODE);
+    }
+  }
+
   onKeyDown(e: KeyboardEvent) {
+    const meta = this.metaKey;
+    const ctrl = this.ctrlKey;
     this.metaKey = e.metaKey;
     this.altKey = e.altKey;
     this.ctrlKey = e.ctrlKey;
@@ -1328,6 +1357,12 @@ export default class Listener extends Event {
     if ((this.metaKey || isWin && this.ctrlKey) && this.selected.length === 1
       && !this.selected[0].isSlice && !(this.selected[0] instanceof Slice)) {
       this.select.metaKey(true);
+    }
+    if ((meta !== this.metaKey || isWin && ctrl !== this.ctrlKey) && !this.isMouseDown) {
+      const dpi = this.root.dpi;
+      const x = this.startX * dpi;
+      const y = this.startY * dpi;
+      this.hover(x, y);
     }
     const keyCode = e.keyCode;
     // backspace/delete
@@ -1547,12 +1582,20 @@ export default class Listener extends Event {
   }
 
   onKeyUp(e: KeyboardEvent) {
+    const meta = this.metaKey;
+    const ctrl = this.ctrlKey;
     this.metaKey = e.metaKey;
     this.altKey = e.altKey;
     this.ctrlKey = e.ctrlKey;
     this.shiftKey = e.shiftKey;
     if (!(this.metaKey || isWin && this.ctrlKey) && !this.isRotate) {
       this.select.metaKey(false);
+    }
+    if ((meta !== this.metaKey || isWin && ctrl !== this.ctrlKey) && !this.isMouseDown) {
+      const dpi = this.root.dpi;
+      const x = this.startX * dpi;
+      const y = this.startY * dpi;
+      this.hover(x, y);
     }
     // space
     if (e.keyCode === 32) {
@@ -1631,7 +1674,8 @@ export default class Listener extends Event {
   static RENAME_NODE = 'RENAME_NODE';
   static LOCK_NODE = 'LOCK_NODE';
   static VISIBLE_NODE = 'VISIBLE_NODE';
-  static ART_BOAND_NODE = 'ART_BOAND_NODE';
+  static ART_BOARD_NODE = 'ART_BOARD_NODE';
+  static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
 }
