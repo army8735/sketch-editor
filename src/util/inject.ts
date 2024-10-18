@@ -43,7 +43,7 @@ function offscreenCanvas(
   o.height = height;
   o.style.position = 'fixed';
   o.style.left = '9999px';
-  o.style.webkitFontSmoothing = 'antialiased';
+  o.style.webkitFontSmoothing = 'antialiased'; // offscreenCanvas无效
   if (config.debug) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';

@@ -666,7 +666,7 @@ export default class Tree {
     }
   }
 
-  select(nodes: Node[], expand = false) {
+  select(nodes: Node[], expand = true) {
     const dt = this.dom.querySelectorAll('dt.active');
     dt.forEach((item) => {
       item.classList.remove('active');

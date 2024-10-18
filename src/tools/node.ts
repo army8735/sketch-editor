@@ -932,7 +932,7 @@ export function getBasicInfo(node: Node) {
     rotation: computedStyle.rotateZ,
     opacity: computedStyle.opacity,
     mixBlendMode: computedStyle.mixBlendMode,
-    constrainProportions: node.props.constrainProportions,
+    constrainProportions: !!node.props.constrainProportions,
     matrix: m,
     isLine: false,
     length: 0,
