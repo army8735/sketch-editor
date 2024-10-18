@@ -206,7 +206,10 @@ export default class Listener extends Event {
 
   // 封装getNodeByPoint，一般情况选择画板忽略
   getNode(x: number, y: number, isDbl = false) {
-    const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
+    let meta = this.metaKey || isWin && this.ctrlKey;
+    if (this.options.enabled?.selectWithMeta) {
+      meta = !meta;
+    }
     let node = getNodeByPoint(
       this.root,
       x,
@@ -354,7 +357,10 @@ export default class Listener extends Event {
       // 普通根据点击坐标获取节点逻辑
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
-      const meta = (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta;
+      let meta = this.metaKey || isWin && this.ctrlKey;
+      if (this.options.enabled?.selectWithMeta) {
+        meta = !meta;
+      }
       let node = this.getNode(x, y);
       // 特殊的选择非空画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
       if (node instanceof ArtBoard && node.children.length && !selected.includes(node)) {
@@ -604,7 +610,11 @@ export default class Listener extends Event {
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
           const controlType = this.controlType;
-          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey, this.altKey || this.options.enabled?.resizeWithAlt);
+          let alt = this.altKey;
+          if (this.options.enabled?.resizeWithAlt) {
+            alt = !alt;
+          }
+          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, this.shiftKey, alt);
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -638,8 +648,11 @@ export default class Listener extends Event {
           }
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
-          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi,
-            (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta);
+          let meta = this.metaKey || isWin && this.ctrlKey;
+          if (this.options.enabled?.selectWithMeta) {
+            meta = !meta;
+          }
+          const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, meta);
           const old = selected.splice(0);
           selected.push(...res);
           // 已选择的没变优化
@@ -840,7 +853,11 @@ export default class Listener extends Event {
             node.endSizeChange(this.originStyle[i]);
             if (dx || dy) {
               node.checkPosSizeUpward();
-              const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: this.altKey || this.options.enabled?.resizeWithAlt };
+              let alt = this.altKey;
+              if (this.options.enabled?.resizeWithAlt) {
+                alt = !alt;
+              }
+              const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: alt };
               const originStyle = this.originStyle[i];
               if (originStyle.width.u === StyleUnit.AUTO) {
                 r.widthFromAuto = true;
@@ -1122,8 +1139,11 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    const res = getFrameNodes(root, 0, 0, root.width, root.height,
-      (this.metaKey || isWin && this.ctrlKey) || this.options.enabled?.selectWithMeta);
+    let meta = this.metaKey || isWin && this.ctrlKey;
+    if (this.options.enabled?.selectWithMeta) {
+      meta = !meta;
+    }
+    const res = getFrameNodes(root, 0, 0, root.width, root.height, meta);
     this.active(res);
     this.emit(Listener.SELECT_NODE, res.slice(0));
   }
