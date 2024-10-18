@@ -13,7 +13,7 @@ export default class Input {
   cursorEl: HTMLDivElement;
   node?: Text;
   ignoreBlur: HTMLElement[];
-  hasBlur: boolean; // blur后再输入，UpdateText命令强制独立不合并，输入后取消
+  hasBlur: boolean; // blur后再focus输入，UpdateText命令强制独立不合并，输入后取消
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -108,8 +108,6 @@ export default class Input {
       }
     });
 
-
-
     inputEl.addEventListener('input', (e) => {
       if (!isIme) {
         const s = (e as InputEvent).data;
@@ -166,7 +164,7 @@ export default class Input {
       iterations: Infinity,
     });
 
-    // 点击外部会blur，当来自画布自身且编辑态需自动focus，还有来自textPanel（ignoreBlur）
+    // 点击外部会blur，当来自画布节点内自身且编辑态需自动focus，还有来自textPanel（ignoreBlur）
     document.addEventListener('click', (e) => {
       if (listener.state === State.EDIT_TEXT) {
         let target = e.target as HTMLElement;
@@ -209,6 +207,16 @@ export default class Input {
   hide() {
     this.hideCursor();
     this.blur();
+    const empty = !this.node!._content.length;
+    // 删空内容后blur隐藏则是删除文字节点，需先恢复之前内容
+    if (empty) {
+      const history = this.listener.history;
+      const last = history.commands[0];
+      if (last && last instanceof TextCommand && last.nodes[0] === this.node) {
+        last.undo();
+      }
+      this.listener.remove();
+    }
     this.node = undefined;
   }
 

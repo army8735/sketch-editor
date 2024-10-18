@@ -26,18 +26,22 @@ class TextCommand extends AbstractCommand {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
+      (node as Text).beforeEdit();
       (node as Text).cursor = data[i].next.cursor;
       (node as Text).content = data[i].next.content;
       (node as Text).setRich(data[i].next.rich);
+      (node as Text).afterEdit();
     });
   }
 
   undo() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
+      (node as Text).beforeEdit();
       (node as Text).cursor = data[i].prev.cursor;
       (node as Text).content = data[i].prev.content;
       (node as Text).setRich(data[i].prev.rich);
+      (node as Text).afterEdit();
     });
   }
 }
