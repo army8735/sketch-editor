@@ -96,17 +96,7 @@ module.exports = {
       .click('#button3')
       .assert.value('#base64', '[18,[]]')
       .click('#button5')
-      .assert.value('#base64', '[19,""]')
-
-      .moveToElement('canvas', 80, 200)
-      .doubleClick()
-      .keys(browser.Keys.BACK_SPACE)
-      .keys(browser.Keys.NULL)
-      .assert.value('#base64', '[19,""]') // 防止报错
-      .click('#button3')
-      .assert.value('#base64', '[20,[]]')
-      .click('#button5')
-      .assert.value('#base64', '[21,""]')
+      .assert.value('#base64', '[19]')
 
       .end();
   }

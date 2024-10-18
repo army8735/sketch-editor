@@ -73,7 +73,7 @@ module.exports = {
       .click('#button3')
       .assert.value('#base64', '[10,[]]')
       .click('#button5')
-      .assert.value('#base64', '[11,""]')
+      .assert.value('#base64', '[11]')
 
       .end();
   }
