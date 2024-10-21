@@ -29,14 +29,14 @@ export type ResizeData = {
 };
 
 export enum CONTROL_TYPE {
-  T,
-  R,
-  B,
-  L,
-  TL,
-  TR,
-  BL,
-  BR,
+  T = 0,
+  R = 1,
+  B = 2,
+  L = 3,
+  TL = 4,
+  TR = 5,
+  BL = 6,
+  BR = 7,
 }
 
 class ResizeCommand extends AbstractCommand {

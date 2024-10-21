@@ -666,7 +666,7 @@ export default class Tree {
     }
   }
 
-  select(nodes: Node[], expand = true) {
+  select(nodes: Node[]) {
     const dt = this.dom.querySelectorAll('dt.active');
     dt.forEach((item) => {
       item.classList.remove('active');
@@ -674,24 +674,22 @@ export default class Tree {
     nodes.forEach(item => {
       const dt = this.dom.querySelector(`dl[uuid="${item.props.uuid}"] dt`);
       if (dt) {
-        if (expand) {
-          let dl = dt.parentElement;
-          while (dl) {
-            if (dl.nodeName === 'DL') {
-              dl.classList.add('expand');
-              const uuid = dl.getAttribute('uuid');
-              if (uuid) {
-                const node = this.root.refs[uuid];
-                if (node) {
-                  node.props.isExpanded = true;
-                }
+        let dl = dt.parentElement;
+        while (dl) {
+          if (dl.nodeName === 'DL') {
+            dl.classList.add('expand');
+            const uuid = dl.getAttribute('uuid');
+            if (uuid) {
+              const node = this.root.refs[uuid];
+              if (node) {
+                node.props.isExpanded = true;
               }
             }
-            if (dl === this.dom) {
-              break;
-            }
-            dl = dl.parentElement;
           }
+          if (dl === this.dom) {
+            break;
+          }
+          dl = dl.parentElement;
         }
         dt.classList.add('active');
         if (!this.silence) {
