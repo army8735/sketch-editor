@@ -6,7 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .pause(20)
+      .pause(50)
       .keys(browser.Keys.META)
       .pause(20)
       .moveToElement('canvas', 120, 120)

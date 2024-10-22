@@ -4,6 +4,13 @@ import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix
 import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 
+export type SelectAr = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
 const html = `
   <span class="l">
     <b></b>
@@ -253,6 +260,12 @@ export default class Select {
   }
 
   getAspectRatio() {
-    return this.select.offsetWidth / this.select.offsetHeight;
+    const select = this.select;
+    return {
+      x: parseFloat(select.style.left),
+      y: parseFloat(select.style.top),
+      w: parseFloat(select.style.width),
+      h: parseFloat(select.style.height),
+    };
   }
 }

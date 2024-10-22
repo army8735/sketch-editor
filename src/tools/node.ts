@@ -3,7 +3,6 @@ import {
   calRectPoints,
   identity,
   multiply,
-  multiplyRef,
   multiplyRotateZ,
   multiplyScaleX,
   multiplyScaleY
@@ -19,6 +18,7 @@ import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
 import inject from '../util/inject';
+import { SelectAr } from '../control/Select';
 
 enum POSITION {
   APPEND = 0,
@@ -877,6 +877,146 @@ export function resizeBottomRightAspectRatioOperate(node: Node, originComputedSt
   return next;
 }
 
+function resizeHorizontalAspectRatioMultiAr(next: ResizeStyle, node: Node, originComputedStyle: ComputedStyle, d: number) {
+  if (d) {
+    if (next.left) {
+      if (typeof next.left === 'number') {
+        next.left += d;
+      }
+      else {
+        next.left = parseFloat(next.left) + (d / node.parent!.width) * 100 + '%';
+      }
+    }
+    // 只有left/right中一个且没有width时，一定是left+right，偏移时增加
+    else if (!next.width) {
+      if (node.style.left.u === StyleUnit.PERCENT) {
+        next.left = (originComputedStyle.left + d) * 100 / node.parent!.width + '%';
+      }
+      else if (node.style.left.u === StyleUnit.PX) {
+        next.left = originComputedStyle.left + d;
+      }
+    }
+    if (next.right) {
+      if (typeof next.right === 'number') {
+        next.right -= d;
+      }
+      else {
+        next.right = parseFloat(next.right) - (d / node.parent!.width) * 100 + '%';
+      }
+    }
+    // 同上
+    else if (!next.width) {
+      if (node.style.right.u === StyleUnit.PERCENT) {
+        next.right = (originComputedStyle.right - d) * 100 / node.parent!.width + '%';
+      }
+      else if (node.style.right.u === StyleUnit.PX) {
+        next.right = originComputedStyle.right - d;
+      }
+    }
+  }
+}
+
+function resizeVerticalAspectRatioMultiAr(next: ResizeStyle, node: Node, originComputedStyle: ComputedStyle, d: number) {
+  if (d) {
+    if (next.top) {
+      if (typeof next.top === 'number') {
+        next.top += d;
+      }
+      else {
+        next.top = parseFloat(next.top) + (d / node.parent!.height) * 100 + '%';
+      }
+    }
+    // 只有top/bottom中一个且没有height时，一定是top+bottom，偏移时增加
+    else if (!next.height) {
+      if (node.style.top.u === StyleUnit.PERCENT) {
+        next.top = (originComputedStyle.top + d) * 100 / node.parent!.height + '%';
+      }
+      else if (node.style.top.u === StyleUnit.PX) {
+        next.top = originComputedStyle.top + d;
+      }
+    }
+    if (next.bottom) {
+      if (typeof next.bottom === 'number') {
+        next.bottom -= d;
+      }
+      else {
+        next.bottom = parseFloat(next.bottom) - (d / node.parent!.height) * 100 + '%';
+      }
+    }
+    // 同上
+    else if (!next.height) {
+      if (node.style.bottom.u === StyleUnit.PERCENT) {
+        next.bottom = (originComputedStyle.bottom - d) * 100 / node.parent!.height + '%';
+      }
+      else if (node.style.bottom.u === StyleUnit.PX) {
+        next.bottom = originComputedStyle.bottom - d;
+      }
+    }
+  }
+}
+
+function getVerticalDistanceAspectRatioMultiAr(d: number, clientRect: SelectAr, selectAr: SelectAr) {
+  const d2 = d * selectAr.h / selectAr.w;
+  const sc = selectAr.y + selectAr.h * 0.5;
+  const nc = clientRect.y + clientRect.h * 0.5;
+  return (nc - sc) * d2 / selectAr.h;
+}
+
+function getHorizontalDistanceAspectRatioMultiAr(d: number, clientRect: SelectAr, selectAr: SelectAr) {
+  const d2 = d * selectAr.w / selectAr.h;
+  const sc = selectAr.x + selectAr.w * 0.5;
+  const nc = clientRect.x + clientRect.w * 0.5;
+  return (nc - sc) * d2 / selectAr.w;
+}
+
+export function resizeTopMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeTopAspectRatioOperate(node, originComputedStyle, d * clientRect.h / selectAr.h);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  const dx = getHorizontalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, -dx);
+  // 主轴的偏移和位置比例相关
+  const p = (selectAr.y + selectAr.h - clientRect.y - clientRect.h) / selectAr.h;
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
+  return next;
+}
+
+export function resizeBottomMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeBottomAspectRatioOperate(node, originComputedStyle, d * clientRect.h / selectAr.h);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  const dx = getHorizontalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, dx);
+  // 主轴的偏移和位置比例相关
+  const p = (clientRect.y - selectAr.y) / selectAr.h;
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
+  return next;
+}
+
+export function resizeLeftMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeLeftAspectRatioOperate(node, originComputedStyle, d * clientRect.w / selectAr.w);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  const dy = getVerticalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, -dy);
+  // 主轴的偏移和位置比例相关
+  const p = (selectAr.x + selectAr.w - clientRect.x - clientRect.w) / selectAr.w;
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
+  return next;
+}
+
+export function resizeRightMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeRightAspectRatioOperate(node, originComputedStyle, d * clientRect.w / selectAr.w);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  const dy = getVerticalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, dy);
+  // 主轴的偏移和位置比例相关
+  const p = (clientRect.x - selectAr.x) / selectAr.w;
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
+  return next;
+}
+
 export function move(node: Node, dx: number, dy: number) {
   const originStyle = node.getStyle();
   if (dx || dy) {
@@ -995,6 +1135,7 @@ export default {
   movePrepend,
   moveAfter,
   moveBefore,
+  move,
   migrate,
   sortTempIndex,
   getWholeBoundingClientRect,
@@ -1014,6 +1155,9 @@ export default {
   resizeTopRightAspectRatioOperate,
   resizeBottomLeftAspectRatioOperate,
   resizeBottomRightAspectRatioOperate,
-  move,
+  resizeTopMultiArOperate,
+  resizeBottomMultiArOperate,
+  resizeRightMultiArOperate,
+  resizeLeftMultiArOperate,
   getBasicInfo,
 };

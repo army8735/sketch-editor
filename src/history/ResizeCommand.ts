@@ -1,20 +1,26 @@
 import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
-import { ComputedStyle } from '../style/define';import {
+import { ComputedStyle } from '../style/define';
+import {
   resizeBottomAspectRatioOperate,
   resizeBottomLeftAspectRatioOperate,
+  resizeBottomMultiArOperate,
   resizeBottomOperate,
   resizeBottomRightAspectRatioOperate,
   resizeLeftAspectRatioOperate,
+  resizeLeftMultiArOperate,
   resizeLeftOperate,
   resizeRightAspectRatioOperate,
+  resizeRightMultiArOperate,
   resizeRightOperate,
   resizeTopAspectRatioOperate,
   resizeTopLeftAspectRatioOperate,
+  resizeTopMultiArOperate,
   resizeTopOperate,
   resizeTopRightAspectRatioOperate,
 } from '../tools/node';
 import { JStyle, ResizeStyle } from '../format';
+import { SelectAr } from '../control/Select';
 
 export type ResizeData = {
   dx: number;
@@ -75,7 +81,8 @@ class ResizeCommand extends AbstractCommand {
     });
   }
 
-  static updateStyle(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE, aspectRatio: boolean, fromCenter = false, widthAuto = false, heightAuto = false) {
+  static updateStyle(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE,
+                     aspectRatio: boolean, fromCenter = false, widthAuto = false, heightAuto = false) {
     // 由于保持宽高比/中心点调整的存在，可能在调整过程中切换shift/alt键，所以初始化都是原始样式以便切换后恢复
     const next: ResizeStyle = {
       left: cssStyle.left,
@@ -128,6 +135,43 @@ class ResizeCommand extends AbstractCommand {
       else if (controlType === CONTROL_TYPE.R || controlType === CONTROL_TYPE.TR || controlType === CONTROL_TYPE.BR) {
         Object.assign(next, resizeRightOperate(node, computedStyle, dx, fromCenter));
       }
+    }
+    if (widthAuto) {
+      next.width = 'auto';
+    }
+    if (heightAuto) {
+      next.height = 'auto';
+    }
+    node.updateStyle(next);
+  }
+
+  static updateStyleMultiAr(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, clientRect: SelectAr, dx: number, dy: number, controlType: CONTROL_TYPE,
+                          selectAr: SelectAr, fromCenter = false, widthAuto = false, heightAuto = false) {
+    // 一定是保持宽高比才会进这，每个节点都可能会改变位置，初始值同上单个的情况
+    const next: ResizeStyle = {
+      left: cssStyle.left,
+      right: cssStyle.right,
+      top: cssStyle.top,
+      bottom: cssStyle.bottom,
+      width: cssStyle.width,
+      height: cssStyle.height,
+      scaleX: cssStyle.scaleX,
+      scaleY: cssStyle.scaleY,
+    };
+    if (controlType === CONTROL_TYPE.T) {
+      Object.assign(next, resizeTopMultiArOperate(node, computedStyle, clientRect, dy, selectAr));
+    }
+    else if (controlType === CONTROL_TYPE.R) {
+      Object.assign(next, resizeRightMultiArOperate(node, computedStyle, clientRect, dx, selectAr));
+    }
+    else if (controlType === CONTROL_TYPE.B) {
+      Object.assign(next, resizeBottomMultiArOperate(node, computedStyle, clientRect, dy, selectAr));
+    }
+    else if (controlType === CONTROL_TYPE.L) {
+      Object.assign(next, resizeLeftMultiArOperate(node, computedStyle, clientRect, dx, selectAr));
+    }
+    else {
+      //
     }
     if (widthAuto) {
       next.width = 'auto';

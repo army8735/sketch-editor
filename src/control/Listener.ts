@@ -7,7 +7,7 @@ import Group from '../node/Group';
 import Slice from '../node/Slice';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import Event from '../util/Event';
-import Select from './Select';
+import Select, { SelectAr } from './Select';
 import Input from './Input';
 import State from './State';
 import { clone } from '../util/type';
@@ -88,7 +88,7 @@ export default class Listener extends Event {
   pageTy: number;
   centerX: number; // 单个节点拖转旋转时节点的中心
   centerY: number;
-  aspectRatio: number; // 多个节点拉伸时最初的选框比例
+  selectAr?: SelectAr; // 多个节点拉伸时最初的选框信息
   dx: number; // 每次拖拽的px，考虑缩放和dpi，即为sketch内的单位
   dy: number;
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
@@ -96,6 +96,7 @@ export default class Listener extends Event {
   selected: Node[]; // 已选的节点们
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
+  clientRect?: SelectAr[]; // 和selectAr一样记录每个节点最初的选框信息
   originStyle: Style[]; // 同上
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
@@ -133,7 +134,6 @@ export default class Listener extends Event {
     this.pageTy = 0;
     this.centerX = 0;
     this.centerY = 0;
-    this.aspectRatio = 1;
     this.dx = 0;
     this.dy = 0;
     this.isFrame = false;
@@ -342,9 +342,22 @@ export default class Listener extends Event {
           }
           return [];
         });
-        // 多个节点保持宽高比拉伸时，按对角线统一
+        // 多个节点拉伸时，有一个保持宽高比，整体都需要，缩放是选框缩放，节点需保持相对框的位置，先记录初始信息
         if (selected.length > 1) {
-          this.aspectRatio = this.select.getAspectRatio();
+          this.selectAr = this.select.getAspectRatio();
+          this.clientRect = selected.map(item => {
+            const r = item.getBoundingClientRect();
+            return {
+              x: r.left / dpi,
+              y: r.top / dpi,
+              w: r.width / dpi,
+              h: r.height / dpi,
+            };
+          });
+        }
+        else {
+          this.selectAr = undefined;
+          this.clientRect = undefined;
         }
       }
     }
@@ -616,11 +629,7 @@ export default class Listener extends Event {
             }
           }
         }
-        // 多个节点保持宽高比拉伸时，按对角线统一
-        if (selected.length > 1) {
-          const r = dx / dy;
-          if (r !== this.aspectRatio) {}
-        }
+        const controlType = this.controlType;
         selected.forEach((node, i) => {
           // 改变尺寸前置记录操作，注意更新computedStyle（startSizeChange变更了），影响计算
           if (!this.isMouseMove) {
@@ -630,12 +639,19 @@ export default class Listener extends Event {
           }
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
-          const controlType = this.controlType;
           let alt = this.altKey;
           if (this.options.enabled?.resizeWithAlt) {
             alt = !alt;
           }
           ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
+          // 多个节点保持宽高比拉伸时，按选框进行缩放和保持相对位置
+          // if (shift && this.selectAr && this.clientRect && this.clientRect[i]) {
+          //   ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, this.clientRect[i], dx2, dy2, controlType, this.selectAr, alt);
+          // }
+          // // 普通拉伸
+          // else {
+          //   ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
+          // }
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -1417,7 +1433,14 @@ export default class Listener extends Event {
       }
     }
     // 移动
-    else if (keyCode >= 37 && keyCode <= 40) {}
+    else if (keyCode >= 37 && keyCode <= 40) {
+      e.preventDefault();
+    }
+    // a全选
+    else if (keyCode === 65 && (this.metaKey || isWin && this.ctrlKey)) {
+      e.preventDefault();
+      this.selectAll();
+    }
     // z，undo/redo
     else if (keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
       const target = e.target as HTMLElement;
