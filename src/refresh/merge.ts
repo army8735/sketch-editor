@@ -623,7 +623,6 @@ function genTotal(
               );
             }
             // 有无mbm都复用这段逻辑
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, target2.magNearest ? gl.NEAREST : gl.LINEAR);
             drawTextureCache(
               gl,
               cx,
@@ -899,7 +898,6 @@ function drawInSpreadBbox(
       for (let i = 0, len = listS.length; i < len; i++) {
         const { bbox: bbox2, t: t2 } = listS[i];
         if (checkInRect(bbox2, undefined, x0, y0, w0, h0)) {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, textureTarget.magNearest ? gl.NEAREST : gl.LINEAR);
           drawTextureCache(
             gl,
             cx,
@@ -1739,7 +1737,6 @@ function genColorByMatrix(
   for (let i = 0, len = list.length; i < len; i++) {
     const { bbox, w, h, t } = list[i];
     const tex = createTexture(gl, 0, undefined, w, h);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, old.magNearest ? gl.NEAREST : gl.LINEAR);
     if (frameBuffer) {
       gl.framebufferTexture2D(
         gl.FRAMEBUFFER,
@@ -2219,7 +2216,6 @@ function genMask(
       // outline如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
       if (maskMode === MASK.OUTLINE && computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
         const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, textureTarget.magNearest ? gl.NEAREST : gl.LINEAR);
         drawTextureCache(
           gl,
           cx,
@@ -2332,7 +2328,6 @@ function genMask(
                 }
               }
               // 有无mbm都复用这段逻辑
-              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, target2.magNearest ? gl.NEAREST : gl.LINEAR);
               drawTextureCache(
                 gl,
                 cx,

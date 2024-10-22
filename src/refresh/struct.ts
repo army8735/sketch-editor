@@ -908,7 +908,6 @@ function renderWebglNoTile(
       }
       // 有无mbm都复用这段逻辑
       const list = target.list;
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, target.magNearest ? gl.NEAREST : gl.LINEAR);
       for (let i = 0, len = list.length; i < len; i++) {
         const { bbox, t } = list[i];
         drawTextureCache(

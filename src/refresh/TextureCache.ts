@@ -25,15 +25,13 @@ class TextureCache {
   available: boolean;
   bbox: Float64Array;
   list: SubTexture[];
-  magNearest?: boolean;
 
-  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache, magNearest?: boolean) {
+  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache) {
     this.gl = gl;
     this.available = true;
     this.bbox = bbox.slice(0);
     const maxX = bbox[2], maxY = bbox[3];
     this.list = [];
-    this.magNearest = magNearest;
     // 从已有节点来的内容
     if (cache) {
       const { list, w, h } = cache;
@@ -141,7 +139,7 @@ class TextureCache {
     }
     // const texture = createTexture(gl, 0, canvas!);
     const item = HASH[id] = HASH[id] || {};
-    const res = new TextureCache(gl, bbox, cache!, true);
+    const res = new TextureCache(gl, bbox, cache!);
     // 第一张图记录下原始位图的尺寸等信息供后续复用计算
     item[url] = {
       value: res.list.map((item, i) => {
