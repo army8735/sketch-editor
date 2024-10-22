@@ -1434,7 +1434,10 @@ export default class Listener extends Event {
     }
     // 移动
     else if (keyCode >= 37 && keyCode <= 40) {
-      e.preventDefault();
+      const target = e.target as HTMLElement;
+      if (target && target.tagName.toUpperCase() !== 'INPUT') {
+        e.preventDefault();
+      }
     }
     // a全选
     else if (keyCode === 65 && (this.metaKey || isWin && this.ctrlKey)) {
