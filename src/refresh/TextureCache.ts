@@ -26,7 +26,7 @@ class TextureCache {
   bbox: Float64Array;
   list: SubTexture[];
 
-  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache) {
+  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache, magNearest?: boolean) {
     this.gl = gl;
     this.available = true;
     this.bbox = bbox.slice(0);
@@ -43,7 +43,7 @@ class TextureCache {
       const r2 = h2 / h;
       for (let i = 0; i < len; i++) {
         const item = list[i];
-        const t = createTexture(gl, 0, item.os.canvas);
+        const t = createTexture(gl, 0, item.os.canvas, undefined, undefined, magNearest);
         this.list.push({
           bbox: new Float64Array([
             item.x * r1, // 允许小数
@@ -139,7 +139,7 @@ class TextureCache {
     }
     // const texture = createTexture(gl, 0, canvas!);
     const item = HASH[id] = HASH[id] || {};
-    const res = new TextureCache(gl, bbox, cache!);
+    const res = new TextureCache(gl, bbox, cache!, true);
     // 第一张图记录下原始位图的尺寸等信息供后续复用计算
     item[url] = {
       value: res.list.map((item, i) => {
