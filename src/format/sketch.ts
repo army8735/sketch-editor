@@ -17,24 +17,22 @@ import {
   Rich,
   TAG_NAME,
 } from './';
+import { PAGE_W, PAGE_H } from './dft';
 import { POINTS_RADIUS_BEHAVIOUR, TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
 import inject from '../util/inject';
 
-// sketch的Page没有尺寸，固定100
-const W = 100, H = 100;
-
 // prettier-ignore
 export enum ResizingConstraint {
-  UNSET = 0b111111,
-  RIGHT = 0b000001, // 1
-  WIDTH = 0b000010, // 2
-  LEFT = 0b000100, // 4
+  UNSET  = 0b111111,
+  RIGHT  = 0b000001, // 1
+  WIDTH  = 0b000010, // 2
+  LEFT   = 0b000100, // 4
   BOTTOM = 0b001000, // 8
   HEIGHT = 0b010000, // 16
-  TOP = 0b100000, // 32
+  TOP    = 0b100000, // 32
 }
 
 export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
@@ -112,7 +110,7 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
   const symbolMasters: any[] = [];
   const foreignSymbols = json.document?.foreignSymbols || [];
   for (let i = 0, len = foreignSymbols.length; i < len; i++) {
-    symbolMasters[i] = await convertItem(foreignSymbols[i].symbolMaster, (i + 1) / (len + 1), opt, W, H);
+    symbolMasters[i] = await convertItem(foreignSymbols[i].symbolMaster, (i + 1) / (len + 1), opt, PAGE_W, PAGE_H);
   }
   const pages: JPage[] = [];
   if (json.pages) {
@@ -141,14 +139,16 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
 }
 
 async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Promise<JPage> {
-  const children: (JNode | undefined)[] = [];
+  const children: JNode[] = [];
   for (let i = 0, len = page.layers.length; i < len; i++) {
-    const res = await convertItem(page.layers[i], (i + 1) / (len + 1), opt, W, H);
-    children.push(res);
+    const res = await convertItem(page.layers[i], (i + 1) / (len + 1), opt, PAGE_W, PAGE_H);
+    if (res) {
+      children.push(res);
+    }
   }
-  let x = 0,
-    y = 0,
-    zoom = 1;
+  let x = 0;
+  let y = 0;
+  let zoom = 1;
   const ua = opt.user[page.do_objectID];
   if (ua) {
     const { scrollOrigin, zoomValue } = ua;
@@ -175,8 +175,8 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
         baseY: page.verticalRulerData.base,
       },
       style: {
-        width: W,
-        height: H,
+        width: PAGE_W,
+        height: PAGE_H,
         visible: false,
         translateX: x,
         translateY: y,
@@ -243,7 +243,7 @@ async function convertItem(
   // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
   if (layer._class === SketchFormat.ClassValue.Artboard
     || layer._class === SketchFormat.ClassValue.SymbolMaster) {
-    const children: (JNode | undefined)[] = [];
+    const children: JNode[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, width as number, height as number);
       if (res) {
@@ -568,7 +568,7 @@ async function convertItem(
     } as JSymbolInstance;
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
-    const children: (JNode | undefined)[] = [];
+    const children: JNode[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
       if (res) {
@@ -1012,7 +1012,7 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
-    const children: (JNode | undefined)[] = [];
+    const children: JNode[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
       if (res) {

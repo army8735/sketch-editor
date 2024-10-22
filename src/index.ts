@@ -1,5 +1,6 @@
 import format, { TAG_NAME, JFile, JSymbolMaster, JLayer, JStyle } from './format';
-import { openAndConvertSketchBuffer, convertSketch, openAndConvertSketchZip } from './format/sketch';
+import { openAndConvertSketchBuffer, openAndConvertSketchZip, convertSketch } from './format/sketch';
+import { openAndConvertPsdBuffer } from './format/psd';
 import refresh from './refresh';
 import style from './style';
 import math from './math';
@@ -74,6 +75,7 @@ export default {
   openAndConvertSketchBuffer,
   openAndConvertSketchZip,
   convertSketch,
+  openAndConvertPsdBuffer,
   node,
   refresh,
   style,

@@ -352,6 +352,7 @@ class TextPanel extends Panel {
           listener.history.addCommand(new RichCommand(nodes, data, RichCommand.FONT_FAMILY));
           listener.select.updateSelect(nodes);
           listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
+          this.show(this.nodes);
         }
       }
       else if (key === 'fontWeight') {

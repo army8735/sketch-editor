@@ -9,9 +9,6 @@ export function checkReflow(node: Node, addDom: boolean, removeDom: boolean) {
   }
   // add和普通修改共用
   else {
-    if (addDom) {
-      // node.willMount();
-    }
     node.layout({
       w: parent.width,
       h: parent.height,

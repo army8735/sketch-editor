@@ -5,6 +5,7 @@ import {
   TEXT_DECORATION,
   POINTS_RADIUS_BEHAVIOUR,
 } from '../style/define';
+import { DEFAULT_STYLE } from './dft';
 
 export type JFile = {
   document: {
@@ -166,65 +167,7 @@ export type JStyle = {
 };
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
-  return Object.assign(
-    {
-      left: 0,
-      top: 0,
-      right: 'auto',
-      bottom: 'auto',
-      width: 'auto',
-      height: 'auto',
-      lineHeight: 'normal',
-      fontFamily: 'arial',
-      fontSize: 16,
-      fontWeight: 400,
-      fontStyle: 'normal',
-      visible: true,
-      backgroundColor: [0, 0, 0, 0],
-      color: [0, 0, 0, 1],
-      opacity: 1,
-      fill: [],
-      fillOpacity: [],
-      fillEnable: [],
-      fillMode: [],
-      fillRule: 'nonzero',
-      stroke: [],
-      strokeEnable: [],
-      strokeWidth: [],
-      strokePosition: [],
-      strokeMode: [],
-      strokeDasharray: [],
-      strokeLinecap: 'butt',
-      strokeLinejoin: 'miter',
-      strokeMiterlimit: 0,
-      letterSpacing: 0,
-      paragraphSpacing: 0,
-      textAlign: 'left',
-      textVerticalAlign: 'top',
-      textDecoration: [],
-      translateX: 0,
-      translateY: 0,
-      scaleX: 1,
-      scaleY: 1,
-      rotateZ: 0,
-      transformOrigin: ['center', 'center'],
-      booleanOperation: 'none',
-      mixBlendMode: 'normal',
-      pointerEvents: true,
-      maskMode: 'none',
-      breakMask: false,
-      blur: 'none',
-      shadow: [],
-      shadowEnable: [],
-      innerShadow: [],
-      innerShadowEnable: [],
-      hueRotate: 0,
-      saturate: 1,
-      brightness: 1,
-      contrast: 1,
-    },
-    v,
-  );
+  return Object.assign({}, DEFAULT_STYLE, v);
 }
 
 export type Props = {

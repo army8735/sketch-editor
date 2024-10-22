@@ -58,7 +58,6 @@ import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
 import { MASK, StyleUnit } from '../style/define';
 import inject from '../util/inject';
-import slice from './Slice';
 
 class Root extends Container implements FrameCallback {
   canvas?: HTMLCanvasElement;
