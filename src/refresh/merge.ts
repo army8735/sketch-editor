@@ -237,7 +237,7 @@ export function genMerge(
   }
   let firstMerge = true;
   let breakMerge: Merge[] | undefined;
-  const mergeRecord: Array<{ bbox: Float64Array, m: Float64Array }> = [];
+  const mergeRecord: { bbox: Float64Array, m: Float64Array }[] = [];
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const { i, lv, total, node, valid, isNew } = mergeList[j];
@@ -1739,6 +1739,7 @@ function genColorByMatrix(
   for (let i = 0, len = list.length; i < len; i++) {
     const { bbox, w, h, t } = list[i];
     const tex = createTexture(gl, 0, undefined, w, h);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, old.magNearest ? gl.NEAREST : gl.LINEAR);
     if (frameBuffer) {
       gl.framebufferTexture2D(
         gl.FRAMEBUFFER,
