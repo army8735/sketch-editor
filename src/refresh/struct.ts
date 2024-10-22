@@ -849,7 +849,7 @@ function renderWebglNoTile(
     }
     // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2)
     // 真正的渲染部分
-    if (isInScreen && target?.available) {
+    if (isInScreen && target && target.available) {
       const { mixBlendMode, blur } = computedStyle;
       /**
        * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
@@ -908,6 +908,7 @@ function renderWebglNoTile(
       }
       // 有无mbm都复用这段逻辑
       const list = target.list;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, target.magNearest ? gl.NEAREST : gl.LINEAR);
       for (let i = 0, len = list.length; i < len; i++) {
         const { bbox, t } = list[i];
         drawTextureCache(

@@ -134,6 +134,7 @@ const o = {
     }
     this._register(family, style, postscriptName, true);
     inject.addArrayBufferFont(postscriptName, ab);
+    return this.data[family];
   },
   _cal(family: string, f: { ascent: number, descent: number, lineGap: number, emSquare: number }) {
     let spread = 0;

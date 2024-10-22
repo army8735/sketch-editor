@@ -198,7 +198,7 @@ class Text extends Node {
   constructor(props: TextProps) {
     super(props);
     this.isText = true;
-    this._content = props.content;
+    this._content = props.content || '';
     this.rich = props.rich?.slice(0) || [];
     this.lineBoxList = [];
     this.tempCursorX = 0;

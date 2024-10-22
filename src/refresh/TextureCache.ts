@@ -25,6 +25,7 @@ class TextureCache {
   available: boolean;
   bbox: Float64Array;
   list: SubTexture[];
+  magNearest?: boolean;
 
   constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache, magNearest?: boolean) {
     this.gl = gl;
@@ -32,6 +33,7 @@ class TextureCache {
     this.bbox = bbox.slice(0);
     const maxX = bbox[2], maxY = bbox[3];
     this.list = [];
+    this.magNearest = magNearest;
     // 从已有节点来的内容
     if (cache) {
       const { list, w, h } = cache;
@@ -43,7 +45,7 @@ class TextureCache {
       const r2 = h2 / h;
       for (let i = 0; i < len; i++) {
         const item = list[i];
-        const t = createTexture(gl, 0, item.os.canvas, undefined, undefined, magNearest);
+        const t = createTexture(gl, 0, item.os.canvas);
         this.list.push({
           bbox: new Float64Array([
             item.x * r1, // 允许小数
@@ -155,7 +157,7 @@ class TextureCache {
       h: cache!.h,
       count: 1,
     };
-    return new TextureCache(gl, bbox, cache!);
+    return res;
   }
 
   static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array) {
