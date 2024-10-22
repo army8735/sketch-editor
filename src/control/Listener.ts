@@ -1384,7 +1384,7 @@ export default class Listener extends Event {
     // backspace/delete
     if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
-      if (target.tagName.toUpperCase() !== 'INPUT' && this.selected.length && !this.options.disabled?.remove) {
+      if (!['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase()) && this.selected.length && !this.options.disabled?.remove) {
         this.remove();
       }
     }
@@ -1435,7 +1435,7 @@ export default class Listener extends Event {
     // 移动
     else if (keyCode >= 37 && keyCode <= 40) {
       const target = e.target as HTMLElement;
-      if (target && target.tagName.toUpperCase() !== 'INPUT') {
+      if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
       }
     }
@@ -1447,7 +1447,7 @@ export default class Listener extends Event {
     // z，undo/redo
     else if (keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
       const target = e.target as HTMLElement;
-      if (target && target.tagName.toUpperCase() === 'INPUT') {
+      if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
       }
       let c: AbstractCommand | undefined;
