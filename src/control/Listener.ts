@@ -1437,19 +1437,57 @@ export default class Listener extends Event {
       const target = e.target as HTMLElement;
       if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
+        const nodes = this.selected.slice(0);
+        const data: MoveData[] = [];
+        const changeAb: Node[] = [];
+        nodes.forEach((node) => {
+          const originStyle = node.getStyle();
+          const oldAb = node.artBoard;
+          let ab;
+          let x = 0;
+          let y = 0;
+          if (keyCode === 37) {
+            x = this.shiftKey ? -10 : -1;
+          }
+          else if (keyCode === 38) {
+            y = this.shiftKey ? -10 : -1;
+          }
+          else if (keyCode === 39) {
+            x = this.shiftKey ? 10 : 1;
+          }
+          else if (keyCode === 40) {
+            y = this.shiftKey ? 10 : 1;
+          }
+          ab = MoveCommand.update(node, node.computedStyle, x, y);
+          if (oldAb !== ab) {
+            changeAb.push(node);
+          }
+          node.endPosChange(originStyle, x, y);
+          data.push({ dx: x, dy: y });
+          node.checkPosSizeUpward();
+        });
+        if (changeAb.length) {
+          this.emit(Listener.ART_BOARD_NODE, changeAb);
+        }
+        if (nodes.length) {
+          this.select.updateSelect(nodes);
+          this.emit(Listener.MOVE_NODE, nodes.slice(0));
+          this.history.addCommand(new MoveCommand(nodes, data));
+        }
       }
     }
     // a全选
     else if (keyCode === 65 && (this.metaKey || isWin && this.ctrlKey)) {
-      e.preventDefault();
       const target = e.target as HTMLElement;
       // 编辑文字状态特殊处理
-      if (target === this.input.inputEl) {
+      if (this.state === State.EDIT_TEXT && target === this.input.inputEl) {
+        e.preventDefault();
         this.input.node!.selectAll();
         this.input.hideCursor();
       }
       else if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
+        this.selectAll();
       }
     }
     // z，undo/redo
