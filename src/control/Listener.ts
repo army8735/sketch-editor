@@ -5,7 +5,7 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
-import { ComputedStyle, Style, StyleUnit } from '../style/define';
+import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { SelectAr } from './Select';
 import Input from './Input';
@@ -1267,22 +1267,22 @@ export default class Listener extends Event {
     }
   }
 
-  visible(value: boolean, nodes = this.selected) {
+  visible(value: 'visible' | 'hidden', nodes = this.selected) {
     if (nodes.length) {
-      const prevs: boolean[] = [];
+      const prevs: ('visible' | 'hidden')[] = [];
       nodes.forEach(item => {
-        prevs.push(item.computedStyle.visible);
+        prevs.push(item.computedStyle.visibility === VISIBILITY.VISIBLE ? 'visible' : 'hidden');
         item.updateStyle({
-          visible: value,
+          visibility: value,
         });
       });
       this.history.addCommand(new VisibleCommand(nodes.slice(0), prevs.map((item) => {
         return {
           prev: {
-            visible: item,
+            visibility: item,
           },
           next: {
-            visible: value,
+            visibility: value,
           },
         };
       })));

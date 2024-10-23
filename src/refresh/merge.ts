@@ -5,7 +5,6 @@ import {
   drawBox,
   drawColorMatrix,
   drawDual,
-  drawGauss,
   drawMask,
   drawMbm,
   drawMotion,
@@ -29,7 +28,16 @@ import Text from '../node/Text';
 import config from '../util/config';
 import { canvasPolygon } from './paint';
 import { color2gl } from '../style/css';
-import { BLUR, ComputedBlur, ComputedShadow, ComputedStyle, FILL_RULE, MASK, MIX_BLEND_MODE, } from '../style/define';
+import {
+  BLUR,
+  ComputedBlur,
+  ComputedShadow,
+  ComputedStyle,
+  FILL_RULE,
+  MASK,
+  MIX_BLEND_MODE,
+  VISIBILITY,
+} from '../style/define';
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
 import { Struct } from './struct';
@@ -143,7 +151,7 @@ export function genMerge(
       }
       else if (maskMode === MASK.OUTLINE && (computedStyle.opacity === 0 || !node.next || node.next.computedStyle.breakMask)) {
         needMask = false;
-        if (!computedStyle.visible || computedStyle.opacity === 0) {
+        if (computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity === 0) {
           node.textureTarget[scaleIndex] = undefined;
         }
         else {
@@ -241,7 +249,7 @@ export function genMerge(
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const { i, lv, total, node, valid, isNew } = mergeList[j];
-    const { maskMode, visible, opacity } = node.computedStyle;
+    const { maskMode, visibility, opacity } = node.computedStyle;
     // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
     if (!valid) {
       if (isNew && maskMode) {
@@ -250,7 +258,7 @@ export function genMerge(
       continue;
     }
     // 不可见的，注意蒙版不可见时也生效
-    if ((!visible || opacity <= 0) && !maskMode) {
+    if ((visibility === VISIBILITY.HIDDEN || opacity <= 0) && !maskMode) {
       continue;
     }
     if (!firstMerge && (Date.now() - startTime) > config.deltaTime) {
@@ -2214,7 +2222,7 @@ function genMask(
       const cx = width * 0.5,
         cy = height * 0.5;
       // outline如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
-      if (maskMode === MASK.OUTLINE && computedStyle.visible && computedStyle.opacity > 0 && textureTarget.available) {
+      if (maskMode === MASK.OUTLINE && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
         const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
         drawTextureCache(
           gl,
@@ -2957,7 +2965,7 @@ export function shouldIgnoreAndIsBgBlur(
       node instanceof Geom ||
       node instanceof Bitmap ||
       node instanceof Text);
-  let shouldIgnore = !computedStyle.visible || computedStyle.opacity <= 0;
+  let shouldIgnore = computedStyle.visibility === VISIBILITY.HIDDEN || computedStyle.opacity <= 0;
   if (shouldIgnore && computedStyle.maskMode && node.next) {
     shouldIgnore = false;
   }
@@ -2965,7 +2973,7 @@ export function shouldIgnoreAndIsBgBlur(
     const textureTarget = node.textureTarget[scaleIndex];
     // 轮廓模板如果opacity看不见，那么整个包含蒙版都看不见，如果visible看不见，仅自身看不见，还有可能未形成mask内容（被遮罩未加载）
     if (computedStyle.maskMode === MASK.OUTLINE) {
-      if (computedStyle.visible) {
+      if (computedStyle.visibility === VISIBILITY.VISIBLE) {
         shouldIgnore = false;
       }
       else if (textureTarget !== node.textureTotal[scaleIndex] && textureTarget !== node.textureCache[scaleIndex]) {
@@ -2979,7 +2987,7 @@ export function shouldIgnoreAndIsBgBlur(
       }
     }
   }
-  if (shouldIgnore && isBgBlur && computedStyle.visible) {
+  if (shouldIgnore && isBgBlur && computedStyle.visibility === VISIBILITY.VISIBLE) {
     shouldIgnore = false;
   }
   return { shouldIgnore, isBgBlur };

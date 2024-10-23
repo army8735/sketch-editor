@@ -13,7 +13,7 @@ export const DEFAULT_STYLE = {
   fontSize: 16,
   fontWeight: 400,
   fontStyle: 'normal',
-  visible: true,
+  visibility: 'visible',
   backgroundColor: [0, 0, 0, 0],
   color: [0, 0, 0, 1],
   opacity: 1,

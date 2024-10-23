@@ -177,7 +177,7 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
       style: {
         width: PAGE_W,
         height: PAGE_H,
-        visible: false,
+        visibility: 'hidden',
         translateX: x,
         translateY: y,
         scaleX: zoom,
@@ -218,7 +218,7 @@ async function convertItem(
     translateY += height;
     height = Math.abs(height);
   }
-  const visible = layer.isVisible;
+  const visibility = layer.isVisible ? 'visible' : 'hidden';
   const opacity = layer.style?.contextSettings?.opacity ?? 1;
   const rotateZ = -layer.rotation;
   let scaleX = layer.isFlippedHorizontal ? -1 : 1;
@@ -275,7 +275,7 @@ async function convertItem(
           style: {
             width, // 画板始终相对于page的原点，没有百分比单位
             height,
-            visible,
+            visibility,
             opacity,
             translateX,
             translateY,
@@ -299,7 +299,7 @@ async function convertItem(
         style: {
           width, // 画板始终相对于page的原点，没有百分比单位
           height,
-          visible,
+          visibility,
           opacity,
           translateX,
           translateY,
@@ -543,7 +543,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           fill,
           fillEnable,
@@ -594,7 +594,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           fill,
           fillEnable,
@@ -658,7 +658,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           fill,
           fillEnable,
@@ -830,7 +830,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           fill,
           fillEnable,
@@ -956,7 +956,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           fill,
           fillEnable,
@@ -1034,7 +1034,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           fill,
           fillEnable,
@@ -1088,7 +1088,7 @@ async function convertItem(
           bottom,
           width,
           height,
-          visible,
+          visibility,
           opacity,
           translateX,
           translateY,

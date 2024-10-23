@@ -3,6 +3,7 @@ import Root from '../node/Root';
 import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
 import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
+import { VISIBILITY } from '../style/define';
 
 export type SelectAr = {
   x: number;
@@ -173,7 +174,7 @@ export default class Select {
     if (selected.length === 1) {
       sub.innerHTML = '';
       this.select.classList.remove('multi');
-      if (selected[0].computedStyle.visible) {
+      if (selected[0].computedStyle.visibility === VISIBILITY.VISIBLE) {
         this.select.classList.remove('hide');
       }
       else {
@@ -198,7 +199,7 @@ export default class Select {
           top: rect.top,
           right: rect.right,
           bottom: rect.bottom,
-          visible: item.computedStyle.visible,
+          visible: item.computedStyle.visibility === VISIBILITY.VISIBLE,
         });
         if (i) {
           left = Math.min(left, rect.left);

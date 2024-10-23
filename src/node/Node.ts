@@ -49,6 +49,7 @@ import {
   STROKE_POSITION,
   Style,
   StyleUnit,
+  VISIBILITY,
 } from '../style/define';
 import { calMatrixByOrigin, calRotateZ, calTransformByMatrixAndOrigin } from '../style/transform';
 import Event from '../util/Event';
@@ -398,7 +399,7 @@ class Node extends Event {
 
   calRepaintStyle(lv: RefreshLevel) {
     const { style, computedStyle } = this;
-    computedStyle.visible = style.visible.v;
+    computedStyle.visibility = style.visibility.v;
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
     computedStyle.fill = style.fill.map((item) => {
@@ -1155,6 +1156,7 @@ class Node extends Event {
       }
     });
     res.opacity = computedStyle.opacity;
+    res.visibility = computedStyle.visibility === VISIBILITY.VISIBLE ? 'visible' : 'hidden';
     res.color = color2rgbaStr(computedStyle.color);
     res.backgroundColor = color2rgbaStr(computedStyle.backgroundColor);
     res.fontStyle = ['normal', 'italic', 'oblique'][computedStyle.fontStyle];
@@ -1756,7 +1758,7 @@ class Node extends Event {
       isFlippedVertical: scaleY === -1,
       isLocked: props.isLocked || false,
       isTemplate: false,
-      isVisible: computedStyle.visible,
+      isVisible: computedStyle.visibility === VISIBILITY.VISIBLE,
       layerListExpandedType: props.isExpanded
         ? SketchFormat.LayerListExpanded.Expanded
         : SketchFormat.LayerListExpanded.Collapsed,

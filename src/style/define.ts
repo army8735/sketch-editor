@@ -66,6 +66,11 @@ export type StyleBoolValue = {
   u: StyleUnit.BOOLEAN;
 };
 
+export type StyleVisibilityValue = {
+  v: VISIBILITY;
+  u: StyleUnit.NUMBER;
+};
+
 export type StyleColorValue = {
   v: number[];
   u: StyleUnit.RGBA;
@@ -231,7 +236,7 @@ export type Style = {
   fontSize: StyleNumValue;
   fontWeight: StyleNumValue;
   fontStyle: StyleFontStyleValue;
-  visible: StyleBoolValue;
+  visibility: StyleVisibilityValue;
   backgroundColor: StyleColorValue;
   color: StyleColorValue;
   opacity: StyleNumValue;
@@ -291,7 +296,7 @@ export type ComputedStyle = {
   fontSize: number;
   fontWeight: number;
   fontStyle: FONT_STYLE;
-  visible: boolean;
+  visibility: VISIBILITY;
   backgroundColor: number[];
   color: number[];
   opacity: number;
@@ -446,6 +451,11 @@ export enum PATTERN_FILL_TYPE {
   FILL = 1,
   STRETCH = 2,
   FIT = 3,
+}
+
+export enum VISIBILITY {
+  VISIBLE = 0,
+  HIDDEN = 1,
 }
 
 export enum TEXT_BEHAVIOUR {

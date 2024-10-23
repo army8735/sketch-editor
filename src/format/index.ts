@@ -98,7 +98,7 @@ export type JStyle = {
   width: number | string;
   height: number | string;
   lineHeight: number | 'normal';
-  visible: boolean;
+  visibility: 'visible' | 'hidden';
   fontFamily: string;
   fontSize: number;
   fontWeight: number | string;
@@ -333,7 +333,7 @@ export type MaskModeStyle = Pick<JStyle, 'maskMode'>;
 
 export type BreakMaskStyle = Pick<JStyle, 'breakMask'>;
 
-export type VisibleStyle = Pick<JStyle, 'visible'>;
+export type VisibleStyle = Pick<JStyle, 'visibility'>;
 
 export default {
   TAG_NAME,

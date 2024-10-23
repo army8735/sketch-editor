@@ -66,7 +66,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
       style: {
         width: W,
         height: H,
-        visible: false,
+        visibility: 'hidden',
         scaleX: 0.5,
         scaleY: 0.5,
         transformOrigin: [0, 0],
@@ -97,6 +97,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
 async function convertItem(layer: any, json: any, w: number, h: number) {
   // console.log(layer, json);
   const { type, name, visible, opacity } = json;
+  const visibility = visible ? 'visible' : 'hidden';
   if (type === 'group') {
     const children: JNode[] = [];
     const c = layer.children();
@@ -123,7 +124,7 @@ async function convertItem(layer: any, json: any, w: number, h: number) {
           bottom: '0%',
           mixBlendMode: json.blendingMode,
           opacity,
-          visible,
+          visibility,
         },
         isExpanded: true,
       },
@@ -175,7 +176,7 @@ async function convertItem(layer: any, json: any, w: number, h: number) {
             translateY: '-50%',
             mixBlendMode: json.blendingMode,
             opacity,
-            visible,
+            visibility,
           },
           rich,
           content: text.value,
@@ -195,7 +196,7 @@ async function convertItem(layer: any, json: any, w: number, h: number) {
             right: (w - json.right) * 100 / w + '%',
             bottom: (h - json.bottom) * 100 / h + '%',
             opacity,
-            visible,
+            visibility,
           },
           src: layer2.image.toPng().src,
         },

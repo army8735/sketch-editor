@@ -1,6 +1,6 @@
 import Group from '../node/Group';
 import Listener from './Listener';
-import { MASK } from '../style/define';
+import { MASK, VISIBILITY } from '../style/define';
 import { version } from '../../package.json';
 
 let canvasDiv: HTMLElement;
@@ -98,10 +98,10 @@ export default {
           listener.lock(false);
         }
         else if (classList.contains('hide')) {
-          listener.visible(false);
+          listener.visible('hidden');
         }
         else if (classList.contains('show')) {
-          listener.visible(true);
+          listener.visible('visible');
         }
         else if (classList.contains('remove')) {
           listener.remove();
@@ -149,7 +149,7 @@ export default {
     else {
       canvasDiv.querySelector('.lock span')!.innerHTML = nodes.length.toString();
     }
-    let hasHidden = nodes.filter(item => !item.computedStyle.visible);
+    let hasHidden = nodes.filter(item => item.computedStyle.visibility === VISIBILITY.HIDDEN);
     if (hasHidden.length === nodes.length) {
       classList.add('hidden');
       canvasDiv.querySelector('.show span')!.innerHTML = hasHidden.length.toString();

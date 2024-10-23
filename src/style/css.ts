@@ -23,6 +23,7 @@ import {
   TEXT_ALIGN,
   TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
+  VISIBILITY,
 } from './define';
 import font from './font';
 import { convert2Css, isGradient, parseGradient } from './gradient';
@@ -79,11 +80,11 @@ export function normalize(style: any): Style {
       res.lineHeight = n;
     }
   }
-  const visible = style.visible;
-  if (!isNil(visible)) {
-    res.visible = {
-      v: visible,
-      u: StyleUnit.BOOLEAN,
+  const visibility = style.visibility;
+  if (!isNil(visibility)) {
+    res.visibility = {
+      v: /hidden/i.test(visibility) ? VISIBILITY.HIDDEN : VISIBILITY.VISIBLE,
+      u: StyleUnit.NUMBER,
     };
   }
   const fontFamily = style.fontFamily;

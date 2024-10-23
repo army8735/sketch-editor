@@ -56,7 +56,7 @@ import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
-import { MASK, StyleUnit } from '../style/define';
+import { MASK, StyleUnit, VISIBILITY } from '../style/define';
 import inject from '../util/inject';
 
 class Root extends Container implements FrameCallback {
@@ -279,7 +279,7 @@ class Root extends Container implements FrameCallback {
         return;
       }
       this.lastPage.updateStyle({
-        visible: false,
+        visibility: 'hidden',
       });
     }
     // 先置空，否则新页初始化添加DOM会触发事件到老页上
@@ -288,7 +288,7 @@ class Root extends Container implements FrameCallback {
     // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
     newPage.updateStyle({
-      visible: true,
+      visibility: 'visible',
     });
     this.lastPage = newPage;
     const children: ArtBoard[] = [];
@@ -522,7 +522,7 @@ class Root extends Container implements FrameCallback {
     }
     let parent = node.parent;
     while (parent) {
-      if (!parent.computedStyle.visible) {
+      if (parent.computedStyle.visibility === VISIBILITY.HIDDEN) {
         return false;
       }
       parent = parent.parent;

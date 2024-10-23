@@ -18,7 +18,7 @@ import {
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
-  StyleUnit,
+  StyleUnit, VISIBILITY,
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import { migrate, sortTempIndex } from '../../tools/node';
@@ -164,7 +164,7 @@ class ShapeGroup extends Group {
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
       // 不可见的无效
-      if (!item.computedStyle.visible) {
+      if (item.computedStyle.visibility === VISIBILITY.HIDDEN) {
         continue;
       }
       let coords;

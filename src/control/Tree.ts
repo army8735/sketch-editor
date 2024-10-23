@@ -13,7 +13,7 @@ import Container from '../node/Container';
 import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
-import { MASK } from '../style/define';
+import { MASK, VISIBILITY } from '../style/define';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -56,7 +56,7 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
     if (node.props.isLocked) {
       s += `<span class="lock"></span>`;
     }
-    s += `<span class="visible ${node.computedStyle.visible ? 't' : ''}"></span>`;
+    s += `<span class="visible ${node.computedStyle.visibility === VISIBILITY.VISIBLE ? 't' : ''}"></span>`;
   }
   dt.innerHTML = s;
   dl.appendChild(dt);
@@ -380,7 +380,7 @@ export default class Tree {
           if (dl) {
             const visible = dl.querySelector('.visible') as HTMLElement;
             const classList = visible.classList;
-            if (item.computedStyle.visible) {
+            if (item.computedStyle.visibility === VISIBILITY.VISIBLE) {
               classList.add('t');
             }
             else {
@@ -505,7 +505,7 @@ export default class Tree {
         if (uuid) {
           const node = root.refs[uuid];
           if (node) {
-            listener.visible(!classList.contains('t'), [node]);
+            listener.visible(classList.contains('t') ? 'visible' : 'hidden', [node]);
           }
         }
       }
