@@ -698,7 +698,7 @@ class TextPanel extends Panel {
     const texts = nodes.filter(item => item instanceof Text) as Text[];
     this.nodes = texts;
     const isEditText = this.listener.state === State.EDIT_TEXT && nodes.length === 1;
-    const o = isEditText ? getEditTextInfo(texts[0]) : getTextInfo(texts);
+    const o = isEditText && texts[0]._content ? getEditTextInfo(texts[0]) : getTextInfo(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
       // 移除上次可能遗留的无效字体展示

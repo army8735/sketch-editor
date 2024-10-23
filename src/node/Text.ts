@@ -171,8 +171,8 @@ export type Cursor = {
   endTextBox: number;
   startString: number; // 位于textBox中字符串的索引
   endString: number;
-  start: number;
-  end: number; // 整个字符串的索引
+  start: number; // 整个字符串的索引
+  end: number;
 };
 
 type Loader = {
@@ -2456,6 +2456,26 @@ class Text extends Node {
       y: p.y,
       h: lineBox.lineHeight * matrix[0],
     };
+  }
+
+  selectAll() {
+    const lineBoxList = this.lineBoxList;
+    const len = lineBoxList.length;
+    const lastTextBox = lineBoxList[len - 1];
+    const list = lastTextBox?.list;
+    const last = list ? list[list.length - 1] : undefined;
+    Object.assign(this.cursor, {
+      isMulti: true,
+      startLineBox: 0,
+      startTextBox: 0,
+      startString: 0,
+      start: 0,
+      endLineBox: len - 1,
+      endTextBox: list ? list.length - 1 : 0,
+      endString: last ? last.str.length : 0,
+      end: this._content.length,
+    });
+    this.refresh();
   }
 
   /**

@@ -1442,7 +1442,15 @@ export default class Listener extends Event {
     // a全选
     else if (keyCode === 65 && (this.metaKey || isWin && this.ctrlKey)) {
       e.preventDefault();
-      this.selectAll();
+      const target = e.target as HTMLElement;
+      // 编辑文字状态特殊处理
+      if (target === this.input.inputEl) {
+        this.input.node!.selectAll();
+        this.input.hideCursor();
+      }
+      else if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
+        e.preventDefault();
+      }
     }
     // z，undo/redo
     else if (keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
