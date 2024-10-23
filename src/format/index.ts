@@ -239,11 +239,11 @@ export type Rich = {
   fontSize: number;
   fontWeight: number | string; // 用不到，只会改postscriptName
   fontStyle: string; // 同
-  lineHeight?: number;
+  lineHeight: number;
   textAlign: TEXT_ALIGN;
   textDecoration: TEXT_DECORATION[];
-  letterSpacing?: number;
-  paragraphSpacing?: number;
+  letterSpacing: number;
+  paragraphSpacing: number;
   color: number[];
 };
 
