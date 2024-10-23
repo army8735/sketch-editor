@@ -67,7 +67,7 @@ class BlurPanel extends Panel {
     panel.className = 'blur-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     const btn = this.btn = panel.querySelector('.btn') as HTMLElement;
     const select = this.select = panel.querySelector('select')!;

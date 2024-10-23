@@ -60,7 +60,7 @@ class ColorAdjustPanel extends Panel {
     panel.className = 'color-adjust-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     const hueRotateRange = this.hueRotateRange = panel.querySelector('.hue .range') as HTMLInputElement;
     const hueRotateNumber = this.hueRotateNumber = panel.querySelector('.hue .number') as HTMLInputElement;

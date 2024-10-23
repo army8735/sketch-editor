@@ -61,7 +61,7 @@ class ShadowPanel extends Panel {
     panel.className = 'shadow-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     let nodes: Node[] = [];
     let prevs: ShadowStyle[] = [];

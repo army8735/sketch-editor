@@ -40,6 +40,7 @@ import UnGroupCommand from '../history/UnGroupCommand';
 import RenameCommand from '../history/RenameCommand';
 import LockCommand from '../history/LockCommand';
 import VisibleCommand from '../history/VisibleCommand';
+import { toPrecision } from '../math';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1102,7 +1103,7 @@ export default class Listener extends Event {
       }
       const x = (e.clientX - this.originX) * dpi / width;
       const y = (e.clientY - this.originY) * dpi / height;
-      let scale = page.getZoom(true);
+      let scale = page.getZoom();
       // 最后缩小时防止太快
       if (scale < 1) {
         sc *= scale;
@@ -1114,6 +1115,7 @@ export default class Listener extends Event {
       else if (scale < 0.01) {
         scale = 0.01;
       }
+      scale = toPrecision(scale);
       root.zoomTo(scale, x, y);
       this.emit(Listener.ZOOM_PAGE, scale);
     }
@@ -1131,7 +1133,7 @@ export default class Listener extends Event {
     this.updateInput();
   }
 
-  scale(upOrDown = false) {
+  zoom(upOrDown = false) {
     const root = this.root;
     const page = root.getCurPage();
     if (!page) {
@@ -1150,9 +1152,22 @@ export default class Listener extends Event {
     else if (scale < 0.01) {
       scale = 0.01;
     }
+    scale = toPrecision(scale);
     root.zoomTo(scale, 0.5, 0.5);
     this.updateSelected();
     this.emit(Listener.ZOOM_PAGE, scale);
+  }
+
+  zoomActual() {
+    if (this.root.zoomActual()) {
+      this.emit(Listener.ZOOM_PAGE, this.root.getCurPageZoom());
+    }
+  }
+
+  zoomFit() {
+    if (this.root.zoomFit()) {
+      this.emit(Listener.ZOOM_PAGE, this.root.getCurPageZoom());
+    }
   }
 
   selectAll() {
@@ -1380,7 +1395,7 @@ export default class Listener extends Event {
       const y = this.startY * dpi;
       this.hover(x, y);
     }
-    const keyCode = e.keyCode;
+    const keyCode = e.keyCode; console.log(keyCode);
     // backspace/delete
     if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时

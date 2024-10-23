@@ -25,7 +25,7 @@ class OpacityPanel extends Panel {
     panel.className = 'opacity-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     const range = panel.querySelector('input[type=range]') as HTMLInputElement;
     const number = panel.querySelector('input[type=number]') as HTMLInputElement;

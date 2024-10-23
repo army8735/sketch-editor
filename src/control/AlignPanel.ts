@@ -26,7 +26,7 @@ class AlignPanel extends Panel {
     const panel = this.panel = document.createElement('div');
     panel.className = 'align-panel';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     panel.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;

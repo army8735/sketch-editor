@@ -15,6 +15,7 @@ import PageList from './PageList';
 import ShadowPanel from './ShadowPanel';
 import BlurPanel from './BlurPanel';
 import ColorAdjustPanel from './ColorAdjustPanel';
+import Zoom from './Zoom';
 import picker from './picker';
 import contextMenu from './contextMenu';
 
@@ -79,11 +80,16 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
   };
 }
 
+export function initZoom(root: Root, dom: HTMLElement, listener: Listener) {
+  return new Zoom(root, dom, listener);
+}
+
 export default {
   initCanvasControl,
   initPageList,
   initTree,
   initPanel,
+  initZoom,
   Listener,
   PageList,
   Tree,
@@ -100,6 +106,7 @@ export default {
   BlurPanel,
   AlignPanel,
   ColorAdjustPanel,
+  Zoom,
   picker,
   contextMenu,
 };

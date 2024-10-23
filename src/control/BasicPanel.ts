@@ -57,7 +57,7 @@ class BasicPanel extends Panel {
     const panel = this.panel = document.createElement('div');
     panel.className = 'basic-panel';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     const x = panel.querySelector('.x') as HTMLInputElement;
     const y = panel.querySelector('.y') as HTMLInputElement;

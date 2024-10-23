@@ -27,7 +27,7 @@ class RoundPanel extends Panel {
     panel.className = 'round-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
   }
 
   show(nodes: Node[]) {

@@ -1615,3 +1615,35 @@ html, body {
     }
   }
 }
+
+.zoom {
+  position: relative;
+  padding: 2px 5px;
+  width: 60px;
+  height: 22px;
+  background: #FFF;
+  border-radius: 5px;
+
+  select {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 2px;
+    bottom: 2px;
+    appearance: none;
+    outline: none;
+    margin: 0;
+    padding: 0 5px;
+    background: #FFF url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACPTkDJAAAAv0lEQVRYCWNgGAWjITAaAqMhMBoCIz0EGEkIAG6g2kQgZieg5ydQfj4QfyWgDizNRIwiqJofQPoLEepBakBqiQKkOOAv0MTNQPwbj8kgOZAakFqiADNRqhCKvgOZIB+qIIRQWLuBvIcoIgQ4pDoAZNxrIOYHYjEQBwlcBbKPI/GJYpISBcgG7gVy3iIJgNggMZIBOSEAsuQfED8GYm0oew2QJiaBApVRF4gDjQPhUTAaAqMhMBoCoyEwGgJkhwAANCkawjWUxM8AAAAASUVORK5CYII=) no-repeat right center;
+    background-size: 16px 16px;
+    border: none;
+  }
+
+  div {
+    position: relative;
+    pointer-events: none;
+    color: #000;
+    font-size: 14px;
+    line-height: 22px;
+  }
+}

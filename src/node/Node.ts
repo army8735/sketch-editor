@@ -1573,7 +1573,7 @@ class Node extends Event {
   }
 
   getZoom(excludeDpi = false): number {
-    const n = this.matrixWorld[0];
+    const n = this.computedStyle.scaleX;
     if (excludeDpi && this.root) {
       return n / this.root.dpi;
     }

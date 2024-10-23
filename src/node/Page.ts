@@ -82,6 +82,14 @@ class Page extends Container {
     });
   }
 
+  zoomActual() {
+    const { keys } = this.updateStyle({
+      scaleX: 1,
+      scaleY: 1,
+    });
+    return keys.length > 0;
+  }
+
   zoomFit() {
     const children = this.children;
     if (!children.length || !this.root) {
@@ -144,6 +152,7 @@ class Page extends Container {
         scaleY: sx,
       });
     }
+    return true;
   }
 
   override clone(override?: Record<string, Override>) {

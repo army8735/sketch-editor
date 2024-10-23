@@ -88,7 +88,7 @@ class TextPanel extends Panel {
     panel.className = 'text-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
     listener.input.ignoreBlur.push(panel);
     this.initFontList();
 

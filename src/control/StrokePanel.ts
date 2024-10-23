@@ -101,7 +101,7 @@ class StrokePanel extends Panel {
     panel.className = 'stroke-panel';
     panel.style.display = 'none';
     panel.innerHTML = html;
-    this.dom.appendChild(panel);
+    dom.appendChild(panel);
 
     let nodes: Node[] = [];
     let prevs: StrokeStyle[] = [];

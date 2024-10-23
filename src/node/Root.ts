@@ -721,8 +721,12 @@ class Root extends Container implements FrameCallback {
     this.lastPage?.zoomTo(scale, cx, cy);
   }
 
+  zoomActual() {
+    return this.lastPage?.zoomActual();
+  }
+
   zoomFit() {
-    this.lastPage?.zoomFit();
+    return this.lastPage?.zoomFit();
   }
 
   async toSketchFile(filter?: (node: Node) => boolean): Promise<JSZip> {
