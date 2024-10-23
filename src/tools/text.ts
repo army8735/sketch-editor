@@ -86,7 +86,7 @@ function putInfo(
   if (!letterSpacing.includes(ls)) {
     letterSpacing.push(ls);
   }
-  const auto = isRich ? lh2 === 0 : lh.u === StyleUnit.AUTO;
+  const auto = isRich ? !lh2 : lh.u === StyleUnit.AUTO;
   if (!autoLineHeight.includes(auto)) {
     autoLineHeight.push(auto);
   }
