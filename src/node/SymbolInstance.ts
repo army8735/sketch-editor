@@ -9,7 +9,7 @@ class SymbolInstance extends Group {
 
   constructor(props: SymbolInstanceProps, symbolMaster: SymbolMaster) {
     const hash: Record<string, Override> = {};
-    const overrideValues = props.overrideValues;
+    const overrideValues = props.overrideValues || [];
     overrideValues.forEach(item => {
       const [uuid, property] = item.name.split('_');
       hash[uuid] = {

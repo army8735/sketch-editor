@@ -813,7 +813,7 @@ class Root extends Container implements FrameCallback {
       do_objectID: props.uuid || uuid.v4(),
       assets: {
         _class: 'assetCollection',
-        do_objectID: props.assets.uuid || uuid.v4(),
+        do_objectID: props.assets?.uuid || uuid.v4(),
         colorAssets: [],
         gradientAssets: [],
         images: [],
@@ -829,12 +829,12 @@ class Root extends Container implements FrameCallback {
       foreignSwatches: [],
       layerStyles: {
         _class: 'sharedStyleContainer',
-        do_objectID: props.layerStyles.uuid || uuid.v4(),
+        do_objectID: props.layerStyles?.uuid || uuid.v4(),
         objects: [],
       },
       layerTextStyles: {
         _class: 'sharedTextStyleContainer',
-        do_objectID: props.layerTextStyles.uuid || uuid.v4(),
+        do_objectID: props.layerTextStyles?.uuid || uuid.v4(),
         objects: [],
       },
       perDocumentLibraries: [],

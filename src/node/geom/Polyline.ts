@@ -772,8 +772,8 @@ class Polyline extends Geom {
     let baseX = 0,
       baseY = 0;
     if (!this.artBoard) {
-      baseX = (this.page?.props as PageProps).rule.baseX;
-      baseY = (this.page?.props as PageProps).rule.baseY;
+      baseX = (this.page?.props as PageProps).rule?.baseX || 0;
+      baseY = (this.page?.props as PageProps).rule?.baseY || 0;
     }
     points.forEach((point) => {
       if (list.indexOf(point) === -1) {

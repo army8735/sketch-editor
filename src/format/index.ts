@@ -185,20 +185,20 @@ export type Props = {
 
 export type RootProps = Props & {
   dpi: number;
-  assets: {
+  assets?: {
     uuid: string;
   };
-  layerStyles: {
+  layerStyles?: {
     uuid: string;
   };
-  layerTextStyles: {
+  layerTextStyles?: {
     uuid: string;
   };
   contextAttributes: any,
 };
 
 export type PageProps = Props & {
-  rule: {
+  rule?: {
     baseX: number;
     baseY: number;
   };
@@ -212,19 +212,19 @@ export type BitmapProps = Props & {
 };
 
 export type ArtBoardProps = Props & {
-  hasBackgroundColor: boolean;
-  resizesContent: boolean;
-  includeBackgroundColorInExport: boolean;
+  hasBackgroundColor?: boolean;
+  resizesContent?: boolean;
+  includeBackgroundColorInExport?: boolean;
 };
 
 export type SymbolMasterProps = ArtBoardProps & {
   symbolId: string;
-  includeBackgroundColorInInstance: boolean;
+  includeBackgroundColorInInstance?: boolean;
 };
 
 export type SymbolInstanceProps = Props & {
   symbolId: string;
-  overrideValues: { name: string; value: string }[];
+  overrideValues?: { name: string; value: string }[];
 };
 
 export type TextProps = Props & {
@@ -239,11 +239,11 @@ export type Rich = {
   fontSize: number;
   fontWeight: number | string; // 用不到，只会改postscriptName
   fontStyle: string; // 同
-  lineHeight: number;
+  lineHeight?: number;
   textAlign: TEXT_ALIGN;
   textDecoration: TEXT_DECORATION[];
-  letterSpacing: number;
-  paragraphSpacing: number;
+  letterSpacing?: number;
+  paragraphSpacing?: number;
   color: number[];
 };
 
@@ -253,8 +253,8 @@ export type PolylineProps = Props & {
   constrainProportions: boolean;
   fixedRadius: number;
   pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
-  isRectangle: boolean;
-  isOval: boolean;
+  isRectangle?: boolean;
+  isOval?: boolean;
 };
 
 export type ShapeGroupProps = Props & {

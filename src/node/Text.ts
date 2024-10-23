@@ -327,21 +327,16 @@ class Text extends Node {
     // 第一个肯定要设置测量font
     if (rich.length) {
       const first = rich[0];
-      letterSpacing = first.letterSpacing;
-      paragraphSpacing = first.paragraphSpacing;
+      letterSpacing = first.letterSpacing || 0;
+      paragraphSpacing = first.paragraphSpacing || 0;
       perW = first.fontSize * 0.8 + letterSpacing;
-      lineHeight = first.lineHeight;
-      baseline = getBaseline(first);
-      contentArea = getContentArea(first);
+      lineHeight = first.lineHeight || calNormalLineHeight(first);
+      baseline = getBaseline(first, lineHeight);
+      contentArea = getContentArea(first, lineHeight);
       fontFamily = first.fontFamily;
       fontSize = first.fontSize;
       color = color2rgbaStr(first.color);
       textDecoration = first.textDecoration || [];
-      if (!lineHeight) {
-        lineHeight = calNormalLineHeight(first);
-        baseline += lineHeight * 0.5;
-        contentArea += lineHeight * 0.5;
-      }
       ctx.font = setFontStyle(first);
       // @ts-ignore
       ctx.letterSpacing = letterSpacing + 'px';
@@ -351,18 +346,13 @@ class Text extends Node {
       letterSpacing = computedStyle.letterSpacing;
       paragraphSpacing = computedStyle.paragraphSpacing;
       perW = computedStyle.fontWeight * 0.8 + letterSpacing;
-      lineHeight = computedStyle.lineHeight;
-      baseline = getBaseline(computedStyle);
-      contentArea = getContentArea(computedStyle);
+      lineHeight = computedStyle.lineHeight || calNormalLineHeight(computedStyle);
+      baseline = getBaseline(computedStyle, lineHeight);
+      contentArea = getContentArea(computedStyle, lineHeight);
       fontFamily = computedStyle.fontFamily;
       fontSize = computedStyle.fontSize;
       color = color2rgbaStr(computedStyle.color);
       textDecoration = computedStyle.textDecoration || [];
-      if (!lineHeight) {
-        lineHeight = calNormalLineHeight(computedStyle);
-        baseline += lineHeight * 0.5;
-        contentArea += lineHeight * 0.5;
-      }
       ctx.font = setFontStyle(computedStyle);
       // @ts-ignore
       ctx.letterSpacing = letterSpacing + 'px';
@@ -378,21 +368,16 @@ class Text extends Node {
       // 每串富文本重置font测量
       if (i && setFontIndex) {
         const cur = rich[setFontIndex];
-        letterSpacing = cur.letterSpacing;
-        paragraphSpacing = cur.paragraphSpacing;
+        letterSpacing = cur.letterSpacing || 0;
+        paragraphSpacing = cur.paragraphSpacing || 0;
         perW = cur.fontSize * 0.8 + letterSpacing;
-        lineHeight = cur.lineHeight;
-        baseline = getBaseline(cur);
-        contentArea = getContentArea(cur);
+        lineHeight = cur.lineHeight || calNormalLineHeight(cur);
+        baseline = getBaseline(cur, lineHeight);
+        contentArea = getContentArea(cur, lineHeight);
         fontFamily = cur.fontFamily;
         fontSize = cur.fontSize;
         color = color2rgbaStr(cur.color);
         textDecoration = cur.textDecoration || [];
-        if (!lineHeight) {
-          lineHeight = calNormalLineHeight(cur);
-          baseline += lineHeight * 0.5;
-          contentArea += lineHeight * 0.5;
-        }
         ctx.font = setFontStyle(cur);
         // @ts-ignore
         ctx.letterSpacing = letterSpacing + 'px';
@@ -664,9 +649,6 @@ class Text extends Node {
         }
       }
     }
-    // 富文本每串不同的需要设置字体颜色
-    const SET_COLOR_INDEX: { index: number; color: string }[] = [];
-    let color: string;
     // 如果有fill，原本的颜色失效，sketch多个fill还将忽略颜色的alpha，这里都忽略
     let hasFill = false;
     const {
