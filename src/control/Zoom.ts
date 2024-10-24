@@ -13,6 +13,7 @@ class Zoom {
     this.listener = listener;
     const select = document.createElement('select');
     select.innerHTML = `
+      <option value="" disabled="disabled">请选择</option>
       <option value="up">放大</option>
       <option value="down">缩小</option>
       <option value="actual">实际尺寸</option>

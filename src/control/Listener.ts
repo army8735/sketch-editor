@@ -1103,7 +1103,7 @@ export default class Listener extends Event {
       }
       const x = (e.clientX - this.originX) * dpi / width;
       const y = (e.clientY - this.originY) * dpi / height;
-      let scale = page.getZoom();
+      let scale = page.getZoom(true);
       // 最后缩小时防止太快
       if (scale < 1) {
         sc *= scale;
