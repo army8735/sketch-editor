@@ -224,7 +224,7 @@ export type SymbolMasterProps = ArtBoardProps & {
 
 export type SymbolInstanceProps = Props & {
   symbolId: string;
-  overrideValues?: { name: string; value: string }[];
+  overrideValues?: Record<string, Override[]>;
 };
 
 export type TextProps = Props & {
@@ -305,7 +305,7 @@ export enum TAG_NAME {
 }
 
 export type Override = {
-  property: string;
+  key: string[];
   value: string;
 };
 

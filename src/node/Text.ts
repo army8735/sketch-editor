@@ -3225,14 +3225,16 @@ class Text extends Node {
     return res;
   }
 
-  override clone(override?: Record<string, Override>) {
+  override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     const oldUUid = props.uuid;
     if (override && override.hasOwnProperty(oldUUid)) {
-      const { property, value } = override[oldUUid];
-      if (property === 'stringValue') {
-        this._content = value;
-      }
+      override[oldUUid].forEach(item => {
+        const { key, value } = item;
+        if (key[0] === 'content') {
+          this._content = value;
+        }
+      });
     }
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;

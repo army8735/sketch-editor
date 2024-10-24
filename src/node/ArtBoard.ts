@@ -196,7 +196,7 @@ class ArtBoard extends Container {
     gl.useProgram(programs.program);
   }
 
-  override clone(override?: Record<string, Override>) {
+  override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;

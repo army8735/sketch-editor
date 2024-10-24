@@ -8,23 +8,15 @@ class SymbolInstance extends Group {
   symbolMaster: SymbolMaster;
 
   constructor(props: SymbolInstanceProps, symbolMaster: SymbolMaster) {
-    const hash: Record<string, Override> = {};
-    const overrideValues = props.overrideValues || [];
-    overrideValues.forEach(item => {
-      const [uuid, property] = item.name.split('_');
-      hash[uuid] = {
-        property,
-        value: item.value,
-      };
-    });
-    super(props, symbolMaster.children.map(item => item.clone(hash)));
+    const overrideValues = props.overrideValues || {};
+    super(props, symbolMaster.children.map(item => item.clone(overrideValues)));
     this.isSymbolInstance = true;
     this.symbolMaster = symbolMaster;
     this.symbolInstance = this;
     symbolMaster.addSymbolInstance(this);
   }
 
-  override clone(override?: Record<string, Override>) {
+  override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;

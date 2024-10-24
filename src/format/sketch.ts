@@ -12,7 +12,7 @@ import {
   JShapeGroup,
   JSymbolInstance,
   JSymbolMaster,
-  JText,
+  JText, Override,
   Point,
   Rich,
   TAG_NAME,
@@ -522,6 +522,7 @@ async function convertItem(
       fillEnable,
       fillOpacity,
     } = await geomStyle(layer, opt);
+    const overrideValues = await convertOverrideValues(layer.overrideValues, opt);
     return {
       tagName: TAG_NAME.SYMBOL_INSTANCE,
       props: {
@@ -530,12 +531,7 @@ async function convertItem(
         index,
         constrainProportions,
         symbolId: layer.symbolID,
-        overrideValues: layer.overrideValues.map(item => {
-          return {
-            name: item.overrideName as string,
-            value: item.value as string,
-          };
-        }),
+        overrideValues,
         style: {
           left,
           top,
@@ -1104,6 +1100,64 @@ async function convertItem(
   inject.error(layer);
 }
 
+async function convertFill(item: SketchFormat.Fill, opt: Opt) {
+  if (item.fillType === SketchFormat.FillType.Pattern) {
+    let url = '';
+    const image = item.image!;
+    if (image._ref_class === 'MSImageData') {
+      url = await readImageFile(image._ref, opt);
+    }
+    else if ((image._ref_class as string) === 'MSNetworkImage') {
+      url = image._ref;
+    }
+    const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
+    const scale = item.patternTileScale;
+    return `url(${url}) ${type} ${scale * 100}%`;
+  }
+  else if (item.fillType === SketchFormat.FillType.Gradient) {
+    const g = item.gradient;
+    const from = parseStrPoint(g.from);
+    const to = parseStrPoint(g.to);
+    const stops = g.stops.map((item) => {
+      const color = color2rgbaStr([
+        Math.floor(item.color.red * 255),
+        Math.floor(item.color.green * 255),
+        Math.floor(item.color.blue * 255),
+        item.color.alpha,
+      ]);
+      return color + ' ' + item.position * 100 + '%';
+    });
+    if (g.gradientType === SketchFormat.GradientType.Linear) {
+      return
+        `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+          ',',
+        )})`;
+    }
+    else if (g.gradientType === SketchFormat.GradientType.Radial) {
+      const ellipseLength = g.elipseLength;
+      return
+        `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`;
+    }
+    else if (g.gradientType === SketchFormat.GradientType.Angular) {
+      return
+        `conicGradient(${0.5} ${0.5} ${0.5} ${0.5},${stops.join(
+          ',',
+        )})`;
+    }
+    else {
+      throw new Error('Unknown gradient');
+    }
+  }
+  else {
+    return [
+      Math.floor(item.color.red * 255),
+      Math.floor(item.color.green * 255),
+      Math.floor(item.color.blue * 255),
+      item.color.alpha,
+    ];
+  }
+}
+
 async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
   const {
     borders,
@@ -1120,64 +1174,8 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
   if (fills) {
     for (let i = 0, len = fills.length; i < len; i++) {
       const item = fills[i];
-      if (item.fillType === SketchFormat.FillType.Pattern) {
-        let url = '';
-        const image = item.image!;
-        if (image._ref_class === 'MSImageData') {
-          url = await readImageFile(image._ref, opt);
-        }
-        else if ((image._ref_class as string) === 'MSNetworkImage') {
-          url = image._ref;
-        }
-        const type = ['tile', 'fill', 'stretch', 'fit'][item.patternFillType];
-        const scale = item.patternTileScale;
-        fill.push(`url(${url}) ${type} ${scale * 100}%`);
-      }
-      else if (item.fillType === SketchFormat.FillType.Gradient) {
-        const g = item.gradient;
-        const from = parseStrPoint(g.from);
-        const to = parseStrPoint(g.to);
-        const stops = g.stops.map((item) => {
-          const color = color2rgbaStr([
-            Math.floor(item.color.red * 255),
-            Math.floor(item.color.green * 255),
-            Math.floor(item.color.blue * 255),
-            item.color.alpha,
-          ]);
-          return color + ' ' + item.position * 100 + '%';
-        });
-        if (g.gradientType === SketchFormat.GradientType.Linear) {
-          fill.push(
-            `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
-              ',',
-            )})`,
-          );
-        }
-        else if (g.gradientType === SketchFormat.GradientType.Radial) {
-          const ellipseLength = g.elipseLength;
-          fill.push(
-            `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`,
-          );
-        }
-        else if (g.gradientType === SketchFormat.GradientType.Angular) {
-          fill.push(
-            `conicGradient(${0.5} ${0.5} ${0.5} ${0.5},${stops.join(
-              ',',
-            )})`,
-          );
-        }
-        else {
-          throw new Error('Unknown gradient');
-        }
-      }
-      else {
-        fill.push([
-          Math.floor(item.color.red * 255),
-          Math.floor(item.color.green * 255),
-          Math.floor(item.color.blue * 255),
-          item.color.alpha,
-        ]);
-      }
+      const f = await convertFill(item, opt);
+      fill.push(f!);
       fillEnable.push(item.isEnabled);
       fillOpacity.push(item.contextSettings.opacity ?? 1);
       const blend = item.contextSettings.blendMode;
@@ -1459,4 +1457,31 @@ export function toSketchColor(color: number[], obj?: SketchFormat.Color): Sketch
     green: color[1] / 255,
     blue: color[2] / 255,
   };
+}
+
+async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[], opt: Opt) {
+  const hash: Record<string, Override[]> = {};
+  for (let i = 0, len = overrideValues.length; i < len; i++) {
+    const item = overrideValues[i];
+    const [uuid, property] = item.overrideName.split('_');
+    const [type, k] = property.split(':');
+    const key = (k || type).split('-');
+    let value = item.value as string;
+    if (key[0] === 'stringValue') {
+      key[0] = 'content';
+    }
+    else if (key[0] === 'fill') {
+      if (type === 'color') {
+        // @ts-ignore
+        value = await convertFill({ color: value } as SketchFormat.Fill, opt);
+        value = color2rgbaStr(value);
+      }
+    }
+    const o = hash[uuid] = hash[uuid] || [];
+    o.push({
+      key, // 默认开头props.style可省略
+      value,
+    });
+  }
+  return hash;
 }

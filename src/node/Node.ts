@@ -1981,7 +1981,7 @@ class Node extends Event {
     return json;
   }
 
-  clone(override?: Record<string, Override>) {
+  clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;

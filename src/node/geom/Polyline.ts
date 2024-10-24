@@ -5,7 +5,7 @@ import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../.
 import { calPoint, inverse4 } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
-import { color2rgbaStr } from '../../style/css';
+import { color2rgbaInt, color2rgbaStr } from '../../style/css';
 import {
   ComputedGradient,
   ComputedPattern,
@@ -16,7 +16,7 @@ import {
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
-  STROKE_POSITION,
+  STROKE_POSITION, StyleUnit,
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
@@ -848,14 +848,23 @@ class Polyline extends Geom {
     return super.toSvg(scale, this.props.isClosed);
   }
 
-  override clone(override?: Record<string, Override>) {
+  override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
+    const oldUUid = props.uuid;
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;
     const res = new Polyline(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
-    if (override) {
+    if (override && override.hasOwnProperty(oldUUid)) {
+      override[oldUUid].forEach(item => {
+        const { key, value } = item;
+        if (key[0] === 'fill') {
+          const i = parseInt(key[1]) || 0;
+          props.style.fill[i] = value;
+          res.style.fill[i] = { v: color2rgbaInt(value), u: StyleUnit.RGBA };
+        }
+      });
     }
     return res;
   }

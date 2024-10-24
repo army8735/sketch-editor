@@ -6,7 +6,7 @@ import bo from '../../math/bo';
 import { calPoint, isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon, svgPolygon } from '../../refresh/paint';
-import { color2rgbaStr } from '../../style/css';
+import { color2rgbaInt, color2rgbaStr } from '../../style/css';
 import {
   BOOLEAN_OPERATION,
   ComputedGradient,
@@ -832,12 +832,23 @@ class ShapeGroup extends Group {
   }
 
   // @ts-ignore
-  override clone(override?: Record<string, Override>) {
+  override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
+    const oldUUid = props.uuid;
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;
     const res = new ShapeGroup(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
+    if (override && override.hasOwnProperty(oldUUid)) {
+      override[oldUUid].forEach(item => {
+        const { key, value } = item;
+        if (key[0] === 'fill') {
+          const i = parseInt(key[1]) || 0;
+          props.style.fill[i] = value;
+          res.style.fill[i] = { v: color2rgbaInt(value), u: StyleUnit.RGBA };
+        }
+      });
+    }
     return res;
   }
 
