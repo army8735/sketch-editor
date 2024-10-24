@@ -1128,21 +1128,18 @@ async function convertFill(item: SketchFormat.Fill, opt: Opt) {
       return color + ' ' + item.position * 100 + '%';
     });
     if (g.gradientType === SketchFormat.GradientType.Linear) {
-      return
-        `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
-          ',',
-        )})`;
+      return `linearGradient(${from.x} ${from.y} ${to.x} ${to.y},${stops.join(
+        ',',
+      )})`;
     }
     else if (g.gradientType === SketchFormat.GradientType.Radial) {
       const ellipseLength = g.elipseLength;
-      return
-        `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`;
+      return `radialGradient(${from.x} ${from.y} ${to.x} ${to.y} ${ellipseLength},${stops.join(',')})`;
     }
     else if (g.gradientType === SketchFormat.GradientType.Angular) {
-      return
-        `conicGradient(${0.5} ${0.5} ${0.5} ${0.5},${stops.join(
-          ',',
-        )})`;
+      return `conicGradient(${0.5} ${0.5} ${0.5} ${0.5},${stops.join(
+        ',',
+      )})`;
     }
     else {
       throw new Error('Unknown gradient');
