@@ -155,6 +155,14 @@ class Page extends Container {
     return true;
   }
 
+  override getZoom(excludeDpi = false) {
+    let n = this.computedStyle.scaleX;
+    if (!excludeDpi && this.root) {
+      return n * this.root.dpi;
+    }
+    return n;
+  }
+
   override clone(override?: Record<string, Override>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();

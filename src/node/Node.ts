@@ -1572,10 +1572,15 @@ class Node extends Event {
     return false;
   }
 
-  getZoom(excludeDpi = false): number {
-    const n = this.computedStyle.scaleX;
-    if (excludeDpi && this.root) {
-      return n / this.root.dpi;
+  getZoom(excludeDpi = false) {
+    let n = this.computedStyle.scaleX;
+    let p = this.parent;
+    while (p && p !== this.page && !p.isPage) {
+      n *= p.computedStyle.scaleX;
+      p = p.parent;
+    }
+    if (!excludeDpi && this.root) {
+      return n * this.root.dpi;
     }
     return n;
   }

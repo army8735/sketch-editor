@@ -1380,7 +1380,8 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    if ((this.metaKey || isWin && this.ctrlKey) && this.selected.length === 1
+    const metaKey = (this.metaKey || isWin && this.ctrlKey);
+    if (metaKey && this.selected.length === 1
       && !this.selected[0].isSlice && !(this.selected[0] instanceof Slice)) {
       this.select.metaKey(true);
     }
@@ -1390,7 +1391,7 @@ export default class Listener extends Event {
       const y = this.startY * dpi;
       this.hover(x, y);
     }
-    const keyCode = e.keyCode; console.log(keyCode);
+    const keyCode = e.keyCode;
     // backspace/delete
     if (keyCode === 8 || keyCode === 46) {
       const target = e.target as HTMLElement; // 忽略输入时
@@ -1487,7 +1488,7 @@ export default class Listener extends Event {
       }
     }
     // a全选
-    else if (keyCode === 65 && (this.metaKey || isWin && this.ctrlKey)) {
+    else if (keyCode === 65 && metaKey) {
       const target = e.target as HTMLElement;
       // 编辑文字状态特殊处理
       if (this.state === State.EDIT_TEXT && target === this.input.inputEl) {
@@ -1500,8 +1501,18 @@ export default class Listener extends Event {
         this.selectAll();
       }
     }
+    // +
+    else if (keyCode === 187 && metaKey) {
+      e.preventDefault();
+      this.zoom(2);
+    }
+    // -
+    else if (keyCode === 189 && metaKey) {
+      e.preventDefault();
+      this.zoom(0.5);
+    }
     // z，undo/redo
-    else if (keyCode === 90 && (this.metaKey || isWin && this.ctrlKey)) {
+    else if (keyCode === 90 && metaKey) {
       const target = e.target as HTMLElement;
       if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
