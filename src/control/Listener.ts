@@ -1133,19 +1133,14 @@ export default class Listener extends Event {
     this.updateInput();
   }
 
-  zoom(upOrDown = false) {
+  zoom(factor: number) {
     const root = this.root;
     const page = root.getCurPage();
     if (!page) {
       return;
     }
     let scale = page.getZoom(true);
-    if (upOrDown) {
-      scale *= 2;
-    }
-    else {
-      scale *= 0.5;
-    }
+    scale *= factor;
     if (scale > 32) {
       scale = 32;
     }
