@@ -12,6 +12,7 @@
     <input type="file" title="请选择sketch文件" id="file" accept=".sketch"/>
     <label><input type="checkbox" class="tile"/>开启tile</label>
     <label><input type="checkbox" class="debug"/>开启debug</label>
+    <div class="zoom" id="zoom"></div>
     <button id="save">保存</button>
   </div>
   <div class="container">
@@ -101,6 +102,7 @@
         sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
         sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+        sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
       });
     }
   };

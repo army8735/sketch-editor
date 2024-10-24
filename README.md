@@ -44,6 +44,7 @@ sketchEditor
     sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
     sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
     sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+    sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
   });
 ```
 
