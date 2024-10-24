@@ -65,7 +65,7 @@ export default {
           listener.selectAll();
         }
         else if (classList.contains('scale-up') || classList.contains('scale-down')) {
-          listener.zoom(classList.contains('scale-up'));
+          listener.zoom(classList.contains('scale-up') ? 2 : 0.5);
         }
         else if (classList.contains('mask') || classList.contains('outline-mask')) {
           if (canvasDiv.classList.contains('outline')) {
