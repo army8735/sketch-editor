@@ -41,6 +41,7 @@ import RenameCommand from '../history/RenameCommand';
 import LockCommand from '../history/LockCommand';
 import VisibleCommand from '../history/VisibleCommand';
 import { toPrecision } from '../math';
+import Guides from './Guides';
 
 export type ListenerOptions = {
   enabled?: {
@@ -58,6 +59,7 @@ export type ListenerOptions = {
     editText?: boolean; // 进入编辑文字状态如双击
     inputText?: boolean; // 编辑输入文字
     contextMenu?: boolean; // 右键菜单
+    guides?: boolean; // 参考线功能
   };
 };
 
@@ -104,6 +106,7 @@ export default class Listener extends Event {
   mouseDownArtBoard?: ArtBoard;
   mouseDown2ArtBoard?: Node;
   isWin = isWin;
+  guides: Guides;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -148,6 +151,7 @@ export default class Listener extends Event {
 
     this.select = new Select(root, dom);
     this.input = new Input(root, dom, this);
+    this.guides = new Guides(root, dom, this);
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
     dom.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -371,6 +375,7 @@ export default class Listener extends Event {
         const rect = this.select.select.getBoundingClientRect();
         if (x >= rect.left && y >= rect.top && x <= rect.right && y <= rect.bottom) {
           this.prepare();
+          this.guides.initMove(this.select.select, selected);
           return;
         }
       }
@@ -451,6 +456,7 @@ export default class Listener extends Event {
             // 唯一已选节点继续点击，不触发选择事件
             if (selected.length === 1 && selected[0] === node) {
               this.prepare();
+              this.guides.initMove(this.select.select, selected);
               if (this.select.hoverNode) {
                 this.select.hideHover();
                 this.emit(Listener.UN_HOVER_NODE);
@@ -520,6 +526,7 @@ export default class Listener extends Event {
         this.select.metaKey(true);
       }
       this.prepare();
+      this.guides.initMove(this.select.select, selected);
       this.emit(Listener.SELECT_NODE, selected.slice(0));
     }
   }
@@ -713,6 +720,7 @@ export default class Listener extends Event {
           }
         }
         else {
+          this.select.select.classList.add('move');
           // 水平/垂直
           if (this.shiftKey) {
             if (dx2 >= dy2) {
@@ -720,6 +728,17 @@ export default class Listener extends Event {
             }
             else {
               this.dx = dx2 = 0;
+            }
+          }
+          // 吸附参考线功能
+          if (!this.options.disabled?.guides) {
+            const meta = this.metaKey || isWin && this.ctrlKey;
+            if (!meta) {
+              const snap = this.guides.snapMove(dx2, dy2);
+              if (snap) {
+                dx2 += snap.x;
+                dy2 += snap.y;
+              }
             }
           }
           selected.forEach((node, i) => {
@@ -919,6 +938,8 @@ export default class Listener extends Event {
         this.select.hideFrame();
       }
       else {
+        this.guides.hide();
+        this.select.select.classList.remove('move');
         const { dx, dy } = this;
         const data: MoveData[] = [];
         selected.forEach((node, i) => {

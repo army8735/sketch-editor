@@ -18,6 +18,7 @@ import ColorAdjustPanel from './ColorAdjustPanel';
 import Zoom from './Zoom';
 import picker from './picker';
 import contextMenu from './contextMenu';
+import Guides from './Guides';
 
 export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
   return new PageList(root, dom, listener);
@@ -109,4 +110,5 @@ export default {
   Zoom,
   picker,
   contextMenu,
+  Guides,
 };

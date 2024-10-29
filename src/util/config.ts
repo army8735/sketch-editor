@@ -28,4 +28,5 @@ export default {
   },
   treeLvPadding: 16, // 节点tree列表每级缩进px
   historyTime: 1000, // 添加历史记录时命令之间是否合并的时间差阈值
+  guidesSnap: 10, // 参考线吸附阈值，2条参考线之间至少距离阈值
 };

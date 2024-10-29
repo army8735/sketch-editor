@@ -9,6 +9,7 @@ import Text from '../node/Text';
 import { isPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { VISIBILITY } from '../style/define';
+import config from '../util/config';
 
 function getTopShapeGroup(node: Geom | ShapeGroup) {
   const root = node.root;
@@ -328,9 +329,137 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
   return [];
 }
 
+export type NodeGuide = {
+  node: Node;
+  n: number;
+  r: GuideRect;
+};
+
+export type GuideRect = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  center: number;
+  middle: number;
+};
+
+// 递归遍历，分别从x/y上看，根据config.guidesSnap距离内的不再继续下钻遍历
+function scanGuides(node: Node, x: NodeGuide[], y: NodeGuide[], threshold: number, w: number, h: number, ignore?: Node[]) {
+  const { left, right, top, bottom } = node.getBoundingClientRect();
+  // 屏幕内才有效，否则可以忽略包含递归孩子
+  if (left >= w || right <= 0 || top >= h || bottom <= 0) {
+    return;
+  }
+  const center = (left + right) * 0.5;
+  const middle = (top + bottom) * 0.5;
+  const r = {
+    left,
+    right,
+    top,
+    bottom,
+    center,
+    middle,
+  };
+  // 6个值如果没有吸附冲突都加入
+  const i1 = search2(left, x);
+  if (i1 > -1
+    && (!x[i1 - 1] || Math.abs(x[i1 - 1].n - left) >= threshold)
+    && (!x[i1] || Math.abs(x[i1].n - left) >= threshold)) {
+    x.splice(i1, 0, { node, n: left, r });
+  }
+  const i2 = search2(right, x);
+  if (i2 > -1
+    && (!x[i2 - 1] || Math.abs(x[i2 - 1].n - right) >= threshold)
+    && (!x[i2] || Math.abs(x[i2].n - right) >= threshold)) {
+    x.splice(i2, 0, { node, n: right, r });
+  }
+  const i3 = search2(center, x);
+  if (i3 > -1
+    && (!x[i3 - 1] || Math.abs(x[i3 - 1].n - center) >= threshold)
+    && (!x[i3] || Math.abs(x[i3].n - center) >= threshold)) {
+    x.splice(i3, 0, { node, n: center, r });
+  }
+  const i4 = search2(top, y);
+  if (i4 > -1
+    && (!y[i4 - 1] || Math.abs(y[i4 - 1].n - top) >= threshold)
+    && (!y[i4] || Math.abs(y[i4].n - top) >= threshold)) {
+    y.splice(i4, 0, { node, n: top, r });
+  }
+  const i5 = search2(bottom, y);
+  if (i5 > -1
+    && (!y[i5 - 1] || Math.abs(y[i5 - 1].n - bottom) >= threshold)
+    && (!y[i5] || Math.abs(y[i5].n - bottom) >= threshold)) {
+    y.splice(i5, 0, { node, n: bottom, r });
+  }
+  const i6 = search2(middle, y);
+  if (i6 > -1
+    && (!y[i6 - 1] || Math.abs(y[i6 - 1].n - middle) >= threshold)
+    && (!y[i6] || Math.abs(y[i6].n - middle) >= threshold)) {
+    y.splice(i6, 0, { node, n: middle, r });
+  }
+  if (node instanceof Group) {
+    node.children.forEach((item) => {
+      if (!ignore || !ignore.includes(item)) {
+        scanGuides(item, x, y, threshold, w, h, ignore);
+      }
+    });
+  }
+}
+
+export function search2(n: number, list: NodeGuide[]) {
+  if (!list.length) {
+    return 0;
+  }
+  if (n < list[0].n) {
+    return 0;
+  }
+  const len = list.length;
+  if (n > list[len - 1].n) {
+    return len;
+  }
+  let i = 0;
+  let j = len;
+  while (i < j) {
+    if (i === j - 1) {
+      return j;
+    }
+    const mid = Math.round((i + j) * 0.5);
+    if (n === list[mid].n) {
+      return mid + 1;
+    }
+    else if (n > list[mid].n) {
+      i = mid;
+    }
+    else {
+      j = mid;
+    }
+  }
+  return i;
+}
+
+export function getGuidesNodes(root: Root, ignore?: Node[]) {
+  const res: { x: NodeGuide[], y: NodeGuide[] } = { x: [], y: [] };
+  if (root.isDestroyed) {
+    return res;
+  }
+  const page = root.lastPage;
+  if (page) {
+    const threshold = Math.max(0, config.guidesSnap * root.dpi);
+    page.children.forEach((item) => {
+      if (!ignore || !ignore.includes(item)) {
+        scanGuides(item, res.x, res.y, threshold, root.width, root.height, ignore);
+      }
+    });
+  }
+  return res;
+}
+
 export default {
   getNodeByPoint,
   getOverlayNodeByPoint,
   getOverlayArtBoardByPoint,
   getFrameNodes,
+  getGuidesNodes,
+  search2,
 };
