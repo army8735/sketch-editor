@@ -62,11 +62,10 @@ class Guides {
     const { x, y } = getGuidesNodes(this.root, ignore);
     this.xs = x;
     this.ys = y;
-    const dpi = this.root.dpi;
-    const left = parseFloat(dom.style.left) * dpi;
-    const top = parseFloat(dom.style.top) * dpi;
-    const width = parseFloat(dom.style.width) * dpi;
-    const height = parseFloat(dom.style.height) * dpi;
+    const left = parseFloat(dom.style.left);
+    const top = parseFloat(dom.style.top);
+    const width = parseFloat(dom.style.width);
+    const height = parseFloat(dom.style.height);
     const right = left + width;
     const center = (left + right) * 0.5;
     const bottom = top + height;
@@ -81,14 +80,15 @@ class Guides {
     };
   }
 
-  snapMove(dx: number, dy: number) {
+  snapMove(dx: number, dy: number, factor: number) {
     let x = 0;
     let y = 0;
     let ngX;
     let ngY;
     let has = false;
     const { xs, ys } = this;
-    const threshold = Math.max(0, config.guidesSnap * this.root.dpi);
+    const threshold = Math.max(0, config.guidesSnap);
+    // const factor = this.root.getCurPageZoom() / this.root.dpi;
     // 当前位置寻找位于哪条参考线索引
     let { left, right, top, bottom, center, middle } = this.move;
     left += dx;
@@ -143,10 +143,10 @@ class Guides {
     // 距离显示，需要节点在目标外
     if (ngX) {
       if (top > ngX.r.bottom) {
-        this.showDistanceV(ngX.r.bottom, top);
+        this.showDistanceV(ngX.r.bottom, top, factor);
       }
       else if (bottom < ngX.r.top) {
-        this.showDistanceV(bottom, ngX.r.top);
+        this.showDistanceV(bottom, ngX.r.top, factor);
       }
       else {
         this.hideDistanceV();
@@ -157,10 +157,10 @@ class Guides {
     }
     if (ngY) {
       if (left > ngY.r.right) {
-        this.showDistanceH(ngY.r.right, left);
+        this.showDistanceH(ngY.r.right, left, factor);
       }
       else if (right < ngY.r.left) {
-        this.showDistanceH(right, ngY.r.left);
+        this.showDistanceH(right, ngY.r.left, factor);
       }
       else {
         this.hideDistanceH();
@@ -175,42 +175,38 @@ class Guides {
   }
 
   showLineH(n: number, ng: NodeGuide) {
-    const dpi = this.root.dpi;
     const style = this.lineH.style;
-    style.top = n / dpi + 'px';
-    style.left = ng.r.left / dpi + 'px';
-    style.width = (ng.r.right - ng.r.left) / dpi + 'px';
+    style.top = n + 'px';
+    style.left = ng.r.left + 'px';
+    style.width = (ng.r.right - ng.r.left) + 'px';
     style.display = 'block';
   }
 
   showLineV(n: number, ng: NodeGuide) {
-    const dpi = this.root.dpi;
     const style = this.lineV.style;
-    style.left = n / dpi + 'px';
-    style.top = ng.r.top / dpi + 'px';
-    style.height = (ng.r.bottom - ng.r.top) / dpi + 'px';
+    style.left = n + 'px';
+    style.top = ng.r.top + 'px';
+    style.height = (ng.r.bottom - ng.r.top) + 'px';
     style.display = 'block';
   }
 
-  showDistanceH(x1: number, x2: number) {
-    const dpi = this.root.dpi;
+  showDistanceH(x1: number, x2: number, factor: number) {
     const style = this.distanceH.style;
     const w = Math.abs(x1 - x2);
-    this.distanceH.querySelector('span')!.innerHTML = toPrecision(w, 2).toString();
+    this.distanceH.querySelector('span')!.innerHTML = toPrecision(w * factor, 2).toString();
     style.top = this.lineH.style.top;
-    style.left = Math.min(x1, x2) / dpi + 'px';
-    style.width = w / dpi + 'px';
+    style.left = Math.min(x1, x2) + 'px';
+    style.width = w + 'px';
     style.display = 'block';
   }
 
-  showDistanceV(y1: number, y2: number) {
-    const dpi = this.root.dpi;
+  showDistanceV(y1: number, y2: number, factor: number) {
     const style = this.distanceV.style;
     const h = Math.abs(y1 - y2);
-    this.distanceV.querySelector('span')!.innerHTML = toPrecision(h, 2).toString();
+    this.distanceV.querySelector('span')!.innerHTML = toPrecision(h * factor, 2).toString();
     style.left = this.lineV.style.left;
-    style.top = Math.min(y1, y2) / dpi + 'px';
-    style.height = h / dpi + 'px';
+    style.top = Math.min(y1, y2) + 'px';
+    style.height = h + 'px';
     style.display = 'block';
   }
 

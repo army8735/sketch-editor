@@ -344,9 +344,11 @@ export type GuideRect = {
   middle: number;
 };
 
-// 递归遍历，分别从x/y上看，根据config.guidesSnap距离内的不再继续下钻遍历
-function scanGuides(node: Node, x: NodeGuide[], y: NodeGuide[], threshold: number, w: number, h: number, ignore?: Node[]) {
-  const { left, right, top, bottom } = node.getBoundingClientRect();
+// 递归遍历，分别从x/y上看，根据config.guidesSnap距离内的不再继续下钻遍历，可视html单位基准不考虑dpi
+function scanGuides(node: Node, x: NodeGuide[], y: NodeGuide[], threshold: number, w: number, h: number, dpi: number, ignore?: Node[]) {
+  const { left, right, top, bottom } = node.getBoundingClientRect({
+    excludeDpi: true,
+  });
   // 屏幕内才有效，否则可以忽略包含递归孩子
   if (left >= w || right <= 0 || top >= h || bottom <= 0) {
     return;
@@ -401,7 +403,7 @@ function scanGuides(node: Node, x: NodeGuide[], y: NodeGuide[], threshold: numbe
   if (node instanceof Group) {
     node.children.forEach((item) => {
       if (!ignore || !ignore.includes(item)) {
-        scanGuides(item, x, y, threshold, w, h, ignore);
+        scanGuides(item, x, y, threshold, w, h, dpi, ignore);
       }
     });
   }
@@ -445,10 +447,10 @@ export function getGuidesNodes(root: Root, ignore?: Node[]) {
   }
   const page = root.lastPage;
   if (page) {
-    const threshold = Math.max(0, config.guidesSnap * root.dpi);
+    const threshold = Math.max(0, config.guidesSnap);
     page.children.forEach((item) => {
       if (!ignore || !ignore.includes(item)) {
-        scanGuides(item, res.x, res.y, threshold, root.width, root.height, ignore);
+        scanGuides(item, res.x, res.y, threshold, root.width, root.height, root.dpi, ignore);
       }
     });
   }

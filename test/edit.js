@@ -169,7 +169,7 @@ fetch('./sketch.sketch')
           canvas,
           dpi,
         });
-        listener = sketchEditor.control.initCanvasControl(root, $canvasC, {
+        listener = sketchEditor.control.initCanvasControl(root, $canvasC, window.disabled || {
           disabled: {
             guides: true,
           },
@@ -178,16 +178,6 @@ fetch('./sketch.sketch')
         sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
 
-        // $canvasC.addEventListener('mousedown', (e) => {
-        //   if (e.button === 1) {
-        //     e.preventDefault();
-        //     toDataURL();
-        //   }
-        //   else if (e.button === 2) {
-        //     e.preventDefault();
-        //     toStyle();
-        //   }
-        // });
         const button1 = document.querySelector('#button1');
         const button2 = document.querySelector('#button2');
         const button3 = document.querySelector('#button3');

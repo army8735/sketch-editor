@@ -1213,6 +1213,7 @@ class Node extends Event {
   getBoundingClientRect(opt?: {
     includeBbox?: boolean,
     excludeRotate?: boolean,
+    excludeDpi?: boolean,
   }) {
     const bbox = opt?.includeBbox
       ? this._bbox || this.bbox
@@ -1231,21 +1232,22 @@ class Node extends Event {
     else {
       t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
     }
-    const x1 = t.x1;
-    const y1 = t.y1;
-    const x2 = t.x2;
-    const y2 = t.y2;
-    const x3 = t.x3;
-    const y3 = t.y3;
-    const x4 = t.x4;
-    const y4 = t.y4;
+    const dpi = this.root?.dpi || 1;
+    const x1 = opt?.excludeDpi ? t.x1 / dpi : t.x1;
+    const y1 = opt?.excludeDpi ? t.y1 / dpi : t.y1;
+    const x2 = opt?.excludeDpi ? t.x2 / dpi : t.x2;
+    const y2 = opt?.excludeDpi ? t.y2 / dpi : t.y2;
+    const x3 = opt?.excludeDpi ? t.x3 / dpi : t.x3;
+    const y3 = opt?.excludeDpi ? t.y3 / dpi : t.y3;
+    const x4 = opt?.excludeDpi ? t.x4 / dpi : t.x4;
+    const y4 = opt?.excludeDpi ? t.y4 / dpi : t.y4;
     return {
       left: Math.min(x1, x2, x3, x4),
       top: Math.min(y1, y2, y3, y4),
       right: Math.max(x1, x2, x3, x4),
       bottom: Math.max(y1, y2, y3, y4),
-      width: this.width * this.root!.dpi,
-      height: this.height * this.root!.dpi,
+      width: this.width * (opt?.excludeDpi ? 1 : dpi),
+      height: this.height * (opt?.excludeDpi ? 1 : dpi),
       points: [
         {
           x: x1,

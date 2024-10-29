@@ -582,11 +582,11 @@ export default class Listener extends Event {
       return;
     }
     const dpi = root.dpi;
-    const dx = e.clientX - this.startX; // 外部页面单位
-    const dy = e.clientY - this.startY;
+    let dx = e.clientX - this.startX; // 外部页面单位
+    let dy = e.clientY - this.startY;
     const zoom = page.getZoom();
-    let dx2 = this.dx = Math.round((dx / zoom) * dpi); // 画布内sketch单位
-    let dy2 = this.dy = Math.round((dy / zoom) * dpi);
+    let dx2 = this.dx = Math.round(dx * dpi / zoom); // 画布内sketch单位
+    let dy2 = this.dy = Math.round(dy * dpi / zoom);
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
@@ -724,20 +724,21 @@ export default class Listener extends Event {
           // 水平/垂直
           if (this.shiftKey) {
             if (dx2 >= dy2) {
-              this.dy = dy2 = 0;
+              this.dy = dy = dy2 = 0;
             }
             else {
-              this.dx = dx2 = 0;
+              this.dx = dx = dx2 = 0;
             }
           }
           // 吸附参考线功能
           if (!this.options.disabled?.guides) {
             const meta = this.metaKey || isWin && this.ctrlKey;
             if (!meta) {
-              const snap = this.guides.snapMove(dx2, dy2);
+              console.log(this.shiftKey, dx, dy);
+              const snap = this.guides.snapMove(dx, dy, dpi / zoom);
               if (snap) {
-                dx2 += snap.x;
-                dy2 += snap.y;
+                dx2 += snap.x * dpi / zoom;
+                dy2 += snap.y * dpi / zoom;
               }
             }
           }
