@@ -723,7 +723,7 @@ export default class Listener extends Event {
           this.select.select.classList.add('move');
           // 水平/垂直
           if (this.shiftKey) {
-            if (dx2 >= dy2) {
+            if (Math.abs(dx2) >= Math.abs(dy2)) {
               this.dy = dy = dy2 = 0;
             }
             else {
@@ -734,12 +734,14 @@ export default class Listener extends Event {
           if (!this.options.disabled?.guides) {
             const meta = this.metaKey || isWin && this.ctrlKey;
             if (!meta) {
-              console.log(this.shiftKey, dx, dy);
               const snap = this.guides.snapMove(dx, dy, dpi / zoom);
               if (snap) {
-                dx2 += snap.x * dpi / zoom;
-                dy2 += snap.y * dpi / zoom;
+                this.dx = dx2 += snap.x * dpi / zoom;
+                this.dy = dy2 += snap.y * dpi / zoom;
               }
+            }
+            else {
+              this.guides.hide();
             }
           }
           selected.forEach((node, i) => {
