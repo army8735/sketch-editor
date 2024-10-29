@@ -338,7 +338,7 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
 // 特殊优化，凸多边形是否和无旋转矩形重叠
 export function isPolygonOverlapRect(
   x1: number, y1: number, x2: number, y2: number,
-  points: Array<{ x: number, y: number }>, includeIntersect = false,
+  points: { x: number, y: number }[], includeIntersect = false,
 ) {
   if (x1 > x2) {
     [x1, x2] = [x2, x1];
@@ -389,13 +389,27 @@ export function isPolygonOverlapRect(
   }
   // 部分重合的情况
   if (allInX) {
-    if (ya >= y1 && ya <= y2 || yb >= y1 && yb <= y2) {
-      return true;
+    if (includeIntersect) {
+      if (ya >= y1 && ya <= y2 || yb >= y1 && yb <= y2) {
+        return true;
+      }
+    }
+    else {
+      if (ya > y1 && ya < y2 || yb > y1 && yb < y2) {
+        return true;
+      }
     }
   }
   if (allInY) {
-    if (xa >= x1 && xa <= x2 || xb >= x1 && xb <= x2) {
-      return true;
+    if (includeIntersect) {
+      if (xa >= x1 && xa <= x2 || xb >= x1 && xb <= x2) {
+        return true;
+      }
+    }
+    else {
+      if (xa > x1 && xa < x2 || xb > x1 && xb < x2) {
+        return true;
+      }
     }
   }
   // 在矩形外可提前跳出
