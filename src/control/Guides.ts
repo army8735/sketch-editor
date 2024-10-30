@@ -12,8 +12,8 @@ class Guides {
   xs: NodeGuide[];
   ys: NodeGuide[];
   move: GuideRect;
-  lineH: HTMLElement;
-  lineV: HTMLElement;
+  lineH: HTMLElement[];
+  lineV: HTMLElement[];
   distanceH: HTMLElement;
   distanceV: HTMLElement;
 
@@ -33,15 +33,8 @@ class Guides {
       middle: 0,
     };
 
-    this.lineH = document.createElement('div');
-    this.lineH.className = 'line-h';
-    this.lineH.style.display = 'none';
-    this.dom.appendChild(this.lineH);
-
-    this.lineV = document.createElement('div');
-    this.lineV.className = 'line-v';
-    this.lineV.style.display = 'none';
-    this.dom.appendChild(this.lineV);
+    this.lineH = [];
+    this.lineV = [];
 
     this.distanceH = document.createElement('div');
     this.distanceH.className = 'distance-h';
@@ -88,7 +81,6 @@ class Guides {
     let has = false;
     const { xs, ys } = this;
     const threshold = Math.max(0, config.guidesSnap);
-    // const factor = this.root.getCurPageZoom() / this.root.dpi;
     // 当前位置寻找位于哪条参考线索引
     let { left, right, top, bottom, center, middle } = this.move;
     left += dx;
@@ -110,8 +102,17 @@ class Guides {
       x = d;
       left += x;
       right += x;
-      this.showLineV(ng.n, ng);
       ngX = ng;
+      this.showLineV(ng.n, ng, 0);
+      for (let i = 1, len = listX.length; i < len; i++) {
+        const item = listX[i]!;
+        if (item.d === d) {
+          this.showLineV(item.ng.n, item.ng, i);
+        }
+        else {
+          break;
+        }
+      }
     }
     else {
       this.hideLineV();
@@ -135,7 +136,16 @@ class Guides {
       top += y;
       bottom += y;
       ngY = ng;
-      this.showLineH(ng.n, ng);
+      this.showLineH(ng.n, ng, 0);
+      for (let i = 1, len = listY.length; i < len; i++) {
+        const item = listY[i]!;
+        if (item.d === d) {
+          this.showLineH(item.ng.n, item.ng, i);
+        }
+        else {
+          break;
+        }
+      }
     }
     else {
       this.hideLineH();
@@ -174,16 +184,26 @@ class Guides {
     }
   }
 
-  showLineH(n: number, ng: NodeGuide) {
-    const style = this.lineH.style;
+  showLineH(n: number, ng: NodeGuide, i: number) {
+    if (!this.lineH[i]) {
+      const o = this.lineH[i] = document.createElement('div');
+      o.className = 'line-h';
+      this.dom.appendChild(o);
+    }
+    const style = this.lineH[i].style;
     style.top = n + 'px';
     style.left = ng.r.left + 'px';
     style.width = (ng.r.right - ng.r.left) + 'px';
     style.display = 'block';
   }
 
-  showLineV(n: number, ng: NodeGuide) {
-    const style = this.lineV.style;
+  showLineV(n: number, ng: NodeGuide, i: number) {
+    if (!this.lineV[i]) {
+      const o = this.lineV[i] = document.createElement('div');
+      o.className = 'line-v';
+      this.dom.appendChild(o);
+    }
+    const style = this.lineV[i].style;
     style.left = n + 'px';
     style.top = ng.r.top + 'px';
     style.height = (ng.r.bottom - ng.r.top) + 'px';
@@ -194,7 +214,7 @@ class Guides {
     const style = this.distanceH.style;
     const w = Math.abs(x1 - x2);
     this.distanceH.querySelector('span')!.innerHTML = toPrecision(w * factor, 2).toString();
-    style.top = this.lineH.style.top;
+    style.top = this.lineH[0].style.top;
     style.left = Math.min(x1, x2) + 'px';
     style.width = w + 'px';
     style.display = 'block';
@@ -204,18 +224,22 @@ class Guides {
     const style = this.distanceV.style;
     const h = Math.abs(y1 - y2);
     this.distanceV.querySelector('span')!.innerHTML = toPrecision(h * factor, 2).toString();
-    style.left = this.lineV.style.left;
+    style.left = this.lineV[0].style.left;
     style.top = Math.min(y1, y2) + 'px';
     style.height = h + 'px';
     style.display = 'block';
   }
 
   hideLineH() {
-    this.lineH.style.display = 'none';
+    this.lineH.forEach(item => {
+      item.style.display = 'none';
+    });
   }
 
   hideLineV() {
-    this.lineV.style.display = 'none';
+    this.lineV.forEach(item => {
+      item.style.display = 'none';
+    });
   }
 
   hideDistanceH() {
