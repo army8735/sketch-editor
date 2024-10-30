@@ -1702,7 +1702,7 @@ html, body {
   }
 
   &.empty {
-    .group, .un-group, .lock, .un-lock, .hide, .show, .mask, .break-mask, .remove {
+    .group, .un-group, .lock, .un-lock, .hide, .show, .mask, .break-mask, .remove, .cut, .copy {
       display: none;
     }
   }
@@ -1724,6 +1724,13 @@ html, body {
       display: none;
     }
     .un-group {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+  }
+
+  &.no-clone {
+    .paste {
       opacity: 0.3;
       pointer-events: none;
     }

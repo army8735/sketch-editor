@@ -1377,6 +1377,41 @@ export default class Listener extends Event {
     }
   }
 
+  clone(nodes = this.selected) {
+    if (nodes.length) {
+      this.clones = nodes.map(item => ({
+        parent: item.parent!,
+        node: item.clone(),
+      }));
+    }
+  }
+
+  paste(nodes = this.clones) {
+    if (nodes.length) {
+      const nodes2: Node[] = [];
+      const data: AddData[] = [];
+      nodes.forEach(item => {
+        // 因为和原节点index相同，所以会被添加到其后面，并重设索引
+        const o = {
+          x: item.node.computedStyle.left,
+          y: item.node.computedStyle.top,
+          parent: item.parent,
+        };
+        appendWithPosAndSize(item.node, o, true);
+        nodes2.push(item.node);
+        data.push(o);
+      });
+      // 清空复制的
+      this.clones.splice(0);
+      if (nodes2.length) {
+        this.history.addCommand(new AddCommand(nodes2, data));
+        this.selected = nodes2.slice(0);
+        this.updateActive();
+        this.emit(Listener.ADD_NODE, nodes2.slice(0));
+      }
+    }
+  }
+
   hover(x: number, y: number) {
     let node = this.getNode(x, y);
     if (!node) {
@@ -1421,6 +1456,7 @@ export default class Listener extends Event {
       this.hover(x, y);
     }
     const { keyCode, code } = e;
+    // console.log(keyCode, code);
     const target = e.target as HTMLElement; // 忽略输入时
     const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
@@ -1535,10 +1571,7 @@ export default class Listener extends Event {
     // c复制/x剪切
     else if ((keyCode === 67 || code === 'KeyC' || keyCode === 88 || code === 'KeyX') && metaKey) {
       if (!isInput) {
-        this.clones = this.selected.map(item => ({
-          parent: item.parent!,
-          node: item.clone(),
-        }));
+        this.clone();
         if ((keyCode === 88 || code === 'KeyX') && !this.options.disabled?.remove) {
           this.remove();
         }
@@ -1547,27 +1580,7 @@ export default class Listener extends Event {
     // v粘帖
     else if ((keyCode === 86 || code === 'KeyV') && metaKey) {
       if (!isInput && this.clones.length) {
-        const nodes: Node[] = [];
-        const data: AddData[] = [];
-        this.clones.forEach(item => {
-          // 因为和原节点index相同，所以会被添加到其后面，并重设索引
-          const o = {
-            x: item.node.computedStyle.left,
-            y: item.node.computedStyle.top,
-            parent: item.parent,
-          };
-          appendWithPosAndSize(item.node, o, true);
-          nodes.push(item.node);
-          data.push(o);
-        });
-        // 清空复制的
-        this.clones.splice(0);
-        if (nodes.length) {
-          this.history.addCommand(new AddCommand(nodes, data));
-          this.selected = nodes.slice(0);
-          this.updateActive();
-          this.emit(Listener.ADD_NODE, nodes.slice(0));
-        }
+        this.paste();
       }
     }
     // +

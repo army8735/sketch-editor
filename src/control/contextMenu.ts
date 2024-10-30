@@ -10,6 +10,10 @@ const htmlCanvas = `
   <div class="item un-group">解除编组</div>
   <div class="item select-all">选择全部</div>
   <div class="split"></div>
+  <div class="item cut">剪切</div>
+  <div class="item copy">复制</div>
+  <div class="item paste">粘贴</div>
+  <div class="split"></div>
   <div class="item remove">删除</div>
   <div class="split"></div>
   <div class="item lock">锁定<span></span>个图层</div>
@@ -106,6 +110,15 @@ export default {
         else if (classList.contains('remove')) {
           listener.remove();
         }
+        else if (classList.contains('cut') || classList.contains('copy')) {
+          listener.clone();
+          if (classList.contains('cut') && !listener.options.disabled?.remove) {
+            listener.remove();
+          }
+        }
+        else if (classList.contains('paste')) {
+          listener.paste();
+        }
       });
     }
     canvasDiv.innerHTML = htmlCanvas;
@@ -126,6 +139,12 @@ export default {
     }
     else {
       classList.add('empty');
+    }
+    if (listener.clones.length) {
+      classList.remove('no-clone');
+    }
+    else {
+      classList.add('no-clone');
     }
     let hasMask = nodes.filter(item => item.computedStyle.maskMode);
     if (hasMask.length) {
