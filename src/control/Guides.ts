@@ -103,11 +103,11 @@ class Guides {
       left += x;
       right += x;
       ngX = ng;
-      this.showLineV(ng.n, ng, 0);
+      this.showLineV(ng.n, ng.r.top, ng.r.bottom, 0);
       for (let i = 1, len = listX.length; i < len; i++) {
         const item = listX[i]!;
         if (item.d === d) {
-          this.showLineV(item.ng.n, item.ng, i);
+          this.showLineV(item.ng.n, item.ng.r.top, item.ng.r.bottom, i);
         }
         else {
           break;
@@ -136,11 +136,11 @@ class Guides {
       top += y;
       bottom += y;
       ngY = ng;
-      this.showLineH(ng.n, ng, 0);
+      this.showLineH(ng.n, ng.r.left, ng.r.right, 0);
       for (let i = 1, len = listY.length; i < len; i++) {
         const item = listY[i]!;
         if (item.d === d) {
-          this.showLineH(item.ng.n, item.ng, i);
+          this.showLineH(item.ng.n, item.ng.r.left, item.ng.r.right, i);
         }
         else {
           break;
@@ -184,7 +184,7 @@ class Guides {
     }
   }
 
-  showLineH(n: number, ng: NodeGuide, i: number) {
+  showLineH(n: number, left: number, right: number, i: number) {
     if (!this.lineH[i]) {
       const o = this.lineH[i] = document.createElement('div');
       o.className = 'line-h';
@@ -192,12 +192,12 @@ class Guides {
     }
     const style = this.lineH[i].style;
     style.top = n + 'px';
-    style.left = ng.r.left + 'px';
-    style.width = (ng.r.right - ng.r.left) + 'px';
+    style.left = left + 'px';
+    style.width = (right - left) + 'px';
     style.display = 'block';
   }
 
-  showLineV(n: number, ng: NodeGuide, i: number) {
+  showLineV(n: number, top: number, bottom: number, i: number) {
     if (!this.lineV[i]) {
       const o = this.lineV[i] = document.createElement('div');
       o.className = 'line-v';
@@ -205,8 +205,8 @@ class Guides {
     }
     const style = this.lineV[i].style;
     style.left = n + 'px';
-    style.top = ng.r.top + 'px';
-    style.height = (ng.r.bottom - ng.r.top) + 'px';
+    style.top = top + 'px';
+    style.height = (bottom - top) + 'px';
     style.display = 'block';
   }
 
@@ -231,14 +231,16 @@ class Guides {
   }
 
   hideLineH() {
-    this.lineH.forEach(item => {
+    this.lineH.splice(0).forEach(item => {
       item.style.display = 'none';
+      item.remove();
     });
   }
 
   hideLineV() {
-    this.lineV.forEach(item => {
+    this.lineV.splice(0).forEach(item => {
       item.style.display = 'none';
+      item.remove();
     });
   }
 

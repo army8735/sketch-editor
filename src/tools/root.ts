@@ -10,6 +10,7 @@ import { isPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { VISIBILITY } from '../style/define';
 import config from '../util/config';
+import Page from '../node/Page';
 
 function getTopShapeGroup(node: Geom | ShapeGroup) {
   const root = node.root;
@@ -353,52 +354,68 @@ function scanGuides(node: Node, x: NodeGuide[], y: NodeGuide[], threshold: numbe
   if (left >= w || right <= 0 || top >= h || bottom <= 0) {
     return;
   }
-  const center = (left + right) * 0.5;
-  const middle = (top + bottom) * 0.5;
-  const r = {
-    left,
-    right,
-    top,
-    bottom,
-    center,
-    middle,
-  };
-  // 6个值如果没有吸附冲突都加入
-  const i1 = search2(left, x);
-  if (i1 > -1
-    && (!x[i1 - 1] || Math.abs(x[i1 - 1].n - left) >= threshold)
-    && (!x[i1] || Math.abs(x[i1].n - left) >= threshold)) {
-    x.splice(i1, 0, { node, n: left, r });
+  let isParent = false;
+  if (ignore && node instanceof Group) {
+    for (let i = 0, len = ignore.length; i < len; i++) {
+      let p = ignore[i].parent;
+      while (p && !p.isPage && !(p instanceof Page)) {
+        if (p === node) {
+          isParent = true;
+          break;
+        }
+        p = p.parent;
+      }
+    }
   }
-  const i2 = search2(right, x);
-  if (i2 > -1
-    && (!x[i2 - 1] || Math.abs(x[i2 - 1].n - right) >= threshold)
-    && (!x[i2] || Math.abs(x[i2].n - right) >= threshold)) {
-    x.splice(i2, 0, { node, n: right, r });
-  }
-  const i3 = search2(center, x);
-  if (i3 > -1
-    && (!x[i3 - 1] || Math.abs(x[i3 - 1].n - center) >= threshold)
-    && (!x[i3] || Math.abs(x[i3].n - center) >= threshold)) {
-    x.splice(i3, 0, { node, n: center, r });
-  }
-  const i4 = search2(top, y);
-  if (i4 > -1
-    && (!y[i4 - 1] || Math.abs(y[i4 - 1].n - top) >= threshold)
-    && (!y[i4] || Math.abs(y[i4].n - top) >= threshold)) {
-    y.splice(i4, 0, { node, n: top, r });
-  }
-  const i5 = search2(bottom, y);
-  if (i5 > -1
-    && (!y[i5 - 1] || Math.abs(y[i5 - 1].n - bottom) >= threshold)
-    && (!y[i5] || Math.abs(y[i5].n - bottom) >= threshold)) {
-    y.splice(i5, 0, { node, n: bottom, r });
-  }
-  const i6 = search2(middle, y);
-  if (i6 > -1
-    && (!y[i6 - 1] || Math.abs(y[i6 - 1].n - middle) >= threshold)
-    && (!y[i6] || Math.abs(y[i6].n - middle) >= threshold)) {
-    y.splice(i6, 0, { node, n: middle, r });
+  // 不能是拖动目标的父亲祖父
+  if (!isParent) {
+    const center = (left + right) * 0.5;
+    const middle = (top + bottom) * 0.5;
+    const r = {
+      left,
+      right,
+      top,
+      bottom,
+      center,
+      middle,
+    };
+    // 6个值如果没有吸附冲突都加入
+    const i1 = search2(left, x);
+    if (i1 > -1
+      && (!x[i1 - 1] || Math.abs(x[i1 - 1].n - left) >= threshold)
+      && (!x[i1] || Math.abs(x[i1].n - left) >= threshold)) {
+      x.splice(i1, 0, { node, n: left, r });
+    }
+    const i2 = search2(right, x);
+    if (i2 > -1
+      && (!x[i2 - 1] || Math.abs(x[i2 - 1].n - right) >= threshold)
+      && (!x[i2] || Math.abs(x[i2].n - right) >= threshold)) {
+      x.splice(i2, 0, { node, n: right, r });
+    }
+    const i3 = search2(center, x);
+    if (i3 > -1
+      && (!x[i3 - 1] || Math.abs(x[i3 - 1].n - center) >= threshold)
+      && (!x[i3] || Math.abs(x[i3].n - center) >= threshold)) {
+      x.splice(i3, 0, { node, n: center, r });
+    }
+    const i4 = search2(top, y);
+    if (i4 > -1
+      && (!y[i4 - 1] || Math.abs(y[i4 - 1].n - top) >= threshold)
+      && (!y[i4] || Math.abs(y[i4].n - top) >= threshold)) {
+      y.splice(i4, 0, { node, n: top, r });
+    }
+    const i5 = search2(bottom, y);
+    if (i5 > -1
+      && (!y[i5 - 1] || Math.abs(y[i5 - 1].n - bottom) >= threshold)
+      && (!y[i5] || Math.abs(y[i5].n - bottom) >= threshold)) {
+      y.splice(i5, 0, { node, n: bottom, r });
+    }
+    const i6 = search2(middle, y);
+    if (i6 > -1
+      && (!y[i6 - 1] || Math.abs(y[i6 - 1].n - middle) >= threshold)
+      && (!y[i6] || Math.abs(y[i6].n - middle) >= threshold)) {
+      y.splice(i6, 0, { node, n: middle, r });
+    }
   }
   if (node instanceof Group) {
     node.children.forEach((item) => {
@@ -449,6 +466,7 @@ export function getGuidesNodes(root: Root, ignore?: Node[]) {
   if (page) {
     const threshold = Math.max(0, config.guidesSnap);
     page.children.forEach((item) => {
+      // 不能包含自己
       if (!ignore || !ignore.includes(item)) {
         scanGuides(item, res.x, res.y, threshold, root.width, root.height, root.dpi, ignore);
       }
