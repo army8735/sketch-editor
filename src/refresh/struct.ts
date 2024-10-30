@@ -44,7 +44,7 @@ export function renderWebgl(
   }
   else {
     let n = 1;
-    while (scale >= 1) {
+    while (scale > 1) {
       scale *= 0.5;
       n = n << 1;
       scaleIndex++;
