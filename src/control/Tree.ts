@@ -560,14 +560,15 @@ export default class Tree {
           }
         };
         input.onkeydown = (e) => {
-          if (e.keyCode === 27) {
+          const { keyCode, code } = e;
+          if (keyCode === 27 || code === 'Escape') {
             e.stopPropagation();
             if (!did) {
               did = true;
               onChange(input);
             }
           }
-          else if (e.keyCode === 13) {
+          else if (keyCode === 13 || code === 'Enter') {
             if (!did) {
               did = true;
               onChange(input);

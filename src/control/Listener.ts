@@ -1415,23 +1415,23 @@ export default class Listener extends Event {
       const y = this.startY * dpi;
       this.hover(x, y);
     }
-    const keyCode = e.keyCode;
+    const { keyCode, code } = e;
     // backspace/delete
-    if (keyCode === 8 || keyCode === 46) {
+    if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
       const target = e.target as HTMLElement; // 忽略输入时
       if (!['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase()) && this.selected.length && !this.options.disabled?.remove) {
         this.remove();
       }
     }
     // space
-    else if (keyCode === 32) {
+    else if (keyCode === 32 || code === 'Space') {
       this.spaceKey = true;
       if (!this.isMouseDown && !this.options.disabled?.drag) {
         this.dom.style.cursor = 'grab';
       }
     }
     // option+esc
-    else if (keyCode === 27 && this.altKey) {
+    else if ((keyCode === 27 || code === 'Escape') && this.altKey) {
       if (this.selected.length) {
         let node = this.selected[0];
         if (node instanceof Page || node instanceof Root || node instanceof ArtBoard) {
@@ -1445,7 +1445,7 @@ export default class Listener extends Event {
       }
     }
     // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
-    else if (keyCode === 27) {
+    else if (keyCode === 27 || code === 'Escape') {
       if (picker.isShow()) {
         picker.hide();
         if (this.state === State.EDIT_TEXT) {
@@ -1468,7 +1468,7 @@ export default class Listener extends Event {
       }
     }
     // 移动
-    else if (keyCode >= 37 && keyCode <= 40) {
+    else if (keyCode >= 37 && keyCode <= 40 || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)) {
       const target = e.target as HTMLElement;
       if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
@@ -1512,7 +1512,7 @@ export default class Listener extends Event {
       }
     }
     // a全选
-    else if (keyCode === 65 && metaKey) {
+    else if ((keyCode === 65 || code === 'KeyA') && metaKey) {
       const target = e.target as HTMLElement;
       // 编辑文字状态特殊处理
       if (this.state === State.EDIT_TEXT && target === this.input.inputEl) {
@@ -1526,17 +1526,17 @@ export default class Listener extends Event {
       }
     }
     // +
-    else if (keyCode === 187 && metaKey) {
+    else if ((keyCode === 187 || code === 'Equal') && metaKey) {
       e.preventDefault();
       this.zoom(2);
     }
     // -
-    else if (keyCode === 189 && metaKey) {
+    else if ((keyCode === 189 || code === 'Minus') && metaKey) {
       e.preventDefault();
       this.zoom(0.5);
     }
     // z，undo/redo
-    else if (keyCode === 90 && metaKey) {
+    else if ((keyCode === 90 || code === 'KeyZ') && metaKey) {
       const target = e.target as HTMLElement;
       if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();

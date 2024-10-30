@@ -277,17 +277,25 @@ class FillPanel extends Panel {
     panel.addEventListener('keydown', (e) => {
       const target = e.target as HTMLInputElement;
       if (target.tagName.toUpperCase() === 'INPUT' && target.type === 'text') {
-        const keyCode = e.keyCode; console.log(keyCode)
+        const { keyCode, code } = e;
         if (e.metaKey || listener.isWin && e.ctrlKey || e.shiftKey || e.altKey) {
         }
         else if (keyCode >= 48 && keyCode <= 57 // 0-9
+          || /Digit\d/.test(code)
           || keyCode >= 37 && keyCode <= 40 // 上下左右
+          || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)
           || keyCode >= 65 && keyCode <= 90 // a-z
+          || /Key[A-Z]/.test(code)
           || keyCode === 8 // backspace
+          || code === 'Backspace'
           || keyCode === 46 // delete
+          || code === 'Delete'
           || keyCode === 27 // esc
+          || code === 'Escape'
           || keyCode === 13 // enter
+          || code === 'Enter'
           || keyCode === 20 // capslock
+          || code === 'CapsLock'
         ) {}
         else {
           e.preventDefault();

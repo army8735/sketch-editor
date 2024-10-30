@@ -80,20 +80,20 @@ export default class Input {
 
     let isIme = false;
     inputEl.addEventListener('keydown', (e) => {
-      const keyCode = e.keyCode;
+      const { keyCode, code } = e;
       if (this.node) {
-        if (keyCode === 13) {
+        if (keyCode === 13 || code === 'Enter') {
           onCallback(() => {
             this.node?.enter();
           });
         }
-        else if (keyCode === 8 || keyCode === 46) {
+        else if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
           e.stopPropagation();
           onCallback(() => {
-            this.node?.delete(keyCode === 46);
+            this.node?.delete(keyCode === 46 || code === 'Delete');
           });
         }
-        else if (keyCode >= 37 && keyCode <= 40) {
+        else if (keyCode >= 37 && keyCode <= 40 || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)) {
           e.stopPropagation();
           const p = this.node.moveCursor(keyCode, e.shiftKey);
           if (e.shiftKey) {
