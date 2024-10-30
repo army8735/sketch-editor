@@ -24,6 +24,7 @@ import sketchEditor from 'sketch-editor';
 
 sketchEditor
   .openAndConvertSketchBuffer(arrayBuffer)
+  // .openAndConvertPsdBuffer(arrayBuffer) // or psd
   .then(json => {
     const dpi = 2;
     
