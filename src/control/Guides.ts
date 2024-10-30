@@ -86,6 +86,9 @@ class Guides {
     left += dx;
     right += dx;
     center += dx;
+    top += dy;
+    bottom += dy;
+    middle += dy;
     const il = search2(left, xs);
     const ic = search2(center, xs);
     const ir = search2(right, xs);
@@ -103,11 +106,11 @@ class Guides {
       left += x;
       right += x;
       ngX = ng;
-      this.showLineV(ng.n, ng.r.top, ng.r.bottom, 0);
+      this.showLineV(ng.n, Math.min(top, ng.r.top), Math.max(bottom, ng.r.bottom), 0);
       for (let i = 1, len = listX.length; i < len; i++) {
         const item = listX[i]!;
         if (item.d === d) {
-          this.showLineV(item.ng.n, item.ng.r.top, item.ng.r.bottom, i);
+          this.showLineV(item.ng.n, Math.min(top, item.ng.r.top), Math.max(bottom, item.ng.r.bottom), i);
         }
         else {
           break;
@@ -118,9 +121,6 @@ class Guides {
       this.hideLineV();
     }
     // y同样
-    top += dy;
-    bottom += dy;
-    middle += dy;
     const it = search2(top, ys);
     const im = search2(middle, ys);
     const ib = search2(bottom, ys);
@@ -136,11 +136,11 @@ class Guides {
       top += y;
       bottom += y;
       ngY = ng;
-      this.showLineH(ng.n, ng.r.left, ng.r.right, 0);
+      this.showLineH(ng.n, Math.min(left, ng.r.left), Math.max(right, ng.r.right), 0);
       for (let i = 1, len = listY.length; i < len; i++) {
         const item = listY[i]!;
         if (item.d === d) {
-          this.showLineH(item.ng.n, item.ng.r.left, item.ng.r.right, i);
+          this.showLineH(item.ng.n, Math.min(left, item.ng.r.left), Math.max(right, item.ng.r.right), i);
         }
         else {
           break;
