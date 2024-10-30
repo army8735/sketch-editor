@@ -40,7 +40,13 @@ export function renderWebgl(
   let scale = root.getCurPageZoom();
   let scaleIndex = 0;
   if (scale <= 1) {
-    scale = scale === 1 ? 2 : 1; // 50%且dpi为2时文字模糊不清，特殊处理
+    if (scale === 1) {
+      scale = 2; // 50%且dpi为2时文字模糊不清，特殊处理
+      scaleIndex = 1;
+    }
+    else {
+      scale = 1;
+    }
   }
   else {
     let n = 1;
