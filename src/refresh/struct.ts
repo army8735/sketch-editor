@@ -40,11 +40,11 @@ export function renderWebgl(
   let scale = root.getCurPageZoom();
   let scaleIndex = 0;
   if (scale <= 1) {
-    scale = 1;
+    scale = scale === 1 ? 2 : 1; // 50%且dpi为2时文字模糊不清，特殊处理
   }
   else {
     let n = 1;
-    while (scale > 1) {
+    while (scale >= 1) {
       scale *= 0.5;
       n = n << 1;
       scaleIndex++;
