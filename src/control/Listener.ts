@@ -1,4 +1,5 @@
 import Node from '../node/Node';
+import Container from '../node/Container';
 import Root from '../node/Root';
 import Page from '../node/Page';
 import Text from '../node/Text';
@@ -42,6 +43,8 @@ import LockCommand from '../history/LockCommand';
 import VisibleCommand from '../history/VisibleCommand';
 import { toPrecision } from '../math';
 import Guides from './Guides';
+import { appendWithPosAndSize } from '../tools/container';
+import AddCommand, { AddData } from '../history/AddCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -107,6 +110,7 @@ export default class Listener extends Event {
   mouseDown2ArtBoard?: Node;
   isWin = isWin;
   guides: Guides;
+  clones: { parent: Container, node: Node }[];
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -152,6 +156,7 @@ export default class Listener extends Event {
     this.select = new Select(root, dom);
     this.input = new Input(root, dom, this);
     this.guides = new Guides(root, dom, this);
+    this.clones = [];
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
     dom.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -1416,10 +1421,12 @@ export default class Listener extends Event {
       this.hover(x, y);
     }
     const { keyCode, code } = e;
+    const target = e.target as HTMLElement; // 忽略输入时
+    const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
       const target = e.target as HTMLElement; // 忽略输入时
-      if (!['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase()) && this.selected.length && !this.options.disabled?.remove) {
+      if (!isInput && !this.options.disabled?.remove) {
         this.remove();
       }
     }
@@ -1520,9 +1527,47 @@ export default class Listener extends Event {
         this.input.node!.selectAll();
         this.input.hideCursor();
       }
-      else if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
+      else if (target && !isInput) {
         e.preventDefault();
         this.selectAll();
+      }
+    }
+    // c复制/x剪切
+    else if ((keyCode === 67 || code === 'KeyC' || keyCode === 88 || code === 'KeyX') && metaKey) {
+      if (!isInput) {
+        this.clones = this.selected.map(item => ({
+          parent: item.parent!,
+          node: item.clone(),
+        }));
+        if ((keyCode === 88 || code === 'KeyX') && !this.options.disabled?.remove) {
+          this.remove();
+        }
+      }
+    }
+    // v粘帖
+    else if ((keyCode === 86 || code === 'KeyV') && metaKey) {
+      if (!isInput && this.clones.length) {
+        const nodes: Node[] = [];
+        const data: AddData[] = [];
+        this.clones.forEach(item => {
+          // 因为和原节点index相同，所以会被添加到其后面，并重设索引
+          const o = {
+            x: item.node.computedStyle.left,
+            y: item.node.computedStyle.top,
+            parent: item.parent,
+          };
+          appendWithPosAndSize(item.node, o, true);
+          nodes.push(item.node);
+          data.push(o);
+        });
+        // 清空复制的
+        this.clones.splice(0);
+        if (nodes.length) {
+          this.history.addCommand(new AddCommand(nodes, data));
+          this.selected = nodes.slice(0);
+          this.updateActive();
+          this.emit(Listener.ADD_NODE, nodes.slice(0));
+        }
       }
     }
     // +
@@ -1538,7 +1583,7 @@ export default class Listener extends Event {
     // z，undo/redo
     else if ((keyCode === 90 || code === 'KeyZ') && metaKey) {
       const target = e.target as HTMLElement;
-      if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
+      if (target && isInput) {
         e.preventDefault();
       }
       let c: AbstractCommand | undefined;
@@ -1574,6 +1619,18 @@ export default class Listener extends Event {
             });
             this.updateActive();
             this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
+          }
+        }
+        else if (c instanceof AddCommand) {
+          if (this.shiftKey) {
+            this.selected = nodes.slice(0);
+            this.updateActive();
+            this.emit(Listener.ADD_NODE, nodes.slice(0));
+          }
+          else {
+            this.selected.splice(0);
+            this.select.hideSelect();
+            this.emit(Listener.REMOVE_NODE, nodes);
           }
         }
         else if (c instanceof RotateCommand) {

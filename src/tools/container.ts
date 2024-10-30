@@ -3,12 +3,13 @@ import Container from '../node/Container';
 import { clone } from '../util/type';
 import { StyleUnit } from '../style/define';
 import { RemoveData } from '../history/RemoveCommand';
+import { AddData } from '../history/AddCommand';
 
 /**
  * 将child移动到parent内，并且保持原本的尺寸位置（相对于老parent的绝对计算值），
  * 用已有计算的computedStyle来赋值style定位新的parent，完成后根据style的原有单位换算style的新值。
  */
-export function appendWithPosAndSize(node: Node, data: RemoveData) {
+export function appendWithPosAndSize(node: Node, data: RemoveData | AddData, resetIndex = false) {
   const { style, computedStyle } = node;
   const { x, y, parent } = data;
   // 原始单位记录下来
@@ -43,7 +44,7 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
     v: computedStyle.height,
     u: StyleUnit.PX,
   };
-  appendWithIndex(parent, node);
+  appendWithIndex(parent, node, resetIndex);
   // 还原style原本的单位，需要重算一遍数值不能直接用已有的，因为%的情况parent可能发生了尺寸变化
   if (left.u === StyleUnit.PERCENT) {
     style.left = {
@@ -155,22 +156,32 @@ export function appendWithPosAndSize(node: Node, data: RemoveData) {
   }
 }
 
-export function appendWithIndex(parent: Container, node: Node) {
+export function appendWithIndex(parent: Container, node: Node, resetIndex = false) {
   // 利用小数索引找到正确的位置
   const children = parent.children;
   if (!children.length) {
     parent.appendChild(node);
+    if (resetIndex) {
+      node.props.index = 0.5;
+    }
   }
   else {
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
+      // 相等也是后面
       if (node.props.index < child.props.index) {
         child.insertBefore(node);
+        if (resetIndex) {
+          node.props.index = (child.props.index + (children[i + 1]?.props.index || 1)) * 0.5;
+        }
         break;
       }
       // 直到最后也没有
       else if (i === len - 1) {
         parent.appendChild(node);
+        if (resetIndex) {
+          node.props.index = (children[i - 1].props.index + 1) * 0.5;
+        }
         break;
       }
     }

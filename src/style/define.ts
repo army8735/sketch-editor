@@ -483,6 +483,7 @@ export default {
   STROKE_POSITION,
   PATTERN_FILL_TYPE,
   TEXT_BEHAVIOUR,
+  VISIBILITY,
 };
 
 export enum TEXT_DECORATION {

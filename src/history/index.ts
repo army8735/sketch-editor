@@ -2,6 +2,7 @@ import History from './History';
 import AbstractCommand from './AbstractCommand';
 import MoveCommand from './MoveCommand';
 import ResizeCommand from './ResizeCommand';
+import AddCommand  from './AddCommand';
 import RemoveCommand from './RemoveCommand';
 import RotateCommand from './RotateCommand';
 import BlurCommand from './BlurCommand';
@@ -26,6 +27,7 @@ export default {
   AbstractCommand,
   MoveCommand,
   ResizeCommand,
+  AddCommand,
   RemoveCommand,
   RotateCommand,
   BlurCommand,
