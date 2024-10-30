@@ -214,7 +214,16 @@ class Guides {
     const style = this.distanceH.style;
     const w = Math.abs(x1 - x2);
     this.distanceH.querySelector('span')!.innerHTML = toPrecision(w * factor, 2).toString();
-    style.top = this.lineH[0].style.top;
+    const len = this.lineH.length;
+    if (len === 3) {
+      style.top = this.lineH[1].style.top;
+    }
+    else if (len > 1) {
+      style.top = (parseFloat(this.lineH[0].style.top) + parseFloat(this.lineH[len - 1].style.top)) * 0.5 + 'px';
+    }
+    else {
+      style.top = this.lineH[0].style.top;
+    }
     style.left = Math.min(x1, x2) + 'px';
     style.width = w + 'px';
     style.display = 'block';
@@ -224,7 +233,16 @@ class Guides {
     const style = this.distanceV.style;
     const h = Math.abs(y1 - y2);
     this.distanceV.querySelector('span')!.innerHTML = toPrecision(h * factor, 2).toString();
-    style.left = this.lineV[0].style.left;
+    const len = this.lineV.length;
+    if (len === 3) {
+      style.left = this.lineV[1].style.left;
+    }
+    else if (len > 1) {
+      style.left = (parseFloat(this.lineV[0].style.left) + parseFloat(this.lineV[len - 1].style.left)) * 0.5 + 'px';
+    }
+    else {
+      style.left = this.lineV[0].style.left;
+    }
     style.top = Math.min(y1, y2) + 'px';
     style.height = h + 'px';
     style.display = 'block';

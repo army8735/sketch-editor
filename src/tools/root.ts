@@ -379,42 +379,54 @@ function scanGuides(node: Node, x: NodeGuide[], y: NodeGuide[], threshold: numbe
       center,
       middle,
     };
-    // 6个值如果没有吸附冲突都加入
-    const i1 = search2(left, x);
-    if (i1 > -1
-      && (!x[i1 - 1] || Math.abs(x[i1 - 1].n - left) >= threshold)
-      && (!x[i1] || Math.abs(x[i1].n - left) >= threshold)) {
-      x.splice(i1, 0, { node, n: left, r });
+    // 6个值如果没有吸附冲突都加入，并且需要在可视屏幕内
+    if (left >= 0 && left <= w) {
+      const i1 = search2(left, x);
+      if (i1 > -1
+        && (!x[i1 - 1] || Math.abs(x[i1 - 1].n - left) >= threshold)
+        && (!x[i1] || Math.abs(x[i1].n - left) >= threshold)) {
+        x.splice(i1, 0, { node, n: left, r });
+      }
     }
-    const i2 = search2(right, x);
-    if (i2 > -1
-      && (!x[i2 - 1] || Math.abs(x[i2 - 1].n - right) >= threshold)
-      && (!x[i2] || Math.abs(x[i2].n - right) >= threshold)) {
-      x.splice(i2, 0, { node, n: right, r });
+    if (right >= 0 && right <= w) {
+      const i2 = search2(right, x);
+      if (i2 > -1
+        && (!x[i2 - 1] || Math.abs(x[i2 - 1].n - right) >= threshold)
+        && (!x[i2] || Math.abs(x[i2].n - right) >= threshold)) {
+        x.splice(i2, 0, { node, n: right, r });
+      }
     }
-    const i3 = search2(center, x);
-    if (i3 > -1
-      && (!x[i3 - 1] || Math.abs(x[i3 - 1].n - center) >= threshold)
-      && (!x[i3] || Math.abs(x[i3].n - center) >= threshold)) {
-      x.splice(i3, 0, { node, n: center, r });
+    if (center >= 0 && center <= w) {
+      const i3 = search2(center, x);
+      if (i3 > -1
+        && (!x[i3 - 1] || Math.abs(x[i3 - 1].n - center) >= threshold)
+        && (!x[i3] || Math.abs(x[i3].n - center) >= threshold)) {
+        x.splice(i3, 0, { node, n: center, r });
+      }
     }
-    const i4 = search2(top, y);
-    if (i4 > -1
-      && (!y[i4 - 1] || Math.abs(y[i4 - 1].n - top) >= threshold)
-      && (!y[i4] || Math.abs(y[i4].n - top) >= threshold)) {
-      y.splice(i4, 0, { node, n: top, r });
+    if (top >= 0 && top <= h) {
+      const i4 = search2(top, y);
+      if (i4 > -1
+        && (!y[i4 - 1] || Math.abs(y[i4 - 1].n - top) >= threshold)
+        && (!y[i4] || Math.abs(y[i4].n - top) >= threshold)) {
+        y.splice(i4, 0, { node, n: top, r });
+      }
     }
-    const i5 = search2(bottom, y);
-    if (i5 > -1
-      && (!y[i5 - 1] || Math.abs(y[i5 - 1].n - bottom) >= threshold)
-      && (!y[i5] || Math.abs(y[i5].n - bottom) >= threshold)) {
-      y.splice(i5, 0, { node, n: bottom, r });
+    if (bottom >= 0 && bottom <= h) {
+      const i5 = search2(bottom, y);
+      if (i5 > -1
+        && (!y[i5 - 1] || Math.abs(y[i5 - 1].n - bottom) >= threshold)
+        && (!y[i5] || Math.abs(y[i5].n - bottom) >= threshold)) {
+        y.splice(i5, 0, { node, n: bottom, r });
+      }
     }
-    const i6 = search2(middle, y);
-    if (i6 > -1
-      && (!y[i6 - 1] || Math.abs(y[i6 - 1].n - middle) >= threshold)
-      && (!y[i6] || Math.abs(y[i6].n - middle) >= threshold)) {
-      y.splice(i6, 0, { node, n: middle, r });
+    if (middle >= 0 && middle <= h) {
+      const i6 = search2(middle, y);
+      if (i6 > -1
+        && (!y[i6 - 1] || Math.abs(y[i6 - 1].n - middle) >= threshold)
+        && (!y[i6] || Math.abs(y[i6].n - middle) >= threshold)) {
+        y.splice(i6, 0, { node, n: middle, r });
+      }
     }
   }
   if (node instanceof Group) {
@@ -468,7 +480,7 @@ export function getGuidesNodes(root: Root, ignore?: Node[]) {
     page.children.forEach((item) => {
       // 不能包含自己
       if (!ignore || !ignore.includes(item)) {
-        scanGuides(item, res.x, res.y, threshold, root.width, root.height, root.dpi, ignore);
+        scanGuides(item, res.x, res.y, threshold, root.width / root.dpi, root.height / root.dpi, root.dpi, ignore);
       }
     });
   }
