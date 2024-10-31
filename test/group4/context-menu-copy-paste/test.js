@@ -24,7 +24,7 @@ module.exports = {
       .moveToElement('.sketch-editor-context-menu .copy', 10, 10)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
-      .keys(browser.Keys.ESCAPE)
+      .keys(browser.Keys.META)
       .keys('a')
       .keys(browser.Keys.NULL)
       .click('#button4')
