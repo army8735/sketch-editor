@@ -180,7 +180,7 @@ export function appendWithIndex(parent: Container, node: Node, resetIndex = fals
       else if (i === len - 1) {
         parent.appendChild(node);
         if (resetIndex) {
-          node.props.index = (children[i - 1].props.index + 1) * 0.5;
+          node.props.index = ((children[i - 1]?.props.index || 0) + 1) * 0.5;
         }
         break;
       }

@@ -1489,6 +1489,7 @@ export default class Listener extends Event {
     }
     // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
     else if (keyCode === 27 || code === 'Escape') {
+      contextMenu.hide();
       if (picker.isShow()) {
         picker.hide();
         if (this.state === State.EDIT_TEXT) {
