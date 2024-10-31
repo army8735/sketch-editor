@@ -20,7 +20,7 @@ module.exports = {
       .moveToElement('canvas', 50, 50)
       .mouseButtonDown(2)
       .mouseButtonUp(2)
-      .assert.cssProperty('.sketch-editor-context-menu .cut', 'display', 'block')
+      .assert.cssProperty('.sketch-editor-context-menu .cut', 'display', 'flex')
       .moveToElement('.sketch-editor-context-menu .cut', 10, 10)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
