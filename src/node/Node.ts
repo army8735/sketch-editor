@@ -1241,13 +1241,17 @@ class Node extends Event {
     const y3 = opt?.excludeDpi ? t.y3 / dpi : t.y3;
     const x4 = opt?.excludeDpi ? t.x4 / dpi : t.x4;
     const y4 = opt?.excludeDpi ? t.y4 / dpi : t.y4;
+    const left = Math.min(x1, x2, x3, x4);
+    const top = Math.min(y1, y2, y3, y4);
+    const right = Math.max(x1, x2, x3, x4);
+    const bottom = Math.max(y1, y2, y3, y4);
     return {
-      left: Math.min(x1, x2, x3, x4),
-      top: Math.min(y1, y2, y3, y4),
-      right: Math.max(x1, x2, x3, x4),
-      bottom: Math.max(y1, y2, y3, y4),
-      width: this.width / (opt?.excludeDpi ? dpi : 1),
-      height: this.height / (opt?.excludeDpi ? dpi : 1),
+      left,
+      top,
+      right,
+      bottom,
+      width: right - left,
+      height: bottom - top,
       points: [
         {
           x: x1,

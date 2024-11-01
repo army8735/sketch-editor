@@ -31,7 +31,7 @@ export type ResizeData = {
   dx: number;
   dy: number;
   controlType: CONTROL_TYPE;
-  aspectRatio?: boolean;
+  aspectRatio: boolean;
   clientRect?: Rect;
   selectRect?: Rect;
   fromCenter?: boolean; // altKey从中心点缩放
@@ -72,10 +72,10 @@ class ResizeCommand extends AbstractCommand {
       const cssStyle = node.getCssStyle();
       controlType = flip(controlType, flipX, flipY);
       if (clientRect) {
-        ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, -dx, -dy, controlType, clientRect, selectRect!, fromCenter, widthToAuto, heightToAuto);
+        ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, -dx, -dy, controlType, clientRect, selectRect!, aspectRatio, fromCenter, widthToAuto, heightToAuto);
       }
       else {
-        ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx, dy, controlType, aspectRatio!, fromCenter, widthToAuto, heightToAuto);
+        ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx, dy, controlType, aspectRatio, fromCenter, widthToAuto, heightToAuto);
       }
       node.endSizeChange(originStyle);
       node.checkPosSizeUpward();
@@ -92,10 +92,10 @@ class ResizeCommand extends AbstractCommand {
       const cssStyle = node.getCssStyle();
       controlType = flip(controlType, flipX, flipY);
       if (clientRect) {
-        ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, -dx, -dy, controlType, clientRect, selectRect!, fromCenter, widthFromAuto, heightFromAuto);
+        ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, -dx, -dy, controlType, clientRect, selectRect!, aspectRatio, fromCenter, widthFromAuto, heightFromAuto);
       }
       else {
-        ResizeCommand.updateStyle(node, computedStyle, cssStyle, -dx, -dy, controlType, aspectRatio!, fromCenter, widthFromAuto, heightFromAuto);
+        ResizeCommand.updateStyle(node, computedStyle, cssStyle, -dx, -dy, controlType, aspectRatio, fromCenter, widthFromAuto, heightFromAuto);
       }
       node.endSizeChange(originStyle);
       node.checkPosSizeUpward();
@@ -167,7 +167,7 @@ class ResizeCommand extends AbstractCommand {
   }
 
   static updateStyleMultiAr(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE,
-                            clientRect: Rect, selectRect: Rect, fromCenter = false, widthAuto = false, heightAuto = false) {
+                            clientRect: Rect, selectRect: Rect, aspectRatio: boolean, fromCenter = false, widthAuto = false, heightAuto = false) {
     // 一定是保持宽高比才会进这，每个节点都可能会改变位置，初始值同上单个的情况
     const next: ResizeStyle = {
       left: cssStyle.left,
@@ -181,35 +181,40 @@ class ResizeCommand extends AbstractCommand {
     };
     // 4个方向上复用普通的拉伸后进行偏移调整
     if (controlType === CONTROL_TYPE.T) {
-      Object.assign(next, resizeTopMultiArOperate(node, computedStyle, dy, clientRect, selectRect, fromCenter));
+      Object.assign(next, resizeTopMultiArOperate(node, computedStyle, dy, clientRect, selectRect, aspectRatio, fromCenter));
     }
     else if (controlType === CONTROL_TYPE.R) {
-      Object.assign(next, resizeRightMultiArOperate(node, computedStyle, dx, clientRect, selectRect, fromCenter));
+      Object.assign(next, resizeRightMultiArOperate(node, computedStyle, dx, clientRect, selectRect, aspectRatio, fromCenter));
     }
     else if (controlType === CONTROL_TYPE.B) {
-      Object.assign(next, resizeBottomMultiArOperate(node, computedStyle, dy, clientRect, selectRect, fromCenter));
+      Object.assign(next, resizeBottomMultiArOperate(node, computedStyle, dy, clientRect, selectRect, aspectRatio, fromCenter));
     }
     else if (controlType === CONTROL_TYPE.L) {
-      Object.assign(next, resizeLeftMultiArOperate(node, computedStyle, dx, clientRect, selectRect, fromCenter));
+      Object.assign(next, resizeLeftMultiArOperate(node, computedStyle, dx, clientRect, selectRect, aspectRatio, fromCenter));
     }
-    // 4个角需要计算对角线垂线交点，类似单个拖拽保持宽高比的角计算
+    // 4个角在保持宽高比时需要计算对角线垂线交点，类似单个拖拽保持宽高比的计算
     else {
-      const dpi = node.root?.dpi || 1;
-      const o = { width: selectRect.w * dpi, height: selectRect.h * dpi };
-      const { x, y } = getDiagonalAspectRatioIsec(o, dx, dy, [CONTROL_TYPE.TL, CONTROL_TYPE.BR].includes(controlType));
-      dx = x - o.width;
-      dy = y - o.height;
+      if (aspectRatio) {
+        const dpi = node.root?.dpi || 1;
+        const o = { width: selectRect.w * dpi, height: selectRect.h * dpi };
+        const {
+          x,
+          y
+        } = getDiagonalAspectRatioIsec(o, dx, dy, [CONTROL_TYPE.TL, CONTROL_TYPE.BR].includes(controlType));
+        dx = x - o.width;
+        dy = y - o.height;
+      }
       if (controlType === CONTROL_TYPE.TL) {
-        Object.assign(next, resizeTopLeftMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, fromCenter));
+        Object.assign(next, resizeTopLeftMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, aspectRatio, fromCenter));
       }
       else if (controlType === CONTROL_TYPE.TR) {
-        Object.assign(next, resizeTopRightMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, fromCenter));
+        Object.assign(next, resizeTopRightMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, aspectRatio, fromCenter));
       }
       else if (controlType === CONTROL_TYPE.BL) {
-        Object.assign(next, resizeBottomLeftMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, fromCenter));
+        Object.assign(next, resizeBottomLeftMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, aspectRatio, fromCenter));
       }
       else if (controlType === CONTROL_TYPE.BR) {
-        Object.assign(next, resizeBottomRightMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, fromCenter));
+        Object.assign(next, resizeBottomRightMultiArOperate(node, computedStyle, dx, dy, clientRect, selectRect, aspectRatio, fromCenter));
       }
     }
     if (widthAuto) {

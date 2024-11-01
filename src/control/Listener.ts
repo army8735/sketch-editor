@@ -659,10 +659,9 @@ export default class Listener extends Event {
           }
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
-          ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
-          // 多个节点保持宽高比拉伸时，按选框进行缩放和保持相对位置
-          if (shift && this.selectRect && this.clientRect && this.clientRect[i]) {
-            ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, dx2, dy2, controlType, this.clientRect[i], this.selectRect, alt);
+          // 多个节点拉伸时，按选框进行缩放和保持相对位置
+          if (this.selectRect && this.clientRect && this.clientRect[i]) {
+            ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, dx2, dy2, controlType, this.clientRect[i], this.selectRect, shift, alt);
           }
           // 普通拉伸
           else {
