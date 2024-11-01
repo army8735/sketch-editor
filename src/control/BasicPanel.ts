@@ -7,13 +7,14 @@ import { toPrecision } from '../math';
 import Listener from './Listener';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getBasicInfo, resizeBottomOperate, resizeRightOperate } from '../tools/node';
+import { getBasicInfo } from '../tools/node';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import UpdateStyleCommand, { UpdateStyleData } from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { ComputedStyle, Style, TEXT_BEHAVIOUR } from '../style/define';
+import { ComputedStyle, Style, StyleUnit, TEXT_BEHAVIOUR } from '../style/define';
 import { getTextBehaviour } from '../tools/text';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
+import { JStyle } from '../format';
 
 const html = `
   <div class="line">
@@ -71,6 +72,7 @@ class BasicPanel extends Panel {
     let nodes: Node[] = [];
     let originStyle: Style[] = [];
     let computedStyle: ComputedStyle[] = [];
+    let cssStyle: JStyle[] = [];
     let prevNumber: number[] = [];
     let nextNumber: number[] = [];
     let widthAuto: boolean[] = [];
@@ -248,10 +250,22 @@ class BasicPanel extends Panel {
 
     const onInputSize = (e: Event, isWOrH = true) => {
       this.silence = true;
+      listener.beforeResize();
+      let shift = false;
+      if (!shift) {
+        // 有一个是固定宽高比的，整体都是
+        for (let i = 0, len = listener.selected.length; i < len; i++) {
+          if (listener.selected[i].props.constrainProportions) {
+            shift = true;
+            break;
+          }
+        }
+      }
       const isFirst = !nodes.length;
       if (isFirst) {
         originStyle = [];
         computedStyle = [];
+        cssStyle = [];
         prevNumber = [];
         widthAuto = [];
         heightAuto = [];
@@ -264,6 +278,7 @@ class BasicPanel extends Panel {
           nodes.push(node);
           originStyle.push(node.getStyle());
           computedStyle.push(node.getComputedStyle());
+          cssStyle.push(node.getCssStyle());
           prevNumber.push(isWOrH ? this.data[i].w : this.data[i].h);
           if (node instanceof Text) {
             const tb = getTextBehaviour(node);
@@ -314,11 +329,11 @@ class BasicPanel extends Panel {
           next = prev + d;
         }
         nextNumber.push(next);
-        const t = isWOrH
-          ? resizeRightOperate(node, computedStyle[i], d)
-          : resizeBottomOperate(node, computedStyle[i], d);
-        if (t) {
-          node.updateStyle(t);
+        if (listener.selectRect && listener.clientRect && listener.clientRect[i]) {
+          ResizeCommand.updateStyleMultiAr(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d, isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, listener.clientRect[i], listener.selectRect, shift);
+        }
+        else {
+          ResizeCommand.updateStyle(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d, isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, shift);
         }
       });
       if (nodes.length) {
@@ -331,6 +346,16 @@ class BasicPanel extends Panel {
 
     const onChangeSize = (isWOrH = true) => {
       if (nodes.length) {
+        let shift = listener.shiftKey;
+        if (!shift) {
+          // 有一个是固定宽高比的，整体都是
+          for (let i = 0, len = listener.selected.length; i < len; i++) {
+            if (listener.selected[i].props.constrainProportions) {
+              shift = true;
+              break;
+            }
+          }
+        }
         const data: ResizeData[] = [];
         nodes.forEach((node, i) => {
           const p = node.parent;
@@ -344,12 +369,26 @@ class BasicPanel extends Panel {
             dx: isWOrH ? d : 0,
             dy: isWOrH ? 0 : d,
             controlType: isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B,
-            aspectRatio: false,
+            aspectRatio: shift,
             fromCenter: false,
           };
           if (node instanceof Text) {
             rd.widthFromAuto = widthAuto[i];
             rd.heightFromAuto = heightAuto[i];
+          }
+          else {
+            if (originStyle[i].width.u === StyleUnit.AUTO) {
+              rd.widthFromAuto = true;
+            }
+            if (originStyle[i].height.u === StyleUnit.AUTO) {
+              rd.heightFromAuto = true;
+            }
+          }
+          if (computedStyle[i].scaleX !== node.computedStyle.scaleX) {
+            rd.flipX = true;
+          }
+          if (computedStyle[i].scaleY !== node.computedStyle.scaleY) {
+            rd.flipY = true;
           }
           data.push(rd);
         });

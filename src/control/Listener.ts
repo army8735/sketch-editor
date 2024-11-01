@@ -6,7 +6,7 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
-import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
+import { ComputedStyle, Style, StyleUnit, TEXT_BEHAVIOUR, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { Rect } from './Select';
 import Input from './Input';
@@ -45,6 +45,7 @@ import { toPrecision } from '../math';
 import Guides from './Guides';
 import { appendWithPosAndSize } from '../tools/container';
 import AddCommand, { AddData } from '../history/AddCommand';
+import { getTextBehaviour } from '../tools/text';
 
 export type ListenerOptions = {
   enabled?: {
@@ -236,6 +237,29 @@ export default class Listener extends Event {
     return node;
   }
 
+  beforeResize() {
+    // 多个节点拉伸时，有一个保持宽高比，整体都需要，缩放是选框缩放，节点需保持相对框的位置，先记录初始信息
+    if (this.selected.length > 1) {
+      this.selectRect = this.select.getAspectRatio();
+      this.clientRect = this.selected.map(item => {
+        const r = item.getBoundingClientRect({
+          excludeDpi: true,
+        });
+        return {
+          x: r.left,
+          y: r.top,
+          w: r.width,
+          h: r.height,
+        };
+      });
+      // console.warn(this.selectRect, this.clientRect)
+    }
+    else {
+      this.selectRect = undefined;
+      this.clientRect = undefined;
+    }
+  }
+
   onDown(target: HTMLElement, e: MouseEvent | Touch) {
     const selected = this.selected;
     const isControl = this.select.isSelectControlDom(target);
@@ -352,26 +376,7 @@ export default class Listener extends Event {
           }
           return [];
         });
-        // 多个节点拉伸时，有一个保持宽高比，整体都需要，缩放是选框缩放，节点需保持相对框的位置，先记录初始信息
-        if (selected.length > 1) {
-          this.selectRect = this.select.getAspectRatio();
-          this.clientRect = selected.map(item => {
-            const r = item.getBoundingClientRect({
-              excludeDpi: true,
-            });
-            return {
-              x: r.left,
-              y: r.top,
-              w: r.width,
-              h: r.height,
-            };
-          });
-          // console.warn(this.selectRect, this.clientRect)
-        }
-        else {
-          this.selectRect = undefined;
-          this.clientRect = undefined;
-        }
+        this.beforeResize();
       }
     }
     // 点到canvas上
@@ -919,25 +924,37 @@ export default class Listener extends Event {
             node.endSizeChange(this.originStyle[i]);
             if (dx || dy) {
               node.checkPosSizeUpward();
-              const r: ResizeData = { dx, dy, controlType, aspectRatio: shift, clientRect: this.clientRect && this.clientRect[i], selectRect: this.selectRect, fromCenter: alt };
+              const rd: ResizeData = { dx, dy, controlType, aspectRatio: shift, clientRect: this.clientRect && this.clientRect[i], selectRect: this.selectRect, fromCenter: alt };
               const originStyle = this.originStyle[i];
-              if (originStyle.width.u === StyleUnit.AUTO) {
-                r.widthFromAuto = true;
+              if (node instanceof Text) {
+                const tb = getTextBehaviour(node);
+                if (tb === TEXT_BEHAVIOUR.AUTO) {
+                  rd.widthFromAuto = true;
+                  rd.heightFromAuto = true;
+                }
+                else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
+                  rd.heightFromAuto = true;
+                }
               }
-              if (originStyle.height.u === StyleUnit.AUTO) {
-                r.heightFromAuto = true;
+              else {
+                if (originStyle.width.u === StyleUnit.AUTO) {
+                  rd.widthFromAuto = true;
+                }
+                if (originStyle.height.u === StyleUnit.AUTO) {
+                  rd.heightFromAuto = true;
+                }
               }
               if (this.computedStyle[i].scaleX !== node.computedStyle.scaleX) {
-                r.flipX = true;
+                rd.flipX = true;
               }
               if (this.computedStyle[i].scaleY !== node.computedStyle.scaleY) {
-                r.flipY = true;
+                rd.flipY = true;
               }
-              data.push(r);
+              data.push(rd);
             }
           });
           if (data.length) {
-            this.history.addCommand(new ResizeCommand(selected.slice(0), data), true);
+            this.history.addCommand(new ResizeCommand(selected.slice(0), data));
           }
         }
       }
