@@ -5,7 +5,7 @@ import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 import { VISIBILITY } from '../style/define';
 
-export type SelectAr = {
+export type Rect = {
   x: number;
   y: number;
   w: number;

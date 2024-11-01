@@ -18,7 +18,7 @@ import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
 import inject from '../util/inject';
-import { SelectAr } from '../control/Select';
+import { Rect } from '../control/Select';
 
 enum POSITION {
   APPEND = 0,
@@ -829,9 +829,9 @@ export function resizeRightAspectRatioOperate(node: Node, originComputedStyle: C
   return Object.assign(next, t);
 }
 
-function getDiagonalAspectRatioIsec(originComputedStyle: ComputedStyle, dx: number, dy: number, isACOrBD = true) {
+export function getDiagonalAspectRatioIsec(data: { width: number, height: number }, dx: number, dy: number, isACOrBD = true) {
   // 视左上角为原点，求对角线的斜率，一定不是特殊垂线或水平线，过原点的为AC，另外一条是BD
-  const { width: x1, height: y1 } = originComputedStyle;
+  const { width: x1, height: y1 } = data;
   let k1 = y1 / x1;
   if (!isACOrBD) {
     k1 *= -1;
@@ -955,66 +955,180 @@ function resizeVerticalAspectRatioMultiAr(next: ResizeStyle, node: Node, originC
   }
 }
 
-function getVerticalDistanceAspectRatioMultiAr(d: number, clientRect: SelectAr, selectAr: SelectAr) {
-  const d2 = d * selectAr.h / selectAr.w;
-  const sc = selectAr.y + selectAr.h * 0.5;
+function getVerticalDistanceAspectRatioMultiAr(d: number, clientRect: Rect, selectRect: Rect) {
+  const d2 = d * selectRect.h / selectRect.w;
+  const sc = selectRect.y + selectRect.h * 0.5;
   const nc = clientRect.y + clientRect.h * 0.5;
-  return (nc - sc) * d2 / selectAr.h;
+  return (nc - sc) * d2 / selectRect.h;
 }
 
-function getHorizontalDistanceAspectRatioMultiAr(d: number, clientRect: SelectAr, selectAr: SelectAr) {
-  const d2 = d * selectAr.w / selectAr.h;
-  const sc = selectAr.x + selectAr.w * 0.5;
+function getHorizontalDistanceAspectRatioMultiAr(d: number, clientRect: Rect, selectRect: Rect) {
+  const d2 = d * selectRect.w / selectRect.h;
+  const sc = selectRect.x + selectRect.w * 0.5;
   const nc = clientRect.x + clientRect.w * 0.5;
-  return (nc - sc) * d2 / selectAr.w;
+  return (nc - sc) * d2 / selectRect.w;
 }
 
-export function resizeTopMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
+export function resizeTopMultiArOperate(node: Node, originComputedStyle: ComputedStyle, d: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
   // 复用单个的比例拉伸，值和尺寸比例相关
-  const next = resizeTopAspectRatioOperate(node, originComputedStyle, d * clientRect.h / selectAr.h);
+  const next = resizeTopAspectRatioOperate(node, originComputedStyle, d * clientRect.h / selectRect.h, fromCenter);
   // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
-  const dx = getHorizontalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
+  let dx = getHorizontalDistanceAspectRatioMultiAr(d, clientRect, selectRect);
+  if (fromCenter) {
+    dx *= 2;
+  }
   resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, -dx);
-  // 主轴的偏移和位置比例相关
-  const p = (selectAr.y + selectAr.h - clientRect.y - clientRect.h) / selectAr.h;
-  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
-  return next;
-}
-
-export function resizeBottomMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
-  // 复用单个的比例拉伸，值和尺寸比例相关
-  const next = resizeBottomAspectRatioOperate(node, originComputedStyle, d * clientRect.h / selectAr.h);
-  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
-  const dx = getHorizontalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
-  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, dx);
-  // 主轴的偏移和位置比例相关
-  const p = (clientRect.y - selectAr.y) / selectAr.h;
-  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
-  return next;
-}
-
-export function resizeLeftMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
-  // 复用单个的比例拉伸，值和尺寸比例相关
-  const next = resizeLeftAspectRatioOperate(node, originComputedStyle, d * clientRect.w / selectAr.w);
-  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
-  const dy = getVerticalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
-  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, -dy);
-  // 主轴的偏移和位置比例相关
-  const p = (selectAr.x + selectAr.w - clientRect.x - clientRect.w) / selectAr.w;
-  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
-  return next;
-}
-
-export function resizeRightMultiArOperate(node: Node, originComputedStyle: ComputedStyle, clientRect: SelectAr, d: number, selectAr: SelectAr) {
-  // 复用单个的比例拉伸，值和尺寸比例相关
-  const next = resizeRightAspectRatioOperate(node, originComputedStyle, d * clientRect.w / selectAr.w);
-  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
-  const dy = getVerticalDistanceAspectRatioMultiAr(d, clientRect, selectAr);
+  // 主轴的偏移和所在位置比例相关
+  let dy = 0;
+  if (fromCenter) {
+    dy = -d * (clientRect.y + clientRect.h * 0.5 - selectRect.y - selectRect.h * 0.5) * 2 / selectRect.h;
+  }
+  else {
+    dy = d * (selectRect.y + selectRect.h - clientRect.y - clientRect.h) / selectRect.h;
+  }
   resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, dy);
-  // 主轴的偏移和位置比例相关
-  const p = (clientRect.x - selectAr.x) / selectAr.w;
-  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, d * p);
   return next;
+}
+
+export function resizeBottomMultiArOperate(node: Node, originComputedStyle: ComputedStyle, d: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeBottomAspectRatioOperate(node, originComputedStyle, d * clientRect.h / selectRect.h, fromCenter);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  let dx = getHorizontalDistanceAspectRatioMultiAr(d, clientRect, selectRect);
+  if (fromCenter) {
+    dx *= 2;
+  }
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, dx);
+  let dy = 0;
+  if (fromCenter) {
+    dy = d * (clientRect.y + clientRect.h * 0.5 - selectRect.y - selectRect.h * 0.5) * 2 / selectRect.h;
+  }
+  else {
+    dy = d * (clientRect.y - selectRect.y) / selectRect.h;
+  }
+  // 主轴的偏移和位置比例相关
+  const p = (clientRect.y - selectRect.y) / selectRect.h;
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, dy);
+  return next;
+}
+
+export function resizeLeftMultiArOperate(node: Node, originComputedStyle: ComputedStyle, d: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeLeftAspectRatioOperate(node, originComputedStyle, d * clientRect.w / selectRect.w, fromCenter);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  let dy = getVerticalDistanceAspectRatioMultiAr(d, clientRect, selectRect);
+  if (fromCenter) {
+    dy *= 2;
+  }
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, -dy);
+  // 主轴的偏移和所在位置比例相关
+  let dx = 0;
+  if (fromCenter) {
+    dx = -d * (clientRect.x + clientRect.w * 0.5 - selectRect.x - selectRect.w * 0.5) * 2 / selectRect.w;
+  }
+  else {
+    dx = d * (selectRect.x + selectRect.w - clientRect.x - clientRect.w) / selectRect.w;
+  }
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, dx);
+  return next;
+}
+
+export function resizeRightMultiArOperate(node: Node, originComputedStyle: ComputedStyle, d: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // console.log(d);
+  // 复用单个的比例拉伸，值和尺寸比例相关
+  const next = resizeRightAspectRatioOperate(node, originComputedStyle, d * clientRect.w / selectRect.w, fromCenter);
+  // 再计算副轴变化的尺寸进行偏移，按中心点对齐保持等比
+  let dy = getVerticalDistanceAspectRatioMultiAr(d, clientRect, selectRect);
+  if (fromCenter) {
+    dy *= 2;
+  }
+  resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, dy);
+  // 主轴的偏移和所在位置比例相关
+  let dx = 0;
+  if (fromCenter) {
+    dx = d * (clientRect.x + clientRect.w * 0.5 - selectRect.x - selectRect.w * 0.5) * 2 / selectRect.w;
+  }
+  else {
+    dx = d * (clientRect.x - selectRect.x) / selectRect.w;
+  }
+  resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, dx);
+  return next;
+}
+
+function resetTopMultiAr(node: Node, originComputedStyle: ComputedStyle, dy: number, clientRect: Rect, selectRect: Rect, next1: ResizeStyle) {
+  const next2 = resizeTopMultiArOperate(node, originComputedStyle, dy, clientRect, selectRect);
+  delete next1.top;
+  delete next1.height;
+  delete next1.bottom;
+  if (next2.top !== undefined) {
+    next1.top = next2.top;
+  }
+  if (next2.height !== undefined) {
+    next1.height = next2.height;
+  }
+  if (next2.bottom !== undefined) {
+    next1.bottom = next2.bottom;
+  }
+}
+
+export function resizeTopLeftMultiArOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // 中心反而简单了，就是选框中心点，选择任意一侧拉伸都可以
+  const next1 = resizeLeftMultiArOperate(node, originComputedStyle, dx, clientRect, selectRect, fromCenter);
+  if (fromCenter) {
+    return next1;
+  }
+  // 非中心用2侧数据合并
+  resetTopMultiAr(node, originComputedStyle, dy, clientRect, selectRect, next1);
+  return next1;
+}
+
+export function resizeTopRightMultiArOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // 中心反而简单了，就是选框中心点，选择任意一侧拉伸都可以
+  const next1 = resizeRightMultiArOperate(node, originComputedStyle, dx, clientRect, selectRect, fromCenter);
+  if (fromCenter) {
+    return next1;
+  }
+  // 非中心用2侧数据合并
+  resetTopMultiAr(node, originComputedStyle, dy, clientRect, selectRect, next1);
+  return next1;
+}
+
+function resetBottomMultiAr(node: Node, originComputedStyle: ComputedStyle, dy: number, clientRect: Rect, selectRect: Rect, next1: ResizeStyle) {
+  const next2 = resizeBottomMultiArOperate(node, originComputedStyle, dy, clientRect, selectRect);
+  delete next1.top;
+  delete next1.height;
+  delete next1.bottom;
+  if (next2.top !== undefined) {
+    next1.top = next2.top;
+  }
+  if (next2.height !== undefined) {
+    next1.height = next2.height;
+  }
+  if (next2.bottom !== undefined) {
+    next1.bottom = next2.bottom;
+  }
+}
+
+export function resizeBottomLeftMultiArOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // 中心反而简单了，就是选框中心点，选择任意一侧拉伸都可以
+  const next1 = resizeLeftMultiArOperate(node, originComputedStyle, dx, clientRect, selectRect, fromCenter);
+  if (fromCenter) {
+    return next1;
+  }
+  // 非中心用2侧数据合并
+  resetBottomMultiAr(node, originComputedStyle, dy, clientRect, selectRect, next1);
+  return next1;
+}
+
+export function resizeBottomRightMultiArOperate(node: Node, originComputedStyle: ComputedStyle, dx: number, dy: number, clientRect: Rect, selectRect: Rect, fromCenter = false) {
+  // 中心反而简单了，就是选框中心点，选择任意一侧拉伸都可以
+  const next1 = resizeRightMultiArOperate(node, originComputedStyle, dx, clientRect, selectRect, fromCenter);
+  if (fromCenter) {
+    return next1;
+  }
+  // 非中心用2侧数据合并
+  resetBottomMultiAr(node, originComputedStyle, dy, clientRect, selectRect, next1);
+  return next1;
 }
 
 export function move(node: Node, dx: number, dy: number) {
@@ -1159,5 +1273,9 @@ export default {
   resizeBottomMultiArOperate,
   resizeRightMultiArOperate,
   resizeLeftMultiArOperate,
+  resizeTopLeftMultiArOperate,
+  resizeTopRightMultiArOperate,
+  resizeBottomLeftMultiArOperate,
+  resizeBottomRightMultiArOperate,
   getBasicInfo,
 };

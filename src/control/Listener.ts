@@ -8,7 +8,7 @@ import Group from '../node/Group';
 import Slice from '../node/Slice';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
-import Select, { SelectAr } from './Select';
+import Select, { Rect } from './Select';
 import Input from './Input';
 import State from './State';
 import { clone } from '../util/type';
@@ -94,7 +94,7 @@ export default class Listener extends Event {
   pageTy: number;
   centerX: number; // 单个节点拖转旋转时节点的中心
   centerY: number;
-  selectAr?: SelectAr; // 多个节点拉伸时最初的选框信息
+  selectRect?: Rect; // 多个节点拉伸时最初的选框信息
   dx: number; // 每次拖拽的px，考虑缩放和dpi，即为sketch内的单位
   dy: number;
   isFrame: boolean; // 点下时是否选中节点，没有则是框选
@@ -102,7 +102,7 @@ export default class Listener extends Event {
   selected: Node[]; // 已选的节点们
   abcStyle: Partial<Style>[][]; // 点击按下时已选artBoard（非resizeContent）下直接children的样式clone记录，拖动过程中用转换的px单位计算，拖动结束时还原
   computedStyle: ComputedStyle[]; // 点击按下时已选节点的值样式状态记录初始状态，拖动过程中对比计算
-  clientRect?: SelectAr[]; // 和selectAr一样记录每个节点最初的选框信息
+  clientRect?: Rect[]; // 和selectAr一样记录每个节点最初的选框信息
   originStyle: Style[]; // 同上
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
@@ -354,19 +354,22 @@ export default class Listener extends Event {
         });
         // 多个节点拉伸时，有一个保持宽高比，整体都需要，缩放是选框缩放，节点需保持相对框的位置，先记录初始信息
         if (selected.length > 1) {
-          this.selectAr = this.select.getAspectRatio();
+          this.selectRect = this.select.getAspectRatio();
           this.clientRect = selected.map(item => {
-            const r = item.getBoundingClientRect();
+            const r = item.getBoundingClientRect({
+              excludeDpi: true,
+            });
             return {
-              x: r.left / dpi,
-              y: r.top / dpi,
-              w: r.width / dpi,
-              h: r.height / dpi,
+              x: r.left,
+              y: r.top,
+              w: r.width,
+              h: r.height,
             };
           });
+          // console.warn(this.selectRect, this.clientRect)
         }
         else {
-          this.selectAr = undefined;
+          this.selectRect = undefined;
           this.clientRect = undefined;
         }
       }
@@ -642,6 +645,10 @@ export default class Listener extends Event {
             }
           }
         }
+        let alt = this.altKey;
+        if (this.options.enabled?.resizeWithAlt) {
+          alt = !alt;
+        }
         const controlType = this.controlType;
         selected.forEach((node, i) => {
           // 改变尺寸前置记录操作，注意更新computedStyle（startSizeChange变更了），影响计算
@@ -652,19 +659,15 @@ export default class Listener extends Event {
           }
           const computedStyle = this.computedStyle[i];
           const cssStyle = this.cssStyle[i];
-          let alt = this.altKey;
-          if (this.options.enabled?.resizeWithAlt) {
-            alt = !alt;
-          }
           ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
           // 多个节点保持宽高比拉伸时，按选框进行缩放和保持相对位置
-          // if (shift && this.selectAr && this.clientRect && this.clientRect[i]) {
-          //   ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, this.clientRect[i], dx2, dy2, controlType, this.selectAr, alt);
-          // }
-          // // 普通拉伸
-          // else {
-          //   ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
-          // }
+          if (shift && this.selectRect && this.clientRect && this.clientRect[i]) {
+            ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, dx2, dy2, controlType, this.clientRect[i], this.selectRect, alt);
+          }
+          // 普通拉伸
+          else {
+            ResizeCommand.updateStyle(node, computedStyle, cssStyle, dx2, dy2, controlType, shift, alt);
+          }
         });
         this.isMouseMove = true;
         this.select.updateSelect(selected);
@@ -896,6 +899,20 @@ export default class Listener extends Event {
           }
         });
         if (this.isMouseMove) {
+          let shift = this.shiftKey;
+          if (!shift) {
+            // 有一个是固定宽高比的，整体都是
+            for (let i = 0, len = selected.length; i < len; i++) {
+              if (selected[i].props.constrainProportions) {
+                shift = true;
+                break;
+              }
+            }
+          }
+          let alt = this.altKey;
+          if (this.options.enabled?.resizeWithAlt) {
+            alt = !alt;
+          }
           const controlType = this.controlType;
           const data: ResizeData[] = [];
           selected.forEach((node, i) => {
@@ -903,17 +920,19 @@ export default class Listener extends Event {
             node.endSizeChange(this.originStyle[i]);
             if (dx || dy) {
               node.checkPosSizeUpward();
-              let alt = this.altKey;
-              if (this.options.enabled?.resizeWithAlt) {
-                alt = !alt;
-              }
-              const r: ResizeData = { dx, dy, controlType, aspectRatio: this.shiftKey, fromCenter: alt };
+              const r: ResizeData = { dx, dy, controlType, aspectRatio: shift, clientRect: this.clientRect && this.clientRect[i], selectRect: this.selectRect, fromCenter: alt };
               const originStyle = this.originStyle[i];
               if (originStyle.width.u === StyleUnit.AUTO) {
                 r.widthFromAuto = true;
               }
               if (originStyle.height.u === StyleUnit.AUTO) {
                 r.heightFromAuto = true;
+              }
+              if (this.computedStyle[i].scaleX !== node.computedStyle.scaleX) {
+                r.flipX = true;
+              }
+              if (this.computedStyle[i].scaleY !== node.computedStyle.scaleY) {
+                r.flipY = true;
               }
               data.push(r);
             }
@@ -1401,8 +1420,6 @@ export default class Listener extends Event {
         nodes2.push(item.node);
         data.push(o);
       });
-      // 清空复制的
-      this.clones.splice(0);
       if (nodes2.length) {
         this.history.addCommand(new AddCommand(nodes2, data));
         this.selected = nodes2.slice(0);
