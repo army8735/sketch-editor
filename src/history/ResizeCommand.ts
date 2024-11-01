@@ -70,7 +70,6 @@ class ResizeCommand extends AbstractCommand {
       node.startSizeChange();
       const computedStyle = node.getComputedStyle();
       const cssStyle = node.getCssStyle();
-      controlType = flip(controlType, flipX, flipY);
       if (clientRect) {
         ResizeCommand.updateStyleMultiAr(node, computedStyle, cssStyle, -dx, -dy, controlType, clientRect, selectRect!, aspectRatio, fromCenter, widthToAuto, heightToAuto);
       }
