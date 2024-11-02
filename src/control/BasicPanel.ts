@@ -1,6 +1,5 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import Text from '../node/Text';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
 import { toPrecision } from '../math';
@@ -74,8 +73,6 @@ class BasicPanel extends Panel {
     let cssStyle: JStyle[] = [];
     let prevNumber: number[] = [];
     let nextNumber: number[] = [];
-    let widthAuto: boolean[] = [];
-    let heightAuto: boolean[] = [];
 
     const onInputPos = (e: Event, isXOrY = true) => {
       this.silence = true;
@@ -282,28 +279,18 @@ class BasicPanel extends Panel {
         computedStyle = [];
         cssStyle = [];
         prevNumber = [];
-        widthAuto = [];
-        heightAuto = [];
       }
       nextNumber = [];
       const value = parseFloat(isWOrH ? w.value : h.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         if (isFirst) {
-          node.startSizeChange();
           nodes.push(node);
           originStyle.push(node.getStyle());
+          node.startSizeChange();
           computedStyle.push(node.getComputedStyle());
           cssStyle.push(node.getCssStyle());
           prevNumber.push(isWOrH ? this.data[i].w : this.data[i].h);
-          if (originStyle[i].width.u === StyleUnit.AUTO) {
-            widthAuto.push(true);
-          }
-          if (originStyle[i].height.u === StyleUnit.AUTO) {
-            heightAuto.push(true);
-          }
-          widthAuto[i] = widthAuto[i] || false;
-          heightAuto[i] = heightAuto[i] || false;
           const p = node.parent;
           if (p && p.isGroup && p instanceof Group) {
             p.fixedPosAndSize = true;
@@ -380,17 +367,11 @@ class BasicPanel extends Panel {
             aspectRatio: shift,
             fromCenter: false,
           };
-          if (node instanceof Text) {
-            rd.widthFromAuto = widthAuto[i];
-            rd.heightFromAuto = heightAuto[i];
+          if (originStyle[i].width.u === StyleUnit.AUTO) {
+            rd.widthFromAuto = true;
           }
-          else {
-            if (originStyle[i].width.u === StyleUnit.AUTO) {
-              rd.widthFromAuto = true;
-            }
-            if (originStyle[i].height.u === StyleUnit.AUTO) {
-              rd.heightFromAuto = true;
-            }
+          if (originStyle[i].height.u === StyleUnit.AUTO) {
+            rd.heightFromAuto = true;
           }
           if (computedStyle[i].scaleX !== node.computedStyle.scaleX) {
             rd.flipX = true;
@@ -400,14 +381,14 @@ class BasicPanel extends Panel {
           }
           data.push(rd);
         });
-        listener.history.addCommand(new ResizeCommand(nodes, data));
+        if (nodes.length && data.length) {
+          listener.history.addCommand(new ResizeCommand(nodes, data));
+        }
         nodes = [];
         originStyle = [];
         computedStyle = [];
         prevNumber = [];
         nextNumber = [];
-        widthAuto = [];
-        heightAuto = [];
       }
     };
 
