@@ -926,23 +926,11 @@ export default class Listener extends Event {
               node.checkPosSizeUpward();
               const rd: ResizeData = { dx, dy, controlType, aspectRatio: shift, clientRect: this.clientRect && this.clientRect[i], selectRect: this.selectRect, fromCenter: alt };
               const originStyle = this.originStyle[i];
-              if (node instanceof Text) {
-                const tb = getTextBehaviour(node);
-                if (tb === TEXT_BEHAVIOUR.AUTO) {
-                  rd.widthFromAuto = true;
-                  rd.heightFromAuto = true;
-                }
-                else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
-                  rd.heightFromAuto = true;
-                }
+              if (originStyle.width.u === StyleUnit.AUTO) {
+                rd.widthFromAuto = true;
               }
-              else {
-                if (originStyle.width.u === StyleUnit.AUTO) {
-                  rd.widthFromAuto = true;
-                }
-                if (originStyle.height.u === StyleUnit.AUTO) {
-                  rd.heightFromAuto = true;
-                }
+              if (originStyle.height.u === StyleUnit.AUTO) {
+                rd.heightFromAuto = true;
               }
               if (this.computedStyle[i].scaleX !== node.computedStyle.scaleX) {
                 rd.flipX = true;

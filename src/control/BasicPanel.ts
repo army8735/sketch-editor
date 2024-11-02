@@ -11,8 +11,7 @@ import { getBasicInfo } from '../tools/node';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import UpdateStyleCommand, { UpdateStyleData } from '../history/UpdateStyleCommand';
 import Panel from './Panel';
-import { ComputedStyle, Style, StyleUnit, TEXT_BEHAVIOUR } from '../style/define';
-import { getTextBehaviour } from '../tools/text';
+import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
 import { JStyle } from '../format';
 
@@ -118,6 +117,14 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          else if (listener.altKey) {
+            if (d > 0) {
+              d = 0.1;
+            }
+            else {
+              d = -0.1;
+            }
+          }
           next = prev + d;
         }
         nextNumber.push(next);
@@ -217,6 +224,14 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          else if (listener.altKey) {
+            if (d > 0) {
+              d = 0.1;
+            }
+            else {
+              d = -0.1;
+            }
+          }
           next = prev + d;
         }
         nextNumber.push(next);
@@ -280,21 +295,11 @@ class BasicPanel extends Panel {
           computedStyle.push(node.getComputedStyle());
           cssStyle.push(node.getCssStyle());
           prevNumber.push(isWOrH ? this.data[i].w : this.data[i].h);
-          if (node instanceof Text) {
-            const tb = getTextBehaviour(node);
-            if (tb === TEXT_BEHAVIOUR.AUTO) {
-              if (isWOrH) {
-                widthAuto.push(true);
-              }
-              else {
-                heightAuto.push(true);
-              }
-            }
-            else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
-              if (!isWOrH) {
-                heightAuto.push(true);
-              }
-            }
+          if (originStyle[i].width.u === StyleUnit.AUTO) {
+            widthAuto.push(true);
+          }
+          if (originStyle[i].height.u === StyleUnit.AUTO) {
+            heightAuto.push(true);
           }
           widthAuto[i] = widthAuto[i] || false;
           heightAuto[i] = heightAuto[i] || false;
@@ -326,15 +331,18 @@ class BasicPanel extends Panel {
               d = -10;
             }
           }
+          else if (listener.altKey) {
+            if (d > 0) {
+              d = 0.1;
+            }
+            else {
+              d = -0.1;
+            }
+          }
           next = prev + d;
         }
         nextNumber.push(next);
-        if (listener.selectRect && listener.clientRect && listener.clientRect[i]) {
-          ResizeCommand.updateStyleMultiAr(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d, isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, listener.clientRect[i], listener.selectRect, shift);
-        }
-        else {
-          ResizeCommand.updateStyle(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d, isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, shift);
-        }
+        ResizeCommand.updateStyle(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d, isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, shift);
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
