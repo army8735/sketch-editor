@@ -352,6 +352,14 @@ class StrokePanel extends Panel {
               d = -10;
             }
           }
+          else if (listener.altKey) {
+            if (d > 0) {
+              d = 0.1;
+            }
+            else {
+              d = -0.1;
+            }
+          }
           next = prev + d;
           next = Math.max(next, 0);
           next = Math.min(next, 100);

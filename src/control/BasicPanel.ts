@@ -290,6 +290,7 @@ class BasicPanel extends Panel {
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         if (isFirst) {
+          node.startSizeChange();
           nodes.push(node);
           originStyle.push(node.getStyle());
           computedStyle.push(node.getComputedStyle());
@@ -303,7 +304,6 @@ class BasicPanel extends Panel {
           }
           widthAuto[i] = widthAuto[i] || false;
           heightAuto[i] = heightAuto[i] || false;
-          node.startSizeChange();
           const p = node.parent;
           if (p && p.isGroup && p instanceof Group) {
             p.fixedPosAndSize = true;

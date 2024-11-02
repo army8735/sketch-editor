@@ -319,11 +319,17 @@ class ShadowPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
+            else if (listener.altKey) {
+              d *= 0.1;
+            }
           }
           else {
             d = n - p;
             if (listener.shiftKey) {
               d *= 10;
+            }
+            else if (listener.altKey) {
+              d *= 0.1;
             }
           }
           next = p + d;

@@ -150,11 +150,17 @@ class TextPanel extends Panel {
                   if (listener.shiftKey) {
                     d *= 10;
                   }
+                  else if (listener.altKey) {
+                    d *= 0.1;
+                  }
                 }
                 else {
                   d = value - prevs[0][i][key];
                   if (listener.shiftKey) {
                     d *= 10;
+                  }
+                  else if (listener.altKey) {
+                    d *= 0.1;
                   }
                 }
                 const location = Math.max(rich.location, start);
@@ -195,11 +201,17 @@ class TextPanel extends Panel {
               if (listener.shiftKey) {
                 d *= 10;
               }
+              else if (listener.altKey) {
+                d *= 0.1;
+              }
             }
             else {
               d = value - prevs[0][0][key];
               if (listener.shiftKey) {
                 d *= 10;
+              }
+              else if (listener.altKey) {
+                d *= 0.1;
               }
             }
             node.rich.forEach((rich) => {

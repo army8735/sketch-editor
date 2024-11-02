@@ -100,9 +100,8 @@ class BlurPanel extends Panel {
         prevs.push({
           blur: node.getCssStyle().blur,
         });
-        const blur = node.computedStyle.blur;
         // 默认删除，如果是添加则改变
-        let next = {
+        const next = {
           blur: 'none',
         };
         if (isAdd) {
@@ -235,6 +234,9 @@ class BlurPanel extends Panel {
             if (listener.shiftKey) {
               d *= 10;
             }
+            else if (listener.altKey) {
+              d *= 0.1;
+            }
             next = Math.min(max, Math.max(min, Math.round(prev + d)));
             number.value = '';
           }
@@ -242,6 +244,9 @@ class BlurPanel extends Panel {
             d = next - prev;
             if (listener.shiftKey) {
               d *= 10;
+            }
+            else if (listener.altKey) {
+              d *= 0.1;
             }
             next = Math.min(max, Math.max(min, Math.round(prev + d)));
             if (!i) {
