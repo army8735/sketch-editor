@@ -351,7 +351,7 @@ class Text extends Node {
       contentArea = getContentArea(computedStyle, lineHeight);
       fontFamily = computedStyle.fontFamily;
       fontSize = computedStyle.fontSize;
-      color = color2rgbaStr(computedStyle.color);
+      color = color2rgbaStr(this.style.color.v);
       textDecoration = computedStyle.textDecoration || [];
       ctx.font = setFontStyle(computedStyle);
       // @ts-ignore
@@ -2987,6 +2987,9 @@ class Text extends Node {
   // 合并相邻相同的rich，排序以及校验，防止脏数据
   private mergeRich() {
     const { rich, _content: content, style } = this;
+    if (!rich.length) {
+      return;
+    }
     rich.sort((a, b) => {
       if (a.location === b.location) {
         return a.length - b.length;
