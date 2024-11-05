@@ -109,7 +109,7 @@ class Guides {
       this.showLineV(ng.n, Math.min(top, ng.r.top), Math.max(bottom, ng.r.bottom), 0);
       for (let i = 1, len = listX.length; i < len; i++) {
         const item = listX[i]!;
-        if (item.d === d) {
+        if (Math.abs(item.d - d) < 1e-9) {
           this.showLineV(item.ng.n, Math.min(top, item.ng.r.top), Math.max(bottom, item.ng.r.bottom), i);
         }
         else {
