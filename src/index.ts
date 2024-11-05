@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import format, { TAG_NAME, JFile, JSymbolMaster, JLayer, JStyle } from './format';
 import { openAndConvertSketchBuffer, openAndConvertSketchZip, convertSketch } from './format/sketch';
 import { openAndConvertPsdBuffer } from './format/psd';
@@ -36,11 +37,11 @@ export default {
     }
     const root = new node.Root({
       dpi,
-      uuid: json.document.uuid,
+      uuid: json.document?.uuid || uuid.v4(),
       index: 0,
-      assets: json.document.assets,
-      layerStyles: json.document.layerStyles,
-      layerTextStyles: json.document.layerTextStyles,
+      assets: json.document?.assets,
+      layerStyles: json.document?.layerStyles,
+      layerTextStyles: json.document?.layerTextStyles,
       style,
       contextAttributes: Object.assign({}, gl.ca, options.contextAttributes),
     });

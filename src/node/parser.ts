@@ -58,8 +58,9 @@ export function parse(json: JLayer, root?: Root): Node | undefined {
   }
   else if (tagName === TAG_NAME.GROUP) {
     const children = [];
-    for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i], root);
+    const cd = (json as JContainer).children || [];
+    for (let i = 0, len = cd.length; i < len; i++) {
+      const res = parse(cd[i], root);
       if (res) {
         children.push(res);
       }
