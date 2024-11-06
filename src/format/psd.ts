@@ -1,9 +1,9 @@
 import * as uuid from 'uuid';
-import { Layer, readPsd, RGB } from 'ag-psd';
+import { Layer, readPsd, RGB, LayerMaskData } from 'ag-psd';
 import { JArtBoard, JBitmap, JFile, JGroup, JLayer, JNode, JPage, JText, Rich, TAG_NAME, } from './';
 import { PAGE_H as H, PAGE_W as W } from './dft';
 import { TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
-import inject from '../util/inject';
+import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
 import { color2rgbaStr } from '../style/css';
 
@@ -47,10 +47,26 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
     children: [ab],
   } as JPage;
   if (json.children) {
+    let breakMask = false;
     for (let i = 0, len = json.children.length; i < len; i++) {
-      const j = json.children[i];
-      const res = await convertItem(json.children[i], json.width, json.height);
+      const child = json.children[i];
+      const res = await convertItem(child, json.width, json.height);
       if (res) {
+        if (breakMask) {
+          res.props.style!.breakMask = breakMask;
+          breakMask = false;
+        }
+        if (child.mask) {
+          const m = await convertMask(child, json.width, json.height);
+          if (m) {
+            children.push(m);
+            // 下一个child要中断不能继续mask
+            breakMask = true;
+          }
+          if (child.mask.disabled) {
+            res.props.style!.breakMask = true;
+          }
+        }
         children.push(res);
       }
     }
@@ -129,9 +145,26 @@ async function convertItem(layer: Layer, w: number, h: number) {
   if (layer.opened !== undefined) {
     const children: JNode[] = [];
     if (layer.children) {
+      let breakMask = false;
       for (let i = 0, len = layer.children.length; i < len; i++) {
-        const res = await convertItem(layer.children[i], w, h);
+        const child = layer.children[i];
+        const res = await convertItem(child, w, h);
         if (res) {
+          if (breakMask) {
+            res.props.style!.breakMask = breakMask;
+            breakMask = false;
+          }
+          if (child.mask) {
+            const m = await convertMask(child, w, h);
+            if (m) {
+              children.push(m);
+              // 下一个child要中断不能继续mask
+              breakMask = true;
+            }
+            if (child.mask.disabled) {
+              res.props.style!.breakMask = true;
+            }
+          }
           children.push(res);
         }
       }
@@ -162,13 +195,16 @@ async function convertItem(layer: Layer, w: number, h: number) {
     } as JGroup;
   }
   else if (layer.text) {
+    const transform = layer.text.transform || [1, 0, 1, 0, 0, 0];
     const rich: Rich[] = [];
     const {
       font: { name: fontFamily = inject.defaultFontFamily } = {},
       fontSize = inject.defaultFontSize,
       fauxBold,
       fauxItalic,
+      autoKerning,
       kerning = 0,
+      autoLeading,
       leading = 0,
       fillColor,
       // strokeColor,
@@ -185,10 +221,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
     }
     const textStyle = {
       fontFamily,
-      fontSize,
+      fontSize: fontSize * transform[0],
       fontWeight: fauxBold ? 'bold' : 'normal',
       fontStyle: fauxItalic ? 'italic' : 'normal',
-      letterSpacing: kerning,
+      letterSpacing: autoKerning ? 0 : kerning,
       textAlign: justification ? justification : 'left',
       color: fillColor ? [
         Math.floor((fillColor as RGB).r),
@@ -201,7 +237,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       //   Math.floor((strokeColor as RGB).b),
       // ]] : [],
       textDecoration,
-      paragraphSpacing: leading,
+      paragraphSpacing: autoLeading ? 0 : leading,
     };
     const style = {
       left: (left + (right - left) * 0.5) * 100 / w + '%',
@@ -392,4 +428,63 @@ async function convertItem(layer: Layer, w: number, h: number) {
       });
     });
   }
+}
+
+async function convertMask(layer: Layer, w: number, h: number) {
+  const { top = 0, left = 0, bottom = 0, right = 0, canvas } = layer.mask!;
+  if (!canvas) {
+    return;
+  }
+  let canvas2 = canvas;
+  let oc: OffScreen;
+  // psd的遮罩和图层是一样大的，如果四周是白色会省略，需填充
+  if (top > layer.top! || left > layer.left! || right < layer.right! || bottom < layer.bottom!) {
+    const w = layer.right! - layer.left!;
+    const h = layer.bottom! - layer.top!;
+    oc = inject.getOffscreenCanvas(w, h);
+    canvas2 = oc.canvas;
+    oc.ctx.fillStyle = '#FFF';
+    if (top > layer.top!) {
+      oc.ctx.fillRect(0, 0, w, top - layer.top!);
+    }
+    if (bottom < layer.bottom!) {
+      oc.ctx.fillRect(0, bottom, w, layer.bottom! - bottom);
+    }
+    if (left > layer.left!) {
+      oc.ctx.fillRect(0, 0, left - layer.left!, h);
+    }
+    if (right < layer.right!) {
+      oc.ctx.fillRect(right, 0, layer.right! - right, h);
+    }
+    oc.ctx.drawImage(canvas, left - layer.left!, top - layer.top!);
+  }
+  return new Promise<JLayer | undefined>(resolve => {
+    canvas2!.toBlob(blob => {
+      if (oc) {
+        oc.release();
+      }
+      if (blob) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(blob);
+        img.title = layer.name!;
+        document.body.appendChild(img);
+        return resolve({
+          tagName: TAG_NAME.BITMAP,
+          props: {
+            uuid: uuid.v4(),
+            name: layer.name,
+            style: {
+              left: layer.left! * 100 / w + '%',
+              top: layer.top! * 100 / h + '%',
+              right: (w - layer.right!) * 100 / w + '%',
+              bottom: (h - layer.bottom!) * 100 / h + '%',
+              maskMode: 'gray',
+            },
+            src: URL.createObjectURL(blob),
+          },
+        } as JBitmap);
+      }
+      resolve(undefined);
+    });
+  });
 }

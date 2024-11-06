@@ -143,9 +143,13 @@ export type JStyle = {
     | 'darken'
     | 'lighten'
     | 'color-dodge'
+    | 'colorDodge'
     | 'color-burn'
+    | 'colorBurn'
     | 'hard-light'
+    | 'hardLight'
     | 'soft-light'
+    | 'softLight'
     | 'difference'
     | 'exclusion'
     | 'hue'
@@ -153,7 +157,7 @@ export type JStyle = {
     | 'color'
     | 'luminosity';
   pointerEvents: boolean;
-  maskMode: 'none' | 'outline' | 'alpha';
+  maskMode: 'none' | 'outline' | 'alpha' | 'gray';
   breakMask: boolean;
   blur: string;
   shadow: string[];

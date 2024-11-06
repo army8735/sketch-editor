@@ -2400,38 +2400,68 @@ function genMask(
     );
     listO = outline.list;
   }
-  const maskProgram = programs.maskProgram;
-  gl.useProgram(maskProgram);
-  const clipProgram = programs.clipProgram;
-  // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
-  for (let i = 0, len = listS.length; i < len; i++) {
-    const { bbox, w, h, t } = listS[i];
-    const tex = createTexture(gl, 0, undefined, w, h);
-    if (frameBuffer) {
-      gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,
-        gl.COLOR_ATTACHMENT0,
-        gl.TEXTURE_2D,
-        tex,
-        0,
-      );
-      gl.viewport(0, 0, w, h);
+  if (maskMode === MASK.GRAY) {
+    const maskGrayProgram = programs.maskGrayProgram;
+    gl.useProgram(maskGrayProgram);
+    for (let i = 0, len = listS.length; i < len; i++) {
+      const { bbox, w, h, t } = listS[i];
+      const tex = createTexture(gl, 0, undefined, w, h);
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+        gl.viewport(0, 0, w, h);
+      }
+      else {
+        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+      }
+      drawMask(gl, maskGrayProgram, listM[i].t, t);
+      listR.push({
+        bbox: bbox.slice(0),
+        w,
+        h,
+        t: tex,
+      });
     }
-    else {
-      frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+  }
+  // alpha/outline
+  else {
+    const maskProgram = programs.maskProgram;
+    gl.useProgram(maskProgram);
+    // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
+    for (let i = 0, len = listS.length; i < len; i++) {
+      const { bbox, w, h, t } = listS[i];
+      const tex = createTexture(gl, 0, undefined, w, h);
+      if (frameBuffer) {
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          tex,
+          0,
+        );
+        gl.viewport(0, 0, w, h);
+      }
+      else {
+        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+      }
+      drawMask(gl, maskProgram, listO ? listO[i].t : listM[i].t, t);
+      // if (listO) {
+      //   gl.useProgram(clipProgram);
+      //   drawMask(gl, clipProgram, listO[i].t, listM[i].t);
+      //   gl.useProgram(maskProgram);
+      // }
+      listR.push({
+        bbox: bbox.slice(0),
+        w,
+        h,
+        t: tex,
+      });
     }
-    drawMask(gl, maskProgram, listO ? listO[i].t : listM[i].t, t);
-    if (listO) {
-      gl.useProgram(clipProgram);
-      drawMask(gl, clipProgram, listO[i].t, listM[i].t);
-      gl.useProgram(maskProgram);
-    }
-    listR.push({
-      bbox: bbox.slice(0),
-      w,
-      h,
-      t: tex,
-    });
   }
   gl.useProgram(program);
   // 删除fbo恢复

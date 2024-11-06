@@ -1189,7 +1189,7 @@ class Node extends Event {
     res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
     res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
     res.strokePosition = computedStyle.strokePosition.map(item => getCssStrokePosition(item));
-    res.maskMode = ['none', 'outline', 'alpha'][computedStyle.maskMode];
+    res.maskMode = ['none', 'outline', 'alpha', 'gray'][computedStyle.maskMode];
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
       [computedStyle.booleanOperation];
     const blur = computedStyle.blur;

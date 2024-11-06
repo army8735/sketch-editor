@@ -30,6 +30,7 @@ import innerShadowFrag from '../gl/innerShadow.frag';
 import mainVert from '../gl/main.vert';
 import mainFrag from '../gl/main.frag';
 import maskFrag from '../gl/mask.frag';
+import maskGrayFrag from '../gl/maskGray.frag';
 import boxFrag from '../gl/box.frag';
 import dualDownFrag from '../gl/dualDown.frag';
 import dualUpFrag from '../gl/dualUp.frag';
@@ -197,6 +198,7 @@ class Root extends Container implements FrameCallback {
     this.programs.bgShadowProgram = initShaders(gl, bgShadowVert, bgShadowFrag);
     this.programs.simpleProgram = initShaders(gl, simpleVert, simpleFrag);
     this.programs.maskProgram = initShaders(gl, simpleVert, maskFrag);
+    this.programs.maskGrayProgram = initShaders(gl, simpleVert, maskGrayFrag);
     this.programs.clipProgram = initShaders(gl, simpleVert, clipFrag);
     this.programs.multiplyProgram = initShaders(gl, simpleVert, multiplyFrag);
     this.programs.screenProgram = initShaders(gl, simpleVert, screenFrag);
@@ -604,6 +606,7 @@ class Root extends Container implements FrameCallback {
       gl.deleteProgram(programs.bgShadowProgram);
       gl.deleteProgram(programs.simpleProgram);
       gl.deleteProgram(programs.maskProgram);
+      gl.deleteProgram(programs.maskGrayProgram);
       gl.deleteProgram(programs.clipProgram);
       gl.deleteProgram(programs.multiplyProgram);
       gl.deleteProgram(programs.screenProgram);

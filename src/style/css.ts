@@ -467,6 +467,9 @@ export function normalize(style: any): Style {
     else if (maskMode === 'alpha') {
       v = MASK.ALPHA;
     }
+    else if (maskMode === 'gray') {
+      v = MASK.GRAY;
+    }
     res.maskMode = { v, u: StyleUnit.NUMBER };
   }
   const breakMask = style.breakMask;
@@ -644,49 +647,49 @@ export function normalize(style: any): Style {
 
 function getBlendMode(blend: string) {
   let v = MIX_BLEND_MODE.NORMAL;
-  if (/multiply/i.test(blend)) {
+  if (/multiply/.test(blend)) {
     v = MIX_BLEND_MODE.MULTIPLY;
   }
-  else if (/screen/i.test(blend)) {
+  else if (/screen/.test(blend)) {
     v = MIX_BLEND_MODE.SCREEN;
   }
-  else if (/overlay/i.test(blend)) {
+  else if (/overlay/.test(blend)) {
     v = MIX_BLEND_MODE.OVERLAY;
   }
-  else if (/darken/i.test(blend)) {
+  else if (/darken/.test(blend)) {
     v = MIX_BLEND_MODE.DARKEN;
   }
-  else if (/lighten/i.test(blend)) {
+  else if (/lighten/.test(blend)) {
     v = MIX_BLEND_MODE.LIGHTEN;
   }
-  else if (/color-dodge/i.test(blend)) {
+  else if (/color-dodge/.test(blend) || /colorDodge/.test(blend)) {
     v = MIX_BLEND_MODE.COLOR_DODGE;
   }
-  else if (/color-burn/i.test(blend)) {
+  else if (/color-burn/.test(blend) || /colorBurn/.test(blend)) {
     v = MIX_BLEND_MODE.COLOR_BURN;
   }
-  else if (/hard-light/i.test(blend)) {
+  else if (/hard-light/.test(blend) || /hardLight/.test(blend)) {
     v = MIX_BLEND_MODE.HARD_LIGHT;
   }
-  else if (/soft-light/i.test(blend)) {
+  else if (/soft-light/.test(blend) || /softLight/.test(blend)) {
     v = MIX_BLEND_MODE.SOFT_LIGHT;
   }
-  else if (/difference/i.test(blend)) {
+  else if (/difference/.test(blend)) {
     v = MIX_BLEND_MODE.DIFFERENCE;
   }
-  else if (/exclusion/i.test(blend)) {
+  else if (/exclusion/.test(blend)) {
     v = MIX_BLEND_MODE.EXCLUSION;
   }
-  else if (/hue/i.test(blend)) {
+  else if (/hue/.test(blend)) {
     v = MIX_BLEND_MODE.HUE;
   }
-  else if (/saturation/i.test(blend)) {
+  else if (/saturation/.test(blend)) {
     v = MIX_BLEND_MODE.SATURATION;
   }
-  else if (/color/i.test(blend)) {
+  else if (/color/.test(blend)) {
     v = MIX_BLEND_MODE.COLOR;
   }
-  else if (/luminosity/i.test(blend)) {
+  else if (/luminosity/.test(blend)) {
     v = MIX_BLEND_MODE.LUMINOSITY;
   }
   return v;

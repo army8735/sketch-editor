@@ -426,6 +426,7 @@ export enum MASK {
   NONE = 0,
   OUTLINE = 1,
   ALPHA = 2,
+  GRAY = 3,
 }
 
 export enum STROKE_LINE_CAP {
