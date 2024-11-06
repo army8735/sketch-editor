@@ -2990,7 +2990,7 @@ class Text extends Node {
     if (!rich.length) {
       return;
     }
-    this.rich = rich = rich.filter(item => item.location > 0 && item.length > 0);
+    this.rich = rich = rich.filter(item => item.location > -1 && item.length > 0);
     rich.sort((a, b) => {
       if (a.location === b.location) {
         return a.length - b.length;
