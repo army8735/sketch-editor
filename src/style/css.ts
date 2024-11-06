@@ -957,9 +957,17 @@ export function setFontStyle(style: ComputedStyle | Rich) {
   if (/[\s.,/\\]/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
+  let fontStyle = '';
+  if (style.fontStyle === FONT_STYLE.ITALIC) {
+    fontStyle = 'italic ';
+  }
+  let fontWeight = '';
+  if (style.fontWeight !== 400) {
+    fontWeight = style.fontWeight + ' ';
+  }
   return (
-    // (style.fontStyle || '') + ' ' +
-    // (style.fontWeight || '400') + ' ' +
+    fontStyle +
+    fontWeight +
     fontSize + 'px ' +
     fontFamily
   );
@@ -976,7 +984,7 @@ export function calFontFamily(fontFamily: string) {
   return inject.defaultFontFamily;
 }
 
-export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
+export function calNormalLineHeight(style: Pick<ComputedStyle | Rich, 'fontFamily' | 'fontSize'>, ff?: string) {
   if (!ff) {
     ff = calFontFamily(style.fontFamily);
   }
@@ -990,7 +998,7 @@ export function calNormalLineHeight(style: ComputedStyle | Rich, ff?: string) {
  * https://zhuanlan.zhihu.com/p/25808995
  * 根据字形信息计算baseline的正确值，差值上下均分
  */
-export function getBaseline(style: ComputedStyle | Rich, lineHeight?: number) {
+export function getBaseline(style: Pick<ComputedStyle | Rich, 'fontSize' | 'fontFamily' | 'lineHeight'>, lineHeight?: number) {
   const fontSize = style.fontSize;
   const ff = calFontFamily(style.fontFamily);
   const normal = calNormalLineHeight(style, ff);
@@ -1000,7 +1008,7 @@ export function getBaseline(style: ComputedStyle | Rich, lineHeight?: number) {
   return ((lineHeight ?? style.lineHeight) - normal) * 0.5 + fontSize * blr;
 }
 
-export function getContentArea(style: ComputedStyle | Rich, lineHeight?: number) {
+export function getContentArea(style: Pick<ComputedStyle | Rich, 'fontSize' | 'fontFamily' | 'lineHeight'>, lineHeight?: number) {
   const fontSize = style.fontSize;
   const ff = calFontFamily(style.fontFamily);
   const normal = calNormalLineHeight(style, ff);

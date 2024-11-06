@@ -8,15 +8,15 @@ import {
 import { DEFAULT_STYLE } from './dft';
 
 export type JFile = {
-  document: {
+  document?: {
     uuid: string;
-    assets: {
+    assets?: {
       uuid: string;
     };
-    layerStyles: {
+    layerStyles?: {
       uuid: string;
     };
-    layerTextStyles: {
+    layerTextStyles?: {
       uuid: string;
     };
   };

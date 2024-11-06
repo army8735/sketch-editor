@@ -26,8 +26,8 @@
   },
   "dependencies": {
     "@sketch-hq/sketch-file-format-ts": "^6.5.0",
+    "ag-psd": "^22.0.0",
     "jszip": "^3.10.1",
-    "psd.js": "^3.9.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
