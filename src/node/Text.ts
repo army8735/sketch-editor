@@ -2986,10 +2986,11 @@ class Text extends Node {
 
   // 合并相邻相同的rich，排序以及校验，防止脏数据
   private mergeRich() {
-    const { rich, _content: content, style } = this;
+    let { rich, _content: content, style } = this;
     if (!rich.length) {
       return;
     }
+    this.rich = rich = rich.filter(item => item.location > 0 && item.length > 0);
     rich.sort((a, b) => {
       if (a.location === b.location) {
         return a.length - b.length;
