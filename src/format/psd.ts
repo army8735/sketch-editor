@@ -91,7 +91,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
 
 async function convertItem(layer: Layer, w: number, h: number) {
   const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {} } = layer;
-  console.log(name, layer);
+  // console.log(name, layer);
   const visibility = !hidden ? 'visible' : 'hidden';
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
@@ -253,7 +253,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     };
     const style = {
       left: (left + (right - left) * 0.5) * 100 / w + '%',
-      right: layer.text.orientation === 'vertical' ? (w - right - (right - left) * 0.5) * 100 / w + '%' : 'auto',
+      // right: layer.text.orientation === 'vertical' ? (w - right - (right - left) * 0.5) * 100 / w + '%' : 'auto',
       top: (top + (bottom - top) * 0.5) * 100 / h + '%',
       opacity,
       visibility,
