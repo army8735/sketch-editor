@@ -12,9 +12,10 @@ import {
   JShapeGroup,
   JSymbolInstance,
   JSymbolMaster,
-  JText, Override,
+  JText,
+  JRich,
+  Override,
   Point,
-  Rich,
   TAG_NAME,
 } from './';
 import { PAGE_W, PAGE_H } from './dft';
@@ -718,7 +719,7 @@ async function convertItem(
       // 啥也不干，等同普通节点的固定宽高
     }
     const { string, attributes } = layer.attributedString;
-    const rich: Rich[] = attributes.length
+    const rich: JRich[] = attributes.length
       ? attributes.map((item: any) => {
         const {
           location,
@@ -738,12 +739,12 @@ async function convertItem(
             } = {},
           },
         } = item;
-        const textDecoration: TEXT_DECORATION[] = [];
+        const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
         if (underlineStyle !== SketchFormat.UnderlineStyle.None) {
-          textDecoration.push(TEXT_DECORATION.UNDERLINE);
+          textDecoration.push('underline');
         }
         if (strikethroughStyle !== SketchFormat.StrikethroughStyle.None) {
-          textDecoration.push(TEXT_DECORATION.LINE_THROUGH);
+          textDecoration.push('lineThrough');
         }
         return {
           location: parseInt(location) || 0,
@@ -753,7 +754,7 @@ async function convertItem(
           fontWeight: 400, // 无用写死
           fontStyle: 'normal', // 同
           letterSpacing: kerning,
-          textAlign: [TEXT_ALIGN.LEFT, TEXT_ALIGN.RIGHT, TEXT_ALIGN.CENTER, TEXT_ALIGN.JUSTIFY][alignment || 0],
+          textAlign: ['left', 'right', 'center', 'justify'][alignment || 0],
           textDecoration,
           lineHeight: maximumLineHeight,
           paragraphSpacing,
@@ -763,7 +764,7 @@ async function convertItem(
             Math.floor(blue * 255),
             alpha,
           ],
-        };
+        } as JRich;
       })
       : [];
     const MSAttributedStringFontAttribute =
@@ -776,7 +777,7 @@ async function convertItem(
     const alignment = paragraphStyle?.alignment ?? rich[0]?.textAlign;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const { underlineStyle = 0, strikethroughStyle = 0, kerning: letterSpacing = 0, MSAttributedStringColorAttribute } = layer.style?.textStyle?.encodedAttributes || {};
-    const textAlign = ['left', 'right', 'center', 'justify'][alignment || 0];
+    const textAlign = alignment;
     const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
     const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
     const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];

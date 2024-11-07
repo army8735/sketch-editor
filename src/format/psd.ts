@@ -9,9 +9,10 @@ import {
   JNode,
   JPage,
   JPolyline,
+  JRich,
   JShapeGroup,
-  JText, Point,
-  Rich,
+  JText,
+  Point,
   TAG_NAME,
 } from './';
 import { PAGE_H as H, PAGE_W as W } from './dft';
@@ -208,7 +209,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       });
     }
     const transform = layer.text.transform || [1, 0, 1, 0, 0, 0];
-    const rich: Rich[] = [];
+    const rich: JRich[] = [];
     const {
       font: { name: fontFamily = inject.defaultFontFamily } = {},
       fontSize = inject.defaultFontSize,
@@ -224,7 +225,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       strikethrough,
     } = layer.text.style || {};
     const { justification } = layer.text.paragraphStyle || {};
-    const textDecoration: string[] = [];
+    const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
     if (underline) {
       textDecoration.push('underline');
     }
@@ -279,7 +280,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
         if (i++ > 10) {
           break;
         }
-        const res: Rich = {
+        const res: JRich = {
           location,
           length: 1,
           fontFamily,
@@ -290,23 +291,18 @@ async function convertItem(layer: Layer, w: number, h: number) {
           lineHeight: 0,
           textAlign: justification
             ? {
-              left: TEXT_ALIGN.LEFT,
-              'justify-left':  TEXT_ALIGN.LEFT,
-              center: TEXT_ALIGN.CENTER,
-              'justify-center':  TEXT_ALIGN.CENTER,
-              right: TEXT_ALIGN.RIGHT,
-              'justify-right':  TEXT_ALIGN.RIGHT,
-              justify: TEXT_ALIGN.JUSTIFY,
-              'justify-all': TEXT_ALIGN.JUSTIFY,
-            }[justification]
-            : TEXT_ALIGN.LEFT,
+              left: 'left',
+              'justify-left':  'left',
+              center: 'center',
+              'justify-center': 'center',
+              right: 'right',
+              'justify-right': 'right',
+              justify: 'justify',
+              'justify-all': 'justify',
+            }[justification] as 'left' | 'center' | 'right' | 'justify'
+            : 'left',
           color: color2rgbaInt(textStyle.color),
-          textDecoration: textStyle.textDecoration.map(item => {
-            return {
-              'underline': TEXT_DECORATION.UNDERLINE,
-              'lineThrough': TEXT_DECORATION.LINE_THROUGH,
-            }[item] as TEXT_DECORATION;
-          }),
+          textDecoration: textStyle.textDecoration,
           paragraphSpacing: leading,
         };
         let len1 = -1;
@@ -368,12 +364,12 @@ async function convertItem(layer: Layer, w: number, h: number) {
             ];
           }
           if (style.strikethrough !== undefined || style.underline !== undefined) {
-            const textDecoration: TEXT_DECORATION[] = [];
+            const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
             if (style.strikethrough) {
-              textDecoration.push(TEXT_DECORATION.LINE_THROUGH);
+              textDecoration.push('lineThrough');
             }
             if (style.underline) {
-              textDecoration.push(TEXT_DECORATION.UNDERLINE);
+              textDecoration.push('underline');
             }
             res.textDecoration = textDecoration;
           }
@@ -383,15 +379,15 @@ async function convertItem(layer: Layer, w: number, h: number) {
           res.length = length;
           if (style.justification) {
             res.textAlign = {
-              left: TEXT_ALIGN.LEFT,
-              'justify-left':  TEXT_ALIGN.LEFT,
-              center: TEXT_ALIGN.CENTER,
-              'justify-center':  TEXT_ALIGN.CENTER,
-              right: TEXT_ALIGN.RIGHT,
-              'justify-right':  TEXT_ALIGN.RIGHT,
-              justify: TEXT_ALIGN.JUSTIFY,
-              'justify-all': TEXT_ALIGN.JUSTIFY,
-            }[style.justification];
+              left: 'left',
+              'justify-left':  'left',
+              center: 'center',
+              'justify-center': 'center',
+              right: 'right',
+              'justify-right': 'right',
+              justify: 'justify',
+              'justify-all': 'justify',
+            }[style.justification] as 'left' | 'center' | 'right' | 'justify';
           }
         }
         rich.push(res);

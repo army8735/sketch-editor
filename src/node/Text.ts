@@ -11,6 +11,7 @@ import {
   color2rgbaStr,
   getBaseline,
   getContentArea,
+  normalizeRich,
   setFontStyle,
 } from '../style/css';
 import {
@@ -199,7 +200,7 @@ class Text extends Node {
     super(props);
     this.isText = true;
     this._content = props.content || '';
-    this.rich = props.rich?.slice(0) || [];
+    this.rich = (props.rich?.slice(0) || []).map(item => normalizeRich(item));
     this.lineBoxList = [];
     this.tempCursorX = 0;
     this.currentCursorX = 0;

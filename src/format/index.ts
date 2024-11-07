@@ -233,8 +233,10 @@ export type SymbolInstanceProps = Props & {
 
 export type TextProps = Props & {
   content: string;
-  rich?: Rich[];
+  rich?: JRich[];
 };
+
+export type JRich = Omit<Rich, 'textAlign' | 'textDecoration' | 'color'> & Pick<JStyle, 'textAlign' | 'textDecoration' | 'color'>;
 
 export type Rich = {
   location: number;

@@ -1,4 +1,4 @@
-import { JStyle, Rich } from '../format';
+import { JRich, JStyle, Rich } from '../format';
 import inject from '../util/inject';
 import { isNil, isString } from '../util/type';
 import {
@@ -645,6 +645,27 @@ export function normalize(style: any): Style {
   return res;
 }
 
+export function normalizeRich(rich: JRich): Rich {
+  return {
+    ...rich,
+    color: color2rgbaInt(rich.color),
+    textAlign: {
+      left: TEXT_ALIGN.LEFT,
+      center: TEXT_ALIGN.CENTER,
+      right: TEXT_ALIGN.RIGHT,
+      justify: TEXT_ALIGN.JUSTIFY,
+    }[rich.textAlign],
+    textDecoration: rich.textDecoration.map(item => {
+      return {
+        'none': TEXT_DECORATION.NONE,
+        'underline': TEXT_DECORATION.UNDERLINE,
+        'lineThrough': TEXT_DECORATION.LINE_THROUGH,
+        'line-through': TEXT_DECORATION.LINE_THROUGH,
+      }[item];
+    }),
+  };
+}
+
 function getBlendMode(blend: string) {
   let v = MIX_BLEND_MODE.NORMAL;
   if (/multiply/.test(blend)) {
@@ -1076,6 +1097,7 @@ export function getCssStrokePosition(o: STROKE_POSITION) {
 
 export default {
   normalize,
+  normalizeRich,
   equalStyle,
   color2rgbaInt,
   color2rgbaStr,
