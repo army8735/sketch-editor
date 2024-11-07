@@ -23,6 +23,7 @@ import { color2rgbaInt, color2rgbaStr } from '../style/css';
 
 export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
   const json = readPsd(arrayBuffer, { useImageData: false });
+  // console.log(json);
   const children: JNode[] = [];
   const ab = {
     tagName: TAG_NAME.ART_BOARD,
@@ -113,7 +114,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const blur = item.size?.value || 0;
       const choke = item.choke?.value || 0;
       shadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke) * 0.01} ${blur * choke * 0.01}`);
-      shadowEnable.push(!!item.enabled);
+      shadowEnable.push(effects.disabled ? false : !!item.enabled);
     });
   }
   if (effects.innerShadow) {
@@ -131,7 +132,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const blur = item.size?.value || 0;
       const choke = item.choke?.value || 0;
       innerShadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke) * 0.01} ${blur * choke * 0.01}`);
-      innerShadowEnable.push(!!item.enabled);
+      innerShadowEnable.push(effects.disabled ? false : !!item.enabled);
     });
   }
   // 仅组有opened
@@ -196,7 +197,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     if (effects.stroke) {
       effects.stroke.forEach(item => {
         if (item.fillType === 'color') {
-          strokeEnable.push(!!item.enabled);
+          strokeEnable.push(effects.disabled ? false : !!item.enabled);
           stroke.push(color2rgbaStr([
             Math.floor((item.color as RGB).r),
             Math.floor((item.color as RGB).g),

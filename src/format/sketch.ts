@@ -774,10 +774,11 @@ async function convertItem(
     const fontFamily = MSAttributedStringFontAttribute?.name || rich[0]?.fontFamily || inject.defaultFontFamily;
     const paragraphStyle =
       layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
-    const alignment = paragraphStyle?.alignment ?? rich[0]?.textAlign;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const { underlineStyle = 0, strikethroughStyle = 0, kerning: letterSpacing = 0, MSAttributedStringColorAttribute } = layer.style?.textStyle?.encodedAttributes || {};
-    const textAlign = alignment;
+    const textAlign = paragraphStyle?.alignment !== undefined
+      ? ['left', 'right', 'center', 'justify'][paragraphStyle.alignment]
+      : rich[0]?.textAlign;
     const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
     const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
     const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
