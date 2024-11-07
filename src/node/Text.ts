@@ -740,7 +740,7 @@ class Text extends Node {
           const mode = fillMode[i];
           ctx.globalAlpha = fillOpacity[i];
           if (Array.isArray(f)) {
-            if (!f[3]) {
+            if (f[3] <= 0) {
               continue;
             }
             ctx.fillStyle = color2rgbaStr(f);

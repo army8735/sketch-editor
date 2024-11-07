@@ -1,15 +1,27 @@
 import * as uuid from 'uuid';
 import { Layer, readPsd, RGB, LayerMaskData } from 'ag-psd';
-import { JArtBoard, JBitmap, JFile, JGroup, JLayer, JNode, JPage, JText, Rich, TAG_NAME, } from './';
+import {
+  JArtBoard,
+  JBitmap,
+  JFile,
+  JGroup,
+  JLayer,
+  JNode,
+  JPage,
+  JPolyline,
+  JShapeGroup,
+  JText, Point,
+  Rich,
+  TAG_NAME,
+} from './';
 import { PAGE_H as H, PAGE_W as W } from './dft';
-import { TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
+import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
 import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
-import { color2rgbaStr } from '../style/css';
+import { color2rgbaInt, color2rgbaStr } from '../style/css';
 
 export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
   const json = readPsd(arrayBuffer, { useImageData: false });
-  console.log(json);
   const children: JNode[] = [];
   const ab = {
     tagName: TAG_NAME.ART_BOARD,
@@ -81,30 +93,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
   const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {} } = layer;
   console.log(name, layer);
   const visibility = !hidden ? 'visible' : 'hidden';
-  const strokeEnable: boolean[] = [];
-  const stroke: Array<string | number[]> = [];
-  const strokeWidth: number[] = [];
-  const strokePosition: string[] = [];
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
   const innerShadow: string[] = [];
   const innerShadowEnable: boolean[] = [];
-  // ps里似乎不区分类型，统一加上，反正只有文字和矢量会生效
-  if (effects.stroke) {
-    effects.stroke.forEach(item => {
-      if (item.fillType === 'color') {
-        strokeEnable.push(!!item.enabled);
-        stroke.push([
-          Math.floor((item.color as RGB).r),
-          Math.floor((item.color as RGB).g),
-          Math.floor((item.color as RGB).b),
-          item.opacity ?? 1,
-        ]);
-        strokeWidth.push(item.size?.value || 1);
-        strokePosition.push(item.position || 'center');
-      }
-    });
-  }
   if (effects.dropShadow) {
     effects.dropShadow.forEach(item => {
       const color = [
@@ -119,7 +111,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const y = Math.sin(rd) * d || 0;
       const blur = item.size?.value || 0;
       const choke = item.choke?.value || 0;
-      shadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke)} ${blur * choke}`);
+      shadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke) * 0.01} ${blur * choke * 0.01}`);
       shadowEnable.push(!!item.enabled);
     });
   }
@@ -137,7 +129,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const y = Math.sin(rd) * d || 0;
       const blur = item.size?.value || 0;
       const choke = item.choke?.value || 0;
-      innerShadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke)} ${blur * choke}`);
+      innerShadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke) * 0.01} ${blur * choke * 0.01}`);
       innerShadowEnable.push(!!item.enabled);
     });
   }
@@ -195,6 +187,26 @@ async function convertItem(layer: Layer, w: number, h: number) {
     } as JGroup;
   }
   else if (layer.text) {
+    const strokeEnable: boolean[] = [];
+    const stroke: Array<string | number[]> = [];
+    const strokeWidth: number[] = [];
+    const strokePosition: string[] = [];
+    // ps里似乎不区分类型，只有文字生效
+    if (effects.stroke) {
+      effects.stroke.forEach(item => {
+        if (item.fillType === 'color') {
+          strokeEnable.push(!!item.enabled);
+          stroke.push(color2rgbaStr([
+            Math.floor((item.color as RGB).r),
+            Math.floor((item.color as RGB).g),
+            Math.floor((item.color as RGB).b),
+            item.opacity ?? 1,
+          ]));
+          strokeWidth.push(item.size?.value || 1);
+          strokePosition.push(item.position || 'center');
+        }
+      });
+    }
     const transform = layer.text.transform || [1, 0, 1, 0, 0, 0];
     const rich: Rich[] = [];
     const {
@@ -226,11 +238,11 @@ async function convertItem(layer: Layer, w: number, h: number) {
       fontStyle: fauxItalic ? 'italic' : 'normal',
       letterSpacing: autoKerning ? 0 : kerning,
       textAlign: justification ? justification : 'left',
-      color: fillColor ? [
+      color: color2rgbaStr(fillColor ? [
         Math.floor((fillColor as RGB).r),
         Math.floor((fillColor as RGB).g),
         Math.floor((fillColor as RGB).b),
-      ] : [0, 0, 0],
+      ] : [0, 0, 0]),
       // stroke: strokeColor ? [[
       //   Math.floor((strokeColor as RGB).r),
       //   Math.floor((strokeColor as RGB).g),
@@ -241,6 +253,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     };
     const style = {
       left: (left + (right - left) * 0.5) * 100 / w + '%',
+      right: layer.text.orientation === 'vertical' ? (w - right - (right - left) * 0.5) * 100 / w + '%' : 'auto',
       top: (top + (bottom - top) * 0.5) * 100 / h + '%',
       opacity,
       visibility,
@@ -266,7 +279,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
         if (i++ > 10) {
           break;
         }
-        const res = {
+        const res: Rich = {
           location,
           length: 1,
           fontFamily,
@@ -287,7 +300,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
               'justify-all': TEXT_ALIGN.JUSTIFY,
             }[justification]
             : TEXT_ALIGN.LEFT,
-          color: textStyle.color,
+          color: color2rgbaInt(textStyle.color),
           textDecoration: textStyle.textDecoration.map(item => {
             return {
               'underline': TEXT_DECORATION.UNDERLINE,
@@ -395,6 +408,136 @@ async function convertItem(layer: Layer, w: number, h: number) {
       },
     } as JText;
   }
+  else if (layer.vectorOrigination && layer.vectorOrigination.keyDescriptorList.length && !layer.vectorOrigination.keyDescriptorList[0].keyShapeInvalidated) {
+    const { vectorFill, vectorStroke, vectorOrigination: { keyDescriptorList } } = layer;
+    const fill: Array<string | number[]> = [];
+    const fillEnable: boolean[] = [];
+    const fillOpacity: number[] = [];
+    const fillMode: string[] = [];
+    const stroke: Array<string | number[]> = [];
+    const strokeEnable: boolean[] = [];
+    const strokeWidth: number[] = [];
+    const strokePosition: string[] = [];
+    const strokeMode: string[] = [];
+    if (vectorFill) {
+      fill.push(color2rgbaStr([
+        // @ts-ignore
+        Math.floor((vectorFill.color as RGB).r),
+        // @ts-ignore
+        Math.floor((vectorFill.color as RGB).g),
+        // @ts-ignore
+        Math.floor((vectorFill.color as RGB).b),
+      ]));
+      fillEnable.push(vectorStroke?.fillEnabled ?? true);
+      fillOpacity.push(1);
+      fillMode.push('normal');
+    }
+    if (vectorStroke) {
+      stroke.push(color2rgbaStr([
+        // @ts-ignore
+        Math.floor((vectorStroke.content.color as RGB).r),
+        // @ts-ignore
+        Math.floor((vectorStroke.content.color as RGB).g),
+        // @ts-ignore
+        Math.floor((vectorStroke.content.color as RGB).b),
+        vectorStroke.opacity ?? 1,
+      ]));
+      strokeEnable.push(!!vectorStroke.strokeEnabled);
+      strokeWidth.push(vectorStroke.lineWidth?.value || 1);
+      strokePosition.push(vectorStroke.lineAlignment || 'center');
+      strokeMode.push(vectorStroke.blendMode || 'normal');
+    }
+    const w2 = right - left;
+    const h2 = bottom - top;
+    const points: Point[] = [];
+    keyDescriptorList.forEach(item => {
+      const { keyOriginRRectRadii, keyOriginShapeBoundingBox } = item;
+      if (keyOriginShapeBoundingBox) {
+        points.push({
+          x: ((keyOriginShapeBoundingBox.left.value || left) - left) / w2,
+          y: ((keyOriginShapeBoundingBox.top.value || top) - top) / h2,
+          cornerRadius: keyOriginRRectRadii?.topLeft.value || 0,
+          curveMode: CURVE_MODE.STRAIGHT,
+          cornerStyle: CORNER_STYLE.ROUNDED,
+          hasCurveFrom: false,
+          hasCurveTo: false,
+          fx: 0,
+          fy: 0,
+          tx: 0,
+          ty: 0,
+        });
+        points.push({
+          x: ((keyOriginShapeBoundingBox?.right.value || right) - left) / w2,
+          y: ((keyOriginShapeBoundingBox?.top.value || top) - top) / h2,
+          cornerRadius: keyOriginRRectRadii?.topRight.value || 0,
+          curveMode: CURVE_MODE.STRAIGHT,
+          cornerStyle: CORNER_STYLE.ROUNDED,
+          hasCurveFrom: false,
+          hasCurveTo: false,
+          fx: 0,
+          fy: 0,
+          tx: 0,
+          ty: 0,
+        });
+        points.push({
+          x: ((keyOriginShapeBoundingBox?.right.value || right) - left) / w2,
+          y: ((keyOriginShapeBoundingBox?.bottom.value || bottom) - top) / h2,
+          cornerRadius: keyOriginRRectRadii?.bottomLeft.value || 0,
+          curveMode: CURVE_MODE.STRAIGHT,
+          cornerStyle: CORNER_STYLE.ROUNDED,
+          hasCurveFrom: false,
+          hasCurveTo: false,
+          fx: 0,
+          fy: 0,
+          tx: 0,
+          ty: 0,
+        });
+        points.push({
+          x: ((keyOriginShapeBoundingBox?.left.value || left) - left) / w2,
+          y: ((keyOriginShapeBoundingBox?.bottom.value || bottom) - top) / h2,
+          cornerRadius: keyOriginRRectRadii?.bottomRight.value || 0,
+          curveMode: CURVE_MODE.STRAIGHT,
+          cornerStyle: CORNER_STYLE.ROUNDED,
+          hasCurveFrom: false,
+          hasCurveTo: false,
+          fx: 0,
+          fy: 0,
+          tx: 0,
+          ty: 0,
+        });
+      }
+    });
+    return {
+      tagName: keyDescriptorList.length > 1 ? TAG_NAME.SHAPE_GROUP : TAG_NAME.POLYLINE,
+      props: {
+        uuid: uuid.v4(),
+        name,
+        style: {
+          left: left * 100 / w + '%',
+          top: top * 100 / h + '%',
+          right: (w - right) * 100 / w + '%',
+          bottom: (h - bottom) * 100 / h + '%',
+          opacity,
+          visibility,
+          fill,
+          fillEnable,
+          fillOpacity,
+          fillMode,
+          stroke,
+          strokeEnable,
+          strokePosition,
+          strokeWidth,
+          strokeMode,
+          shadow,
+          shadowEnable,
+          innerShadow,
+          innerShadowEnable,
+        },
+        points,
+        isClosed: true,
+      },
+    } as JPolyline | JShapeGroup;
+  }
   else if (layer.canvas) {
     return new Promise<JLayer | undefined>(resolve => {
       layer.canvas!.toBlob(blob => {
@@ -411,10 +554,6 @@ async function convertItem(layer: Layer, w: number, h: number) {
                 bottom: (h - bottom) * 100 / h + '%',
                 opacity,
                 visibility,
-                stroke,
-                strokeEnable,
-                strokePosition,
-                strokeWidth,
                 shadow,
                 shadowEnable,
                 innerShadow,

@@ -1164,10 +1164,10 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
     miterLimit: strokeMiterlimit,
     do_objectID: styleId,
   } = layer.style || {};
-  const fill: Array<string | number[]> = [],
-    fillEnable: boolean[] = [],
-    fillOpacity: number[] = [],
-    fillMode: string[] = [];
+  const fill: Array<string | number[]> = [];
+  const fillEnable: boolean[] = [];
+  const fillOpacity: number[] = [];
+  const fillMode: string[] = [];
   if (fills) {
     for (let i = 0, len = fills.length; i < len; i++) {
       const item = fills[i];
@@ -1179,11 +1179,11 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       fillMode.push(getBlendMode(blend));
     }
   }
-  const stroke: Array<string | number[]> = [],
-    strokeEnable: boolean[] = [],
-    strokeWidth: number[] = [],
-    strokePosition: string[] = [],
-    strokeMode: string[] = [];
+  const stroke: Array<string | number[]> = [];
+  const strokeEnable: boolean[] = [];
+  const strokeWidth: number[] = [];
+  const strokePosition: string[] = [];
+  const strokeMode: string[] = [];
   if (borders) {
     for (let i = 0, len = borders.length; i < len; i++) {
       const item = borders[i];
