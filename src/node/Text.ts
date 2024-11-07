@@ -3260,10 +3260,23 @@ class Text extends Node {
   override async toSketchJson(zip: JSZip): Promise<SketchFormat.Text> {
     const json = await super.toSketchJson(zip) as SketchFormat.Text;
     json._class = SketchFormat.ClassValue.Text;
+    const rich = this.rich.length ? this.rich : (this._content ? [{
+      location: 0,
+      length: this._content.length,
+      fontFamily: this.computedStyle.fontFamily,
+      fontSize: this.computedStyle.fontSize,
+      fontWeight: this.computedStyle.fontWeight,
+      letterSpacing: this.computedStyle.letterSpacing,
+      textAlign: this.computedStyle.textAlign,
+      textDecoration: this.computedStyle.textDecoration,
+      lineHeight: this.style.lineHeight.u === StyleUnit.AUTO ? 0 : this.computedStyle.lineHeight,
+      paragraphSpacing: this.computedStyle.paragraphSpacing,
+      color: this.computedStyle.color,
+    }] : []);
     json.attributedString = {
       _class: 'attributedString',
       string: this._content,
-      attributes: this.rich.map(item => {
+      attributes: rich.map(item => {
         return {
           _class: 'stringAttribute',
           location: item.location,
