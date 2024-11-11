@@ -1247,7 +1247,7 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       else {
         strokePosition.push('center');
       }
-      const blend = item.contextSettings.blendMode;
+      const blend = item.contextSettings?.blendMode;
       strokeMode.push(getBlendMode(blend));
     }
   }
