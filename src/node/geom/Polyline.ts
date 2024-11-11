@@ -456,7 +456,7 @@ class Polyline extends Geom {
               const gd = getLinear(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
               gd.stop.forEach((item) => {
-                lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+                lg.addColorStop(item.offset, color2rgbaStr(item.color));
               });
               ctx.fillStyle = lg;
             }
@@ -471,7 +471,7 @@ class Polyline extends Geom {
                 gd.total,
               );
               gd.stop.forEach((item) => {
-                rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+                rg.addColorStop(item.offset, color2rgbaStr(item.color));
               });
               // 椭圆渐变，由于有缩放，用clip确定绘制范围，然后缩放长短轴绘制椭圆
               const m = gd.matrix;
@@ -496,7 +496,7 @@ class Polyline extends Geom {
               const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
               const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
               gd.stop.forEach((item) => {
-                cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+                cg.addColorStop(item.offset, color2rgbaStr(item.color));
               });
               ctx.fillStyle = cg;
             }
@@ -618,7 +618,7 @@ class Polyline extends Geom {
             const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
             gd.stop.forEach((item) => {
-              lg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              lg.addColorStop(item.offset, color2rgbaStr(item.color));
             });
             ctx.strokeStyle = lg;
           }
@@ -633,7 +633,7 @@ class Polyline extends Geom {
               gd.total,
             );
             gd.stop.forEach((item) => {
-              rg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              rg.addColorStop(item.offset, color2rgbaStr(item.color));
             });
             // 椭圆渐变，由于有缩放，先离屏绘制白色stroke记a，再绘制变换的结果整屏fill记b，b混合到a上用source-in即可只显示重合的b
             const m = gd.matrix;
@@ -691,7 +691,7 @@ class Polyline extends Geom {
             const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
             gd.stop.forEach((item) => {
-              cg.addColorStop(item.offset!, color2rgbaStr(item.color));
+              cg.addColorStop(item.offset, color2rgbaStr(item.color));
             });
             ctx.strokeStyle = cg;
           }

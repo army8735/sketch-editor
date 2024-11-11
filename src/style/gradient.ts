@@ -13,7 +13,7 @@ export function getColorStop(
   total: number,
   isConic = false,
 ): { color: number[], offset: number }[] {
-  const list: { color: number[]; offset?: number }[] = [];
+  const list: { color: number[]; offset: number }[] = [];
   const firstColor = stops[0].color;
   // offset是[0,1]的百分比形式，可能未声明缺省
   for (let i = 0, len = stops.length; i < len; i++) {
@@ -60,20 +60,20 @@ export function getColorStop(
   }
   // 每个不能小于前面的，按大小排序，canvas/svg兼容这种情况，但还是排序下
   list.sort((a, b) => {
-    return a.offset! - b.offset!;
+    return a.offset - b.offset;
   });
   // 0之前的和1之后的要过滤掉
   for (let i = 0, len = list.length; i < len; i++) {
     const item = list[i];
-    if (item.offset! > 1) {
+    if (item.offset > 1) {
       list.splice(i);
       const prev = list[i - 1];
-      if (prev && prev.offset! < 1) {
+      if (prev && prev.offset < 1) {
         const dr = item.color[0] - prev.color[0];
         const dg = item.color[1] - prev.color[1];
         const db = item.color[2] - prev.color[2];
         const da = item.color[3] - prev.color[3];
-        const p = (1 - prev.offset!) / (item.offset! - prev.offset!);
+        const p = (1 - prev.offset) / (item.offset - prev.offset);
         list.push({
           color: [
             item.color[0] + dr * p,
@@ -89,15 +89,15 @@ export function getColorStop(
   }
   for (let i = list.length - 1; i >= 0; i--) {
     const item = list[i];
-    if (item.offset! < 0) {
+    if (item.offset < 0) {
       list.splice(0, i + 1);
       const next = list[i];
-      if (next && next.offset! > 0) {
+      if (next && next.offset > 0) {
         const dr = next.color[0] - item.color[0];
         const dg = next.color[1] - item.color[1];
         const db = next.color[2] - item.color[2];
         const da = next.color[3] - item.color[3];
-        const p = -item.offset! / (next.offset! - item.offset!);
+        const p = -item.offset / (next.offset - item.offset);
         list.unshift({
           color: [
             item.color[0] + dr * p,
@@ -113,10 +113,10 @@ export function getColorStop(
   }
   // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
   list.forEach((item) => {
-    if (item.offset! < 0) {
+    if (item.offset < 0) {
       item.offset = 0;
     }
-    else if (item.offset! > 1) {
+    else if (item.offset > 1) {
       item.offset = 1;
     }
   });
@@ -137,14 +137,14 @@ export function getColorStop(
   if (isConic) {
     const first = list[0];
     const last = list[list.length - 1];
-    if (first.offset! > 0 || last.offset! < 1) {
+    if (first.offset > 0 || last.offset < 1) {
       const dr = last.color[0] - first.color[0];
       const dg = last.color[1] - first.color[1];
       const db = last.color[2] - first.color[2];
       const da = last.color[3] - first.color[3];
-      const dp = first.offset! + (1 - last.offset!);
-      if (first.offset! > 0) {
-        const p = first.offset! / dp;
+      const dp = first.offset + (1 - last.offset);
+      if (first.offset > 0) {
+        const p = first.offset / dp;
         list.unshift({
           color: [
             first.color[0] + dr * p,
@@ -155,8 +155,8 @@ export function getColorStop(
           offset: 0,
         });
       }
-      if (last.offset! < 1) {
-        const p = (1 - last.offset!) / dp;
+      if (last.offset < 1) {
+        const p = (1 - last.offset) / dp;
         list.push({
           color: [
             last.color[0] - dr * p,
@@ -532,14 +532,14 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
     theta = angleBySides(a, b, c);
     const p2 = theta ? b * Math.cos(theta) : b;
-    const list = (clone(stops) as ComputedColorStop[]).sort((a, b) => a.offset! - b.offset!);
-    if (list[0].offset! > 0) {
+    const list = (clone(stops) as ComputedColorStop[]).sort((a, b) => a.offset - b.offset);
+    if (list[0].offset > 0) {
       list.unshift({
         color: list[0].color.slice(0),
         offset: 0,
       });
     }
-    if (list[list.length - 1].offset! < 1) {
+    if (list[list.length - 1].offset < 1) {
       list.push({
         color: list[list.length - 1].color.slice(0),
         offset: 1,
@@ -550,12 +550,12 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
       const offset = p1 / c;
       for (let i = 0, len = list.length; i < len; i++) {
         const item = list[i];
-        if (item.offset! >= offset) {
+        if (item.offset >= offset) {
           const prev = list[i - 1];
           list.splice(0, i);
-          if (item.offset! > offset) {
-            const l = c * (item.offset! - prev.offset!);
-            const p = (p1 - prev.offset! * c) / l;
+          if (item.offset > offset) {
+            const l = c * (item.offset - prev.offset);
+            const p = (p1 - prev.offset * c) / l;
             const color = prev.color.map((color, i) => {
               if (i === 3) {
                 return color + (item.color[i] - color) * p;
@@ -575,7 +575,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     // 不足计算正确的offset，原本开头是0
     else if (p1 < 0) {
       list.forEach(item => {
-        item.offset! = (item.offset! * c - p1) / (c - p1);
+        item.offset = (item.offset * c - p1) / (c - p1);
       });
     }
     // end一样
@@ -583,12 +583,12 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
       const offset = (c - p2) / c;
       for (let i = list.length - 1; i >= 0; i--) {
         const item = list[i];
-        if (item.offset! <= offset) {
+        if (item.offset <= offset) {
           const next = list[i + 1];
           list.splice(i + 1);
-          if (item.offset! < offset) {
-            const l = c * (next.offset! - item.offset!);
-            const p = (p2 - (1 - next.offset!) * c) / l;
+          if (item.offset < offset) {
+            const l = c * (next.offset - item.offset);
+            const p = (p2 - (1 - next.offset) * c) / l;
             const color = next.color.map((color, i) => {
               if (i === 3) {
                 return color + (item.color[i] - color) * p;
@@ -607,7 +607,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     }
     else if (p2 < 0) {
       list.forEach(item => {
-        item.offset! = (item.offset! * (c - p1)) / (c - p1 - p2);
+        item.offset = (item.offset * (c - p1)) / (c - p1 - p2);
       });
     }
     let s = 'linear-gradient(';
@@ -621,7 +621,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     list.forEach((item) => {
       s += ', ';
       item.color[3] = toPrecision(item.color[3]);
-      s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
+      s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset * 100) + '%';
     });
     return s + ')';
   }
@@ -647,7 +647,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
           return Math.min(255, Math.floor(c * ratio));
         }
       });
-      s += color2rgbaStr(color) + ' ' + toPrecision(item.offset! * 100) + '%';
+      s += color2rgbaStr(color) + ' ' + toPrecision(item.offset * 100) + '%';
     });
     return s + ')';
   }
@@ -658,7 +658,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
         s += ', ';
       }
       item.color[3] = toPrecision(item.color[3]);
-      s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset! * 100) + '%';
+      s += color2rgbaStr(item.color) + ' ' + toPrecision(item.offset * 100) + '%';
     });
     return s + ')';
   }
