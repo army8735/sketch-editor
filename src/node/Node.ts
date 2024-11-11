@@ -419,7 +419,7 @@ class Node extends Event {
         t: v.t,
         d: v.d.slice(0),
         stops: v.stops.map(item => {
-          const offset = item.offset ? item.offset.v * 0.01 : undefined;
+          const offset = item.offset.v * 0.01;
           return {
             color: item.color.v.slice(0),
             offset,

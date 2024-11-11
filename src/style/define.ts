@@ -108,12 +108,12 @@ export type StyleTdValue = {
 
 export type ColorStop = {
   color: StyleColorValue;
-  offset?: StyleNumValue;
+  offset: StyleNumValue;
 };
 
 export type ComputedColorStop = {
   color: number[];
-  offset?: number;
+  offset: number;
 };
 
 export type Gradient = {

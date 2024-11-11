@@ -2,11 +2,10 @@ import { angleBySides, d2r, r2d } from '../math/geom';
 import { identity, multiplyRotateZ, multiplyScaleY } from '../math/matrix';
 import { clone } from '../util/type';
 import { color2rgbaInt, color2rgbaStr } from './css';
-import { calUnit, ColorStop, ComputedColorStop, ComputedGradient, GRADIENT, StyleUnit } from './define';
+import { calUnit, ColorStop, ComputedColorStop, ComputedGradient, GRADIENT, StyleNumValue, StyleUnit } from './define';
 import reg from './reg';
 import { calMatrixByOrigin } from './transform';
 import { toPrecision } from '../math';
-import Node from '../node/Node';
 
 // 获取color-stop区间范围，去除无用值
 export function getColorStop(
@@ -238,14 +237,14 @@ export function parseGradient(s: string) {
       gradient[2].match(
         /(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]*)?)|(transparent)/gi,
       ) || [];
-    const stops: ColorStop[] = v.map((item) => {
+    const stops: (Pick<ColorStop, 'color'> & { offset?: StyleNumValue })[] = v.map((item, i) => {
       const color =
         /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
       const percent =
         /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?(?:(?:px)|%)?/.exec(
           item.replace(color![0], ''),
         );
-      let offset;
+      let offset: StyleNumValue | undefined;
       if (percent) {
         const v = calUnit(percent[0]);
         if (v.u !== StyleUnit.PERCENT) {
@@ -253,6 +252,20 @@ export function parseGradient(s: string) {
           v.u = StyleUnit.PERCENT;
         }
         offset = v;
+      }
+      else {
+        if (!i) {
+          offset = {
+            v: 0,
+            u: StyleUnit.PERCENT,
+          };
+        }
+        else if (i === v.length - 1) {
+          offset = {
+            v: 100,
+            u: StyleUnit.PERCENT,
+          };
+        }
       }
       return {
         color: {
@@ -262,10 +275,44 @@ export function parseGradient(s: string) {
         offset,
       };
     });
+    stops.sort((a, b) => {
+      if (a.offset && b.offset) {
+        return a.offset.v - b.offset.v;
+      }
+      return 0;
+    });
+    for (let i = stops.length - 2; i > 0; i--) {
+      const cur = stops[i];
+      if (!cur.offset) {
+        const next = stops[i + 1].offset!.v;
+        let prev = stops[0].offset!.v;
+        const old = i;
+        for (let j = i - 1; j >= 0; j--) {
+          if (j === 0) {
+            i = j;
+            break;
+          }
+          else if (stops[j].offset) {
+            i = j;
+            prev = stops[j].offset!.v;
+            break;
+          }
+        }
+        const len = old - i + 1;
+        const diff = next - prev;
+        const per = diff / len;
+        for (let k = i + 1; k <= old; k++) {
+          stops[i].offset = {
+            v: prev + (k - i) * per,
+            u: StyleUnit.PERCENT,
+          };
+        }
+      }
+    }
     return {
       t,
       d: d!,
-      stops,
+      stops: stops as ColorStop[],
     };
   }
 }
