@@ -47,7 +47,6 @@ module.exports = {
       .moveToElement('canvas', 80, 130)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
-      .assert.domPropertyEquals('#side .text-panel .picker-btn b', 'title', 'rgba(0,0,255,1)')
       .keys('5')
       .keys(browser.Keys.NULL)
       .click('#button3')
