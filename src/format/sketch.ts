@@ -1176,8 +1176,8 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
       const f = await convertFill(item, opt);
       fill.push(f!);
       fillEnable.push(item.isEnabled);
-      fillOpacity.push(item.contextSettings.opacity ?? 1);
-      const blend = item.contextSettings.blendMode;
+      fillOpacity.push(item.contextSettings?.opacity ?? 1);
+      const blend = item.contextSettings?.blendMode;
       fillMode.push(getBlendMode(blend));
     }
   }
