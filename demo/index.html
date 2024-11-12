@@ -9,7 +9,7 @@
 <body>
 <div class="wrap">
   <div class="menu">
-    <input type="file" title="请选择sketch文件" id="file" accept=".sketch"/>
+    <input type="file" title="请选择sketch文件" id="file" accept=".sketch,.psd"/>
     <label><input type="checkbox" class="tile"/>开启tile</label>
     <label><input type="checkbox" class="debug"/>开启debug</label>
     <div class="zoom" id="zoom"></div>
@@ -66,7 +66,10 @@
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
     reader.onload = function() {
-      sketchEditor.openAndConvertSketchBuffer(reader.result).then(function(json) {
+      const loadBuffer = file.name.endsWith('.psd')
+        ? sketchEditor.openAndConvertPsdBuffer
+        : sketchEditor.openAndConvertSketchBuffer;
+      loadBuffer(reader.result).then(function(json) {
         const canvas = document.createElement('canvas');
 
         function resize() {
