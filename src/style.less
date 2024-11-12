@@ -138,7 +138,7 @@ html, body {
       }
     }
 
-    &.hover>.name, &:hover>.name {
+    &.hover > .name, &:hover > .name {
       color: #36F;
     }
 
@@ -315,12 +315,15 @@ html, body {
       .t b {
         border-top-style: dashed;
       }
+
       .r b {
         border-right-style: dashed;
       }
+
       .b b {
         border-bottom-style: dashed;
       }
+
       .l b {
         border-left-style: dashed;
       }
@@ -334,12 +337,15 @@ html, body {
       .t b {
         border-top-style: solid;
       }
+
       .r b {
         border-right-style: solid;
       }
+
       .b b {
         border-bottom-style: solid;
       }
+
       .l b {
         border-left-style: solid;
       }
@@ -587,7 +593,7 @@ html, body {
     }
 
     span {
-      position :absolute;
+      position: absolute;
       left: 50%;
       bottom: 2px;
       padding: 2px 4px;
@@ -631,7 +637,7 @@ html, body {
     }
 
     span {
-      position :absolute;
+      position: absolute;
       top: 50%;
       right: 2px;
       padding: 2px 4px;
@@ -732,7 +738,7 @@ html, body {
       &:disabled {
         opacity: 0.3;
 
-        &+.unit {
+        & + .unit {
           opacity: 0.3;
         }
       }
@@ -1580,7 +1586,7 @@ html, body {
   }
 }
 
-.sketch-editor-picker, .sketch-editor-context-menu {
+.sketch-editor-picker {
   position: absolute;
   z-index: 9999;
   padding: 5px;
@@ -1588,9 +1594,182 @@ html, body {
   border: 1px solid #CCC;
   border-radius: 5px;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  transform: translateX(-26%);
+
+  .arrow {
+    position: absolute;
+    left: 26%;
+    top: 0;
+    border: 10px solid transparent;
+    border-bottom-color: #CCC;
+    transform: translate(-50%, -100%);
+    pointer-events: none;
+    filter: drop-shadow(0 -2px 1px rgba(0, 0, 0, 0.2));
+
+    b {
+      position: absolute;
+      left: 0;
+      top: 0;
+      border: 10px solid transparent;
+      border-bottom-color: #FFF;
+      transform: translate(-10px, -9px)
+    }
+  }
+
+  .type {
+    display: flex;
+    align-items: flex-start;
+    box-sizing: border-box;
+    margin: 0 0 10px;
+    padding: 4px 0 8px;
+    list-style: none;
+    border-bottom: 0.5px solid #CCC;
+
+    li {
+      margin: 0 5px;
+      width: 14px;
+      height: 14px;
+      border: 0.5px solid #999;
+      border-radius: 50%;
+
+      &:hover {
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+      }
+
+      &.cur {
+        border-color: #F66;
+      }
+
+      &.color {
+        background: #AAA;
+
+        &.cur {
+          background: #F99;
+        }
+      }
+
+      &.linear {
+        background: linear-gradient(#FFF, #AAA);
+
+        &.cur {
+          background: linear-gradient(#FFF, #F99);
+        }
+      }
+
+      &.radial {
+        background: radial-gradient(#FFF, #AAA);
+
+        &.cur {
+          background: radial-gradient(#FFF, #F99);
+        }
+      }
+
+      &.conic {
+        background: conic-gradient(#FFF, #AAA);
+
+        &.cur {
+          background: conic-gradient(#FFF, #F99);
+        }
+      }
+    }
+  }
+
+  .line {
+    box-sizing: border-box;
+    position: relative;
+    margin: 10px 5px;
+    padding: 0 0 10px;
+    border-bottom: 0.5px solid #CCC;
+    overflow: visible;
+
+    .bg {
+      width: 80%;
+      height: 8px;
+      border: 0.5px solid #999;
+      border-radius: 5px;
+    }
+
+    .con {
+      position: absolute;
+      left: 0;
+      top: 0.5px;
+      width: 80%;
+      height: 8px;
+
+      span {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        border: 3px solid #FFF;
+        box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+        transform: translate(-50%, -50%);
+
+        &:before {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: 3px solid #FFF;
+          content: ' ';
+          box-shadow: 0 0 0.5px rgba(0, 0, 0, 0.5);
+          transform: translate(-50%, -50%);
+        }
+
+        &:after {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: 0.5px solid #999;
+          content: ' ';
+          transform: translate(-50%, -50%);
+        }
+
+        &.cur {
+          box-shadow: 0 0 3px 1px rgba(255, 0, 0, 0.5);
+        }
+      }
+    }
+  }
+
+  &.shadowPanel {
+    .type {
+      display: none;
+    }
+  }
+
+  &.textPanel {
+    transform: translateX(-90%);
+
+    .type {
+      display: none;
+    }
+
+    .arrow {
+      left: 90%;
+    }
+  }
+
+  .picker_wrapper {
+    box-shadow: 0 0 0 0.5px silver;
+  }
 }
 
 .sketch-editor-context-menu {
+  position: absolute;
+  z-index: 9999;
+  padding: 5px;
+  background: #FFF;
+  border: 1px solid #CCC;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   font-size: 13px;
   line-height: 20px;
   cursor: default;
@@ -1658,7 +1837,7 @@ html, body {
   }
 
   &.outline, &.alpha {
-    .mask>.checked {
+    .mask > .checked {
       display: block;
     }
   }
@@ -1723,6 +1902,7 @@ html, body {
     .scale-up, .scale-down, .select-all {
       display: none;
     }
+
     .un-group {
       opacity: 0.3;
       pointer-events: none;

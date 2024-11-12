@@ -4,7 +4,7 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import style from '../style';
 import { getEditTextInfo, getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
-import { TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
+import { ComputedGradient, ComputedPattern, TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RichCommand, { RichData } from '../history/RichCommand';
 import VerticalAlignCommand, { VerticalAlignData } from '../history/VerticalAlignCommand';
@@ -428,53 +428,47 @@ class TextPanel extends Panel {
           picker.hide();
           return;
         }
-        const p = picker.show(el, 'textPanel', pickCallback, true);
+        // 最开始记录nodes/prevs
+        nodes = this.nodes.slice(0);
+        prevs = nodes.map(item => item.getRich());
+        const p = picker.show(el, this.nodes[0].computedStyle.color, 'textPanel',
+          (data: number[] | ComputedGradient | ComputedPattern) => {
+            this.silence = true;
+            nexts = [];
+            if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
+              const node = nodes[0];
+              const { isMulti, start, end } = node.getSortedCursor();
+              if (isMulti) {
+                node.updateRangeStyle(start, end - start, {
+                  color: data as number[],
+                });
+                nexts.push(node.getRich());
+                node.setCursorByIndex(start);
+                node.setCursorByIndex(end, true);
+              }
+              else {
+                node.setInputStyle({
+                  color: data as number[],
+                });
+              }
+            }
+            else {
+              nodes.forEach(node => {
+                node.updateRangeStyle(0, node._content.length, {
+                  color: data as number[],
+                });
+                nexts.push(node.getRich());
+              });
+            }
+            if (nodes.length) {
+              listener.emit(Listener.COLOR_NODE, nodes.slice(0));
+            }
+            this.silence = false;
+          }, pickCallback);
         const pDom = p.domElement.parentElement!;
         if (!listener.input.ignoreBlur.includes(pDom)) {
           listener.input.ignoreBlur.push(pDom);
         }
-        // 最开始记录nodes/prevs
-        nodes = this.nodes.slice(0);
-        prevs = nodes.map(item => item.getRich());
-        // 每次变更记录更新nexts
-        p.onChange = (color: any) => {
-          this.silence = true;
-          nexts = [];
-          if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
-            const node = nodes[0];
-            const { isMulti, start, end } = node.getSortedCursor();
-            if (isMulti) {
-              node.updateRangeStyle(start, end - start, {
-                color: color.rgba.slice(0),
-              });
-              nexts.push(node.getRich());
-              node.setCursorByIndex(start);
-              node.setCursorByIndex(end, true);
-            }
-            else {
-              node.setInputStyle({
-                color: color.rgba.slice(0),
-              });
-            }
-          }
-          else {
-            nodes.forEach(node => {
-              node.updateRangeStyle(0, node._content.length, {
-                color: color.rgba.slice(0),
-              });
-              nexts.push(node.getRich());
-            });
-          }
-          if (nodes.length) {
-            listener.emit(Listener.COLOR_NODE, nodes.slice(0));
-          }
-          // 新插入样式时无法触发COLOR_NODE更新
-          el.title = el.style.background = color2rgbaStr(color.rgba);
-          this.silence = false;
-        };
-        p.onDone = () => {
-          picker.hide();
-        };
       }
       else if (classList.contains('arrow')) {
         if (panel.classList.contains('fold')) {

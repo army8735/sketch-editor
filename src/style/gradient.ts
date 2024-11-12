@@ -214,7 +214,7 @@ export function parseGradient(s: string) {
     }
     else if (t === GRADIENT.RADIAL) {
       const points =
-        /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(
+        /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)(\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?))?/.exec(
           gradient[2],
         );
       if (points) {
@@ -223,7 +223,7 @@ export function parseGradient(s: string) {
           parseFloat(points[2]),
           parseFloat(points[3]),
           parseFloat(points[4]),
-          parseFloat(points[5]),
+          parseFloat(points[5]) || 0,
         ];
       }
       else {
@@ -459,10 +459,10 @@ export function getConic(
   else {
     angle = Math.atan(y / x);
   }
-  // safari的bug，不是水平右位0而是垂直上，角度需增加90
-  if (typeof navigator !== undefined &&/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
-    angle += Math.PI * 0.5;
-  }
+  // safari的bug，不是水平右位0而是垂直上，角度需增加90，新版已修复
+  // if (typeof navigator !== undefined &&/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)) {
+  //   angle += Math.PI * 0.5;
+  // }
   const total = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
   const stop = getColorStop(stops, total, true);
   return {
@@ -634,7 +634,14 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     const d4 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1 - height, 2)));
     const distance = Math.max(d1, d2, d3, d4);
     const ratio = distance / r;
-    let s = `radial-gradient(circle at ${toPrecision(d[0]) * 100}% ${toPrecision(d[1]) * 100}%, `;
+    let s = 'radial-gradient(';
+    // css固定类型无法还原sketch的长短点表达形式
+    if (standard) {
+      s += `circle at ${toPrecision(d[0]) * 100}% ${toPrecision(d[1]) * 100}%, `;
+    }
+    else {
+      s += d.join(' ') + ', ';
+    }
     stops.forEach((item, i) => {
       if (i) {
         s += ', ';
@@ -653,7 +660,48 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
   }
   else if (t === GRADIENT.CONIC) {
     let s = 'conic-gradient(';
-    stops.forEach((item, i) => {
+    // css的角度和sketch不一样差90°
+    if (standard) {
+      s += 'from 90deg, ';
+    }
+    const newStops = stops.slice(0);
+    // 当首尾offset不为[0,1]时，标准尾首间会断渐变需要手动补齐
+    const first = newStops[0];
+    const last = newStops[newStops.length - 1];
+    if (standard && (first.offset > 0 || last.offset < 1)) {
+      const dc = [
+        first.color[0] - last.color[0],
+        first.color[1] - last.color[1],
+        first.color[2] - last.color[2],
+        first.color[3] ?? 1 - last.color[3] ?? 1,
+      ];
+      const dl = 1 - last.offset + first.offset;
+      if (first.offset > 0) {
+        const p = first.offset / dl;
+        newStops.unshift({
+          color: [
+            Math.min(255, Math.max(0, Math.round(first.color[0] - dc[0] * p))),
+            Math.min(255, Math.max(0, Math.round(first.color[1] - dc[1] * p))),
+            Math.min(255, Math.max(0, Math.round(first.color[2] - dc[2] * p))),
+            Math.min(1, Math.max(0, first.color[3] ?? 1 - dc[3] * p)),
+          ],
+          offset: 0,
+        });
+      }
+      if (last.offset < 1) {
+        const p = (1 - last.offset) / dl;
+        newStops.push({
+          color: [
+            Math.min(255, Math.max(0, Math.round(last.color[0] + dc[0] * p))),
+            Math.min(255, Math.max(0, Math.round(last.color[1] + dc[1] * p))),
+            Math.min(255, Math.max(0, Math.round(last.color[2] + dc[2] * p))),
+            Math.min(1, Math.max(0, last.color[3] ?? 1 + dc[3] * p)),
+          ],
+          offset: 1,
+        });
+      }
+    }
+    newStops.forEach((item, i) => {
       if (i) {
         s += ', ';
       }

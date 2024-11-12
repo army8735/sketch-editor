@@ -6,7 +6,7 @@ import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
 import { color2rgbaStr, getCssShadow } from '../style/css';
-import { ComputedShadow } from '../style/define';
+import { ComputedGradient, ComputedPattern, ComputedShadow } from '../style/define';
 
 const html = `
   <div class="panel-title">阴影<b class="btn del"></b><b class="btn add"></b></div>
@@ -93,8 +93,6 @@ class ShadowPanel extends Panel {
           picker.hide();
           return;
         }
-        const index = parseInt(el.parentElement!.parentElement!.parentElement!.title);
-        const p = picker.show(el, 'shadowPanel', pickCallback);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -106,38 +104,32 @@ class ShadowPanel extends Panel {
             shadowEnable,
           });
         });
-        // 每次变更记录更新nexts
-        p.onChange = (color: any) => {
-          this.silence = true;
-          nexts = [];
-          nodes.forEach(node => {
-            const { shadow, shadowEnable } = node.getComputedStyle();
-            const cssShadow = shadow.map((item, i) => {
-              if (i === index) {
-                return getCssShadow(Object.assign(item, {
-                  color: color.rgba,
-                }));
-              }
-              else {
-                return getCssShadow(item);
-              }
+        const index = parseInt(el.parentElement!.parentElement!.parentElement!.title);
+        picker.show(el, this.nodes[0].computedStyle.shadow[0].color, 'shadowPanel',
+          (data: number[] | ComputedGradient | ComputedPattern) => {
+            this.silence = true;
+            nexts = [];
+            nodes.forEach(node => {
+              const { shadow, shadowEnable } = node.getComputedStyle();
+              const cssShadow = shadow.map((item, i) => {
+                if (i === index) {
+                  return getCssShadow(Object.assign(item, {
+                    color: data as number[], // 只能是纯色
+                  }));
+                }
+                else {
+                  return getCssShadow(item);
+                }
+              });
+              const o = {
+                shadow: cssShadow,
+                shadowEnable,
+              };
+              nexts.push(o);
+              node.updateStyle(o);
             });
-            const o = {
-              shadow: cssShadow,
-              shadowEnable,
-            };
-            nexts.push(o);
-            node.updateStyle(o);
-          });
-          if (nodes.length) {
-            listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
-          }
-          el.title = el.style.background = color2rgbaStr(color.rgba);
-          this.silence = false;
-        };
-        p.onDone = () => {
-          picker.hide();
-        };
+            this.silence = false;
+          }, pickCallback);
       }
       else if (classList.contains('add')) {
         this.silence = true;

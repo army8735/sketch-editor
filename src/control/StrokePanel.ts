@@ -131,9 +131,6 @@ class StrokePanel extends Panel {
           picker.hide();
           return;
         }
-        const line = el.parentElement!.parentElement!.parentElement!;
-        const index = parseInt(line.title);
-        const p = picker.show(el, 'strokePanel', pickCallback);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -147,39 +144,37 @@ class StrokePanel extends Panel {
             strokeWidth,
           });
         });
-        // 每次变更记录更新nexts
-        p.onChange = (color: any) => {
-          this.silence = true;
-          nexts = [];
-          this.nodes.forEach((node) => {
-            const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
-            const cssStroke = stroke.map((item, i) => {
-              if (i === index) {
-                return getCssFillStroke(color.rgba, node.width, node.height);
-              }
-              else {
-                return getCssFillStroke(item, node.width, node.height);
-              }
+
+        const line = el.parentElement!.parentElement!.parentElement!;
+        const index = parseInt(line.title);
+        picker.show(el, this.nodes[0].computedStyle.stroke[0], 'strokePanel',
+          (data: number[] | ComputedGradient | ComputedPattern) => {
+            this.silence = true;
+            nexts = [];
+            this.nodes.forEach((node) => {
+              const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+              const cssStroke = stroke.map((item, i) => {
+                if (i === index) {
+                  return getCssFillStroke(data, node.width, node.height);
+                }
+                else {
+                  return getCssFillStroke(item, node.width, node.height);
+                }
+              });
+              const o = {
+                stroke: cssStroke,
+                strokeEnable,
+                strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+                strokeWidth,
+              };
+              nexts.push(o);
+              node.updateStyle(o);
             });
-            const o = {
-              stroke: cssStroke,
-              strokeEnable,
-              strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
-              strokeWidth,
-            };
-            nexts.push(o);
-            node.updateStyle(o);
-          });
-          if (nodes.length) {
-            listener.emit(Listener.STROKE_NODE, nodes.slice(0));
-          }
-          const c = color2hexStr(color.rgba);
-          el.title = el.style.background = c;
-          this.silence = false;
-        };
-        p.onDone = () => {
-          picker.hide();
-        };
+            if (nodes.length) {
+              listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+            }
+            this.silence = false;
+          }, pickCallback);
       }
       else if (classList.contains('enabled')) {
         this.silence = true;

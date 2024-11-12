@@ -33,7 +33,7 @@ function renderItem(
   const multiGradient = fillGradient.length > 1;
   const multiFill = (fillColor.length ? 1 : 0) + (fillPattern.length ? 1 : 0) + (fillGradient.length ? 1 : 0) > 1;
   const multi = multiFill || multiColor || multiPattern || multiGradient;
-  const readOnly = (multiFillEnable || !fillEnable || multiFill || multiPattern || multiGradient || fillPattern.length || fillGradient.length) ? 'readonly="readonly"' : '';
+  const readOnly = (multiFillEnable || !fillEnable || multiFill || multiPattern || multiGradient || fillPattern.length) ? 'readonly="readonly"' : '';
   let background = '';
   let txt1 = ' ';
   let txt2 = ' ';
@@ -102,7 +102,7 @@ function renderItem(
         </select>
       </div>
       <div class="gradient ${(fillColor.length || fillPattern.length || multiGradient) ? 'hide' : ''}">
-        <select disabled="disabled">
+        <select>
           <option value="${GRADIENT.LINEAR}" ${fillGradient[0]?.t === GRADIENT.LINEAR ? 'selected="selected"' : ''}>线性</option>
           <option value="${GRADIENT.RADIAL}" ${fillGradient[0]?.t === GRADIENT.RADIAL ? 'selected="selected"' : ''}>径向</option>
           <option value="${GRADIENT.CONIC}" ${fillGradient[0]?.t === GRADIENT.CONIC ? 'selected="selected"' : ''}>角度</option>
@@ -166,9 +166,6 @@ class FillPanel extends Panel {
           picker.hide();
           return;
         }
-        const line = el.parentElement!.parentElement!.parentElement!;
-        const index = parseInt(line.title);
-        const p = picker.show(el, 'fillPanel', pickCallback);
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -181,39 +178,39 @@ class FillPanel extends Panel {
             fillEnable,
           });
         });
-        // 每次变更记录更新nexts
-        p.onChange = (color: any) => {
-          this.silence = true;
-          nexts = [];
-          nodes.forEach((node) => {
-            const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-            const cssFill = fill.map((item, i) => {
-              if (i === index) {
-                return getCssFillStroke(color.rgba, node.width, node.height);
-              }
-              else {
-                return getCssFillStroke(item, node.width, node.height);
-              }
+        const line = el.parentElement!.parentElement!.parentElement!;
+        const index = parseInt(line.title);
+        picker.show(el, this.nodes[0].computedStyle.fill[0], 'fillPanel',
+          (data: number[] | ComputedGradient | ComputedPattern) => {
+            this.silence = true;
+            nexts = [];
+            nodes.forEach(node => {
+              const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+              const cssFill = fill.map((item, i) => {
+                if (i === index) {
+                  return getCssFillStroke(data, node.width, node.height);
+                }
+                else {
+                  return getCssFillStroke(item, node.width, node.height);
+                }
+              });
+              const o = {
+                fill: cssFill,
+                fillOpacity,
+                fillEnable,
+              };
+              nexts.push(o);
+              node.updateStyle(o);
             });
-            const o = {
-              fill: cssFill,
-              fillOpacity,
-              fillEnable,
-            };
-            nexts.push(o);
-            node.updateStyle(o);
-          });
-          if (nodes.length) {
-            listener.emit(Listener.FILL_NODE, nodes.slice(0));
-          }
-          const c = color2rgbaStr(color.rgba);
-          el.title = el.style.background = c;
-          (line.querySelector('.hex input') as HTMLInputElement).value = color2hexStr(color.rgba).slice(1);
-          this.silence = false;
-        };
-        p.onDone = () => {
-          picker.hide();
-        };
+            if (nodes.length) {
+              listener.emit(Listener.FILL_NODE, nodes.slice(0));
+            }
+            if (Array.isArray(data)) {
+              const c = color2hexStr(data);
+              (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
+            }
+            this.silence = false;
+          }, pickCallback);
       }
       else if (classList.contains('enabled')) {
         this.silence = true;
