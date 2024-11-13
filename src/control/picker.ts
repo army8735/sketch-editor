@@ -331,10 +331,10 @@ export default {
         t.t = GRADIENT.LINEAR;
         bg.style.background = convert2Css(t, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
         line.style.display = 'block';
+        initStops(data, line);
+        picker.setColor(color2rgbaStr(data.stops[0].color), true);
         if (data.t === GRADIENT.LINEAR) {
           type.querySelector('.linear')?.classList.add('cur');
-          initLinear(data, line);
-          picker.setColor(color2rgbaStr(data.stops[0].color), true);
         }
         else if (data.t === GRADIENT.RADIAL) {
           type.querySelector('.radial')?.classList.add('cur');
@@ -367,7 +367,7 @@ export default {
   },
 };
 
-function initLinear(data: ComputedGradient, line: HTMLElement) {
+function initStops(data: ComputedGradient, line: HTMLElement) {
   const con = line.querySelector('.con') as HTMLElement;
   con.innerHTML = '';
   const fragment = document.createDocumentFragment();
