@@ -1630,10 +1630,24 @@ export default class Listener extends Event {
       }
       if (c) {
         const nodes = c.nodes.slice(0);
+        // 移除和编组特殊自己判断，其它自动更新selected并事件
         if (!(c instanceof RemoveCommand) && !(c instanceof GroupCommand)) {
+          const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
           this.updateActive();
+          // 不发送这个可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
+          if (nodes.length !== olds.length) {
+            this.emit(Listener.SELECT_NODE, nodes);
+          }
+          else {
+            for (let i = 0, len = nodes.length; i < len; i++) {
+              if (nodes[i] !== olds[i]) {
+                this.emit(Listener.SELECT_NODE, nodes);
+                break;
+              }
+            }
+          }
         }
         // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
@@ -1653,14 +1667,14 @@ export default class Listener extends Event {
               return c.data[i].selected || item;
             });
             this.updateActive();
-            this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
+            this.emit(Listener.ADD_NODE, nodes, this.selected.slice(0));
           }
         }
         else if (c instanceof AddCommand) {
           if (this.shiftKey) {
             this.selected = nodes.slice(0);
             this.updateActive();
-            this.emit(Listener.ADD_NODE, nodes.slice(0));
+            this.emit(Listener.ADD_NODE, nodes);
           }
           else {
             this.selected.splice(0);
@@ -1720,12 +1734,12 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
-            this.emit(Listener.GROUP_NODE, nodes.slice(0), c.data.map(item => item.children.slice(0)));
+            this.emit(Listener.GROUP_NODE, nodes, c.data.map(item => item.children.slice(0)));
           }
         }
         else if (c instanceof MaskModeCommand) {
           const maskMode = ['none', 'outline', 'alpha'][nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
-          this.emit(Listener.MASK_NODE, nodes.slice(0), maskMode);
+          this.emit(Listener.MASK_NODE, nodes, maskMode);
         }
         else if (c instanceof BreakMaskCommand) {
           const breakMask = nodes[0].computedStyle.breakMask;
