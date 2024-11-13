@@ -546,7 +546,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
       });
     }
     // start超过截取
-    if (p1 > 0) {
+    if (p1 > 1e-9) {
       const offset = p1 / c;
       for (let i = 0, len = list.length; i < len; i++) {
         const item = list[i];
@@ -573,13 +573,13 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
       }
     }
     // 不足计算正确的offset，原本开头是0
-    else if (p1 < 0) {
+    else if (p1 < -1e-9) {
       list.forEach(item => {
         item.offset = (item.offset * c - p1) / (c - p1);
       });
     }
     // end一样
-    if (p2 > 0) {
+    if (p2 > 1e-9) {
       const offset = (c - p2) / c;
       for (let i = list.length - 1; i >= 0; i--) {
         const item = list[i];
@@ -605,7 +605,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
         }
       }
     }
-    else if (p2 < 0) {
+    else if (p2 < -1e-9) {
       list.forEach(item => {
         item.offset = (item.offset * (c - p1)) / (c - p1 - p2);
       });

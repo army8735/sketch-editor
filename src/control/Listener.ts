@@ -1630,21 +1630,23 @@ export default class Listener extends Event {
       }
       if (c) {
         const nodes = c.nodes.slice(0);
-        // 移除和编组特殊自己判断，其它自动更新selected并事件
+        // 移除和编组特殊自己判断，其它自动更新selected
         if (!(c instanceof RemoveCommand) && !(c instanceof GroupCommand)) {
           const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
           this.updateActive();
-          // 不发送这个可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
-          if (nodes.length !== olds.length) {
-            this.emit(Listener.SELECT_NODE, nodes);
-          }
-          else {
-            for (let i = 0, len = nodes.length; i < len; i++) {
-              if (nodes[i] !== olds[i]) {
-                this.emit(Listener.SELECT_NODE, nodes);
-                break;
+          // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
+          if (!(c instanceof AddCommand)) {
+            if (nodes.length !== olds.length) {
+              this.emit(Listener.SELECT_NODE, nodes);
+            }
+            else {
+              for (let i = 0, len = nodes.length; i < len; i++) {
+                if (nodes[i] !== olds[i]) {
+                  this.emit(Listener.SELECT_NODE, nodes);
+                  break;
+                }
               }
             }
           }
