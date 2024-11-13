@@ -300,12 +300,7 @@ export default {
         this.hide();
       };
       picker.onChange = (color: any) => {
-        const cur = line.querySelector('.cur') as HTMLElement;
-        // 限定纯色的比如阴影
-        if (!cur) {
-          onChange(color.rgba);
-          return;
-        }
+        const cur = type.querySelector('.cur') as HTMLElement;
         const classList = cur.classList;
         if (classList.contains('color')) {
           onChange(color.rgba);

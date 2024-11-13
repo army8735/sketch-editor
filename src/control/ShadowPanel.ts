@@ -32,7 +32,7 @@ function renderItem(
     <span class="enabled ${multiEnable ? 'multi-checked' : (enable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="pick ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}" title="${color}">○○○</b>
+        <b class="pick ${multiColor ? 'multi' : ''}" style="${multiColor ? '' : `background:${color}`}">○○○</b>
       </span>
       <span class="txt">颜色</span>
     </div>
@@ -104,7 +104,8 @@ class ShadowPanel extends Panel {
             shadowEnable,
           });
         });
-        const index = parseInt(el.parentElement!.parentElement!.parentElement!.title);
+        const line = el.parentElement!.parentElement!.parentElement!;
+        const index = parseInt(line.title);
         picker.show(el, this.nodes[0].computedStyle.shadow[0].color, 'shadowPanel',
           (data: number[] | ComputedGradient | ComputedPattern) => {
             this.silence = true;
@@ -128,6 +129,10 @@ class ShadowPanel extends Panel {
               nexts.push(o);
               node.updateStyle(o);
             });
+            (line.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
+            if (nodes.length) {
+              listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+            }
             this.silence = false;
           }, pickCallback);
       }

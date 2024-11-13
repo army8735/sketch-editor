@@ -84,7 +84,7 @@ function renderItem(
     <span class="enabled ${multiFillEnable ? 'multi-checked' : (fillEnable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}" title="${background}">○○○</b>
+        <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}">○○○</b>
       </span>
       <span class="txt">${txt1}</span>
     </div>
@@ -183,11 +183,15 @@ class FillPanel extends Panel {
         picker.show(el, this.nodes[0].computedStyle.fill[0], 'fillPanel',
           (data: number[] | ComputedGradient | ComputedPattern) => {
             this.silence = true;
+            const style = (line.querySelector('.pick') as HTMLElement).style;
             // 类型变更需改变select/input展示
             if (Array.isArray(data)) {
               panel.querySelector('.value .hex')!.classList.remove('hide');
               panel.querySelector('.value .gradient')!.classList.add('hide');
               panel.querySelector('.value .multi-type')!.classList.add('hide');
+              const c = color2hexStr(data);
+              (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
+              style.background = color2rgbaStr(data);
             }
             else {
               const p = data as ComputedPattern;
@@ -199,6 +203,7 @@ class FillPanel extends Panel {
                 panel.querySelector('.value .multi-type')!.classList.add('hide');
                 const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
                 select.value = data.t.toString();
+                style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
               }
             }
             nexts = [];
@@ -222,10 +227,6 @@ class FillPanel extends Panel {
             });
             if (nodes.length) {
               listener.emit(Listener.FILL_NODE, nodes.slice(0));
-            }
-            if (Array.isArray(data)) {
-              const c = color2hexStr(data);
-              (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
             }
             this.silence = false;
           }, pickCallback);

@@ -70,7 +70,7 @@ function renderItem(
     <span class="enabled ${multiStrokeEnable ? 'multi-checked' : (strokeEnable ? 'checked' : 'un-checked')}"></span>
     <div class="color">
       <span class="picker-btn ${readOnly ? 'read-only' : ''}">
-        <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}" title="${background}">○○○</b>
+        <b class="pick ${multi ? 'multi' : ''}" style="${multi ? '' : `background:${background}`}">○○○</b>
       </span>
       <span class="txt">${txt1}</span>
     </div>

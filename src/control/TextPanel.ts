@@ -460,6 +460,7 @@ class TextPanel extends Panel {
                 nexts.push(node.getRich());
               });
             }
+            (panel.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
             if (nodes.length) {
               listener.emit(Listener.COLOR_NODE, nodes.slice(0));
             }
@@ -789,7 +790,7 @@ class TextPanel extends Panel {
       select.disabled = !(o.valid.length === 1 && o.valid[0]);
     }
     {
-      const color = panel.querySelector('.color b') as HTMLElement;
+      const color = panel.querySelector('.color .pick') as HTMLElement;
       if (o.color.length > 1) {
         color.style.background = '';
         color.classList.add('multi');
@@ -798,7 +799,7 @@ class TextPanel extends Panel {
         color.style.background = o.color[0];
         color.classList.remove('multi');
       }
-      color.setAttribute('title', o.color[0]);
+      // color.setAttribute('title', o.color[0]);
     }
     {
       const input = panel.querySelector('.fs input') as HTMLInputElement;
