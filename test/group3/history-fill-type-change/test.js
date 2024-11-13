@@ -25,7 +25,7 @@ module.exports = {
       .assert.value('#side .fill-panel .line[title="0"] .hex input', '00FF00')
       .assert.not.visible('#side .fill-panel .line[title="0"] .gradient select')
       .assert.visible('#side .fill-panel .line[title="0"] .hex input')
-      .assert.cssProperty('#side .fill-panel .line[title="0"] .color .picker-btn b', 'backgroundColor', 'rgb(0, 255, 0)')
+      .assert.cssProperty('#side .fill-panel .line[title="0"] .color .picker-btn b', 'backgroundColor', 'rgba(0, 255, 0, 1)')
 
       .keys(browser.Keys.META)
       .keys('z')
@@ -46,7 +46,7 @@ module.exports = {
       .assert.value('#side .fill-panel .line[title="0"] .hex input', '00FF00')
       .assert.not.visible('#side .fill-panel .line[title="0"] .gradient select')
       .assert.visible('#side .fill-panel .line[title="0"] .hex input')
-      .assert.cssProperty('#side .fill-panel .line[title="0"] .color .picker-btn b', 'backgroundColor', 'rgb(0, 255, 0)')
+      .assert.cssProperty('#side .fill-panel .line[title="0"] .color .picker-btn b', 'backgroundColor', 'rgba(0, 255, 0, 1)')
 
       .end();
   }
