@@ -183,6 +183,24 @@ class FillPanel extends Panel {
         picker.show(el, this.nodes[0].computedStyle.fill[0], 'fillPanel',
           (data: number[] | ComputedGradient | ComputedPattern) => {
             this.silence = true;
+            // 类型变更需改变select/input展示
+            if (Array.isArray(data)) {
+              panel.querySelector('.value .hex')!.classList.remove('hide');
+              panel.querySelector('.value .gradient')!.classList.add('hide');
+              panel.querySelector('.value .multi-type')!.classList.add('hide');
+            }
+            else {
+              const p = data as ComputedPattern;
+              if (p.url !== undefined) {}
+              else {
+                data = data  as ComputedGradient;
+                panel.querySelector('.value .hex')!.classList.add('hide');
+                panel.querySelector('.value .gradient')!.classList.remove('hide');
+                panel.querySelector('.value .multi-type')!.classList.add('hide');
+                const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
+                select.value = data.t.toString();
+              }
+            }
             nexts = [];
             nodes.forEach(node => {
               const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
@@ -405,7 +423,52 @@ class FillPanel extends Panel {
       this.silence = false;
     });
 
-    panel.addEventListener('change', pickCallback);
+    panel.addEventListener('change', (e) => {
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName.toUpperCase();
+      if (tagName === 'SELECT') {
+        if (target.parentElement!.classList.contains('pattern')) {}
+        else {
+          const line = target.parentElement!.parentElement!.parentElement!;
+          const index = parseInt(line.title);
+          nodes = this.nodes.slice(0);
+          prevs = [];
+          nexts = [];
+          nodes.forEach(node => {
+            const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+            const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
+            prevs.push({
+              fill: cssFill,
+              fillOpacity,
+              fillEnable,
+            });
+            const cssFill2 = fill.map((item, i) => {
+              if (i === index) {
+                (item as ComputedGradient).t = parseInt((target as HTMLSelectElement).value);
+                return getCssFillStroke(item, node.width, node.height);
+              }
+              else {
+                return getCssFillStroke(item, node.width, node.height);
+              }
+            });
+            const o = {
+              fill: cssFill2,
+              fillOpacity,
+              fillEnable,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
+          });
+          pickCallback();
+          if (nodes.length) {
+            listener.emit(Listener.FILL_NODE, nodes.slice(0));
+          }
+        }
+      }
+      else if (tagName === 'INPUT') {
+        pickCallback();
+      }
+    });
 
     listener.on([
       Listener.FILL_NODE,
