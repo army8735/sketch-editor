@@ -170,6 +170,7 @@ class StrokePanel extends Panel {
               nexts.push(o);
               node.updateStyle(o);
             });
+            (line.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
             if (nodes.length) {
               listener.emit(Listener.STROKE_NODE, nodes.slice(0));
             }
