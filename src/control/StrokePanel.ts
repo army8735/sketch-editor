@@ -170,7 +170,13 @@ class StrokePanel extends Panel {
               nexts.push(o);
               node.updateStyle(o);
             });
-            (line.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
+            const style = (line.querySelector('.pick') as HTMLElement).style;
+            if (Array.isArray(data)) {
+              style.background = color2rgbaStr(data);
+            }
+            else {
+              style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
+            }
             if (nodes.length) {
               listener.emit(Listener.STROKE_NODE, nodes.slice(0));
             }
