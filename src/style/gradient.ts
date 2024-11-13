@@ -504,6 +504,9 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
       }
     }
   }
+  const newStops = stops.slice(0);
+  // panel新增可能出现顺序不对
+  newStops.sort((a, b) => a.offset - b.offset);
   if (t === GRADIENT.LINEAR) {
     let start: { x: number, y: number },
       end: { x: number, y: number };
@@ -532,7 +535,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
     theta = angleBySides(a, b, c);
     const p2 = theta ? b * Math.cos(theta) : b;
-    const list = (clone(stops) as ComputedColorStop[]).sort((a, b) => a.offset - b.offset);
+    const list = (clone(newStops) as ComputedColorStop[]).sort((a, b) => a.offset - b.offset);
     if (list[0].offset > 0) {
       list.unshift({
         color: list[0].color.slice(0),
@@ -642,7 +645,7 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     else {
       s += d.join(' ') + ', ';
     }
-    stops.forEach((item, i) => {
+    newStops.forEach((item, i) => {
       if (i) {
         s += ', ';
       }
@@ -664,7 +667,6 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     if (standard) {
       s += 'from 90deg, ';
     }
-    const newStops = stops.slice(0);
     // 当首尾offset不为[0,1]时，标准尾首间会断渐变需要手动补齐
     const first = newStops[0];
     const last = newStops[newStops.length - 1];
