@@ -701,6 +701,15 @@ async function convertItem(
     if (tb === SketchFormat.TextBehaviour.Flexible) {
       if (left !== 'auto' && right !== 'auto') {
         right = 'auto';
+        // 左右类型变成自动宽，矫正left和translateX
+        const l = parseFloat(left.toString());
+        if (/%$/.test(left.toString())) {
+          left = l + layer.frame.width * 50 / w + '%';
+        }
+        else {
+          left = l + layer.frame.width * 0.5;
+        }
+        translateX = '-50%';
       }
       if (top !== 'auto' && bottom !== 'auto') {
         bottom = 'auto';
