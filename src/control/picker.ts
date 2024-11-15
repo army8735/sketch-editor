@@ -8,10 +8,10 @@ const html = `
   <b></b>
 </span>
 <ul class="type">
-  <li class="color"></li>
-  <li class="linear"></li>
-  <li class="radial"></li>
-  <li class="conic"></li>
+  <li class="color" title="纯色"></li>
+  <li class="linear" title="线性渐变"></li>
+  <li class="radial" title="径向渐变"></li>
+  <li class="conic" title="圆锥渐变"></li>
 </ul>
 <div class="line">
   <div class="bg"></div>
