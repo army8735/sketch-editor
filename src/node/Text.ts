@@ -3243,7 +3243,18 @@ class Text extends Node {
     }
     props.uuid = uuid.v4();
     props.sourceUuid = this.props.uuid;
-    props.rich = clone(this.rich);
+    if (this.rich) {
+      props.rich = this.rich.map(item => {
+        return {
+          ...item,
+          textAlign: ['left', 'right', 'center', 'justify'][item.textAlign] || 'left',
+          textDecoration: item.textDecoration.map(o => {
+            return ['none', 'underline', 'lineThrough'][o] || 'none';
+          }),
+          color: color2rgbaStr(item.color),
+        };
+      });
+    }
     props.content = this._content;
     const res = new Text(props);
     res.style = clone(this.style);
