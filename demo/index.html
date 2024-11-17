@@ -10,10 +10,15 @@
 <div class="wrap">
   <div class="menu">
     <input type="file" title="请选择sketch文件" id="file" accept=".sketch,.psd"/>
-    <label><input type="checkbox" class="tile"/>开启tile</label>
-    <label><input type="checkbox" class="debug"/>开启debug</label>
+    <div>
+      <label><input type="checkbox" class="tile"/>开启tile</label>
+      <label><input type="checkbox" class="debug"/>开启debug</label>
+    </div>
     <div class="zoom" id="zoom"></div>
-    <button id="save">保存</button>
+    <div>
+      <button id="save">保存</button>
+      <button id="export">导出</button>
+    </div>
   </div>
   <div class="container">
     <div class="list">
@@ -128,6 +133,61 @@
         })
       });
     }
+  });
+  const $export = document.querySelector('#export');
+  $export.addEventListener('click', () => {
+    if (!root) {
+      return;
+    }
+    const selected = listener.selected[0] || root.getCurPage()?.children[0];
+    if (!selected) {
+      return;
+    }
+    const { width, height } = selected;
+    const canvas2 = document.createElement('canvas');
+    canvas2.width = width;
+    canvas2.height = height;
+    canvas2.style.position = 'fixed';
+    canvas2.style.left = '100%';
+    canvas2.style.top = '100%';
+    canvas2.style.zIndex = 9999;
+    document.body.appendChild(canvas2);
+    const root2 = new sketchEditor.node.Root({
+      style: {
+        width,
+        height,
+      },
+    });
+    root2.appendTo(canvas2);
+    const clone = selected.clone();
+    clone.updateStyle({
+      left: 0,
+      top: 0,
+      right: 'auto',
+      bottom: 'auto',
+      width,
+      height,
+      translateX: 0,
+      translateY: 0,
+    });
+    root2.appendChild(clone);
+    root2.on('REFRESH_COMPLETE', () => {
+      canvas2.toBlob(blob => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          if (typeof link.download === 'string') {
+            document.body.appendChild(link);
+            link.download = (root.props.name || 'se') + '.png';
+            link.href = url;
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            location.replace(url);
+          }
+        }
+      });
+    });
   });
 </script>
 </body>
