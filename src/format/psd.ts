@@ -285,7 +285,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           location,
           length: 1,
           fontFamily,
-          fontSize,
+          fontSize: fontSize * transform[0],
           fontWeight: textStyle.fontWeight,
           fontStyle: textStyle.fontStyle,
           letterSpacing: kerning,
