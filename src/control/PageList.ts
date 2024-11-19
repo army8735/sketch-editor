@@ -36,7 +36,7 @@ export default class PageList {
         classList.add('active');
         const uuid = target.getAttribute('uuid');
         if (uuid) {
-          const page = root.refs[uuid];
+          const page = root.refs[uuid] as Page;
           if (page) {
             const i = pageContainer.children.indexOf(page);
             if (i > -1) {

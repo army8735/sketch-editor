@@ -69,7 +69,7 @@ class Root extends Container implements FrameCallback {
   refs: Record<string, Node>;
   symbolMasters: Record<string, SymbolMaster>;
   lastPage?: Page; // 上一个显示的Page对象
-  pageContainer: Container; // 存Page显示对象列表的容器
+  pageContainer: Container<Page>; // 存Page显示对象列表的容器
   overlay: Overlay; // 不跟随Page缩放的选框标尺等容器
   structs: Struct[]; // 队列代替递归Tree的数据结构
   isAsyncDraw: boolean; // 异步下帧刷新标识，多次刷新任务去重
@@ -114,7 +114,7 @@ class Root extends Container implements FrameCallback {
     this.scale = 1;
     this.scaleIndex = 0;
     // 存所有Page
-    this.pageContainer = new Container(
+    this.pageContainer = new Container<Page>(
       {
         name: 'pageContainer',
         uuid: 'pageContainer',
@@ -255,11 +255,19 @@ class Root extends Container implements FrameCallback {
   }
 
   setJPages(jPages: JPage[]) {
+    this.pageContainer.clearChildren();
+    this.lastPage = undefined;
     jPages.forEach((item) => {
       const page = new Page(item.props, []);
       page.json = item;
       this.pageContainer.appendChild(page);
     });
+  }
+
+  setPages(pages: Page[]) {
+    this.pageContainer.clearChildren();
+    this.lastPage = undefined;
+    pages.forEach(item => this.pageContainer.appendChild(item));
   }
 
   getPageIndex() {
@@ -286,7 +294,7 @@ class Root extends Container implements FrameCallback {
     }
     // 先置空，否则新页初始化添加DOM会触发事件到老页上
     this.lastPage = undefined;
-    let newPage = this.pageContainer.children[index] as Page;
+    let newPage = this.pageContainer.children[index];
     // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
     newPage.updateStyle({
@@ -689,11 +697,54 @@ class Root extends Container implements FrameCallback {
   }
 
   getPages() {
-    return this.pageContainer.children as Page[];
+    return this.pageContainer.children;
   }
 
   getCurPage() {
     return this.lastPage;
+  }
+
+  getCurPageWithCreate() {
+    if (this.lastPage) {
+      return this.lastPage;
+    }
+    if (this.pageContainer.children.length) {
+      const page = this.pageContainer.children[0];
+      this.setCurPage(page);
+      return page;
+    }
+    const page = this.addNewPage();
+    this.setCurPage(page);
+    return page;
+  }
+
+  addNewPage(page?: Page) {
+    const pageContainer = this.pageContainer;
+    if (!page) {
+      page = new Page(
+        {
+          uuid: uuid.v4(),
+          index: pageContainer.children.length,
+          name: '页面 ' + (pageContainer.children.length + 1),
+          style: {
+            width: 100,
+            height: 100,
+            visibility: 'hidden',
+            transformOrigin: [0, 0],
+            pointerEvents: false,
+          },
+          rule: {
+            baseX: 0,
+            baseY: 0,
+          },
+          isLocked: false,
+          isExpanded: false,
+        },
+        [],
+      );
+    }
+    pageContainer.appendChild(page);
+    return page;
   }
 
   setCurPage(page: Page) {

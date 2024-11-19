@@ -8,10 +8,10 @@ import { clone } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
 
-class Container extends Node {
-  children: Node[];
+class Container<T extends Node = Node> extends Node {
+  children: T[];
 
-  constructor(props: Props, children: Node[] = []) {
+  constructor(props: Props, children: T[] = []) {
     super(props);
     this.children = children;
     const len = children.length;
@@ -142,7 +142,7 @@ class Container extends Node {
     return rect;
   }
 
-  appendChild(node: Node, cb?: (sync: boolean) => void) {
+  appendChild(node: T, cb?: (sync: boolean) => void) {
     node.remove();
     const { root, children } = this;
     const len = children.length;
@@ -168,7 +168,7 @@ class Container extends Node {
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
-  prependChild(node: Node, cb?: (sync: boolean) => void) {
+  prependChild(node: T, cb?: (sync: boolean) => void) {
     node.remove();
     const { root, children } = this;
     const len = children.length;
