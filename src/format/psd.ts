@@ -29,7 +29,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
     tagName: TAG_NAME.ART_BOARD,
     props: {
       uuid: uuid.v4(),
-      name: 'default',
+      name: '画板',
       style: {
         width: json.width,
         height: json.height,
@@ -42,7 +42,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
     tagName: TAG_NAME.PAGE,
     props: {
       uuid: uuid.v4(),
-      name: 'default',
+      name: '页面 1',
       index: 0,
       rule: {
         baseX: 0,
