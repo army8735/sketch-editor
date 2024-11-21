@@ -531,6 +531,24 @@ class Text extends Node {
         }
       }
     }
+    else if (content && computedStyle.textAlign !== TEXT_ALIGN.LEFT) {
+      for (let i = 0, len = lineBoxList.length; i < len; i++) {
+        const lineBox = lineBoxList[i];
+        // 非\n而是布局宽度造成的换行，自动沿用之前的
+        if (computedStyle.textAlign === TEXT_ALIGN.CENTER) {
+          const d = this.width - lineBox.width;
+          if (d) {
+            lineBox.offsetX(d * 0.5);
+          }
+        }
+        else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT) {
+          const d = this.width - lineBox.width;
+          if (d) {
+            lineBox.offsetX(d);
+          }
+        }
+      }
+    }
     // 垂直对齐偏移
     const dh = this.height - lineBox.y - lineBox.height;
     if (dh) {
