@@ -526,92 +526,95 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
       start = { x: width, y: height };
       end = { x: 0, y: 0 };
     }
-    let a = Math.sqrt(Math.pow(y2 - start.y, 2) + Math.pow(x2 - start.x, 2));
-    let b = Math.sqrt(Math.pow(y1 - start.y, 2) + Math.pow(x1 - start.x, 2));
-    const c = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
-    let theta = angleBySides(a, b, c);
-    const p1 = theta ? b * Math.cos(theta) : b;
-    a = Math.sqrt(Math.pow(y1 - end.y, 2) + Math.pow(x1 - end.x, 2));
-    b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
-    theta = angleBySides(a, b, c);
-    const p2 = theta ? b * Math.cos(theta) : b;
     const list = (clone(newStops) as ComputedColorStop[]).sort((a, b) => a.offset - b.offset);
-    if (list[0].offset > 0) {
-      list.unshift({
-        color: list[0].color.slice(0),
-        offset: 0,
-      });
-    }
-    if (list[list.length - 1].offset < 1) {
-      list.push({
-        color: list[list.length - 1].color.slice(0),
-        offset: 1,
-      });
-    }
-    // start超过截取
-    if (p1 > 1e-9) {
-      const offset = p1 / c;
-      for (let i = 0, len = list.length; i < len; i++) {
-        const item = list[i];
-        if (item.offset >= offset) {
-          const prev = list[i - 1];
-          list.splice(0, i);
-          if (item.offset > offset) {
-            const l = c * (item.offset - prev.offset);
-            const p = (p1 - prev.offset * c) / l;
-            const color = prev.color.map((color, i) => {
-              if (i === 3) {
-                return color + (item.color[i] - color) * p;
-              }
-              return color + Math.floor((item.color[i] - color) * p);
-            });
-            const n = {
-              color,
-              offset: 0,
-            };
-            list.unshift(n);
+    // 标准需要补全首尾或截取，以保持offset强制[0, 1]
+    if (standard) {
+      let a = Math.sqrt(Math.pow(y2 - start.y, 2) + Math.pow(x2 - start.x, 2));
+      let b = Math.sqrt(Math.pow(y1 - start.y, 2) + Math.pow(x1 - start.x, 2));
+      const c = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+      let theta = angleBySides(a, b, c);
+      const p1 = theta ? b * Math.cos(theta) : b;
+      a = Math.sqrt(Math.pow(y1 - end.y, 2) + Math.pow(x1 - end.x, 2));
+      b = Math.sqrt(Math.pow(y2 - end.y, 2) + Math.pow(x2 - end.x, 2));
+      theta = angleBySides(a, b, c);
+      const p2 = theta ? b * Math.cos(theta) : b;
+      if (list[0].offset > 0) {
+        list.unshift({
+          color: list[0].color.slice(0),
+          offset: 0,
+        });
+      }
+      if (list[list.length - 1].offset < 1) {
+        list.push({
+          color: list[list.length - 1].color.slice(0),
+          offset: 1,
+        });
+      }
+      // start超过截取
+      if (p1 > 1e-9) {
+        const offset = p1 / c;
+        for (let i = 0, len = list.length; i < len; i++) {
+          const item = list[i];
+          if (item.offset >= offset) {
+            const prev = list[i - 1] || { color: item.color, offset: 0 };
+            list.splice(0, i);
+            if (item.offset > offset) {
+              const l = c * (item.offset - prev.offset);
+              const p = (p1 - prev.offset * c) / l;
+              const color = prev.color.map((color, i) => {
+                if (i === 3) {
+                  return color + (item.color[i] - color) * p;
+                }
+                return color + Math.floor((item.color[i] - color) * p);
+              });
+              const n = {
+                color,
+                offset: 0,
+              };
+              list.unshift(n);
+            }
+            break;
           }
-          break;
         }
       }
-    }
-    // 不足计算正确的offset，原本开头是0
-    else if (p1 < -1e-9) {
-      list.forEach(item => {
-        item.offset = (item.offset * c - p1) / (c - p1);
-      });
-    }
-    // end一样
-    if (p2 > 1e-9) {
-      const offset = (c - p2) / c;
-      for (let i = list.length - 1; i >= 0; i--) {
-        const item = list[i];
-        if (item.offset <= offset) {
-          const next = list[i + 1];
-          list.splice(i + 1);
-          if (item.offset < offset) {
-            const l = c * (next.offset - item.offset);
-            const p = (p2 - (1 - next.offset) * c) / l;
-            const color = next.color.map((color, i) => {
-              if (i === 3) {
-                return color + (item.color[i] - color) * p;
-              }
-              return color + Math.floor((item.color[i] - color) * p);
-            });
-            const n = {
-              color,
-              offset: 1,
-            };
-            list.push(n);
+      // 不足计算正确的offset，原本开头是0
+      else if (p1 < -1e-9) {
+        list.forEach(item => {
+          item.offset = (item.offset * c - p1) / (c - p1);
+        });
+      }
+      // end一样
+      if (p2 > 1e-9) {
+        const offset = (c - p2) / c;
+        for (let i = list.length - 1; i >= 0; i--) {
+          const item = list[i];
+          if (item.offset <= offset) {
+            const next = list[i + 1] || { color: item.color, offset: 1 };
+            list.splice(i + 1);
+            if (item.offset < offset) {
+              const l = c * (next.offset - item.offset);
+              const p = (p2 - (1 - next.offset) * c) / l;
+              const color = next.color.map((color, i) => {
+                if (i === 3) {
+                  return color + (item.color[i] - color) * p;
+                }
+                return color + Math.floor((item.color[i] - color) * p);
+              });
+              const n = {
+                color,
+                offset: 1,
+              };
+              list.push(n);
+            }
+            break;
           }
-          break;
         }
       }
-    }
-    else if (p2 < -1e-9) {
-      list.forEach(item => {
-        item.offset = (item.offset * (c - p1)) / (c - p1 - p2);
-      });
+      else if (p2 < -1e-9) {
+        list.forEach(item => {
+          item.offset = (item.offset * (c - p1)) / (c - p1 - p2);
+        });
+      }
     }
     let s = 'linear-gradient(';
     // 标准css用deg方向等，自己用sketch的2点式
