@@ -158,8 +158,6 @@ class StrokePanel extends Panel {
             panel.querySelector('.value .hex')?.classList.remove('hide');
             panel.querySelector('.value .gradient')?.classList.add('hide');
             panel.querySelector('.value .multi-type')?.classList.add('hide');
-            const c = color2hexStr(data);
-            (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
             style.background = color2rgbaStr(data);
           }
           else {
