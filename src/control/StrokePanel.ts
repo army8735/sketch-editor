@@ -155,9 +155,9 @@ class StrokePanel extends Panel {
           const style = (line.querySelector('.pick') as HTMLElement).style;
           // 类型变更需改变select/input展示
           if (Array.isArray(data)) {
-            panel.querySelector('.value .hex')!.classList.remove('hide');
-            panel.querySelector('.value .gradient')!.classList.add('hide');
-            panel.querySelector('.value .multi-type')!.classList.add('hide');
+            panel.querySelector('.value .hex')?.classList.remove('hide');
+            panel.querySelector('.value .gradient')?.classList.add('hide');
+            panel.querySelector('.value .multi-type')?.classList.add('hide');
             const c = color2hexStr(data);
             (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
             style.background = color2rgbaStr(data);

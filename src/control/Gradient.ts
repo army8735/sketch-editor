@@ -34,9 +34,11 @@ export default class Gradient {
     let h = 1;
     let len = 1;
     let target: HTMLElement;
+    let list: NodeListOf<HTMLSpanElement>;
     panel.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       target = e.target as HTMLElement;
+      list = panel.querySelectorAll('span');
       const tagName = target.tagName.toUpperCase();
       if (tagName === 'SPAN') {
         isDrag = true;
@@ -69,7 +71,15 @@ export default class Gradient {
               d[2] = x;
               d[3] = y;
             }
+            this.updateBg(data);
             len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
+            stops.forEach((item, i) => {
+              const left = (d[0] + (d[2] - d[0]) * item.offset) * 100 + '%';
+              const top = (d[1] + (d[3] - d[1]) * item.offset) * 100 + '%';
+              list[i].style.left = left;
+              list[i].style.top = top;
+            });
+            this.onChange!(data, true);
           }
           // 中间的不调整长度并限制范围
           else {
