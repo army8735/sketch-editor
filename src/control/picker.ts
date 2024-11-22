@@ -1,6 +1,7 @@
 import { color2rgbaStr, getCssFillStroke } from '../style/css';
 import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { convert2Css } from '../style/gradient';
+import Listener from './Listener';
 
 let div: HTMLElement;
 const html = `
@@ -27,8 +28,14 @@ let tempColor: number[] | undefined; // 编辑切换类别时，保存下可以�
 let tempGradient: ComputedGradient | undefined;
 
 export default {
-  show(el: HTMLElement, data: number[] | ComputedGradient | ComputedPattern, from: string,
-       onChange: (data: number[] | ComputedGradient | ComputedPattern) => void, cb: () => void) {
+  show(
+    el: HTMLElement,
+    data: number[] | ComputedGradient | ComputedPattern,
+    from: string,
+    onChange: (data: number[] | ComputedGradient | ComputedPattern) => void,
+    cb: () => void,
+    listener: Listener,
+  ) {
     // 强制渐变stops顺序排列初始化
     // if (!Array.isArray(data) && (data as ComputedGradient).stops) {
     //   (data as ComputedGradient).stops.sort((a, b) => a.offset - b.offset);
@@ -54,17 +61,6 @@ export default {
       div = document.createElement('div');
       div.innerHTML = html;
       document.body.appendChild(div);
-      // 点击外部自动关闭
-      document.addEventListener('click', (e) => {
-        let p = e.target as (HTMLElement | null);
-        while (p) {
-          if (p === div) {
-            return;
-          }
-          p = p.parentElement;
-        }
-        this.hide();
-      });
     }
     const type = div.querySelector('.type') as HTMLElement;
     type.querySelector('.cur')?.classList.remove('cur');
@@ -220,6 +216,7 @@ export default {
           startX = e.pageX;
           initX = parseFloat(cur.style.left) * 0.01;
           picker.setColor((data as ComputedGradient).stops[index].color, true);
+          listener.gradient.setLinearCur(index);
         }
         // 新增一个
         else if (tagName === 'DIV') {
@@ -228,9 +225,6 @@ export default {
           const span = document.createElement('span');
           span.style.left = p * 100 + '%';
           const list = con.querySelectorAll('.con span');
-          // index最后更新style会自动排序直接追加即可
-          index = list.length;
-          span.title = index.toString();
           con.appendChild(span);
           const o = {
             color: [0, 0, 0, 0],
@@ -256,23 +250,38 @@ export default {
                   (prev[3] ?? 1) + ((next[3] ?? 1) - (prev[3] ?? 1)) * p2,
                 ];
               }
+              index = i;
               break;
             }
             else if (i === len - 1) {
               o.color = (data as ComputedGradient).stops[i].color.slice(0);
+              index = len;
             }
           }
-          (data as ComputedGradient).stops[index] = o;
+          // 后面的index++
+          for (let i = index, len = list.length; i < len; i++) {
+            (list[i] as HTMLElement).title = (index + 1).toString();
+          }
+          span.title = index.toString();
+          (data as ComputedGradient).stops.splice(index, 0, o);
           cur = span;
           cur.classList.add('cur');
           isDrag = true;
           startX = e.pageX;
           initX = parseFloat(cur.style.left) * 0.01;
           picker.setColor(o.color, true);
+          listener.gradient.setLinearCur(index);
+          onChange(data);
         }
+      });
+      // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
+      let isClick = false;
+      div.addEventListener('mousedown', (e) => {
+        isClick = true;
       });
       document.addEventListener('mousemove', (e) => {
         if (isDrag) {
+          e.preventDefault();
           const diff = e.pageX - startX;
           const p = Math.min(1, Math.max(0, initX + diff / w));
           (data as ComputedGradient).stops[index].offset = p;
@@ -281,8 +290,13 @@ export default {
           onChange(data);
         }
       });
-      document.addEventListener('mouseup', () => {
-        isDrag = false;
+      // 点击外部自动关闭，拖拽过程除外，利用冒泡顺序
+      document.addEventListener('click', (e) => {
+        if (isDrag || isClick) {
+          isDrag = isClick = false;
+          return;
+        }
+        this.hide();
       });
     }
     div.className = 'sketch-editor-picker';
@@ -326,12 +340,9 @@ export default {
       else {
         data = data as ComputedGradient;
         picker.setColor(color2rgbaStr(data.stops[0].color), true);
-        // bg条恒定linear-gradient且向右
-        const t = Object.assign({}, data);
-        t.t = GRADIENT.LINEAR;
-        bg.style.background = convert2Css(t, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
+        this.updateLineBg(data);
         line.style.display = 'block';
-        initStops(data, line);
+        initStops(data, line); // 初始0
         picker.setColor(color2rgbaStr(data.stops[0].color), true);
         if (data.t === GRADIENT.LINEAR) {
           type.querySelector('.linear')?.classList.add('cur');
@@ -364,6 +375,27 @@ export default {
   },
   isShowFrom(from: string) {
     return this.isShow() && openFrom === from;
+  },
+  setLineCur(i: number) {
+    if (div) {
+      div.querySelector('.line .con .cur')?.classList.remove('cur');
+      div.querySelector(`.line .con span[title="${i}"]`)?.classList.add('cur');
+    }
+  },
+  updateLinePos(i: number, offset: number, data: ComputedGradient) {
+    if (div) {
+      (div.querySelector(`.line .con span[title="${i}"]`) as HTMLElement).style.left = offset * 100 + '%';
+      this.updateLineBg(data);
+    }
+  },
+  updateLineBg(data: ComputedGradient) {
+    if (div) {
+      const t = Object.assign({}, data);
+      t.t = GRADIENT.LINEAR;
+      const bg = div.querySelector('.line .bg') as HTMLElement;
+      // bg条恒定linear-gradient且向右
+      bg.style.background = convert2Css(t, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
+    }
   },
 };
 

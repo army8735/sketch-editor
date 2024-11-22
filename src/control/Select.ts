@@ -166,6 +166,10 @@ export default class Select {
 
   showSelect(selected: Node[]) {
     this.updateSelect(selected);
+    this.showSelectNotUpdate();
+  }
+
+  showSelectNotUpdate() {
     this.select.style.display = 'block';
   }
 

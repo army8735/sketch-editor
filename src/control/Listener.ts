@@ -46,6 +46,7 @@ import Guides from './Guides';
 import { appendWithPosAndSize } from '../tools/container';
 import AddCommand, { AddData } from '../history/AddCommand';
 import { getTextBehaviour } from '../tools/text';
+import Gradient from './Gradient';
 
 export type ListenerOptions = {
   enabled?: {
@@ -107,6 +108,7 @@ export default class Listener extends Event {
   originStyle: Style[]; // 同上
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
+  gradient: Gradient; // 渐变编辑控制
   mouseDownArtBoard?: ArtBoard;
   mouseDown2ArtBoard?: Node;
   isWin = isWin;
@@ -157,6 +159,7 @@ export default class Listener extends Event {
     this.select = new Select(root, dom);
     this.input = new Input(root, dom, this);
     this.guides = new Guides(root, dom, this);
+    this.gradient = new Gradient(root, dom, this);
     this.clones = [];
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
@@ -558,6 +561,10 @@ export default class Listener extends Event {
     this.button = e.button;
     // 右键菜单，忽略meta按下
     if (e.button === 2) {
+      if (this.state === State.EDIT_GRADIENT) {
+        contextMenu.showOk(e.pageX, e.pageY, this);
+        return;
+      }
       if (this.metaKey || isWin && this.ctrlKey || this.state === State.EDIT_TEXT || this.options.disabled?.contextMenu) {
         return;
       }
@@ -565,6 +572,11 @@ export default class Listener extends Event {
       // 复用普通左键选择的部分逻辑
       this.onDown(target, e);
       contextMenu.showCanvas(e.pageX, e.pageY, this);
+      return;
+    }
+    if (this.state === State.EDIT_GRADIENT) {
+      this.state = State.NORMAL;
+      this.select.showSelectNotUpdate();
       return;
     }
     this.isMouseDown = true;

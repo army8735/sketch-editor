@@ -541,6 +541,83 @@ html, body {
     }
   }
 
+  .gradient {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+
+    div {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 2px;
+      transform-origin: 0 0;
+
+      &:before {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 100%;
+        height: 50%;
+        background: #FFF;
+        box-shadow: 0 0 2px #999;
+        transform: translate(0, -50%);
+        content: ' ';
+      }
+    }
+
+    span {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 3px solid #FFF;
+      box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+      opacity: 0.75;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+
+      &:before {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px solid #FFF;
+        content: ' ';
+        box-shadow: 0 0 0.5px rgba(0, 0, 0, 0.5);
+        transform: translate(-50%, -50%);
+      }
+
+      &:after {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 0.5px solid #999;
+        content: ' ';
+        transform: translate(-50%, -50%);
+      }
+
+      &.cur {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.25);
+      }
+
+      &:hover {
+        opacity: 1;
+        box-shadow: 0 0 3px 1px rgba(255, 0, 0, 0.5);
+      }
+    }
+  }
+
   .line-h {
     position: absolute;
     height: 1px;
@@ -1687,6 +1764,7 @@ html, body {
       height: 8px;
       border: 0.5px solid #999;
       border-radius: 5px;
+      transform: scaleX(1.04);
     }
 
     .con {
@@ -1705,6 +1783,7 @@ html, body {
         border-radius: 50%;
         border: 3px solid #FFF;
         box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+        opacity: 0.75;
         transform: translate(-50%, -50%);
 
         &:before {
@@ -1733,6 +1812,12 @@ html, body {
         }
 
         &.cur {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.25);
+        }
+
+        &:hover {
+          opacity: 1;
           box-shadow: 0 0 3px 1px rgba(255, 0, 0, 0.5);
         }
       }
@@ -1781,6 +1866,7 @@ html, body {
     margin: 4px 2px;
     padding: 0 6px;
     border-radius: 3px;
+    user-select: none;
 
     &:hover {
       background: rgba(51, 102, 255, 0.1);
@@ -1829,6 +1915,10 @@ html, body {
     span {
       pointer-events: none;
     }
+  }
+
+  .ok {
+    display: none;
   }
 
   .version {
@@ -1915,6 +2005,16 @@ html, body {
       pointer-events: none;
     }
   }
+
+  &.only-ok {
+    .item, .split {
+      display: none;
+    }
+
+    .ok, .version {
+      display: block;
+    }
+  }
 }
 
 .zoom {
@@ -1946,5 +2046,14 @@ html, body {
     color: #000;
     font-size: 14px;
     line-height: 22px;
+  }
+}
+
+@keyframes hover-gradient-drag {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
   }
 }

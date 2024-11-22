@@ -11,6 +11,7 @@ import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '
 import Panel from './Panel';
 import { FillStyle } from '../format';
 import FillCommand from '../history/FillCommand';
+import State from './State';
 
 const html = `
   <h4 class="panel-title">填充</h4>
@@ -151,6 +152,7 @@ class FillPanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
+      listener.gradient.hide();
     };
 
     panel.addEventListener('click', (e) => {
@@ -180,56 +182,63 @@ class FillPanel extends Panel {
         });
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
-        picker.show(el, this.nodes[0].computedStyle.fill[0], 'fillPanel',
-          (data: number[] | ComputedGradient | ComputedPattern) => {
-            this.silence = true;
-            const style = (line.querySelector('.pick') as HTMLElement).style;
-            // 类型变更需改变select/input展示
-            if (Array.isArray(data)) {
-              panel.querySelector('.value .hex')!.classList.remove('hide');
-              panel.querySelector('.value .gradient')!.classList.add('hide');
-              panel.querySelector('.value .multi-type')!.classList.add('hide');
-              const c = color2hexStr(data);
-              (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
-              style.background = color2rgbaStr(data);
-            }
+        const fill = this.nodes[0].computedStyle.fill[index];
+        const onChange = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
+          this.silence = true;
+          const style = (line.querySelector('.pick') as HTMLElement).style;
+          // 类型变更需改变select/input展示
+          if (Array.isArray(data)) {
+            panel.querySelector('.value .hex')!.classList.remove('hide');
+            panel.querySelector('.value .gradient')!.classList.add('hide');
+            panel.querySelector('.value .multi-type')!.classList.add('hide');
+            const c = color2hexStr(data);
+            (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
+            style.background = color2rgbaStr(data);
+          }
+          else {
+            const p = data as ComputedPattern;
+            if (p.url !== undefined) {}
             else {
-              const p = data as ComputedPattern;
-              if (p.url !== undefined) {}
-              else {
-                data = data  as ComputedGradient;
-                panel.querySelector('.value .hex')!.classList.add('hide');
-                panel.querySelector('.value .gradient')!.classList.remove('hide');
-                panel.querySelector('.value .multi-type')!.classList.add('hide');
-                const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
-                select.value = data.t.toString();
-                style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
+              data = data  as ComputedGradient;
+              panel.querySelector('.value .hex')!.classList.add('hide');
+              panel.querySelector('.value .gradient')!.classList.remove('hide');
+              panel.querySelector('.value .multi-type')!.classList.add('hide');
+              const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
+              select.value = data.t.toString();
+              style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
+            }
+          }
+          nexts = [];
+          nodes.forEach(node => {
+            const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+            const cssFill = fill.map((item, i) => {
+              if (i === index) {
+                return getCssFillStroke(data);
               }
-            }
-            nexts = [];
-            nodes.forEach(node => {
-              const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-              const cssFill = fill.map((item, i) => {
-                if (i === index) {
-                  return getCssFillStroke(data, node.width, node.height);
-                }
-                else {
-                  return getCssFillStroke(item, node.width, node.height);
-                }
-              });
-              const o = {
-                fill: cssFill,
-                fillOpacity,
-                fillEnable,
-              };
-              nexts.push(o);
-              node.updateStyle(o);
+              else {
+                return getCssFillStroke(item);
+              }
             });
-            if (nodes.length) {
-              listener.emit(Listener.FILL_NODE, nodes.slice(0));
-            }
-            this.silence = false;
-          }, pickCallback);
+            const o = {
+              fill: cssFill,
+              fillOpacity,
+              fillEnable,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
+          });
+          if (!fromGradient) {
+            listener.gradient.update(this.nodes[0], fill);
+          }
+          if (nodes.length) {
+            listener.emit(Listener.FILL_NODE, nodes.slice(0));
+          }
+          this.silence = false;
+        };
+        picker.show(el, fill, 'fillPanel', onChange, pickCallback, listener);
+        listener.select.hideSelect();
+        listener.gradient.show(this.nodes[0], fill, onChange);
+        listener.state = State.EDIT_GRADIENT;
       }
       else if (classList.contains('enabled')) {
         this.silence = true;

@@ -106,35 +106,35 @@ class ShadowPanel extends Panel {
         });
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
-        picker.show(el, this.nodes[0].computedStyle.shadow[0].color, 'shadowPanel',
-          (data: number[] | ComputedGradient | ComputedPattern) => {
-            this.silence = true;
-            nexts = [];
-            nodes.forEach(node => {
-              const { shadow, shadowEnable } = node.getComputedStyle();
-              const cssShadow = shadow.map((item, i) => {
-                if (i === index) {
-                  return getCssShadow(Object.assign(item, {
-                    color: data as number[], // 只能是纯色
-                  }));
-                }
-                else {
-                  return getCssShadow(item);
-                }
-              });
-              const o = {
-                shadow: cssShadow,
-                shadowEnable,
-              };
-              nexts.push(o);
-              node.updateStyle(o);
+        const color = this.nodes[0].computedStyle.shadow[0].color;
+        picker.show(el, color, 'shadowPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
+          this.silence = true;
+          nexts = [];
+          nodes.forEach(node => {
+            const { shadow, shadowEnable } = node.getComputedStyle();
+            const cssShadow = shadow.map((item, i) => {
+              if (i === index) {
+                return getCssShadow(Object.assign(item, {
+                  color: data as number[], // 只能是纯色
+                }));
+              }
+              else {
+                return getCssShadow(item);
+              }
             });
-            (line.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
-            if (nodes.length) {
-              listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
-            }
-            this.silence = false;
-          }, pickCallback);
+            const o = {
+              shadow: cssShadow,
+              shadowEnable,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
+          });
+          (line.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
+          if (nodes.length) {
+            listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
+          }
+          this.silence = false;
+        }, pickCallback, listener);
       }
       else if (classList.contains('add')) {
         this.silence = true;

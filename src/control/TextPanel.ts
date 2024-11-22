@@ -431,41 +431,41 @@ class TextPanel extends Panel {
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = nodes.map(item => item.getRich());
-        const p = picker.show(el, this.nodes[0].computedStyle.color, 'textPanel',
-          (data: number[] | ComputedGradient | ComputedPattern) => {
-            this.silence = true;
-            nexts = [];
-            if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
-              const node = nodes[0];
-              const { isMulti, start, end } = node.getSortedCursor();
-              if (isMulti) {
-                node.updateRangeStyle(start, end - start, {
-                  color: data as number[],
-                });
-                nexts.push(node.getRich());
-                node.setCursorByIndex(start);
-                node.setCursorByIndex(end, true);
-              }
-              else {
-                node.setInputStyle({
-                  color: data as number[],
-                });
-              }
+        const color = this.nodes[0].computedStyle.color;
+        const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
+          this.silence = true;
+          nexts = [];
+          if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
+            const node = nodes[0];
+            const { isMulti, start, end } = node.getSortedCursor();
+            if (isMulti) {
+              node.updateRangeStyle(start, end - start, {
+                color: data as number[],
+              });
+              nexts.push(node.getRich());
+              node.setCursorByIndex(start);
+              node.setCursorByIndex(end, true);
             }
             else {
-              nodes.forEach(node => {
-                node.updateRangeStyle(0, node._content.length, {
-                  color: data as number[],
-                });
-                nexts.push(node.getRich());
+              node.setInputStyle({
+                color: data as number[],
               });
             }
-            (panel.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
-            if (nodes.length) {
-              listener.emit(Listener.COLOR_NODE, nodes.slice(0));
-            }
-            this.silence = false;
-          }, pickCallback);
+          }
+          else {
+            nodes.forEach(node => {
+              node.updateRangeStyle(0, node._content.length, {
+                color: data as number[],
+              });
+              nexts.push(node.getRich());
+            });
+          }
+          (panel.querySelector('.pick') as HTMLElement).style.background = color2rgbaStr(data as number[]);
+          if (nodes.length) {
+            listener.emit(Listener.COLOR_NODE, nodes.slice(0));
+          }
+          this.silence = false;
+        }, pickCallback, listener);
         const pDom = p.domElement.parentElement!;
         if (!listener.input.ignoreBlur.includes(pDom)) {
           listener.input.ignoreBlur.push(pDom);

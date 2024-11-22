@@ -11,6 +11,7 @@ import { color2hexStr, color2rgbaStr, getCssFillStroke, getCssStrokePosition } f
 import Panel from './Panel';
 import { StrokeStyle } from '../format';
 import StrokeCommand from '../history/StrokeCommand';
+import State from './State';
 
 const html = `
   <h4 class="panel-title">描边</h4>
@@ -116,6 +117,7 @@ class StrokePanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
+      listener.gradient.hide();
     };
 
     panel.addEventListener('click', (e) => {
@@ -147,41 +149,64 @@ class StrokePanel extends Panel {
 
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
-        picker.show(el, this.nodes[0].computedStyle.stroke[0], 'strokePanel',
-          (data: number[] | ComputedGradient | ComputedPattern) => {
-            this.silence = true;
-            nexts = [];
-            this.nodes.forEach((node) => {
-              const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
-              const cssStroke = stroke.map((item, i) => {
-                if (i === index) {
-                  return getCssFillStroke(data, node.width, node.height);
-                }
-                else {
-                  return getCssFillStroke(item, node.width, node.height);
-                }
-              });
-              const o = {
-                stroke: cssStroke,
-                strokeEnable,
-                strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
-                strokeWidth,
-              };
-              nexts.push(o);
-              node.updateStyle(o);
-            });
-            const style = (line.querySelector('.pick') as HTMLElement).style;
-            if (Array.isArray(data)) {
-              style.background = color2rgbaStr(data);
-            }
+        const stroke = this.nodes[0].computedStyle.stroke[0];
+        const onChange = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
+          this.silence = true;
+          const style = (line.querySelector('.pick') as HTMLElement).style;
+          // 类型变更需改变select/input展示
+          if (Array.isArray(data)) {
+            panel.querySelector('.value .hex')!.classList.remove('hide');
+            panel.querySelector('.value .gradient')!.classList.add('hide');
+            panel.querySelector('.value .multi-type')!.classList.add('hide');
+            const c = color2hexStr(data);
+            (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
+            style.background = color2rgbaStr(data);
+          }
+          else {
+            const p = data as ComputedPattern;
+            if (p.url !== undefined) {}
             else {
+              data = data  as ComputedGradient;
+              panel.querySelector('.value .hex')!.classList.add('hide');
+              panel.querySelector('.value .gradient')!.classList.remove('hide');
+              panel.querySelector('.value .multi-type')!.classList.add('hide');
+              const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
+              select.value = data.t.toString();
               style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
             }
-            if (nodes.length) {
-              listener.emit(Listener.STROKE_NODE, nodes.slice(0));
-            }
-            this.silence = false;
-          }, pickCallback);
+          }
+          nexts = [];
+          nodes.forEach((node) => {
+            const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+            const cssStroke = stroke.map((item, i) => {
+              if (i === index) {
+                return getCssFillStroke(data);
+              }
+              else {
+                return getCssFillStroke(item);
+              }
+            });
+            const o = {
+              stroke: cssStroke,
+              strokeEnable,
+              strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+              strokeWidth,
+            };
+            nexts.push(o);
+            node.updateStyle(o);
+          });
+          if (!fromGradient) {
+            listener.gradient.update(this.nodes[0], stroke);
+          }
+          if (nodes.length) {
+            listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+          }
+          this.silence = false;
+        };
+        picker.show(el, stroke, 'strokePanel', onChange, pickCallback, listener);
+        listener.select.hideSelect();
+        listener.gradient.show(this.nodes[0], stroke, onChange);
+        listener.state = State.EDIT_GRADIENT;
       }
       else if (classList.contains('enabled')) {
         this.silence = true;
