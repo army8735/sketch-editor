@@ -3,7 +3,7 @@ import Node from '../node/Node';
 import Listener from './Listener';
 import picker from './picker';
 import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
-import { color2rgbaStr, getCssFillStroke } from '../style/css';
+import { color2rgbaStr } from '../style/css';
 import { r2d } from '../math/geom';
 import { toPrecision } from '../math';
 import { clone } from '../util/type';
@@ -64,6 +64,11 @@ export default class Gradient {
           // 首尾影响渐变起始点，即长度，然后其它点都随之变化
           if (idx === 0 || idx === stops.length - 1) {
             if (idx === 0) {
+              // linear改变两端点之一不影响另外一个，但radial和conic是半径统一影响
+              if ([GRADIENT.RADIAL, GRADIENT.CONIC].includes(data.t)) {
+                d[2] += x - d[0];
+                d[3] += y - d[1];
+              }
               d[0] = x;
               d[1] = y;
             }
@@ -71,7 +76,12 @@ export default class Gradient {
               d[2] = x;
               d[3] = y;
             }
-            this.updateBg(data);
+            if (data.t === GRADIENT.LINEAR) {
+              this.updateLinearD(data);
+            }
+            else if (data.t === GRADIENT.RADIAL) {
+              this.updateRadialD(data);
+            }
             len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
             stops.forEach((item, i) => {
               const left = (d[0] + (d[2] - d[0]) * item.offset) * 100 + '%';
@@ -124,7 +134,9 @@ export default class Gradient {
     if (data.t === GRADIENT.LINEAR) {
       this.genLinear(data);
     }
-    else if (data.t === GRADIENT.RADIAL) {}
+    else if (data.t === GRADIENT.RADIAL) {
+      this.genRadial(data);
+    }
     else if (data.t === GRADIENT.CONIC) {}
   }
 
@@ -143,9 +155,18 @@ export default class Gradient {
         this.genLinear(data);
       }
       else {
-        this.updateLinear(data);
+        this.updateLinearStops(data);
       }
     }
+    else if (data.t === GRADIENT.RADIAL) {
+      if (data.stops.length !== this.data?.stops.length) {
+        this.genRadial(data);
+      }
+      else {
+        this.updateLinearStops(data);
+      }
+    }
+    else if (data.t === GRADIENT.CONIC) {}
   }
 
   updateSize(node: Node) {
@@ -163,17 +184,51 @@ export default class Gradient {
     const panel = this.panel;
     const { stops } = data;
     panel.innerHTML = '';
-    let html = '<div></div>';
+    let html = '<div class="l"></div>';
     stops.forEach((item, i) => {
       html += `<span title="${i}"></span>`;
     });
     panel.innerHTML = html;
-    this.updateBg(data);
-    this.updateLinear(data);
+    this.updateLinearD(data);
+    this.updateLinearStops(data);
     this.setLinearCur(0); // 初始0
   }
 
-  updateLinear(data: ComputedGradient) {
+  updateLinearD(data: ComputedGradient) {
+    const panel = this.panel;
+    const div = panel.querySelector('.l') as HTMLElement;
+    const { clientWidth, clientHeight } = panel;
+    const { d } = data;
+    const left = d[0] * 100 + '%';
+    const top = d[1] * 100 + '%';
+    const len = Math.sqrt(Math.pow((d[2] - d[0]) * clientWidth, 2) + Math.pow((d[3] - d[1]) * clientHeight, 2)) + 'px';
+    div.style.left = left;
+    div.style.top = top;
+    div.style.width = len;
+    if (d[0] === d[2]) {
+      if (d[3] >= d[1]) {
+        div.style.transform = `translateY(-50%) rotateZ(90deg)`;
+      }
+      else {
+        div.style.transform = `translateY(-50%) rotateZ(-90deg)`;
+      }
+    }
+    else if (d[1] === d[3]) {
+      if (d[2] >= d[0]) {
+        div.style.transform = `translateY(-50%)`;
+      }
+      else {
+        div.style.transform = `translateY(-50%) rotateZ(180deg)`;
+      }
+    }
+    else {
+      const r = Math.atan((d[3] - d[1]) * clientHeight / (d[2] - d[0]) / clientWidth);
+      const deg = toPrecision(r2d(r)) + 'deg';
+      div.style.transform = `translateY(-50%) rotateZ(${deg})`;
+    }
+  }
+
+  updateLinearStops(data: ComputedGradient) {
     const panel = this.panel;
     const spans = panel.querySelectorAll('span');
     const { d, stops } = data;
@@ -194,26 +249,61 @@ export default class Gradient {
     });
   }
 
-  updateBg(data: ComputedGradient) {
+  genRadial(data: ComputedGradient) {
+    console.log(data);
     const panel = this.panel;
-    const div = panel.querySelector('div') as HTMLElement;
+    const { stops } = data;
+    panel.innerHTML = '';
+    let html = '<div class="l"></div><div class="c"></div>';
+    stops.forEach((item, i) => {
+      html += `<span title="${i}"></span>`;
+    });
+    panel.innerHTML = html;
+    this.updateRadialD(data);
+    this.updateLinearStops(data);
+  }
+
+  updateRadialD(data: ComputedGradient) {
+    const panel = this.panel;
+    const line = panel.querySelector('.l') as HTMLElement;
+    const circle = panel.querySelector('.c') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
     const { d } = data;
     const left = d[0] * 100 + '%';
     const top = d[1] * 100 + '%';
-    const len = Math.sqrt(Math.pow((d[2] - d[0]) * clientWidth, 2) + Math.pow((d[3] - d[1]) * clientHeight, 2)) + 'px';
+    const len = Math.sqrt(Math.pow((d[2] - d[0]) * clientWidth, 2) + Math.pow((d[3] - d[1]) * clientHeight, 2));
+    line.style.left = left;
+    line.style.top = top;
+    line.style.width = len + 'px';
+    circle.style.left = left;
+    circle.style.top = top;
+    circle.style.width = circle.style.height = len * 2 + 'px';
     if (d[0] === d[2]) {
-      if (d[3] >= d[1]) {}
-      else {}
+      if (d[3] >= d[1]) {
+        line.style.transform = `translateY(-50%) rotateZ(90deg)`;
+      }
+      else {
+        line.style.transform = `translateY(-50%) rotateZ(-90deg)`;
+      }
+    }
+    else if (d[1] === d[3]) {
+      if (d[2] >= d[0]) {
+        line.style.transform = `translateY(-50%)`;
+      }
+      else {
+        line.style.transform = `translateY(-50%) rotateZ(180deg)`;
+      }
     }
     else {
       const r = Math.atan((d[3] - d[1]) * clientHeight / (d[2] - d[0]) / clientWidth);
       const deg = toPrecision(r2d(r)) + 'deg';
-      div.style.left = left;
-      div.style.top = top;
-      div.style.width = len;
-      div.style.transform = `translateY(-50%) rotateZ(${deg})`;
+      line.style.transform = `translateY(-50%) rotateZ(${deg})`;
     }
+  }
+
+  updateRadialStops(data: ComputedGradient) {
+    const panel = this.panel;
+    const spans = panel.querySelectorAll('span');
   }
 
   setLinearCur(i: number, notify = false) {

@@ -632,14 +632,18 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     return s + ')';
   }
   else if (t === GRADIENT.RADIAL) {
+    // 非标准不用变
+    let ratio = 1;
     // 半径，和圆心到4个角的距离取最大值即farthest-corner
-    const r = Math.sqrt((Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
-    const d1 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1, 2)));
-    const d2 = Math.sqrt((Math.pow(x1 - width, 2) + Math.pow(y1, 2)));
-    const d3 = Math.sqrt((Math.pow(x1 - width, 2) + Math.pow(y1 - height, 2)));
-    const d4 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1 - height, 2)));
-    const distance = Math.max(d1, d2, d3, d4);
-    const ratio = distance / r;
+    if (standard) {
+      const r = Math.sqrt((Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
+      const d1 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1, 2)));
+      const d2 = Math.sqrt((Math.pow(x1 - width, 2) + Math.pow(y1, 2)));
+      const d3 = Math.sqrt((Math.pow(x1 - width, 2) + Math.pow(y1 - height, 2)));
+      const d4 = Math.sqrt((Math.pow(x1, 2) + Math.pow(y1 - height, 2)));
+      const distance = Math.max(d1, d2, d3, d4);
+      ratio = distance / r;
+    }
     let s = 'radial-gradient(';
     // css固定类型无法还原sketch的长短点表达形式
     if (standard) {

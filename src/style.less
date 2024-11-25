@@ -548,12 +548,13 @@ html, body {
     transform-origin: 0 0;
     pointer-events: none;
 
-    div {
+    .l {
       position: absolute;
       left: 0;
       top: 0;
       height: 2px;
       transform-origin: 0 0;
+      pointer-events: auto;
 
       &:before {
         position: absolute;
@@ -566,6 +567,17 @@ html, body {
         transform: translate(0, -50%);
         content: ' ';
       }
+    }
+
+    .c {
+      position: absolute;
+      left: 0;
+      top: 0;
+      box-sizing: border-box;
+      border: 0.5px solid #999;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
     }
 
     span {
