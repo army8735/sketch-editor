@@ -1095,9 +1095,20 @@ export function getCssStrokePosition(o: STROKE_POSITION) {
   return (['center', 'inside', 'outside'][o] || 'inside') as 'center' | 'inside' | 'outside';
 }
 
+export function normalizeColor(color: number[]) {
+  color[0] = Math.min(255, Math.max(0, Math.round(color[0])));
+  color[1] = Math.min(255, Math.max(0, Math.round(color[1])));
+  color[2] = Math.min(255, Math.max(0, Math.round(color[2])));
+  if (color.length > 3) {
+    color[3] = Math.min(1, Math.max(0, color[3]));
+  }
+  return color;
+}
+
 export default {
   normalize,
   normalizeRich,
+  normalizeColor,
   equalStyle,
   color2rgbaInt,
   color2rgbaStr,

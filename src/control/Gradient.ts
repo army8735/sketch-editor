@@ -3,10 +3,9 @@ import Node from '../node/Node';
 import Listener from './Listener';
 import picker from './picker';
 import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
-import { color2rgbaStr } from '../style/css';
+import { color2rgbaStr, normalizeColor } from '../style/css';
 import { r2d } from '../math/geom';
 import { toPrecision } from '../math';
-import { clone } from '../util/type';
 
 export default class Gradient {
   root: Root;
@@ -40,19 +39,62 @@ export default class Gradient {
       target = e.target as HTMLElement;
       list = panel.querySelectorAll('span');
       const tagName = target.tagName.toUpperCase();
+      const o = panel.getBoundingClientRect();
+      originX = o.left;
+      originY = o.top;
+      w = panel.clientWidth;
+      h = panel.clientHeight;
+      const d = this.data!.d;
+      len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
       if (tagName === 'SPAN') {
         isDrag = true;
         idx = parseInt(target.title);
         this.setLinearCur(idx, true);
-        const o = panel.getBoundingClientRect();
-        originX = o.left;
-        originY = o.top;
-        w = panel.clientWidth;
-        h = panel.clientHeight;
-        const d = this.data!.d;
-        len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
       }
-      else if (tagName === 'DIV') {}
+      else if (tagName === 'DIV') {
+        const data = this.data;
+        if (data) {
+          const { d, stops } = data;
+          const x0 = originX + d[0] * w;
+          const y0 = originY + d[1] * h;
+          const len = Math.sqrt(Math.pow(e.pageX - x0, 2) + Math.pow(e.pageY - y0, 2));
+          const offset = len / target.clientWidth;
+          // 一定不会是首尾，因为点不到
+          for (let i = 0, len = stops.length; i < len; i++) {
+            const item = stops[i];
+            if (offset < item.offset) {
+              const prev = stops[i - 1];
+              const p = (offset - prev.offset) / (item.offset - prev.offset);
+              stops.splice(i, 0, {
+                color: normalizeColor([
+                  prev.color[0] + (item.color[0] - prev.color[0]) * p,
+                  prev.color[1] + (item.color[1] - prev.color[1]) * p,
+                  prev.color[2] + (item.color[2] - prev.color[2]) * p,
+                  (prev.color[3] ?? 1) + ((item.color[3] ?? 1) - (prev.color[3] ?? 1)) * p,
+                ]),
+                offset,
+              });
+              idx = i;
+              break;
+            }
+          }
+          panel.innerHTML += '<span></span>';
+          panel.querySelectorAll('span').forEach((item, i) => {
+            item.title = i.toString();
+            if (i === idx) {
+              target = item;
+            }
+          });
+          this.updateLinearStops(data);
+          picker.addLineItem(idx, offset);
+          this.setLinearCur(idx, true);
+          this.onChange!(data, true);
+          isDrag = true;
+          // @ts-ignore
+          data.id = 'b';
+          console.log(data);
+        }
+      }
     });
     document.addEventListener('mousemove', (e) => {
       if (isDrag) {
@@ -111,6 +153,13 @@ export default class Gradient {
     });
     document.addEventListener('mouseup', () => {
       if (isDrag) {
+        // 为防止拖拽乱序重新设置
+        if (this.data) {
+          (this.data as ComputedGradient).stops.sort((a, b) => a.offset - b.offset);
+          panel.querySelectorAll('span').forEach((item, i) => {
+            item.title = i.toString();
+          })
+        }
         isDrag = false;
       }
     });
@@ -129,7 +178,7 @@ export default class Gradient {
     }
     this.onChange = onChange;
     data = data as ComputedGradient;
-    this.data = clone(data);
+    this.data = data;
     this.updateSize(node);
     if (data.t === GRADIENT.LINEAR) {
       this.genLinear(data);

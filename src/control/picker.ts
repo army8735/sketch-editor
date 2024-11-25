@@ -27,6 +27,8 @@ let callback: (() => void) | undefined; // 多个panel共用一个picker，新�
 let tempColor: number[] | undefined; // 编辑切换类别时，保存下可以切回去不丢失
 let tempGradient: ComputedGradient | undefined;
 
+let index = 0;
+
 export default {
   show(
     el: HTMLElement,
@@ -69,7 +71,6 @@ export default {
     line.removeAttribute('style');
     const bg = line.querySelector('.bg') as HTMLElement;
     const con = line.querySelector('.con') as HTMLElement;
-    let index = 0;
     // 事件侦听
     if (isInit) {
       type.addEventListener('click', (e) => {
@@ -290,8 +291,14 @@ export default {
           onChange(data);
         }
       });
-      // 点击外部自动关闭，拖拽过程除外，利用冒泡顺序
+      // 点击外部自动关闭，拖拽过程除外，利用冒泡顺序，为防止拖拽乱序重新设置
       document.addEventListener('click', (e) => {
+        if (isDrag) {
+          (data as ComputedGradient).stops.sort((a, b) => a.offset - b.offset);
+          div.querySelectorAll('.line .con span').forEach((item, i) => {
+            (item as HTMLElement).title = i.toString();
+          });
+        }
         if (isDrag || isClick) {
           isDrag = isClick = false;
           return;
@@ -380,6 +387,32 @@ export default {
     if (div) {
       div.querySelector('.line .con .cur')?.classList.remove('cur');
       div.querySelector(`.line .con span[title="${i}"]`)?.classList.add('cur');
+      index = i;
+    }
+  },
+  addLineItem(i: number, offset: number) {
+    if (div) {
+      const con = div.querySelector('.line .con') as HTMLElement;
+      const span = document.createElement('span');
+      span.title = i.toString();
+      span.style.left = offset * 100 + '%';
+      const spans = con.querySelectorAll('span');
+      for (let j = 0, len = spans.length; j < len; j++) {
+        const item = spans[j];
+        const idx = parseInt(item.title);
+        if (i <= idx) {
+          con.insertBefore(span, item);
+          for (let k = j; k < len; k++) {
+            const item = spans[k];
+            item.title = (parseInt(item.title) + 1).toString();
+          }
+          break;
+        }
+        else if (j === len - 1) {
+          con.appendChild(span);
+        }
+      }
+      index = i;
     }
   },
   updateLinePos(i: number, offset: number, data: ComputedGradient) {
