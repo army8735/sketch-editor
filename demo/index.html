@@ -170,7 +170,7 @@
       translateX: 0,
       translateY: 0,
     });
-    root2.appendChild(clone);
+    root2.getCurPageWithCreate().appendChild(clone);
     root2.on('REFRESH_COMPLETE', () => {
       canvas2.toBlob(blob => {
         if (blob) {
