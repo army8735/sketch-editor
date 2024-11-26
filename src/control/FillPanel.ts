@@ -186,7 +186,7 @@ class FillPanel extends Panel {
         const onChange = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
           this.silence = true;
           const style = (line.querySelector('.pick') as HTMLElement).style;
-          // 类型变更需改变select/input展示
+          // 类型变更需改变select/input展示，stroke之类不会出现渐变切换所以可能会没有要加?防止
           if (Array.isArray(data)) {
             panel.querySelector('.value .hex')?.classList.remove('hide');
             panel.querySelector('.value .gradient')?.classList.add('hide');

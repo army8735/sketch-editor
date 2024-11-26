@@ -578,7 +578,6 @@ html, body {
       border: 0.5px solid #999;
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      pointer-events: none;
     }
 
     .c2 {
@@ -590,6 +589,19 @@ html, body {
       border-radius: 50%;
       box-shadow: 0 0 1px 0 #999, 0 0 1px 0 #ccc inset;
       transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: copy;
+
+      &:before {
+        position: absolute;
+        left: 4px;
+        top: 4px;
+        right: 4px;
+        bottom: 4px;
+        border-radius: 50%;
+        cursor: auto;
+        content: ' ';
+      }
     }
 
     span {

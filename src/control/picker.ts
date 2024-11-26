@@ -217,7 +217,7 @@ export default {
           startX = e.pageX;
           initX = parseFloat(cur.style.left) * 0.01;
           picker.setColor((data as ComputedGradient).stops[index].color, true);
-          listener.gradient.setLinearCur(index);
+          listener.gradient.setCur(index);
         }
         // 新增一个
         else if (tagName === 'DIV') {
@@ -271,7 +271,7 @@ export default {
           startX = e.pageX;
           initX = parseFloat(cur.style.left) * 0.01;
           picker.setColor(o.color, true);
-          listener.gradient.setLinearCur(index);
+          listener.gradient.setCur(index);
           onChange(data);
         }
       });

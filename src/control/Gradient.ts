@@ -2,7 +2,7 @@ import Root from '../node/Root';
 import Node from '../node/Node';
 import Listener from './Listener';
 import picker from './picker';
-import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
+import { ComputedColorStop, ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { color2rgbaStr, normalizeColor } from '../style/css';
 import { r2d } from '../math/geom';
 import { toPrecision } from '../math';
@@ -35,8 +35,8 @@ export default class Gradient {
     let target: HTMLElement;
     let list: NodeListOf<HTMLSpanElement>;
     panel.addEventListener('mousedown', (e) => {
-      e.stopPropagation();
       target = e.target as HTMLElement;
+      const classList = target.classList;
       list = panel.querySelectorAll('span');
       const tagName = target.tagName.toUpperCase();
       const o = panel.getBoundingClientRect();
@@ -44,34 +44,97 @@ export default class Gradient {
       originY = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
-      const d = this.data!.d;
-      len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
-      if (tagName === 'SPAN') {
+      // conic的环点击需要特殊判断在圆边上
+      if (classList.contains('c2')) {
+        e.stopPropagation();
+        const { offsetX, offsetY } = e;
+        const c = Math.max(w, h) * 0.5;
+        const d = Math.sqrt(Math.pow(offsetX - c, 2) + Math.pow(offsetY - c, 2));
+        const data = this.data;
+        if (d >= c - 4 && data) {
+          let offset = getConicOffset(c, c, offsetX, offsetY);
+          const stops = data.stops;
+          // 和line不同可能点到首尾，因为是个环首尾会变或不存在
+          let prev: ComputedColorStop | undefined, next: ComputedColorStop | undefined;
+          for (let i = 0, len = stops.length; i < len; i++) {
+            const item = stops[i];
+            if (offset < item.offset) {
+              next = item;
+              idx = i;
+              break;
+            }
+            prev = item;
+          }
+          // 点在尾首间会造成特殊情况
+          if (!prev || !next) {
+            prev = prev || stops[0];
+            next = next || stops[stops.length - 1];
+            const p = Math.abs(offset - prev.offset) / Math.abs(prev.offset - next.offset);
+            const o = {
+              color: genNewStop(next, prev, p),
+              offset,
+            };
+            if (offset < prev.offset) {
+              stops.unshift(o);
+              idx = 0;
+            }
+            else {
+              stops.push(o);
+              idx = stops.length - 1;
+            }
+          }
+          else {
+            const p = (offset - prev.offset) / (next.offset - prev.offset);
+            stops.splice(idx, 0, {
+              color: genNewStop(prev, next, p),
+              offset,
+            });
+            panel.innerHTML += '<span></span>';
+            panel.querySelectorAll('span').forEach((item, i) => {
+              item.title = i.toString();
+              if (i === idx) {
+                target = item;
+              }
+            });
+          }
+          this.updateConicStops(data);
+          picker.addLineItem(idx, offset);
+          this.setCur(idx, true);
+          this.onChange!(data, true);
+          isDrag = true;
+        }
+      }
+      // stops
+      else if (tagName === 'SPAN') {
+        e.stopPropagation();
         isDrag = true;
         idx = parseInt(target.title);
-        this.setLinearCur(idx, true);
+        this.setCur(idx, true);
+        const data = this.data;
+        if (data && data.t !== GRADIENT.CONIC) {
+          const d = data.d;
+          len = Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
+        }
       }
+      // linear和radial才有的line渐变条
       else if (tagName === 'DIV') {
+        e.stopPropagation();
         const data = this.data;
         if (data) {
           const { d, stops } = data;
+          len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
           const x0 = originX + d[0] * w;
           const y0 = originY + d[1] * h;
-          const len = Math.sqrt(Math.pow(e.pageX - x0, 2) + Math.pow(e.pageY - y0, 2));
-          const offset = len / target.clientWidth;
-          // 一定不会是首尾，因为点不到
+          const len2 = Math.sqrt(Math.pow(e.pageX - x0, 2) + Math.pow(e.pageY - y0, 2));
+          const offset = len2 / target.clientWidth;
+          // 一定不会是首尾，因为点不到，首尾决定了长度
           for (let i = 0, len = stops.length; i < len; i++) {
             const item = stops[i];
             if (offset < item.offset) {
               const prev = stops[i - 1];
               const p = (offset - prev.offset) / (item.offset - prev.offset);
               stops.splice(i, 0, {
-                color: normalizeColor([
-                  prev.color[0] + (item.color[0] - prev.color[0]) * p,
-                  prev.color[1] + (item.color[1] - prev.color[1]) * p,
-                  prev.color[2] + (item.color[2] - prev.color[2]) * p,
-                  (prev.color[3] ?? 1) + ((item.color[3] ?? 1) - (prev.color[3] ?? 1)) * p,
-                ]),
+                color: genNewStop(prev, item, p),
                 offset,
               });
               idx = i;
@@ -87,7 +150,7 @@ export default class Gradient {
           });
           this.updateLinearStops(data);
           picker.addLineItem(idx, offset);
-          this.setLinearCur(idx, true);
+          this.setCur(idx, true);
           this.onChange!(data, true);
           isDrag = true;
         }
@@ -100,8 +163,8 @@ export default class Gradient {
         const data = this.data;
         if (data) {
           const { d, stops } = data;
-          // 首尾影响渐变起始点，即长度，然后其它点都随之变化
-          if (idx === 0 || idx === stops.length - 1) {
+          // 首尾影响渐变起始点，即长度，然后其它点都随之变化，conic不影响不进这里
+          if ((idx === 0 || idx === stops.length - 1) && data.t !== GRADIENT.CONIC) {
             if (idx === 0) {
               // linear改变两端点之一不影响另外一个，但radial和conic是半径统一影响
               if ([GRADIENT.RADIAL, GRADIENT.CONIC].includes(data.t)) {
@@ -121,7 +184,7 @@ export default class Gradient {
             else if (data.t === GRADIENT.RADIAL) {
               this.updateRadialD(data);
             }
-            len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
+            len = Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
             stops.forEach((item, i) => {
               const left = (d[0] + (d[2] - d[0]) * item.offset) * 100 + '%';
               const top = (d[1] + (d[3] - d[1]) * item.offset) * 100 + '%';
@@ -132,17 +195,49 @@ export default class Gradient {
           }
           // 中间的不调整长度并限制范围
           else {
-            const dx = x - d[0];
-            const dy = y - d[1];
-            const sum = Math.pow(dx, 2) * (dx < 0 ? -1 : 1) + Math.pow(dy, 2) * (dy < 0 ? -1 : 1);
-            let offset = Math.sqrt(Math.max(0, sum)) / len;
-            offset = Math.max(0, Math.min(1, offset));
-            stops[idx].offset = offset;
-            const left = (d[0] + (d[2] - d[0]) * offset) * 100 + '%';
-            const top = (d[1] + (d[3] - d[1]) * offset) * 100 + '%';
-            target.style.left = left;
-            target.style.top = top;
-            picker.updateLinePos(idx, offset, data);
+            if (data.t === GRADIENT.CONIC) {
+              const offset = getConicOffset(originX + w * 0.5, originY + h * 0.5, e.pageX, e.pageY);
+              const r = offset * 2 * Math.PI;
+              let left = 1;
+              let top = 0.5;
+              const c2 = panel.querySelector('.c2') as HTMLElement;
+              const ax = c2.clientWidth / panel.clientWidth;
+              const ay = c2.clientHeight / panel.clientHeight;
+              if (offset === 0.25) {
+                left = 0;
+                top = 1;
+              }
+              else if (offset === 0.5) {
+                left = 0;
+                top = 0.5;
+              }
+              else if (offset === 0.75) {
+                left = 0.5;
+                top = 0;
+              }
+              // 自动带符号了无需考虑象限
+              else {
+                left = 0.5 + Math.cos(r) * 0.5 * ax;
+                top = 0.5 + Math.sin(r) * 0.5 * ay;
+              }
+              stops[idx].offset = offset;
+              target.style.left = left * 100 + '%';
+              target.style.top = top * 100 + '%';
+              picker.updateLinePos(idx, offset, data);
+            }
+            else {
+              const dx = x - d[0];
+              const dy = y - d[1];
+              const sum = Math.pow(dx, 2) * (dx < 0 ? -1 : 1) + Math.pow(dy, 2) * (dy < 0 ? -1 : 1);
+              let offset = Math.sqrt(Math.max(0, sum)) / len;
+              offset = Math.max(0, Math.min(1, offset));
+              stops[idx].offset = offset;
+              const left = (d[0] + (d[2] - d[0]) * offset) * 100 + '%';
+              const top = (d[1] + (d[3] - d[1]) * offset) * 100 + '%';
+              target.style.left = left;
+              target.style.top = top;
+              picker.updateLinePos(idx, offset, data);
+            }
             this.onChange!(data, true);
           }
         }
@@ -160,7 +255,7 @@ export default class Gradient {
         isDrag = false;
       }
     });
-    // 阻止冒泡，listener侦听document点击取消选择
+    // 阻止冒泡，listener侦听document点击会取消选择
     panel.addEventListener('click', (e) => {
       e.stopPropagation();
     });
@@ -246,7 +341,7 @@ export default class Gradient {
     panel.innerHTML = html;
     this.updateLinearD(data);
     this.updateLinearStops(data);
-    this.setLinearCur(0); // 初始0
+    this.setCur(0); // 初始0
   }
 
   updateLinearD(data: ComputedGradient) {
@@ -315,7 +410,7 @@ export default class Gradient {
     panel.innerHTML = html;
     this.updateRadialD(data);
     this.updateLinearStops(data);
-    this.setLinearCur(0); // 初始0
+    this.setCur(0); // 初始0
   }
 
   updateRadialD(data: ComputedGradient) {
@@ -357,7 +452,6 @@ export default class Gradient {
   }
 
   genConic(data: ComputedGradient) {
-    console.log(data);
     const panel = this.panel;
     const { stops } = data;
     panel.innerHTML = '';
@@ -368,7 +462,7 @@ export default class Gradient {
     panel.innerHTML = html;
     this.updateConicD(data);
     this.updateConicStops(data);
-    this.setLinearCur(0); // 初始0
+    this.setCur(0); // 初始0
   }
 
   updateConicD(data: ComputedGradient) {
@@ -376,6 +470,7 @@ export default class Gradient {
     const circle = panel.querySelector('.c2') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
     const { d } = data;
+    // conic可能默认没有就是中心
     const left = (d[0] ?? 0.5) * 100 + '%';
     const top = (d[1] ?? 0.5) * 100 + '%';
     circle.style.left = left;
@@ -426,7 +521,7 @@ export default class Gradient {
     });
   }
 
-  setLinearCur(i: number, notify = false) {
+  setCur(i: number, notify = false) {
     const panel = this.panel;
     panel.querySelector('.cur')?.classList.remove('cur');
     panel.querySelector(`span[title="${i}"]`)?.classList.add('cur');
@@ -439,4 +534,51 @@ export default class Gradient {
     this.panel.style.display = 'none';
     this.data = undefined;
   }
+}
+
+function getConicOffset(cx: number, cy: number, x: number, y: number) {
+  let offset = 0;
+  // 4个象限区别
+  if (x === cx) {
+    if (y >= cy) {
+      offset = 0.75;
+    }
+    else {
+      offset = 0.25;
+    }
+  }
+  else if (x > cx) {
+    if (y >= cy) {
+      const tan = (y - cy) / (x - cx);
+      const r = Math.atan(tan);
+      offset = r * 0.5 / Math.PI;
+    }
+    else {
+      const tan = (cy - y) / (x - cx);
+      const r = Math.atan(tan);
+      offset = 1 - r * 0.5 / Math.PI;
+    }
+  }
+  else {
+    if (y >= cy) {
+      const tan = (y - cy) / (cx - x);
+      const r = Math.atan(tan);
+      offset = 0.5 - r * 0.5 / Math.PI;
+    }
+    else {
+      const tan = (cy - y) / (cx - x);
+      const r = Math.atan(tan);
+      offset = 0.5 + r * 0.5 / Math.PI;
+    }
+  }
+  return offset;
+}
+
+function genNewStop(prev: ComputedColorStop, next: ComputedColorStop, p: number) {
+  return normalizeColor([
+    prev.color[0] + (next.color[0] - prev.color[0]) * p,
+    prev.color[1] + (next.color[1] - prev.color[1]) * p,
+    prev.color[2] + (next.color[2] - prev.color[2]) * p,
+    (prev.color[3] ?? 1) + ((next.color[3] ?? 1) - (prev.color[3] ?? 1)) * p,
+  ]);
 }
