@@ -6,7 +6,7 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
-import { ComputedStyle, Style, StyleUnit, TEXT_BEHAVIOUR, VISIBILITY } from '../style/define';
+import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { Rect } from './Select';
 import Input from './Input';
@@ -45,7 +45,6 @@ import { toPrecision } from '../math';
 import Guides from './Guides';
 import { appendWithPosAndSize } from '../tools/container';
 import AddCommand, { AddData } from '../history/AddCommand';
-import { getTextBehaviour } from '../tools/text';
 import Gradient from './Gradient';
 
 export type ListenerOptions = {
@@ -604,6 +603,9 @@ export default class Listener extends Event {
     const root = this.root;
     const page = root.getCurPage();
     if (!page) {
+      return;
+    }
+    if (this.state === State.EDIT_GRADIENT) {
       return;
     }
     const dpi = root.dpi;

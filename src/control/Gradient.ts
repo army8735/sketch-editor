@@ -90,9 +90,6 @@ export default class Gradient {
           this.setLinearCur(idx, true);
           this.onChange!(data, true);
           isDrag = true;
-          // @ts-ignore
-          data.id = 'b';
-          console.log(data);
         }
       }
     });
@@ -186,7 +183,9 @@ export default class Gradient {
     else if (data.t === GRADIENT.RADIAL) {
       this.genRadial(data);
     }
-    else if (data.t === GRADIENT.CONIC) {}
+    else if (data.t === GRADIENT.CONIC) {
+      this.genConic(data);
+    }
   }
 
   update(node: Node, data: number[] | ComputedGradient | ComputedPattern) {
@@ -215,7 +214,14 @@ export default class Gradient {
         this.updateLinearStops(data);
       }
     }
-    else if (data.t === GRADIENT.CONIC) {}
+    else if (data.t === GRADIENT.CONIC) {
+      if (data.stops.length !== this.data?.stops.length) {
+        this.genConic(data);
+      }
+      else {
+        this.updateConicStops(data);
+      }
+    }
   }
 
   updateSize(node: Node) {
@@ -299,7 +305,6 @@ export default class Gradient {
   }
 
   genRadial(data: ComputedGradient) {
-    console.log(data);
     const panel = this.panel;
     const { stops } = data;
     panel.innerHTML = '';
@@ -310,6 +315,7 @@ export default class Gradient {
     panel.innerHTML = html;
     this.updateRadialD(data);
     this.updateLinearStops(data);
+    this.setLinearCur(0); // 初始0
   }
 
   updateRadialD(data: ComputedGradient) {
@@ -350,9 +356,74 @@ export default class Gradient {
     }
   }
 
-  updateRadialStops(data: ComputedGradient) {
+  genConic(data: ComputedGradient) {
+    console.log(data);
     const panel = this.panel;
+    const { stops } = data;
+    panel.innerHTML = '';
+    let html = '<div class="c2"></div>';
+    stops.forEach((item, i) => {
+      html += `<span title="${i}"></span>`;
+    });
+    panel.innerHTML = html;
+    this.updateConicD(data);
+    this.updateConicStops(data);
+    this.setLinearCur(0); // 初始0
+  }
+
+  updateConicD(data: ComputedGradient) {
+    const panel = this.panel;
+    const circle = panel.querySelector('.c2') as HTMLElement;
+    const { clientWidth, clientHeight } = panel;
+    const { d } = data;
+    const left = (d[0] ?? 0.5) * 100 + '%';
+    const top = (d[1] ?? 0.5) * 100 + '%';
+    circle.style.left = left;
+    circle.style.top = top;
+    circle.style.width = circle.style.height = Math.max(clientWidth, clientHeight) + 'px';
+  }
+
+  updateConicStops(data: ComputedGradient) {
+    const panel = this.panel;
+    const { clientWidth, clientHeight } = panel;
+    const R = Math.max(clientWidth, clientHeight) * 0.5;
     const spans = panel.querySelectorAll('span');
+    const { d, stops } = data;
+    const cx = (d[0] ?? 0.5) * 100;
+    const cy = (d[1] ?? 0.5) * 100;
+    stops.forEach((item, i) => {
+      const { color, offset } = item;
+      const bgc = color2rgbaStr(color);
+      const span = spans[i];
+      if (span) {
+        span.style.background = bgc;
+        if (offset === 0 || offset === 1) {
+          span.style.left = cx + 50 + '%';
+          span.style.top = cy + '%';
+        }
+        else if (offset === 0.25) {
+          span.style.left = cx + '%';
+          span.style.top = cy + 50 + '%';
+        }
+        else if (offset === 0.5) {
+          span.style.left = cx - 50 + '%';
+          span.style.top = cy + '%';
+        }
+        else if (offset === 0.75) {
+          span.style.left = cx + '%';
+          span.style.top = cy - 50 + '%';
+        }
+        else {
+          const r = offset * Math.PI * 2;
+          const sin = Math.sin(r);
+          const cos = Math.cos(r);
+          const x = R * cos;
+          const y = R * sin;
+          span.style.left = cx + x * 100 / clientWidth + '%';
+          span.style.top = cy + y * 100 / clientHeight + '%';
+        }
+      }
+    });
   }
 
   setLinearCur(i: number, notify = false) {
