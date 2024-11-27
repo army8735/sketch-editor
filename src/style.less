@@ -589,18 +589,28 @@ html, body {
       border-radius: 50%;
       box-shadow: 0 0 1px 0 #999, 0 0 1px 0 #ccc inset;
       transform: translate(-50%, -50%);
-      pointer-events: auto;
       cursor: copy;
+      pointer-events: auto;
 
       &:before {
         position: absolute;
-        left: 4px;
-        top: 4px;
-        right: 4px;
-        bottom: 4px;
+        left: -4px;
+        top: -4px;
+        right: -4px;
+        bottom: -4px;
+        border-radius: 50%;
+        cursor: copy;
+        content: ' ';
+      }
+
+      b {
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        right: 6px;
+        bottom: 6px;
         border-radius: 50%;
         cursor: auto;
-        content: ' ';
       }
     }
 

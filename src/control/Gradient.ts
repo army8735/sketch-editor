@@ -35,6 +35,7 @@ export default class Gradient {
     let target: HTMLElement;
     let list: NodeListOf<HTMLSpanElement>;
     panel.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
       target = e.target as HTMLElement;
       const classList = target.classList;
       list = panel.querySelectorAll('span');
@@ -44,14 +45,12 @@ export default class Gradient {
       originY = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
-      // conic的环点击需要特殊判断在圆边上
+      // conic的环点击需要特殊判断在圆边上，用dom完成了
       if (classList.contains('c2')) {
-        e.stopPropagation();
-        const { offsetX, offsetY } = e;
-        const c = Math.max(w, h) * 0.5;
-        const d = Math.sqrt(Math.pow(offsetX - c, 2) + Math.pow(offsetY - c, 2));
         const data = this.data;
-        if (d >= c - 4 && data) {
+        if (data) {
+          const { offsetX, offsetY } = e;
+          const c = Math.max(w, h) * 0.5;
           let offset = getConicOffset(c, c, offsetX, offsetY);
           const stops = data.stops;
           // 和line不同可能点到首尾，因为是个环首尾会变或不存在
@@ -106,7 +105,6 @@ export default class Gradient {
       }
       // stops
       else if (tagName === 'SPAN') {
-        e.stopPropagation();
         isDrag = true;
         idx = parseInt(target.title);
         this.setCur(idx, true);
@@ -118,7 +116,6 @@ export default class Gradient {
       }
       // linear和radial才有的line渐变条
       else if (tagName === 'DIV') {
-        e.stopPropagation();
         const data = this.data;
         if (data) {
           const { d, stops } = data;
@@ -201,8 +198,6 @@ export default class Gradient {
               let left = 1;
               let top = 0.5;
               const c2 = panel.querySelector('.c2') as HTMLElement;
-              const ax = c2.clientWidth / panel.clientWidth;
-              const ay = c2.clientHeight / panel.clientHeight;
               if (offset === 0.25) {
                 left = 0;
                 top = 1;
@@ -217,6 +212,8 @@ export default class Gradient {
               }
               // 自动带符号了无需考虑象限
               else {
+                const ax = c2.clientWidth / panel.clientWidth;
+                const ay = c2.clientHeight / panel.clientHeight;
                 left = 0.5 + Math.cos(r) * 0.5 * ax;
                 top = 0.5 + Math.sin(r) * 0.5 * ay;
               }
@@ -455,7 +452,7 @@ export default class Gradient {
     const panel = this.panel;
     const { stops } = data;
     panel.innerHTML = '';
-    let html = '<div class="c2"></div>';
+    let html = '<div class="c2"><b></b></div>';
     stops.forEach((item, i) => {
       html += `<span title="${i}"></span>`;
     });
