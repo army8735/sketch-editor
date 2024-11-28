@@ -10,6 +10,7 @@ import {
 import Container from '../node/Container';
 import Group from '../node/Group';
 import Node from '../node/Node';
+import Root from '../node/Root';
 import { ComputedStyle, StyleUnit } from '../style/define';
 import { PageProps, Point, ResizeStyle } from '../format';
 import Geom from '../node/geom/Geom';
@@ -1281,6 +1282,53 @@ export function getBasicInfo(node: Node) {
   return res;
 }
 
+export async function toPngBlob(node: Node) {
+  const bbox = node._filterBbox2 || node.filterBbox2;
+  const width = bbox[2] - bbox[0];
+  const height = bbox[3] - bbox[1];
+  const canvas2 = document.createElement('canvas');
+  canvas2.width = width;
+  canvas2.height = height;
+  canvas2.style.position = 'fixed';
+  canvas2.style.left = '100%';
+  canvas2.style.top = '100%';
+  document.body.appendChild(canvas2);
+  const root2 = new Root({
+    dpi: 1,
+    uuid: '',
+    index: 0,
+    style: {
+      width,
+      height,
+    },
+  });
+  root2.appendTo(canvas2);
+  const clone = node.clone();
+  clone.updateStyle({
+    left: -bbox[0],
+    top: -bbox[1],
+    right: 'auto',
+    bottom: 'auto',
+    width: node.width,
+    height: node.height,
+    translateX: 0,
+    translateY: 0,
+  });
+  root2.getCurPageWithCreate().appendChild(clone);
+  return new Promise((resolve, reject) => {
+    root2.on('REFRESH_COMPLETE', () => {
+      canvas2.toBlob(blob => {
+        if (blob) {
+          resolve(blob);
+        }
+        else {
+          reject();
+        }
+      });
+    });
+  });
+}
+
 export default {
   moveAppend,
   movePrepend,
@@ -1315,4 +1363,5 @@ export default {
   resizeBottomLeftMultiArOperate,
   resizeBottomRightMultiArOperate,
   getBasicInfo,
+  toPngBlob,
 };

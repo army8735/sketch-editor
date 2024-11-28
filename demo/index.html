@@ -143,50 +143,18 @@
     if (!selected) {
       return;
     }
-    const { width, height } = selected;
-    const canvas2 = document.createElement('canvas');
-    canvas2.width = width;
-    canvas2.height = height;
-    canvas2.style.position = 'fixed';
-    canvas2.style.left = '100%';
-    canvas2.style.top = '100%';
-    canvas2.style.zIndex = 9999;
-    document.body.appendChild(canvas2);
-    const root2 = new sketchEditor.node.Root({
-      style: {
-        width,
-        height,
-      },
-    });
-    root2.appendTo(canvas2);
-    const clone = selected.clone();
-    clone.updateStyle({
-      left: 0,
-      top: 0,
-      right: 'auto',
-      bottom: 'auto',
-      width,
-      height,
-      translateX: 0,
-      translateY: 0,
-    });
-    root2.getCurPageWithCreate().appendChild(clone);
-    root2.on('REFRESH_COMPLETE', () => {
-      canvas2.toBlob(blob => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          if (typeof link.download === 'string') {
-            document.body.appendChild(link);
-            link.download = (root.props.name || 'se') + '.png';
-            link.href = url;
-            link.click();
-            document.body.removeChild(link);
-          } else {
-            location.replace(url);
-          }
-        }
-      });
+    sketchEditor.tools.node.toPngBlob(selected).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      if (typeof link.download === 'string') {
+        document.body.appendChild(link);
+        link.download = (root.props.name || 'se') + '.png';
+        link.href = url;
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        location.replace(url);
+      }
     });
   });
 </script>
