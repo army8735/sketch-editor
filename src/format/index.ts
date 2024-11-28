@@ -198,7 +198,7 @@ export type RootProps = Props & {
   layerTextStyles?: {
     uuid: string;
   };
-  contextAttributes: any,
+  contextAttributes?: any,
 };
 
 export type PageProps = Props & {
