@@ -1527,7 +1527,11 @@ export default class Listener extends Event {
       contextMenu.hide();
       if (picker.isShow()) {
         picker.hide();
-        if (this.state === State.EDIT_TEXT) {
+        if (this.state === State.EDIT_GRADIENT) {
+          this.state = State.NORMAL;
+          this.select.showSelectNotUpdate();
+        }
+        else if (this.state === State.EDIT_TEXT) {
           this.input.focus();
         }
       }
