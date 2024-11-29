@@ -196,6 +196,7 @@ export function parseGradient(s: string) {
     }[gradient[1].toLowerCase()]!;
     let d: number[];
     if (t === GRADIENT.LINEAR) {
+      // sketch的2点式
       const points =
         /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(
           gradient[2],
@@ -208,8 +209,15 @@ export function parseGradient(s: string) {
           parseFloat(points[4]),
         ];
       }
+      // css的角度式，d里是弧度
       else {
-        return;
+        const deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
+        if (deg) {
+          d = [d2r(parseFloat(deg[1]))];
+        }
+        else {
+          d = [];
+        }
       }
     }
     else if (t === GRADIENT.RADIAL) {
@@ -326,11 +334,52 @@ export type Linear = {
   stop: { color: number[]; offset: number }[];
 };
 
+// 根据角度和宽高偏移求出sketch的两点式linear坐标方式
+export function getLinearCoords(deg: number, ox: number, oy: number, w: number, h: number) {
+  let x1, y1, x2, y2;
+  if (deg % (Math.PI * 2) === 0) {
+    x1 = x2 = w * 0.5;
+    y1 = 0;
+    y2 = h;
+  }
+  else if (deg % (Math.PI * 0.5) === 0) {
+    x1 = 0;
+    x2 = w;
+    y1 = y2 = h * 0.5;
+  }
+  else if (deg % Math.PI === 0) {
+    x1 = x2 = w * 0.5;
+    y1 = h;
+    y2 = 0;
+  }
+  else if (deg % (Math.PI * 1.5) === 0) {
+    x1 = w;
+    x2 = 0;
+    y1 = y2 = h * 0.5;
+  }
+  else {
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const r = Math.min(cx, cy);
+    const sin = Math.sin(deg % 360);
+    const cos = Math.cos(deg % 360);
+    x1 = cx - r * sin;
+    y1 = cy - r * cos;
+    x2 = cx + r * sin;
+    y2 = cy + r * cos;
+  }
+  x1 += ox;
+  y1 += oy;
+  x2 += ox;
+  y2 += oy;
+  return { x1, y1, x2, y2 };
+}
+
 /**
  * 生成canvas的linearGradient
  * @param stops
  * @param d 控制点或角度
- * @param ox 原点
+ * @param ox 原点，一般是0，有偏移传进来
  * @param oy
  * @param w
  * @param h
@@ -343,10 +392,21 @@ export function getLinear(
   w: number,
   h: number,
 ): Linear {
-  const x1 = ox + d[0] * w;
-  const y1 = oy + d[1] * h;
-  const x2 = ox + d[2] * w;
-  const y2 = oy + d[3] * h;
+  let x1, y1, x2, y2;
+  // 特殊的css角度写法，先求出外接圆心和半径，默认css是180deg
+  if (d.length <= 1) {
+    const t = getLinearCoords(d[0] ?? Math.PI, ox, oy, w, h);
+    x1 = t.x1;
+    y1 = t.y1;
+    x2 = t.x2;
+    y2 = t.y2;
+  }
+  else {
+    x1 = ox + d[0] * w;
+    y1 = oy + d[1] * h;
+    x2 = ox + d[2] * w;
+    y2 = oy + d[3] * h;
+  }
   const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   const stop = getColorStop(stops, total, false);
   return {
@@ -481,26 +541,32 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
   y1 *= height;
   y2 *= height;
   let deg = 0;
-  if (x1 === x2) {
-    if (y1 < y2) {
-      deg = 180;
-    }
+  // 允许用1个数字表达角度
+  if (d.length === 1) {
+    deg = d[0];
   }
   else {
-    if (x2 > x1) {
-      if (y2 >= y1) {
-        deg = 90 + r2d(Math.atan((y2 - y1) / (x2 - x1)));
-      }
-      else {
-        deg = r2d(Math.atan((x2 - x1) / (y1 - y2)));
+    if (x1 === x2) {
+      if (y1 < y2) {
+        deg = 180;
       }
     }
     else {
-      if (y2 >= y1) {
-        deg = 180 + r2d(Math.atan((x1 - x2) / (y2 - y1)));
+      if (x2 > x1) {
+        if (y2 >= y1) {
+          deg = 90 + r2d(Math.atan((y2 - y1) / (x2 - x1)));
+        }
+        else {
+          deg = r2d(Math.atan((x2 - x1) / (y1 - y2)));
+        }
       }
       else {
-        deg = 360 - r2d(Math.atan((x1 - x2) / (y1 - y2)));
+        if (y2 >= y1) {
+          deg = 180 + r2d(Math.atan((x1 - x2) / (y2 - y1)));
+        }
+        else {
+          deg = 360 - r2d(Math.atan((x1 - x2) / (y1 - y2)));
+        }
       }
     }
   }
@@ -723,9 +789,12 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
 }
 
 export default {
+  isGradient,
+  parseGradient,
   getColorStop,
   getLinear,
   getRadial,
   getConic,
   convert2Css,
+  getLinearCoords,
 };

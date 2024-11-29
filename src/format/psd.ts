@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Layer, readPsd, RGB, LayerMaskData } from 'ag-psd';
+import { Layer, readPsd, RGB } from 'ag-psd';
 import {
   JArtBoard,
   JBitmap,
@@ -16,10 +16,12 @@ import {
   TAG_NAME,
 } from './';
 import { PAGE_H as H, PAGE_W as W } from './dft';
-import { CORNER_STYLE, CURVE_MODE, TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
+import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
 import { color2rgbaInt, color2rgbaStr } from '../style/css';
+import { getLinearCoords } from '../style/gradient';
+import { toPrecision } from '../math';
 
 export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
   const json = readPsd(arrayBuffer, { useImageData: false });
@@ -92,13 +94,40 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
 }
 
 async function convertItem(layer: Layer, w: number, h: number) {
-  const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {} } = layer;
+  const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {}, canvas } = layer;
   // console.log(name, layer);
   const visibility = !hidden ? 'visible' : 'hidden';
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
   const innerShadow: string[] = [];
   const innerShadowEnable: boolean[] = [];
+  const canvasPromise = new Promise<JLayer | undefined>(resolve => {
+    canvas!.toBlob(blob => {
+      if (blob) {
+        return resolve({
+          tagName: TAG_NAME.BITMAP,
+          props: {
+            uuid: uuid.v4(),
+            name,
+            style: {
+              left: left * 100 / w + '%',
+              top: top * 100 / h + '%',
+              right: (w - right) * 100 / w + '%',
+              bottom: (h - bottom) * 100 / h + '%',
+              opacity,
+              visibility,
+              shadow,
+              shadowEnable,
+              innerShadow,
+              innerShadowEnable,
+            },
+            src: URL.createObjectURL(blob),
+          },
+        } as JBitmap);
+      }
+      resolve(undefined);
+    });
+  });
   if (effects.dropShadow) {
     effects.dropShadow.forEach(item => {
       const color = [
@@ -417,14 +446,65 @@ async function convertItem(layer: Layer, w: number, h: number) {
     const strokePosition: string[] = [];
     const strokeMode: string[] = [];
     if (vectorFill) {
-      fill.push(color2rgbaStr([
-        // @ts-ignore
-        Math.floor((vectorFill.color as RGB).r),
-        // @ts-ignore
-        Math.floor((vectorFill.color as RGB).g),
-        // @ts-ignore
-        Math.floor((vectorFill.color as RGB).b),
-      ]));
+      if (vectorFill.type === 'color') {
+        fill.push(color2rgbaStr([
+          Math.floor((vectorFill.color as RGB).r),
+          Math.floor((vectorFill.color as RGB).g),
+          Math.floor((vectorFill.color as RGB).b),
+        ]));
+      }
+      else if (vectorFill.type === 'solid') {
+        console.log(name, vectorFill);
+        const { angle = 0, colorStops, opacityStops, style, reverse, align, scale = 1 } = vectorFill;
+        let s = '';
+        if (style === 'linear') {
+          let deg = angle + 90;
+          // 对齐是标准css外接圆，否则自己算
+          if ((align !== false || deg % 90 === 0) && scale === 1) {
+            if (reverse) {
+              if (deg >= 0) {
+                deg -= 180;
+              }
+              else {
+                deg += 180;
+              }
+            }
+            s = `linear-gradient(${deg}deg, `;
+          }
+          else {
+            const { x1, y1, x2, y2 } = getLinearCoords(deg, 0, 0, w, h);
+            const d = [
+              toPrecision(x1 / w * scale),
+              toPrecision(y1 / h * scale),
+              toPrecision(x2 / w * scale),
+              toPrecision(y2 / h * scale),
+            ];
+            s = `linear-gradient(${d.join(' ')}, `;
+          }
+        }
+        else if (style === 'radial') {}
+        else if (style === 'angle') {}
+        // 不支持
+        else {
+          if (canvas) {
+            return canvasPromise;
+          }
+          return;
+        }
+        colorStops.forEach((stop, i) => {
+          if (i) {
+            s += ', ';
+          }
+          s += color2rgbaStr([
+            Math.floor((stop.color as RGB).r),
+            Math.floor((stop.color as RGB).g),
+            Math.floor((stop.color as RGB).b),
+            opacityStops[i]?.opacity ?? 1,
+          ]) + ' ' + stop.location * 100 + '%';
+        });
+        s += ')';
+        fill.push(s);
+      }
       fillEnable.push(vectorStroke?.fillEnabled ?? true);
       fillOpacity.push(1);
       fillMode.push('normal');
@@ -432,11 +512,11 @@ async function convertItem(layer: Layer, w: number, h: number) {
     if (vectorStroke) {
       stroke.push(color2rgbaStr([
         // @ts-ignore
-        Math.floor((vectorStroke.content.color as RGB).r),
+        Math.floor((vectorStroke.content?.color as RGB).r),
         // @ts-ignore
-        Math.floor((vectorStroke.content.color as RGB).g),
+        Math.floor((vectorStroke.content?.color as RGB).g),
         // @ts-ignore
-        Math.floor((vectorStroke.content.color as RGB).b),
+        Math.floor((vectorStroke.content?.color as RGB).b),
         vectorStroke.opacity ?? 1,
       ]));
       strokeEnable.push(!!vectorStroke.strokeEnabled);
@@ -535,34 +615,8 @@ async function convertItem(layer: Layer, w: number, h: number) {
       },
     } as JPolyline | JShapeGroup;
   }
-  else if (layer.canvas) {
-    return new Promise<JLayer | undefined>(resolve => {
-      layer.canvas!.toBlob(blob => {
-        if (blob) {
-          return resolve({
-            tagName: TAG_NAME.BITMAP,
-            props: {
-              uuid: uuid.v4(),
-              name,
-              style: {
-                left: left * 100 / w + '%',
-                top: top * 100 / h + '%',
-                right: (w - right) * 100 / w + '%',
-                bottom: (h - bottom) * 100 / h + '%',
-                opacity,
-                visibility,
-                shadow,
-                shadowEnable,
-                innerShadow,
-                innerShadowEnable,
-              },
-              src: URL.createObjectURL(blob),
-            },
-          } as JBitmap);
-        }
-        resolve(undefined);
-      });
-    });
+  else if (canvas) {
+    return canvasPromise;
   }
 }
 
