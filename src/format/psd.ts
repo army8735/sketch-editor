@@ -87,6 +87,32 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
       }
     }
   }
+  else if (json.canvas) {
+    const o = await new Promise<JLayer | undefined>(resolve => {
+      json.canvas!.toBlob(blob => {
+        if (blob) {
+          return resolve({
+            tagName: TAG_NAME.BITMAP,
+            props: {
+              uuid: uuid.v4(),
+              name: '截图',
+              style: {
+                left: '0%',
+                top: '0%',
+                right: '0%',
+                bottom: '0%',
+              },
+              src: URL.createObjectURL(blob),
+            },
+          } as JBitmap);
+        }
+        resolve(undefined);
+      });
+    });
+    if (o) {
+      children.push(o);
+    }
+  }
   return {
     pages: [page],
     currentPageIndex: 0,
