@@ -354,24 +354,31 @@ export default class Gradient {
     div.style.width = len;
     if (d[0] === d[2]) {
       if (d[3] >= d[1]) {
-        div.style.transform = `translateY(-50%) rotateZ(90deg)`;
+        div.style.transform = 'translateY(-50%) rotateZ(90deg)';
       }
       else {
-        div.style.transform = `translateY(-50%) rotateZ(-90deg)`;
+        div.style.transform = 'translateY(-50%) rotateZ(-90deg)';
       }
     }
     else if (d[1] === d[3]) {
       if (d[2] >= d[0]) {
-        div.style.transform = `translateY(-50%)`;
+        div.style.transform = 'translateY(-50%)';
       }
       else {
-        div.style.transform = `translateY(-50%) rotateZ(180deg)`;
+        div.style.transform = 'translateY(-50%) rotateZ(180deg)';
       }
     }
     else {
-      const r = Math.atan((d[3] - d[1]) * clientHeight / (d[2] - d[0]) / clientWidth);
-      const deg = toPrecision(r2d(r)) + 'deg';
-      div.style.transform = `translateY(-50%) rotateZ(${deg})`;
+      const dx = d[2] - d[0];
+      const dy = d[3] - d[1];
+      const r = Math.atan((dy) * clientHeight / (dx) / clientWidth);
+      const deg = toPrecision(r2d(r));
+      if (dx >= 0) {
+        div.style.transform = `translateY(-50%) rotateZ(${deg}deg)`;
+      }
+      else {
+        div.style.transform = `translateY(-50%) rotateZ(${deg + 180}deg)`;
+      }
     }
   }
 
