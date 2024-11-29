@@ -234,8 +234,11 @@ export function parseGradient(s: string) {
           parseFloat(points[5]) || 0,
         ];
       }
+      // 默认css的farthest-corner
       else {
-        return;
+        d = [
+          0.5, 0.5, 1, 1,
+        ];
       }
     }
     else if (t === GRADIENT.CONIC) {

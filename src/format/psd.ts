@@ -19,7 +19,7 @@ import { PAGE_H as H, PAGE_W as W } from './dft';
 import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
-import { color2rgbaInt, color2rgbaStr } from '../style/css';
+import { color2rgbaInt, color2rgbaStr, normalizeColor } from '../style/css';
 import { getLinearCoords } from '../style/gradient';
 import { toPrecision } from '../math';
 
@@ -454,8 +454,8 @@ async function convertItem(layer: Layer, w: number, h: number) {
         ]));
       }
       else if (vectorFill.type === 'solid') {
-        console.log(name, vectorFill);
-        const { angle = 0, colorStops, opacityStops, style, reverse, align, scale = 1 } = vectorFill;
+        const { angle = 0, colorStops, opacityStops, style, reverse, align } = vectorFill;
+        let scale = vectorFill.scale ?? 1;
         let s = '';
         if (style === 'linear') {
           let deg = angle + 90;
@@ -481,9 +481,22 @@ async function convertItem(layer: Layer, w: number, h: number) {
             ];
             s = `linear-gradient(${d.join(' ')}, `;
           }
+          scale = 1;
         }
-        else if (style === 'radial') {}
-        else if (style === 'angle') {}
+        // ps是到closest-side圆形
+        else if (style === 'radial') {
+          s = 'radial-gradient(0.5 0.5 ';
+          if (w >= h) {
+            s += (w + h) * 0.5 / w + ' 1, ';
+          }
+          else {
+            s += '1 ' + (w + h) * 0.5 / h + ', ';
+          }
+        }
+        else if (style === 'angle') {
+          s = 'conic-gradient(';
+          scale = 1;
+        }
         // 不支持
         else {
           if (canvas) {
@@ -491,18 +504,66 @@ async function convertItem(layer: Layer, w: number, h: number) {
           }
           return;
         }
+        const stops: { color: number[], offset: number }[] = [];
         colorStops.forEach((stop, i) => {
+          stops.push({
+            color: [
+              Math.floor((stop.color as RGB).r),
+              Math.floor((stop.color as RGB).g),
+              Math.floor((stop.color as RGB).b),
+              opacityStops[i]?.opacity ?? 1,
+            ],
+            offset: stop.location * scale,
+          });
+        });
+        // conic时ps可以调整起始角度，影响每个stop的offset
+        if (style === 'angle' && angle) {
+          const offset = angle / 360;
+          stops.forEach((stop) => {
+            stop.offset -= offset;
+          });
+          const first = stops[0];
+          const last = stops[stops.length - 1];
+          if (first.offset > 0 && last.offset > 1) {
+            const prev = stops[stops.length - 2];
+            const p = (1 - prev.offset) / (last.offset - prev.offset);
+            const color = last.color.slice(0);
+            last.color = normalizeColor([
+              prev.color[0] + (last.color[0] - prev.color[0]) * p,
+              prev.color[1] + (last.color[1] - prev.color[1]) * p,
+              prev.color[2] + (last.color[2] - prev.color[2]) * p,
+              prev.color[3] ?? 1 + (last.color[3] ?? 1 - prev.color[3] ?? 1) * p,
+            ]);
+            last.offset = 1;
+            stops.unshift({
+              color,
+              offset: Math.max(0, first.offset - 1e-8),
+            });
+          }
+          else if (first.offset < 0 && last.offset < 1) {
+            const next = stops[1];
+            const p = -first.offset / (next.offset - first.offset);
+            const color = first.color.slice(0);
+            first.color = normalizeColor([
+              first.color[0] + (next.color[0] - first.color[0]) * p,
+              first.color[1] + (next.color[1] - first.color[1]) * p,
+              first.color[2] + (next.color[2] - first.color[2]) * p,
+              first.color[3] ?? 1 + (next.color[3] ?? 1 - first.color[3] ?? 1) * p,
+            ]);
+            first.offset = 1;
+            stops.push({
+              color,
+              offset: Math.min(1, last.offset + 1e-8),
+            });
+          }
+        }
+        stops.forEach((stop, i) => {
           if (i) {
             s += ', ';
           }
-          s += color2rgbaStr([
-            Math.floor((stop.color as RGB).r),
-            Math.floor((stop.color as RGB).g),
-            Math.floor((stop.color as RGB).b),
-            opacityStops[i]?.opacity ?? 1,
-          ]) + ' ' + stop.location * 100 + '%';
+          s += color2rgbaStr(stop.color) + ' ' + stop.offset * 100 + '%';
         });
-        s += ')';
+        s += ')'; console.log(s)
         fill.push(s);
       }
       fillEnable.push(vectorStroke?.fillEnabled ?? true);
