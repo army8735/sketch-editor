@@ -159,11 +159,11 @@ module.exports = {
       .assert.cssProperty('#main .gradient span[title="1"]', 'top', '0px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'backgroundColor', 'rgba(0, 0, 255, 1)')
 
-      .moveToElement('#main .gradient span[title="1"]', 10, 10)
+      .moveToElement('#main .gradient', 150, 0)
       .mouseButtonDown(0)
       .assert.cssClassPresent('#main .gradient span[title="1"]', 'cur')
       .assert.not.cssClassPresent('#main .gradient span[title="0"]', 'cur')
-      .moveToElement('#main .gradient span[title="1"]', -65, 10)
+      .moveToElement('#main .gradient', 75, 0)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '75px')
       .click('#button2')
