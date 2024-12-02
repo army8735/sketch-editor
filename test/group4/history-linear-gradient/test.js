@@ -53,6 +53,7 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[1,"2"]')
       .assert.cssProperty('#main .gradient', 'display', 'none')
+      .moveToElement('canvas', 20, 150)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .moveToElement('#side .fill-panel .line .pick', 10, 10)
