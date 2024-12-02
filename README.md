@@ -22,6 +22,11 @@ npm install sketch-editor
 ```
 import sketchEditor from 'sketch-editor';
 
+// 一些建议的手动配置
+sketchEditor.config.tile = true; // 开启tile优化大尺寸大文件（持续改进中）
+sketchEditor.config.maxTextureSize = 4096; // 设置分块渲染的尺寸最大值
+
+// 真正的读取渲染逻辑
 sketchEditor
   .openAndConvertSketchBuffer(arrayBuffer)
   // .openAndConvertPsdBuffer(arrayBuffer) // or psd
