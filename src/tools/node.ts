@@ -1283,6 +1283,25 @@ export function getBasicInfo(node: Node) {
 }
 
 export async function toPngBlob(node: Node) {
+  if (node.isDestroyed) {
+    return;
+  }
+  const root = node.root;
+  if (node === root) {
+    return new Promise((resolve, reject) => {
+      if (!root.canvas) {
+        return;
+      }
+      root.canvas.toBlob(blob => {
+        if (blob) {
+          resolve(blob);
+        }
+        else {
+          reject();
+        }
+      });
+    });
+  }
   const bbox = node._filterBbox2 || node.filterBbox2;
   const width = bbox[2] - bbox[0];
   const height = bbox[3] - bbox[1];

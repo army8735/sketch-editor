@@ -875,6 +875,9 @@ export default class Listener extends Event {
     if (e && e.button !== this.button) {
       return;
     }
+    if (this.state === State.EDIT_GRADIENT) {
+      return;
+    }
     const selected = this.selected;
     // 调整之前锁住的group，结束后统一进行解锁
     selected.forEach(node => {

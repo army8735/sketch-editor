@@ -2,6 +2,7 @@ import { color2rgbaStr, getCssFillStroke } from '../style/css';
 import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { convert2Css } from '../style/gradient';
 import Listener from './Listener';
+import State from './State';
 
 let div: HTMLElement;
 const html = `
@@ -303,7 +304,10 @@ export default {
           isDrag = isClick = false;
           return;
         }
-        this.hide();
+        // 拖stop的冒泡不能隐藏
+        if (listener.state !== State.EDIT_GRADIENT) {
+          this.hide();
+        }
       });
     }
     div.className = 'sketch-editor-picker';
