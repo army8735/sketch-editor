@@ -505,7 +505,7 @@ export default class Tree {
         if (uuid) {
           const node = root.refs[uuid];
           if (node) {
-            listener.visible(classList.contains('t') ? 'visible' : 'hidden', [node]);
+            listener.visible(classList.contains('t') ? 'hidden' : 'visible', [node]);
           }
         }
       }
