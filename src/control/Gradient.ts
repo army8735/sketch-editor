@@ -43,7 +43,6 @@ export default class Gradient {
       if (!data) {
         return;
       }
-      const { d } = data;
       target = e.target as HTMLElement;
       const classList = target.classList;
       list = panel.querySelectorAll('span');
@@ -55,8 +54,8 @@ export default class Gradient {
       h = panel.clientHeight;
       const span = panel.querySelector('span[title="0"]') as HTMLElement;
       const o2 = span.getBoundingClientRect();
-      ox2 = o2.left + span.clientWidth * 0.5;
-      oy2 = o2.top + span.clientHeight * 0.5;
+      ox2 = o2.left + o2.width * 0.5;
+      oy2 = o2.top + o2.height * 0.5;
       // conic的环点击需要特殊判断在圆边上，用dom完成了
       if (classList.contains('c2')) {
         const { offsetX, offsetY } = e;
