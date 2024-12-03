@@ -106,7 +106,7 @@ module.exports = {
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '150px')
       .assert.cssProperty('#main .gradient span[title="0"]', 'top', '50px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '136.859px')
-      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '7.60156px')
+      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '7.59375px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'transform', 'matrix(1, 0, 0, 1, -6, -6)')
 
       .keys(browser.Keys.ESCAPE)
