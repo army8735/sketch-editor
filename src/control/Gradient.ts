@@ -369,9 +369,11 @@ export default class Gradient {
     const div = panel.querySelector('.l') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
     const { d } = data;
+    const w = d[2] - d[0];
+    const h = d[3] - d[1];
     const left = d[0] * 100 + '%';
     const top = d[1] * 100 + '%';
-    const len = Math.sqrt(Math.pow((d[2] - d[0]) * clientWidth, 2) + Math.pow((d[3] - d[1]) * clientHeight, 2)) + 'px';
+    const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2)) + 'px';
     div.style.left = left;
     div.style.top = top;
     div.style.width = len;
@@ -392,11 +394,9 @@ export default class Gradient {
       }
     }
     else {
-      const dx = d[2] - d[0];
-      const dy = d[3] - d[1];
-      const r = Math.atan(dy * clientHeight / dx / clientWidth);
+      const r = Math.atan(h * clientHeight / w / clientWidth);
       const deg = toPrecision(r2d(r));
-      if (dx >= 0) {
+      if (w >= 0) {
         div.style.transform = `translateY(-50%) rotateZ(${deg}deg)`;
       }
       else {
@@ -435,6 +435,8 @@ export default class Gradient {
       html += `<span title="${i}"></span>`;
     });
     panel.innerHTML = html;
+    // 复用linear的d，自己则是控制椭圆的逻辑
+    this.updateLinearD(data);
     this.updateRadialD(data);
     // 复用linear的stops，自己则是控制椭圆的逻辑
     this.updateLinearStops(data);
@@ -444,7 +446,6 @@ export default class Gradient {
 
   updateRadialD(data: ComputedGradient) {
     const panel = this.panel;
-    const line = panel.querySelector('.l') as HTMLElement;
     const circle = panel.querySelector('.c') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
     const { d } = data;
@@ -453,38 +454,35 @@ export default class Gradient {
     const w = d[2] - d[0];
     const h = d[3] - d[1];
     const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2));
-    line.style.left = left;
-    line.style.top = top;
-    line.style.width = len + 'px';
     circle.style.left = left;
     circle.style.top = top;
     circle.style.width = circle.style.height = len * 2 + 'px';
     // 除了特殊的垂直x/y轴，其余求角度确定坐标
     if (d[0] === d[2]) {
       if (d[3] >= d[1]) {
-        line.style.transform = `translateY(-50%) rotateZ(90deg)`;
         circle.style.transform = `translate(-50%, -50%) rotateZ(90deg) scaleY(${d[4] || 1})`;
       }
       else {
-        line.style.transform = `translateY(-50%) rotateZ(-90deg)`;
         circle.style.transform = `translate(-50%, -50%) rotateZ(-90deg) scaleY(${d[4] || 1})`;
       }
     }
     else if (d[1] === d[3]) {
       if (d[2] >= d[0]) {
-        line.style.transform = `translateY(-50%) scaleY(${d[4] || 1}`;
         circle.style.transform = `translate(-50%, -50%) scaleY(${d[4] || 1})`;
       }
       else {
-        line.style.transform = `translateY(-50%) rotateZ(180deg)`;
         circle.style.transform = `translate(-50%, -50%) rotateZ(180deg) scaleY(${d[4] || 1})`;
       }
     }
     else {
       const r = Math.atan(h * clientHeight / w / clientWidth);
-      const deg = toPrecision(r2d(r)) + 'deg';
-      line.style.transform = `translateY(-50%) rotateZ(${deg})`;
-      circle.style.transform = `translate(-50%, -50%) rotateZ(${deg}) scaleY(${d[4] || 1})`;
+      const deg = toPrecision(r2d(r));
+      if (w >= 0) {
+        circle.style.transform = `translate(-50%, -50%) rotateZ(${deg}deg) scaleY(${d[4] || 1})`;
+      }
+      else {
+        circle.style.transform = `translate(-50%, -50%) rotateZ(${deg + 180}deg) scaleY(${d[4] || 1})`;
+      }
     }
   }
 
@@ -492,7 +490,6 @@ export default class Gradient {
     // 额外的椭圆控制
     const panel = this.panel;
     const { clientWidth, clientHeight } = panel;
-    // const l = panel.querySelector('.l') as HTMLElement;
     const e = panel.querySelector('.e') as HTMLElement;
     const { d } = data;
     const w = d[2] - d[0];
@@ -500,32 +497,37 @@ export default class Gradient {
     const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2));
     const ax = len / clientWidth * (d[4] || 1);
     const ay = len / clientHeight * (d[4] || 1);
-    // console.log(d[4])
     // 类似外圈的位置，但要顺时针转90deg
     if (d[0] === d[2]) {
-      e.style.left = d[0] * 100 + '%';
+      e.style.top = d[1] * 100 + '%';
       if (d[3] >= d[1]) {
-        e.style.top = (d[1] + 0.5) * 100 + '%';
+        e.style.left = (d[1] - ax) * 100 + '%';
       }
       else {
-        e.style.top = (d[1] - 0.5) * 100 + '%';
+        e.style.left = (d[1] + ax) * 100 + '%';
       }
     }
     else if (d[1] === d[3]) {
-      e.style.top = d[1] * 100 + '%';
+      e.style.left = d[0] * 100 + '%';
       if (d[2] >= d[0]) {
-        e.style.left = (d[0] + 0.5) * 100 + '%';
+        e.style.top = (d[0] + ay) * 100 + '%';
       }
       else {
-        e.style.left = (d[0] - 0.5) * 100 + '%';
+        e.style.top = (d[0] - ay) * 100 + '%';
       }
     }
     else {
       const r = Math.atan(h * clientHeight / w / clientWidth) + Math.PI * 0.5;
       const sin = Math.sin(r);
       const cos = Math.cos(r);
-      e.style.left = (cos * ax + d[0]) * 100 + '%';
-      e.style.top = (sin * ay + d[1]) * 100 + '%';
+      if (w >= 0) {
+        e.style.left = (cos * ax + d[0]) * 100 + '%';
+        e.style.top = (sin * ay + d[1]) * 100 + '%';
+      }
+      else {
+        e.style.left = (-cos * ax + d[0]) * 100 + '%';
+        e.style.top = (-sin * ay + d[1]) * 100 + '%';
+      }
     }
   }
 
