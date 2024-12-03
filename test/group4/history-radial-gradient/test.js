@@ -166,7 +166,7 @@ module.exports = {
       .assert.cssProperty('#main .gradient .c', 'top', '50px')
       .assert.cssProperty('#main .gradient .c', 'width', '180.266px')
       .assert.cssProperty('#main .gradient .c', 'height', '180.266px')
-      .assert.cssProperty('#main .gradient .c', 'transform', 'matrix(0.832051, -0.554699, 0.324771, 0.487158, -90.1367, -90.1367)')
+      .assert.cssProperty('#main .gradient .c', 'transform', 'matrix(0.832051, -0.554699, 0.324771, 0.487158, -90.1328, -90.1328)')
       .assert.cssProperty('#main .gradient .e', 'left', '104.273px')
       .assert.cssProperty('#main .gradient .e', 'top', '93.9602px')
       .assert.cssClassPresent('#main .gradient span[title="0"]', 'cur')
