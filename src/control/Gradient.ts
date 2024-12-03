@@ -60,8 +60,7 @@ export default class Gradient {
       if (classList.contains('c2')) {
         const { offsetX, offsetY } = e;
         const c = Math.max(w, h) * 0.5;
-        // 扩大可点区域造成的偏移
-        let offset = getConicOffset(c, c, offsetX - 4, offsetY - 4);
+        let offset = getConicOffset(c, c, offsetX, offsetY);
         const stops = data.stops;
         // 和line不同可能点到首尾，因为是个环首尾会变或不存在
         let prev: ComputedColorStop | undefined, next: ComputedColorStop | undefined;
