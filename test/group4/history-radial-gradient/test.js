@@ -131,8 +131,8 @@ module.exports = {
       .assert.cssClassPresent('#main .gradient span[title="0"]', 'cur')
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '75px')
       .assert.cssProperty('#main .gradient span[title="0"]', 'top', '50px')
-      .assert.cssProperty('#main .gradient span[title="1"]', 'left', '150px')
-      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '100px')
+      .assert.cssProperty('#main .gradient span[title="1"]', 'left', '0px')
+      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '0px')
 
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
