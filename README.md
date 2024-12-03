@@ -5,7 +5,7 @@ A sketch Render&Editor on Canvas/WebGL.
 ![CI](https://github.com/army8735/sketch-editor/workflows/CI/badge.svg)
 
 ## Install
-```
+```shell
 npm install sketch-editor
 ```
 
@@ -19,7 +19,7 @@ npm install sketch-editor
 <script src="https://gw.alipayobjects.com/os/lib/vanilla-picker/2.12.3/dist/vanilla-picker.min.js"></script>
 ```
 拿到sketch文件的ArrayBuffer后：
-```
+```tsx
 import sketchEditor from 'sketch-editor';
 
 // 一些建议的手动配置
@@ -55,7 +55,7 @@ sketchEditor
 ```
 
 ## Dev
-```
+```shell
 npm run dev
 ```
 sketch-editor的诞生离不开 [karas](https://github.com/karasjs/karas) 开源项目。
