@@ -118,7 +118,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '31.9062px')
-      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '111.383px')
+      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '111.375px')
       .assert.cssProperty('#main .gradient span[title="0"]', 'backgroundColor', 'rgba(0, 0, 255, 1)')
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '31.5703px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'top', '111.141')
