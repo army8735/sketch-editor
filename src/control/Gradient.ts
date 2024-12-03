@@ -27,127 +27,77 @@ export default class Gradient {
 
     let isDrag = false;
     let isEllipse = false;
-    let originX = 0;
-    let originY = 0;
+    let ox = 0; // panel
+    let oy = 0;
     let idx = 0;
     let w = 1;
     let h = 1;
     let len = 1;
+    let ox2 = 0; // line
+    let oy2 = 0;
     let target: HTMLElement;
     let list: NodeListOf<HTMLSpanElement>;
     panel.addEventListener('mousedown', (e) => {
       e.stopPropagation();
+      const data = this.data;
+      if (!data) {
+        return;
+      }
+      const { d } = data;
       target = e.target as HTMLElement;
       const classList = target.classList;
       list = panel.querySelectorAll('span');
       const tagName = target.tagName.toUpperCase();
       const o = panel.getBoundingClientRect();
-      originX = o.left;
-      originY = o.top;
+      ox = o.left;
+      oy = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
+      const span = panel.querySelector('span[title="0"]') as HTMLElement;
+      const o2 = span.getBoundingClientRect();
+      ox2 = o2.left + span.clientWidth * 0.5;
+      oy2 = o2.top + span.clientHeight * 0.5;
       // conic的环点击需要特殊判断在圆边上，用dom完成了
       if (classList.contains('c2')) {
-        const data = this.data;
-        if (data) {
-          const { offsetX, offsetY } = e;
-          const c = Math.max(w, h) * 0.5;
-          let offset = getConicOffset(c, c, offsetX, offsetY);
-          const stops = data.stops;
-          // 和line不同可能点到首尾，因为是个环首尾会变或不存在
-          let prev: ComputedColorStop | undefined, next: ComputedColorStop | undefined;
-          for (let i = 0, len = stops.length; i < len; i++) {
-            const item = stops[i];
-            if (offset < item.offset) {
-              next = item;
-              idx = i;
-              break;
-            }
-            prev = item;
+        const { offsetX, offsetY } = e;
+        const c = Math.max(w, h) * 0.5;
+        let offset = getConicOffset(c, c, offsetX, offsetY);
+        const stops = data.stops;
+        // 和line不同可能点到首尾，因为是个环首尾会变或不存在
+        let prev: ComputedColorStop | undefined, next: ComputedColorStop | undefined;
+        for (let i = 0, len = stops.length; i < len; i++) {
+          const item = stops[i];
+          if (offset < item.offset) {
+            next = item;
+            idx = i;
+            break;
           }
-          // 点在尾首间会造成特殊情况
-          if (!prev || !next) {
-            prev = prev || stops[0];
-            next = next || stops[stops.length - 1];
-            const p = Math.abs(offset - prev.offset) / Math.abs(prev.offset - next.offset);
-            const o = {
-              color: genNewStop(next, prev, p),
-              offset,
-            };
-            if (offset < prev.offset) {
-              stops.unshift(o);
-              idx = 0;
-            }
-            else {
-              stops.push(o);
-              idx = stops.length - 1;
-            }
+          prev = item;
+        }
+        // 点在尾首间会造成特殊情况
+        if (!prev || !next) {
+          prev = prev || stops[0];
+          next = next || stops[stops.length - 1];
+          const p = Math.abs(offset - prev.offset) / Math.abs(prev.offset - next.offset);
+          const o = {
+            color: genNewStop(next, prev, p),
+            offset,
+          };
+          if (offset < prev.offset) {
+            stops.unshift(o);
+            idx = 0;
           }
           else {
-            const p = (offset - prev.offset) / (next.offset - prev.offset);
-            stops.splice(idx, 0, {
-              color: genNewStop(prev, next, p),
-              offset,
-            });
-            panel.innerHTML += '<span></span>';
-            panel.querySelectorAll('span').forEach((item, i) => {
-              item.title = i.toString();
-              if (i === idx) {
-                target = item;
-              }
-            });
+            stops.push(o);
+            idx = stops.length - 1;
           }
-          this.updateConicStops(data);
-          picker.addLineItem(idx, offset);
-          this.setCur(idx, true);
-          this.onChange!(data, true);
-          isDrag = true;
         }
-      }
-      // radial的椭圆控制
-      else if (classList.contains('e')) {
-        const span = panel.querySelector('span[title="0"]') as HTMLElement;
-        const o = span.getBoundingClientRect();
-        originX = o.left;
-        originY = o.top;
-        len = (panel.querySelector('.l') as HTMLElement).clientWidth;
-        isEllipse = true;
-      }
-      // stops
-      else if (tagName === 'SPAN') {
-        isDrag = true;
-        idx = parseInt(target.title);
-        this.setCur(idx, true);
-        const data = this.data;
-        if (data && data.t !== GRADIENT.CONIC) {
-          const d = data.d;
-          len = Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
-        }
-      }
-      // linear和radial才有的line渐变条
-      else if (tagName === 'DIV') {
-        const data = this.data;
-        if (data) {
-          const { d, stops } = data;
-          len = Math.sqrt(Math.pow((d[2] - d[0]), 2) + Math.pow((d[3] - d[1]), 2));
-          const x0 = originX + d[0] * w;
-          const y0 = originY + d[1] * h;
-          const len2 = Math.sqrt(Math.pow(e.pageX - x0, 2) + Math.pow(e.pageY - y0, 2));
-          const offset = len2 / target.clientWidth;
-          // 一定不会是首尾，因为点不到，首尾决定了长度
-          for (let i = 0, len = stops.length; i < len; i++) {
-            const item = stops[i];
-            if (offset < item.offset) {
-              const prev = stops[i - 1];
-              const p = (offset - prev.offset) / (item.offset - prev.offset);
-              stops.splice(i, 0, {
-                color: genNewStop(prev, item, p),
-                offset,
-              });
-              idx = i;
-              break;
-            }
-          }
+        else {
+          const p = (offset - prev.offset) / (next.offset - prev.offset);
+          stops.splice(idx, 0, {
+            color: genNewStop(prev, next, p),
+            offset,
+          });
           panel.innerHTML += '<span></span>';
           panel.querySelectorAll('span').forEach((item, i) => {
             item.title = i.toString();
@@ -155,12 +105,55 @@ export default class Gradient {
               target = item;
             }
           });
-          this.updateLinearStops(data);
-          picker.addLineItem(idx, offset);
-          this.setCur(idx, true);
-          this.onChange!(data, true);
-          isDrag = true;
         }
+        this.updateConicStops(data);
+        picker.addLineItem(idx, offset);
+        this.setCur(idx, true);
+        this.onChange!(data, true);
+        isDrag = true;
+      }
+      // radial的椭圆控制
+      else if (classList.contains('e')) {
+        len = (panel.querySelector('.l') as HTMLElement).clientWidth;
+        isEllipse = true;
+      }
+      // stops
+      else if (tagName === 'SPAN') {
+        idx = parseInt(target.title);
+        this.setCur(idx, true);
+        isDrag = true;
+      }
+      // linear和radial才有的line渐变条
+      else if (tagName === 'DIV') {
+        const { stops } = data;
+        const len2 = Math.sqrt(Math.pow(e.pageX - ox2, 2) + Math.pow(e.pageY - oy2, 2));
+        const offset = len2 / target.clientWidth;
+        // 一定不会是首尾，因为点不到，首尾决定了长度
+        for (let i = 0, len = stops.length; i < len; i++) {
+          const item = stops[i];
+          if (offset < item.offset) {
+            const prev = stops[i - 1];
+            const p = (offset - prev.offset) / (item.offset - prev.offset);
+            stops.splice(i, 0, {
+              color: genNewStop(prev, item, p),
+              offset,
+            });
+            idx = i;
+            break;
+          }
+        }
+        panel.innerHTML += '<span></span>';
+        panel.querySelectorAll('span').forEach((item, i) => {
+          item.title = i.toString();
+          if (i === idx) {
+            target = item;
+          }
+        });
+        this.updateLinearStops(data);
+        picker.addLineItem(idx, offset);
+        this.setCur(idx, true);
+        this.onChange!(data, true);
+        isDrag = true;
       }
     });
     document.addEventListener('mousemove', (e) => {
@@ -168,7 +161,7 @@ export default class Gradient {
         const data = this.data;
         if (data) {
           const d = data.d;
-          const len2 = Math.sqrt(Math.pow(e.pageX - originX, 2) + Math.pow(e.pageY - originY, 2));
+          const len2 = Math.sqrt(Math.pow(e.pageX - ox2, 2) + Math.pow(e.pageY - oy2, 2));
           d[4] = len2 / len;
           this.updateRadialD(data);
           this.updateRadialStops(data);
@@ -176,8 +169,8 @@ export default class Gradient {
         }
       }
       else if (isDrag) {
-        const x = (e.pageX - originX) / w;
-        const y = (e.pageY - originY) / h;
+        const x = (e.pageX - ox) / w;
+        const y = (e.pageY - oy) / h;
         const data = this.data;
         if (data) {
           const { d, stops } = data;
@@ -202,7 +195,7 @@ export default class Gradient {
             else if (data.t === GRADIENT.RADIAL) {
               this.updateRadialD(data);
             }
-            len = Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
+            // len = Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
             stops.forEach((item, i) => {
               const left = (d[0] + (d[2] - d[0]) * item.offset) * 100 + '%';
               const top = (d[1] + (d[3] - d[1]) * item.offset) * 100 + '%';
@@ -214,7 +207,7 @@ export default class Gradient {
           // 中间的不调整长度并限制范围
           else {
             if (data.t === GRADIENT.CONIC) {
-              const offset = getConicOffset(originX + w * 0.5, originY + h * 0.5, e.pageX, e.pageY);
+              const offset = getConicOffset(ox + w * 0.5, oy + h * 0.5, e.pageX, e.pageY);
               const r = offset * 2 * Math.PI;
               let left = 1;
               let top = 0.5;
@@ -244,10 +237,17 @@ export default class Gradient {
               picker.updateLinePos(idx, offset, data);
             }
             else {
+              /**
+               * 特殊的交互，在首尾两点之间移动，采用距离和首点的百分比作为offset；
+               * 在首尾范围外时（dx/dy为负），运算过程的d要*-1来计算，同时要考虑方向，
+               * 即dx/dy的负是指和渐变矢量方向相反。
+               */
               const dx = x - d[0];
               const dy = y - d[1];
-              const sum = Math.pow(dx, 2) * (dx < 0 ? -1 : 1) + Math.pow(dy, 2) * (dy < 0 ? -1 : 1);
-              let offset = Math.sqrt(Math.max(0, sum)) / len;
+              const sx = (dx < 0 ? -1 : 1) * (d[2] < d[0] ? -1 : 1);
+              const sy = (dy < 0 ? -1 : 1) * (d[3] < d[1] ? -1 : 1);
+              const sum = Math.pow(dx, 2) * sx + Math.pow(dy, 2) * sy;
+              let offset = Math.sqrt(Math.max(0, sum)) / Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
               offset = Math.max(0, Math.min(1, offset));
               stops[idx].offset = offset;
               const left = (d[0] + (d[2] - d[0]) * offset) * 100 + '%';
