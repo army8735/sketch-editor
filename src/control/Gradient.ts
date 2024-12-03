@@ -566,27 +566,46 @@ export default class Gradient {
     const { d, stops } = data;
     const cx = (d[0] ?? 0.5) * 100;
     const cy = (d[1] ?? 0.5) * 100;
+    // 当stop重复一个%时，需依次向外排列，记录%下有多少个重复的，其中offset的0和1共用
+    const hash: Record<string, number> = {};
+    const size = 12;
     stops.forEach((item, i) => {
       const { color, offset } = item;
       const bgc = color2rgbaStr(color);
       const span = spans[i];
       if (span) {
         span.style.background = bgc;
+        const offsetStr = toPrecision(offset || 1); // 精度合并
+        const count = hash[offsetStr] || 0;
+        // 先清空，防止上次遗留，新增后干扰
+        span.style.transform = '';
         if (offset === 0 || offset === 1) {
           span.style.left = cx + 50 + '%';
           span.style.top = cy + '%';
+          if (count) {
+            span.style.transform = `translate(-50%, -50%) translateX(${count * size}px)`;
+          }
         }
         else if (offset === 0.25) {
           span.style.left = cx + '%';
           span.style.top = cy + 50 + '%';
+          if (count) {
+            span.style.transform = `translate(-50%, -50%) translateY(${count * size}px)`;
+          }
         }
         else if (offset === 0.5) {
           span.style.left = cx - 50 + '%';
           span.style.top = cy + '%';
+          if (count) {
+            span.style.transform = `translate(-50%, -50%) translateX(${-count * size}px)`;
+          }
         }
         else if (offset === 0.75) {
           span.style.left = cx + '%';
           span.style.top = cy - 50 + '%';
+          if (count) {
+            span.style.transform = `translate(-50%, -50%) translateY(${-count * size}px)`;
+          }
         }
         else {
           const r = offset * Math.PI * 2;
@@ -596,7 +615,11 @@ export default class Gradient {
           const y = R * sin;
           span.style.left = cx + x * 100 / clientWidth + '%';
           span.style.top = cy + y * 100 / clientHeight + '%';
+          if (count) {
+            span.style.transform = `translate(-50%, -50%) translate(${count * size * cos}px, ${count * size * sin}px)`;
+          }
         }
+        hash[offsetStr] = count + 1;
       }
     });
   }
