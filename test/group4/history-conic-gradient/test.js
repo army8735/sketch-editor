@@ -44,9 +44,9 @@ module.exports = {
       .assert.cssProperty('#main .gradient .c2', 'width', '150px')
       .assert.cssProperty('#main .gradient .c2', 'height', '150px')
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '75px')
-      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '100px')
+      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '150px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '75px')
-      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '100px')
+      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '150px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'transform', 'matrix(1, 0, 0, 1, -6, 6)')
 
       .moveToElement('canvas', 20, 150)
@@ -76,9 +76,9 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '75px')
-      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '0px')
+      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '-25px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '75px')
-      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '0px')
+      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '-25px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'transform', 'matrix(1, 0, 0, 1, -6, -18)')
 
       .keys(browser.Keys.ESCAPE)
