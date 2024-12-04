@@ -1204,6 +1204,7 @@ export default class Listener extends Event {
     }
     this.updateSelected();
     this.updateInput();
+    this.updateGradient();
   }
 
   zoom(factor: number) {
@@ -1863,6 +1864,12 @@ export default class Listener extends Event {
   updateInput() {
     if (this.state === State.EDIT_TEXT) {
       this.input.updateCursor();
+    }
+  }
+
+  updateGradient() {
+    if (this.state === State.EDIT_GRADIENT) {
+      this.gradient.updatePos();
     }
   }
 

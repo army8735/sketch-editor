@@ -12,6 +12,7 @@ export default class Gradient {
   dom: HTMLElement;
   listener: Listener;
   panel: HTMLElement;
+  node?: Node;
   data?: ComputedGradient;
   onChange?: (data: ComputedGradient, fromGradient?: boolean) => void;
   keep?: boolean; // 保持窗口外部点击时不关闭
@@ -272,6 +273,7 @@ export default class Gradient {
     if ((data as ComputedPattern).url) {
       return;
     }
+    this.node = node;
     this.onChange = onChange;
     data = data as ComputedGradient;
     this.data = data;
@@ -352,39 +354,40 @@ export default class Gradient {
     const panel = this.panel;
     const div = panel.querySelector('.l') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
+    const { scaleX, scaleY } = this.node!.computedStyle;
     const { d } = data;
     const w = d[2] - d[0];
     const h = d[3] - d[1];
-    const left = d[0] * 100 + '%';
-    const top = d[1] * 100 + '%';
+    const left = (scaleX === - 1 ? (1 - d[0]) : d[0] )* 100 + '%';
+    const top = (scaleY === - 1 ? (1 - d[1]) : d[1]) * 100 + '%';
     const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2)) + 'px';
     div.style.left = left;
     div.style.top = top;
     div.style.width = len;
     if (d[0] === d[2]) {
       if (d[3] >= d[1]) {
-        div.style.transform = 'translateY(-50%) rotateZ(90deg)';
+        div.style.transform = `translateY(-50%) rotateZ(90deg) scale(${scaleX}, ${scaleY})`;
       }
       else {
-        div.style.transform = 'translateY(-50%) rotateZ(-90deg)';
+        div.style.transform = `translateY(-50%) rotateZ(-90deg) scale(${scaleX}, ${scaleY})`;
       }
     }
     else if (d[1] === d[3]) {
       if (d[2] >= d[0]) {
-        div.style.transform = 'translateY(-50%)';
+        div.style.transform = `translateY(-50%) scale(${scaleX}, ${scaleY})`;
       }
       else {
-        div.style.transform = 'translateY(-50%) rotateZ(180deg)';
+        div.style.transform = `translateY(-50%) rotateZ(180deg) scale(${scaleX}, ${scaleY})`;
       }
     }
     else {
       const r = Math.atan(h * clientHeight / w / clientWidth);
       const deg = toPrecision(r2d(r));
       if (w >= 0) {
-        div.style.transform = `translateY(-50%) rotateZ(${deg}deg)`;
+        div.style.transform = `translateY(-50%) rotateZ(${deg}deg) scale(${scaleX}, ${scaleY})`;
       }
       else {
-        div.style.transform = `translateY(-50%) rotateZ(${deg + 180}deg)`;
+        div.style.transform = `translateY(-50%) rotateZ(${deg + 180}deg) scale(${scaleX}, ${scaleY})`;
       }
     }
   }
@@ -392,14 +395,15 @@ export default class Gradient {
   updateLinearStops(data: ComputedGradient) {
     const panel = this.panel;
     const spans = panel.querySelectorAll('span');
+    const { scaleX, scaleY } = this.node!.computedStyle;
     const { d, stops } = data;
     // stops的范围不等于dom的宽高范围[0, 1]，因此offset不能简单算作定位的百分比，需*个系数
     const xl = d[2] - d[0];
     const yl = d[3] - d[1];
     stops.forEach((item, i) => {
       const { color, offset } = item;
-      const left = d[0] * 100 + offset * xl * 100 + '%';
-      const top = d[1] * 100 + offset * yl * 100 + '%';
+      const left = (scaleX === - 1 ? (1 - d[0]) : d[0]) * 100 + offset * xl * 100 * scaleX + '%';
+      const top = (scaleY === - 1 ? (1 - d[1]) : d[1]) * 100 + offset * yl * 100 * scaleY + '%';
       const bgc = color2rgbaStr(color);
       const span = spans[i];
       if (span) {
@@ -623,6 +627,13 @@ export default class Gradient {
   hide() {
     this.panel.style.display = 'none';
     this.data = undefined;
+    this.node = undefined;
+  }
+
+  updatePos() {
+    if (this.node) {
+      this.updateSize(this.node);
+    }
   }
 }
 
