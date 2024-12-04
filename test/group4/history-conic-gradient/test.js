@@ -44,9 +44,9 @@ module.exports = {
       .assert.cssProperty('#main .gradient .c2', 'width', '150px')
       .assert.cssProperty('#main .gradient .c2', 'height', '150px')
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '75px')
-      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '150px')
+      .assert.cssProperty('#main .gradient span[title="0"]', 'top', '125px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '75px')
-      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '150px')
+      .assert.cssProperty('#main .gradient span[title="1"]', 'top', '125px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'transform', 'matrix(1, 0, 0, 1, -6, 6)')
 
       .moveToElement('canvas', 20, 150)
