@@ -19,10 +19,11 @@ npm install sketch-editor
 <script src="https://gw.alipayobjects.com/os/lib/vanilla-picker/2.12.3/dist/vanilla-picker.min.js"></script>
 ```
 拿到sketch文件的ArrayBuffer后：
-```js
+```tsx
 import sketchEditor from 'sketch-editor';
+
 // css自行修改引入，这里是举例
-// import 'sketch-editor/style.css';
+import 'sketch-editor/style.css';
 
 // 一些建议的手动配置
 sketchEditor.config.tile = true; // 开启tile优化大尺寸大文件（持续改进中）
