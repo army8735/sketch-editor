@@ -31,6 +31,7 @@ let tempGradient: ComputedGradient | undefined;
 let index = 0;
 
 export default {
+  keep: false,
   show(
     el: HTMLElement,
     data: number[] | ComputedGradient | ComputedPattern,
@@ -277,9 +278,8 @@ export default {
         }
       });
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
-      let isClick = false;
-      div.addEventListener('mousedown', (e) => {
-        isClick = true;
+      div.addEventListener('mousedown', () => {
+        this.keep = true;
       });
       document.addEventListener('mousemove', (e) => {
         if (isDrag) {
@@ -300,14 +300,11 @@ export default {
             (item as HTMLElement).title = i.toString();
           });
         }
-        if (isDrag || isClick) {
-          isDrag = isClick = false;
+        if (this.keep) {
+          this.keep = false;
           return;
         }
-        // 拖stop的冒泡不能隐藏
-        if (listener.state !== State.EDIT_GRADIENT) {
-          this.hide();
-        }
+        this.hide();
       });
     }
     div.className = 'sketch-editor-picker';

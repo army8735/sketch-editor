@@ -14,6 +14,7 @@ export default class Gradient {
   panel: HTMLElement;
   data?: ComputedGradient;
   onChange?: (data: ComputedGradient, fromGradient?: boolean) => void;
+  keep?: boolean; // 保持窗口外部点击时不关闭
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -250,9 +251,18 @@ export default class Gradient {
         isDrag = false;
       }
     });
-    // 阻止冒泡，listener侦听document点击会取消选择
-    panel.addEventListener('click', (e) => {
-      e.stopPropagation();
+    // 自身点击设置keep，阻止document全局侦听关闭
+    document.addEventListener('click', () => {
+      if (this.keep) {
+        this.keep = false;
+        return;
+      }
+      // 直接关，state变化逻辑listener内部关心
+      this.hide();
+    });
+    panel.addEventListener('click', () => {
+      this.keep = true;
+      picker.keep = true;
     });
   }
 

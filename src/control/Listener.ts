@@ -1075,7 +1075,11 @@ export default class Listener extends Event {
     this.onMouseUp();
   }
 
-  onClick() {
+  onClick(e: MouseEvent) {
+    // 外部侦听document点击会隐藏
+    if (this.state === State.EDIT_GRADIENT) {
+      this.gradient.keep = true;
+    }
   }
 
   onDblClick(e: MouseEvent) {
