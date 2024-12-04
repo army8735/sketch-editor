@@ -194,7 +194,6 @@ export default class Gradient {
             else if (data.t === GRADIENT.RADIAL) {
               this.updateRadialD(data);
             }
-            // len = Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
             stops.forEach((item, i) => {
               const left = (d[0] + (d[2] - d[0]) * item.offset) * 100 + '%';
               const top = (d[1] + (d[3] - d[1]) * item.offset) * 100 + '%';
@@ -203,36 +202,12 @@ export default class Gradient {
             });
             this.onChange!(data, true);
           }
-          // 中间的不调整长度并限制范围
+          // 中间的和conic类型不调整长度并限制范围
           else {
             if (data.t === GRADIENT.CONIC) {
               const offset = getConicOffset(ox + w * 0.5, oy + h * 0.5, e.pageX, e.pageY);
-              const r = offset * 2 * Math.PI;
-              let left = 1;
-              let top = 0.5;
-              const c2 = panel.querySelector('.c2') as HTMLElement;
-              if (offset === 0.25) {
-                left = 0;
-                top = 1;
-              }
-              else if (offset === 0.5) {
-                left = 0;
-                top = 0.5;
-              }
-              else if (offset === 0.75) {
-                left = 0.5;
-                top = 0;
-              }
-              // 自动带符号了无需考虑象限
-              else {
-                const ax = c2.clientWidth / panel.clientWidth;
-                const ay = c2.clientHeight / panel.clientHeight;
-                left = 0.5 + Math.cos(r) * 0.5 * ax;
-                top = 0.5 + Math.sin(r) * 0.5 * ay;
-              }
               stops[idx].offset = offset;
-              target.style.left = left * 100 + '%';
-              target.style.top = top * 100 + '%';
+              this.updateConicStops(data);
               picker.updateLinePos(idx, offset, data);
             }
             else {
@@ -563,6 +538,9 @@ export default class Gradient {
     const { clientWidth, clientHeight } = panel;
     const R = Math.max(clientWidth, clientHeight) * 0.5;
     const spans = panel.querySelectorAll('span');
+    const c2 = panel.querySelector('.c2') as HTMLElement;
+    const ax = c2.clientWidth / clientWidth;
+    const ay = c2.clientHeight / clientHeight;
     const { d, stops } = data;
     const cx = (d[0] ?? 0.5) * 100;
     const cy = (d[1] ?? 0.5) * 100;
@@ -578,9 +556,9 @@ export default class Gradient {
         const offsetStr = toPrecision(offset || 1); // 精度合并
         const count = hash[offsetStr] || 0;
         // 先清空，防止上次遗留，新增后干扰
-        span.style.transform = '';
+        span.style.transform = ''; console.log(i, offset);
         if (offset === 0 || offset === 1) {
-          span.style.left = cx + 50 + '%';
+          span.style.left = (R * 100 / c2.clientWidth) * ax + cx + '%';
           span.style.top = cy + '%';
           if (count) {
             span.style.transform = `translate(-50%, -50%) translateX(${count * size}px)`;
@@ -588,13 +566,13 @@ export default class Gradient {
         }
         else if (offset === 0.25) {
           span.style.left = cx + '%';
-          span.style.top = cy + 50 + '%';
+          span.style.top = (R * 100 / c2.clientHeight) * ay + cy + '%';
           if (count) {
             span.style.transform = `translate(-50%, -50%) translateY(${count * size}px)`;
           }
         }
         else if (offset === 0.5) {
-          span.style.left = cx - 50 + '%';
+          span.style.left = (-R * 100 / c2.clientWidth) * ax + cx + '%';
           span.style.top = cy + '%';
           if (count) {
             span.style.transform = `translate(-50%, -50%) translateX(${-count * size}px)`;
@@ -602,7 +580,7 @@ export default class Gradient {
         }
         else if (offset === 0.75) {
           span.style.left = cx + '%';
-          span.style.top = cy - 50 + '%';
+          span.style.top = (-R * 100 / c2.clientHeight) * ay + cy + '%';
           if (count) {
             span.style.transform = `translate(-50%, -50%) translateY(${-count * size}px)`;
           }
@@ -644,10 +622,18 @@ function getConicOffset(cx: number, cy: number, x: number, y: number) {
   // 4个象限区别
   if (x === cx) {
     if (y >= cy) {
-      offset = 0.75;
+      offset = 0.25;
     }
     else {
-      offset = 0.25;
+      offset = 0.75;
+    }
+  }
+  else if (y === cy) {
+    if (x >= cx) {
+      offset = 0;
+    }
+    else {
+      offset = 0.5;
     }
   }
   else if (x > cx) {
