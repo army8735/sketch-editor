@@ -1,28 +1,22 @@
-let manual = false;
+let max = 2048;
 
 export default {
   debug: false,
   offscreenCanvas: false,
   tile: false, // 是否开启tile优化
   deltaTime: 8, // 跨帧渲染，单帧渲染过程超过值时停止在下一帧继续
-  maxTextureSize: 8192, // 纹理块尺寸限制
+  maxTextureSize: max, // 纹理块尺寸限制
   get MAX_TEXTURE_SIZE() {
     return this.maxTextureSize;
   },
   set MAX_TEXTURE_SIZE(v: number) {
-    this.maxTextureSize = v;
-    manual = true;
+    this.maxTextureSize = Math.min(max, v);
   },
   MAX_TEXTURE_UNITS: 8,
   MAX_VARYING_VECTORS: 15,
   init(maxSize: number, maxUnits: number, maxVectors: number) {
-    if (!manual) {
-      this.maxTextureSize = maxSize;
-    }
-    // 手动事先设置了超限的尺寸需缩小
-    else if (maxSize < this.maxTextureSize) {
-      this.maxTextureSize = maxSize;
-    }
+    this.maxTextureSize = Math.min(max, maxSize);
+    max = maxSize;
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
   },
