@@ -556,7 +556,7 @@ export default class Gradient {
         const offsetStr = toPrecision(offset || 1); // 精度合并
         const count = hash[offsetStr] || 0;
         // 先清空，防止上次遗留，新增后干扰
-        span.style.transform = ''; console.log(i, offset);
+        span.style.transform = '';
         if (offset === 0 || offset === 1) {
           span.style.left = (R * 100 / c2.clientWidth) * ax + cx + '%';
           span.style.top = cy + '%';
