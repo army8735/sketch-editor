@@ -159,9 +159,6 @@ class FillPanel extends Panel {
       const el = e.target as HTMLElement;
       const classList = el.classList;
       if (classList.contains('pick')) {
-        // picker侦听了document全局click隐藏窗口，这里停止
-        picker.keep = true;
-        listener.gradient.keep = true;
         if (el.parentElement!.classList.contains('read-only')) {
           return;
         }
@@ -169,6 +166,9 @@ class FillPanel extends Panel {
           picker.hide();
           return;
         }
+        // picker侦听了document全局click隐藏窗口，这里停止
+        picker.keep = true;
+        listener.gradient.keep = true;
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
