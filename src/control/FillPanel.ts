@@ -161,6 +161,7 @@ class FillPanel extends Panel {
       if (classList.contains('pick')) {
         // picker侦听了document全局click隐藏窗口，这里停止
         picker.keep = true;
+        listener.gradient.keep = true;
         if (el.parentElement!.classList.contains('read-only')) {
           return;
         }
