@@ -299,6 +299,7 @@ export default {
           div.querySelectorAll('.line .con span').forEach((item, i) => {
             (item as HTMLElement).title = i.toString();
           });
+          isDrag = false;
         }
         if (this.keep) {
           this.keep = false;
