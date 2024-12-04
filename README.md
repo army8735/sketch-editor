@@ -19,17 +19,21 @@ npm install sketch-editor
 <script src="https://gw.alipayobjects.com/os/lib/vanilla-picker/2.12.3/dist/vanilla-picker.min.js"></script>
 ```
 拿到sketch文件的ArrayBuffer后：
-```tsx
+```js
 import sketchEditor from 'sketch-editor';
+// css自行修改引入，这里是举例
+// import 'sketch-editor/style.css';
 
 // 一些建议的手动配置
 sketchEditor.config.tile = true; // 开启tile优化大尺寸大文件（持续改进中）
-sketchEditor.config.maxTextureSize = 4096; // 设置分块渲染的尺寸最大值
+
+// 一些有用的前置方法
+sketchEditor.style.font.registerLocalFonts(); // 异步注册本地字体
 
 // 真正的读取渲染逻辑
 sketchEditor
-  .openAndConvertSketchBuffer(arrayBuffer)
-  // .openAndConvertPsdBuffer(arrayBuffer) // or psd
+  .openAndConvertSketchBuffer(arrayBuffer) // 读取sketch的buffer
+  // .openAndConvertPsdBuffer(arrayBuffer) // 如果是psd用这个
   .then(json => {
     const dpi = 2;
     
@@ -45,11 +49,15 @@ sketchEditor
       canvas,
     });
     
-    // 可选控制
+    // 可选控制，鼠标键盘基础操作
     const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
+    // page列表展示
     sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
+    // 图层树结构展示
     sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
+    // 右侧属性面板展示
     sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+    // 缩放情况展示
     sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
   });
 ```
