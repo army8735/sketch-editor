@@ -1,4 +1,5 @@
 let max = 2048;
+let manual = false;
 
 export default {
   debug: false,
@@ -10,12 +11,20 @@ export default {
     return this.maxTextureSize;
   },
   set MAX_TEXTURE_SIZE(v: number) {
-    this.maxTextureSize = Math.min(max, v);
+    this.maxTextureSize = v;
+    manual = true;
   },
   MAX_TEXTURE_UNITS: 8,
   MAX_VARYING_VECTORS: 15,
+  // 初始化root的时候才会调用
   init(maxSize: number, maxUnits: number, maxVectors: number) {
-    this.maxTextureSize = Math.min(max, maxSize);
+    if (!manual) {
+      this.maxTextureSize = Math.min(max, maxSize);
+    }
+    // 手动事先设置了超限的尺寸需缩小
+    else if (maxSize < this.maxTextureSize) {
+      this.maxTextureSize = maxSize;
+    }
     max = maxSize;
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
