@@ -44,10 +44,12 @@ function init(listener: Listener) {
     document.body.appendChild(canvasDiv);
     // 点击自动关闭，外部或者子项都可，但点自身不关闭，因为有padding或者不可点击的项视为点自己
     document.addEventListener('click', (e) => {
-      if (e.target !== canvasDiv) {
-        if (hide()) {
-          listener.emit(Listener.CONTEXT_MENU, false, canvasDiv);
-        }
+      if (o.keep) {
+        o.keep = false;
+        return;
+      }
+      if (hide()) {
+        listener.emit(Listener.CONTEXT_MENU, false, canvasDiv);
       }
     });
     document.addEventListener('visibilitychange', (e) => {
@@ -62,7 +64,7 @@ function init(listener: Listener) {
       const classList = target.classList;
       // 菜单空白处忽略任何动作不冒泡触发
       if (target === canvasDiv) {
-        e.stopPropagation();
+        o.keep = true;
       }
       else if (classList.contains('group')) {
         listener.group();
@@ -141,7 +143,8 @@ function hide() {
   return false;
 }
 
-export default {
+const o = {
+  keep: false,
   showCanvas(x: number, y: number, listener: Listener) {
     init(listener);
     const classList = canvasDiv.classList;
@@ -216,3 +219,5 @@ export default {
   },
   hide,
 };
+
+export default o;

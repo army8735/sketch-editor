@@ -39,7 +39,6 @@ export default class Gradient {
     let target: HTMLElement;
     let list: NodeListOf<HTMLSpanElement>;
     panel.addEventListener('mousedown', (e) => {
-      e.stopPropagation();
       const data = this.data;
       if (!data) {
         return;

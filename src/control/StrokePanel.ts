@@ -124,8 +124,8 @@ class StrokePanel extends Panel {
       const el = e.target as HTMLElement;
       const classList = el.classList;
       if (classList.contains('pick')) {
-        // picker侦听了document全局click隐藏窗口，这里停止向上冒泡
-        e.stopPropagation();
+        // picker侦听了document全局click隐藏窗口，这里停止
+        picker.keep = true;
         if (el.parentElement!.classList.contains('read-only')) {
           return;
         }
