@@ -280,6 +280,9 @@ export default {
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
       div.addEventListener('mousedown', () => {
         this.keep = true;
+        if (listener.state === State.EDIT_GRADIENT) {
+          listener.gradient.keep = true;
+        }
       });
       document.addEventListener('mousemove', (e) => {
         if (isDrag) {
@@ -306,6 +309,10 @@ export default {
           return;
         }
         this.hide();
+        if (listener.state === State.EDIT_GRADIENT) {
+          listener.state = State.NORMAL;
+          listener.select.showSelectNotUpdate();
+        }
       });
     }
     div.className = 'sketch-editor-picker';
@@ -321,6 +328,10 @@ export default {
       });
       picker.onDone = () => {
         this.hide();
+        if (listener.state === State.EDIT_GRADIENT) {
+          listener.state = State.NORMAL;
+          listener.select.showSelectNotUpdate();
+        }
       };
       picker.onChange = (color: any) => {
         const cur = type.querySelector('.cur') as HTMLElement;

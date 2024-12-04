@@ -358,7 +358,7 @@ export default class Gradient {
     const { d } = data;
     const w = d[2] - d[0];
     const h = d[3] - d[1];
-    const left = (scaleX === - 1 ? (1 - d[0]) : d[0] )* 100 + '%';
+    const left = (scaleX === - 1 ? (1 - d[0]) : d[0]) * 100 + '%';
     const top = (scaleY === - 1 ? (1 - d[1]) : d[1]) * 100 + '%';
     const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2)) + 'px';
     div.style.left = left;
@@ -436,9 +436,10 @@ export default class Gradient {
     const panel = this.panel;
     const circle = panel.querySelector('.c') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
+    const { scaleX, scaleY } = this.node!.computedStyle;
     const { d } = data;
-    const left = d[0] * 100 + '%';
-    const top = d[1] * 100 + '%';
+    const left = (scaleX === - 1 ? (1 - d[0]) : d[0]) * 100 + '%';
+    const top = (scaleY === - 1 ? (1 - d[1]) : d[1]) * 100 + '%';
     const w = d[2] - d[0];
     const h = d[3] - d[1];
     const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2));
@@ -448,28 +449,28 @@ export default class Gradient {
     // 除了特殊的垂直x/y轴，其余求角度确定坐标
     if (d[0] === d[2]) {
       if (d[3] >= d[1]) {
-        circle.style.transform = `translate(-50%, -50%) rotateZ(90deg) scaleY(${d[4] || 1})`;
+        circle.style.transform = `translate(-50%, -50%) rotateZ(90deg) scale(${scaleX}, ${scaleY * (d[4] || 1)})`;
       }
       else {
-        circle.style.transform = `translate(-50%, -50%) rotateZ(-90deg) scaleY(${d[4] || 1})`;
+        circle.style.transform = `translate(-50%, -50%) rotateZ(-90deg) scale(${scaleX}, ${scaleY * (d[4] || 1)})`;
       }
     }
     else if (d[1] === d[3]) {
       if (d[2] >= d[0]) {
-        circle.style.transform = `translate(-50%, -50%) scaleY(${d[4] || 1})`;
+        circle.style.transform = `translate(-50%, -50%) scale(${scaleX}, ${scaleY * (d[4] || 1)})`;
       }
       else {
-        circle.style.transform = `translate(-50%, -50%) rotateZ(180deg) scaleY(${d[4] || 1})`;
+        circle.style.transform = `translate(-50%, -50%) rotateZ(180deg) scale(${scaleX}, ${scaleY * (d[4] || 1)})`;
       }
     }
     else {
       const r = Math.atan(h * clientHeight / w / clientWidth);
       const deg = toPrecision(r2d(r));
       if (w >= 0) {
-        circle.style.transform = `translate(-50%, -50%) rotateZ(${deg}deg) scaleY(${d[4] || 1})`;
+        circle.style.transform = `translate(-50%, -50%) rotateZ(${deg}deg) scale(${scaleX}, ${scaleY * (d[4] || 1)})`;
       }
       else {
-        circle.style.transform = `translate(-50%, -50%) rotateZ(${deg + 180}deg) scaleY(${d[4] || 1})`;
+        circle.style.transform = `translate(-50%, -50%) rotateZ(${deg + 180}deg) scale(${scaleX}, ${scaleY * (d[4] || 1)})`;
       }
     }
   }
@@ -478,8 +479,11 @@ export default class Gradient {
     // 额外的椭圆控制
     const panel = this.panel;
     const { clientWidth, clientHeight } = panel;
+    const { scaleX, scaleY } = this.node!.computedStyle;
     const e = panel.querySelector('.e') as HTMLElement;
     const { d } = data;
+    const left = scaleX === -1 ? (1 - d[0]) : d[0];
+    const top = scaleY === -1 ? (1 - d[1]) : d[1];
     const w = d[2] - d[0];
     const h = d[3] - d[1];
     const len = Math.sqrt(Math.pow(w * clientWidth, 2) + Math.pow(h * clientHeight, 2));
@@ -487,21 +491,21 @@ export default class Gradient {
     const ay = len / clientHeight * (d[4] || 1);
     // 类似外圈的位置，但要顺时针转90deg
     if (d[0] === d[2]) {
-      e.style.top = d[1] * 100 + '%';
+      e.style.top = top * 100 + '%';
       if (d[3] >= d[1]) {
-        e.style.left = (d[1] - ax) * 100 + '%';
+        e.style.left = (scaleX === -1 ? (d[0] + ax) : (d[0] - ax)) * 100 + '%';
       }
       else {
-        e.style.left = (d[1] + ax) * 100 + '%';
+        e.style.left = (scaleX === -1 ? (d[0] - ax) : (d[0] + ax)) * 100 + '%';
       }
     }
     else if (d[1] === d[3]) {
-      e.style.left = d[0] * 100 + '%';
+      e.style.left = left * 100 + '%';
       if (d[2] >= d[0]) {
-        e.style.top = (d[0] + ay) * 100 + '%';
+        e.style.top = (scaleY === -1 ? (d[1] - ay) : (d[1] + ay)) * 100 + '%';
       }
       else {
-        e.style.top = (d[0] - ay) * 100 + '%';
+        e.style.top = (scaleY === -1 ? (d[1] + ay) : (d[1] - ay)) * 100 + '%';
       }
     }
     else {
@@ -537,6 +541,7 @@ export default class Gradient {
     const panel = this.panel;
     const circle = panel.querySelector('.c2') as HTMLElement;
     const { clientWidth, clientHeight } = panel;
+    const { scaleX, scaleY } = this.node!.computedStyle;
     const { d } = data;
     // conic可能默认没有就是中心
     const left = (d[0] ?? 0.5) * 100 + '%';
