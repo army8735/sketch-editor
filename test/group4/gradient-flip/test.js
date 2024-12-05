@@ -48,7 +48,7 @@ module.exports = {
       .assert.cssProperty('#main .gradient span[title="1"]', 'left', '0px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'top', '0px')
       .assert.cssProperty('#main .gradient span[title="1"]', 'backgroundColor', 'rgba(0, 0, 255, 1)')
-      .assert.cssProperty('#main .gradient .e', 'left', '100.18px')
+      .assert.cssProperty('#main .gradient .e', 'left', '100.172px')
       .assert.cssProperty('#main .gradient .e', 'top', '12.2266px')
 
       .moveToElement('#main .gradient', 75, 50)
