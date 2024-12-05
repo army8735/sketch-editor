@@ -342,13 +342,14 @@ class Root extends Container implements FrameCallback {
       if (node instanceof Page) {
         this.emit(Event.WILL_REMOVE_PAGE, node);
       }
-      else {
-        this.emit(Event.WILL_REMOVE_DOM, node);
-        // 可能刚添加的就删除了，不会影响tile
-        const uuid = node.props.uuid;
-        if (uuid && this.tileRecord[uuid]) {
-          delete this.tileRecord[uuid];
-        }
+      else if (node instanceof ArtBoard) {
+        this.overlay.removeArtBoard(node);
+      }
+      this.emit(Event.WILL_REMOVE_DOM, node);
+      // 可能刚添加的就删除了，不会影响tile
+      const uuid = node.props.uuid;
+      if (uuid && this.tileRecord[uuid]) {
+        delete this.tileRecord[uuid];
       }
     }
     if (addDom || removeDom) {

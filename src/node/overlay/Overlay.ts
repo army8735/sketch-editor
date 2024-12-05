@@ -62,6 +62,17 @@ class Overlay extends Container {
     }
   }
 
+  removeArtBoard(artBoard: ArtBoard) {
+    const list = this.artBoardList;
+    for (let i = 0, len = list.length; i < len; i++) {
+      if (list[i].artBoard === artBoard) {
+        list.splice(i, 1);
+        this.artBoards.removeChild(this.artBoards.children[i]);
+        break;
+      }
+    }
+  }
+
   update() {
     const artBoardList = this.artBoardList;
     for (let i = 0, len = artBoardList.length; i < len; i++) {
