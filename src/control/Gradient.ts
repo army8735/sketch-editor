@@ -37,6 +37,8 @@ export default class Gradient {
     let len = 1;
     let ox2 = 0; // line
     let oy2 = 0;
+    let w2 = 1; // d
+    let h2 = 1;
     let target: HTMLElement;
     let list: NodeListOf<HTMLSpanElement>;
     panel.addEventListener('mousedown', (e) => {
@@ -57,11 +59,14 @@ export default class Gradient {
       const o2 = span.getBoundingClientRect();
       ox2 = o2.left + o2.width * 0.5;
       oy2 = o2.top + o2.height * 0.5;
+      w2 = data.d[2] - data.d[0];
+      h2 = data.d[3] - data.d[1];
+      const { scaleX, scaleY } = this.node!.computedStyle;
       // conic的环点击需要特殊判断在圆边上，用dom完成了
       if (classList.contains('c2')) {
         const { offsetX, offsetY } = e;
         const c = Math.max(w, h) * 0.5;
-        let offset = getConicOffset(c, c, offsetX, offsetY);
+        let offset = getConicOffset(c, c, offsetX, offsetY, scaleX, scaleY);
         const stops = data.stops;
         // 和line不同可能点到首尾，因为是个环首尾会变或不存在
         let prev: ComputedColorStop | undefined, next: ComputedColorStop | undefined;
@@ -174,39 +179,40 @@ export default class Gradient {
         const data = this.data;
         if (data) {
           const { d, stops } = data;
+          const { scaleX, scaleY } = this.node!.computedStyle;
+          const l = scaleX === -1 ? (1 - d[0]) : d[0];
+          const t = scaleY === -1 ? (1 - d[1]) : d[1];
           // 首尾影响渐变起始点，即长度，然后其它点都随之变化，conic不影响不进这里
           if ((idx === 0 || idx === stops.length - 1) && data.t !== GRADIENT.CONIC) {
             if (idx === 0) {
-              // linear改变两端点之一不影响另外一个，但radial和conic是半径统一影响
-              if ([GRADIENT.RADIAL, GRADIENT.CONIC].includes(data.t)) {
-                d[2] += x - d[0];
-                d[3] += y - d[1];
+              d[0] = scaleX === -1 ? (1 - x) : x;
+              d[1] = scaleY === -1 ? (1 - y) : y;
+              // linear改变两端点之一不影响另外一个，但radial是半径统一影响
+              if ([GRADIENT.RADIAL].includes(data.t)) {
+                d[2] = d[0] + w2;
+                d[3] = d[1] + h2;
               }
-              d[0] = x;
-              d[1] = y;
             }
             else {
-              d[2] = x;
-              d[3] = y;
+              d[2] = scaleX === -1 ? (1 - x) : x;
+              d[3] = scaleY === -1 ? (1 - y) : y;
             }
             if (data.t === GRADIENT.LINEAR) {
               this.updateLinearD(data);
+              this.updateLinearStops(data);
             }
             else if (data.t === GRADIENT.RADIAL) {
+              this.updateLinearD(data);
               this.updateRadialD(data);
+              this.updateLinearStops(data);
+              this.updateRadialStops(data);
             }
-            stops.forEach((item, i) => {
-              const left = (d[0] + (d[2] - d[0]) * item.offset) * 100 + '%';
-              const top = (d[1] + (d[3] - d[1]) * item.offset) * 100 + '%';
-              list[i].style.left = left;
-              list[i].style.top = top;
-            });
             this.onChange!(data, true);
           }
           // 中间的和conic类型不调整长度并限制范围
           else {
             if (data.t === GRADIENT.CONIC) {
-              const offset = getConicOffset(ox + w * 0.5, oy + h * 0.5, e.pageX, e.pageY);
+              const offset = getConicOffset(ox + w * 0.5, oy + h * 0.5, e.pageX, e.pageY, scaleX, scaleY);
               stops[idx].offset = offset;
               this.updateConicStops(data);
               picker.updateLinePos(idx, offset, data);
@@ -217,16 +223,16 @@ export default class Gradient {
                * 在首尾范围外时（dx/dy为负），运算过程的d要*-1来计算，同时要考虑方向，
                * 即dx/dy的负是指和渐变矢量方向相反。
                */
-              const dx = x - d[0];
-              const dy = y - d[1];
-              const sx = (dx < 0 ? -1 : 1) * (d[2] < d[0] ? -1 : 1);
-              const sy = (dy < 0 ? -1 : 1) * (d[3] < d[1] ? -1 : 1);
+              const dx = x - l;
+              const dy = y - t;
+              const sx = (dx < 0 ? -1 : 1) * (d[2] < d[0] ? -1 : 1) * scaleX;
+              const sy = (dy < 0 ? -1 : 1) * (d[3] < d[1] ? -1 : 1) * scaleY;
               const sum = Math.pow(dx, 2) * sx + Math.pow(dy, 2) * sy;
               let offset = Math.sqrt(Math.max(0, sum)) / Math.sqrt(Math.pow(d[2] - d[0], 2) + Math.pow(d[3] - d[1], 2));
               offset = Math.max(0, Math.min(1, offset));
               stops[idx].offset = offset;
-              const left = (d[0] + (d[2] - d[0]) * offset) * 100 + '%';
-              const top = (d[1] + (d[3] - d[1]) * offset) * 100 + '%';
+              const left = (l + (d[2] - d[0]) * offset * scaleX) * 100 + '%';
+              const top = (t + (d[3] - d[1]) * offset * scaleY) * 100 + '%';
               target.style.left = left;
               target.style.top = top;
               picker.updateLinePos(idx, offset, data);
@@ -513,12 +519,12 @@ export default class Gradient {
       const sin = Math.sin(r);
       const cos = Math.cos(r);
       if (w >= 0) {
-        e.style.left = (cos * ax + d[0]) * 100 + '%';
-        e.style.top = (sin * ay + d[1]) * 100 + '%';
+        e.style.left = (cos * ax * scaleX + left) * 100 + '%';
+        e.style.top = (sin * ay * scaleY + top) * 100 + '%';
       }
       else {
-        e.style.left = (-cos * ax + d[0]) * 100 + '%';
-        e.style.top = (-sin * ay + d[1]) * 100 + '%';
+        e.style.left = (-cos * ax * scaleX + left) * 100 + '%';
+        e.style.top = (-sin * ay * scaleY + top) * 100 + '%';
       }
     }
   }
@@ -544,8 +550,8 @@ export default class Gradient {
     const { scaleX, scaleY } = this.node!.computedStyle;
     const { d } = data;
     // conic可能默认没有就是中心
-    const left = (d[0] ?? 0.5) * 100 + '%';
-    const top = (d[1] ?? 0.5) * 100 + '%';
+    const left = (scaleX === - 1 ? (1 - (d[0] ?? 0.5)) : (d[0] ?? 0.5)) * 100 + '%';
+    const top = (scaleY === - 1 ? (1 - (d[1] ?? 0.5)) : (d[1]) ?? 0.5) * 100 + '%';
     circle.style.left = left;
     circle.style.top = top;
     circle.style.width = circle.style.height = Math.max(clientWidth, clientHeight) + 'px';
@@ -554,14 +560,15 @@ export default class Gradient {
   updateConicStops(data: ComputedGradient) {
     const panel = this.panel;
     const { clientWidth, clientHeight } = panel;
+    const { scaleX, scaleY } = this.node!.computedStyle;
     const R = Math.max(clientWidth, clientHeight) * 0.5;
     const spans = panel.querySelectorAll('span');
     const c2 = panel.querySelector('.c2') as HTMLElement;
     const ax = c2.clientWidth / clientWidth;
     const ay = c2.clientHeight / clientHeight;
     const { d, stops } = data;
-    const cx = (d[0] ?? 0.5) * 100;
-    const cy = (d[1] ?? 0.5) * 100;
+    const cx = (scaleX === - 1 ? (1 - (d[0] ?? 0.5)) : (d[0] ?? 0.5)) * 100;
+    const cy = (scaleY === - 1 ? (1 - (d[1] ?? 0.5)) : (d[1]) ?? 0.5) * 100;
     // 当stop重复一个%时，需依次向外排列，记录%下有多少个重复的，其中offset的0和1共用
     const hash: Record<string, number> = {};
     const size = 12;
@@ -576,31 +583,31 @@ export default class Gradient {
         // 先清空，防止上次遗留，新增后干扰
         span.style.transform = '';
         if (offset === 0 || offset === 1) {
-          span.style.left = (R * 100 / c2.clientWidth) * ax + cx + '%';
+          span.style.left = (R * 100 / c2.clientWidth) * ax * scaleX + cx + '%';
           span.style.top = cy + '%';
           if (count) {
-            span.style.transform = `translate(-50%, -50%) translateX(${count * size}px)`;
+            span.style.transform = `translate(-50%, -50%) translateX(${count * size * scaleX}px)`;
           }
         }
         else if (offset === 0.25) {
           span.style.left = cx + '%';
-          span.style.top = (R * 100 / c2.clientHeight) * ay + cy + '%';
+          span.style.top = (R * 100 / c2.clientHeight) * ay * scaleY + cy + '%';
           if (count) {
-            span.style.transform = `translate(-50%, -50%) translateY(${count * size}px)`;
+            span.style.transform = `translate(-50%, -50%) translateY(${count * size * scaleY}px)`;
           }
         }
         else if (offset === 0.5) {
-          span.style.left = (-R * 100 / c2.clientWidth) * ax + cx + '%';
+          span.style.left = (-R * 100 / c2.clientWidth) * ax * scaleX + cx + '%';
           span.style.top = cy + '%';
           if (count) {
-            span.style.transform = `translate(-50%, -50%) translateX(${-count * size}px)`;
+            span.style.transform = `translate(-50%, -50%) translateX(${-count * size * scaleX}px)`;
           }
         }
         else if (offset === 0.75) {
           span.style.left = cx + '%';
-          span.style.top = (-R * 100 / c2.clientHeight) * ay + cy + '%';
+          span.style.top = (-R * 100 / c2.clientHeight) * ay * scaleY + cy + '%';
           if (count) {
-            span.style.transform = `translate(-50%, -50%) translateY(${-count * size}px)`;
+            span.style.transform = `translate(-50%, -50%) translateY(${-count * size * scaleY}px)`;
           }
         }
         else {
@@ -609,8 +616,8 @@ export default class Gradient {
           const cos = Math.cos(r);
           const x = R * cos;
           const y = R * sin;
-          span.style.left = cx + x * 100 / clientWidth + '%';
-          span.style.top = cy + y * 100 / clientHeight + '%';
+          span.style.left = cx + x * 100 * scaleX / clientWidth + '%';
+          span.style.top = cy + y * 100 * scaleY / clientHeight + '%';
           if (count) {
             span.style.transform = `translate(-50%, -50%) translate(${count * size * cos}px, ${count * size * sin}px)`;
           }
@@ -642,23 +649,23 @@ export default class Gradient {
   }
 }
 
-function getConicOffset(cx: number, cy: number, x: number, y: number) {
+function getConicOffset(cx: number, cy: number, x: number, y: number, scaleX = 1, scaleY = 1) {
   let offset = 0;
   // 4个象限区别
   if (x === cx) {
     if (y >= cy) {
-      offset = 0.25;
+      offset = scaleY === -1 ? 0.75 : 0.25;
     }
     else {
-      offset = 0.75;
+      offset = scaleY === -1 ? 0.25 : 0.75;
     }
   }
   else if (y === cy) {
     if (x >= cx) {
-      offset = 0;
+      offset = scaleX === -1 ? 0.5 : 0;
     }
     else {
-      offset = 0.5;
+      offset = scaleX === -1 ? 0 : 0.5;
     }
   }
   else if (x > cx) {
@@ -666,11 +673,29 @@ function getConicOffset(cx: number, cy: number, x: number, y: number) {
       const tan = (y - cy) / (x - cx);
       const r = Math.atan(tan);
       offset = r * 0.5 / Math.PI;
+      if (scaleX === -1 && scaleY === -1) {
+        offset += 0.5;
+      }
+      else if (scaleX === -1) {
+        offset = 0.5 - offset;
+      }
+      else if (scaleY) {
+        offset = 1 - offset;
+      }
     }
     else {
       const tan = (cy - y) / (x - cx);
       const r = Math.atan(tan);
       offset = 1 - r * 0.5 / Math.PI;
+      if (scaleX === -1 && scaleY === -1) {
+        offset -= 0.5;
+      }
+      else if (scaleX === -1) {
+        offset = 1.5 - offset;
+      }
+      else if (scaleY) {
+        offset = 1 - offset;
+      }
     }
   }
   else {
@@ -678,11 +703,29 @@ function getConicOffset(cx: number, cy: number, x: number, y: number) {
       const tan = (y - cy) / (cx - x);
       const r = Math.atan(tan);
       offset = 0.5 - r * 0.5 / Math.PI;
+      if (scaleX === -1 && scaleY === -1) {
+        offset += 0.5;
+      }
+      else if (scaleX === -1) {
+        offset = 0.5 - offset;
+      }
+      else if (scaleY) {
+        offset = 1 - offset;
+      }
     }
     else {
       const tan = (cy - y) / (cx - x);
       const r = Math.atan(tan);
       offset = 0.5 + r * 0.5 / Math.PI;
+      if (scaleX === -1 && scaleY === -1) {
+        offset -= 0.5;
+      }
+      else if (scaleX === -1) {
+        offset = 1.5 - offset;
+      }
+      else if (scaleY) {
+        offset = 1 - offset;
+      }
     }
   }
   return offset;
