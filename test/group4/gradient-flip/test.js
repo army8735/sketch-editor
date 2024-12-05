@@ -60,10 +60,10 @@ module.exports = {
 
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
-      .moveToElement('canvas', 20, 260)
+      .moveToElement('canvas', 20, 320)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
-      .moveToElement('#side .fill-panel .line .pick', 20, 320)
+      .moveToElement('#side .fill-panel .line .pick', 10, 10)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '0px')
