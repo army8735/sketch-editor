@@ -568,14 +568,7 @@ export default class Listener extends Event {
       contextMenu.showCanvas(e.pageX, e.pageY, this);
       return;
     }
-    // 编辑text按下无效，左键则取消编辑状态
-    if (this.state === State.EDIT_TEXT) {
-      if (e.button === 0) {
-        this.cancelEditText();
-      }
-      return;
-    }
-    // 编辑gradient同上，但可以滚动
+    // 编辑gradient按下无效，左键则取消编辑状态，但可以滚动
     if (this.state === State.EDIT_GRADIENT) {
       if (e.button === 2 || e.button === 0 && !this.spaceKey) {
         this.cancelEditGradient();
@@ -1128,6 +1121,7 @@ export default class Listener extends Event {
         );
         this.state = State.EDIT_TEXT;
         node.beforeEdit();
+        this.emit(Listener.CURSOR_NODE, [node]);
       }
       // else if (node instanceof Polyline) {
       //   if (this.options.disabled?.editGeom) {
