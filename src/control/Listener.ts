@@ -505,9 +505,10 @@ export default class Listener extends Event {
       else {
         // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
         if (this.state === State.EDIT_TEXT) {
-          // const text = selected[0] as Text;
-          // text.resetCursor();
-          // text.inputStyle = undefined;
+          // 后面做
+        }
+        // 理论进不来因为gradient/geom的dom盖在上面点不到，点到也应该有节点
+        else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -555,7 +556,7 @@ export default class Listener extends Event {
     this.button = e.button;
     // 右键菜单，忽略meta按下
     if (e.button === 2) {
-      if (this.state === State.EDIT_GRADIENT) {
+      if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
         contextMenu.showOk(e.pageX, e.pageY, this);
         return;
       }
@@ -568,16 +569,34 @@ export default class Listener extends Event {
       contextMenu.showCanvas(e.pageX, e.pageY, this);
       return;
     }
-    // 编辑gradient按下无效，左键则取消编辑状态，但可以滚动
-    if (this.state === State.EDIT_GRADIENT) {
+    // 编辑gradient/geom按下无效，左键则取消编辑状态，但可以滚动
+    if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
       if (e.button === 2 || e.button === 0 && !this.spaceKey) {
-        this.cancelEditGradient();
+        if (this.state === State.EDIT_GRADIENT) {
+          // 说明点在内部控制点上
+          if (this.gradient.keep) {
+            return;
+          }
+          this.cancelEditGradient();
+        }
+        else {
+          // 说明点在内部控制点上
+          if (this.geometry.keep) {
+            return;
+          }
+          this.cancelEditGeom();
+        }
         return;
       }
-      // 同时设置keep防止窗口关闭
-      else if (e.button === 0) {
-        this.gradient.keep = true;
-        picker.keep = true;
+      // 拖拽设置keep防止窗口关闭
+      else if (e.button === 1 || e.button === 0 && this.spaceKey) {
+        if (this.state === State.EDIT_GRADIENT) {
+          this.gradient.keep = true;
+          picker.keep = true;
+        }
+        else {
+          this.geometry.keep = true;
+        }
       }
     }
     this.isMouseDown = true;
@@ -607,7 +626,7 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    if (this.state === State.EDIT_GRADIENT) {
+    if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
       return;
     }
     const dpi = root.dpi;
@@ -841,6 +860,9 @@ export default class Listener extends Event {
           if (this.state === State.EDIT_GRADIENT) {
             this.gradient.updatePos();
           }
+          else if (this.state === State.EDIT_GEOM) {
+            this.geometry.updatePos();
+          }
         }
       }
       else {
@@ -984,7 +1006,7 @@ export default class Listener extends Event {
         }
         this.input.focus();
       }
-      else if (this.state === State.EDIT_GRADIENT) {
+      else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
         // 啥也不做
       }
       else if (this.isFrame) {
@@ -1084,6 +1106,9 @@ export default class Listener extends Event {
     // 外部侦听document点击会隐藏
     if (this.state === State.EDIT_GRADIENT) {
       this.gradient.keep = true;
+    }
+    else if (this.state === State.EDIT_GEOM) {
+      this.geometry.keep = true;
     }
   }
 
@@ -1556,6 +1581,10 @@ export default class Listener extends Event {
           this.state = State.NORMAL;
           this.select.showSelectNotUpdate();
         }
+        else if (this.state === State.EDIT_GEOM) {
+          this.state = State.NORMAL;
+          this.select.showSelectNotUpdate();
+        }
         else if (this.state === State.EDIT_TEXT) {
           this.input.focus();
         }
@@ -1901,6 +1930,11 @@ export default class Listener extends Event {
   }
 
   cancelEditGradient() {
+    this.state = State.NORMAL;
+    this.select.showSelectNotUpdate();
+  }
+
+  cancelEditGeom() {
     this.state = State.NORMAL;
     this.select.showSelectNotUpdate();
   }

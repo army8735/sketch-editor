@@ -46,6 +46,7 @@ export default class Gradient {
       if (!data) {
         return;
       }
+      this.keep = true;
       target = e.target as HTMLElement;
       const classList = target.classList;
       const tagName = target.tagName.toUpperCase();
@@ -639,6 +640,7 @@ export default class Gradient {
     this.panel.style.display = 'none';
     this.data = undefined;
     this.node = undefined;
+    this.keep = false;
   }
 
   updatePos() {

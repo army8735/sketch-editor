@@ -717,6 +717,30 @@ html, body {
       top: 0;
       width: 100%;
       height: 100%;
+      overflow: visible;
+
+      path {
+        stroke: #F00;
+        stroke-width: 0.5px;
+        fill: transparent;
+
+        &.cur {
+          stroke: #36F;
+          stroke-width: 2px;
+        }
+      }
+
+      &.stroke {
+        pointer-events: none;
+      }
+
+      &.interactive {
+        path {
+          stroke: transparent;
+          stroke-width: 6px;
+          cursor: copy;
+        }
+      }
     }
   }
 
