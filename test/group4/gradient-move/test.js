@@ -29,6 +29,7 @@ module.exports = {
 
       .moveToElement('canvas', 200, 200)
       .keys(browser.Keys.SPACE)
+      .pause(20)
       .mouseButtonDown(0)
       .moveToElement('canvas', 220, 210)
       .mouseButtonUp(0)
