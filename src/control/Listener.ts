@@ -1529,7 +1529,7 @@ export default class Listener extends Event {
     // space
     else if (keyCode === 32 || code === 'Space') {
       this.spaceKey = true;
-      if (!this.isMouseMove && !this.options.disabled?.drag) {
+      if (!this.isMouseDown && !this.options.disabled?.drag) {
         this.dom.style.cursor = 'grab';
       }
     }
