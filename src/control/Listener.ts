@@ -1108,7 +1108,6 @@ export default class Listener extends Event {
         this.selected.splice(0);
         this.selected.push(node);
         this.select.showSelect(this.selected);
-        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
       if (node instanceof Text) {
         if (this.options.disabled?.editText) {
@@ -1121,7 +1120,6 @@ export default class Listener extends Event {
         );
         this.state = State.EDIT_TEXT;
         node.beforeEdit();
-        this.emit(Listener.CURSOR_NODE, [node]);
       }
       // else if (node instanceof Polyline) {
       //   if (this.options.disabled?.editGeom) {
@@ -1131,6 +1129,7 @@ export default class Listener extends Event {
       //   this.state = State.EDIT_GEOM;
       //   this.geometry.show(node);
       // }
+      this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
   }
 

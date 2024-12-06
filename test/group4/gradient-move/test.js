@@ -16,6 +16,7 @@ module.exports = {
       .assert.cssProperty('#main .gradient', 'display', 'block')
       .assert.cssProperty('#main .gradient', 'left', '10px')
       .assert.cssProperty('#main .gradient', 'top', '10px')
+      .assert.cssProperty('.sketch-editor-picker', 'display', 'block')
 
       .moveToElement('canvas', 200, 200)
       .mouseButtonDown(1)
@@ -24,6 +25,7 @@ module.exports = {
       .assert.cssProperty('#main .gradient', 'display', 'block')
       .assert.cssProperty('#main .gradient', 'left', '30px')
       .assert.cssProperty('#main .gradient', 'top', '20px')
+      .assert.cssProperty('.sketch-editor-picker', 'display', 'block')
 
       .moveToElement('canvas', 200, 200)
       .keys(browser.Keys.SPACE)
@@ -34,6 +36,7 @@ module.exports = {
       .assert.cssProperty('#main .gradient', 'display', 'block')
       .assert.cssProperty('#main .gradient', 'left', '50px')
       .assert.cssProperty('#main .gradient', 'top', '30px')
+      .assert.cssProperty('.sketch-editor-picker', 'display', 'block')
 
       .end();
   }
