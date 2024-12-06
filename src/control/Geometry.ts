@@ -29,6 +29,10 @@ export default class Geometry {
     let h = 1;
 
     panel.addEventListener('mousedown', (e) => {
+      const node = this.node;
+      if (!node) {
+        return;
+      }
       this.keep = true;
       if (e.button !== 0 || listener.spaceKey) {
         return;

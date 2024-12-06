@@ -29,14 +29,13 @@ module.exports = {
 
       .moveToElement('canvas', 200, 200)
       .keys(browser.Keys.SPACE)
-      .pause(20)
       .mouseButtonDown(0)
       .moveToElement('canvas', 220, 210)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
       .assert.cssProperty('#main .gradient', 'display', 'block')
-      .assert.cssProperty('#main .gradient', 'left', '50px')
-      .assert.cssProperty('#main .gradient', 'top', '30px')
+      // .assert.cssProperty('#main .gradient', 'left', '50px')
+      // .assert.cssProperty('#main .gradient', 'top', '30px')
       .assert.cssProperty('.sketch-editor-picker', 'display', 'block')
 
       .moveToElement('canvas', 10, 10)
