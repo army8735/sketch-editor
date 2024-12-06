@@ -24,7 +24,7 @@ module.exports = {
       .mouseButtonUp(0)
       .moveToElement('#main .gradient', 75, 100)
       .mouseButtonDown(0)
-      .moveToElement('#main .gradient', 0, 100)
+      .moveToElement('#main .gradient', 150, 100)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .gradient span[title="0"]', 'left', '0px')
       .assert.cssProperty('#main .gradient span[title="0"]', 'top', '0px')
