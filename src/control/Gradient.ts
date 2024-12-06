@@ -47,6 +47,9 @@ export default class Gradient {
         return;
       }
       this.keep = true;
+      if (e.button !== 0 || listener.spaceKey) {
+        return;
+      }
       target = e.target as HTMLElement;
       const classList = target.classList;
       const tagName = target.tagName.toUpperCase();

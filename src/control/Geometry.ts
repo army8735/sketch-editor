@@ -30,6 +30,9 @@ export default class Geometry {
 
     panel.addEventListener('mousedown', (e) => {
       this.keep = true;
+      if (e.button !== 0 || listener.spaceKey) {
+        return;
+      }
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const o = panel.getBoundingClientRect();
