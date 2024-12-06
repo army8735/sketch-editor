@@ -43,6 +43,7 @@ module.exports = {
       .mouseButtonUp(0)
       .assert.cssProperty('#main .gradient', 'display', 'none')
       .assert.cssProperty('.sketch-editor-picker', 'display', 'none')
+      .assert.cssProperty('#main .select', 'display', 'block')
 
       .end();
   }
