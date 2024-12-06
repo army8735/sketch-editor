@@ -333,7 +333,7 @@ export default {
           listener.select.showSelectNotUpdate();
         }
       };
-      picker.onInput = (color: any) => {
+      picker.onChange = (color: any) => {
         const cur = type.querySelector('.cur') as HTMLElement;
         const classList = cur.classList;
         if (classList.contains('color')) {
