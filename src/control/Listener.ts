@@ -1702,7 +1702,9 @@ export default class Listener extends Event {
           const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
-          this.updateActive();
+          if (!(c instanceof FillCommand) && this.state !== State.EDIT_GRADIENT) {
+            this.updateActive();
+          }
           // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
           if (!(c instanceof AddCommand)) {
             if (nodes.length !== olds.length) {
@@ -1770,7 +1772,7 @@ export default class Listener extends Event {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes);
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, nodes);
+          this.emit(Listener.FILL_NODE, nodes, c.data);
         }
         else if (c instanceof StrokeCommand) {
           this.emit(Listener.STROKE_NODE, nodes);

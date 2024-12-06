@@ -10,7 +10,7 @@ import Listener from './Listener';
 import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '../style/define';
 import Panel from './Panel';
 import { FillStyle } from '../format';
-import FillCommand from '../history/FillCommand';
+import FillCommand, { FillData } from '../history/FillCommand';
 import State from './State';
 
 const html = `
@@ -141,17 +141,19 @@ class FillPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: FillStyle[] = [];
     let nexts: FillStyle[] = [];
+    let indexes: number[] = [];
 
     const pickCallback = () => {
       // 只有变更才会有next
       if (nexts.length) {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-          return { prev, next: nexts[i] };
+          return { prev, next: nexts[i], index: indexes[i] };
         })));
       }
       nodes = [];
       prevs = [];
       nexts = [];
+      indexes = [];
       listener.gradient.hide();
     };
 
@@ -210,6 +212,7 @@ class FillPanel extends Panel {
             }
           }
           nexts = [];
+          indexes = [];
           nodes.forEach(node => {
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
             const cssFill = fill.map((item, i) => {
@@ -226,6 +229,7 @@ class FillPanel extends Panel {
               fillEnable,
             };
             nexts.push(o);
+            indexes.push(index);
             node.updateStyle(o);
           });
           if (!fromGradient) {
@@ -238,7 +242,15 @@ class FillPanel extends Panel {
         };
         picker.show(el, fill, 'fillPanel', onChange, pickCallback, listener);
         listener.select.hideSelect();
-        listener.gradient.show(this.nodes[0], fill, onChange);
+        listener.gradient.show(this.nodes[0], fill, onChange, () => {
+          if (nexts.length) {
+            listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+              return { prev, next: nexts[i], index };
+            })), true);
+            prevs = nexts.slice(0);
+            nexts = [];
+          }
+        });
         listener.state = State.EDIT_GRADIENT;
       }
       else if (classList.contains('enabled')) {
@@ -248,6 +260,7 @@ class FillPanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: FillStyle[] = [];
         const nexts: FillStyle[] = [];
+        const indexes: number[] = [];
         let value = false;
         if (classList.contains('multi-checked') || classList.contains('un-checked')) {
           value = true;
@@ -272,6 +285,7 @@ class FillPanel extends Panel {
             fillOpacity: fo,
           };
           nexts.push(o);
+          indexes.push(index);
           node.updateStyle(o);
         });
         classList.remove('multi-checked');
@@ -292,7 +306,7 @@ class FillPanel extends Panel {
         if (nodes.length) {
           listener.emit(Listener.FILL_NODE, nodes.slice(0));
           listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-            return { prev, next: nexts[i] };
+            return { prev, next: nexts[i], index: indexes[i] };
           })));
         }
         this.silence = false;
@@ -483,11 +497,16 @@ class FillPanel extends Panel {
 
     listener.on([
       Listener.FILL_NODE,
-    ], (nodes: Node[]) => {
+    ], (nodes: Node[], data: FillData[]) => {
       if (this.silence) {
         return;
       }
       this.show(nodes);
+      if (listener.state === State.EDIT_GRADIENT) {
+        // node一定相等，就是第0个，用记录的索引确定更新的是哪个fill
+        const node = listener.gradient.node!;
+        listener.gradient.update(node, node.computedStyle.fill[data[0].index]);
+      }
     });
   }
 

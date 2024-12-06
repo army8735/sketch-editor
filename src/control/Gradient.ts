@@ -14,7 +14,8 @@ export default class Gradient {
   panel: HTMLElement;
   node?: Node;
   data?: ComputedGradient;
-  onChange?: (data: ComputedGradient, fromGradient?: boolean) => void;
+  onInput?: (data: ComputedGradient, fromGradient?: boolean) => void;
+  onChange?: () => void;
   keep?: boolean; // 保持窗口外部点击时不关闭
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -28,6 +29,7 @@ export default class Gradient {
     dom.appendChild(panel);
 
     let isDrag = false;
+    let isMove = false;
     let isEllipse = false;
     let ox = 0; // panel
     let oy = 0;
@@ -65,6 +67,7 @@ export default class Gradient {
       w2 = data.d[2] - data.d[0];
       h2 = data.d[3] - data.d[1];
       const { scaleX, scaleY } = this.node!.computedStyle;
+      isMove = false;
       // conic的环点击需要特殊判断在圆边上，用dom完成了
       if (classList.contains('c2')) {
         const { offsetX, offsetY } = e;
@@ -117,7 +120,7 @@ export default class Gradient {
         this.updateConicStops(data);
         picker.addLineItem(idx, offset);
         this.setCur(idx, true);
-        this.onChange!(data, true);
+        this.onInput!(data, true);
         isDrag = true;
       }
       // radial的椭圆控制
@@ -160,7 +163,7 @@ export default class Gradient {
         this.updateLinearStops(data);
         picker.addLineItem(idx, offset);
         this.setCur(idx, true);
-        this.onChange!(data, true);
+        this.onInput!(data, true);
         isDrag = true;
       }
     });
@@ -168,12 +171,13 @@ export default class Gradient {
       if (isEllipse) {
         const data = this.data;
         if (data) {
+          isMove = true;
           const d = data.d;
           const len2 = Math.sqrt(Math.pow(e.pageX - ox2, 2) + Math.pow(e.pageY - oy2, 2));
           d[4] = len2 / len;
           this.updateRadialD(data);
           this.updateRadialStops(data);
-          this.onChange!(data, true);
+          this.onInput!(data, true);
         }
       }
       else if (isDrag) {
@@ -181,6 +185,7 @@ export default class Gradient {
         const y = (e.pageY - oy) / h;
         const data = this.data;
         if (data) {
+          isMove = true;
           const { d, stops } = data;
           const { scaleX, scaleY } = this.node!.computedStyle;
           const l = scaleX === -1 ? (1 - d[0]) : d[0];
@@ -210,7 +215,7 @@ export default class Gradient {
               this.updateLinearStops(data);
               this.updateRadialStops(data);
             }
-            this.onChange!(data, true);
+            this.onInput!(data, true);
           }
           // 中间的和conic类型不调整长度并限制范围
           else {
@@ -240,7 +245,7 @@ export default class Gradient {
               target.style.top = top;
               picker.updateLinePos(idx, offset, data);
             }
-            this.onChange!(data, true);
+            this.onInput!(data, true);
           }
         }
       }
@@ -258,6 +263,9 @@ export default class Gradient {
           })
         }
         isDrag = false;
+        if (this.onChange) {
+          this.onChange();
+        }
       }
     });
     // 自身点击设置keep，阻止document全局侦听关闭
@@ -275,7 +283,7 @@ export default class Gradient {
     });
   }
 
-  show(node: Node, data: number[] | ComputedGradient | ComputedPattern, onChange: (data: ComputedGradient) => void) {
+  show(node: Node, data: number[] | ComputedGradient | ComputedPattern, onInput: (data: ComputedGradient) => void, onChange?: () => void) {
     if (Array.isArray(data)) {
       return;
     }
@@ -283,6 +291,7 @@ export default class Gradient {
       return;
     }
     this.node = node;
+    this.onInput = onInput;
     this.onChange = onChange;
     data = data as ComputedGradient;
     this.data = data;
@@ -305,14 +314,17 @@ export default class Gradient {
     if ((data as ComputedPattern).url) {
       return;
     }
+    this.node = node;
     this.updateSize(node);
     data = data as ComputedGradient;
+    this.data = data;
     // 新增一个渐变stop的时候会长度不一致，需重新生成，一般都是更新
     if (data.t === GRADIENT.LINEAR) {
       if (data.stops.length !== this.data?.stops.length) {
         this.genLinear(data);
       }
       else {
+        this.updateLinearD(data);
         this.updateLinearStops(data);
       }
     }
@@ -321,6 +333,9 @@ export default class Gradient {
         this.genRadial(data);
       }
       else {
+        this.updateLinearD(data);
+        this.updateRadialD(data);
+        this.updateLinearStops(data);
         this.updateLinearStops(data);
       }
     }
@@ -329,6 +344,7 @@ export default class Gradient {
         this.genConic(data);
       }
       else {
+        this.updateConicD(data);
         this.updateConicStops(data);
       }
     }
