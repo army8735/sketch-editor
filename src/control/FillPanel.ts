@@ -186,7 +186,7 @@ class FillPanel extends Panel {
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         const fill = this.nodes[0].computedStyle.fill[index];
-        const onChange = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
+        const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false, changeType = false) => {
           this.silence = true;
           const style = (line.querySelector('.pick') as HTMLElement).style;
           // 类型变更需改变select/input展示，stroke之类不会出现渐变切换所以可能会没有要加?防止
@@ -233,16 +233,16 @@ class FillPanel extends Panel {
             node.updateStyle(o);
           });
           if (!fromGradient) {
-            listener.gradient.update(this.nodes[0], fill);
+            listener.gradient.update(this.nodes[0], fill, changeType);
           }
           if (nodes.length) {
             listener.emit(Listener.FILL_NODE, nodes.slice(0));
           }
           this.silence = false;
         };
-        picker.show(el, fill, 'fillPanel', onChange, pickCallback, listener);
+        picker.show(el, fill, 'fillPanel', onInput, pickCallback, listener);
         listener.select.hideSelect();
-        listener.gradient.show(this.nodes[0], fill, onChange, () => {
+        listener.gradient.show(this.nodes[0], fill, onInput, () => {
           if (nexts.length) {
             listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
               return { prev, next: nexts[i], index };

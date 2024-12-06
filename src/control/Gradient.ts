@@ -307,7 +307,7 @@ export default class Gradient {
     }
   }
 
-  update(node: Node, data: number[] | ComputedGradient | ComputedPattern) {
+  update(node: Node, data: number[] | ComputedGradient | ComputedPattern, changeType = false) {
     if (Array.isArray(data)) {
       return;
     }
@@ -320,7 +320,7 @@ export default class Gradient {
     this.data = data;
     // 新增一个渐变stop的时候会长度不一致，需重新生成，一般都是更新
     if (data.t === GRADIENT.LINEAR) {
-      if (data.stops.length !== this.data?.stops.length) {
+      if (changeType || data.stops.length !== this.data?.stops.length) {
         this.genLinear(data);
       }
       else {
@@ -329,7 +329,7 @@ export default class Gradient {
       }
     }
     else if (data.t === GRADIENT.RADIAL) {
-      if (data.stops.length !== this.data?.stops.length) {
+      if (changeType || data.stops.length !== this.data?.stops.length) {
         this.genRadial(data);
       }
       else {
@@ -340,7 +340,7 @@ export default class Gradient {
       }
     }
     else if (data.t === GRADIENT.CONIC) {
-      if (data.stops.length !== this.data?.stops.length) {
+      if (changeType || data.stops.length !== this.data?.stops.length) {
         this.genConic(data);
       }
       else {

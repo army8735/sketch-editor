@@ -36,7 +36,7 @@ export default {
     el: HTMLElement,
     data: number[] | ComputedGradient | ComputedPattern,
     from: string,
-    onChange: (data: number[] | ComputedGradient | ComputedPattern) => void,
+    onInput: (data: number[] | ComputedGradient | ComputedPattern, fromGradient?: boolean, changeType?: boolean) => void,
     cb: () => void,
     listener: Listener,
   ) {
@@ -94,10 +94,10 @@ export default {
           }
           else if ((data as ComputedGradient).stops) {
             c = (data as ComputedGradient).stops[0].color;
-            onChange(c);
+            onInput(c, false, true);
           }
           else {
-            onChange(c);
+            onInput(c, false, true);
           }
           picker.setColor(c, true);
         }
@@ -194,7 +194,7 @@ export default {
           }
           // 肯定有
           if (tempGradient) {
-            onChange(tempGradient);
+            onInput(tempGradient, false, true);
           }
         }
       });
@@ -274,7 +274,7 @@ export default {
           initX = parseFloat(cur.style.left) * 0.01;
           picker.setColor(o.color, true);
           listener.gradient.setCur(index);
-          onChange(data);
+          onInput(data);
         }
       });
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
@@ -292,7 +292,7 @@ export default {
           (data as ComputedGradient).stops[index].offset = p;
           cur.style.left = p * 100 + '%';
           bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
-          onChange(data);
+          onInput(data);
         }
       });
       // 点击外部自动关闭，拖拽过程除外，利用冒泡顺序，为防止拖拽乱序重新设置
@@ -333,16 +333,16 @@ export default {
           listener.select.showSelectNotUpdate();
         }
       };
-      picker.onChange = (color: any) => {
+      picker.onInput = (color: any) => {
         const cur = type.querySelector('.cur') as HTMLElement;
         const classList = cur.classList;
         if (classList.contains('color')) {
-          onChange(color.rgba);
+          onInput(color.rgba);
         }
         else {
           (data as ComputedGradient).stops[index].color = color.rgba;
           bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
-          onChange(data);
+          onInput(data);
         }
       };
     }
