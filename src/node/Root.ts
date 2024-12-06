@@ -339,10 +339,7 @@ class Root extends Container implements FrameCallback {
       }
     }
     if (removeDom) {
-      if (node instanceof Page) {
-        this.emit(Event.WILL_REMOVE_PAGE, node);
-      }
-      else if (node instanceof ArtBoard) {
+      if (node instanceof ArtBoard) {
         this.overlay.removeArtBoard(node);
       }
       this.emit(Event.WILL_REMOVE_DOM, node);
@@ -368,12 +365,7 @@ class Root extends Container implements FrameCallback {
     // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
     if (this.lastPage && node.page) {
       if (addDom) {
-        if (node instanceof Page) {
-          this.emit(Event.DID_ADD_PAGE, node);
-        }
-        else {
-          this.emit(Event.DID_ADD_DOM, node);
-        }
+        this.emit(Event.DID_ADD_DOM, node);
       }
       else if (!removeDom && keys.length) {
         this.emit(Event.STYLE_CHANGED, node, keys);

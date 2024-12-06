@@ -118,8 +118,6 @@ class Event {
   static DID_ADD_DOM = 'DID_ADD_DOM';
   static WILL_REMOVE_DOM = 'WILL_REMOVE_DOM';
   static STYLE_CHANGED = 'STYLE_CHANGED';
-  static DID_ADD_PAGE = 'DID_ADD_PAGE';
-  static WILL_REMOVE_PAGE = 'WILL_REMOVE_PAGE';
 }
 
 export default Event;
