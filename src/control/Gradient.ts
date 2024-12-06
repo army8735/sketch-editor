@@ -40,7 +40,7 @@ export default class Gradient {
     let w2 = 1; // d
     let h2 = 1;
     let target: HTMLElement;
-    let list: NodeListOf<HTMLSpanElement>;
+
     panel.addEventListener('mousedown', (e) => {
       const data = this.data;
       if (!data) {
@@ -48,7 +48,6 @@ export default class Gradient {
       }
       target = e.target as HTMLElement;
       const classList = target.classList;
-      list = panel.querySelectorAll('span');
       const tagName = target.tagName.toUpperCase();
       const o = panel.getBoundingClientRect();
       ox = o.left;

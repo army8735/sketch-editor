@@ -682,6 +682,44 @@ html, body {
     }
   }
 
+  .geometry {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+
+    div {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 5px;
+      height: 5px;
+      background: #FFF;
+      border: 1px solid #999;
+      border-radius: 50%;
+      opacity: 0.9;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+
+      &:hover {
+        box-shadow: 0 0 2px 0.5px rgba(0, 0, 0, 0.5);
+      }
+
+      &.cur {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.25);
+      }
+    }
+
+    svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
   .line-h {
     position: absolute;
     height: 1px;

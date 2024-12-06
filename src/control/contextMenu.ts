@@ -128,6 +128,7 @@ function init(listener: Listener) {
       }
       else if (classList.contains('ok')) {
         listener.state = State.NORMAL;
+        listener.cancelEditGradient();
       }
     });
   }

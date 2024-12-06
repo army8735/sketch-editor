@@ -6,6 +6,7 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
+import Polyline from '../node/geom/Polyline';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { Rect } from './Select';
@@ -46,6 +47,7 @@ import Guides from './Guides';
 import { appendWithPosAndSize } from '../tools/container';
 import AddCommand, { AddData } from '../history/AddCommand';
 import Gradient from './Gradient';
+import Geometry from './Geometry';
 
 export type ListenerOptions = {
   enabled?: {
@@ -64,6 +66,7 @@ export type ListenerOptions = {
     inputText?: boolean; // 编辑输入文字
     contextMenu?: boolean; // 右键菜单
     guides?: boolean; // 参考线功能
+    editGeom?: boolean; // 编辑矢量
   };
 };
 
@@ -108,6 +111,7 @@ export default class Listener extends Event {
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
   gradient: Gradient; // 渐变编辑控制
+  geometry: Geometry;
   mouseDownArtBoard?: ArtBoard;
   mouseDown2ArtBoard?: Node;
   isWin = isWin;
@@ -159,6 +163,7 @@ export default class Listener extends Event {
     this.input = new Input(root, dom, this);
     this.guides = new Guides(root, dom, this);
     this.gradient = new Gradient(root, dom, this);
+    this.geometry = new Geometry(root, dom, this);
     this.clones = [];
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
@@ -293,12 +298,7 @@ export default class Listener extends Event {
       }[target.className]!;
       this.prepare();
       if (this.state === State.EDIT_TEXT) {
-        this.state = State.NORMAL;
-        this.input.hide();
-        const text = selected[0] as Text;
-        text.resetCursor();
-        text.afterEdit();
-        text.inputStyle = undefined;
+        this.cancelEditText();
       }
       // 旋转时记住中心坐标
       if (selected.length === 1 && (this.metaKey || isWin && this.ctrlKey)
@@ -515,12 +515,7 @@ export default class Listener extends Event {
       }
       // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
       if (this.state === State.EDIT_TEXT) {
-        const text = selected[0] as Text;
-        text.resetCursor();
-        text.afterEdit();
-        text.inputStyle = undefined;
-        this.state = State.NORMAL;
-        this.input.hide();
+        this.cancelEditText();
       }
       if (this.select.hoverNode) {
         this.select.hideHover();
@@ -573,10 +568,24 @@ export default class Listener extends Event {
       contextMenu.showCanvas(e.pageX, e.pageY, this);
       return;
     }
-    if (this.state === State.EDIT_GRADIENT) {
-      this.state = State.NORMAL;
-      this.select.showSelectNotUpdate();
+    // 编辑text按下无效，左键则取消编辑状态
+    if (this.state === State.EDIT_TEXT) {
+      if (e.button === 0) {
+        this.cancelEditText();
+      }
       return;
+    }
+    // 编辑gradient同上，但可以滚动
+    if (this.state === State.EDIT_GRADIENT) {
+      if (e.button === 2 || e.button === 0 && !this.spaceKey) {
+        this.cancelEditGradient();
+        return;
+      }
+      // 同时设置keep防止窗口关闭
+      else if (e.button === 0) {
+        this.gradient.keep = true;
+        picker.keep = true;
+      }
     }
     this.isMouseDown = true;
     this.isMouseMove = false;
@@ -836,6 +845,9 @@ export default class Listener extends Event {
           if (selected.length) {
             this.select.updateSelect(selected);
           }
+          if (this.state === State.EDIT_GRADIENT) {
+            this.gradient.updatePos();
+          }
         }
       }
       else {
@@ -873,9 +885,6 @@ export default class Listener extends Event {
   onMouseUp(e?: MouseEvent) {
     // 限制了只能按下一个鼠标键防止冲突
     if (e && e.button !== this.button) {
-      return;
-    }
-    if (this.state === State.EDIT_GRADIENT) {
       return;
     }
     const selected = this.selected;
@@ -981,6 +990,9 @@ export default class Listener extends Event {
           this.input.hideCursor();
         }
         this.input.focus();
+      }
+      else if (this.state === State.EDIT_GRADIENT) {
+        // 啥也不做
       }
       else if (this.isFrame) {
         this.select.hideFrame();
@@ -1103,6 +1115,7 @@ export default class Listener extends Event {
         this.selected.splice(0);
         this.selected.push(node);
         this.select.showSelect(this.selected);
+        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
       if (node instanceof Text) {
         if (this.options.disabled?.editText) {
@@ -1116,7 +1129,14 @@ export default class Listener extends Event {
         this.state = State.EDIT_TEXT;
         node.beforeEdit();
       }
-      this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+      // else if (node instanceof Polyline) {
+      //   if (this.options.disabled?.editGeom) {
+      //     return;
+      //   }
+      //   this.select.hideSelect();
+      //   this.state = State.EDIT_GEOM;
+      //   this.geometry.show(node);
+      // }
     }
   }
 
@@ -1205,6 +1225,7 @@ export default class Listener extends Event {
     this.updateSelected();
     this.updateInput();
     this.updateGradient();
+    this.updateGeom();
   }
 
   zoom(factor: number) {
@@ -1224,6 +1245,9 @@ export default class Listener extends Event {
     scale = toPrecision(scale);
     root.zoomTo(scale, 0.5, 0.5);
     this.updateSelected();
+    this.updateInput();
+    this.updateGradient();
+    this.updateGeom();
     this.emit(Listener.ZOOM_PAGE, scale);
   }
 
@@ -1544,12 +1568,7 @@ export default class Listener extends Event {
         }
       }
       else if (this.state === State.EDIT_TEXT) {
-        const text = this.selected[0] as Text;
-        text.resetCursor();
-        text.afterEdit();
-        text.inputStyle = undefined;
-        this.state = State.NORMAL;
-        this.input.hide();
+        this.cancelEditText();
       }
       else {
         this.selected.splice(0);
@@ -1871,6 +1890,26 @@ export default class Listener extends Event {
     if (this.state === State.EDIT_GRADIENT) {
       this.gradient.updatePos();
     }
+  }
+
+  updateGeom() {
+    if (this.state === State.EDIT_GEOM) {
+      this.geometry.update();
+    }
+  }
+
+  cancelEditText() {
+    this.state = State.NORMAL;
+    this.input.hide();
+    const text = this.selected[0] as Text;
+    text.resetCursor();
+    text.afterEdit();
+    text.inputStyle = undefined;
+  }
+
+  cancelEditGradient() {
+    this.state = State.NORMAL;
+    this.select.showSelectNotUpdate();
   }
 
   onContextMenu(e: MouseEvent) {
