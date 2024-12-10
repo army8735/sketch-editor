@@ -33,7 +33,6 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
-    this.points = clone(props.points || []);
     this.isPolyline = true;
   }
 
@@ -44,7 +43,7 @@ class Polyline extends Geom {
     this.textureOutline.forEach((item) => item?.release());
     this.coords = [];
     const { width, height } = this;
-    const points = this.points;
+    const points = this.props.points;
     if (!points.length) {
       return;
     }
@@ -223,40 +222,6 @@ class Polyline extends Geom {
     }
     this.coords.push(...res);
   }
-
-  // deletePoint(point: Point | number) {
-  //   const props = this.props;
-  //   const points = props.points;
-  //   if (typeof point === 'number') {
-  //     points.splice(point, 1);
-  //     this.points = undefined;
-  //     // this.checkPointsChange();
-  //     this.refresh();
-  //     return;
-  //   }
-  //   const i = points.indexOf(point);
-  //   if (i > -1) {
-  //     points.splice(i, 1);
-  //     this.points = undefined;
-  //     // this.checkPointsChange();
-  //     this.refresh();
-  //   }
-  // }
-  //
-  // addPoint(point: Point, index: number) {
-  //   const props = this.props;
-  //   const points = props.points;
-  //   points.splice(index, 0, point);
-  //   this.points = undefined;
-  //   // this.checkPointsChange();
-  //   this.refresh();
-  // }
-  //
-  // modifyPoint() {
-  //   this.points = undefined;
-  //   // this.checkPointsChange();
-  //   this.refresh();
-  // }
 
   override renderCanvas(scale: number) {
     super.renderCanvas(scale);
@@ -828,7 +793,7 @@ class Polyline extends Geom {
 
   private adjustPoints(dx: number, dy: number) {
     const { width, height } = this;
-    const points = this.points;
+    const points = this.props.points;
     points.forEach((point) => {
       point.x = (point.absX! - dx) / width;
       point.y = (point.absY! - dy) / height;
@@ -841,7 +806,7 @@ class Polyline extends Geom {
         point.ty = (point.absTy! - dy) / height;
       }
     });
-    this.points.splice(0);
+    // this.points.splice(0);
   }
 
   toSvg(scale: number) {
@@ -879,7 +844,7 @@ class Polyline extends Geom {
     const json = await super.toSketchJson(zip) as SketchFormat.ShapePath;
     json._class = SketchFormat.ClassValue.ShapePath;
     json.isClosed = this.props.isClosed;
-    json.points = this.points.map(item => {
+    json.points = this.props.points.map(item => {
       return {
         _class: 'curvePoint',
         cornerRadius: item.cornerRadius,

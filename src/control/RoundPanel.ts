@@ -54,7 +54,7 @@ class RoundPanel extends Panel {
     const rs: number[] = [];
     geoms.forEach(item => {
       if (item instanceof Polyline) {
-        item.points.forEach(point => {
+        item.props.points.forEach(point => {
           const r = point.cornerRadius;
           if (!rs.includes(r)) {
             rs.push(r);
@@ -64,7 +64,7 @@ class RoundPanel extends Panel {
       else if (item instanceof ShapeGroup) {
         item.children.forEach(child => {
           if (child instanceof Polyline) {
-            child.points.forEach(point => {
+            child.props.points.forEach(point => {
               const r = point.cornerRadius;
               if (!rs.includes(r)) {
                 rs.push(r);

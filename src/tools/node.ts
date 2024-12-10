@@ -20,6 +20,7 @@ import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
 import inject from '../util/inject';
 import { Rect } from '../control/Select';
+import Polyline from '../node/geom/Polyline';
 
 enum POSITION {
   APPEND = 0,
@@ -1231,9 +1232,9 @@ export function getBasicInfo(node: Node) {
     angle: 0,
     points: [] as Point[],
   };
-  if (node instanceof Geom) {
+  if (node instanceof Polyline) {
     res.isLine = node.isLine();
-    const points = node.points;
+    const points = node.props.points;
     if (res.isLine) {
       res.length = Math.sqrt(
         Math.pow(points[1].absX! - points[0].absX!, 2) +

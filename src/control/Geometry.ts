@@ -1,4 +1,5 @@
 import Polyline from '../node/geom/Polyline';
+import Geom from '../node/geom/Geom';
 import Root from '../node/Root';
 import Listener from './Listener';
 
@@ -7,7 +8,7 @@ export default class Geometry {
   dom: HTMLElement;
   listener: Listener;
   panel: HTMLElement;
-  node?: Polyline;
+  node?: Geom;
   keep?: boolean; // 保持窗口外部点击时不关闭
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -21,6 +22,7 @@ export default class Geometry {
     dom.appendChild(panel);
 
     let isDrag = false;
+    let isMove = false;
     let target: HTMLElement;
     let ox = 0; // panel
     let oy = 0;
@@ -44,6 +46,7 @@ export default class Geometry {
       oy = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
+      isMove = false;
       if (tagName === 'DIV') {
         panel.querySelector('div.cur')?.classList.remove('cur');
         target.classList.add('cur');
@@ -58,12 +61,28 @@ export default class Geometry {
         const y = (e.pageY - oy) / h;
         const node = this.node;
         if (node) {
+          if (node instanceof Polyline) {
+            node.props.points[idx].x = x;
+            node.props.points[idx].y = y;
+            node.refresh();
+            this.updateVertex(node);
+          }
+          isMove = true;
         }
       }
     });
     document.addEventListener('mouseup', () => {
       if (isDrag) {
         isDrag = false;
+        if (isMove) {
+          isMove = false;
+          const node = this.node;
+          if (node) {
+            if (node instanceof Polyline) {
+              //
+            }
+          }
+        }
       }
     });
     panel.addEventListener('mouseover', (e) => {
@@ -96,7 +115,7 @@ export default class Geometry {
     });
   }
 
-  show(node: Polyline) {
+  show(node: Geom) {
     this.node = node;
     this.panel.innerHTML = '';
     this.updateSize(node);
@@ -111,7 +130,7 @@ export default class Geometry {
     }
   }
 
-  updateSize(node: Polyline) {
+  updateSize(node: Geom) {
     const panel = this.panel;
     const res = this.listener.select.calRect(node);
     panel.style.left = res.left + 'px';
@@ -122,7 +141,7 @@ export default class Geometry {
     panel.style.display = 'block';
   }
 
-  genVertex(node: Polyline) {
+  genVertex(node: Geom) {
     const panel = this.panel;
     const coords = node.coords;
     panel.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
@@ -141,9 +160,9 @@ export default class Geometry {
     panel.innerHTML += s2;
   }
 
-  updateVertex(node: Polyline) {
+  updateVertex(node: Geom) {
+    node.buildPoints();
     const coords = node.coords!;
-    const isClosed = node.props.isClosed;
     const zoom = node.root?.getCurPageZoom(true) || 1;
     const panel = this.panel;
     const divs = panel.querySelectorAll('div');

@@ -6,7 +6,7 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
-import Polyline from '../node/geom/Polyline';
+import Geom from '../node/geom/Geom';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { Rect } from './Select';
@@ -1146,14 +1146,14 @@ export default class Listener extends Event {
         this.state = State.EDIT_TEXT;
         node.beforeEdit();
       }
-      // else if (node instanceof Polyline) {
-      //   if (this.options.disabled?.editGeom) {
-      //     return;
-      //   }
-      //   this.select.hideSelect();
-      //   this.state = State.EDIT_GEOM;
-      //   this.geometry.show(node);
-      // }
+      else if (node instanceof Geom) {
+        if (this.options.disabled?.editGeom) {
+          return;
+        }
+        this.select.hideSelect();
+        this.state = State.EDIT_GEOM;
+        this.geometry.show(node);
+      }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
   }

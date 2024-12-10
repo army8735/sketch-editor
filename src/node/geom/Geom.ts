@@ -17,7 +17,6 @@ export type Loader = {
 };
 
 class Geom extends Node {
-  points: Point[];
   coords?: number[][];
   loaders: Loader[];
 
@@ -25,8 +24,6 @@ class Geom extends Node {
     super(props);
     this.isGeom = true;
     this.loaders = [];
-    this.points = [];
-    // this.coords = [];
   }
 
   override lay(data: LayoutData) {
@@ -39,6 +36,9 @@ class Geom extends Node {
     this.coords = undefined;
     this._rect = undefined;
     this._bbox = undefined;
+    this._bbox2 = undefined;
+    this._filterBbox = undefined;
+    this._filterBbox2 = undefined;
   }
 
   buildPoints() {
@@ -68,6 +68,13 @@ class Geom extends Node {
       parent.clearPoints();
       parent = parent.parent;
     }
+  }
+
+  override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
+    if (lv >= RefreshLevel.REPAINT) {
+      this.coords = undefined;
+    }
+    super.refresh(lv, cb);
   }
 
   toSvg(max: number, isClosed = false) {
