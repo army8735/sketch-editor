@@ -926,19 +926,13 @@ async function convertItem(
       styleId,
     } = await geomStyle(layer, opt);
     let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
-    if (
-      layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy
-    ) {
+    if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.LEGACY;
     }
-    else if (
-      layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded
-    ) {
+    else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.ROUNDED;
     }
-    else if (
-      layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth
-    ) {
+    else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth) {
       pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
     }
     return {

@@ -6,6 +6,7 @@ import { BLUR } from '../style/define';
 import { BlurStyle } from '../format';
 import { getCssBlur } from '../style/css';
 import BlurCommand from '../history/BlurCommand';
+import State from './State';
 
 const html = `
   <div class="panel-title">模糊<b class="btn"></b></div>
@@ -347,12 +348,17 @@ class BlurPanel extends Panel {
       }
       this.show(nodes);
     });
+    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+        this.show(listener.selected);
+      }
+    });
   }
 
   override show(nodes: Node[]) {
     this.nodes = nodes;
     const panel = this.panel;
-    if (!nodes.length) {
+    if (!nodes.length || this.listener.state === State.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }

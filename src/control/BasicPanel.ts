@@ -13,6 +13,7 @@ import Panel from './Panel';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
 import { JStyle } from '../format';
+import State from './State';
 
 const html = `
   <div class="line">
@@ -513,12 +514,22 @@ class BasicPanel extends Panel {
       }
       this.show(nodes);
     });
+    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+        this.show(listener.selected);
+      }
+    });
   }
 
   override show(nodes: Node[]) {
     this.nodes = nodes;
     this.data = [];
     const panel = this.panel;
+    if (this.listener.state === State.EDIT_GEOM) {
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
     if (!nodes.length) {
       panel.querySelectorAll('.input-unit,.cp,.fh,.fv').forEach(item => {
         item.classList.add('disabled');

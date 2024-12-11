@@ -7,6 +7,7 @@ import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
 import { color2rgbaStr, getCssShadow } from '../style/css';
 import { ComputedGradient, ComputedPattern, ComputedShadow } from '../style/define';
+import State from './State';
 
 const html = `
   <div class="panel-title">阴影<b class="btn del"></b><b class="btn add"></b></div>
@@ -363,6 +364,11 @@ class ShadowPanel extends Panel {
       }
       this.show(nodes);
     });
+    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+        this.show(listener.selected);
+      }
+    });
   }
 
   show(nodes: Node[]) {
@@ -372,7 +378,7 @@ class ShadowPanel extends Panel {
     this.panel.querySelectorAll('.line').forEach(item => {
       item.remove();
     });
-    if (!nodes.length) {
+    if (!nodes.length || this.listener.state === State.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }

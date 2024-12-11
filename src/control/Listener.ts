@@ -1143,16 +1143,18 @@ export default class Listener extends Event {
           e.clientX - this.originX,
           e.clientY - this.originY,
         );
-        this.state = State.EDIT_TEXT;
         node.beforeEdit();
+        this.state = State.EDIT_TEXT;
+        this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
       else if (node instanceof Geom) {
         if (this.options.disabled?.editGeom) {
           return;
         }
         this.select.hideSelect();
-        this.state = State.EDIT_GEOM;
         this.geometry.show(node);
+        this.state = State.EDIT_GEOM;
+        this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
@@ -1578,12 +1580,14 @@ export default class Listener extends Event {
       if (picker.isShow()) {
         picker.hide();
         if (this.state === State.EDIT_GRADIENT) {
-          this.state = State.NORMAL;
           this.select.showSelectNotUpdate();
+          this.state = State.NORMAL;
+          this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
         }
         else if (this.state === State.EDIT_GEOM) {
-          this.state = State.NORMAL;
           this.select.showSelectNotUpdate();
+          this.state = State.NORMAL;
+          this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
         }
         else if (this.state === State.EDIT_TEXT) {
           this.input.focus();
@@ -1923,22 +1927,25 @@ export default class Listener extends Event {
   }
 
   cancelEditText() {
-    this.state = State.NORMAL;
     this.input.hide();
     const text = this.selected[0] as Text;
     text.resetCursor();
     text.afterEdit();
     text.inputStyle = undefined;
+    this.state = State.NORMAL;
+    this.emit(Listener.STATE_CHANGE, State.EDIT_TEXT, this.state);
   }
 
   cancelEditGradient() {
-    this.state = State.NORMAL;
     this.select.showSelectNotUpdate();
+    this.state = State.NORMAL;
+    this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
   }
 
   cancelEditGeom() {
-    this.state = State.NORMAL;
     this.select.showSelectNotUpdate();
+    this.state = State.NORMAL;
+    this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
   }
 
   onContextMenu(e: MouseEvent) {
@@ -2003,4 +2010,5 @@ export default class Listener extends Event {
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
+  static STATE_CHANGE = 'STATE_CHANGE';
 }

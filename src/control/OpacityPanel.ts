@@ -3,6 +3,7 @@ import Root from '../node/Root';
 import Listener from './Listener';
 import OpacityCommand from '../history/OpacityCommand';
 import Panel from './Panel';
+import State from './State';
 
 const html = `
   <h4 class="panel-title">不透明度</h4>
@@ -167,12 +168,17 @@ class OpacityPanel extends Panel {
       }
       this.show(nodes);
     });
+    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+        this.show(listener.selected);
+      }
+    });
   }
 
   show(nodes: Node[]) {
     this.nodes = nodes;
     const panel = this.panel;
-    if (!nodes.length) {
+    if (!nodes.length || this.listener.state === State.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }

@@ -5,7 +5,7 @@ import Polyline from '../node/geom/Polyline';
 import { toPrecision } from '../math';
 import Listener from './Listener';
 import Panel from './Panel';
-import Text from '../node/Text';
+import State from './State';
 
 const html = `
   <h4 class="panel-title">圆角</h4>
@@ -28,9 +28,15 @@ class RoundPanel extends Panel {
     panel.style.display = 'none';
     panel.innerHTML = html;
     dom.appendChild(panel);
+
+    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+        this.show(listener.selected);
+      }
+    });
   }
 
-  show(nodes: Node[]) {
+  override show(nodes: Node[]) {
     const panel = this.panel;
     let willShow = false;
     for (let i = 0, len = nodes.length; i < len; i++) {
@@ -39,6 +45,9 @@ class RoundPanel extends Panel {
         willShow = true;
         break;
       }
+    }
+    if (this.listener.state === State.EDIT_GEOM) {
+      willShow = false;
     }
     if (!willShow) {
       panel.style.display = 'none';
