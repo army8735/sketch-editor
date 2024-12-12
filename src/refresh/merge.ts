@@ -2182,24 +2182,46 @@ function genMask(
       // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
       if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
         const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
-        const t = listM[index].t;
-        t && drawTextureCache(
-          gl,
-          cx,
-          cy,
-          program,
-          [
-            {
-              opacity: 1,
-              bbox: new Float64Array([0, 0, width, height]),
-              texture: t,
-            },
-          ],
-          0,
-          0,
-          false,
-          -1, -1, 1, 1,
-        );
+        if (listM.length === 1 && i && node instanceof Bitmap) {
+          const t = listM[0]!.t!;
+          drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                bbox: new Float64Array([0, 0, width, height]),
+                texture: t,
+              },
+            ],
+            -i * UNIT,
+            -j * UNIT,
+            false,
+            -1, -1, 1, 1,
+          );
+        }
+        else {
+          const t = listM[index]?.t;
+          t && drawTextureCache(
+            gl,
+            cx,
+            cy,
+            program,
+            [
+              {
+                opacity: 1,
+                bbox: new Float64Array([0, 0, width, height]),
+                texture: t,
+              },
+            ],
+            0,
+            0,
+            false,
+            -1, -1, 1, 1,
+          );
+        }
       }
       // 后续兄弟节点遍历
       const isFirst = !i && !j;
@@ -2379,7 +2401,7 @@ function genMask(
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
       // 当unit限制比较小时，可能mask是个大尺寸图片，此时只有1个listM但多个listS，用偏移完成
-      if (listM.length === 1 && i) {
+      if (listM.length === 1 && i && node instanceof Bitmap) {
         const dx = bbox[0] / UNIT;
         const dy = bbox[1] / UNIT;
         listM[0].t && drawMask(gl, maskGrayProgram, listM[0].t, t!, dx, dy);
