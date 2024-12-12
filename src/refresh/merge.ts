@@ -1,5 +1,3 @@
-import gaussFrag from '../gl/gauss.frag';
-import simpleVert from '../gl/simple.vert';
 import {
   createTexture,
   drawBox,
@@ -12,9 +10,8 @@ import {
   drawShadow,
   drawTextureCache,
   drawTint,
-  initShaders,
 } from '../gl/webgl';
-import { boxesForGauss, gaussianWeight, kernelSize, outerSizeByD } from '../math/blur';
+import { boxesForGauss, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 import { assignMatrix, calRectPoints, identity, inverse, multiply, multiplyScale, toE, } from '../math/matrix';
 import Bitmap from '../node/Bitmap';
@@ -601,7 +598,7 @@ function genTotal(
         // 再循环当前target的分块
         for (let k = 0, len = list2.length; k < len; k++) {
           const { bbox: bbox2, t: t2 } = list2[k];
-          if (checkInRect(bbox2, matrix, x, y, w, h)) {
+          if (t2 && checkInRect(bbox2, matrix, x, y, w, h)) {
             if (!t) {
               t = rect.t = createTexture(gl, 0, undefined, w, h);
             }
@@ -684,14 +681,12 @@ function genTotal(
   }
   // 赋给结果，这样可能存在的空白区域无纹理
   listRect.forEach(item => {
-    if (item.t) {
-      list.push({
-        bbox: item.bbox,
-        w: item.w,
-        h: item.h,
-        t: item.t,
-      });
-    }
+    list.push({
+      bbox: item.bbox,
+      w: item.w,
+      h: item.h,
+      t: item.t,
+    });
   });
   return res;
 }
@@ -905,7 +900,7 @@ function drawInSpreadBbox(
         cy = height * 0.5;
       for (let i = 0, len = listS.length; i < len; i++) {
         const { bbox: bbox2, t: t2 } = listS[i];
-        if (checkInRect(bbox2, undefined, x0, y0, w0, h0)) {
+        if (t2 && checkInRect(bbox2, undefined, x0, y0, w0, h0)) {
           drawTextureCache(
             gl,
             cx,
@@ -1046,7 +1041,7 @@ function drawInOverlay(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
       gl.TEXTURE_2D,
-      t,
+      t!,
       0,
     );
     gl.viewport(0, 0, w, h);
@@ -1176,7 +1171,7 @@ function genGaussBlur(
       bbox: bbox.slice(0),
       w,
       h,
-      t: genScaleGaussBlur(gl, root, boxes, dualTimes, t, w, h),
+      t: t && genScaleGaussBlur(gl, root, boxes, dualTimes, t, w, h),
     });
   }
   // 如果有超过1个区块，相邻部位需重新提取出来进行模糊替换
@@ -1203,7 +1198,7 @@ function genGaussBlur(
         const { bbox: bbox2, t: t2 } = listT[j];
         const w2 = bbox2[2] - bbox2[0],
           h2 = bbox2[3] - bbox2[1];
-        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+        if (t2 && checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
             cx,
@@ -1304,43 +1299,6 @@ function genScaleGaussBlur(
   return tex;
 }
 
-function toFloat(n: number) {
-  const str = n.toString();
-  if (str.indexOf('.') > -1) {
-    return str;
-  }
-  return str + '.0';
-}
-
-function genGaussShader(
-  gl: WebGL2RenderingContext | WebGLRenderingContext,
-  programs: Record<string, WebGLProgram>,
-  sigma: number,
-  d: number,
-) {
-  const key = 'programGauss,' + sigma + ',' + d;
-  if (programs.hasOwnProperty(key)) {
-    return programs[key];
-  }
-  const weights = gaussianWeight(sigma, d);
-  let frag = 'gl_FragColor+=';
-  const r = Math.floor(d * 0.5);
-  for (let i = 0; i < r; i++) {
-    // u_direction传入基数为100，因此相邻的像素点间隔百分之一
-    let c = (r - i) * 0.01;
-    frag += `b(${toFloat(c)},${toFloat(weights[i])})`;
-    if (i && !(i % 100)) { // 太长的表达式会卡死
-      frag += ';gl_FragColor+=';
-    }
-    else {
-      frag += '+';
-    }
-  }
-  frag += `a(v_texCoords,${toFloat(weights[r])});`;
-  frag = gaussFrag.replace('placeholder;', frag);
-  return (programs[key] = initShaders(gl, simpleVert, frag));
-}
-
 /**
  * 原理：https://zhuanlan.zhihu.com/p/125744132
  * 源码借鉴pixi：https://github.com/pixijs/filters
@@ -1393,7 +1351,7 @@ function genMotionBlur(
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
     gl.viewport(0, 0, w, h);
-    const tex = drawMotion(gl, programMotion, t, d2, radian, w, h);
+    const tex = t && drawMotion(gl, programMotion, t, d2, radian, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1424,7 +1382,7 @@ function genMotionBlur(
         const { bbox: bbox2, t: t2 } = listT[j];
         const w2 = bbox2[2] - bbox2[0],
           h2 = bbox2[3] - bbox2[1];
-        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+        if (t2 && checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
             cx,
@@ -1525,7 +1483,7 @@ function genRadialBlur(
       (cx0 - bbox[0] + bboxR[0]) / w2,
       (cy0 - bbox[1] + bboxR[1]) / h2,
     ] as [number, number];
-    const tex = drawRadial(gl, programRadial, t, ratio, spread * scale, center2, w, h);
+    const tex = t && drawRadial(gl, programRadial, t, ratio, spread * scale, center2, w, h);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1560,7 +1518,7 @@ function genRadialBlur(
         const { bbox: bbox2, t: t2 } = listT[j];
         const w2 = bbox2[2] - bbox2[0],
           h2 = bbox2[3] - bbox2[1];
-        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+        if (t2 && checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
             cx,
@@ -1758,7 +1716,7 @@ function genColorByMatrix(
     else {
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
-    drawColorMatrix(gl, cmProgram, t, m);
+    t && drawColorMatrix(gl, cmProgram, t, m);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1803,7 +1761,7 @@ function genTint(
     else {
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
-    drawTint(gl, tintProgram, t, tint, opacity);
+    t && drawTint(gl, tintProgram, t, tint, opacity);
     listR.push({
       bbox: bbox.slice(0),
       w,
@@ -1953,7 +1911,7 @@ function genShadow(
         tex,
         0,
       );
-      drawShadow(gl, dropShadowProgram, t, color2gl(color));
+      t && drawShadow(gl, dropShadowProgram, t, color2gl(color));
       listR.push({
         bbox: b,
         w,
@@ -1978,7 +1936,7 @@ function genShadow(
       for (let i = 0, len = listR.length; i < len; i++) {
         const { bbox, w, h, t } = listR[i];
         gl.viewport(0, 0, w, h);
-        const tex = drawBox(gl, programBox, t, w, h, boxes);
+        const tex = t && drawBox(gl, programBox, t, w, h, boxes);
         listT.push({
           bbox: bbox.slice(0),
           w,
@@ -2006,7 +1964,7 @@ function genShadow(
           // 用temp而非原始的，因为位图存在缩放，bbox会有误差
           for (let j = 0, len = listR.length; j < len; j++) {
             const { bbox: bbox2, w: w2, h: h2, t: t2 } = listR[j];
-            if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+            if (t2 && checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
               drawTextureCache(
                 gl,
                 cx,
@@ -2047,7 +2005,7 @@ function genShadow(
         gl.FRAMEBUFFER,
         gl.COLOR_ATTACHMENT0,
         gl.TEXTURE_2D,
-        t,
+        t!,
         0,
       );
       gl.viewport(0, 0, w, h);
@@ -2055,7 +2013,7 @@ function genShadow(
         cy = h * 0.5;
       for (let j = 0, len = listR.length; j < len; j++) {
         const { bbox: bbox2, w: w2, h: h2, t: t2 } = listR[j];
-        if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+        if (t2 && checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
           drawTextureCache(
             gl,
             cx,
@@ -2093,7 +2051,7 @@ function genShadow(
         gl.FRAMEBUFFER,
         gl.COLOR_ATTACHMENT0,
         gl.TEXTURE_2D,
-        t,
+        t!,
         0,
       );
       gl.viewport(0, 0, w, h);
@@ -2105,7 +2063,7 @@ function genShadow(
       cy = h * 0.5;
     for (let j = 0, len = listS.length; j < len; j++) {
       const { bbox: bbox2, w: w2, h: h2, t: t2 } = listS[j];
-      if (checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
+      if (t2 && checkInRect(bbox, undefined, bbox2[0], bbox2[1], w2, h2)) {
         drawTextureCache(
           gl,
           cx,
@@ -2221,10 +2179,11 @@ function genMask(
       }
       const cx = width * 0.5,
         cy = height * 0.5;
-      // outline如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
-      if (maskMode === MASK.OUTLINE && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
+      // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
+      if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
         const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
-        drawTextureCache(
+        const t = listM[index].t;
+        t && drawTextureCache(
           gl,
           cx,
           cy,
@@ -2233,7 +2192,7 @@ function genMask(
             {
               opacity: 1,
               bbox: new Float64Array([0, 0, width, height]),
-              texture: listM[index].t,
+              texture: t,
             },
           ],
           0,
@@ -2316,7 +2275,7 @@ function genMask(
           const list2 = target2.list;
           for (let j = 0, len2 = list2.length; j < len2; j++) {
             const { bbox: bbox2, t: t2 } = list2[j];
-            if (checkInRect(bbox2, matrix, x1, y1, width, height)) {
+            if (t2 && checkInRect(bbox2, matrix, x1, y1, width, height)) {
               let tex: WebGLTexture | undefined;
               // 有mbm先将本节点内容绘制到同尺寸纹理上
               if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
@@ -2400,7 +2359,7 @@ function genMask(
     );
     listO = outline.list;
   }
-  if (maskMode === MASK.GRAY) {
+  if (maskMode === MASK.GRAY || maskMode === MASK.GRAY_WITH) {
     const maskGrayProgram = programs.maskGrayProgram;
     gl.useProgram(maskGrayProgram);
     for (let i = 0, len = listS.length; i < len; i++) {
@@ -2419,7 +2378,15 @@ function genMask(
       else {
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
-      drawMask(gl, maskGrayProgram, listM[i].t, t);
+      // 当unit限制比较小时，可能mask是个大尺寸图片，此时只有1个listM但多个listS，用偏移完成
+      if (listM.length === 1 && i) {
+        const dx = bbox[0] / UNIT;
+        const dy = bbox[1] / UNIT;
+        listM[0].t && drawMask(gl, maskGrayProgram, listM[0].t, t!, dx, dy);
+      }
+      else {
+        listM[i].t && drawMask(gl, maskGrayProgram, listM[i].t!, t!);
+      }
       listR.push({
         bbox: bbox.slice(0),
         w,
@@ -2428,7 +2395,7 @@ function genMask(
       });
     }
   }
-  // alpha/outline
+  // alpha/outline/alpha-with
   else {
     const maskProgram = programs.maskProgram;
     const clipProgram = programs.clipProgram;
@@ -2450,10 +2417,10 @@ function genMask(
       else {
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
-      drawMask(gl, maskProgram, listO ? listO[i].t : listM[i].t, t);
+      drawMask(gl, maskProgram, listO ? listO[i].t! : listM[i].t!, t!);
       if (listO) {
         gl.useProgram(clipProgram);
-        drawMask(gl, clipProgram, listO[i].t, listM[i].t);
+        drawMask(gl, clipProgram, listO[i].t!, listM[i].t!);
         gl.useProgram(maskProgram);
       }
       listR.push({
@@ -2616,7 +2583,7 @@ export function genBgBlur(
     }
     for (let j = 0, len = listO.length; j < len; j++) {
       const { bbox: bbox2, t: t2 } = listO[j];
-      if (checkInRect(bbox2, matrix,
+      if (t2 && checkInRect(bbox2, matrix,
         bbox[0] * scale, bbox[1] * scale,
         (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale)) {
         drawTextureCache(
@@ -2670,8 +2637,10 @@ export function genBgBlur(
       0,
     );
     gl.viewport(0, 0, w, h);
-    drawMask(gl, maskProgram, listO2[i], t);
-    gl.deleteTexture(t);
+    if (t) {
+      drawMask(gl, maskProgram, listO2[i], t);
+      gl.deleteTexture(t);
+    }
     gl.deleteTexture(listO2[i]);
     item.t = tex;
   }
@@ -2711,7 +2680,7 @@ export function genBgBlur(
     );
     if (t) {
       for (let i = 0, len = listB.length; i < len; i++) {
-        gl.deleteTexture(listB[i].t);
+        listB[i].t && gl.deleteTexture(listB[i].t!);
         listB[i].t = t.list[i].t;
       }
       if (frameBuffer) {
@@ -2724,7 +2693,7 @@ export function genBgBlur(
   const listO3: WebGLTexture[] = [];
   const listT = target.list;
   for (let i = 0, len = listT.length; i < len; i++) {
-    const { bbox, w, h, t } = listT[i];
+    const { bbox, w, h } = listT[i];
     const cx = w * 0.5,
       cy = h * 0.5;
     const tex = createTexture(gl, 0, undefined, w, h);
@@ -2739,7 +2708,7 @@ export function genBgBlur(
     gl.viewport(0, 0, w, h);
     for (let j = 0, len = listO.length; j < len; j++) {
       const { bbox: bbox2, t: t2 } = listO[j];
-      if (checkInRect(bbox2, matrix,
+      if (t2 && checkInRect(bbox2, matrix,
         bbox[0] * scale, bbox[1] * scale,
         (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale)) {
         drawTextureCache(
@@ -2792,8 +2761,10 @@ export function genBgBlur(
       0,
     );
     gl.viewport(0, 0, w, h);
-    drawMask(gl, clipProgram, listO3[i], t);
-    gl.deleteTexture(t);
+    if (t) {
+      drawMask(gl, clipProgram, listO3[i], t);
+      gl.deleteTexture(t);
+    }
     gl.deleteTexture(listO3[i]);
     item.t = tex;
     // const pixels = new Uint8Array(w * h * 4);
@@ -2826,13 +2797,13 @@ export function genBgBlur(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
       gl.TEXTURE_2D,
-      t,
+      t!,
       0,
     );
     gl.viewport(0, 0, w, h);
     for (let j = 0, len = listB.length; j < len; j++) {
       const { bbox: bbox2, t: t2 } = listB[j];
-      if (checkInRect(bbox2, undefined, bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1])) {
+      if (t2 && checkInRect(bbox2, undefined, bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1])) {
         drawTextureCache(
           gl,
           w * 0.5,

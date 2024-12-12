@@ -377,6 +377,8 @@ export function drawMask(
   program: WebGLProgram,
   mask: WebGLTexture,
   summary: WebGLTexture,
+  dx = 0,
+  dy = 0,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 纹理单元
@@ -386,92 +388,14 @@ export function drawMask(
   gl.uniform1i(u_texture1, 0);
   const u_texture2 = gl.getUniformLocation(program, 'u_texture2');
   gl.uniform1i(u_texture2, 1);
+  const u_d = gl.getUniformLocation(program, 'u_d');
+  gl.uniform2f(u_d, dx, dy);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-}
-
-/**
- * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
- * 按照css规范的优化方法执行3次，避免卷积核扩大3倍性能慢
- * x/y方向分开执行，加速性能，计算次数由d*d变为d+d，d为卷积核大小
- * spread由d和sigma计算得出，d由sigma计算得出，sigma即css的blur()参数
- * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
- * 3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
- */
-export function drawGauss(
-  gl: WebGL2RenderingContext | WebGLRenderingContext,
-  program: WebGLProgram,
-  texture: WebGLTexture,
-  width: number,
-  height: number,
-) {
-  const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
-  /**
-   * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
-   * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
-   * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
-   * tex1和tex2来回3次，最后是到tex1
-   */
-  const u_texture = gl.getUniformLocation(program, 'u_texture');
-  const u_direction = gl.getUniformLocation(program, 'u_direction');
-  const max = 100 / Math.max(width, height);
-  const ratio = width / height;
-  let tex1 = texture;
-  let tex2 = createTexture(gl, 0, undefined, width, height);
-  let tex3 = createTexture(gl, 0, undefined, width, height);
-  for (let i = 0; i < 3; i++) {
-    // tex1到tex2
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex2,
-      0,
-    );
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    bindTexture(gl, tex1, 0);
-    if (width >= height) {
-      gl.uniform2f(u_direction, max, 0);
-    }
-    else {
-      gl.uniform2f(u_direction, max / ratio, 0);
-    }
-    gl.uniform1i(u_texture, 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    // tex2到tex3
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      tex3,
-      0,
-    );
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    bindTexture(gl, tex2, 0);
-    if (width >= height) {
-      gl.uniform2f(u_direction, 0, max * ratio);
-    }
-    else {
-      gl.uniform2f(u_direction, 0, max);
-    }
-    gl.uniform1i(u_texture, 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    // 循环，tex1的原始传入不能改变，tex3变成tex1作为新的输入
-    tex1 = tex3;
-  }
-  // 回收
-  gl.deleteBuffer(pointBuffer);
-  gl.deleteBuffer(texBuffer);
-  gl.disableVertexAttribArray(a_position);
-  gl.disableVertexAttribArray(a_texCoords);
-  gl.deleteTexture(tex2);
-  return tex3;
 }
 
 export function drawBox(

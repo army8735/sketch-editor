@@ -470,6 +470,12 @@ export function normalize(style: any): Style {
     else if (maskMode === 'gray') {
       v = MASK.GRAY;
     }
+    else if (maskMode === 'alpha-with') {
+      v = MASK.ALPHA_WITH;
+    }
+    else if (maskMode === 'gray-with') {
+      v = MASK.GRAY_WITH;
+    }
     res.maskMode = { v, u: StyleUnit.NUMBER };
   }
   const breakMask = style.breakMask;

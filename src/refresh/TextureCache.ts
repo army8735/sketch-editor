@@ -5,7 +5,7 @@ export type SubTexture = {
   bbox: Float64Array;
   w: number;
   h: number;
-  t: WebGLTexture;
+  t?: WebGLTexture;
   tc?: { x1: number, y1: number, x3: number, y3: number },
 };
 
@@ -15,7 +15,7 @@ const HASH: Record<string, Record<string, {
     y: number;
     w: number;
     h: number;
-    t: WebGLTexture;
+    t?: WebGLTexture;
   }[],
   w: number, h: number, count: number,
 }>> = {};
@@ -68,7 +68,11 @@ class TextureCache {
     }
     this.available = false;
     // this.gl.deleteTexture(this.texture);
-    this.list.splice(0).forEach(item => this.gl.deleteTexture(item.t));
+    this.list.splice(0).forEach(item => {
+      if (item.t) {
+        this.gl.deleteTexture(item.t);
+      }
+    });
   }
 
   releaseImg(id: string, url: string) {
@@ -86,7 +90,11 @@ class TextureCache {
       // 此时无引用计数可清空且释放texture
       delete o[url];
       // this.gl.deleteTexture(this.texture);
-      this.list.splice(0).forEach(item => this.gl.deleteTexture(item.t));
+      this.list.splice(0).forEach(item => {
+        if (item.t) {
+          this.gl.deleteTexture(item.t);
+        }
+      });
     }
   }
 

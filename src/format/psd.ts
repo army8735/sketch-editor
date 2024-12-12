@@ -66,7 +66,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
     let breakMask = false;
     for (let i = 0, len = json.children.length; i < len; i++) {
       const child = json.children[i];
-      const res = await convertItem(child, json.width, json.height);
+      let res = await convertItem(child, json.width, json.height);
       if (res) {
         if (breakMask) {
           res.props.style!.breakMask = breakMask;
@@ -75,13 +75,17 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
         if (child.mask) {
           const m = await convertMask(child, json.width, json.height);
           if (m) {
-            children.push(m);
-            // 下一个child要中断不能继续mask
-            breakMask = true;
+            res = wrapMask(res, m);
           }
           if (child.mask.disabled) {
             res.props.style!.breakMask = true;
           }
+        }
+        if (child.clipping && children.length) {
+          const last = children[children.length - 1];
+          last.props.style!.maskMode = 'alpha-with';
+          // 下一个child要中断不能继续mask
+          breakMask = true;
         }
         children.push(res);
       }
@@ -120,7 +124,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
 }
 
 async function convertItem(layer: Layer, w: number, h: number) {
-  const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {}, canvas } = layer;
+  const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {}, blendMode, canvas } = layer;
   // console.log(name, layer);
   const visibility = !hidden ? 'visible' : 'hidden';
   const shadow: string[] = [];
@@ -146,6 +150,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
               shadowEnable,
               innerShadow,
               innerShadowEnable,
+              mixBlendMode: blendMode,
             },
             src: URL.createObjectURL(blob),
           },
@@ -197,7 +202,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       let breakMask = false;
       for (let i = 0, len = layer.children.length; i < len; i++) {
         const child = layer.children[i];
-        const res = await convertItem(child, w, h);
+        let res = await convertItem(child, w, h);
         if (res) {
           if (breakMask) {
             res.props.style!.breakMask = breakMask;
@@ -206,13 +211,17 @@ async function convertItem(layer: Layer, w: number, h: number) {
           if (child.mask) {
             const m = await convertMask(child, w, h);
             if (m) {
-              children.push(m);
-              // 下一个child要中断不能继续mask
-              breakMask = true;
+              res = wrapMask(res, m);
             }
             if (child.mask.disabled) {
               res.props.style!.breakMask = true;
             }
+          }
+          if (child.clipping && children.length) {
+            const last = children[children.length - 1];
+            last.props.style!.maskMode = 'alpha-with';
+            // 下一个child要中断不能继续mask
+            breakMask = true;
           }
           children.push(res);
         }
@@ -238,6 +247,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           shadowEnable,
           innerShadow,
           innerShadowEnable,
+          mixBlendMode: blendMode,
         },
       },
       children,
@@ -325,6 +335,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       shadowEnable,
       innerShadow,
       innerShadowEnable,
+      mixBlendMode: blendMode,
     };
     const { styleRuns, paragraphStyleRuns } = layer.text;
     if (styleRuns || paragraphStyleRuns) {
@@ -333,9 +344,6 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const pr = (paragraphStyleRuns || []).slice(0);
       let i = 0;
       while (sr.length || pr.length) {
-        if (i++ > 10) {
-          break;
-        }
         const res: JRich = {
           location,
           length: 1,
@@ -696,6 +704,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           shadowEnable,
           innerShadow,
           innerShadowEnable,
+          mixBlendMode: blendMode,
         },
         points,
         isClosed: true,
@@ -716,22 +725,22 @@ async function convertMask(layer: Layer, w: number, h: number) {
   let oc: OffScreen;
   // psd的遮罩和图层是一样大的，如果四周是白色会省略，需填充
   if (top > layer.top! || left > layer.left! || right < layer.right! || bottom < layer.bottom!) {
-    const w = layer.right! - layer.left!;
-    const h = layer.bottom! - layer.top!;
-    oc = inject.getOffscreenCanvas(w, h);
+    const w2 = layer.right! - layer.left!;
+    const h2 = layer.bottom! - layer.top!;
+    oc = inject.getOffscreenCanvas(w2, h2);
     canvas2 = oc.canvas;
-    oc.ctx.fillStyle = '#FFF';
+    oc.ctx.fillStyle = '#FF0';
     if (top > layer.top!) {
-      oc.ctx.fillRect(0, 0, w, top - layer.top!);
+      oc.ctx.fillRect(0, 0, w2, top - layer.top!);
     }
     if (bottom < layer.bottom!) {
-      oc.ctx.fillRect(0, bottom, w, layer.bottom! - bottom);
+      oc.ctx.fillRect(0, bottom - layer.top!, w2, layer.bottom! - bottom);
     }
     if (left > layer.left!) {
-      oc.ctx.fillRect(0, 0, left - layer.left!, h);
+      oc.ctx.fillRect(0, 0, left - layer.left!, h2);
     }
     if (right < layer.right!) {
-      oc.ctx.fillRect(right, 0, layer.right! - right, h);
+      oc.ctx.fillRect(right - layer.left!, 0, layer.right! - right, h2);
     }
     oc.ctx.drawImage(canvas, left - layer.left!, top - layer.top!);
   }
@@ -749,13 +758,13 @@ async function convertMask(layer: Layer, w: number, h: number) {
           tagName: TAG_NAME.BITMAP,
           props: {
             uuid: uuid.v4(),
-            name: layer.name,
+            name: layer.name + ' mask',
             style: {
               left: layer.left! * 100 / w + '%',
               top: layer.top! * 100 / h + '%',
               right: (w - layer.right!) * 100 / w + '%',
               bottom: (h - layer.bottom!) * 100 / h + '%',
-              maskMode: 'gray',
+              maskMode: 'gray-with',
             },
             src: URL.createObjectURL(blob),
           },
@@ -764,4 +773,35 @@ async function convertMask(layer: Layer, w: number, h: number) {
       resolve(undefined);
     });
   });
+}
+
+function wrapMask(res: JNode, m: JNode) {
+  const group = {
+    tagName: TAG_NAME.GROUP,
+    props: {
+      uuid: uuid.v4(),
+      name: res.props.name,
+      isExpanded: true,
+      style: {
+        left: res.props.style!.left,
+        top: res.props.style!.top,
+        right: res.props.style!.right,
+        bottom: res.props.style!.bottom,
+      },
+    },
+    children: [
+      m,
+      res,
+    ],
+  } as JGroup;
+  res.props.style!.left = 0;
+  res.props.style!.top = 0;
+  res.props.style!.right = 0;
+  res.props.style!.bottom = 0;
+  res.props.name += ' origin';
+  m.props.style!.left = 0;
+  m.props.style!.top = 0;
+  m.props.style!.right = 0;
+  m.props.style!.bottom = 0;
+  return group;
 }

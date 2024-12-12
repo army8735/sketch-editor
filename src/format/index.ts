@@ -157,7 +157,7 @@ export type JStyle = {
     | 'color'
     | 'luminosity';
   pointerEvents: boolean;
-  maskMode: 'none' | 'outline' | 'alpha' | 'gray';
+  maskMode: 'none' | 'outline' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with';
   breakMask: boolean;
   blur: string;
   shadow: string[];

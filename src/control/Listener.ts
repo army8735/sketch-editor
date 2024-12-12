@@ -1151,10 +1151,10 @@ export default class Listener extends Event {
         if (this.options.disabled?.editGeom) {
           return;
         }
-        this.select.hideSelect();
-        this.geometry.show(node);
-        this.state = State.EDIT_GEOM;
-        this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
+        // this.select.hideSelect();
+        // this.geometry.show(node);
+        // this.state = State.EDIT_GEOM;
+        // this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
@@ -1331,11 +1331,12 @@ export default class Listener extends Event {
     }
   }
 
-  mask(value: 'none' | 'outline' | 'alpha', nodes = this.selected) {
+  mask(value: 'none' | 'outline' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with', nodes = this.selected) {
     if (nodes.length) {
       const prevs: MaskModeStyle[] = [];
       nodes.forEach(item => {
-        const prev = ['none', 'outline', 'alpha'][item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+        const prev = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with']
+          [item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with';
         prevs.push({
           maskMode: prev,
         });
@@ -1813,7 +1814,8 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof MaskModeCommand) {
-          const maskMode = ['none', 'outline', 'alpha'][nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha';
+          const maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with']
+            [nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha' | 'alpha-with' | 'gray-with';
           this.emit(Listener.MASK_NODE, nodes, maskMode);
         }
         else if (c instanceof BreakMaskCommand) {
