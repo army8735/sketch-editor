@@ -484,7 +484,7 @@ function renderWebglTile(
           const list = target!.list;
           // 特殊优化，对象只有1个渲染目标时等同于不分块，省略一些计算判断
           if (list.length === 1) {
-            drawTextureCache(
+            list[0].t && drawTextureCache(
               gl,
               cx2,
               cx2,
@@ -525,7 +525,7 @@ function renderWebglTile(
               }
               // tile循环第一次，即第0个tile时计算避免重复
               coords2[k] = coords2[k] || bbox2Coords(bbox, cx2, cx2, 0, 0, false, m);
-              drawTextureCache(
+              t && drawTextureCache(
                 gl,
                 cx2,
                 cx2,
@@ -886,7 +886,7 @@ function renderWebglNoTile(
         const isPagTex = resTexture === pageTexture;
         genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
         // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
-        resTexture = wrap.list[0].t;
+        resTexture = wrap.list[0].t!;
         if (isPagTex) {
           pageTexture = resTexture;
         }
@@ -916,7 +916,7 @@ function renderWebglNoTile(
       const list = target.list;
       for (let i = 0, len = list.length; i < len; i++) {
         const { bbox, t } = list[i];
-        drawTextureCache(
+        t && drawTextureCache(
           gl,
           cx,
           cy,
@@ -1097,7 +1097,7 @@ function renderOverlay(
         const list = target.list;
         for (let i = 0, len = list.length; i < len; i++) {
           const { bbox, t } = list[i];
-          drawTextureCache(
+          t && drawTextureCache(
             gl,
             cx,
             cy,
