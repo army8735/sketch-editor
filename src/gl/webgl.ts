@@ -1,5 +1,6 @@
 import { calRectPoints } from '../math/matrix';
 import { color2gl } from '../style/css';
+import inject from '../util/inject';
 
 export function initShaders(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -742,4 +743,27 @@ export function offsetCoords(
     };
   }
   return coords;
+}
+
+// 从已绑定的framebuffer中获取当前图像数据debug
+export function texture2Blob (gl: WebGL2RenderingContext | WebGLRenderingContext, w: number, h: number, title?: string) {
+  const pixels = new Uint8Array(w * h * 4);
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  const os = inject.getOffscreenCanvas(w, h);
+  const id = os.ctx.getImageData(0, 0, w, h);
+  for (let i = 0, len = w * h * 4; i < len ;i++) {
+    id.data[i] = pixels[i];
+  }
+  os.ctx.putImageData(id, 0, 0);
+  const img = document.createElement('img');
+  if (title) {
+    img.title = title;
+  }
+  os.canvas.toBlob(blob => {
+    if (blob) {
+      img.src = URL.createObjectURL(blob!);
+      document.body.appendChild(img);
+      os.release();
+    }
+  });
 }

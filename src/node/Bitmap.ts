@@ -239,8 +239,16 @@ class Bitmap extends Node {
       if (canvasCache.getCount(this._src) === 1) {
         const list = canvasCache.list;
         for (let i = 0, len = list.length; i < len; i++) {
-          const { x, y, os: { ctx } } = list[i];
-          ctx.drawImage(loader.source!, -x, -y);
+          const { x, y, os } = list[i];
+          os.ctx.drawImage(loader.source!, -x, -y);
+          // os.canvas.toBlob(blob => {
+          //   if (blob) {
+          //     const img = document.createElement('img');
+          //     img.title = 'img' + i;
+          //     img.src = URL.createObjectURL(blob);
+          //     document.body.appendChild(img);
+          //   }
+          // });
         }
       }
     }

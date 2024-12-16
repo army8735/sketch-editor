@@ -752,8 +752,8 @@ async function convertMask(layer: Layer, w: number, h: number) {
       if (blob) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(blob);
-        img.title = layer.name!;
-        document.body.appendChild(img);
+        // img.title = layer.name!;
+        // document.body.appendChild(img);
         return resolve({
           tagName: TAG_NAME.BITMAP,
           props: {
