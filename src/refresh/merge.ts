@@ -10,6 +10,7 @@ import {
   drawShadow,
   drawTextureCache,
   drawTint,
+  texture2Blob,
 } from '../gl/webgl';
 import { boxesForGauss, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
@@ -460,10 +461,19 @@ function genTotal(
   H: number,
   scale: number,
   scaleIndex: number,
+  force = false, // Bitmap在mask时强制生成
 ) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureTotal[scaleIndex]?.available) {
-    return node.textureTotal[scaleIndex];
+    // bitmap的total都是自己
+    if (force) {
+      if (node.textureTotal[scaleIndex] !== node.textureCache[scaleIndex]) {
+        return node.textureTotal[scaleIndex];
+      }
+    }
+    else {
+      return node.textureTotal[scaleIndex];
+    }
   }
   const bbox = node.tempBbox!;
   node.tempBbox = undefined;
@@ -472,7 +482,7 @@ function genTotal(
   bbox[2] = Math.ceil(bbox[2]);
   bbox[3] = Math.ceil(bbox[3]);
   // 单个叶子节点也不需要，就是本身节点的内容
-  if (!total || node.isShapeGroup) {
+  if ((!total || node.isShapeGroup) && !force) {
     let target = node.textureCache[scaleIndex];
     if ((!target || !target.available) && node.hasContent) {
       node.genTexture(gl, scale, scaleIndex);
@@ -2114,7 +2124,7 @@ function genMask(
   if (!node.next) {
     return textureTarget;
   }
-  const listM = textureTarget.list;
+  let listM = textureTarget.list;
   const programs = root.programs;
   const program = programs.program;
   gl.useProgram(program);
@@ -2133,6 +2143,13 @@ function genMask(
   const listS = summary.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   const UNIT = config.maxTextureSize;
+  // Bitmap有个特点，纯图使用原始图尺寸生成纹理，它一般不和当前缩放匹配，需要多生成一个临时对应的纹理
+  let genImgMask: TextureCache | undefined;
+  if (node instanceof Bitmap && node.onlyImg && textureTarget === node.textureCache[scaleIndex]) {
+    node.tempBbox = (node.tempBbox || node._rect || node.rect).slice(0);
+    genImgMask = genTotal(gl, root, node, structs, index, total, W, H, scale, scaleIndex, true);
+    listM = genImgMask!.list;
+  }
   const m = identity();
   assignMatrix(m, matrix);
   multiplyScale(m, 1 / scale);
@@ -2181,47 +2198,25 @@ function genMask(
         cy = height * 0.5;
       // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
       if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
-        const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可
-        if (listM.length === 1 && i && node instanceof Bitmap) {
-          const t = listM[0]!.t!;
-          drawTextureCache(
-            gl,
-            cx,
-            cy,
-            program,
-            [
-              {
-                opacity: 1,
-                bbox: new Float64Array([0, 0, width, height]),
-                texture: t,
-              },
-            ],
-            -i * UNIT,
-            -j * UNIT,
-            false,
-            -1, -1, 1, 1,
-          );
-        }
-        else {
-          const t = listM[index]?.t;
-          t && drawTextureCache(
-            gl,
-            cx,
-            cy,
-            program,
-            [
-              {
-                opacity: 1,
-                bbox: new Float64Array([0, 0, width, height]),
-                texture: t,
-              },
-            ],
-            0,
-            0,
-            false,
-            -1, -1, 1, 1,
-          );
-        }
+        const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
+        const t = listM[index]?.t;
+        t && drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, width, height]),
+              texture: t,
+            },
+          ],
+          0,
+          0,
+          false,
+          -1, -1, 1, 1,
+        );
       }
       // 后续兄弟节点遍历
       const isFirst = !i && !j;
@@ -2278,6 +2273,10 @@ function genMask(
         }
         if (target2 && target2.available) {
           const { mixBlendMode, blur } = computedStyle;
+          // 整个节点都不在当前块内跳过
+          if (!checkInRect(target2.bbox, matrix, x1, y1, width, height)) {
+            continue;
+          }
           // 同主循环的bgBlur
           if (isBgBlur && i > index + total + 1) {
             const outline = node2.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
@@ -2363,6 +2362,7 @@ function genMask(
           i += total2;
         }
       }
+      // texture2Blob(gl, width, height, 's' + i + ',' + j);
     }
   }
   const res = TextureCache.getEmptyInstance(gl, bbox);
@@ -2386,28 +2386,24 @@ function genMask(
     gl.useProgram(maskGrayProgram);
     for (let i = 0, len = listS.length; i < len; i++) {
       const { bbox, w, h, t } = listS[i];
-      const tex = createTexture(gl, 0, undefined, w, h);
-      if (frameBuffer) {
-        gl.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          gl.COLOR_ATTACHMENT0,
-          gl.TEXTURE_2D,
-          tex,
-          0,
-        );
-        gl.viewport(0, 0, w, h);
-      }
-      else {
-        frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-      }
-      // 当unit限制比较小时，可能mask是个大尺寸图片，此时只有1个listM但多个listS，用偏移完成
-      if (listM.length === 1 && i && node instanceof Bitmap) {
-        const dx = bbox[0] / UNIT;
-        const dy = bbox[1] / UNIT;
-        listM[0].t && drawMask(gl, maskGrayProgram, listM[0].t, t!, dx, dy);
-      }
-      else {
-        listM[i].t && drawMask(gl, maskGrayProgram, listM[i].t!, t!);
+      let tex;
+      if (listM[i] && listM[i].t && t) {
+        tex = createTexture(gl, 0, undefined, w, h);
+        if (frameBuffer) {
+          gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            tex,
+            0,
+          );
+          gl.viewport(0, 0, w, h);
+        }
+        else {
+          frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+        }
+        listM[i] && listM[i].t && drawMask(gl, maskGrayProgram, listM[i].t!, t!);
+        // texture2Blob(gl, w, h, 'res' + i);
       }
       listR.push({
         bbox: bbox.slice(0),
@@ -2456,6 +2452,7 @@ function genMask(
   gl.useProgram(program);
   // 删除fbo恢复
   summary.release();
+  genImgMask && genImgMask.release();
   if (frameBuffer) {
     releaseFrameBuffer(gl, frameBuffer, W, H);
   }

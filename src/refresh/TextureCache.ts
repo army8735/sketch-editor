@@ -132,9 +132,9 @@ class TextureCache {
           const item = value[i];
           res.list.push({
             bbox: new Float64Array([
-              item.x * r1, // 允许小数
+              item.x * r1, // 允许小数，只有图片有小数
               item.y * r2,
-              Math.min(maxX, (item.x + item.w) * r1), // 精度问题保底
+              Math.min(maxX, (item.x + item.w) * r1), // 精度问题保底，防止最后一个超过
               Math.min(maxY, (item.y + item.h) * r2),
             ]),
             w: item.w,
