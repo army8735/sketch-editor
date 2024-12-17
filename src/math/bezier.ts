@@ -447,19 +447,19 @@ function pointByT3(points: { x: number, y: number }[], t: number) {
 
 
 // 已知曲线和上面一点获得t
-export function getPointT(points: { x: number, y: number }[], x: number, y: number) {
+export function getPointT(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2) {
   if (points.length === 4) {
-    return getPointT3(points, x, y);
+    return getPointT3(points, x, y, eps);
   }
   else if (points.length === 3) {
-    return getPointT2(points, x, y);
+    return getPointT2(points, x, y, eps);
   }
   else {
     throw new Error('Unsupported order');
   }
 }
 
-function getPointT2(points: { x: number, y: number }[], x: number, y: number) {
+function getPointT2(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2) {
   // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
   const tx = getRoots([
     points[0].x - x,
@@ -479,7 +479,7 @@ function getPointT2(points: { x: number, y: number }[], x: number, y: number) {
       const y = ty[j];
       const diff = Math.abs(x - y);
       // 必须小于一定误差
-      if (diff <= 1e-2) {
+      if (diff <= eps) {
         t.push({
           x,
           y,
@@ -512,7 +512,7 @@ function getPointT2(points: { x: number, y: number }[], x: number, y: number) {
   return res;
 }
 
-function getPointT3(points: { x: number, y: number }[], x: number, y: number) {
+function getPointT3(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2) {
   const tx = getRoots([
     points[0].x - x,
     3 * (points[1].x - points[0].x),
@@ -533,7 +533,7 @@ function getPointT3(points: { x: number, y: number }[], x: number, y: number) {
       const y = ty[j];
       const diff = Math.abs(x - y);
       // 必须小于一定误差
-      if (diff <= 1e-2) {
+      if (diff <= eps) {
         t.push({
           x,
           y,
@@ -797,6 +797,18 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
   return res;
 }
 
+/**
+ * 2分逼近法求曲线中靠近某一个点的线上点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果，
+ * eps是切割的阈值，epsP是此点和近似点的距离阈值；
+ * 用epsP+近似点视为一个圆形，然后2分和曲线求交，当曲线2分至足够小时（eps），开始缩减epsP，
+ * 当epsP缩减
+ */
+function getPointByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2, epsP: number = 1) {
+  if (points.length < 2 || points.length > 4) {
+    throw new Error('Unsupported order');
+  }
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -804,6 +816,7 @@ export default {
   sliceBezier,
   getPointByT,
   getPointT,
+  getPointByApprox,
   bezierSlope,
   bezierExtremeT,
   bezierTangent,
