@@ -1,5 +1,5 @@
 import { Vector2Like } from './bo/Point';
-import { getRoots, pointSlope2General, twoPoint2General } from './equation';
+import equation, { getRoots, pointSlope2General, twoPoint2General } from './equation';
 
 /**
  * 二阶贝塞尔曲线范围框
@@ -797,13 +797,50 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
   return res;
 }
 
+// 获取曲线单调性t值，有结果才返回，比如水平垂直线特例没有结果，求导看dt=0的t值
+function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
+  if (points.length < 2 || points.length > 3) {
+    throw new Error('Unsupported order');
+  }
+  if (points.length === 4) {
+    const t = equation
+      .getRoots([
+        isX ? 3 * (points[1].x - points[0].x) : 3 * (points[1].y - points[0].y),
+        isX
+          ? 6 * (points[2].x + points[0].x - 2 * points[1].x)
+          : 6 * (points[2].y + points[0].y - 2 * points[1].y),
+        isX
+          ? 3 * (points[3].x + 3 * points[1].x - points[0].x - 3 * points[2].x)
+          : 3 * (points[3].y + 3 * points[1].y - points[0].y - 3 * points[2].y),
+      ])
+      .filter((i) => i > eps&& i < 1 - eps);
+    if (t.length) {
+      return t.sort(function (a, b) {
+        return a - b;
+      });
+    }
+  }
+  else if (points.length === 3) {
+    const t = isX
+      ? (points[0].x - points[1].x) /
+      (points[0].x - 2 * points[1].x + points[2].x)
+      : (points[0].y - points[1].y) /
+      (points[0].y - 2 * points[1].y + points[2].y);
+    if (t > eps && t < 1 - eps) {
+      return [t];
+    }
+  }
+}
+
 /**
- * 2分逼近法求曲线中靠近某一个点的线上点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果，
- * eps是切割的阈值，epsP是此点和近似点的距离阈值；
- * 用epsP+近似点视为一个圆形，然后2分和曲线求交，当曲线2分至足够小时（eps），开始缩减epsP，
- * 当epsP缩减
+ * 2分逼近法求曲线上距离某个点p最近的对应点，实际上是求p距离曲线的距离问题，如果小于阈值则返回，否则为空；
+ * 先计算p和曲线端点（包含顶点和控制点）的距离，选取最小的那个为初始点（顶点就是顶点，控制点为对应t值的点），
+ * 记此时的t为t0，不断循环改变t0来查找更小的t值，循环如下：
+ * 这个点和p的距离记d0，然后t0以step向两侧移动（t+step/t-step），获取新的距离d1/d2，
+ * 比较d0和d1/d2，如果d0最小，将step减半继续；如果有比d0小的（可能1个或者2个），将小的那个t值视作新t0继续。
+ * eps是指曲线的bbox足够小到一定范围后不再继续循环，step就是上面的步长。
  */
-function getPointByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2, epsP: number = 1) {
+function getPointByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2, step = 1e-1) {
   if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
@@ -821,4 +858,5 @@ export default {
   bezierExtremeT,
   bezierTangent,
   splitBezierT,
+  getBezierMonotonicityT,
 };

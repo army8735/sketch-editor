@@ -66,7 +66,7 @@ class Polygon {
             continue;
           }
           const cPoint = new Point(curr[0], curr[1]);
-          const t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
+          const t = bezier.getBezierMonotonicityT([startPoint, cPoint, endPoint], true);
           if (t) {
             const points: [number, number][] = [
               [startPoint.x, startPoint.y],
@@ -143,7 +143,7 @@ class Polygon {
           }
           const cPoint1 = new Point(curr[0], curr[1]),
             cPoint2 = new Point(curr[2], curr[3]);
-          const t = getBezierMonotonicity(
+          const t = bezier.getBezierMonotonicityT(
             [startPoint, cPoint1, cPoint2, endPoint],
             true,
           );
@@ -1386,38 +1386,6 @@ function segAboveCompare(segA: Segment, segB: Segment) {
     }
   }
   return false;
-}
-
-// 获取曲线单调性t值，有结果才返回
-function getBezierMonotonicity(coords: Point[], isX: boolean) {
-  if (coords.length === 3) {
-    const t = isX
-      ? (coords[0].x - coords[1].x) /
-      (coords[0].x - 2 * coords[1].x + coords[2].x)
-      : (coords[0].y - coords[1].y) /
-      (coords[0].y - 2 * coords[1].y + coords[2].y);
-    if (t > 1e-9 && t < 1 - 1e-9) {
-      return [t];
-    }
-  }
-  else if (coords.length === 4) {
-    const t = equation
-      .getRoots([
-        isX ? 3 * (coords[1].x - coords[0].x) : 3 * (coords[1].y - coords[0].y),
-        isX
-          ? 6 * (coords[2].x + coords[0].x - 2 * coords[1].x)
-          : 6 * (coords[2].y + coords[0].y - 2 * coords[1].y),
-        isX
-          ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x)
-          : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y),
-      ])
-      .filter((i) => i > 1e-9 && i < 1 - 1e-9);
-    if (t.length) {
-      return t.sort(function (a, b) {
-        return a - b;
-      });
-    }
-  }
 }
 
 // 根据x的值解得t后获取y，由于线段已经x单调，所以解只会有1个而非多个
