@@ -102,21 +102,40 @@ export function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: 
 }
 
 export function bboxBezier(
-  x0: number, y0: number, x1: number, y1: number,
+  x0: number | { x: number, y: number }[], y0?: number, x1?: number, y1?: number,
   x2?: number, y2?: number, x3?: number, y3?: number) {
-  const len = arguments.length;
-  if (len === 4 || x2 === undefined) {
-    const a = Math.min(x0, x1);
-    const b = Math.min(y0, y1);
-    const c = Math.max(x0, x1);
-    const d = Math.max(y0, y1);
+  let len = arguments.length;
+  if (Array.isArray(x0)) {
+    len = x0.length;
+    if (len < 2 || len > 4) {
+      throw new Error('Unsupported order');
+    }
+    if (len === 4) {
+      return bboxBezier3(x0[0].x, x0[0].y, x0[1].x, x0[1].y, x0[2].x, x0[2].y, x0[3].x, x0[3].y);
+    }
+    else if (len === 3) {
+      return bboxBezier2(x0[0].x, x0[0].y, x0[1].x, x0[1].y, x0[2].x, x0[2].y);
+    }
+    else {
+      const a = Math.min(x0[0].x, x0[1].x);
+      const b = Math.min(x0[0].y, x0[1].y);
+      const c = Math.max(x0[0].x, x0[1].x);
+      const d = Math.max(x0[0].y, x0[1].y);
+      return [a, b, c, d];
+    }
+  }
+  if (len === 4 || x2 === undefined || y2 === undefined) {
+    const a = Math.min(x0, x1!);
+    const b = Math.min(y0!, y1!);
+    const c = Math.max(x0, x1!);
+    const d = Math.max(y0!, y1!);
     return [a, b, c, d];
   }
-  if (len === 6 || x3 === undefined) {
-    return bboxBezier2(x0, y0, x1, y1, x2!, y2!);
+  if (len === 6 || x3 === undefined || y3 === undefined) {
+    return bboxBezier2(x0, y0!, x1!, y1!, x2!, y2!);
   }
   if (len === 8) {
-    return bboxBezier3(x0, y0, x1, y1, x2!, y2!, x3!, y3!);
+    return bboxBezier3(x0, y0!, x1!, y1!, x2!, y2!, x3!, y3!);
   }
   throw new Error('Unsupported order');
 }
@@ -799,7 +818,7 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
 
 // 获取曲线单调性t值，有结果才返回，比如水平垂直线特例没有结果，求导看dt=0的t值
 function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
-  if (points.length < 2 || points.length > 3) {
+  if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
   if (points.length === 4) {
@@ -833,17 +852,86 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
 }
 
 /**
- * 2分逼近法求曲线上距离某个点p最近的对应点，实际上是求p距离曲线的距离问题，如果小于阈值则返回，否则为空；
- * 先计算p和曲线端点（包含顶点和控制点）的距离，选取最小的那个为初始点（顶点就是顶点，控制点为对应t值的点），
- * 记此时的t为t0，不断循环改变t0来查找更小的t值，循环如下：
- * 这个点和p的距离记d0，然后t0以step向两侧移动（t+step/t-step），获取新的距离d1/d2，
- * 比较d0和d1/d2，如果d0最小，将step减半继续；如果有比d0小的（可能1个或者2个），将小的那个t值视作新t0继续。
- * eps是指曲线的bbox足够小到一定范围后不再继续循环，step就是上面的步长。
+ * 2分步长逼近法求曲线上距离某个点p最近的对应点，实际上是求p距离曲线的距离问题
+ * 先把曲线按x/y单调切割（一般情况都是单调的），分成若干段曲线
+ * 再对每一段分别求解，取每一段t=0.5时作为初始t0，点为p0，求p和p0的距离d
+ * 然后t0以step向两侧移动（t0+step/t0-step），获取新的距离d1/d2
+ * 比较d0和d1/d2，如果d0最小，将step减半继续；如果有比d0小的（可能1个或者2个），将小的那个t值视作新t0继续
+ * 直到移动距离非常小（此时曲线的bbox面积不足eps）时结束，近似解存入结果列表中
+ * 由于开头切割，所以可能有多个近似解，排序返回距离最小的
+ *
+ * 另使用牛顿迭代来改进性能，无需指定步长（计算的），当本地迭代的点和上次迭代的点组成的bbox<eps时结束
  */
-function getPointByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2, step = 1e-1) {
+function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-1) {
   if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
+  // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
+  const tx = getBezierMonotonicityT(points, true);
+  const ty = getBezierMonotonicityT(points, true);
+  const ts: number[] = [];
+  if (tx) {
+    ts.push(...tx);
+  }
+  if (ty) {
+    ty.forEach((y) => {
+      const i = ts.indexOf(y);
+      if (i === -1) {
+        ts.push(y);
+      }
+    });
+  }
+  // 切割过程，按照t顺序从小到大，不实际切割只记录t
+  ts.sort((a, b) => a - b);
+  // 防止计算过程中太小的曲线bbox出现，过滤一遍，如果有太近的t将其合并到邻近的前后曲线（删除掉），首尾要多判断
+  // if (ts.length) {
+  //   const last = ts[ts.length - 1];
+  //   const l = sliceBezier(points, last, 1);
+  //   const b = bboxBezier(l);
+  //   if (Math.abs(b[2] - b[0]) <= eps || Math.abs(b[3] - b[1]) <= eps) {
+  //     ts.pop();
+  //   }
+  // }
+  // for (let i = ts.length - 1; i > 0; i--) {
+  //   const t1 = ts[i - 1];
+  //   const t2 = ts[i];
+  //   const l = sliceBezier(points, t1, t2);
+  //   const b = bboxBezier(l);
+  //   if (Math.abs(b[2] - b[0]) * Math.abs(b[3] - b[1]) <= eps) {
+  //     ts.splice(i, 1);
+  //   }
+  // }
+  // if (ts.length) {
+  //   const first = ts[0];
+  //   const l = sliceBezier(points, 0, first);
+  //   const b = bboxBezier(l);
+  //   if (Math.abs(b[2] - b[0]) * Math.abs(b[3] - b[1]) <= eps) {
+  //     ts.shift();
+  //   }
+  // }
+  // 分别对每一段进行牛顿迭代
+  const temp: { t: number, d: number }[] = [];
+  ts.forEach((t, i) => {
+    if (i) {
+      temp.push(getEachTByApprox(points, ts[i - 1], t, x, y, eps));
+    }
+  });
+  temp.sort((a, b) => a.d - b.d);
+  if (temp.length) {
+    const p = getPointByT(points, temp[0].t);
+    return {
+      x: p.x,
+      y: p.y,
+      t: temp[0].t,
+      d: temp[0].d,
+    };
+  }
+}
+
+// 牛顿迭代求单调性曲线和点的最短距离
+function getEachTByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4) {
+  let last;
+  let t = 0.5;
 }
 
 export default {
@@ -853,7 +941,7 @@ export default {
   sliceBezier,
   getPointByT,
   getPointT,
-  getPointByApprox,
+  getPointWithDByApprox,
   bezierSlope,
   bezierExtremeT,
   bezierTangent,
