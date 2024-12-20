@@ -607,30 +607,19 @@ export function bezierSlope(points: { x: number, y: number }[], t = 0) {
 }
 
 export function bezier2Slope(points: { x: number, y: number }[], t = 0) {
-  const { x: x0, y: y0 } = points[0];
-  const { x: x1, y: y1 } = points[1];
-  const { x: x2, y: y2 } = points[2];
-  const x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+  const x = bezierDerivative(points, t, true)!;
   if (x === 0) {
     return Infinity;
   }
-  return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+  return bezierDerivative(points, t, false)! / x;
 }
 
 export function bezier3Slope(points: { x: number, y: number }[], t: number) {
-  const { x: x0, y: y0 } = points[0];
-  const { x: x1, y: y1 } = points[1];
-  const { x: x2, y: y2 } = points[2];
-  const { x: x3, y: y3 } = points[3];
-  const x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t
-    + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t
-    + 3 * x1 - 3 * x0;
+  const x = bezierDerivative(points, t, true)!;
   if (x === 0) {
     return Infinity;
   }
-  return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
-    + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t
-    + 3 * y1 - 3 * y0) / x;
+  return bezierDerivative(points, t, false)! / x;
 }
 
 export function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
@@ -862,7 +851,7 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
  *
  * 另使用牛顿迭代来改进性能，无需指定步长（计算的），当本地迭代的点和上次迭代的点组成的bbox<eps时结束
  */
-function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-1) {
+export function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-4) {
   if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
@@ -883,55 +872,134 @@ function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y:
   }
   // 切割过程，按照t顺序从小到大，不实际切割只记录t
   ts.sort((a, b) => a - b);
-  // 防止计算过程中太小的曲线bbox出现，过滤一遍，如果有太近的t将其合并到邻近的前后曲线（删除掉），首尾要多判断
-  // if (ts.length) {
-  //   const last = ts[ts.length - 1];
-  //   const l = sliceBezier(points, last, 1);
-  //   const b = bboxBezier(l);
-  //   if (Math.abs(b[2] - b[0]) <= eps || Math.abs(b[3] - b[1]) <= eps) {
-  //     ts.pop();
-  //   }
-  // }
-  // for (let i = ts.length - 1; i > 0; i--) {
-  //   const t1 = ts[i - 1];
-  //   const t2 = ts[i];
-  //   const l = sliceBezier(points, t1, t2);
-  //   const b = bboxBezier(l);
-  //   if (Math.abs(b[2] - b[0]) * Math.abs(b[3] - b[1]) <= eps) {
-  //     ts.splice(i, 1);
-  //   }
-  // }
-  // if (ts.length) {
-  //   const first = ts[0];
-  //   const l = sliceBezier(points, 0, first);
-  //   const b = bboxBezier(l);
-  //   if (Math.abs(b[2] - b[0]) * Math.abs(b[3] - b[1]) <= eps) {
-  //     ts.shift();
-  //   }
-  // }
   // 分别对每一段进行牛顿迭代
-  const temp: { t: number, d: number }[] = [];
+  const temp: { x: number, y: number, t: number, d: number }[] = [];
   ts.forEach((t, i) => {
     if (i) {
-      temp.push(getEachTByApprox(points, ts[i - 1], t, x, y, eps));
+      temp.push(getEachPDByApprox(points, ts[i - 1], t, x, y, eps));
     }
   });
+  // 本身就是单调无切割则求整个
+  if (!ts.length) {
+    temp.push(getEachPDByApprox(points, 0, 1, x, y, eps));
+  }
   temp.sort((a, b) => a.d - b.d);
   if (temp.length) {
-    const p = getPointByT(points, temp[0].t);
     return {
-      x: p.x,
-      y: p.y,
+      x: temp[0].x,
+      y: temp[0].y,
       t: temp[0].t,
       d: temp[0].d,
     };
   }
 }
 
-// 牛顿迭代求单调性曲线和点的最短距离
-function getEachTByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4) {
-  let last;
-  let t = 0.5;
+/**
+ * 牛顿迭代求单调性曲线和点的最短距离，提前确保x/y已经是单调的了
+ * 即便如此，点距离曲线还是可能非单调（x和y的单调性相反情况），从而有非单根情况，最多双根
+ * 因为x/y单调性的贝塞尔曲线和一个圆最多2个交点，反证有3个交点就不单调了
+ * 此时求2次，各自从t1/t2开始，然后取最小值即可
+ */
+function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4, min = 3, max = 30) {
+  console.warn(points, t1, t2, x, y);
+  const r1 = getEachPDByApproxWithStartT(points, t1, t2, t1, x, y, eps, min, max);
+  const r2 = getEachPDByApproxWithStartT(points, t1, t2, t2, x, y, eps, min, max);
+  if (r1.d > r2.d) {
+    return r2;
+  }
+  return r1;
+}
+
+function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: number, t2: number, t: number, x: number, y: number, eps = 1e-4, min = 5, max = 30) {
+  let last = t;
+  let count = 0;
+  while (count++ < max) {
+    const f = (bezierValue(points, t, true)! - x) * bezierDerivative(points, t, true)!
+      + (bezierValue(points, t, false)! - y) * bezierDerivative(points, t, false)!;
+    const df = Math.pow(bezierDerivative(points, t, true)!, 2)
+      + (bezierValue(points, t, true)! - x) * bezierDerivative2(points, t, true)!
+      + Math.pow(bezierDerivative(points, t, false)!, 2)
+      + (bezierValue(points, t, false)! - y) * bezierDerivative2(points, t, false)!;
+    const d = f / df;
+    // console.log(count, f, df, d, t);
+    t -= d;
+    if (t > t2) {
+      t = t2;
+    }
+    else if (t < t1) {
+      t = t1;
+    }
+    // 判断是否需要继续，用本次和上次的移动距离做而不是t的差值，因为可能曲线非常大，t的变化即便很小也会有较大误差
+    if (count > min) {
+      const x1 = bezierValue(points, t, true)!;
+      const y1 = bezierValue(points, t, false)!;
+      const x2 = bezierValue(points, last, true)!;
+      const y2 = bezierValue(points, last, false)!;
+      const diff = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+      // console.log(count, diff);
+      if (Math.abs(diff) < eps) {
+        break;
+      }
+    }
+    last = t;
+  }
+  const tx = bezierValue(points, t, true)!;
+  const ty = bezierValue(points, t, false)!;
+  const d = Math.sqrt(Math.pow(x - tx, 2) + Math.pow(y - ty, 2));
+  return { x: tx, y: ty, t, d };
+}
+
+// 贝塞尔1阶导数
+export function bezierDerivative(points: { x: number, y: number }[], t: number, isX = true) {
+  if (points.length < 3 || points.length > 4) {
+    throw new Error('Unsupported order');
+  }
+  const p0 = isX ? points[0].x : points[0].y;
+  const p1 = isX ? points[1].x : points[1].y;
+  const p2 = isX ? points[2].x : points[2].y;
+  if (points.length === 3) {
+    return 2 * (p0 - 2 * p1 + p2) * t + 2 * (p1 - p0);
+  }
+  if (points.length === 4) {
+    const p3 = isX ? points[3].x : points[3].y;
+    return 3 * (-p0 + 3 * p1 - 3 * p2 + p3) * t * t
+      + 2 * (3 * p0 - 6 * p1 + 3 * p2) * t
+      + 3 * p1 - 3 * p0;
+  }
+}
+
+// 贝塞尔2阶导数
+export function bezierDerivative2(points: { x: number, y: number }[], t: number, isX = true) {
+  if (points.length < 3 || points.length > 4) {
+    throw new Error('Unsupported order');
+  }
+  const p0 = isX ? points[0].x : points[0].y;
+  const p1 = isX ? points[1].x : points[1].y;
+  const p2 = isX ? points[2].x : points[2].y;
+  if (points.length === 3) {
+    return 2 * (p0 - 2 * p1 + p2);
+  }
+  if (points.length === 4) {
+    const p3 = isX ? points[3].x : points[3].y;
+    return 6 * (-p0 + 3 * p1 - 3 * p2 + p3) * t
+      +2 * (3 * p0 - 6 * p1 + 3 * p2);
+  }
+}
+
+export function bezierValue(points: { x: number, y: number }[], t: number, isX = true) {
+  if (points.length < 3 || points.length > 4) {
+    throw new Error('Unsupported order');
+  }
+  const p0 = isX ? points[0].x : points[0].y;
+  const p1 = isX ? points[1].x : points[1].y;
+  const p2 = isX ? points[2].x : points[2].y;
+  if (points.length === 3) {
+    return Math.pow(1 - t, 2) * p0 + 2 * t * (1 - t) * p1 + Math.pow(t, 2) * p2;
+  }
+  if (points.length === 4) {
+    const p3 = isX ? points[3].x : points[3].y;
+    return Math.pow(1 - t, 2) * p0 + 3 * Math.pow(1 - t, 2) * p1 + 3 * Math.pow(t, 2) * (1 - t) * p2 + Math.pow(t, 3) * p3;
+  }
 }
 
 export default {
@@ -947,4 +1015,7 @@ export default {
   bezierTangent,
   splitBezierT,
   getBezierMonotonicityT,
+  bezierDerivative,
+  bezierDerivative2,
+  bezierValue,
 };

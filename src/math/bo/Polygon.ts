@@ -509,7 +509,7 @@ function findIntersection(
         bboxA = seg.bbox;
       // 第2次访问边是离开活动，考虑删除
       if (seg.isVisited) {
-        // console.warn(x, seg.toString());
+        // console.warn(x, 'isVisited', seg.toString());
         // console.log(ael.map(item => item.toString()));
         // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
         if (bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
@@ -529,7 +529,7 @@ function findIntersection(
       }
       // 第1次访问边一定是进入活动，求交
       else {
-        // console.warn(x, seg.toString());
+        // console.warn(x, 'first', seg.toString());
         // console.log(ael.map(item => item.toString()));
         // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
         if (ael.length) {
