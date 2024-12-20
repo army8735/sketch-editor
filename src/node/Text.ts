@@ -722,19 +722,21 @@ class Text extends Node {
           if (textDecoration.length) {
             textDecoration.forEach(item => {
               if (item === TEXT_DECORATION.UNDERLINE) {
+                const h = Math.min(3 * scale, textBox.lineHeight * 0.05 * scale);
                 ctx.strokeRect(
                   textBox.x * scale + dx,
-                  (textBox.y + textBox.contentArea - 4) * scale + dy,
+                  (textBox.y + textBox.contentArea) * scale + dy - h,
                   textBox.w * scale,
-                  3 * scale,
+                  h,
                 );
               }
               else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                const h = Math.min(3 * scale, textBox.lineHeight * 0.05 * scale);
                 ctx.strokeRect(
                   textBox.x * scale + dx,
-                  (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy,
+                  (textBox.y + textBox.lineHeight * 0.5) * scale + dy - h * 0.5,
                   textBox.w * scale,
-                  3 * scale,
+                  h,
                 );
               }
             });
@@ -960,19 +962,21 @@ class Text extends Node {
             if (textDecoration.length) {
               textDecoration.forEach(item => {
                 if (item === TEXT_DECORATION.UNDERLINE) {
+                  const h = Math.min(3 * scale, textBox.lineHeight * 0.05 * scale);
                   ctx.fillRect(
                     textBox.x * scale + dx2,
-                    (textBox.y + textBox.contentArea - 4) * scale + dy2,
+                    (textBox.y + textBox.contentArea) * scale + dy2 - h,
                     textBox.w * scale,
-                    3 * scale,
+                    h,
                   );
                 }
                 else if (item === TEXT_DECORATION.LINE_THROUGH) {
+                  const h = Math.min(3 * scale, textBox.lineHeight * 0.05 * scale);
                   ctx.fillRect(
                     textBox.x * scale + dx2,
-                    (textBox.y + textBox.lineHeight * 0.5 - 1.5) * scale + dy2,
+                    (textBox.y + textBox.lineHeight * 0.5) * scale + dy2 - h * 0.5,
                     textBox.w * scale,
-                    3 * scale,
+                    h,
                   );
                 }
               });
