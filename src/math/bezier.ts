@@ -901,7 +901,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
  * 此时求2次，各自从t1/t2开始，然后取最小值即可
  */
 function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4, min = 3, max = 30) {
-  console.warn(points, t1, t2, x, y);
+  // console.warn(points, t1, t2, x, y);
   const r1 = getEachPDByApproxWithStartT(points, t1, t2, t1, x, y, eps, min, max);
   const r2 = getEachPDByApproxWithStartT(points, t1, t2, t2, x, y, eps, min, max);
   if (r1.d > r2.d) {
@@ -982,7 +982,7 @@ export function bezierDerivative2(points: { x: number, y: number }[], t: number,
   if (points.length === 4) {
     const p3 = isX ? points[3].x : points[3].y;
     return 6 * (-p0 + 3 * p1 - 3 * p2 + p3) * t
-      +2 * (3 * p0 - 6 * p1 + 3 * p2);
+      + 2 * (3 * p0 - 6 * p1 + 3 * p2);
   }
 }
 

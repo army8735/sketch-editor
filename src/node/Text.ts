@@ -725,7 +725,7 @@ class Text extends Node {
                 const h = Math.min(3 * scale, textBox.lineHeight * 0.05 * scale);
                 ctx.strokeRect(
                   textBox.x * scale + dx,
-                  (textBox.y + textBox.contentArea) * scale + dy - h,
+                  (textBox.y + textBox.contentArea) * scale + dy - h * 0.5,
                   textBox.w * scale,
                   h,
                 );
@@ -965,7 +965,7 @@ class Text extends Node {
                   const h = Math.min(3 * scale, textBox.lineHeight * 0.05 * scale);
                   ctx.fillRect(
                     textBox.x * scale + dx2,
-                    (textBox.y + textBox.contentArea) * scale + dy2 - h,
+                    (textBox.y + textBox.contentArea) * scale + dy2 - h * 0.5,
                     textBox.w * scale,
                     h,
                   );
