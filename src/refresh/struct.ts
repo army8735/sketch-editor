@@ -131,7 +131,7 @@ function renderWebglTile(
   const unit = Tile.UNIT * scaleT * dpi;
   let nw = 0;
   let nh = 0;
-  // console.log(x, y, translateX, translateY, '\n', scale, scaleIndex, scaleX, scaleB, scaleT, '\n', W, H, unit);
+  // console.log(x, y, '\n', scale, scaleIndex, scaleX, scaleB, scaleT, '\n', W, H, unit);
   // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
   const offsetX = x % unit;
   const offsetY = y % unit;
@@ -165,7 +165,9 @@ function renderWebglTile(
   const programs = root.programs;
   const program = programs.program;
   gl.useProgram(programs.program);
+  // artboard的裁剪，以及记录artboard的画布rect来判断节点是否超出范围外
   const artBoardIndex: ArtBoard[] = [];
+  let abRect = new Float64Array([0, 0, W, H]);
   // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
   let complete = true;
   for (let i = 0, len = tileList.length; i < len; i++) {
@@ -277,6 +279,12 @@ function renderWebglTile(
         if (total + next) {
           const i = structs.indexOf(artBoard.struct);
           artBoardIndex[i + total + next] = artBoard;
+          const bbox = artBoard._bbox || artBoard.bbox;
+          const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], artBoard.matrixWorld);
+          abRect[0] = ab.x1;
+          abRect[1] = ab.y1;
+          abRect[2] = ab.x3;
+          abRect[3] = ab.y3;
         }
       }
     }
@@ -320,6 +328,10 @@ function renderWebglTile(
         // 在画布end处重置clip
         if (artBoardIndex[i]) {
           resetTileClip(tileList);
+          abRect[0] = 0;
+          abRect[1] = 0;
+          abRect[2] = W;
+          abRect[3] = H;
         }
         continue;
       }
@@ -349,6 +361,40 @@ function renderWebglTile(
           node.genTexture(gl, scale, scaleIndex);
           target = textureTarget[scaleIndex];
         }
+      }
+      // 这里只做计算画板的rect，和noTile不太一样，其它计算在后面步骤
+      if (isInScreen) {
+        if (node.isArtBoard && node instanceof ArtBoard) {
+          if (total + next) {
+            const bbox = node._bbox || node.bbox;
+            const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+            abRect[0] = ab.x1;
+            abRect[1] = ab.y1;
+            abRect[2] = ab.x3;
+            abRect[3] = ab.y3;
+          }
+        }
+        // 检查画布内节点是否在画布范围内，否则可以跳过
+        else if (abRect[0] !== 0 || abRect[1] !== 0 || abRect[2] !== W || abRect[3] !== H) {
+          if (target && target.available) {
+            isInScreen = checkInRect(target.bbox, matrix, abRect[0], abRect[1], abRect[2] - abRect[0], abRect[3] - abRect[1]);
+          }
+          else {
+            isInScreen = checkInRect(
+              node._filterBbox || node.filterBbox, // 检测用原始的渲染用取整的
+              matrix,
+              abRect[0], abRect[1], abRect[2] - abRect[0], abRect[3] - abRect[1]
+            );
+          }
+        }
+      }
+      else if (node.isArtBoard && node instanceof ArtBoard) {
+        resetTileClip(tileList);
+        abRect[0] = 0;
+        abRect[1] = 0;
+        abRect[2] = W;
+        abRect[3] = H;
+        continue;
       }
       // 和普通渲染比没有画布索引部分，仅图片检查内容加载计数器
       if (isInScreen && node.isBitmap && (node as Bitmap).checkLoader()) {
@@ -401,6 +447,11 @@ function renderWebglTile(
           const bbox = node._bbox || node.bbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
           artBoardIndex[i + total + next] = node;
+          const ab2 = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], node.matrixWorld);
+          abRect[0] = ab2.x1;
+          abRect[1] = ab2.y1;
+          abRect[2] = ab2.x3;
+          abRect[3] = ab2.y3;
         }
         // console.warn(i, node.props.name, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
@@ -575,6 +626,10 @@ function renderWebglTile(
       // 在画布end处重置clip
       if (artBoardIndex[i]) {
         resetTileClip(tileList);
+        abRect[0] = 0;
+        abRect[1] = 0;
+        abRect[2] = W;
+        abRect[3] = H;
       }
     }
     // 释放回主画布
@@ -773,7 +828,9 @@ function renderWebglNoTile(
   const overlay = root.overlay;
   const program = programs.program;
   gl.useProgram(programs.program);
+  // artboard的裁剪，以及记录artboard的画布rect来判断节点是否超出范围外
   let x1 = -1, y1 = -1, x2 = 1, y2 = 1;
+  let abRect = new Float64Array([0, 0, W, H]);
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];
@@ -792,6 +849,10 @@ function renderWebglNoTile(
       i += total + next;
       // 同正常逻辑检查画板end，重置clip
       if (artBoardIndex[i]) {
+        abRect[0] = 0;
+        abRect[1] = 0;
+        abRect[2] = W;
+        abRect[3] = H;
         x1 = y1 = -1;
         x2 = y2 = 1;
         resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
@@ -833,6 +894,10 @@ function renderWebglNoTile(
           artBoardIndex[i + total + next] = node;
           const bbox = node._bbox || node.bbox;
           const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
+          abRect[0] = ab.x1;
+          abRect[1] = ab.y1;
+          abRect[2] = ab.x3;
+          abRect[3] = ab.y3;
           x1 = (ab.x1 - cx) / cx;
           y1 = (ab.y1 - cy) / cy;
           x2 = (ab.x3 - cx) / cx;
@@ -848,12 +913,30 @@ function renderWebglNoTile(
           resTexture = artBoardTexture;
         }
       }
-      // 图片检查内容加载计数器
-      if (node.isBitmap && (node as Bitmap).checkLoader()) {
-        imgLoadList.push(node as Bitmap);
+      // 检查画布内节点是否在画布范围内，否则可以跳过
+      else if (abRect[0] !== 0 || abRect[1] !== 0 || abRect[2] !== W || abRect[3] !== H) {
+        if (target && target.available) {
+          isInScreen = checkInRect(target.bbox, matrix, abRect[0], abRect[1], abRect[2] - abRect[0], abRect[3] - abRect[1]);
+        }
+        else {
+          isInScreen = checkInRect(
+            node._filterBbox || node.filterBbox, // 检测用原始的渲染用取整的
+            matrix,
+            abRect[0], abRect[1], abRect[2] - abRect[0], abRect[3] - abRect[1]
+          );
+        }
       }
     }
-    // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2)
+    // 画布外的画板直接跳过
+    else if (node.isArtBoard && node instanceof ArtBoard) {
+      i += total + next;
+      continue;
+    }
+    // 图片检查内容加载计数器
+    if (isInScreen && node.isBitmap && (node as Bitmap).checkLoader()) {
+      imgLoadList.push(node as Bitmap);
+    }
+    // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2, abRect.join(','))
     // 真正的渲染部分
     if (isInScreen && target && target.available) {
       const { mixBlendMode, blur } = computedStyle;
@@ -961,6 +1044,10 @@ function renderWebglNoTile(
     }
     // 在画布end处重置clip
     if (artBoardIndex[i]) {
+      abRect[0] = 0;
+      abRect[1] = 0;
+      abRect[2] = W;
+      abRect[3] = H;
       x1 = y1 = -1;
       x2 = y2 = 1;
       resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
