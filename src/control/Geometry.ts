@@ -2,6 +2,7 @@ import Polyline from '../node/geom/Polyline';
 import Geom from '../node/geom/Geom';
 import Root from '../node/Root';
 import Listener from './Listener';
+import { getPointWithDByApprox } from '../math/bezier';
 
 export default class Geometry {
   root: Root;
@@ -53,7 +54,31 @@ export default class Geometry {
         idx = parseInt(target.title);
         isDrag = true;
       }
-      else if (tagName === 'PATH') {}
+      else if (tagName === 'PATH') {
+        idx = parseInt(target.getAttribute('title') || '0');
+        const x = e.pageX - ox;
+        const y = e.pageY - oy;
+        const scale = root.getCurPageZoom(true);
+        // console.log(1, idx, x, y, scale)
+        const node = this.node;
+        if (node) {
+          if (node instanceof Polyline) {
+            const coords = node.coords!;
+            // console.log(coords);
+            const prev = coords[idx].slice(-2);
+            const next = coords[idx + 1] || coords[0];
+            // console.log(prev, next);
+            const points: { x: number; y: number }[] = [];
+            points.push({ x: prev[0] * scale, y: prev[1] * scale });
+            for (let i = 0, len = next.length; i < len; i += 2) {
+              points.push({ x: next[i] * scale, y: next[i + 1] * scale });
+            }
+            // console.log(points);
+            const p = getPointWithDByApprox(points, x, y);
+            // console.log(p);
+          }
+        }
+      }
     });
     document.addEventListener('mousemove', (e) => {
       if (isDrag) {
@@ -85,13 +110,37 @@ export default class Geometry {
         }
       }
     });
+    let pathIdx = -1;
     panel.addEventListener('mouseover', (e) => {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       if (tagName === 'PATH') {
-        const i = target.getAttribute('title');
-        panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
-        panel.querySelector(`svg.stroke path[title="${i}"]`)?.classList.add('cur');
+        pathIdx = +target.getAttribute('title')!;
+        // console.warn(pathIdx, target.innerHTML);
+        // panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
+        // panel.querySelector(`svg.stroke path[title="${i}"]`)?.classList.add('cur');
+      }
+    });
+    panel.addEventListener('mousemove', (e) => {
+      const node = this.node;
+      if (pathIdx > -1 && node) {
+        if (node instanceof Polyline) {
+          const x = e.pageX - ox;
+          const y = e.pageY - oy;
+          const scale = root.getCurPageZoom(true);
+          const coords = node.coords!;
+          const prev = coords[(idx ? idx : coords.length) - 1].slice(-2);
+          const next = coords[(idx + 1) % coords.length];
+          // console.log(prev, next);
+          const points: { x: number; y: number }[] = [];
+          points.push({ x: prev[0] * scale, y: prev[1] * scale });
+          for (let i = 0, len = next.length; i < len; i += 2) {
+            points.push({ x: next[i] * scale, y: next[i + 1] * scale });
+          }
+          // console.log(points, x, y);
+          const p = getPointWithDByApprox(points, x, y);
+          // console.log(pathIdx, p);
+        }
       }
     });
     panel.addEventListener('mouseout', (e) => {
@@ -100,6 +149,7 @@ export default class Geometry {
       if (tagName === 'PATH') {
         panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
       }
+      pathIdx = -1;
     });
     // 自身点击设置keep，阻止document全局侦听关闭
     document.addEventListener('click', () => {

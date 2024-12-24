@@ -224,7 +224,7 @@ async function convertItem(
   const rotateZ = -layer.rotation;
   let scaleX = layer.isFlippedHorizontal ? -1 : 1;
   let scaleY = layer.isFlippedVertical ? -1 : 1;
-  if (layer._class === SketchFormat.ClassValue.SymbolInstance && layer.scale !== 1) {
+  if (layer._class === SketchFormat.ClassValue.SymbolInstance && layer.scale && layer.scale !== 1) {
     scaleX *= layer.scale;
     scaleY *= layer.scale;
     const w = width / layer.scale;
