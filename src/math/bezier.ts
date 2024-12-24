@@ -1,5 +1,6 @@
 import { Vector2Like } from './bo/Point';
 import equation, { getRoots, pointSlope2General, twoPoint2General } from './equation';
+import { includedAngle } from './vector';
 
 /**
  * 二阶贝塞尔曲线范围框
@@ -852,8 +853,31 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
  * 另使用牛顿迭代来改进性能，无需指定步长（计算的），当本地迭代的点和上次迭代的点组成的bbox<eps时结束
  */
 export function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-4) {
-  if (points.length < 2 || points.length > 4) {
+  if (points.length < 3 || points.length > 4) {
     throw new Error('Unsupported order');
+  }
+  if (points.length === 2) {
+    const x1 = points[1].x - points[0].x;
+    const y1 = points[1].y - points[0].y;
+    const x2 = x - points[0].x;
+    const y2 = y - points[0].y;
+    const cos = includedAngle(x1, y1, x2, y2, true);
+    let x3, y3;
+    if (cos === 1 || cos === -1) {
+      x3 = x;
+      y3 = y;
+    }
+    else {
+      x3 = x2 * cos;
+      y3 = y2 * cos;
+    }
+    const d = Math.sqrt(Math.pow(x3 - points[0].x, 2) + Math.pow(y3 - points[0].y, 2));
+    const len = Math.sqrt(x1 * x1 + y1 * y1);
+    let t = d / len;
+    if (cos < 0) {
+      t = -1;
+    }
+    return { x: x3, y: y3, d, t };
   }
   // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
   const tx = getBezierMonotonicityT(points, true);

@@ -30,8 +30,12 @@ export function projection(x1: number, y1: number, x2: number, y2: number) {
 }
 
 // a和b夹角
-export function includedAngle(x1: number, y1: number, x2: number, y2: number) {
-  return Math.acos(dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2))) || 0;
+export function includedAngle(x1: number, y1: number, x2: number, y2: number, keepFunction = false) {
+  const cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
+  if (keepFunction) {
+    return cos;
+  }
+  return Math.acos(cos) || 0;
 }
 
 // 向量长度
