@@ -1221,6 +1221,13 @@ export default class Listener extends Event {
       if (scale < 1) {
         sc *= scale;
       }
+      // 最小值兜底防止不动了
+      if (sc < 0 && sc > -0.01) {
+        sc = -0.01;
+      }
+      else if (sc > 0 && sc < 0.01) {
+        sc = 0.01;
+      }
       scale += sc;
       if (scale > 32) {
         scale = 32;
