@@ -23,7 +23,7 @@ class Zoom {
     dom.appendChild(select);
 
     const div = document.createElement('div');
-    div.innerText = toPrecision(root.getCurPageZoom(true) * 100).toString() + '%';
+    div.innerText = toPrecision(root.getCurPageZoom(true) * 100, 0).toString() + '%';
     dom.appendChild(div);
 
     select.addEventListener('change', (e) => {
@@ -43,7 +43,7 @@ class Zoom {
     });
 
     listener.on(Listener.ZOOM_PAGE, (zoom: number) => {
-      div.innerText = toPrecision(zoom * 100).toString() + '%';
+      div.innerText = toPrecision(zoom * 100, 0).toString() + '%';
     });
   }
 }

@@ -1278,6 +1278,20 @@ export default class Listener extends Event {
     this.emit(Listener.ZOOM_PAGE, scale);
   }
 
+  zoomTo(scale: number, cx = 0.5, cy = 0.5) {
+    const root = this.root;
+    const page = root.getCurPage();
+    if (!page) {
+      return;
+    }
+    page.zoomTo(scale, cx, cy);
+    this.updateSelected();
+    this.updateInput();
+    this.updateGradient();
+    this.updateGeom();
+    this.emit(Listener.ZOOM_PAGE, scale);
+  }
+
   zoomActual() {
     if (this.root.zoomActual()) {
       this.emit(Listener.ZOOM_PAGE, this.root.getCurPageZoom());

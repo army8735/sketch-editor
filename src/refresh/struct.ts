@@ -105,7 +105,7 @@ function renderWebglTile(
    * 在缩放为100%的时候，scaleB为1*dpi，scaleT为1*dpi，
    * 在缩放为75%的时候，scaleB为1*dpi，scaleT为0.75*dpi，
    * 在缩放为49%的时候，scaleB为0.5*dpi，scaleT为0.98%dpi，
-   * 在缩放为150%的似乎，scaleB为2*dpi，scaleT为0.75*dpi。
+   * 在缩放为150%的时候，scaleB为2*dpi，scaleT为0.75*dpi。
    * 即scaleT始终是page真实缩放占scale比率。
    * 为此，先要求出当前缩放所对应的幂值，在缩放>=100%的时候，它就是scale，
    * 在<100%的时候，由于贴图纹理不再缩小，最低为1，因此需要重新计算。
@@ -131,13 +131,13 @@ function renderWebglTile(
   const unit = Tile.UNIT * scaleT * dpi;
   let nw = 0;
   let nh = 0;
-  // console.log(x, y, '\n', scale, scaleIndex, scaleX, scaleB, scaleT, '\n', W, H, unit);
+  // console.log(x, y, ';', scale, scaleIndex, ';', scaleX, scaleB, scaleT, ';', W, H, unit);
   // 先看page的平移造成的左上非对齐部分，除非是0/0或者w/h整数，否则都会占一个不完整的tile，整体宽度要先减掉这部分
   const offsetX = x % unit;
   const offsetY = y % unit;
   const indexX = Math.floor(-x / unit);
   const indexY = Math.floor(-y / unit);
-  // 注意正负数，对偏移造成的影响不同，正数右下移左上多出来是漏出的Tile尺寸，负数左上移是本身遮盖的Tile尺寸
+  // 注意正负数，对偏移造成的影响不同，正数右下移，左上多出来是漏出的Tile尺寸，负数左上移，是本身遮盖的Tile尺寸
   if (offsetX > 0) {
     nw = Math.ceil((W - offsetX) / unit) + 1;
   }
@@ -158,7 +158,7 @@ function renderWebglTile(
     nw,
     nh,
   );
-  // console.log(offsetX, offsetY, nw, nh, indexX, indexY);
+  // console.log(offsetX, offsetY, ';', nw, nh, ';', indexX, indexY);
   // 渲染准备
   const cx = W * 0.5,
     cy = H * 0.5;
@@ -196,6 +196,7 @@ function renderWebglTile(
     x2 = last.bbox[2];
     y2 = last.bbox[3];
   }
+  // console.log(x1, y1, ';', x2, y2, ';', W, H);
   // merge提前算，因为有hasContent计算
   const startTime = Date.now();
   const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);

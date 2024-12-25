@@ -182,14 +182,11 @@ export function genMerge(
       mergeHash[i] = t;
     }
     // shapeGroup需跳过子节点，忽略子矢量的一切
-    if (node instanceof ShapeGroup) {
+    if (node instanceof ShapeGroup || textureTotal[scaleIndex]?.available) {
       i += total;
     }
-    if (textureTotal[scaleIndex]?.available) {
-      i += total;
-      if (textureMask[scaleIndex]?.available) {
-        i += next;
-      }
+    if (textureMask[scaleIndex]?.available) {
+      i += next;
     }
   }
   if (mergeList.length) {
