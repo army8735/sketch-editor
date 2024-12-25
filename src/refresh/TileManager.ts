@@ -135,7 +135,7 @@ class TileManager {
           const { scale: scale2, table } = this.data[j];
           for (let i = 0, len = table.length; i < len; i++) {
             const list = table[i];
-            if (list.length) {
+            if (list && list.length) {
               const first = list[0];
               if (first.y === y || first.y < y && first.y + first.size > y) {
                 for (let j = 0, len = list.length; j < len; j++) {
@@ -167,7 +167,7 @@ class TileManager {
           }> = [];
           for (let i = 0, len = table.length; i < len; i++) {
             const list = table[i];
-            if (list.length) {
+            if (list && list.length) {
               const first = list[0];
               if (first.y >= y && first.y < y + s) {
                 for (let j = 0, len = list.length; j < len; j++) {
