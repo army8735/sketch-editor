@@ -127,6 +127,7 @@ export default class Geometry {
         if (node instanceof Polyline) {
           const x = e.offsetX;
           const y = e.offsetY;
+          console.error(x, y);
           const scale = root.getCurPageZoom(true);
           const coords = node.coords!;
           const prev = coords[pathIdx].slice(-2);
