@@ -853,7 +853,7 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
  * 另使用牛顿迭代来改进性能，无需指定步长（计算的），当本地迭代的点和上次迭代的点组成的bbox<eps时结束
  */
 export function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-4) {
-  if (points.length < 3 || points.length > 4) {
+  if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
   if (points.length === 2) {
@@ -863,25 +863,30 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
     const y2 = y - points[0].y;
     const cos = includedAngle(x1, y1, x2, y2, true);
     let x3, y3;
-    if (cos === 1 || cos === -1) {
+    if (cos === 1 || cos === -1 || cos === Infinity || cos === -Infinity) {
       x3 = x;
       y3 = y;
     }
     else {
       x3 = x2 * cos;
-      y3 = y2 * cos;
+      const r = Math.acos(cos);
+      const sin = Math.sin(r);
+      y3 = y2 * sin;
     }
-    const d = Math.sqrt(Math.pow(x3 - points[0].x, 2) + Math.pow(y3 - points[0].y, 2));
-    const len = Math.sqrt(x1 * x1 + y1 * y1);
-    let t = d / len;
+    const len1 = Math.sqrt(Math.pow(x3, 2) + Math.pow(y3, 2));
+    const len2 = Math.sqrt(Math.pow(x1, 2) + Math.pow(y1, 2));
+    let t = len1 / len2;
     if (cos < 0) {
       t = -1;
     }
+    x3 += points[0].x;
+    y3 += points[0].y;
+    const d = Math.sqrt(Math.pow(x3 - x, 2) + Math.pow(y3 - y, 2));
     return { x: x3, y: y3, d, t };
   }
   // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
   const tx = getBezierMonotonicityT(points, true);
-  const ty = getBezierMonotonicityT(points, true);
+  const ty = getBezierMonotonicityT(points, false);
   const ts: number[] = [];
   if (tx) {
     ts.push(...tx);
@@ -899,8 +904,9 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
   // 分别对每一段进行牛顿迭代
   const temp: { x: number, y: number, t: number, d: number }[] = [];
   ts.forEach((t, i) => {
-    if (i) {
-      temp.push(getEachPDByApprox(points, ts[i - 1], t, x, y, eps));
+    temp.push(getEachPDByApprox(points, t, ts[i + 1] || 1, x, y, eps));
+    if (!i) {
+      temp.push(getEachPDByApprox(points, 0, t, x, y, eps));
     }
   });
   // 本身就是单调无切割则求整个
@@ -925,7 +931,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
  * 此时求2次，各自从t1/t2开始，然后取最小值即可
  */
 function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4, min = 3, max = 30) {
-  // console.warn(points, t1, t2, x, y);
+  console.warn(t1, t2, x, y);
   const r1 = getEachPDByApproxWithStartT(points, t1, t2, t1, x, y, eps, min, max);
   const r2 = getEachPDByApproxWithStartT(points, t1, t2, t2, x, y, eps, min, max);
   if (r1.d > r2.d) {
@@ -937,6 +943,7 @@ function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: n
 function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: number, t2: number, t: number, x: number, y: number, eps = 1e-4, min = 5, max = 30) {
   let last = t;
   let count = 0;
+  console.log('start', points, t1, t2, t, x, y)
   while (count++ < max) {
     const f = (bezierValue(points, t, true)! - x) * bezierDerivative(points, t, true)!
       + (bezierValue(points, t, false)! - y) * bezierDerivative(points, t, false)!;
@@ -945,7 +952,7 @@ function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: num
       + Math.pow(bezierDerivative(points, t, false)!, 2)
       + (bezierValue(points, t, false)! - y) * bezierDerivative2(points, t, false)!;
     const d = f / df;
-    // console.log(count, f, df, d, t);
+    console.log(count, f, df, d, t);
     t -= d;
     if (t > t2) {
       t = t2;
@@ -967,10 +974,11 @@ function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: num
     }
     last = t;
   }
-  const tx = bezierValue(points, t, true)!;
-  const ty = bezierValue(points, t, false)!;
-  const d = Math.sqrt(Math.pow(x - tx, 2) + Math.pow(y - ty, 2));
-  return { x: tx, y: ty, t, d };
+  const px = bezierValue(points, t, true)!;
+  const py = bezierValue(points, t, false)!;
+  const d = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
+  console.log('end', t, px, py, d)
+  return { x: px, y: py, t, d };
 }
 
 // 贝塞尔1阶导数

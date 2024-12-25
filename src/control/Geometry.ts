@@ -116,30 +116,33 @@ export default class Geometry {
       const tagName = target.tagName.toUpperCase();
       if (tagName === 'PATH') {
         pathIdx = +target.getAttribute('title')!;
-        // console.warn(pathIdx, target.innerHTML);
-        // panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
-        // panel.querySelector(`svg.stroke path[title="${i}"]`)?.classList.add('cur');
+      }
+      else {
+        pathIdx = -1;
       }
     });
     panel.addEventListener('mousemove', (e) => {
       const node = this.node;
       if (pathIdx > -1 && node) {
         if (node instanceof Polyline) {
-          const x = e.pageX - ox;
-          const y = e.pageY - oy;
+          const x = e.offsetX;
+          const y = e.offsetY;
           const scale = root.getCurPageZoom(true);
           const coords = node.coords!;
-          const prev = coords[(idx ? idx : coords.length) - 1].slice(-2);
-          const next = coords[(idx + 1) % coords.length];
-          // console.log(prev, next);
+          const prev = coords[pathIdx].slice(-2);
+          const next = coords[pathIdx + 1] || coords[0];
           const points: { x: number; y: number }[] = [];
           points.push({ x: prev[0] * scale, y: prev[1] * scale });
           for (let i = 0, len = next.length; i < len; i += 2) {
             points.push({ x: next[i] * scale, y: next[i + 1] * scale });
           }
-          // console.log(points, x, y);
           const p = getPointWithDByApprox(points, x, y);
-          // console.log(pathIdx, p);
+          panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
+          panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
+          if (p && p.d <= 5) {
+            panel.querySelector(`svg.stroke path[title="${pathIdx}"]`)?.classList.add('cur');
+            panel.querySelector(`svg.interactive path[title="${pathIdx}"]`)?.classList.add('cur');
+          }
         }
       }
     });

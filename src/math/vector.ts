@@ -31,7 +31,29 @@ export function projection(x1: number, y1: number, x2: number, y2: number) {
 
 // a和b夹角
 export function includedAngle(x1: number, y1: number, x2: number, y2: number, keepFunction = false) {
-  const cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
+  let cos = 0;
+  if (y1 === y2) {
+    if (x2 > x1) {
+      cos = 1;
+    }
+    else if (x2 < x1) {
+      cos = -1;
+    }
+    else {
+      throw new Error('Vector is a point');
+    }
+  }
+  else if (x1 === x2) {
+    if (y2 > y1) {
+      cos = Infinity;
+    }
+    else if (y2 < y1) {
+      cos = -Infinity;
+    }
+  }
+  else {
+    cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
+  }
   if (keepFunction) {
     return cos;
   }
