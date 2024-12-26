@@ -6,7 +6,6 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
-import Geom from '../node/geom/Geom';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { Rect } from './Select';
@@ -48,6 +47,7 @@ import { appendWithPosAndSize } from '../tools/container';
 import AddCommand, { AddData } from '../history/AddCommand';
 import Gradient from './Gradient';
 import Geometry from './Geometry';
+import Polyline from '../node/geom/Polyline';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1147,7 +1147,7 @@ export default class Listener extends Event {
         this.state = State.EDIT_TEXT;
         this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
-      else if (node instanceof Geom) {
+      else if (node instanceof Polyline) {
         if (this.options.disabled?.editGeom) {
           return;
         }

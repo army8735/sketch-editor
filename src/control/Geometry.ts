@@ -1,15 +1,16 @@
 import Polyline from '../node/geom/Polyline';
-import Geom from '../node/geom/Geom';
 import Root from '../node/Root';
 import Listener from './Listener';
-import { getPointWithDByApprox } from '../math/bezier';
+import { getPointWithDByApprox, sliceBezier } from '../math/bezier';
+import ShapeGroup from '../node/geom/ShapeGroup';
+import { CURVE_MODE } from '../style/define';
 
 export default class Geometry {
   root: Root;
   dom: HTMLElement;
   listener: Listener;
   panel: HTMLElement;
-  node?: Geom;
+  node?: Polyline | ShapeGroup;
   keep?: boolean; // 保持窗口外部点击时不关闭
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -55,27 +56,17 @@ export default class Geometry {
         isDrag = true;
       }
       else if (tagName === 'PATH') {
-        idx = parseInt(target.getAttribute('title') || '0');
-        const x = e.pageX - ox;
-        const y = e.pageY - oy;
+        idx = +target.getAttribute('title')!;
+        const x = e.offsetX;
+        const y = e.offsetY;
         const scale = root.getCurPageZoom(true);
-        // console.log(1, idx, x, y, scale)
-        const node = this.node;
-        if (node) {
-          if (node instanceof Polyline) {
-            const coords = node.coords!;
-            // console.log(coords);
-            const prev = coords[idx].slice(-2);
-            const next = coords[idx + 1] || coords[0];
-            // console.log(prev, next);
-            const points: { x: number; y: number }[] = [];
-            points.push({ x: prev[0] * scale, y: prev[1] * scale });
-            for (let i = 0, len = next.length; i < len; i += 2) {
-              points.push({ x: next[i] * scale, y: next[i + 1] * scale });
-            }
-            // console.log(points);
-            const p = getPointWithDByApprox(points, x, y);
-            // console.log(p);
+        if (node instanceof Polyline) {
+          const points = getPolylineCoords(node, idx, scale);
+          const p = getPointWithDByApprox(points, x, y);
+          if (p && p.d <= 5) {
+            console.log(idx, p);
+            const a = sliceBezier(points, 0, p.t);
+            const b = sliceBezier(points, p.t, 1);
           }
         }
       }
@@ -124,24 +115,22 @@ export default class Geometry {
     panel.addEventListener('mousemove', (e) => {
       const node = this.node;
       if (pathIdx > -1 && node) {
+        const x = e.offsetX;
+        const y = e.offsetY;
+        const scale = root.getCurPageZoom(true);
         if (node instanceof Polyline) {
-          const x = e.offsetX;
-          const y = e.offsetY;
-          const scale = root.getCurPageZoom(true);
-          const coords = node.coords!;
-          const prev = coords[pathIdx].slice(-2);
-          const next = coords[pathIdx + 1] || coords[0];
-          const points: { x: number; y: number }[] = [];
-          points.push({ x: prev[0] * scale, y: prev[1] * scale });
-          for (let i = 0, len = next.length; i < len; i += 2) {
-            points.push({ x: next[i] * scale, y: next[i + 1] * scale });
-          }
+          const points = getPolylineCoords(node, pathIdx, scale);
           const p = getPointWithDByApprox(points, x, y);
           panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
           panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
+          panel.querySelector('.pt.cur')?.classList.remove('cur');
           if (p && p.d <= 5) {
             panel.querySelector(`svg.stroke path[title="${pathIdx}"]`)?.classList.add('cur');
             panel.querySelector(`svg.interactive path[title="${pathIdx}"]`)?.classList.add('cur');
+            const pj = panel.querySelector('.pj') as HTMLElement;
+            pj.style.left = p.x + 'px';
+            pj.style.top = p.y + 'px';
+            pj.classList.add('cur');
           }
         }
       }
@@ -151,6 +140,7 @@ export default class Geometry {
       const tagName = target.tagName.toUpperCase();
       if (tagName === 'PATH') {
         panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
+        panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
       }
       pathIdx = -1;
     });
@@ -168,7 +158,7 @@ export default class Geometry {
     });
   }
 
-  show(node: Geom) {
+  show(node: Polyline | ShapeGroup) {
     this.node = node;
     this.panel.innerHTML = '';
     this.updateSize(node);
@@ -183,7 +173,7 @@ export default class Geometry {
     }
   }
 
-  updateSize(node: Geom) {
+  updateSize(node: Polyline | ShapeGroup) {
     const panel = this.panel;
     const res = this.listener.select.calRect(node);
     panel.style.left = res.left + 'px';
@@ -194,64 +184,89 @@ export default class Geometry {
     panel.style.display = 'block';
   }
 
-  genVertex(node: Geom) {
+  genVertex(node: Polyline | ShapeGroup) {
     const panel = this.panel;
-    const coords = node.coords;
+    const coords = node.coords!;
     panel.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
     const svg1 = panel.querySelector('svg.stroke') as SVGElement;
     const svg2 = panel.querySelector('svg.interactive') as SVGElement;
     let s = '';
     let s2 = '';
-    coords!.forEach((item, i) => {
+    coords.forEach((item, i) => {
       if (i) {
         s += `<path title="${i - 1}" d=""></path>`;
-        s2 += `<div title="${i - 1}"></div>`;
+        const p = node.props.points[i - 1];
+        if (p.curveMode === CURVE_MODE.NONE || p.curveMode === CURVE_MODE.STRAIGHT) {
+          s2 += `<div class="vt" title="${i - 1}"></div>`;
+        }
+        else {
+          s2 += `<div class="vt" title="${i - 1}">`;
+          if (p.hasCurveFrom) {
+            s2 += '<span></span>';
+          }
+          if (p.hasCurveTo) {
+            s2 += '<span></span>';
+          }
+          s2 += '</div>';
+        }
       }
     });
     svg1.innerHTML = s;
     svg2.innerHTML = s;
-    panel.innerHTML += s2;
+    panel.innerHTML += s2 + '<div class="pj"></div>';
   }
 
-  updateVertex(node: Geom) {
+  updateVertex(node: Polyline | ShapeGroup) {
     node.buildPoints();
-    const coords = node.coords!;
-    const zoom = node.root?.getCurPageZoom(true) || 1;
-    const panel = this.panel;
-    const divs = panel.querySelectorAll('div');
-    const paths1 = panel.querySelectorAll('svg.stroke path');
-    const paths2 = panel.querySelectorAll('svg.interactive path');
-    coords.forEach((item, i) => {
-      if (divs[i]) {
-        const c = item.slice(-2);
-        const style = divs[i].style;
-        style.left = c[0] * zoom + 'px';
-        style.top = c[1] * zoom + 'px';
-      }
-      if (paths1[i]) {
-        let d = 'M' + item.slice(-2).map(n => n * zoom).join(',');
-        const next = coords[i + 1] || coords[0];
-        if (next) {
-          if (next.length === 6) {
-            d += 'C';
+    if (node instanceof Polyline) {
+      const coords = node.coords!;
+      const zoom = node.root!.getCurPageZoom(true) || 1;
+      const panel = this.panel;
+      const vts = panel.querySelectorAll('.vt');
+      const paths1 = panel.querySelectorAll('svg.stroke path');
+      const paths2 = panel.querySelectorAll('svg.interactive path');
+      coords.forEach((item, i) => {
+        const div = vts[i] as HTMLElement;
+        if (div) {
+          const c = item.slice(-2);
+          const style = div.style;
+          style.left = c[0] * zoom + 'px';
+          style.top = c[1] * zoom + 'px';
+          const spans = div.querySelectorAll('span');
+          console.log(node.props.points, i);
+          if (i) {
+            const p = node.props.points[i - 1];
+            if (p.curveMode !== CURVE_MODE.NONE && p.curveMode !== CURVE_MODE.STRAIGHT) {
+              //
+            }
           }
-          else if (next.length === 4) {
-            d += 'Q';
-          }
-          else if (next.length === 2) {
-            d += 'L';
-          }
-          d += next.map(n => n * zoom).join(',');
-          paths1[i].setAttribute('d', d);
-          paths2[i].setAttribute('d', d);
         }
-      }
-    });
+        if (paths1[i]) {
+          let d = 'M' + item.slice(-2).map(n => n * zoom).join(',');
+          const next = coords[i + 1] || coords[0];
+          if (next) {
+            if (next.length === 6) {
+              d += 'C';
+            }
+            else if (next.length === 4) {
+              d += 'Q';
+            }
+            else if (next.length === 2) {
+              d += 'L';
+            }
+            d += next.map(n => n * zoom).join(',');
+            paths1[i].setAttribute('d', d);
+            paths2[i] && paths2[i].setAttribute('d', d);
+          }
+        }
+      });
+    }
   }
 
   updatePos() {
-    if (this.node) {
-      this.updateSize(this.node);
+    const node = this.node;
+    if (node) {
+      this.updateSize(node);
     }
   }
 
@@ -261,4 +276,16 @@ export default class Geometry {
     this.node = undefined;
     this.keep = false;
   }
+}
+
+function getPolylineCoords(node: Polyline, idx: number, scale: number) {
+  const coords = node.coords!;
+  const prev = coords[idx].slice(-2);
+  const next = coords[idx + 1] || coords[0];
+  const points: { x: number; y: number }[] = [];
+  points.push({ x: prev[0] * scale, y: prev[1] * scale });
+  for (let i = 0, len = next.length; i < len; i += 2) {
+    points.push({ x: next[i] * scale, y: next[i + 1] * scale });
+  }
+  return points;
 }
