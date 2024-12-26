@@ -965,15 +965,29 @@ function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: num
     const f = vx * dx1 + vy * dy1;
     const df = Math.pow(dx1, 2) + vx * bezierDerivative2(points, t, true)!
       + Math.pow(dy1, 2) + vy * bezierDerivative2(points, t, false)!;
-    const d = f / df;
+
+    const [a, b, c, d] = points;
+    const d1 = 6 * (a.x * a.x + a.y * a.y) * Math.pow(t, 5)
+      + 10 * (a.x * b.x + a.y * b.y) * Math.pow(t, 4)
+      + 4 * (2 * (a.x * c.x + a.y * c.y) + b.x * b.x + b.y * b.y) * Math.pow(t, 3)
+      + 6 * (a.x * (d.x - x) + b.x * c.x + a.y * (d.y - y) + b.y * c.y) * Math.pow(t, 2)
+      + 2 * (2 * (b.x * d.x - b.x * x + b.y * d.y - b.y * y) + c.x * c.x + c.y * c.y) * t
+      + 2 * (c.x * d.x - c.x * x + c.y * d.y - c.y * y);
+    const d2 = 30 * (a.x * a.x + a.y * a.y) * Math.pow(t, 4)
+      + 40 * (a.x * b.x + a.y * b.y) * Math.pow(t, 3)
+      + 12 * (2 * a.x * c.x + b.x * b.x + 2 * a.y * c.y + b.y * b.y) * Math.pow(t, 2)
+      + 12 * (a.x * (d.x - x) + b.x * c.x + a.y * (d.y - y) + b.y * c.y) * t
+      + 2 * (2 * (b.x * d.x - b.x * x + b.y * d.y - b.y * y) + c.x * c.x + c.y * c.y);
+    const diff = f / df;
+    const diff2 = d1 / d2;
     // @ts-ignore
     if (window.ttt) {
-      console.log(count, f, df, ';', d, t);
+      console.log(count, f, df, diff, ';', d1, d2, diff2, ';', t);
       console.log(vx, dx1, ',', vy, dy1, ';',
         bezierDerivative2(points, t, true)!, bezierDerivative2(points, t, false)!,
       );
     }
-    t -= d;
+    t -= diff;
     if (t > t2) {
       t = t2;
     }
@@ -1015,9 +1029,10 @@ export function bezierDerivative(points: { x: number, y: number }[], t: number, 
   }
   if (points.length === 4) {
     const p3 = isX ? points[3].x : points[3].y;
-    return 3 * (-p0 + 3 * p1 - 3 * p2 + p3) * t * t
-      + 2 * (3 * p0 - 6 * p1 + 3 * p2) * t
-      + 3 * p1 - 3 * p0;
+    return 3 * Math.pow(1 - t, 2) * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) + 3 * t * t * (p3 - p2);
+    // return 3 * (-p0 + 3 * p1 - 3 * p2 + p3) * t * t
+    //   + 2 * (3 * p0 - 6 * p1 + 3 * p2) * t
+    //   + 3 * p1 - 3 * p0;
   }
 }
 
@@ -1034,8 +1049,9 @@ export function bezierDerivative2(points: { x: number, y: number }[], t: number,
   }
   if (points.length === 4) {
     const p3 = isX ? points[3].x : points[3].y;
-    return 6 * (-p0 + 3 * p1 - 3 * p2 + p3) * t
-      + 2 * (3 * p0 - 6 * p1 + 3 * p2);
+    return 6 * (1 - t) * (p2 - 2 * p1 + p0) + 6 * t * (p3 - 2 * p2 + p1);
+    // return 6 * (-p0 + 3 * p1 - 3 * p2 + p3) * t
+    //   + 2 * (3 * p0 - 6 * p1 + 3 * p2);
   }
 }
 
