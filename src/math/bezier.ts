@@ -884,7 +884,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
     const d = Math.sqrt(Math.pow(x3 - x, 2) + Math.pow(y3 - y, 2));
     return { x: x3, y: y3, d, t };
   }
-  console.error(points, x, y);
+  console.error('曲线和点', points.map(item => item.x + ',' + item.y).join(' '), x, y);
   // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
   const tx = getBezierMonotonicityT(points, true);
   const ty = getBezierMonotonicityT(points, false);
@@ -920,7 +920,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
     temp.push(getEachPDByApprox(points, 0, 1, x, y, eps));
   }
   temp.sort((a, b) => a.d - b.d);
-  console.error('最终结果', temp);
+  console.error('最终结果', temp[0]);
   if (temp.length) {
     return {
       x: temp[0].x,
@@ -946,7 +946,7 @@ function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: n
   window.ttt && console.log('查找第1次，t初始化是开头', t3);
   const r1 = getEachPDByApproxWithStartT(points, t1, t2, t3, x, y, eps, min, max);
   // @ts-ignore
-  window.ttt && console.log('查找第2次，t初始化是结尾', t4);
+  // window.ttt && console.log('查找第2次，t初始化是结尾', t4);
   // @ts-ignore
   window.ttt = 0;
   const r2 = getEachPDByApproxWithStartT(points, t1, t2, t4, x, y, eps, min, max);
@@ -960,19 +960,19 @@ function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: num
   let last = t;
   let count = 0;
   while (count++ < max) {
-    const vx = (bezierValue(points, t, true)! - x);
+    const vx = (bezierValue(points, t, true)! - x); // 坐标差
     const vy = (bezierValue(points, t, false)! - y);
-    const dx1 = bezierDerivative(points, t, true)!;
+    const dx1 = bezierDerivative(points, t, true)!; // 一阶导数
     const dy1 = bezierDerivative(points, t, false)!;
-    const dx2 = bezierDerivative2(points, t, true)!;
+    const dx2 = bezierDerivative2(points, t, true)!; // 二阶导数
     const dy2 = bezierDerivative2(points, t, false)!;
     const f = vx * dx1 + vy * dy1;
     const df = Math.pow(dx1, 2) + vx * dx2 + Math.pow(dy1, 2) + vy * dy2;
     const diff = f / df;
     // @ts-ignore
     if (window.ttt && count < 2) {
-      console.log(count, f, df, diff, ',', t);
-      console.log(vx, x, dx1, dx2, ',', vy, y, dy1, dy2);
+      console.log(count, '极值', f, '极值导', df, '差t', diff, '当前t', t,
+        '坐标差', vx, vy, '1阶导', dx1, dy1, '2阶导', dx2, dy2);
     }
     t -= diff;
     if (t > t2) {
