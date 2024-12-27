@@ -884,7 +884,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
     const d = Math.sqrt(Math.pow(x3 - x, 2) + Math.pow(y3 - y, 2));
     return { x: x3, y: y3, d, t };
   }
-  console.error('曲线和点', points.map(item => item.x + ',' + item.y).join(' '), x, y);
+  // console.error('曲线和点', points.map(item => item.x + ',' + item.y).join(' '), x, y);
   // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
   const tx = getBezierMonotonicityT(points, true);
   const ty = getBezierMonotonicityT(points, false);
@@ -902,25 +902,24 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
   }
   // 切割过程，按照t顺序从小到大，不实际切割只记录t
   ts.sort((a, b) => a - b);
-  console.log('单调分割t', ts);
+  // console.log('单调分割t', ts);
   // 分别对每一段进行牛顿迭代
   const temp: { x: number, y: number, t: number, d: number }[] = [];
   ts.forEach((t, i) => {
     if (!i) {
-      temp.push(getEachPDByApprox(points, 0, t, x, y, eps));
+      const r = getEachPDByApprox(points, 0, t, x, y, eps);
+      r && temp.push(r);
     }
-    // @ts-ignore
-    if (i === 0) window.ttt=1;
-    temp.push(getEachPDByApprox(points, t, ts[i + 1] || 1, x, y, eps));
-    // @ts-ignore
-    window.ttt=0;
+    const r = getEachPDByApprox(points, t, ts[i + 1] || 1, x, y, eps);
+    r && temp.push(r);
   });
   // 本身就是单调无切割则求整个
   if (!ts.length) {
-    temp.push(getEachPDByApprox(points, 0, 1, x, y, eps));
+    const r = getEachPDByApprox(points, 0, 1, x, y, eps);
+    r && temp.push(r);
   }
   temp.sort((a, b) => a.d - b.d);
-  console.error('最终结果', temp[0]);
+  // console.error('最终结果', temp[0]);
   if (temp.length) {
     return {
       x: temp[0].x,
@@ -938,22 +937,27 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
  * 此时求2次，各自从t1/t2开始，然后取最小值即可
  */
 function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4, min = 3, max = 30) {
-  // @ts-ignore
-  window.ttt && console.warn('在此t范围内查找2次', t1, t2);
-  const t3 = t1 + Number.EPSILON;
-  const t4 = t2 - Number.EPSILON;
-  // @ts-ignore
-  window.ttt && console.log('查找第1次，t初始化是开头', t3);
-  const r1 = getEachPDByApproxWithStartT(points, t1, t2, t3, x, y, eps, min, max);
-  // @ts-ignore
-  // window.ttt && console.log('查找第2次，t初始化是结尾', t4);
-  // @ts-ignore
-  window.ttt = 0;
-  const r2 = getEachPDByApproxWithStartT(points, t1, t2, t4, x, y, eps, min, max);
-  if (r1.d > r2.d) {
-    return r2;
+  // console.warn('在此t范围内查找2次', t1, t2);
+  const list: { x: number, y: number, t: number, d: number }[] = [];
+  const r1 = getEachPDByApproxWithStartT(points, t1, t2, t1, x, y, eps, min, max);
+  if (r1) {
+    list.push(r1);
   }
-  return r1;
+  const r2 = getEachPDByApproxWithStartT(points, t1, t2, t2, x, y, eps, min, max);
+  if (r2) {
+    list.push(r2);
+  }
+  if (list.length < 2) {
+    const r3 = getEachPDByApproxWithStartT(points, t1, t2, (t1 + t2) * 0.5, x, y, eps, min, max);
+    if (r3) {
+      list.push(r3);
+    }
+  }
+  if (!list.length) {
+    return;
+  }
+  list.sort((a, b) => a.d - b.d);
+  return list[0];
 }
 
 function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: number, t2: number, t: number, x: number, y: number, eps = 1e-4, min = 5, max = 30) {
@@ -968,12 +972,12 @@ function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: num
     const dy2 = bezierDerivative2(points, t, false)!;
     const f = vx * dx1 + vy * dy1;
     const df = Math.pow(dx1, 2) + vx * dx2 + Math.pow(dy1, 2) + vy * dy2;
-    const diff = f / df;
-    // @ts-ignore
-    if (window.ttt && count < 2) {
-      console.log(count, '极值', f, '极值导', df, '差t', diff, '当前t', t,
-        '坐标差', vx, vy, '1阶导', dx1, dy1, '2阶导', dx2, dy2);
+    if (df < 0) {
+      return;
     }
+    const diff = f / df;
+    // console.log(count, '极值', f, '极值导', df, '差t', diff, '当前t', t,
+    //   '坐标差', vx, vy, '1阶导', dx1, dy1, '2阶导', dx2, dy2);
     t -= diff;
     if (t > t2) {
       t = t2;
@@ -998,8 +1002,7 @@ function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: num
   const px = bezierValue(points, t, true)!;
   const py = bezierValue(points, t, false)!;
   const d = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
-  // @ts-ignore
-  window.ttt && console.log('查找结束，t为', t, '点坐标为', px, py, '距离', d);
+  // console.log('查找结束，t为', t, '点坐标为', px, py, '距离', d);
   return { x: px, y: py, t, d };
 }
 
