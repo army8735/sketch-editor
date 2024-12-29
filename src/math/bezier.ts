@@ -1,4 +1,3 @@
-import { Vector2Like } from './bo/Point';
 import equation, { getRoots, pointSlope2General, twoPoint2General } from './equation';
 import { includedAngle } from './vector';
 
@@ -309,43 +308,6 @@ export function nearestPointFromPointToBezier(
     curve: points,
     index: -1,
   };
-}
-
-function mixPoint(n1: Vector2Like, n2: Vector2Like, percent: number) {
-  return {
-    x: mix(n1.x, n2.x, percent),
-    y: mix(n1.y, n2.y, percent),
-  };
-}
-
-export function interceptionBezier(
-  startPoint: Vector2Like,
-  control1: Vector2Like,
-  control2: Vector2Like,
-  endPoint: Vector2Like,
-  s: number,
-  e: number,
-) {
-  if (s === e) return null;
-  let s1 = mixPoint(startPoint, control1, s);
-  let s2 = mixPoint(control1, control2, s);
-  let s3 = mixPoint(control2, endPoint, s);
-  let e1 = mixPoint(startPoint, control1, e);
-  let e2 = mixPoint(control1, control2, e);
-  let e3 = mixPoint(control2, endPoint, e);
-  let ss1 = mixPoint(s1, s2, s);
-  let ss2 = mixPoint(s2, s3, s);
-  let ee1 = mixPoint(e1, e2, e);
-  let ee2 = mixPoint(e2, e3, e);
-  let ctrl_start = mixPoint(ss1, ss2, e);
-  let ctrl_end = mixPoint(ee2, ee1, 1 - s);
-  let s_n = bezierAt(s, [startPoint, control1, control2, endPoint], 0);
-  let e_n = bezierAt(e, [startPoint, control1, control2, endPoint], 0);
-  return [s_n, ctrl_start, ctrl_end, e_n];
-}
-
-export function mix(n1: number, n2: number, percent: number) {
-  return n1 + (n2 - n1) * percent;
 }
 
 function sliceBezierS(points: { x: number, y: number }[], t: number) {

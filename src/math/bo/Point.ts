@@ -1,8 +1,3 @@
-export interface Vector2Like {
-  x: number;
-  y: number;
-}
-
 class Point {
   x: number;
   y: number;
@@ -22,9 +17,8 @@ class Point {
   }
 
   equalEps(o: Point, eps = 1e-2) {
-    return (
-      (Math.abs(this.x * 100 - o.x * 100) <= eps * 100 && Math.abs(this.y * 100 - o.y * 100) <= eps * 100)
-    );
+    return this === o ||
+      Math.abs(this.x * 100 - o.x * 100) <= eps * 100 && Math.abs(this.y * 100 - o.y * 100) <= eps * 100;
   }
 
   add(p: Point) {
