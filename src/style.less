@@ -692,23 +692,33 @@ html, body {
       position: absolute;
       left: 0;
       top: 0;
-      width: 5px;
-      height: 5px;
-      background: #FFF;
-      border: 1px solid #999;
-      border-radius: 50%;
-      opacity: 0.9;
-      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
       pointer-events: auto;
 
-      &:hover {
+      &:hover:after {
         box-shadow: 0 0 2px 0.5px rgba(0, 0, 0, 0.5);
       }
 
+      &:after {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 5px;
+        height: 5px;
+        background: #FFF;
+        border: 1px solid #999;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        content: ' ';
+      }
+
       &.cur {
-        opacity: 1;
-        border-width: 1.5px;
-        transform: translate(-50%, -50%) scale(1.25);
+        &:after {
+          border-width: 1.5px;
+          transform: translate(-50%, -50%) scale(1.25);
+          z-index: 9999;
+        }
 
         span {
           display: block;
@@ -720,10 +730,44 @@ html, body {
         display: none;
         left: 0;
         top: 0;
-        width: 4px;
-        height: 4px;
-        background: #FFF;
-        border: 1px solid #999;
+        width: 0;
+        height: 0;
+
+        b {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          height: 0;
+          pointer-events: none;
+          transform-origin: 0 0;
+
+          &:after {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            border-top: 1px solid #999;
+            transform: translateY(-50%);
+            content: ' ';
+          }
+        }
+
+        &:after {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 4px;
+          height: 4px;
+          background: #FFF;
+          border: 1px solid #999;
+          transform: translate(-50%, -50%);
+          content: ' ';
+        }
+
+        &:hover:after {
+          box-shadow: 0 0 2px 0.5px rgba(0, 0, 0, 0.5);
+        }
       }
     }
 
