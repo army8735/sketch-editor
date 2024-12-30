@@ -696,8 +696,26 @@ html, body {
       height: 0;
       pointer-events: auto;
 
-      &:hover:after {
-        box-shadow: 0 0 2px 0.5px rgba(0, 0, 0, 0.5);
+      &:hover {
+        &:after {
+          box-shadow: 0 0 2px 0.5px rgba(0, 0, 0, 0.5);
+        }
+
+        span {
+          display: block;
+          opacity: 0.3;
+        }
+      }
+
+      &:before {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        content: ' ';
       }
 
       &:after {
@@ -722,6 +740,7 @@ html, body {
 
         span {
           display: block;
+          opacity: 1;
         }
       }
 

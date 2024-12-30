@@ -24,12 +24,13 @@ export default class Geometry {
     panel.style.display = 'none';
     dom.appendChild(panel);
 
+    let idx = -1;
     let isDrag = false;
+    let isControl = false;
     let isMove = false;
     let target: HTMLElement;
     let ox = 0; // panel
     let oy = 0;
-    let idx = 0;
     let w = 1;
     let h = 1;
 
@@ -58,18 +59,23 @@ export default class Geometry {
       }
       else if (tagName === 'PATH') {
         idx = +target.getAttribute('title')!;
-        const x = e.offsetX;
-        const y = e.offsetY;
-        const scale = root.getCurPageZoom(true);
-        if (node instanceof Polyline) {
-          const points = getPolylineCoords(node, idx, scale);
-          const p = getPointWithDByApprox(points, x, y);
-          if (p && p.d <= 5) {
-            console.log(idx, p);
-            const a = sliceBezier(points, 0, p.t);
-            const b = sliceBezier(points, p.t, 1);
+        if (!isNaN(idx)) {
+          const x = e.offsetX;
+          const y = e.offsetY;
+          const scale = root.getCurPageZoom(true);
+          if (node instanceof Polyline) {
+            const points = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
+            const p = getPointWithDByApprox(points, x, y);
+            if (p && p.d <= 5) {
+              console.log(idx, p);
+              const a = sliceBezier(points, 0, p.t);
+              const b = sliceBezier(points, p.t, 1);
+            }
           }
         }
+      }
+      else if (tagName === 'SPAN') {
+        isControl = true;
       }
     });
     document.addEventListener('mousemove', (e) => {
@@ -102,6 +108,8 @@ export default class Geometry {
         }
       }
     });
+
+    // 侦听在path上的移动，高亮当前path以及投影点
     let pathIdx = -1;
     let pj;
     panel.addEventListener('mouseover', (e) => {
@@ -110,6 +118,12 @@ export default class Geometry {
       pj = panel.querySelector('.pj') as HTMLElement;
       if (tagName === 'PATH') {
         pathIdx = +target.getAttribute('title')!;
+        if (isNaN(pathIdx)) {
+          pathIdx = -1;
+        }
+        else {
+          pathIdx = +target.getAttribute('idx')!;
+        }
       }
       else {
         pathIdx = -1;
@@ -128,8 +142,8 @@ export default class Geometry {
           panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
           panel.querySelector('.pt.cur')?.classList.remove('cur');
           if (p && p.d <= 5) {
-            panel.querySelector(`svg.stroke path[title="${pathIdx}"]`)?.classList.add('cur');
-            panel.querySelector(`svg.interactive path[title="${pathIdx}"]`)?.classList.add('cur');
+            panel.querySelector(`svg.stroke path[idx="${pathIdx}"]`)?.classList.add('cur');
+            panel.querySelector(`svg.interactive path[idx="${pathIdx}"]`)?.classList.add('cur');
             pj!.style.left = p.x + 'px';
             pj!.style.top = p.y + 'px';
             pj!.classList.add('cur');
@@ -149,6 +163,14 @@ export default class Geometry {
       }
       pathIdx = -1;
       pj!.classList.remove('cur');
+    });
+
+    // 操作过程组织滚轮拖动
+    panel.addEventListener('wheel', (e) => {
+      console.log(isDrag, isControl)
+      if (isDrag || isControl) {
+        e.stopPropagation();
+      }
     });
     // 自身点击设置keep，阻止document全局侦听关闭
     document.addEventListener('click', () => {
@@ -172,6 +194,13 @@ export default class Geometry {
     this.updateVertex(node);
   }
 
+  hide() {
+    this.panel.style.display = 'none';
+    this.panel.innerHTML = '';
+    this.node = undefined;
+    this.keep = false;
+  }
+
   update() {
     if (this.node) {
       this.updateSize(this.node);
@@ -192,28 +221,37 @@ export default class Geometry {
 
   genVertex(node: Polyline | ShapeGroup) {
     const panel = this.panel;
-    const coords = node.coords!;
+    const points = node.props.points;
     panel.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
     const svg1 = panel.querySelector('svg.stroke') as SVGElement;
     const svg2 = panel.querySelector('svg.interactive') as SVGElement;
     let s = '';
     let s2 = '';
-    coords.forEach((item, i) => {
-      if (i) {
-        s += `<path title="${i - 1}" d=""></path>`;
-        const p = node.props.points[i - 1];
-        if (p.curveMode === CURVE_MODE.NONE || p.curveMode === CURVE_MODE.STRAIGHT) {
-          s2 += `<div class="vt" title="${i - 1}"></div>`;
+    const len = points.length;
+    let count = 0;
+    points.forEach((item, i) => {
+      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
+        s2 += `<div class="vt" title="${i}"></div>`;
+        // 最后一个判断是否闭合
+        if (item.cornerRadius && (i < len || node.props.isClosed)) {
+          s += `<path title="cr${i}" idx="${count++}" d=""></path>`;
         }
-        else {
-          s2 += `<div class="vt" title="${i - 1}">`;
-          if (p.hasCurveTo) {
-            s2 += '<span><b></b></span>';
-          }
-          if (p.hasCurveFrom) {
-            s2 += '<span><b></b></span>';
-          }
-          s2 += '</div>';
+        if (i < len || node.props.isClosed) {
+          s += `<path title="${i}" idx="${count++}" d=""></path>`;
+        }
+      }
+      else {
+        s2 += `<div class="vt" title="${i}">`;
+        if (item.hasCurveTo) {
+          s2 += '<span><b></b></span>';
+        }
+        if (item.hasCurveFrom) {
+          s2 += '<span><b></b></span>';
+        }
+        s2 += '</div>';
+        // 最后一个判断是否闭合
+        if (i < len || node.props.isClosed) {
+          s += `<path title="${i}" idx="${count++}" d=""></path>`;
         }
       }
     });
@@ -223,46 +261,41 @@ export default class Geometry {
   }
 
   updateVertex(node: Polyline | ShapeGroup) {
-    node.buildPoints();
     const panel = this.panel;
     const zoom = node.root!.getCurPageZoom(true) || 1;
     if (node instanceof Polyline) {
+      const points = node.props.points;
       const coords = node.coords!;
       const vts = panel.querySelectorAll('.vt');
       const paths1 = panel.querySelectorAll('svg.stroke path');
       const paths2 = panel.querySelectorAll('svg.interactive path');
-      coords.forEach((item, i) => {
+      points.forEach((item, i) => {
         const div = vts[i] as HTMLElement;
         if (div) {
-          const c = item.slice(-2);
-          const style = div.style;
-          style.left = c[0] * zoom + 'px';
-          style.top = c[1] * zoom + 'px';
+          div.style.transform = `translate(${item.absX! * zoom}px, ${item.absY! * zoom}px)`;
           const spans = div.querySelectorAll('span');
-          const p = node.props.points[i];
-          if (p.curveMode !== CURVE_MODE.NONE && p.curveMode !== CURVE_MODE.STRAIGHT) {
-            const [prev, next] = spans; console.log(prev, next)
+          if (item.curveMode !== CURVE_MODE.NONE && item.curveMode !== CURVE_MODE.STRAIGHT) {
+            const [prev, next] = spans;
             const list: { el: HTMLElement, cx: number, cy: number }[] = [];
-            if (p.hasCurveTo && prev) {
+            if (item.hasCurveTo && prev) {
               list.push({
                 el: prev,
-                cx: p.absTx!,
-                cy: p.absTy!,
+                cx: item.absTx!,
+                cy: item.absTy!,
               });
             }
-            if (p.hasCurveFrom && next) {
+            if (item.hasCurveFrom && next) {
               list.push({
                 el: next,
-                cx: p.absFx!,
-                cy: p.absFy!,
+                cx: item.absFx!,
+                cy: item.absFy!,
               });
             }
-            list.forEach((item) => {
-              const { el, cx, cy } = item;
-              const x = (cx - p.absX!) * zoom;
-              const y = (cy - p.absY!) * zoom;
-              el.style.left = x + 'px';
-              el.style.top = y + 'px';
+            list.forEach((item2) => {
+              const { el, cx, cy } = item2;
+              const x = (cx - item.absX!) * zoom;
+              const y = (cy - item.absY!) * zoom;
+              el.style.transform = `translate(${x}px, ${y}px)`;
               const d = Math.sqrt(x * x + y * y);
               const b = el.firstElementChild as HTMLElement;
               b.style.width = d + 'px';
@@ -270,10 +303,21 @@ export default class Geometry {
             });
           }
         }
-        if (paths1[i]) {
+      });
+      coords.forEach((item, i) => {
+        if (paths1[i] && paths2[i]) {
           let d = 'M' + item.slice(-2).map(n => n * zoom).join(',');
           const next = coords[i + 1] || coords[0];
-          if (next) {
+          const title = paths1[i].getAttribute('title') || '';
+          const idx = parseInt(title);
+          if (isNaN(idx)) {
+            d += 'L';
+            const j = parseInt(/\d+/.exec(title)![0]);
+            d += points[j].absX! * zoom + ',' + points[j].absY! * zoom;
+            d += 'L';
+            d += next.slice(-2).map(n => n * zoom).join(',');
+          }
+          else if (next) {
             if (next.length === 6) {
               d += 'C';
             }
@@ -284,9 +328,9 @@ export default class Geometry {
               d += 'L';
             }
             d += next.map(n => n * zoom).join(',');
-            paths1[i].setAttribute('d', d);
-            paths2[i] && paths2[i].setAttribute('d', d);
           }
+          paths1[i].setAttribute('d', d);
+          paths2[i].setAttribute('d', d);
         }
       });
     }
@@ -297,13 +341,6 @@ export default class Geometry {
     if (node) {
       this.updateSize(node);
     }
-  }
-
-  hide() {
-    this.panel.style.display = 'none';
-    this.panel.innerHTML = '';
-    this.node = undefined;
-    this.keep = false;
   }
 }
 
@@ -319,7 +356,7 @@ function getPolylineCoords(node: Polyline, idx: number, scale: number) {
   return points;
 }
 
-export function getRotate(x: number, y: number) {
+function getRotate(x: number, y: number) {
   if (x === 0) {
     if (y >= 0) {
       return 90;
