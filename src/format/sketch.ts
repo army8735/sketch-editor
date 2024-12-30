@@ -47,8 +47,10 @@ export async function openAndConvertSketchZip(zipFile: JSZip) {
     'document.json',
   );
   const pages: SketchFormat.Page[] = [];
-  for (let i = 0, len = document.pages.length; i < len; i++) {
-    pages[i] = await readJsonFile(zipFile, document.pages[i]._ref + '.json');
+  if (document.pages) {
+    for (let i = 0, len = document.pages.length; i < len; i++) {
+      pages[i] = await readJsonFile(zipFile, document.pages[i]._ref + '.json');
+    }
   }
   const meta = await readJsonFile(zipFile, 'meta.json');
   const user = await readJsonFile(zipFile, 'user.json');

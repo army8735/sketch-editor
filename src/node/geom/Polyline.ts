@@ -188,8 +188,8 @@ class Polyline extends Geom {
       first.absX!,
       first.absY!,
     ];
-    const res: number[][] = [p],
-      len = temp.length;
+    this.coords.push(p);
+    const len = temp.length;
     for (let i = 1; i < len; i++) {
       const item = temp[i];
       const prev = temp[i - 1];
@@ -203,7 +203,7 @@ class Polyline extends Geom {
       if (prev.hasCurveFrom) {
         p.unshift(prev.absFx!, prev.absFy!);
       }
-      res.push(p);
+      this.coords.push(p);
     }
     // 闭合
     if (this.props.isClosed) {
@@ -218,9 +218,8 @@ class Polyline extends Geom {
       if (last.hasCurveFrom) {
         p.unshift(last.absFx!, last.absFy!);
       }
-      res.push(p);
+      this.coords.push(p);
     }
-    this.coords.push(...res);
   }
 
   override renderCanvas(scale: number) {
