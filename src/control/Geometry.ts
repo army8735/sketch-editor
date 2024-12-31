@@ -26,13 +26,14 @@ export default class Geometry {
 
     let idx = -1;
     let isDrag = false;
-    let isControl = false;
-    let isMove = false;
+    let isControlF = false;
+    let isControlT = false;
     let target: HTMLElement;
     let ox = 0; // panel
     let oy = 0;
     let w = 1;
     let h = 1;
+    let diff = { tx: 0, ty: 0, fx: 0, fy: 0 }; // 按下记录control和点的差值
 
     panel.addEventListener('mousedown', (e) => {
       const node = this.node;
@@ -50,12 +51,22 @@ export default class Geometry {
       oy = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
-      isMove = false;
       if (tagName === 'DIV') {
         panel.querySelector('div.cur')?.classList.remove('cur');
+        panel.querySelector('div.f')?.classList.remove('f');
+        panel.querySelector('div.t')?.classList.remove('t');
         target.classList.add('cur');
+        target.nextElementSibling?.classList.add('t');
+        target.previousElementSibling?.classList.add('f');
         idx = parseInt(target.title);
         isDrag = true;
+        if (node instanceof Polyline) {
+          const p = node.props.points[idx];
+          diff.tx = p.tx - p.x;
+          diff.ty = p.ty - p.y;
+          diff.fx = p.fx - p.x;
+          diff.fy = p.fy - p.y;
+        }
       }
       else if (tagName === 'PATH') {
         idx = +target.getAttribute('title')!;
@@ -67,45 +78,68 @@ export default class Geometry {
             const points = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
             const p = getPointWithDByApprox(points, x, y);
             if (p && p.d <= 5) {
-              console.log(idx, p);
-              const a = sliceBezier(points, 0, p.t);
-              const b = sliceBezier(points, p.t, 1);
+              // const a = sliceBezier(points, 0, p.t);
+              // const b = sliceBezier(points, p.t, 1);
             }
           }
         }
       }
       else if (tagName === 'SPAN') {
-        isControl = true;
+        panel.querySelector('div.cur')?.classList.remove('cur');
+        panel.querySelector('div.f')?.classList.remove('f');
+        panel.querySelector('div.t')?.classList.remove('t');
+        const div = target.parentNode as HTMLElement;
+        div.classList.add('cur');
+        div.nextElementSibling?.classList.add('t');
+        div.previousElementSibling?.classList.add('f');
+        idx = parseInt(div.title);
+        if (target.classList.contains('f')) {
+          isControlF = true;
+        }
+        else {
+          isControlT = true;
+        }
       }
     });
     document.addEventListener('mousemove', (e) => {
+      const node = this.node;
+      if (!node) {
+        return;
+      }
+      const x = (e.pageX - ox) / w;
+      const y = (e.pageY - oy) / h;
       if (isDrag) {
-        const x = (e.pageX - ox) / w;
-        const y = (e.pageY - oy) / h;
-        const node = this.node;
-        if (node) {
-          if (node instanceof Polyline) {
-            node.props.points[idx].x = x;
-            node.props.points[idx].y = y;
-            node.refresh();
-            this.updateVertex(node);
+        if (node instanceof Polyline) {
+          const p = node.props.points[idx];
+          p.x = x;
+          p.y = y;
+          p.tx = p.x + diff.tx;
+          p.ty = p.y + diff.ty;
+          p.fx = p.x + diff.fx;
+          p.fy = p.y + diff.fy;
+          node.refresh();
+          this.updateVertex(node);
+        }
+      }
+      else if (isControlF || isControlT) {
+        if (node instanceof Polyline) {
+          const p = node.props.points[idx];
+          if (isControlF) {
+            p.fx = x;
+            p.fy = y;
           }
-          isMove = true;
+          else {
+            p.tx = x;
+            p.ty = y;
+          }
+          node.refresh();
+          this.updateVertex(node);
         }
       }
     });
     document.addEventListener('mouseup', () => {
-      if (isDrag) {
-        isDrag = false;
-        if (isMove) {
-          isMove = false;
-          const node = this.node;
-          if (node) {
-            if (node instanceof Polyline) {
-              //
-            }
-          }
-        }
+      if (isDrag || isControlF || isControlT) {
+        isDrag = isControlF = isControlT = false;
       }
     });
 
@@ -167,8 +201,7 @@ export default class Geometry {
 
     // 操作过程组织滚轮拖动
     panel.addEventListener('wheel', (e) => {
-      console.log(isDrag, isControl)
-      if (isDrag || isControl) {
+      if (isDrag || isControlF || isControlT) {
         e.stopPropagation();
       }
     });
@@ -189,7 +222,7 @@ export default class Geometry {
   show(node: Polyline | ShapeGroup) {
     this.node = node;
     this.panel.innerHTML = '';
-    this.updateSize(node);
+    this.updatePosSize(node);
     this.genVertex(node);
     this.updateVertex(node);
   }
@@ -203,12 +236,12 @@ export default class Geometry {
 
   update() {
     if (this.node) {
-      this.updateSize(this.node);
+      this.updatePosSize(this.node);
       this.updateVertex(this.node);
     }
   }
 
-  updateSize(node: Polyline | ShapeGroup) {
+  updatePosSize(node: Polyline | ShapeGroup) {
     const panel = this.panel;
     const res = this.listener.select.calRect(node);
     panel.style.left = res.left + 'px';
@@ -243,10 +276,10 @@ export default class Geometry {
       else {
         s2 += `<div class="vt" title="${i}">`;
         if (item.hasCurveTo) {
-          s2 += '<span><b></b></span>';
+          s2 += '<span class="t"><b></b></span>';
         }
         if (item.hasCurveFrom) {
-          s2 += '<span><b></b></span>';
+          s2 += '<span class="f"><b></b></span>';
         }
         s2 += '</div>';
         // 最后一个判断是否闭合
@@ -261,6 +294,7 @@ export default class Geometry {
   }
 
   updateVertex(node: Polyline | ShapeGroup) {
+    node.buildPoints();
     const panel = this.panel;
     const zoom = node.root!.getCurPageZoom(true) || 1;
     if (node instanceof Polyline) {
@@ -339,7 +373,7 @@ export default class Geometry {
   updatePos() {
     const node = this.node;
     if (node) {
-      this.updateSize(node);
+      this.updatePosSize(node);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Point, Props } from '../../format';
+import { Props } from '../../format';
 import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE, STROKE_POSITION } from '../../style/define';
