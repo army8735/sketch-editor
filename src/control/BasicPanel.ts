@@ -522,7 +522,7 @@ class BasicPanel extends Panel {
   }
 
   override show(nodes: Node[]) {
-    this.nodes = nodes;
+    super.show(nodes);
     this.data = [];
     const panel = this.panel;
     if (this.listener.state === State.EDIT_GEOM) {

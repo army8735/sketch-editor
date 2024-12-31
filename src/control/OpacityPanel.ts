@@ -175,8 +175,8 @@ class OpacityPanel extends Panel {
     });
   }
 
-  show(nodes: Node[]) {
-    this.nodes = nodes;
+  override show(nodes: Node[]) {
+    super.show(nodes);
     const panel = this.panel;
     if (!nodes.length || this.listener.state === State.EDIT_GEOM) {
       panel.style.display = 'none';

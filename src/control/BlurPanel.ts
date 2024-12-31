@@ -356,7 +356,7 @@ class BlurPanel extends Panel {
   }
 
   override show(nodes: Node[]) {
-    this.nodes = nodes;
+    super.show(nodes);
     const panel = this.panel;
     if (!nodes.length || this.listener.state === State.EDIT_GEOM) {
       panel.style.display = 'none';

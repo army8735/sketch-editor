@@ -156,6 +156,7 @@ export default class Geometry {
               node.refresh();
               node.checkPointsChange();
               this.show(node);
+              listener.emit(Listener.POINT_NODE, [node]);
             }
           }
         }
@@ -217,6 +218,7 @@ export default class Geometry {
       if (isDrag || isControlF || isControlT) {
         isDrag = isControlF = isControlT = false;
         this.update();
+        listener.emit(Listener.POINT_NODE, [this.node]);
       }
     });
 
