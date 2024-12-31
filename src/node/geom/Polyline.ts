@@ -774,9 +774,7 @@ class Polyline extends Geom {
 
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
   checkPointsChange() {
-    this._rect = undefined;
-    this._bbox = undefined;
-    const rect = this.rect;
+    const rect = this._rect || this.rect;
     const dx = rect[0],
       dy = rect[1],
       dw = rect[2] - this.width,
@@ -786,6 +784,9 @@ class Polyline extends Geom {
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
       this.adjustPoints(dx, dy);
       this.checkPosSizeUpward();
+      this._rect = undefined;
+      this._bbox = undefined;
+      this.coords = undefined;
     }
   }
 
@@ -804,7 +805,6 @@ class Polyline extends Geom {
         point.ty = (point.absTy! - dy) / height;
       }
     });
-    // this.points.splice(0);
   }
 
   toSvg(scale: number) {

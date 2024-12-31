@@ -1607,7 +1607,7 @@ export default class Listener extends Event {
           this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
         }
         else if (this.state === State.EDIT_GEOM) {
-          this.select.showSelectNotUpdate();
+          this.select.showSelect(this.selected);
           this.state = State.NORMAL;
           this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
         }
@@ -1968,7 +1968,7 @@ export default class Listener extends Event {
   }
 
   cancelEditGeom() {
-    this.select.showSelectNotUpdate();
+    this.select.showSelect(this.selected);
     this.state = State.NORMAL;
     this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
   }
