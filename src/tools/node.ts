@@ -196,7 +196,7 @@ export function migrate(parent: Node, node: Node) {
   const p2 = calPoint({ x: 0, y: parent.height }, mp);
   const v1 = { x: p1.x - p0.x, y: p1.y - p0.y };
   const v2 = { x: p2.x - p0.x, y: p2.y - p0.y };
-  // console.log('v1', v1, v2);
+  // console.log('v1 v2', v1, v2);
   // 再求得node的matrix，并相对于parent取消旋转和镜像
   const i = identity();
   const flipN = getFlipOnPage(node);
@@ -225,9 +225,10 @@ export function migrate(parent: Node, node: Node) {
   const p = calPoint({ x: -node.computedStyle.translateX, y: -node.computedStyle.translateY }, m);
   // console.log(p);
   const v = { x: p.x - p0.x, y: p.y - p0.y };
+  // console.log('v', v);
   const v3 = projection(v.x, v.y, v1.x, v1.y);
   const v4 = projection(v.x, v.y, v2.x, v2.y);
-  // console.log('v3', v3, v4);
+  // console.log('v3 v4', v3, v4);
   // 看这个向量和那2条矢量之间的夹角，判断x/y的正负号
   let x = length(v3.x, v3.y);
   let y = length(v4.x, v4.y);

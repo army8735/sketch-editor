@@ -40,7 +40,8 @@ export function includedAngle(x1: number, y1: number, x2: number, y2: number, ke
       cos = -1;
     }
     else {
-      throw new Error('Vector is a point');
+      // throw new Error('Vector is a point');
+      return 0;
     }
   }
   else if (x1 === x2) {
