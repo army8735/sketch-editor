@@ -472,7 +472,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       },
     } as JText;
   }
-  else if (layer.vectorOrigination && layer.vectorOrigination.keyDescriptorList.length && !layer.vectorOrigination.keyDescriptorList[0].keyShapeInvalidated) {
+  else if (layer.vectorOrigination && layer.vectorOrigination.keyDescriptorList.length === 1 && !layer.vectorOrigination.keyDescriptorList[0].keyShapeInvalidated) {
     const { vectorFill, vectorStroke, vectorOrigination: { keyDescriptorList } } = layer;
     const fill: Array<string | number[]> = [];
     const fillEnable: boolean[] = [];
@@ -684,7 +684,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       }
     });
     return {
-      tagName: keyDescriptorList.length > 1 ? TAG_NAME.SHAPE_GROUP : TAG_NAME.POLYLINE,
+      tagName: TAG_NAME.POLYLINE,
       props: {
         uuid: uuid.v4(),
         name,
