@@ -132,7 +132,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
   const innerShadow: string[] = [];
   const innerShadowEnable: boolean[] = [];
   const canvasPromise = new Promise<JLayer | undefined>(resolve => {
-    canvas!.toBlob(blob => {
+    if (!canvas) {
+      return resolve(undefined);
+    }
+    canvas.toBlob(blob => {
       if (blob) {
         return resolve({
           tagName: TAG_NAME.BITMAP,
