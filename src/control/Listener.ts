@@ -509,6 +509,7 @@ export default class Listener extends Event {
         }
         // 理论进不来因为gradient/geom的dom盖在上面点不到，点到也应该有节点
         else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+          this.emit(Listener.SELECT_POINT, -1);
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -1970,6 +1971,7 @@ export default class Listener extends Event {
   cancelEditGeom() {
     this.select.showSelect(this.selected);
     this.state = State.NORMAL;
+    this.emit(Listener.SELECT_POINT, -1);
     this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
   }
 
@@ -2034,6 +2036,7 @@ export default class Listener extends Event {
   static ART_BOARD_NODE = 'ART_BOARD_NODE';
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static POINT_NODE = 'POINT_NODE';
+  static SELECT_POINT = 'SELECT_POINT';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
   static STATE_CHANGE = 'STATE_CHANGE';

@@ -34,7 +34,7 @@ export default class Geometry {
     let oy = 0;
     let w = 1;
     let h = 1;
-    let diff = { tx: 0, ty: 0, fx: 0, fy: 0 }; // 按下记录control和点的差值
+    let diff = { tx: 0, ty: 0, fx: 0, fy: 0, d: 0 }; // 按下记录control和点的差值
 
     panel.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.spaceKey) {
@@ -52,14 +52,15 @@ export default class Geometry {
       oy = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
+      panel.querySelector('div.cur')?.classList.remove('cur');
+      panel.querySelector('div.f')?.classList.remove('f');
+      panel.querySelector('div.t')?.classList.remove('t');
       if (tagName === 'DIV') {
-        panel.querySelector('div.cur')?.classList.remove('cur');
-        panel.querySelector('div.f')?.classList.remove('f');
-        panel.querySelector('div.t')?.classList.remove('t');
         target.classList.add('cur');
         target.nextElementSibling?.classList.add('t');
         target.previousElementSibling?.classList.add('f');
         idx = parseInt(target.title);
+        listener.emit(Listener.SELECT_POINT, idx);
         isDrag = true;
         if (node instanceof Polyline) {
           const p = node.props.points[idx];
@@ -157,25 +158,36 @@ export default class Geometry {
               node.checkPointsChange();
               this.show(node);
               listener.emit(Listener.POINT_NODE, [node]);
+              listener.emit(Listener.SELECT_POINT, i + 1);
+            }
+            else {
+              listener.emit(Listener.SELECT_POINT, -1);
             }
           }
         }
+        else {
+          listener.emit(Listener.SELECT_POINT, -1);
+        }
       }
       else if (tagName === 'SPAN') {
-        panel.querySelector('div.cur')?.classList.remove('cur');
-        panel.querySelector('div.f')?.classList.remove('f');
-        panel.querySelector('div.t')?.classList.remove('t');
         const div = target.parentNode as HTMLElement;
         div.classList.add('cur');
         div.nextElementSibling?.classList.add('t');
         div.previousElementSibling?.classList.add('f');
         idx = parseInt(div.title);
+        listener.emit(Listener.SELECT_POINT, idx);
+        const p = node.props.points[idx];
         if (target.classList.contains('f')) {
           isControlF = true;
+          diff.d = Math.sqrt(Math.pow(p.x - p.tx, 2) + Math.pow(p.y - p.tx, 2));
         }
         else {
           isControlT = true;
+          diff.d = Math.sqrt(Math.pow(p.x - p.fx, 2) + Math.pow(p.y - p.fx, 2));
         }
+      }
+      else {
+        listener.emit(Listener.SELECT_POINT, -1);
       }
     });
     document.addEventListener('mousemove', (e) => {
@@ -208,6 +220,26 @@ export default class Geometry {
           else {
             p.tx = x;
             p.ty = y;
+          }
+          // 镜像和非对称需更改对应点
+          if (p.curveMode === CURVE_MODE.MIRRORED) {
+            if (isControlF) {
+              const dx = p.fx - p.x;
+              const dy = p.fy - p.y;
+              p.tx = p.x - dx;
+              p.ty = p.y - dy;
+            }
+            else {
+              const dx = p.tx - p.x;
+              const dy = p.ty - p.y;
+              p.fx = p.x - dx;
+              p.fy = p.y - dy;
+            }
+          }
+          else if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
+            if (isControlF) {
+            }
+            else {}
           }
           node.refresh();
           this.updateVertex(node);
