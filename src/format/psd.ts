@@ -319,7 +319,8 @@ async function convertItem(layer: Layer, w: number, h: number) {
       //   Math.floor((strokeColor as RGB).b),
       // ]] : [],
       textDecoration,
-      paragraphSpacing: autoLeading ? 0 : leading,
+      lineHeight: autoLeading ? 0 : leading * transform[0],
+      paragraphSpacing: 0,
     };
     const style = {
       left: (left + (right - left) * 0.5) * 100 / w + '%',
@@ -355,7 +356,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           fontWeight: textStyle.fontWeight,
           fontStyle: textStyle.fontStyle,
           letterSpacing: kerning,
-          lineHeight: 0,
+          lineHeight: autoLeading ? 0 : leading * transform[0],
           textAlign: justification
             ? {
               left: 'left',
@@ -370,7 +371,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             : 'left',
           color: color2rgbaInt(textStyle.color),
           textDecoration: textStyle.textDecoration,
-          paragraphSpacing: leading,
+          paragraphSpacing: 0,
         };
         let len1 = -1;
         let len2 = -1;
@@ -417,11 +418,11 @@ async function convertItem(layer: Layer, w: number, h: number) {
           if (style.fontSize !== undefined) {
             res.fontSize = style.fontSize;
           }
-          if (style.kerning !== undefined) {
+          if (!style.autoKerning && style.kerning !== undefined) {
             res.letterSpacing = style.kerning;
           }
-          if (style.leading !== undefined) {
-            res.paragraphSpacing = style.leading;
+          if (!style.autoLeading && style.leading !== undefined) {
+            res.lineHeight = style.leading * transform[0];
           }
           if (style.fillColor) {
             res.color = [
