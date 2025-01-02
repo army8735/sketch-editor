@@ -226,8 +226,19 @@ export function pointSlope2General(x1: number, y1: number, k: number) {
   return [k, -1, y1 - k * x1];
 }
 
+export function lineSlope(x1: number, y1: number, x2: number, y2: number) {
+  if (y1 === y2) {
+    return 0;
+  }
+  if (x1 === x2) {
+    return y2 > y1 ? Infinity : -Infinity;
+  }
+  return (y2 - y1) / (x2 - x1);
+}
+
 export default {
   getRoots,
   twoPoint2General,
   pointSlope2General,
+  lineSlope,
 };

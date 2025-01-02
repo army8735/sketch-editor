@@ -34,7 +34,7 @@ export default class Geometry {
     let oy = 0;
     let w = 1;
     let h = 1;
-    let diff = { tx: 0, ty: 0, fx: 0, fy: 0, d: 0 }; // 按下记录control和点的差值
+    let diff = { tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录control和点的差值，拖拽时计算用
 
     panel.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.spaceKey) {
@@ -179,12 +179,12 @@ export default class Geometry {
         const p = node.props.points[idx];
         if (target.classList.contains('f')) {
           isControlF = true;
-          diff.d = Math.sqrt(Math.pow(p.x - p.tx, 2) + Math.pow(p.y - p.tx, 2));
         }
         else {
           isControlT = true;
-          diff.d = Math.sqrt(Math.pow(p.x - p.fx, 2) + Math.pow(p.y - p.fx, 2));
         }
+        diff.td = Math.sqrt(Math.pow(p.x - p.tx, 2) + Math.pow(p.y - p.tx, 2));
+        diff.fd = Math.sqrt(Math.pow(p.x - p.fx, 2) + Math.pow(p.y - p.fx, 2));
       }
       else {
         listener.emit(Listener.SELECT_POINT, -1);
@@ -222,24 +222,26 @@ export default class Geometry {
             p.ty = y;
           }
           // 镜像和非对称需更改对应点
-          if (p.curveMode === CURVE_MODE.MIRRORED) {
+          if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
+            let ratio = 1;
             if (isControlF) {
+              if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
+                ratio = diff.fd / Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2)) * diff.td;
+              }
               const dx = p.fx - p.x;
               const dy = p.fy - p.y;
-              p.tx = p.x - dx;
-              p.ty = p.y - dy;
+              p.tx = p.x - dx * ratio;
+              p.ty = p.y - dy * ratio;
             }
             else {
+              if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
+                ratio = diff.td / Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2)) * diff.fd;
+              }
               const dx = p.tx - p.x;
               const dy = p.ty - p.y;
-              p.fx = p.x - dx;
-              p.fy = p.y - dy;
+              p.fx = p.x - dx * ratio;
+              p.fy = p.y - dy * ratio;
             }
-          }
-          else if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-            if (isControlF) {
-            }
-            else {}
           }
           node.refresh();
           this.updateVertex(node);

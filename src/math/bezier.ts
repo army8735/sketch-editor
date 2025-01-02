@@ -1,4 +1,4 @@
-import equation, { getRoots, pointSlope2General, twoPoint2General } from './equation';
+import equation, { getRoots, lineSlope, pointSlope2General, twoPoint2General } from './equation';
 import { includedAngle } from './vector';
 
 /**
@@ -555,10 +555,7 @@ export function bezierSlope(points: { x: number, y: number }[], t = 0) {
   if (points.length === 2) {
     const { x: x1, y: y1 } = points[0];
     const { x: x2, y: y2 } = points[1];
-    if (x1 === x2) {
-      return Infinity;
-    }
-    return (y2 - y1) / (x2 - x1);
+    return lineSlope(x1, y1, x2, y2);
   }
   if (points.length === 3) {
     return bezier2Slope(points, t);
