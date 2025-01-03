@@ -85,7 +85,13 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
 
 // 判断点是否在一个矩形，比如事件发生是否在节点上
 export function pointInRect(x: number, y: number, x1: number, y1: number, x2: number, y2: number,
-                            matrix: Float64Array, includeIntersect: boolean = false) {
+                            matrix?: Float64Array, includeIntersect: boolean = false) {
+  if (x1 >= x2) {
+    [x1, x2] = [x2, x1];
+  }
+  if (y1 >= y2) {
+    [y1, y2] = [y2, y1];
+  }
   if (matrix && !isE(matrix)) {
     const t1 = calPoint({ x: x1, y: y1 }, matrix);
     const t2 = calPoint({ x: x2, y: y1 }, matrix);
