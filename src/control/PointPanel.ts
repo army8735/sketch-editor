@@ -6,6 +6,8 @@ import State from './State';
 import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import { CURVE_MODE } from '../style/define';
+import { Point } from '../format';
+import { clone } from '../util/type';
 
 const html = `
   <h4 class="panel-title">锚点</h4>
@@ -113,11 +115,107 @@ class PointPanel extends Panel {
 
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
     const number = panel.querySelector('input[type="number"]') as HTMLInputElement;
+    let prevPoint: Point[] = [];
+
     range.addEventListener('input', (e) => {
-      console.log(1);
+      const node = this.node;
+      if (!node) {
+        return;
+      }
+      if (!prevPoint.length) {
+        if (node instanceof Polyline) {
+          prevPoint = clone(node.props.points);
+        }
+      }
+      const value = parseFloat(range.value) || 0;
+      if (node instanceof Polyline) {
+        let points = node.props.points;
+        // 激活的顶点或者全部
+        if (listener.geometry.idx.length) {
+          points = listener.geometry.idx.map(i => points[i]);
+        }
+        points.forEach(item => {
+          item.cornerRadius = value;
+        });
+      }
+      range.placeholder = number.placeholder = '';
+      number.value = range.value;
+      node.refresh();
+      listener.geometry.updateVertex(node);
+      listener.emit(Listener.POINT_NODE, [node]);
     });
     range.addEventListener('change', (e) => {
-      console.log(2);
+      listener.geometry.update();
+    });
+
+    number.addEventListener('input', (e) => {
+      const node = this.node;
+      if (!node) {
+        return;
+      }
+      const value = parseFloat(number.value) || 0;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      if (!prevPoint.length) {
+        if (node instanceof Polyline) {
+          prevPoint = clone(node.props.points);
+        }
+      }
+      if (node instanceof Polyline) {
+        let points = node.props.points;
+        // 激活的顶点或者全部
+        if (listener.geometry.idx.length) {
+          points = listener.geometry.idx.map(i => points[i]);
+        }
+        points.forEach((item, i) => {
+          if (isInput) {
+            item.cornerRadius = value;
+            if (!i) {
+              range.placeholder = number.placeholder = '';
+              range.value = number.value;
+            }
+          }
+          else {
+            let d = 0;
+            if (number.placeholder) {
+              d = value;
+            }
+            else {
+              d = value - item.cornerRadius;
+            }
+            if (listener.shiftKey) {
+              if (d > 0) {
+                d = 10;
+              }
+              else {
+                d = -10;
+              }
+            }
+            else if (listener.altKey) {
+              if (d > 0) {
+                d = 0.1;
+              }
+              else {
+                d = -0.1;
+              }
+            }
+            item.cornerRadius += d;
+            if (!i) {
+              if (number.placeholder) {
+                number.value = '';
+              }
+              else {
+                number.value = item.cornerRadius.toString();
+              }
+            }
+          }
+        });
+      }
+      node.refresh();
+      listener.geometry.updateVertex(node);
+      listener.emit(Listener.POINT_NODE, [node]);
+    });
+    number.addEventListener('change', (e) => {
+      listener.geometry.update();
     });
 
     listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
@@ -133,19 +231,15 @@ class PointPanel extends Panel {
         panel.querySelector('.type')?.classList.add('enable');
         const node = this.node;
         const type: CURVE_MODE[] = [];
-        const radius: number[] = [];
         if (node instanceof Polyline) {
           idx.forEach(i => {
             const p = node.props.points[i];
-            let { curveMode, cornerRadius } = p;
+            let { curveMode } = p;
             if (curveMode === CURVE_MODE.NONE) {
               curveMode = CURVE_MODE.STRAIGHT;
             }
             if (!type.includes(curveMode)) {
               type.push(curveMode);
-            }
-            if (!radius.includes(cornerRadius)) {
-              radius.push(cornerRadius);
             }
           });
         }
@@ -162,18 +256,7 @@ class PointPanel extends Panel {
           }
           panel.querySelector(`.type .${t}`)?.classList.add('cur');
         }
-        if (!radius.length) {
-          radius.push(0);
-        }
-        if (radius.length > 1) {
-          range.placeholder = number.placeholder = '多个';
-          range.value = '0';
-          number.value = '';
-        }
-        else {
-          range.placeholder = number.placeholder = '';
-          range.value = number.value = radius[0].toString();
-        }
+        this.updateNumber(idx);
       }
     });
   }
@@ -188,20 +271,35 @@ class PointPanel extends Panel {
     }
     this.node = geoms[0];
     panel.style.display = 'block';
+    this.updateNumber([]);
+  }
+
+  updateNumber(idx: number[]) {
+    const node = this.node;
+    if (!node) {
+      return;
+    }
+    const panel = this.panel;
+    const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
+    const number = panel.querySelector('input[type="number"]') as HTMLInputElement;
     const radius: number[] = [];
-    this.node.props.points.forEach(item => {
-      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
-        const r = item.cornerRadius;
-        if (!radius.includes(r)) {
-          radius.push(r);
-        }
+    if (node instanceof Polyline) {
+      let points = node.props.points;
+      if (idx.length) {
+        points = idx.map(i => points[i]);
       }
-    });
+      points.forEach(item => {
+        if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
+          const r = item.cornerRadius;
+          if (!radius.includes(r)) {
+            radius.push(r);
+          }
+        }
+      });
+    }
     if (!radius.length) {
       radius.push(0);
     }
-    const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
-    const number = panel.querySelector('input[type="number"]') as HTMLInputElement;
     if (radius.length > 1) {
       range.placeholder = number.placeholder = '多个';
       range.value = '0';
