@@ -127,8 +127,13 @@ function init(listener: Listener) {
         listener.paste();
       }
       else if (classList.contains('ok')) {
+        if (listener.state === State.EDIT_GEOM) {
+          listener.cancelEditGeom();
+        }
+        else if (listener.state === State.EDIT_GRADIENT) {
+          listener.cancelEditGradient();
+        }
         listener.state = State.NORMAL;
-        listener.cancelEditGradient();
       }
     });
   }
