@@ -6,6 +6,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import { r2d } from '../math/geom';
 import { Point } from '../format';
+import { clone } from '../util/type';
 
 export default class Geometry {
   root: Root;
@@ -14,11 +15,13 @@ export default class Geometry {
   panel: HTMLElement;
   node?: Polyline | ShapeGroup;
   keep?: boolean; // 保持窗口外部点击时不关闭
+  idx: number[]; // 当前激活点索引
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
+    this.idx = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'geometry';
@@ -29,12 +32,16 @@ export default class Geometry {
     let isDrag = false;
     let isControlF = false;
     let isControlT = false;
+    let isMove = false;
+    let isUnSelected = false; // 多选点按下时无法判断意图，抬起时才能判断，另外按下未选要特殊标注
+    let isShift = false; // 同上，shift以按下时为准，因为按下后可能松开
     let target: HTMLElement;
     let ox = 0; // panel
     let oy = 0;
     let w = 1;
     let h = 1;
-    let diff = { tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录control和点的差值，拖拽时计算用
+    let diff = { x: 0, y: 0, tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录点的位置，拖拽时计算用
+    let clonePoints: Point[];
 
     panel.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.spaceKey) {
@@ -47,28 +54,53 @@ export default class Geometry {
       this.keep = true;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
+      const classList = target.classList;
       const o = panel.getBoundingClientRect();
       ox = o.left;
       oy = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
-      panel.querySelector('div.cur')?.classList.remove('cur');
-      panel.querySelector('div.f')?.classList.remove('f');
-      panel.querySelector('div.t')?.classList.remove('t');
+      isMove = false;
+      isUnSelected = false;
+      isShift = false;
       if (tagName === 'DIV') {
-        target.classList.add('cur');
-        target.nextElementSibling?.classList.add('t');
-        target.previousElementSibling?.classList.add('f');
         idx = parseInt(target.title);
-        listener.emit(Listener.SELECT_POINT, idx);
+        // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起判断
+        if (listener.shiftKey) {
+          isShift = true;
+          if (!this.idx.includes(idx)) {
+            this.idx.push(idx);
+          }
+          else {
+            isUnSelected = true;
+          }
+          classList.add('cur');
+          target.nextElementSibling?.classList.add('t');
+          target.previousElementSibling?.classList.add('f');
+        }
+        // 无shift则是单个选择
+        else {
+          panel.querySelector('div.cur')?.classList.remove('cur');
+          panel.querySelector('div.f')?.classList.remove('f');
+          panel.querySelector('div.t')?.classList.remove('t');
+          this.idx.splice(0);
+          this.idx.push(idx);
+          classList.add('cur');
+          target.nextElementSibling?.classList.add('t');
+          target.previousElementSibling?.classList.add('f');
+        }
         isDrag = true;
         if (node instanceof Polyline) {
           const p = node.props.points[idx];
+          diff.x = p.x;
+          diff.y = p.y;
           diff.tx = p.tx - p.x;
           diff.ty = p.ty - p.y;
           diff.fx = p.fx - p.x;
           diff.fy = p.fy - p.y;
+          clonePoints = clone(node.props.points);
         }
+        listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
       }
       else if (tagName === 'PATH') {
         const title = target.getAttribute('title')!;
@@ -158,24 +190,25 @@ export default class Geometry {
               node.checkPointsChange();
               this.show(node);
               listener.emit(Listener.POINT_NODE, [node]);
-              listener.emit(Listener.SELECT_POINT, i + 1);
+              this.idx.splice(0);
+              this.idx.push(i + 1);
+              listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
             }
             else {
-              listener.emit(Listener.SELECT_POINT, -1);
+              this.idx.splice(0);
+              listener.emit(Listener.SELECT_POINT, []);
             }
           }
         }
         else {
-          listener.emit(Listener.SELECT_POINT, -1);
+          this.idx.splice(0);
+          listener.emit(Listener.SELECT_POINT, []);
         }
       }
       else if (tagName === 'SPAN') {
         const div = target.parentNode as HTMLElement;
-        div.classList.add('cur');
-        div.nextElementSibling?.classList.add('t');
-        div.previousElementSibling?.classList.add('f');
+        // span可能是相邻的顶点控制，所以不记录顶点
         idx = parseInt(div.title);
-        listener.emit(Listener.SELECT_POINT, idx);
         const p = node.props.points[idx];
         if (target.classList.contains('f')) {
           isControlF = true;
@@ -187,7 +220,8 @@ export default class Geometry {
         diff.fd = Math.sqrt(Math.pow(p.x - p.fx, 2) + Math.pow(p.y - p.fx, 2));
       }
       else {
-        listener.emit(Listener.SELECT_POINT, -1);
+        this.idx.splice(0);
+        listener.emit(Listener.SELECT_POINT, []);
       }
     });
     document.addEventListener('mousemove', (e) => {
@@ -195,17 +229,32 @@ export default class Geometry {
       if (!node) {
         return;
       }
+      isMove = true;
       const x = (e.pageX - ox) / w;
       const y = (e.pageY - oy) / h;
       if (isDrag) {
         if (node instanceof Polyline) {
-          const p = node.props.points[idx];
+          const points = node.props.points;
+          const p = points[idx];
+          const dx = x - clonePoints[idx].x;
+          const dy = y - clonePoints[idx].y;
           p.x = x;
           p.y = y;
           p.tx = p.x + diff.tx;
           p.ty = p.y + diff.ty;
           p.fx = p.x + diff.fx;
           p.fy = p.y + diff.fy;
+          // 多个点的话其它的也随之变动
+          this.idx.forEach(i => {
+            if (i !== idx) {
+              points[i].x = clonePoints[i].x + dx;
+              points[i].y = clonePoints[i].y + dy;
+              points[i].tx = clonePoints[i].tx + dx;
+              points[i].ty = clonePoints[i].ty + dy;
+              points[i].fx = clonePoints[i].fx + dx;
+              points[i].fy = clonePoints[i].fy + dy;
+            }
+          });
           node.refresh();
           this.updateVertex(node);
         }
@@ -250,6 +299,15 @@ export default class Geometry {
     });
     document.addEventListener('mouseup', () => {
       if (isDrag || isControlF || isControlT) {
+        // 顶点抬起时特殊判断，没有移动过的多选在已选时视为取消选择
+        if (isDrag && !isMove && isShift && isUnSelected) {
+          panel.querySelector(`div[title="${idx}"]`)?.classList.remove('cur');
+          const i = this.idx.indexOf(idx);
+          if (i > -1) {
+            this.idx.splice(i, 1);
+            listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+          }
+        }
         isDrag = isControlF = isControlT = false;
         this.update();
         listener.emit(Listener.POINT_NODE, [this.node]);
@@ -338,6 +396,8 @@ export default class Geometry {
     this.updatePosSize(node);
     this.genVertex(node);
     this.updateVertex(node);
+    this.idx.splice(0);
+    // this.listener.emit(Listener.SELECT_POINT, []);
   }
 
   hide() {
