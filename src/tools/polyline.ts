@@ -2,6 +2,8 @@ import * as uuid from 'uuid';
 import { Point } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
+import { calPoint } from '../math/matrix';
+import { pointInRect } from '../math/geom';
 
 export function createLine(x1: number, y1: number, x2: number, y2: number) {
   const w = Math.abs(x1 - x2);
@@ -357,7 +359,7 @@ export function createRect(x: number, y: number, w: number, h: number) {
   ]);
 }
 
-function createPolyline(
+export function createPolyline(
   x: number,
   y: number,
   w: number,
@@ -394,3 +396,25 @@ function createPolyline(
     isOval: polyType === 'oval',
   });
 }
+
+export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: number, y2: number) {
+  // console.log(x1, y1, x2, y2);
+  node.buildPoints();
+  const m = node.matrixWorld;
+  const points = node.props.points;
+  const list: number[] = [];
+  points.forEach((item: Point, i) => {
+    const p = calPoint({
+      x: item.absX!,
+      y: item.absY!,
+    }, m);
+    if (pointInRect(p.x, p.y, x1, y1, x2, y2)) {
+      list.push(i);
+    }
+  });
+  return list;
+}
+
+export default {
+  getFrameVertexes,
+};

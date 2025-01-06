@@ -48,6 +48,7 @@ import AddCommand, { AddData } from '../history/AddCommand';
 import Gradient from './Gradient';
 import Geometry from './Geometry';
 import Polyline from '../node/geom/Polyline';
+import { getFrameVertexes } from '../tools/polyline';
 
 export type ListenerOptions = {
   enabled?: {
@@ -394,6 +395,13 @@ export default class Listener extends Event {
           return;
         }
       }
+      // 矢量编辑状态下空按下多选框选多个矢量顶点，非空按下为内移动顶点
+      if (this.state === State.EDIT_GEOM) {
+        if (!this.geometry.idx.length) {
+          this.isFrame = true;
+        }
+        return;
+      }
       // 普通根据点击坐标获取节点逻辑
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
@@ -570,24 +578,16 @@ export default class Listener extends Event {
       contextMenu.showCanvas(e.pageX, e.pageY, this);
       return;
     }
-    // 编辑gradient/geom按下无效，左键则取消编辑状态，但可以滚动
+    // 编辑gradient/geom按下无效（geom左键可以按下框选不无效），左键则取消编辑状态，但可以滚动
     if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
-      if (e.button === 2 || e.button === 0 && !this.spaceKey) {
+      if (e.button === 0 && !this.spaceKey) {
         if (this.state === State.EDIT_GRADIENT) {
-          // 说明点在内部控制点上
-          if (this.gradient.keep) {
-            return;
+          // 是否点在内部控制点上
+          if (!this.gradient.keep) {
+            this.cancelEditGradient();
           }
-          this.cancelEditGradient();
+          return;
         }
-        else {
-          // 说明点在内部控制点上
-          if (this.geometry.keep) {
-            return;
-          }
-          this.cancelEditGeom();
-        }
-        return;
       }
       // 拖拽设置keep防止窗口关闭
       else if (e.button === 1 || e.button === 0 && this.spaceKey) {
@@ -627,7 +627,7 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+    if ([State.EDIT_GRADIENT].includes(this.state)) {
       return;
     }
     const dpi = root.dpi;
@@ -732,6 +732,7 @@ export default class Listener extends Event {
         if (this.options.disabled?.move) {
           return;
         }
+        // 矢量编辑也特殊，框选发生在没按下矢量点并移动
         if (this.isFrame) {
           if (!this.isMouseMove) {
             this.select.showFrame(this.startX - this.originX, this.startY - this.originY, dx, dy);
@@ -739,11 +740,31 @@ export default class Listener extends Event {
           else {
             this.select.updateFrame(dx, dy);
           }
+          this.isMouseMove = true;
           const x = (this.startX - this.originX) * dpi;
           const y = (this.startY - this.originY) * dpi;
           let meta = this.metaKey || isWin && this.ctrlKey;
           if (this.options.enabled?.selectWithMeta) {
             meta = !meta;
+          }
+          // 矢量顶点框选
+          if (this.state === State.EDIT_GEOM) {
+            const node = this.geometry.node;
+            if (node instanceof Polyline) {
+              const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
+              const geometry = this.geometry;
+              if (res.join(',') !== geometry.idx.join(',')) {
+                geometry.idx.splice(0);
+                geometry.clearCur();
+                res.forEach(i => {
+                  this.geometry.idx.push(i);
+                  const div = geometry.panel.querySelector(`.vt[title="${i}"]`) as HTMLElement;
+                  div.classList.add('cur');
+                });
+                this.emit(Listener.SELECT_POINT, res);
+              }
+            }
+            return;
           }
           const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, meta);
           const old = selected.splice(0);
@@ -768,6 +789,9 @@ export default class Listener extends Event {
           }
         }
         else {
+          if (this.state === State.EDIT_GEOM) {
+            return;
+          }
           this.select.select.classList.add('move');
           // 水平/垂直
           if (this.shiftKey) {
@@ -1007,7 +1031,7 @@ export default class Listener extends Event {
         }
         this.input.focus();
       }
-      else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+      else if ([State.EDIT_GRADIENT].includes(this.state)) {
         // 啥也不做
       }
       else if (this.isFrame) {
@@ -1050,6 +1074,16 @@ export default class Listener extends Event {
       this.select.showSelect(selected);
       this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
+    }
+    if (this.state === State.EDIT_GEOM && !this.isMouseMove) {
+      if (!this.isMouseMove) {
+        this.state = State.NORMAL;
+        this.cancelEditGeom();
+      }
+      const node = this.geometry.node!;
+      if (node instanceof Polyline) {
+        this.geometry.clonePoints = clone(node.props.points);
+      }
     }
     this.isMouseDown = false;
     this.isMouseMove = false;
@@ -1571,7 +1605,7 @@ export default class Listener extends Event {
     const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
-      const target = e.target as HTMLElement; // 忽略输入时
+      // 忽略输入时
       if (!isInput && !this.options.disabled?.remove) {
         this.remove();
       }
@@ -1580,7 +1614,10 @@ export default class Listener extends Event {
     else if (keyCode === 32 || code === 'Space') {
       this.spaceKey = true;
       if (!this.isMouseDown && !this.options.disabled?.drag) {
-        this.dom.style.cursor = 'grab';
+        // 拖拽矢量点特殊icon不变手
+        if (this.state !== State.EDIT_GEOM || !this.geometry.idx.length) {
+          this.dom.style.cursor = 'grab';
+        }
       }
     }
     // option+esc

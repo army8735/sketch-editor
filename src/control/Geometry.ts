@@ -16,12 +16,14 @@ export default class Geometry {
   node?: Polyline | ShapeGroup;
   keep?: boolean; // 保持窗口外部点击时不关闭
   idx: number[]; // 当前激活点索引
+  clonePoints: Point[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
     this.idx = [];
+    this.clonePoints = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'geometry';
@@ -41,7 +43,7 @@ export default class Geometry {
     let w = 1;
     let h = 1;
     let diff = { x: 0, y: 0, tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录点的位置，拖拽时计算用
-    let clonePoints: Point[];
+    // let clonePoints: Point[];
 
     panel.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.spaceKey) {
@@ -80,9 +82,7 @@ export default class Geometry {
         }
         // 无shift则是单个选择
         else {
-          panel.querySelector('div.cur')?.classList.remove('cur');
-          panel.querySelector('div.f')?.classList.remove('f');
-          panel.querySelector('div.t')?.classList.remove('t');
+          this.clearCur();
           this.idx.splice(0);
           this.idx.push(idx);
           classList.add('cur');
@@ -98,7 +98,7 @@ export default class Geometry {
           diff.ty = p.ty - p.y;
           diff.fx = p.fx - p.x;
           diff.fy = p.fy - p.y;
-          clonePoints = clone(node.props.points);
+          this.clonePoints = clone(node.props.points);
         }
         listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
       }
@@ -236,8 +236,8 @@ export default class Geometry {
         if (node instanceof Polyline) {
           const points = node.props.points;
           const p = points[idx];
-          const dx = x - clonePoints[idx].x;
-          const dy = y - clonePoints[idx].y;
+          const dx = x - this.clonePoints[idx].x;
+          const dy = y - this.clonePoints[idx].y;
           p.x = x;
           p.y = y;
           p.tx = p.x + diff.tx;
@@ -247,12 +247,12 @@ export default class Geometry {
           // 多个点的话其它的也随之变动
           this.idx.forEach(i => {
             if (i !== idx) {
-              points[i].x = clonePoints[i].x + dx;
-              points[i].y = clonePoints[i].y + dy;
-              points[i].tx = clonePoints[i].tx + dx;
-              points[i].ty = clonePoints[i].ty + dy;
-              points[i].fx = clonePoints[i].fx + dx;
-              points[i].fy = clonePoints[i].fy + dy;
+              points[i].x = this.clonePoints[i].x + dx;
+              points[i].y = this.clonePoints[i].y + dy;
+              points[i].tx = this.clonePoints[i].tx + dx;
+              points[i].ty = this.clonePoints[i].ty + dy;
+              points[i].fx = this.clonePoints[i].fx + dx;
+              points[i].fy = this.clonePoints[i].fy + dy;
             }
           });
           node.refresh();
@@ -318,6 +318,10 @@ export default class Geometry {
     let pathIdx = -1;
     let pj;
     panel.addEventListener('mouseover', (e) => {
+      // 框选不侦听hover
+      if (listener.isMouseDown) {
+        return;
+      }
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       pj = panel.querySelector('.pj') as HTMLElement;
@@ -370,7 +374,7 @@ export default class Geometry {
       pj!.classList.remove('cur');
     });
 
-    // 操作过程组织滚轮拖动
+    // 操作过程阻止滚轮拖动
     panel.addEventListener('wheel', (e) => {
       if (isDrag || isControlF || isControlT) {
         e.stopPropagation();
@@ -553,6 +557,19 @@ export default class Geometry {
     if (node) {
       this.updatePosSize(node);
     }
+  }
+
+  clearCur() {
+    const panel = this.panel;
+    panel.querySelectorAll('div.cur')?.forEach(div => {
+      div.classList.remove('cur');
+    });
+    panel.querySelectorAll('div.f')?.forEach(div => {
+      div.classList.remove('f');
+    });
+    panel.querySelectorAll('div.t')?.forEach(div => {
+      div.classList.remove('t');
+    });
   }
 }
 
