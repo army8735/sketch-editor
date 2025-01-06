@@ -6,7 +6,9 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import { r2d } from '../math/geom';
 import { Point } from '../format';
-import { clone } from '../util/type';
+import { clone, equal } from '../util/type';
+import PointCommand from '../history/PointCommand';
+import State from './State';
 
 export default class Geometry {
   root: Root;
@@ -53,7 +55,6 @@ export default class Geometry {
       if (!node) {
         return;
       }
-      this.keep = true;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
@@ -65,7 +66,8 @@ export default class Geometry {
       isMove = false;
       isUnSelected = false;
       isShift = false;
-      if (tagName === 'DIV') {
+      if (tagName === 'DIV' && classList.contains('vt')) {
+        this.keep = true;
         idx = parseInt(target.title);
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起判断
         if (listener.shiftKey) {
@@ -113,6 +115,7 @@ export default class Geometry {
             const pts = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
             const p = getPointWithDByApprox(pts, x, y);
             if (p && p.d <= 5) {
+              this.keep = true;
               const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
               const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
               const i = parseInt(/\d+/.exec(title)![0]);
@@ -189,9 +192,13 @@ export default class Geometry {
               node.refresh();
               node.checkPointsChange();
               this.show(node);
-              listener.emit(Listener.POINT_NODE, [node]);
               this.idx.splice(0);
               this.idx.push(i + 1);
+              listener.history.addCommand(new PointCommand([node], [{
+                prev: clone(node.props.points),
+                next: this.clonePoints.slice(0),
+              }]));
+              listener.emit(Listener.POINT_NODE, [node]);
               listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
             }
             else {
@@ -206,6 +213,7 @@ export default class Geometry {
         }
       }
       else if (tagName === 'SPAN') {
+        this.keep = true;
         const div = target.parentNode as HTMLElement;
         // span可能是相邻的顶点控制，所以不记录顶点
         idx = parseInt(div.title);
@@ -309,8 +317,28 @@ export default class Geometry {
           }
         }
         isDrag = isControlF = isControlT = false;
-        this.update();
-        listener.emit(Listener.POINT_NODE, [this.node]);
+        // this.update();
+        const node = this.node;
+        if (node instanceof Polyline) {
+          let eq = this.clonePoints.length === node.props.points.length;
+          if (eq) {
+            for (let i = 0; i < this.clonePoints.length; i++) {
+              const a = this.clonePoints[i];
+              const b = node.props.points[i];
+              if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
+                eq = false;
+                break;
+              }
+            }
+          }
+          if (!eq) {
+            listener.history.addCommand(new PointCommand([node], [{
+              prev: this.clonePoints.slice(0),
+              next: clone(node.props.points),
+            }]));
+          }
+        }
+        listener.emit(Listener.POINT_NODE, [node]);
       }
     });
 
@@ -388,9 +416,9 @@ export default class Geometry {
       }
       // 直接关，state变化逻辑listener内部关心
       this.hide();
-    });
-    panel.addEventListener('click', () => {
-      this.keep = true;
+      if (listener.state === State.EDIT_GEOM) {
+        listener.cancelEditGeom();
+      }
     });
   }
 
@@ -416,9 +444,9 @@ export default class Geometry {
     if (!node) {
       return;
     }
-    if (node instanceof Polyline) {
-      node.checkPointsChange();
-    }
+    // if (node instanceof Polyline) {
+    //   node.checkPointsChange();
+    // }
     this.updatePosSize(node);
     this.updateVertex(node);
   }

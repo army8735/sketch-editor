@@ -102,6 +102,7 @@ export default class Select {
     const dpi = root.dpi;
     const computedStyle = node.computedStyle;
     let rect = node._rect || node.rect;
+    // console.log(node.width, node.height, rect.join(','))
     let matrix = node.matrixWorld;
     if (dpi !== 1) {
       const t = identity();

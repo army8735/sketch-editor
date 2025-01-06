@@ -8,6 +8,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import { CURVE_MODE } from '../style/define';
 import { Point } from '../format';
 import { clone } from '../util/type';
+import PointCommand from '../history/PointCommand';
 
 const html = `
   <h4 class="panel-title">锚点</h4>
@@ -144,9 +145,17 @@ class PointPanel extends Panel {
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
     });
-    range.addEventListener('change', (e) => {
+    const onChange = () => {
       listener.geometry.update();
-    });
+      const node = this.node;
+      if (node instanceof Polyline) {
+        listener.history.addCommand(new PointCommand([node], [{
+          prev: prevPoint.slice(0),
+          next: clone(node.props.points),
+        }]));
+      }
+    };
+    range.addEventListener('change', onChange);
 
     number.addEventListener('input', (e) => {
       const node = this.node;
@@ -214,9 +223,7 @@ class PointPanel extends Panel {
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
     });
-    number.addEventListener('change', (e) => {
-      listener.geometry.update();
-    });
+    number.addEventListener('change', onChange);
 
     listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
       if (next === State.EDIT_GEOM || prev === State.EDIT_GEOM) {

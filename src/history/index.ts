@@ -21,6 +21,7 @@ import UnGroupCommand from './UnGroupCommand';
 import RenameCommand from './RenameCommand';
 import LockCommand from './LockCommand';
 import ConstrainProportionCommand from './ConstrainProportionCommand';
+import PointCommand from './PointCommand';
 
 export default {
   History,
@@ -46,4 +47,5 @@ export default {
   RenameCommand,
   LockCommand,
   ConstrainProportionCommand,
+  PointCommand,
 };

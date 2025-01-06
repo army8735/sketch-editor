@@ -49,6 +49,7 @@ import Gradient from './Gradient';
 import Geometry from './Geometry';
 import Polyline from '../node/geom/Polyline';
 import { getFrameVertexes } from '../tools/polyline';
+import PointCommand from '../history/PointCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -517,7 +518,7 @@ export default class Listener extends Event {
         }
         // 理论进不来因为gradient/geom的dom盖在上面点不到，点到也应该有节点
         else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
-          this.emit(Listener.SELECT_POINT, -1);
+          this.emit(Listener.SELECT_POINT, []);
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -1075,16 +1076,6 @@ export default class Listener extends Event {
       this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
     }
-    if (this.state === State.EDIT_GEOM && !this.isMouseMove) {
-      if (!this.isMouseMove) {
-        this.state = State.NORMAL;
-        this.cancelEditGeom();
-      }
-      const node = this.geometry.node!;
-      if (node instanceof Polyline) {
-        this.geometry.clonePoints = clone(node.props.points);
-      }
-    }
     this.isMouseDown = false;
     this.isMouseMove = false;
     this.mouseDownArtBoard = undefined;
@@ -1142,9 +1133,9 @@ export default class Listener extends Event {
     if (this.state === State.EDIT_GRADIENT) {
       this.gradient.keep = true;
     }
-    else if (this.state === State.EDIT_GEOM) {
-      this.geometry.keep = true;
-    }
+    // else if (this.state === State.EDIT_GEOM) {
+    //   this.geometry.keep = true;
+    // }
   }
 
   onDblClick(e: MouseEvent) {
@@ -1761,8 +1752,8 @@ export default class Listener extends Event {
       }
       if (c) {
         const nodes = c.nodes.slice(0);
-        // 移除和编组特殊自己判断，其它自动更新selected
-        if (!(c instanceof RemoveCommand) && !(c instanceof GroupCommand)) {
+        // 移除和编组特殊自己判断，矢量编辑不需要，其它自动更新selected
+        if (!(c instanceof RemoveCommand) && !(c instanceof GroupCommand) && !(c instanceof PointCommand)) {
           const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
@@ -1904,7 +1895,7 @@ export default class Listener extends Event {
             this.emit(Listener.LETTER_SPACING_NODE, nodes);
           }
           // 更新光标
-          if (this.state === State.EDIT_TEXT && nodes.length === 1) {
+          if (this.state === State.EDIT_TEXT) {
             const node = nodes[0] as Text;
             const { isMulti, start } = node.getSortedCursor();
             if (!isMulti) {
@@ -1916,7 +1907,7 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof TextCommand) {
-          if (this.state === State.EDIT_TEXT && nodes.length === 1) {
+          if (this.state === State.EDIT_TEXT) {
             const node = nodes[0] as Text;
             const { isMulti, start } = node.getSortedCursor();
             if (!isMulti) {
@@ -1925,6 +1916,24 @@ export default class Listener extends Event {
               this.input.showCursor();
             }
             this.input.focus();
+          }
+        }
+        else if (c instanceof PointCommand) {
+          const node = nodes[0];
+          if (this.state === State.EDIT_GEOM) {
+            if (node instanceof Polyline) {
+              this.geometry.update();
+              this.emit(Listener.SELECT_POINT, this.geometry.idx.slice(0));
+            }
+          }
+          else {
+            if (node instanceof Polyline) {
+              node.refresh();
+              node.checkPointsChange();
+            }
+            this.selected.splice(0);
+            this.selected.push(node);
+            this.updateActive();
           }
         }
         else if (c instanceof RenameCommand) {
@@ -1988,28 +1997,38 @@ export default class Listener extends Event {
   }
 
   cancelEditText(node?: Node) {
-    const text = (node || this.selected[0]) as Text;
-    if (text) {
-      text.resetCursor();
-      text.afterEdit();
-      text.inputStyle = undefined;
+    if (this.state === State.EDIT_TEXT) {
+      const text = (node || this.selected[0]) as Text;
+      if (text) {
+        text.resetCursor();
+        text.afterEdit();
+        text.inputStyle = undefined;
+      }
+      this.input.hide();
+      this.state = State.NORMAL;
+      this.emit(Listener.STATE_CHANGE, State.EDIT_TEXT, this.state);
     }
-    this.input.hide();
-    this.state = State.NORMAL;
-    this.emit(Listener.STATE_CHANGE, State.EDIT_TEXT, this.state);
   }
 
   cancelEditGradient() {
-    this.select.showSelectNotUpdate();
-    this.state = State.NORMAL;
-    this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
+    if (this.state === State.EDIT_GRADIENT) {
+      this.select.showSelectNotUpdate();
+      this.state = State.NORMAL;
+      this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
+    }
   }
 
   cancelEditGeom() {
-    this.select.showSelect(this.selected);
-    this.state = State.NORMAL;
-    this.emit(Listener.SELECT_POINT, -1);
-    this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
+    if (this.state === State.EDIT_GEOM) {
+      const node = this.geometry.node;
+      if (node instanceof Polyline) {
+        node.checkPointsChange();
+      }
+      this.select.showSelect(this.selected);
+      this.state = State.NORMAL;
+      // this.emit(Listener.SELECT_POINT, []);
+      this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
+    }
   }
 
   onContextMenu(e: MouseEvent) {
