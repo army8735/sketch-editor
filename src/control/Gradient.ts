@@ -29,7 +29,6 @@ export default class Gradient {
     dom.appendChild(panel);
 
     let isDrag = false;
-    let isMove = false;
     let isEllipse = false;
     let ox = 0; // panel
     let oy = 0;
@@ -49,6 +48,7 @@ export default class Gradient {
         return;
       }
       this.keep = true;
+      picker.keep = true;
       if (e.button !== 0 || listener.spaceKey) {
         return;
       }
@@ -67,7 +67,6 @@ export default class Gradient {
       w2 = data.d[2] - data.d[0];
       h2 = data.d[3] - data.d[1];
       const { scaleX, scaleY } = this.node!.computedStyle;
-      isMove = false;
       // conic的环点击需要特殊判断在圆边上，用dom完成了
       if (classList.contains('c2')) {
         const { offsetX, offsetY } = e;
@@ -171,7 +170,6 @@ export default class Gradient {
       if (isEllipse) {
         const data = this.data;
         if (data) {
-          isMove = true;
           const d = data.d;
           const len2 = Math.sqrt(Math.pow(e.pageX - ox2, 2) + Math.pow(e.pageY - oy2, 2));
           d[4] = len2 / len;
@@ -185,7 +183,6 @@ export default class Gradient {
         const y = (e.pageY - oy) / h;
         const data = this.data;
         if (data) {
-          isMove = true;
           const { d, stops } = data;
           const { scaleX, scaleY } = this.node!.computedStyle;
           const l = scaleX === -1 ? (1 - d[0]) : d[0];
@@ -268,6 +265,13 @@ export default class Gradient {
         }
       }
     });
+
+    // 操作过程阻止滚轮拖动
+    panel.addEventListener('wheel', (e) => {
+      if (isDrag) {
+        e.stopPropagation();
+      }
+    });
     // 自身点击设置keep，阻止document全局侦听关闭
     document.addEventListener('click', () => {
       if (this.keep) {
@@ -276,10 +280,6 @@ export default class Gradient {
       }
       // 直接关，state变化逻辑listener内部关心
       this.hide();
-    });
-    panel.addEventListener('click', () => {
-      this.keep = true;
-      picker.keep = true;
     });
   }
 
