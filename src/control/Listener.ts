@@ -396,7 +396,7 @@ export default class Listener extends Event {
           return;
         }
       }
-      // 矢量编辑状态下空按下多选框选多个矢量顶点，非空按下为内移动顶点
+      // 矢量编辑状态下空按下多选框选多个矢量顶点，非空按下为内移动顶点（geometry内部冒泡优先响应按下）
       if (this.state === State.EDIT_GEOM) {
         if (!this.geometry.idx.length) {
           this.isFrame = true;
@@ -748,8 +748,9 @@ export default class Listener extends Event {
           if (this.options.enabled?.selectWithMeta) {
             meta = !meta;
           }
-          // 矢量顶点框选
+          // 矢量顶点框选，不关闭矢量面板
           if (this.state === State.EDIT_GEOM) {
+            this.geometry.keep = true;
             const node = this.geometry.node;
             if (node instanceof Polyline) {
               const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
@@ -1129,13 +1130,6 @@ export default class Listener extends Event {
   }
 
   onClick(e: MouseEvent) {
-    // 外部侦听document点击会隐藏
-    if (this.state === State.EDIT_GRADIENT) {
-      this.gradient.keep = true;
-    }
-    // else if (this.state === State.EDIT_GEOM) {
-    //   this.geometry.keep = true;
-    // }
   }
 
   onDblClick(e: MouseEvent) {

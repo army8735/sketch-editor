@@ -414,11 +414,9 @@ export default class Geometry {
         this.keep = false;
         return;
       }
-      // 直接关，state变化逻辑listener内部关心
+      // 直接关，外部框选不关由listener设置keep
       this.hide();
-      if (listener.state === State.EDIT_GEOM) {
-        listener.cancelEditGeom();
-      }
+      listener.cancelEditGeom();
     });
   }
 
