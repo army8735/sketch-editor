@@ -32,7 +32,7 @@ module.exports = {
       .doubleClick()
       .moveToElement('#main .geometry .vt[title="3"]', 0, 0)
       .mouseButtonDown(0)
-      .moveToElement('#main .geometry .vt[title="3"]', 0, -75)
+      .moveToElement('#main .geometry .vt[title="3"]', -75, 0)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .geometry', 'display', 'block')
       .keys(browser.Keys.ESCAPE)
