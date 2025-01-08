@@ -148,7 +148,7 @@ function toContent() {
 }
 
 function toPoint() {
-  const nodes = listener.selected; console.log(nodes);
+  const nodes = listener.selected;
   if (nodes.length > 1) {
     input.value = JSON.stringify(nodes.map(node => {
       return [
