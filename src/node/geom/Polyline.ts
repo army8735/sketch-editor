@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, PageProps, Point, PolylineProps, TAG_NAME } from '../../format';
+import { JNode, Override, Point, PolylineProps, TAG_NAME } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
 import { color2rgbaInt, color2rgbaStr } from '../../style/css';
@@ -46,35 +46,23 @@ class Polyline extends Geom {
     if (!points.length) {
       return;
     }
-    let baseX = 0;
-    let baseY = 0;
-    if (!this.artBoard) {
-      baseX = (this.page?.props as PageProps).rule?.baseX || 0;
-      baseY = (this.page?.props as PageProps).rule?.baseY || 0;
-    }
     let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
     for (let i = 0, len = points.length; i < len; i++) {
       const item = points[i];
       item.absX = (item.x || 0) * width;
-      item.dspX = item.absX - baseX;
       item.absY = (item.y || 0) * height;
-      item.dspY = item.absY - baseY;
       if (isCornerPoint(item)) {
         hasCorner = true;
       }
       else {
         if (item.hasCurveTo) {
           item.absTx = item.tx * width;
-          item.dspTx = item.absTx + baseX;
           item.absTy = item.ty * height;
-          item.dspTy = item.absTy + baseY;
         }
         if (item.hasCurveFrom) {
           item.absFx = item.fx * width;
-          item.dspFx = item.absFx + baseX;
           item.absFy = item.fy * height;
-          item.dspTy = item.absFy + baseY;
         }
       }
     }
