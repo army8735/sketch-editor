@@ -17,6 +17,7 @@ module.exports = {
       .doubleClick()
       .moveToElement('#main .geometry .vt[title="0"]', 5, 5)
       .mouseButtonDown(0)
+      .assert.cssClassPresent('#main .geometry .vt[title="0"]', ['vt', 'cur'])
       .moveToElement('#main .geometry .vt[title="0"]', 5, 55)
       .mouseButtonUp(0)
       .assert.cssProperty('#main .geometry', 'display', 'block')
