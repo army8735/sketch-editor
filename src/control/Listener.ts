@@ -1641,6 +1641,9 @@ export default class Listener extends Event {
       else if (this.state === State.EDIT_TEXT) {
         this.cancelEditText();
       }
+      else if (this.state === State.EDIT_GEOM) {
+        this.cancelEditGeom();
+      }
       else {
         this.selected.splice(0);
         this.select.hideSelect();
@@ -2014,6 +2017,7 @@ export default class Listener extends Event {
 
   cancelEditGeom() {
     if (this.state === State.EDIT_GEOM) {
+      this.geometry.hide();
       const node = this.geometry.node;
       if (node instanceof Polyline) {
         node.checkPointsChange();

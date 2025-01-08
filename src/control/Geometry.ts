@@ -415,7 +415,6 @@ export default class Geometry {
         return;
       }
       // 直接关，外部框选不关由listener设置keep
-      this.hide();
       listener.cancelEditGeom();
     });
   }
