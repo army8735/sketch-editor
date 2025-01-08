@@ -1255,30 +1255,30 @@ export function getBasicInfo(node: Node) {
         res.angle = r2d(Math.atan(tan));
       }
     }
-    points.forEach(item => {
-      const p = calPoint({
-        x: item.absX! - res.baseX,
-        y: item.absY! - res.baseY,
-      }, m);
-      item.dspX = p.x;
-      item.dspY = p.y;
-      if (item.hasCurveFrom) {
-        const p = calPoint({
-          x: item.absFx! - res.baseX,
-          y: item.absFy! - res.baseY,
-        }, m);
-        item.dspFx = p.x;
-        item.dspFy = p.y;
-      }
-      if (item.hasCurveTo) {
-        const p = calPoint({
-          x: item.absTx! - res.baseX,
-          y: item.absTy! - res.baseY,
-        }, m,);
-        item.dspTx = p.x;
-        item.dspTy = p.y;
-      }
-    });
+    // points.forEach(item => {
+    //   const p = calPoint({
+    //     x: item.absX! - res.baseX,
+    //     y: item.absY! - res.baseY,
+    //   }, m);
+    //   item.dspX = p.x;
+    //   item.dspY = p.y;
+    //   if (item.hasCurveFrom) {
+    //     const p = calPoint({
+    //       x: item.absFx! - res.baseX,
+    //       y: item.absFy! - res.baseY,
+    //     }, m);
+    //     item.dspFx = p.x;
+    //     item.dspFy = p.y;
+    //   }
+    //   if (item.hasCurveTo) {
+    //     const p = calPoint({
+    //       x: item.absTx! - res.baseX,
+    //       y: item.absTy! - res.baseY,
+    //     }, m,);
+    //     item.dspTx = p.x;
+    //     item.dspTy = p.y;
+    //   }
+    // });
     res.points = points;
   }
   return res;
