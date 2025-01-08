@@ -796,14 +796,10 @@ class Polyline extends Geom {
     points.forEach((point) => {
       point.x = (point.absX! - dx) / width;
       point.y = (point.absY! - dy) / height;
-      if (point.hasCurveFrom) {
-        point.fx = (point.absFx! - dx) / width;
-        point.fy = (point.absFy! - dy) / height;
-      }
-      if (point.hasCurveTo) {
-        point.tx = (point.absTx! - dx) / width;
-        point.ty = (point.absTy! - dy) / height;
-      }
+      point.fx = (point.absFx! - dx) / width;
+      point.fy = (point.absFy! - dy) / height;
+      point.tx = (point.absTx! - dx) / width;
+      point.ty = (point.absTy! - dy) / height;
     });
   }
 
