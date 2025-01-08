@@ -29,5 +29,12 @@
 <script src="../../vanilla-picker.min.js"></script>
 <script src="../../../dist/index.js"></script>
 <script src="../../edit.js"></script>
+<script>
+  document.addEventListener('keypress', e => {
+    if (e.code === 'KeyF') {
+      toPoint();
+    }
+  });
+</script>
 </body>
 </html>

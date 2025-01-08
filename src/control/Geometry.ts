@@ -8,7 +8,6 @@ import { r2d } from '../math/geom';
 import { Point } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand from '../history/PointCommand';
-import State from './State';
 
 export default class Geometry {
   root: Root;
@@ -455,9 +454,6 @@ export default class Geometry {
     if (!node) {
       return;
     }
-    // if (node instanceof Polyline) {
-    //   node.checkPointsChange();
-    // }
     this.updatePosSize(node);
     this.updateVertex(node);
   }
