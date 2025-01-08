@@ -2024,7 +2024,6 @@ export default class Listener extends Event {
       }
       this.select.showSelect(this.selected);
       this.state = State.NORMAL;
-      // this.emit(Listener.SELECT_POINT, []);
       this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
     }
   }

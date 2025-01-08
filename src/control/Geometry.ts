@@ -82,7 +82,10 @@ export default class Geometry {
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
         }
-        // 无shift则是单个选择
+        // 无shift看点下的是否是已选，否是单个选择，是则也是无法判断意图
+        else if (this.idx.includes(idx)) {
+          isUnSelected = true;
+        }
         else {
           this.clearCur();
           this.idx.splice(0);
@@ -307,17 +310,28 @@ export default class Geometry {
     });
     document.addEventListener('mouseup', () => {
       if (isDrag || isControlF || isControlT) {
-        // 顶点抬起时特殊判断，没有移动过的多选在已选时视为取消选择
-        if (isDrag && !isMove && isShift && isUnSelected) {
-          panel.querySelector(`div[title="${idx}"]`)?.classList.remove('cur');
-          const i = this.idx.indexOf(idx);
-          if (i > -1) {
-            this.idx.splice(i, 1);
+        // 顶点抬起时特殊判断，没有移动过的多选在已选时视为取消选择，没有移动过多单选取消其它的
+        if (isDrag && !isMove && isUnSelected) {
+          if (isShift) {
+            panel.querySelector(`.vt[title="${idx}"]`)?.classList.remove('cur');
+            const i = this.idx.indexOf(idx);
+            if (i > -1) {
+              this.idx.splice(i, 1);
+              listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+            }
+          }
+          else {
+            panel.querySelectorAll('.vt.cur').forEach((item) => {
+              if ((item as HTMLElement).title !== idx.toString()) {
+                item.classList.remove('cur');
+              }
+            });
+            this.idx.splice(0);
+            this.idx.push(idx);
             listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
           }
         }
         isDrag = isControlF = isControlT = false;
-        // this.update();
         const node = this.node;
         if (node instanceof Polyline) {
           let eq = this.clonePoints.length === node.props.points.length;
