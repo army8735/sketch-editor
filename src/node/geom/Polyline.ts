@@ -52,18 +52,12 @@ class Polyline extends Geom {
       const item = points[i];
       item.absX = (item.x || 0) * width;
       item.absY = (item.y || 0) * height;
+      item.absTx = item.tx * width;
+      item.absTy = item.ty * height;
+      item.absFx = item.fx * width;
+      item.absFy = item.fy * height;
       if (isCornerPoint(item)) {
         hasCorner = true;
-      }
-      else {
-        if (item.hasCurveTo) {
-          item.absTx = item.tx * width;
-          item.absTy = item.ty * height;
-        }
-        if (item.hasCurveFrom) {
-          item.absFx = item.fx * width;
-          item.absFy = item.fy * height;
-        }
       }
     }
     // 如果有圆角，拟合画圆

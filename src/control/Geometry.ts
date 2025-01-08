@@ -43,7 +43,7 @@ export default class Geometry {
     let oy = 0;
     let w = 1;
     let h = 1;
-    let diff = { x: 0, y: 0, tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录点的位置，拖拽时计算用
+    const diff = { x: 0, y: 0, tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录点的位置，拖拽时计算用
     // let clonePoints: Point[];
 
     panel.addEventListener('mousedown', (e) => {
@@ -249,20 +249,34 @@ export default class Geometry {
           const dx = x - this.clonePoints[idx].x;
           const dy = y - this.clonePoints[idx].y;
           p.x = x;
+          p.absX = x * w;
           p.y = y;
+          p.absY = x * h;
           p.tx = p.x + diff.tx;
+          p.absTx = p.tx * w;
           p.ty = p.y + diff.ty;
+          p.absTy = p.ty * h;
           p.fx = p.x + diff.fx;
+          p.absFx = p.fx * w;
           p.fy = p.y + diff.fy;
+          p.absFy = p.fy * h;
           // 多个点的话其它的也随之变动
           this.idx.forEach(i => {
             if (i !== idx) {
-              points[i].x = this.clonePoints[i].x + dx;
-              points[i].y = this.clonePoints[i].y + dy;
-              points[i].tx = this.clonePoints[i].tx + dx;
-              points[i].ty = this.clonePoints[i].ty + dy;
-              points[i].fx = this.clonePoints[i].fx + dx;
-              points[i].fy = this.clonePoints[i].fy + dy;
+              const p = points[i];
+              const cp = this.clonePoints[i];
+              p.x = cp.x + dx;
+              p.absX = p.x * w;
+              p.y = cp.y + dy;
+              p.absY = p.y * h;
+              p.tx = cp.tx + dx;
+              p.absTx = p.tx * w;
+              p.ty = cp.ty + dy;
+              p.absTy = p.ty * h;
+              p.fx = cp.fx + dx;
+              p.absFx = p.fx * w;
+              p.fy = cp.fy + dy;
+              p.absFy = p.fy * h;
             }
           });
           node.refresh();
@@ -274,11 +288,15 @@ export default class Geometry {
           const p = node.props.points[idx];
           if (isControlF) {
             p.fx = x;
+            p.absFx = x * w;
             p.fy = y;
+            p.absFy = y * h;
           }
           else {
             p.tx = x;
+            p.absTx = x * w;
             p.ty = y;
+            p.absTy = y * h;
           }
           // 镜像和非对称需更改对应点
           if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -290,7 +308,9 @@ export default class Geometry {
               const dx = p.fx - p.x;
               const dy = p.fy - p.y;
               p.tx = p.x - dx * ratio;
+              p.absTx = p.tx * w;
               p.ty = p.y - dy * ratio;
+              p.absTy = p.ty * h;
             }
             else {
               if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -299,7 +319,9 @@ export default class Geometry {
               const dx = p.tx - p.x;
               const dy = p.ty - p.y;
               p.fx = p.x - dx * ratio;
+              p.absFx = p.fx * w;
               p.fy = p.y - dy * ratio;
+              p.absFy = p.fy * h;
             }
           }
           node.refresh();
