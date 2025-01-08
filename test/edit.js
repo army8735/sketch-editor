@@ -147,6 +147,32 @@ function toContent() {
   }
 }
 
+function toPoint() {
+  const nodes = listener.selected; console.log(nodes);
+  if (nodes.length > 1) {
+    input.value = JSON.stringify(nodes.map(node => {
+      return [
+        count,
+        node.props.points,
+      ];
+    }));
+    count++;
+  }
+  else if (nodes.length) {
+    let node = nodes[0];
+    if (!node) {
+      node = root.getCurPage().children[0];
+    }
+    input.value = JSON.stringify([
+      count++,
+      node.props.points,
+    ]);
+  }
+  else {
+    input.value = '[' + (count++) + ']';
+  }
+}
+
 window.onerror = function(e) {
   input.value = e.toString();
 }
@@ -183,6 +209,7 @@ fetch('./sketch.sketch')
         const button3 = document.querySelector('#button3');
         const button4 = document.querySelector('#button4');
         const button5 = document.querySelector('#button5');
+        const button6 = document.querySelector('#button6');
         if (button1) {
           button1.addEventListener('click', () => {
             toDataURL();
@@ -206,6 +233,11 @@ fetch('./sketch.sketch')
         if (button5) {
           button5.addEventListener('click', () => {
             toContent();
+          });
+        }
+        if (button6) {
+          button6.addEventListener('click', () => {
+            toPoint();
           });
         }
       });
