@@ -1917,7 +1917,7 @@ export default class Listener extends Event {
         }
         else if (c instanceof PointCommand) {
           const node = nodes[0];
-          if (this.state === State.EDIT_GEOM) {
+          if (this.state === State.EDIT_GEOM && node === this.selected[0]) {
             if (node instanceof Polyline) {
               this.geometry.update();
               this.emit(Listener.SELECT_POINT, this.geometry.idx.slice(0));

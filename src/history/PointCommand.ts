@@ -20,6 +20,8 @@ class PointCommand extends AbstractCommand {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
       (node as Polyline).props.points = clone(data[i].next);
+      // 可能会牵扯到尺寸变更，先用abs值反向计算相对值
+      (node as Polyline).reflectPoints();
       (node as Polyline).refresh();
     });
   }
@@ -28,6 +30,7 @@ class PointCommand extends AbstractCommand {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
       (node as Polyline).props.points = clone(data[i].prev);
+      (node as Polyline).reflectPoints();
       (node as Polyline).refresh();
     });
   }
