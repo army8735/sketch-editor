@@ -73,7 +73,7 @@ module.exports = {
       .mouseButtonUp(0)
       .moveToElement('#main .geometry .vt[title="1"]', 0, 0)
       .mouseButtonDown(0)
-      .assert.cssClassPresent('#main .geometry .vt[title="0"]', ['vt', 'cur'])
+      .assert.not.cssClassPresent('#main .geometry .vt[title="0"]', ['vt', 'cur'])
       .assert.cssClassPresent('#main .geometry .vt[title="1"]', ['vt', 'cur'])
       .mouseButtonUp(0)
       .assert.not.cssClassPresent('#main .geometry .vt[title="0"]', ['vt', 'cur'])
