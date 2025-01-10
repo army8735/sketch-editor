@@ -1171,10 +1171,10 @@ export default class Listener extends Event {
         if (this.options.disabled?.editGeom) {
           return;
         }
-        this.select.hideSelect();
-        this.geometry.show(node);
-        this.state = State.EDIT_GEOM;
-        this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
+        // this.select.hideSelect();
+        // this.geometry.show(node);
+        // this.state = State.EDIT_GEOM;
+        // this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }

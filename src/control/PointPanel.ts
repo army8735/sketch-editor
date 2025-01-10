@@ -12,6 +12,16 @@ import PointCommand from '../history/PointCommand';
 
 const html = `
   <h4 class="panel-title">锚点</h4>
+  <div class="line">
+    <div class="input-unit">
+      <input type="number" class="x" step="1"/>
+      <span class="unit">X</span>
+    </div>
+    <div class="input-unit">
+      <input type="number" class="y" step="1"/>
+      <span class="unit">Y</span>
+    </div>
+  </div>
   <div class="intro">类型</div>
   <ul class="type">
     <li class="straight" title="直线"></li>

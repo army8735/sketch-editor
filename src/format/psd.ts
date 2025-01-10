@@ -131,6 +131,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
   const shadowEnable: boolean[] = [];
   const innerShadow: string[] = [];
   const innerShadowEnable: boolean[] = [];
+  const fill: Array<string | number[]> = []; // 颜色叠加，比如Bitmap或Group的tint叠加填充
+  const fillEnable: boolean[] = [];
+  const fillOpacity: number[] = [];
+  const fillMode: string[] = [];
   const canvasPromise = new Promise<JLayer | undefined>(resolve => {
     if (!canvas) {
       return resolve(undefined);
@@ -154,6 +158,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
               innerShadow,
               innerShadowEnable,
               mixBlendMode: blendMode,
+              fill,
+              fillEnable,
+              fillOpacity,
+              fillMode,
             },
             src: URL.createObjectURL(blob),
           },
@@ -163,7 +171,8 @@ async function convertItem(layer: Layer, w: number, h: number) {
     });
   });
   if (effects.dropShadow) {
-    effects.dropShadow.forEach(item => {
+    for (let i = effects.dropShadow.length - 1; i >= 0; i--) {
+      const item = effects.dropShadow[i];
       const color = [
         Math.floor((item.color as RGB).r),
         Math.floor((item.color as RGB).g),
@@ -178,10 +187,11 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const choke = item.choke?.value || 0;
       shadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke) * 0.01} ${blur * choke * 0.01}`);
       shadowEnable.push(effects.disabled ? false : !!item.enabled);
-    });
+    }
   }
   if (effects.innerShadow) {
-    effects.innerShadow.forEach(item => {
+    for (let i = effects.innerShadow.length - 1; i >= 0; i--) {
+      const item = effects.innerShadow[i];
       const color = [
         Math.floor((item.color as RGB).r),
         Math.floor((item.color as RGB).g),
@@ -196,7 +206,21 @@ async function convertItem(layer: Layer, w: number, h: number) {
       const choke = item.choke?.value || 0;
       innerShadow.push(`${color2rgbaStr(color)} ${x} ${y} ${blur * (100 - choke) * 0.01} ${blur * choke * 0.01}`);
       innerShadowEnable.push(effects.disabled ? false : !!item.enabled);
-    });
+    }
+  }
+  if (effects.solidFill) {
+    for (let i = effects.solidFill.length - 1; i >= 0; i--) {
+      const item = effects.solidFill[i];
+      fill.push([
+        Math.floor((item.color as RGB).r),
+        Math.floor((item.color as RGB).g),
+        Math.floor((item.color as RGB).b),
+        item.opacity ?? 1,
+      ]);
+      fillEnable.push(!!item.enabled);
+      fillOpacity.push(item.opacity ?? 1);
+      fillMode.push(item.blendMode || 'normal');
+    }
   }
   // 仅组有opened
   if (layer.opened !== undefined) {
@@ -251,6 +275,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
           innerShadow,
           innerShadowEnable,
           mixBlendMode: blendMode,
+          fill,
+          fillEnable,
+          fillOpacity,
+          fillMode,
         },
       },
       children,
@@ -263,7 +291,8 @@ async function convertItem(layer: Layer, w: number, h: number) {
     const strokePosition: string[] = [];
     // ps里似乎不区分类型，只有文字生效
     if (effects.stroke) {
-      effects.stroke.forEach(item => {
+      for (let i = effects.stroke.length - 1; i >= 0; i--) {
+        const item = effects.stroke[i];
         if (item.fillType === 'color') {
           strokeEnable.push(effects.disabled ? false : !!item.enabled);
           stroke.push(color2rgbaStr([
@@ -275,7 +304,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           strokeWidth.push(item.size?.value || 1);
           strokePosition.push(item.position || 'center');
         }
-      });
+      }
     }
     const transform = layer.text.transform || [1, 0, 1, 0, 0, 0];
     const rich: JRich[] = [];
@@ -340,6 +369,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
       innerShadow,
       innerShadowEnable,
       mixBlendMode: blendMode,
+      fill,
+      fillEnable,
+      fillOpacity,
+      fillMode,
     };
     const { styleRuns, paragraphStyleRuns } = layer.text;
     if (styleRuns || paragraphStyleRuns) {
@@ -474,15 +507,12 @@ async function convertItem(layer: Layer, w: number, h: number) {
   }
   else if (layer.vectorOrigination && layer.vectorOrigination.keyDescriptorList.length === 1 && !layer.vectorOrigination.keyDescriptorList[0].keyShapeInvalidated) {
     const { vectorFill, vectorStroke, vectorOrigination: { keyDescriptorList } } = layer;
-    const fill: Array<string | number[]> = [];
-    const fillEnable: boolean[] = [];
-    const fillOpacity: number[] = [];
-    const fillMode: string[] = [];
     const stroke: Array<string | number[]> = [];
     const strokeEnable: boolean[] = [];
     const strokeWidth: number[] = [];
     const strokePosition: string[] = [];
     const strokeMode: string[] = [];
+    // 矢量和ps的颜色叠加应该互斥
     if (vectorFill) {
       if (vectorFill.type === 'color') {
         fill.push(color2rgbaStr([
