@@ -1920,7 +1920,7 @@ export default class Listener extends Event {
           if (this.state === State.EDIT_GEOM && node === this.selected[0]) {
             if (node instanceof Polyline) {
               this.geometry.update();
-              this.emit(Listener.SELECT_POINT, this.geometry.idx.slice(0));
+              // this.emit(Listener.SELECT_POINT, this.geometry.idx.slice(0));
             }
           }
           else {
@@ -1932,6 +1932,7 @@ export default class Listener extends Event {
             this.selected.push(node);
             this.updateActive();
           }
+          this.emit(Listener.POINT_NODE, nodes);
         }
         else if (c instanceof RenameCommand) {
           this.emit(Listener.RENAME_NODE, nodes);

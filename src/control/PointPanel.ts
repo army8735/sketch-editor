@@ -152,6 +152,7 @@ class PointPanel extends Panel {
       if (!node) {
         return;
       }
+      this.silence = true;
       const value = parseFloat(isX ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !prevPoint.length;
@@ -249,6 +250,7 @@ class PointPanel extends Panel {
       node.refresh();
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
+      this.silence = false;
     };
 
     x.addEventListener('input', (e) => {
@@ -269,6 +271,7 @@ class PointPanel extends Panel {
       if (!node) {
         return;
       }
+      this.silence = true;
       if (!prevPoint.length) {
         if (node instanceof Polyline) {
           prevPoint = clone(node.props.points);
@@ -290,6 +293,7 @@ class PointPanel extends Panel {
       node.refresh();
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
+      this.silence = false;
     });
     range.addEventListener('change', onChange);
 
@@ -298,6 +302,7 @@ class PointPanel extends Panel {
       if (!node) {
         return;
       }
+      this.silence = true;
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       if (!prevPoint.length) {
@@ -358,6 +363,7 @@ class PointPanel extends Panel {
       node.refresh();
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
+      this.silence = false;
     });
     number.addEventListener('change', onChange);
 
@@ -367,7 +373,10 @@ class PointPanel extends Panel {
       }
     });
 
-    listener.on(Listener.SELECT_POINT, (idx: number[]) => {
+    const showPoint = (idx: number[]) => {
+      if (this.silence) {
+        return;
+      }
       panel.querySelector('.type.enable')?.classList.remove('enable');
       panel.querySelector('.type .cur')?.classList.remove('cur');
       x.value = '';
@@ -409,6 +418,11 @@ class PointPanel extends Panel {
         this.updateCoords(idx);
         this.updateRange(idx);
       }
+    };
+
+    listener.on(Listener.SELECT_POINT, showPoint);
+    listener.on(Listener.POINT_NODE, (node) => {
+      showPoint(listener.geometry.idx);
     });
   }
 

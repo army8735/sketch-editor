@@ -282,6 +282,7 @@ export default class Geometry {
           node.refresh();
           this.updateVertex(node);
         }
+        listener.emit(Listener.POINT_NODE, [node]);
       }
       else if (isControlF || isControlT) {
         if (node instanceof Polyline) {
@@ -327,6 +328,7 @@ export default class Geometry {
           node.refresh();
           this.updateVertex(node);
         }
+        listener.emit(Listener.POINT_NODE, [node]);
       }
     });
     document.addEventListener('mouseup', () => {
