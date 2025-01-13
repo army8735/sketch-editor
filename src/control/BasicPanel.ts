@@ -48,7 +48,7 @@ const html = `
 class BasicPanel extends Panel {
   panel: HTMLElement;
   // node当前数据，每次input变更则更新
-  data: { x: number, y: number, angle: number, w: number, h: number, rotation: number }[];
+  data: { x: number, y: number, w: number, h: number, rotation: number }[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
