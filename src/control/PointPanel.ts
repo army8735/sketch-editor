@@ -9,6 +9,8 @@ import { CURVE_MODE } from '../style/define';
 import { Point } from '../format';
 import { clone } from '../util/type';
 import PointCommand from '../history/PointCommand';
+import { getPointsDspCoords } from '../tools/polyline';
+import { toPrecision } from '../math';
 
 const html = `
   <h4 class="panel-title">锚点</h4>
@@ -33,7 +35,7 @@ const html = `
   <div class="line">
     <input type="range" min="0" max="100" step="1" value="0"/>
     <div class="input-unit">
-      <input type="number" min="0" max="100" step="1" value=""/>
+      <input type="number" class="r" min="0" max="100" step="1" value=""/>
     </div>
   </div>
 `;
@@ -124,8 +126,11 @@ class PointPanel extends Panel {
       listener.geometry.keep = true;
     });
 
+    const x = panel.querySelector('input.x') as HTMLInputElement;
+    const y = panel.querySelector('input.y') as HTMLInputElement;
+
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
-    const number = panel.querySelector('input[type="number"]') as HTMLInputElement;
+    const number = panel.querySelector('input.r') as HTMLInputElement;
     let prevPoint: Point[] = [];
 
     range.addEventListener('input', (e) => {
@@ -244,6 +249,13 @@ class PointPanel extends Panel {
     listener.on(Listener.SELECT_POINT, (idx: number[]) => {
       panel.querySelector('.type.enable')?.classList.remove('enable');
       panel.querySelector('.type .cur')?.classList.remove('cur');
+      x.value = '';
+      x.placeholder = '';
+      y.value = '';
+      y.placeholder = '';
+      range.value = '';
+      number.value = '';
+      number.placeholder = '';
       if (idx.length) {
         panel.querySelector('.type')?.classList.add('enable');
         const node = this.node;
@@ -273,7 +285,8 @@ class PointPanel extends Panel {
           }
           panel.querySelector(`.type .${t}`)?.classList.add('cur');
         }
-        this.updateNumber(idx);
+        this.updateCoords(idx);
+        this.updateRange(idx);
       }
     });
   }
@@ -288,20 +301,58 @@ class PointPanel extends Panel {
     }
     this.node = geoms[0];
     panel.style.display = 'block';
-    this.updateNumber([]);
+    this.updateCoords([]);
+    this.updateRange([]);
   }
 
-  updateNumber(idx: number[]) {
+  updateCoords(idx: number[]) {
+    const node = this.node;
+    if (!node || !idx.length) {
+      return;
+    }
+    const panel = this.panel;
+    const x = panel.querySelector('input.x') as HTMLInputElement;
+    const y = panel.querySelector('input.y') as HTMLInputElement;
+    const xs: number[] = [];
+    const ys: number[] = [];
+    if (node instanceof Polyline) {
+      const points = idx.map(i => node.props.points[i]);
+      const r = getPointsDspCoords(node, points);
+      r.forEach(item => {
+        if (!xs.includes(item.x)) {
+          xs.push(item.x);
+        }
+        if (!ys.includes(item.y)) {
+          ys.push(item.y);
+        }
+      });
+    }
+    if (xs.length > 1) {
+      x.placeholder = '多个';
+    }
+    else {
+      x.value = toPrecision(xs[0]).toString();
+    }
+    if (ys.length > 1) {
+      y.placeholder = '多个';
+    }
+    else {
+      y.value = toPrecision(ys[0]).toString();
+    }
+  }
+
+  updateRange(idx: number[]) {
     const node = this.node;
     if (!node) {
       return;
     }
     const panel = this.panel;
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
-    const number = panel.querySelector('input[type="number"]') as HTMLInputElement;
+    const number = panel.querySelector('input.r') as HTMLInputElement;
     const radius: number[] = [];
     if (node instanceof Polyline) {
       let points = node.props.points;
+      // 默认展示全部
       if (idx.length) {
         points = idx.map(i => points[i]);
       }

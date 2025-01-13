@@ -4,6 +4,7 @@ import Polyline from '../node/geom/Polyline';
 import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
 import { calPoint } from '../math/matrix';
 import { pointInRect } from '../math/geom';
+import { getBaseCoords, getBasicMatrix } from './node';
 
 export function createLine(x1: number, y1: number, x2: number, y2: number) {
   const w = Math.abs(x1 - x2);
@@ -397,6 +398,7 @@ export function createPolyline(
   });
 }
 
+// 框选范围内的顶点
 export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: number, y2: number) {
   // console.log(x1, y1, x2, y2);
   node.buildPoints();
@@ -415,6 +417,39 @@ export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: num
   return list;
 }
 
+// 类似node的basicInfo，顶点abs坐标相对于AP的展示坐标
+export function getPointsDspCoords(node: Polyline, points?: Point[]) {
+  const m = getBasicMatrix(node);
+  node.buildPoints();
+  if (!points) {
+    points = node.props.points;
+  }
+  const { baseX, baseY } = getBaseCoords(node);
+  return points.map(item => {
+    const p = calPoint({
+      x: item.absX! - baseX,
+      y: item.absY! - baseY,
+    }, m);
+    const f = calPoint({
+      x: item.absFx! - baseX,
+      y: item.absFy! - baseY,
+    }, m);
+    const t = calPoint({
+      x: item.absTx! - baseX,
+      y: item.absTy! - baseY,
+    }, m);
+    return {
+      x: p.x,
+      y: p.y,
+      fx: f.x,
+      fy: f.y,
+      tx: t.x,
+      ty: t.y,
+    };
+  });
+}
+
 export default {
   getFrameVertexes,
+  getPointsDspCoords,
 };

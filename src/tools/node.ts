@@ -1183,7 +1183,7 @@ export function move(node: Node, dx: number, dy: number) {
   }
 }
 
-export function getBasicInfo(node: Node) {
+export function getBasicMatrix(node: Node) {
   const list: Node[] = [node];
   const top = node.artBoard || node.page;
   if (node !== top) {
@@ -1197,6 +1197,21 @@ export function getBasicInfo(node: Node) {
   for (let i = 0, len = list.length; i < len; i++) {
     m = multiply(m, list[i].matrix);
   }
+  return m;
+}
+
+export function getBaseCoords(node: Node) {
+  let baseX = 0,
+    baseY = 0;
+  if (!node.artBoard) {
+    baseX = (node.page?.props as PageProps).rule?.baseX || 0;
+    baseY = (node.page?.props as PageProps).rule?.baseY || 0;
+  }
+  return { baseX, baseY };
+}
+
+export function getBasicInfo(node: Node) {
+  const m = getBasicMatrix(node);
   const rect = node._rect || node.rect;
   const t = calRectPoints(rect[0], rect[1], rect[2], rect[3], m);
   const x1 = t.x1;
@@ -1208,12 +1223,7 @@ export function getBasicInfo(node: Node) {
   const x4 = t.x4;
   const y4 = t.y4;
   const { computedStyle } = node;
-  let baseX = 0,
-    baseY = 0;
-  if (!node.artBoard) {
-    baseX = (node.page?.props as PageProps).rule?.baseX || 0;
-    baseY = (node.page?.props as PageProps).rule?.baseY || 0;
-  }
+  const { baseX, baseY } = getBaseCoords(node);
   const res = {
     baseX,
     baseY,
@@ -1228,59 +1238,35 @@ export function getBasicInfo(node: Node) {
     mixBlendMode: computedStyle.mixBlendMode,
     constrainProportions: !!node.props.constrainProportions,
     matrix: m,
-    isLine: false,
-    length: 0,
-    angle: 0,
-    points: [] as Point[],
+    // isLine: false,
+    // length: 0,
+    // angle: 0,
+    // points: [] as Point[],
   };
-  if (node instanceof Polyline) {
-    res.isLine = node.isLine();
-    const points = node.props.points;
-    if (res.isLine) {
-      res.length = Math.sqrt(
-        Math.pow(points[1].absX! - points[0].absX!, 2) +
-        Math.pow(points[1].absY! - points[0].absY!, 2),
-      );
-      const dx = points[1].absX! - points[0].absX!;
-      if (dx === 0) {
-        if (points[1].absY! >= points[0].absY!) {
-          res.angle = 90;
-        }
-        else {
-          res.angle = -90;
-        }
-      }
-      else {
-        const tan = (points[1].absY! - points[0].absY!) / dx;
-        res.angle = r2d(Math.atan(tan));
-      }
-    }
-    // points.forEach(item => {
-    //   const p = calPoint({
-    //     x: item.absX! - res.baseX,
-    //     y: item.absY! - res.baseY,
-    //   }, m);
-    //   item.dspX = p.x;
-    //   item.dspY = p.y;
-    //   if (item.hasCurveFrom) {
-    //     const p = calPoint({
-    //       x: item.absFx! - res.baseX,
-    //       y: item.absFy! - res.baseY,
-    //     }, m);
-    //     item.dspFx = p.x;
-    //     item.dspFy = p.y;
-    //   }
-    //   if (item.hasCurveTo) {
-    //     const p = calPoint({
-    //       x: item.absTx! - res.baseX,
-    //       y: item.absTy! - res.baseY,
-    //     }, m,);
-    //     item.dspTx = p.x;
-    //     item.dspTy = p.y;
-    //   }
-    // });
-    res.points = points;
-  }
+  // if (node instanceof Polyline) {
+  //   res.isLine = node.isLine();
+  //   const points = node.props.points;
+  //   if (res.isLine) {
+  //     res.length = Math.sqrt(
+  //       Math.pow(points[1].absX! - points[0].absX!, 2) +
+  //       Math.pow(points[1].absY! - points[0].absY!, 2),
+  //     );
+  //     const dx = points[1].absX! - points[0].absX!;
+  //     if (dx === 0) {
+  //       if (points[1].absY! >= points[0].absY!) {
+  //         res.angle = 90;
+  //       }
+  //       else {
+  //         res.angle = -90;
+  //       }
+  //     }
+  //     else {
+  //       const tan = (points[1].absY! - points[0].absY!) / dx;
+  //       res.angle = r2d(Math.atan(tan));
+  //     }
+  //   }
+  //   res.points = points;
+  // }
   return res;
 }
 
@@ -1383,6 +1369,8 @@ export default {
   resizeTopRightMultiArOperate,
   resizeBottomLeftMultiArOperate,
   resizeBottomRightMultiArOperate,
+  getBasicMatrix,
+  getBaseCoords,
   getBasicInfo,
   toPngBlob,
 };
