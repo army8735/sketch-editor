@@ -2,7 +2,7 @@ import * as uuid from 'uuid';
 import { Point } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
-import { calPoint } from '../math/matrix';
+import { calPoint, inverse4 } from '../math/matrix';
 import { pointInRect } from '../math/geom';
 import { getBaseCoords, getBasicMatrix } from './node';
 
@@ -449,7 +449,21 @@ export function getPointsDspCoords(node: Polyline, points?: Point[]) {
   });
 }
 
+export function getPointsAbsByDsp(node: Polyline, points: { x: number, y: number }[]) {
+  const m = getBasicMatrix(node);
+  const i = inverse4(m);
+  const { baseX, baseY } = getBaseCoords(node);
+  return points.map(item => {
+    const p = calPoint({ x: item.x + baseX, y: item.y + baseY }, i);
+    return {
+      x: p.x,
+      y: p.y,
+    };
+  });
+}
+
 export default {
   getFrameVertexes,
   getPointsDspCoords,
+  getPointsAbsByDsp,
 };
