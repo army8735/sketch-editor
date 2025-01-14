@@ -419,7 +419,6 @@ export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: num
 // 类似node的basicInfo，顶点abs坐标相对于AP的展示坐标
 export function getPointsDspByAbs(node: Polyline, points?: Point[]) {
   const m = getBasicMatrix(node);
-  node.buildPoints();
   if (!points) {
     points = node.props.points;
   }
@@ -449,7 +448,6 @@ export function getPointsDspByAbs(node: Polyline, points?: Point[]) {
 
 export function getPointsAbsByDsp(node: Polyline, points?: Point[]) {
   const m = getBasicMatrix(node);
-  node.buildPoints();
   if (!points) {
     points = node.props.points;
   }
@@ -463,11 +461,11 @@ export function getPointsAbsByDsp(node: Polyline, points?: Point[]) {
     const f = calPoint({
       x: item.dspFx! - baseX,
       y: item.dspFy! - baseY,
-    }, m);
+    }, i);
     const t = calPoint({
       x: item.dspTx! - baseX,
       y: item.dspTy! - baseY,
-    }, m);
+    }, i);
     item.absX = p.x;
     item.absY = p.y;
     item.absFx = f.x;

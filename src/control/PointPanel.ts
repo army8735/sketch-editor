@@ -128,7 +128,6 @@ class PointPanel extends Panel {
 
     let prevPoint: Point[] = [];
     const onChange = () => {
-      listener.geometry.update();
       const node = this.node;
       if (node instanceof Polyline) {
         listener.history.addCommand(new PointCommand([node], [{
@@ -240,6 +239,7 @@ class PointPanel extends Panel {
           }
         });
         getPointsAbsByDsp(node, points);
+        node.reflectPoints(points);
       }
       node.refresh();
       listener.geometry.updateVertex(node);
@@ -305,11 +305,7 @@ class PointPanel extends Panel {
         }
       }
       if (node instanceof Polyline) {
-        let points = node.props.points;
-        // 激活的顶点或者全部
-        if (listener.geometry.idx.length) {
-          points = listener.geometry.idx.map(i => points[i]);
-        }
+        const points = listener.geometry.idx.map(i => node.props.points[i]);
         points.forEach((item, i) => {
           if (isInput) {
             item.cornerRadius = value;

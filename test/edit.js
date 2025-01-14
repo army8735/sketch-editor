@@ -153,7 +153,25 @@ function toPoint() {
     input.value = JSON.stringify(nodes.map(node => {
       return [
         count,
-        node.props.points,
+        node.props.points.map(item => ({
+          x: item.x,
+          y: item.y,
+          cornerRadius: item.cornerRadius,
+          cornerStyle: item.cornerStyle,
+          curveMode: item.curveMode,
+          fx: item.fx,
+          fy: item.fy,
+          tx: item.tx,
+          ty: item.ty,
+          hasCurveFrom: item.hasCurveFrom,
+          hasCurveTo: item.hasCurveTo,
+          absX: item.absX,
+          absY: item.absY,
+          absFx: item.absFx,
+          absFy: item.absFy,
+          absTx: item.absTx,
+          absTy: item.absTy,
+        })),
       ];
     }));
     count++;
@@ -165,7 +183,25 @@ function toPoint() {
     }
     input.value = JSON.stringify([
       count++,
-      node.props.points,
+      node.props.points.map(item => ({
+        x: item.x,
+        y: item.y,
+        cornerRadius: item.cornerRadius,
+        cornerStyle: item.cornerStyle,
+        curveMode: item.curveMode,
+        fx: item.fx,
+        fy: item.fy,
+        tx: item.tx,
+        ty: item.ty,
+        hasCurveFrom: item.hasCurveFrom,
+        hasCurveTo: item.hasCurveTo,
+        absX: item.absX,
+        absY: item.absY,
+        absFx: item.absFx,
+        absFy: item.absFy,
+        absTx: item.absTx,
+        absTy: item.absTy,
+      })),
     ]);
   }
   else {

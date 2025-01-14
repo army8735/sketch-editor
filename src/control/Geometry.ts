@@ -199,7 +199,7 @@ export default class Geometry {
               listener.history.addCommand(new PointCommand([node], [{
                 prev: clone(node.props.points),
                 next: this.clonePoints.slice(0),
-              }]));
+              }]), true);
               listener.emit(Listener.POINT_NODE, [node]);
               listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
             }
@@ -372,7 +372,7 @@ export default class Geometry {
             listener.history.addCommand(new PointCommand([node], [{
               prev: this.clonePoints.slice(0),
               next: clone(node.props.points),
-            }]));
+            }]), true);
           }
         }
         listener.emit(Listener.POINT_NODE, [node]);

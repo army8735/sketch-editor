@@ -48,7 +48,7 @@ import AddCommand, { AddData } from '../history/AddCommand';
 import Gradient from './Gradient';
 import Geometry from './Geometry';
 import Polyline from '../node/geom/Polyline';
-import { getFrameVertexes } from '../tools/polyline';
+import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 import PointCommand from '../history/PointCommand';
 
 export type ListenerOptions = {
@@ -1704,7 +1704,27 @@ export default class Listener extends Event {
         }
         if (this.state === State.EDIT_GEOM) {
           const node = this.selected[0];
-          if (node instanceof Polyline && this.geometry.idx.length) {}
+          if (node instanceof Polyline) {
+            const prevPoint = clone(node.props.points);
+            const points = this.geometry.idx.map(i => node.props.points[i]);
+            points.forEach(item => {
+              item.dspX! += x;
+              item.dspY! += y;
+              item.dspFx! += x;
+              item.dspFy! += y;
+              item.dspTx! += x;
+              item.dspTy! += y;
+            });
+            getPointsAbsByDsp(node, points);
+            node.reflectPoints(points);
+            node.refresh();
+            this.geometry.updateVertex(node);
+            this.emit(Listener.POINT_NODE, [node]);
+            this.history.addCommand(new PointCommand([node], [{
+              prev: prevPoint.slice(0),
+              next: clone(node.props.points),
+            }]));
+          }
         }
         else {
           const nodes = this.selected.slice(0);
