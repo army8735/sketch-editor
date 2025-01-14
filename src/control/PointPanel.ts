@@ -9,7 +9,7 @@ import { CURVE_MODE } from '../style/define';
 import { Point } from '../format';
 import { clone } from '../util/type';
 import PointCommand from '../history/PointCommand';
-import { getPointsAbsByDsp, getPointsDspCoords } from '../tools/polyline';
+import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
 import { toPrecision } from '../math';
 
 const html = `
@@ -43,14 +43,9 @@ const html = `
 class PointPanel extends Panel {
   panel: HTMLElement;
   node?: Polyline | ShapeGroup;
-  xs: number[];
-  ys: number[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
-
-    this.xs = [];
-    this.ys = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'point-panel';
@@ -162,15 +157,15 @@ class PointPanel extends Panel {
         }
       }
       if (node instanceof Polyline) {
-        let points = node.props.points;
-        // 激活的顶点或者全部
-        if (listener.geometry.idx.length) {
-          points = listener.geometry.idx.map(i => points[i]);
-        }
-        const arr = isX ? this.xs : this.ys;
-        listener.geometry.idx.forEach((item, i) => {
+        const points = listener.geometry.idx.map(i => node.props.points[i]);
+        points.forEach((item, i) => {
           if (isInput) {
-            arr[i] = value;
+            if (isX) {
+              item.dspX = value;
+            }
+            else {
+              item.dspY = value;
+            }
             if (!i) {
               if (isX) {
                 x.placeholder = '';
@@ -187,7 +182,7 @@ class PointPanel extends Panel {
                 d = value;
               }
               else {
-                d = value - arr[i];
+                d = value - item.dspX!;
               }
             }
             else {
@@ -195,7 +190,7 @@ class PointPanel extends Panel {
                 d = value;
               }
               else {
-                d = value - arr[i];
+                d = value - item.dspY!;
               }
             }
             if (listener.shiftKey) {
@@ -214,14 +209,23 @@ class PointPanel extends Panel {
                 d = -0.1;
               }
             }
-            arr[i] += d;
+            if (isX) {
+              item.dspX! += d;
+              item.dspFx! += d;
+              item.dspTx! += d;
+            }
+            else {
+              item.dspY! += d;
+              item.dspFy! += d;
+              item.dspTy! += d;
+            }
             if (!i) {
               if (isX) {
                 if (x.placeholder) {
                   x.value = '';
                 }
                 else {
-                  x.value = toPrecision(arr[i]).toString();
+                  x.value = toPrecision(item.dspX!).toString();
                 }
               }
               else {
@@ -229,23 +233,13 @@ class PointPanel extends Panel {
                   y.value = '';
                 }
                 else {
-                  y.value = toPrecision(arr[i]).toString();
+                  y.value = toPrecision(item.dspY!).toString();
                 }
               }
             }
           }
         });
-        const dsp = arr.map((item, i) => {
-          return { x: this.xs[i], y: this.ys[i] };
-        });
-        const abs = getPointsAbsByDsp(node, dsp);
-        const { width, height } = node;
-        points.forEach((item, i) => {
-          item.absX = abs[i].x;
-          item.absY = abs[i].y;
-          item.x = item.absX / width;
-          item.y = item.absY / height;
-        });
+        getPointsAbsByDsp(node, points);
       }
       node.refresh();
       listener.geometry.updateVertex(node);
@@ -377,15 +371,10 @@ class PointPanel extends Panel {
       if (this.silence) {
         return;
       }
+      this.updateCoords(idx);
+      this.updateRange(idx);
       panel.querySelector('.type.enable')?.classList.remove('enable');
       panel.querySelector('.type .cur')?.classList.remove('cur');
-      x.value = '';
-      x.placeholder = '';
-      y.value = '';
-      y.placeholder = '';
-      range.value = '';
-      number.value = '';
-      number.placeholder = '';
       if (idx.length) {
         panel.querySelector('.type')?.classList.add('enable');
         const node = this.node;
@@ -415,8 +404,6 @@ class PointPanel extends Panel {
           }
           panel.querySelector(`.type .${t}`)?.classList.add('cur');
         }
-        this.updateCoords(idx);
-        this.updateRange(idx);
       }
     };
 
@@ -442,23 +429,28 @@ class PointPanel extends Panel {
 
   updateCoords(idx: number[]) {
     const node = this.node;
-    if (!node || !idx.length) {
+    if (!node) {
       return;
     }
     const panel = this.panel;
     const x = panel.querySelector('input.x') as HTMLInputElement;
     const y = panel.querySelector('input.y') as HTMLInputElement;
+    if (!idx.length) {
+      x.value = y.value = '';
+      x.placeholder = y.placeholder = '';
+      return;
+    }
     const xs: number[] = [];
     const ys: number[] = [];
     if (node instanceof Polyline) {
       const points = idx.map(i => node.props.points[i]);
-      const r = getPointsDspCoords(node, points);
-      r.forEach(item => {
-        if (!xs.includes(item.x)) {
-          xs.push(item.x);
+      getPointsDspByAbs(node, points);
+      points.forEach(item => {
+        if (!xs.includes(item.dspX!)) {
+          xs.push(item.dspX!);
         }
-        if (!ys.includes(item.y)) {
-          ys.push(item.y);
+        if (!ys.includes(item.dspY!)) {
+          ys.push(item.dspY!);
         }
       });
     }
@@ -474,8 +466,6 @@ class PointPanel extends Panel {
     else {
       y.value = toPrecision(ys[0]).toString();
     }
-    this.xs = xs;
-    this.ys = ys;
   }
 
   updateRange(idx: number[]) {
@@ -486,6 +476,12 @@ class PointPanel extends Panel {
     const panel = this.panel;
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
     const number = panel.querySelector('input.r') as HTMLInputElement;
+    if (!idx.length) {
+      range.value = '0';
+      number.value = '';
+      range.placeholder = number.placeholder = '';
+      return;
+    }
     const radius: number[] = [];
     if (node instanceof Polyline) {
       let points = node.props.points;

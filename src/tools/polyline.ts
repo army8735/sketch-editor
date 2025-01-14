@@ -400,7 +400,6 @@ export function createPolyline(
 
 // 框选范围内的顶点
 export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: number, y2: number) {
-  // console.log(x1, y1, x2, y2);
   node.buildPoints();
   const m = node.matrixWorld;
   const points = node.props.points;
@@ -418,14 +417,14 @@ export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: num
 }
 
 // 类似node的basicInfo，顶点abs坐标相对于AP的展示坐标
-export function getPointsDspCoords(node: Polyline, points?: Point[]) {
+export function getPointsDspByAbs(node: Polyline, points?: Point[]) {
   const m = getBasicMatrix(node);
   node.buildPoints();
   if (!points) {
     points = node.props.points;
   }
   const { baseX, baseY } = getBaseCoords(node);
-  return points.map(item => {
+  points.forEach(item => {
     const p = calPoint({
       x: item.absX! - baseX,
       y: item.absY! - baseY,
@@ -438,32 +437,49 @@ export function getPointsDspCoords(node: Polyline, points?: Point[]) {
       x: item.absTx! - baseX,
       y: item.absTy! - baseY,
     }, m);
-    return {
-      x: p.x,
-      y: p.y,
-      fx: f.x,
-      fy: f.y,
-      tx: t.x,
-      ty: t.y,
-    };
+    item.dspX = p.x;
+    item.dspY = p.y;
+    item.dspFx = f.x;
+    item.dspFy = f.y;
+    item.dspTx = t.x;
+    item.dspTy = t.y;
   });
+  return points;
 }
 
-export function getPointsAbsByDsp(node: Polyline, points: { x: number, y: number }[]) {
+export function getPointsAbsByDsp(node: Polyline, points?: Point[]) {
   const m = getBasicMatrix(node);
+  node.buildPoints();
+  if (!points) {
+    points = node.props.points;
+  }
   const i = inverse4(m);
   const { baseX, baseY } = getBaseCoords(node);
-  return points.map(item => {
-    const p = calPoint({ x: item.x + baseX, y: item.y + baseY }, i);
-    return {
-      x: p.x,
-      y: p.y,
-    };
+  points.forEach(item => {
+    const p = calPoint({
+      x: item.dspX! + baseX,
+      y: item.dspY! + baseY,
+    }, i);
+    const f = calPoint({
+      x: item.dspFx! - baseX,
+      y: item.dspFy! - baseY,
+    }, m);
+    const t = calPoint({
+      x: item.dspTx! - baseX,
+      y: item.dspTy! - baseY,
+    }, m);
+    item.absX = p.x;
+    item.absY = p.y;
+    item.absFx = f.x;
+    item.absFy = f.y;
+    item.absTx = t.x;
+    item.absTy = t.y;
   });
+  return points;
 }
 
 export default {
   getFrameVertexes,
-  getPointsDspCoords,
+  getPointsDspByAbs,
   getPointsAbsByDsp,
 };
