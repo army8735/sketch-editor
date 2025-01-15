@@ -29,6 +29,9 @@ jobs:
         run: npm install
       - name: npm build
         run: npm run build
+      - uses: browser-actions/setup-chrome@v1
+        with:
+         chrome-version: 131
       - name: npm test1
         uses: GabrielBB/xvfb-action@v1
         with:
@@ -80,7 +83,7 @@ jobs:
         run: npm install
       - name: npm build
         run: npm run build
-      - name: npm test3
+      - name: npm test4
         uses: GabrielBB/xvfb-action@v1
         with:
           run: npm run test4
