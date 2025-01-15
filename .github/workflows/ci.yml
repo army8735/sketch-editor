@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -18,7 +18,7 @@ jobs:
       - name: npm test
         run: npm run test
   test1:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -29,16 +29,13 @@ jobs:
         run: npm install
       - name: npm build
         run: npm run build
-      - uses: browser-actions/setup-chrome@v1
-        with:
-         chrome-version: 131
       - name: npm test1
         uses: GabrielBB/xvfb-action@v1
         with:
           run: npm run test1
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test2:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -55,7 +52,7 @@ jobs:
           run: npm run test2
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -72,7 +69,7 @@ jobs:
           run: npm run test3
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test4:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
