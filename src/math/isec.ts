@@ -1,6 +1,5 @@
 import vector from './vector';
 import { bboxBezier, getPointByT, sliceBezier } from './bezier';
-import { isRectsOverlap } from './geom';
 
 type Point3 = {
   x: number,
@@ -13,12 +12,12 @@ const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 /**
  * 2分逼近法求曲线交点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果
  * 当出现几乎重叠但不重叠的情况，2分后会出现和对方一半几乎重叠另一半相邻的情况，造成大量组合浪费
- * 需要判断这种情况避免，即bbox相邻但端点都在边上且不相交
+ * 需要判断这种情况避免，即bbox相邻但端点都在边上且不相交，多边形相邻线段之间很容易出现
  */
 function intersectFn(
   a: { x: number, y: number }[], b: { x: number, y: number }[],
   eps: number, eps2: number, res: { x: number, y: number, t1: number, t2: number }[],
-) {
+) { console.warn(a, b);
   const list = [{
     a,
     b,
@@ -31,7 +30,7 @@ function intersectFn(
     const { a, b, t1, t2, t3, t4 } = list.pop()!;
     const bbox1 = bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
     const bbox2 = bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
-    if (isRectsOverlap(bbox1[0], bbox1[1], bbox1[2], bbox1[3], bbox2[0], bbox2[1], bbox2[2], bbox2[3], true)) {
+    if (isOverlap(bbox1, bbox2, a, b)) {
       // 直线可能宽高为0，防止非法运算取min值
       const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
       const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
@@ -118,10 +117,6 @@ function intersectFn(
             t3: t3 + (t4 - t3) * 0.5,
             t4,
           });
-          // intersectFn(a1, b1, eps, t1, t1 + (t2 - t1) * 0.5, t3, t3 + (t4 - t3) * 0.5, res);
-          // intersectFn(a1, b2, eps, t1, t1 + (t2 - t1) * 0.5, t3 + (t4 - t3) * 0.5, t4, res);
-          // intersectFn(a2, b1, eps, t1 + (t2 - t1) * 0.5, t2, t3, t3 + (t4 - t3) * 0.5, res);
-          // intersectFn(a2, b2, eps, t1 + (t2 - t1) * 0.5, t2, t3 + (t4 - t3) * 0.5, t4, res);
         }
         // 只有一方的2分
         else if (l1 > eps || l2 > eps) {
@@ -143,8 +138,6 @@ function intersectFn(
             t3,
             t4,
           });
-          // intersectFn(a1, b, eps, t1, t1 + (t2 - t1) * 0.5, t3, t4, res);
-          // intersectFn(a2, b, eps, t1 + (t2 - t1) * 0.5, t2, t3, t4, res);
         }
         // 另一方的2分
         else if (l3 > eps || l4 > eps) {
@@ -166,8 +159,6 @@ function intersectFn(
             t3: t3 + (t4 - t3) * 0.5,
             t4,
           });
-          // intersectFn(a, b1, eps, t1, t2, t3, t3 + (t4 - t3) * 0.5, res);
-          // intersectFn(a, b2, eps, t1, t2, t3 + (t4 - t3) * 0.5, t4, res);
         }
       }
     }
@@ -227,6 +218,96 @@ function intersectFn(
     }
   }
   return res;
+}
+// 特殊优化的判断，仅相邻时看端点情况，除非一方可能将另外一方切割，否则不继续2分判断，最多只有1方会是直线，其它曲线
+// 自相交时比如圆两个圆弧之间顶点复用，很容易出现这种情况
+function isOverlap(
+  bbox1: number[], bbox2: number[],
+  a: { x: number, y: number }[], b: { x: number, y: number }[],
+) {
+  if (bbox1[0] > bbox2[2] || bbox1[1] > bbox2[3] || bbox2[0] > bbox1[2] || bbox2[1] > bbox1[3]) {
+    return false;
+  }
+  // 边重合情况，另一侧不重合快速判断
+  if (bbox1[2] === bbox2[0] || bbox1[0] === bbox2[2]) {
+    if (bbox2[3] < bbox1[1] || bbox1[1] > bbox2[3]) {
+      return false;
+    }
+  }
+  if (bbox1[3] === bbox2[1] || bbox1[1] === bbox2[3]) {
+    if (bbox2[2] < bbox1[0] || bbox1[0] > bbox2[2]) {
+      return false;
+    }
+  }
+  const la = a.length;
+  const lb = b.length;
+  // 上下相邻
+  if (bbox1[1] === bbox2[3] || bbox1[3] === bbox2[1]) {
+    const y = bbox1[1] === bbox2[3] ? bbox1[1] : bbox1[3];
+    // a直线
+    if (la === 2) {
+      // 水平线特殊继续
+      if (bbox1[1] === bbox1[3]) {
+        return true;
+      }
+      // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+      else {
+        return b[1].y === y || b[lb - 2].y === y;
+      }
+    }
+    // a曲线
+    else {
+      // b直线
+      if (lb === 2) {
+        // 水平线特殊继续
+        if (bbox2[1] === bbox2[3]) {
+          return true;
+        }
+        // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+        else {
+          return a[1].y === y || a[la - 2].y === y;
+        }
+      }
+      // b曲线，都是曲线的时候，除非控制点在边界上，否则不可能
+      else {
+        return a[1].y === y || a[la - 2].y === y || b[1].y === y || b[lb - 2].y === y;
+      }
+    }
+  }
+  // 左右相邻
+  if (bbox1[0] === bbox2[2] || bbox1[2] === bbox2[0]) {
+    const x = bbox1[0] === bbox2[2] ? bbox1[0] : bbox1[2];
+    // a直线
+    if (la === 2) {
+      // 垂直线特殊继续
+      if (bbox1[0] === bbox1[2]) {
+        return true;
+      }
+      // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+      else {
+        return b[1].x === x || b[lb - 2].y === x;
+      }
+    }
+    // a曲线
+    else {
+      // b直线
+      if (lb === 2) {
+        // 垂直线特殊继续
+        if (bbox2[0] === bbox2[2]) {
+          return true;
+        }
+        // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+        else {
+          return a[1].x === x || a[la - 2].x === x;
+        }
+      }
+      // b曲线，都是曲线的时候，除非控制点在边界上，否则不可能
+      else {
+        return a[1].x === x || a[la - 2].x === x || b[1].x === x || b[lb - 2].x === x;
+      }
+    }
+  }
+  return true;
 }
 
 export function intersectBezier2Bezier2(

@@ -140,7 +140,7 @@ export function isRectsOverlap(ax1: number, ay1: number, ax2: number, ay2: numbe
     if (ax1 > bx2 || ay1 > by2 || bx1 > ax2 || by1 > ay2) {
       return false;
     }
-    // 边重合情况
+    // 边重合情况，另一侧不重合快速判断
     if (ax2 === bx1 || ax1 === bx2) {
       if (ay2 < by1 || ay1 > by2) {
         return false;
