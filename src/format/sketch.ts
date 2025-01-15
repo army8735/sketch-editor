@@ -788,8 +788,8 @@ async function convertItem(
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const { underlineStyle = 0, strikethroughStyle = 0, kerning: letterSpacing = 0, MSAttributedStringColorAttribute } = layer.style?.textStyle?.encodedAttributes || {};
     const textAlign = paragraphStyle?.alignment !== undefined
-      ? ['left', 'right', 'center', 'justify'][paragraphStyle.alignment]
-      : rich[0]?.textAlign;
+      ? ['left', 'right', 'center', 'justify'][paragraphStyle.alignment || 0]
+      : (rich[0]?.textAlign ?? 'left');
     const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
     const textVerticalAlign = ['top', 'middle', 'bottom'][verticalAlignment || 0];
     const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
