@@ -1,4 +1,3 @@
-import bezier from '../bezier';
 import Point from './Point';
 
 let uuid = 0;
@@ -81,24 +80,13 @@ class Segment {
 
   calBbox() {
     let coords = this.coords, l = coords.length;
-    const a = coords[0], b = coords[1];
-    if (l === 2) {
-      const x1 = Math.min(a.x, b.x);
-      const y1 = Math.min(a.y, b.y);
-      const x2 = Math.max(a.x, b.x);
-      const y2 = Math.max(a.y, b.y);
-      return [x1, y1, x2, y2];
-    }
-    else {
-      const c = coords[2];
-      if (l === 3) {
-        return bezier.bboxBezier(a.x, a.y, b.x, b.y, c.x, c.y);
-      }
-      else {
-        const d = coords[3];
-        return bezier.bboxBezier(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
-      }
-    }
+    const a = coords[0], b = coords[l - 1];
+    // 由于曲线已经x/y单调，直接看两端即可
+    const x1 = Math.min(a.x, b.x);
+    const y1 = Math.min(a.y, b.y);
+    const x2 = Math.max(a.x, b.x);
+    const y2 = Math.max(a.y, b.y);
+    return [x1, y1, x2, y2];
   }
 
   // 线段边逆序
