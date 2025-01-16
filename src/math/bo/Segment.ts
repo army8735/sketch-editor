@@ -16,9 +16,9 @@ class Segment {
 
   constructor(coords: Point[], belong: number) {
     this.uuid = uuid++;
-    // 截取过程中曲线可能分成很小一截的水平/垂直直线，这里去除一下
+    const first = coords[0];
     if (coords.length > 2) {
-      const first = coords[0];
+      // 截取过程中曲线可能分成很小一截的水平/垂直直线，这里去除一下
       let equalX = true, equalY = true;
       for (let i = 1, len = coords.length; i < len; i++) {
         const item = coords[i];
@@ -67,6 +67,19 @@ class Segment {
         }
       }
     }
+    // 控制点如果和端点重合，视为无效
+    if (coords.length > 2) {
+      if (coords[1].x === first.x && coords[1].y === first.y) {
+        coords.splice(1, 1);
+      }
+    }
+    if (coords.length > 2) {
+      const l = coords.length;
+      const end = coords[l - 1];
+      if (coords[l - 2].x === end.x && coords[l - 2].y === end.y) {
+        coords.splice(l - 2, 1);
+      }
+    }
     this.coords = coords;
     this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
     this.bbox = this.calBbox();
@@ -79,7 +92,7 @@ class Segment {
   }
 
   calBbox() {
-    let coords = this.coords, l = coords.length;
+    const coords = this.coords, l = coords.length;
     const a = coords[0], b = coords[l - 1];
     // 由于曲线已经x/y单调，直接看两端即可
     const x1 = Math.min(a.x, b.x);
@@ -95,7 +108,7 @@ class Segment {
   }
 
   equal(o: Segment) {
-    let ca = this.coords, cb = o.coords;
+    const ca = this.coords, cb = o.coords;
     if (ca.length !== cb.length) {
       return false;
     }
