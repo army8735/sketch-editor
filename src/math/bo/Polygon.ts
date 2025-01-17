@@ -66,8 +66,14 @@ class Polygon {
             continue;
           }
           const cPoint = new Point(curr[0], curr[1]);
-          const t = bezier.getBezierMonotonicityT([startPoint, cPoint, endPoint], true);
-          if (t) {
+          const t = bezier.getBezierMonotonicityT2([startPoint, cPoint, endPoint], true) || [];
+          const t2 = bezier.getBezierMonotonicityT2([startPoint, cPoint, endPoint], false);
+          t2?.forEach(i => {
+            if (!t.includes(i)) {
+              t.push(i);
+            }
+          });
+          if (t.length) {
             const points: [number, number][] = [
               [startPoint.x, startPoint.y],
               [curr[0], curr[1]],
@@ -143,11 +149,20 @@ class Polygon {
           }
           const cPoint1 = new Point(curr[0], curr[1]),
             cPoint2 = new Point(curr[2], curr[3]);
-          const t = bezier.getBezierMonotonicityT(
+          const t = bezier.getBezierMonotonicityT2(
             [startPoint, cPoint1, cPoint2, endPoint],
             true,
+          ) || [];
+          const t2 = bezier.getBezierMonotonicityT2(
+            [startPoint, cPoint1, cPoint2, endPoint],
+            false,
           );
-          if (t) {
+          t2?.forEach(i => {
+            if (!t.includes(i)) {
+              t.push(i);
+            }
+          });
+          if (t.length) {
             const points: Array<[number, number]> = [
               [startPoint.x, startPoint.y],
               [curr[0], curr[1]],

@@ -9,15 +9,27 @@ type Point3 = {
 
 const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 
+function bboxMonotonous(p: { x: number, y: number }[]) {
+  const a = p[0], b = p[p.length - 1];
+  const x1 = Math.min(a.x, b.x);
+  const y1 = Math.min(a.y, b.y);
+  const x2 = Math.max(a.x, b.x);
+  const y2 = Math.max(a.y, b.y);
+  return [x1, y1, x2, y2];
+}
+
 /**
  * 2分逼近法求曲线交点，递归改用循环实现，当分割后的曲线的bbox和宽高小于阈值时认为找到结果
- * 当出现几乎重叠但不重叠的情况，2分后会出现和对方一半几乎重叠另一半相邻的情况，造成大量组合浪费
+ * 当出现几乎重叠的情况，2分后会出现和对方一半几乎重叠另一半相邻的情况，造成大量组合浪费
  * 需要判断这种情况避免，即bbox相邻但端点都在边上且不相交，多边形相邻线段之间很容易出现
+ * 还有布尔运算前置已经将曲线切割为单调情况，两个几乎重叠的曲线可以通过计算端点时钟序快速判断不相交
  */
 function intersectFn(
   a: { x: number, y: number }[], b: { x: number, y: number }[],
-  eps: number, eps2: number, res: { x: number, y: number, t1: number, t2: number }[],
-) { console.warn(a, b);
+  eps: number, eps2: number, monotonous: boolean,
+  res: { x: number, y: number, t1: number, t2: number }[],
+) {
+  // console.warn(a, b);
   const list = [{
     a,
     b,
@@ -26,11 +38,83 @@ function intersectFn(
     t3: 0,
     t4: 1,
   }];
+  let count = 0;
   while (list.length) {
     const { a, b, t1, t2, t3, t4 } = list.pop()!;
-    const bbox1 = bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
-    const bbox2 = bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
-    if (isOverlap(bbox1, bbox2, a, b)) {
+    const la = a.length;
+    const lb = b.length;
+    const bbox1 = monotonous
+      ? bboxMonotonous(a)
+      : bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
+    const bbox2 = monotonous
+      ? bboxMonotonous(b)
+      : bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
+    count++;
+    // 这里一般不会出现2条直线，但还是做兜底
+    if (la === 2 && lb === 2) {
+      const r = intersectLineLine(
+        a[0].x, a[0].y, a[1].x, a[1].y,
+        b[0].x, b[0].y, b[1].x, b[1].y,
+        true, eps,
+      );
+      if (r) {
+        res.push({
+          x: r.x,
+          y: r.y,
+          t1: r.toSource,
+          t2: r.toClip,
+        });
+      }
+      continue;
+    }
+    // 单调且其中有一条是直线的话，相连肯定不相交，但要看是否最初线段的两端，否则要记录下来交点
+    if (monotonous && (la === 2 || lb === 2)) {
+      if (a[0].x === b[0].x && a[0].y === b[0].y) {
+        if (t1 > 0 || t3 > 0) {
+          res.push({
+            x: a[0].x,
+            y: a[0].y,
+            t1,
+            t2: t3,
+          });
+        }
+        continue;
+      }
+      if (a[0].x === b[lb - 1].x && a[0].y === b[lb - 1].y) {
+        if (t1 > 0 || t4 < 1) {
+          res.push({
+            x: a[0].x,
+            y: a[0].y,
+            t1,
+            t2: t4,
+          });
+        }
+        continue;
+      }
+      if (a[la - 1].x === b[0].x && a[la - 1].y === b[0].y) {
+        if (t2 < 1 || t3 > 0) {
+          res.push({
+            x: b[0].x,
+            y: b[0].y,
+            t1: t2,
+            t2: t3,
+          });
+        }
+        continue;
+      }
+      if (a[la - 1].x === b[lb - 1].x && a[la - 1].y === b[lb - 1].y) {
+        if (t2 < 1 || t4 < 1) {
+          res.push({
+            x: a[la - 1].x,
+            y: a[la - 1].y,
+            t1: t2,
+            t2: t4,
+          });
+        }
+        continue;
+      }
+    }
+    if (isOverlap(bbox1, bbox2, a, b, t1, t2, t3, t4)) {
       // 直线可能宽高为0，防止非法运算取min值
       const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
       const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
@@ -44,28 +128,28 @@ function intersectFn(
         if (t1 === 0) {
           const p1 = a[0];
           if (p1.x === b[0].x && p1.y === b[0].y ||
-            p1.x === b[b.length - 1].x && p1.y === b[b.length - 1].y) {
+            p1.x === b[lb - 1].x && p1.y === b[lb - 1].y) {
             ta = 0;
           }
         }
         else if (t2 === 1) {
-          const p1 = a[a.length - 1];
+          const p1 = a[la - 1];
           if (p1.x === b[0].x && p1.y === b[0].y ||
-            p1.x === b[b.length - 1].x && p1.y === b[b.length - 1].y) {
+            p1.x === b[lb - 1].x && p1.y === b[lb - 1].y) {
             ta = 1;
           }
         }
         if (t3 === 0) {
           const p1 = b[0];
           if (p1.x === a[0].x && p1.y === a[0].y ||
-            p1.x === a[a.length - 1].x && p1.y === a[a.length - 1].y) {
+            p1.x === a[la - 1].x && p1.y === a[la - 1].y) {
             tb = 0;
           }
         }
         else if (t4 === 1) {
-          const p1 = b[b.length - 1];
+          const p1 = b[lb - 1];
           if (p1.x === a[0].x && p1.y === a[0].y ||
-            p1.x === a[a.length - 1].x && p1.y === a[a.length - 1].y) {
+            p1.x === a[la - 1].x && p1.y === a[la - 1].y) {
             tb = 1;
           }
         }
@@ -163,6 +247,7 @@ function intersectFn(
       }
     }
   }
+  // console.log(count, res.length);
   res.sort((a, b) => {
     if (a.t1 === b.t1) {
       return a.t2 - b.t2;
@@ -219,11 +304,16 @@ function intersectFn(
   }
   return res;
 }
+
+const OVER = 0;
+const ADJ = 1;
+const NOT = 2;
 // 特殊优化的判断，仅相邻时看端点情况，除非一方可能将另外一方切割，否则不继续2分判断，最多只有1方会是直线，其它曲线
 // 自相交时比如圆两个圆弧之间顶点复用，很容易出现这种情况
 function isOverlap(
   bbox1: number[], bbox2: number[],
   a: { x: number, y: number }[], b: { x: number, y: number }[],
+  t1: number, t2: number, t3: number, t4: number,
 ) {
   if (bbox1[0] > bbox2[2] || bbox1[1] > bbox2[3] || bbox2[0] > bbox1[2] || bbox2[1] > bbox1[3]) {
     return false;
@@ -246,11 +336,17 @@ function isOverlap(
     const y = bbox1[1] === bbox2[3] ? bbox1[1] : bbox1[3];
     // a直线
     if (la === 2) {
-      // 水平线特殊继续
+      // 水平线，看交点是否在水平线两端，不在才有可能，如果是最初未切割的线，两端相交认为是相连
       if (bbox1[1] === bbox1[3]) {
         return true;
+        // let r = b[0].y === y && b[0].x !== bbox1[0] && b[0].x !== bbox1[1]
+        //   && b[1].y === y && b[1].x !== bbox1[0] && b[1].x !== bbox1[1]
+        //   && b[lb - 2].y === y && b[lb - 2].x !== bbox1[0] && b[lb - 2].x !== bbox1[1]
+        //   && b[lb - 1].y === y && b[lb - 1].x !== bbox1[0] && b[lb - 1].x !== bbox1[1];
+        // // if (r && ) {}
+        // return r;
       }
-      // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+      // 其它则看极值点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
       else {
         return b[1].y === y || b[lb - 2].y === y;
       }
@@ -259,16 +355,20 @@ function isOverlap(
     else {
       // b直线
       if (lb === 2) {
-        // 水平线特殊继续
+        // 水平线同上
         if (bbox2[1] === bbox2[3]) {
           return true;
+          // return a[0].y === y && a[0].x !== bbox2[0] && a[0].x !== bbox2[1]
+          //   && a[1].y === y && a[1].x !== bbox2[0] && a[1].x !== bbox2[1]
+          //   && a[la - 2].y === y && a[la - 2].x !== bbox2[0] && a[la - 2].x !== bbox2[1]
+          //   && a[la - 1].y === y && a[la - 1].x !== bbox2[0] && a[la - 1].x !== bbox2[1];
         }
-        // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+        // 其它同上
         else {
           return a[1].y === y || a[la - 2].y === y;
         }
       }
-      // b曲线，都是曲线的时候，除非控制点在边界上，否则不可能
+      // b曲线同上
       else {
         return a[1].y === y || a[la - 2].y === y || b[1].y === y || b[lb - 2].y === y;
       }
@@ -279,9 +379,13 @@ function isOverlap(
     const x = bbox1[0] === bbox2[2] ? bbox1[0] : bbox1[2];
     // a直线
     if (la === 2) {
-      // 垂直线特殊继续
+      // 垂直线，看端点是否在垂直线两端，不在才有可能
       if (bbox1[0] === bbox1[2]) {
         return true;
+        // return b[0].x === x && b[0].y !== bbox1[1] && b[0].y !== bbox1[3]
+        //   && b[1].x === x && b[1].y !== bbox1[1] && b[1].y !== bbox1[3]
+        //   && b[lb - 2].x === x && b[lb - 2].y !== bbox1[1] && b[lb - 2].y !== bbox1[3]
+        //   && b[lb - 1].x === x && b[lb - 1].y !== bbox1[1] && b[lb - 1].y !== bbox1[3];
       }
       // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
       else {
@@ -292,16 +396,20 @@ function isOverlap(
     else {
       // b直线
       if (lb === 2) {
-        // 垂直线特殊继续
+        // 垂直线同上
         if (bbox2[0] === bbox2[2]) {
           return true;
+          // return a[0].x === x && a[0].y !== bbox2[1] && a[0].y !== bbox2[3]
+          //   && a[1].x === x && a[1].y !== bbox2[1] && a[1].y !== bbox2[3]
+          //   && a[la - 2].x === x && a[la - 2].y !== bbox2[1] && a[la - 2].y !== bbox2[3]
+          //   && a[la - 1].x === x && a[la - 1].y !== bbox2[1] && a[la - 1].y !== bbox2[3];
         }
-        // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+        // 其它同上
         else {
           return a[1].x === x || a[la - 2].x === x;
         }
       }
-      // b曲线，都是曲线的时候，除非控制点在边界上，否则不可能
+      // b曲线同上
       else {
         return a[1].x === x || a[la - 2].x === x || b[1].x === x || b[lb - 2].x === x;
       }
@@ -313,7 +421,8 @@ function isOverlap(
 export function intersectBezier2Bezier2(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number,
-  eps = 0.1, eps2 = 0.5) {
+  eps = 0.1, eps2 = 0.5, monotonous = false,
+) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -325,7 +434,7 @@ export function intersectBezier2Bezier2(
       { x: bx2, y: by2 },
       { x: bx3, y: by3 },
     ],
-    eps, eps2, res,
+    eps, eps2, monotonous, res,
   );
   return res;
 }
@@ -333,7 +442,8 @@ export function intersectBezier2Bezier2(
 export function intersectBezier3Bezier3(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
-  eps = 0.1, eps2 = 0.5) {
+  eps = 0.1, eps2 = 0.5, monotonous = false,
+) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -347,7 +457,7 @@ export function intersectBezier3Bezier3(
       { x: bx3, y: by3 },
       { x: bx4, y: by4 },
     ],
-    eps, eps2, res,
+    eps, eps2, monotonous, res,
   );
   return res;
 }
@@ -355,7 +465,8 @@ export function intersectBezier3Bezier3(
 export function intersectBezier2Bezier3(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number, bx3: number, by3: number, bx4: number, by4: number,
-  eps = 0.1, eps2 = 0.5) {
+  eps = 0.1, eps2 = 0.5, monotonous = false,
+) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -368,7 +479,7 @@ export function intersectBezier2Bezier3(
       { x: bx3, y: by3 },
       { x: bx4, y: by4 },
     ],
-    eps, eps2, res,
+    eps, eps2, monotonous, res,
   );
   return res;
 }
@@ -376,7 +487,8 @@ export function intersectBezier2Bezier3(
 export function intersectLineLine(
   ax1: number, ay1: number, ax2: number, ay2: number,
   bx1: number, by1: number, bx2: number, by2: number,
-  limit = true, eps = 0) {
+  limit = true, eps = 0,
+) {
   const d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
   if (d !== 0) {
     const toSource = (
@@ -403,7 +515,8 @@ export function intersectLineLine(
 export function intersectBezier2Line(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number,
   bx1: number, by1: number, bx2: number, by2: number,
-  eps = 0.1, eps2 = 0.5) {
+  eps = 0.1, eps2 = 0.5, monotonous = false,
+) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -414,7 +527,7 @@ export function intersectBezier2Line(
       { x: bx1, y: by1 },
       { x: bx2, y: by2 },
     ],
-    eps, eps2, res,
+    eps, eps2, monotonous, res,
   );
   return res;
 }
@@ -422,7 +535,8 @@ export function intersectBezier2Line(
 export function intersectBezier3Line(
   ax1: number, ay1: number, ax2: number, ay2: number, ax3: number, ay3: number, ax4: number, ay4: number,
   bx1: number, by1: number, bx2: number, by2: number,
-  eps = 0.1, eps2 = 0.5) {
+  eps = 0.1, eps2 = 0.5, monotonous = false,
+) {
   const res: { x: number, y: number, t1: number, t2: number }[] = [];
   intersectFn(
     [
@@ -434,7 +548,7 @@ export function intersectBezier3Line(
       { x: bx1, y: by1 },
       { x: bx2, y: by2 },
     ],
-    eps, eps2, res,
+    eps, eps2, monotonous, res,
   );
   return res;
 }

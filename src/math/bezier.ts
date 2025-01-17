@@ -765,21 +765,66 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
   return res;
 }
 
-// 获取曲线单调性t值，有结果才返回，比如水平垂直线特例没有结果，求导看dt=0的t值
+// 获取曲线1阶单调性t值，有结果才返回，比如水平垂直线特例没有结果，求导看dt=0的t值
 function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
   if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
+  const p0 = isX ? points[0].x : points[0].y;
+  const p1 = isX ? points[1].x : points[1].y;
+  const p2 = isX ? points[2].x : points[2].y;
   if (points.length === 4) {
+    const p3 = isX ? points[3].x : points[3].y;
+    // const t = equation
+    //   .getRoots([
+    //     isX ? 3 * (points[1].x - points[0].x) : 3 * (points[1].y - points[0].y),
+    //     isX
+    //       ? 6 * (points[2].x + points[0].x - 2 * points[1].x)
+    //       : 6 * (points[2].y + points[0].y - 2 * points[1].y),
+    //     isX
+    //       ? 3 * (points[3].x + 3 * points[1].x - points[0].x - 3 * points[2].x)
+    //       : 3 * (points[3].y + 3 * points[1].y - points[0].y - 3 * points[2].y),
+    //   ])
+    //   .filter((i) => i > eps&& i < 1 - eps);
+    const t = equation.getRoots([
+      3 * p1 - 3 * p0,
+      2 * (3 * p0 - 6 * p1 + 3 * p2),
+      3 * (-p0 + 3 * p1 - 3 * p2 + p3),
+    ]).filter((i) => i > eps&& i < 1 - eps);
+    if (t.length) {
+      return t.sort(function (a, b) {
+        return a - b;
+      });
+    }
+  }
+  else if (points.length === 3) {
+    // const t = isX
+    //   ? (points[0].x - points[1].x) /
+    //   (points[0].x - 2 * points[1].x + points[2].x)
+    //   : (points[0].y - points[1].y) /
+    //   (points[0].y - 2 * points[1].y + points[2].y);
+    const t = equation.getRoots([
+      2 * (p1 - p0),
+      2 * (p0 - 2 * p1 + p2),
+    ]).filter((i) => i > eps&& i < 1 - eps);
+    return t;
+  }
+}
+
+// 同上，获取2阶导单调性t值
+function getBezierMonotonicityT2(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
+  if (points.length < 2 || points.length > 4) {
+    throw new Error('Unsupported order');
+  }
+  const p0 = isX ? points[0].x : points[0].y;
+  const p1 = isX ? points[1].x : points[1].y;
+  const p2 = isX ? points[2].x : points[2].y;
+  if (points.length === 4) {
+    const p3 = isX ? points[3].x : points[3].y;
     const t = equation
       .getRoots([
-        isX ? 3 * (points[1].x - points[0].x) : 3 * (points[1].y - points[0].y),
-        isX
-          ? 6 * (points[2].x + points[0].x - 2 * points[1].x)
-          : 6 * (points[2].y + points[0].y - 2 * points[1].y),
-        isX
-          ? 3 * (points[3].x + 3 * points[1].x - points[0].x - 3 * points[2].x)
-          : 3 * (points[3].y + 3 * points[1].y - points[0].y - 3 * points[2].y),
+        2 * (3 * p0 - 6 * p1 + 3 * p2),
+        6 * (-p0 + 3 * p1 - 3 * p2 + p3),
       ])
       .filter((i) => i > eps&& i < 1 - eps);
     if (t.length) {
@@ -789,14 +834,11 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
     }
   }
   else if (points.length === 3) {
-    const t = isX
-      ? (points[0].x - points[1].x) /
-      (points[0].x - 2 * points[1].x + points[2].x)
-      : (points[0].y - points[1].y) /
-      (points[0].y - 2 * points[1].y + points[2].y);
+    const t = 2 * (p0 - 2 * p1 + p2);
     if (t > eps && t < 1 - eps) {
       return [t];
     }
+    return [];
   }
 }
 
@@ -1033,6 +1075,7 @@ export default {
   bezierTangent,
   splitBezierT,
   getBezierMonotonicityT,
+  getBezierMonotonicityT2,
   bezierDerivative,
   bezierDerivative2,
   bezierValue,

@@ -61,6 +61,7 @@ export function getIntersectionBezier2Line(
     by2,
     EPS,
     EPS2,
+    true,
   );
   if (res.length) {
     return filterIsec(res);
@@ -96,6 +97,7 @@ export function getIntersectionBezier2Bezier2(
     by3,
     EPS,
     EPS2,
+    true,
   );
   if (res.length) {
     return filterIsec(res);
@@ -135,6 +137,7 @@ export function getIntersectionBezier2Bezier3(
     by4,
     EPS,
     EPS2,
+    true,
   );
   if (res.length) {
     return filterIsec(res);
@@ -170,6 +173,7 @@ export function getIntersectionBezier3Line(
     by2,
     EPS,
     EPS2,
+    true,
   );
   if (res.length) {
     return filterIsec(res);
@@ -213,6 +217,7 @@ export function getIntersectionBezier3Bezier3(
     by4,
     EPS,
     EPS2,
+    true,
   );
   if (res.length) {
     return filterIsec(res);
