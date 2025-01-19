@@ -1,5 +1,5 @@
 import vector from './vector';
-import { bboxBezier, getPointByT, sliceBezier } from './bezier';
+import { bboxBezier, bezierExtremeT, getPointByT, sliceBezier } from './bezier';
 
 type Point3 = {
   x: number,
@@ -29,7 +29,7 @@ function intersectFn(
   eps: number, eps2: number, monotonous: boolean,
   res: { x: number, y: number, t1: number, t2: number }[],
 ) {
-  // console.warn(a, b);
+  console.warn(a, b);
   const list = [{
     a,
     b,
@@ -38,37 +38,37 @@ function intersectFn(
     t3: 0,
     t4: 1,
   }];
+  const la = a.length;
+  const lb = b.length;
+  // 这里一般不会出现2条直线，但还是做兜底
+  if (la === 2 && lb === 2) {
+    const r = intersectLineLine(
+      a[0].x, a[0].y, a[1].x, a[1].y,
+      b[0].x, b[0].y, b[1].x, b[1].y,
+      true, eps,
+    );
+    if (r) {
+      res.push({
+        x: r.x,
+        y: r.y,
+        t1: r.toSource,
+        t2: r.toClip,
+      });
+    }
+    return res;
+  }
   let count = 0;
   while (list.length) {
     const { a, b, t1, t2, t3, t4 } = list.pop()!;
-    const la = a.length;
-    const lb = b.length;
     const bbox1 = monotonous
       ? bboxMonotonous(a)
       : bboxBezier(a[0].x, a[0].y, a[1].x, a[1].y, a[2]?.x, a[2]?.y, a[3]?.x, a[3]?.y);
     const bbox2 = monotonous
       ? bboxMonotonous(b)
       : bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
-    count++;
-    // 这里一般不会出现2条直线，但还是做兜底
-    if (la === 2 && lb === 2) {
-      const r = intersectLineLine(
-        a[0].x, a[0].y, a[1].x, a[1].y,
-        b[0].x, b[0].y, b[1].x, b[1].y,
-        true, eps,
-      );
-      if (r) {
-        res.push({
-          x: r.x,
-          y: r.y,
-          t1: r.toSource,
-          t2: r.toClip,
-        });
-      }
-      continue;
-    }
-    // 单调且其中有一条是直线的话，相连肯定不相交，但要看是否最初线段的两端，否则要记录下来交点
-    if (monotonous && (la === 2 || lb === 2)) {
+    // 单调相连相邻特殊优化提前跳出无效循环
+    if (monotonous) {
+      // 顶点相连，如果是最初的线段（t为0和1）忽略，2分后的中间线段保留，无论哪种都可以跳出循环
       if (a[0].x === b[0].x && a[0].y === b[0].y) {
         if (t1 > 0 || t3 > 0) {
           res.push({
@@ -113,8 +113,96 @@ function intersectFn(
         }
         continue;
       }
+      // ab左右相邻
+      if ((bbox1[0] === bbox2[2] || bbox1[2] === bbox2[0]) && bbox1[1] <= bbox2[3] && bbox1[3] >= bbox2[1]) {
+        const aLeft = bbox1[2] === bbox2[0];
+        if (la === 2) {
+          const r = lineLeftRightBezier(a, b, bbox1, aLeft);
+          if (r) {
+            const tl = t1 + r.tl * (t2 - t1);
+            const tb = t3 + r.tb * (t4 - t3);
+            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
+              res.push({
+                x: r.x,
+                y: r.y,
+                t1: tl,
+                t2: tb,
+              });
+            }
+          }
+        }
+        else if (lb === 2) {
+          const r = lineLeftRightBezier(b, a, bbox2, !aLeft);
+          if (r) {
+            const tl = t3 + r.tb * (t4 - t3);
+            const tb = t1 + r.tl * (t2 - t1);
+            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
+              res.push({
+                x: r.x,
+                y: r.y,
+                t1: tb,
+                t2: tl,
+              });
+            }
+          }
+        }
+        else {}
+        continue;
+      }
+      // ab上下相邻
+      else if ((bbox1[1] === bbox2[3] || bbox1[3] === bbox2[1]) && bbox1[0] <= bbox2[2] && bbox1[2] >= bbox2[0]) {
+        const aTop = bbox1[1] === bbox2[3];
+        if (la === 2) {
+          const r = lineTopBottomBezier(a, b, bbox1, aTop);
+          if (r) {
+            const tl = t1 + r.tl * (t2 - t1);
+            const tb = t3 + r.tb * (t4 - t3);
+            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
+              res.push({
+                x: r.x,
+                y: r.y,
+                t1: tl,
+                t2: tb,
+              });
+            }
+          }
+        }
+        else if (lb === 2) {
+          const r = lineTopBottomBezier(b, a, bbox2, !aTop);
+          if (r) {
+            const tl = t3 + r.tb * (t4 - t3);
+            const tb = t1 + r.tl * (t2 - t1);
+            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
+              res.push({
+                x: r.x,
+                y: r.y,
+                t1: tb,
+                t2: tl,
+              });
+            }
+          }
+        }
+        else {
+          const r = bezierTopBottomBezier(a, b, bbox1, aTop);
+          if (r) {
+            const ta = t1 + r.ta * (t2 - t1);
+            const tb = t3 + r.tb * (t4 - t3);
+            if (ta > 0 && ta < 1 || tb > 0 && tb < 1) {
+              res.push({
+                x: r.x,
+                y: r.y,
+                t1: ta,
+                t2: tb,
+              });
+            }
+          }
+        }
+        continue;
+      }
     }
+    count++;
     if (isOverlap(bbox1, bbox2, a, b, t1, t2, t3, t4)) {
+      // console.log(a, bbox1.join(','))
       // 直线可能宽高为0，防止非法运算取min值
       const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
       const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
@@ -247,7 +335,7 @@ function intersectFn(
       }
     }
   }
-  // console.log(count, res.length);
+  console.log(count, res.length);
   res.sort((a, b) => {
     if (a.t1 === b.t1) {
       return a.t2 - b.t2;
@@ -305,9 +393,336 @@ function intersectFn(
   return res;
 }
 
-const OVER = 0;
-const ADJ = 1;
-const NOT = 2;
+function lineTopBottomBezier(
+  l: { x: number, y: number }[], b: { x: number, y: number }[],
+  bboxL: number[], lineTop = true,
+) {
+  const lb = b.length;
+  const y = lineTop ? bboxL[3] : bboxL[1];
+  // 是水平线
+  if (bboxL[1] === bboxL[3]) {
+    // 曲线端点相连比较好处理
+    if (b[0].y === y || b[lb - 1].y === y) {
+      const x = b[0].y === y ? b[0].x : b[lb - 1].x;
+      return {
+        x,
+        y,
+        tl: (x - bboxL[0]) / (bboxL[2] - bboxL[0]),
+        tb: b[0].y === y ? 0 : 1,
+      };
+    }
+    // 曲线中间某点求极值即可
+    else {
+      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p = getPointByT(b, t[0]);
+      return {
+        x: p.x,
+        y,
+        tl: (p.x - bboxL[0]) / (bboxL[2] - bboxL[0]),
+        tb: t[0],
+      };
+    }
+  }
+  // 非水平情况看l的端点和b是否有交点
+  else {
+    // 曲线端点相连比较好处理
+    if (b[0].y === y || b[lb - 1].y === y) {
+      const x = b[0].y === y ? b[0].x : b[lb - 1].x;
+      if (l[0].x === x && l[0].y === y || l[1].x === x && l[1].y === y) {
+        return {
+          x,
+          y,
+          tl: l[0].y === y ? 0 : 1,
+          tb: b[0].y === y ? 0 : 1,
+        };
+      }
+    }
+    // 曲线中间某点求极值即可
+    else {
+      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p = getPointByT(b, t[0]);
+      if (p.x === l[0].x && l[0].y === y || p.x === l[1].x && l[1].y === y) {
+        return {
+          x: p.x,
+          y,
+          tl: p.x === l[0].x ? 0 : 1,
+          tb: t[0],
+        };
+      }
+    }
+  }
+}
+
+function lineLeftRightBezier(
+  l: { x: number, y: number }[], b: { x: number, y: number }[],
+  bboxL: number[], lineLeft = true,
+) {
+  const lb = b.length;
+  const x = lineLeft ? bboxL[2] : bboxL[0];
+  // 是垂直线
+  if (bboxL[0] === bboxL[2]) {
+    // 曲线端点相连比较好处理
+    if (b[0].x === x || b[lb - 1].x === x) {
+      const y = b[0].x === x ? b[0].x : b[lb - 1].x;
+      return {
+        x,
+        y,
+        tl: (y - bboxL[1]) / (bboxL[3] - bboxL[1]),
+        tb: b[0].x === x ? 0 : 1,
+      };
+    }
+    // 曲线中间某点求极值即可
+    else {
+      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p = getPointByT(b, t[0]);
+      return {
+        x,
+        y: p.y,
+        tl: (p.y - bboxL[1]) / (bboxL[3] - bboxL[1]),
+        tb: t[0],
+      };
+    }
+  }
+  // 非垂直情况l的端点和b是否有交点
+  else {
+    // 曲线端点相连比较好处理
+    if (b[0].x === x || b[lb - 1].x === x) {
+      const y = b[0].x === x ? b[0].x : b[lb - 1].x;
+      if (l[0].x === x && l[0].y === y || l[1].x === x && l[1].y === y) {
+        return {
+          x,
+          y,
+          tl: l[0].x === x ? 0 : 1,
+          tb: b[0].x === x ? 0 : 1,
+        };
+      }
+    }
+    // 曲线中间某点求极值即可
+    else {
+      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p = getPointByT(b, t[0]);
+      if (p.y === l[0].y && l[0].x === x || p.y === l[1].y && l[1].x === x) {
+        return {
+          x,
+          y: p.y,
+          tl: p.y === l[0].y ? 0 : 1,
+          tb: t[0],
+        };
+      }
+    }
+  }
+}
+
+function bezierLeftRightBezier(
+  a: { x: number, y: number }[], b: { x: number, y: number }[],
+  bboxA: number[], aLeft = true,
+) {
+  const la = a.length;
+  const lb = b.length;
+  const x = aLeft ? bboxA[2] : bboxA[0];
+  // a曲线端点在边界
+  if (a[0].x === x || a[la - 1].x === x) {
+    // b曲线端点在边界
+    if (b[0].x === x || b[lb - 1].x === x) {
+      if (a[0].x === x && b[0].x === x && a[0].y === b[0].y) {
+        return {
+          x,
+          y: a[0].y,
+          ta: 0,
+          tb: 0,
+        };
+      }
+      else if (a[0].x === x && b[lb - 1].x === x && a[0].y === b[lb - 1].y) {
+        return {
+          x,
+          y: a[0].y,
+          ta: 0,
+          tb: 1,
+        };
+      }
+      else if (a[la - 1].x === x && b[lb - 1].x === x && a[la - 1].y === b[lb - 1].y) {
+        return {
+          x,
+          y: a[la - 1].y,
+          ta: 1,
+          tb: 1,
+        };
+      }
+      else if (a[la - 1].x === x && b[0].x === x && a[la - 1].y === b[0].y) {
+        return {
+          x,
+          y: a[la - 1].y,
+          ta: 1,
+          tb: 0,
+        };
+      }
+    }
+    // b曲线中间在边界，求极值
+    else {
+      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p = getPointByT(b, t[0]);
+      if (a[0].x === x && a[0].y === p.y) {
+        return {
+          x,
+          y: p.y,
+          ta: 0,
+          tb: t[0],
+        };
+      }
+      else if (a[la - 1].x === x && a[la - 1].y === p.y) {
+        return {
+          x,
+          y: p.y,
+          ta: 1,
+          tb: t[0],
+        };
+      }
+    }
+  }
+  // a曲线中间在边界
+  else {
+    const t1 = bezierExtremeT(a[0].x, a[0].y, a[1].x, a[1].y, a[2].x, a[2].y, a[3]?.x, a[3]?.y).filter(i => i > 0 && i < 1);
+    const p1 = getPointByT(a, t1[0]);
+    // b曲线端点在边界
+    if (b[0].x === x || b[lb - 1].x === x) {
+      if (b[0].x === x && b[0].y === p1.y) {
+        return {
+          x,
+          y: p1.y,
+          ta: t1[0],
+          tb: 0,
+        }
+      }
+      else if (b[lb - 1].x === x && b[lb - 1].y === p1.y) {
+        return {
+          x,
+          y: p1.y,
+          ta: t1[0],
+          tb: 1,
+        }
+      }
+    }
+    // b曲线中间在边界
+    else {
+      const t2 = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p2 = getPointByT(b, t2[0]);
+      if (p1.y === p2.y) {
+        return {
+          x,
+          y: p1.y,
+          ta: t1[0],
+          tb: t2[0],
+        };
+      }
+    }
+  }
+}
+
+function bezierTopBottomBezier(
+  a: { x: number, y: number }[], b: { x: number, y: number }[],
+  bboxA: number[], aTop = true,
+) {
+  const la = a.length;
+  const lb = b.length;
+  const y = aTop ? bboxA[3] : bboxA[1];
+  // a曲线端点在边界
+  if (a[0].y === y || a[la - 1].y === y) {
+    // b曲线端点在边界
+    if (b[0].y === y || b[lb - 1].y === y) {
+      if (a[0].y === y && b[0].y === y && a[0].x === b[0].x) {
+        return {
+          x: a[0].x,
+          y,
+          ta: 0,
+          tb: 0,
+        };
+      }
+      else if (a[0].y === y && b[lb - 1].y === y && a[0].x === b[lb - 1].x) {
+        return {
+          x: a[0].x,
+          y,
+          ta: 0,
+          tb: 1,
+        };
+      }
+      else if (a[la - 1].y === y && b[lb - 1].y === y && a[la - 1].x === b[lb - 1].x) {
+        return {
+          x: a[la - 1].x,
+          y,
+          ta: 1,
+          tb: 1,
+        };
+      }
+      else if (a[la - 1].y === y && b[0].y === y && a[la - 1].x === b[0].x) {
+        return {
+          x: a[la - 1].x,
+          y,
+          ta: 1,
+          tb: 0,
+        };
+      }
+    }
+    // b曲线中间在边界，求极值
+    else {
+      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p = getPointByT(b, t[0]);
+      if (a[0].y === y && a[0].x === p.x) {
+        return {
+          x: p.x,
+          y,
+          ta: 0,
+          tb: t[0],
+        };
+      }
+      else if (a[la - 1].y === y && a[la - 1].x === p.x) {
+        return {
+          x: p.x,
+          y,
+          ta: 1,
+          tb: t[0],
+        };
+      }
+    }
+  }
+  // a曲线中间在边界
+  else {
+    const t1 = bezierExtremeT(a[0].x, a[0].y, a[1].x, a[1].y, a[2].x, a[2].y, a[3]?.x, a[3]?.y).filter(i => i > 0 && i < 1);
+    const p1 = getPointByT(a, t1[0]);
+    // b曲线端点在边界
+    if (b[0].y === y || b[lb - 1].y === y) {
+      if (b[0].y === y && b[0].x === p1.x) {
+        return {
+          x: p1.x,
+          y,
+          ta: t1[0],
+          tb: 0,
+        }
+      }
+      else if (b[lb - 1].y === y && b[lb - 1].x === p1.x) {
+        return {
+          x: p1.x,
+          y,
+          ta: t1[0],
+          tb: 1,
+        }
+      }
+    }
+    // b曲线中间在边界
+    else {
+      const t2 = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const p2 = getPointByT(b, t2[0]);
+      if (p1.x === p2.x) {
+        return {
+          x: p1.x,
+          y,
+          ta: t1[0],
+          tb: t2[0],
+        };
+      }
+    }
+  }
+}
+
 // 特殊优化的判断，仅相邻时看端点情况，除非一方可能将另外一方切割，否则不继续2分判断，最多只有1方会是直线，其它曲线
 // 自相交时比如圆两个圆弧之间顶点复用，很容易出现这种情况
 function isOverlap(
@@ -718,11 +1133,11 @@ function intersectPlanePlane(p1: Point3, p2: Point3, p3: Point3, p4: Point3, p5:
 }
 
 // 点是否在线段上，注意误差
-function pointOnLine3(p: Point3, p1: Point3, p2: Point3) {
+function pointOnLine3(p: Point3, p1: Point3, p2: Point3, eps = 1e-9) {
   const v1x = p1.x - p.x, v1y = p1.y - p.y, v1z = p1.z - p.z;
   const v2x = p2.x - p.x, v2y = p2.y - p.y, v2z = p2.z - p.z;
   const c = crossProduct3(v1x, v1y, v1z, v2x, v2y, v2z);
-  return length3(c.x, c.y, c.z) < 1e-9;
+  return length3(c.x, c.y, c.z) < eps;
 }
 
 export default {

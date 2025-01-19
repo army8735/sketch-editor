@@ -659,7 +659,7 @@ export function bezierExtremeT3(x0: number, y0: number, x1: number, y1: number, 
   return res;
 }
 
-// 贝塞尔曲线的极值点的t，包含默认的0和1，直线则默认就是[0, 1]
+// 贝塞尔曲线的极值点的t，包含默认的0和1驻点，直线则默认就是[0, 1]
 export function bezierExtremeT(x0: number, y0: number, x1: number, y1: number,
                                x2?: number, y2?: number, x3?: number, y3?: number) {
   const len = arguments.length;
@@ -775,17 +775,6 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
   const p2 = isX ? points[2].x : points[2].y;
   if (points.length === 4) {
     const p3 = isX ? points[3].x : points[3].y;
-    // const t = equation
-    //   .getRoots([
-    //     isX ? 3 * (points[1].x - points[0].x) : 3 * (points[1].y - points[0].y),
-    //     isX
-    //       ? 6 * (points[2].x + points[0].x - 2 * points[1].x)
-    //       : 6 * (points[2].y + points[0].y - 2 * points[1].y),
-    //     isX
-    //       ? 3 * (points[3].x + 3 * points[1].x - points[0].x - 3 * points[2].x)
-    //       : 3 * (points[3].y + 3 * points[1].y - points[0].y - 3 * points[2].y),
-    //   ])
-    //   .filter((i) => i > eps&& i < 1 - eps);
     const t = equation.getRoots([
       3 * p1 - 3 * p0,
       2 * (3 * p0 - 6 * p1 + 3 * p2),
@@ -798,11 +787,6 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
     }
   }
   else if (points.length === 3) {
-    // const t = isX
-    //   ? (points[0].x - points[1].x) /
-    //   (points[0].x - 2 * points[1].x + points[2].x)
-    //   : (points[0].y - points[1].y) /
-    //   (points[0].y - 2 * points[1].y + points[2].y);
     const t = equation.getRoots([
       2 * (p1 - p0),
       2 * (p0 - 2 * p1 + p2),

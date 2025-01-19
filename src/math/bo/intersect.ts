@@ -1,7 +1,7 @@
 import isec from '../isec';
 import Point from './Point';
 
-const EPS = 0.001;
+const EPS = 0.1;
 const EPS2 = 1;
 
 export function getIntersectionLineLine(
@@ -241,7 +241,10 @@ export function filterIsec(res: Array<{ x: number; y: number; t1: number; t2: nu
       res.splice(i, 1);
     }
   }
-  return res.map(item => {
+  return res.filter(item => {
+    // 相连排除
+    return !(item.t1 === 0 || item.t1 === 1 && item.t2 === 0 || item.t2 === 1);
+  }).map(item => {
     return {
       point: new Point(Math.round(item.x), Math.round(item.y)),
       toSource: item.t1,
