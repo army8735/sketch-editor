@@ -197,6 +197,31 @@ function intersectFn(
     count++;
     if (isOverlap(bbox1, bbox2, a, b, monotonous)) {
       // console.log(a, bbox1.join(','))
+      // 先判断可能是重合，考虑误差
+      if (la === lb) {
+        let isOver = true;
+        for (let i = 0; i < la; i++) {
+          if (Math.abs(a[i].x - b[i].x) > eps * 0.1 || Math.abs(a[i].y - b[i].y) > eps * 0.1) {
+            isOver = false;
+            break;
+          }
+        }
+        if (isOver) {
+          res.push({
+            x: (a[0].x + b[0].x) * 0.5,
+            y: (a[0].y + b[0].y) * 0.5,
+            t1: t1,
+            t2: t3,
+          });
+          res.push({
+            x: (a[la - 1].x + b[lb - 1].x) * 0.5,
+            y: (a[la - 1].y + b[lb - 1].y) * 0.5,
+            t1: t2,
+            t2: t4,
+          });
+          continue;
+        }
+      }
       // 直线可能宽高为0，防止非法运算取min值
       const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
       const l2 = (bbox1[3] - bbox1[1]) || Number.EPSILON;
