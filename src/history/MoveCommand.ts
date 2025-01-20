@@ -2,7 +2,7 @@ import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import { ComputedStyle } from '../style/define';
 import ArtBoard from '../node/ArtBoard';
-import { isPolygonOverlapRect } from '../math/geom';
+import { isConvexPolygonOverlapRect } from '../math/geom';
 import { moveAppend, moveAfter } from '../tools/node';
 
 export type MoveData = { dx: number, dy: number };
@@ -51,7 +51,7 @@ class MoveCommand extends AbstractCommand {
     // 检查移动后是否改变画板所属，优先看是否在老画板上
     if (oldAb) {
       const r = oldAb.getBoundingClientRect();
-      if (isPolygonOverlapRect(r.left, r.top, r.right, r.bottom, rect.points)) {
+      if (isConvexPolygonOverlapRect(r.left, r.top, r.right, r.bottom, rect.points)) {
         return oldAb;
       }
     }
@@ -63,7 +63,7 @@ class MoveCommand extends AbstractCommand {
         const child = children[i];
         if (child !== oldAb && child instanceof ArtBoard) {
           const r = child.getBoundingClientRect();
-          if (isPolygonOverlapRect(r.left, r.top, r.right, r.bottom, rect.points)) {
+          if (isConvexPolygonOverlapRect(r.left, r.top, r.right, r.bottom, rect.points)) {
             moveAppend([node], child);
             return child;
           }

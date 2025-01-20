@@ -20,7 +20,7 @@ import {
   shouldIgnoreAndIsBgBlur,
 } from './merge';
 import Tile from './Tile';
-import { isPolygonOverlapRect } from '../math/geom';
+import { isConvexPolygonOverlapRect } from '../math/geom';
 import { RefreshLevel } from './level';
 import TextureCache from '../refresh/TextureCache';
 
@@ -214,7 +214,7 @@ function renderWebglTile(
           const tile = tileList[j];
           const bbox = tile.bbox;
           // console.log(j, bbox.join(','), tile.count)
-          if (isPolygonOverlapRect(
+          if (isConvexPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -242,7 +242,7 @@ function renderWebglTile(
       for (let j = 0, len = tileList.length; j < len; j++) {
         const tile = tileList[j];
         const bbox = tile.bbox;
-        if (tile.count && isPolygonOverlapRect(
+        if (tile.count && isConvexPolygonOverlapRect(
           bbox[0], bbox[1], bbox[2], bbox[3],
           [{
             x: sb.x1, y: sb.y1,
@@ -466,7 +466,7 @@ function renderWebglTile(
             tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
           }
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
-          if ((!node.hasContent && !isArtBoard) || tile.complete || tile.has(node) || !isPolygonOverlapRect(
+          if ((!node.hasContent && !isArtBoard) || tile.complete || tile.has(node) || !isConvexPolygonOverlapRect(
             bboxT[0], bboxT[1], bboxT[2], bboxT[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -561,7 +561,7 @@ function renderWebglTile(
               const { bbox, t } = list[k];
               const sb = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
               // 再次判断，节点可能有多区块，每个区块不一定都在对应tile上
-              if (!isPolygonOverlapRect(
+              if (!isConvexPolygonOverlapRect(
                 bboxT[0], bboxT[1], bboxT[2], bboxT[3],
                 [{
                   x: sb.x1, y: sb.y1,

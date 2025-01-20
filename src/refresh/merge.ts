@@ -13,7 +13,7 @@ import {
   texture2Blob,
 } from '../gl/webgl';
 import { boxesForGauss, kernelSize, outerSizeByD } from '../math/blur';
-import { d2r, isPolygonOverlapRect, isRectsOverlap } from '../math/geom';
+import { d2r, isConvexPolygonOverlapRect, isRectsOverlap } from '../math/geom';
 import { assignMatrix, calRectPoints, identity, inverse, multiply, multiplyScale, toE, } from '../math/matrix';
 import Bitmap from '../node/Bitmap';
 import Geom from '../node/geom/Geom';
@@ -410,7 +410,7 @@ export function checkInRect(
     }
     return isRectsOverlap(x, y, x + width, y + height, x1, y1, x3, y3, false);
   }
-  return isPolygonOverlapRect(x, y, x + width, y + height, [
+  return isConvexPolygonOverlapRect(x, y, x + width, y + height, [
     { x: x1, y: y1 },
     { x: x2, y: y2 },
     { x: x3, y: y3 },

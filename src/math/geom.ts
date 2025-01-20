@@ -173,11 +173,11 @@ export function isRectsInside(ax1: number, ay1: number, ax2: number, ay2: number
   return false;
 }
 
-// 两个直线多边形是否重叠，不能简单地互相判断顶点在对方内部，因为有特殊的完全重合状态
-export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
+// 两个凸直线多边形是否重叠，不能简单地互相判断顶点在对方内部，因为有特殊的完全重合状态
+export function isConvexPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{ x: number, y: number }>,
                                   includeIntersect = false) {
   let xa = 0, ya = 0, xb = 0, yb = 0;
-  for (let i = 0, len = a.length; i < len - 1; i++) {
+  for (let i = 0, len = a.length; i < len; i++) {
     const { x, y } = a[i];
     if (i) {
       xa = Math.min(xa, x);
@@ -193,7 +193,7 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
     }
   }
   let xc = 0, yc = 0, xd = 0, yd = 0;
-  for (let i = 0, len = b.length; i < len - 1; i++) {
+  for (let i = 0, len = b.length; i < len; i++) {
     const { x, y } = b[i];
     if (i) {
       xc = Math.min(xc, x);
@@ -210,7 +210,7 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
   }
   // 最大最小值不重合提前跳出
   if (includeIntersect) {
-    if (xa > xd || ya > yd || xb < xc || yb < yc) {
+    if (xa > xd || ya > yd || xb < xc || yb < yc) {console.log(xa,ya,xb,yb,xc,yc,xd,yd)
       return false;
     }
   }
@@ -222,12 +222,12 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
   let allIn = true;
   // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
   outer:
-    for (let i = 0, len = a.length; i < len - 1; i++) {
+    for (let i = 0, len = a.length; i < len; i++) {
       const { x, y } = a[i];
       let first;
       for (let j = 0, len = b.length; j < len - 1; j++) {
-        const { x: x1, y: y1 } = b[i];
-        const { x: x2, y: y2 } = b[(i + 1 % len)];
+        const { x: x1, y: y1 } = b[j];
+        const { x: x2, y: y2 } = b[(j + 1) % len];
         let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
         if (n !== 0) {
           n = n > 0 ? 1 : 0;
@@ -277,8 +277,8 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
       const { x, y } = b[i];
       let first;
       for (let j = 0, len = a.length; j < len - 1; j++) {
-        const { x: x1, y: y1 } = a[i];
-        const { x: x2, y: y2 } = a[(i + 1 % len)];
+        const { x: x1, y: y1 } = a[j];
+        const { x: x2, y: y2 } = a[(j + 1) % len];
         let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
         if (n !== 0) {
           n = n > 0 ? 1 : 0;
@@ -322,27 +322,11 @@ export function isPolygonsOverlap(a: Array<{ x: number, y: number }>, b: Array<{
   if (allIn) {
     return true;
   }
-  // 边相交也得判断
-  for (let i = 0, len = a.length; i < len - 1; i++) {
-    const { x: x1, y: y1 } = a[i];
-    const { x: x2, y: y2 } = a[i + 1];
-    for (let j = 0, len = b.length; j < len - 1; j++) {
-      const { x: x3, y: y3 } = b[j];
-      const { x: x4, y: y4 } = b[j + 1];
-      const res = intersectLineLine(x1, y1, x2, y2, x3, y3, x4, y4, true);
-      if (res) {
-        if (includeIntersect) {
-          return true;
-        }
-        return res.toSource > 0 && res.toSource < 1 && res.toClip > 0 && res.toClip < 1;
-      }
-    }
-  }
   return false;
 }
 
 // 特殊优化，凸多边形是否和无旋转矩形重叠
-export function isPolygonOverlapRect(
+export function isConvexPolygonOverlapRect(
   x1: number, y1: number, x2: number, y2: number,
   points: { x: number, y: number }[], includeIntersect = false,
 ) {
@@ -433,15 +417,7 @@ export function isPolygonOverlapRect(
   return pointInConvexPolygon(x1, y1, points, includeIntersect) ||
     pointInConvexPolygon(x2, y1, points, includeIntersect) ||
     pointInConvexPolygon(x2, y2, points, includeIntersect) ||
-    pointInConvexPolygon(x1, y2, points, includeIntersect) ||
-    isPolygonsOverlap(
-      [
-        { x: x1, y: y1 },
-        { x: x2, y: y1 },
-        { x: x2, y: y2 },
-        { x: x1, y: y2 },
-      ], points, includeIntersect,
-    );
+    pointInConvexPolygon(x1, y2, points, includeIntersect)
 }
 
 export default {
@@ -457,6 +433,6 @@ export default {
   angleBySides,
   isRectsOverlap,
   isRectsInside,
-  isPolygonsOverlap,
-  isPolygonOverlapRect,
+  isConvexPolygonsOverlap,
+  isConvexPolygonOverlapRect,
 };

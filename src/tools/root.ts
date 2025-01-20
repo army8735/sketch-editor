@@ -6,7 +6,7 @@ import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Container from '../node/Container';
 import Text from '../node/Text';
-import { isPolygonOverlapRect, pointInRect } from '../math/geom';
+import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { VISIBILITY } from '../style/define';
 import config from '../util/config';
@@ -77,7 +77,7 @@ function getChildrenByFrame(parent: Container, x1: number, y1: number, x2: numbe
     const { matrixWorld } = child;
     const rect = child._rect || child.rect;
     const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
-    if (isPolygonOverlapRect(x1, y1, x2, y2, [
+    if (isConvexPolygonOverlapRect(x1, y1, x2, y2, [
       { x: box.x1, y: box.y1 },
       { x: box.x2, y: box.y2 },
       { x: box.x3, y: box.y3 },

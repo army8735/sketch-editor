@@ -68,49 +68,41 @@ function intersectFn(
       : bboxBezier(b[0].x, b[0].y, b[1].x, b[1].y, b[2]?.x, b[2]?.y, b[3]?.x, b[3]?.y);
     // 单调相连相邻特殊优化提前跳出无效循环
     if (monotonous) {
-      // 顶点相连，如果是最初的线段（t为0和1）忽略，2分后的中间线段保留，无论哪种都可以跳出循环
+      // 顶点相连，跳出循环
       if (a[0].x === b[0].x && a[0].y === b[0].y) {
-        if (t1 > 0 || t3 > 0) {
-          res.push({
-            x: a[0].x,
-            y: a[0].y,
-            t1,
-            t2: t3,
-          });
-        }
+        res.push({
+          x: a[0].x,
+          y: a[0].y,
+          t1,
+          t2: t3,
+        });
         continue;
       }
       if (a[0].x === b[lb - 1].x && a[0].y === b[lb - 1].y) {
-        if (t1 > 0 || t4 < 1) {
-          res.push({
-            x: a[0].x,
-            y: a[0].y,
-            t1,
-            t2: t4,
-          });
-        }
+        res.push({
+          x: a[0].x,
+          y: a[0].y,
+          t1,
+          t2: t4,
+        });
         continue;
       }
       if (a[la - 1].x === b[0].x && a[la - 1].y === b[0].y) {
-        if (t2 < 1 || t3 > 0) {
-          res.push({
-            x: b[0].x,
-            y: b[0].y,
-            t1: t2,
-            t2: t3,
-          });
-        }
+        res.push({
+          x: b[0].x,
+          y: b[0].y,
+          t1: t2,
+          t2: t3,
+        });
         continue;
       }
       if (a[la - 1].x === b[lb - 1].x && a[la - 1].y === b[lb - 1].y) {
-        if (t2 < 1 || t4 < 1) {
-          res.push({
-            x: a[la - 1].x,
-            y: a[la - 1].y,
-            t1: t2,
-            t2: t4,
-          });
-        }
+        res.push({
+          x: a[la - 1].x,
+          y: a[la - 1].y,
+          t1: t2,
+          t2: t4,
+        });
         continue;
       }
       // ab左右相邻
@@ -121,14 +113,12 @@ function intersectFn(
           if (r) {
             const tl = t1 + r.tl * (t2 - t1);
             const tb = t3 + r.tb * (t4 - t3);
-            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
-              res.push({
-                x: r.x,
-                y: r.y,
-                t1: tl,
-                t2: tb,
-              });
-            }
+            res.push({
+              x: r.x,
+              y: r.y,
+              t1: tl,
+              t2: tb,
+            });
           }
         }
         else if (lb === 2) {
@@ -136,17 +126,27 @@ function intersectFn(
           if (r) {
             const tl = t3 + r.tb * (t4 - t3);
             const tb = t1 + r.tl * (t2 - t1);
-            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
-              res.push({
-                x: r.x,
-                y: r.y,
-                t1: tb,
-                t2: tl,
-              });
-            }
+            res.push({
+              x: r.x,
+              y: r.y,
+              t1: tb,
+              t2: tl,
+            });
           }
         }
-        else {}
+        else {
+          const r = bezierLeftRightBezier(a, b, bbox1, aLeft);
+          if (r) {
+            const ta = t1 + r.ta * (t2 - t1);
+            const tb = t3 + r.tb * (t4 - t3);
+            res.push({
+              x: r.x,
+              y: r.y,
+              t1: ta,
+              t2: tb,
+            });
+          }
+        }
         continue;
       }
       // ab上下相邻
@@ -157,14 +157,12 @@ function intersectFn(
           if (r) {
             const tl = t1 + r.tl * (t2 - t1);
             const tb = t3 + r.tb * (t4 - t3);
-            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
-              res.push({
-                x: r.x,
-                y: r.y,
-                t1: tl,
-                t2: tb,
-              });
-            }
+            res.push({
+              x: r.x,
+              y: r.y,
+              t1: tl,
+              t2: tb,
+            });
           }
         }
         else if (lb === 2) {
@@ -172,14 +170,12 @@ function intersectFn(
           if (r) {
             const tl = t3 + r.tb * (t4 - t3);
             const tb = t1 + r.tl * (t2 - t1);
-            if (tl > 0 && tl < 1 || tb > 0 && tb < 1) {
-              res.push({
-                x: r.x,
-                y: r.y,
-                t1: tb,
-                t2: tl,
-              });
-            }
+            res.push({
+              x: r.x,
+              y: r.y,
+              t1: tb,
+              t2: tl,
+            });
           }
         }
         else {
@@ -187,21 +183,19 @@ function intersectFn(
           if (r) {
             const ta = t1 + r.ta * (t2 - t1);
             const tb = t3 + r.tb * (t4 - t3);
-            if (ta > 0 && ta < 1 || tb > 0 && tb < 1) {
-              res.push({
-                x: r.x,
-                y: r.y,
-                t1: ta,
-                t2: tb,
-              });
-            }
+            res.push({
+              x: r.x,
+              y: r.y,
+              t1: ta,
+              t2: tb,
+            });
           }
         }
         continue;
       }
     }
     count++;
-    if (isOverlap(bbox1, bbox2, a, b, t1, t2, t3, t4)) {
+    if (isOverlap(bbox1, bbox2, a, b, monotonous)) {
       // console.log(a, bbox1.join(','))
       // 直线可能宽高为0，防止非法运算取min值
       const l1 = (bbox1[2] - bbox1[0]) || Number.EPSILON;
@@ -723,12 +717,11 @@ function bezierTopBottomBezier(
   }
 }
 
-// 特殊优化的判断，仅相邻时看端点情况，除非一方可能将另外一方切割，否则不继续2分判断，最多只有1方会是直线，其它曲线
-// 自相交时比如圆两个圆弧之间顶点复用，很容易出现这种情况
+// bbox是否重叠，提前得出曲线是否可能相交
 function isOverlap(
   bbox1: number[], bbox2: number[],
   a: { x: number, y: number }[], b: { x: number, y: number }[],
-  t1: number, t2: number, t3: number, t4: number,
+  monotonous: boolean,
 ) {
   if (bbox1[0] > bbox2[2] || bbox1[1] > bbox2[3] || bbox2[0] > bbox1[2] || bbox2[1] > bbox1[3]) {
     return false;
@@ -746,87 +739,90 @@ function isOverlap(
   }
   const la = a.length;
   const lb = b.length;
-  // 上下相邻
-  if (bbox1[1] === bbox2[3] || bbox1[3] === bbox2[1]) {
-    const y = bbox1[1] === bbox2[3] ? bbox1[1] : bbox1[3];
-    // a直线
-    if (la === 2) {
-      // 水平线，看交点是否在水平线两端，不在才有可能，如果是最初未切割的线，两端相交认为是相连
-      if (bbox1[1] === bbox1[3]) {
-        return true;
-        // let r = b[0].y === y && b[0].x !== bbox1[0] && b[0].x !== bbox1[1]
-        //   && b[1].y === y && b[1].x !== bbox1[0] && b[1].x !== bbox1[1]
-        //   && b[lb - 2].y === y && b[lb - 2].x !== bbox1[0] && b[lb - 2].x !== bbox1[1]
-        //   && b[lb - 1].y === y && b[lb - 1].x !== bbox1[0] && b[lb - 1].x !== bbox1[1];
-        // // if (r && ) {}
-        // return r;
-      }
-      // 其它则看极值点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
-      else {
-        return b[1].y === y || b[lb - 2].y === y;
-      }
-    }
-    // a曲线
-    else {
-      // b直线
-      if (lb === 2) {
-        // 水平线同上
-        if (bbox2[1] === bbox2[3]) {
-          return true;
-          // return a[0].y === y && a[0].x !== bbox2[0] && a[0].x !== bbox2[1]
-          //   && a[1].y === y && a[1].x !== bbox2[0] && a[1].x !== bbox2[1]
-          //   && a[la - 2].y === y && a[la - 2].x !== bbox2[0] && a[la - 2].x !== bbox2[1]
-          //   && a[la - 1].y === y && a[la - 1].x !== bbox2[0] && a[la - 1].x !== bbox2[1];
-        }
-        // 其它同上
-        else {
-          return a[1].y === y || a[la - 2].y === y;
+  // 在曲线非常相似的情况下，bbox很难快速得出不相交的结果，因此用这种盒子来加速判断
+  if (monotonous) {
+    // 先简单判断平移情况
+    if (la === lb) {
+      const dx = a[0].x - b[0].x;
+      const dy = a[0].y - b[0].y;
+      let translate = true;
+      for (let i = 0; i < la; i++) {
+        if (a[i].x - b[i].x !== dx || a[i].y - b[i].y !== dy) {
+          translate = false;
+          break;
         }
       }
-      // b曲线同上
-      else {
-        return a[1].y === y || a[la - 2].y === y || b[1].y === y || b[lb - 2].y === y;
+      if (translate) {
+        return false;
       }
     }
   }
-  // 左右相邻
-  if (bbox1[0] === bbox2[2] || bbox1[2] === bbox2[0]) {
-    const x = bbox1[0] === bbox2[2] ? bbox1[0] : bbox1[2];
-    // a直线
-    if (la === 2) {
-      // 垂直线，看端点是否在垂直线两端，不在才有可能
-      if (bbox1[0] === bbox1[2]) {
-        return true;
-        // return b[0].x === x && b[0].y !== bbox1[1] && b[0].y !== bbox1[3]
-        //   && b[1].x === x && b[1].y !== bbox1[1] && b[1].y !== bbox1[3]
-        //   && b[lb - 2].x === x && b[lb - 2].y !== bbox1[1] && b[lb - 2].y !== bbox1[3]
-        //   && b[lb - 1].x === x && b[lb - 1].y !== bbox1[1] && b[lb - 1].y !== bbox1[3];
+  // 非单调仅优化相邻情况，一般都是单调的
+  else {
+    // 上下相邻
+    if (bbox1[1] === bbox2[3] || bbox1[3] === bbox2[1]) {
+      const y = bbox1[1] === bbox2[3] ? bbox1[1] : bbox1[3];
+      // a直线
+      if (la === 2) {
+        // 水平线，看交点是否在水平线两端，不在才有可能，如果是最初未切割的线，两端相交认为是相连
+        if (bbox1[1] === bbox1[3]) {
+          return true;
+        }
+        // 其它则看极值点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+        else {
+          return b[1].y === y || b[lb - 2].y === y;
+        }
       }
-      // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
+      // a曲线
       else {
-        return b[1].x === x || b[lb - 2].y === x;
+        // b直线
+        if (lb === 2) {
+          // 水平线同上
+          if (bbox2[1] === bbox2[3]) {
+            return true;
+          }
+          // 其它同上
+          else {
+            return a[1].y === y || a[la - 2].y === y;
+          }
+        }
+        // b曲线同上
+        else {
+          return a[1].y === y || a[la - 2].y === y || b[1].y === y || b[lb - 2].y === y;
+        }
       }
     }
-    // a曲线
-    else {
-      // b直线
-      if (lb === 2) {
-        // 垂直线同上
-        if (bbox2[0] === bbox2[2]) {
+    // 左右相邻
+    if (bbox1[0] === bbox2[2] || bbox1[2] === bbox2[0]) {
+      const x = bbox1[0] === bbox2[2] ? bbox1[0] : bbox1[2];
+      // a直线
+      if (la === 2) {
+        // 垂直线，看端点是否在垂直线两端，不在才有可能
+        if (bbox1[0] === bbox1[2]) {
           return true;
-          // return a[0].x === x && a[0].y !== bbox2[1] && a[0].y !== bbox2[3]
-          //   && a[1].x === x && a[1].y !== bbox2[1] && a[1].y !== bbox2[3]
-          //   && a[la - 2].x === x && a[la - 2].y !== bbox2[1] && a[la - 2].y !== bbox2[3]
-          //   && a[la - 1].x === x && a[la - 1].y !== bbox2[1] && a[la - 1].y !== bbox2[3];
         }
-        // 其它同上
+        // 其它则看端点情况，因为直线只可能有一个端点相交，除非曲线的控制点在边界可能相交，否则都不可能
         else {
-          return a[1].x === x || a[la - 2].x === x;
+          return b[1].x === x || b[lb - 2].y === x;
         }
       }
-      // b曲线同上
+      // a曲线
       else {
-        return a[1].x === x || a[la - 2].x === x || b[1].x === x || b[lb - 2].x === x;
+        // b直线
+        if (lb === 2) {
+          // 垂直线同上
+          if (bbox2[0] === bbox2[2]) {
+            return true;
+          }
+          // 其它同上
+          else {
+            return a[1].x === x || a[la - 2].x === x;
+          }
+        }
+        // b曲线同上
+        else {
+          return a[1].x === x || a[la - 2].x === x || b[1].x === x || b[lb - 2].x === x;
+        }
       }
     }
   }
