@@ -3,17 +3,17 @@ import chains from './chains';
 import Segment from './Segment';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
-function prefix(polygon: any): Array<Array<Array<number>>> {
+function prefix(polygon: Polygon | number[][] | number[][][]): number[][][] {
   if (!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
     return [];
   }
   if (Array.isArray(polygon[0][0])) {
-    return polygon;
+    return polygon as number[][][];
   }
-  return [polygon];
+  return [polygon] as number[][][];
 }
 
-function trivial(polygonA: any, polygonB: any) {
+function trivial(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][]) {
   const isIntermediateA = polygonA instanceof Polygon;
   const isIntermediateB = polygonB instanceof Polygon;
   // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
@@ -70,7 +70,7 @@ const INTERSECT = [
   0, 1, 1, 0,
 ];
 
-function filter(segments: Array<Segment>, matrix: Array<number>) {
+function filter(segments: Segment[], matrix: number[]) {
   // console.log(segments.map(item => item.toString()))
   const res: Array<Segment> = [], hash: any = {};
   segments.forEach(seg => {
@@ -113,7 +113,7 @@ export function intersect(polygonA: any, polygonB: any, intermediate = false) {
   return chains(list);
 }
 
-export function union(polygonA: any, polygonB: any, intermediate = false) {
+export function union(polygonA: Polygon | number[][][], polygonB: any, intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
   const list = filter(source.segments.concat(clip.segments), UNION);
   if (intermediate) {
@@ -124,7 +124,7 @@ export function union(polygonA: any, polygonB: any, intermediate = false) {
   return chains(list);
 }
 
-export function subtract(polygonA: any, polygonB: any, intermediate = false) {
+export function subtract(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
   let list = filter(source.segments.concat(clip.segments), SUBTRACT);
   // 暂时这样解决反向的问题
@@ -139,7 +139,7 @@ export function subtract(polygonA: any, polygonB: any, intermediate = false) {
   return chains(list);
 }
 
-export function subtractRev(polygonA: any, polygonB: any, intermediate = false) {
+export function subtractRev(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
   const list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
   if (intermediate) {
@@ -149,7 +149,7 @@ export function subtractRev(polygonA: any, polygonB: any, intermediate = false) 
   return chains(list);
 }
 
-export function xor(polygonA: any, polygonB: any, intermediate = false) {
+export function xor(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
   const list = filter(source.segments.concat(clip.segments), XOR);
   if (intermediate) {
@@ -159,19 +159,11 @@ export function xor(polygonA: any, polygonB: any, intermediate = false) {
   return chains(list);
 }
 
-export function chain(polygon: Polygon | Array<Segment>) {
-  if (polygon instanceof Polygon) {
-    return chains(polygon.segments);
-  }
-  return prefix(polygon);
-}
-
 export default {
   intersect,
   union,
   subtract,
   subtractRev,
   xor,
-  chain,
   chains,
 };
