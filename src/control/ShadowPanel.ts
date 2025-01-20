@@ -225,6 +225,7 @@ class ShadowPanel extends Panel {
         const prevs: ShadowStyle[] = [];
         const nexts: ShadowStyle[] = [];
         let value = false;
+        // 多个或者未选，点击都变成勾选状态
         if (classList.contains('multi-checked') || classList.contains('un-checked')) {
           value = true;
         }
@@ -262,6 +263,8 @@ class ShadowPanel extends Panel {
             (item as HTMLInputElement).readOnly = true;
           });
         }
+        const un = panel.querySelector('.un-checked');
+        (panel.querySelector('.del') as HTMLElement).style.display = un ? 'block' : 'none';
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
