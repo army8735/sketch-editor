@@ -1,5 +1,11 @@
 import vector from './vector';
-import { bboxBezier, bezierExtremeT, getPointByT, sliceBezier } from './bezier';
+import {
+  bboxBezier,
+  bezierExtremeT,
+  getBezierMonotonicityT2,
+  getPointByT,
+  sliceBezier
+} from './bezier';
 
 type Point3 = {
   x: number,
@@ -124,8 +130,8 @@ function intersectFn(
         else if (lb === 2) {
           const r = lineLeftRightBezier(b, a, bbox2, !aLeft);
           if (r) {
-            const tl = t3 + r.tb * (t4 - t3);
-            const tb = t1 + r.tl * (t2 - t1);
+            const tl = t3 + r.tl * (t4 - t3);
+            const tb = t1 + r.tb * (t2 - t1);
             res.push({
               x: r.x,
               y: r.y,
@@ -151,7 +157,7 @@ function intersectFn(
       }
       // ab上下相邻
       else if ((bbox1[1] === bbox2[3] || bbox1[3] === bbox2[1]) && bbox1[0] <= bbox2[2] && bbox1[2] >= bbox2[0]) {
-        const aTop = bbox1[1] === bbox2[3];
+        const aTop = bbox1[3] === bbox2[1];
         if (la === 2) {
           const r = lineTopBottomBezier(a, b, bbox1, aTop);
           if (r) {
@@ -168,8 +174,8 @@ function intersectFn(
         else if (lb === 2) {
           const r = lineTopBottomBezier(b, a, bbox2, !aTop);
           if (r) {
-            const tl = t3 + r.tb * (t4 - t3);
-            const tb = t1 + r.tl * (t2 - t1);
+            const tl = t3 + r.tl * (t4 - t3);
+            const tb = t1 + r.tb * (t2 - t1);
             res.push({
               x: r.x,
               y: r.y,
@@ -193,10 +199,11 @@ function intersectFn(
         }
         continue;
       }
+      // TODO 水平线垂直线优化，曲线取特定点值即可
+      // TODO 曲线和直线优化（曲线端点将直线切割为2部分，只有其中一部分可能相交）
     }
     count++;
     if (isOverlap(bbox1, bbox2, a, b, monotonous)) {
-      // console.log(a, bbox1.join(','))
       // 先判断可能是重合，考虑误差
       if (la === lb) {
         let isOver = true;
@@ -354,8 +361,8 @@ function intersectFn(
       }
     }
   }
-  if (count > 1000) {
-    console.log(a, b, count, res.length);
+  if (count > 100) {
+    // console.log(a, b, count, res.length);
   }
   res.sort((a, b) => {
     if (a.t1 === b.t1) {
@@ -425,23 +432,29 @@ function lineTopBottomBezier(
     // 曲线端点相连比较好处理
     if (b[0].y === y || b[lb - 1].y === y) {
       const x = b[0].y === y ? b[0].x : b[lb - 1].x;
-      return {
-        x,
-        y,
-        tl: (x - bboxL[0]) / (bboxL[2] - bboxL[0]),
-        tb: b[0].y === y ? 0 : 1,
-      };
+      const tl = (x - bboxL[0]) / (bboxL[2] - bboxL[0]);
+      if (tl >= 0 && tl <= 1) {
+        return {
+          x,
+          y,
+          tl,
+          tb: b[0].y === y ? 0 : 1,
+        };
+      }
     }
     // 曲线中间某点求极值即可
     else {
       const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
-      return {
-        x: p.x,
-        y,
-        tl: (p.x - bboxL[0]) / (bboxL[2] - bboxL[0]),
-        tb: t[0],
-      };
+      const tl = (p.x - bboxL[0]) / (bboxL[2] - bboxL[0]);
+      if (tl >= 0 && tl <= 1) {
+        return {
+          x: p.x,
+          y,
+          tl,
+          tb: t[0],
+        };
+      }
     }
   }
   // 非水平情况看l的端点和b是否有交点
@@ -484,24 +497,30 @@ function lineLeftRightBezier(
   if (bboxL[0] === bboxL[2]) {
     // 曲线端点相连比较好处理
     if (b[0].x === x || b[lb - 1].x === x) {
-      const y = b[0].x === x ? b[0].x : b[lb - 1].x;
-      return {
-        x,
-        y,
-        tl: (y - bboxL[1]) / (bboxL[3] - bboxL[1]),
-        tb: b[0].x === x ? 0 : 1,
-      };
+      const y = b[0].x === x ? b[0].y : b[lb - 1].y;
+      const tl = (y - bboxL[1]) / (bboxL[3] - bboxL[1]);
+      if (tl >= 0 && tl <= 1) {
+        return {
+          x,
+          y,
+          tl,
+          tb: b[0].x === x ? 0 : 1,
+        };
+      }
     }
     // 曲线中间某点求极值即可
     else {
       const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
-      return {
-        x,
-        y: p.y,
-        tl: (p.y - bboxL[1]) / (bboxL[3] - bboxL[1]),
-        tb: t[0],
-      };
+      const tl = (p.y - bboxL[1]) / (bboxL[3] - bboxL[1]);
+      if (tl >= 0 && tl <= 1) {
+        return {
+          x,
+          y: p.y,
+          tl: (p.y - bboxL[1]) / (bboxL[3] - bboxL[1]),
+          tb: t[0],
+        };
+      }
     }
   }
   // 非垂直情况l的端点和b是否有交点
@@ -766,20 +785,56 @@ function isOverlap(
   }
   const la = a.length;
   const lb = b.length;
-  // 在曲线非常相似的情况下，bbox很难快速得出不相交的结果，因此用这种盒子来加速判断
+  // 在曲线非常相似的情况下，bbox很难快速得出不相交的结果，因此用各种方法来加速判断
   if (monotonous) {
     // 先简单判断平移情况
     if (la === lb) {
       const dx = a[0].x - b[0].x;
       const dy = a[0].y - b[0].y;
-      let translate = true;
+      let translateX = true;
+      let translateY = true;
       for (let i = 0; i < la; i++) {
-        if (a[i].x - b[i].x !== dx || a[i].y - b[i].y !== dy) {
-          translate = false;
+        if (a[i].x - b[i].x !== dx) {
+          translateX = false;
+        }
+        if (a[i].y - b[i].y !== dy) {
+          translateY = false;
+        }
+        if (!translateX && !translateY) {
           break;
         }
       }
-      if (translate) {
+      // 完全一样的曲线平移到另外一个位置肯定不相交
+      if (translateX && translateY) {
+        return false;
+      }
+      // 仅一侧平移，求相减的2阶导数得极值t，再看t上的点的差值，要和两端同号即不相交
+      if (translateX) {
+        const d = a[0].y - b[0].y;
+        const t = getBezierMonotonicityT2(a.map((item, i) => {
+          return { x: item.x - b[i].x, y: item.y - b[i].y };
+        }), false) || [];
+        for (let i = 0, len = t.length; i < len; i++) {
+          const pa = getPointByT(a, t[i]);
+          const pb = getPointByT(b, t[i]);
+          if (d > 0 && pa.y - pb.y <= 0 || d < 0 && pa.y - pb.y >= 0) {
+            return true;
+          }
+        }
+        return false;
+      }
+      else if (translateY) {
+        const d = a[0].x - b[0].x;
+        const t = getBezierMonotonicityT2(a.map((item, i) => {
+          return { x: item.x - b[i].x, y: item.y - b[i].y };
+        }), true) || [];
+        for (let i = 0, len = t.length; i < len; i++) {
+          const pa = getPointByT(a, t[i]);
+          const pb = getPointByT(b, t[i]);
+          if (d > 0 && pa.x - pb.x <= 0 || d < 0 && pa.x - pb.x >= 0) {
+            return true;
+          }
+        }
         return false;
       }
     }

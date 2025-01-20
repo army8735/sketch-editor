@@ -243,7 +243,7 @@ export function filterIsec(res: Array<{ x: number; y: number; t1: number; t2: nu
   }
   return res.filter(item => {
     // 相连排除
-    return !(item.t1 === 0 || item.t1 === 1 && item.t2 === 0 || item.t2 === 1);
+    return !((item.t1 === 0 || item.t1 === 1) && (item.t2 === 0 || item.t2 === 1));
   }).map(item => {
     return {
       point: new Point(Math.round(item.x), Math.round(item.y)),

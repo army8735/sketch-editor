@@ -436,23 +436,26 @@ export function getPointT(points: { x: number, y: number }[], x: number, y: numb
   else if (points.length === 3) {
     return getPointT2(points, x, y, eps);
   }
+  else if (points.length === 2) {
+    return getPointT1(points, x, y, eps);
+  }
   else {
     throw new Error('Unsupported order');
   }
 }
 
+function getPointT1(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
+  const tx = (x - points[0].x) / (points[1].x - points[0].x);
+  const ty = (y - points[0].y) / (points[1].y - points[0].y);
+  if (Math.abs(tx - ty) <= eps) {
+    return [(tx + ty) * 0.5];
+  }
+  return [];
+}
+
 function getPointT2(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
-  // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
-  const tx = getRoots([
-    points[0].x - x,
-    2 * (points[1].x - points[0].x),
-    points[2].x + points[0].x - 2 * points[1].x,
-  ]).filter(i => i >= 0 && i <= 1);
-  const ty = getRoots([
-    points[0].y - y,
-    2 * (points[1].y - points[0].y),
-    points[2].y + points[0].y - 2 * points[1].y,
-  ]).filter(i => i >= 0 && i <= 1);
+  const tx = getT(points, x, true);
+  const ty = getT(points, y, false);
   // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
   let t = [];
   for (let i = 0, len = tx.length; i < len; i++) {
@@ -480,14 +483,10 @@ function getPointT2(points: { x: number, y: number }[], x: number, y: number, ep
   t = t.map(item => (item.x + item.y) * 0.5);
   const res: number[] = [];
   t.forEach(t => {
-    const xt = points[0].x * Math.pow(1 - t, 2)
-      + 2 * points[1].x * t * (1 - t)
-      + points[2].x * t * t;
-    const yt = points[0].y * Math.pow(1 - t, 2)
-      + 2 * points[1].y * t * (1 - t)
-      + points[2].y * t * t;
+    const xt = bezierValue(points, t, true)!;
+    const yt = bezierValue(points, t, false)!;
     // 计算误差忽略
-    if (Math.abs(xt - x) <= 1e-2 && Math.abs(yt - y) <= 1e-2) {
+    if (Math.abs(xt - x) <= eps && Math.abs(yt - y) <= eps) {
       res.push(t);
     }
   });
@@ -495,18 +494,8 @@ function getPointT2(points: { x: number, y: number }[], x: number, y: number, ep
 }
 
 function getPointT3(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
-  const tx = getRoots([
-    points[0].x - x,
-    3 * (points[1].x - points[0].x),
-    3 * (points[2].x + points[0].x - 2 * points[1].x),
-    points[3].x - points[0].x + 3 * points[1].x - 3 * points[2].x,
-  ]).filter(i => i >= 0 && i <= 1);
-  const ty = getRoots([
-    points[0].y - y,
-    3 * (points[1].y - points[0].y),
-    3 * (points[2].y + points[0].y - 2 * points[1].y),
-    points[3].y - points[0].y + 3 * points[1].y - 3 * points[2].y,
-  ]).filter(i => i >= 0 && i <= 1);
+  const tx = getT(points, x, true);
+  const ty = getT(points, y, false);
   // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
   let t = [];
   for (let i = 0, len = tx.length; i < len; i++) {
@@ -534,16 +523,10 @@ function getPointT3(points: { x: number, y: number }[], x: number, y: number, ep
   t = t.map(item => (item.x + item.y) * 0.5);
   const res: number[] = [];
   t.forEach(t => {
-    const xt = points[0].x * Math.pow(1 - t, 3)
-      + 3 * points[1].x * t * Math.pow(1 - t, 2)
-      + 3 * points[2].x * t * t * (1 - t)
-      + points[3].x * Math.pow(t, 3);
-    const yt = points[0].y * Math.pow(1 - t, 3)
-      + 3 * points[1].y * t * Math.pow(1 - t, 2)
-      + 3 * points[2].y * t * t * (1 - t)
-      + points[3].y * Math.pow(t, 3);
+    const xt = bezierValue(points, t, true)!;
+    const yt = bezierValue(points, t, false)!;
     // 计算误差忽略
-    if (Math.abs(xt - x) <= 1e-2 && Math.abs(yt - y) <= 1e-2) {
+    if (Math.abs(xt - x) <= eps && Math.abs(yt - y) <= eps) {
       res.push(t);
     }
   });
@@ -766,8 +749,8 @@ export function splitBezierT(points: { x: number, y: number }[], n: number, maxI
 }
 
 // 获取曲线1阶单调性t值，有结果才返回，比如水平垂直线特例没有结果，求导看dt=0的t值
-function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
-  if (points.length < 2 || points.length > 4) {
+export function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
+  if (points.length < 3 || points.length > 4) {
     throw new Error('Unsupported order');
   }
   const p0 = isX ? points[0].x : points[0].y;
@@ -796,8 +779,8 @@ function getBezierMonotonicityT(points: { x: number, y: number }[], isX = true, 
 }
 
 // 同上，获取2阶导单调性t值
-function getBezierMonotonicityT2(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
-  if (points.length < 2 || points.length > 4) {
+export function getBezierMonotonicityT2(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
+  if (points.length < 3 || points.length > 4) {
     throw new Error('Unsupported order');
   }
   const p0 = isX ? points[0].x : points[0].y;
@@ -1013,8 +996,11 @@ export function bezierDerivative(points: { x: number, y: number }[], t: number, 
 
 // 贝塞尔2阶导数
 export function bezierDerivative2(points: { x: number, y: number }[], t: number, isX = true) {
-  if (points.length < 3 || points.length > 4) {
+  if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
+  }
+  if (points.length === 2) {
+    return 0;
   }
   const p0 = isX ? points[0].x : points[0].y;
   const p1 = isX ? points[1].x : points[1].y;
@@ -1031,11 +1017,14 @@ export function bezierDerivative2(points: { x: number, y: number }[], t: number,
 }
 
 export function bezierValue(points: { x: number, y: number }[], t: number, isX = true) {
-  if (points.length < 3 || points.length > 4) {
+  if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
   const p0 = isX ? points[0].x : points[0].y;
   const p1 = isX ? points[1].x : points[1].y;
+  if (points.length === 2) {
+    return p0 + (p1 - p0) * t;
+  }
   const p2 = isX ? points[2].x : points[2].y;
   if (points.length === 3) {
     return Math.pow(1 - t, 2) * p0 + 2 * t * (1 - t) * p1 + Math.pow(t, 2) * p2;
@@ -1046,12 +1035,35 @@ export function bezierValue(points: { x: number, y: number }[], t: number, isX =
   }
 }
 
+export function getT(points: { x: number, y: number }[], v: number, isX = true) {
+  const p0 = isX ? points[0].x : points[0].y;
+  const p1 = isX ? points[1].x : points[1].y;
+  const p2 = isX ? points[2].x : points[2].y;
+  if (points.length === 4) {
+    const p3 = isX ? points[3].x : points[3].y;
+    const t = getRoots([
+      p0 - v,
+      3 * (p1 - p0),
+      3 * (p2 + p0 - 2 * p1),
+      p3 - p0 + 3 * p1 - 3 * p2,
+    ]);
+    return t.filter(i => i >= 0 && i <= 1);
+  }
+  const t = getRoots([
+    p0 - v,
+    2 * (p1 - p0),
+    p2 + p0 - 2 * p1,
+  ]);
+  return t.filter(i => i >= 0 && i <= 1);
+}
+
 export default {
   bboxBezier,
   bezierLength,
   bezierAt,
   sliceBezier,
   getPointByT,
+  getT,
   getPointT,
   getPointWithDByApprox,
   bezierSlope,
