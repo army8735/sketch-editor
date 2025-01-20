@@ -156,7 +156,7 @@ function simpson38(derivativeFunc: (n: number) => number, l: number, r: number) 
  * @param eps 精度
  * @return {*} number
  */
-function adaptiveSimpson38(derivativeFunc: (n: number) => number, l: number, r: number, eps = 0.001): number {
+function adaptiveSimpson38(derivativeFunc: (n: number) => number, l: number, r: number, eps = 1e-9): number {
   const f = derivativeFunc;
   const mid = (l + r) / 2;
   const st = simpson38(f, l, r);
@@ -429,7 +429,7 @@ function pointByT3(points: { x: number, y: number }[], t: number) {
 
 
 // 已知曲线和上面一点获得t
-export function getPointT(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2) {
+export function getPointT(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
   if (points.length === 4) {
     return getPointT3(points, x, y, eps);
   }
@@ -441,7 +441,7 @@ export function getPointT(points: { x: number, y: number }[], x: number, y: numb
   }
 }
 
-function getPointT2(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2) {
+function getPointT2(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
   // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
   const tx = getRoots([
     points[0].x - x,
@@ -494,7 +494,7 @@ function getPointT2(points: { x: number, y: number }[], x: number, y: number, ep
   return res;
 }
 
-function getPointT3(points: { x: number, y: number }[], x: number, y: number, eps = 1e-2) {
+function getPointT3(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
   const tx = getRoots([
     points[0].x - x,
     3 * (points[1].x - points[0].x),
@@ -837,7 +837,7 @@ function getBezierMonotonicityT2(points: { x: number, y: number }[], isX = true,
  *
  * 另使用牛顿迭代来改进性能，无需指定步长（计算的），当本地迭代的点和上次迭代的点组成的bbox<eps时结束
  */
-export function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-4) {
+export function getPointWithDByApprox(points: { x: number, y: number }[], x: number, y: number, eps = 1e-9) {
   if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
@@ -921,7 +921,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
  * 因为x/y单调性的贝塞尔曲线和一个圆最多2个交点，反证有3个交点就不单调了
  * 此时求2次，各自从t1/t2开始，然后取最小值即可
  */
-function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-4, min = 3, max = 30) {
+function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-9, min = 3, max = 30) {
   // console.warn('在此t范围内查找2次', t1, t2);
   const list: { x: number, y: number, t: number, d: number }[] = [];
   const r1 = getEachPDByApproxWithStartT(points, t1, t2, t1, x, y, eps, min, max);
@@ -945,7 +945,7 @@ function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: n
   return list[0];
 }
 
-function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: number, t2: number, t: number, x: number, y: number, eps = 1e-4, min = 5, max = 30) {
+function getEachPDByApproxWithStartT(points: { x: number, y: number }[], t1: number, t2: number, t: number, x: number, y: number, eps = 1e-9, min = 5, max = 30) {
   let last = t;
   let count = 0;
   while (count++ < max) {

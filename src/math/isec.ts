@@ -29,7 +29,7 @@ function intersectFn(
   eps: number, eps2: number, monotonous: boolean,
   res: { x: number, y: number, t1: number, t2: number }[],
 ) {
-  console.warn(a, b);
+  // console.warn(a, b);
   const list = [{
     a,
     b,
@@ -329,7 +329,9 @@ function intersectFn(
       }
     }
   }
-  console.log(count, res.length);
+  if (count > 1000) {
+    console.log(a, b, count, res.length);
+  }
   res.sort((a, b) => {
     if (a.t1 === b.t1) {
       return a.t2 - b.t2;
