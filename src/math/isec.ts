@@ -4,6 +4,7 @@ import {
   bezierExtremeT,
   getBezierMonotonicityT2,
   getPointByT,
+  getT,
   sliceBezier
 } from './bezier';
 
@@ -63,6 +64,7 @@ function intersectFn(
     }
     return res;
   }
+  // 2分查找
   let count = 0;
   while (list.length) {
     const { a, b, t1, t2, t3, t4 } = list.pop()!;
@@ -199,8 +201,87 @@ function intersectFn(
         }
         continue;
       }
-      // TODO 水平线垂直线优化，曲线取特定点值即可
-      // TODO 曲线和直线优化（曲线端点将直线切割为2部分，只有其中一部分可能相交）
+      // 水平线垂直线优化，曲线取特定点值即可
+      if (la === 2) {
+        if (a[0].x === a[1].x) {
+          const t = getT(b, a[0].x, true);
+          t.forEach(item => {
+            if (item < 0 || item > 1) {
+              return;
+            }
+            const p = getPointByT(b, item);
+            const t1 = (p.y - a[0].y) / (a[1].y - a[0].y);
+            if (t1 >= 0 && t1 <= 1) {
+              res.push({
+                x: p.x,
+                y: p.y,
+                t1,
+                t2: item,
+              });
+            }
+          });
+          continue;
+        }
+        else if (a[0].y === a[1].y) {
+          const t = getT(b, a[0].y, false);
+          t.forEach(item => {
+            if (item < 0 || item > 1) {
+              return;
+            }
+            const p = getPointByT(b, item);
+            const t1 = (p.x - a[0].x) / (a[1].x - a[0].x);
+            if (t1 >= 0 && t1 <= 1) {
+              res.push({
+                x: p.x,
+                y: p.y,
+                t1,
+                t2: item,
+              });
+            }
+          });
+          continue;
+        }
+      }
+      else if (lb === 2) {
+        if (b[0].x === b[1].x) {
+          const t = getT(a, b[0].x, true);
+          t.forEach(item => {
+            if (item < 0 || item > 1) {
+              return;
+            }
+            const p = getPointByT(a, item);
+            const t2 = (p.y - b[0].y) / (b[1].y - b[0].y);
+            if (t2 >= 0 && t2 <= 1) {
+              res.push({
+                x: p.x,
+                y: p.y,
+                t1: item,
+                t2,
+              });
+            }
+          });
+          continue;
+        }
+        else if (b[0].y === b[1].y) {
+          const t = getT(a, b[0].y, false);
+          t.forEach(item => {
+            if (item < 0 || item > 1) {
+              return;
+            }
+            const p = getPointByT(a, item);
+            const t2 = (p.x - b[0].x) / (b[1].x - b[0].x);
+            if (t2 >= 0 && t2 <= 1) {
+              res.push({
+                x: p.x,
+                y: p.y,
+                t1: item,
+                t2,
+              });
+            }
+          });
+          continue;
+        }
+      }
     }
     count++;
     if (isOverlap(bbox1, bbox2, a, b, monotonous)) {
@@ -361,8 +442,8 @@ function intersectFn(
       }
     }
   }
-  if (count > 100) {
-    // console.log(a, b, count, res.length);
+  if (count > 40) {
+  //   console.log(a, b, count, res.length);
   }
   res.sort((a, b) => {
     if (a.t1 === b.t1) {
