@@ -438,6 +438,7 @@ class TextPanel extends Panel {
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
           this.silence = true;
           nexts = [];
+          // 编辑文本状态下选中部分的更新
           if (listener.state === State.EDIT_TEXT && nodes.length === 1) {
             const node = nodes[0];
             const { isMulti, start, end } = node.getSortedCursor();
@@ -455,6 +456,7 @@ class TextPanel extends Panel {
               });
             }
           }
+          // 非编辑则全range更新
           else {
             nodes.forEach(node => {
               node.updateRangeStyle(0, node._content.length, {
