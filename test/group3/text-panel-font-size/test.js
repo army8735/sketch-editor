@@ -19,7 +19,6 @@ module.exports = {
       .click('#side .text-panel .fs input')
       .keys(browser.Keys.ARROW_UP)
       .keys(browser.Keys.NULL)
-      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[1,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":25,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":37,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
       .assert.value('#side .text-panel .fs input', '')
@@ -29,21 +28,18 @@ module.exports = {
       .keys(browser.Keys.SHIFT)
       .keys(browser.Keys.ARROW_UP)
       .keys(browser.Keys.NULL)
-      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[2,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":35,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":47,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
 
       .click('#side .text-panel .fs input')
       .keys(browser.Keys.ARROW_DOWN)
       .keys(browser.Keys.NULL)
-      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[3,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":34,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":46,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
 
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
-      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[4,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":35,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":47,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
 
@@ -51,7 +47,6 @@ module.exports = {
       .keys(browser.Keys.SHIFT)
       .keys('z')
       .keys(browser.Keys.NULL)
-      .pause(20)
       .click('#button3')
       .assert.value('#base64', '[5,[{"location":0,"length":4,"fontFamily":"Helvetica","fontSize":34,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]},{"location":4,"length":3,"fontFamily":"Helvetica","fontSize":46,"fontWeight":400,"fontStyle":"normal","letterSpacing":0,"textAlign":0,"textDecoration":[],"lineHeight":0,"paragraphSpacing":0,"color":[78,78,78,1]}]]')
 

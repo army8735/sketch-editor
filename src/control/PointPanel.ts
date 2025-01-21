@@ -431,9 +431,9 @@ class PointPanel extends Panel {
     const panel = this.panel;
     const x = panel.querySelector('input.x') as HTMLInputElement;
     const y = panel.querySelector('input.y') as HTMLInputElement;
+    x.value = y.value = '';
+    x.placeholder = y.placeholder = '';
     if (!idx.length) {
-      x.value = y.value = '';
-      x.placeholder = y.placeholder = '';
       return;
     }
     const xs: number[] = [];
@@ -472,10 +472,10 @@ class PointPanel extends Panel {
     const panel = this.panel;
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
     const number = panel.querySelector('input.r') as HTMLInputElement;
+    range.value = '0';
+    number.value = '';
+    range.placeholder = number.placeholder = '';
     if (!idx.length) {
-      range.value = '0';
-      number.value = '';
-      range.placeholder = number.placeholder = '';
       return;
     }
     const radius: number[] = [];
@@ -499,11 +499,8 @@ class PointPanel extends Panel {
     }
     if (radius.length > 1) {
       range.placeholder = number.placeholder = '多个';
-      range.value = '0';
-      number.value = '';
     }
     else {
-      range.placeholder = number.placeholder = '';
       range.value = number.value = radius[0].toString();
     }
   }
