@@ -463,7 +463,6 @@ export default class Geometry {
     this.genVertex(node);
     this.updateVertex(node);
     this.idx.splice(0);
-    // this.listener.emit(Listener.SELECT_POINT, []);
   }
 
   hide() {

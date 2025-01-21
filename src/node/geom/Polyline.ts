@@ -35,6 +35,12 @@ class Polyline extends Geom {
     this.isPolyline = true;
   }
 
+  override didMount() {
+    super.didMount();
+    // 脏数据导致x/y不对应尺寸[0,1]重新订正
+    this.checkPointsChange();
+  }
+
   override buildPoints() {
     if (this.coords) {
       return;
