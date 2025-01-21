@@ -55,7 +55,7 @@ module.exports = {
       .keys(browser.Keys.ARROW_UP)
       .keys(browser.Keys.NULL)
       .assert.value('#side .point-panel .y', '20')
-      .assert.cssProperty('#main .geometry .vt[title="1"]', 'transform', 'matrix(1, 0, 0, 1, 0, 10)')
+      .assert.cssProperty('#main .geometry .vt[title="1"]', 'transform', 'matrix(1, 0, 0, 1, 151, 10)')
       .moveToElement('canvas', 200, 200)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
