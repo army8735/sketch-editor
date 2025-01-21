@@ -396,9 +396,9 @@ export default class Listener extends Event {
           return;
         }
       }
-      // 矢量编辑状态下空按下多选框选多个矢量顶点，非空按下为内移动顶点（geometry内部冒泡优先响应按下）
+      // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为内移动顶点（geometry内部冒泡优先响应按下）
       if (this.state === State.EDIT_GEOM) {
-        if (!this.geometry.idx.length) {
+        if (!this.geometry.keep) {
           this.isFrame = true;
         }
         return;
