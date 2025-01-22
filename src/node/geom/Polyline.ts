@@ -196,11 +196,15 @@ class Polyline extends Geom {
         item.absX!,
         item.absY!,
       ];
-      if (item.hasCurveTo) {
-        p.unshift(item.absTx!, item.absTy!);
+      if (item.curveMode !== CURVE_MODE.STRAIGHT && item.curveMode !== CURVE_MODE.NONE) {
+        if (item.hasCurveTo) {
+          p.unshift(item.absTx!, item.absTy!);
+        }
       }
-      if (prev.hasCurveFrom) {
-        p.unshift(prev.absFx!, prev.absFy!);
+      if (prev.curveMode !== CURVE_MODE.STRAIGHT && prev.curveMode !== CURVE_MODE.NONE) {
+        if (prev.hasCurveFrom) {
+          p.unshift(prev.absFx!, prev.absFy!);
+        }
       }
       this.coords.push(p);
     }
@@ -735,55 +739,6 @@ class Polyline extends Geom {
     //   });
     // });
   }
-
-  // 改变坐标，基于相对于artBoard/page的面板展示坐标，matrix是getFrameProps()相对ap矩阵
-  // updatePointsBaseOnAP(points: Point[], matrix: Float64Array) {
-  //   if (!points.length) {
-  //     return points;
-  //   }
-  //   const list = this.props.points;
-  //   const { width, height } = this;
-  //   // 逆向还原矩阵和归一化点坐标
-  //   const i = inverse4(matrix);
-  //   let baseX = 0,
-  //     baseY = 0;
-  //   if (!this.artBoard) {
-  //     baseX = (this.page?.props as PageProps).rule?.baseX || 0;
-  //     baseY = (this.page?.props as PageProps).rule?.baseY || 0;
-  //   }
-  //   points.forEach((point) => {
-  //     if (list.indexOf(point) === -1) {
-  //       throw new Error('Can not update non-existent point');
-  //     }
-  //     const p = calPoint({ x: point.dspX! + baseX, y: point.dspY! + baseY }, i);
-  //     point.absX = p.x;
-  //     point.absY = p.y;
-  //     point.x = p.x / width;
-  //     point.y = p.y / height;
-  //     if (point.hasCurveFrom) {
-  //       const p = calPoint(
-  //         { x: point.dspFx! + baseX, y: point.dspFy! + baseY },
-  //         i,
-  //       );
-  //       point.absFx = p.x;
-  //       point.absFy = p.y;
-  //       point.fx = p.x / width;
-  //       point.fy = p.y / height;
-  //     }
-  //     if (point.hasCurveTo) {
-  //       const p = calPoint(
-  //         { x: point.dspTx! + baseX, y: point.dspTy! + baseY },
-  //         i,
-  //       );
-  //       point.absTx = p.x;
-  //       point.absTy = p.y;
-  //       point.tx = p.x / width;
-  //       point.ty = p.y / height;
-  //     }
-  //   });
-  //   this.refresh();
-  //   return points;
-  // }
 
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
   checkPointsChange() {

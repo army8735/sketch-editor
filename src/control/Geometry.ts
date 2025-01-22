@@ -503,29 +503,13 @@ export default class Geometry {
     const len = points.length;
     let count = 0;
     points.forEach((item, i) => {
-      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
-        s2 += `<div class="vt" title="${i}"></div>`;
-        // 最后一个判断是否闭合
-        if (item.cornerRadius && (i < len || node.props.isClosed)) {
-          s += `<path title="cr${i}" idx="${count++}" d=""></path>`;
-        }
-        if (i < len || node.props.isClosed) {
-          s += `<path title="${i}" idx="${count++}" d=""></path>`;
-        }
-      }
-      else {
-        s2 += `<div class="vt" title="${i}">`;
-        if (item.hasCurveTo) {
-          s2 += '<span class="t"><b></b></span>';
-        }
-        if (item.hasCurveFrom) {
-          s2 += '<span class="f"><b></b></span>';
-        }
-        s2 += '</div>';
-        // 最后一个判断是否闭合
-        if (i < len || node.props.isClosed) {
-          s += `<path title="${i}" idx="${count++}" d=""></path>`;
-        }
+      const isStraight = item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT;
+      s2 += `<div class="vt" title="${i}">`;
+      s2 += `<span class="t ${isStraight ? 'hide' : ''}"><b></b></span>`;
+      s2 += `<span class="f ${isStraight ? 'hide' : ''}"><b></b></span>`;
+      s2 += '</div>';
+      if (i < len || node.props.isClosed) {
+        s += `<path title="${i}" idx="${count++}" d=""></path>`;
       }
     });
     svg1.innerHTML = s;
@@ -548,10 +532,13 @@ export default class Geometry {
         if (div) {
           div.style.transform = `translate(${item.absX! * zoom}px, ${item.absY! * zoom}px)`;
           const spans = div.querySelectorAll('span');
+          const [prev, next] = spans;
+          prev.classList.add('hide');
+          next.classList.add('hide');
           if (item.curveMode !== CURVE_MODE.NONE && item.curveMode !== CURVE_MODE.STRAIGHT) {
-            const [prev, next] = spans;
             const list: { el: HTMLElement, cx: number, cy: number }[] = [];
             if (item.hasCurveTo && prev) {
+              prev.classList.remove('hide');
               list.push({
                 el: prev,
                 cx: item.absTx!,
@@ -559,6 +546,7 @@ export default class Geometry {
               });
             }
             if (item.hasCurveFrom && next) {
+              next.classList.remove('hide');
               list.push({
                 el: next,
                 cx: item.absFx!,

@@ -64,6 +64,7 @@ class PointPanel extends Panel {
         const points = node.props.points;
         listener.geometry.idx.forEach(i => {
           const p = points[i];
+          p.hasCurveTo = p.hasCurveFrom = true;
           if (classList.contains('mirrored')) {
             p.curveMode = CURVE_MODE.MIRRORED;
             // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
@@ -117,6 +118,7 @@ class PointPanel extends Panel {
           }
           else {
             p.curveMode = CURVE_MODE.STRAIGHT;
+            p.hasCurveTo = p.hasCurveFrom = false;
           }
         });
         node.refresh();
