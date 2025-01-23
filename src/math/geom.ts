@@ -210,7 +210,7 @@ export function isConvexPolygonsOverlap(a: Array<{ x: number, y: number }>, b: A
   }
   // 最大最小值不重合提前跳出
   if (includeIntersect) {
-    if (xa > xd || ya > yd || xb < xc || yb < yc) {console.log(xa,ya,xb,yb,xc,yc,xd,yd)
+    if (xa > xd || ya > yd || xb < xc || yb < yc) {
       return false;
     }
   }
@@ -336,25 +336,10 @@ export function isConvexPolygonOverlapRect(
   if (y1 > y2) {
     [y1, y2] = [y2, y1];
   }
-  let xa = 0, ya = 0, xb = 0, yb = 0;
-  let allInX = true;
-  let allInY = true;
-  // 看多边形顶点是否在矩形内
+  // 看多边形顶点是否在矩形内，以及边是否有在矩形内的部分
   for (let i = 0, len = points.length; i < len; i++) {
     const { x, y } = points[i];
-    if (i) {
-      xa = Math.min(xa, x);
-      ya = Math.min(ya, y);
-      xb = Math.max(xb, x);
-      yb = Math.max(yb, y);
-    }
-    else {
-      xa = x;
-      ya = y;
-      xb = x;
-      yb = y;
-    }
-    // 在矩形内可提前跳出
+    // 点在矩形内可提前跳出
     if (includeIntersect) {
       if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
         return true;
@@ -365,59 +350,49 @@ export function isConvexPolygonOverlapRect(
         return true;
       }
     }
-    // 特殊情况，正好和矩形重合时，所有点都在边上认为还是重叠
-    if (x < x1 || x > x2) {
-      allInX = false
-    }
-    if (y < y1 || y > y2) {
-      allInY = false;
-    }
-  }
-  // 完全重合情况
-  if (allInX && allInY) {
-    return true;
-  }
-  // 部分重合的情况
-  if (allInX) {
-    if (includeIntersect) {
-      if (ya >= y1 && ya <= y2 || yb >= y1 && yb <= y2) {
-        return true;
+    // 点在矩形外，多边形每条边如果在矩形范围内也重叠，按先x小大（如果相等再y小大）排列边的2个点
+    const { x: nx, y: ny } = points[(i + 1) % len];
+    // 垂直线特殊情况，两点在矩形外
+    if (x === nx) {
+      if (y >=  ny) {
+        if (includeIntersect && (ny <= y2 || y >= y1)
+          || !includeIntersect && (ny < y2 || y > y1)) {
+          return true;
+        }
+      }
+      else {
+        if (includeIntersect && (y <= y2 || ny >= y1)
+          || !includeIntersect && (y < y2 || ny > y1)) {
+          return true;
+        }
       }
     }
+    // 斜线普通情况，求得在x1/x2的y点坐标，检查是否在矩形内
     else {
-      if (ya > y1 && ya < y2 || yb > y1 && yb < y2) {
-        return true;
+      const dx = nx - x;
+      const dy = ny - y;
+      const t1 = (x1 - x) / dx;
+      if (t1 >= 0 && t1 <= 1) {
+        const p = y + t1 * dy;
+        if (includeIntersect && p >= y1 && p <= y2
+          || !includeIntersect && p > y1 && p < y2) {
+          return true;
+        }
+      }
+      const t2 = (x2 - x) / dx;
+      if (t2 >= 0 && t2 <= 1) {
+        if (t1 >= 0 && t1 <= 1) {
+          return true; // 有2个交点说明包含矩形
+        }
+        const p = y + t2 * dy;
+        if (includeIntersect && p >= y1 && p <= y2
+          || !includeIntersect && p > y1 && p < y2) {
+          return true;
+        }
       }
     }
   }
-  if (allInY) {
-    if (includeIntersect) {
-      if (xa >= x1 && xa <= x2 || xb >= x1 && xb <= x2) {
-        return true;
-      }
-    }
-    else {
-      if (xa > x1 && xa < x2 || xb > x1 && xb < x2) {
-        return true;
-      }
-    }
-  }
-  // 在矩形外可提前跳出
-  if (includeIntersect) {
-    if (xb < x1 || xa > x2 || yb < y1 || ya > y2) {
-      return false;
-    }
-  }
-  else {
-    if (xb <= x1 || xa >= x2 || yb <= y1 || ya >= y2) {
-      return false;
-    }
-  }
-  // 最普通的情况，相交或者包含都得判断
-  return pointInConvexPolygon(x1, y1, points, includeIntersect) ||
-    pointInConvexPolygon(x2, y1, points, includeIntersect) ||
-    pointInConvexPolygon(x2, y2, points, includeIntersect) ||
-    pointInConvexPolygon(x1, y2, points, includeIntersect)
+  return false;
 }
 
 export default {
