@@ -381,9 +381,6 @@ export function isConvexPolygonOverlapRect(
       }
       const t2 = (x2 - x) / dx;
       if (t2 >= 0 && t2 <= 1) {
-        if (t1 >= 0 && t1 <= 1) {
-          return true; // 有2个交点说明包含矩形
-        }
         const p = y + t2 * dy;
         if (includeIntersect && p >= y1 && p <= y2
           || !includeIntersect && p > y1 && p < y2) {
