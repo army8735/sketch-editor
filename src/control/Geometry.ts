@@ -36,7 +36,7 @@ export default class Geometry {
     let isControlF = false;
     let isControlT = false;
     let isMove = false;
-    let isUnSelected = false; // 多选点按下时无法判断意图，抬起时才能判断，另外按下未选要特殊标注
+    let isSelected = false; // 多选点按下时无法判断意图，抬起时才能判断，另外按下未选要特殊标注
     let isShift = false; // 同上，shift以按下时为准，因为按下后可能松开
     let target: HTMLElement;
     let ox = 0; // panel
@@ -63,27 +63,27 @@ export default class Geometry {
       w = panel.clientWidth;
       h = panel.clientHeight;
       isMove = false;
-      isUnSelected = false;
+      isSelected = false;
       isShift = false;
       if (tagName === 'DIV' && classList.contains('vt')) {
         this.keep = true;
         idx = parseInt(target.title);
-        // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起判断
+        // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey) {
           isShift = true;
-          if (!this.idx.includes(idx)) {
-            this.idx.push(idx);
+          if (this.idx.includes(idx)) {
+            isSelected = true;
           }
           else {
-            isUnSelected = true;
+            this.idx.push(idx);
           }
           classList.add('cur');
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
         }
-        // 无shift看点下的是否是已选，否是单个选择，是则也是无法判断意图
+        // 无shift看点下的是否是已选，否仅是单个选择，是暂时无法判断意图先记录等抬起
         else if (this.idx.includes(idx)) {
-          isUnSelected = true;
+          isSelected = true;
         }
         else {
           this.clearCur();
@@ -332,29 +332,28 @@ export default class Geometry {
       }
     });
     document.addEventListener('mouseup', () => {
-      if (isDrag || isControlF || isControlT) {
-        // 顶点抬起时特殊判断，没有移动过的多选在已选时视为取消选择，没有移动过多单选取消其它的
-        if (isDrag && !isMove && isUnSelected) {
-          if (isShift) {
-            panel.querySelector(`.vt[title="${idx}"]`)?.classList.remove('cur');
-            const i = this.idx.indexOf(idx);
-            if (i > -1) {
-              this.idx.splice(i, 1);
-              listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
-            }
-          }
-          else {
-            panel.querySelectorAll('.vt.cur').forEach((item) => {
-              if ((item as HTMLElement).title !== idx.toString()) {
-                item.classList.remove('cur');
-              }
-            });
-            this.idx.splice(0);
-            this.idx.push(idx);
+      // 顶点抬起时特殊判断，没有移动过的多选在已选时点击视为取消选择，没有移动过的单选则取消其它的
+      if (isDrag && !isMove && isSelected) {
+        if (isShift) {
+          panel.querySelector(`.vt[title="${idx}"]`)?.classList.remove('cur');
+          const i = this.idx.indexOf(idx);
+          if (i > -1) {
+            this.idx.splice(i, 1);
             listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
           }
         }
-        isDrag = isControlF = isControlT = false;
+        else {
+          panel.querySelectorAll('.vt.cur').forEach((item) => {
+            if ((item as HTMLElement).title !== idx.toString()) {
+              item.classList.remove('cur');
+            }
+          });
+          this.idx.splice(0);
+          this.idx.push(idx);
+          listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+        }
+      }
+      if (isMove && (isDrag || isControlF || isControlT)) {
         const node = this.node;
         if (node instanceof Polyline) {
           let eq = this.clonePoints.length === node.props.points.length;
@@ -369,14 +368,17 @@ export default class Geometry {
             }
           }
           if (!eq) {
+            // move结束可能干扰尺寸，调整后重新设置
+            node.checkPointsChange();
+            this.update();
             listener.history.addCommand(new PointCommand([node], [{
               prev: this.clonePoints.slice(0),
               next: clone(node.props.points),
             }]), true);
           }
         }
-        listener.emit(Listener.POINT_NODE, [node]);
       }
+      isDrag = isControlF = isControlT = false;
     });
 
     // 侦听在path上的移动，高亮当前path以及投影点

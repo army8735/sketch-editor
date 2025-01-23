@@ -196,15 +196,11 @@ class Polyline extends Geom {
         item.absX!,
         item.absY!,
       ];
-      if (item.curveMode !== CURVE_MODE.STRAIGHT && item.curveMode !== CURVE_MODE.NONE) {
-        if (item.hasCurveTo) {
-          p.unshift(item.absTx!, item.absTy!);
-        }
+      if (item.hasCurveTo) {
+        p.unshift(item.absTx!, item.absTy!);
       }
-      if (prev.curveMode !== CURVE_MODE.STRAIGHT && prev.curveMode !== CURVE_MODE.NONE) {
-        if (prev.hasCurveFrom) {
-          p.unshift(prev.absFx!, prev.absFy!);
-        }
+      if (prev.hasCurveFrom) {
+        p.unshift(prev.absFx!, prev.absFy!);
       }
       this.coords.push(p);
     }

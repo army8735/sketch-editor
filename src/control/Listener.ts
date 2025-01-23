@@ -2076,10 +2076,6 @@ export default class Listener extends Event {
 
   cancelEditGeom() {
     if (this.state === State.EDIT_GEOM) {
-      const node = this.geometry.node;
-      if (node instanceof Polyline) {
-        node.checkPointsChange();
-      }
       this.geometry.hide();
       this.select.showSelect(this.selected);
       this.state = State.NORMAL;

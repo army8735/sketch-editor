@@ -54,6 +54,7 @@ class PointPanel extends Panel {
     dom.appendChild(panel);
 
     panel.addEventListener('click', (e) => {
+      this.silence = true;
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
@@ -61,77 +62,82 @@ class PointPanel extends Panel {
       if (tagName === 'LI' && !classList.contains('cur') && node) {
         panel.querySelector('.type .cur')?.classList.remove('cur');
         classList.add('cur');
-        const points = node.props.points;
-        listener.geometry.idx.forEach(i => {
-          const p = points[i];
-          p.hasCurveTo = p.hasCurveFrom = true;
-          if (classList.contains('mirrored')) {
-            p.curveMode = CURVE_MODE.MIRRORED;
-            // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
-            if (p.hasCurveTo) {
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx;
-              p.fy = p.y - dy;
+        if (node instanceof Polyline) {
+          const points = node.props.points;
+          prevPoint = clone(points);
+          listener.geometry.idx.forEach(i => {
+            const p = points[i];
+            p.hasCurveTo = p.hasCurveFrom = true;
+            if (classList.contains('mirrored')) {
+              p.curveMode = CURVE_MODE.MIRRORED;
+              // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
+              if (p.hasCurveTo) {
+                const dx = p.tx - p.x;
+                const dy = p.ty - p.y;
+                p.fx = p.x - dx;
+                p.fy = p.y - dy;
+              }
+              else if (p.hasCurveFrom) {
+                const dx = p.fx - p.x;
+                const dy = p.fy - p.y;
+                p.tx = p.x - dx;
+                p.ty = p.y - dy;
+              }
+              // 都没有默认设置和前后点x/y的差值
+              else {
+                const prev = points[i - 1] || points[points.length - 1];
+                p.tx = (prev.x + p.x) * 0.5;
+                p.ty = (prev.y + p.y) * 0.5;
+                const dx = p.tx - p.x;
+                const dy = p.ty - p.y;
+                p.fx = p.x - dx;
+                p.fy = p.y - dy;
+              }
+              p.hasCurveFrom = true;
+              p.hasCurveTo = true;
             }
-            else if (p.hasCurveFrom) {
-              const dx = p.fx - p.x;
-              const dy = p.fy - p.y;
-              p.tx = p.x - dx;
-              p.ty = p.y - dy;
+            else if (classList.contains('disconnected')) {
+              p.curveMode = CURVE_MODE.DISCONNECTED;
             }
-            // 都没有默认设置和前后点x/y的差值
+            else if (classList.contains('asymmetric')) {
+              p.curveMode = CURVE_MODE.ASYMMETRIC;
+              const dt = Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2));
+              const df = Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2));
+              // 前后控制点都有或者都没有则后面的跟随前面的，否则没有的跟随有的
+              if (p.hasCurveTo || !p.hasCurveFrom && !p.hasCurveTo) {
+                const dx = p.tx - p.x;
+                const dy = p.ty - p.y;
+                p.fx = p.x - dx * df / dt;
+                p.fy = p.y - dy * df / dt;
+              }
+              else if (p.hasCurveFrom) {
+                const dx = p.fx - p.x;
+                const dy = p.fy - p.y;
+                p.tx = p.x - dx * dt / df;
+                p.ty = p.y - dy * dt / df;
+              }
+              p.hasCurveFrom = true;
+              p.hasCurveTo = true;
+            }
             else {
-              const prev = points[i - 1] || points[points.length - 1];
-              p.tx = (prev.x + p.x) * 0.5;
-              p.ty = (prev.y + p.y) * 0.5;
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx;
-              p.fy = p.y - dy;
+              p.curveMode = CURVE_MODE.STRAIGHT;
+              p.hasCurveTo = p.hasCurveFrom = false;
             }
-            p.hasCurveFrom = true;
-            p.hasCurveTo = true;
-          }
-          else if (classList.contains('disconnected')) {
-            p.curveMode = CURVE_MODE.DISCONNECTED;
-          }
-          else if (classList.contains('asymmetric')) {
-            p.curveMode = CURVE_MODE.ASYMMETRIC;
-            const dt = Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2));
-            const df = Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2));
-            // 前后控制点都有或者都没有则后面的跟随前面的，否则没有的跟随有的
-            if (p.hasCurveTo || !p.hasCurveFrom && !p.hasCurveTo) {
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx * df / dt;
-              p.fy = p.y - dy * df / dt;
-            }
-            else if (p.hasCurveFrom) {
-              const dx = p.fx - p.x;
-              const dy = p.fy - p.y;
-              p.tx = p.x - dx * dt / df;
-              p.ty = p.y - dy * dt / df;
-            }
-            p.hasCurveFrom = true;
-            p.hasCurveTo = true;
-          }
-          else {
-            p.curveMode = CURVE_MODE.STRAIGHT;
-            p.hasCurveTo = p.hasCurveFrom = false;
-          }
-        });
+          });
+        }
         node.refresh();
         listener.geometry.updateVertex(node);
+        onChange();
       }
       // 不能关闭矢量编辑状态
       listener.geometry.keep = true;
+      this.silence = false;
     });
 
     let prevPoint: Point[] = [];
     const onChange = () => {
       const node = this.node;
-      if (node instanceof Polyline) {
+      if (node instanceof Polyline && prevPoint.length) {
         listener.history.addCommand(new PointCommand([node], [{
           prev: prevPoint.slice(0),
           next: clone(node.props.points),
