@@ -353,17 +353,32 @@ export function isConvexPolygonOverlapRect(
     // 点在矩形外，多边形每条边如果在矩形范围内也重叠，按先x小大（如果相等再y小大）排列边的2个点
     const { x: nx, y: ny } = points[(i + 1) % len];
     // 垂直线特殊情况，x在矩形内y两点在矩形外
-    if (x === nx && x >= x1 && x <= x2) {
-      if (y >=  ny) {
-        if (includeIntersect && (ny <= y2 || y >= y1)
-          || !includeIntersect && (ny < y2 || y > y1)) {
-          return true;
+    if (x === nx) {
+      if (x >= x1 && x <= x2) {
+        if (y >= ny) {
+          if (y >= y2 && ny <= y1) {
+            return true;
+          }
+        }
+        else {
+          if (y <= y1 && ny >= y2) {
+            return true;
+          }
         }
       }
-      else {
-        if (includeIntersect && (y <= y2 || ny >= y1)
-          || !includeIntersect && (y < y2 || ny > y1)) {
-          return true;
+    }
+    // 水平线特殊情况同理
+    else if (y === ny) {
+      if (y >= y1 && y <= y2) {
+        if (x >= nx) {
+          if (x >= x2 && nx <= x1) {
+            return true;
+          }
+        }
+        else {
+          if (x <= x1 && nx >= x2) {
+            return true;
+          }
         }
       }
     }
