@@ -336,9 +336,22 @@ export function isConvexPolygonOverlapRect(
   if (y1 > y2) {
     [y1, y2] = [y2, y1];
   }
+  let xa = 0, ya = 0, xb = 0, yb = 0;
   // 看多边形顶点是否在矩形内，以及边是否有在矩形内的部分
   for (let i = 0, len = points.length; i < len; i++) {
     const { x, y } = points[i];
+    if (i) {
+      xa = Math.min(xa, x);
+      ya = Math.min(ya, y);
+      xb = Math.max(xb, x);
+      yb = Math.max(yb, y);
+    }
+    else {
+      xa = x;
+      ya = y;
+      xb = x;
+      yb = y;
+    }
     // 点在矩形内可提前跳出
     if (includeIntersect) {
       if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
@@ -403,6 +416,10 @@ export function isConvexPolygonOverlapRect(
         }
       }
     }
+  }
+  // 特殊情况，矩形在多边形内
+  if (xa <= x1 && ya <= y1 && xb >= x2 && yb >= y2) {
+    return true;
   }
   return false;
 }
