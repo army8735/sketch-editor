@@ -138,6 +138,7 @@ class PointPanel extends Panel {
     const onChange = () => {
       const node = this.node;
       if (node instanceof Polyline && prevPoint.length) {
+        node.checkPointsChange();
         listener.geometry.update();
         listener.history.addCommand(new PointCommand([node], [{
           prev: prevPoint.slice(0),
