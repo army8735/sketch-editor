@@ -25,14 +25,14 @@ const html = `
     </div>
   </div>
   <div class="intro">类型</div>
-  <ul class="type">
+  <ul class="line type">
     <li class="straight" title="直线"></li>
     <li class="mirrored" title="对称曲线"></li>
     <li class="disconnected" title="断开连接"></li>
     <li class="asymmetric" title="不对称曲线"></li>
   </ul>
   <div class="intro">半径</div>
-  <div class="line">
+  <div class="line num">
     <input type="range" min="0" max="100" step="1" value="0"/>
     <div class="input-unit">
       <input type="number" class="r" min="0" max="100" step="1" value=""/>
@@ -381,8 +381,10 @@ class PointPanel extends Panel {
       this.updateRange(idx);
       panel.querySelector('.type.enable')?.classList.remove('enable');
       panel.querySelector('.type .cur')?.classList.remove('cur');
+      panel.querySelector('.num.enable')?.classList.remove('enable');
       if (idx.length) {
         panel.querySelector('.type')?.classList.add('enable');
+        panel.querySelector('.num')?.classList.add('enable');
         const node = this.node;
         const type: CURVE_MODE[] = [];
         if (node instanceof Polyline) {

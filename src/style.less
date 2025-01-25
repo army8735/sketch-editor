@@ -1942,8 +1942,6 @@ html, body {
     .type {
       margin: 0;
       padding: 0;
-      display: flex;
-      align-items: center;
       justify-content: space-between;
       list-style: none;
       pointer-events: none;
@@ -1998,9 +1996,19 @@ html, body {
       }
     }
 
-    input[type=range] {
-      flex: 1;
-      margin-right: 5px;
+    .num {
+      pointer-events: none;
+      opacity: 0.5;
+
+      &.enable {
+        pointer-events: auto;
+        opacity: 1;
+      }
+
+      input[type=range] {
+        flex: 1;
+        margin-right: 5px;
+      }
     }
   }
 }
