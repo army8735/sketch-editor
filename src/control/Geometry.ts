@@ -44,7 +44,6 @@ export default class Geometry {
     let w = 1;
     let h = 1;
     const diff = { x: 0, y: 0, tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录点的位置，拖拽时计算用
-    // let clonePoints: Point[];
 
     panel.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.spaceKey) {
@@ -65,8 +64,9 @@ export default class Geometry {
       isMove = false;
       isSelected = false;
       isShift = false;
+      this.keep = true;
+      // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
-        this.keep = true;
         idx = parseInt(target.title);
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey) {
@@ -106,6 +106,7 @@ export default class Geometry {
         }
         listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
       }
+      // 点矢量边添加顶点
       else if (tagName === 'PATH') {
         const title = target.getAttribute('title')!;
         idx = parseInt(title);
@@ -214,6 +215,7 @@ export default class Geometry {
           listener.emit(Listener.SELECT_POINT, []);
         }
       }
+      // 点控制点开始拖拽
       else if (tagName === 'SPAN') {
         this.keep = true;
         const div = target.parentNode as HTMLElement;
@@ -229,8 +231,12 @@ export default class Geometry {
         diff.td = Math.sqrt(Math.pow(p.x - p.tx, 2) + Math.pow(p.y - p.tx, 2));
         diff.fd = Math.sqrt(Math.pow(p.x - p.fx, 2) + Math.pow(p.y - p.fx, 2));
       }
+      // 点自己清空顶点，保持编辑态
       else {
         this.idx.splice(0);
+        panel.querySelector('div.vt.cur')?.classList.remove('cur');
+        panel.querySelector('div.vt.f')?.classList.remove('f');
+        panel.querySelector('div.vt.t')?.classList.remove('t');
         listener.emit(Listener.SELECT_POINT, []);
       }
     });
