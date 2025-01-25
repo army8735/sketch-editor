@@ -1977,8 +1977,8 @@ export default class Listener extends Event {
           const node = nodes[0];
           if (node instanceof Polyline) {
             node.checkPointsChange();
-            node.refresh();
           }
+          node.refresh();
           if (this.state === State.EDIT_GEOM && node === this.selected[0]) {
             this.geometry.update();
           }
