@@ -510,8 +510,20 @@ export default class Geometry {
       s2 += `<span class="t ${isStraight ? 'hide' : ''}"><b></b></span>`;
       s2 += `<span class="f ${isStraight ? 'hide' : ''}"><b></b></span>`;
       s2 += '</div>';
-      if (i < len || node.props.isClosed) {
-        s += `<path title="${i}" idx="${count++}" d=""></path>`;
+      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
+        // 最后一个判断是否闭合
+        if (item.cornerRadius && (i < len || node.props.isClosed)) {
+          s += `<path title="cr${i}" idx="${count++}" d=""></path>`;
+        }
+        if (i < len || node.props.isClosed) {
+          s += `<path title="${i}" idx="${count++}" d=""></path>`;
+        }
+      }
+      else {
+        // 最后一个判断是否闭合
+        if (i < len || node.props.isClosed) {
+          s += `<path title="${i}" idx="${count++}" d=""></path>`;
+        }
       }
     });
     svg1.innerHTML = s;
