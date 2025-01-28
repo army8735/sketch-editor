@@ -288,18 +288,29 @@ export default class Geometry {
       }
       const dpi = root.dpi;
       const zoom = page.getZoom();
-      const dx = Math.round((e.clientX - startX) * dpi / zoom);
-      const dy = Math.round((e.clientY - startY) * dpi / zoom);
+      let dx = Math.round(e.clientX - startX);
+      let dy = Math.round(e.clientY - startY);
+      let dx2 = Math.round(dx * dpi / zoom);
+      let dy2 = Math.round(dy * dpi / zoom);
+      // 水平/垂直
+      if (listener.shiftKey) {
+        if (Math.abs(dx2) >= Math.abs(dy2)) {
+          dy = dy2 = 0;
+        }
+        else {
+          dx = dx2 = 0;
+        }
+      }
       if (isDrag) {
         if (node instanceof Polyline) {
           const points = node.props.points;
           const p = points[idx];
-          p.dspX = diff.dspX + dx;
-          p.dspY = diff.dspY + dy;
-          p.dspFx = diff.dspFx + dx;
-          p.dspFy = diff.dspFy + dy;
-          p.dspTx = diff.dspTx + dx;
-          p.dspTy = diff.dspTy + dy;
+          p.dspX = diff.dspX + dx2;
+          p.dspY = diff.dspY + dy2;
+          p.dspFx = diff.dspFx + dx2;
+          p.dspFy = diff.dspFy + dy2;
+          p.dspTx = diff.dspTx + dx2;
+          p.dspTy = diff.dspTy + dy2;
           // 多个点的话其它的也随之变动
           const pts = this.idx.map(i => {
             if (i === idx) {
@@ -308,12 +319,12 @@ export default class Geometry {
             else {
               const p = points[i];
               const c = this.clonePoints[i];
-              p.dspX = c.dspX! + dx;
-              p.dspY = c.dspY! + dy;
-              p.dspFx = c.dspFx! + dx;
-              p.dspFy = c.dspFy! + dy;
-              p.dspTx = c.dspTx! + dx;
-              p.dspTy = c.dspTy! + dy;
+              p.dspX = c.dspX! + dx2;
+              p.dspY = c.dspY! + dy2;
+              p.dspFx = c.dspFx! + dx2;
+              p.dspFy = c.dspFy! + dy2;
+              p.dspTx = c.dspTx! + dx2;
+              p.dspTy = c.dspTy! + dy2;
               return p;
             }
           });
@@ -328,10 +339,10 @@ export default class Geometry {
         if (node instanceof Polyline) {
           const p = node.props.points[idx];
           if (isControlF) {
-            p.dspFx = this.clonePoints[idx].dspFx! + dx;
+            p.dspFx = this.clonePoints[idx].dspFx! + dx2;
           }
           else {
-            p.dspTx = this.clonePoints[idx].dspTx! + dx;
+            p.dspTx = this.clonePoints[idx].dspTx! + dx2;
           }
           // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
           if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
