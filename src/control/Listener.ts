@@ -1642,7 +1642,14 @@ export default class Listener extends Event {
         this.cancelEditText();
       }
       else if (this.state === State.EDIT_GEOM) {
-        this.cancelEditGeom();
+        if (this.geometry.idx.length) {
+          this.geometry.idx.splice(0);
+          this.geometry.clearCur();
+          this.emit(Listener.SELECT_POINT, []);
+        }
+        else {
+          this.cancelEditGeom();
+        }
       }
       else {
         this.selected.splice(0);

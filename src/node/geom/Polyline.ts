@@ -15,7 +15,8 @@ import {
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
-  STROKE_POSITION, StyleUnit,
+  STROKE_POSITION,
+  StyleUnit,
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
@@ -745,12 +746,8 @@ class Polyline extends Geom {
       dw = rect[2] - this.width,
       dh = rect[3] - this.height;
     // 检查真正有变化，位置相对于自己原本位置为原点
-    if (dx || dy || dw || dh) {
+    if (Math.abs(dx) > 1e-6 || Math.abs(dy) > 1e-6 || Math.abs(dw) > 1e-6 || Math.abs(dh) > 1e-6) {
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
-      this.adjustPoints(dx, dy);
-      this.checkPosSizeUpward();
-      this._rect = undefined;
-      this._bbox = undefined;
       this.coords = undefined;
     }
   }

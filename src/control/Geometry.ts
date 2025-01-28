@@ -110,12 +110,6 @@ export default class Geometry {
         isDrag = true;
         if (node instanceof Polyline) {
           const p = node.props.points[idx];
-          // diff.x = p.x;
-          // diff.y = p.y;
-          // diff.tx = p.tx - p.x;
-          // diff.ty = p.ty - p.y;
-          // diff.fx = p.fx - p.x;
-          // diff.fy = p.fy - p.y;
           diff.dspX = p.dspX!;
           diff.dspY = p.dspY!;
           diff.dspFx = p.dspFx!;
@@ -300,8 +294,6 @@ export default class Geometry {
         return;
       }
       const zoom = page.getZoom();
-      // const x = (e.pageX - ox) / w;
-      // const y = (e.pageY - oy) / h;
       const dx = Math.round((e.clientX - startX) * dpi / zoom);
       const dy = Math.round((e.clientY - startY) * dpi / zoom);
       if (isDrag) {
@@ -314,20 +306,6 @@ export default class Geometry {
           p.dspFy = diff.dspFy + dy;
           p.dspTx = diff.dspTx + dx;
           p.dspTy = diff.dspTy + dy;
-          // const dx = x - this.clonePoints[idx].x;
-          // const dy = y - this.clonePoints[idx].y;
-          // p.x = x;
-          // p.absX = x * w;
-          // p.y = y;
-          // p.absY = x * h;
-          // p.tx = p.x + diff.tx;
-          // p.absTx = p.tx * w;
-          // p.ty = p.y + diff.ty;
-          // p.absTy = p.ty * h;
-          // p.fx = p.x + diff.fx;
-          // p.absFx = p.fx * w;
-          // p.fy = p.y + diff.fy;
-          // p.absFy = p.fy * h;
           // 多个点的话其它的也随之变动
           const pts = this.idx.map(i => {
             if (i === idx) {
@@ -345,24 +323,6 @@ export default class Geometry {
               return p;
             }
           });
-          // this.idx.forEach(i => {
-          //   if (i !== idx) {
-          //     const p = points[i];
-          //     const cp = this.clonePoints[i];
-          //     p.x = cp.x + dx;
-          //     p.absX = p.x * w;
-          //     p.y = cp.y + dy;
-          //     p.absY = p.y * h;
-          //     p.tx = cp.tx + dx;
-          //     p.absTx = p.tx * w;
-          //     p.ty = cp.ty + dy;
-          //     p.absTy = p.ty * h;
-          //     p.fx = cp.fx + dx;
-          //     p.absFx = p.fx * w;
-          //     p.fy = cp.fy + dy;
-          //     p.absFy = p.fy * h;
-          //   }
-          // });
           getPointsAbsByDsp(node, pts);
           node.reflectPoints(pts);
           node.refresh();
@@ -375,17 +335,9 @@ export default class Geometry {
           const p = node.props.points[idx];
           if (isControlF) {
             p.dspFx = this.clonePoints[idx].dspFx! + dx;
-            // p.fx = x;
-            // p.absFx = x * w;
-            // p.fy = y;
-            // p.absFy = y * h;
           }
           else {
             p.dspTx = this.clonePoints[idx].dspTx! + dx;
-            // p.tx = x;
-            // p.absTx = x * w;
-            // p.ty = y;
-            // p.absTy = y * h;
           }
           // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
           if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -397,9 +349,7 @@ export default class Geometry {
               const dx = p.dspFx! - p.dspX!;
               const dy = p.dspFy! - p.dspY!;
               p.dspTx = p.dspX! - dx * ratio;
-              // p.absTx = p.tx * w;
               p.dspTy = p.dspY! - dy * ratio;
-              // p.absTy = p.ty * h;
             }
             else {
               if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -408,9 +358,7 @@ export default class Geometry {
               const dx = p.dspTx! - p.dspX!;
               const dy = p.dspTy! - p.dspY!;
               p.dspFx = p.dspX! - dx * ratio;
-              // p.absFx = p.fx * w;
               p.dspFy = p.dspY! - dy * ratio;
-              // p.absFy = p.fy * h;
             }
           }
           getPointsAbsByDsp(node, p);

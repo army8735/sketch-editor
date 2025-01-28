@@ -460,12 +460,12 @@ export function getPointsAbsByDsp(node: Polyline, points?: Point | Point[]) {
       y: item.dspY! + baseY,
     }, i);
     const f = calPoint({
-      x: item.dspFx! - baseX,
-      y: item.dspFy! - baseY,
+      x: item.dspFx! + baseX,
+      y: item.dspFy! + baseY,
     }, i);
     const t = calPoint({
-      x: item.dspTx! - baseX,
-      y: item.dspTy! - baseY,
+      x: item.dspTx! + baseX,
+      y: item.dspTy! + baseY,
     }, i);
     item.absX = p.x;
     item.absY = p.y;
