@@ -40,8 +40,6 @@ export default class Geometry {
     let isSelected = false; // 多选点按下时无法判断意图，抬起时才能判断，另外按下未选要特殊标注
     let isShift = false; // 同上，shift以按下时为准，因为按下后可能松开
     let target: HTMLElement;
-    let ox = 0; // panel
-    let oy = 0;
     let w = 1;
     let h = 1;
     let startX = 0;
@@ -68,12 +66,9 @@ export default class Geometry {
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
-      const o = panel.getBoundingClientRect();
-      ox = o.left;
-      oy = o.top;
       w = panel.clientWidth;
       h = panel.clientHeight;
-      isMove = false;
+      isDrag = isControlF = isControlT = isMove = false;
       isSelected = false;
       isShift = false;
       this.keep = true;
@@ -287,12 +282,11 @@ export default class Geometry {
       if (!node) {
         return;
       }
-      isMove = true;
-      const dpi = root.dpi;
       const page = root.getCurPage();
       if (!page) {
         return;
       }
+      const dpi = root.dpi;
       const zoom = page.getZoom();
       const dx = Math.round((e.clientX - startX) * dpi / zoom);
       const dy = Math.round((e.clientY - startY) * dpi / zoom);
@@ -368,6 +362,7 @@ export default class Geometry {
         }
         listener.emit(Listener.POINT_NODE, [node]);
       }
+      isMove = true;
     });
     document.addEventListener('mouseup', () => {
       // 顶点抬起时特殊判断，没有移动过的多选在已选时点击视为取消选择，没有移动过的单选则取消其它的
@@ -416,7 +411,7 @@ export default class Geometry {
           }
         }
       }
-      isDrag = isControlF = isControlT = false;
+      isDrag = isControlF = isControlT = isMove = false;
     });
 
     // 侦听在path上的移动，高亮当前path以及投影点
