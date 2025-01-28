@@ -135,11 +135,11 @@ class PointPanel extends Panel {
     });
 
     let prevPoint: Point[] = [];
-    const onChange = () => {
+    const onChange = (init = false) => {
       const node = this.node;
       if (node instanceof Polyline && prevPoint.length) {
         node.checkPointsChange();
-        listener.geometry.update();
+        listener.geometry.update(init);
         listener.history.addCommand(new PointCommand([node], [{
           prev: prevPoint.slice(0),
           next: clone(node.props.points),
@@ -260,16 +260,17 @@ class PointPanel extends Panel {
     x.addEventListener('input', (e) => {
       onInputCoords(e, true);
     });
-    x.addEventListener('change', onChange);
+    x.addEventListener('change', () => onChange());
 
     y.addEventListener('input', (e) => {
       onInputCoords(e, false);
     });
-    y.addEventListener('change', onChange);
+    y.addEventListener('change', () => onChange());
 
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
     const number = panel.querySelector('input.r') as HTMLInputElement;
 
+    let rangeAlt = false; // 半径在0和有之间切换需重新生成path
     range.addEventListener('input', (e) => {
       const node = this.node;
       if (!node) {
@@ -282,6 +283,7 @@ class PointPanel extends Panel {
         }
       }
       const value = parseFloat(range.value) || 0;
+      rangeAlt = false;
       if (node instanceof Polyline) {
         let points = node.props.points;
         // 激活的顶点或者全部
@@ -289,6 +291,9 @@ class PointPanel extends Panel {
           points = listener.geometry.idx.map(i => points[i]);
         }
         points.forEach(item => {
+          if (item.cornerRadius && !value || !item.cornerRadius && value) {
+            rangeAlt = true;
+          }
           item.cornerRadius = value;
         });
       }
@@ -299,7 +304,7 @@ class PointPanel extends Panel {
       listener.emit(Listener.POINT_NODE, [node]);
       this.silence = false;
     });
-    range.addEventListener('change', onChange);
+    range.addEventListener('change', () => onChange(rangeAlt));
 
     number.addEventListener('input', (e) => {
       const node = this.node;
@@ -365,7 +370,7 @@ class PointPanel extends Panel {
       listener.emit(Listener.POINT_NODE, [node]);
       this.silence = false;
     });
-    number.addEventListener('change', onChange);
+    number.addEventListener('change', () => onChange());
 
     listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
       if (next === State.EDIT_GEOM || prev === State.EDIT_GEOM) {

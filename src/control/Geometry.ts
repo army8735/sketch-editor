@@ -8,6 +8,7 @@ import { r2d } from '../math/geom';
 import { Point } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand from '../history/PointCommand';
+import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
 
 export default class Geometry {
   root: Root;
@@ -43,7 +44,18 @@ export default class Geometry {
     let oy = 0;
     let w = 1;
     let h = 1;
-    const diff = { x: 0, y: 0, tx: 0, ty: 0, fx: 0, fy: 0, td: 0, fd: 0 }; // 按下记录点的位置，拖拽时计算用
+    let startX = 0;
+    let startY = 0;
+    const diff = {
+      td: 0,
+      fd: 0,
+      dspX: 0,
+      dspY: 0,
+      dspFx: 0,
+      dspFy: 0,
+      dspTx: 0,
+      dspTy: 0,
+    }; // 按下记录点的位置，拖拽时计算用
 
     panel.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.spaceKey) {
@@ -65,6 +77,8 @@ export default class Geometry {
       isSelected = false;
       isShift = false;
       this.keep = true;
+      startX = e.clientX;
+      startY = e.clientY;
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
         idx = parseInt(target.title);
@@ -96,12 +110,18 @@ export default class Geometry {
         isDrag = true;
         if (node instanceof Polyline) {
           const p = node.props.points[idx];
-          diff.x = p.x;
-          diff.y = p.y;
-          diff.tx = p.tx - p.x;
-          diff.ty = p.ty - p.y;
-          diff.fx = p.fx - p.x;
-          diff.fy = p.fy - p.y;
+          // diff.x = p.x;
+          // diff.y = p.y;
+          // diff.tx = p.tx - p.x;
+          // diff.ty = p.ty - p.y;
+          // diff.fx = p.fx - p.x;
+          // diff.fy = p.fy - p.y;
+          diff.dspX = p.dspX!;
+          diff.dspY = p.dspY!;
+          diff.dspFx = p.dspFx!;
+          diff.dspFy = p.dspFy!;
+          diff.dspTx = p.dspTx!;
+          diff.dspTy = p.dspTy!;
           this.clonePoints = clone(node.props.points);
         }
         listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
@@ -130,50 +150,78 @@ export default class Geometry {
               const mid: Point = {
                 x: mx,
                 y: my,
+                absX: p.x,
+                absY: p.y,
                 cornerRadius: 0,
                 cornerStyle: CORNER_STYLE.ROUNDED,
                 curveMode: a.length === 2 ? CURVE_MODE.STRAIGHT : CURVE_MODE.ASYMMETRIC,
                 fx: mx,
                 fy: my,
+                absFx: p.x,
+                absFy: p.y,
                 tx: mx,
                 ty: my,
+                absTx: p.x,
+                absTy: p.y,
                 hasCurveFrom: false,
                 hasCurveTo: false,
               };
               if (a.length === 4) {
                 prev.fx = a[1].x;
                 prev.fy = a[1].y;
+                prev.absFx = prev.fx * w;
+                prev.absFy = prev.fy * h;
                 mid.hasCurveTo = true;
                 mid.tx = a[2].x;
                 mid.ty = a[2].y;
+                mid.absTx = mid.tx * w;
+                mid.absTy = mid.ty * h;
+                getPointsDspByAbs(node, [prev, mid]);
               }
               else if (a.length === 3) {
                 if (prev.hasCurveFrom && prev.curveMode !== CURVE_MODE.NONE && prev.curveMode !== CURVE_MODE.STRAIGHT) {
                   prev.fx = a[1].x;
                   prev.fy = a[1].y;
+                  prev.absFx = prev.fx * w;
+                  prev.absFy = prev.fy * h;
+                  getPointsDspByAbs(node, prev);
                 }
                 else {
                   mid.hasCurveTo = true;
                   mid.tx = a[1].x;
                   mid.ty = a[1].y;
+                  mid.absTx = mid.tx * w;
+                  mid.absTy = mid.ty * h;
+                  getPointsDspByAbs(node, mid);
                 }
               }
               if (b.length === 4) {
                 next.tx = b[2].x;
                 next.ty = b[2].y;
+                next.absTx = next.tx * w;
+                next.absTy = next.ty * h;
                 mid.hasCurveFrom = true;
                 mid.fx = b[1].x;
                 mid.fy = b[1].y;
+                mid.absFx = mid.fx * w;
+                mid.absFy = mid.fy * h;
+                getPointsDspByAbs(node, [next, mid]);
               }
               else if (b.length === 3) {
                 if (next.hasCurveTo && next.curveMode !== CURVE_MODE.NONE && next.curveMode !== CURVE_MODE.STRAIGHT) {
                   next.tx = b[1].x;
                   next.ty = b[1].y;
+                  next.absTx = next.tx * w;
+                  next.absTy = next.ty * h;
+                  getPointsDspByAbs(node, next);
                 }
                 else {
                   mid.hasCurveFrom = true;
                   mid.fx = b[1].x;
                   mid.fy = b[1].y;
+                  mid.absFx = mid.fx * w;
+                  mid.absFy = mid.fy * h;
+                  getPointsDspByAbs(node, mid);
                 }
               }
               // 曲线类型默认断开，如果对称就设置镜像
@@ -228,8 +276,8 @@ export default class Geometry {
         else {
           isControlT = true;
         }
-        diff.td = Math.sqrt(Math.pow(p.x - p.tx, 2) + Math.pow(p.y - p.tx, 2));
-        diff.fd = Math.sqrt(Math.pow(p.x - p.fx, 2) + Math.pow(p.y - p.fx, 2));
+        diff.td = Math.sqrt(Math.pow(p.dspX! - p.dspTx!, 2) + Math.pow(p.dspY! - p.dspTx!, 2));
+        diff.fd = Math.sqrt(Math.pow(p.dspX! - p.dspFx!, 2) + Math.pow(p.dspY! - p.dspFx!, 2));
       }
       // 点自己清空顶点，保持编辑态
       else {
@@ -246,45 +294,77 @@ export default class Geometry {
         return;
       }
       isMove = true;
-      const x = (e.pageX - ox) / w;
-      const y = (e.pageY - oy) / h;
+      const dpi = root.dpi;
+      const page = root.getCurPage();
+      if (!page) {
+        return;
+      }
+      const zoom = page.getZoom();
+      // const x = (e.pageX - ox) / w;
+      // const y = (e.pageY - oy) / h;
+      const dx = Math.round((e.clientX - startX) * dpi / zoom);
+      const dy = Math.round((e.clientY - startY) * dpi / zoom);
       if (isDrag) {
         if (node instanceof Polyline) {
           const points = node.props.points;
           const p = points[idx];
-          const dx = x - this.clonePoints[idx].x;
-          const dy = y - this.clonePoints[idx].y;
-          p.x = x;
-          p.absX = x * w;
-          p.y = y;
-          p.absY = x * h;
-          p.tx = p.x + diff.tx;
-          p.absTx = p.tx * w;
-          p.ty = p.y + diff.ty;
-          p.absTy = p.ty * h;
-          p.fx = p.x + diff.fx;
-          p.absFx = p.fx * w;
-          p.fy = p.y + diff.fy;
-          p.absFy = p.fy * h;
+          p.dspX = diff.dspX + dx;
+          p.dspY = diff.dspY + dy;
+          p.dspFx = diff.dspFx + dx;
+          p.dspFy = diff.dspFy + dy;
+          p.dspTx = diff.dspTx + dx;
+          p.dspTy = diff.dspTy + dy;
+          // const dx = x - this.clonePoints[idx].x;
+          // const dy = y - this.clonePoints[idx].y;
+          // p.x = x;
+          // p.absX = x * w;
+          // p.y = y;
+          // p.absY = x * h;
+          // p.tx = p.x + diff.tx;
+          // p.absTx = p.tx * w;
+          // p.ty = p.y + diff.ty;
+          // p.absTy = p.ty * h;
+          // p.fx = p.x + diff.fx;
+          // p.absFx = p.fx * w;
+          // p.fy = p.y + diff.fy;
+          // p.absFy = p.fy * h;
           // 多个点的话其它的也随之变动
-          this.idx.forEach(i => {
-            if (i !== idx) {
+          const pts = this.idx.map(i => {
+            if (i === idx) {
+              return p;
+            }
+            else {
               const p = points[i];
-              const cp = this.clonePoints[i];
-              p.x = cp.x + dx;
-              p.absX = p.x * w;
-              p.y = cp.y + dy;
-              p.absY = p.y * h;
-              p.tx = cp.tx + dx;
-              p.absTx = p.tx * w;
-              p.ty = cp.ty + dy;
-              p.absTy = p.ty * h;
-              p.fx = cp.fx + dx;
-              p.absFx = p.fx * w;
-              p.fy = cp.fy + dy;
-              p.absFy = p.fy * h;
+              const c = this.clonePoints[i];
+              p.dspX = c.dspX! + dx;
+              p.dspY = c.dspY! + dy;
+              p.dspFx = c.dspFx! + dx;
+              p.dspFy = c.dspFy! + dy;
+              p.dspTx = c.dspTx! + dx;
+              p.dspTy = c.dspTy! + dy;
+              return p;
             }
           });
+          // this.idx.forEach(i => {
+          //   if (i !== idx) {
+          //     const p = points[i];
+          //     const cp = this.clonePoints[i];
+          //     p.x = cp.x + dx;
+          //     p.absX = p.x * w;
+          //     p.y = cp.y + dy;
+          //     p.absY = p.y * h;
+          //     p.tx = cp.tx + dx;
+          //     p.absTx = p.tx * w;
+          //     p.ty = cp.ty + dy;
+          //     p.absTy = p.ty * h;
+          //     p.fx = cp.fx + dx;
+          //     p.absFx = p.fx * w;
+          //     p.fy = cp.fy + dy;
+          //     p.absFy = p.fy * h;
+          //   }
+          // });
+          getPointsAbsByDsp(node, pts);
+          node.reflectPoints(pts);
           node.refresh();
           this.updateVertex(node);
         }
@@ -294,43 +374,47 @@ export default class Geometry {
         if (node instanceof Polyline) {
           const p = node.props.points[idx];
           if (isControlF) {
-            p.fx = x;
-            p.absFx = x * w;
-            p.fy = y;
-            p.absFy = y * h;
+            p.dspFx = this.clonePoints[idx].dspFx! + dx;
+            // p.fx = x;
+            // p.absFx = x * w;
+            // p.fy = y;
+            // p.absFy = y * h;
           }
           else {
-            p.tx = x;
-            p.absTx = x * w;
-            p.ty = y;
-            p.absTy = y * h;
+            p.dspTx = this.clonePoints[idx].dspTx! + dx;
+            // p.tx = x;
+            // p.absTx = x * w;
+            // p.ty = y;
+            // p.absTy = y * h;
           }
-          // 镜像和非对称需更改对应点
+          // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
           if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
             let ratio = 1;
             if (isControlF) {
               if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-                ratio = diff.fd / Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2)) * diff.td;
+                ratio = diff.fd / Math.sqrt(Math.pow(p.dspFx! - p.dspX!, 2) + Math.pow(p.dspFy! - p.dspY!, 2)) * diff.td;
               }
-              const dx = p.fx - p.x;
-              const dy = p.fy - p.y;
-              p.tx = p.x - dx * ratio;
-              p.absTx = p.tx * w;
-              p.ty = p.y - dy * ratio;
-              p.absTy = p.ty * h;
+              const dx = p.dspFx! - p.dspX!;
+              const dy = p.dspFy! - p.dspY!;
+              p.dspTx = p.dspX! - dx * ratio;
+              // p.absTx = p.tx * w;
+              p.dspTy = p.dspY! - dy * ratio;
+              // p.absTy = p.ty * h;
             }
             else {
               if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-                ratio = diff.td / Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2)) * diff.fd;
+                ratio = diff.td / Math.sqrt(Math.pow(p.dspTx! - p.dspX!, 2) + Math.pow(p.dspTy! - p.dspY!, 2)) * diff.fd;
               }
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx * ratio;
-              p.absFx = p.fx * w;
-              p.fy = p.y - dy * ratio;
-              p.absFy = p.fy * h;
+              const dx = p.dspTx! - p.dspX!;
+              const dy = p.dspTy! - p.dspY!;
+              p.dspFx = p.dspX! - dx * ratio;
+              // p.absFx = p.fx * w;
+              p.dspFy = p.dspY! - dy * ratio;
+              // p.absFy = p.fy * h;
             }
           }
+          getPointsAbsByDsp(node, p);
+          node.reflectPoints(p);
           node.refresh();
           this.updateVertex(node);
         }
@@ -466,11 +550,12 @@ export default class Geometry {
 
   show(node: Polyline | ShapeGroup) {
     this.node = node;
-    this.panel.innerHTML = '';
-    this.updatePosSize(node);
-    this.genVertex(node);
-    this.updateVertex(node);
+    this.update(true);
     this.idx.splice(0);
+    // 编辑就要计算dsp坐标，即相对于页面/画布的世界坐标，后续变更以此为准，因为会牵扯到尺寸变化相对坐标不正确
+    if (node instanceof Polyline) {
+      getPointsDspByAbs(node);
+    }
   }
 
   hide() {
@@ -480,12 +565,16 @@ export default class Geometry {
     this.keep = false;
   }
 
-  update() {
+  update(init = false) {
     const node = this.node;
     if (!node) {
       return;
     }
     this.updatePosSize(node);
+    if (init) {
+      this.panel.innerHTML = '';
+      this.genVertex(node);
+    }
     this.updateVertex(node);
   }
 

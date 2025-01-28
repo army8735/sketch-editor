@@ -1975,12 +1975,8 @@ export default class Listener extends Event {
         }
         else if (c instanceof PointCommand) {
           const node = nodes[0];
-          if (node instanceof Polyline) {
-            node.checkPointsChange();
-          }
-          node.refresh();
           if (this.state === State.EDIT_GEOM && node === this.selected[0]) {
-            this.geometry.update();
+            this.geometry.update(true); // 不知道是否造成path变化，统一重新生成html
           }
           else {
             this.selected.splice(0);

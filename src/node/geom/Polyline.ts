@@ -222,9 +222,10 @@ class Polyline extends Geom {
   }
 
   // 根据abs值反向计算相对值
-  reflectPoints(points = this.props.points) {
+  reflectPoints(points: Point | Point[] = this.props.points) {
     const { width, height } = this;
-    points.forEach(item => {
+    const pts = Array.isArray(points) ? points : [points];
+    pts.forEach(item => {
       item.x = item.absX! / width;
       item.y = item.absY! / height;
       item.tx = item.absTx! / width;
@@ -758,12 +759,18 @@ class Polyline extends Geom {
     const { width, height } = this;
     const points = this.props.points;
     points.forEach((point) => {
-      point.x = (point.absX! - dx) / width;
-      point.y = (point.absY! - dy) / height;
-      point.fx = (point.absFx! - dx) / width;
-      point.fy = (point.absFy! - dy) / height;
-      point.tx = (point.absTx! - dx) / width;
-      point.ty = (point.absTy! - dy) / height;
+      point.absX! -= dx;
+      point.absY! -= dy;
+      point.absFx! -= dx;
+      point.absFy! -= dy;
+      point.absTx! -= dx;
+      point.absTy! -= dy;
+      point.x = point.absX! / width;
+      point.y = point.absY! / height;
+      point.fx = point.absFx! / width;
+      point.fy = point.absFy! / height;
+      point.tx = point.absTx! / width;
+      point.ty = point.absTy! / height;
     });
   }
 
