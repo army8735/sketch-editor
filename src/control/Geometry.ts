@@ -265,8 +265,11 @@ export default class Geometry {
         else {
           isControlT = true;
         }
-        diff.td = Math.sqrt(Math.pow(p.dspX! - p.dspTx!, 2) + Math.pow(p.dspY! - p.dspTx!, 2));
-        diff.fd = Math.sqrt(Math.pow(p.dspX! - p.dspFx!, 2) + Math.pow(p.dspY! - p.dspFx!, 2));
+        if (node instanceof Polyline) {
+          this.clonePoints = clone(node.props.points);
+        }
+        diff.td = Math.sqrt(Math.pow(p.dspX! - p.dspTx!, 2) + Math.pow(p.dspY! - p.dspTy!, 2));
+        diff.fd = Math.sqrt(Math.pow(p.dspX! - p.dspFx!, 2) + Math.pow(p.dspY! - p.dspFy!, 2));
       }
       // 点自己清空顶点，保持编辑态
       else {
@@ -351,7 +354,7 @@ export default class Geometry {
             let ratio = 1;
             if (isControlF) {
               if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-                ratio = diff.fd / Math.sqrt(Math.pow(p.dspFx! - p.dspX!, 2) + Math.pow(p.dspFy! - p.dspY!, 2)) * diff.td;
+                ratio = diff.fd / diff.td;
               }
               const dx = p.dspFx! - p.dspX!;
               const dy = p.dspFy! - p.dspY!;
@@ -360,7 +363,7 @@ export default class Geometry {
             }
             else {
               if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-                ratio = diff.td / Math.sqrt(Math.pow(p.dspTx! - p.dspX!, 2) + Math.pow(p.dspTy! - p.dspY!, 2)) * diff.fd;
+                ratio = diff.fd / diff.td;
               }
               const dx = p.dspTx! - p.dspX!;
               const dy = p.dspTy! - p.dspY!;

@@ -43,7 +43,20 @@ module.exports = {
       .keys('z')
       .keys(browser.Keys.NULL)
       .click('#button6')
-      .assert.value('#base64', '[3,[{"x":0,"y":0.04397705544933078,"cornerRadius":0,"cornerStyle":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.04397705544933078,"tx":0,"ty":0.04397705544933078,"absX":0,"absY":5.75,"absTx":0,"absTy":5.75,"absFx":0,"absFy":5.75},{"x":0.8438758424648896,"y":0.04397705544933078,"cornerRadius":0,"cornerStyle":0,"curveMode":2,"hasCurveFrom":true,"hasCurveTo":true,"fx":1.0492189641313463,"fy":0.13193116634799235,"tx":0.6385327207984328,"ty":-0.04397705544933078,"absX":150.00000000000006,"absY":5.75,"absTx":113.5,"absTy":-5.75,"absFx":186.5000000000001,"absFy":17.25},{"x":0.8438758424648896,"y":0.904397705544933,"cornerRadius":0,"cornerStyle":0,"curveMode":4,"hasCurveFrom":true,"hasCurveTo":true,"fx":0.632906881848667,"fy":1.095602294455067,"tx":1.054844803081113,"ty":0.7131931166347992,"absX":150.00000000000006,"absY":118.25,"absTx":187.50000000000028,"absTy":93.25,"absFx":112.5,"absFy":143.25},{"x":0,"y":0.904397705544933,"cornerRadius":0,"cornerStyle":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.904397705544933,"tx":0,"ty":0.904397705544933,"absX":0,"absY":118.25,"absTx":0,"absTy":118.25,"absFx":0,"absFy":118.25}]]')
+      .assert.value('#base64', '[3,[{"x":0,"y":0.04397705544933078,"cornerRadius":0,"cornerStyle":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.04397705544933078,"tx":0,"ty":0.04397705544933078,"absX":0,"absY":5.75,"absTx":0,"absTy":5.75,"absFx":0,"absFy":5.75},{"x":0.8438758424648896,"y":0.04397705544933078,"cornerRadius":0,"cornerStyle":0,"curveMode":2,"hasCurveFrom":true,"hasCurveTo":true,"fx":1.0492189641313463,"fy":0.13193116634799235,"tx":0.6385327207984329,"ty":-0.04397705544933078,"absX":150.00000000000006,"absY":5.75,"absTx":113.50000000000001,"absTy":-5.75,"absFx":186.5000000000001,"absFy":17.25},{"x":0.8438758424648896,"y":0.904397705544933,"cornerRadius":0,"cornerStyle":0,"curveMode":4,"hasCurveFrom":true,"hasCurveTo":true,"fx":0.632906881848667,"fy":1.095602294455067,"tx":1.054844803081113,"ty":0.7131931166347992,"absX":150.00000000000006,"absY":118.25,"absTx":187.50000000000028,"absTy":93.25,"absFx":112.5,"absFy":143.25},{"x":0,"y":0.904397705544933,"cornerRadius":0,"cornerStyle":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.904397705544933,"tx":0,"ty":0.904397705544933,"absX":0,"absY":118.25,"absTx":0,"absTy":118.25,"absFx":0,"absFy":118.25}]]')
+
+      .moveToElement('canvas', 60, 60)
+      .doubleClick()
+      .moveToElement('#main .geometry .vt[title="2"]', 0, 0)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
+      .click('#side .point-panel .type .asymmetric')
+      .moveToElement('#main .geometry .vt[title="2"] span.t', 0, 0)
+      .mouseButtonDown(0)
+      .moveToElement('#main .geometry .vt[title="2"] span.t', 1, 1)
+      .mouseButtonUp(0)
+      .click('#button6')
+      .assert.value('#base64', '[4,[{"x":0,"y":0.04397705544933078,"cornerRadius":0,"cornerStyle":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.04397705544933078,"tx":0,"ty":0.04397705544933078,"absX":0,"absY":5.75,"absTx":0,"absTy":5.75,"absFx":0,"absFy":5.75},{"x":0.8420816341763745,"y":0.04397705544933078,"cornerRadius":0,"cornerStyle":0,"curveMode":2,"hasCurveFrom":true,"hasCurveTo":true,"fx":1.0469881651592925,"fy":0.13193116634799235,"tx":0.6371751031934564,"ty":-0.04397705544933078,"absX":150.00000000000006,"absY":5.75,"absTx":113.5,"absTy":-5.75,"absFx":186.5000000000001,"absFy":17.25},{"x":0.8420816341763745,"y":0.904397705544933,"cornerRadius":0,"cornerStyle":0,"curveMode":4,"hasCurveFrom":true,"hasCurveTo":true,"fx":0.6315612256322806,"fy":1.095602294455067,"tx":1.0582159202816452,"ty":0.7208413001912046,"absX":150.00000000000006,"absY":118.25,"absTx":188.5000000000003,"absTy":94.25,"absFx":112.5,"absFy":143.25},{"x":0,"y":0.904397705544933,"cornerRadius":0,"cornerStyle":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.904397705544933,"tx":0,"ty":0.904397705544933,"absX":0,"absY":118.25,"absTx":0,"absTy":118.25,"absFx":0,"absFy":118.25}]]')
 
       .end();
   }
