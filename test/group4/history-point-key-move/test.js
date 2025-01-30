@@ -15,7 +15,9 @@ module.exports = {
 
       .moveToElement('canvas', 30, 30)
       .doubleClick()
-      .click('#main .geometry .vt[title="0"]')
+      .moveToElement('#main .geometry .vt[title="0"]', 0, 0)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
       .assert.cssClassPresent('#main .geometry .vt[title="0"]', ['vt', 'cur'])
       .keys(browser.Keys.ARROW_DOWN)
       .keys(browser.Keys.NULL)
@@ -26,7 +28,9 @@ module.exports = {
 
       .moveToElement('canvas', 30, 30)
       .doubleClick()
-      .click('#main .geometry .vt[title="2"]')
+      .moveToElement('#main .geometry .vt[title="2"]', 0, 0)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
       .assert.cssClassPresent('#main .geometry .vt[title="2"]', ['vt', 'cur'])
       .keys(browser.Keys.SHIFT)
       .keys(browser.Keys.ARROW_LEFT)
