@@ -340,9 +340,11 @@ export default class Geometry {
           const p = node.props.points[idx];
           if (isControlF) {
             p.dspFx = this.clonePoints[idx].dspFx! + dx2;
+            p.dspFy = this.clonePoints[idx].dspFy! + dy2;
           }
           else {
             p.dspTx = this.clonePoints[idx].dspTx! + dx2;
+            p.dspTy = this.clonePoints[idx].dspTy! + dy2;
           }
           // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
           if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
