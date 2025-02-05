@@ -12,15 +12,13 @@ import Group from '../node/Group';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { ComputedStyle, StyleUnit } from '../style/define';
-import { PageProps, Point, ResizeStyle } from '../format';
-import Geom from '../node/geom/Geom';
+import { PageProps, ResizeStyle } from '../format';
 import { d2r, r2d } from '../math/geom';
 import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
 import inject from '../util/inject';
 import { Rect } from '../control/Select';
-import Polyline from '../node/geom/Polyline';
 
 enum POSITION {
   APPEND = 0,

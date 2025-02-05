@@ -3299,6 +3299,22 @@ class Text extends Node {
     const res = new Text(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
+    if (props.textBehaviour === TEXT_BEHAVIOUR.AUTO) {
+      res.style.width = {
+        v: this.width,
+        u: StyleUnit.PX,
+      };
+      res.style.height = {
+        v: this.height,
+        u: StyleUnit.PX,
+      };
+    }
+    else if (props.textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
+      res.style.height = {
+        v: this.height,
+        u: StyleUnit.PX,
+      };
+    }
     return res;
   }
 
