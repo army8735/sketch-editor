@@ -4,6 +4,7 @@ import {
   TEXT_ALIGN,
   TEXT_DECORATION,
   POINTS_RADIUS_BEHAVIOUR,
+  TEXT_BEHAVIOUR,
 } from '../style/define';
 import { DEFAULT_STYLE } from './dft';
 
@@ -234,6 +235,7 @@ export type SymbolInstanceProps = Props & {
 export type TextProps = Props & {
   content: string;
   rich?: JRich[];
+  textBehaviour?: TEXT_BEHAVIOUR; // sketch中特有，考虑字体的不确定性，记录原始文本框的大小位置对齐以便初始化
 };
 
 export type JRich = Omit<Rich, 'textAlign' | 'textDecoration' | 'color'> & Pick<JStyle, 'textAlign' | 'textDecoration' | 'color'>;

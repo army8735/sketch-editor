@@ -9,17 +9,17 @@ import {
   JNode,
   JPage,
   JPolyline,
+  JRich,
   JShapeGroup,
   JSymbolInstance,
   JSymbolMaster,
   JText,
-  JRich,
   Override,
   Point,
   TAG_NAME,
 } from './';
-import { PAGE_W, PAGE_H } from './dft';
-import { POINTS_RADIUS_BEHAVIOUR, TEXT_ALIGN, TEXT_DECORATION } from '../style/define';
+import { PAGE_H, PAGE_W } from './dft';
+import { POINTS_RADIUS_BEHAVIOUR, TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
@@ -244,8 +244,7 @@ async function convertItem(
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   const constrainProportions = layer.frame.constrainProportions;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
-  if (layer._class === SketchFormat.ClassValue.Artboard
-    || layer._class === SketchFormat.ClassValue.SymbolMaster) {
+  if (layer._class === SketchFormat.ClassValue.Artboard || layer._class === SketchFormat.ClassValue.SymbolMaster) {
     const children: JNode[] = [];
     for (let i = 0, len = layer.layers.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, width as number, height as number);
@@ -330,9 +329,8 @@ async function convertItem(
       right = w - translateX - width;
       width = 'auto';
     }
-    // left+width
+    // left+width，默认right就是auto啥也不做
     else if (resizingConstraint & ResizingConstraint.WIDTH) {
-      // 默认right就是auto啥也不做
     }
     // 仅left，right是百分比忽略width
     else {
@@ -378,9 +376,8 @@ async function convertItem(
       bottom = h - translateY - height;
       height = 'auto';
     }
-    // top+height
+    // top+height，bottom是auto
     else if (resizingConstraint & ResizingConstraint.HEIGHT) {
-      // 默认啥也不做
     }
     // 仅top，bottom是百分比忽略height
     else {
@@ -699,8 +696,16 @@ async function convertItem(
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
     const tb = layer.textBehaviour;
-    // sketch冗余的信息，文本的宽高在自动情况下实时测量获得，另外优先级高于ResizingConstraint
+    let textBehaviour: TEXT_BEHAVIOUR;
+    /**
+     * sketch独有，优先级高于ResizingConstraint，指明文本框的对齐方式。
+     * sketch中自动宽的文本不能左右固定只能最多一方，因此都是translate:-50%的中心对齐。
+     * 看似冗余，但因为编辑器字体的不确定性，在别处打开时需保留最初的文本框尺寸位置，
+     * 所以传入，并在初始化时考虑translate:-50%的计算居中对齐。
+     */
     if (tb === SketchFormat.TextBehaviour.Flexible) {
+      textBehaviour = TEXT_BEHAVIOUR.AUTO;
+      // 左右类型，是固定宽度，width无用但保留
       if (left !== 'auto' && right !== 'auto') {
         right = 'auto';
         // 左右类型变成自动宽，矫正left和translateX
@@ -713,21 +718,37 @@ async function convertItem(
         }
         translateX = '-50%';
       }
+      // 单左或右，宽度有用，左右都是auto，宽度有用
+      // 上下同
       if (top !== 'auto' && bottom !== 'auto') {
         bottom = 'auto';
+        const t = parseFloat(top.toString());
+        if (/%$/.test(top.toString())) {
+          top = t + layer.frame.height * 50 / h + '%';
+        }
+        else {
+          top = t + layer.frame.height * 0.5;
+        }
+        translateY = '-50%';
       }
-      width = 'auto';
-      height = 'auto';
     }
     else if (tb === SketchFormat.TextBehaviour.Fixed) {
-      // 可能width是auto（left+right），也可能是left+width，或者right固定+width
+      textBehaviour = TEXT_BEHAVIOUR.FIXED_W;
       if (top !== 'auto' && bottom !== 'auto') {
         bottom = 'auto';
+        const t = parseFloat(top.toString());
+        if (/%$/.test(top.toString())) {
+          top = t + layer.frame.height * 50 / h + '%';
+        }
+        else {
+          top = t + layer.frame.height * 0.5;
+        }
+        translateY = '-50%';
       }
-      height = 'auto';
     }
-    else if (tb === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
-      // 啥也不干，等同普通节点的固定宽高
+    // FixedWidthAndHeight啥也不干，等同普通节点的固定宽高，脏数据不太可能，也认为是固定尺寸
+    else {
+      textBehaviour = TEXT_BEHAVIOUR.FIXED_W_H;
     }
     const { string, attributes } = layer.attributedString;
     const rich: JRich[] = attributes.length
@@ -831,6 +852,7 @@ async function convertItem(
         name: layer.name,
         index,
         constrainProportions,
+        textBehaviour,
         styleId,
         style: {
           left,

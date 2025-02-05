@@ -26,6 +26,7 @@ import {
   Style,
   StyleUnit,
   TEXT_ALIGN,
+  TEXT_BEHAVIOUR,
   TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
@@ -217,6 +218,23 @@ class Text extends Node {
     };
     this.asyncRefresh = false;
     this.loaders = [];
+  }
+
+  override didMount() {
+    super.didMount();
+    const textBehaviour = (this.props as TextProps).textBehaviour;
+    // 特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初的尺寸位置需记录，
+    // 待布局后css标准化，双击编辑文本有改变后会重回正常尺寸
+    if (textBehaviour === TEXT_BEHAVIOUR.AUTO) {
+      this.style.width.v = 0;
+      this.style.width.u = StyleUnit.AUTO;
+      this.style.height.v = 0;
+      this.style.height.u = StyleUnit.AUTO;
+    }
+    else if (textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
+      this.style.height.v = 0;
+      this.style.height.u = StyleUnit.AUTO;
+    }
   }
 
   override lay(data: LayoutData) {
