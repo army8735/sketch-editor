@@ -748,6 +748,7 @@ class Polyline extends Geom {
     const eps = 1e-9;
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (Math.abs(dx) > eps || Math.abs(dy) > eps || Math.abs(dw) > eps || Math.abs(dh) > eps) {
+      // console.log(rect.join(','), dx, dy, dw, dh);
       this.adjustPosAndSizeSelf(dx, dy, dw, dh);
       this.adjustPoints(dx, dy);
       this.checkPosSizeUpward();

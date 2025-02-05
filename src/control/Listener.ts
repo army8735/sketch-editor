@@ -526,7 +526,7 @@ export default class Listener extends Event {
       }
       // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
       if (this.state === State.EDIT_TEXT) {
-        this.cancelEditText(selected.length ? selected[0] : oldSelected[0]);
+        this.cancelEditText(oldSelected[0]);
       }
       if (this.select.hoverNode) {
         this.select.hideHover();
