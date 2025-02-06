@@ -8,7 +8,7 @@ import Container from './Container';
 import Node from './Node';
 import { clone } from '../util/type';
 
-const EPS = 1e-2;
+const EPS = 1e-4;
 
 class Group extends Container {
   fixedPosAndSize: boolean;
@@ -182,15 +182,6 @@ class Group extends Container {
     });
     return json;
   }
-
-  // override get rect() {
-  //   let res = this._rect;
-  //   if (!res) {
-  //     res = this._rect = new Float64Array(4);
-  //     getGroupRect(this, res);
-  //   }
-  //   return res;
-  // }
 
   static get EPS() {
     return EPS;

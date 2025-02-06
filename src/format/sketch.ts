@@ -808,7 +808,7 @@ async function convertItem(
       layer.style?.textStyle?.encodedAttributes?.paragraphStyle;
     const lineHeight = paragraphStyle?.maximumLineHeight || 'normal';
     const { underlineStyle = 0, strikethroughStyle = 0, kerning: letterSpacing = 0, MSAttributedStringColorAttribute } = layer.style?.textStyle?.encodedAttributes || {};
-    const textAlign = paragraphStyle?.alignment !== undefined
+    let textAlign = paragraphStyle?.alignment !== undefined
       ? ['left', 'right', 'center', 'justify'][paragraphStyle.alignment || 0]
       : (rich[0]?.textAlign ?? 'left');
     const verticalAlignment = layer.style?.textStyle?.verticalAlignment;
@@ -829,6 +829,10 @@ async function convertItem(
         MSAttributedStringColorAttribute.alpha,
       ]
       : (rich[0]?.color || [0, 0, 0, 1]);
+    // 保持一致
+    if (rich[0] && rich[0].textAlign !== textAlign) {
+      textAlign = rich[0].textAlign;
+    }
     const {
       fill,
       fillEnable,

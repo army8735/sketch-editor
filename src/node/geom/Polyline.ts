@@ -27,6 +27,8 @@ import { getCanvasGCO } from '../../style/mbm';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
 
+const EPS = 1e-4;
+
 class Polyline extends Geom {
   props: PolylineProps;
 
@@ -853,67 +855,9 @@ class Polyline extends Geom {
     }
   }
 
-  // getAllBezierCurves(): Array<{ x: number; y: number }>[] {
-  //   const result: Array<{ x: number; y: number }>[] = [];
-  //   const points = this.getFrameProps().points;
-  //   const w = this.width;
-  //   const h = this.height;
-  //   // 非闭合
-  //   for (let i = 0; i < points.length - 1; i++) {
-  //     const curve: Array<{ x: number; y: number }> = [];
-  //     result.push(curve);
-  //     curve.push(
-  //       {
-  //         x: w * points[i].x,
-  //         y: h * points[i].y,
-  //       },
-  //       {
-  //         x: w * (points[i].hasCurveFrom ? points[i].fx : points[i].x),
-  //         y: h * (points[i].hasCurveFrom ? points[i].fy : points[i].y),
-  //       },
-  //       {
-  //         x:
-  //           w *
-  //           (points[i + 1].hasCurveFrom ? points[i + 1].tx : points[i + 1].x),
-  //         y:
-  //           h *
-  //           (points[i + 1].hasCurveFrom ? points[i + 1].ty : points[i + 1].y),
-  //       },
-  //       {
-  //         x: w * points[i + 1].x,
-  //         y: h * points[i + 1].y,
-  //       },
-  //     );
-  //   }
-  //
-  //   if (this.props.isClosed) {
-  //     const index = points.length - 1;
-  //     result.push([
-  //       {
-  //         x: w * points[index].x,
-  //         y: h * points[index].y,
-  //       },
-  //       {
-  //         x:
-  //           w *
-  //           (points[index].hasCurveFrom ? points[index].fx : points[index].x),
-  //         y:
-  //           h *
-  //           (points[index].hasCurveFrom ? points[index].fy : points[index].y),
-  //       },
-  //       {
-  //         x: w * (points[0].hasCurveFrom ? points[0].tx : points[0].x),
-  //         y: h * (points[0].hasCurveFrom ? points[0].ty : points[0].y),
-  //       },
-  //       {
-  //         x: w * points[0].x,
-  //         y: h * points[0].y,
-  //       },
-  //     ]);
-  //   }
-  //
-  //   return result;
-  // }
+  static get EPS() {
+    return EPS;
+  }
 }
 
 export default Polyline;

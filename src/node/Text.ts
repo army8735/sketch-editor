@@ -223,17 +223,45 @@ class Text extends Node {
   override didMount() {
     super.didMount();
     const textBehaviour = (this.props as TextProps).textBehaviour;
+    const { style, computedStyle, width, height, lineBoxList } = this;
     // 特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初的尺寸位置需记录，
     // 待布局后css标准化，双击编辑文本有改变后会重回正常尺寸
-    if (textBehaviour === TEXT_BEHAVIOUR.AUTO) {
-      this.style.width.v = 0;
-      this.style.width.u = StyleUnit.AUTO;
-      this.style.height.v = 0;
-      this.style.height.u = StyleUnit.AUTO;
-    }
-    else if (textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
-      this.style.height.v = 0;
-      this.style.height.u = StyleUnit.AUTO;
+    if (textBehaviour === TEXT_BEHAVIOUR.AUTO || textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
+      if (textBehaviour === TEXT_BEHAVIOUR.AUTO && style.width.u !== StyleUnit.AUTO) {
+        let max = 0;
+        lineBoxList.forEach(item => {
+          max = Math.max(max, item.width);
+        });
+        const d = max - width;
+        if (d) {
+          if (computedStyle.textAlign === TEXT_ALIGN.LEFT) {
+            this.adjustPosAndSizeSelf(d * 0.5, 0, 0, 0);
+          }
+          else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT) {
+            this.adjustPosAndSizeSelf(-d * 0.5, 0, 0, 0);
+          }
+        }
+        this.updateStyle({
+          width: 'auto',
+        });
+        this.checkPosSizeUpward();
+      }
+      if (this.style.height.u !== StyleUnit.AUTO) {
+        let last = lineBoxList[lineBoxList.length - 1];
+        const d = last ? (last.y + last.height - height) : -height;
+        if (d) {
+          if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
+            this.adjustPosAndSizeSelf(0, d * 0.5, 0, 0);
+          }
+          else if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
+            this.adjustPosAndSizeSelf(0, -d * 0.5, 0, 0);
+          }
+        }
+        this.updateStyle({
+          height: 'auto',
+        });
+        this.checkPosSizeUpward();
+      }
     }
   }
 
