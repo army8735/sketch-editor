@@ -25,7 +25,7 @@ module.exports = {
       .moveToElement('#main .geometry .vt[title="2"]', 0, 0)
       .mouseButtonDown(0)
       .keys(browser.Keys.SHIFT)
-      .moveToElement('#main .geometry .vt[title="2"]', 10, 10)
+      .moveToElement('#main .geometry .vt[title="2"]', 2, 10)
       .keys(browser.Keys.NULL)
       .mouseButtonUp(0)
       .click('#button6')

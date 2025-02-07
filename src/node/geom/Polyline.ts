@@ -752,25 +752,33 @@ class Polyline extends Geom {
     // 检查真正有变化才继续，位置相对于自己原本位置为原点
     if (Math.abs(dx1) > EPS || Math.abs(dy1) > EPS || Math.abs(dx2) > EPS || Math.abs(dy2) > EPS) {
       const { style, computedStyle } = this;
-      // 先计算定位2点逆旋转的位置
-      const i1 = identity();
-      calRotateZ(i1, -computedStyle.rotateZ);
-      let m1 = calMatrixByOrigin(i1, computedStyle.transformOrigin[0], computedStyle.transformOrigin[1]);
-      m1 = multiply(this.matrix, m1);
-      const p1 = calPoint({ x: rect[0], y: rect[1] }, m1);
-      const p2 = calPoint({ x: this.width, y: this.height }, m1);
-      // 计算新的transformOrigin，目前都是中心点
-      const [cx, cy] = style.transformOrigin.map((item, i) => {
-        return calSize(item, i ? rect[3] : rect[2]);
-      });
-      // 用新的tfo逆旋转回去
-      const i = identity();
-      calRotateZ(i, -computedStyle.rotateZ);
-      let m2 = calMatrixByOrigin(i, cx, cy);
-      m2 = multiply(this.matrix, m2);
-      const n1 = calPoint({ x: rect[0], y: rect[1] }, m2);
-      const n2 = calPoint({ x: rect[2], y: rect[3] }, m2);
-      this.adjustPosAndSizeSelf(n1.x - p1.x, n1.y - p1.y, n2.x - p2.x, n2.y - p2.y);
+      const { transformOrigin, rotateZ } = computedStyle;
+      // 旋转特殊考虑，计算新的和原始的逆旋转还原后的差值
+      if (rotateZ) {
+        // 先计算定位2点逆旋转的位置
+        const i1 = identity();
+        calRotateZ(i1, -rotateZ);
+        let m1 = calMatrixByOrigin(i1, transformOrigin[0], transformOrigin[1]);
+        m1 = multiply(this.matrix, m1);
+        const p1 = calPoint({ x: rect[0], y: rect[1] }, m1);
+        const p2 = calPoint({ x: this.width, y: this.height }, m1);
+        // 计算新的transformOrigin，目前都是中心点
+        const [cx, cy] = style.transformOrigin.map((item, i) => {
+          return calSize(item, i ? rect[3] : rect[2]);
+        });
+        // 用新的tfo逆旋转回去
+        const i = identity();
+        calRotateZ(i, -rotateZ);
+        let m2 = calMatrixByOrigin(i, cx, cy);
+        m2 = multiply(this.matrix, m2);
+        const n1 = calPoint({ x: rect[0], y: rect[1] }, m2);
+        const n2 = calPoint({ x: rect[2], y: rect[3] }, m2);
+        this.adjustPosAndSizeSelf(n1.x - p1.x, n1.y - p1.y, n2.x - p2.x, n2.y - p2.y);
+      }
+      // 无旋转的简单直接改变
+      else {
+        this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
+      }
       this.reflectPoints();
       this.checkPosSizeUpward();
       this.coords = undefined;
