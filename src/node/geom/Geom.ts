@@ -183,43 +183,8 @@ class Geom extends Node {
       if (coords && coords.length) {
         getPointsRect(coords, res);
       }
-      const {
-        strokeWidth,
-        strokeEnable,
-      } = this.computedStyle;
-      let minBorder = 0;
-      strokeWidth.forEach((item, i) => {
-        if (strokeEnable[i]) {
-          minBorder = Math.max(minBorder, item);
-        }
-      });
-      // 特殊检查，比如垂线平线，高宽可能为0，此时bbox
-      const dx = res[2] - res[0];
-      if (dx < minBorder) {
-        const h = minBorder * 0.5;
-        res[0] -= h;
-        res[2] += h;
-      }
-      const dy = res[3] - res[1];
-      if (dy < minBorder) {
-        const h = minBorder * 0.5;
-        res[1] -= h;
-        res[3] += h;
-      }
     }
     return res!;
-  }
-
-  get rectLine() {
-    let res = new Float64Array(4);
-    // 可能不存在
-    this.buildPoints();
-    // 可能矢量编辑过程中超过或不足原本尺寸范围
-    const coords = this.coords;
-    if (coords && coords.length) {
-      getPointsRect(coords, res);
-    }
-    return res;
   }
 
   override get bbox() {
@@ -236,6 +201,7 @@ class Geom extends Node {
         strokeLinejoin,
         strokeMiterlimit,
       } = this.computedStyle;
+      const isLine = this.isLine();
       // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗范围
       let border = 0;
       strokeWidth.forEach((item, i) => {
@@ -243,7 +209,8 @@ class Geom extends Node {
           if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
             border = Math.max(border, item);
           }
-          else if (strokePosition[i] === STROKE_POSITION.CENTER) {
+          // line很特殊，没有粗细高度，描边固定等同于center
+          else if (strokePosition[i] === STROKE_POSITION.CENTER || isLine) {
             border = Math.max(border, item * 0.5);
           }
         }
@@ -253,7 +220,7 @@ class Geom extends Node {
       const maxX = res[2] + border;
       const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
-      if (this.isLine()) {
+      if (isLine) {
         res = this._bbox = lineCap(res, border, this.coords || [], strokeLinecap);
       }
       // 闭合看lineJoin

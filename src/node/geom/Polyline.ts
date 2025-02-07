@@ -749,6 +749,9 @@ class Polyline extends Geom {
       dy1 = rect[1],
       dx2 = rect[2] - this.width,
       dy2 = rect[3] - this.height;
+    if (this.isLine()) {
+      return;
+    }
     // 检查真正有变化才继续，位置相对于自己原本位置为原点
     if (Math.abs(dx1) > EPS || Math.abs(dy1) > EPS || Math.abs(dx2) > EPS || Math.abs(dy2) > EPS) {
       const { style, computedStyle } = this;

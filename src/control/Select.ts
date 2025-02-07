@@ -111,7 +111,7 @@ export default class Select {
     }
     const isLine = node instanceof Polyline && node.isLine();
     if (isLine) {
-      rect = node.rectLine;
+      // rect = node.rectLine;
     }
     let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
     if (computedStyle.scaleX === -1) {
