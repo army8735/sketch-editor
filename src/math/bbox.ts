@@ -117,7 +117,7 @@ export function getPointsRect(points: number[][], res?: Float64Array) {
     }
     else {
       const t = mergeNotFirst(item, x, y, res);
-      if(!t) {
+      if (!t) {
         inject.error('Unsupported point data: ' + i + ' - ' + item.join(','));
         continue;
       }

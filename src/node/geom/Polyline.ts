@@ -777,15 +777,38 @@ class Polyline extends Geom {
         const n1 = calPoint({ x: rect[0], y: rect[1] }, m2);
         const n2 = calPoint({ x: rect[2], y: rect[3] }, m2);
         this.adjustPosAndSizeSelf(n1.x - p1.x, n1.y - p1.y, n2.x - p2.x, n2.y - p2.y);
+        this.adjustPoints(p1.x - n1.x, p1.y - n1.y);
       }
       // 无旋转的简单直接改变
       else {
         this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
+        this.adjustPoints(-dx1, -dy1);
       }
-      this.reflectPoints();
       this.checkPosSizeUpward();
       this.coords = undefined;
     }
+  }
+
+  private adjustPoints(dx: number, dy: number) {
+    if (!dx && !dy) {
+      return;
+    }
+    const { width, height } = this;
+    const points = this.props.points;
+    points.forEach((point) => {
+      point.absX! += dx;
+      point.absY! += dy;
+      point.absFx! += dx;
+      point.absFy! += dy;
+      point.absTx! += dx;
+      point.absTy! += dy;
+      point.x = point.absX! / width;
+      point.y = point.absY! / height;
+      point.fx = point.absFx! / width;
+      point.fy = point.absFy! / height;
+      point.tx = point.absTx! / width;
+      point.ty = point.absTy! / height;
+    });
   }
 
   toSvg(scale: number) {
