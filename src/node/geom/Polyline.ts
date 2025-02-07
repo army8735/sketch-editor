@@ -4,7 +4,7 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Point, PolylineProps, TAG_NAME } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
-import { color2rgbaInt, color2rgbaStr } from '../../style/css';
+import { calSize, color2rgbaInt, color2rgbaStr } from '../../style/css';
 import {
   ComputedGradient,
   ComputedPattern,
@@ -26,6 +26,8 @@ import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
+import { calPoint, identity, multiply } from '../../math/matrix';
+import { calMatrixByOrigin, calRotateZ } from '../../style/transform';
 
 const EPS = 1e-4;
 
@@ -743,38 +745,36 @@ class Polyline extends Geom {
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
   checkPointsChange() {
     const rect = this._rect || this.rect;
-    const dx = rect[0],
-      dy = rect[1],
-      dw = rect[2] - this.width,
-      dh = rect[3] - this.height;
-    const eps = 1e-9;
-    // 检查真正有变化，位置相对于自己原本位置为原点
-    if (Math.abs(dx) > eps || Math.abs(dy) > eps || Math.abs(dw) > eps || Math.abs(dh) > eps) {
-      // console.log(rect.join(','), dx, dy, dw, dh);
-      this.adjustPosAndSizeSelf(dx, dy, dw, dh);
-      this.adjustPoints(dx, dy);
+    const dx1 = rect[0],
+      dy1 = rect[1],
+      dx2 = rect[2] - this.width,
+      dy2 = rect[3] - this.height;
+    // 检查真正有变化才继续，位置相对于自己原本位置为原点
+    if (Math.abs(dx1) > EPS || Math.abs(dy1) > EPS || Math.abs(dx2) > EPS || Math.abs(dy2) > EPS) {
+      const { style, computedStyle } = this;
+      // 先计算定位2点逆旋转的位置
+      const i1 = identity();
+      calRotateZ(i1, -computedStyle.rotateZ);
+      let m1 = calMatrixByOrigin(i1, computedStyle.transformOrigin[0], computedStyle.transformOrigin[1]);
+      m1 = multiply(this.matrix, m1);
+      const p1 = calPoint({ x: rect[0], y: rect[1] }, m1);
+      const p2 = calPoint({ x: this.width, y: this.height }, m1);
+      // 计算新的transformOrigin，目前都是中心点
+      const [cx, cy] = style.transformOrigin.map((item, i) => {
+        return calSize(item, i ? rect[3] : rect[2]);
+      });
+      // 用新的tfo逆旋转回去
+      const i = identity();
+      calRotateZ(i, -computedStyle.rotateZ);
+      let m2 = calMatrixByOrigin(i, cx, cy);
+      m2 = multiply(this.matrix, m2);
+      const n1 = calPoint({ x: rect[0], y: rect[1] }, m2);
+      const n2 = calPoint({ x: rect[2], y: rect[3] }, m2);
+      this.adjustPosAndSizeSelf(n1.x - p1.x, n1.y - p1.y, n2.x - p2.x, n2.y - p2.y);
+      this.reflectPoints();
       this.checkPosSizeUpward();
       this.coords = undefined;
     }
-  }
-
-  private adjustPoints(dx: number, dy: number) {
-    const { width, height } = this;
-    const points = this.props.points;
-    points.forEach((point) => {
-      point.absX! -= dx;
-      point.absY! -= dy;
-      point.absFx! -= dx;
-      point.absFy! -= dy;
-      point.absTx! -= dx;
-      point.absTy! -= dy;
-      point.x = point.absX! / width;
-      point.y = point.absY! / height;
-      point.fx = point.absFx! / width;
-      point.fy = point.absFy! / height;
-      point.tx = point.absTx! / width;
-      point.ty = point.absTy! / height;
-    });
   }
 
   toSvg(scale: number) {

@@ -12,7 +12,10 @@ import { Style } from './define';
 import { calSize } from './css';
 
 export function calRotateZ(t: Float64Array, v: number) {
-  v = d2r(v);
+  return calRotateZRadian(t, d2r(v));
+}
+
+export function calRotateZRadian(t: Float64Array, v: number) {
   const sin = Math.sin(v);
   const cos = Math.cos(v);
   t[0] = t[5] = cos;
@@ -73,6 +76,7 @@ export function calTransformByMatrixAndOrigin(matrix: Float64Array, x: number, y
 
 export default {
   calRotateZ,
+  calRotateZRadian,
   calMatrix,
   calMatrixByOrigin,
   calTransformByMatrixAndOrigin,
