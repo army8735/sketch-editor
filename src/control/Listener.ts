@@ -1965,6 +1965,9 @@ export default class Listener extends Event {
               this.input.updateCursor(p);
               this.input.showCursor();
             }
+            else {
+              this.input.hideCursor();
+            }
             this.input.focus();
           }
         }
@@ -1976,6 +1979,9 @@ export default class Listener extends Event {
               const p = node.updateCursorByIndex(start);
               this.input.updateCursor(p);
               this.input.showCursor();
+            }
+            else {
+              this.input.hideCursor();
             }
             this.input.focus();
           }

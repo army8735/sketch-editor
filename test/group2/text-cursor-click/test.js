@@ -56,6 +56,30 @@ module.exports = {
       .mouseButtonUp(0)
       .assert.cssProperty('#main div.input', 'opacity', '0')
 
+      .moveToElement('canvas', 30, 90)
+      .doubleClick()
+      .assert.cssProperty('#main div.input', 'opacity', '1')
+      .mouseButtonDown(0)
+      .moveToElement('canvas', 90, 90)
+      .mouseButtonUp(0)
+      .keys('f')
+      .keys(browser.Keys.NULL)
+      .assert.cssProperty('#main div.input', 'opacity', '0')
+      .keys(browser.Keys.META)
+      .keys('z')
+      .keys(browser.Keys.NULL)
+      .assert.cssProperty('#main div.input', 'opacity', '1')
+
+      .moveToElement('canvas', 30, 30)
+      .doubleClick()
+      .assert.cssProperty('#main div.input', 'opacity', '1')
+      .moveToElement('canvas', 30, 300)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
+      .assert.cssProperty('#main div.input', 'opacity', '0')
+      .assert.cssProperty('#main div.select', 'display', 'block')
+      .assert.value('#base64', '')
+
       .end();
   }
 };
