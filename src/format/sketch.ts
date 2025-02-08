@@ -718,6 +718,7 @@ async function convertItem(
         }
         translateX = '-50%';
       }
+      width = layer.frame.width;
       // 单左或右，宽度有用，左右都是auto，宽度有用
       // 上下同
       if (top !== 'auto' && bottom !== 'auto') {
@@ -731,6 +732,7 @@ async function convertItem(
         }
         translateY = '-50%';
       }
+      height = layer.frame.height;
     }
     else if (tb === SketchFormat.TextBehaviour.Fixed) {
       textBehaviour = TEXT_BEHAVIOUR.FIXED_W;
@@ -745,6 +747,7 @@ async function convertItem(
         }
         translateY = '-50%';
       }
+      height = layer.frame.height;
     }
     // FixedWidthAndHeight啥也不干，等同普通节点的固定宽高，脏数据不太可能，也认为是固定尺寸
     else {
