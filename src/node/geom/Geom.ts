@@ -1,4 +1,4 @@
-import { Props } from '../../format';
+import { GeomProps } from '../../format';
 import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE, STROKE_POSITION } from '../../style/define';
@@ -20,7 +20,7 @@ class Geom extends Node {
   coords?: number[][];
   loaders: Loader[];
 
-  constructor(props: Props) {
+  constructor(props: GeomProps) {
     super(props);
     this.isGeom = true;
     this.loaders = [];
@@ -39,6 +39,7 @@ class Geom extends Node {
     this._bbox2 = undefined;
     this._filterBbox = undefined;
     this._filterBbox2 = undefined;
+    this.tempBbox = undefined;
   }
 
   buildPoints() {
@@ -184,7 +185,7 @@ class Geom extends Node {
         getPointsRect(coords, res);
       }
     }
-    return res!;
+    return res;
   }
 
   override get bbox() {
@@ -201,16 +202,16 @@ class Geom extends Node {
         strokeLinejoin,
         strokeMiterlimit,
       } = this.computedStyle;
-      const isLine = this.isLine();
+      const isClosed = (this.props as GeomProps).isClosed;
       // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗范围
       let border = 0;
       strokeWidth.forEach((item, i) => {
         if (strokeEnable[i]) {
-          if (strokePosition[i] === STROKE_POSITION.OUTSIDE) {
+          // line很特殊，没有粗细高度，描边固定等同于center
+          if (strokePosition[i] === STROKE_POSITION.OUTSIDE && isClosed) {
             border = Math.max(border, item);
           }
-          // line很特殊，没有粗细高度，描边固定等同于center
-          else if (strokePosition[i] === STROKE_POSITION.CENTER || isLine) {
+          else if (strokePosition[i] === STROKE_POSITION.CENTER || !isClosed) {
             border = Math.max(border, item * 0.5);
           }
         }
@@ -220,7 +221,7 @@ class Geom extends Node {
       const maxX = res[2] + border;
       const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
-      if (isLine) {
+      if (isClosed) {
         res = this._bbox = lineCap(res, border, this.coords || [], strokeLinecap);
       }
       // 闭合看lineJoin

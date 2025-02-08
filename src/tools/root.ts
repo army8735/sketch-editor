@@ -11,6 +11,7 @@ import { calRectPoints } from '../math/matrix';
 import { VISIBILITY } from '../style/define';
 import config from '../util/config';
 import Page from '../node/Page';
+import Polyline from '../node/geom/Polyline';
 
 function getTopShapeGroup(node: Geom | ShapeGroup) {
   const root = node.root;
@@ -48,7 +49,23 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
       continue;
     }
     const { computedStyle, matrixWorld } = child;
-    const rect = child._rect || child.rect;
+    let rect = child._rect || child.rect;
+    // 防止直线太难选
+    if (child instanceof Polyline) {
+      const dx = rect[2] - rect[0];
+      const dy = rect[3] - rect[1];
+      if (dx < 2 || dy < 2) {
+        rect = rect.slice(0);
+        if (dx < 2) {
+          rect[0] -= (2 - dx) * 0.5;
+          rect[2] += (2 - dx) * 0.5;
+        }
+        if (dy < 2) {
+          rect[1] -= (2 - dy) * 0.5;
+          rect[3] += (2 - dy) * 0.5;
+        }
+      }
+    }
     if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
       if (child instanceof Container) {
         const res = getChildByPoint(child, x, y);
@@ -107,6 +124,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   const page = root.lastPage;
   if (page) {
     const res = getChildByPoint(page, x, y);
+    // console.log(res);
     if (res) {
       // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回最上层ShapeGroup
       if (metaKey) {

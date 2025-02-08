@@ -188,6 +188,10 @@ export type Props = {
   styleId?: string;
 };
 
+export type GeomProps = Props & {
+  isClosed: boolean;
+};
+
 export type RootProps = Props & {
   dpi: number;
   assets?: {
@@ -255,9 +259,8 @@ export type Rich = {
   color: number[];
 };
 
-export type PolylineProps = Props & {
+export type PolylineProps = GeomProps & {
   points: Point[];
-  isClosed: boolean;
   constrainProportions: boolean;
   fixedRadius: number;
   pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
@@ -265,9 +268,8 @@ export type PolylineProps = Props & {
   isOval?: boolean;
 };
 
-export type ShapeGroupProps = Props & {
+export type ShapeGroupProps = GeomProps & {
   points: Point[];
-  isClosed: boolean;
   constrainProportions: boolean;
   fixedRadius: number;
   pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;

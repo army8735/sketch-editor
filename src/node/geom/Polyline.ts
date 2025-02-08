@@ -274,7 +274,6 @@ class Polyline extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = this.computedStyle;
-    const isLine = this.isLine();
     const list = canvasCache.list;
     for (let i = 0, len = list.length; i < len; i++) {
       const { x, y, os: { ctx } } = list[i];
@@ -636,7 +635,7 @@ class Polyline extends Geom {
               if (p === STROKE_POSITION.INSIDE) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.save();
-                if (!isLine) {
+                if (this.props.isClosed) {
                   ctx2.clip();
                 }
                 ctx2.stroke();
@@ -646,7 +645,7 @@ class Polyline extends Geom {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
-                if (!isLine) {
+                if (this.props.isClosed) {
                   ctx2.clip();
                 }
                 ctx2.globalCompositeOperation = 'destination-out';
@@ -680,10 +679,10 @@ class Polyline extends Geom {
         }
         // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
         let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
-        if (p === STROKE_POSITION.INSIDE) {
+        if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
           ctx.lineWidth = strokeWidth[i] * 2 * scale;
         }
-        else if (p === STROKE_POSITION.OUTSIDE) {
+        else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
           os = inject.getOffscreenCanvas(w, h);
           ctx2 = os.ctx;
           ctx2.setLineDash(ctx.getLineDash());
@@ -703,18 +702,18 @@ class Polyline extends Geom {
             ctx2.closePath();
           }
         }
-        if (p === STROKE_POSITION.INSIDE) {
+        if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
           ctx.save();
-          if (!isLine) {
+          if (!this.props.isClosed) {
             ctx.clip();
           }
           ctx.stroke();
           ctx.restore();
         }
-        else if (p === STROKE_POSITION.OUTSIDE) {
+        else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
           ctx2!.stroke();
           ctx2!.save();
-          if (!isLine) {
+          if (!this.props.isClosed) {
             ctx2!.clip();
           }
           ctx2!.globalCompositeOperation = 'destination-out';
