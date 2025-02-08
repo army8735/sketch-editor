@@ -69,7 +69,7 @@ module.exports = {
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
-      .assert.cssProperty('#main div.input', 'opacity', '1')
+      .assert.cssProperty('#main div.input', 'opacity', '0')
 
       .moveToElement('canvas', 30, 30)
       .doubleClick()
