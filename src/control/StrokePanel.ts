@@ -201,6 +201,9 @@ class StrokePanel extends Panel {
           }
           this.silence = false;
         };
+        // 取消可能的其它编辑态
+        listener.cancelEditGeom();
+        listener.cancelEditText();
         picker.show(el, stroke, 'strokePanel', onChange, pickCallback, listener);
         listener.select.hideSelect();
         listener.gradient.show(this.nodes[0], stroke, onChange);

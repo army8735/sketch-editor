@@ -1590,8 +1590,21 @@ export default class Listener extends Event {
     const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
+      if (this.state === State.EDIT_GEOM) {
+        if (this.geometry.idx.length) {
+          this.geometry.delVertex();
+        }
+        // 没选择顶点删除等同于esc的取消功能
+        else {
+          this.cancelEditGeom();
+        }
+      }
+      // 暂时不支持 TODO
+      else if (this.state === State.EDIT_GRADIENT) {
+        this.cancelEditGradient();
+      }
       // 忽略输入时
-      if (!isInput && !this.options.disabled?.remove) {
+      else if (!isInput && !this.options.disabled?.remove) {
         this.remove();
       }
     }

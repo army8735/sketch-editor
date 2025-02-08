@@ -685,6 +685,27 @@ export default class Geometry {
       div.classList.remove('t');
     });
   }
+
+  delVertex() {
+    const node = this.node;
+    const idx = this.idx;
+    if (node && idx.length) {
+      if (node instanceof Polyline) {
+        const prev = clone(node.props.points);
+        idx.sort((a, b) => b - a);
+        idx.forEach(i => {
+          node.props.points.splice(i, 1);
+        });
+        node.refresh();
+        node.checkPointsChange();
+        this.update(true);
+        this.listener.history.addCommand(new PointCommand([node], [{
+          prev,
+          next: clone(node.props.points),
+        }]), true);
+      }
+    }
+  }
 }
 
 function getPolylineCoords(node: Polyline, idx: number, scale: number) {
