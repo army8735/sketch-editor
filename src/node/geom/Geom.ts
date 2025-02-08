@@ -221,7 +221,7 @@ class Geom extends Node {
       const maxX = res[2] + border;
       const maxY = res[3] + border;
       // lineCap仅对非闭合首尾端点有用
-      if (isClosed) {
+      if (!isClosed) {
         res = this._bbox = lineCap(res, border, this.coords || [], strokeLinecap);
       }
       // 闭合看lineJoin

@@ -632,22 +632,18 @@ class Polyline extends Geom {
               if (this.props.isClosed) {
                 ctx2.closePath();
               }
-              if (p === STROKE_POSITION.INSIDE) {
+              if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.save();
-                if (this.props.isClosed) {
-                  ctx2.clip();
-                }
+                ctx2.clip();
                 ctx2.stroke();
                 ctx2.restore();
               }
-              else if (p === STROKE_POSITION.OUTSIDE) {
+              else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
-                if (this.props.isClosed) {
-                  ctx2.clip();
-                }
+                ctx2.clip();
                 ctx2.globalCompositeOperation = 'destination-out';
                 ctx2.strokeStyle = '#FFF';
                 ctx2.stroke();
@@ -704,18 +700,14 @@ class Polyline extends Geom {
         }
         if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
           ctx.save();
-          if (!this.props.isClosed) {
-            ctx.clip();
-          }
+          ctx.clip();
           ctx.stroke();
           ctx.restore();
         }
         else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
           ctx2!.stroke();
           ctx2!.save();
-          if (!this.props.isClosed) {
-            ctx2!.clip();
-          }
+          ctx2!.clip();
           ctx2!.globalCompositeOperation = 'destination-out';
           ctx2!.strokeStyle = '#FFF';
           ctx2!.stroke();
