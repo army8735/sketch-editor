@@ -435,9 +435,6 @@ class TextPanel extends Panel {
         nodes = this.nodes.slice(0);
         prevs = nodes.map(item => item.getRich());
         const color = this.nodes[0].computedStyle.color;
-        // 取消可能的其它编辑态
-        listener.cancelEditGeom();
-        listener.cancelEditText();
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
           this.silence = true;
           nexts = [];
