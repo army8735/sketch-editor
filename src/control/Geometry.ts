@@ -497,7 +497,7 @@ export default class Geometry {
       }
     });
     // 自身点击设置keep，阻止document全局侦听关闭
-    document.addEventListener('click', () => {
+    document.addEventListener('click', (e) => {
       if (this.keep) {
         this.keep = false;
         return;
