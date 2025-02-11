@@ -441,10 +441,6 @@ export default class Tree {
       if (actives.length === 1 && actives[0] === dt) {
         return;
       }
-      actives.forEach((item) => {
-        item.classList.remove('active');
-      });
-      dt.classList.add('active');
       const uuid = dl.getAttribute('uuid');
       if (uuid) {
         const node = root.refs[uuid];
@@ -459,7 +455,7 @@ export default class Tree {
             }
             listener.active(selected);
           }
-          // 多选
+          // 多选，但要排除父子规则，已选择子祖父全忽略，已选择祖父再选子依旧忽略祖父
           else if (listener.metaKey) {
             const selected = listener.selected.slice(0);
             const i = selected.indexOf(node);
@@ -467,15 +463,35 @@ export default class Tree {
               selected.splice(i, 1);
             }
             else {
+              for (let i = selected.length - 1; i >= 0; i--) {
+                const item = selected[i];
+                if (node.isParent(item)) {
+                  selected.splice(i, 1);
+                }
+                else if (node.isChild(item)) {
+                  return;
+                }
+              }
               selected.push(node);
             }
             listener.active(selected);
           }
+          // 单选
           else {
             listener.active([node]);
           }
         }
       }
+      actives.forEach((item) => {
+        item.classList.remove('active');
+      });
+      listener.selected.forEach(item => {
+        const uuid = item.props.uuid;
+        const dt = dom.querySelector(`dl[uuid="${uuid}"] dt`);
+        if (dt) {
+          dt.classList.add('active');
+        }
+      });
     };
 
     dom.addEventListener('click', (e) => {

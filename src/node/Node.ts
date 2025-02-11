@@ -2022,6 +2022,21 @@ class Node extends Event {
     return list;
   }
 
+  isParent(target: Node) {
+    let p = this.parent;
+    while (p) {
+      if (p === target) {
+        return true;
+      }
+      p = p.parent;
+    }
+    return false;
+  }
+
+  isChild(target: Node) {
+    return target.isParent(this);
+  }
+
   get opacity() {
     const root = this.root;
     if (!root) {

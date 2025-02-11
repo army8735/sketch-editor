@@ -50,6 +50,7 @@ import Geometry from './Geometry';
 import Polyline from '../node/geom/Polyline';
 import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 import PointCommand from '../history/PointCommand';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1138,6 +1139,7 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
+    const oldSelected = this.selected.slice(0);
     const dpi = root.dpi;
     let node = this.getNode(
       (e.clientX - this.originX) * dpi,
@@ -1168,13 +1170,16 @@ export default class Listener extends Event {
         this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
       else if (node instanceof Polyline) {
-        if (this.options.disabled?.editGeom) {
-          return;
+        // 双击shapeGroup进入的polyline是选择，之后再双击编辑矢量
+        if (oldSelected.includes(node)) {
+          if (this.options.disabled?.editGeom) {
+            return;
+          }
+          this.select.hideSelect();
+          this.geometry.show(node);
+          this.state = State.EDIT_GEOM;
+          this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
         }
-        this.select.hideSelect();
-        this.geometry.show(node);
-        this.state = State.EDIT_GEOM;
-        this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
@@ -1664,7 +1669,40 @@ export default class Listener extends Event {
           this.cancelEditGeom();
         }
       }
+      // 如果有矢量，看上层的shapeGroup，有的话先选择，没有才是普通的取消选择
       else {
+        const geom: Array<Polyline | ShapeGroup> = this.selected.filter(item => item instanceof Polyline || item instanceof ShapeGroup);
+        if (geom.length) {
+          const parent: ShapeGroup[] = geom.map(item => {
+            const p = item.parent;
+            if (p instanceof ShapeGroup) {
+              return p;
+            }
+          }).filter(item => item) as ShapeGroup[];
+          const l = parent.length;
+          if (l) {
+            // 依旧要处理父子重复，有子则所有祖父都忽略
+            const list: Node[] = [];
+            parent.forEach(a => {
+              for (let i = list.length - 1; i >= 0; i--) {
+                const b = list[i];
+                if (a.isParent(b)) {
+                  list.splice(i, 1, a);
+                  return;
+                }
+                else if (a.isChild(b)) {
+                  return;
+                }
+              }
+              list.push(a);
+            });
+            this.selected.splice(0);
+            this.selected.push(...list);
+            this.select.showSelect(this.selected);
+            this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+            return;
+          }
+        }
         this.selected.splice(0);
         this.select.hideSelect();
         this.select.hideHover();
