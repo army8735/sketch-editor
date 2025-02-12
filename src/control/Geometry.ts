@@ -16,7 +16,8 @@ export default class Geometry {
   listener: Listener;
   panel: HTMLElement;
   node?: Polyline | ShapeGroup;
-  keep?: boolean; // 保持窗口外部点击时不关闭
+  keep?: boolean; // 按下整体任意，后续外部冒泡侦听按下识别
+  keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   idx: number[]; // 当前激活点索引
   clonePoints: Point[];
 
@@ -63,6 +64,7 @@ export default class Geometry {
       if (!node) {
         return;
       }
+      this.keep = true;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
@@ -71,11 +73,11 @@ export default class Geometry {
       isDrag = isControlF = isControlT = isMove = false;
       isSelected = false;
       isShift = false;
-      this.keep = true;
       startX = e.clientX;
       startY = e.clientY;
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
+        this.keepVertPath = true;
         idx = parseInt(target.title);
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey) {
@@ -127,7 +129,7 @@ export default class Geometry {
             const pts = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
             const p = getPointWithDByApprox(pts, x, y);
             if (p && p.d <= 5) {
-              this.keep = true;
+              this.keepVertPath = true;
               const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
               const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
               const i = parseInt(/\d+/.exec(title)![0]);
@@ -254,7 +256,7 @@ export default class Geometry {
       }
       // 点控制点开始拖拽
       else if (tagName === 'SPAN') {
-        this.keep = true;
+        this.keepVertPath = true;
         const div = target.parentNode as HTMLElement;
         // span可能是相邻的顶点控制，所以不记录顶点
         idx = parseInt(div.title);
@@ -498,12 +500,11 @@ export default class Geometry {
     });
     // 自身点击设置keep，阻止document全局侦听关闭
     document.addEventListener('click', (e) => {
-      if (this.keep) {
+      if (this.keep || this.keepVertPath) {
         this.keep = false;
+        this.keepVertPath = false;
         return;
       }
-      // 直接关，外部框选不关由listener设置keep
-      listener.cancelEditGeom();
     });
   }
 
@@ -522,6 +523,7 @@ export default class Geometry {
     this.panel.innerHTML = '';
     this.node = undefined;
     this.keep = false;
+    this.keepVertPath = false;
   }
 
   update(init = false) {

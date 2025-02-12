@@ -397,9 +397,9 @@ export default class Listener extends Event {
           return;
         }
       }
-      // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为内移动顶点（geometry内部冒泡优先响应按下）
+      // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
       if (this.state === State.EDIT_GEOM) {
-        if (!this.geometry.keep) {
+        if (!this.geometry.keep || !this.geometry.keepVertPath) {
           this.isFrame = true;
         }
         return;
@@ -629,7 +629,8 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    if ([State.EDIT_GRADIENT].includes(this.state)) {
+    // 编辑无hover
+    if ([State.EDIT_TEXT, State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
       return;
     }
     const dpi = root.dpi;
@@ -1077,6 +1078,12 @@ export default class Listener extends Event {
       this.select.showSelect(selected);
       this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
+    }
+    // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
+    if (this.state === State.EDIT_GEOM) {
+      if (!this.geometry.keep) {console.log('cancel')
+        this.cancelEditGeom();
+      }
     }
     this.isMouseDown = false;
     this.isMouseMove = false;
