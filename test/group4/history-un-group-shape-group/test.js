@@ -31,7 +31,7 @@ module.exports = {
       .assert.value('#base64', '[3,"a"]')
       .assert.elementPresent('#tree span.name[title="a"]')
       .click('#button1')
-      .assert.value('')
+      .assert.value('#base64', '')
 
       .end();
   }
