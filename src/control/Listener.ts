@@ -194,7 +194,29 @@ export default class Listener extends Event {
   active(nodes: Node[]) {
     this.selected.splice(0);
     this.selected.push(...nodes);
-    this.updateActive();
+    // 一般从tree点击切换，在编辑矢量切换到其它矢量依旧保持编辑状态
+    if (this.state === State.EDIT_GEOM) {
+      let keepGeom = true;
+      for (let i = 0, len = nodes.length; i < len; i++) {
+        const item = nodes[i];
+        if (!(item instanceof Polyline)) {
+          keepGeom = false;
+          break;
+        }
+      }
+      // 暂时不允许多选编辑 TODO
+      if (keepGeom) {
+        this.select.hideSelect();
+        this.geometry.show(this.selected[0] as Polyline);
+      }
+      else {
+        this.geometry.hide();
+        this.updateActive();
+      }
+    }
+    else {
+      this.updateActive();
+    }
     this.emit(Listener.SELECT_NODE, this.selected.slice(0));
   }
 
@@ -207,6 +229,9 @@ export default class Listener extends Event {
     }
     else {
       this.select.hideSelect();
+      this.cancelEditGeom();
+      this.cancelEditGradient();
+      this.cancelEditText();
     }
   }
 
@@ -384,7 +409,7 @@ export default class Listener extends Event {
         this.beforeResize();
       }
     }
-    // 点到canvas上
+    // 点到canvas上，也有可能在canvas外，逻辑一样
     else {
       // 非按键多选情况下点击框内，视为移动，多选时选框一定是无旋转的
       if (selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
