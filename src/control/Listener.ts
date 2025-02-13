@@ -629,8 +629,8 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    // 编辑无hover，但编辑Text有选择文本段（一定按下移动），所以后面特殊处理
-    if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+    // 编辑无hover，但编辑Text有选择文本段（一定按下移动），编辑Geom有框选，所以后面特殊处理
+    if ([State.EDIT_GRADIENT].includes(this.state)) {
       return;
     }
     const dpi = root.dpi;
@@ -841,7 +841,7 @@ export default class Listener extends Event {
       this.isMouseMove = true;
     }
     // 普通的hover，仅mouseEvent有，排除编辑文字时
-    else if (!isTouch && this.state !== State.EDIT_TEXT) {
+    else if (!isTouch && this.state !== State.EDIT_TEXT && this.state !== State.EDIT_GEOM) {
       if (this.options.disabled?.hover) {
         return;
       }
@@ -1081,7 +1081,7 @@ export default class Listener extends Event {
     }
     // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
     if (this.state === State.EDIT_GEOM) {
-      if (!this.geometry.keep) {console.log('cancel')
+      if (!this.geometry.keep) {
         this.cancelEditGeom();
       }
     }
