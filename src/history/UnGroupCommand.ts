@@ -5,6 +5,7 @@ import Group from '../node/Group';
 import { unGroup } from '../tools/group';
 import { migrate } from '../tools/node';
 import { appendWithIndex } from '../tools/container';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type UnGroupData = {
   parent: Container;
@@ -38,6 +39,9 @@ class UnGroupCommand extends AbstractCommand {
       });
       group.fixedPosAndSize = false;
       group.checkPosSizeSelf();
+      if (group instanceof ShapeGroup) {
+        group.refresh();
+      }
     });
     this.data.forEach((item) => {
       const { parent } = item;

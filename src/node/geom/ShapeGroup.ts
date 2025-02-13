@@ -727,6 +727,13 @@ class ShapeGroup extends Group {
     // });
   }
 
+  override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
+    if (lv >= RefreshLevel.REPAINT) {
+      this.coords = undefined;
+    }
+    super.refresh(lv, cb);
+  }
+
   toSvg(max: number) {
     this.buildPoints();
     const computedStyle = this.computedStyle;
