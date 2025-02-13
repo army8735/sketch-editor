@@ -629,8 +629,8 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    // 编辑无hover
-    if ([State.EDIT_TEXT, State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+    // 编辑无hover，但编辑Text有选择文本段（一定按下移动），所以后面特殊处理
+    if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
       return;
     }
     const dpi = root.dpi;
@@ -840,8 +840,8 @@ export default class Listener extends Event {
       }
       this.isMouseMove = true;
     }
-    // 普通的hover，仅mouseEvent有
-    else if (!isTouch) {
+    // 普通的hover，仅mouseEvent有，排除编辑文字时
+    else if (!isTouch && this.state !== State.EDIT_TEXT) {
       if (this.options.disabled?.hover) {
         return;
       }
