@@ -196,7 +196,7 @@ export default class Listener extends Event {
     this.selected.push(...nodes);
     // 一般从tree点击切换，在编辑矢量切换到其它矢量依旧保持编辑状态
     if (this.state === State.EDIT_GEOM) {
-      let keepGeom = true;
+      let keepGeom = !!nodes.length;
       for (let i = 0, len = nodes.length; i < len; i++) {
         const item = nodes[i];
         if (!(item instanceof Polyline)) {
