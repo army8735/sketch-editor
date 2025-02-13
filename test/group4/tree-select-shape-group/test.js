@@ -72,6 +72,13 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[13,"a"]')
 
+      .moveToElement('canvas', 300, 300)
+      .click('#tree span.name[title="a"]')
+      .moveToElement('canvas', 50, 50)
+      .doubleClick()
+      .click('#button4')
+      .assert.value('#base64', '[14,"1"]')
+
       .end();
   }
 };
