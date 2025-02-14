@@ -753,13 +753,13 @@ class TextPanel extends Panel {
         else {
           multi.style.display = 'none';
           multi.classList.remove('invalid');
-          const option = select.querySelector(`option[value="${o.postscriptName[0]}"]`);
+          const option = select.querySelector(`option[value="${o.fontFamily[0]}"]`);
           // 有可能手动initFontList没包含但此字体可用，添加之
           if (!option) {
-            const s = `<option value="${o.postscriptName[0]}">${o.fontFamily[0]}</option>`;
+            const s = `<option value="${o.fontFamily[0]}">${o.name[0]}</option>`;
             select.innerHTML += s;
           }
-          select.value = o.postscriptName[0];
+          select.value = o.fontFamily[0];
         }
       }
     }
