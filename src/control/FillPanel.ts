@@ -253,7 +253,9 @@ class FillPanel extends Panel {
             nexts = [];
           }
         });
-        listener.state = State.EDIT_GRADIENT;
+        if (!Array.isArray(fill)) {
+          listener.state = State.EDIT_GRADIENT;
+        }
       }
       else if (classList.contains('enabled')) {
         this.silence = true;

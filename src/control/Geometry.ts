@@ -2,7 +2,6 @@ import Polyline from '../node/geom/Polyline';
 import Root from '../node/Root';
 import Listener from './Listener';
 import { getPointWithDByApprox, sliceBezier } from '../math/bezier';
-import ShapeGroup from '../node/geom/ShapeGroup';
 import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import { r2d } from '../math/geom';
 import { Point } from '../format';
@@ -15,7 +14,7 @@ export default class Geometry {
   dom: HTMLElement;
   listener: Listener;
   panel: HTMLElement;
-  node?: Polyline | ShapeGroup;
+  node?: Polyline;
   keep?: boolean; // 按下整体任意，后续外部冒泡侦听按下识别
   keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   idx: number[]; // 当前激活点索引
@@ -105,16 +104,14 @@ export default class Geometry {
           target.previousElementSibling?.classList.add('f');
         }
         isDrag = true;
-        if (node instanceof Polyline) {
-          const p = node.props.points[idx];
-          diff.dspX = p.dspX!;
-          diff.dspY = p.dspY!;
-          diff.dspFx = p.dspFx!;
-          diff.dspFy = p.dspFy!;
-          diff.dspTx = p.dspTx!;
-          diff.dspTy = p.dspTy!;
-          this.clonePoints = clone(node.props.points);
-        }
+        const p = node.props.points[idx];
+        diff.dspX = p.dspX!;
+        diff.dspY = p.dspY!;
+        diff.dspFx = p.dspFx!;
+        diff.dspFy = p.dspFy!;
+        diff.dspTx = p.dspTx!;
+        diff.dspTy = p.dspTy!;
+        this.clonePoints = clone(node.props.points);
         listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
       }
       // 点矢量边添加顶点
@@ -125,128 +122,126 @@ export default class Geometry {
           const x = e.offsetX;
           const y = e.offsetY;
           const scale = root.getCurPageZoom(true);
-          if (node instanceof Polyline) {
-            const pts = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
-            const p = getPointWithDByApprox(pts, x, y);
-            if (p && p.d <= 5) {
-              this.keepVertPath = true;
-              const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
-              const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
-              const i = parseInt(/\d+/.exec(title)![0]);
-              const points = node.props.points;
-              const prev = points[i];
-              const next = points[i + 1] || points[0];
-              const mx = p.x / w;
-              const my = p.y / h;
-              const mid: Point = {
-                x: mx,
-                y: my,
-                absX: p.x,
-                absY: p.y,
-                cornerRadius: 0,
-                cornerStyle: CORNER_STYLE.ROUNDED,
-                curveMode: a.length === 2 ? CURVE_MODE.STRAIGHT : CURVE_MODE.ASYMMETRIC,
-                fx: mx,
-                fy: my,
-                absFx: p.x,
-                absFy: p.y,
-                tx: mx,
-                ty: my,
-                absTx: p.x,
-                absTy: p.y,
-                hasCurveFrom: false,
-                hasCurveTo: false,
-              };
-              if (a.length === 4) {
+          const pts = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
+          const p = getPointWithDByApprox(pts, x, y);
+          if (p && p.d <= 5) {
+            this.keepVertPath = true;
+            const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
+            const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
+            const i = parseInt(/\d+/.exec(title)![0]);
+            const points = node.props.points;
+            const prev = points[i];
+            const next = points[i + 1] || points[0];
+            const mx = p.x / w;
+            const my = p.y / h;
+            const mid: Point = {
+              x: mx,
+              y: my,
+              absX: p.x,
+              absY: p.y,
+              cornerRadius: 0,
+              cornerStyle: CORNER_STYLE.ROUNDED,
+              curveMode: a.length === 2 ? CURVE_MODE.STRAIGHT : CURVE_MODE.ASYMMETRIC,
+              fx: mx,
+              fy: my,
+              absFx: p.x,
+              absFy: p.y,
+              tx: mx,
+              ty: my,
+              absTx: p.x,
+              absTy: p.y,
+              hasCurveFrom: false,
+              hasCurveTo: false,
+            };
+            if (a.length === 4) {
+              prev.fx = a[1].x;
+              prev.fy = a[1].y;
+              prev.absFx = prev.fx * w;
+              prev.absFy = prev.fy * h;
+              mid.hasCurveTo = true;
+              mid.tx = a[2].x;
+              mid.ty = a[2].y;
+              mid.absTx = mid.tx * w;
+              mid.absTy = mid.ty * h;
+              getPointsDspByAbs(node, [prev, mid]);
+            }
+            else if (a.length === 3) {
+              if (prev.hasCurveFrom && prev.curveMode !== CURVE_MODE.NONE && prev.curveMode !== CURVE_MODE.STRAIGHT) {
                 prev.fx = a[1].x;
                 prev.fy = a[1].y;
                 prev.absFx = prev.fx * w;
                 prev.absFy = prev.fy * h;
+                getPointsDspByAbs(node, prev);
+              }
+              else {
                 mid.hasCurveTo = true;
-                mid.tx = a[2].x;
-                mid.ty = a[2].y;
+                mid.tx = a[1].x;
+                mid.ty = a[1].y;
                 mid.absTx = mid.tx * w;
                 mid.absTy = mid.ty * h;
-                getPointsDspByAbs(node, [prev, mid]);
+                getPointsDspByAbs(node, mid);
               }
-              else if (a.length === 3) {
-                if (prev.hasCurveFrom && prev.curveMode !== CURVE_MODE.NONE && prev.curveMode !== CURVE_MODE.STRAIGHT) {
-                  prev.fx = a[1].x;
-                  prev.fy = a[1].y;
-                  prev.absFx = prev.fx * w;
-                  prev.absFy = prev.fy * h;
-                  getPointsDspByAbs(node, prev);
-                }
-                else {
-                  mid.hasCurveTo = true;
-                  mid.tx = a[1].x;
-                  mid.ty = a[1].y;
-                  mid.absTx = mid.tx * w;
-                  mid.absTy = mid.ty * h;
-                  getPointsDspByAbs(node, mid);
-                }
-              }
-              if (b.length === 4) {
-                next.tx = b[2].x;
-                next.ty = b[2].y;
+            }
+            if (b.length === 4) {
+              next.tx = b[2].x;
+              next.ty = b[2].y;
+              next.absTx = next.tx * w;
+              next.absTy = next.ty * h;
+              mid.hasCurveFrom = true;
+              mid.fx = b[1].x;
+              mid.fy = b[1].y;
+              mid.absFx = mid.fx * w;
+              mid.absFy = mid.fy * h;
+              getPointsDspByAbs(node, [next, mid]);
+            }
+            else if (b.length === 3) {
+              if (next.hasCurveTo && next.curveMode !== CURVE_MODE.NONE && next.curveMode !== CURVE_MODE.STRAIGHT) {
+                next.tx = b[1].x;
+                next.ty = b[1].y;
                 next.absTx = next.tx * w;
                 next.absTy = next.ty * h;
+                getPointsDspByAbs(node, next);
+              }
+              else {
                 mid.hasCurveFrom = true;
                 mid.fx = b[1].x;
                 mid.fy = b[1].y;
                 mid.absFx = mid.fx * w;
                 mid.absFy = mid.fy * h;
-                getPointsDspByAbs(node, [next, mid]);
+                getPointsDspByAbs(node, mid);
               }
-              else if (b.length === 3) {
-                if (next.hasCurveTo && next.curveMode !== CURVE_MODE.NONE && next.curveMode !== CURVE_MODE.STRAIGHT) {
-                  next.tx = b[1].x;
-                  next.ty = b[1].y;
-                  next.absTx = next.tx * w;
-                  next.absTy = next.ty * h;
-                  getPointsDspByAbs(node, next);
-                }
-                else {
-                  mid.hasCurveFrom = true;
-                  mid.fx = b[1].x;
-                  mid.fy = b[1].y;
-                  mid.absFx = mid.fx * w;
-                  mid.absFy = mid.fy * h;
-                  getPointsDspByAbs(node, mid);
-                }
-              }
-              // 曲线类型默认断开，如果对称就设置镜像
-              if (mid.hasCurveTo && mid.hasCurveFrom) {
-                const dfx = mid.fx - mid.x;
-                const dfy = mid.fy - mid.y;
-                const dtx = mid.x - mid.tx;
-                const dty = mid.y - mid.ty;
-                const df = Math.sqrt(Math.pow(dfx, 2) + Math.pow(dfy, 2));
-                const dt = Math.sqrt(Math.pow(dtx, 2) + Math.pow(dty, 2));
-                if (Math.abs(dt - df) < 1e-6 && Math.abs(dfx - dtx) < 1e-6 && Math.abs(dfy - dty) < 1e-6) {
-                  mid.curveMode = CURVE_MODE.MIRRORED;
-                }
-              }
-              else if (mid.hasCurveTo || mid.hasCurveFrom) {
-                mid.curveMode = CURVE_MODE.DISCONNECTED;
-              }
-              points.splice(i + 1, 0, mid);
-              node.refresh();
-              node.checkPointsChange();
-              this.show(node);
-              this.idx.splice(0);
-              this.idx.push(i + 1);
-              listener.history.addCommand(new PointCommand([node], [{
-                prev: clone(node.props.points),
-                next: this.clonePoints.slice(0),
-              }]), true);
-              listener.emit(Listener.POINT_NODE, [node]);
-              listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
             }
-            else {
-              this.idx.splice(0);
-              listener.emit(Listener.SELECT_POINT, []);
+            // 曲线类型默认断开，如果对称就设置镜像
+            if (mid.hasCurveTo && mid.hasCurveFrom) {
+              const dfx = mid.fx - mid.x;
+              const dfy = mid.fy - mid.y;
+              const dtx = mid.x - mid.tx;
+              const dty = mid.y - mid.ty;
+              const df = Math.sqrt(Math.pow(dfx, 2) + Math.pow(dfy, 2));
+              const dt = Math.sqrt(Math.pow(dtx, 2) + Math.pow(dty, 2));
+              if (Math.abs(dt - df) < 1e-6 && Math.abs(dfx - dtx) < 1e-6 && Math.abs(dfy - dty) < 1e-6) {
+                mid.curveMode = CURVE_MODE.MIRRORED;
+              }
             }
+            else if (mid.hasCurveTo || mid.hasCurveFrom) {
+              mid.curveMode = CURVE_MODE.DISCONNECTED;
+            }
+            points.splice(i + 1, 0, mid);
+            node.refresh();
+            node.checkPointsChange();
+            this.show(node);
+            this.idx.splice(0);
+            this.idx.push(i + 1);
+            listener.history.addCommand(new PointCommand([node], [{
+              prev: clone(node.props.points),
+              next: this.clonePoints.slice(0),
+            }]), true);
+            listener.emit(Listener.POINT_NODE, [node]);
+            listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+          }
+          else {
+            this.idx.splice(0);
+            listener.emit(Listener.SELECT_POINT, []);
           }
         }
         else {
@@ -267,9 +262,7 @@ export default class Geometry {
         else {
           isControlT = true;
         }
-        if (node instanceof Polyline) {
-          this.clonePoints = clone(node.props.points);
-        }
+        this.clonePoints = clone(node.props.points);
         diff.td = Math.sqrt(Math.pow(p.dspX! - p.dspTx!, 2) + Math.pow(p.dspY! - p.dspTy!, 2));
         diff.fd = Math.sqrt(Math.pow(p.dspX! - p.dspFx!, 2) + Math.pow(p.dspY! - p.dspFy!, 2));
       }
@@ -307,82 +300,82 @@ export default class Geometry {
         }
       }
       if (isDrag) {
-        if (node instanceof Polyline) {
-          const points = node.props.points;
-          const p = points[idx];
-          p.dspX = diff.dspX + dx2;
-          p.dspY = diff.dspY + dy2;
-          p.dspFx = diff.dspFx + dx2;
-          p.dspFy = diff.dspFy + dy2;
-          p.dspTx = diff.dspTx + dx2;
-          p.dspTy = diff.dspTy + dy2;
-          // 多个点的话其它的也随之变动
-          const pts = this.idx.map(i => {
-            if (i === idx) {
-              return p;
-            }
-            else {
-              const p = points[i];
-              const c = this.clonePoints[i];
-              p.dspX = c.dspX! + dx2;
-              p.dspY = c.dspY! + dy2;
-              p.dspFx = c.dspFx! + dx2;
-              p.dspFy = c.dspFy! + dy2;
-              p.dspTx = c.dspTx! + dx2;
-              p.dspTy = c.dspTy! + dy2;
-              return p;
-            }
-          });
-          getPointsAbsByDsp(node, pts);
-          node.reflectPoints(pts);
-          node.refresh();
-          this.updateVertex(node);
-        }
+        const points = node.props.points;
+        const p = points[idx];
+        p.dspX = diff.dspX + dx2;
+        p.dspY = diff.dspY + dy2;
+        p.dspFx = diff.dspFx + dx2;
+        p.dspFy = diff.dspFy + dy2;
+        p.dspTx = diff.dspTx + dx2;
+        p.dspTy = diff.dspTy + dy2;
+        // 多个点的话其它的也随之变动
+        const pts = this.idx.map(i => {
+          if (i === idx) {
+            return p;
+          }
+          else {
+            const p = points[i];
+            const c = this.clonePoints[i];
+            p.dspX = c.dspX! + dx2;
+            p.dspY = c.dspY! + dy2;
+            p.dspFx = c.dspFx! + dx2;
+            p.dspFy = c.dspFy! + dy2;
+            p.dspTx = c.dspTx! + dx2;
+            p.dspTy = c.dspTy! + dy2;
+            return p;
+          }
+        });
+        getPointsAbsByDsp(node, pts);
+        node.reflectPoints(pts);
+        node.refresh();
+        this.updateVertex(node);
         listener.emit(Listener.POINT_NODE, [node]);
       }
       else if (isControlF || isControlT) {
-        if (node instanceof Polyline) {
-          const p = node.props.points[idx];
+        const p = node.props.points[idx];
+        if (isControlF) {
+          p.dspFx = this.clonePoints[idx].dspFx! + dx2;
+          p.dspFy = this.clonePoints[idx].dspFy! + dy2;
+        }
+        else {
+          p.dspTx = this.clonePoints[idx].dspTx! + dx2;
+          p.dspTy = this.clonePoints[idx].dspTy! + dy2;
+        }
+        // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
+        if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
+          let ratio = 1;
           if (isControlF) {
-            p.dspFx = this.clonePoints[idx].dspFx! + dx2;
-            p.dspFy = this.clonePoints[idx].dspFy! + dy2;
+            if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
+              ratio = diff.fd / diff.td;
+            }
+            const dx = p.dspFx! - p.dspX!;
+            const dy = p.dspFy! - p.dspY!;
+            p.dspTx = p.dspX! - dx * ratio;
+            p.dspTy = p.dspY! - dy * ratio;
           }
           else {
-            p.dspTx = this.clonePoints[idx].dspTx! + dx2;
-            p.dspTy = this.clonePoints[idx].dspTy! + dy2;
-          }
-          // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
-          if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
-            let ratio = 1;
-            if (isControlF) {
-              if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-                ratio = diff.fd / diff.td;
-              }
-              const dx = p.dspFx! - p.dspX!;
-              const dy = p.dspFy! - p.dspY!;
-              p.dspTx = p.dspX! - dx * ratio;
-              p.dspTy = p.dspY! - dy * ratio;
+            if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
+              ratio = diff.fd / diff.td;
             }
-            else {
-              if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
-                ratio = diff.fd / diff.td;
-              }
-              const dx = p.dspTx! - p.dspX!;
-              const dy = p.dspTy! - p.dspY!;
-              p.dspFx = p.dspX! - dx * ratio;
-              p.dspFy = p.dspY! - dy * ratio;
-            }
+            const dx = p.dspTx! - p.dspX!;
+            const dy = p.dspTy! - p.dspY!;
+            p.dspFx = p.dspX! - dx * ratio;
+            p.dspFy = p.dspY! - dy * ratio;
           }
-          getPointsAbsByDsp(node, p);
-          node.reflectPoints(p);
-          node.refresh();
-          this.updateVertex(node);
         }
+        getPointsAbsByDsp(node, p);
+        node.reflectPoints(p);
+        node.refresh();
+        this.updateVertex(node);
         listener.emit(Listener.POINT_NODE, [node]);
       }
       isMove = true;
     });
     document.addEventListener('mouseup', () => {
+      const node = this.node;
+      if (!node) {
+        return;
+      }
       // 顶点抬起时特殊判断，没有移动过的多选在已选时点击视为取消选择，没有移动过的单选则取消其它的
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
@@ -405,28 +398,25 @@ export default class Geometry {
         }
       }
       if (isMove && (isDrag || isControlF || isControlT)) {
-        const node = this.node;
-        if (node instanceof Polyline) {
-          let eq = this.clonePoints.length === node.props.points.length;
-          if (eq) {
-            for (let i = 0; i < this.clonePoints.length; i++) {
-              const a = this.clonePoints[i];
-              const b = node.props.points[i];
-              if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
-                eq = false;
-                break;
-              }
+        let eq = this.clonePoints.length === node.props.points.length;
+        if (eq) {
+          for (let i = 0; i < this.clonePoints.length; i++) {
+            const a = this.clonePoints[i];
+            const b = node.props.points[i];
+            if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
+              eq = false;
+              break;
             }
           }
-          if (!eq) {
-            // move结束可能干扰尺寸，调整后重新设置
-            node.checkPointsChange();
-            this.update();
-            listener.history.addCommand(new PointCommand([node], [{
-              prev: this.clonePoints.slice(0),
-              next: clone(node.props.points),
-            }]), true);
-          }
+        }
+        if (!eq) {
+          // move结束可能干扰尺寸，调整后重新设置
+          node.checkPointsChange();
+          this.update();
+          listener.history.addCommand(new PointCommand([node], [{
+            prev: this.clonePoints.slice(0),
+            next: clone(node.props.points),
+          }]), true);
         }
       }
       isDrag = isControlF = isControlT = isMove = false;
@@ -462,22 +452,20 @@ export default class Geometry {
         const x = e.offsetX;
         const y = e.offsetY;
         const scale = root.getCurPageZoom(true);
-        if (node instanceof Polyline) {
-          const points = getPolylineCoords(node, pathIdx, scale);
-          const p = getPointWithDByApprox(points, x, y);
-          panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
-          panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
-          panel.querySelector('.pt.cur')?.classList.remove('cur');
-          if (p && p.d <= 5) {
-            panel.querySelector(`svg.stroke path[idx="${pathIdx}"]`)?.classList.add('cur');
-            panel.querySelector(`svg.interactive path[idx="${pathIdx}"]`)?.classList.add('cur');
-            pj!.style.left = p.x + 'px';
-            pj!.style.top = p.y + 'px';
-            pj!.classList.add('cur');
-          }
-          else {
-            pj!.classList.remove('cur');
-          }
+        const points = getPolylineCoords(node, pathIdx, scale);
+        const p = getPointWithDByApprox(points, x, y);
+        panel.querySelector('svg.stroke .cur')?.classList.remove('cur');
+        panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
+        panel.querySelector('.pt.cur')?.classList.remove('cur');
+        if (p && p.d <= 5) {
+          panel.querySelector(`svg.stroke path[idx="${pathIdx}"]`)?.classList.add('cur');
+          panel.querySelector(`svg.interactive path[idx="${pathIdx}"]`)?.classList.add('cur');
+          pj!.style.left = p.x + 'px';
+          pj!.style.top = p.y + 'px';
+          pj!.classList.add('cur');
+        }
+        else {
+          pj!.classList.remove('cur');
         }
       }
     });
@@ -508,14 +496,12 @@ export default class Geometry {
     });
   }
 
-  show(node: Polyline | ShapeGroup) {
+  show(node: Polyline) {
     this.node = node;
     this.update(true);
     this.idx.splice(0);
     // 编辑就要计算dsp坐标，即相对于页面/画布的世界坐标，后续变更以此为准，因为会牵扯到尺寸变化相对坐标不正确
-    if (node instanceof Polyline) {
-      getPointsDspByAbs(node);
-    }
+    getPointsDspByAbs(node);
   }
 
   hide() {
@@ -539,7 +525,7 @@ export default class Geometry {
     this.updateVertex(node);
   }
 
-  updatePosSize(node: Polyline | ShapeGroup) {
+  updatePosSize(node: Polyline) {
     const panel = this.panel;
     const res = this.listener.select.calRect(node);
     panel.style.left = res.left + 'px';
@@ -550,7 +536,7 @@ export default class Geometry {
     panel.style.display = 'block';
   }
 
-  genVertex(node: Polyline | ShapeGroup) {
+  genVertex(node: Polyline) {
     const panel = this.panel;
     const points = node.props.points;
     panel.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
@@ -587,85 +573,83 @@ export default class Geometry {
     panel.innerHTML += s2 + '<div class="pj"></div>';
   }
 
-  updateVertex(node: Polyline | ShapeGroup) {
+  updateVertex(node: Polyline) {
     node.buildPoints();
     const panel = this.panel;
     const zoom = node.root!.getCurPageZoom(true);
-    if (node instanceof Polyline) {
-      const points = node.props.points;
-      const coords = node.coords!;
-      const vts = panel.querySelectorAll('.vt');
-      const paths1 = panel.querySelectorAll('svg.stroke path');
-      const paths2 = panel.querySelectorAll('svg.interactive path');
-      points.forEach((item, i) => {
-        const div = vts[i] as HTMLElement;
-        if (div) {
-          div.style.transform = `translate(${item.absX! * zoom}px, ${item.absY! * zoom}px)`;
-          const spans = div.querySelectorAll('span');
-          const [prev, next] = spans;
-          prev.classList.add('hide');
-          next.classList.add('hide');
-          if (item.curveMode !== CURVE_MODE.NONE && item.curveMode !== CURVE_MODE.STRAIGHT) {
-            const list: { el: HTMLElement, cx: number, cy: number }[] = [];
-            if (item.hasCurveTo && prev) {
-              prev.classList.remove('hide');
-              list.push({
-                el: prev,
-                cx: item.absTx!,
-                cy: item.absTy!,
-              });
-            }
-            if (item.hasCurveFrom && next) {
-              next.classList.remove('hide');
-              list.push({
-                el: next,
-                cx: item.absFx!,
-                cy: item.absFy!,
-              });
-            }
-            list.forEach((item2) => {
-              const { el, cx, cy } = item2;
-              const x = (cx - item.absX!) * zoom;
-              const y = (cy - item.absY!) * zoom;
-              el.style.transform = `translate(${x}px, ${y}px)`;
-              const d = Math.sqrt(x * x + y * y);
-              const b = el.firstElementChild as HTMLElement;
-              b.style.width = d + 'px';
-              b.style.transform = `rotateZ(${getRotate(-x, -y) || 0}deg)`;
+    const points = node.props.points;
+    const coords = node.coords!;
+    const vts = panel.querySelectorAll('.vt');
+    const paths1 = panel.querySelectorAll('svg.stroke path');
+    const paths2 = panel.querySelectorAll('svg.interactive path');
+    points.forEach((item, i) => {
+      const div = vts[i] as HTMLElement;
+      if (div) {
+        div.style.transform = `translate(${item.absX! * zoom}px, ${item.absY! * zoom}px)`;
+        const spans = div.querySelectorAll('span');
+        const [prev, next] = spans;
+        prev.classList.add('hide');
+        next.classList.add('hide');
+        if (item.curveMode !== CURVE_MODE.NONE && item.curveMode !== CURVE_MODE.STRAIGHT) {
+          const list: { el: HTMLElement, cx: number, cy: number }[] = [];
+          if (item.hasCurveTo && prev) {
+            prev.classList.remove('hide');
+            list.push({
+              el: prev,
+              cx: item.absTx!,
+              cy: item.absTy!,
             });
           }
-        }
-      });
-      coords.forEach((item, i) => {
-        if (paths1[i] && paths2[i]) {
-          let d = 'M' + item.slice(-2).map(n => n * zoom).join(',');
-          const next = coords[i + 1] || coords[0];
-          const title = paths1[i].getAttribute('title') || '';
-          const idx = parseInt(title);
-          if (isNaN(idx)) {
-            d += 'L';
-            const j = parseInt(/\d+/.exec(title)![0]);
-            d += points[j].absX! * zoom + ',' + points[j].absY! * zoom;
-            d += 'L';
-            d += next.slice(-2).map(n => n * zoom).join(',');
+          if (item.hasCurveFrom && next) {
+            next.classList.remove('hide');
+            list.push({
+              el: next,
+              cx: item.absFx!,
+              cy: item.absFy!,
+            });
           }
-          else if (next) {
-            if (next.length === 6) {
-              d += 'C';
-            }
-            else if (next.length === 4) {
-              d += 'Q';
-            }
-            else if (next.length === 2) {
-              d += 'L';
-            }
-            d += next.map(n => n * zoom).join(',');
-          }
-          paths1[i].setAttribute('d', d);
-          paths2[i].setAttribute('d', d);
+          list.forEach((item2) => {
+            const { el, cx, cy } = item2;
+            const x = (cx - item.absX!) * zoom;
+            const y = (cy - item.absY!) * zoom;
+            el.style.transform = `translate(${x}px, ${y}px)`;
+            const d = Math.sqrt(x * x + y * y);
+            const b = el.firstElementChild as HTMLElement;
+            b.style.width = d + 'px';
+            b.style.transform = `rotateZ(${getRotate(-x, -y) || 0}deg)`;
+          });
         }
-      });
-    }
+      }
+    });
+    coords.forEach((item, i) => {
+      if (paths1[i] && paths2[i]) {
+        let d = 'M' + item.slice(-2).map(n => n * zoom).join(',');
+        const next = coords[i + 1] || coords[0];
+        const title = paths1[i].getAttribute('title') || '';
+        const idx = parseInt(title);
+        if (isNaN(idx)) {
+          d += 'L';
+          const j = parseInt(/\d+/.exec(title)![0]);
+          d += points[j].absX! * zoom + ',' + points[j].absY! * zoom;
+          d += 'L';
+          d += next.slice(-2).map(n => n * zoom).join(',');
+        }
+        else if (next) {
+          if (next.length === 6) {
+            d += 'C';
+          }
+          else if (next.length === 4) {
+            d += 'Q';
+          }
+          else if (next.length === 2) {
+            d += 'L';
+          }
+          d += next.map(n => n * zoom).join(',');
+        }
+        paths1[i].setAttribute('d', d);
+        paths2[i].setAttribute('d', d);
+      }
+    });
   }
 
   updatePos() {
@@ -692,20 +676,18 @@ export default class Geometry {
     const node = this.node;
     const idx = this.idx;
     if (node && idx.length) {
-      if (node instanceof Polyline) {
-        const prev = clone(node.props.points);
-        idx.sort((a, b) => b - a);
-        idx.forEach(i => {
-          node.props.points.splice(i, 1);
-        });
-        node.refresh();
-        node.checkPointsChange();
-        this.update(true);
-        this.listener.history.addCommand(new PointCommand([node], [{
-          prev,
-          next: clone(node.props.points),
-        }]), true);
-      }
+      const prev = clone(node.props.points);
+      idx.sort((a, b) => b - a);
+      idx.forEach(i => {
+        node.props.points.splice(i, 1);
+      });
+      node.refresh();
+      node.checkPointsChange();
+      this.update(true);
+      this.listener.history.addCommand(new PointCommand([node], [{
+        prev,
+        next: clone(node.props.points),
+      }]), true);
     }
   }
 }
