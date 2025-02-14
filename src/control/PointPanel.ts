@@ -4,7 +4,6 @@ import Root from '../node/Root';
 import Listener from './Listener';
 import State from './State';
 import Polyline from '../node/geom/Polyline';
-import ShapeGroup from '../node/geom/ShapeGroup';
 import { CURVE_MODE } from '../style/define';
 import { Point } from '../format';
 import { clone } from '../util/type';
@@ -42,7 +41,7 @@ const html = `
 
 class PointPanel extends Panel {
   panel: HTMLElement;
-  node?: Polyline | ShapeGroup;
+  node?: Polyline;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
@@ -427,7 +426,7 @@ class PointPanel extends Panel {
   }
 
   override show(nodes: Node[]) {
-    const geoms = nodes.filter(item => item instanceof Polyline || item instanceof ShapeGroup);
+    const geoms = nodes.filter(item => item instanceof Polyline);
     this.nodes = geoms;
     const panel = this.panel;
     if (!geoms.length || this.listener.state !== State.EDIT_GEOM) {
