@@ -13,6 +13,7 @@ export type Rect = {
 };
 
 const html = `
+  <div class="sub"></div>
   <span class="l">
     <b></b>
   </span>
@@ -25,7 +26,6 @@ const html = `
   <span class="b">
     <b></b>
   </span>
-  <div class="sub"></div>
   <span class="tl">
     <b></b>
   </span>
