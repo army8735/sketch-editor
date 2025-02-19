@@ -61,69 +61,67 @@ class PointPanel extends Panel {
       if (tagName === 'LI' && !classList.contains('cur') && node) {
         panel.querySelector('.type .cur')?.classList.remove('cur');
         classList.add('cur');
-        if (node instanceof Polyline) {
-          const points = node.props.points;
-          prevPoint = clone(points);
-          listener.geometry.idx.forEach(i => {
-            const p = points[i];
-            p.hasCurveTo = p.hasCurveFrom = true;
-            if (classList.contains('mirrored')) {
-              p.curveMode = CURVE_MODE.MIRRORED;
-              // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
-              if (p.hasCurveTo) {
-                const dx = p.tx - p.x;
-                const dy = p.ty - p.y;
-                p.fx = p.x - dx;
-                p.fy = p.y - dy;
-              }
-              else if (p.hasCurveFrom) {
-                const dx = p.fx - p.x;
-                const dy = p.fy - p.y;
-                p.tx = p.x - dx;
-                p.ty = p.y - dy;
-              }
-              // 都没有默认设置和前后点x/y的差值
-              else {
-                const prev = points[i - 1] || points[points.length - 1];
-                p.tx = (prev.x + p.x) * 0.5;
-                p.ty = (prev.y + p.y) * 0.5;
-                const dx = p.tx - p.x;
-                const dy = p.ty - p.y;
-                p.fx = p.x - dx;
-                p.fy = p.y - dy;
-              }
-              p.hasCurveFrom = true;
-              p.hasCurveTo = true;
+        const points = node.props.points;
+        prevPoint = clone(points);
+        listener.geometry.idxes.forEach(i => {
+          const p = points[i];
+          p.hasCurveTo = p.hasCurveFrom = true;
+          if (classList.contains('mirrored')) {
+            p.curveMode = CURVE_MODE.MIRRORED;
+            // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
+            if (p.hasCurveTo) {
+              const dx = p.tx - p.x;
+              const dy = p.ty - p.y;
+              p.fx = p.x - dx;
+              p.fy = p.y - dy;
             }
-            else if (classList.contains('disconnected')) {
-              p.curveMode = CURVE_MODE.DISCONNECTED;
+            else if (p.hasCurveFrom) {
+              const dx = p.fx - p.x;
+              const dy = p.fy - p.y;
+              p.tx = p.x - dx;
+              p.ty = p.y - dy;
             }
-            else if (classList.contains('asymmetric')) {
-              p.curveMode = CURVE_MODE.ASYMMETRIC;
-              const dt = Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2));
-              const df = Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2));
-              // 前后控制点都有或者都没有则后面的跟随前面的，否则没有的跟随有的
-              if (p.hasCurveTo || !p.hasCurveFrom && !p.hasCurveTo) {
-                const dx = p.tx - p.x;
-                const dy = p.ty - p.y;
-                p.fx = p.x - dx * df / dt;
-                p.fy = p.y - dy * df / dt;
-              }
-              else if (p.hasCurveFrom) {
-                const dx = p.fx - p.x;
-                const dy = p.fy - p.y;
-                p.tx = p.x - dx * dt / df;
-                p.ty = p.y - dy * dt / df;
-              }
-              p.hasCurveFrom = true;
-              p.hasCurveTo = true;
-            }
+            // 都没有默认设置和前后点x/y的差值
             else {
-              p.curveMode = CURVE_MODE.STRAIGHT;
-              p.hasCurveTo = p.hasCurveFrom = false;
+              const prev = points[i - 1] || points[points.length - 1];
+              p.tx = (prev.x + p.x) * 0.5;
+              p.ty = (prev.y + p.y) * 0.5;
+              const dx = p.tx - p.x;
+              const dy = p.ty - p.y;
+              p.fx = p.x - dx;
+              p.fy = p.y - dy;
             }
-          });
-        }
+            p.hasCurveFrom = true;
+            p.hasCurveTo = true;
+          }
+          else if (classList.contains('disconnected')) {
+            p.curveMode = CURVE_MODE.DISCONNECTED;
+          }
+          else if (classList.contains('asymmetric')) {
+            p.curveMode = CURVE_MODE.ASYMMETRIC;
+            const dt = Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2));
+            const df = Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2));
+            // 前后控制点都有或者都没有则后面的跟随前面的，否则没有的跟随有的
+            if (p.hasCurveTo || !p.hasCurveFrom && !p.hasCurveTo) {
+              const dx = p.tx - p.x;
+              const dy = p.ty - p.y;
+              p.fx = p.x - dx * df / dt;
+              p.fy = p.y - dy * df / dt;
+            }
+            else if (p.hasCurveFrom) {
+              const dx = p.fx - p.x;
+              const dy = p.fy - p.y;
+              p.tx = p.x - dx * dt / df;
+              p.ty = p.y - dy * dt / df;
+            }
+            p.hasCurveFrom = true;
+            p.hasCurveTo = true;
+          }
+          else {
+            p.curveMode = CURVE_MODE.STRAIGHT;
+            p.hasCurveTo = p.hasCurveFrom = false;
+          }
+        });
         node.refresh();
         listener.geometry.updateVertex(node);
         onChange();
@@ -160,96 +158,92 @@ class PointPanel extends Panel {
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !prevPoint.length;
       if (isFirst) {
-        if (node instanceof Polyline) {
-          prevPoint = clone(node.props.points);
-        }
+        prevPoint = clone(node.props.points);
       }
-      if (node instanceof Polyline) {
-        const points = listener.geometry.idx.map(i => node.props.points[i]);
-        points.forEach((item, i) => {
-          if (isInput) {
+      const points = listener.geometry.idxes.map(i => node.props.points[i]);
+      points.forEach((item, i) => {
+        if (isInput) {
+          if (isX) {
+            item.dspX = value;
+          }
+          else {
+            item.dspY = value;
+          }
+          if (!i) {
             if (isX) {
-              item.dspX = value;
+              x.placeholder = '';
             }
             else {
-              item.dspY = value;
+              y.placeholder = '';
             }
-            if (!i) {
-              if (isX) {
-                x.placeholder = '';
-              }
-              else {
-                y.placeholder = '';
-              }
+          }
+        }
+        else {
+          let d = 0;
+          if (isX) {
+            if (x.placeholder) {
+              d = value;
+            }
+            else {
+              d = value - item.dspX!;
             }
           }
           else {
-            let d = 0;
+            if (y.placeholder) {
+              d = value;
+            }
+            else {
+              d = value - item.dspY!;
+            }
+          }
+          if (listener.shiftKey) {
+            if (d > 0) {
+              d = 10;
+            }
+            else {
+              d = -10;
+            }
+          }
+          else if (listener.altKey) {
+            if (d > 0) {
+              d = 0.1;
+            }
+            else {
+              d = -0.1;
+            }
+          }
+          if (isX) {
+            item.dspX! += d;
+            item.dspFx! += d;
+            item.dspTx! += d;
+          }
+          else {
+            item.dspY! += d;
+            item.dspFy! += d;
+            item.dspTy! += d;
+          }
+          if (!i) {
             if (isX) {
               if (x.placeholder) {
-                d = value;
+                x.value = '';
               }
               else {
-                d = value - item.dspX!;
+                x.value = toPrecision(item.dspX!).toString();
               }
             }
             else {
               if (y.placeholder) {
-                d = value;
+                y.value = '';
               }
               else {
-                d = value - item.dspY!;
-              }
-            }
-            if (listener.shiftKey) {
-              if (d > 0) {
-                d = 10;
-              }
-              else {
-                d = -10;
-              }
-            }
-            else if (listener.altKey) {
-              if (d > 0) {
-                d = 0.1;
-              }
-              else {
-                d = -0.1;
-              }
-            }
-            if (isX) {
-              item.dspX! += d;
-              item.dspFx! += d;
-              item.dspTx! += d;
-            }
-            else {
-              item.dspY! += d;
-              item.dspFy! += d;
-              item.dspTy! += d;
-            }
-            if (!i) {
-              if (isX) {
-                if (x.placeholder) {
-                  x.value = '';
-                }
-                else {
-                  x.value = toPrecision(item.dspX!).toString();
-                }
-              }
-              else {
-                if (y.placeholder) {
-                  y.value = '';
-                }
-                else {
-                  y.value = toPrecision(item.dspY!).toString();
-                }
+                y.value = toPrecision(item.dspY!).toString();
               }
             }
           }
-        });
-        getPointsAbsByDsp(node, points);
-        node.reflectPoints(points);
-      }
+        }
+      });
+      getPointsAbsByDsp(node, points);
+      node.reflectPoints(points);
       node.refresh();
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
@@ -277,25 +271,21 @@ class PointPanel extends Panel {
       }
       this.silence = true;
       if (!prevPoint.length) {
-        if (node instanceof Polyline) {
-          prevPoint = clone(node.props.points);
-        }
+        prevPoint = clone(node.props.points);
       }
       const value = parseFloat(range.value) || 0;
       rangeAlt = false;
-      if (node instanceof Polyline) {
-        let points = node.props.points;
-        // 激活的顶点或者全部
-        if (listener.geometry.idx.length) {
-          points = listener.geometry.idx.map(i => points[i]);
-        }
-        points.forEach(item => {
-          if (item.cornerRadius && !value || !item.cornerRadius && value) {
-            rangeAlt = true;
-          }
-          item.cornerRadius = value;
-        });
+      let points = node.props.points;
+      // 激活的顶点或者全部
+      if (listener.geometry.idxes.length) {
+        points = listener.geometry.idxes.map(i => points[i]);
       }
+      points.forEach(item => {
+        if (item.cornerRadius && !value || !item.cornerRadius && value) {
+          rangeAlt = true;
+        }
+        item.cornerRadius = value;
+      });
       range.placeholder = number.placeholder = '';
       number.value = range.value;
       node.refresh();
@@ -314,56 +304,52 @@ class PointPanel extends Panel {
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       if (!prevPoint.length) {
-        if (node instanceof Polyline) {
-          prevPoint = clone(node.props.points);
-        }
+        prevPoint = clone(node.props.points);
       }
-      if (node instanceof Polyline) {
-        const points = listener.geometry.idx.map(i => node.props.points[i]);
-        points.forEach((item, i) => {
-          if (isInput) {
-            item.cornerRadius = value;
-            if (!i) {
-              range.placeholder = number.placeholder = '';
-              range.value = number.value;
-            }
+      const points = listener.geometry.idxes.map(i => node.props.points[i]);
+      points.forEach((item, i) => {
+        if (isInput) {
+          item.cornerRadius = value;
+          if (!i) {
+            range.placeholder = number.placeholder = '';
+            range.value = number.value;
+          }
+        }
+        else {
+          let d = 0;
+          if (number.placeholder) {
+            d = value;
           }
           else {
-            let d = 0;
-            if (number.placeholder) {
-              d = value;
+            d = value - item.cornerRadius;
+          }
+          if (listener.shiftKey) {
+            if (d > 0) {
+              d = 10;
             }
             else {
-              d = value - item.cornerRadius;
-            }
-            if (listener.shiftKey) {
-              if (d > 0) {
-                d = 10;
-              }
-              else {
-                d = -10;
-              }
-            }
-            else if (listener.altKey) {
-              if (d > 0) {
-                d = 0.1;
-              }
-              else {
-                d = -0.1;
-              }
-            }
-            item.cornerRadius += d;
-            if (!i) {
-              if (number.placeholder) {
-                number.value = '';
-              }
-              else {
-                number.value = toPrecision(item.cornerRadius).toString();
-              }
+              d = -10;
             }
           }
-        });
-      }
+          else if (listener.altKey) {
+            if (d > 0) {
+              d = 0.1;
+            }
+            else {
+              d = -0.1;
+            }
+          }
+          item.cornerRadius += d;
+          if (!i) {
+            if (number.placeholder) {
+              number.value = '';
+            }
+            else {
+              number.value = toPrecision(item.cornerRadius).toString();
+            }
+          }
+        }
+      });
       node.refresh();
       listener.geometry.updateVertex(node);
       listener.emit(Listener.POINT_NODE, [node]);
@@ -421,7 +407,7 @@ class PointPanel extends Panel {
 
     listener.on(Listener.SELECT_POINT, showPoint);
     listener.on(Listener.POINT_NODE, (node) => {
-      showPoint(listener.geometry.idx);
+      showPoint(listener.geometry.idxes);
     });
   }
 
@@ -454,18 +440,16 @@ class PointPanel extends Panel {
     }
     const xs: number[] = [];
     const ys: number[] = [];
-    if (node instanceof Polyline) {
-      const points = idx.map(i => node.props.points[i]);
-      getPointsDspByAbs(node, points);
-      points.forEach(item => {
-        if (!xs.includes(item.dspX!)) {
-          xs.push(item.dspX!);
-        }
-        if (!ys.includes(item.dspY!)) {
-          ys.push(item.dspY!);
-        }
-      });
-    }
+    const points = idx.map(i => node.props.points[i]);
+    getPointsDspByAbs(node, points);
+    points.forEach(item => {
+      if (!xs.includes(item.dspX!)) {
+        xs.push(item.dspX!);
+      }
+      if (!ys.includes(item.dspY!)) {
+        ys.push(item.dspY!);
+      }
+    });
     if (xs.length > 1) {
       x.placeholder = '多个';
     }
@@ -495,21 +479,19 @@ class PointPanel extends Panel {
       return;
     }
     const radius: number[] = [];
-    if (node instanceof Polyline) {
-      let points = node.props.points;
-      // 默认展示全部
-      if (idx.length) {
-        points = idx.map(i => points[i]);
-      }
-      points.forEach(item => {
-        if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
-          const r = item.cornerRadius;
-          if (!radius.includes(r)) {
-            radius.push(r);
-          }
-        }
-      });
+    let points = node.props.points;
+    // 默认展示全部
+    if (idx.length) {
+      points = idx.map(i => points[i]);
     }
+    points.forEach(item => {
+      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
+        const r = item.cornerRadius;
+        if (!radius.includes(r)) {
+          radius.push(r);
+        }
+      }
+    });
     if (!radius.length) {
       radius.push(0);
     }

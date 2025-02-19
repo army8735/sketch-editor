@@ -207,7 +207,7 @@ export default class Listener extends Event {
       // 暂时不允许多选编辑 TODO
       if (keepGeom) {
         this.select.hideSelect();
-        this.geometry.show(this.selected[0] as Polyline);
+        this.geometry.show([this.selected[0] as Polyline]);
       }
       else {
         this.geometry.hide();
@@ -775,18 +775,18 @@ export default class Listener extends Event {
           if (this.options.enabled?.selectWithMeta) {
             meta = !meta;
           }
-          // 矢量顶点框选，不关闭矢量面板
+          // 矢量顶点框选，不关闭矢量面板，注意刚按下时人手可能会轻微移动，x/y某个为0忽略，产生位移后keep就为true了
           if (this.state === State.EDIT_GEOM) {
-            this.geometry.keep = true;
-            const node = this.geometry.node;
-            if (node instanceof Polyline) {
+            if (dx && dy || this.geometry.keep) {
+              this.geometry.keep = true;
+              const node = this.geometry.nodes[this.geometry.nodeIdx];
               const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
               const geometry = this.geometry;
-              if (res.join(',') !== geometry.idx.join(',')) {
-                geometry.idx.splice(0);
+              if (res.join(',') !== geometry.idxes.join(',')) {
+                geometry.idxes.splice(0);
                 geometry.clearCur();
                 res.forEach(i => {
-                  this.geometry.idx.push(i);
+                  this.geometry.idxes.push(i);
                   const div = geometry.panel.querySelector(`.vt[title="${i}"]`) as HTMLElement;
                   div.classList.add('cur');
                 });
@@ -1208,7 +1208,7 @@ export default class Listener extends Event {
             return;
           }
           this.select.hideSelect();
-          this.geometry.show(node);
+          this.geometry.show([node]);
           this.state = State.EDIT_GEOM;
           this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
         }
@@ -1628,7 +1628,7 @@ export default class Listener extends Event {
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
       if (this.state === State.EDIT_GEOM) {
-        if (this.geometry.idx.length) {
+        if (this.geometry.idxes.length) {
           this.geometry.delVertex();
         }
         // 没选择顶点删除等同于esc的取消功能
@@ -1650,7 +1650,7 @@ export default class Listener extends Event {
       this.spaceKey = true;
       if (!this.isMouseDown && !this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
-        if (this.state !== State.EDIT_GEOM || !this.geometry.idx.length) {
+        if (this.state !== State.EDIT_GEOM || !this.geometry.idxes.length) {
           this.dom.style.cursor = 'grab';
         }
       }
@@ -1692,8 +1692,8 @@ export default class Listener extends Event {
         this.cancelEditText();
       }
       else if (this.state === State.EDIT_GEOM) {
-        if (this.geometry.idx.length) {
-          this.geometry.idx.splice(0);
+        if (this.geometry.idxes.length) {
+          this.geometry.idxes.splice(0);
           this.geometry.clearCur();
           this.emit(Listener.SELECT_POINT, []);
         }
@@ -1796,7 +1796,7 @@ export default class Listener extends Event {
           const node = this.selected[0];
           if (node instanceof Polyline) {
             const prevPoint = clone(node.props.points);
-            const points = this.geometry.idx.map(i => node.props.points[i]);
+            const points = this.geometry.idxes.map(i => node.props.points[i]);
             points.forEach(item => {
               item.dspX! += x;
               item.dspY! += y;

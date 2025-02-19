@@ -268,7 +268,8 @@ export function getOverlayArtBoardByPoint(root: Root, x: number, y: number) {
 }
 
 export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2: number, metaKey = false) {
-  if (root.isDestroyed) {
+  // 鼠标轻微移动没有宽或高
+  if (root.isDestroyed || x1 === x2 || y1 === y2) {
     return [];
   }
   const page = root.lastPage;

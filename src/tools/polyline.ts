@@ -400,10 +400,14 @@ export function createPolyline(
 
 // 框选范围内的顶点
 export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: number, y2: number) {
+  const list: number[] = [];
+  // 鼠标轻微移动没有宽或高
+  if (x1 === x2 || y1 === y2) {
+    return list;
+  }
   node.buildPoints();
   const m = node.matrixWorld;
   const points = node.props.points;
-  const list: number[] = [];
   points.forEach((item: Point, i) => {
     const p = calPoint({
       x: item.absX!,

@@ -14,17 +14,20 @@ export default class Geometry {
   dom: HTMLElement;
   listener: Listener;
   panel: HTMLElement;
-  node?: Polyline;
   keep?: boolean; // 按下整体任意，后续外部冒泡侦听按下识别
   keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
-  idx: number[]; // 当前激活点索引
+  nodes: Polyline[];
+  nodeIdx: number; // 当前编辑节点索引，一般只有1个，特殊情况tree多选会展示多个节点但编辑始终是1个
+  idxes: number[]; // 当前激活点索引
   clonePoints: Point[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
-    this.idx = [];
+    this.nodes = [];
+    this.nodeIdx = 0;
+    this.idxes = [];
     this.clonePoints = [];
 
     const panel = this.panel = document.createElement('div');
@@ -32,7 +35,7 @@ export default class Geometry {
     panel.style.display = 'none';
     dom.appendChild(panel);
 
-    let idx = -1;
+    let idx = -1; // 当前点的索引
     let isDrag = false;
     let isControlF = false;
     let isControlT = false;
@@ -59,7 +62,7 @@ export default class Geometry {
       if (e.button !== 0 || listener.spaceKey) {
         return;
       }
-      const node = this.node;
+      const node = this.nodes[this.nodeIdx];
       if (!node) {
         return;
       }
@@ -81,24 +84,24 @@ export default class Geometry {
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey) {
           isShift = true;
-          if (this.idx.includes(idx)) {
+          if (this.idxes.includes(idx)) {
             isSelected = true;
           }
           else {
-            this.idx.push(idx);
+            this.idxes.push(idx);
           }
           classList.add('cur');
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
         }
         // 无shift看点下的是否是已选，否仅是单个选择，是暂时无法判断意图先记录等抬起
-        else if (this.idx.includes(idx)) {
+        else if (this.idxes.includes(idx)) {
           isSelected = true;
         }
         else {
           this.clearCur();
-          this.idx.splice(0);
-          this.idx.push(idx);
+          this.idxes.splice(0);
+          this.idxes.push(idx);
           classList.add('cur');
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
@@ -112,7 +115,7 @@ export default class Geometry {
         diff.dspTx = p.dspTx!;
         diff.dspTy = p.dspTy!;
         this.clonePoints = clone(node.props.points);
-        listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+        listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
       }
       // 点矢量边添加顶点
       else if (tagName === 'PATH') {
@@ -229,23 +232,23 @@ export default class Geometry {
             points.splice(i + 1, 0, mid);
             node.refresh();
             node.checkPointsChange();
-            this.show(node);
-            this.idx.splice(0);
-            this.idx.push(i + 1);
+            this.show([node]);
+            this.idxes.splice(0);
+            this.idxes.push(i + 1);
             listener.history.addCommand(new PointCommand([node], [{
               prev: clone(node.props.points),
               next: this.clonePoints.slice(0),
             }]), true);
             listener.emit(Listener.POINT_NODE, [node]);
-            listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+            listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
           }
           else {
-            this.idx.splice(0);
+            this.idxes.splice(0);
             listener.emit(Listener.SELECT_POINT, []);
           }
         }
         else {
-          this.idx.splice(0);
+          this.idxes.splice(0);
           listener.emit(Listener.SELECT_POINT, []);
         }
       }
@@ -268,7 +271,7 @@ export default class Geometry {
       }
       // 点自己清空顶点，保持编辑态
       else {
-        this.idx.splice(0);
+        this.idxes.splice(0);
         panel.querySelector('div.vt.cur')?.classList.remove('cur');
         panel.querySelector('div.vt.f')?.classList.remove('f');
         panel.querySelector('div.vt.t')?.classList.remove('t');
@@ -276,7 +279,7 @@ export default class Geometry {
       }
     });
     document.addEventListener('mousemove', (e) => {
-      const node = this.node;
+      const node = this.nodes[this.nodeIdx];
       if (!node) {
         return;
       }
@@ -309,7 +312,7 @@ export default class Geometry {
         p.dspTx = diff.dspTx + dx2;
         p.dspTy = diff.dspTy + dy2;
         // 多个点的话其它的也随之变动
-        const pts = this.idx.map(i => {
+        const pts = this.idxes.map(i => {
           if (i === idx) {
             return p;
           }
@@ -372,7 +375,7 @@ export default class Geometry {
       isMove = true;
     });
     document.addEventListener('mouseup', () => {
-      const node = this.node;
+      const node = this.nodes[this.nodeIdx];
       if (!node) {
         return;
       }
@@ -380,10 +383,10 @@ export default class Geometry {
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
           panel.querySelector(`.vt[title="${idx}"]`)?.classList.remove('cur');
-          const i = this.idx.indexOf(idx);
+          const i = this.idxes.indexOf(idx);
           if (i > -1) {
-            this.idx.splice(i, 1);
-            listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+            this.idxes.splice(i, 1);
+            listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
           }
         }
         else {
@@ -392,9 +395,9 @@ export default class Geometry {
               item.classList.remove('cur');
             }
           });
-          this.idx.splice(0);
-          this.idx.push(idx);
-          listener.emit(Listener.SELECT_POINT, this.idx.slice(0));
+          this.idxes.splice(0);
+          this.idxes.push(idx);
+          listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
         }
       }
       if (isMove && (isDrag || isControlF || isControlT)) {
@@ -447,7 +450,7 @@ export default class Geometry {
       }
     });
     panel.addEventListener('mousemove', (e) => {
-      const node = this.node;
+      const node = this.nodes[this.nodeIdx];
       if (pathIdx > -1 && node) {
         const x = e.offsetX;
         const y = e.offsetY;
@@ -496,24 +499,32 @@ export default class Geometry {
     });
   }
 
-  show(node: Polyline) {
-    this.node = node;
+  show(nodes: Polyline[], nodeIdx = 0) {
+    this.nodes.splice(0);
+    this.nodes.push(...nodes);
+    this.alt(nodeIdx);
+  }
+
+  alt(nodeIdx: number) {
+    this.nodeIdx = nodeIdx;
     this.update(true);
-    this.idx.splice(0);
+    this.idxes.splice(0);
     // 编辑就要计算dsp坐标，即相对于页面/画布的世界坐标，后续变更以此为准，因为会牵扯到尺寸变化相对坐标不正确
-    getPointsDspByAbs(node);
+    getPointsDspByAbs(this.nodes[nodeIdx]);
   }
 
   hide() {
     this.panel.style.display = 'none';
     this.panel.innerHTML = '';
-    this.node = undefined;
+    this.nodes.splice(0);
+    this.nodeIdx = -1;
+    this.idxes.splice(0);
     this.keep = false;
     this.keepVertPath = false;
   }
 
   update(init = false) {
-    const node = this.node;
+    const node = this.nodes[this.nodeIdx];
     if (!node) {
       return;
     }
@@ -653,7 +664,7 @@ export default class Geometry {
   }
 
   updatePos() {
-    const node = this.node;
+    const node = this.nodes[this.nodeIdx];
     if (node) {
       this.updatePosSize(node);
     }
@@ -673,12 +684,12 @@ export default class Geometry {
   }
 
   delVertex() {
-    const node = this.node;
-    const idx = this.idx;
-    if (node && idx.length) {
+    const node = this.nodes[this.nodeIdx];
+    const idxes = this.idxes;
+    if (node && idxes.length) {
       const prev = clone(node.props.points);
-      idx.sort((a, b) => b - a);
-      idx.forEach(i => {
+      idxes.sort((a, b) => b - a);
+      idxes.forEach(i => {
         node.props.points.splice(i, 1);
       });
       node.refresh();
