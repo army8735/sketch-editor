@@ -12,7 +12,7 @@ import Select, { Rect } from './Select';
 import Input from './Input';
 import State from './State';
 import { clone } from '../util/type';
-import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle } from '../format';
+import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle, Point } from '../format';
 import { getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
@@ -49,7 +49,7 @@ import Gradient from './Gradient';
 import Geometry from './Geometry';
 import Polyline from '../node/geom/Polyline';
 import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
-import PointCommand from '../history/PointCommand';
+import PointCommand, { PointData } from '../history/PointCommand';
 import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type ListenerOptions = {
@@ -204,10 +204,10 @@ export default class Listener extends Event {
           break;
         }
       }
-      // 暂时不允许多选编辑 TODO
+      // 多选编辑
       if (keepGeom) {
         this.select.hideSelect();
-        this.geometry.show([this.selected[0] as Polyline]);
+        this.geometry.show(this.selected as Polyline[]);
       }
       else {
         this.geometry.hide();
@@ -544,7 +544,7 @@ export default class Listener extends Event {
         }
         // 理论进不来因为gradient/geom的dom盖在上面点不到，点到也应该有节点
         else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
-          this.emit(Listener.SELECT_POINT, []);
+          this.emit(Listener.SELECT_POINT, [], []);
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -777,20 +777,44 @@ export default class Listener extends Event {
           }
           // 矢量顶点框选，不关闭矢量面板，注意刚按下时人手可能会轻微移动，x/y某个为0忽略，产生位移后keep就为true了
           if (this.state === State.EDIT_GEOM) {
-            if (dx && dy || this.geometry.keep) {
-              this.geometry.keep = true;
-              const node = this.geometry.nodes[this.geometry.nodeIdx];
-              const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
-              const geometry = this.geometry;
-              if (res.join(',') !== geometry.idxes.join(',')) {
-                geometry.idxes.splice(0);
-                geometry.clearCur();
-                res.forEach(i => {
-                  this.geometry.idxes.push(i);
-                  const div = geometry.panel.querySelector(`.vt[title="${i}"]`) as HTMLElement;
-                  div.classList.add('cur');
-                });
-                this.emit(Listener.SELECT_POINT, res);
+            const geometry = this.geometry;
+            if (dx && dy || geometry.keep) {
+              geometry.keep = true;
+              let hasChange = false;
+              geometry.nodes.forEach((node, i) => {
+                const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
+                if (res.length) {
+                  if (!geometry.nodeIdxes.includes(i)) {
+                    geometry.nodeIdxes.push(i);
+                  }
+                  const j = geometry.nodeIdxes.indexOf(i);
+                  const idxes = geometry.idxes[j] = geometry.idxes[j] || [];
+                  if (res.join(',') !== idxes.sort((a, b) => a - b).join(',')) {
+                    idxes.splice(0);
+                    idxes.push(...res);
+                    // 清空已有的
+                    const div = geometry.panel.querySelector(`div.item[title="${j}"]`) as HTMLElement;
+                    div.querySelectorAll('div.cur')?.forEach(item => {
+                      item.classList.remove('cur');
+                    });
+                    div.querySelectorAll('div.f')?.forEach(item => {
+                      item.classList.remove('f');
+                    });
+                    div.querySelectorAll('div.t')?.forEach(item => {
+                      item.classList.remove('t');
+                    });
+                    res.forEach(i => {
+                      const vt = div.querySelector(`div.vt[title="${i}"]`) as HTMLElement;
+                      vt.classList.add('cur');
+                      vt.nextElementSibling?.classList.add('t');
+                      vt.previousElementSibling?.classList.add('f');
+                    });
+                    hasChange = true;
+                  }
+                }
+              });
+              if (hasChange) {
+                this.geometry.emitSelectPoint();
               }
             }
             return;
@@ -915,7 +939,7 @@ export default class Listener extends Event {
             this.gradient.updatePos();
           }
           else if (this.state === State.EDIT_GEOM) {
-            this.geometry.updatePos();
+            this.geometry.updateCurPosSize();
           }
         }
       }
@@ -1695,7 +1719,7 @@ export default class Listener extends Event {
         if (this.geometry.idxes.length) {
           this.geometry.idxes.splice(0);
           this.geometry.clearCur();
-          this.emit(Listener.SELECT_POINT, []);
+          this.emit(Listener.SELECT_POINT, [], []);
         }
         else {
           this.cancelEditGeom();
@@ -1793,27 +1817,40 @@ export default class Listener extends Event {
           }
         }
         if (this.state === State.EDIT_GEOM) {
-          const node = this.selected[0];
-          if (node instanceof Polyline) {
-            const prevPoint = clone(node.props.points);
-            const points = this.geometry.idxes.map(i => node.props.points[i]);
-            points.forEach(item => {
-              item.dspX! += x;
-              item.dspY! += y;
-              item.dspFx! += x;
-              item.dspFy! += y;
-              item.dspTx! += x;
-              item.dspTy! += y;
-            });
-            getPointsAbsByDsp(node, points);
-            node.reflectPoints(points);
-            node.refresh();
-            this.geometry.updateVertex(node);
-            this.emit(Listener.POINT_NODE, [node]);
-            this.history.addCommand(new PointCommand([node], [{
-              prev: prevPoint.slice(0),
-              next: clone(node.props.points),
-            }]));
+          const geometry = this.geometry;
+          const nodes: Polyline[] = [];
+          const data: PointData[] = [];
+          const points: Point[][] = [];
+          geometry.nodeIdxes.forEach((i, j) => {
+            const node = geometry.nodes[i];
+            const idxes = geometry.idxes[j] || [];
+            // 应该肯定有
+            if (idxes.length) {
+              nodes.push(node);
+              const prev = clone(node.props.points);
+              const pts = idxes.map(i => node.props.points[i]);
+              pts.forEach(item => {
+                item.dspX! += x;
+                item.dspY! += y;
+                item.dspFx! += x;
+                item.dspFy! += y;
+                item.dspTx! += x;
+                item.dspTy! += y;
+              });
+              getPointsAbsByDsp(node, pts);
+              node.reflectPoints(pts);
+              node.refresh();
+              geometry.updateVertex(node, i);
+              data.push({
+                prev,
+                next: clone(node.props.points),
+              });
+              points.push(pts);
+            }
+          });
+          if (nodes.length) {
+            this.emit(Listener.POINT_NODE, nodes, points);
+            this.history.addCommand(new PointCommand(nodes, data));
           }
         }
         else {
@@ -2070,13 +2107,14 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof PointCommand) {
-          const node = nodes[0];
-          if (this.state === State.EDIT_GEOM && node === this.selected[0]) {
-            this.geometry.update(true); // 不知道是否造成path变化，统一重新生成html
+          // 编辑态特殊，强制选择这些节点
+          if (this.state === State.EDIT_GEOM) {
+            this.geometry.show(nodes as Polyline[]);
           }
+          // 非编辑态选择它们
           else {
             this.selected.splice(0);
-            this.selected.push(node);
+            this.selected.push(...nodes);
             this.updateActive();
           }
           this.emit(Listener.POINT_NODE, nodes);
@@ -2137,7 +2175,7 @@ export default class Listener extends Event {
 
   updateGeom() {
     if (this.state === State.EDIT_GEOM) {
-      this.geometry.update();
+      this.geometry.updateAll();
     }
   }
 

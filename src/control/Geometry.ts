@@ -6,7 +6,7 @@ import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import { r2d } from '../math/geom';
 import { Point } from '../format';
 import { clone, equal } from '../util/type';
-import PointCommand from '../history/PointCommand';
+import PointCommand, { PointData } from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
 
 export default class Geometry {
@@ -17,16 +17,16 @@ export default class Geometry {
   keep?: boolean; // 按下整体任意，后续外部冒泡侦听按下识别
   keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   nodes: Polyline[];
-  nodeIdx: number; // 当前编辑节点索引，一般只有1个，特殊情况tree多选会展示多个节点但编辑始终是1个
-  idxes: number[]; // 当前激活点索引
-  clonePoints: Point[];
+  nodeIdxes: number[]; // 当前编辑节点索引，一般只有1个，特殊情况tree多选会展示多个
+  idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是nodeIdxes记录的
+  clonePoints: Point[][]; // 同上，编辑前的point数据
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
     this.nodes = [];
-    this.nodeIdx = 0;
+    this.nodeIdxes = [];
     this.idxes = [];
     this.clonePoints = [];
 
@@ -35,7 +35,8 @@ export default class Geometry {
     panel.style.display = 'none';
     dom.appendChild(panel);
 
-    let idx = -1; // 当前点的索引
+    let nodeIdx = -1; // 当前按下的节点索引
+    let idx = -1; // 当前按下点的索引
     let isDrag = false;
     let isControlF = false;
     let isControlT = false;
@@ -43,35 +44,32 @@ export default class Geometry {
     let isSelected = false; // 多选点按下时无法判断意图，抬起时才能判断，另外按下未选要特殊标注
     let isShift = false; // 同上，shift以按下时为准，因为按下后可能松开
     let target: HTMLElement;
-    let w = 1;
-    let h = 1;
     let startX = 0;
     let startY = 0;
     const diff = {
       td: 0,
       fd: 0,
-      dspX: 0,
-      dspY: 0,
-      dspFx: 0,
-      dspFy: 0,
-      dspTx: 0,
-      dspTy: 0,
+      // dspX: 0,
+      // dspY: 0,
+      // dspFx: 0,
+      // dspFy: 0,
+      // dspTx: 0,
+      // dspTy: 0,
     }; // 按下记录点的位置，拖拽时计算用
 
     panel.addEventListener('mousedown', (e) => {
-      if (e.button !== 0 || listener.spaceKey) {
+      if (e.button !== 0 || listener.spaceKey || !this.nodes.length) {
         return;
       }
-      const node = this.nodes[this.nodeIdx];
-      if (!node) {
-        return;
-      }
+      let node;
+      // const node = this.nodes[this.nodeIdxes];
+      // if (!node) {
+      //   return;
+      // }
       this.keep = true;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
-      w = panel.clientWidth;
-      h = panel.clientHeight;
       isDrag = isControlF = isControlT = isMove = false;
       isSelected = false;
       isShift = false;
@@ -80,47 +78,50 @@ export default class Geometry {
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
         this.keepVertPath = true;
+        nodeIdx = +target.parentElement!.title;
+        if (!this.nodeIdxes.includes(nodeIdx)) {
+          this.nodeIdxes.push(nodeIdx);
+        }
+        const i = this.nodeIdxes.indexOf(nodeIdx);
+        const idxes = this.idxes[i] = this.idxes[i] || [];
         idx = parseInt(target.title);
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey) {
           isShift = true;
-          if (this.idxes.includes(idx)) {
+          if (idxes.includes(idx)) {
             isSelected = true;
           }
           else {
-            this.idxes.push(idx);
+            idxes.push(idx);
           }
           classList.add('cur');
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
         }
-        // 无shift看点下的是否是已选，否仅是单个选择，是暂时无法判断意图先记录等抬起
-        else if (this.idxes.includes(idx)) {
+        // 无shift看点下的是否是已选，是暂时无法判断意图先记录等抬起
+        else if (idxes.includes(idx)) {
           isSelected = true;
         }
+        // 无shift单选未选的，将其它节点索引清空，本节点索引只留1个
         else {
-          this.clearCur();
-          this.idxes.splice(0);
-          this.idxes.push(idx);
+          this.clearCur(idxes);
+          idxes.splice(0);
+          idxes.push(idx);
           classList.add('cur');
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
         }
         isDrag = true;
-        const p = node.props.points[idx];
-        diff.dspX = p.dspX!;
-        diff.dspY = p.dspY!;
-        diff.dspFx = p.dspFx!;
-        diff.dspFy = p.dspFy!;
-        diff.dspTx = p.dspTx!;
-        diff.dspTy = p.dspTy!;
-        this.clonePoints = clone(node.props.points);
-        listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
+        this.setClonePoints();
+        this.emitSelectPoint();
       }
-      // 点矢量边添加顶点
+      // 点矢量边添加顶点，点后只剩这一个已选
       else if (tagName === 'PATH') {
+        nodeIdx = +target.parentElement!.parentElement!.title;
+        node = this.nodes[nodeIdx];
         const title = target.getAttribute('title')!;
         idx = parseInt(title);
+        // 肯定有，兜底
         if (!isNaN(idx)) {
           const x = e.offsetX;
           const y = e.offsetY;
@@ -129,6 +130,12 @@ export default class Geometry {
           const p = getPointWithDByApprox(pts, x, y);
           if (p && p.d <= 5) {
             this.keepVertPath = true;
+            this.nodeIdxes.splice(0);
+            this.nodeIdxes.push(nodeIdx);
+            const div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+            const w = div.clientWidth;
+            const h = div.clientHeight;
+            const prevs = clone(node.props.points);
             const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
             const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
             const i = parseInt(/\d+/.exec(title)![0]);
@@ -232,32 +239,49 @@ export default class Geometry {
             points.splice(i + 1, 0, mid);
             node.refresh();
             node.checkPointsChange();
-            this.show([node]);
-            this.idxes.splice(0);
-            this.idxes.push(i + 1);
+            this.clearCur();
+            const idxes = this.idxes[0] = this.idxes[0] || [];
+            idxes.splice(0);
+            idxes.push(i + 1);
+            this.update(true, nodeIdx);
             listener.history.addCommand(new PointCommand([node], [{
-              prev: clone(node.props.points),
-              next: this.clonePoints.slice(0),
+              prev: prevs,
+              next: clone(node.props.points),
             }]), true);
             listener.emit(Listener.POINT_NODE, [node]);
-            listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
+            this.emitSelectPoint();
           }
+          // 点空了
           else {
-            this.idxes.splice(0);
-            listener.emit(Listener.SELECT_POINT, []);
+            this.nodeIdxes.splice(0);
+            this.clearCur();
+            listener.emit(Listener.SELECT_POINT, [], []);
           }
         }
+        // 理论进不来兜底，同点空
         else {
-          this.idxes.splice(0);
-          listener.emit(Listener.SELECT_POINT, []);
+          this.nodeIdxes.splice(0);
+          this.clearCur();
+          listener.emit(Listener.SELECT_POINT, [], []);
         }
       }
-      // 点控制点开始拖拽
+      // 点控制点开始拖拽，只能单选
       else if (tagName === 'SPAN') {
         this.keepVertPath = true;
         const div = target.parentNode as HTMLElement;
-        // span可能是相邻的顶点控制，所以不记录顶点
+        nodeIdx = +div.parentElement!.title;
+        this.nodeIdxes.splice(0);
+        this.nodeIdxes.push(nodeIdx);
+        node = this.nodes[nodeIdx];
+        const idxes = this.idxes[nodeIdx] = this.idxes[nodeIdx] || [];
+        this.clearCur(idxes);
+        div.classList.add('cur');
+        div.nextElementSibling?.classList.add('t');
+        div.previousElementSibling?.classList.add('f');
+        // span可能是相邻的顶点控制（激活顶点后选兄弟的），从div识别索引
         idx = parseInt(div.title);
+        idxes.splice(0);
+        idxes.push(idx);
         const p = node.props.points[idx];
         if (target.classList.contains('f')) {
           isControlF = true;
@@ -265,21 +289,19 @@ export default class Geometry {
         else {
           isControlT = true;
         }
-        this.clonePoints = clone(node.props.points);
+        this.setClonePoints();
         diff.td = Math.sqrt(Math.pow(p.dspX! - p.dspTx!, 2) + Math.pow(p.dspY! - p.dspTy!, 2));
         diff.fd = Math.sqrt(Math.pow(p.dspX! - p.dspFx!, 2) + Math.pow(p.dspY! - p.dspFy!, 2));
       }
-      // 点自己清空顶点，保持编辑态
+      // 点panel自己清空顶点，保持编辑态
       else {
-        this.idxes.splice(0);
-        panel.querySelector('div.vt.cur')?.classList.remove('cur');
-        panel.querySelector('div.vt.f')?.classList.remove('f');
-        panel.querySelector('div.vt.t')?.classList.remove('t');
-        listener.emit(Listener.SELECT_POINT, []);
+        this.nodeIdxes.splice(0);
+        this.clearCur();
+        listener.emit(Listener.SELECT_POINT, [], []);
       }
     });
     document.addEventListener('mousemove', (e) => {
-      const node = this.nodes[this.nodeIdx];
+      const node = this.nodes[nodeIdx];
       if (!node) {
         return;
       }
@@ -302,23 +324,13 @@ export default class Geometry {
           dx = dx2 = 0;
         }
       }
+      // 拖动顶点，多个顶点的话其它的也随之变动
       if (isDrag) {
-        const points = node.props.points;
-        const p = points[idx];
-        p.dspX = diff.dspX + dx2;
-        p.dspY = diff.dspY + dy2;
-        p.dspFx = diff.dspFx + dx2;
-        p.dspFy = diff.dspFy + dy2;
-        p.dspTx = diff.dspTx + dx2;
-        p.dspTy = diff.dspTy + dy2;
-        // 多个点的话其它的也随之变动
-        const pts = this.idxes.map(i => {
-          if (i === idx) {
-            return p;
-          }
-          else {
-            const p = points[i];
-            const c = this.clonePoints[i];
+        this.nodeIdxes.forEach(i => {
+          const item = this.nodes[i];
+          const pts = this.idxes[i].map(j => {
+            const p = item.props.points[j];
+            const c = this.clonePoints[i][j];
             p.dspX = c.dspX! + dx2;
             p.dspY = c.dspY! + dy2;
             p.dspFx = c.dspFx! + dx2;
@@ -326,23 +338,24 @@ export default class Geometry {
             p.dspTx = c.dspTx! + dx2;
             p.dspTy = c.dspTy! + dy2;
             return p;
-          }
+          });
+          getPointsAbsByDsp(item, pts);
+          item.reflectPoints(pts);
+          item.refresh();
+          this.updateVertex(item, i);
         });
-        getPointsAbsByDsp(node, pts);
-        node.reflectPoints(pts);
-        node.refresh();
-        this.updateVertex(node);
-        listener.emit(Listener.POINT_NODE, [node]);
+        listener.emit(Listener.POINT_NODE, this.nodeIdxes.map(i => this.nodes[i]));
       }
+      // 拖控制点
       else if (isControlF || isControlT) {
         const p = node.props.points[idx];
         if (isControlF) {
-          p.dspFx = this.clonePoints[idx].dspFx! + dx2;
-          p.dspFy = this.clonePoints[idx].dspFy! + dy2;
+          p.dspFx = this.clonePoints[nodeIdx][idx].dspFx! + dx2;
+          p.dspFy = this.clonePoints[nodeIdx][idx].dspFy! + dy2;
         }
         else {
-          p.dspTx = this.clonePoints[idx].dspTx! + dx2;
-          p.dspTy = this.clonePoints[idx].dspTy! + dy2;
+          p.dspTx = this.clonePoints[nodeIdx][idx].dspTx! + dx2;
+          p.dspTy = this.clonePoints[nodeIdx][idx].dspTy! + dy2;
         }
         // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
         if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -369,57 +382,67 @@ export default class Geometry {
         getPointsAbsByDsp(node, p);
         node.reflectPoints(p);
         node.refresh();
-        this.updateVertex(node);
+        this.updateVertex(node, nodeIdx);
         listener.emit(Listener.POINT_NODE, [node]);
       }
       isMove = true;
     });
     document.addEventListener('mouseup', () => {
-      const node = this.nodes[this.nodeIdx];
+      const node = this.nodes[nodeIdx];
       if (!node) {
         return;
       }
-      // 顶点抬起时特殊判断，没有移动过的多选在已选时点击视为取消选择，没有移动过的单选则取消其它的
+      // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非是变为单选
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
-          panel.querySelector(`.vt[title="${idx}"]`)?.classList.remove('cur');
-          const i = this.idxes.indexOf(idx);
+          panel.querySelector(`div.item[title=${nodeIdx}]`)?.querySelector(`div.vt[title=${idx}]`)?.classList.remove('cur');
+          const idxes = this.idxes[nodeIdx] || [];
+          const i = idxes.indexOf(idx);
           if (i > -1) {
-            this.idxes.splice(i, 1);
-            listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
+            idxes.splice(i, 1);
+            this.emitSelectPoint();
           }
         }
         else {
-          panel.querySelectorAll('.vt.cur').forEach((item) => {
-            if ((item as HTMLElement).title !== idx.toString()) {
-              item.classList.remove('cur');
-            }
+          this.nodeIdxes.splice(0);
+          this.nodeIdxes.push(nodeIdx);
+          panel.querySelectorAll('div.item')?.forEach((div, i) => {
+            div.querySelectorAll('div.vt.cur').forEach(item => {
+              const title = +(item as HTMLElement).title;
+              if (i !== nodeIdx || title !== idx) {
+                item.classList.remove('cur');
+              }
+            });
           });
           this.idxes.splice(0);
-          this.idxes.push(idx);
-          listener.emit(Listener.SELECT_POINT, this.idxes.slice(0));
+          const idxes = this.idxes[0] = this.idxes[0] || [];
+          idxes.push(idx);
+          this.emitSelectPoint();
         }
       }
+      // 移动可能会回原点，有变化的改变顶点控制点才更新
       if (isMove && (isDrag || isControlF || isControlT)) {
-        let eq = this.clonePoints.length === node.props.points.length;
-        if (eq) {
-          for (let i = 0; i < this.clonePoints.length; i++) {
-            const a = this.clonePoints[i];
-            const b = node.props.points[i];
-            if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
-              eq = false;
-              break;
-            }
+        const nodes: Polyline[] = [];
+        const data: PointData[] = [];
+        this.nodeIdxes.forEach((nodeIdx, i) => {
+          const a = this.clonePoints[i];
+          const node = this.nodes[nodeIdx];
+          const b = node.props.points;
+          if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
+            nodes.push(node);
+            data.push({
+              prev: a,
+              next: clone(b),
+            });
           }
-        }
-        if (!eq) {
+        });
+        if (nodes.length) {
           // move结束可能干扰尺寸，调整后重新设置
-          node.checkPointsChange();
-          this.update();
-          listener.history.addCommand(new PointCommand([node], [{
-            prev: this.clonePoints.slice(0),
-            next: clone(node.props.points),
-          }]), true);
+          nodes.forEach((item, i) => {
+            item.checkPointsChange();
+            this.update(false, this.nodeIdxes[i]);
+          });
+          listener.history.addCommand(new PointCommand(nodes, data), true);
         }
       }
       isDrag = isControlF = isControlT = isMove = false;
@@ -437,6 +460,7 @@ export default class Geometry {
       const tagName = target.tagName.toUpperCase();
       pj = panel.querySelector('.pj') as HTMLElement;
       if (tagName === 'PATH') {
+        nodeIdx = +target.parentElement!.parentElement!.title;
         pathIdx = +target.getAttribute('title')!;
         if (isNaN(pathIdx)) {
           pathIdx = -1;
@@ -450,7 +474,7 @@ export default class Geometry {
       }
     });
     panel.addEventListener('mousemove', (e) => {
-      const node = this.nodes[this.nodeIdx];
+      const node = this.nodes[nodeIdx];
       if (pathIdx > -1 && node) {
         const x = e.offsetX;
         const y = e.offsetY;
@@ -499,60 +523,69 @@ export default class Geometry {
     });
   }
 
-  show(nodes: Polyline[], nodeIdx = 0) {
+  show(nodes: Polyline[]) {
     this.nodes.splice(0);
     this.nodes.push(...nodes);
-    this.alt(nodeIdx);
-  }
-
-  alt(nodeIdx: number) {
-    this.nodeIdx = nodeIdx;
-    this.update(true);
-    this.idxes.splice(0);
-    // 编辑就要计算dsp坐标，即相对于页面/画布的世界坐标，后续变更以此为准，因为会牵扯到尺寸变化相对坐标不正确
-    getPointsDspByAbs(this.nodes[nodeIdx]);
+    this.panel.innerHTML = ''; console.log(nodes)
+    this.nodes.forEach((node, i) => {
+      getPointsDspByAbs(node);
+      this.update(true, i);
+    });
+    this.panel.style.display = 'block';
   }
 
   hide() {
     this.panel.style.display = 'none';
     this.panel.innerHTML = '';
     this.nodes.splice(0);
-    this.nodeIdx = -1;
+    this.nodeIdxes.splice(0);
     this.idxes.splice(0);
     this.keep = false;
     this.keepVertPath = false;
   }
 
-  update(init = false) {
-    const node = this.nodes[this.nodeIdx];
+  update(init = false, nodeIdx: number) {
+    const node = this.nodes[nodeIdx];
     if (!node) {
       return;
     }
-    this.updatePosSize(node);
+    this.updatePosSize(node, nodeIdx);
     if (init) {
-      this.panel.innerHTML = '';
-      this.genVertex(node);
+      this.genVertex(node, nodeIdx);
     }
-    this.updateVertex(node);
+    this.updateVertex(node, nodeIdx);
   }
 
-  updatePosSize(node: Polyline) {
+  updateAll(init = false) {
+    this.nodeIdxes.forEach(i => {
+      this.update(init, i);
+    });
+  }
+
+  updatePosSize(node: Polyline, nodeIdx: number) {
     const panel = this.panel;
+    let div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+    if (!div) {
+      div = document.createElement('div');
+      div.className = 'item';
+      div.title = nodeIdx.toString();
+      panel.appendChild(div);
+    }
     const res = this.listener.select.calRect(node);
-    panel.style.left = res.left + 'px';
-    panel.style.top = res.top + 'px';
-    panel.style.width = res.width + 'px';
-    panel.style.height = res.height + 'px';
-    panel.style.transform = res.transform;
-    panel.style.display = 'block';
+    div.style.left = res.left + 'px';
+    div.style.top = res.top + 'px';
+    div.style.width = res.width + 'px';
+    div.style.height = res.height + 'px';
+    div.style.transform = res.transform;
   }
 
-  genVertex(node: Polyline) {
+  genVertex(node: Polyline, nodeIdx: number) {
     const panel = this.panel;
     const points = node.props.points;
-    panel.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
-    const svg1 = panel.querySelector('svg.stroke') as SVGElement;
-    const svg2 = panel.querySelector('svg.interactive') as SVGElement;
+    const div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+    div.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
+    const svg1 = div.querySelector('svg.stroke') as SVGElement;
+    const svg2 = div.querySelector('svg.interactive') as SVGElement;
     let s = '';
     let s2 = '';
     const len = points.length;
@@ -581,18 +614,20 @@ export default class Geometry {
     });
     svg1.innerHTML = s;
     svg2.innerHTML = s;
-    panel.innerHTML += s2 + '<div class="pj"></div>';
+    div.innerHTML += s2 + '<div class="pj"></div>';
+    panel.appendChild(div);
   }
 
-  updateVertex(node: Polyline) {
+  updateVertex(node: Polyline, nodeIdx: number) {
     node.buildPoints();
     const panel = this.panel;
+    const div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
     const zoom = node.root!.getCurPageZoom(true);
     const points = node.props.points;
     const coords = node.coords!;
-    const vts = panel.querySelectorAll('.vt');
-    const paths1 = panel.querySelectorAll('svg.stroke path');
-    const paths2 = panel.querySelectorAll('svg.interactive path');
+    const vts = div.querySelectorAll('.vt');
+    const paths1 = div.querySelectorAll('svg.stroke path');
+    const paths2 = div.querySelectorAll('svg.interactive path');
     points.forEach((item, i) => {
       const div = vts[i] as HTMLElement;
       if (div) {
@@ -663,14 +698,16 @@ export default class Geometry {
     });
   }
 
-  updatePos() {
-    const node = this.nodes[this.nodeIdx];
-    if (node) {
-      this.updatePosSize(node);
-    }
+  updateCurPosSize() {
+    this.nodeIdxes.forEach(i => {
+      const node = this.nodes[i];
+      if (node) {
+        this.updatePosSize(node, i);
+      }
+    });
   }
 
-  clearCur() {
+  clearCur(idxes?: number[]) {
     const panel = this.panel;
     panel.querySelectorAll('div.cur')?.forEach(div => {
       div.classList.remove('cur');
@@ -681,25 +718,60 @@ export default class Geometry {
     panel.querySelectorAll('div.t')?.forEach(div => {
       div.classList.remove('t');
     });
+    this.idxes.splice(0);
+    idxes && this.idxes.push(idxes);
   }
 
   delVertex() {
-    const node = this.nodes[this.nodeIdx];
-    const idxes = this.idxes;
-    if (node && idxes.length) {
-      const prev = clone(node.props.points);
-      idxes.sort((a, b) => b - a);
-      idxes.forEach(i => {
-        node.props.points.splice(i, 1);
-      });
-      node.refresh();
-      node.checkPointsChange();
-      this.update(true);
-      this.listener.history.addCommand(new PointCommand([node], [{
-        prev,
-        next: clone(node.props.points),
-      }]), true);
+    const nodes: Polyline[] = [];
+    const data: PointData[] = [];
+    this.nodeIdxes.forEach((nodeIdx, i) => {
+      const node = this.nodes[nodeIdx];
+      const idxes = this.idxes[i];
+      if (node && idxes.length) {
+        const prev = clone(node.props.points);
+        idxes.sort((a, b) => b - a);
+        idxes.forEach(i => {
+          node.props.points.splice(i, 1);
+        });
+        node.refresh();
+        node.checkPointsChange();
+        this.update(true, nodeIdx);
+        nodes.push(node);
+        data.push({
+          prev,
+          next: clone(node.props.points),
+        });
+      }
+    });
+    if (nodes.length) {
+      this.listener.history.addCommand(new PointCommand(nodes, data), true);
     }
+  }
+
+  setClonePoints() {
+    this.clonePoints = this.nodeIdxes.map(i => {
+      const node = this.nodes[i];
+      return clone(node.props.points);
+    });
+  }
+
+  emitSelectPoint() {
+    const nodes: Polyline[] = [];
+    const points: Point[][] = [];
+    this.nodeIdxes.map((i, j) => {
+      const idxes = this.idxes[j] || [];
+      if (idxes.length) {
+        const node = this.nodes[i];
+        nodes.push(node);
+        const list: Point[] = [];
+        idxes.forEach(i => {
+          list.push(node.props.points[i]);
+        });
+        points.push(list);
+      }
+    });
+    this.listener.emit(Listener.SELECT_POINT, nodes, points);
   }
 }
 

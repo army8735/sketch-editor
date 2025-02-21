@@ -3,7 +3,7 @@ import { Point } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
 import { calPoint, inverse4 } from '../math/matrix';
-import { pointInRect } from '../math/geom';
+import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { getBaseCoords, getBasicMatrix } from './node';
 
 export function createLine(x1: number, y1: number, x2: number, y2: number) {
@@ -407,6 +407,20 @@ export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: num
   }
   node.buildPoints();
   const m = node.matrixWorld;
+  // 先判断是否和世界bbox相交
+  const r = node._rect || node.rect;
+  const pts = [
+    { x: r[0], y: r[1] },
+    { x: r[2], y: r[1] },
+    { x: r[2], y: r[3] },
+    { x: r[0], y: r[3] },
+  ].map(item => {
+    return calPoint(item, m);
+  });
+  if (!isConvexPolygonOverlapRect(x1, y1, x2, y2, pts)) {
+    return list;
+  }
+  // 所有点依次判断
   const points = node.props.points;
   points.forEach((item: Point, i) => {
     const p = calPoint({
