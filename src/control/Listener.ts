@@ -210,7 +210,7 @@ export default class Listener extends Event {
         this.geometry.show(this.selected as Polyline[]);
       }
       else {
-        this.geometry.hide();
+        this.cancelEditGeom();
         this.updateActive();
       }
     }
@@ -2268,10 +2268,10 @@ export default class Listener extends Event {
   static RENAME_NODE = 'RENAME_NODE';
   static LOCK_NODE = 'LOCK_NODE';
   static VISIBLE_NODE = 'VISIBLE_NODE';
-  static ART_BOARD_NODE = 'ART_BOARD_NODE';
+  static ART_BOARD_NODE = 'ART_BOARD_NODE'; // 改变画板
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
-  static POINT_NODE = 'POINT_NODE';
-  static SELECT_POINT = 'SELECT_POINT';
+  static POINT_NODE = 'POINT_NODE'; // 改变矢量点
+  static SELECT_POINT = 'SELECT_POINT'; // 选择矢量点
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
   static STATE_CHANGE = 'STATE_CHANGE';
