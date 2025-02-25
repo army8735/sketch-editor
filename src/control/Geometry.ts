@@ -526,7 +526,9 @@ export default class Geometry {
   show(nodes: Polyline[]) {
     this.nodes.splice(0);
     this.nodes.push(...nodes);
-    this.panel.innerHTML = ''; console.log(nodes)
+    this.nodeIdxes.splice(0);
+    this.idxes.splice(0);
+    this.panel.innerHTML = '';
     this.nodes.forEach((node, i) => {
       getPointsDspByAbs(node);
       this.update(true, i);
