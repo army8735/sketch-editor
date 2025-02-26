@@ -1,5 +1,4 @@
 import Panel from './Panel';
-import Node from '../node/Node';
 import Root from '../node/Root';
 import Listener from './Listener';
 import State from './State';
@@ -13,7 +12,7 @@ import { toPrecision } from '../math';
 
 const html = `
   <h4 class="panel-title">锚点</h4>
-  <div class="line">
+  <div class="line coords">
     <div class="input-unit">
       <input type="number" class="x" step="1"/>
       <span class="unit">X</span>
@@ -41,10 +40,11 @@ const html = `
 
 class PointPanel extends Panel {
   panel: HTMLElement;
-  node?: Polyline;
+  nodes: Polyline[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
+    this.nodes = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'point-panel';
@@ -52,78 +52,97 @@ class PointPanel extends Panel {
     panel.innerHTML = html;
     dom.appendChild(panel);
 
+    const nodes: Polyline[] = [];
+    const prevPoint: Point[][] = [];
+
     panel.addEventListener('click', (e) => {
       this.silence = true;
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
-      const node = this.node;
-      if (tagName === 'LI' && !classList.contains('cur') && node) {
+      const { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
+      nodeIdxes.forEach((nodeIdx, i) => {
+        const node = nodes2[nodeIdx];
+        const is = idxes[i] || [];
+        if (is.length) {
+          nodes.push(node);
+          prevPoint.push(clone(node.props.points));
+        }
+      });
+      if (tagName === 'LI' && !classList.contains('cur')) {
         panel.querySelector('.type .cur')?.classList.remove('cur');
         classList.add('cur');
-        const points = node.props.points;
-        prevPoint = clone(points);
-        listener.geometry.idxes.forEach(i => {
-          const p = points[i];
-          p.hasCurveTo = p.hasCurveFrom = true;
-          if (classList.contains('mirrored')) {
-            p.curveMode = CURVE_MODE.MIRRORED;
-            // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
-            if (p.hasCurveTo) {
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx;
-              p.fy = p.y - dy;
-            }
-            else if (p.hasCurveFrom) {
-              const dx = p.fx - p.x;
-              const dy = p.fy - p.y;
-              p.tx = p.x - dx;
-              p.ty = p.y - dy;
-            }
-            // 都没有默认设置和前后点x/y的差值
-            else {
-              const prev = points[i - 1] || points[points.length - 1];
-              p.tx = (prev.x + p.x) * 0.5;
-              p.ty = (prev.y + p.y) * 0.5;
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx;
-              p.fy = p.y - dy;
-            }
-            p.hasCurveFrom = true;
-            p.hasCurveTo = true;
+        nodes.splice(0);
+        prevPoint.splice(0);
+        nodeIdxes.forEach((nodeIdx, i) => {
+          const node = nodes2[nodeIdx];
+          const is = idxes[i] || [];
+          if (is.length) {
+            nodes.push(node);
+            prevPoint.push(clone(node.props.points));
+            const points = is.map(i => node.props.points[i]);
+            points.forEach(p => {
+              p.hasCurveTo = p.hasCurveFrom = true;
+              if (classList.contains('mirrored')) {
+                p.curveMode = CURVE_MODE.MIRRORED;
+                // 前后控制点都有则后面的跟随前面的，否则没有的跟随有的
+                if (p.hasCurveTo) {
+                  const dx = p.tx - p.x;
+                  const dy = p.ty - p.y;
+                  p.fx = p.x - dx;
+                  p.fy = p.y - dy;
+                }
+                else if (p.hasCurveFrom) {
+                  const dx = p.fx - p.x;
+                  const dy = p.fy - p.y;
+                  p.tx = p.x - dx;
+                  p.ty = p.y - dy;
+                }
+                // 都没有默认设置和前后点x/y的差值
+                else {
+                  const prev = points[i - 1] || points[points.length - 1];
+                  p.tx = (prev.x + p.x) * 0.5;
+                  p.ty = (prev.y + p.y) * 0.5;
+                  const dx = p.tx - p.x;
+                  const dy = p.ty - p.y;
+                  p.fx = p.x - dx;
+                  p.fy = p.y - dy;
+                }
+                p.hasCurveFrom = true;
+                p.hasCurveTo = true;
+              }
+              else if (classList.contains('disconnected')) {
+                p.curveMode = CURVE_MODE.DISCONNECTED;
+              }
+              else if (classList.contains('asymmetric')) {
+                p.curveMode = CURVE_MODE.ASYMMETRIC;
+                const dt = Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2));
+                const df = Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2));
+                // 前后控制点都有或者都没有则后面的跟随前面的，否则没有的跟随有的
+                if (p.hasCurveTo || !p.hasCurveFrom && !p.hasCurveTo) {
+                  const dx = p.tx - p.x;
+                  const dy = p.ty - p.y;
+                  p.fx = p.x - dx * df / dt;
+                  p.fy = p.y - dy * df / dt;
+                }
+                else if (p.hasCurveFrom) {
+                  const dx = p.fx - p.x;
+                  const dy = p.fy - p.y;
+                  p.tx = p.x - dx * dt / df;
+                  p.ty = p.y - dy * dt / df;
+                }
+                p.hasCurveFrom = true;
+                p.hasCurveTo = true;
+              }
+              else {
+                p.curveMode = CURVE_MODE.STRAIGHT;
+                p.hasCurveTo = p.hasCurveFrom = false;
+              }
+            });
+            node.refresh();
           }
-          else if (classList.contains('disconnected')) {
-            p.curveMode = CURVE_MODE.DISCONNECTED;
-          }
-          else if (classList.contains('asymmetric')) {
-            p.curveMode = CURVE_MODE.ASYMMETRIC;
-            const dt = Math.sqrt(Math.pow(p.tx - p.x, 2) + Math.pow(p.ty - p.y, 2));
-            const df = Math.sqrt(Math.pow(p.fx - p.x, 2) + Math.pow(p.fy - p.y, 2));
-            // 前后控制点都有或者都没有则后面的跟随前面的，否则没有的跟随有的
-            if (p.hasCurveTo || !p.hasCurveFrom && !p.hasCurveTo) {
-              const dx = p.tx - p.x;
-              const dy = p.ty - p.y;
-              p.fx = p.x - dx * df / dt;
-              p.fy = p.y - dy * df / dt;
-            }
-            else if (p.hasCurveFrom) {
-              const dx = p.fx - p.x;
-              const dy = p.fy - p.y;
-              p.tx = p.x - dx * dt / df;
-              p.ty = p.y - dy * dt / df;
-            }
-            p.hasCurveFrom = true;
-            p.hasCurveTo = true;
-          }
-          else {
-            p.curveMode = CURVE_MODE.STRAIGHT;
-            p.hasCurveTo = p.hasCurveFrom = false;
-          }
+          listener.geometry.updateVertex(node, nodeIdx);
         });
-        node.refresh();
-        listener.geometry.updateVertex(node);
         onChange();
       }
       // 不能关闭矢量编辑状态
@@ -131,16 +150,17 @@ class PointPanel extends Panel {
       this.silence = false;
     });
 
-    let prevPoint: Point[] = [];
     const onChange = (init = false) => {
-      const node = this.node;
-      if (node instanceof Polyline && prevPoint.length) {
-        node.checkPointsChange();
-        listener.geometry.update(init);
-        listener.history.addCommand(new PointCommand([node], [{
-          prev: prevPoint.slice(0),
-          next: clone(node.props.points),
-        }]));
+      if (nodes.length) {
+        nodes.forEach(item => item.checkPointsChange());
+        listener.geometry.updateAll(init);
+        listener.history.addCommand(new PointCommand(nodes.slice(0), nodes.map((item, i) => {
+          return {
+            prev: prevPoint[i],
+            next: clone(item.props.points),
+          };
+        })));
+        nodes.splice(0);
         prevPoint.splice(0);
       }
     };
@@ -149,104 +169,110 @@ class PointPanel extends Panel {
     const y = panel.querySelector('input.y') as HTMLInputElement;
 
     const onInputCoords = (e: Event, isX = true) => {
-      const node = this.node;
-      if (!node) {
-        return;
-      }
       this.silence = true;
+      const { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
       const value = parseFloat(isX ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      const isFirst = !prevPoint.length;
-      if (isFirst) {
-        prevPoint = clone(node.props.points);
-      }
-      const points = listener.geometry.idxes.map(i => node.props.points[i]);
-      points.forEach((item, i) => {
-        if (isInput) {
-          if (isX) {
-            item.dspX = value;
+      const isFirst = !nodes.length;
+      const data: Point[][] = [];
+      nodeIdxes.forEach((nodeIdx, i) => {
+        const node = nodes2[nodeIdx];
+        const is = idxes[i] || [];
+        if (is.length) {
+          if (isFirst) {
+            nodes.push(node);
+            prevPoint.push(clone(node.props.points));
           }
-          else {
-            item.dspY = value;
-          }
-          if (!i) {
-            if (isX) {
-              x.placeholder = '';
-            }
-            else {
-              y.placeholder = '';
-            }
-          }
-        }
-        else {
-          let d = 0;
-          if (isX) {
-            if (x.placeholder) {
-              d = value;
-            }
-            else {
-              d = value - item.dspX!;
-            }
-          }
-          else {
-            if (y.placeholder) {
-              d = value;
-            }
-            else {
-              d = value - item.dspY!;
-            }
-          }
-          if (listener.shiftKey) {
-            if (d > 0) {
-              d = 10;
-            }
-            else {
-              d = -10;
-            }
-          }
-          else if (listener.altKey) {
-            if (d > 0) {
-              d = 0.1;
-            }
-            else {
-              d = -0.1;
-            }
-          }
-          if (isX) {
-            item.dspX! += d;
-            item.dspFx! += d;
-            item.dspTx! += d;
-          }
-          else {
-            item.dspY! += d;
-            item.dspFy! += d;
-            item.dspTy! += d;
-          }
-          if (!i) {
-            if (isX) {
-              if (x.placeholder) {
-                x.value = '';
+          const points = is.map(i => node.props.points[i]);
+          points.forEach((item, j) => {
+            if (isInput) {
+              if (isX) {
+                item.dspX = value;
               }
               else {
-                x.value = toPrecision(item.dspX!).toString();
+                item.dspY = value;
+              }
+              if (!i && !j) {
+                if (isX) {
+                  x.placeholder = '';
+                }
+                else {
+                  y.placeholder = '';
+                }
               }
             }
             else {
-              if (y.placeholder) {
-                y.value = '';
+              let d = 0;
+              if (isX) {
+                if (x.placeholder) {
+                  d = value;
+                }
+                else {
+                  d = value - item.dspX!;
+                }
               }
               else {
-                y.value = toPrecision(item.dspY!).toString();
+                if (y.placeholder) {
+                  d = value;
+                }
+                else {
+                  d = value - item.dspY!;
+                }
+              }
+              if (listener.shiftKey) {
+                if (d > 0) {
+                  d = 10;
+                }
+                else {
+                  d = -10;
+                }
+              }
+              else if (listener.altKey) {
+                if (d > 0) {
+                  d = 0.1;
+                }
+                else {
+                  d = -0.1;
+                }
+              }
+              if (isX) {
+                item.dspX! += d;
+                item.dspFx! += d;
+                item.dspTx! += d;
+              }
+              else {
+                item.dspY! += d;
+                item.dspFy! += d;
+                item.dspTy! += d;
+              }
+              if (!i && !j) {
+                if (isX) {
+                  if (x.placeholder) {
+                    x.value = '';
+                  }
+                  else {
+                    x.value = toPrecision(item.dspX!).toString();
+                  }
+                }
+                else {
+                  if (y.placeholder) {
+                    y.value = '';
+                  }
+                  else {
+                    y.value = toPrecision(item.dspY!).toString();
+                  }
+                }
               }
             }
-          }
+          });
+          getPointsAbsByDsp(node, points);
+          node.reflectPoints(points);
+          node.refresh();
+          listener.geometry.updateVertex(node, nodeIdx);
+          data.push(points);
         }
       });
-      getPointsAbsByDsp(node, points);
-      node.reflectPoints(points);
-      node.refresh();
-      listener.geometry.updateVertex(node);
-      listener.emit(Listener.POINT_NODE, [node]);
+      listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
       this.silence = false;
     };
 
@@ -265,191 +291,174 @@ class PointPanel extends Panel {
 
     let rangeAlt = false; // 半径在0和有之间切换需重新生成path
     range.addEventListener('input', (e) => {
-      const node = this.node;
-      if (!node) {
-        return;
-      }
       this.silence = true;
-      if (!prevPoint.length) {
-        prevPoint = clone(node.props.points);
-      }
+      const  { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
       const value = parseFloat(range.value) || 0;
       rangeAlt = false;
-      let points = node.props.points;
-      // 激活的顶点或者全部
-      if (listener.geometry.idxes.length) {
-        points = listener.geometry.idxes.map(i => points[i]);
-      }
-      points.forEach(item => {
-        if (item.cornerRadius && !value || !item.cornerRadius && value) {
-          rangeAlt = true;
+      const isFirst = !nodes.length;
+      const data: Point[][] = [];
+      nodeIdxes.forEach((nodeIdx, i) => {
+        const node = nodes2[nodeIdx];
+        const is = idxes[i] || [];
+        if (is.length) {
+          if (isFirst) {
+            nodes.push(node);
+            prevPoint.push(clone(node.props.points));
+          }
+          const points = is.map(i => node.props.points[i]);
+          points.forEach(item => {
+            if (item.cornerRadius && !value || !item.cornerRadius && value) {
+              rangeAlt = true;
+            }
+            item.cornerRadius = value;
+          });
+          node.refresh();
+          listener.geometry.updateVertex(node, nodeIdx);
+          data.push(points);
         }
-        item.cornerRadius = value;
       });
       range.placeholder = number.placeholder = '';
       number.value = range.value;
-      node.refresh();
-      listener.geometry.updateVertex(node);
-      listener.emit(Listener.POINT_NODE, [node]);
+      listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
       this.silence = false;
     });
     range.addEventListener('change', () => onChange(rangeAlt));
 
     number.addEventListener('input', (e) => {
-      const node = this.node;
-      if (!node) {
-        return;
-      }
       this.silence = true;
+      const  { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      if (!prevPoint.length) {
-        prevPoint = clone(node.props.points);
-      }
-      const points = listener.geometry.idxes.map(i => node.props.points[i]);
-      points.forEach((item, i) => {
-        if (isInput) {
-          item.cornerRadius = value;
-          if (!i) {
-            range.placeholder = number.placeholder = '';
-            range.value = number.value;
+      const isFirst = !nodes.length;
+      const data: Point[][] = [];
+      nodeIdxes.forEach((nodeIdx, i) => {
+        const node = nodes2[nodeIdx];
+        const is = idxes[i] || [];
+        if (is.length) {
+          if (isFirst) {
+            nodes.push(node);
+            prevPoint.push(clone(node.props.points));
           }
-        }
-        else {
-          let d = 0;
-          if (number.placeholder) {
-            d = value;
-          }
-          else {
-            d = value - item.cornerRadius;
-          }
-          if (listener.shiftKey) {
-            if (d > 0) {
-              d = 10;
+          const points = is.map(i => node.props.points[i]);
+          points.forEach((item, j) => {
+            if (isInput) {
+              item.cornerRadius = value;
+              if (!i && !j) {
+                range.placeholder = number.placeholder = '';
+                range.value = number.value;
+              }
             }
             else {
-              d = -10;
+              let d = 0;
+              if (number.placeholder) {
+                d = value;
+              }
+              else {
+                d = value - item.cornerRadius;
+              }
+              if (listener.shiftKey) {
+                if (d > 0) {
+                  d = 10;
+                }
+                else {
+                  d = -10;
+                }
+              }
+              else if (listener.altKey) {
+                if (d > 0) {
+                  d = 0.1;
+                }
+                else {
+                  d = -0.1;
+                }
+              }
+              item.cornerRadius += d;
+              if (!i && !j) {
+                if (number.placeholder) {
+                  number.value = '';
+                }
+                else {
+                  number.value = toPrecision(item.cornerRadius).toString();
+                }
+              }
             }
-          }
-          else if (listener.altKey) {
-            if (d > 0) {
-              d = 0.1;
-            }
-            else {
-              d = -0.1;
-            }
-          }
-          item.cornerRadius += d;
-          if (!i) {
-            if (number.placeholder) {
-              number.value = '';
-            }
-            else {
-              number.value = toPrecision(item.cornerRadius).toString();
-            }
-          }
+          });
+          node.refresh();
+          listener.geometry.updateVertex(node, nodeIdx);
+          data.push(points);
         }
       });
-      node.refresh();
-      listener.geometry.updateVertex(node);
-      listener.emit(Listener.POINT_NODE, [node]);
+      listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
       this.silence = false;
     });
     number.addEventListener('change', () => onChange());
 
     listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+      // 出现或消失
       if (next === State.EDIT_GEOM || prev === State.EDIT_GEOM) {
-        this.show(listener.selected);
+        nodes.splice(0);
+        prevPoint.splice(0);
+        this.show();
       }
     });
 
-    const showPoint = (idx: number[]) => {
-      if (this.silence) {
-        return;
-      }
-      this.updateCoords(idx);
-      this.updateRange(idx);
-      panel.querySelector('.type.enable')?.classList.remove('enable');
-      panel.querySelector('.type .cur')?.classList.remove('cur');
-      panel.querySelector('.num.enable')?.classList.remove('enable');
-      if (idx.length) {
-        panel.querySelector('.type')?.classList.add('enable');
-        panel.querySelector('.num')?.classList.add('enable');
-        const node = this.node;
-        const type: CURVE_MODE[] = [];
-        if (node instanceof Polyline) {
-          idx.forEach(i => {
-            const p = node.props.points[i];
-            let { curveMode } = p;
-            if (curveMode === CURVE_MODE.NONE) {
-              curveMode = CURVE_MODE.STRAIGHT;
-            }
-            if (!type.includes(curveMode)) {
-              type.push(curveMode);
-            }
-          });
-        }
-        if (type.length === 1) {
-          let t = 'straight';
-          if (type[0] === CURVE_MODE.MIRRORED) {
-            t = 'mirrored';
-          }
-          else if (type[0] === CURVE_MODE.DISCONNECTED) {
-            t = 'disconnected';
-          }
-          else if (type[0] === CURVE_MODE.ASYMMETRIC) {
-            t = 'asymmetric';
-          }
-          panel.querySelector(`.type .${t}`)?.classList.add('cur');
-        }
-      }
-    };
-
-    listener.on(Listener.SELECT_POINT, showPoint);
-    listener.on(Listener.POINT_NODE, (node) => {
-      showPoint(listener.geometry.idxes);
+    listener.on([
+      Listener.SELECT_POINT,
+      Listener.POINT_NODE,
+    ], () => {
+      nodes.splice(0);
+      prevPoint.splice(0);
+      this.updateCoords();
+      this.updateType();
+      this.updateRange();
     });
   }
 
-  override show(nodes: Node[]) {
-    const geoms = nodes.filter(item => item instanceof Polyline);
-    this.nodes = geoms;
+  override show() {
+    const geoms = this.listener.selected.filter(item => item instanceof Polyline);
     const panel = this.panel;
     if (!geoms.length || this.listener.state !== State.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }
-    this.node = geoms[0];
     panel.style.display = 'block';
-    this.updateCoords([]);
-    this.updateRange([]);
+    this.updateCoords();
+    this.updateType();
+    this.updateRange();
   }
 
-  updateCoords(idx: number[]) {
-    const node = this.node;
-    if (!node) {
-      return;
-    }
-    const panel = this.panel;
-    const x = panel.querySelector('input.x') as HTMLInputElement;
-    const y = panel.querySelector('input.y') as HTMLInputElement;
-    x.value = y.value = '';
-    x.placeholder = y.placeholder = '';
-    if (!idx.length) {
-      return;
-    }
+  updateCoords() {
+    const { panel, listener: { geometry: { nodes, nodeIdxes, idxes } } } = this;
+    const coords = panel.querySelector('.coords') as HTMLInputElement;
+    const x = coords.querySelector('input.x') as HTMLInputElement;
+    const y = coords.querySelector('input.y') as HTMLInputElement;
     const xs: number[] = [];
     const ys: number[] = [];
-    const points = idx.map(i => node.props.points[i]);
-    getPointsDspByAbs(node, points);
-    points.forEach(item => {
-      if (!xs.includes(item.dspX!)) {
-        xs.push(item.dspX!);
-      }
-      if (!ys.includes(item.dspY!)) {
-        ys.push(item.dspY!);
+    nodeIdxes.forEach((nodeIdx, i) => {
+      const node = nodes[nodeIdx];
+      const is = idxes[i] || [];
+      if (is.length) {
+        const points = is.map(i => node.props.points[i]);
+        getPointsDspByAbs(node, points);
+        points.forEach(item => {
+          if (!xs.includes(item.dspX!)) {
+            xs.push(item.dspX!);
+          }
+          if (!ys.includes(item.dspY!)) {
+            ys.push(item.dspY!);
+          }
+        });
       }
     });
+    coords.classList.remove('enable');
+    x.value = y.value = '';
+    x.placeholder = y.placeholder = '';
+    x.disabled = y.disabled = true;
+    if (!xs.length) {
+      return;
+    }
+    coords.classList.add('enable');
+    x.disabled = y.disabled = false;
     if (xs.length > 1) {
       x.placeholder = '多个';
     }
@@ -464,42 +473,83 @@ class PointPanel extends Panel {
     }
   }
 
-  updateRange(idx: number[]) {
-    const node = this.node;
-    if (!node) {
+  updateType() {
+    const { panel, listener: { geometry: { nodes, nodeIdxes, idxes } } } = this;
+    const type = panel.querySelector('.type') as HTMLInputElement;
+    const ts: CURVE_MODE[] = [];
+    nodeIdxes.forEach((nodeIdx, i) => {
+      const node = nodes[nodeIdx];
+      const is = idxes[i] || [];
+      if (is.length) {
+        const points = is.map(i => node.props.points[i]);
+        points.forEach(item => {
+          let { curveMode } = item;
+          if (curveMode === CURVE_MODE.NONE) {
+            curveMode = CURVE_MODE.STRAIGHT;
+          }
+          if (!ts.includes(curveMode)) {
+            ts.push(curveMode);
+          }
+        });
+      }
+    });
+    type.classList.remove('enable');
+    type.querySelector('.cur')?.classList.remove('cur');
+    if (!ts.length) {
       return;
     }
-    const panel = this.panel;
-    const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
-    const number = panel.querySelector('input.r') as HTMLInputElement;
+    type.classList.add('enable');
+    if (ts.length === 1) {
+      let t = 'straight';
+      if (ts[0] === CURVE_MODE.MIRRORED) {
+        t = 'mirrored';
+      }
+      else if (ts[0] === CURVE_MODE.DISCONNECTED) {
+        t = 'disconnected';
+      }
+      else if (ts[0] === CURVE_MODE.ASYMMETRIC) {
+        t = 'asymmetric';
+      }
+      panel.querySelector(`.type .${t}`)?.classList.add('cur');
+    }
+  }
+
+  updateRange() {
+    const { panel, listener: { geometry: { nodes, nodeIdxes, idxes } } } = this;
+    const num = panel.querySelector('.num') as HTMLElement;
+    const range = num.querySelector('input[type="range"]') as HTMLInputElement;
+    const number = num.querySelector('input.r') as HTMLInputElement;
+    const radius: number[] = [];
+    nodeIdxes.forEach((nodeIdx, i) => {
+      const node = nodes[nodeIdx];
+      const is = idxes[i] || [];
+      if (is.length) {
+        const points = is.map(i => node.props.points[i]);
+        points.forEach(item => {
+          if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
+            const r = item.cornerRadius;
+            if (!radius.includes(r)) {
+              radius.push(r);
+            }
+          }
+        });
+      }
+    });
+    num.classList.remove('enable');
     range.value = '0';
     number.value = '';
     range.placeholder = number.placeholder = '';
-    if (!idx.length) {
+    range.disabled = number.disabled = true;
+    if (!radius.length) {
       return;
     }
-    const radius: number[] = [];
-    let points = node.props.points;
-    // 默认展示全部
-    if (idx.length) {
-      points = idx.map(i => points[i]);
-    }
-    points.forEach(item => {
-      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
-        const r = item.cornerRadius;
-        if (!radius.includes(r)) {
-          radius.push(r);
-        }
-      }
-    });
-    if (!radius.length) {
-      radius.push(0);
-    }
+    num.classList.add('enable');
+    range.disabled = number.disabled = false;
     if (radius.length > 1) {
       range.placeholder = number.placeholder = '多个';
     }
     else {
-      range.value = number.value = radius[0].toString();
+      range.value = number.value = toPrecision(radius[0]).toString();
     }
   }
 }

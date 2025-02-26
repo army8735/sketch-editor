@@ -1915,6 +1915,16 @@ html, body {
       margin-bottom: 10px;
     }
 
+    .coords {
+      pointer-events: none;
+      opacity: 0.5;
+
+      &.enable {
+        pointer-events: auto;
+        opacity: 1;
+      }
+    }
+
     .input-unit {
       margin-left: 16px;
       width: 64px;

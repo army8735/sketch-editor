@@ -248,7 +248,7 @@ export default class Geometry {
               prev: prevs,
               next: clone(node.props.points),
             }]), true);
-            listener.emit(Listener.POINT_NODE, [node]);
+            listener.emit(Listener.POINT_NODE, [node], [[mid]]);
             this.emitSelectPoint();
           }
           // 点空了
@@ -326,6 +326,8 @@ export default class Geometry {
       }
       // 拖动顶点，多个顶点的话其它的也随之变动
       if (isDrag) {
+        const nodes: Polyline[] = [];
+        const data: Point[][] = [];
         this.nodeIdxes.forEach(i => {
           const item = this.nodes[i];
           const pts = this.idxes[i].map(j => {
@@ -343,8 +345,10 @@ export default class Geometry {
           item.reflectPoints(pts);
           item.refresh();
           this.updateVertex(item, i);
+          nodes.push(item);
+          data.push(pts);
         });
-        listener.emit(Listener.POINT_NODE, this.nodeIdxes.map(i => this.nodes[i]));
+        listener.emit(Listener.POINT_NODE, nodes, data);
       }
       // 拖控制点
       else if (isControlF || isControlT) {
@@ -383,7 +387,7 @@ export default class Geometry {
         node.reflectPoints(p);
         node.refresh();
         this.updateVertex(node, nodeIdx);
-        listener.emit(Listener.POINT_NODE, [node]);
+        listener.emit(Listener.POINT_NODE, [node], [[p]]);
       }
       isMove = true;
     });
