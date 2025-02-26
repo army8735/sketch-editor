@@ -35,7 +35,7 @@ module.exports = {
       .moveToElement('#tree', 50, 200)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
-      .assert.cssProperty('#main .select', 'display', 'block')
+      .assert.cssProperty('#main .select', 'display', 'none')
       .assert.cssProperty('#main .geometry', 'display', 'none')
       .click('#button4')
       .assert.value('#base64', '[3]')
