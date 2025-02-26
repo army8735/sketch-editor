@@ -28,7 +28,7 @@ module.exports = {
       .click('#tree span.name[title="2"]')
       .assert.cssProperty('#main .select', 'display', 'none')
       .assert.cssProperty('#main .geometry', 'display', 'block')
-      .assert.cssProperty('#main .geometry', 'top', '120px')
+      .assert.cssProperty('#main .geometry .item', 'top', '120px')
       .click('#button4')
       .assert.value('#base64', '[2,"2"]')
 

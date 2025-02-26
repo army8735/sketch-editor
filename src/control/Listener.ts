@@ -793,7 +793,7 @@ export default class Listener extends Event {
                     idxes.splice(0);
                     idxes.push(...res);
                     // 清空已有的
-                    const div = geometry.panel.querySelector(`div.item[title="${j}"]`) as HTMLElement;
+                    const div = geometry.panel.querySelector(`div.item[idx="${j}"]`) as HTMLElement;
                     div.querySelectorAll('div.cur')?.forEach(item => {
                       item.classList.remove('cur');
                     });
