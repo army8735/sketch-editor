@@ -406,6 +406,9 @@ class PointPanel extends Panel {
       Listener.SELECT_POINT,
       Listener.POINT_NODE,
     ], () => {
+      if (this.silence) {
+        return;
+      }
       nodes.splice(0);
       prevPoint.splice(0);
       this.updateCoords();
