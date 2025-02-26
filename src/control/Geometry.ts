@@ -399,7 +399,7 @@ export default class Geometry {
       // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非是变为单选
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
-          panel.querySelector(`div.item[title=${nodeIdx}]`)?.querySelector(`div.vt[title=${idx}]`)?.classList.remove('cur');
+          panel.querySelector(`div.item[idx=${nodeIdx}]`)?.querySelector(`div.vt[title=${idx}]`)?.classList.remove('cur');
           const idxes = this.idxes[nodeIdx] || [];
           const i = idxes.indexOf(idx);
           if (i > -1) {
@@ -464,7 +464,7 @@ export default class Geometry {
       const tagName = target.tagName.toUpperCase();
       pj = panel.querySelector('.pj') as HTMLElement;
       if (tagName === 'PATH') {
-        nodeIdx = +target.parentElement!.parentElement!.title;
+        nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
         pathIdx = +target.getAttribute('title')!;
         if (isNaN(pathIdx)) {
           pathIdx = -1;
@@ -570,11 +570,11 @@ export default class Geometry {
 
   updatePosSize(node: Polyline, nodeIdx: number) {
     const panel = this.panel;
-    let div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+    let div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
     if (!div) {
       div = document.createElement('div');
       div.className = 'item';
-      div.title = nodeIdx.toString();
+      div.setAttribute('idx', nodeIdx.toString());
       panel.appendChild(div);
     }
     const res = this.listener.select.calRect(node);
@@ -588,7 +588,7 @@ export default class Geometry {
   genVertex(node: Polyline, nodeIdx: number) {
     const panel = this.panel;
     const points = node.props.points;
-    const div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+    const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
     div.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
     const svg1 = div.querySelector('svg.stroke') as SVGElement;
     const svg2 = div.querySelector('svg.interactive') as SVGElement;
@@ -627,7 +627,7 @@ export default class Geometry {
   updateVertex(node: Polyline, nodeIdx: number) {
     node.buildPoints();
     const panel = this.panel;
-    const div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+    const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
     const zoom = node.root!.getCurPageZoom(true);
     const points = node.props.points;
     const coords = node.coords!;
