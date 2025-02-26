@@ -51,7 +51,7 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
   // roundPanel.show(listener.selected);
 
   const pointPanel = new PointPanel(root, dom, listener);
-  pointPanel.show(listener.selected);
+  pointPanel.show();
 
   const fillPanel = new FillPanel(root, dom, listener);
   fillPanel.show(listener.selected);
