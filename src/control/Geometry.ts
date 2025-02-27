@@ -49,12 +49,6 @@ export default class Geometry {
     const diff = {
       td: 0,
       fd: 0,
-      // dspX: 0,
-      // dspY: 0,
-      // dspFx: 0,
-      // dspFy: 0,
-      // dspTx: 0,
-      // dspTy: 0,
     }; // 按下记录点的位置，拖拽时计算用
 
     panel.addEventListener('mousedown', (e) => {
@@ -62,10 +56,6 @@ export default class Geometry {
         return;
       }
       let node;
-      // const node = this.nodes[this.nodeIdxes];
-      // if (!node) {
-      //   return;
-      // }
       this.keep = true;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
@@ -78,7 +68,7 @@ export default class Geometry {
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
         this.keepVertPath = true;
-        nodeIdx = +target.parentElement!.title;
+        nodeIdx = +target.parentElement!.getAttribute('idx')!;
         if (!this.nodeIdxes.includes(nodeIdx)) {
           this.nodeIdxes.push(nodeIdx);
         }
@@ -86,7 +76,7 @@ export default class Geometry {
         const idxes = this.idxes[i] = this.idxes[i] || [];
         idx = parseInt(target.title);
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
-        if (listener.shiftKey) {
+        if (listener.shiftKey || listener.metaKey) {
           isShift = true;
           if (idxes.includes(idx)) {
             isSelected = true;
@@ -328,11 +318,11 @@ export default class Geometry {
       if (isDrag) {
         const nodes: Polyline[] = [];
         const data: Point[][] = [];
-        this.nodeIdxes.forEach(i => {
+        this.nodeIdxes.forEach((i, j) => {
           const item = this.nodes[i];
-          const pts = this.idxes[i].map(j => {
-            const p = item.props.points[j];
-            const c = this.clonePoints[i][j];
+          const pts = this.idxes[j].map(k => {
+            const p = item.props.points[k];
+            const c = this.clonePoints[j][k];
             p.dspX = c.dspX! + dx2;
             p.dspY = c.dspY! + dy2;
             p.dspFx = c.dspFx! + dx2;
@@ -353,13 +343,14 @@ export default class Geometry {
       // 拖控制点
       else if (isControlF || isControlT) {
         const p = node.props.points[idx];
+        const j = this.nodeIdxes.indexOf(nodeIdx);
         if (isControlF) {
-          p.dspFx = this.clonePoints[nodeIdx][idx].dspFx! + dx2;
-          p.dspFy = this.clonePoints[nodeIdx][idx].dspFy! + dy2;
+          p.dspFx = this.clonePoints[j][idx].dspFx! + dx2;
+          p.dspFy = this.clonePoints[j][idx].dspFy! + dy2;
         }
         else {
-          p.dspTx = this.clonePoints[nodeIdx][idx].dspTx! + dx2;
-          p.dspTy = this.clonePoints[nodeIdx][idx].dspTy! + dy2;
+          p.dspTx = this.clonePoints[j][idx].dspTx! + dx2;
+          p.dspTy = this.clonePoints[j][idx].dspTy! + dy2;
         }
         // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
         if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -399,7 +390,7 @@ export default class Geometry {
       // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非是变为单选
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
-          panel.querySelector(`div.item[idx=${nodeIdx}]`)?.querySelector(`div.vt[title=${idx}]`)?.classList.remove('cur');
+          panel.querySelector(`div.item[idx="${nodeIdx}"]`)?.querySelector(`div.vt[title="${idx}"]`)?.classList.remove('cur');
           const idxes = this.idxes[nodeIdx] || [];
           const i = idxes.indexOf(idx);
           if (i > -1) {
