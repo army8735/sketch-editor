@@ -391,10 +391,11 @@ export default class Geometry {
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
           panel.querySelector(`div.item[idx="${nodeIdx}"]`)?.querySelector(`div.vt[title="${idx}"]`)?.classList.remove('cur');
-          const idxes = this.idxes[nodeIdx] || [];
-          const i = idxes.indexOf(idx);
-          if (i > -1) {
-            idxes.splice(i, 1);
+          const i = this.nodeIdxes.indexOf(nodeIdx);
+          const idxes = this.idxes[i] || [];
+          const j = idxes.indexOf(idx);
+          if (j > -1) {
+            idxes.splice(j, 1);
             this.emitSelectPoint();
           }
         }
