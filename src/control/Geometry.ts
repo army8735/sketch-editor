@@ -465,7 +465,7 @@ export default class Geometry {
       }
     });
     panel.addEventListener('mousemove', (e) => {
-      const node = this.nodes[nodeIdx]; console.log(nodeIdx, node.props.name)
+      const node = this.nodes[nodeIdx];
       if (pathIdx > -1 && node) {
         const x = e.offsetX;
         const y = e.offsetY;
