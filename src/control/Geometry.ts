@@ -222,9 +222,8 @@ export default class Geometry {
             node.refresh();
             node.checkPointsChange();
             this.clearCur();
-            const idxes = this.idxes[0] = this.idxes[0] || [];
-            idxes.splice(0);
-            idxes.push(i + 1);
+            this.idxes[nodeIdx].splice(0);
+            this.idxes[nodeIdx].push(i + 1);
             this.update(node, true);
             listener.history.addCommand(new PointCommand([node], [{
               prev: prevs,
@@ -232,6 +231,7 @@ export default class Geometry {
             }]), true);
             listener.emit(Listener.POINT_NODE, [node], [[mid]]);
             this.emitSelectPoint();
+            pathIdx = -1;
           }
           // 点空了
           else {
@@ -590,7 +590,7 @@ export default class Geometry {
     const panel = this.panel;
     const points = node.props.points;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
-    div.innerHTML += `<svg class="stroke"></svg><svg class="interactive"></svg>`;
+    div.innerHTML = `<svg class="stroke"></svg><svg class="interactive"></svg>`;
     const svg1 = div.querySelector('svg.stroke') as SVGElement;
     const svg2 = div.querySelector('svg.interactive') as SVGElement;
     let s = '';
