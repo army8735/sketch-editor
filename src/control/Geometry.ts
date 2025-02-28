@@ -88,6 +88,7 @@ export default class Geometry {
         }
         // 无shift单选未选的，将其它节点索引清空，本节点索引只留1个
         else {
+          idxes.splice(0);
           idxes.push(idx);
           this.clearCur(idxes);
           classList.add('cur');
@@ -792,7 +793,7 @@ export default class Geometry {
         });
         points.push(list);
       }
-    }); console.log(nodes, points);
+    });
     this.listener.emit(Listener.SELECT_POINT, nodes, points);
   }
 }
