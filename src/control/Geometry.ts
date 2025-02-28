@@ -414,7 +414,7 @@ export default class Geometry {
         this.nodes.forEach((item, i) => {
           const a = this.clonePoints[i];
           const b = item.props.points;
-          nodes.push(node);
+          nodes.push(item);
           if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
             data.push({
               prev: a,
@@ -524,7 +524,7 @@ export default class Geometry {
       this.idxes.push([]);
     });
     this.panel.innerHTML = '';
-    this.nodes.forEach((node, i) => {
+    this.nodes.forEach((node) => {
       getPointsDspByAbs(node);
       this.update(node, true);
     });
