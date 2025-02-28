@@ -824,33 +824,37 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
   if (points.length < 2 || points.length > 4) {
     throw new Error('Unsupported order');
   }
+  // 直线直接算
   if (points.length === 2) {
     const x1 = points[1].x - points[0].x;
     const y1 = points[1].y - points[0].y;
     const x2 = x - points[0].x;
     const y2 = y - points[0].y;
-    const cos = includedAngle(x1, y1, x2, y2, true);
-    let x3, y3;
-    if (cos === 1 || cos === -1 || cos === Infinity || cos === -Infinity) {
-      x3 = x;
-      y3 = y;
+    const len1 = Math.sqrt(Math.pow(x1, 2) + Math.pow(y1, 2));
+    const len2 = Math.sqrt(Math.pow(x2, 2) + Math.pow(y2, 2));
+    let cos = includedAngle(x1, y1, x2, y2, true);
+    let t;
+    if (cos === 1) {
+      t = -x2 / len1;
+    }
+    else if (cos === -1) {
+      t = x2 / len1;
+    }
+    else if (cos === Infinity) {
+      t = -y2 / len1;
+    }
+    else if (cos === -Infinity) {
+      t = y2 / len1;
     }
     else {
-      x3 = x2 * cos;
-      const r = Math.acos(cos);
-      const sin = Math.sin(r);
-      y3 = y2 * sin;
+      t = len2 * cos / len1;
     }
-    const len1 = Math.sqrt(Math.pow(x3, 2) + Math.pow(y3, 2));
-    const len2 = Math.sqrt(Math.pow(x1, 2) + Math.pow(y1, 2));
-    let t = len1 / len2;
-    if (cos < 0) {
-      t = -1;
-    }
-    x3 += points[0].x;
-    y3 += points[0].y;
-    const d = Math.sqrt(Math.pow(x3 - x, 2) + Math.pow(y3 - y, 2));
-    return { x: x3, y: y3, d, t };
+    let tx = x1 * t;
+    let ty = y1 * t;
+    tx += points[0].x;
+    ty += points[0].y;
+    const d = Math.sqrt(Math.pow(tx - x, 2) + Math.pow(ty - y, 2));
+    return { x: tx, y: ty, d, t };
   }
   // console.error('曲线和点', points.map(item => item.x + ',' + item.y).join(' '), x, y);
   // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做

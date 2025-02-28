@@ -443,7 +443,7 @@ export default class Geometry {
 
     // 侦听在path上的移动，高亮当前path以及投影点
     let pathIdx = -1;
-    let pj;
+    let pj: HTMLElement;
     panel.addEventListener('mouseover', (e) => {
       // 框选不侦听hover
       if (listener.isMouseDown) {
@@ -451,7 +451,6 @@ export default class Geometry {
       }
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
-      pj = panel.querySelector('.pj') as HTMLElement;
       if (tagName === 'PATH') {
         nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
         pathIdx = +target.getAttribute('title')!;
@@ -465,6 +464,7 @@ export default class Geometry {
       else {
         pathIdx = -1;
       }
+      pj = panel.querySelector(`.item[idx="${nodeIdx}"] .pj`) as HTMLElement;
     });
     panel.addEventListener('mousemove', (e) => {
       const node = this.nodes[nodeIdx];
@@ -478,14 +478,14 @@ export default class Geometry {
         panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
         panel.querySelector('.pt.cur')?.classList.remove('cur');
         if (p && p.d <= 5) {
-          panel.querySelector(`svg.stroke path[idx="${pathIdx}"]`)?.classList.add('cur');
-          panel.querySelector(`svg.interactive path[idx="${pathIdx}"]`)?.classList.add('cur');
+          panel.querySelector(`.item[idx="${nodeIdx}"] svg.stroke path[idx="${pathIdx}"]`)?.classList.add('cur');
+          panel.querySelector(`.item[idx="${nodeIdx}"] svg.interactive path[idx="${pathIdx}"]`)?.classList.add('cur');
           pj!.style.left = p.x + 'px';
           pj!.style.top = p.y + 'px';
           pj!.classList.add('cur');
         }
         else {
-          pj!.classList.remove('cur');
+          pj?.classList.remove('cur');
         }
       }
     });
@@ -497,7 +497,7 @@ export default class Geometry {
         panel.querySelector('svg.interactive .cur')?.classList.remove('cur');
       }
       pathIdx = -1;
-      pj!.classList.remove('cur');
+      pj?.classList.remove('cur');
     });
 
     // 操作过程阻止滚轮拖动
