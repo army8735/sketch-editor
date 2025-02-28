@@ -7,7 +7,7 @@ import { getPointsAbsByDsp } from '../tools/polyline';
 export type PointData = {
   prev: Point[],
   next: Point[],
-};
+} | undefined; // 没变化就是undefined
 
 class PointCommand extends AbstractCommand {
   data: PointData[];
@@ -20,6 +20,9 @@ class PointCommand extends AbstractCommand {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
+      if (!data[i]) {
+        return;
+      }
       (node as Polyline).props.points = clone(data[i].next);
       getPointsAbsByDsp(node as Polyline);
       // 可能会牵扯到尺寸变更，先用abs值反向计算相对值
@@ -32,6 +35,9 @@ class PointCommand extends AbstractCommand {
   undo() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
+      if (!data[i]) {
+        return;
+      }
       (node as Polyline).props.points = clone(data[i].prev);
       getPointsAbsByDsp(node as Polyline);
       (node as Polyline).reflectPoints();

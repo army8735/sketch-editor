@@ -784,11 +784,11 @@ export default class Listener extends Event {
               geometry.nodes.forEach((node, i) => {
                 const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
                 if (res.length) {
-                  if (!geometry.nodeIdxes.includes(i)) {
-                    geometry.nodeIdxes.push(i);
+                  if (!geometry.nodes.includes(node)) {
+                    geometry.nodes.push(node);
                   }
-                  const j = geometry.nodeIdxes.indexOf(i);
-                  const idxes = geometry.idxes[j] = geometry.idxes[j] || [];
+                  const j = geometry.nodes.indexOf(node);
+                  const idxes = geometry.idxes[j];
                   if (res.join(',') !== idxes.sort((a, b) => a - b).join(',')) {
                     idxes.splice(0);
                     idxes.push(...res);
@@ -1821,9 +1821,8 @@ export default class Listener extends Event {
           const nodes: Polyline[] = [];
           const data: PointData[] = [];
           const points: Point[][] = [];
-          geometry.nodeIdxes.forEach((i, j) => {
-            const node = geometry.nodes[i];
-            const idxes = geometry.idxes[j] || [];
+          geometry.nodes.forEach((node, i) => {
+            const idxes = geometry.idxes[i];
             // 应该肯定有
             if (idxes.length) {
               nodes.push(node);
@@ -1840,7 +1839,7 @@ export default class Listener extends Event {
               getPointsAbsByDsp(node, pts);
               node.reflectPoints(pts);
               node.refresh();
-              geometry.updateVertex(node, i);
+              geometry.updateVertex(node);
               data.push({
                 prev,
                 next: clone(node.props.points),

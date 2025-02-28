@@ -17,8 +17,7 @@ export default class Geometry {
   keep?: boolean; // 按下整体任意，后续外部冒泡侦听按下识别
   keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   nodes: Polyline[];
-  nodeIdxes: number[]; // 当前编辑节点索引，一般只有1个，特殊情况tree多选会展示多个
-  idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是nodeIdxes记录的
+  idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是node索引
   clonePoints: Point[][]; // 同上，编辑前的point数据
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -26,7 +25,6 @@ export default class Geometry {
     this.dom = dom;
     this.listener = listener;
     this.nodes = [];
-    this.nodeIdxes = [];
     this.idxes = [];
     this.clonePoints = [];
 
@@ -69,12 +67,8 @@ export default class Geometry {
       if (tagName === 'DIV' && classList.contains('vt')) {
         this.keepVertPath = true;
         nodeIdx = +target.parentElement!.getAttribute('idx')!;
-        if (!this.nodeIdxes.includes(nodeIdx)) {
-          this.nodeIdxes.push(nodeIdx);
-        }
-        const i = this.nodeIdxes.indexOf(nodeIdx);
-        const idxes = this.idxes[i] = this.idxes[i] || [];
         idx = parseInt(target.title);
+        const idxes = this.idxes[nodeIdx];
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey || listener.metaKey) {
           isShift = true;
@@ -95,8 +89,6 @@ export default class Geometry {
         // 无shift单选未选的，将其它节点索引清空，本节点索引只留1个
         else {
           this.clearCur(idxes);
-          idxes.splice(0);
-          idxes.push(idx);
           classList.add('cur');
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
@@ -120,9 +112,7 @@ export default class Geometry {
           const p = getPointWithDByApprox(pts, x, y);
           if (p && p.d <= 5) {
             this.keepVertPath = true;
-            this.nodeIdxes.splice(0);
-            this.nodeIdxes.push(nodeIdx);
-            const div = panel.querySelector(`div.item[title="${nodeIdx}"]`) as HTMLElement;
+            const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
             const w = div.clientWidth;
             const h = div.clientHeight;
             const prevs = clone(node.props.points);
@@ -233,7 +223,7 @@ export default class Geometry {
             const idxes = this.idxes[0] = this.idxes[0] || [];
             idxes.splice(0);
             idxes.push(i + 1);
-            this.update(true, nodeIdx);
+            this.update(node, true);
             listener.history.addCommand(new PointCommand([node], [{
               prev: prevs,
               next: clone(node.props.points),
@@ -243,14 +233,12 @@ export default class Geometry {
           }
           // 点空了
           else {
-            this.nodeIdxes.splice(0);
             this.clearCur();
             listener.emit(Listener.SELECT_POINT, [], []);
           }
         }
         // 理论进不来兜底，同点空
         else {
-          this.nodeIdxes.splice(0);
           this.clearCur();
           listener.emit(Listener.SELECT_POINT, [], []);
         }
@@ -260,10 +248,8 @@ export default class Geometry {
         this.keepVertPath = true;
         const div = target.parentNode as HTMLElement;
         nodeIdx = +div.parentElement!.title;
-        this.nodeIdxes.splice(0);
-        this.nodeIdxes.push(nodeIdx);
         node = this.nodes[nodeIdx];
-        const idxes = this.idxes[nodeIdx] = this.idxes[nodeIdx] || [];
+        const idxes = this.idxes[nodeIdx];
         this.clearCur(idxes);
         div.classList.add('cur');
         div.nextElementSibling?.classList.add('t');
@@ -285,12 +271,12 @@ export default class Geometry {
       }
       // 点panel自己清空顶点，保持编辑态
       else {
-        this.nodeIdxes.splice(0);
         this.clearCur();
         listener.emit(Listener.SELECT_POINT, [], []);
       }
     });
     document.addEventListener('mousemove', (e) => {
+      // 当前按下移动的那个point属于的node，用来算diff距离，多个其它node上的point会跟着这个点一起变
       const node = this.nodes[nodeIdx];
       if (!node) {
         return;
@@ -318,11 +304,10 @@ export default class Geometry {
       if (isDrag) {
         const nodes: Polyline[] = [];
         const data: Point[][] = [];
-        this.nodeIdxes.forEach((i, j) => {
-          const item = this.nodes[i];
-          const pts = this.idxes[j].map(k => {
-            const p = item.props.points[k];
-            const c = this.clonePoints[j][k];
+        this.nodes.forEach((item, i) => {
+          const pts = this.idxes[i].map(j => {
+            const p = item.props.points[j];
+            const c = this.clonePoints[i][j];
             p.dspX = c.dspX! + dx2;
             p.dspY = c.dspY! + dy2;
             p.dspFx = c.dspFx! + dx2;
@@ -331,26 +316,27 @@ export default class Geometry {
             p.dspTy = c.dspTy! + dy2;
             return p;
           });
+          if (pts.length) {
           getPointsAbsByDsp(item, pts);
           item.reflectPoints(pts);
           item.refresh();
-          this.updateVertex(item, i);
+          this.updateVertex(item);
           nodes.push(item);
           data.push(pts);
+          }
         });
         listener.emit(Listener.POINT_NODE, nodes, data);
       }
       // 拖控制点
       else if (isControlF || isControlT) {
         const p = node.props.points[idx];
-        const j = this.nodeIdxes.indexOf(nodeIdx);
         if (isControlF) {
-          p.dspFx = this.clonePoints[j][idx].dspFx! + dx2;
-          p.dspFy = this.clonePoints[j][idx].dspFy! + dy2;
+          p.dspFx = this.clonePoints[nodeIdx][idx].dspFx! + dx2;
+          p.dspFy = this.clonePoints[nodeIdx][idx].dspFy! + dy2;
         }
         else {
-          p.dspTx = this.clonePoints[j][idx].dspTx! + dx2;
-          p.dspTy = this.clonePoints[j][idx].dspTy! + dy2;
+          p.dspTx = this.clonePoints[nodeIdx][idx].dspTx! + dx2;
+          p.dspTy = this.clonePoints[nodeIdx][idx].dspTy! + dy2;
         }
         // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
         if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -377,7 +363,7 @@ export default class Geometry {
         getPointsAbsByDsp(node, p);
         node.reflectPoints(p);
         node.refresh();
-        this.updateVertex(node, nodeIdx);
+        this.updateVertex(node);
         listener.emit(Listener.POINT_NODE, [node], [[p]]);
       }
       isMove = true;
@@ -390,9 +376,8 @@ export default class Geometry {
       // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非是变为单选
       if (isDrag && !isMove && isSelected) {
         if (isShift) {
-          panel.querySelector(`div.item[idx="${nodeIdx}"]`)?.querySelector(`div.vt[title="${idx}"]`)?.classList.remove('cur');
-          const i = this.nodeIdxes.indexOf(nodeIdx);
-          const idxes = this.idxes[i] || [];
+          panel.querySelector(`div.item[idx="${nodeIdx}"]`)!.querySelector(`div.vt[title="${idx}"]`)?.classList.remove('cur');
+          const idxes = this.idxes[nodeIdx];
           const j = idxes.indexOf(idx);
           if (j > -1) {
             idxes.splice(j, 1);
@@ -400,8 +385,6 @@ export default class Geometry {
           }
         }
         else {
-          this.nodeIdxes.splice(0);
-          this.nodeIdxes.push(nodeIdx);
           panel.querySelectorAll('div.item')?.forEach((div, i) => {
             div.querySelectorAll('div.vt.cur').forEach(item => {
               const title = +(item as HTMLElement).title;
@@ -410,9 +393,15 @@ export default class Geometry {
               }
             });
           });
-          this.idxes.splice(0);
-          const idxes = this.idxes[0] = this.idxes[0] || [];
+          const idxes = this.idxes[nodeIdx];
+          idxes.splice(0);
           idxes.push(idx);
+          this.clearCur(idxes);
+          const target = panel.querySelector(`div.item[idx="${nodeIdx}"]`)!.querySelector(`div.vt[title="${idx}"]`) as HTMLElement;
+          const classList = target.classList;
+          classList.add('cur');
+          target.nextElementSibling?.classList.add('t');
+          target.previousElementSibling?.classList.add('f');
           this.emitSelectPoint();
         }
       }
@@ -420,23 +409,29 @@ export default class Geometry {
       if (isMove && (isDrag || isControlF || isControlT)) {
         const nodes: Polyline[] = [];
         const data: PointData[] = [];
-        this.nodeIdxes.forEach((nodeIdx, i) => {
+        this.nodes.forEach((item, i) => {
           const a = this.clonePoints[i];
-          const node = this.nodes[nodeIdx];
-          const b = node.props.points;
+          const b = item.props.points;
+          nodes.push(node);
           if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
-            nodes.push(node);
             data.push({
               prev: a,
               next: clone(b),
             });
           }
+          // 没变化
+          else {
+            data.push(undefined);
+          }
         });
         if (nodes.length) {
           // move结束可能干扰尺寸，调整后重新设置
           nodes.forEach((item, i) => {
+            if (!data[i]) {
+              return;
+            }
             item.checkPointsChange();
-            this.update(false, this.nodeIdxes[i]);
+            this.update(item, false);
           });
           listener.history.addCommand(new PointCommand(nodes, data), true);
         }
@@ -470,7 +465,7 @@ export default class Geometry {
       }
     });
     panel.addEventListener('mousemove', (e) => {
-      const node = this.nodes[nodeIdx];
+      const node = this.nodes[nodeIdx]; console.log(nodeIdx, node.props.name)
       if (pathIdx > -1 && node) {
         const x = e.offsetX;
         const y = e.offsetY;
@@ -522,12 +517,14 @@ export default class Geometry {
   show(nodes: Polyline[]) {
     this.nodes.splice(0);
     this.nodes.push(...nodes);
-    this.nodeIdxes.splice(0);
     this.idxes.splice(0);
+    nodes.forEach(() => {
+      this.idxes.push([]);
+    });
     this.panel.innerHTML = '';
     this.nodes.forEach((node, i) => {
       getPointsDspByAbs(node);
-      this.update(true, i);
+      this.update(node, true);
     });
     this.panel.style.display = 'block';
   }
@@ -536,31 +533,36 @@ export default class Geometry {
     this.panel.style.display = 'none';
     this.panel.innerHTML = '';
     this.nodes.splice(0);
-    this.nodeIdxes.splice(0);
     this.idxes.splice(0);
     this.keep = false;
     this.keepVertPath = false;
   }
 
-  update(init = false, nodeIdx: number) {
-    const node = this.nodes[nodeIdx];
-    if (!node) {
+  update(node: Polyline, init = false) {
+    const nodeIdx = this.nodes.indexOf(node);
+    // 一般不可能，防范一下
+    if (nodeIdx === -1) {
       return;
     }
-    this.updatePosSize(node, nodeIdx);
+    this.updatePosSize(node);
     if (init) {
-      this.genVertex(node, nodeIdx);
+      this.genVertex(node);
     }
-    this.updateVertex(node, nodeIdx);
+    this.updateVertex(node);
   }
 
   updateAll(init = false) {
-    this.nodeIdxes.forEach(i => {
-      this.update(init, i);
+    this.nodes.forEach((item) => {
+      this.update(item, init);
     });
   }
 
-  updatePosSize(node: Polyline, nodeIdx: number) {
+  updatePosSize(node: Polyline) {
+    const nodeIdx = this.nodes.indexOf(node);
+    // 一般不可能，防范一下
+    if (nodeIdx === -1) {
+      return;
+    }
     const panel = this.panel;
     let div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
     if (!div) {
@@ -577,7 +579,12 @@ export default class Geometry {
     div.style.transform = res.transform;
   }
 
-  genVertex(node: Polyline, nodeIdx: number) {
+  genVertex(node: Polyline) {
+    const nodeIdx = this.nodes.indexOf(node);
+    // 一般不可能，防范一下
+    if (nodeIdx === -1) {
+      return;
+    }
     const panel = this.panel;
     const points = node.props.points;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
@@ -616,7 +623,12 @@ export default class Geometry {
     panel.appendChild(div);
   }
 
-  updateVertex(node: Polyline, nodeIdx: number) {
+  updateVertex(node: Polyline) {
+    const nodeIdx = this.nodes.indexOf(node);
+    // 一般不可能，防范一下
+    if (nodeIdx === -1) {
+      return;
+    }
     node.buildPoints();
     const panel = this.panel;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
@@ -697,10 +709,10 @@ export default class Geometry {
   }
 
   updateCurPosSize() {
-    this.nodeIdxes.forEach(i => {
-      const node = this.nodes[i];
-      if (node) {
-        this.updatePosSize(node, i);
+    this.nodes.forEach((item, i) => {
+      const idxes = this.idxes[i];
+      if (idxes.length) {
+        this.updatePosSize(item);
       }
     });
   }
@@ -716,30 +728,35 @@ export default class Geometry {
     panel.querySelectorAll('div.t')?.forEach(div => {
       div.classList.remove('t');
     });
-    this.idxes.splice(0);
-    idxes && this.idxes.push(idxes);
+    this.idxes.forEach(item => {
+      if (item !== idxes) {
+        item.splice(0);
+      }
+    });
   }
 
   delVertex() {
     const nodes: Polyline[] = [];
     const data: PointData[] = [];
-    this.nodeIdxes.forEach((nodeIdx, i) => {
-      const node = this.nodes[nodeIdx];
+    this.nodes.forEach((item, i) => {
+      nodes.push(item);
       const idxes = this.idxes[i];
-      if (node && idxes.length) {
-        const prev = clone(node.props.points);
+      if (idxes.length) {
+        const prev = clone(item.props.points);
         idxes.sort((a, b) => b - a);
         idxes.forEach(i => {
-          node.props.points.splice(i, 1);
+          item.props.points.splice(i, 1);
         });
-        node.refresh();
-        node.checkPointsChange();
-        this.update(true, nodeIdx);
-        nodes.push(node);
+        item.refresh();
+        item.checkPointsChange();
+        this.update(item, true);
         data.push({
           prev,
-          next: clone(node.props.points),
+          next: clone(item.props.points),
         });
+      }
+      else {
+        data.push(undefined);
       }
     });
     if (nodes.length) {
@@ -748,23 +765,20 @@ export default class Geometry {
   }
 
   setClonePoints() {
-    this.clonePoints = this.nodeIdxes.map(i => {
-      const node = this.nodes[i];
-      return clone(node.props.points);
+    this.clonePoints = this.nodes.map(item => {
+      return clone(item.props.points);
     });
   }
 
   emitSelectPoint() {
     const nodes: Polyline[] = [];
     const points: Point[][] = [];
-    this.nodeIdxes.map((i, j) => {
-      const idxes = this.idxes[j] || [];
+    this.nodes.map((item, i) => {
+      const idxes = this.idxes[i];
       if (idxes.length) {
-        const node = this.nodes[i];
-        nodes.push(node);
         const list: Point[] = [];
         idxes.forEach(i => {
-          list.push(node.props.points[i]);
+          list.push(item.props.points[i]);
         });
         points.push(list);
       }

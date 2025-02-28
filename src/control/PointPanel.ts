@@ -60,10 +60,9 @@ class PointPanel extends Panel {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
-      const { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
-      nodeIdxes.forEach((nodeIdx, i) => {
-        const node = nodes2[nodeIdx];
-        const is = idxes[i] || [];
+      const { geometry: { nodes: nodes2, idxes } } = listener;
+      nodes2.forEach((node, i) => {
+        const is = idxes[i];
         if (is.length) {
           nodes.push(node);
           prevPoint.push(clone(node.props.points));
@@ -74,9 +73,8 @@ class PointPanel extends Panel {
         classList.add('cur');
         nodes.splice(0);
         prevPoint.splice(0);
-        nodeIdxes.forEach((nodeIdx, i) => {
-          const node = nodes2[nodeIdx];
-          const is = idxes[i] || [];
+        nodes2.forEach((node, i) => {
+          const is = idxes[i];
           if (is.length) {
             nodes.push(node);
             prevPoint.push(clone(node.props.points));
@@ -141,7 +139,7 @@ class PointPanel extends Panel {
             });
             node.refresh();
           }
-          listener.geometry.updateVertex(node, nodeIdx);
+          listener.geometry.updateVertex(node);
         });
         onChange();
       }
@@ -170,14 +168,13 @@ class PointPanel extends Panel {
 
     const onInputCoords = (e: Event, isX = true) => {
       this.silence = true;
-      const { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
+      const { geometry: { nodes: nodes2, idxes } } = listener;
       const value = parseFloat(isX ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
       const data: Point[][] = [];
-      nodeIdxes.forEach((nodeIdx, i) => {
-        const node = nodes2[nodeIdx];
-        const is = idxes[i] || [];
+      nodes2.forEach((node, i) => {
+        const is = idxes[i];
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
@@ -268,7 +265,7 @@ class PointPanel extends Panel {
           getPointsAbsByDsp(node, points);
           node.reflectPoints(points);
           node.refresh();
-          listener.geometry.updateVertex(node, nodeIdx);
+          listener.geometry.updateVertex(node);
           data.push(points);
         }
       });
@@ -292,14 +289,13 @@ class PointPanel extends Panel {
     let rangeAlt = false; // 半径在0和有之间切换需重新生成path
     range.addEventListener('input', (e) => {
       this.silence = true;
-      const  { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
+      const  { geometry: { nodes: nodes2, idxes } } = listener;
       const value = parseFloat(range.value) || 0;
       rangeAlt = false;
       const isFirst = !nodes.length;
       const data: Point[][] = [];
-      nodeIdxes.forEach((nodeIdx, i) => {
-        const node = nodes2[nodeIdx];
-        const is = idxes[i] || [];
+      nodes2.forEach((node, i) => {
+        const is = idxes[i];
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
@@ -313,7 +309,7 @@ class PointPanel extends Panel {
             item.cornerRadius = value;
           });
           node.refresh();
-          listener.geometry.updateVertex(node, nodeIdx);
+          listener.geometry.updateVertex(node);
           data.push(points);
         }
       });
@@ -326,14 +322,13 @@ class PointPanel extends Panel {
 
     number.addEventListener('input', (e) => {
       this.silence = true;
-      const  { geometry: { nodes: nodes2, nodeIdxes, idxes } } = listener;
+      const  { geometry: { nodes: nodes2, idxes } } = listener;
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
       const data: Point[][] = [];
-      nodeIdxes.forEach((nodeIdx, i) => {
-        const node = nodes2[nodeIdx];
-        const is = idxes[i] || [];
+      nodes2.forEach((node, i) => {
+        const is = idxes[i];
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
@@ -384,7 +379,7 @@ class PointPanel extends Panel {
             }
           });
           node.refresh();
-          listener.geometry.updateVertex(node, nodeIdx);
+          listener.geometry.updateVertex(node);
           data.push(points);
         }
       });
@@ -431,15 +426,14 @@ class PointPanel extends Panel {
   }
 
   updateCoords() {
-    const { panel, listener: { geometry: { nodes, nodeIdxes, idxes } } } = this;
+    const { panel, listener: { geometry: { nodes, idxes } } } = this;
     const coords = panel.querySelector('.coords') as HTMLInputElement;
     const x = coords.querySelector('input.x') as HTMLInputElement;
     const y = coords.querySelector('input.y') as HTMLInputElement;
     const xs: number[] = [];
     const ys: number[] = [];
-    nodeIdxes.forEach((nodeIdx, i) => {
-      const node = nodes[nodeIdx];
-      const is = idxes[i] || [];
+    nodes.forEach((node, i) => {
+      const is = idxes[i];
       if (is.length) {
         const points = is.map(i => node.props.points[i]);
         getPointsDspByAbs(node, points);
@@ -477,12 +471,11 @@ class PointPanel extends Panel {
   }
 
   updateType() {
-    const { panel, listener: { geometry: { nodes, nodeIdxes, idxes } } } = this;
+    const { panel, listener: { geometry: { nodes, idxes } } } = this;
     const type = panel.querySelector('.type') as HTMLInputElement;
     const ts: CURVE_MODE[] = [];
-    nodeIdxes.forEach((nodeIdx, i) => {
-      const node = nodes[nodeIdx];
-      const is = idxes[i] || [];
+    nodes.forEach((node, i) => {
+      const is = idxes[i];
       if (is.length) {
         const points = is.map(i => node.props.points[i]);
         points.forEach(item => {
@@ -518,14 +511,13 @@ class PointPanel extends Panel {
   }
 
   updateRange() {
-    const { panel, listener: { geometry: { nodes, nodeIdxes, idxes } } } = this;
+    const { panel, listener: { geometry: { nodes, idxes } } } = this;
     const num = panel.querySelector('.num') as HTMLElement;
     const range = num.querySelector('input[type="range"]') as HTMLInputElement;
     const number = num.querySelector('input.r') as HTMLInputElement;
     const radius: number[] = [];
-    nodeIdxes.forEach((nodeIdx, i) => {
-      const node = nodes[nodeIdx];
-      const is = idxes[i] || [];
+    nodes.forEach((node, i) => {
+      const is = idxes[i];
       if (is.length) {
         const points = is.map(i => node.props.points[i]);
         points.forEach(item => {
