@@ -1652,7 +1652,7 @@ export default class Listener extends Event {
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
       if (this.state === State.EDIT_GEOM) {
-        if (this.geometry.idxes.length) {
+        if (this.geometry.hasEditPoint()) {
           this.geometry.delVertex();
         }
         // 没选择顶点删除等同于esc的取消功能
@@ -1674,7 +1674,7 @@ export default class Listener extends Event {
       this.spaceKey = true;
       if (!this.isMouseDown && !this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
-        if (this.state !== State.EDIT_GEOM || !this.geometry.idxes.length) {
+        if (this.state !== State.EDIT_GEOM || !this.geometry.hasEditPoint()) {
           this.dom.style.cursor = 'grab';
         }
       }
@@ -1716,8 +1716,7 @@ export default class Listener extends Event {
         this.cancelEditText();
       }
       else if (this.state === State.EDIT_GEOM) {
-        if (this.geometry.idxes.length) {
-          this.geometry.idxes.splice(0);
+        if (this.geometry.hasEditPoint()) {
           this.geometry.clearCur();
           this.emit(Listener.SELECT_POINT, [], []);
         }

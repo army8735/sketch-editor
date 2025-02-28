@@ -735,6 +735,15 @@ export default class Geometry {
     });
   }
 
+  hasEditPoint() {
+    for (let i = 0, len = this.idxes.length; i < len; i++) {
+      if (this.idxes[i].length) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   delVertex() {
     const nodes: Polyline[] = [];
     const data: PointData[] = [];
