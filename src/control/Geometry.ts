@@ -101,7 +101,7 @@ export default class Geometry {
       }
       // 点矢量边添加顶点，点后只剩这一个已选
       else if (tagName === 'PATH') {
-        nodeIdx = +target.parentElement!.parentElement!.title;
+        nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
         node = this.nodes[nodeIdx];
         const title = target.getAttribute('title')!;
         idx = parseInt(title);
