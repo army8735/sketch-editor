@@ -221,6 +221,7 @@ export default class Geometry {
             points.splice(i + 1, 0, mid);
             node.refresh();
             node.checkPointsChange();
+            getPointsDspByAbs(node, mid);
             this.clearCur();
             this.idxes[nodeIdx].splice(0);
             this.idxes[nodeIdx].push(i + 1);
