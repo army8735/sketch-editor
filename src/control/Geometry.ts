@@ -53,7 +53,7 @@ export default class Geometry {
       if (e.button !== 0 || listener.spaceKey || !this.nodes.length) {
         return;
       }
-      let node;
+      let node: Polyline;
       this.keep = true;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
@@ -117,7 +117,7 @@ export default class Geometry {
             const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
             const w = div.clientWidth;
             const h = div.clientHeight;
-            const prevs = clone(node.props.points);
+            const prevPoints = clone(node.props.points);
             const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
             const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
             const i = parseInt(/\d+/.exec(title)![0]);
@@ -229,11 +229,15 @@ export default class Geometry {
             target.classList.add('cur');
             target.nextElementSibling?.classList.add('t');
             target.previousElementSibling?.classList.add('f');
-            listener.history.addCommand(new PointCommand([node], [{
-              prev: prevs,
-              next: clone(node.props.points),
-            }]), true);
-            listener.emit(Listener.POINT_NODE, [node], [[mid]]);
+            const data: PointData[] = this.nodes.map(item => {
+              if (item === node) {
+                return {
+                  prev: prevPoints,
+                  next: clone(node.props.points),
+                };
+              }
+            });
+            listener.emit(Listener.POINT_NODE, this.nodes.slice(0), data);
             this.emitSelectPoint();
             pathIdx = -1;
           }
