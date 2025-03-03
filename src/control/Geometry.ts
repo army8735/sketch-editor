@@ -225,6 +225,10 @@ export default class Geometry {
             this.idxes[nodeIdx].splice(0);
             this.idxes[nodeIdx].push(i + 1);
             this.update(node, true);
+            const target = div.querySelector(`.vt[title="${i + 1}"]`) as HTMLElement;
+            target.classList.add('cur');
+            target.nextElementSibling?.classList.add('t');
+            target.previousElementSibling?.classList.add('f');
             listener.history.addCommand(new PointCommand([node], [{
               prev: prevs,
               next: clone(node.props.points),
