@@ -253,15 +253,10 @@ export default class Select {
 
   metaKey(meta: boolean) {
     if (meta) {
-      this.select.querySelectorAll('.tl, .tr, .bl, .br').forEach(item => {
-        (item as HTMLElement).style.cursor = 'cell';
-      });
+      this.select.classList.add('rotate');
     }
     else {
-      (this.select.querySelector('.tl') as HTMLElement).style.cursor = 'nwse-resize';
-      (this.select.querySelector('.tr') as HTMLElement).style.cursor = 'nesw-resize';
-      (this.select.querySelector('.bl') as HTMLElement).style.cursor = 'nesw-resize';
-      (this.select.querySelector('.br') as HTMLElement).style.cursor = 'nwse-resize';
+      this.select.classList.remove('rotate');
     }
   }
 
