@@ -220,11 +220,12 @@ export default class Select {
         }
       });
       const dpi = this.root.dpi;
-      this.select.style.left = left / dpi + 'px';
-      this.select.style.top = top / dpi + 'px';
-      this.select.style.width = (right - left) / dpi + 'px';
-      this.select.style.height = (bottom - top) / dpi + 'px';
-      this.select.style.transform = '';
+      const style = this.select.style;
+      style.left = left / dpi + 'px';
+      style.top = top / dpi + 'px';
+      style.width = (right - left) / dpi + 'px';
+      style.height = (bottom - top) / dpi + 'px';
+      style.transform = '';
       // 多选更新每个节点的小框
       let s = '';
       rects.forEach(item => {
@@ -261,12 +262,12 @@ export default class Select {
   }
 
   getAspectRatio() {
-    const select = this.select;
+    const style = this.select.style;
     return {
-      x: parseFloat(select.style.left),
-      y: parseFloat(select.style.top),
-      w: parseFloat(select.style.width),
-      h: parseFloat(select.style.height),
+      x: parseFloat(style.left),
+      y: parseFloat(style.top),
+      w: parseFloat(style.width),
+      h: parseFloat(style.height),
     };
   }
 }

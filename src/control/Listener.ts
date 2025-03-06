@@ -634,12 +634,12 @@ export default class Listener extends Event {
     if (e.button === 1) {
       this.middleKey = true;
     }
+    const o = page.getComputedStyle();
+    this.pageTx = o.translateX;
+    this.pageTy = o.translateY;
     // 空格或中间移动画布
     if (e.button === 0 && this.spaceKey || this.middleKey) {
-      const o = page.getComputedStyle();
-      this.pageTx = o.translateX;
-      this.pageTy = o.translateY;
-      this.dom.style.cursor = 'grabbing';
+      this.dom.classList.add('moving');
     }
     // 普通按下是选择节点或者编辑文本
     else if (!this.spaceKey) {
@@ -922,6 +922,7 @@ export default class Listener extends Event {
         if (this.options.disabled?.drag) {
           return;
         }
+        this.dom.classList.add('moving'); // 先按鼠标后空格
         this.select.hideHover();
         this.isMouseMove = true;
         const page = root.getCurPage();
@@ -1140,14 +1141,11 @@ export default class Listener extends Event {
     this.mouseDown2ArtBoard = undefined;
     this.isFrame = false;
     this.middleKey = false;
+    this.dom.classList.remove('moving');
     if (this.spaceKey || this.middleKey) {
-      if (this.options.disabled?.drag) {
-        return;
-      }
-      this.dom.style.cursor = 'grab';
     }
     else {
-      this.dom.style.cursor = 'auto';
+      this.dom.classList.remove('move');
     }
   }
 
@@ -1672,10 +1670,10 @@ export default class Listener extends Event {
     // space
     else if (keyCode === 32 || code === 'Space') {
       this.spaceKey = true;
-      if (!this.isMouseDown && !this.options.disabled?.drag) {
+      if (!this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
         if (this.state !== State.EDIT_GEOM || !this.geometry.hasEditPoint()) {
-          this.dom.style.cursor = 'grab';
+          this.dom.classList.add('move');
         }
       }
     }
@@ -2149,7 +2147,8 @@ export default class Listener extends Event {
     // space
     if (e.keyCode === 32) {
       this.spaceKey = false;
-      this.dom.style.cursor = 'auto';
+      this.dom.classList.remove('move');
+      this.dom.classList.remove('moving');
     }
   }
 
