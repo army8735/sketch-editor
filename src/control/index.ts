@@ -20,6 +20,7 @@ import Zoom from './Zoom';
 import picker from './picker';
 import contextMenu from './contextMenu';
 import Guides from './Guides';
+import Toolbar from './Toolbar';
 
 export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
   return new PageList(root, dom, listener);
@@ -89,12 +90,17 @@ export function initZoom(root: Root, dom: HTMLElement, listener: Listener) {
   return new Zoom(root, dom, listener);
 }
 
+export function initToolbar(root: Root, dom: HTMLElement, listener: Listener) {
+  return new Toolbar(root, dom, listener);
+}
+
 export default {
   initCanvasControl,
   initPageList,
   initTree,
   initPanel,
   initZoom,
+  initToolbar,
   Listener,
   PageList,
   Tree,

@@ -11,6 +11,7 @@ class Zoom {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
+
     const select = document.createElement('select');
     select.innerHTML = `
       <option value="" disabled="disabled">请选择</option>

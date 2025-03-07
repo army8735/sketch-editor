@@ -1145,7 +1145,7 @@ export default class Listener extends Event {
     if (this.spaceKey || this.middleKey) {
     }
     else {
-      this.dom.classList.remove('move');
+      this.dom.classList.remove('hand');
     }
   }
 
@@ -1673,7 +1673,7 @@ export default class Listener extends Event {
       if (!this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
         if (this.state !== State.EDIT_GEOM || !this.geometry.hasEditPoint()) {
-          this.dom.classList.add('move');
+          this.dom.classList.add('hand');
         }
       }
     }
@@ -2147,8 +2147,8 @@ export default class Listener extends Event {
     // space
     if (e.keyCode === 32) {
       this.spaceKey = false;
-      this.dom.classList.remove('move');
-      this.dom.classList.remove('moving');
+      this.dom.classList.remove('hand');
+      this.dom.classList.remove('handing');
     }
   }
 
