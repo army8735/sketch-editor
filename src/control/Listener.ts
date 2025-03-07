@@ -10,7 +10,7 @@ import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import Select, { Rect } from './Select';
 import Input from './Input';
-import State from './State';
+import state from './state';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle, Point } from '../format';
 import { getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
@@ -77,7 +77,7 @@ const isWin = typeof navigator !== 'undefined' && /win/i.test(navigator.platform
 
 export default class Listener extends Event {
   options: ListenerOptions;
-  state: State;
+  state: state;
   root: Root;
   dom: HTMLElement;
   history: History;
@@ -124,7 +124,7 @@ export default class Listener extends Event {
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
     this.options = options;
-    this.state = State.NORMAL;
+    this.state = state.NORMAL;
     this.root = root;
     this.dom = dom;
     this.history = new History();
@@ -195,7 +195,7 @@ export default class Listener extends Event {
     this.selected.splice(0);
     this.selected.push(...nodes);
     // 一般从tree点击切换，在编辑矢量切换到其它矢量依旧保持编辑状态
-    if (this.state === State.EDIT_GEOM) {
+    if (this.state === state.EDIT_GEOM) {
       let keepGeom = !!nodes.length;
       for (let i = 0, len = nodes.length; i < len; i++) {
         const item = nodes[i];
@@ -325,7 +325,7 @@ export default class Listener extends Event {
         'br': CONTROL_TYPE.BR,
       }[target.className]!;
       this.prepare();
-      if (this.state === State.EDIT_TEXT) {
+      if (this.state === state.EDIT_TEXT) {
         this.cancelEditText();
       }
       // 旋转时记住中心坐标
@@ -423,7 +423,7 @@ export default class Listener extends Event {
         }
       }
       // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
-      if (this.state === State.EDIT_GEOM) {
+      if (this.state === state.EDIT_GEOM) {
         if (!this.geometry.keep || !this.geometry.keepVertPath) {
           this.isFrame = true;
         }
@@ -474,7 +474,7 @@ export default class Listener extends Event {
         const i = selected.indexOf(node);
         // 点选已有节点，当编辑text且shift且点击当前text时，是选区
         if (i > -1) {
-          if (this.shiftKey && (this.state !== State.EDIT_TEXT || selected[0] !== node)) {
+          if (this.shiftKey && (this.state !== state.EDIT_TEXT || selected[0] !== node)) {
             // 已选唯一相同节点，按shift不消失，是水平/垂直移动
             if (selected.length !== 1 || selected[0] !== node) {
               selected.splice(i, 1);
@@ -482,7 +482,7 @@ export default class Listener extends Event {
           }
           else {
             // 持续编辑更新文本的编辑光标并提前退出
-            if (this.state === State.EDIT_TEXT) {
+            if (this.state === state.EDIT_TEXT) {
               const text = selected[0] as Text;
               if (this.shiftKey) {
                 text.setCursorEndByAbsCoords(x, y);
@@ -539,11 +539,11 @@ export default class Listener extends Event {
       }
       else {
         // 没有选中节点，但当前在编辑某个文本节点时，变为非编辑选择状态，此时已选的就是唯一文本节点，不用清空
-        if (this.state === State.EDIT_TEXT) {
+        if (this.state === state.EDIT_TEXT) {
           // 后面做
         }
         // 理论进不来因为gradient/geom的dom盖在上面点不到，点到也应该有节点
-        else if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+        else if ([state.EDIT_GRADIENT, state.EDIT_GEOM].includes(this.state)) {
           this.emit(Listener.SELECT_POINT, [], []);
         }
         else if (!this.shiftKey) {
@@ -551,7 +551,7 @@ export default class Listener extends Event {
         }
       }
       // 一定是退出文本的编辑状态，持续编辑文本在前面逻辑会提前跳出
-      if (this.state === State.EDIT_TEXT) {
+      if (this.state === state.EDIT_TEXT) {
         this.cancelEditText(oldSelected[0]);
       }
       if (this.select.hoverNode) {
@@ -592,11 +592,11 @@ export default class Listener extends Event {
     this.button = e.button;
     // 右键菜单，忽略meta按下
     if (e.button === 2) {
-      if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+      if ([state.EDIT_GRADIENT, state.EDIT_GEOM].includes(this.state)) {
         contextMenu.showOk(e.pageX, e.pageY, this);
         return;
       }
-      if (this.metaKey || isWin && this.ctrlKey || this.state === State.EDIT_TEXT || this.options.disabled?.contextMenu) {
+      if (this.metaKey || isWin && this.ctrlKey || this.state === state.EDIT_TEXT || this.options.disabled?.contextMenu) {
         return;
       }
       const target = e.target as HTMLElement;
@@ -606,9 +606,9 @@ export default class Listener extends Event {
       return;
     }
     // 编辑gradient/geom按下无效（geom左键可以按下框选不无效），左键则取消编辑状态，但可以滚动
-    if ([State.EDIT_GRADIENT, State.EDIT_GEOM].includes(this.state)) {
+    if ([state.EDIT_GRADIENT, state.EDIT_GEOM].includes(this.state)) {
       if (e.button === 0 && !this.spaceKey) {
-        if (this.state === State.EDIT_GRADIENT) {
+        if (this.state === state.EDIT_GRADIENT) {
           // 是否点在内部控制点上
           if (!this.gradient.keep) {
             this.cancelEditGradient();
@@ -618,7 +618,7 @@ export default class Listener extends Event {
       }
       // 拖拽设置keep防止窗口关闭
       else if (e.button === 1 || e.button === 0 && this.spaceKey) {
-        if (this.state === State.EDIT_GRADIENT) {
+        if (this.state === state.EDIT_GRADIENT) {
           this.gradient.keep = true;
           picker.keep = true;
         }
@@ -655,7 +655,7 @@ export default class Listener extends Event {
       return;
     }
     // 编辑无hover，但编辑Text有选择文本段（一定按下移动），编辑Geom有框选，所以后面特殊处理
-    if ([State.EDIT_GRADIENT].includes(this.state)) {
+    if ([state.EDIT_GRADIENT].includes(this.state)) {
       return;
     }
     const dpi = root.dpi;
@@ -744,7 +744,7 @@ export default class Listener extends Event {
     }
     // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
     else if (this.isMouseDown) {
-      if (this.state === State.EDIT_TEXT) {
+      if (this.state === state.EDIT_TEXT) {
         const x = (e.clientX - this.originX) * dpi;
         const y = (e.clientY - this.originY) * dpi;
         const text = selected[0] as Text;
@@ -776,7 +776,7 @@ export default class Listener extends Event {
             meta = !meta;
           }
           // 矢量顶点框选，不关闭矢量面板，注意刚按下时人手可能会轻微移动，x/y某个为0忽略，产生位移后keep就为true了
-          if (this.state === State.EDIT_GEOM) {
+          if (this.state === state.EDIT_GEOM) {
             const geometry = this.geometry;
             if (dx && dy || geometry.keep) {
               geometry.keep = true;
@@ -842,7 +842,7 @@ export default class Listener extends Event {
           }
         }
         else {
-          if (this.state === State.EDIT_GEOM) {
+          if (this.state === state.EDIT_GEOM) {
             return;
           }
           this.select.select.classList.add('move');
@@ -890,7 +890,7 @@ export default class Listener extends Event {
       this.isMouseMove = true;
     }
     // 普通的hover，仅mouseEvent有，排除编辑文字时
-    else if (!isTouch && this.state !== State.EDIT_TEXT && this.state !== State.EDIT_GEOM) {
+    else if (!isTouch && this.state !== state.EDIT_TEXT && this.state !== state.EDIT_GEOM) {
       if (this.options.disabled?.hover) {
         return;
       }
@@ -936,10 +936,10 @@ export default class Listener extends Event {
           if (selected.length) {
             this.select.updateSelect(selected);
           }
-          if (this.state === State.EDIT_GRADIENT) {
+          if (this.state === state.EDIT_GRADIENT) {
             this.gradient.updatePos();
           }
-          else if (this.state === State.EDIT_GEOM) {
+          else if (this.state === state.EDIT_GEOM) {
             this.geometry.updateCurPosSize();
           }
         }
@@ -1069,7 +1069,7 @@ export default class Listener extends Event {
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
-      if (this.state === State.EDIT_TEXT) {
+      if (this.state === state.EDIT_TEXT) {
         if (this.options.disabled?.inputText) {
           return;
         }
@@ -1085,7 +1085,7 @@ export default class Listener extends Event {
         }
         this.input.focus();
       }
-      else if ([State.EDIT_GRADIENT].includes(this.state)) {
+      else if ([state.EDIT_GRADIENT].includes(this.state)) {
         // 啥也不做
       }
       else if (this.isFrame) {
@@ -1130,7 +1130,7 @@ export default class Listener extends Event {
       this.emit(Listener.SELECT_NODE, selected.slice(0));
     }
     // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
-    if (this.state === State.EDIT_GEOM) {
+    if (this.state === state.EDIT_GEOM) {
       if (!this.geometry.keep) {
         this.cancelEditGeom();
       }
@@ -1220,8 +1220,8 @@ export default class Listener extends Event {
           e.clientY - this.originY,
         );
         node.beforeEdit();
-        this.state = State.EDIT_TEXT;
-        this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
+        this.state = state.EDIT_TEXT;
+        this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
       }
       else if (node instanceof Polyline) {
         // 双击shapeGroup进入的polyline是选择，之后再双击编辑矢量
@@ -1231,8 +1231,8 @@ export default class Listener extends Event {
           }
           this.select.hideSelect();
           this.geometry.show([node]);
-          this.state = State.EDIT_GEOM;
-          this.emit(Listener.STATE_CHANGE, State.NORMAL, this.state);
+          this.state = state.EDIT_GEOM;
+          this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
         }
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));
@@ -1649,7 +1649,7 @@ export default class Listener extends Event {
     const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
-      if (this.state === State.EDIT_GEOM) {
+      if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
           this.geometry.delVertex();
         }
@@ -1659,7 +1659,7 @@ export default class Listener extends Event {
         }
       }
       // 暂时不支持 TODO
-      else if (this.state === State.EDIT_GRADIENT) {
+      else if (this.state === state.EDIT_GRADIENT) {
         this.cancelEditGradient();
       }
       // 忽略输入时
@@ -1672,7 +1672,7 @@ export default class Listener extends Event {
       this.spaceKey = true;
       if (!this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
-        if (this.state !== State.EDIT_GEOM || !this.geometry.hasEditPoint()) {
+        if (this.state !== state.EDIT_GEOM || !this.geometry.hasEditPoint()) {
           this.dom.classList.add('hand');
         }
       }
@@ -1696,24 +1696,24 @@ export default class Listener extends Event {
       contextMenu.hide();
       if (picker.isShow()) {
         picker.hide();
-        if (this.state === State.EDIT_GRADIENT) {
+        if (this.state === state.EDIT_GRADIENT) {
           this.select.showSelectNotUpdate();
-          this.state = State.NORMAL;
-          this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
+          this.state = state.NORMAL;
+          this.emit(Listener.STATE_CHANGE, state.EDIT_GRADIENT, this.state);
         }
-        else if (this.state === State.EDIT_GEOM) {
+        else if (this.state === state.EDIT_GEOM) {
           this.select.showSelect(this.selected);
-          this.state = State.NORMAL;
-          this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
+          this.state = state.NORMAL;
+          this.emit(Listener.STATE_CHANGE, state.EDIT_GEOM, this.state);
         }
-        else if (this.state === State.EDIT_TEXT) {
+        else if (this.state === state.EDIT_TEXT) {
           this.input.focus();
         }
       }
-      else if (this.state === State.EDIT_TEXT) {
+      else if (this.state === state.EDIT_TEXT) {
         this.cancelEditText();
       }
-      else if (this.state === State.EDIT_GEOM) {
+      else if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
           this.geometry.clearCur();
           this.emit(Listener.SELECT_POINT, [], []);
@@ -1813,7 +1813,7 @@ export default class Listener extends Event {
             y = 1;
           }
         }
-        if (this.state === State.EDIT_GEOM) {
+        if (this.state === state.EDIT_GEOM) {
           const geometry = this.geometry;
           const nodes: Polyline[] = [];
           const data: PointData[] = [];
@@ -1880,7 +1880,7 @@ export default class Listener extends Event {
     else if ((keyCode === 65 || code === 'KeyA') && metaKey) {
       const target = e.target as HTMLElement;
       // 编辑文字状态特殊处理
-      if (this.state === State.EDIT_TEXT && target === this.input.inputEl) {
+      if (this.state === state.EDIT_TEXT && target === this.input.inputEl) {
         e.preventDefault();
         this.input.node!.selectAll();
         this.input.hideCursor();
@@ -1935,7 +1935,7 @@ export default class Listener extends Event {
           const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
-          if (!(c instanceof FillCommand) && this.state !== State.EDIT_GRADIENT) {
+          if (!(c instanceof FillCommand) && this.state !== state.EDIT_GRADIENT) {
             this.updateActive();
           }
           // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
@@ -2073,7 +2073,7 @@ export default class Listener extends Event {
             this.emit(Listener.LETTER_SPACING_NODE, nodes);
           }
           // 更新光标
-          if (this.state === State.EDIT_TEXT) {
+          if (this.state === state.EDIT_TEXT) {
             const node = nodes[0] as Text;
             const { isMulti, start } = node.getSortedCursor();
             if (!isMulti) {
@@ -2088,7 +2088,7 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof TextCommand) {
-          if (this.state === State.EDIT_TEXT) {
+          if (this.state === state.EDIT_TEXT) {
             const node = nodes[0] as Text;
             const { isMulti, start } = node.getSortedCursor();
             if (!isMulti) {
@@ -2104,7 +2104,7 @@ export default class Listener extends Event {
         }
         else if (c instanceof PointCommand) {
           // 编辑态特殊，强制选择这些节点
-          if (this.state === State.EDIT_GEOM) {
+          if (this.state === state.EDIT_GEOM) {
             this.geometry.show(nodes as Polyline[]);
           }
           // 非编辑态选择它们
@@ -2159,25 +2159,25 @@ export default class Listener extends Event {
   }
 
   updateInput() {
-    if (this.state === State.EDIT_TEXT) {
+    if (this.state === state.EDIT_TEXT) {
       this.input.updateCursor();
     }
   }
 
   updateGradient() {
-    if (this.state === State.EDIT_GRADIENT) {
+    if (this.state === state.EDIT_GRADIENT) {
       this.gradient.updatePos();
     }
   }
 
   updateGeom() {
-    if (this.state === State.EDIT_GEOM) {
+    if (this.state === state.EDIT_GEOM) {
       this.geometry.updateAll();
     }
   }
 
   cancelEditText(node?: Node) {
-    if (this.state === State.EDIT_TEXT) {
+    if (this.state === state.EDIT_TEXT) {
       const text = (node || this.selected[0]) as Text;
       if (text) {
         text.resetCursor();
@@ -2185,25 +2185,25 @@ export default class Listener extends Event {
         text.inputStyle = undefined;
       }
       this.input.hide();
-      this.state = State.NORMAL;
-      this.emit(Listener.STATE_CHANGE, State.EDIT_TEXT, this.state);
+      this.state = state.NORMAL;
+      this.emit(Listener.STATE_CHANGE, state.EDIT_TEXT, this.state);
     }
   }
 
   cancelEditGradient() {
-    if (this.state === State.EDIT_GRADIENT) {
+    if (this.state === state.EDIT_GRADIENT) {
       this.select.showSelectNotUpdate();
-      this.state = State.NORMAL;
-      this.emit(Listener.STATE_CHANGE, State.EDIT_GRADIENT, this.state);
+      this.state = state.NORMAL;
+      this.emit(Listener.STATE_CHANGE, state.EDIT_GRADIENT, this.state);
     }
   }
 
   cancelEditGeom() {
-    if (this.state === State.EDIT_GEOM) {
+    if (this.state === state.EDIT_GEOM) {
       this.geometry.hide();
       this.select.showSelect(this.selected);
-      this.state = State.NORMAL;
-      this.emit(Listener.STATE_CHANGE, State.EDIT_GEOM, this.state);
+      this.state = state.NORMAL;
+      this.emit(Listener.STATE_CHANGE, state.EDIT_GEOM, this.state);
     }
   }
 

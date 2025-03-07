@@ -16,13 +16,17 @@ const geomHtml = `
 <ul class="sub">
   <li title="square"><b class="square"></b><span class="name">矩形</span><span class="key">R</span></li>
   <li title="ellipse"><b class="ellipse"></b><span class="name">椭圆形</span><span class="key">O</span></li>
-  <li title="line"><b class="line"></b><span class="name">直线</span><span class="key"></span></li>
+  <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>
   <li title="arrow"><b class="arrow"></b><span class="name">箭头</span><span class="key"></span></li>
   <li title="star"><b class="star"></b><span class="name">星形</span><span class="key"></span></li>
+  <li class="split"></li>
+  <li title="pen"><b class="pen"></b><span class="name">钢笔</span><span class="key">P</span></li>
 </ul>
 `;
 
 const textHtml = `<div class="title" title="text"><b class="text"></b></div>`;
+
+const imageHtml = `<div class="title" title="image"><b class="image"></b></div>`;
 
 const maskHtml = `
 <div class="title" title="alpha"><b class="alpha"></b></div>
@@ -70,6 +74,11 @@ class Toolbar {
     text.className = 'text item';
     text.innerHTML = textHtml;
     dom.appendChild(text);
+
+    const image = document.createElement('div');
+    image.className = 'img item';
+    image.innerHTML = imageHtml;
+    dom.appendChild(image);
 
     const mask = document.createElement('div');
     mask.className = 'mask item';

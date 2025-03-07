@@ -3,7 +3,7 @@ import Root from '../node/Root';
 import Listener from './Listener';
 import OpacityCommand from '../history/OpacityCommand';
 import Panel from './Panel';
-import State from './State';
+import state from './state';
 
 const html = `
   <h4 class="panel-title">不透明度</h4>
@@ -168,8 +168,8 @@ class OpacityPanel extends Panel {
       }
       this.show(nodes);
     });
-    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
-      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+    listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
+      if (next === state.EDIT_GEOM || next === state.NORMAL) {
         this.show(listener.selected);
       }
     });
@@ -178,7 +178,7 @@ class OpacityPanel extends Panel {
   override show(nodes: Node[]) {
     super.show(nodes);
     const panel = this.panel;
-    if (!nodes.length || this.listener.state === State.EDIT_GEOM) {
+    if (!nodes.length || this.listener.state === state.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }

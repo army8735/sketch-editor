@@ -2,7 +2,7 @@ import Group from '../node/Group';
 import Listener from './Listener';
 import { MASK, VISIBILITY } from '../style/define';
 import { version } from '../../package.json';
-import State from './State';
+import state from './state';
 
 let canvasDiv: HTMLElement;
 
@@ -127,13 +127,13 @@ function init(listener: Listener) {
         listener.paste();
       }
       else if (classList.contains('ok')) {
-        if (listener.state === State.EDIT_GEOM) {
+        if (listener.state === state.EDIT_GEOM) {
           listener.cancelEditGeom();
         }
-        else if (listener.state === State.EDIT_GRADIENT) {
+        else if (listener.state === state.EDIT_GRADIENT) {
           listener.cancelEditGradient();
         }
-        listener.state = State.NORMAL;
+        listener.state = state.NORMAL;
       }
     });
   }

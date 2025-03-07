@@ -11,7 +11,7 @@ import { color2hexStr, color2rgbaStr, getCssFillStroke, getCssStrokePosition } f
 import Panel from './Panel';
 import { StrokeStyle } from '../format';
 import StrokeCommand from '../history/StrokeCommand';
-import State from './State';
+import state from './state';
 
 const html = `
   <h4 class="panel-title">描边</h4>
@@ -206,7 +206,7 @@ class StrokePanel extends Panel {
         picker.show(el, stroke, 'strokePanel', onChange, pickCallback, listener);
         listener.select.hideSelect();
         listener.gradient.show(this.nodes[0], stroke, onChange);
-        listener.state = State.EDIT_GRADIENT;
+        listener.state = state.EDIT_GRADIENT;
       }
       else if (classList.contains('enabled')) {
         this.silence = true;

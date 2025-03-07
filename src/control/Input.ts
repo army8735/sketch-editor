@@ -1,7 +1,7 @@
 import Text from '../node/Text';
 import Root from '../node/Root';
 import Listener from './Listener';
-import State from './State';
+import state from './state';
 import TextCommand from '../history/TextCommand';
 
 export default class Input {
@@ -166,7 +166,7 @@ export default class Input {
 
     // 点击外部会blur，当来自画布节点内自身且编辑态需自动focus，还有来自textPanel（ignoreBlur）
     document.addEventListener('click', (e) => {
-      if (listener.state === State.EDIT_TEXT) {
+      if (listener.state === state.EDIT_TEXT) {
         let target = e.target as HTMLElement;
         let p = target as HTMLElement | null;
         while (p) {
@@ -179,7 +179,7 @@ export default class Input {
           }
           p = p.parentElement;
         }
-        listener.state = State.NORMAL;
+        listener.state = state.NORMAL;
         const node = this.node!;
         node.resetCursor();
         node.afterEdit();

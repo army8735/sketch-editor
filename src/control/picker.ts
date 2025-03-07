@@ -2,7 +2,7 @@ import { color2rgbaStr, getCssFillStroke } from '../style/css';
 import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { convert2Css } from '../style/gradient';
 import Listener from './Listener';
-import State from './State';
+import state from './state';
 
 let div: HTMLElement;
 const html = `
@@ -280,7 +280,7 @@ export default {
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
       div.addEventListener('mousedown', () => {
         this.keep = true;
-        if (listener.state === State.EDIT_GRADIENT) {
+        if (listener.state === state.EDIT_GRADIENT) {
           listener.gradient.keep = true;
         }
       });
@@ -309,8 +309,8 @@ export default {
           return;
         }
         this.hide();
-        if (listener.state === State.EDIT_GRADIENT) {
-          listener.state = State.NORMAL;
+        if (listener.state === state.EDIT_GRADIENT) {
+          listener.state = state.NORMAL;
           listener.select.showSelectNotUpdate();
         }
       });
@@ -328,8 +328,8 @@ export default {
       });
       picker.onDone = () => {
         this.hide();
-        if (listener.state === State.EDIT_GRADIENT) {
-          listener.state = State.NORMAL;
+        if (listener.state === state.EDIT_GRADIENT) {
+          listener.state = state.NORMAL;
           listener.select.showSelectNotUpdate();
         }
       };

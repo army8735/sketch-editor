@@ -1,7 +1,7 @@
 import Panel from './Panel';
 import Root from '../node/Root';
 import Listener from './Listener';
-import State from './State';
+import state from './state';
 import Polyline from '../node/geom/Polyline';
 import { CURVE_MODE } from '../style/define';
 import { Point } from '../format';
@@ -388,9 +388,9 @@ class PointPanel extends Panel {
     });
     number.addEventListener('change', () => onChange());
 
-    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
+    listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       // 出现或消失
-      if (next === State.EDIT_GEOM || prev === State.EDIT_GEOM) {
+      if (next === state.EDIT_GEOM || prev === state.EDIT_GEOM) {
         nodes.splice(0);
         prevPoint.splice(0);
         this.show();
@@ -415,7 +415,7 @@ class PointPanel extends Panel {
   override show() {
     const geoms = this.listener.selected.filter(item => item instanceof Polyline);
     const panel = this.panel;
-    if (!geoms.length || this.listener.state !== State.EDIT_GEOM) {
+    if (!geoms.length || this.listener.state !== state.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }

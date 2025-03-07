@@ -13,7 +13,7 @@ import Panel from './Panel';
 import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
 import { JStyle } from '../format';
-import State from './State';
+import state from './state';
 
 const html = `
   <div class="line">
@@ -514,8 +514,8 @@ class BasicPanel extends Panel {
       }
       this.show(nodes);
     });
-    listener.on(Listener.STATE_CHANGE, (prev: State, next: State) => {
-      if (next === State.EDIT_GEOM || next === State.NORMAL) {
+    listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
+      if (next === state.EDIT_GEOM || next === state.NORMAL) {
         this.show(listener.selected);
       }
     });
@@ -525,7 +525,7 @@ class BasicPanel extends Panel {
     super.show(nodes);
     this.data = [];
     const panel = this.panel;
-    if (this.listener.state === State.EDIT_GEOM) {
+    if (this.listener.state === state.EDIT_GEOM) {
       panel.style.display = 'none';
       return;
     }

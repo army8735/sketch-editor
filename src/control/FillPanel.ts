@@ -11,7 +11,7 @@ import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '
 import Panel from './Panel';
 import { FillStyle } from '../format';
 import FillCommand, { FillData } from '../history/FillCommand';
-import State from './State';
+import state from './state';
 
 const html = `
   <h4 class="panel-title">填充</h4>
@@ -254,7 +254,7 @@ class FillPanel extends Panel {
           }
         });
         if (!Array.isArray(fill)) {
-          listener.state = State.EDIT_GRADIENT;
+          listener.state = state.EDIT_GRADIENT;
         }
       }
       else if (classList.contains('enabled')) {
@@ -506,7 +506,7 @@ class FillPanel extends Panel {
         return;
       }
       this.show(nodes);
-      if (listener.state === State.EDIT_GRADIENT) {
+      if (listener.state === state.EDIT_GRADIENT) {
         // node一定相等，就是第0个，用记录的索引确定更新的是哪个fill
         const node = listener.gradient.node!;
         listener.gradient.update(node, node.computedStyle.fill[data[0].index]);
