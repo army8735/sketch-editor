@@ -25,11 +25,24 @@ const geomHtml = `
 const textHtml = `<div class="title" title="text"><b class="text"></b></div>`;
 
 const maskHtml = `
-<div class="title" title="mask"><b class="mask"></b></div>
+<div class="title" title="alpha"><b class="alpha"></b></div>
 <div class="drop"></div>
 <ul class="sub">
-  <li title="alpha"><b class="alpha"></b><span class="name">透明度蒙版</span><span class="key">O</span></li>
-  <li title="outline"><b class="outline"></b><span class="name">轮廓蒙版</span><span class="key">R</span></li>
+  <li title="alpha"><b class="alpha"></b><span class="name">透明度蒙版</span><span class="key">⌃</span><span class="key">⌘</span><span class="key">M</span></li>
+  <li title="outline"><b class="outline"></b><span class="name">轮廓蒙版</span><span class="key"></span></li>
+</ul>
+`;
+
+const boolHtml = `
+<div class="title" title="union"><b class="union"></b></div>
+<div class="drop"></div>
+<ul class="sub">
+  <li title="union"><b class="union"></b><span class="name">联集</span><span class="key"></span></li>
+  <li title="subtract"><b class="subtract"></b><span class="name">减去顶层</span><span class="key"></span></li>
+  <li title="intersect"><b class="intersect"></b><span class="name">交集</span><span class="key"></span></li>
+  <li title="xor"><b class="xor"></b><span class="name">差集</span><span class="key"></span></li>
+  <li class="split"></li>
+  <li title="flatten"><b class="flatten"></b><span class="name">拼合</span><span class="key"></span></li>
 </ul>
 `;
 
@@ -62,6 +75,11 @@ class Toolbar {
     mask.className = 'mask item';
     mask.innerHTML = maskHtml;
     dom.appendChild(mask);
+
+    const bool = document.createElement('div');
+    bool.className = 'bool item';
+    bool.innerHTML = boolHtml;
+    dom.appendChild(bool);
 
     let keep = false;
     dom.addEventListener('click', (e) => {
