@@ -1329,11 +1329,11 @@ async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
 }
 
 function parseStrPoint(s: string) {
-  const res = /{(.+),\s*(.+)}/.exec(s);
+  const res = /{(.+),\s*(.+)}/.exec(s || '');
   if (!res) {
-    throw new Error('Unknown point: ' + s);
+    return { x: 0, y: 0 };
   }
-  return { x: parseFloat(res[1]), y: parseFloat(res[2]) };
+  return { x: parseFloat(res[1]) || 0, y: parseFloat(res[2]) || 0 };
 }
 
 async function readImageFile(filename: string, opt: Opt) {
