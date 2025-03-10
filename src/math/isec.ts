@@ -1,7 +1,7 @@
 import vector from './vector';
 import {
   bboxBezier,
-  bezierExtremeT,
+  bezierExtremaT,
   getBezierMonotonicityT2,
   getPointByT,
   getT,
@@ -525,7 +525,7 @@ function lineTopBottomBezier(
     }
     // 曲线中间某点求极值即可
     else {
-      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
       const tl = (p.x - bboxL[0]) / (bboxL[2] - bboxL[0]);
       if (tl >= 0 && tl <= 1) {
@@ -554,7 +554,7 @@ function lineTopBottomBezier(
     }
     // 曲线中间某点求极值即可
     else {
-      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
       if (p.x === l[0].x && l[0].y === y || p.x === l[1].x && l[1].y === y) {
         return {
@@ -591,7 +591,7 @@ function lineLeftRightBezier(
     }
     // 曲线中间某点求极值即可
     else {
-      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
       const tl = (p.y - bboxL[1]) / (bboxL[3] - bboxL[1]);
       if (tl >= 0 && tl <= 1) {
@@ -620,7 +620,7 @@ function lineLeftRightBezier(
     }
     // 曲线中间某点求极值即可
     else {
-      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
       if (p.y === l[0].y && l[0].x === x || p.y === l[1].y && l[1].x === x) {
         return {
@@ -680,7 +680,7 @@ function bezierLeftRightBezier(
     }
     // b曲线中间在边界，求极值
     else {
-      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
       if (a[0].x === x && a[0].y === p.y) {
         return {
@@ -702,7 +702,7 @@ function bezierLeftRightBezier(
   }
   // a曲线中间在边界
   else {
-    const t1 = bezierExtremeT(a[0].x, a[0].y, a[1].x, a[1].y, a[2].x, a[2].y, a[3]?.x, a[3]?.y).filter(i => i > 0 && i < 1);
+    const t1 = bezierExtremaT(a[0].x, a[0].y, a[1].x, a[1].y, a[2].x, a[2].y, a[3]?.x, a[3]?.y).filter(i => i > 0 && i < 1);
     const p1 = getPointByT(a, t1[0]);
     // b曲线端点在边界
     if (b[0].x === x || b[lb - 1].x === x) {
@@ -725,7 +725,7 @@ function bezierLeftRightBezier(
     }
     // b曲线中间在边界
     else {
-      const t2 = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t2 = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p2 = getPointByT(b, t2[0]);
       if (p1.y === p2.y) {
         return {
@@ -785,7 +785,7 @@ function bezierTopBottomBezier(
     }
     // b曲线中间在边界，求极值
     else {
-      const t = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p = getPointByT(b, t[0]);
       if (a[0].y === y && a[0].x === p.x) {
         return {
@@ -807,7 +807,7 @@ function bezierTopBottomBezier(
   }
   // a曲线中间在边界
   else {
-    const t1 = bezierExtremeT(a[0].x, a[0].y, a[1].x, a[1].y, a[2].x, a[2].y, a[3]?.x, a[3]?.y).filter(i => i > 0 && i < 1);
+    const t1 = bezierExtremaT(a[0].x, a[0].y, a[1].x, a[1].y, a[2].x, a[2].y, a[3]?.x, a[3]?.y).filter(i => i > 0 && i < 1);
     const p1 = getPointByT(a, t1[0]);
     // b曲线端点在边界
     if (b[0].y === y || b[lb - 1].y === y) {
@@ -830,7 +830,7 @@ function bezierTopBottomBezier(
     }
     // b曲线中间在边界
     else {
-      const t2 = bezierExtremeT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
+      const t2 = bezierExtremaT(b[0].x, b[0].y, b[1].x, b[1].y, b[2].x, b[2].y, b[3]?.x, b[3]?.y).filter(i => i > 0 && i < 1);
       const p2 = getPointByT(b, t2[0]);
       if (p1.x === p2.x) {
         return {

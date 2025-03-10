@@ -88,7 +88,9 @@ class Group extends Container {
     // 记得重置
     child._rect = undefined;
     child._bbox = undefined;
+    child._bbox2 = undefined;
     child._filterBbox = undefined;
+    child._filterBbox2 = undefined;
     child.tempBbox = undefined;
   }
 

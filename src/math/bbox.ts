@@ -56,6 +56,7 @@ function mergeFirst(item: number[], res: Float64Array) {
     y = item[1];
   }
   else {
+    inject.error('Unsupported point data: ' + item.join(','));
     return;
   }
   res[0] = x;
@@ -94,6 +95,7 @@ function mergeNotFirst(item: number[], x2: number, y2: number, res: Float64Array
     mergeBbox(res, x, y, x, y);
   }
   else {
+    inject.error('Unsupported point data: ' + item.join(','));
     return;
   }
   return { x, y };
@@ -148,7 +150,7 @@ export function getShapeGroupRect(points: number[][][], res?: Float64Array) {
       }
       else {
         const t = mergeNotFirst(item, x, y, res);
-        if(!t) {
+        if (!t) {
           inject.error('Unsupported point data: ' + i + ':' + j + ' - ' + item.join(','));
           continue;
         }

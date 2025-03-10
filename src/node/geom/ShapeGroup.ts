@@ -105,29 +105,6 @@ class ShapeGroup extends Group {
     this.isShapeGroup = true;
   }
 
-  override didMount() {
-    this.buildPoints();
-    if (!this.coords?.length) {
-      return;
-    }
-    const rect = this._rect || this.rect;
-    const { width, height } = this;
-    const EPS = Group.EPS;
-    // 和group的对比不同，直接用points的结果的rect
-    if (Math.abs(-rect[0]) > EPS
-      || Math.abs(-rect[1]) > EPS
-      || Math.abs(width - rect[2]) > EPS
-      || Math.abs(height - rect[3]) > EPS) {
-      // 冒泡过程无需向下检测，直接向上
-      this.adjustPosAndSize({
-        minX: rect[0],
-        minY: rect[1],
-        maxX: rect[2],
-        maxY: rect[3],
-      });
-    }
-  }
-
   override lay(data: LayoutData) {
     super.lay(data);
     this.coords = undefined;

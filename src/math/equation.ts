@@ -192,9 +192,12 @@ function getQuarticRoots(coefs: number[]) {
 export function getRoots(coefs: number[]) {
   let degree = coefs.length - 1;
   for (let i = degree; i >= 0; i--) {
-    if (Math.abs(coefs[i]) < 1e-12) {
+    if (coefs[i] === 0) {
       degree--;
     }
+    // if (Math.abs(coefs[i]) < 1e-12) {
+    //   degree--;
+    // }
     else {
       break;
     }
@@ -213,6 +216,7 @@ export function getRoots(coefs: number[]) {
     case 4:
       result = getQuarticRoots(coefs);
   }
+  // console.log('coefs', coefs, result)
   return result;
 }
 

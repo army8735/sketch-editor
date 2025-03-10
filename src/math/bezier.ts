@@ -1,4 +1,4 @@
-import equation, { getRoots, lineSlope, pointSlope2General, twoPoint2General } from './equation';
+import { getRoots, lineSlope, pointSlope2General, twoPoint2General } from './equation';
 import { includedAngle } from './vector';
 
 /**
@@ -48,62 +48,47 @@ export function bboxBezier2(x0: number, y0: number, x1: number, y1: number, x2: 
 /**
  * 同上三阶的
  */
-export function bboxBezier3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
-  let minX = Math.min(x0, x3);
-  let minY = Math.min(y0, y3);
-  let maxX = Math.max(x0, x3);
-  let maxY = Math.max(y0, y3);
-  if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
-    const cx = -x0 + x1;
-    const cy = -y0 + y1;
-    const bx = x0 - 2 * x1 + x2;
-    const by = y0 - 2 * y1 + y2;
-    const ax = -x0 + 3 * x1 - 3 * x2 + x3;
-    const ay = -y0 + 3 * y1 - 3 * y2 + y3;
-    let hx = bx * bx - ax * cx;
-    let hy = by * by - ay * cy;
-    if (hx > 0) {
-      hx = Math.sqrt(hx);
-      let t = (-bx - hx) / ax;
-      // 2次项系数为0注意降级为一元一次方程
-      if (ax && t > 0 && t < 1) {
-        const s = 1 - t;
-        const q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
-        minX = Math.min(minX, q);
-        maxX = Math.max(maxX, q);
-      }
-      t = ax ? ((-bx + hx) / ax) : (-cx * 0.5 / bx);
-      if (t > 0 && t < 1) {
-        const s = 1 - t;
-        const q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
-        minX = Math.min(minX, q);
-        maxX = Math.max(maxX, q);
-      }
-    }
-    if (hy > 0) {
-      hy = Math.sqrt(hy);
-      let t = (-by - hy) / ay;
-      if (ay && t > 0 && t < 1) {
-        const s = 1 - t;
-        const q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
-        minY = Math.min(minY, q);
-        maxY = Math.max(maxY, q);
-      }
-      t = ay ? ((-by + hy) / ay) : (-cy * 0.5 / by);
-      if (t > 0 && t < 1) {
-        const s = 1 - t;
-        const q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
-        minY = Math.min(minY, q);
-        maxY = Math.max(maxY, q);
-      }
-    }
+export function bboxBezier3(
+  x0: number | { x: number, y: number }[], y0?: number, x1?: number, y1?: number,
+  x2?: number, y2?: number, x3?: number, y3?: number,
+) {
+  if (Array.isArray(x0)) {
+    x3 = x0[3].x;
+    y3 = x0[3].y;
+    x2 = x0[2].x;
+    y2 = x0[2].y;
+    x1 = x0[1].x;
+    y1 = x0[1].y;
+    y0 = x0[0].y;
+    x0 = x0[0].x;
+  }
+  let minX = Math.min(x0, x3!);
+  let minY = Math.min(y0!, y3!);
+  let maxX = Math.max(x0, x3!);
+  let maxY = Math.max(y0!, y3!);
+  // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
+  if (x1! < minX || y1! < minY || x1! > maxX || y1! > maxY || x2! < minX || y2! < minY || x2! > maxX || y2! > maxY) {
+    const extremaT = bezierExtremaT(x0, y0!, x1!, y1!, x2!, y2!, x3!, y3!);
+    extremaT.forEach(t => {
+      const p = getPointByT([
+        { x: x0, y: y0! },
+        { x: x1!, y: y1! },
+        { x: x2!, y: y2! },
+        { x: x3!, y: y3! },
+      ], t);
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    });
   }
   return [minX, minY, maxX, maxY];
 }
 
 export function bboxBezier(
   x0: number | { x: number, y: number }[], y0?: number, x1?: number, y1?: number,
-  x2?: number, y2?: number, x3?: number, y3?: number) {
+  x2?: number, y2?: number, x3?: number, y3?: number,
+) {
   let len = arguments.length;
   if (Array.isArray(x0)) {
     len = x0.length;
@@ -565,7 +550,7 @@ export function bezier3Slope(points: { x: number, y: number }[], t: number) {
   return bezierDerivative(points, t, false)! / x;
 }
 
-export function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
+export function bezierExtremaT2(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) {
   let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
   if (isNaN(tx) || tx < 0) {
     tx = 0;
@@ -594,66 +579,43 @@ export function bezierExtremeT2(x0: number, y0: number, x1: number, y1: number, 
   return res;
 }
 
-export function bezierExtremeT3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
-  const cx = -x0 + x1;
-  const cy = -y0 + y1;
-  const bx = x0 - 2 * x1 + x2;
-  const by = y0 - 2 * y1 + y2;
-  const ax = -x0 + 3 * x1 - 3 * x2 + x3;
-  const ay = -y0 + 3 * y1 - 3 * y2 + y3;
-  let hx = bx * bx - ax * cx;
-  let hy = by * by - ay * cy;
-  const res: number[] = [];
-  if (hx > 0) {
-    hx = Math.sqrt(hx);
-    let t = (-bx - hx) / ax;
-    // 2次项系数为0注意降级为一元一次方程
-    if (ax && t > 0 && t < 1) {
-      res.push(t);
-    }
-    t = ax ? ((-bx + hx) / ax) : (-cx * 0.5 / bx);
-    if (t > 0 && t < 1) {
-      res.push(t);
-    }
-  }
-  if (hy > 0) {
-    hy = Math.sqrt(hy);
-    let t = (-by - hy) / ay;
-    if (ay && t > 0 && t < 1) {
-      res.push(t);
-    }
-    t = ay ? ((-by + hy) / ay) : (-cy * 0.5 / by);
-    if (t > 0 && t < 1) {
-      res.push(t);
-    }
-  }
+export function bezierExtremaT3(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+  const cx = -3 * x0 + 3 * x1;
+  const cy = -3 * y0 + 3 * y1;
+  const bx = 6 * x0 - 12 * x1 + 6 * x2;
+  const by = 6 * y0 - 12 * y1 + 6 * y2;
+  const ax = -3 * x0 + 9 * x1 - 9 * x2 + 3 * x3;
+  const ay = -3 * y0 + 9 * y1 - 9 * y2 + 3 * y3;
+  const ex = getRoots([cx, bx, ax]).filter(i => i >=0 && i <= 1);
+  const ey = getRoots([cy, by, ay]).filter(i => i >=0 && i <= 1);
+  const res = ex.concat(ey);
   res.sort((a, b) => a - b);
   for (let i = res.length - 1; i > 0; i--) {
     if (res[i] === res[i - 1]) {
       res.splice(i, 1);
     }
   }
-  if (res[0] > 0) {
-    res.unshift(0);
-  }
-  if (res[res.length - 1] < 1) {
-    res.push(1);
-  }
+  // if (res[0] > 0) {
+  //   res.unshift(0);
+  // }
+  // if (res[res.length - 1] < 1) {
+  //   res.push(1);
+  // }
   return res;
 }
 
 // 贝塞尔曲线的极值点的t，包含默认的0和1驻点，直线则默认就是[0, 1]
-export function bezierExtremeT(x0: number, y0: number, x1: number, y1: number,
+export function bezierExtremaT(x0: number, y0: number, x1: number, y1: number,
                                x2?: number, y2?: number, x3?: number, y3?: number) {
   const len = arguments.length;
   if (len === 4) {
     return [0, 1];
   }
   if (len === 6) {
-    return bezierExtremeT2(x0, y0, x1, y1, x2!, y2!);
+    return bezierExtremaT2(x0, y0, x1, y1, x2!, y2!);
   }
   if (len === 8) {
-    return bezierExtremeT3(x0, y0, x1, y1, x2!, y2!, x3!, y3!);
+    return bezierExtremaT3(x0, y0, x1, y1, x2!, y2!, x3!, y3!);
   }
   throw new Error('Unsupported order');
 }
@@ -758,7 +720,7 @@ export function getBezierMonotonicityT(points: { x: number, y: number }[], isX =
   const p2 = isX ? points[2].x : points[2].y;
   if (points.length === 4) {
     const p3 = isX ? points[3].x : points[3].y;
-    const t = equation.getRoots([
+    const t = getRoots([
       3 * p1 - 3 * p0,
       2 * (3 * p0 - 6 * p1 + 3 * p2),
       3 * (-p0 + 3 * p1 - 3 * p2 + p3),
@@ -770,7 +732,7 @@ export function getBezierMonotonicityT(points: { x: number, y: number }[], isX =
     }
   }
   else if (points.length === 3) {
-    const t = equation.getRoots([
+    const t = getRoots([
       2 * (p1 - p0),
       2 * (p0 - 2 * p1 + p2),
     ]).filter((i) => i > eps&& i < 1 - eps);
@@ -788,8 +750,7 @@ export function getBezierMonotonicityT2(points: { x: number, y: number }[], isX 
   const p2 = isX ? points[2].x : points[2].y;
   if (points.length === 4) {
     const p3 = isX ? points[3].x : points[3].y;
-    const t = equation
-      .getRoots([
+    const t = getRoots([
         2 * (3 * p0 - 6 * p1 + 3 * p2),
         6 * (-p0 + 3 * p1 - 3 * p2 + p3),
       ])
@@ -1071,7 +1032,7 @@ export default {
   getPointT,
   getPointWithDByApprox,
   bezierSlope,
-  bezierExtremeT,
+  bezierExtremaT,
   bezierTangent,
   splitBezierT,
   getBezierMonotonicityT,
