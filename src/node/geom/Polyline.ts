@@ -26,7 +26,7 @@ import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
-import { calPoint, identity, multiply } from '../../math/matrix';
+import { calPoint, identity, multiply, multiplyTranslate } from '../../math/matrix';
 import { calMatrixByOrigin, calRotateZ } from '../../style/transform';
 
 const EPS = 1e-4;
@@ -43,7 +43,7 @@ class Polyline extends Geom {
   override didMount() {
     super.didMount();
     // 脏数据导致x/y不对应尺寸[0,1]重新订正
-    this.checkPointsChange();
+    this.checkPointsChange(true);
   }
 
   override buildPoints() {
@@ -734,7 +734,7 @@ class Polyline extends Geom {
   }
 
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
-  checkPointsChange() {
+  checkPointsChange(isMount = false) {
     const rect = this._rect || this.rect;
     const dx1 = rect[0],
       dy1 = rect[1],
@@ -754,19 +754,24 @@ class Polyline extends Geom {
         calRotateZ(i1, -rotateZ);
         let m1 = calMatrixByOrigin(i1, transformOrigin[0], transformOrigin[1]);
         m1 = multiply(this.matrix, m1);
-        const p1 = calPoint({ x: rect[0], y: rect[1] }, m1);
+        const p1 = calPoint({ x: 0, y: 0 }, m1);
         const p2 = calPoint({ x: this.width, y: this.height }, m1);
+        const nw = rect[2] - rect[0];
+        const nh = rect[3] - rect[1];
         // 计算新的transformOrigin，目前都是中心点
         const [cx, cy] = style.transformOrigin.map((item, i) => {
-          return calSize(item, i ? rect[3] : rect[2]);
+          return calSize(item, i ? nh : nw);
         });
-        // 用新的tfo逆旋转回去
+        // 用新的tfo逆旋转回去，位置可能发生了位移
         const i = identity();
+        if (rect[0] || rect[1]) {
+          multiplyTranslate(i, rect[0], rect[1]);
+        }
         calRotateZ(i, -rotateZ);
         let m2 = calMatrixByOrigin(i, cx, cy);
         m2 = multiply(this.matrix, m2);
-        const n1 = calPoint({ x: rect[0], y: rect[1] }, m2);
-        const n2 = calPoint({ x: rect[2], y: rect[3] }, m2);
+        const n1 = calPoint({ x: 0, y: 0 }, m2);
+        const n2 = calPoint({ x: nw, y: nh }, m2);
         this.adjustPosAndSizeSelf(n1.x - p1.x, n1.y - p1.y, n2.x - p2.x, n2.y - p2.y);
       }
       // 无旋转的简单直接改变
@@ -774,7 +779,10 @@ class Polyline extends Geom {
         this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
       }
       this.adjustPoints(-dx1, -dy1);
-      this.checkPosSizeUpward();
+      // mount过程自上而下检查不要重复向上
+      if (!isMount) {
+        this.checkPosSizeUpward();
+      }
       this.coords = undefined;
     }
   }
