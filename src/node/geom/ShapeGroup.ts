@@ -106,6 +106,11 @@ class ShapeGroup extends Group {
   }
 
   override didMount() {
+    const { children } = this;
+    const len = children.length;
+    for (let i = 0; i < len; i++) {
+      children[i].didMount();
+    }
     this.buildPoints();
     if (!this.coords?.length) {
       return;
