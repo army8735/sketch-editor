@@ -515,14 +515,14 @@ function renderWebglTile(
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
           }
-          const list = target!.list;
           // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
           if (isArtBoard) {
             node.renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
-            // 一般没有内容，但特殊情况下脏数据比如设置了opacity形成merge
-            if (!list.length) {
-              continue;
-            }
+          }
+          // 一般都有内容，画板没有，但特殊情况下脏数据比如设置了opacity形成merge画板就有了
+          const list = target?.list;
+          if (!list || !list.length) {
+            continue;
           }
           if (isBgBlur && i) {
           }
