@@ -15,7 +15,7 @@ module.exports = {
       .assert.value('#side .basic-panel .w', '120.71')
       .assert.value('#side .basic-panel .h', '120.71')
       .keys(browser.Keys.META)
-      .moveToElement('canvas', 100, 80)
+      .moveToElement('canvas', 100, 100)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
