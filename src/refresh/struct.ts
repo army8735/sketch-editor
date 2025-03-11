@@ -202,6 +202,7 @@ function renderWebglTile(
   const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
   // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld/filterBbox不能用老的
   const keys = Object.keys(tileRecord);
+  // console.log('record', keys, mergeRecord);
   for (let i = 0, len = keys.length; i < len; i++) {
     const node = tileRecord[keys[i]];
     if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
@@ -454,7 +455,7 @@ function renderWebglTile(
           abRect[2] = ab2.x3;
           abRect[3] = ab2.y3;
         }
-        // console.warn(i, node.props.name, coords, bbox.join(','), sb);
+        // console.warn(i, node.props.name, shouldRender, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bboxT = tile.bbox;
@@ -480,6 +481,7 @@ function renderWebglTile(
           )) {
             continue;
           }
+          // console.log(j, shouldRender);
           // 记录节点和tile的关系，发生变化清空所在tile
           node.addTile(tile);
           tile.add(node);
@@ -513,10 +515,14 @@ function renderWebglTile(
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
           }
+          const list = target!.list;
           // 画板的背景色特殊逻辑渲染，以原始屏幕系坐标viewport，传入当前tile和屏幕的坐标差，还要计算tile的裁剪
           if (isArtBoard) {
             node.renderBgcTile(gl, cx2, cx, cy, factor, tile, ab!);
-            continue;
+            // 一般没有内容，但特殊情况下脏数据比如设置了opacity形成merge
+            if (!list.length) {
+              continue;
+            }
           }
           if (isBgBlur && i) {
           }
@@ -533,7 +539,6 @@ function renderWebglTile(
             );
           }
           // 有无mbm都复用这段逻辑
-          const list = target!.list;
           // 特殊优化，对象只有1个渲染目标时等同于不分块，省略一些计算判断
           if (list.length === 1) {
             list[0].t && drawTextureCache(
