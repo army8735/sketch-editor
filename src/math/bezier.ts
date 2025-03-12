@@ -725,11 +725,9 @@ export function getBezierMonotonicityT(points: { x: number, y: number }[], isX =
       2 * (3 * p0 - 6 * p1 + 3 * p2),
       3 * (-p0 + 3 * p1 - 3 * p2 + p3),
     ]).filter((i) => i > eps&& i < 1 - eps);
-    if (t.length) {
-      return t.sort(function (a, b) {
-        return a - b;
-      });
-    }
+    return t.sort(function (a, b) {
+      return a - b;
+    });
   }
   else if (points.length === 3) {
     const t = getRoots([
@@ -740,7 +738,7 @@ export function getBezierMonotonicityT(points: { x: number, y: number }[], isX =
   }
 }
 
-// 同上，获取2阶导单调性t值
+// 同上，获取2阶导凹凸性t值
 export function getBezierMonotonicityT2(points: { x: number, y: number }[], isX = true, eps = 1e-9) {
   if (points.length < 3 || points.length > 4) {
     throw new Error('Unsupported order');
@@ -754,12 +752,10 @@ export function getBezierMonotonicityT2(points: { x: number, y: number }[], isX 
         2 * (3 * p0 - 6 * p1 + 3 * p2),
         6 * (-p0 + 3 * p1 - 3 * p2 + p3),
       ])
-      .filter((i) => i > eps&& i < 1 - eps);
-    if (t.length) {
-      return t.sort(function (a, b) {
-        return a - b;
-      });
-    }
+      .filter((i) => i > eps&& i < 1 - eps);console.log(t);
+    return t.sort(function (a, b) {
+      return a - b;
+    });
   }
   else if (points.length === 3) {
     const t = 2 * (p0 - 2 * p1 + p2);
@@ -818,18 +814,33 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
     return { x: tx, y: ty, d, t };
   }
   // console.error('曲线和点', points.map(item => item.x + ',' + item.y).join(' '), x, y);
-  // 先单调切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
+  // 先单调凹凸切割，但要防止切割的结果使得曲线面积特别小，w/h<=eps，后面做
   const tx = getBezierMonotonicityT(points, true);
   const ty = getBezierMonotonicityT(points, false);
+  const tx2 = getBezierMonotonicityT2(points, true);
+  const ty2 = getBezierMonotonicityT2(points, false);
   const ts: number[] = [];
   if (tx) {
     ts.push(...tx);
   }
   if (ty) {
-    ty.forEach((y) => {
-      const i = ts.indexOf(y);
-      if (i === -1) {
-        ts.push(y);
+    ty.forEach((i) => {
+      if (!ts.includes(i)) {
+        ts.push(i);
+      }
+    });
+  }
+  if (tx2) {
+    tx2.forEach((i) => {
+      if (!ts.includes(i)) {
+        ts.push(i);
+      }
+    });
+  }
+  if (ty2) {
+    ty2.forEach((i) => {
+      if (!ts.includes(i)) {
+        ts.push(i);
       }
     });
   }
