@@ -852,15 +852,21 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
   ts.forEach((t, i) => {
     if (!i) {
       const r = getEachPDByApprox(points, 0, t, x, y, eps);
-      r && temp.push(r);
+      if (r !== undefined) {
+        temp.push(r);
+      }
     }
     const r = getEachPDByApprox(points, t, ts[i + 1] || 1, x, y, eps);
-    r && temp.push(r);
+    if (r !== undefined) {
+      temp.push(r);
+    }
   });
   // 本身就是单调无切割则求整个
   if (!ts.length) {
     const r = getEachPDByApprox(points, 0, 1, x, y, eps);
-    r && temp.push(r);
+    if (r !== undefined) {
+      temp.push(r);
+    }
   }
   temp.sort((a, b) => a.d - b.d);
   // console.error('最终结果', temp[0]);
@@ -891,11 +897,9 @@ function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: n
   if (r2) {
     list.push(r2);
   }
-  if (list.length < 2) {
-    const r3 = getEachPDByApproxWithStartT(points, t1, t2, (t1 + t2) * 0.5, x, y, eps, min, max);
-    if (r3) {
-      list.push(r3);
-    }
+  const r3 = getEachPDByApproxWithStartT(points, t1, t2, (t1 + t2) * 0.5, x, y, eps, min, max);
+  if (r3) {
+    list.push(r3);
   }
   if (!list.length) {
     return;
