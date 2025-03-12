@@ -885,6 +885,8 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
  * 即便如此，点距离曲线还是可能非单调（x和y的单调性相反情况），从而有非单根情况，最多双根
  * 因为x/y单调性的贝塞尔曲线和一个圆最多2个交点，反证有3个交点就不单调了
  * 此时求2次，各自从t1/t2开始，然后取最小值即可
+ * 更新：对单调理解过于理想，x/y单调和距离单调不等价，因此中点一定再计算一次
+ * 另外相邻子曲线的首尾点其实t是一样的，除了开头结尾子曲线，中间的子曲线可以省略一次计算
  */
 function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: number, x: number, y: number, eps = 1e-9, min = 3, max = 30) {
   // console.warn('在此t范围内查找2次', t1, t2);
@@ -893,9 +895,12 @@ function getEachPDByApprox(points: { x: number, y: number }[], t1: number, t2: n
   if (r1) {
     list.push(r1);
   }
-  const r2 = getEachPDByApproxWithStartT(points, t1, t2, t2, x, y, eps, min, max);
-  if (r2) {
-    list.push(r2);
+  // 从小到大排列，最后的子曲线t为1不和前面的结尾重复
+  if (t2 === 1) {
+    const r2 = getEachPDByApproxWithStartT(points, t1, t2, t2, x, y, eps, min, max);
+    if (r2) {
+      list.push(r2);
+    }
   }
   const r3 = getEachPDByApproxWithStartT(points, t1, t2, (t1 + t2) * 0.5, x, y, eps, min, max);
   if (r3) {
