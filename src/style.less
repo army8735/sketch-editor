@@ -2053,11 +2053,12 @@ html, body {
       left: 50%;
       bottom: 20px;
       display: flex;
-      padding: 3px;
+      padding: 2px;
       background: rgba(255, 255, 255, 0.9);
-      border-radius: 5px;
+      border-radius: 4px;
       box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
       cursor: auto;
+      pointer-events: none;
 
       &:empty {
         padding: 0;
@@ -2078,6 +2079,7 @@ html, body {
       .item {
         position: relative;
         display: flex;
+        pointer-events: none;
 
         &.show {
           z-index: 999;
@@ -2092,23 +2094,33 @@ html, body {
         }
 
         &.active {
-          .title {
+          .ti {
             b {
               filter: sepia(0.7) hue-rotate(180deg) saturate(2.5);
             }
           }
         }
 
-        .title {
-          padding: 3px;
+        .ti {
+          padding: 2px;
           width: 24px;
           height: 24px;
           background-repeat: no-repeat;
           background-position: center;
           background-size: 24px auto;
+          border-radius: 3px;
+          pointer-events: auto;
 
           &:hover {
             background-color: rgb(243, 243, 243);
+          }
+
+          &:active {
+            background-color: rgb(214, 246, 255);
+
+            b {
+              background-color: rgba(230, 230, 230);
+            }
           }
         }
 
@@ -2181,11 +2193,18 @@ html, body {
         }
       }
 
+      .item .disable {
+        opacity: 0.3;
+        cursor: not-allowed;
+        //pointer-events: none;
+      }
+
       .drop {
         width: 12px;
         background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACPTkDJAAAAv0lEQVRYCWNgGAWjITAaAqMhMBoCIz0EGEkIAG6g2kQgZieg5ydQfj4QfyWgDizNRIwiqJofQPoLEepBakBqiQKkOOAv0MTNQPwbj8kgOZAakFqiADNRqhCKvgOZIB+qIIRQWLuBvIcoIgQ4pDoAZNxrIOYHYjEQBwlcBbKPI/GJYpISBcgG7gVy3iIJgNggMZIBOSEAsuQfED8GYm0oew2QJiaBApVRF4gDjQPhUTAaAqMhMBoCoyEwGgJkhwAANCkawjWUxM8AAAAASUVORK5CYII=) no-repeat center;
         background-size: 16px auto;
         border-radius: 3px;
+        pointer-events: auto;
 
         &:hover {
           background-color: rgb(230, 230, 230);
@@ -2198,7 +2217,7 @@ html, body {
         bottom: 100%;
         display: none;
         margin: 0;
-        padding: 1px;
+        padding: 2px;
         list-style: none;
         background: rgba(255, 255, 255, 0.9);
         border-radius: 3px;
@@ -2209,10 +2228,11 @@ html, body {
         li {
           display: flex;
           align-items: center;
-          padding: 3px;
+          padding: 2px;
           border-radius: 2px;
           white-space: nowrap;
           font-size:12px;
+          pointer-events: auto;
 
           &.split {
             padding: 0;
@@ -2220,11 +2240,25 @@ html, body {
             border-bottom: 1px dotted #CCC;
           }
 
+          &.disable {
+            opacity: 0.3;
+            cursor: not-allowed;
+            //pointer-events: none;
+          }
+
           &:hover {
             background-color: rgb(243, 243, 243);
 
             .key {
               background: rgba(255, 255, 255, 0.9);
+            }
+          }
+
+          &:active {
+            background-color: rgb(214, 246, 255);
+
+            b {
+              background-color: rgba(230, 230, 230);
             }
           }
 
@@ -2242,12 +2276,16 @@ html, body {
           .name {
             margin: 0 5px;
             width: 60px;
+            user-select: none;
           }
 
           .key {
             margin-left: 1px;
+            display: flex;
             width: 16px;
-            line-height: 16px;
+            height: 16px;
+            align-items: center;
+            justify-content: center;
             background-color: rgb(243, 243, 243);
             font-size: 11px;
             text-align: center;

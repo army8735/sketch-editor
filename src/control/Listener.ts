@@ -638,7 +638,7 @@ export default class Listener extends Event {
     this.pageTx = o.translateX;
     this.pageTy = o.translateY;
     // 空格或中间移动画布
-    if (e.button === 0 && this.spaceKey || this.middleKey) {
+    if (e.button === 0 && this.spaceKey || this.middleKey || this.state === state.HAND) {
       this.dom.classList.add('moving');
     }
     // 普通按下是选择节点或者编辑文本
@@ -917,7 +917,7 @@ export default class Listener extends Event {
     const dpi = root.dpi;
     const selected = this.selected;
     // 空格或中键拖拽画布
-    if (this.spaceKey || this.middleKey) {
+    if ((this.spaceKey || this.middleKey || this.state === state.HAND) && !this.isFrame) {
       if (this.isMouseDown) {
         if (this.options.disabled?.drag) {
           return;
@@ -1142,7 +1142,7 @@ export default class Listener extends Event {
     this.isFrame = false;
     this.middleKey = false;
     this.dom.classList.remove('moving');
-    if (this.spaceKey || this.middleKey) {
+    if (this.spaceKey || this.middleKey || this.state === state.HAND) {
     }
     else {
       this.dom.classList.remove('hand');
@@ -1672,7 +1672,7 @@ export default class Listener extends Event {
       this.spaceKey = true;
       if (!this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
-        if (this.state !== state.EDIT_GEOM || !this.geometry.hasEditPoint()) {
+        if (!this.isFrame && (this.state !== state.EDIT_GEOM || !this.geometry.hasEditPoint())) {
           this.dom.classList.add('hand');
         }
       }
