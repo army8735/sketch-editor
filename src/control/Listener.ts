@@ -639,7 +639,7 @@ export default class Listener extends Event {
     this.pageTy = o.translateY;
     // 空格或中间移动画布
     if (e.button === 0 && this.spaceKey || this.middleKey || this.state === state.HAND) {
-      this.dom.classList.add('moving');
+      this.dom.classList.add('handing');
     }
     // 普通按下是选择节点或者编辑文本
     else if (!this.spaceKey) {
@@ -922,7 +922,7 @@ export default class Listener extends Event {
         if (this.options.disabled?.drag) {
           return;
         }
-        this.dom.classList.add('moving'); // 先按鼠标后空格
+        this.dom.classList.add('handing'); // 先按鼠标后空格
         this.select.hideHover();
         this.isMouseMove = true;
         const page = root.getCurPage();
@@ -1141,7 +1141,7 @@ export default class Listener extends Event {
     this.mouseDown2ArtBoard = undefined;
     this.isFrame = false;
     this.middleKey = false;
-    this.dom.classList.remove('moving');
+    this.dom.classList.remove('handing');
     if (this.spaceKey || this.middleKey || this.state === state.HAND) {
     }
     else {
@@ -2147,8 +2147,10 @@ export default class Listener extends Event {
     // space
     if (e.keyCode === 32) {
       this.spaceKey = false;
-      this.dom.classList.remove('hand');
-      this.dom.classList.remove('handing');
+      if (this.state !== state.HAND) {
+        this.dom.classList.remove('hand');
+        this.dom.classList.remove('handing');
+      }
     }
   }
 
