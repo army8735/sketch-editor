@@ -894,18 +894,18 @@ export default class Listener extends Event {
       if (this.options.disabled?.hover) {
         return;
       }
-      // 因为用到offsetXY，避免是其它DOM触发的（如select上的html），防止不正确
+      // 只响应canvas，在select上的忽视hover，但metaKey时可能在画板上需要放行后续判断
       const target = e.target as HTMLElement;
-      if (target.tagName.toUpperCase() !== 'CANVAS' && target !== this.dom) {
+      const metaKey = (this.metaKey || isWin && this.ctrlKey);
+      if (target !== this.root.canvas && !metaKey) {
         if (this.select.hoverNode) {
           this.select.hideHover();
           this.emit(Listener.UN_HOVER_NODE);
         }
         return;
       }
-      // mousemove时可以用offsetXY直接获取坐标无需关心dom位置原点等
-      this.startX = (e as MouseEvent).offsetX;
-      this.startY = (e as MouseEvent).offsetY;
+      this.startX = (e as MouseEvent).clientX - this.originX;
+      this.startY = (e as MouseEvent).clientY - this.originY;
       const x = this.startX * dpi;
       const y = this.startY * dpi;
       this.hover(x, y);
@@ -1602,6 +1602,7 @@ export default class Listener extends Event {
 
   hover(x: number, y: number) {
     let node = this.getNode(x, y);
+    // 画板的text标题特殊判断
     if (!node) {
       node = getOverlayArtBoardByPoint(this.root, x, y);
     }

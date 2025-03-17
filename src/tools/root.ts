@@ -254,6 +254,7 @@ export function getOverlayNodeByPoint(root: Root, x: number, y: number) {
   return getChildByPoint(root.overlay, x, y);
 }
 
+// 画板的text标题响应
 export function getOverlayArtBoardByPoint(root: Root, x: number, y: number) {
   const n = getOverlayNodeByPoint(root, x, y);
   if (n && n instanceof Text) {
