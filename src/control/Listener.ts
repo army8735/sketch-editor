@@ -897,7 +897,7 @@ export default class Listener extends Event {
       // 只响应canvas，在select上的忽视hover，但metaKey时可能在画板上需要放行后续判断
       const target = e.target as HTMLElement;
       const metaKey = (this.metaKey || isWin && this.ctrlKey);
-      if (target !== this.root.canvas && !metaKey) {
+      if (target !== this.root.canvas && !metaKey || this.select.isSelectControlDom(target)) {
         if (this.select.hoverNode) {
           this.select.hideHover();
           this.emit(Listener.UN_HOVER_NODE);
