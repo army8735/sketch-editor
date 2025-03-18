@@ -1220,6 +1220,7 @@ export default class Listener extends Event {
         );
         node.beforeEdit();
         this.state = state.EDIT_TEXT;
+        this.select.select.classList.add('text');
         this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
       }
       else if (node instanceof Polyline) {
@@ -2188,6 +2189,7 @@ export default class Listener extends Event {
       }
       this.input.hide();
       this.state = state.NORMAL;
+      this.select.select.classList.remove('text');
       this.emit(Listener.STATE_CHANGE, state.EDIT_TEXT, this.state);
     }
   }
