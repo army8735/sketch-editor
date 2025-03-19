@@ -166,8 +166,10 @@ class Toolbar {
         listener.dom.classList.add('hand');
       }
       else if (title === 'text') {
+        const prev = listener.state;
         listener.state = state.ADD_TEXT;
         listener.dom.classList.add('text');
+        listener.emit(Listener.STATE_CHANGE, prev, listener.state);
       }
     });
 
@@ -177,6 +179,14 @@ class Toolbar {
         return;
       }
       dom.querySelector('.show')?.classList.remove('show');
+    });
+
+    listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
+      if (next === state.NORMAL) {
+        dom.querySelector('.active')?.classList.remove('active');
+        dom.querySelector('.sel.item')?.classList.add('active');
+        dom.querySelector('.sel.item li[title="select"]')?.classList.add('cur');
+      }
     });
   }
 }

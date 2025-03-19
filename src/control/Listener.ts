@@ -1805,6 +1805,11 @@ export default class Listener extends Event {
       else if (this.state === state.EDIT_TEXT) {
         this.cancelEditText();
       }
+      else if (this.state === state.ADD_TEXT) {
+        this.dom.classList.remove('text');
+        this.state = state.NORMAL;
+        this.emit(Listener.STATE_CHANGE, state.ADD_TEXT, this.state);
+      }
       else if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
           this.geometry.clearCur();
