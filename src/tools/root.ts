@@ -250,6 +250,29 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   }
 }
 
+export function getArtBoardByPoint(root: Root, x: number, y: number) {
+  if (root.isDestroyed) {
+    return;
+  }
+  const page = root.lastPage;
+  if (page) {
+    const children = page.children;
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
+      if (child.props.isLocked
+        || child.computedStyle.visibility === VISIBILITY.HIDDEN
+        || !(child instanceof ArtBoard)) {
+        continue;
+      }
+      const { computedStyle, matrixWorld } = child;
+      let rect = child._rect || child.rect;
+      if (computedStyle.pointerEvents && pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
+        return child;
+      }
+    }
+  }
+}
+
 export function getOverlayNodeByPoint(root: Root, x: number, y: number) {
   return getChildByPoint(root.overlay, x, y);
 }
@@ -509,6 +532,7 @@ export function getGuidesNodes(root: Root, ignore?: Node[]) {
 
 export default {
   getNodeByPoint,
+  getArtBoardByPoint,
   getOverlayNodeByPoint,
   getOverlayArtBoardByPoint,
   getFrameNodes,

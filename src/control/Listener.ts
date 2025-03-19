@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import Root from '../node/Root';
@@ -13,7 +14,7 @@ import Input from './Input';
 import state from './state';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle, Point } from '../format';
-import { getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
+import { getArtBoardByPoint, getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
@@ -408,6 +409,96 @@ export default class Listener extends Event {
         });
         this.beforeResize();
       }
+    }
+    // 添加文字
+    else if (this.state === state.ADD_TEXT) {
+      const page = this.root.getCurPage()!;
+      const zoom = page.getZoom();
+      const x = (e.clientX - this.originX) * dpi;
+      const y = (e.clientY - this.originY) * dpi;
+      const text = new Text({
+        uuid: uuid.v4(),
+        name: '输入文本',
+        index: 0,
+        style: {
+          fontFamily: 'Arial',
+          fontStyle: 'normal',
+          fontWeight: 400,
+          fontSize: 16,
+          lineHeight: 0,
+          textAlign: 'left',
+          textDecoration: [],
+          letterSpacing: 0,
+          paragraphSpacing: 0,
+          color: '#000',
+          translateY: '-50%',
+        },
+        content: '输入文本',
+        rich: [{
+          location: 0,
+          length: 4,
+          fontFamily: 'Arial',
+          fontStyle: 'normal',
+          fontWeight: 400,
+          fontSize: 16,
+          lineHeight: 0,
+          textAlign: 'left',
+          textDecoration: [],
+          letterSpacing: 0,
+          paragraphSpacing: 0,
+          color: '#000',
+        }],
+      });
+      // 点在画板上特殊对待
+      const ab = getArtBoardByPoint(this.root, x, y);
+      if (ab) {
+        const br = ab.getBoundingClientRect();
+        const dx = (x - br.left) / zoom;
+        const dy = (y - br.top) / zoom;
+        text.updateStyle({
+          left: dx * 100 / ab.width + '%',
+          top: dy * 100 / ab.height + '%',
+        });
+        ab.appendChild(text);
+        // 默认左对齐，垂直已居中，调整translateX
+        const w = text.width;
+        text.updateStyle({
+          left: (text.computedStyle.left + w * 0.5) * 100 / ab.width + '%',
+          translateX: '-50%',
+        });
+      }
+      else {
+        const br = page.getBoundingClientRect();
+        const dx = (x - br.left) / zoom;
+        const dy = (y - br.top) / zoom;
+        text.updateStyle({
+          left: dx * 100 / page.width + '%',
+          top: dy * 100 / page.height + '%',
+        });
+        page.appendChild(text);
+        // 默认左对齐，垂直已居中，调整translateX
+        const w = text.width;
+        text.updateStyle({
+          left: (text.computedStyle.left + w * 0.5) * 100 / page.width + '%',
+          translateX: '-50%',
+        });
+      }
+      // 添加后进入编辑态
+      this.selected.splice(0);
+      this.selected.push(text);
+      this.select.showSelect(this.selected);
+      this.input.show(text, e.clientX - this.originX, e.clientY - this.originY);
+      text.beforeEdit();
+      this.select.select.classList.add('text');
+      this.dom.classList.remove('text');
+      this.history.addCommand(new AddCommand([text], [{
+        x: text.computedStyle.left,
+        y: text.computedStyle.top,
+        parent: text.parent!,
+      }]));
+      this.emit(Listener.ADD_NODE, [text]);
+      this.state = state.EDIT_TEXT;
+      this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
     }
     // 点到canvas上，也有可能在canvas外，逻辑一样
     else {
@@ -890,7 +981,7 @@ export default class Listener extends Event {
       this.isMouseMove = true;
     }
     // 普通的hover，仅mouseEvent有，排除编辑文字时
-    else if (!isTouch && this.state !== state.EDIT_TEXT && this.state !== state.EDIT_GEOM) {
+    else if (!isTouch && this.state === state.NORMAL) {
       if (this.options.disabled?.hover) {
         return;
       }
@@ -1985,6 +2076,12 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.select.hideSelect();
             this.emit(Listener.REMOVE_NODE, nodes);
+            // 新增后撤销
+            if (this.state === state.EDIT_TEXT) {
+              this.state = state.NORMAL;
+              this.input.hide();
+              this.emit(Listener.STATE_CHANGE, state.ADD_TEXT, this.state);
+            }
           }
         }
         else if (c instanceof RotateCommand) {

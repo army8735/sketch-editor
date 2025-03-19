@@ -227,6 +227,7 @@ class Text extends Node {
     // 特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初的尺寸位置需记录，
     // 待布局后css标准化，双击编辑文本有改变后会重回正常尺寸
     if (textBehaviour === TEXT_BEHAVIOUR.AUTO || textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
+      let check = false;
       if (textBehaviour === TEXT_BEHAVIOUR.AUTO && style.width.u !== StyleUnit.AUTO) {
         let max = 0;
         lineBoxList.forEach(item => {
@@ -244,7 +245,7 @@ class Text extends Node {
         this.updateStyle({
           width: 'auto',
         });
-        this.checkPosSizeUpward();
+        check = true;
       }
       if (this.style.height.u !== StyleUnit.AUTO) {
         let last = lineBoxList[lineBoxList.length - 1];
@@ -260,6 +261,9 @@ class Text extends Node {
         this.updateStyle({
           height: 'auto',
         });
+        check = true;
+      }
+      if (check) {
         this.checkPosSizeUpward();
       }
     }
