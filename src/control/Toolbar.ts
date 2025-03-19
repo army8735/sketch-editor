@@ -154,14 +154,20 @@ class Toolbar {
         const div = item.querySelector('.ti') as HTMLElement;
         div.title = title;
         div.querySelector('b')!.className = title;
-      } console.log(title)
+      }
+      console.log(title)
+      listener.dom.classList.remove('hand');
+      listener.dom.classList.remove('text');
       if (title === 'select') {
         listener.state = state.NORMAL;
-        listener.dom.classList.remove('hand');
       }
       else if (title === 'hand') {
         listener.state = state.HAND;
         listener.dom.classList.add('hand');
+      }
+      else if (title === 'text') {
+        listener.state = state.ADD_TEXT;
+        listener.dom.classList.add('text');
       }
     });
 
