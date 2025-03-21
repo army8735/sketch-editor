@@ -24,7 +24,9 @@ import Toolbar from './Toolbar';
 import state from './state';
 
 export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
-  return new PageList(root, dom, listener);
+  if (dom) {
+    return new PageList(root, dom, listener);
+  }
 }
 
 /**
@@ -32,14 +34,21 @@ export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
  * 会在DOM下生成各种辅助展示DOM
  */
 export function initCanvasControl(root: Root, dom: HTMLElement, options?: ListenerOptions) {
-  return new Listener(root, dom, options);
+  if (dom) {
+    return new Listener(root, dom, options);
+  }
 }
 
 export function initTree(root: Root, dom: HTMLElement, listener: Listener) {
-  return new Tree(root, dom, listener);
+  if (dom) {
+    return new Tree(root, dom, listener);
+  }
 }
 
 export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
+  if (!dom) {
+    return;
+  }
   const alignPanel = new AlignPanel(root, dom, listener);
   alignPanel.show(listener.selected);
 
@@ -88,11 +97,15 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
 }
 
 export function initZoom(root: Root, dom: HTMLElement, listener: Listener) {
-  return new Zoom(root, dom, listener);
+  if (dom) {
+    return new Zoom(root, dom, listener);
+  }
 }
 
 export function initToolbar(root: Root, dom: HTMLElement, listener: Listener) {
-  return new Toolbar(root, dom, listener);
+  if (dom) {
+    return new Toolbar(root, dom, listener);
+  }
 }
 
 export default {
