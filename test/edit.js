@@ -239,6 +239,7 @@ fetch('./sketch.sketch')
         sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
         sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+        sketchEditor.control.initToolbar(root, document.querySelector('#toolbar'), listener);
 
         const button1 = document.querySelector('#button1');
         const button2 = document.querySelector('#button2');
