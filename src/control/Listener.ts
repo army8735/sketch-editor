@@ -416,9 +416,10 @@ export default class Listener extends Event {
       const zoom = page.getZoom();
       const x = (e.clientX - this.originX) * dpi;
       const y = (e.clientY - this.originY) * dpi;
+      const content = '输入文本';
       const text = new Text({
         uuid: uuid.v4(),
-        name: '输入文本',
+        name: content,
         index: 0,
         style: {
           fontFamily: 'Arial',
@@ -433,7 +434,7 @@ export default class Listener extends Event {
           color: '#000',
           translateY: '-50%',
         },
-        content: '输入文本',
+        content,
         rich: [{
           location: 0,
           length: 4,
@@ -487,7 +488,10 @@ export default class Listener extends Event {
       this.selected.splice(0);
       this.selected.push(text);
       this.select.showSelect(this.selected);
+      // 全选内容
       this.input.show(text, e.clientX - this.originX, e.clientY - this.originY);
+      this.input.node!.selectAll();
+      this.input.hideCursor();
       text.beforeEdit();
       this.select.select.classList.add('text');
       this.dom.classList.remove('text');
