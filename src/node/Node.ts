@@ -1774,7 +1774,7 @@ class Node extends Event {
         ? SketchFormat.LayerListExpanded.Expanded
         : SketchFormat.LayerListExpanded.Collapsed,
       name: props.name || '',
-      nameIsFixed: false,
+      nameIsFixed: props.nameIsFixed || false,
       resizingConstraint,
       resizingType: SketchFormat.ResizeType.Stretch,
       rotation: -computedStyle.rotateZ,

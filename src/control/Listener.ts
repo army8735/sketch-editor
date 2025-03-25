@@ -1620,6 +1620,7 @@ export default class Listener extends Event {
       const prev = item.props.name || '';
       const next = names[i];
       item.props.name = next;
+      item.props.nameIsFixed = true;
       return {
         prev,
         next,
