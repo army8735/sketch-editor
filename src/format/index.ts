@@ -177,6 +177,7 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
 
 export type Props = {
   name?: string;
+  nameIsFixed?: boolean;
   uuid: string;
   sourceUuid?: string;
   index: number;

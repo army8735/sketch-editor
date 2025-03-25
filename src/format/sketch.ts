@@ -171,6 +171,7 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
     props: {
       uuid: page.do_objectID,
       name: page.name,
+      nameIsFixed: page.nameIsFixed,
       index,
       constrainProportions: page.frame.constrainProportions,
       rule: {
@@ -269,6 +270,7 @@ async function convertItem(
         props: {
           uuid: layer.do_objectID,
           name: layer.name,
+          nameIsFixed: layer.nameIsFixed,
           constrainProportions,
           hasBackgroundColor,
           resizesContent: layer.resizesContent,
@@ -295,6 +297,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         constrainProportions,
         hasBackgroundColor,
         resizesContent: layer.resizesContent,
@@ -528,6 +531,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         symbolId: layer.symbolID,
@@ -581,6 +585,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         style: {
@@ -645,6 +650,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         style: {
@@ -857,6 +863,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         textBehaviour,
@@ -971,6 +978,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         points,
@@ -1056,6 +1064,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         styleId,
@@ -1111,6 +1120,7 @@ async function convertItem(
       props: {
         uuid: layer.do_objectID,
         name: layer.name,
+        nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
         style: {
