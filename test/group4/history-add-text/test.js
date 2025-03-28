@@ -30,7 +30,7 @@ module.exports = {
       .mouseButtonUp(0)
       .assert.elementPresent('#main .select.text')
       .assert.elementPresent('#main div.input')
-      .assert.cssProperty('#main div.input', 'opacity', '1')
+      .assert.cssProperty('#main div.input', 'opacity', '0')
       .click('#button2')
       .assert.value('#base64', '')
       .click('#button3')
