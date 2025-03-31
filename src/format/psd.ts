@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Layer, readPsd, RGB } from 'ag-psd';
+import { Layer, readPsd, RGB, RGBA, FRGB, Color } from 'ag-psd';
 import {
   JArtBoard,
   JBitmap,
@@ -125,7 +125,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
 
 async function convertItem(layer: Layer, w: number, h: number) {
   const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {}, blendMode, canvas } = layer;
-  // console.log(name, layer);
+  console.log(name, layer);
   const visibility = !hidden ? 'visible' : 'hidden';
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
@@ -174,9 +174,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     for (let i = effects.dropShadow.length - 1; i >= 0; i--) {
       const item = effects.dropShadow[i];
       const color = [
-        Math.floor((item.color as RGB).r),
-        Math.floor((item.color as RGB).g),
-        Math.floor((item.color as RGB).b),
+        ...convertColor(item.color),
         item.opacity ?? 1,
       ];
       const rd = d2r(item.angle || 0);
@@ -193,9 +191,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     for (let i = effects.innerShadow.length - 1; i >= 0; i--) {
       const item = effects.innerShadow[i];
       const color = [
-        Math.floor((item.color as RGB).r),
-        Math.floor((item.color as RGB).g),
-        Math.floor((item.color as RGB).b),
+        ...convertColor(item.color),
         item.opacity ?? 1,
       ];
       const rd = d2r(item.angle || 0);
@@ -212,9 +208,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     for (let i = effects.solidFill.length - 1; i >= 0; i--) {
       const item = effects.solidFill[i];
       fill.push([
-        Math.floor((item.color as RGB).r),
-        Math.floor((item.color as RGB).g),
-        Math.floor((item.color as RGB).b),
+        ...convertColor(item.color),
         item.opacity ?? 1,
       ]);
       fillEnable.push(!!item.enabled);
@@ -296,9 +290,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
         if (item.fillType === 'color') {
           strokeEnable.push(effects.disabled ? false : !!item.enabled);
           stroke.push(color2rgbaStr([
-            Math.floor((item.color as RGB).r),
-            Math.floor((item.color as RGB).g),
-            Math.floor((item.color as RGB).b),
+            ...convertColor(item.color),
             item.opacity ?? 1,
           ]));
           strokeWidth.push(item.size?.value || 1);
@@ -337,16 +329,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       fontStyle: fauxItalic ? 'italic' : 'normal',
       letterSpacing: autoKerning ? 0 : kerning,
       textAlign: justification ? justification : 'left',
-      color: color2rgbaStr(fillColor ? [
-        Math.floor((fillColor as RGB).r),
-        Math.floor((fillColor as RGB).g),
-        Math.floor((fillColor as RGB).b),
-      ] : [0, 0, 0]),
-      // stroke: strokeColor ? [[
-      //   Math.floor((strokeColor as RGB).r),
-      //   Math.floor((strokeColor as RGB).g),
-      //   Math.floor((strokeColor as RGB).b),
-      // ]] : [],
+      color: color2rgbaStr(fillColor ? convertColor(fillColor) : [0, 0, 0]),
       textDecoration,
       lineHeight: autoLeading ? 0 : leading * transform[0],
       paragraphSpacing: 0,
@@ -458,11 +441,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             res.lineHeight = style.leading * transform[0];
           }
           if (style.fillColor) {
-            res.color = [
-              Math.floor(((style.fillColor || fillColor) as RGB).r),
-              Math.floor(((style.fillColor || fillColor) as RGB).g),
-              Math.floor(((style.fillColor || fillColor) as RGB).b),
-            ];
+            res.color = convertColor(style.fillColor || fillColor);
           }
           if (style.strikethrough !== undefined || style.underline !== undefined) {
             const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
@@ -515,11 +494,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     // 矢量和ps的颜色叠加应该互斥
     if (vectorFill) {
       if (vectorFill.type === 'color') {
-        fill.push(color2rgbaStr([
-          Math.floor((vectorFill.color as RGB).r),
-          Math.floor((vectorFill.color as RGB).g),
-          Math.floor((vectorFill.color as RGB).b),
-        ]));
+        fill.push(color2rgbaStr(convertColor(vectorFill.color)));
       }
       else if (vectorFill.type === 'solid') {
         const { angle = 0, colorStops, opacityStops, style, reverse, align } = vectorFill;
@@ -576,9 +551,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
         colorStops.forEach((stop, i) => {
           stops.push({
             color: [
-              Math.floor((stop.color as RGB).r),
-              Math.floor((stop.color as RGB).g),
-              Math.floor((stop.color as RGB).b),
+              ...convertColor(stop.color),
               opacityStops[i]?.opacity ?? 1,
             ],
             offset: stop.location * scale,
@@ -641,11 +614,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     if (vectorStroke) {
       stroke.push(color2rgbaStr([
         // @ts-ignore
-        Math.floor((vectorStroke.content?.color as RGB).r),
-        // @ts-ignore
-        Math.floor((vectorStroke.content?.color as RGB).g),
-        // @ts-ignore
-        Math.floor((vectorStroke.content?.color as RGB).b),
+        ...convertColor(vectorStroke.content?.color),
         vectorStroke.opacity ?? 1,
       ]));
       strokeEnable.push(!!vectorStroke.strokeEnabled);
@@ -712,7 +681,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           ty: 0,
         });
       }
-    });
+    }); console.log(fill, fillEnable, fillOpacity, points)
     return {
       tagName: TAG_NAME.POLYLINE,
       props: {
@@ -838,4 +807,30 @@ function wrapMask(res: JNode, m: JNode) {
   m.props.style!.right = 0;
   m.props.style!.bottom = 0;
   return group;
+}
+
+function convertColor(color?: Color) {
+  if (!color) {
+    return [0, 0, 0];
+  }
+  if ((color as any).hasOwnProperty('a')) {
+    [
+      (color as RGBA).r,
+      (color as RGBA).g,
+      (color as RGBA).b,
+      (color as RGBA).a,
+    ];
+  }
+  else if ((color as any).hasOwnProperty('fr')) {
+    return [
+      (color as FRGB).fr * 255,
+      (color as FRGB).fg * 255,
+      (color as FRGB).fb * 255,
+    ];
+  }
+  return [
+    (color as RGB).r,
+    (color as RGB).g,
+    (color as RGB).b,
+  ];
 }
