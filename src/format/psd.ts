@@ -449,7 +449,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             res.fontStyle = style.fauxItalic ? 'italic': 'normal';
           }
           if (style.fontSize !== undefined) {
-            res.fontSize = style.fontSize;
+            res.fontSize = style.fontSize * transform[0];
           }
           if (!style.autoKerning && style.kerning !== undefined) {
             res.letterSpacing = style.kerning;
