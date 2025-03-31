@@ -565,7 +565,7 @@ function genTotal(
     if (target2 && target2.available) {
       const { mixBlendMode, blur } = computedStyle;
       // 同主循环的bgBlur，先提取总的outline，在分块渲染时每块单独对背景blur
-      if (isBgBlur && i > index + total + 1) {
+      if (isBgBlur && i > index) {
         const outline = node2.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
         // outline会覆盖这个值，恶心
         assignMatrix(node2.tempMatrix, matrix);
@@ -655,7 +655,7 @@ function genTotal(
             );
             // 这里才是真正生成mbm
             if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
-              rect.t = genMbm(
+              t = rect.t = genMbm(
                 gl,
                 t,
                 tex,
@@ -2434,7 +2434,7 @@ function genMask(
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
       // outline先绘制底部
-      if (listO) {
+      if ([MASK.GRAY_WITH, MASK.ALPHA_WITH, MASK.OUTLINE].includes(maskMode)) {
         gl.useProgram(program);
         drawTextureCache(
           gl,
