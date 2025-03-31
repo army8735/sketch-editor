@@ -63,29 +63,30 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
     children: [ab],
   } as JPage;
   if (json.children) {
-    let breakMask = false;
     for (let i = 0, len = json.children.length; i < len; i++) {
       const child = json.children[i];
       let res = await convertItem(child, json.width, json.height);
       if (res) {
-        if (breakMask) {
-          res.props.style!.breakMask = breakMask;
-          breakMask = false;
-        }
         if (child.mask) {
           const m = await convertMask(child, json.width, json.height);
           if (m) {
             res = wrapMask(res, m);
           }
-          if (child.mask.disabled) {
+          if (!child.clipping) {
             res.props.style!.breakMask = true;
           }
         }
+        // clipping表明被前面兄弟mask，注意是可以连续多个
         if (child.clipping && children.length) {
-          const last = children[children.length - 1];
-          last.props.style!.maskMode = 'alpha-with';
-          // 下一个child要中断不能继续mask
-          breakMask = true;
+          for (let j = i - 1; j >= 0; j--) {
+            const child = json.children[j];
+            if (!child.clipping) {
+              const d = i - j;
+              const m = children[children.length - d];
+              m.props.style!.maskMode = 'alpha-with';
+              break;
+            }
+          }
         }
         children.push(res);
       }
@@ -125,7 +126,7 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
 
 async function convertItem(layer: Layer, w: number, h: number) {
   const { name, opacity, hidden, top = 0, left = 0, bottom = 0, right = 0, effects = {}, blendMode, canvas } = layer;
-  console.log(name, layer);
+  // console.log(name, layer);
   const visibility = !hidden ? 'visible' : 'hidden';
   const shadow: string[] = [];
   const shadowEnable: boolean[] = [];
@@ -220,29 +221,30 @@ async function convertItem(layer: Layer, w: number, h: number) {
   if (layer.opened !== undefined) {
     const children: JNode[] = [];
     if (layer.children) {
-      let breakMask = false;
       for (let i = 0, len = layer.children.length; i < len; i++) {
         const child = layer.children[i];
         let res = await convertItem(child, w, h);
         if (res) {
-          if (breakMask) {
-            res.props.style!.breakMask = breakMask;
-            breakMask = false;
-          }
           if (child.mask) {
             const m = await convertMask(child, w, h);
             if (m) {
               res = wrapMask(res, m);
             }
-            if (child.mask.disabled) {
+            if (!child.clipping) {
               res.props.style!.breakMask = true;
             }
           }
+          // clipping表明被前面兄弟mask，注意是可以连续多个
           if (child.clipping && children.length) {
-            const last = children[children.length - 1];
-            last.props.style!.maskMode = 'alpha-with';
-            // 下一个child要中断不能继续mask
-            breakMask = true;
+            for (let j = i - 1; j >= 0; j--) {
+              const child = layer.children[j];
+              if (!child.clipping) {
+                const d = i - j;
+                const m = children[children.length - d];
+                m.props.style!.maskMode = 'alpha-with';
+                break;
+              }
+            }
           }
           children.push(res);
         }
@@ -604,7 +606,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           }
           s += color2rgbaStr(stop.color) + ' ' + stop.offset * 100 + '%';
         });
-        s += ')'; console.log(s)
+        s += ')';
         fill.push(s);
       }
       fillEnable.push(vectorStroke?.fillEnabled ?? true);
@@ -681,7 +683,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           ty: 0,
         });
       }
-    }); console.log(fill, fillEnable, fillOpacity, points)
+    });
     return {
       tagName: TAG_NAME.POLYLINE,
       props: {
@@ -733,18 +735,18 @@ async function convertMask(layer: Layer, w: number, h: number) {
     oc = inject.getOffscreenCanvas(w2, h2);
     canvas2 = oc.canvas;
     oc.ctx.fillStyle = '#FF0';
-    if (top > layer.top!) {
-      oc.ctx.fillRect(0, 0, w2, top - layer.top!);
-    }
-    if (bottom < layer.bottom!) {
-      oc.ctx.fillRect(0, bottom - layer.top!, w2, layer.bottom! - bottom);
-    }
-    if (left > layer.left!) {
-      oc.ctx.fillRect(0, 0, left - layer.left!, h2);
-    }
-    if (right < layer.right!) {
-      oc.ctx.fillRect(right - layer.left!, 0, layer.right! - right, h2);
-    }
+    // if (top > layer.top!) {
+    //   oc.ctx.fillRect(0, 0, w2, top - layer.top!);
+    // }
+    // if (bottom < layer.bottom!) {
+    //   oc.ctx.fillRect(0, bottom - layer.top!, w2, layer.bottom! - bottom);
+    // }
+    // if (left > layer.left!) {
+    //   oc.ctx.fillRect(0, 0, left - layer.left!, h2);
+    // }
+    // if (right < layer.right!) {
+    //   oc.ctx.fillRect(right - layer.left!, 0, layer.right! - right, h2);
+    // }
     oc.ctx.drawImage(canvas, left - layer.left!, top - layer.top!);
   }
   return new Promise<JLayer | undefined>(resolve => {
@@ -753,8 +755,8 @@ async function convertMask(layer: Layer, w: number, h: number) {
         oc.release();
       }
       if (blob) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(blob);
+        // const img = document.createElement('img');
+        // img.src = URL.createObjectURL(blob);
         // img.title = layer.name!;
         // document.body.appendChild(img);
         return resolve({
@@ -767,7 +769,7 @@ async function convertMask(layer: Layer, w: number, h: number) {
               top: layer.top! * 100 / h + '%',
               right: (w - layer.right!) * 100 / w + '%',
               bottom: (h - layer.bottom!) * 100 / h + '%',
-              maskMode: 'gray-with',
+              maskMode: 'gray',
             },
             src: URL.createObjectURL(blob),
           },
@@ -779,6 +781,7 @@ async function convertMask(layer: Layer, w: number, h: number) {
 }
 
 function wrapMask(res: JNode, m: JNode) {
+  const style = res.props.style!;
   const group = {
     tagName: TAG_NAME.GROUP,
     props: {
@@ -786,10 +789,11 @@ function wrapMask(res: JNode, m: JNode) {
       name: res.props.name,
       isExpanded: true,
       style: {
-        left: res.props.style!.left,
-        top: res.props.style!.top,
-        right: res.props.style!.right,
-        bottom: res.props.style!.bottom,
+        left: style.left,
+        top: style.top,
+        right: style.right,
+        bottom: style.bottom,
+        mixBlendMode: style.mixBlendMode,
       },
     },
     children: [

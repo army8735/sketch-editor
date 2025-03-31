@@ -157,12 +157,12 @@ export function genMerge(
         }
       }
       // 兄弟连续的mask，前面的不生效，等同有breakMask
-      const next = node.next;
-      if (next) {
-        if (next.computedStyle.maskMode || next.computedStyle.breakMask) {
-          needMask = false;
-        }
-      }
+      // const next = node.next;
+      // if (next) {
+      //   if (next.computedStyle.maskMode || next.computedStyle.breakMask) {
+      //     needMask = false;
+      //   }
+      // }
     }
     const needColor =
       hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
