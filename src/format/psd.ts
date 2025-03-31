@@ -734,7 +734,7 @@ async function convertMask(layer: Layer, w: number, h: number) {
     const h2 = layer.bottom! - layer.top!;
     oc = inject.getOffscreenCanvas(w2, h2);
     canvas2 = oc.canvas;
-    oc.ctx.fillStyle = '#FF0';
+    // oc.ctx.fillStyle = '#FF0';
     // if (top > layer.top!) {
     //   oc.ctx.fillRect(0, 0, w2, top - layer.top!);
     // }

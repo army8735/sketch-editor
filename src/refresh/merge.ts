@@ -565,7 +565,7 @@ function genTotal(
     if (target2 && target2.available) {
       const { mixBlendMode, blur } = computedStyle;
       // 同主循环的bgBlur，先提取总的outline，在分块渲染时每块单独对背景blur
-      if (isBgBlur && i > index) {
+      if (isBgBlur && i > index + total + 1) {
         const outline = node2.textureOutline[scale] = genOutline(gl, node2, structs, i, total2, target2.bbox, scale);
         // outline会覆盖这个值，恶心
         assignMatrix(node2.tempMatrix, matrix);
@@ -2194,27 +2194,28 @@ function genMask(
       const cx = width * 0.5,
         cy = height * 0.5;
       // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
-      if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
-        const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
-        const t = listM[index]?.t;
-        t && drawTextureCache(
-          gl,
-          cx,
-          cy,
-          program,
-          [
-            {
-              opacity: 1,
-              bbox: new Float64Array([0, 0, width, height]),
-              texture: t,
-            },
-          ],
-          0,
-          0,
-          false,
-          -1, -1, 1, 1,
-        );
-      }
+      // if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
+      //   console.log(111)
+      //   const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
+      //   const t = listM[index]?.t;
+      //   t && drawTextureCache(
+      //     gl,
+      //     cx,
+      //     cy,
+      //     program,
+      //     [
+      //       {
+      //         opacity: 1,
+      //         bbox: new Float64Array([0, 0, width, height]),
+      //         texture: t,
+      //       },
+      //     ],
+      //     0,
+      //     0,
+      //     false,
+      //     -1, -1, 1, 1,
+      //   );
+      // }
       // 后续兄弟节点遍历
       const isFirst = !i && !j;
       for (let i = index + total + 1, len = structs.length; i < len; i++) {
@@ -2296,7 +2297,7 @@ function genMask(
             if (t2 && checkInRect(bbox2, matrix, x1, y1, width, height)) {
               let tex: WebGLTexture | undefined;
               // 有mbm先将本节点内容绘制到同尺寸纹理上
-              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index) {
+              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index + total + 1) {
                 tex = createTexture(gl, 0, undefined, width, height);
                 if (frameBuffer) {
                   gl.framebufferTexture2D(
@@ -2378,6 +2379,7 @@ function genMask(
     );
     listO = outline.list;
   }
+  // sketch没有灰度，但psd或其它有
   if (maskMode === MASK.GRAY || maskMode === MASK.GRAY_WITH) {
     const maskGrayProgram = programs.maskGrayProgram;
     gl.useProgram(maskGrayProgram);
@@ -2414,7 +2416,6 @@ function genMask(
   else {
     const maskProgram = programs.maskProgram;
     const clipProgram = programs.clipProgram;
-    gl.useProgram(maskProgram);
     // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
     for (let i = 0, len = listS.length; i < len; i++) {
       const { bbox, w, h, t } = listS[i];
@@ -2432,6 +2433,26 @@ function genMask(
       else {
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
+      // outline先绘制底部
+      if (listO) {
+        gl.useProgram(program);
+        drawTextureCache(
+          gl,
+          w * 0.5,
+          h * 0.5,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, w, h]),
+              texture: listM[i].t!,
+            },
+          ],
+          0, 0, false,
+          -1, -1, 1, 1,
+        );
+      }
+      gl.useProgram(maskProgram);
       drawMask(gl, maskProgram, listO ? listO[i].t! : listM[i].t!, t!);
       if (listO) {
         gl.useProgram(clipProgram);
