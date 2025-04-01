@@ -2194,28 +2194,27 @@ function genMask(
       const cx = width * 0.5,
         cy = height * 0.5;
       // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
-      // if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
-      //   console.log(111)
-      //   const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
-      //   const t = listM[index]?.t;
-      //   t && drawTextureCache(
-      //     gl,
-      //     cx,
-      //     cy,
-      //     program,
-      //     [
-      //       {
-      //         opacity: 1,
-      //         bbox: new Float64Array([0, 0, width, height]),
-      //         texture: t,
-      //       },
-      //     ],
-      //     0,
-      //     0,
-      //     false,
-      //     -1, -1, 1, 1,
-      //   );
-      // }
+      if ([MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
+        const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
+        const t = listM[index]?.t;
+        t && drawTextureCache(
+          gl,
+          cx,
+          cy,
+          program,
+          [
+            {
+              opacity: 1,
+              bbox: new Float64Array([0, 0, width, height]),
+              texture: t,
+            },
+          ],
+          0,
+          0,
+          false,
+          -1, -1, 1, 1,
+        );
+      }
       // 后续兄弟节点遍历
       const isFirst = !i && !j;
       for (let i = index + total + 1, len = structs.length; i < len; i++) {
@@ -2296,8 +2295,17 @@ function genMask(
             const { bbox: bbox2, t: t2 } = list2[j];
             if (t2 && checkInRect(bbox2, matrix, x1, y1, width, height)) {
               let tex: WebGLTexture | undefined;
-              // 有mbm先将本节点内容绘制到同尺寸纹理上
-              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && i > index + total + 1) {
+              /**
+               * 有mbm先将本节点内容绘制到同尺寸纹理上，注意sketch和psd的区别，
+               * sketch即便是outline也不收集为底层，因此第0个summary不生效，第1个菜生效，
+               * psd的alpha-with作为底层，因此第0个summary生效
+               */
+              if (mixBlendMode !== MIX_BLEND_MODE.NORMAL
+                && (
+                  i > index + total + 1 && [MASK.OUTLINE, MASK.ALPHA, MASK.GRAY].includes(maskMode)
+                  || i > index + total && [MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode)
+                )
+              ) {
                 tex = createTexture(gl, 0, undefined, width, height);
                 if (frameBuffer) {
                   gl.framebufferTexture2D(
@@ -2434,7 +2442,7 @@ function genMask(
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
       // outline先绘制底部
-      if ([MASK.GRAY_WITH, MASK.ALPHA_WITH, MASK.OUTLINE].includes(maskMode)) {
+      if ([MASK.OUTLINE].includes(maskMode)) {
         gl.useProgram(program);
         drawTextureCache(
           gl,

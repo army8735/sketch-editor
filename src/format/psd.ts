@@ -722,7 +722,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
 }
 
 async function convertMask(layer: Layer, w: number, h: number) {
-  const { top = 0, left = 0, bottom = 0, right = 0, canvas } = layer.mask!;
+  const { top = 0, left = 0, bottom = 0, right = 0, canvas, defaultColor } = layer.mask!;
   if (!canvas) {
     return;
   }
@@ -734,19 +734,21 @@ async function convertMask(layer: Layer, w: number, h: number) {
     const h2 = layer.bottom! - layer.top!;
     oc = inject.getOffscreenCanvas(w2, h2);
     canvas2 = oc.canvas;
-    // oc.ctx.fillStyle = '#FF0';
-    // if (top > layer.top!) {
-    //   oc.ctx.fillRect(0, 0, w2, top - layer.top!);
-    // }
-    // if (bottom < layer.bottom!) {
-    //   oc.ctx.fillRect(0, bottom - layer.top!, w2, layer.bottom! - bottom);
-    // }
-    // if (left > layer.left!) {
-    //   oc.ctx.fillRect(0, 0, left - layer.left!, h2);
-    // }
-    // if (right < layer.right!) {
-    //   oc.ctx.fillRect(right - layer.left!, 0, layer.right! - right, h2);
-    // }
+    if (defaultColor) {
+      oc.ctx.fillStyle = color2rgbaStr([defaultColor, defaultColor, defaultColor]);
+      if (top > layer.top!) {
+        oc.ctx.fillRect(0, 0, w2, top - layer.top!);
+      }
+      if (bottom < layer.bottom!) {
+        oc.ctx.fillRect(0, bottom - layer.top!, w2, layer.bottom! - bottom);
+      }
+      if (left > layer.left!) {
+        oc.ctx.fillRect(0, 0, left - layer.left!, h2);
+      }
+      if (right < layer.right!) {
+        oc.ctx.fillRect(right - layer.left!, 0, layer.right! - right, h2);
+      }
+    }
     oc.ctx.drawImage(canvas, left - layer.left!, top - layer.top!);
   }
   return new Promise<JLayer | undefined>(resolve => {
@@ -793,7 +795,7 @@ function wrapMask(res: JNode, m: JNode) {
         top: style.top,
         right: style.right,
         bottom: style.bottom,
-        mixBlendMode: style.mixBlendMode,
+        // mixBlendMode: style.mixBlendMode,
       },
     },
     children: [
@@ -801,15 +803,20 @@ function wrapMask(res: JNode, m: JNode) {
       res,
     ],
   } as JGroup;
-  res.props.style!.left = 0;
-  res.props.style!.top = 0;
-  res.props.style!.right = 0;
-  res.props.style!.bottom = 0;
+  style.left = 0;
+  style.top = 0;
+  style.right = 0;
+  style.bottom = 0;
   res.props.name += ' origin';
-  m.props.style!.left = 0;
-  m.props.style!.top = 0;
-  m.props.style!.right = 0;
-  m.props.style!.bottom = 0;
+  const styleM = m.props.style!;
+  styleM.left = 0;
+  styleM.top = 0;
+  styleM.right = 0;
+  styleM.bottom = 0;
+  if (style.mixBlendMode) {
+    styleM.mixBlendMode = style.mixBlendMode;
+  }
+  delete style.mixBlendMode;
   return group;
 }
 

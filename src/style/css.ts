@@ -674,49 +674,49 @@ export function normalizeRich(rich: JRich): Rich {
 
 function getBlendMode(blend: string) {
   let v = MIX_BLEND_MODE.NORMAL;
-  if (/multiply/.test(blend)) {
+  if (/multiply/i.test(blend)) {
     v = MIX_BLEND_MODE.MULTIPLY;
   }
-  else if (/screen/.test(blend)) {
+  else if (/screen/i.test(blend)) {
     v = MIX_BLEND_MODE.SCREEN;
   }
-  else if (/overlay/.test(blend)) {
+  else if (/overlay/i.test(blend)) {
     v = MIX_BLEND_MODE.OVERLAY;
   }
-  else if (/darken/.test(blend)) {
+  else if (/darken/i.test(blend)) {
     v = MIX_BLEND_MODE.DARKEN;
   }
-  else if (/lighten/.test(blend)) {
+  else if (/lighten/i.test(blend)) {
     v = MIX_BLEND_MODE.LIGHTEN;
   }
-  else if (/color-dodge/.test(blend) || /colorDodge/.test(blend)) {
+  else if (/color[\-\s]dodge/i.test(blend) || /colorDodge/.test(blend)) {
     v = MIX_BLEND_MODE.COLOR_DODGE;
   }
-  else if (/color-burn/.test(blend) || /colorBurn/.test(blend)) {
+  else if (/color[\-\s]burn/i.test(blend) || /colorBurn/.test(blend)) {
     v = MIX_BLEND_MODE.COLOR_BURN;
   }
-  else if (/hard-light/.test(blend) || /hardLight/.test(blend)) {
+  else if (/hard[\-\s]light/i.test(blend) || /hardLight/.test(blend)) {
     v = MIX_BLEND_MODE.HARD_LIGHT;
   }
-  else if (/soft-light/.test(blend) || /softLight/.test(blend)) {
+  else if (/soft[\-\s]light/i.test(blend) || /softLight/.test(blend)) {
     v = MIX_BLEND_MODE.SOFT_LIGHT;
   }
-  else if (/difference/.test(blend)) {
+  else if (/difference/i.test(blend)) {
     v = MIX_BLEND_MODE.DIFFERENCE;
   }
-  else if (/exclusion/.test(blend)) {
+  else if (/exclusion/i.test(blend)) {
     v = MIX_BLEND_MODE.EXCLUSION;
   }
-  else if (/hue/.test(blend)) {
+  else if (/hue/i.test(blend)) {
     v = MIX_BLEND_MODE.HUE;
   }
-  else if (/saturation/.test(blend)) {
+  else if (/saturation/i.test(blend)) {
     v = MIX_BLEND_MODE.SATURATION;
   }
-  else if (/color/.test(blend)) {
+  else if (/color/i.test(blend)) {
     v = MIX_BLEND_MODE.COLOR;
   }
-  else if (/luminosity/.test(blend)) {
+  else if (/luminosity/i.test(blend)) {
     v = MIX_BLEND_MODE.LUMINOSITY;
   }
   return v;
