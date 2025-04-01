@@ -2454,11 +2454,6 @@ function genMask(
       }
       gl.useProgram(maskProgram);
       drawMask(gl, maskProgram, listO ? listO[i].t! : listM[i].t!, t!);
-      if (listO) {
-        gl.useProgram(clipProgram);
-        drawMask(gl, clipProgram, listO[i].t!, listM[i].t!);
-        gl.useProgram(maskProgram);
-      }
       listR.push({
         bbox: bbox.slice(0),
         w,
