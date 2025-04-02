@@ -236,10 +236,23 @@ fetch('./sketch.sketch')
             guides: true,
           },
         });
-        sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
-        sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
-        sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
-        sketchEditor.control.initToolbar(root, document.querySelector('#toolbar'), listener);
+
+        const page = document.querySelector('#page');
+        const tree = document.querySelector('#tree');
+        const side = document.querySelector('#side');
+        const toolbar = document.querySelector('#toolbar');
+        if (page) {
+          sketchEditor.control.initPageList(root, page, listener);
+        }
+        if (tree) {
+          sketchEditor.control.initTree(root, tree, listener);
+        }
+        if (side) {
+          sketchEditor.control.initPanel(root, side, listener);
+        }
+        if (toolbar) {
+          sketchEditor.control.initToolbar(root, toolbar, listener);
+        }
 
         const button1 = document.querySelector('#button1');
         const button2 = document.querySelector('#button2');
