@@ -281,6 +281,10 @@ async function convertItem(layer: Layer, w: number, h: number) {
     } as JGroup;
   }
   else if (layer.text) {
+    // 路径字体转图片
+    if (layer.text.textPath && layer.text.textPath.bezierCurve) {
+      return canvasPromise;
+    }
     const strokeEnable: boolean[] = [];
     const stroke: Array<string | number[]> = [];
     const strokeWidth: number[] = [];

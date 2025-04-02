@@ -14,6 +14,7 @@ import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
 import { MASK, VISIBILITY } from '../style/define';
+import { TextProps } from '../format';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -407,24 +408,46 @@ export default class Tree {
             const next = item.next;
             if (prev) {
               const uuid2 = prev.props.uuid;
-              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
-              if (dl2) {
-                dl2.parentElement!.before(dd);
+              if (uuid2) {
+                const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+                if (dl2) {
+                  dl2.parentElement!.before(dd);
+                }
               }
             }
-            else if (next) { console.log(next)
+            else if (next) {
               const uuid2 = next.props.uuid;
-              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
-              if (dl2) {
-                dl2.parentElement!.after(dd);
+              if (uuid2) {
+                const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+                if (dl2) {
+                  dl2.parentElement!.after(dd);
+                }
               }
             }
             else {
               const uuid2 = item.parent!.props.uuid;
-              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
-              if (dl2) {
-                dl2.parentElement!.appendChild(dd);
+              if (uuid2) {
+                const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+                if (dl2) {
+                  dl2.parentElement!.appendChild(dd);
+                }
               }
+            }
+          }
+        }
+      });
+    });
+    listener.on(Listener.TEXT_CONTENT_NODE, (nodes: Node[]) => {
+      nodes.forEach(item => {
+        const uuid = item.props.uuid;
+        if (uuid) {
+          const name = dom.querySelector(`dl[uuid="${uuid}"] dt .name`) as HTMLElement;
+          if (name) {
+            const { nameIsFixed } = (item as Text).props as TextProps;
+            const content = (item as Text).content;
+            if (!nameIsFixed) {
+              name.innerText = content;
+              name.title = content;
             }
           }
         }
@@ -487,9 +510,11 @@ export default class Tree {
       });
       listener.selected.forEach(item => {
         const uuid = item.props.uuid;
-        const dt = dom.querySelector(`dl[uuid="${uuid}"] dt`);
-        if (dt) {
-          dt.classList.add('active');
+        if (uuid) {
+          const dt = dom.querySelector(`dl[uuid="${uuid}"] dt`);
+          if (dt) {
+            dt.classList.add('active');
+          }
         }
       });
     };
