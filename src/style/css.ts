@@ -48,10 +48,10 @@ function compatibleTransform(k: string, v: StyleNumValue) {
 export function normalize(style: any): Style {
   const res: any = {};
   ['left', 'top', 'right', 'bottom', 'width', 'height'].forEach((k) => {
-    let v = style[k as keyof JStyle];
-    if (isNil(v)) {
+    if (!style.hasOwnProperty(k)) {
       return;
     }
+    let v = style[k as keyof JStyle];
     const n = calUnit((v as string | number) || 0, true);
     // 限定正数
     if (k === 'width' || k === 'height') {
@@ -61,9 +61,9 @@ export function normalize(style: any): Style {
     }
     res[k] = n;
   });
-  const lineHeight = style.lineHeight;
-  if (!isNil(lineHeight)) {
-    if (lineHeight === 'normal') {
+  if (style.hasOwnProperty('lineHeight')) {
+    const lineHeight = style.lineHeight;
+    if (isNil(lineHeight) || lineHeight === 'normal') {
       res.lineHeight = {
         v: 0,
         u: StyleUnit.AUTO,
@@ -80,17 +80,15 @@ export function normalize(style: any): Style {
       res.lineHeight = n;
     }
   }
-  const visibility = style.visibility;
-  if (!isNil(visibility)) {
+  if (style.hasOwnProperty('visibility')) {
     res.visibility = {
-      v: /hidden/i.test(visibility) ? VISIBILITY.HIDDEN : VISIBILITY.VISIBLE,
+      v: /hidden/i.test(style.visibility) ? VISIBILITY.HIDDEN : VISIBILITY.VISIBLE,
       u: StyleUnit.NUMBER,
     };
   }
-  const fontFamily = style.fontFamily;
-  if (!isNil(fontFamily)) {
+  if (style.hasOwnProperty('fontFamily')) {
     res.fontFamily = {
-      v: fontFamily
+      v: (style.fontFamily || '')
         .toString()
         .trim()
         .replace(/['"]/g, '')
@@ -98,16 +96,15 @@ export function normalize(style: any): Style {
       u: StyleUnit.STRING,
     };
   }
-  const fontSize = style.fontSize;
-  if (!isNil(fontSize)) {
-    let n = calUnit(fontSize || inject.defaultFontSize, true);
+  if (style.hasOwnProperty('fontSize')) {
+    let n = calUnit(style.fontSize || inject.defaultFontSize, true);
     if (n.v <= 0) {
       n.v = inject.defaultFontSize;
     }
     res.fontSize = n;
   }
-  const fontWeight = style.fontWeight;
-  if (!isNil(fontWeight)) {
+  if (style.hasOwnProperty('fontWeight')) {
+    const fontWeight = style.fontWeight;
     if (isString(fontWeight)) {
       if (/thin/i.test(fontWeight as string)) {
         res.fontWeight = { v: 100, u: StyleUnit.NUMBER };
@@ -144,8 +141,8 @@ export function normalize(style: any): Style {
       };
     }
   }
-  const fontStyle = style.fontStyle;
-  if (!isNil(fontStyle)) {
+  if (style.hasOwnProperty('fontStyle')) {
+    const fontStyle = style.fontStyle;
     let v = FONT_STYLE.NORMAL;
     if (/italic/i.test(fontStyle)) {
       v = FONT_STYLE.ITALIC;
@@ -155,163 +152,215 @@ export function normalize(style: any): Style {
     }
     res.fontStyle = { v, u: StyleUnit.NUMBER };
   }
-  const color = style.color;
-  if (!isNil(color)) {
-    res.color = { v: color2rgbaInt(color), u: StyleUnit.RGBA };
+  if (style.hasOwnProperty('color')) {
+    res.color = { v: color2rgbaInt(style.color), u: StyleUnit.RGBA };
   }
-  const backgroundColor = style.backgroundColor;
-  if (!isNil(backgroundColor)) {
+  if (style.hasOwnProperty('backgroundColor')) {
+    const backgroundColor = style.backgroundColor;
     res.backgroundColor = {
       v: color2rgbaInt(backgroundColor),
       u: StyleUnit.RGBA,
     };
   }
-  const opacity = style.opacity;
-  if (!isNil(opacity)) {
+  if (style.hasOwnProperty('opacity')) {
+    let opacity = parseFloat(style.opacity);
+    if (isNaN(opacity)) {
+      opacity = 1;
+    }
     res.opacity = { v: Math.max(0, Math.min(1, opacity)), u: StyleUnit.NUMBER };
   }
-  const fill = style.fill;
-  if (!isNil(fill)) {
-    res.fill = fill.map((item: string | number[]) => {
-      if (isString(item)) {
-        if (isGradient(item as string)) {
-          const v = parseGradient(item as string);
-          if (v) {
-            return { v, u: StyleUnit.GRADIENT };
+  if (style.hasOwnProperty('fill')) {
+    const fill = style.fill;
+    if (Array.isArray(fill)) {
+      res.fill = fill.map((item: string | number[]) => {
+        if (isString(item)) {
+          if (isGradient(item as string)) {
+            const v = parseGradient(item as string);
+            if (v) {
+              return { v, u: StyleUnit.GRADIENT };
+            }
+          }
+          else if (reg.img.test(item as string)) {
+            const v = reg.img.exec(item as string);
+            if (v) {
+              let type = PATTERN_FILL_TYPE.TILE;
+              const s = (item as string).replace(v[0], '');
+              if (s.indexOf('fill') > -1) {
+                type = PATTERN_FILL_TYPE.FILL;
+              }
+              else if (s.indexOf('stretch') > -1) {
+                type = PATTERN_FILL_TYPE.STRETCH;
+              }
+              else if (s.indexOf('fit') > -1) {
+                type = PATTERN_FILL_TYPE.FIT;
+              }
+              let scale;
+              const v2 = /([\d.]+)%/.exec(s);
+              if (v2) {
+                scale = {
+                  v: parseFloat(v2[1]),
+                  u: StyleUnit.PERCENT,
+                };
+              }
+              return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+            }
           }
         }
-        else if (reg.img.test(item as string)) {
-          const v = reg.img.exec(item as string);
-          if (v) {
-            let type = PATTERN_FILL_TYPE.TILE;
-            const s = (item as string).replace(v[0], '');
-            if (s.indexOf('fill') > -1) {
-              type = PATTERN_FILL_TYPE.FILL;
-            }
-            else if (s.indexOf('stretch') > -1) {
-              type = PATTERN_FILL_TYPE.STRETCH;
-            }
-            else if (s.indexOf('fit') > -1) {
-              type = PATTERN_FILL_TYPE.FIT;
-            }
-            let scale;
-            const v2 = /([\d.]+)%/.exec(s);
-            if (v2) {
-              scale = {
-                v: parseFloat(v2[1]),
-                u: StyleUnit.PERCENT,
-              };
-            }
-            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
-          }
-        }
-      }
-      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
-    });
+        return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+      });
+    }
+    else {
+      res.fill = [];
+    }
   }
-  const fillEnable = style.fillEnable;
-  if (!isNil(fillEnable)) {
-    res.fillEnable = fillEnable.map((item: boolean) => {
-      return { v: item, u: StyleUnit.BOOLEAN };
-    });
+  if (style.hasOwnProperty('fillEnable')) {
+    const fillEnable = style.fillEnable;
+    if (Array.isArray(fillEnable)) {
+      res.fillEnable = fillEnable.map((item: boolean) => {
+        return { v: item, u: StyleUnit.BOOLEAN };
+      });
+    }
+    else {
+      res.fillEnable = res.fill.map(() => ({ v: true, u: StyleUnit.BOOLEAN }));
+    }
   }
-  const fillOpacity = style.fillOpacity;
-  if (!isNil(fillOpacity)) {
-    res.fillOpacity = fillOpacity.map((item: number) => {
-      return { v: Math.max(0, Math.min(1, item)), u: StyleUnit.NUMBER };
-    });
+  if (style.hasOwnProperty('fillOpacity')) {
+    const fillOpacity = style.fillOpacity;
+    if (Array.isArray(fillOpacity)) {
+      res.fillOpacity = fillOpacity.map((item: number) => {
+        return { v: Math.max(0, Math.min(1, item)), u: StyleUnit.NUMBER };
+      });
+    }
+    else {
+      res.fillOpacity = res.fill.map(() => ({ v: 1, u: StyleUnit.NUMBER }));
+    }
   }
-  const fillMode = style.fillMode;
-  if (!isNil(fillMode)) {
-    res.fillMode = fillMode.map((item: string) => {
-      return { v: getBlendMode(item), u: StyleUnit.NUMBER };
-    });
+  if (style.hasOwnProperty('fillMode')) {
+    const fillMode = style.fillMode;
+    if (Array.isArray(fillMode)) {
+      res.fillMode = fillMode.map((item: string) => {
+        return { v: getBlendMode(item), u: StyleUnit.NUMBER };
+      });
+    }
+    else {
+      res.fillMode = res.fill.map(() => ({ v: MIX_BLEND_MODE.NORMAL, u : StyleUnit.NUMBER }));
+    }
   }
-  const fillRule = style.fillRule;
-  if (!isNil(fillRule)) {
+  if (style.hasOwnProperty('fillRule')) {
+    const fillRule = style.fillRule;
     res.fillRule = {
       v: fillRule === 'evenodd' ? FILL_RULE.EVEN_ODD : FILL_RULE.NON_ZERO,
       u: StyleUnit.NUMBER,
     };
   }
-  const stroke = style.stroke;
-  if (!isNil(stroke)) {
-    res.stroke = stroke.map((item: string | number[]) => {
-      if (isString(item)) {
-        if (isGradient(item as string)) {
-          const v = parseGradient(item as string);
-          if (v) {
-            return { v, u: StyleUnit.GRADIENT };
+  if (style.hasOwnProperty('stroke')) {
+    const stroke = style.stroke;
+    if (Array.isArray(stroke)) {
+      res.stroke = stroke.map((item: string | number[]) => {
+        if (isString(item)) {
+          if (isGradient(item as string)) {
+            const v = parseGradient(item as string);
+            if (v) {
+              return { v, u: StyleUnit.GRADIENT };
+            }
+          }
+          else if (reg.img.test(item as string)) {
+            const v = reg.img.exec(item as string);
+            if (v) {
+              let type = PATTERN_FILL_TYPE.TILE;
+              const s = (item as string).replace(v[0], '');
+              if (s.indexOf('fill') > -1) {
+                type = PATTERN_FILL_TYPE.FILL;
+              }
+              else if (s.indexOf('stretch') > -1) {
+                type = PATTERN_FILL_TYPE.STRETCH;
+              }
+              else if (s.indexOf('fit') > -1) {
+                type = PATTERN_FILL_TYPE.FIT;
+              }
+              let scale;
+              const v2 = /([\d.]+)%/.exec(s);
+              if (v2) {
+                scale = {
+                  v: parseFloat(v2[1]),
+                  u: StyleUnit.PERCENT,
+                };
+              }
+              return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
+            }
           }
         }
-        else if (reg.img.test(item as string)) {
-          const v = reg.img.exec(item as string);
-          if (v) {
-            let type = PATTERN_FILL_TYPE.TILE;
-            const s = (item as string).replace(v[0], '');
-            if (s.indexOf('fill') > -1) {
-              type = PATTERN_FILL_TYPE.FILL;
-            }
-            else if (s.indexOf('stretch') > -1) {
-              type = PATTERN_FILL_TYPE.STRETCH;
-            }
-            else if (s.indexOf('fit') > -1) {
-              type = PATTERN_FILL_TYPE.FIT;
-            }
-            let scale;
-            const v2 = /([\d.]+)%/.exec(s);
-            if (v2) {
-              scale = {
-                v: parseFloat(v2[1]),
-                u: StyleUnit.PERCENT,
-              };
-            }
-            return { v: { url: v[2], type, scale }, u: StyleUnit.PATTERN };
-          }
+        return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
+      });
+    }
+    else {
+      res.stroke = [];
+    }
+  }
+  if (style.hasOwnProperty('strokeEnable')) {
+    const strokeEnable = style.strokeEnable;
+    if (Array.isArray(strokeEnable)) {
+      res.strokeEnable = strokeEnable.map((item: boolean) => {
+        return { v: item, u: StyleUnit.BOOLEAN };
+      });
+    }
+    else {
+      res.strokeEnable = res.stroke.map(() => ({ v: true, u: StyleUnit.BOOLEAN }));
+    }
+  }
+  if (style.hasOwnProperty('strokeWidth')) {
+    const strokeWidth = style.strokeWidth;
+    if (Array.isArray(strokeWidth)) {
+      res.strokeWidth = strokeWidth.map((item: number) => {
+        return { v: Math.max(0, item), u: StyleUnit.PX };
+      });
+    }
+    else {
+      res.strokeWidth = res.stroke.map(() => ({ v: 1, u: StyleUnit.NUMBER }));
+    }
+  }
+  if (style.hasOwnProperty('strokePosition')) {
+    const strokePosition = style.strokePosition;
+    if (Array.isArray(strokePosition)) {
+      res.strokePosition = strokePosition.map((item: string) => {
+        let v = STROKE_POSITION.CENTER;
+        if (item === 'inside') {
+          v = STROKE_POSITION.INSIDE;
         }
-      }
-      return { v: color2rgbaInt(item), u: StyleUnit.RGBA };
-    });
+        else if (item === 'outside') {
+          v = STROKE_POSITION.OUTSIDE;
+        }
+        return { v, u: StyleUnit.NUMBER };
+      });
+    }
+    else {
+      res.strokePosition = res.stroke.map(() => ({ v: STROKE_POSITION.CENTER, u: StyleUnit.NUMBER }));
+    }
   }
-  const strokeEnable = style.strokeEnable;
-  if (!isNil(strokeEnable)) {
-    res.strokeEnable = strokeEnable.map((item: boolean) => {
-      return { v: item, u: StyleUnit.BOOLEAN };
-    });
+  if (style.hasOwnProperty('strokeMode')) {
+    const strokeMode = style.strokeMode;
+    if (Array.isArray(strokeMode)) {
+      res.strokeMode = strokeMode.map((item: string) => {
+        return { v: getBlendMode(item), u: StyleUnit.NUMBER };
+      });
+    }
+    else {
+      res.strokeMode = res.stroke.map(() => ({ v: MIX_BLEND_MODE.NORMAL, u: StyleUnit.NUMBER }));
+    }
   }
-  const strokeWidth = style.strokeWidth;
-  if (!isNil(strokeWidth)) {
-    res.strokeWidth = strokeWidth.map((item: number) => {
-      return { v: Math.max(0, item), u: StyleUnit.PX };
-    });
+  if (style.hasOwnProperty('strokeDasharray')) {
+    const strokeDasharray = style.strokeDasharray;
+    if (Array.isArray(strokeDasharray)) {
+      res.strokeDasharray = strokeDasharray.map((item: number) => {
+        return { v: Math.max(0, item), u: StyleUnit.PX };
+      });
+    }
+    else {
+      res.strokeDasharray = [];
+    }
   }
-  const strokePosition = style.strokePosition;
-  if (!isNil(strokePosition)) {
-    res.strokePosition = strokePosition.map((item: string) => {
-      let v = STROKE_POSITION.CENTER;
-      if (item === 'inside') {
-        v = STROKE_POSITION.INSIDE;
-      }
-      else if (item === 'outside') {
-        v = STROKE_POSITION.OUTSIDE;
-      }
-      return { v, u: StyleUnit.NUMBER };
-    });
-  }
-  const strokeMode = style.strokeMode;
-  if (!isNil(strokeMode)) {
-    res.strokeMode = strokeMode.map((item: string) => {
-      return { v: getBlendMode(item), u: StyleUnit.NUMBER };
-    });
-  }
-  const strokeDasharray = style.strokeDasharray;
-  if (!isNil(strokeDasharray)) {
-    res.strokeDasharray = strokeDasharray.map((item: number) => {
-      return { v: Math.max(0, item), u: StyleUnit.PX };
-    });
-  }
-  const strokeLinecap = style.strokeLinecap;
-  if (!isNil(strokeLinecap)) {
+  if (style.hasOwnProperty('strokeLinecap')) {
+    const strokeLinecap = style.strokeLinecap;
     let v = STROKE_LINE_CAP.BUTT;
     if (strokeLinecap === 'round') {
       v = STROKE_LINE_CAP.ROUND;
@@ -321,8 +370,8 @@ export function normalize(style: any): Style {
     }
     res.strokeLinecap = { v, u: StyleUnit.NUMBER };
   }
-  const strokeLinejoin = style.strokeLinejoin;
-  if (!isNil(strokeLinejoin)) {
+  if (style.hasOwnProperty('strokeLinejoin')) {
+    const strokeLinejoin = style.strokeLinejoin;
     let v = STROKE_LINE_JOIN.MITER;
     if (strokeLinejoin === 'round') {
       v = STROKE_LINE_JOIN.ROUND;
@@ -332,33 +381,28 @@ export function normalize(style: any): Style {
     }
     res.strokeLinejoin = { v, u: StyleUnit.NUMBER };
   }
-  const strokeMiterlimit = style.strokeMiterlimit;
-  if (!isNil(strokeMiterlimit)) {
-    res.strokeMiterlimit = { v: strokeMiterlimit, u: StyleUnit.NUMBER };
+  if (style.hasOwnProperty('strokeMiterlimit')) {
+    res.strokeMiterlimit = { v: parseFloat(style.strokeMiterlimit) || 0, u: StyleUnit.NUMBER };
   }
   // 只有这几个，3d没有
   ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
-    let v = style[k as keyof JStyle];
-    if (isNil(v)) {
+    if (!style.hasOwnProperty(k)) {
       return;
     }
+    let v = style[k as keyof JStyle];
     const n = calUnit(v as string | number, false);
     // 没有单位或默认值处理单位
     compatibleTransform(k, n);
     res[k] = n;
   });
-  const letterSpacing = style.letterSpacing;
-  if (!isNil(letterSpacing)) {
-    let n = calUnit(letterSpacing || 0, true);
-    res.letterSpacing = n;
+  if (style.hasOwnProperty('letterSpacing')) {
+    res.letterSpacing = calUnit(style.letterSpacing || 0, true);
   }
-  const paragraphSpacing = style.paragraphSpacing;
-  if (!isNil(paragraphSpacing)) {
-    let n = calUnit(paragraphSpacing || 0, true);
-    res.paragraphSpacing = n;
+  if (style.hasOwnProperty('paragraphSpacing')) {
+    res.paragraphSpacing = calUnit(style.paragraphSpacing || 0, true);
   }
-  const textAlign = style.textAlign;
-  if (!isNil(textAlign)) {
+  if (style.hasOwnProperty('textAlign')) {
+    const textAlign = style.textAlign;
     let v = TEXT_ALIGN.LEFT;
     if (textAlign === 'center') {
       v = TEXT_ALIGN.CENTER;
@@ -371,8 +415,8 @@ export function normalize(style: any): Style {
     }
     res.textAlign = { v, u: StyleUnit.NUMBER };
   }
-  const textVerticalAlign = style.textVerticalAlign;
-  if (!isNil(textVerticalAlign)) {
+  if (style.hasOwnProperty('textVerticalAlign')) {
+    const textVerticalAlign = style.textVerticalAlign;
     let v = TEXT_VERTICAL_ALIGN.TOP;
     if (textVerticalAlign === 'middle') {
       v = TEXT_VERTICAL_ALIGN.MIDDLE;
@@ -382,29 +426,37 @@ export function normalize(style: any): Style {
     }
     res.textVerticalAlign = { v, u: StyleUnit.NUMBER };
   }
-  const textDecoration = style.textDecoration;
-  if (!isNil(textDecoration) && Array.isArray(textDecoration)) {
-    res.textDecoration = textDecoration.map(item => {
-      let v = TEXT_DECORATION.NONE;
-      if (item === 'underline') {
-        v = TEXT_DECORATION.UNDERLINE;
-      }
-      else if (item === 'line-through' || item === 'lineThrough') {
-        v = TEXT_DECORATION.LINE_THROUGH;
-      }
-      return { v, u: StyleUnit.NUMBER };
-    });
+  if (style.hasOwnProperty('textDecoration')) {
+    const textDecoration = style.textDecoration;
+    if (Array.isArray(textDecoration)) {
+      res.textDecoration = textDecoration.map(item => {
+        let v = TEXT_DECORATION.NONE;
+        if (item === 'underline') {
+          v = TEXT_DECORATION.UNDERLINE;
+        }
+        else if (item === 'line-through' || item === 'lineThrough') {
+          v = TEXT_DECORATION.LINE_THROUGH;
+        }
+        return { v, u: StyleUnit.NUMBER };
+      });
+    }
+    else {
+      res.textDecoration = [];
+    }
   }
-  const transformOrigin = style.transformOrigin;
-  if (!isNil(transformOrigin)) {
+  if (style.hasOwnProperty('transformOrigin')) {
+    const transformOrigin = style.transformOrigin;
     let o: Array<number | string>;
     if (Array.isArray(transformOrigin)) {
       o = transformOrigin;
     }
     else {
-      o = transformOrigin.match(reg.position) as Array<string>;
+      o = (transformOrigin || '').toString().match(reg.position) as Array<string>;
     }
-    if (o.length === 1) {
+    if (!o || !o.length) {
+      o = [50, 50];
+    }
+    else if (o.length === 1) {
       o[1] = o[0];
     }
     const arr: Array<StyleNumValue> = [];
@@ -433,8 +485,8 @@ export function normalize(style: any): Style {
     }
     res.transformOrigin = arr;
   }
-  const booleanOperation = style.booleanOperation;
-  if (!isNil(booleanOperation)) {
+  if (style.hasOwnProperty('booleanOperation')) {
+    const booleanOperation = style.booleanOperation;
     let v = BOOLEAN_OPERATION.NONE;
     if (booleanOperation === 'union') {
       v = BOOLEAN_OPERATION.UNION;
@@ -450,16 +502,14 @@ export function normalize(style: any): Style {
     }
     res.booleanOperation = { v, u: StyleUnit.NUMBER };
   }
-  const mixBlendMode = style.mixBlendMode;
-  if (!isNil(mixBlendMode)) {
-    res.mixBlendMode = { v: getBlendMode(mixBlendMode), u: StyleUnit.NUMBER };
+  if (style.hasOwnProperty('mixBlendMode')) {
+    res.mixBlendMode = { v: getBlendMode(style.mixBlendMode), u: StyleUnit.NUMBER };
   }
-  const pointerEvents = style.pointerEvents;
-  if (!isNil(pointerEvents)) {
-    res.pointerEvents = { v: pointerEvents, u: StyleUnit.BOOLEAN };
+  if (style.hasOwnProperty('pointerEvents')) {
+    res.pointerEvents = { v: !!style.pointerEvents, u: StyleUnit.BOOLEAN };
   }
-  const maskMode = style.maskMode;
-  if (!isNil(maskMode)) {
+  if (style.hasOwnProperty('maskMode')) {
+    const maskMode = style.maskMode;
     let v = MASK.NONE;
     if (maskMode === 'outline') {
       v = MASK.OUTLINE;
@@ -478,12 +528,11 @@ export function normalize(style: any): Style {
     }
     res.maskMode = { v, u: StyleUnit.NUMBER };
   }
-  const breakMask = style.breakMask;
-  if (!isNil(breakMask)) {
-    res.breakMask = { v: breakMask, u: StyleUnit.BOOLEAN };
+  if (style.hasOwnProperty('breakMask')) {
+    res.breakMask = { v: !!style.breakMask, u: StyleUnit.BOOLEAN };
   }
-  const blur = style.blur;
-  if (!isNil(blur)) {
+  if (style.hasOwnProperty('blur')) {
+    const blur = style.blur;
     const v = reg.blur.exec(blur);
     if (v) {
       const t = v[1].toLowerCase();
@@ -551,102 +600,124 @@ export function normalize(style: any): Style {
       res.blur = { v: { t: BLUR.NONE }, u: StyleUnit.BLUR };
     }
   }
-  const shadow = style.shadow;
-  if (!isNil(shadow)) {
-    res.shadow = shadow.map((item: string) => {
-      const color = reg.color.exec(item);
-      let s = item;
-      if (color) {
-        s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
-      }
-      const d = s.match(reg.number);
-      const x = calUnit(d ? d[0] : '0px', true);
-      const y = calUnit(d ? d[1] : '0px', true);
-      const blur = calUnit(d ? d[2] : '0px', true);
-      // blur一定非负
-      blur.v = Math.max(0, blur.v);
-      const spread = calUnit(d ? d[3] : '0px', true);
-      // spread.v = Math.max(0, spread.v);
-      return {
-        v: {
-          x,
-          y,
-          blur,
-          spread,
-          color: {
-            v: color2rgbaInt(color ? color[0] : '#000'),
-            u: StyleUnit.RGBA,
+  if (style.hasOwnProperty('shadow')) {
+    const shadow = style.shadow;
+    if (Array.isArray(shadow)) {
+      res.shadow = shadow.map((item: string) => {
+        const color = reg.color.exec(item);
+        let s = item;
+        if (color) {
+          s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
+        }
+        const d = s.match(reg.number);
+        const x = calUnit(d ? d[0] : '0px', true);
+        const y = calUnit(d ? d[1] : '0px', true);
+        const blur = calUnit(d ? d[2] : '0px', true);
+        // blur一定非负
+        blur.v = Math.max(0, blur.v);
+        const spread = calUnit(d ? d[3] : '0px', true);
+        // spread.v = Math.max(0, spread.v);
+        return {
+          v: {
+            x,
+            y,
+            blur,
+            spread,
+            color: {
+              v: color2rgbaInt(color ? color[0] : '#000'),
+              u: StyleUnit.RGBA,
+            },
           },
-        },
-        u: StyleUnit.SHADOW,
-      };
-    });
+          u: StyleUnit.SHADOW,
+        };
+      });
+    }
+    else {
+      res.shadow = [];
+    }
   }
-  const shadowEnable = style.shadowEnable;
-  if (!isNil(shadowEnable)) {
-    res.shadowEnable = shadowEnable.map((item: boolean) => {
-      return { v: item, u: StyleUnit.BOOLEAN };
-    });
+  if (style.hasOwnProperty('shadowEnable')) {
+    const shadowEnable = style.shadowEnable;
+    if (Array.isArray(shadowEnable)) {
+      res.shadowEnable = shadowEnable.map((item: boolean) => {
+        return { v: item, u: StyleUnit.BOOLEAN };
+      });
+    }
+    else {
+      res.shadowEnable = res.shadow.map(() => ({ v: true, u: StyleUnit.BOOLEAN }));
+    }
   }
-  const innerShadow = style.innerShadow;
-  if (!isNil(innerShadow)) {
-    res.innerShadow = innerShadow.map((item: string) => {
-      const color = reg.color.exec(item);
-      let s = item;
-      if (color) {
-        s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
-      }
-      const d = s.match(reg.number);
-      const x = calUnit(d ? d[0] : '0px', true);
-      const y = calUnit(d ? d[1] : '0px', true);
-      const blur = calUnit(d ? d[2] : '0px', true);
-      // blur和spread一定非负
-      blur.v = Math.max(0, blur.v);
-      const spread = calUnit(d ? d[3] : '0px', true);
-      spread.v = Math.max(0, spread.v);
-      return {
-        v: {
-          x,
-          y,
-          blur,
-          spread,
-          color: {
-            v: color2rgbaInt(color ? color[0] : '#000'),
-            u: StyleUnit.RGBA,
+  if (style.hasOwnProperty('innerShadow')) {
+    const innerShadow = style.innerShadow;
+    if (Array.isArray(innerShadow)) {
+      res.innerShadow = innerShadow.map((item: string) => {
+        const color = reg.color.exec(item);
+        let s = item;
+        if (color) {
+          s = s.slice(0, color.index) + s.slice(color.index + color[0].length);
+        }
+        const d = s.match(reg.number);
+        const x = calUnit(d ? d[0] : '0px', true);
+        const y = calUnit(d ? d[1] : '0px', true);
+        const blur = calUnit(d ? d[2] : '0px', true);
+        // blur和spread一定非负
+        blur.v = Math.max(0, blur.v);
+        const spread = calUnit(d ? d[3] : '0px', true);
+        spread.v = Math.max(0, spread.v);
+        return {
+          v: {
+            x,
+            y,
+            blur,
+            spread,
+            color: {
+              v: color2rgbaInt(color ? color[0] : '#000'),
+              u: StyleUnit.RGBA,
+            },
           },
-        },
-        u: StyleUnit.SHADOW,
-      };
-    });
+          u: StyleUnit.SHADOW,
+        };
+      });
+    }
+    else {
+      res.innerShadow = [];
+    }
   }
-  const innerShadowEnable = style.innerShadowEnable;
-  if (!isNil(innerShadowEnable)) {
-    res.innerShadowEnable = innerShadowEnable.map((item: boolean) => {
-      return { v: item, u: StyleUnit.BOOLEAN };
-    });
+  if (style.hasOwnProperty('innerShadowEnable')) {
+    const innerShadowEnable = style.innerShadowEnable;
+    if (Array.isArray(innerShadowEnable)) {
+      res.innerShadowEnable = innerShadowEnable.map((item: boolean) => {
+        return { v: item, u: StyleUnit.BOOLEAN };
+      });
+    }
+    else {
+      res.innerShadowEnable = res.innerShadow.map(() => ({ v: true, u: StyleUnit.BOOLEAN }));
+    }
   }
   ['hueRotate', 'saturate', 'brightness', 'contrast'].forEach(k => {
-    const v = style[k];
-    if (!isNil(v)) {
-      const n = calUnit(v);
-      // hue是角度，其它都是百分比
-      if (k === 'hueRotate') {
-        if (n.u !== StyleUnit.DEG) {
-          n.u = StyleUnit.DEG;
-        }
-      }
-      else {
-        if (n.u !== StyleUnit.PERCENT) {
-          n.v *= 100;
-          n.u = StyleUnit.PERCENT;
-        }
-      }
-      res[k] = n;
+    if (!style.hasOwnProperty(k)) {
+      return;
     }
+    const n = calUnit(style[k]);
+    // hue是角度，其它都是百分比
+    if (k === 'hueRotate') {
+      if (n.u !== StyleUnit.DEG) {
+        n.u = StyleUnit.DEG;
+      }
+    }
+    else {
+      if (n.u !== StyleUnit.PERCENT) {
+        n.v *= 100;
+        n.u = StyleUnit.PERCENT;
+      }
+    }
+    res[k] = n;
   });
-  const matrix = style.matrix;
-  if (!isNil(matrix)) {
-    res.matrix = { v: style.matrix, u: StyleUnit.MATRIX };
+  if (style.hasOwnProperty('matrix')) {
+    const matrix = style.matrix;
+    if (Array.isArray(matrix)) {
+      res.matrix = { v: matrix, u: StyleUnit.MATRIX };
+    }
   }
   return res;
 }
