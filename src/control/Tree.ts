@@ -342,9 +342,9 @@ export default class Tree {
       nodes.forEach((item) => {
         const uuid = item.props.uuid;
         if (uuid) {
-          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-          if (dl) {
-            (dl.querySelector('span.name') as HTMLElement).innerText = item.props.name || '';
+          const name = dom.querySelector(`dl[uuid="${uuid}"] .name`) as HTMLElement;
+          if (name) {
+            name.title = name.innerText = item.props.name || '';
           }
         }
       });
