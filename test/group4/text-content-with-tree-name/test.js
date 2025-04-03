@@ -23,13 +23,12 @@ module.exports = {
       .assert.not.elementPresent('#tree .name[title="abcd"]')
       .assert.elementPresent('#tree .name[title="abc"]')
 
-      .moveToElement('#tree .name[title="abc"]', 50, 50)
+      .moveToElement('#tree .name[title="abc"]', 50, 20)
       .doubleClick()
       .keys('z')
       .keys(browser.Keys.NULL)
       .keys(browser.Keys.ENTER)
       .keys(browser.Keys.NULL)
-      .pause(20)
       .assert.not.elementPresent('#tree .name[title="abc"]')
       .assert.elementPresent('#tree .name[title="abcz"]')
 
