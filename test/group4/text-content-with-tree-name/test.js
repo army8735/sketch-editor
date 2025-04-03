@@ -29,6 +29,7 @@ module.exports = {
       .keys(browser.Keys.NULL)
       .keys(browser.Keys.ENTER)
       .keys(browser.Keys.NULL)
+      .pause(20)
       .assert.not.elementPresent('#tree .name[title="abc"]')
       .assert.elementPresent('#tree .name[title="abcz"]')
 
