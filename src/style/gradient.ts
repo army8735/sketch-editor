@@ -345,15 +345,15 @@ export function getLinearCoords(deg: number, ox: number, oy: number, w: number, 
     y1 = 0;
     y2 = h;
   }
-  else if (deg % (Math.PI * 0.5) === 0) {
-    x1 = 0;
-    x2 = w;
-    y1 = y2 = h * 0.5;
-  }
   else if (deg % Math.PI === 0) {
     x1 = x2 = w * 0.5;
     y1 = h;
     y2 = 0;
+  }
+  else if (deg % (Math.PI * 0.5) === 0) {
+    x1 = 0;
+    x2 = w;
+    y1 = y2 = h * 0.5;
   }
   else if (deg % (Math.PI * 1.5) === 0) {
     x1 = w;
