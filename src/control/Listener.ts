@@ -639,7 +639,7 @@ export default class Listener extends Event {
         }
         // 理论进不来因为gradient/geom的dom盖在上面点不到，点到也应该有节点
         else if ([state.EDIT_GRADIENT, state.EDIT_GEOM].includes(this.state)) {
-          this.emit(Listener.SELECT_POINT, [], []);
+          this.emit(Listener.SELECT_POINT, []);
         }
         else if (!this.shiftKey) {
           selected.splice(0);
@@ -1818,7 +1818,7 @@ export default class Listener extends Event {
       else if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
           this.geometry.clearCur();
-          this.emit(Listener.SELECT_POINT, [], []);
+          this.emit(Listener.SELECT_POINT, []);
         }
         else {
           this.cancelEditGeom();

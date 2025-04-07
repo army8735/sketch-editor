@@ -246,13 +246,13 @@ export default class Geometry {
           // 点空了
           else {
             this.clearCur();
-            listener.emit(Listener.SELECT_POINT, [], []);
+            listener.emit(Listener.SELECT_POINT, []);
           }
         }
         // 理论进不来兜底，同点空
         else {
           this.clearCur();
-          listener.emit(Listener.SELECT_POINT, [], []);
+          listener.emit(Listener.SELECT_POINT, []);
         }
       }
       // 点控制点开始拖拽，只能单选
@@ -284,7 +284,7 @@ export default class Geometry {
       // 点panel自己清空顶点，保持编辑态
       else {
         this.clearCur();
-        listener.emit(Listener.SELECT_POINT, [], []);
+        listener.emit(Listener.SELECT_POINT, []);
       }
     });
     document.addEventListener('mousemove', (e) => {
@@ -792,8 +792,7 @@ export default class Geometry {
   }
 
   emitSelectPoint() {
-    const nodes: Polyline[] = [];
-    const points: Point[][] = [];
+    const data: { node: Polyline, points: Point[] }[] = [];
     this.nodes.map((item, i) => {
       const idxes = this.idxes[i];
       if (idxes.length) {
@@ -801,10 +800,13 @@ export default class Geometry {
         idxes.forEach(i => {
           list.push(item.props.points[i]);
         });
-        points.push(list);
+        data.push({
+          node: item,
+          points: list,
+        });
       }
     });
-    this.listener.emit(Listener.SELECT_POINT, nodes, points);
+    this.listener.emit(Listener.SELECT_POINT, data);
   }
 }
 
