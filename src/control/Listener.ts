@@ -1824,6 +1824,11 @@ export default class Listener extends Event {
           this.cancelEditGeom();
         }
       }
+      else if (this.state === state.HAND) {
+        this.dom.classList.remove('hand');
+        this.state = state.NORMAL;
+        this.emit(Listener.STATE_CHANGE, state.HAND, this.state);
+      }
       // 如果有矢量，看上层的shapeGroup，有的话先选择，没有才是普通的取消选择
       else {
         const geom: Array<Polyline | ShapeGroup> = this.selected.filter(item => item instanceof Polyline || item instanceof ShapeGroup);

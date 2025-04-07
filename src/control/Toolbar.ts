@@ -185,6 +185,10 @@ class Toolbar {
       if (next === state.NORMAL) {
         dom.querySelector('.active')?.classList.remove('active');
         dom.querySelector('.sel.item')?.classList.add('active');
+        dom.querySelector('.sel.item .ti')?.setAttribute('title', 'select');
+        // @ts-ignore
+        dom.querySelector('.sel.item .ti b')?.className = 'select';
+        dom.querySelector('.sel.item li.cur')?.classList.remove('cur');
         dom.querySelector('.sel.item li[title="select"]')?.classList.add('cur');
       }
     });
