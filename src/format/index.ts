@@ -262,18 +262,13 @@ export type Rich = {
 
 export type PolylineProps = GeomProps & {
   points: Point[];
-  constrainProportions: boolean;
   fixedRadius: number;
   pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
   isRectangle?: boolean;
   isOval?: boolean;
 };
 
-export type ShapeGroupProps = GeomProps & {
-  points: Point[];
-  constrainProportions: boolean;
-  fixedRadius: number;
-  pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
+export type ShapeGroupProps = Props & {
 };
 
 export type Point = {
