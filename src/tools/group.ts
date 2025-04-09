@@ -3,9 +3,10 @@ import Node from '../node/Node';
 import Group from '../node/Group';
 import { migrate, sortTempIndex } from './node';
 import inject from '../util/inject';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 // 至少1个node进行编组，以第0个位置为基准
-export function group(nodes: Node[], group?: Group) {
+export function group(nodes: Node[], group?: Group | ShapeGroup) {
   if (!nodes.length) {
     return;
   }
@@ -49,7 +50,7 @@ export function group(nodes: Node[], group?: Group) {
   return group;
 }
 
-export function unGroup(group: Group) {
+export function unGroup(group: Group | ShapeGroup) {
   if (group.isDestroyed || !group.parent) {
     inject.error('Can not unGroup a destroyed Node');
     return;

@@ -1501,7 +1501,7 @@ export default class Listener extends Event {
         this.selected.splice(0);
         this.selected.push(group);
         this.select.updateSelect(this.selected);
-        this.history.addCommand(new GroupCommand(nodes, data, group));
+        this.history.addCommand(new GroupCommand(nodes, data, group as Group));
         this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
       }
     }
@@ -1525,6 +1525,13 @@ export default class Listener extends Event {
       this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups);
     }
   }
+
+  boolGroup(booleanOperation: 'none' | 'union' | 'subtract' | 'intersect' | 'xor', nodes = this.selected) {
+    if (nodes.length) {
+    }
+  }
+
+  unBoolGroup() {}
 
   mask(value: 'none' | 'outline' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with', nodes = this.selected) {
     if (nodes.length) {

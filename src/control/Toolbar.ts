@@ -1,6 +1,8 @@
 import Root from '../node/Root';
 import Listener from './Listener';
 import state from './state';
+import Polyline from '../node/geom/Polyline';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 const selHtml = `
 <div class="ti" title="select"><b class="select"></b></div>
@@ -39,15 +41,15 @@ const maskHtml = `
 `;
 
 const boolHtml = `
-<div class="ti" title="union"><b class="union"></b></div>
+<div class="ti disable readonly" title="union"><b class="union"></b></div>
 <div class="drop"></div>
 <ul class="sub">
-  <li title="union"><b class="union"></b><span class="name">联集</span></li>
-  <li title="subtract"><b class="subtract"></b><span class="name">减去顶层</span></li>
-  <li title="intersect"><b class="intersect"></b><span class="name">交集</span></li>
-  <li title="xor"><b class="xor"></b><span class="name">差集</span></li>
+  <li title="union" class="disable readonly"><b class="union"></b><span class="name">联集</span></li>
+  <li title="subtract" class="disable readonly"><b class="subtract"></b><span class="name">减去顶层</span></li>
+  <li title="intersect" class="disable readonly"><b class="intersect"></b><span class="name">交集</span></li>
+  <li title="xor" class="disable readonly"><b class="xor"></b><span class="name">差集</span></li>
   <li class="split"></li>
-  <li title="flatten"><b class="flatten"></b><span class="name">拼合</span></li>
+  <li title="flatten" class="disable readonly"><b class="flatten"></b><span class="name">拼合</span></li>
 </ul>
 `;
 
@@ -123,6 +125,7 @@ class Toolbar {
       // div的父节点.item可能是已激活的.active，li也可能是.cur，还有可能是disable
       if (tagName === 'DIV' && target.parentElement!.classList.contains('active')
         || classList.contains('cur')) {
+        keep = true;
         return;
       }
       // 禁止特殊处理
@@ -136,28 +139,40 @@ class Toolbar {
         tagName = target.tagName.toUpperCase();
         classList = target.classList;
       }
+
       let title = '';
-      dom.querySelector('.active')?.classList.remove('active');
-      dom.querySelector('.cur')?.classList.remove('cur');
+      // bool和mask等按钮不是按下长期生效的
+      if (!classList.contains('readonly')) {
+        dom.querySelector('.active')?.classList.remove('active');
+        dom.querySelector('.cur')?.classList.remove('cur');
+      }
       // 直接显示的icon切换
       if (tagName === 'DIV') {
         const item = target.parentElement!;
-        item.classList.add('active');
+        if (!classList.contains('readonly')) {
+          item.classList.add('active');
+        }
         title = target.title;
       }
       // 下拉中的icon切换
       else if (tagName === 'LI') {
         classList.add('cur');
         const item = target.parentElement!.parentElement!;
-        item.classList.add('active');
+        if (!classList.contains('readonly')) {
+          item.classList.add('active');
+        }
         title = target.title;
-        const div = item.querySelector('.ti') as HTMLElement;
-        div.title = title;
-        div.querySelector('b')!.className = title;
+        if (!classList.contains('readonly')) {
+          const div = item.querySelector('.ti') as HTMLElement;
+          div.title = title;
+          div.querySelector('b')!.className = title;
+        }
       }
       console.log(title)
       listener.dom.classList.remove('hand');
       listener.dom.classList.remove('text');
+
+      const prev = listener.state;
       if (title === 'select') {
         listener.state = state.NORMAL;
       }
@@ -166,9 +181,15 @@ class Toolbar {
         listener.dom.classList.add('hand');
       }
       else if (title === 'text') {
-        const prev = listener.state;
         listener.state = state.ADD_TEXT;
         listener.dom.classList.add('text');
+      }
+      else if (title === 'union' || title === 'subtract' || title === 'intersect' || title === 'xor') {
+        listener.state = state.NORMAL;
+        listener.boolGroup(title);
+      }
+      else if (title === 'flatten') {}
+      if (prev !== listener.state) {
         listener.emit(Listener.STATE_CHANGE, prev, listener.state);
       }
     });
@@ -186,10 +207,35 @@ class Toolbar {
         dom.querySelector('.active')?.classList.remove('active');
         dom.querySelector('.sel.item')?.classList.add('active');
         dom.querySelector('.sel.item .ti')?.setAttribute('title', 'select');
-        // @ts-ignore
-        dom.querySelector('.sel.item .ti b')?.className = 'select';
+        const b = dom.querySelector('.sel.item .ti b') as HTMLElement;
+        if (b) {
+          b.className = 'select';
+        }
         dom.querySelector('.sel.item li.cur')?.classList.remove('cur');
         dom.querySelector('.sel.item li[title="select"]')?.classList.add('cur');
+      }
+    });
+
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+      let count = 0;
+      for (let i = 0, len = nodes.length; i < len; i++) {
+        const node = nodes[i];
+        if (node instanceof Polyline || node instanceof ShapeGroup) {
+          count++;
+        }
+        else {
+          break;
+        }
+      }
+      if (count > 1 && count === nodes.length) {
+        bool.querySelectorAll('.disable').forEach(item => {
+          item.classList.remove('disable');
+        });
+      }
+      else {
+        bool.querySelectorAll('.ti, li[title]').forEach(item => {
+          item.classList.add('disable');
+        });
       }
     });
   }
