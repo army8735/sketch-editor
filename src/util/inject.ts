@@ -43,16 +43,20 @@ function offscreenCanvas(
   o.height = height;
   o.style.position = 'fixed';
   o.style.left = '9999px';
+  o.style.top = '0px';
   o.style.webkitFontSmoothing = 'antialiased'; // offscreenCanvas无效
+  o.style.mozOsxFontSmoothing = 'grayscale';
   if (config.debug) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
+  }
+  // 字体抗锯齿需要添加到DOM
+  if (o instanceof HTMLCanvasElement) {
+    document.body.appendChild(o);
     if (key) {
       o.setAttribute('key', key);
     }
   }
-  // 字体抗锯齿需要添加到DOM
-  document.body.appendChild(o);
   const ctx = o.getContext('2d', contextAttributes);
   if (!ctx) {
     inject.error('Total canvas memory use exceeds the maximum limit');
@@ -71,7 +75,9 @@ function offscreenCanvas(
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
-      document.body.removeChild(o);
+      if (o instanceof HTMLCanvasElement) {
+        document.body.removeChild(o);
+      }
       o = null;
     },
   };
