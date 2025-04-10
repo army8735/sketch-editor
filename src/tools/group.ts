@@ -10,8 +10,9 @@ export function group(nodes: Node[], group?: Group | ShapeGroup) {
   if (!nodes.length) {
     return;
   }
-  sortTempIndex(nodes);
-  const first = nodes[0];
+  const nodes2 = nodes.slice(0);
+  sortTempIndex(nodes2);
+  const first = nodes2[0];
   const parent = first.parent!;
   // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
   if (parent instanceof Group) {
@@ -34,13 +35,13 @@ export function group(nodes: Node[], group?: Group | ShapeGroup) {
   group.fixedPosAndSize = true;
   // 插入到first的后面
   first.insertAfter(group);
-  for (let i = 0, len = nodes.length; i < len; i++) {
-    const item = nodes[i];
+  for (let i = 0, len = nodes2.length; i < len; i++) {
+    const item = nodes2[i];
     migrate(group, item);
   }
   // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
-  for (let i = 0, len = nodes.length; i < len; i++) {
-    group.appendChild(nodes[i]);
+  for (let i = 0, len = nodes2.length; i < len; i++) {
+    group.appendChild(nodes2[i]);
   }
   group.fixedPosAndSize = false;
   if (parent instanceof Group) {
