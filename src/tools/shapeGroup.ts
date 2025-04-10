@@ -8,12 +8,12 @@ import { JStyle } from '../format';
 
 // 和group操作类似，但多了设置bool样式步骤
 export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperation'], shapeGroup?: ShapeGroup) {
-  const geoms = nodes.filter(item => item instanceof Polyline || item instanceof ShapeGroup);
-  if (geoms.length < 2) {
+  if (!nodes.length) {
     return;
   }
-  sortTempIndex(geoms);
-  const first = geoms[0];
+  const nodes2 = nodes.slice(0);
+  sortTempIndex(nodes2);
+  const first = nodes2[0];
   const parent = first.parent!;
   if (!shapeGroup) {
     shapeGroup = new ShapeGroup({
@@ -25,16 +25,28 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
         top: '0%',
         right: '0%',
         bottom: '0%',
+        fillEnable: [true],
+        fillOpacity: [1],
       },
     }, []);
   }
-  group(geoms, shapeGroup);
-  for (let i = 1, len = geoms.length; i < len; i++) {
-    const node = geoms[i];
-    node.updateStyle({
-      booleanOperation,
-    });
+  group(nodes2, shapeGroup);
+  let isFirst = true;
+  for (let i = 0, len = nodes2.length; i < len; i++) {
+    const node = nodes2[i];
+    if (isFirst && (node instanceof Polyline || node instanceof ShapeGroup)) {
+      isFirst = false;
+      shapeGroup.updateStyle({
+        fill: [node.getCssStyle().fill[0]],
+      });
+    }
+    if (i) {
+      node.updateStyle({
+        booleanOperation,
+      });
+    }
   }
+  shapeGroup.clearPointsUpward();
   return shapeGroup;
 }
 
