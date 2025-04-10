@@ -176,7 +176,7 @@ export default class Tree {
         const res = genNodeTree(group, group.struct.lv, true);
         const dd = document.createElement('dd');
         dd.appendChild(res);
-        nodes[i].reverse().forEach(item => {
+        nodes[i].slice(0).reverse().forEach(item => {
           const uuid = item.props.uuid;
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -222,7 +222,7 @@ export default class Tree {
           if (dl) {
             const dd = dl.parentElement!;
             const fragment = document.createDocumentFragment();
-            items.reverse().forEach(item => {
+            items.slice(0).reverse().forEach(item => {
               const uuid2 = item.props.uuid;
               if (uuid2) {
                 const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);

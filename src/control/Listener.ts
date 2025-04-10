@@ -1503,7 +1503,7 @@ export default class Listener extends Event {
         this.selected.push(group);
         this.select.updateSelect(this.selected);
         this.history.addCommand(new GroupCommand(nodes, data, group as Group));
-        this.emit(Listener.GROUP_NODE, [group], [nodes]);
+        this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
       }
     }
   }
