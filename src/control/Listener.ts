@@ -1526,19 +1526,19 @@ export default class Listener extends Event {
     }
   }
 
-  boolGroup(booleanOperation: 'none' | 'union' | 'subtract' | 'intersect' | 'xor', nodes = this.selected) {
+  boolGroup(booleanOperation: JStyle['booleanOperation'], nodes = this.selected) {
     if (nodes.length) {
     }
   }
 
   unBoolGroup() {}
 
-  mask(value: 'none' | 'outline' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with', nodes = this.selected) {
+  mask(value: JStyle['maskMode'], nodes = this.selected) {
     if (nodes.length) {
       const prevs: MaskModeStyle[] = [];
       nodes.forEach(item => {
         const prev = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with']
-          [item.computedStyle.maskMode] as 'none' | 'outline' | 'alpha' | 'gray' | 'alpha-with' | 'gray-with';
+          [item.computedStyle.maskMode] as JStyle['maskMode'];
         prevs.push({
           maskMode: prev,
         });
@@ -1598,7 +1598,7 @@ export default class Listener extends Event {
     }
   }
 
-  visible(value: 'visible' | 'hidden', nodes = this.selected) {
+  visible(value: JStyle['visibility'], nodes = this.selected) {
     if (nodes.length) {
       const prevs: ('visible' | 'hidden')[] = [];
       nodes.forEach(item => {
@@ -2163,7 +2163,7 @@ export default class Listener extends Event {
         }
         else if (c instanceof MaskModeCommand) {
           const maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with']
-            [nodes[0].computedStyle.maskMode] as 'none' | 'outline' | 'alpha' | 'alpha-with' | 'gray-with';
+            [nodes[0].computedStyle.maskMode] as JStyle['maskMode'];
           this.emit(Listener.MASK_NODE, nodes, maskMode);
         }
         else if (c instanceof BreakMaskCommand) {

@@ -11,6 +11,7 @@ import {
   JPolyline,
   JRich,
   JShapeGroup,
+  JStyle,
   JText,
   Point,
   TAG_NAME,
@@ -321,7 +322,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
       strikethrough,
     } = layer.text.style || {};
     const { justification } = layer.text.paragraphStyle || {};
-    const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
+    const textDecoration: JStyle['textDecoration'] = [];
     if (underline) {
       textDecoration.push('underline');
     }
@@ -389,7 +390,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
               'justify-right': 'right',
               justify: 'justify',
               'justify-all': 'justify',
-            }[justification] as 'left' | 'center' | 'right' | 'justify'
+            }[justification] as JStyle['textAlign']
             : 'left',
           color: color2rgbaInt(textStyle.color),
           textDecoration: textStyle.textDecoration,
@@ -450,7 +451,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             res.color = convertColor(style.fillColor || fillColor);
           }
           if (style.strikethrough !== undefined || style.underline !== undefined) {
-            const textDecoration: Array<'none' | 'underline' | 'line-through' | 'lineThrough'> = [];
+            const textDecoration: JStyle['textDecoration'] = [];
             if (style.strikethrough) {
               textDecoration.push('lineThrough');
             }
@@ -473,7 +474,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
               'justify-right': 'right',
               justify: 'justify',
               'justify-all': 'justify',
-            }[style.justification] as 'left' | 'center' | 'right' | 'justify';
+            }[style.justification] as JStyle['textAlign'];
           }
         }
         rich.push(res);
