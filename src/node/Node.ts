@@ -1465,14 +1465,6 @@ class Node extends Event {
     style.translateY.u = translateY.u;
   }
 
-  checkShapeChange() {
-    // 空实现，Geom/ShapeGroup覆盖
-  }
-
-  clearPoints() {
-    // 空实现，ShapeGroup覆盖
-  }
-
   // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
   protected adjustPosAndSizeSelf(
     dx1: number,

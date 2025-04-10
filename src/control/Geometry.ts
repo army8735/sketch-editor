@@ -1,5 +1,6 @@
 import Polyline from '../node/geom/Polyline';
 import Root from '../node/Root';
+import ShapeGroup from '../node/geom/ShapeGroup';
 import Listener from './Listener';
 import { getPointWithDByApprox, sliceBezier } from '../math/bezier';
 import { CORNER_STYLE, CURVE_MODE } from '../style/define';
@@ -332,6 +333,10 @@ export default class Geometry {
           getPointsAbsByDsp(item, pts);
           item.reflectPoints(pts);
           item.refresh();
+          let parent = item.parent;
+          if (parent instanceof ShapeGroup) {
+            parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+          }
           this.updateVertex(item);
           nodes.push(item);
           data.push(pts);
@@ -375,6 +380,10 @@ export default class Geometry {
         getPointsAbsByDsp(node, p);
         node.reflectPoints(p);
         node.refresh();
+        let parent = node.parent;
+        if (parent instanceof ShapeGroup) {
+          parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+        }
         this.updateVertex(node);
         listener.emit(Listener.POINT_NODE, [node], [[p]]);
       }

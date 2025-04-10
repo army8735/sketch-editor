@@ -52,6 +52,7 @@ import Polyline from '../node/geom/Polyline';
 import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 import PointCommand, { PointData } from '../history/PointCommand';
 import ShapeGroup from '../node/geom/ShapeGroup';
+import BoolGroupCommand from '../history/BoolGroupCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1493,22 +1494,22 @@ export default class Listener extends Event {
     this.emit(Listener.SELECT_NODE, res.slice(0));
   }
 
-  group(nodes = this.selected) {
+  group() {
+    const nodes = this.selected.slice(0);
     if (nodes.length) {
       const { data, group } = GroupCommand.operate(nodes);
       if (group) {
-        const nodes = this.selected.slice(0);
         this.selected.splice(0);
         this.selected.push(group);
         this.select.updateSelect(this.selected);
         this.history.addCommand(new GroupCommand(nodes, data, group as Group));
-        this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
+        this.emit(Listener.GROUP_NODE, [group], [nodes]);
       }
     }
   }
 
-  unGroup(nodes = this.selected) {
-    const groups = nodes.filter(item => item instanceof Group);
+  unGroup() {
+    const groups = this.selected.filter(item => item instanceof Group);
     if (groups.length) {
       const res = UnGroupCommand.operate(groups);
       this.selected.splice(0);
@@ -1526,8 +1527,17 @@ export default class Listener extends Event {
     }
   }
 
-  boolGroup(booleanOperation: JStyle['booleanOperation'], nodes = this.selected) {
+  boolGroup(booleanOperation: JStyle['booleanOperation']) {
+    const nodes = this.selected.slice(0);
     if (nodes.length) {
+      const { data, shapeGroup } = BoolGroupCommand.operate(nodes, booleanOperation);
+      if (shapeGroup) {
+        this.selected.splice(0);
+        this.selected.push(shapeGroup);
+        this.select.updateSelect(this.selected);
+        this.history.addCommand(new BoolGroupCommand(nodes, data, shapeGroup, booleanOperation));
+        this.emit(Listener.BOOL_GROUP_NODE, [shapeGroup], [nodes], [booleanOperation]);
+      }
     }
   }
 
@@ -2383,6 +2393,8 @@ export default class Listener extends Event {
   static ADD_NODE = 'ADD_NODE';
   static GROUP_NODE = 'GROUP_NODE';
   static UN_GROUP_NODE = 'UN_GROUP_NODE';
+  static BOOL_GROUP_NODE = 'BOOL_GROUP_NODE';
+  static UN_BOOL_GROUP_NODE = 'UN_BOOL_GROUP_NODE';
   static MASK_NODE = 'MASK_NODE';
   static BREAK_MASK_NODE = 'BREAK_MASK_NODE';
   static RENAME_NODE = 'RENAME_NODE';

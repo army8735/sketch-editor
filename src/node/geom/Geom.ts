@@ -63,14 +63,6 @@ class Geom extends Node {
     );
   }
 
-  override checkShapeChange() {
-    let parent = this.parent;
-    while (parent && parent.isShapeGroup) {
-      parent.clearPoints();
-      parent = parent.parent;
-    }
-  }
-
   override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
     if (lv >= RefreshLevel.REPAINT) {
       this.coords = undefined;

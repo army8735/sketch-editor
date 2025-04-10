@@ -138,16 +138,17 @@ class ShapeGroup extends Group {
     this.coords = undefined;
   }
 
-  override clearPoints() {
+  clearPoints() {
     this.coords = undefined;
     this._rect = undefined;
     this._bbox = undefined;
     this.clearCache(true);
   }
 
-  override checkShapeChange() {
+  clearPointsUpward() {
+    this.clearPoints();
     let parent = this.parent;
-    while (parent && parent.isShapeGroup) {
+    while (parent && parent instanceof ShapeGroup) {
       parent.clearPoints();
       parent = parent.parent;
     }
