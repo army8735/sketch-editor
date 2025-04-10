@@ -2233,6 +2233,7 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof PointCommand) {
+          this.emit(Listener.SELECT_NODE, nodes);
           // 编辑态特殊，强制选择这些节点
           if (this.state === state.EDIT_GEOM) {
             this.geometry.show(nodes as Polyline[]);
