@@ -10,7 +10,6 @@ import {
   drawShadow,
   drawTextureCache,
   drawTint,
-  texture2Blob,
 } from '../gl/webgl';
 import { boxesForGauss, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isConvexPolygonOverlapRect, isRectsOverlap } from '../math/geom';
@@ -2423,7 +2422,7 @@ function genMask(
   // alpha/outline/alpha-with
   else {
     const maskProgram = programs.maskProgram;
-    const clipProgram = programs.clipProgram;
+    // const clipProgram = programs.clipProgram;
     // alpha直接应用，汇总乘以mask本身的alpha即可，outline则用轮廓做为mask，其本身无alpha
     for (let i = 0, len = listS.length; i < len; i++) {
       const { bbox, w, h, t } = listS[i];
@@ -2442,7 +2441,7 @@ function genMask(
         frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
       }
       // outline先绘制底部
-      if ([MASK.OUTLINE].includes(maskMode)) {
+      if ([MASK.OUTLINE].includes(maskMode) && node.computedStyle.visibility === VISIBILITY.VISIBLE && node.computedStyle.opacity) {
         gl.useProgram(program);
         drawTextureCache(
           gl,
