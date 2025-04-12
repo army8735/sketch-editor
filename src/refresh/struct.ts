@@ -1259,3 +1259,10 @@ function renderOverlay(
   gl.disableVertexAttribArray(a_position);
   gl.useProgram(program);
 }
+
+export default {
+  renderWebgl,
+  renderWebglNoTile,
+  renderWebglTile,
+  renderOverlay,
+};
