@@ -49,7 +49,7 @@ const boolHtml = `
   <li title="intersect" class="disable readonly"><b class="intersect"></b><span class="name">交集</span></li>
   <li title="xor" class="disable readonly"><b class="xor"></b><span class="name">差集</span></li>
   <li class="split"></li>
-  <li title="flatten" class="disable readonly"><b class="flatten"></b><span class="name">拼合</span></li>
+  <li title="flatten" class="disable readonly"><b class="flatten"></b><span class="name">路径合并</span></li>
 </ul>
 `;
 
@@ -141,11 +141,6 @@ class Toolbar {
       }
 
       let title = '';
-      // bool和mask等按钮不是按下长期生效的
-      if (!classList.contains('readonly')) {
-        dom.querySelector('.active')?.classList.remove('active');
-        dom.querySelector('.cur')?.classList.remove('cur');
-      }
       // 直接显示的icon切换
       if (tagName === 'DIV') {
         const item = target.parentElement!;
@@ -156,9 +151,10 @@ class Toolbar {
       }
       // 下拉中的icon切换
       else if (tagName === 'LI') {
-        classList.add('cur');
         const item = target.parentElement!.parentElement!;
+        // bool和mask等按钮不是按下长期生效的
         if (!classList.contains('readonly')) {
+          classList.add('cur');
           item.classList.add('active');
         }
         title = target.title;
@@ -216,18 +212,23 @@ class Toolbar {
       }
     });
 
-    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
-      let count = 0;
+    listener.on(Listener.SELECT_NODE, (nodes: (Node | Polyline | ShapeGroup)[]) => {
+      let countPolyline = 0;
+      let countShapeGroup = 0;
+      // polyline的布尔运算
       for (let i = 0, len = nodes.length; i < len; i++) {
         const node = nodes[i];
-        if (node instanceof Polyline || node instanceof ShapeGroup) {
-          count++;
+        if (node instanceof Polyline) {
+          countPolyline++;
+        }
+        else if (node instanceof ShapeGroup) {
+          countShapeGroup++;
         }
         else {
           break;
         }
       }
-      if (count > 1 && count === nodes.length) {
+      if (countPolyline > 1 && countPolyline === nodes.length) {
         bool.querySelectorAll('.disable').forEach(item => {
           item.classList.remove('disable');
         });
@@ -236,6 +237,13 @@ class Toolbar {
         bool.querySelectorAll('.ti, li[title]').forEach(item => {
           item.classList.add('disable');
         });
+      }
+      // shapeGroup的路径合并
+      if (countShapeGroup && countShapeGroup === nodes.length) {
+        bool.querySelector('li[title="flatten"]')?.classList.remove('disable');
+      }
+      else {
+        bool.querySelector('li[title="flatten"]')?.classList.add('disable');
       }
     });
   }

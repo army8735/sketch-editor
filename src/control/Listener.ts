@@ -1504,6 +1504,7 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.history.addCommand(new GroupCommand(nodes, data, group as Group));
         this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
+        this.emit(Listener.SELECT_NODE, [group]);
       }
     }
   }
@@ -1524,6 +1525,7 @@ export default class Listener extends Event {
         }
       })));
       this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups);
+      this.emit(Listener.SELECT_NODE, res.map(item => item.children.slice(0)));
     }
   }
 
@@ -1537,6 +1539,7 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.history.addCommand(new BoolGroupCommand(nodes, data, shapeGroup, booleanOperation));
         this.emit(Listener.BOOL_GROUP_NODE, [shapeGroup], [nodes], [booleanOperation]);
+        this.emit(Listener.SELECT_NODE, [shapeGroup]);
       }
     }
   }

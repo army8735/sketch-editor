@@ -171,7 +171,7 @@ export default class Tree {
       });
       this.select(selected || nodes);
     });
-    listener.on(Listener.GROUP_NODE, (groups: Group[], nodes: Node[][]) => {
+    listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
       groups.forEach((group, i) => {
         const res = genNodeTree(group, group.struct.lv, true);
         const dd = document.createElement('dd');
