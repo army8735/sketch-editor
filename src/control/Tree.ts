@@ -214,7 +214,7 @@ export default class Tree {
       });
       this.select(groups);
     });
-    listener.on(Listener.UN_GROUP_NODE, (nodes: Node[][], groups: Group[]) => {
+    listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][], groups: Group[]) => {
       nodes.forEach((items, i) => {
         const uuid = groups[i].props.uuid;
         if (uuid) {

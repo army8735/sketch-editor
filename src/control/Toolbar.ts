@@ -141,24 +141,27 @@ class Toolbar {
       }
 
       let title = '';
-      // 直接显示的icon切换
+      // bool和mask等按钮不是按下长期生效的，点击后原本激活的依旧保持激活
+      if (!classList.contains('readonly')) {
+        dom.querySelector('.active')?.classList.remove('active');
+        dom.querySelector('.cur')?.classList.remove('cur');
+      }
+      // 面板上直接显示的icon切换
       if (tagName === 'DIV') {
+        title = target.title;
         const item = target.parentElement!;
         if (!classList.contains('readonly')) {
           item.classList.add('active');
         }
-        title = target.title;
       }
       // 下拉中的icon切换
       else if (tagName === 'LI') {
+        title = target.title;
         const item = target.parentElement!.parentElement!;
-        // bool和mask等按钮不是按下长期生效的
+        // bool和mask等按钮
         if (!classList.contains('readonly')) {
           classList.add('cur');
           item.classList.add('active');
-        }
-        title = target.title;
-        if (!classList.contains('readonly')) {
           const div = item.querySelector('.ti') as HTMLElement;
           div.title = title;
           div.querySelector('b')!.className = title;
@@ -184,7 +187,9 @@ class Toolbar {
         listener.state = state.NORMAL;
         listener.boolGroup(title);
       }
-      else if (title === 'flatten') {}
+      else if (title === 'flatten') {
+        listener.state = state.NORMAL;
+      }
       if (prev !== listener.state) {
         listener.emit(Listener.STATE_CHANGE, prev, listener.state);
       }

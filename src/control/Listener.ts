@@ -1494,8 +1494,7 @@ export default class Listener extends Event {
     this.emit(Listener.SELECT_NODE, res.slice(0));
   }
 
-  group() {
-    const nodes = this.selected.slice(0);
+  group(nodes = this.selected) {
     if (nodes.length) {
       const { data, group } = GroupCommand.operate(nodes);
       if (group) {
@@ -1504,13 +1503,12 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.history.addCommand(new GroupCommand(nodes, data, group as Group));
         this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
-        this.emit(Listener.SELECT_NODE, [group]);
       }
     }
   }
 
-  unGroup() {
-    const groups = this.selected.filter(item => item instanceof Group);
+  unGroup(nodes = this.selected) {
+    const groups = nodes.filter(item => item instanceof Group);
     if (groups.length) {
       const res = UnGroupCommand.operate(groups);
       this.selected.splice(0);
@@ -1525,12 +1523,10 @@ export default class Listener extends Event {
         }
       })));
       this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups);
-      this.emit(Listener.SELECT_NODE, res.map(item => item.children.slice(0)));
     }
   }
 
-  boolGroup(booleanOperation: JStyle['booleanOperation']) {
-    const nodes = this.selected.slice(0);
+  boolGroup(booleanOperation: JStyle['booleanOperation'], nodes = this.selected) {
     if (nodes.length) {
       const { data, shapeGroup } = BoolGroupCommand.operate(nodes, booleanOperation);
       if (shapeGroup) {
@@ -1539,12 +1535,13 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.history.addCommand(new BoolGroupCommand(nodes, data, shapeGroup, booleanOperation));
         this.emit(Listener.BOOL_GROUP_NODE, [shapeGroup], [nodes], [booleanOperation]);
-        this.emit(Listener.SELECT_NODE, [shapeGroup]);
       }
     }
   }
 
   unBoolGroup() {}
+
+  flatten() {}
 
   mask(value: JStyle['maskMode'], nodes = this.selected) {
     if (nodes.length) {
