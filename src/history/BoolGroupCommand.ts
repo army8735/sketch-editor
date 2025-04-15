@@ -4,6 +4,9 @@ import Container from '../node/Container';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import { boolGroup } from '../tools/shapeGroup';
 import { JStyle } from '../format';
+import Group from '../node/Group';
+import { migrate } from '../tools/node';
+import { appendWithIndex } from '../tools/container';
 
 export type BoolGroupData = {
   parent: Container;
@@ -22,9 +25,31 @@ class BoolGroupCommand extends AbstractCommand {
     this.booleanOperation = booleanOperation;
   }
 
-  execute() {}
+  execute() {
+    BoolGroupCommand.operate(this.nodes, this.booleanOperation, this.shapeGroup);
+  }
 
-  undo() {}
+  undo() {
+    // 先迁移，再恢复尺寸并删除组，和UnGroup不同子节点有原本自身的位置
+    this.nodes.forEach((node, i) => {
+      const { parent, index } = this.data[i];
+      if (parent instanceof Group) {
+        parent.fixedPosAndSize = true;
+      }
+      migrate(parent, node);
+      node.props.index = index;
+      appendWithIndex(parent, node);
+    });
+    this.data.forEach((item) => {
+      const { parent } = item;
+      // 可能都是一个parent下的，防止重复
+      if (parent instanceof Group && parent.fixedPosAndSize) {
+        parent.fixedPosAndSize = false;
+        parent.checkPosSizeSelf();
+      }
+    });
+    this.shapeGroup.remove();
+  }
 
   static operate(nodes: Node[], booleanOperation: JStyle['booleanOperation'], sg?: ShapeGroup) {
     const data: BoolGroupData[] = nodes.map(item => {

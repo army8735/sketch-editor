@@ -1541,8 +1541,6 @@ export default class Listener extends Event {
     }
   }
 
-  unBoolGroup() {}
-
   flatten() {}
 
   mask(value: JStyle['maskMode'], nodes = this.selected) {
@@ -2057,7 +2055,11 @@ export default class Listener extends Event {
       if (c) {
         const nodes = c.nodes.slice(0);
         // 移除和编组特殊自己判断，矢量编辑不需要，其它自动更新selected
-        if (!(c instanceof RemoveCommand) && !(c instanceof GroupCommand) && !(c instanceof PointCommand)) {
+        if (!(c instanceof RemoveCommand)
+          && !(c instanceof GroupCommand)
+          && !(c instanceof BoolGroupCommand)
+          && !(c instanceof PointCommand)
+        ) {
           const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
@@ -2171,6 +2173,20 @@ export default class Listener extends Event {
             this.selected.push(...nodes);
             this.updateActive();
             this.emit(Listener.GROUP_NODE, nodes, c.data.map(item => item.children.slice(0)));
+          }
+        }
+        else if (c instanceof BoolGroupCommand) {
+          if (this.shiftKey) {
+            this.selected.splice(0);
+            this.selected.push(c.shapeGroup);
+            this.updateActive();
+            this.emit(Listener.GROUP_NODE, [c.shapeGroup], [nodes]);
+          }
+          else {
+            this.selected.splice(0);
+            this.selected.push(...nodes);
+            this.updateActive();
+            this.emit(Listener.UN_GROUP_NODE, [nodes], [c.shapeGroup]);
           }
         }
         else if (c instanceof MaskModeCommand) {
