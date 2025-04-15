@@ -1504,6 +1504,7 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.history.addCommand(new GroupCommand(nodes2.slice(0), data, group as Group));
         this.emit(Listener.GROUP_NODE, [group], [nodes2.slice(0)]);
+        this.emit(Listener.SELECT_NODE, [group]);
       }
     }
   }
@@ -1524,6 +1525,11 @@ export default class Listener extends Event {
         }
       })));
       this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups.slice(0));
+      const nodes: Node[] = [];
+      res.forEach(item => {
+        nodes.push(...item.children);
+      });
+      this.emit(Listener.SELECT_NODE, nodes);
     }
   }
 
@@ -1537,6 +1543,7 @@ export default class Listener extends Event {
         this.select.updateSelect(this.selected);
         this.history.addCommand(new BoolGroupCommand(nodes2, data, shapeGroup, booleanOperation));
         this.emit(Listener.BOOL_GROUP_NODE, [shapeGroup], [nodes2.slice(0)], [booleanOperation]);
+        this.emit(Listener.SELECT_NODE, [shapeGroup]);
       }
     }
   }
@@ -1632,8 +1639,8 @@ export default class Listener extends Event {
     }
   }
 
-  rename(nodes = this.selected, names: string[]) {
-    this.history.addCommand(new RenameCommand(nodes.slice(0), nodes.map((item, i) => {
+  rename(names: string[], nodes = this.selected) {
+    const data = nodes.map((item, i) => {
       const prev = item.props.name || '';
       const next = names[i];
       item.props.name = next;
@@ -1642,11 +1649,12 @@ export default class Listener extends Event {
         prev,
         next,
       };
-    })));
-    this.emit(Listener.RENAME_NODE, nodes.slice(0));
+    });
+    this.history.addCommand(new RenameCommand(nodes.slice(0), data));
+    this.emit(Listener.RENAME_NODE, nodes.slice(0), data);
   }
 
-  remove(nodes = this.selected) {
+  removeNode(nodes = this.selected) {
     if (nodes.length) {
       const sel = nodes.slice(0);
       const nodes2 = nodes.splice(0).map(item => {
@@ -1778,7 +1786,7 @@ export default class Listener extends Event {
       }
       // 忽略输入时
       else if (!isInput && !this.options.disabled?.remove) {
-        this.remove();
+        this.removeNode();
       }
     }
     // space
@@ -2019,7 +2027,7 @@ export default class Listener extends Event {
       if (!isInput) {
         this.clone();
         if ((keyCode === 88 || code === 'KeyX') && !this.options.disabled?.remove) {
-          this.remove();
+          this.removeNode();
         }
       }
     }
@@ -2054,64 +2062,57 @@ export default class Listener extends Event {
       }
       if (c) {
         const nodes = c.nodes.slice(0);
-        // 移除和编组特殊自己判断，矢量编辑不需要，其它自动更新selected
-        if (!(c instanceof RemoveCommand)
+        const olds = this.selected.slice(0);
+        let needUpdateSelectEvent = false;
+        // 添加、移除、编组、矢量（涉及到state和先后顺序）特殊自己判断，其它自动更新selected
+        if (!(c instanceof AddCommand)
+          && !(c instanceof RemoveCommand)
           && !(c instanceof GroupCommand)
+          && !(c instanceof UnGroupCommand)
           && !(c instanceof BoolGroupCommand)
           && !(c instanceof PointCommand)
         ) {
-          const olds = this.selected.slice(0);
           this.selected.splice(0);
           this.selected.push(...nodes);
-          if (!(c instanceof FillCommand) && this.state !== state.EDIT_GRADIENT) {
-            this.updateActive();
-          }
-          // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
-          if (!(c instanceof AddCommand)) {
-            if (nodes.length !== olds.length) {
-              this.emit(Listener.SELECT_NODE, nodes);
-            }
-            else {
-              for (let i = 0, len = nodes.length; i < len; i++) {
-                if (nodes[i] !== olds[i]) {
-                  this.emit(Listener.SELECT_NODE, nodes);
-                  break;
-                }
-              }
-            }
-          }
+          this.updateActive();
+          needUpdateSelectEvent = true;
         }
         // 触发更新的还是目前已选的而不是undo里的数据
         if (c instanceof MoveCommand) {
-          this.emit(Listener.MOVE_NODE, nodes);
+          this.emit(Listener.MOVE_NODE, nodes.slice(0));
         }
         else if (c instanceof ResizeCommand) {
-          this.emit(Listener.RESIZE_NODE, nodes);
+          this.emit(Listener.RESIZE_NODE, nodes.slice(0));
         }
         else if (c instanceof RemoveCommand) {
           if (this.shiftKey) {
             this.selected.splice(0);
             this.select.hideSelect();
-            this.emit(Listener.REMOVE_NODE, nodes);
+            this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+            this.emit(Listener.SELECT_NODE, []);
           }
           else {
             this.selected = nodes.map((item, i) => {
               return c.data[i].selected || item;
             });
             this.updateActive();
-            this.emit(Listener.ADD_NODE, nodes, this.selected.slice(0));
+            this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
         else if (c instanceof AddCommand) {
           if (this.shiftKey) {
-            this.selected = nodes.slice(0);
+            this.selected.splice(0);
+            this.selected.push(...nodes)
             this.updateActive();
-            this.emit(Listener.ADD_NODE, nodes);
+            this.emit(Listener.ADD_NODE, nodes.slice(0));
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
           else {
             this.selected.splice(0);
             this.select.hideSelect();
-            this.emit(Listener.REMOVE_NODE, nodes);
+            this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+            this.emit(Listener.SELECT_NODE, []);
             // 新增后撤销
             if (this.state === state.EDIT_TEXT) {
               this.state = state.NORMAL;
@@ -2121,28 +2122,28 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof RotateCommand) {
-          this.emit(Listener.ROTATE_NODE, nodes);
+          this.emit(Listener.ROTATE_NODE, nodes.slice(0));
         }
         else if (c instanceof OpacityCommand) {
-          this.emit(Listener.OPACITY_NODE, nodes);
+          this.emit(Listener.OPACITY_NODE, nodes.slice(0));
         }
         else if (c instanceof ShadowCommand) {
-          this.emit(Listener.SHADOW_NODE, nodes);
+          this.emit(Listener.SHADOW_NODE, nodes.slice(0));
         }
         else if (c instanceof BlurCommand) {
-          this.emit(Listener.BLUR_NODE, nodes);
+          this.emit(Listener.BLUR_NODE, nodes.slice(0));
         }
         else if (c instanceof ColorAdjustCommand) {
-          this.emit(Listener.COLOR_ADJUST_NODE, nodes);
+          this.emit(Listener.COLOR_ADJUST_NODE, nodes.slice(0));
         }
         else if (c instanceof VerticalAlignCommand) {
-          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes);
+          this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, nodes, c.data);
+          this.emit(Listener.FILL_NODE, nodes.slice(0), c.data);
         }
         else if (c instanceof StrokeCommand) {
-          this.emit(Listener.STROKE_NODE, nodes);
+          this.emit(Listener.STROKE_NODE, nodes.slice(0));
         }
         // 编组之类强制更新并选择节点
         else if (c instanceof GroupCommand) {
@@ -2150,13 +2151,15 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.selected.push(c.group);
             this.updateActive();
-            this.emit(Listener.GROUP_NODE, [c.group], [nodes]);
+            this.emit(Listener.GROUP_NODE, [c.group], [nodes.slice(0)]);
+            this.emit(Listener.SELECT_NODE, [c.group]);
           }
           else {
             this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
-            this.emit(Listener.UN_GROUP_NODE, [nodes], [c.group]);
+            this.emit(Listener.UN_GROUP_NODE, [nodes.slice(0)], [c.group]);
+            this.emit(Listener.SELECT_NODE, [nodes.slice(0)]);
           }
         }
         else if (c instanceof UnGroupCommand) {
@@ -2167,12 +2170,18 @@ export default class Listener extends Event {
             });
             this.updateActive();
             this.emit(Listener.UN_GROUP_NODE, nodes.map((item, i) => c.data[i].children.slice(0)), c.nodes.slice(0));
+            const nodes2: Node[] = [];
+            nodes.forEach((item, i) => {
+              nodes2.push(...c.data[i].children);
+            });
+            this.emit(Listener.SELECT_NODE, nodes2);
           }
           else {
             this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
-            this.emit(Listener.GROUP_NODE, nodes, c.data.map(item => item.children.slice(0)));
+            this.emit(Listener.GROUP_NODE, nodes.slice(0), c.data.map(item => item.children.slice(0)));
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
         else if (c instanceof BoolGroupCommand) {
@@ -2180,45 +2189,47 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.selected.push(c.shapeGroup);
             this.updateActive();
-            this.emit(Listener.GROUP_NODE, [c.shapeGroup], [nodes]);
+            this.emit(Listener.BOOL_GROUP_NODE, [c.shapeGroup], [nodes.slice(0)]);
+            this.emit(Listener.SELECT_NODE, [c.shapeGroup]);
           }
           else {
             this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
-            this.emit(Listener.UN_GROUP_NODE, [nodes], [c.shapeGroup]);
+            this.emit(Listener.UN_BOOL_GROUP_NODE, [nodes.slice(0)], [c.shapeGroup]);
+            this.emit(Listener.SELECT_NODE, [nodes.slice(0)]);
           }
         }
         else if (c instanceof MaskModeCommand) {
           const maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with']
             [nodes[0].computedStyle.maskMode] as JStyle['maskMode'];
-          this.emit(Listener.MASK_NODE, nodes, maskMode);
+          this.emit(Listener.MASK_NODE, nodes.slice(0), maskMode);
         }
         else if (c instanceof BreakMaskCommand) {
           const breakMask = nodes[0].computedStyle.breakMask;
-          this.emit(Listener.BREAK_MASK_NODE, nodes, breakMask);
+          this.emit(Listener.BREAK_MASK_NODE, nodes.slice(0), breakMask);
         }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {
-            this.emit(Listener.TEXT_ALIGN_NODE, nodes);
+            this.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
           }
           else if (c.type === RichCommand.COLOR) {
-            this.emit(Listener.COLOR_NODE, nodes);
+            this.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
           else if (c.type === RichCommand.FONT_FAMILY) {
-            this.emit(Listener.FONT_FAMILY_NODE, nodes);
+            this.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
           }
           else if (c.type === RichCommand.FONT_SIZE) {
-            this.emit(Listener.FONT_SIZE_NODE, nodes);
+            this.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
           }
           else if (c.type === RichCommand.LINE_HEIGHT) {
-            this.emit(Listener.LINE_HEIGHT_NODE, nodes);
+            this.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
           }
           else if (c.type === RichCommand.PARAGRAPH_SPACING) {
-            this.emit(Listener.PARAGRAPH_SPACING_NODE, nodes);
+            this.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
           }
           else if (c.type === RichCommand.LETTER_SPACING) {
-            this.emit(Listener.LETTER_SPACING_NODE, nodes);
+            this.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
           }
           // 更新光标
           if (this.state === state.EDIT_TEXT) {
@@ -2251,10 +2262,10 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof PointCommand) {
-          this.emit(Listener.SELECT_NODE, nodes);
+          this.emit(Listener.SELECT_NODE, nodes.slice(0));
           // 编辑态特殊，强制选择这些节点
           if (this.state === state.EDIT_GEOM) {
-            this.geometry.show(nodes as Polyline[]);
+            this.geometry.show(nodes.slice(0) as Polyline[]);
           }
           // 非编辑态选择它们
           else {
@@ -2262,16 +2273,32 @@ export default class Listener extends Event {
             this.selected.push(...nodes);
             this.updateActive();
           }
-          this.emit(Listener.POINT_NODE, nodes);
+          this.emit(Listener.POINT_NODE, nodes.slice(0));
         }
         else if (c instanceof RenameCommand) {
-          this.emit(Listener.RENAME_NODE, nodes);
+          this.emit(Listener.RENAME_NODE, nodes.slice(0));
         }
         else if (c instanceof LockCommand) {
-          this.emit(Listener.LOCK_NODE, nodes);
+          this.emit(Listener.LOCK_NODE, nodes.slice(0));
         }
         else if (c instanceof VisibleCommand) {
-          this.emit(Listener.VISIBLE_NODE, nodes);
+          this.emit(Listener.VISIBLE_NODE, nodes.slice(0));
+        }
+        // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
+        // 定义无论是人工导致还是命令导致，选择节点一旦发生变更，统一触发SELECT事件
+        // SELECT事件最后触发，主要是需要再ADD、GROUP之后
+        if (needUpdateSelectEvent) {
+          if (nodes.length !== olds.length) {
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
+          }
+          else {
+            for (let i = 0, len = nodes.length; i < len; i++) {
+              if (nodes[i] !== olds[i]) {
+                this.emit(Listener.SELECT_NODE, nodes.slice(0));
+                break;
+              }
+            }
+          }
         }
       }
     }

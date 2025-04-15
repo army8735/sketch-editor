@@ -18,9 +18,9 @@ class Panel {
 
     listener.on([
       Listener.SELECT_NODE,
-      Listener.ADD_NODE,
-      Listener.GROUP_NODE,
-      Listener.BOOL_GROUP_NODE,
+      // Listener.ADD_NODE,
+      // Listener.GROUP_NODE,
+      // Listener.BOOL_GROUP_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
@@ -28,13 +28,13 @@ class Panel {
       }
       this.show(nodes);
     });
-    listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][]) => {
-      const list: Node[] = [];
-      nodes.forEach(item => {
-        list.push(...item);
-      });
-      this.show(list);
-    });
+    // listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][]) => {
+    //   const list: Node[] = [];
+    //   nodes.forEach(item => {
+    //     list.push(...item);
+    //   });
+    //   this.show(list);
+    // });
     listener.on(Listener.REMOVE_NODE, () => {
       if (this.silence) {
         return;

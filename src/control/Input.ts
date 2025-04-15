@@ -215,7 +215,7 @@ export default class Input {
       if (last && last instanceof TextCommand && last.nodes[0] === this.node) {
         last.undo();
       }
-      this.listener.remove();
+      this.listener.removeNode();
     }
     this.node = undefined;
   }

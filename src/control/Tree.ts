@@ -577,7 +577,7 @@ export default class Tree {
       target.remove();
       name.style.display = 'block';
       if (node) {
-        listener.rename([node], [v]);
+        listener.rename([v], [node]);
       }
     };
 

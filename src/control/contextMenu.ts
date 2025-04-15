@@ -115,12 +115,12 @@ function init(listener: Listener) {
         listener.visible('visible');
       }
       else if (classList.contains('remove')) {
-        listener.remove();
+        listener.removeNode();
       }
       else if (classList.contains('cut') || classList.contains('copy')) {
         listener.clone();
         if (classList.contains('cut') && !listener.options.disabled?.remove) {
-          listener.remove();
+          listener.removeNode();
         }
       }
       else if (classList.contains('paste')) {

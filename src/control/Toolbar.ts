@@ -217,7 +217,11 @@ class Toolbar {
       }
     });
 
-    listener.on(Listener.SELECT_NODE, (nodes: (Node | Polyline | ShapeGroup)[]) => {
+    listener.on([
+      Listener.SELECT_NODE,
+      Listener.BOOL_GROUP_NODE,
+      Listener.UN_BOOL_GROUP_NODE,
+    ], (nodes: (Node | Polyline | ShapeGroup)[]) => {console.log(nodes);
       let countPolyline = 0;
       let countShapeGroup = 0;
       // polyline的布尔运算
