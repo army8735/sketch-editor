@@ -1498,11 +1498,12 @@ export default class Listener extends Event {
     if (nodes.length) {
       const { data, group } = GroupCommand.operate(nodes);
       if (group) {
+        const nodes2 = nodes.slice(0);
         this.selected.splice(0);
         this.selected.push(group);
         this.select.updateSelect(this.selected);
-        this.history.addCommand(new GroupCommand(nodes, data, group as Group));
-        this.emit(Listener.GROUP_NODE, [group], [nodes.slice(0)]);
+        this.history.addCommand(new GroupCommand(nodes2.slice(0), data, group as Group));
+        this.emit(Listener.GROUP_NODE, [group], [nodes2.slice(0)]);
       }
     }
   }
@@ -1522,7 +1523,7 @@ export default class Listener extends Event {
           children: item.children,
         }
       })));
-      this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups);
+      this.emit(Listener.UN_GROUP_NODE, res.map(item => item.children.slice(0)), groups.slice(0));
     }
   }
 
@@ -1530,11 +1531,12 @@ export default class Listener extends Event {
     if (nodes.length) {
       const { data, shapeGroup } = BoolGroupCommand.operate(nodes, booleanOperation);
       if (shapeGroup) {
+        const nodes2 = nodes.slice(0);
         this.selected.splice(0);
         this.selected.push(shapeGroup);
         this.select.updateSelect(this.selected);
-        this.history.addCommand(new BoolGroupCommand(nodes, data, shapeGroup, booleanOperation));
-        this.emit(Listener.BOOL_GROUP_NODE, [shapeGroup], [nodes], [booleanOperation]);
+        this.history.addCommand(new BoolGroupCommand(nodes2, data, shapeGroup, booleanOperation));
+        this.emit(Listener.BOOL_GROUP_NODE, [shapeGroup], [nodes2.slice(0)], [booleanOperation]);
       }
     }
   }
