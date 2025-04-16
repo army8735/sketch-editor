@@ -1491,7 +1491,6 @@ export default class Listener extends Event {
     }
     const res = getFrameNodes(root, 0, 0, root.width, root.height, meta);
     this.active(res);
-    this.emit(Listener.SELECT_NODE, res.slice(0));
   }
 
   group(nodes = this.selected) {
@@ -1685,6 +1684,7 @@ export default class Listener extends Event {
       this.select.hideSelect();
       this.history.addCommand(new RemoveCommand(nodes2, data));
       this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
+      this.emit(Listener.SELECT_NODE, []);
     }
   }
 
@@ -2197,7 +2197,7 @@ export default class Listener extends Event {
             this.selected.push(...nodes);
             this.updateActive();
             this.emit(Listener.UN_BOOL_GROUP_NODE, [nodes.slice(0)], [c.shapeGroup]);
-            this.emit(Listener.SELECT_NODE, [nodes.slice(0)]);
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
         else if (c instanceof MaskModeCommand) {

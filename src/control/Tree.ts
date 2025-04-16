@@ -212,7 +212,7 @@ export default class Tree {
           }
         }
       });
-      this.select(groups);
+      // this.select(groups); SELECT事件后续触发
     });
     listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][], groups: Group[]) => {
       nodes.forEach((items, i) => {
@@ -253,7 +253,7 @@ export default class Tree {
       nodes.forEach(item => {
         list.push(...item);
       });
-      this.select(list);
+      // this.select(list); SELECT事件后续触发
     });
     listener.on(Listener.MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
