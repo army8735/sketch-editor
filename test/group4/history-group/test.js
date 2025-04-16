@@ -24,7 +24,7 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[1,"编组"]')
       .assert.elementPresent('#tree span.name[title="编组"]')
-      .assert.domPropertyEquals('#tree dl[uuid="85C14D12-2771-450C-B30E-E99B42E96154"]', 'lv', '4')
+      .assert.elementPresent('#tree dl[uuid="85C14D12-2771-450C-B30E-E99B42E96154"][lv="4"]')
 
       .keys(browser.Keys.META)
       .keys('z')
@@ -34,7 +34,7 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[[3,"矩形"],[3,"椭圆形"]]')
       .assert.not.elementPresent('#tree span.name[title="编组"]')
-      .assert.domPropertyEquals('#tree dl[uuid="85C14D12-2771-450C-B30E-E99B42E96154"]', 'lv', '3')
+      .assert.elementPresent('#tree dl[uuid="85C14D12-2771-450C-B30E-E99B42E96154"][lv="3"]')
 
       .keys(browser.Keys.META)
       .keys(browser.Keys.SHIFT)
