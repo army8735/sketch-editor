@@ -13,7 +13,7 @@ module.exports = {
       .mouseButtonDown(0)
       .moveToElement('canvas', 20, 20)
       .mouseButtonUp(0)
-      .assert.cssClassPresent('#toolbar .bool .ti', ['ti readonly'])
+      .assert.cssClassPresent('#toolbar .bool .ti', ['ti', 'readonly'])
       .assert.cssClassPresent('#toolbar .bool .sub li', ['readonly'])
 
       .click('#toolbar .bool .ti .union')
