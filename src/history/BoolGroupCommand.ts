@@ -11,6 +11,7 @@ import { appendWithIndex } from '../tools/container';
 export type BoolGroupData = {
   parent: Container;
   index: number;
+  booleanOperation: JStyle['booleanOperation']; // 记录原先的样式undo恢复
 };
 
 class BoolGroupCommand extends AbstractCommand {
@@ -32,13 +33,16 @@ class BoolGroupCommand extends AbstractCommand {
   undo() {
     // 先迁移，再恢复尺寸并删除组，和UnGroup不同子节点有原本自身的位置
     this.nodes.forEach((node, i) => {
-      const { parent, index } = this.data[i];
+      const { parent, index, booleanOperation } = this.data[i];
       if (parent instanceof Group) {
         parent.fixedPosAndSize = true;
       }
       migrate(parent, node);
       node.props.index = index;
       appendWithIndex(parent, node);
+      node.updateStyle({
+        booleanOperation,
+      });
     });
     this.data.forEach((item) => {
       const { parent } = item;
@@ -56,6 +60,7 @@ class BoolGroupCommand extends AbstractCommand {
       return {
         parent: item.parent!,
         index: item.props.index,
+        booleanOperation: (['none', 'union', 'subtract', 'intersect', 'xor'][item.computedStyle.booleanOperation] || 'none') as JStyle['booleanOperation'],
       };
     });
     return {
