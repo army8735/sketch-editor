@@ -333,19 +333,19 @@ export default {
           listener.select.showSelectNotUpdate();
         }
       };
-      picker.onChange = (color: any) => {
-        const cur = type.querySelector('.cur') as HTMLElement;
-        const classList = cur.classList;
-        if (classList.contains('color')) {
-          onInput(color.rgba);
-        }
-        else {
-          (data as ComputedGradient).stops[index].color = color.rgba;
-          bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
-          onInput(data);
-        }
-      };
     }
+    picker.onChange = (color: any) => {
+      const cur = type.querySelector('.cur') as HTMLElement;
+      const classList = cur.classList;
+      if (classList.contains('color')) {
+        onInput(color.rgba);
+      }
+      else {
+        (data as ComputedGradient).stops[index].color = color.rgba;
+        bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
+        onInput(data);
+      }
+    };
     if (Array.isArray(data)) {
       const c = color2rgbaStr(data);
       picker.setColor(c, true);

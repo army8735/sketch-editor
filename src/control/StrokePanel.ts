@@ -149,7 +149,7 @@ class StrokePanel extends Panel {
 
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
-        const stroke = this.nodes[0].computedStyle.stroke[0];
+        const stroke = this.nodes[0].computedStyle.stroke[index];
         const onChange = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
           this.silence = true;
           const style = (line.querySelector('.pick') as HTMLElement).style;
