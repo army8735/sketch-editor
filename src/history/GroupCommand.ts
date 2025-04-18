@@ -26,6 +26,7 @@ class GroupCommand extends AbstractCommand {
   }
 
   undo() {
+    this.group.fixedPosAndSize = true;
     // 先迁移，再恢复尺寸并删除组，和UnGroup不同子节点有原本自身的位置
     this.nodes.forEach((node, i) => {
       const { parent, index } = this.data[i];
@@ -44,6 +45,7 @@ class GroupCommand extends AbstractCommand {
         parent.checkPosSizeSelf();
       }
     });
+    this.group.fixedPosAndSize = false;
     this.group.remove();
   }
 

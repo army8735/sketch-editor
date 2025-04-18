@@ -54,7 +54,14 @@ export function unBoolGroup(shapeGroup: ShapeGroup) {
   return unGroup(shapeGroup);
 }
 
+export function flatten(shapeGroup: ShapeGroup) {
+  if (shapeGroup.isDestroyed) {
+    return;
+  }
+}
+
 export default {
   boolGroup,
   unBoolGroup,
+  flatten,
 };

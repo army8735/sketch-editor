@@ -53,6 +53,7 @@ import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 import PointCommand, { PointData } from '../history/PointCommand';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import BoolGroupCommand from '../history/BoolGroupCommand';
+import FlattenCommand from '../history/FlattenCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1547,7 +1548,12 @@ export default class Listener extends Event {
     }
   }
 
-  flatten() {}
+  flatten(nodes = this.selected) {
+    const nodes2 = nodes.filter(item => item instanceof ShapeGroup);
+    if (nodes2.length) {
+      FlattenCommand.operate(nodes2);
+    }
+  }
 
   mask(value: JStyle['maskMode'], nodes = this.selected) {
     if (nodes.length) {
@@ -2159,7 +2165,7 @@ export default class Listener extends Event {
             this.selected.push(...nodes);
             this.updateActive();
             this.emit(Listener.UN_GROUP_NODE, [nodes.slice(0)], [c.group]);
-            this.emit(Listener.SELECT_NODE, [nodes.slice(0)]);
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
         else if (c instanceof UnGroupCommand) {

@@ -22,6 +22,8 @@ import RenameCommand from './RenameCommand';
 import LockCommand from './LockCommand';
 import ConstrainProportionCommand from './ConstrainProportionCommand';
 import PointCommand from './PointCommand';
+import BoolGroupCommand from './BoolGroupCommand';
+import FlattenCommand from './FlattenCommand';
 
 export default {
   History,
@@ -48,4 +50,6 @@ export default {
   LockCommand,
   ConstrainProportionCommand,
   PointCommand,
+  BoolGroupCommand,
+  FlattenCommand,
 };

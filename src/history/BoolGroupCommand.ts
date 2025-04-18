@@ -31,6 +31,7 @@ class BoolGroupCommand extends AbstractCommand {
   }
 
   undo() {
+    this.shapeGroup.fixedPosAndSize = true;
     // 先迁移，再恢复尺寸并删除组，和UnGroup不同子节点有原本自身的位置
     this.nodes.forEach((node, i) => {
       const { parent, index, booleanOperation } = this.data[i];
@@ -52,6 +53,7 @@ class BoolGroupCommand extends AbstractCommand {
         parent.checkPosSizeSelf();
       }
     });
+    this.shapeGroup.fixedPosAndSize = false;
     this.shapeGroup.remove();
   }
 

@@ -189,6 +189,7 @@ class Toolbar {
       }
       else if (title === 'flatten') {
         listener.state = state.NORMAL;
+        listener.flatten();
       }
       if (prev !== listener.state) {
         listener.emit(Listener.STATE_CHANGE, prev, listener.state);

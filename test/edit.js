@@ -211,6 +211,12 @@ function toPoint() {
 
 window.onerror = function(e) {
   input.value = e.toString();
+  requestAnimationFrame(function () {
+    input.value = e.toString();
+  });
+  setTimeout(function () {
+    input.value = e.toString();
+  });
 }
 
 fetch('./sketch.sketch')

@@ -322,12 +322,19 @@ class Node extends Event {
     }
     node.willMount();
     parent.insertStruct(node, i + 1);
+    let didMount = false;
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      if (!sync && node.page) {
+      // 仅sync会提前发生
+      if (!didMount) {
+        didMount = true;
         node.didMount();
       }
       cb && cb(sync);
     });
+    if (!didMount) {
+      didMount = true;
+      node.didMount();
+    }
   }
 
   // 插入node到自己前面
@@ -358,12 +365,19 @@ class Node extends Event {
     }
     node.willMount();
     parent.insertStruct(node, i);
+    let didMount = false;
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      if (!sync && node.page) {
+      // 仅sync会提前发生
+      if (!didMount) {
+        didMount = true;
         node.didMount();
       }
       cb && cb(sync);
     });
+    if (!didMount) {
+      didMount = true;
+      node.didMount();
+    }
   }
 
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
