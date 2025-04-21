@@ -1551,7 +1551,14 @@ export default class Listener extends Event {
   flatten(nodes = this.selected) {
     const nodes2 = nodes.filter(item => item instanceof ShapeGroup);
     if (nodes2.length) {
-      FlattenCommand.operate(nodes2);
+      const data = FlattenCommand.operate(nodes2);
+      this.selected.splice(0);
+      const nodes = data.map(item => item.node);
+      this.selected.push(...nodes);
+      this.select.updateSelect(this.selected);
+      this.history.addCommand(new FlattenCommand(nodes2, data));
+      this.emit(Listener.FLATTEN_NODE, nodes.slice(0), nodes2.slice(0));
+      this.emit(Listener.SELECT_NODE, nodes.slice(0));
     }
   }
 
@@ -2447,6 +2454,8 @@ export default class Listener extends Event {
   static UN_GROUP_NODE = 'UN_GROUP_NODE';
   static BOOL_GROUP_NODE = 'BOOL_GROUP_NODE';
   static UN_BOOL_GROUP_NODE = 'UN_BOOL_GROUP_NODE';
+  static FLATTEN_NODE = 'FLATTEN_NODE';
+  static UN_FLATTEN_NODE = 'UN_FLATTEN_NODE';
   static MASK_NODE = 'MASK_NODE';
   static BREAK_MASK_NODE = 'BREAK_MASK_NODE';
   static RENAME_NODE = 'RENAME_NODE';

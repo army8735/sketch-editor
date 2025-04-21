@@ -734,7 +734,7 @@ class Polyline extends Geom {
   }
 
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
-  checkPointsChange(isMount = false) {
+  checkPointsChange(noUpwards = false) {
     const rect = this._rect || this.rect;
     const dx1 = rect[0],
       dy1 = rect[1],
@@ -780,7 +780,7 @@ class Polyline extends Geom {
       }
       this.adjustPoints(-dx1, -dy1);
       // mount过程自上而下检查不要重复向上
-      if (!isMount) {
+      if (!noUpwards) {
         this.checkPosSizeUpward();
       }
       this.coords = undefined;

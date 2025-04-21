@@ -5,6 +5,8 @@ import { sortTempIndex } from './node';
 import { group, unGroup } from './group';
 import Polyline from '../node/geom/Polyline';
 import { JStyle } from '../format';
+import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
+import inject from '../util/inject';
 
 // 和group操作类似，但多了设置bool样式步骤
 export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperation'], shapeGroup?: ShapeGroup) {
@@ -25,24 +27,30 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
         top: '0%',
         right: '0%',
         bottom: '0%',
-        fillEnable: [true],
-        fillOpacity: [1],
       },
     }, []);
   }
   group(nodes2, shapeGroup);
-  let isFirst = true;
   for (let i = 0, len = nodes2.length; i < len; i++) {
     const node = nodes2[i];
-    if (isFirst && (node instanceof Polyline || node instanceof ShapeGroup)) {
-      isFirst = false;
-      shapeGroup.updateStyle({
-        fill: [node.getCssStyle().fill[0]],
-      });
-    }
     if (i) {
       node.updateStyle({
         booleanOperation,
+      });
+    }
+    else {
+      // 应用首个的fill等样式
+      const cssStyle = node.getCssStyle();
+      shapeGroup.updateStyle({
+        fill: cssStyle.fill,
+        fillEnable: cssStyle.fillEnable,
+        fillOpacity: cssStyle.fillOpacity,
+        shadow: cssStyle.shadow,
+        shadowEnable: cssStyle.shadowEnable,
+        innerShadow: cssStyle.innerShadow,
+        innerShadowEnable: cssStyle.innerShadowEnable,
+        blur: cssStyle.blur,
+        mixBlendMode: cssStyle.mixBlendMode,
       });
     }
   }
@@ -50,18 +58,86 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
   return shapeGroup;
 }
 
-export function unBoolGroup(shapeGroup: ShapeGroup) {
-  return unGroup(shapeGroup);
-}
-
 export function flatten(shapeGroup: ShapeGroup) {
+  const { parent, width, height, coords, computedStyle } = shapeGroup;
   if (shapeGroup.isDestroyed) {
+    inject.error('ShapeGroup is destroyed');
     return;
   }
+  if (!coords) {
+    inject.error('Unsupported flatten data');
+    return;
+  }
+  const cssStyle = shapeGroup.getCssStyle();
+  const style = {
+    left: computedStyle.left * 100 / parent!.width + '%',
+    top: computedStyle.top * 100 / parent!.height + '%',
+    right: computedStyle.right * 100 / parent!.width + '%',
+    bottom: computedStyle.bottom * 100 / parent!.height + '%',
+    fill: cssStyle.fill,
+    fillEnable: cssStyle.fillEnable,
+    fillOpacity: cssStyle.fillOpacity,
+    shadow: cssStyle.shadow,
+    shadowEnable: cssStyle.shadowEnable,
+    innerShadow: cssStyle.innerShadow,
+    innerShadowEnable: cssStyle.innerShadowEnable,
+    blur: cssStyle.blur,
+    mixBlendMode: cssStyle.mixBlendMode,
+  };
+  let node: Polyline | ShapeGroup;
+  // 多区域还是shapeGroup但无布尔运算
+  if (coords.length > 1) {
+    node = new ShapeGroup({
+      uuid: uuid.v4(),
+      name: '形状',
+      index: shapeGroup.props.index,
+      style,
+    }, []);
+  }
+  else {
+    const cs = coords[0];
+    const points = cs.slice(0, cs.length - 1).map((item, i) => {
+      const o = item.slice(-2);
+      const x = o[0] / width;
+      const y = o[1] / height;
+      const next = cs[i + 1];
+      const hasCurveFrom = next.length > 2;
+      const hasCurveTo = item.length > 4;
+      return {
+        x,
+        y,
+        cornerRadius: 0,
+        cornerStyle: CORNER_STYLE.ROUNDED,
+        curveMode: CURVE_MODE.STRAIGHT,
+        fx: hasCurveFrom ? next[0] / width : x,
+        fy: hasCurveFrom ? next[1] / height : y,
+        tx: hasCurveTo ? item[2] / width : x,
+        ty: hasCurveTo ? item[3] / height : y,
+        hasCurveFrom,
+        hasCurveTo,
+      };
+    });
+    node = new Polyline({
+      uuid: uuid.v4(),
+      name: '矢量',
+      index: shapeGroup.props.index,
+      isClosed: true,
+      points,
+      fixedRadius: 0,
+      pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
+      style,
+    });
+  }
+  shapeGroup.insertAfter(node);
+  shapeGroup.remove();
+  node.coords = undefined;
+  // 只可能是1个区域，0个的话不会出现
+  if (node instanceof Polyline) {
+  }
+  return node;
 }
 
 export default {
   boolGroup,
-  unBoolGroup,
   flatten,
 };
