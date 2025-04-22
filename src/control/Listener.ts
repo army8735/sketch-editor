@@ -1551,7 +1551,7 @@ export default class Listener extends Event {
   flatten(nodes = this.selected) {
     const nodes2 = nodes.filter(item => item instanceof ShapeGroup);
     if (nodes2.length) {
-      const data = FlattenCommand.operate(nodes2);
+      const { data } = FlattenCommand.operate(nodes2);
       this.selected.splice(0);
       const nodes = data.map(item => item.node);
       this.selected.push(...nodes);
@@ -2084,6 +2084,7 @@ export default class Listener extends Event {
           && !(c instanceof UnGroupCommand)
           && !(c instanceof BoolGroupCommand)
           && !(c instanceof PointCommand)
+          && !(c instanceof FlattenCommand)
         ) {
           this.selected.splice(0);
           this.selected.push(...nodes);
@@ -2160,15 +2161,14 @@ export default class Listener extends Event {
         }
         // 编组之类强制更新并选择节点
         else if (c instanceof GroupCommand) {
+          this.selected.splice(0);
           if (this.shiftKey) {
-            this.selected.splice(0);
             this.selected.push(c.group);
             this.updateActive();
             this.emit(Listener.GROUP_NODE, [c.group], [nodes.slice(0)]);
             this.emit(Listener.SELECT_NODE, [c.group]);
           }
           else {
-            this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
             this.emit(Listener.UN_GROUP_NODE, [nodes.slice(0)], [c.group]);
@@ -2176,8 +2176,8 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof UnGroupCommand) {
+          this.selected.splice(0);
           if (this.shiftKey) {
-            this.selected.splice(0);
             nodes.forEach((item, i) => {
               this.selected.push(...c.data[i].children);
             });
@@ -2190,7 +2190,6 @@ export default class Listener extends Event {
             this.emit(Listener.SELECT_NODE, nodes2);
           }
           else {
-            this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
             this.emit(Listener.GROUP_NODE, nodes.slice(0), c.data.map(item => item.children.slice(0)));
@@ -2198,15 +2197,14 @@ export default class Listener extends Event {
           }
         }
         else if (c instanceof BoolGroupCommand) {
+          this.selected.splice(0);
           if (this.shiftKey) {
-            this.selected.splice(0);
             this.selected.push(c.shapeGroup);
             this.updateActive();
             this.emit(Listener.BOOL_GROUP_NODE, [c.shapeGroup], [nodes.slice(0)]);
             this.emit(Listener.SELECT_NODE, [c.shapeGroup]);
           }
           else {
-            this.selected.splice(0);
             this.selected.push(...nodes);
             this.updateActive();
             this.emit(Listener.UN_BOOL_GROUP_NODE, [nodes.slice(0)], [c.shapeGroup]);
@@ -2296,6 +2294,21 @@ export default class Listener extends Event {
         }
         else if (c instanceof VisibleCommand) {
           this.emit(Listener.VISIBLE_NODE, nodes.slice(0));
+        }
+        else if (c instanceof FlattenCommand) {
+          this.selected.splice(0);
+          if (this.shiftKey) {
+            this.selected.push(...nodes);
+            this.updateActive();
+            this.emit(Listener.FLATTEN_NODE, c.data.map(item => item.node), nodes.slice(0));
+            this.emit(Listener.SELECT_NODE, c.data.map(item => item.node));
+          }
+          else {
+            this.selected.push(...nodes);
+            this.updateActive();
+            this.emit(Listener.UN_FLATTEN_NODE, nodes.slice(0), c.data.map(item => item.node));
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
+          }
         }
         // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
         // 定义无论是人工导致还是命令导致，选择节点一旦发生变更，统一触发SELECT事件

@@ -478,7 +478,7 @@ function genTotal(
   bbox[2] = Math.ceil(bbox[2]);
   bbox[3] = Math.ceil(bbox[3]);
   // 单个叶子节点也不需要，就是本身节点的内容
-  if ((!total || node.isShapeGroup) && !force) {
+  if ((!total || (node instanceof ShapeGroup)) && !force) {
     let target = node.textureCache[scaleIndex];
     if ((!target || !target.available) && node.hasContent) {
       node.genTexture(gl, scale, scaleIndex);
@@ -763,8 +763,8 @@ function genFilter(
     contrast,
   } = node.computedStyle;
   const source = node.textureTarget[scaleIndex]!;
-  // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素
-  if (node.isGroup) {
+  // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素，shapeGroup是普通的矢量填充
+  if (node instanceof Group && !(node instanceof ShapeGroup)) {
     if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
       res = genTint(
         gl,

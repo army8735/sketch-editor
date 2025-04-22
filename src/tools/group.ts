@@ -18,6 +18,7 @@ export function group(nodes: Node[], group?: Group | ShapeGroup) {
   if (parent instanceof Group) {
     parent.fixedPosAndSize = true;
   }
+  // 首次命令没有生成，后续redo时就有了
   if (!group) {
     // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
     group = new Group({

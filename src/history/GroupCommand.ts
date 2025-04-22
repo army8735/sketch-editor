@@ -8,7 +8,7 @@ import { appendWithIndex } from '../tools/container';
 
 export type GroupData = {
   parent: Container;
-  index: number;
+  index: number; // 冗余
 };
 
 class GroupCommand extends AbstractCommand {
@@ -34,7 +34,7 @@ class GroupCommand extends AbstractCommand {
         parent.fixedPosAndSize = true;
       }
       migrate(parent, node);
-      node.props.index = index;
+      node.props.index = index; // 理论不变，冗余
       appendWithIndex(parent, node);
     });
     this.data.forEach((item) => {

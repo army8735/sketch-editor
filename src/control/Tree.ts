@@ -453,6 +453,21 @@ export default class Tree {
         }
       });
     });
+    listener.on([Listener.FLATTEN_NODE, Listener.UN_FLATTEN_NODE], (add: Node[], remove: Node[]) => {
+      add.forEach((item, i) => {
+        const res = genNodeTree(item, item.struct.lv);
+        const dd = document.createElement('dd');
+        dd.appendChild(res);
+        const uuid = remove[i].props.uuid;
+        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+        // 肯定有，替换掉
+        if (dl) {
+          const sibling = dl.parentElement!;
+          sibling.before(dd);
+          sibling.remove();
+        }
+      });
+    });
 
     dom.addEventListener('selectstart', (e) => {
       e.preventDefault();

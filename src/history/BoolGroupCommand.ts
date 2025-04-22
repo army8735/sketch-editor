@@ -10,7 +10,7 @@ import { appendWithIndex } from '../tools/container';
 
 export type BoolGroupData = {
   parent: Container;
-  index: number;
+  index: number; // 冗余
   booleanOperation: JStyle['booleanOperation']; // 记录原先的样式undo恢复
 };
 
@@ -39,7 +39,7 @@ class BoolGroupCommand extends AbstractCommand {
         parent.fixedPosAndSize = true;
       }
       migrate(parent, node);
-      node.props.index = index;
+      node.props.index = index; // 理论不变，冗余
       appendWithIndex(parent, node);
       node.updateStyle({
         booleanOperation,

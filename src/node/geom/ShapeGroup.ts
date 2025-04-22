@@ -592,7 +592,6 @@ class ShapeGroup extends Group {
         ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
         if (Array.isArray(s)) {
           ctx.strokeStyle = color2rgbaStr(s);
-          ctx.lineWidth = strokeWidth[i];
         }
         else {
           if (s.t === GRADIENT.LINEAR) {

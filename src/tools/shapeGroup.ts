@@ -17,6 +17,7 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
   sortTempIndex(nodes2);
   const first = nodes2[0];
   const parent = first.parent!;
+  // 首次命令没有生成，后续redo时就有了
   if (!shapeGroup) {
     shapeGroup = new ShapeGroup({
       uuid: uuid.v4(),
@@ -30,6 +31,7 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
       },
     }, []);
   }
+  // 复用group，后续改booleanOperation样式
   group(nodes2, shapeGroup);
   for (let i = 0, len = nodes2.length; i < len; i++) {
     const node = nodes2[i];
@@ -45,6 +47,15 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
         fill: cssStyle.fill,
         fillEnable: cssStyle.fillEnable,
         fillOpacity: cssStyle.fillOpacity,
+        stroke: cssStyle.stroke,
+        strokeEnable: cssStyle.strokeEnable,
+        strokeWidth: cssStyle.strokeWidth,
+        strokePosition: cssStyle.strokePosition,
+        strokeMode: cssStyle.strokeMode,
+        strokeDasharray: cssStyle.strokeDasharray,
+        strokeLinecap: cssStyle.strokeLinecap,
+        strokeLinejoin: cssStyle.strokeLinejoin,
+        strokeMiterlimit: cssStyle.strokeMiterlimit,
         shadow: cssStyle.shadow,
         shadowEnable: cssStyle.shadowEnable,
         innerShadow: cssStyle.innerShadow,
@@ -58,7 +69,7 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
   return shapeGroup;
 }
 
-export function flatten(shapeGroup: ShapeGroup) {
+export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
   const { parent, width, height, coords, computedStyle } = shapeGroup;
   if (shapeGroup.isDestroyed) {
     inject.error('ShapeGroup is destroyed');
@@ -77,6 +88,15 @@ export function flatten(shapeGroup: ShapeGroup) {
     fill: cssStyle.fill,
     fillEnable: cssStyle.fillEnable,
     fillOpacity: cssStyle.fillOpacity,
+    stroke: cssStyle.stroke,
+    strokeEnable: cssStyle.strokeEnable,
+    strokeWidth: cssStyle.strokeWidth,
+    strokePosition: cssStyle.strokePosition,
+    strokeMode: cssStyle.strokeMode,
+    strokeDasharray: cssStyle.strokeDasharray,
+    strokeLinecap: cssStyle.strokeLinecap,
+    strokeLinejoin: cssStyle.strokeLinejoin,
+    strokeMiterlimit: cssStyle.strokeMiterlimit,
     shadow: cssStyle.shadow,
     shadowEnable: cssStyle.shadowEnable,
     innerShadow: cssStyle.innerShadow,
@@ -87,12 +107,13 @@ export function flatten(shapeGroup: ShapeGroup) {
   let node: Polyline | ShapeGroup;
   // 多区域还是shapeGroup但无布尔运算
   if (coords.length > 1) {
-    node = new ShapeGroup({
+    node = ps || new ShapeGroup({
       uuid: uuid.v4(),
       name: '形状',
       index: shapeGroup.props.index,
       style,
     }, []);
+    coords.forEach(item => {});
   }
   else {
     const cs = coords[0];
@@ -117,7 +138,7 @@ export function flatten(shapeGroup: ShapeGroup) {
         hasCurveTo,
       };
     });
-    node = new Polyline({
+    node = ps || new Polyline({
       uuid: uuid.v4(),
       name: '矢量',
       index: shapeGroup.props.index,
@@ -131,9 +152,6 @@ export function flatten(shapeGroup: ShapeGroup) {
   shapeGroup.insertAfter(node);
   shapeGroup.remove();
   node.coords = undefined;
-  // 只可能是1个区域，0个的话不会出现
-  if (node instanceof Polyline) {
-  }
   return node;
 }
 
