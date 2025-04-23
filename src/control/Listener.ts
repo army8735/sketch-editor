@@ -2298,7 +2298,7 @@ export default class Listener extends Event {
         else if (c instanceof FlattenCommand) {
           this.selected.splice(0);
           if (this.shiftKey) {
-            this.selected.push(...nodes);
+            this.selected.push(...c.data.map(item => item.node));
             this.updateActive();
             this.emit(Listener.FLATTEN_NODE, c.data.map(item => item.node), nodes.slice(0));
             this.emit(Listener.SELECT_NODE, c.data.map(item => item.node));
