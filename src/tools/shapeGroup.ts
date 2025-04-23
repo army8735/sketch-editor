@@ -47,6 +47,7 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
         fill: cssStyle.fill,
         fillEnable: cssStyle.fillEnable,
         fillOpacity: cssStyle.fillOpacity,
+        fillMode: cssStyle.fillMode,
         stroke: cssStyle.stroke,
         strokeEnable: cssStyle.strokeEnable,
         strokeWidth: cssStyle.strokeWidth,
@@ -88,6 +89,7 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
     fill: cssStyle.fill,
     fillEnable: cssStyle.fillEnable,
     fillOpacity: cssStyle.fillOpacity,
+    fillMode: cssStyle.fillMode,
     stroke: cssStyle.stroke,
     strokeEnable: cssStyle.strokeEnable,
     strokeWidth: cssStyle.strokeWidth,
@@ -107,37 +109,28 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
   let node: Polyline | ShapeGroup;
   // 多区域还是shapeGroup但无布尔运算
   if (coords.length > 1) {
+    const children = coords.map((cs, i) => {
+      const points = coords2Points(cs, width, height);
+      return new Polyline({
+        uuid: uuid.v4(),
+        name: '路径' + (i + 1),
+        index: shapeGroup.props.index,
+        isClosed: true,
+        points,
+        fixedRadius: 0,
+        pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
+        style,
+      });
+    });
     node = ps || new ShapeGroup({
       uuid: uuid.v4(),
       name: '形状',
       index: shapeGroup.props.index,
       style,
-    }, []);
-    coords.forEach(item => {});
+    }, children);
   }
   else {
-    const cs = coords[0];
-    const points = cs.slice(0, cs.length - 1).map((item, i) => {
-      const o = item.slice(-2);
-      const x = o[0] / width;
-      const y = o[1] / height;
-      const next = cs[i + 1];
-      const hasCurveFrom = next.length > 2;
-      const hasCurveTo = item.length > 4;
-      return {
-        x,
-        y,
-        cornerRadius: 0,
-        cornerStyle: CORNER_STYLE.ROUNDED,
-        curveMode: CURVE_MODE.STRAIGHT,
-        fx: hasCurveFrom ? next[0] / width : x,
-        fy: hasCurveFrom ? next[1] / height : y,
-        tx: hasCurveTo ? item[2] / width : x,
-        ty: hasCurveTo ? item[3] / height : y,
-        hasCurveFrom,
-        hasCurveTo,
-      };
-    });
+    const points = coords2Points(coords[0], width, height);
     node = ps || new Polyline({
       uuid: uuid.v4(),
       name: '矢量',
@@ -153,6 +146,30 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
   shapeGroup.remove();
   node.coords = undefined;
   return node;
+}
+
+function coords2Points(cs: number[][], width: number, height: number) {
+  return cs.slice(0, cs.length - 1).map((item, i) => {
+    const o = item.slice(-2);
+    const x = o[0] / width;
+    const y = o[1] / height;
+    const next = cs[i + 1];
+    const hasCurveFrom = next.length > 2;
+    const hasCurveTo = item.length > 4;
+    return {
+      x,
+      y,
+      cornerRadius: 0,
+      cornerStyle: CORNER_STYLE.ROUNDED,
+      curveMode: CURVE_MODE.STRAIGHT,
+      fx: hasCurveFrom ? next[0] / width : x,
+      fy: hasCurveFrom ? next[1] / height : y,
+      tx: hasCurveTo ? item[2] / width : x,
+      ty: hasCurveTo ? item[3] / height : y,
+      hasCurveFrom,
+      hasCurveTo,
+    };
+  });
 }
 
 export default {

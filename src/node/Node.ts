@@ -1199,10 +1199,13 @@ class Node extends Event {
     });
     res.fill = computedStyle.fill.map(item => getCssFillStroke(item, this.width, this.height));
     res.fillRule = ['nonzero', 'evenodd'][computedStyle.fillRule];
+    res.fillMode = computedStyle.fillMode;
     res.stroke = computedStyle.stroke.map(item => getCssFillStroke(item, this.width, this.height));
     res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
     res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
     res.strokePosition = computedStyle.strokePosition.map(item => getCssStrokePosition(item));
+    res.strokeMiterlimit = computedStyle.strokeMiterlimit;
+    res.strokeDasharray = computedStyle.strokeDasharray;
     res.maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with'][computedStyle.maskMode];
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
       [computedStyle.booleanOperation];
