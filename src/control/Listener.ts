@@ -2298,10 +2298,11 @@ export default class Listener extends Event {
         else if (c instanceof FlattenCommand) {
           this.selected.splice(0);
           if (this.shiftKey) {
-            this.selected.push(...c.data.map(item => item.node));
+            const nodes2 = c.data.map(item => item.node);
+            this.selected.push(...nodes2);
             this.updateActive();
-            this.emit(Listener.FLATTEN_NODE, c.data.map(item => item.node), nodes.slice(0));
-            this.emit(Listener.SELECT_NODE, c.data.map(item => item.node));
+            this.emit(Listener.FLATTEN_NODE, nodes2.slice(0), nodes.slice(0));
+            this.emit(Listener.SELECT_NODE, nodes2.slice(0));
           }
           else {
             this.selected.push(...nodes);
