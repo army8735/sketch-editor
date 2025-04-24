@@ -2,9 +2,9 @@ import * as uuid from 'uuid';
 import Node from '../node/Node';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import { sortTempIndex } from './node';
-import { group, unGroup } from './group';
+import { group } from './group';
 import Polyline from '../node/geom/Polyline';
-import { JStyle } from '../format';
+import { JStyle, Point } from '../format';
 import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
 import inject from '../util/inject';
 
@@ -115,13 +115,19 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
       const points = coords2Points(cs, width, height);
       return new Polyline({
         uuid: uuid.v4(),
-        name: '路径' + (i + 1),
+        name: '路径 ' + (i + 1),
         index: shapeGroup.props.index,
         isClosed: true,
         points,
         fixedRadius: 0,
         pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
-        style,
+        // 初始化相对于shapeGroup满尺寸（和coords一致），didMount()后自适应计算
+        style: Object.assign({}, style, {
+          left: '0%',
+          right: '0%',
+          top: '0%',
+          bottom: '0%',
+        }),
       });
     });
     node = ps || new ShapeGroup({
@@ -157,7 +163,8 @@ function coords2Points(cs: number[][], width: number, height: number) {
     const y = o[1] / height;
     const next = cs[i + 1];
     const hasCurveFrom = next.length > 2;
-    const hasCurveTo = item.length > 4;
+    const prev = i ? item : cs[cs.length - 1];
+    const hasCurveTo = prev.length > 4;
     return {
       x,
       y,
@@ -166,11 +173,11 @@ function coords2Points(cs: number[][], width: number, height: number) {
       curveMode: CURVE_MODE.STRAIGHT,
       fx: hasCurveFrom ? next[0] / width : x,
       fy: hasCurveFrom ? next[1] / height : y,
-      tx: hasCurveTo ? item[2] / width : x,
-      ty: hasCurveTo ? item[3] / height : y,
+      tx: hasCurveTo ? prev[2] / width : x,
+      ty: hasCurveTo ? prev[3] / height : y,
       hasCurveFrom,
       hasCurveTo,
-    };
+    } as Point;
   });
 }
 
