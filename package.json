@@ -57,9 +57,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    "import": "./dist/index.mjs",
-    "default": "./dist/index.js",
-    "style": "./dist/style.css"
+    ".": {
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.js"
+    },
+    "./style": "./dist/style.css"
   },
   "engines": {
     "node": ">=10.0.0"
