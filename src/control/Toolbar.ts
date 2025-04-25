@@ -1,8 +1,10 @@
 import Root from '../node/Root';
-import Listener from './Listener';
-import state from './state';
+import Node from '../node/Node';
 import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
+import Listener from './Listener';
+import state from './state';
+import { BOOLEAN_OPERATION } from '../style/define';
 
 const selHtml = `
 <div class="ti" title="select"><b class="select"></b></div>
@@ -221,7 +223,8 @@ class Toolbar {
     listener.on(Listener.SELECT_NODE, (nodes: (Node | Polyline | ShapeGroup)[]) => {
       let countPolyline = 0;
       let countShapeGroup = 0;
-      // polyline的布尔运算
+      let hasBooleanOperation = false;
+      // polyline的布尔运算显示，需要有2+个且都是polyline
       for (let i = 0, len = nodes.length; i < len; i++) {
         const node = nodes[i];
         if (node instanceof Polyline) {
@@ -229,6 +232,9 @@ class Toolbar {
         }
         else if (node instanceof ShapeGroup) {
           countShapeGroup++;
+          if (!hasBooleanOperation) {
+            hasBooleanOperation = scanShapeGroupChildrenBooleanOperation(node);
+          }
         }
         else {
           break;
@@ -244,8 +250,8 @@ class Toolbar {
           item.classList.add('disable');
         });
       }
-      // shapeGroup的路径合并
-      if (countShapeGroup && countShapeGroup === nodes.length) {
+      // shapeGroup的路径合并显示，需要所选都是shapeGroup，且shapeGroup孩子有布尔运算
+      if (countShapeGroup && countShapeGroup === nodes.length && hasBooleanOperation) {
         bool.querySelector('li[title="flatten"]')?.classList.remove('disable');
       }
       else {
@@ -253,6 +259,27 @@ class Toolbar {
       }
     });
   }
+}
+
+function scanShapeGroupChildrenBooleanOperation(shapeGroup: ShapeGroup) {
+  const scan = (children: Node[]): boolean => {
+    let has = false;
+    for (let i = 0, len = children.length; i < len; i++) {
+      const child = children[i];
+      if (child.computedStyle.booleanOperation !== BOOLEAN_OPERATION.NONE) {
+        has = true;
+        break;
+      }
+      if (child instanceof ShapeGroup) {
+        has = scan(child.children);
+        if (has) {
+          break;
+        }
+      }
+    }
+    return has;
+  };
+  return scan(shapeGroup.children);
 }
 
 export default Toolbar;
