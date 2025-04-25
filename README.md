@@ -23,7 +23,7 @@ npm install sketch-editor
 import sketchEditor from 'sketch-editor';
 
 // css自行修改引入，这里是举例
-import 'sketch-editor/dist/style.css';
+import 'sketch-editor/style';
 
 // 一些建议的手动配置
 sketchEditor.config.tile = true; // 开启tile优化大尺寸大文件（持续改进中）
@@ -60,6 +60,8 @@ sketchEditor
     sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
     // 缩放情况展示
     sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
+    // toolbar展示（持续补齐功能中）
+    sketchEditor.control.initToolbar(root, document.querySelector('#toolbar'), listener);
   });
 ```
 

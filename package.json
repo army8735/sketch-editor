@@ -1,6 +1,6 @@
 {
   "name": "sketch-editor",
-  "version": "0.12.19",
+  "version": "0.13.0",
   "maintainers": [
     {
       "name": "army8735",
@@ -61,7 +61,8 @@
       "import": "./dist/index.mjs",
       "default": "./dist/index.js"
     },
-    "./style": "./dist/style.css"
+    "./style": "./dist/style.css",
+    "./style.css": "./dist/style.css"
   },
   "engines": {
     "node": ">=10.0.0"
