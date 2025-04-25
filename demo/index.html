@@ -144,7 +144,9 @@
     if (!selected) {
       return;
     }
-    sketchEditor.tools.node.toPngBlob(selected).then(blob => {
+    sketchEditor.tools.node.toBitmap(selected, {
+      blob: true,
+    }).then(blob => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       if (typeof link.download === 'string') {
