@@ -29,6 +29,7 @@
       <div class="canvas-c" id="canvasC"></div>
     </div>
     <div class="side" id="side"></div>
+    <div class="toolbar" id="toolbar"></div>
   </div>
 </div>
 <script src="https://gw.alipayobjects.com/os/lib/vanilla-picker/2.12.3/dist/vanilla-picker.min.js"></script>
@@ -110,11 +111,12 @@
         sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
         sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
         sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
+        sketchEditor.control.initToolbar(root, document.querySelector('#toolbar'), listener);
       });
     }
   };
-  const $button = document.querySelector('#save');
-  $button.addEventListener('click', function(e) {
+  const $save = document.querySelector('#save');
+  $save.addEventListener('click', function(e) {
     if (root) {
       root.toSketchFile().then(zip => {
         zip.generateAsync({ type: 'blob' }).then(blob => {

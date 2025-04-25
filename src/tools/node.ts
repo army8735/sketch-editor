@@ -1268,7 +1268,11 @@ export function getBasicInfo(node: Node) {
   return res;
 }
 
-export async function toPngBlob(node: Node) {
+export async function toBitmap(node: Node, opts?: {
+  blob?: boolean,
+  type?: string,
+  quality?: number,
+}) {
   if (node.isDestroyed) {
     return;
   }
@@ -1278,14 +1282,19 @@ export async function toPngBlob(node: Node) {
       if (!root.canvas) {
         return;
       }
-      root.canvas.toBlob(blob => {
-        if (blob) {
-          resolve(blob);
-        }
-        else {
-          reject();
-        }
-      });
+      if (opts?.blob) {
+        root.canvas.toBlob(blob => {
+          if (blob) {
+            resolve(blob);
+          }
+          else {
+            reject();
+          }
+        }, opts?.type, opts?.quality);
+      }
+      else {
+        resolve(root.canvas.toDataURL(opts?.type, opts?.quality));
+      }
     });
   }
   const bbox = node._filterBbox2 || node.filterBbox2;
@@ -1322,14 +1331,19 @@ export async function toPngBlob(node: Node) {
   root2.getCurPageWithCreate().appendChild(clone);
   return new Promise((resolve, reject) => {
     root2.on('REFRESH_COMPLETE', () => {
-      canvas2.toBlob(blob => {
-        if (blob) {
-          resolve(blob);
-        }
-        else {
-          reject();
-        }
-      });
+      if (opts?.blob) {
+        canvas2.toBlob(blob => {
+          if (blob) {
+            resolve(blob);
+          }
+          else {
+            reject();
+          }
+        }, opts?.type, opts?.quality);
+      }
+      else {
+        resolve(canvas2.toDataURL(opts?.type, opts?.quality));
+      }
     });
   });
 }
@@ -1370,5 +1384,5 @@ export default {
   getBasicMatrix,
   getBaseCoords,
   getBasicInfo,
-  toPngBlob,
+  toBitmap,
 };
