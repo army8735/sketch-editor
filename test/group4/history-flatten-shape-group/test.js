@@ -32,8 +32,8 @@ module.exports = {
       .assert.not.elementPresent('#tree span.name[title="1"]')
       .assert.not.elementPresent('#tree span.name[title="2"]')
       .assert.elementPresent('#tree span.name[title="形状"]')
-      .assert.elementPresent('#tree span.name[title="形状 1"]')
-      .assert.elementPresent('#tree span.name[title="形状 2"]')
+      .assert.elementPresent('#tree span.name[title="路径 1"]')
+      .assert.elementPresent('#tree span.name[title="路径 2"]')
       .assert.cssClassPresent('#toolbar .bool .ti', ['ti', 'disable', 'readonly'])
       .assert.cssClassPresent('#toolbar .bool .sub li[title="flatten"]', ['disable', 'readonly'])
 
@@ -45,8 +45,8 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[4,"s"]')
       .assert.not.elementPresent('#tree span.name[title="形状"]')
-      .assert.not.elementPresent('#tree span.name[title="形状 1"]')
-      .assert.not.elementPresent('#tree span.name[title="形状 2"]')
+      .assert.not.elementPresent('#tree span.name[title="路径 1"]')
+      .assert.not.elementPresent('#tree span.name[title="路径 2"]')
       .assert.elementPresent('#tree span.name[title="s"]')
       .assert.elementPresent('#tree span.name[title="1"]')
       .assert.elementPresent('#tree span.name[title="2"]')
@@ -63,8 +63,8 @@ module.exports = {
       .assert.not.elementPresent('#tree span.name[title="1"]')
       .assert.not.elementPresent('#tree span.name[title="2"]')
       .assert.elementPresent('#tree span.name[title="形状"]')
-      .assert.elementPresent('#tree span.name[title="形状 1"]')
-      .assert.elementPresent('#tree span.name[title="形状 2"]')
+      .assert.elementPresent('#tree span.name[title="路径 1"]')
+      .assert.elementPresent('#tree span.name[title="路径 2"]')
 
       .end();
   }

@@ -71,7 +71,7 @@ class Toolbar {
     const geom = document.createElement('div');
     geom.className = 'geom item';
     geom.innerHTML = geomHtml;
-    dom.appendChild(geom);
+    // dom.appendChild(geom);
 
     const text = document.createElement('div');
     text.className = 'text item';
@@ -81,12 +81,12 @@ class Toolbar {
     const image = document.createElement('div');
     image.className = 'img item';
     image.innerHTML = imageHtml;
-    dom.appendChild(image);
+    // dom.appendChild(image);
 
     const mask = document.createElement('div');
     mask.className = 'mask item';
     mask.innerHTML = maskHtml;
-    dom.appendChild(mask);
+    // dom.appendChild(mask);
 
     const bool = document.createElement('div');
     bool.className = 'bool item';
