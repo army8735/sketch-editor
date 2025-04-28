@@ -123,7 +123,10 @@ class Node extends Event {
   constructor(props: Props) {
     super();
     this.props = props;
-    this.props.uuid = this.props.uuid || uuid.v4();
+    // this.props.uuid = this.props.uuid || uuid.v4();
+    if (!this.props.uuid) {
+      this.props.uuid = uuid.v4();
+    }
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值

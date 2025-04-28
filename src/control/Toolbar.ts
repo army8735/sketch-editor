@@ -4,7 +4,7 @@ import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Listener from './Listener';
 import state from './state';
-import { BOOLEAN_OPERATION } from '../style/define';
+import { BOOLEAN_OPERATION, MASK } from '../style/define';
 
 const selHtml = `
 <div class="ti" title="select"><b class="select"></b></div>
@@ -143,7 +143,7 @@ class Toolbar {
       }
 
       let title = '';
-      // bool和mask等按钮不是按下长期生效的，点击后原本激活的依旧保持激活
+      // bool和mask等按钮readonly不是按下激活的，点击后原本激活的依旧保持激活，其它按钮按下需取消已激活的（不包含mask）
       if (!classList.contains('readonly')) {
         dom.querySelector('.active')?.classList.remove('active');
         dom.querySelector('.cur')?.classList.remove('cur');
@@ -256,6 +256,18 @@ class Toolbar {
       }
       else {
         bool.querySelector('li[title="flatten"]')?.classList.add('disable');
+      }
+
+      let outline = 0;
+      let alpha = 0;
+      for (let i = 0, len = nodes.length; i < len; i++) {
+        const { computedStyle } = nodes[i];
+        if (computedStyle.maskMode === MASK.OUTLINE) {
+          outline++;
+        }
+        else if (computedStyle.maskMode === MASK.ALPHA) {
+          alpha++;
+        }
       }
     });
   }
