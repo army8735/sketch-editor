@@ -17,14 +17,14 @@ class ConstrainProportionCommand extends AbstractCommand {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.props.constrainProportions = data[i].next;
+      node.constrainProportions = data[i].next;
     });
   }
 
   undo() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.props.constrainProportions = data[i].prev;
+      node.constrainProportions = data[i].prev;
     });
   }
 }

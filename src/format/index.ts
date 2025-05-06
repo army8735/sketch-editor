@@ -185,7 +185,6 @@ export type Props = {
   constrainProportions?: boolean;
   isLocked?: boolean;
   isExpanded?: boolean;
-  isSelected?: boolean;
   styleId?: string;
 };
 

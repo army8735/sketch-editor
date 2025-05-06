@@ -17,14 +17,14 @@ class LockCommand extends AbstractCommand {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.props.isLocked = data[i].next;
+      node.isLocked = data[i].next;
     });
   }
 
   undo() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.props.isLocked = data[i].prev;
+      node.isLocked = data[i].prev;
     });
   }
 }

@@ -45,7 +45,7 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
   const children = parent.children;
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
-    if (child.props.isLocked || child.computedStyle.visibility === VISIBILITY.HIDDEN) {
+    if (child.isLocked || child.computedStyle.visibility === VISIBILITY.HIDDEN) {
       continue;
     }
     const { computedStyle, matrixWorld } = child;
@@ -88,7 +88,7 @@ function getChildrenByFrame(parent: Container, x1: number, y1: number, x2: numbe
   const res: Node[] = [];
   for (let i = 0, len = children.length; i < len; i++) {
     const child = children[i];
-    if (child.props.isLocked || child.computedStyle.visibility === VISIBILITY.HIDDEN) {
+    if (child.isLocked || child.computedStyle.visibility === VISIBILITY.HIDDEN) {
       continue;
     }
     const { matrixWorld } = child;
@@ -259,7 +259,7 @@ export function getArtBoardByPoint(root: Root, x: number, y: number) {
     const children = page.children;
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
-      if (child.props.isLocked
+      if (child.isLocked
         || child.computedStyle.visibility === VISIBILITY.HIDDEN
         || !(child instanceof ArtBoard)) {
         continue;

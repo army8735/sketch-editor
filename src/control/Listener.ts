@@ -805,7 +805,7 @@ export default class Listener extends Event {
         if (!shift) {
           // 有一个是固定宽高比的，整体都是
           for (let i = 0, len = selected.length; i < len; i++) {
-            if (selected[i].props.constrainProportions) {
+            if (selected[i].constrainProportions) {
               shift = true;
               break;
             }
@@ -1123,7 +1123,7 @@ export default class Listener extends Event {
           if (!shift) {
             // 有一个是固定宽高比的，整体都是
             for (let i = 0, len = selected.length; i < len; i++) {
-              if (selected[i].props.constrainProportions) {
+              if (selected[i].constrainProportions) {
                 shift = true;
                 break;
               }
@@ -1614,8 +1614,8 @@ export default class Listener extends Event {
     if (nodes.length) {
       const prevs: boolean[] = [];
       nodes.forEach((item, i) => {
-        prevs.push(!!item.props.isLocked);
-        item.props.isLocked = value;
+        prevs.push(!!item.isLocked);
+        item.isLocked = value;
       });
       this.history.addCommand(new LockCommand(nodes.slice(0), prevs.map((item) => {
         return {

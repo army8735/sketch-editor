@@ -26,7 +26,7 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   if (node instanceof SymbolMaster) {
     classNames.push('symbol-master');
   }
-  if (node.props.isExpanded) {
+  if (node.isExpanded) {
     classNames.push('expand');
   }
   let s = '';
@@ -54,7 +54,7 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   }
   s += `<span class="name" title="${node.name || ''}">${node.name || ''}</span>`;
   if (!(node instanceof ArtBoard)) {
-    if (node.props.isLocked) {
+    if (node.isLocked) {
       s += `<span class="lock"></span>`;
     }
     s += `<span class="visible ${node.computedStyle.visibility === VISIBILITY.VISIBLE ? 't' : ''}"></span>`;
@@ -357,7 +357,7 @@ export default class Tree {
           if (dl) {
             const dt = dl.firstElementChild as HTMLElement;
             const lock = dt.querySelector('.lock');
-            if (item.props.isLocked) {
+            if (item.isLocked) {
               if (!lock) {
                 const span = document.createElement('span');
                 span.classList.add('lock');
@@ -545,7 +545,7 @@ export default class Tree {
         if (uuid) {
           const node = root.refs[uuid];
           if (node) {
-            const isExpanded = node.props.isExpanded = !node.props.isExpanded;
+            const isExpanded = node.isExpanded = !node.isExpanded;
             if (isExpanded) {
               dl.classList.add('expand');
             }
@@ -742,7 +742,7 @@ export default class Tree {
             if (uuid) {
               const node = this.root.refs[uuid];
               if (node) {
-                node.props.isExpanded = true;
+                node.isExpanded = true;
               }
             }
           }

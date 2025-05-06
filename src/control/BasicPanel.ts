@@ -268,7 +268,7 @@ class BasicPanel extends Panel {
       if (!shift) {
         // 有一个是固定宽高比的，整体都是
         for (let i = 0, len = listener.selected.length; i < len; i++) {
-          if (listener.selected[i].props.constrainProportions) {
+          if (listener.selected[i].constrainProportions) {
             shift = true;
             break;
           }
@@ -346,7 +346,7 @@ class BasicPanel extends Panel {
         if (!shift) {
           // 有一个是固定宽高比的，整体都是
           for (let i = 0, len = listener.selected.length; i < len; i++) {
-            if (listener.selected[i].props.constrainProportions) {
+            if (listener.selected[i].constrainProportions) {
               shift = true;
               break;
             }
@@ -418,10 +418,10 @@ class BasicPanel extends Panel {
       const nodes: Node[] = [];
       const data: ConstrainProportionData[] = [];
       this.nodes.forEach((node) => {
-        const prev = !!node.props.constrainProportions;
+        const prev = !!node.constrainProportions;
         const next = cp.classList.contains('active');
         if (prev !== next) {
-          node.props.constrainProportions = next;
+          node.constrainProportions = next;
           nodes.push(node);
           data.push({
             prev,

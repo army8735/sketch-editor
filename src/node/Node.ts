@@ -123,6 +123,9 @@ class Node extends Event {
   name: string;
   nameIsFixed: boolean;
   index: number;
+  constrainProportions: boolean;
+  isLocked: boolean;
+  isExpanded: boolean;
 
   constructor(props: Props) {
     super();
@@ -131,6 +134,9 @@ class Node extends Event {
     this.name = this.props.name || '';
     this.nameIsFixed = this.props.nameIsFixed || false;
     this.index = this.props.index ?? -1;
+    this.constrainProportions = this.props.constrainProportions || false;
+    this.isLocked = this.props.isLocked || false;
+    this.isExpanded = this.props.isExpanded || false;
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
@@ -1654,12 +1660,15 @@ class Node extends Event {
         name: this.name,
         nameIsFixed: this.nameIsFixed,
         index: this.index,
+        constrainProportions: this.constrainProportions,
+        isLocked: this.isLocked,
+        isExpanded: this.isExpanded,
       }),
     };
   }
 
   async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean) {
-    const { props, width, height, style, computedStyle } = this;
+    const { width, height, style, computedStyle } = this;
     let resizingConstraint = 0;
     if (style.left.v === StyleUnit.PX) {
       resizingConstraint |= ResizingConstraint.LEFT;
@@ -1777,7 +1786,7 @@ class Node extends Event {
         _class: 'exportOptions',
       },
       frame: {
-        constrainProportions: props.constrainProportions || false,
+        constrainProportions: this.constrainProportions || false,
         width: width || 0,
         height: height || 0,
         x: computedStyle.left + computedStyle.translateX,
@@ -1788,10 +1797,10 @@ class Node extends Event {
       isFixedToViewport: false,
       isFlippedHorizontal: scaleX === -1,
       isFlippedVertical: scaleY === -1,
-      isLocked: props.isLocked || false,
+      isLocked: this.isLocked || false,
       isTemplate: false,
       isVisible: computedStyle.visibility === VISIBILITY.VISIBLE,
-      layerListExpandedType: props.isExpanded
+      layerListExpandedType: this.isExpanded
         ? SketchFormat.LayerListExpanded.Expanded
         : SketchFormat.LayerListExpanded.Collapsed,
       name: this.name || '',
