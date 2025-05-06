@@ -84,7 +84,9 @@ export async function openAndConvertPsdBuffer(arrayBuffer: ArrayBuffer) {
             if (!child.clipping) {
               const d = i - j;
               const m = children[children.length - d];
-              m?.props?.style!.maskMode = 'alpha-with';
+              if (m) {
+                m.props.style!.maskMode = 'alpha-with';
+              }
               break;
             }
           }
@@ -242,7 +244,9 @@ async function convertItem(layer: Layer, w: number, h: number) {
               if (!child.clipping) {
                 const d = i - j;
                 const m = children[children.length - d];
-                m?.props?.style!.maskMode = 'alpha-with';
+                if (m) {
+                  m.props.style!.maskMode = 'alpha-with';
+                }
                 break;
               }
             }
