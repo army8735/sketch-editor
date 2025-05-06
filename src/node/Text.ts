@@ -3304,7 +3304,7 @@ class Text extends Node {
 
   override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
-    const oldUUid = props.uuid;
+    const oldUUid = this.uuid;
     if (override && override.hasOwnProperty(oldUUid)) {
       override[oldUUid].forEach(item => {
         const { key, value } = item;
@@ -3314,7 +3314,7 @@ class Text extends Node {
       });
     }
     props.uuid = uuid.v4();
-    props.sourceUuid = this.props.uuid;
+    props.sourceUuid = oldUUid;
     if (this.rich) {
       props.rich = this.rich.map(item => {
         return {

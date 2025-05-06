@@ -793,7 +793,7 @@ class Bitmap extends Node {
         this.textureCache[scaleIndex] = this.textureTarget[scaleIndex] = target;
         return;
       }
-      const uuid = this.root!.props.uuid;
+      const uuid = this.root!.uuid;
       const rect = (this._rect || this.rect).slice(0);
       rect[0] = Math.floor(rect[0]);
       rect[1] = Math.floor(rect[1]);
@@ -836,7 +836,7 @@ class Bitmap extends Node {
     if (this.onlyImg) {
       if (includeSelf) {
         this.textureCache.forEach((item) =>
-          item?.releaseImg(this.root!.props.uuid, this._src),
+          item?.releaseImg(this.root!.uuid, this._src),
         );
       }
       this.textureTarget.splice(0);
@@ -852,7 +852,7 @@ class Bitmap extends Node {
   override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    props.sourceUuid = this.props.uuid;
+    props.sourceUuid = this.uuid;
     props.src = this._src;
     const res = new Bitmap(props);
     res.style = clone(this.style);
@@ -881,7 +881,7 @@ class Bitmap extends Node {
     if (imagesZip) {
       const res = await fetch(this._src);
       const blob = res.blob();
-      const url = (this.props as BitmapProps).md5 || this.props.uuid || uuid.v4();
+      const url = (this.props as BitmapProps).md5 || this.uuid || uuid.v4();
       imagesZip.file(url, blob);
       json.image._ref = 'images/' + url;
     }

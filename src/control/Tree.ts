@@ -38,7 +38,7 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
     s += '<span class="mask"></span>';
   }
   dl.className = classNames.join(' ');
-  dl.setAttribute('uuid', node.props.uuid);
+  dl.setAttribute('uuid', node.uuid);
   dl.setAttribute('lv', lv.toString());
   const dt = document.createElement('dt');
   if (lv > 3) {
@@ -139,7 +139,7 @@ export default class Tree {
     });
     listener.on(Listener.REMOVE_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -153,7 +153,7 @@ export default class Tree {
         const res = genNodeTree(item, item.struct.lv);
         const dd = document.createElement('dd');
         dd.appendChild(res);
-        const prev = item.prev?.props.uuid;
+        const prev = item.prev?.uuid;
         if (prev) {
           const dl = dom.querySelector(`dl[uuid="${prev}"]`);
           if (dl) {
@@ -162,7 +162,7 @@ export default class Tree {
           }
         }
         else {
-          const uuid = item.parent!.props.uuid;
+          const uuid = item.parent!.uuid;
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             dl.appendChild(dd);
@@ -177,7 +177,7 @@ export default class Tree {
         const dd = document.createElement('dd');
         dd.appendChild(res);
         nodes[i].slice(0).reverse().forEach(item => {
-          const uuid = item.props.uuid;
+          const uuid = item.uuid;
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             // 本身lv变化
@@ -196,7 +196,7 @@ export default class Tree {
             res.appendChild(dl.parentElement!);
           }
         });
-        const prev = group.prev?.props.uuid;
+        const prev = group.prev?.uuid;
         if (prev) {
           const dl = dom.querySelector(`dl[uuid="${prev}"]`);
           if (dl) {
@@ -205,7 +205,7 @@ export default class Tree {
           }
         }
         else {
-          const uuid = group.parent!.props.uuid;
+          const uuid = group.parent!.uuid;
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             dl.appendChild(dd);
@@ -216,14 +216,14 @@ export default class Tree {
     });
     listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][], groups: Group[]) => {
       nodes.forEach((items, i) => {
-        const uuid = groups[i].props.uuid;
+        const uuid = groups[i].uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             const dd = dl.parentElement!;
             const fragment = document.createDocumentFragment();
             items.slice(0).reverse().forEach(item => {
-              const uuid2 = item.props.uuid;
+              const uuid2 = item.uuid;
               if (uuid2) {
                 const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
                 if (dl2) {
@@ -257,7 +257,7 @@ export default class Tree {
     });
     listener.on(Listener.MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -291,7 +291,7 @@ export default class Tree {
     });
     listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -340,7 +340,7 @@ export default class Tree {
     });
     listener.on(Listener.RENAME_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const name = dom.querySelector(`dl[uuid="${uuid}"] .name`) as HTMLElement;
           if (name) {
@@ -351,7 +351,7 @@ export default class Tree {
     });
     listener.on(Listener.LOCK_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -375,7 +375,7 @@ export default class Tree {
     });
     listener.on(Listener.VISIBLE_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -393,7 +393,7 @@ export default class Tree {
     });
     listener.on(Listener.ART_BOARD_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
@@ -407,7 +407,7 @@ export default class Tree {
             const prev = item.prev;
             const next = item.next;
             if (prev) {
-              const uuid2 = prev.props.uuid;
+              const uuid2 = prev.uuid;
               if (uuid2) {
                 const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
                 if (dl2) {
@@ -416,7 +416,7 @@ export default class Tree {
               }
             }
             else if (next) {
-              const uuid2 = next.props.uuid;
+              const uuid2 = next.uuid;
               if (uuid2) {
                 const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
                 if (dl2) {
@@ -425,7 +425,7 @@ export default class Tree {
               }
             }
             else {
-              const uuid2 = item.parent!.props.uuid;
+              const uuid2 = item.parent!.uuid;
               if (uuid2) {
                 const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
                 if (dl2) {
@@ -439,7 +439,7 @@ export default class Tree {
     });
     listener.on(Listener.TEXT_CONTENT_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const name = dom.querySelector(`dl[uuid="${uuid}"] dt .name`) as HTMLElement;
           if (name) {
@@ -458,7 +458,7 @@ export default class Tree {
         const res = genNodeTree(item, item.struct.lv);
         const dd = document.createElement('dd');
         dd.appendChild(res);
-        const uuid = remove[i].props.uuid;
+        const uuid = remove[i].uuid;
         const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
         // 肯定有，替换掉
         if (dl) {
@@ -524,7 +524,7 @@ export default class Tree {
         item.classList.remove('active');
       });
       listener.selected.forEach(item => {
-        const uuid = item.props.uuid;
+        const uuid = item.uuid;
         if (uuid) {
           const dt = dom.querySelector(`dl[uuid="${uuid}"] dt`);
           if (dt) {
@@ -685,7 +685,7 @@ export default class Tree {
     this.dom.appendChild(dl);
     const page = this.root.getCurPage();
     if (page) {
-      dl.setAttribute('uuid', page.props.uuid);
+      dl.setAttribute('uuid', page.uuid);
       const children = page.children;
       if (!children.length) {
         return;
@@ -704,7 +704,7 @@ export default class Tree {
 
   hover(node: Node) {
     const lastDt = this.dom.querySelector('dt.hover');
-    const uuid = node.props.uuid;
+    const uuid = node.uuid;
     if (uuid) {
       const dt = this.dom.querySelector(`dl[uuid="${uuid}"] dt`);
       if (dt) {
@@ -729,7 +729,10 @@ export default class Tree {
       item.classList.remove('active');
     });
     nodes.forEach(item => {
-      const dt = this.dom.querySelector(`dl[uuid="${item.props.uuid}"] dt`);
+      if (!item.uuid) {
+        return;
+      }
+      const dt = this.dom.querySelector(`dl[uuid="${item.uuid}"] dt`);
       if (dt) {
         let dl = dt.parentElement;
         while (dl) {

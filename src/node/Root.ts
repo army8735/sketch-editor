@@ -344,7 +344,7 @@ class Root extends Container implements FrameCallback {
       }
       this.emit(Event.WILL_REMOVE_DOM, node);
       // 可能刚添加的就删除了，不会影响tile
-      const uuid = node.props.uuid;
+      const uuid = node.uuid;
       if (uuid && this.tileRecord[uuid]) {
         delete this.tileRecord[uuid];
       }
@@ -399,7 +399,7 @@ class Root extends Container implements FrameCallback {
         checkReflow(node, addDom, removeDom);
         // 新增节点渲染前计算影响tile
         if (isTile && addDom) {
-          this.tileRecord[node.props.uuid] = node;
+          this.tileRecord[node.uuid] = node;
         }
       }
     }
@@ -417,7 +417,7 @@ class Root extends Container implements FrameCallback {
         if (lv & (RefreshLevel.TRANSLATE | RefreshLevel.ROTATE_Z)) {
           node.checkPosSizeUpward();
           if (isTile) {
-            this.tileRecord[node.props.uuid] = node;
+            this.tileRecord[node.uuid] = node;
           }
         }
         if (lv & RefreshLevel.OPACITY) {
@@ -427,7 +427,7 @@ class Root extends Container implements FrameCallback {
           node.calFilter(lv);
           // 部分filter也会有渲染尺寸变化影响tile
           if (isTile) {
-            this.tileRecord[node.props.uuid] = node;
+            this.tileRecord[node.uuid] = node;
           }
         }
         if (lv & RefreshLevel.MIX_BLEND_MODE) {
@@ -448,7 +448,7 @@ class Root extends Container implements FrameCallback {
                 Tile.clean(next.cleanTile());
               }
               else {
-                this.tileRecord[next.props.uuid] = next;
+                this.tileRecord[next.uuid] = next;
               }
               next = next.next;
             }
@@ -466,10 +466,10 @@ class Root extends Container implements FrameCallback {
             oldMask.checkPosSizeUpward();
             // oldMask作用的节点和node作用的节点，原本就不展示不影响tile
             if (isTile && !computedStyle.maskMode) {
-              this.tileRecord[node.props.uuid] = node;
+              this.tileRecord[node.uuid] = node;
               let next = node.next;
               while (next && !next.computedStyle.breakMask && next.computedStyle.maskMode === MASK.NONE) {
-                this.tileRecord[next.props.uuid] = next;
+                this.tileRecord[next.uuid] = next;
                 next = next.next;
               }
             }
@@ -806,7 +806,7 @@ class Root extends Container implements FrameCallback {
     };
     this.pageContainer.children.forEach(item => {
       const page = item as Page;
-      const uuid = page.props.uuid;
+      const uuid = page.uuid;
       pages.push({
         _class: 'MSJSONFileReference',
         _ref_class: 'MSImmutablePage',
@@ -822,7 +822,7 @@ class Root extends Container implements FrameCallback {
       };
       page.children.forEach((item2) => {
         if (item2 instanceof ArtBoard) {
-          const uuid2 = item2.props.uuid;
+          const uuid2 = item2.uuid;
           pagesAndArtboards[uuid].artboards[uuid2] = {
             name: item2.props.name || '',
           };

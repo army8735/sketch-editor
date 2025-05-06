@@ -848,7 +848,7 @@ class ShapeGroup extends Group {
     const props = clone(this.props);
     const oldUUid = props.uuid;
     props.uuid = uuid.v4();
-    props.sourceUuid = this.props.uuid;
+    props.sourceUuid = oldUUid;
     const res = new ShapeGroup(props, this.children.map(item => item.clone(override)));
     res.style = clone(this.style);
     if (override && override.hasOwnProperty(oldUUid)) {

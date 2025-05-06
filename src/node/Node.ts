@@ -119,14 +119,12 @@ class Node extends Event {
   isContainer = false;
   isSlice = false;
   tileList: Tile[];
+  uuid: string;
 
   constructor(props: Props) {
     super();
     this.props = props;
-    // this.props.uuid = this.props.uuid || uuid.v4();
-    if (!this.props.uuid) {
-      this.props.uuid = uuid.v4();
-    }
+    this.uuid = this.props.uuid || uuid.v4();
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
@@ -187,7 +185,7 @@ class Node extends Event {
     if (!this.isSymbolInstance) {
       this.symbolInstance = parent.symbolInstance;
     }
-    const uuid = this.props.uuid;
+    const uuid = this.uuid;
     if (uuid) {
       root.refs[uuid] = this;
     }
@@ -1645,7 +1643,9 @@ class Node extends Event {
   toJson(): JNode {
     return {
       tagName: 'node',
-      props: clone(this.props),
+      props: Object.assign({}, clone(this.props), {
+        uuid: this.uuid,
+      }),
     };
   }
 
@@ -1759,7 +1759,7 @@ class Node extends Event {
     > = {
       booleanOperation: computedStyle.booleanOperation - 1,
       clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
-      do_objectID: props.uuid!,
+      do_objectID: this.uuid,
       exportOptions: {
         exportFormats: [],
         includedLayerIds: [],
@@ -1860,7 +1860,7 @@ class Node extends Event {
           if (imagesZip) {
             const res = await fetch(f.url);
             const blob = res.blob();
-            const url = (this.props.uuid || uuid.v4()) + '.png';
+            const url = (this.uuid || uuid.v4()) + '.png';
             imagesZip.file(url, blob);
             image = {
               _class: 'MSJSONFileReference',
@@ -2002,7 +2002,7 @@ class Node extends Event {
   clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     props.uuid = uuid.v4();
-    props.sourceUuid = this.props.uuid;
+    props.sourceUuid = this.uuid;
     const res = new Node(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);

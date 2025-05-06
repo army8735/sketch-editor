@@ -18,7 +18,7 @@ export default class PageList {
     pageContainer.children.forEach(item => {
       const li = document.createElement('li');
       li.title = item.props.name || '';
-      li.setAttribute('uuid', item.props.uuid);
+      li.setAttribute('uuid', item.uuid);
       li.innerHTML = item.props.name || '';
       if (page && item === page) {
         li.className = 'active';
