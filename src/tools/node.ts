@@ -49,7 +49,7 @@ function moveTo(nodes: Node[], target: Node, position = POSITION.APPEND) {
       }
       target.insertBefore(item);
       const prev = target.prev;
-      item.props.index = ((prev?.props.index || 0) + target.props.index) * 0.5;
+      item.index = ((prev?.index || 0) + target.index) * 0.5;
     }
     else if (position === POSITION.AFTER) {
       if (parent) {
@@ -57,7 +57,7 @@ function moveTo(nodes: Node[], target: Node, position = POSITION.APPEND) {
       }
       target.insertAfter(item);
       const next = target.next;
-      item.props.index = ((next?.props.index || 1) + target.props.index) * 0.5;
+      item.index = ((next?.index || 1) + target.index) * 0.5;
     }
     // 默认under
     else if (target instanceof Container) {
@@ -65,12 +65,12 @@ function moveTo(nodes: Node[], target: Node, position = POSITION.APPEND) {
       if (position === POSITION.PREPEND) {
         target.prependChild(item);
         const next = item.next;
-        item.props.index = (next?.props.index || 1) * 0.5;
+        item.index = (next?.index || 1) * 0.5;
       }
       else {
         target.appendChild(item);
         const prev = item.prev;
-        item.props.index = ((prev?.props.index || 0) + 1) * 0.5;
+        item.index = ((prev?.index || 0) + 1) * 0.5;
       }
     }
     item.artBoard = artBoard;

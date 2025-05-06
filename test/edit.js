@@ -101,7 +101,7 @@ function toSelect() {
     input.value = JSON.stringify(nodes.map(node => {
       return [
         count,
-        node.props.name,
+        node.name,
       ];
     }));
     count++;
@@ -113,7 +113,7 @@ function toSelect() {
     }
     input.value = JSON.stringify([
       count++,
-      node.props.name,
+      node.name,
     ]);
   }
   else {

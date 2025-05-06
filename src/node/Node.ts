@@ -122,6 +122,7 @@ class Node extends Event {
   uuid: string;
   name: string;
   nameIsFixed: boolean;
+  index: number;
 
   constructor(props: Props) {
     super();
@@ -129,6 +130,7 @@ class Node extends Event {
     this.uuid = this.props.uuid || uuid.v4();
     this.name = this.props.name || '';
     this.nameIsFixed = this.props.nameIsFixed || false;
+    this.index = this.props.index ?? -1;
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
@@ -309,11 +311,11 @@ class Node extends Event {
     node.parent = parent;
     node.prev = this;
     if (this.next) {
-      node.props.index = (this.next.props.index + this.props.index) * 0.5;
+      node.index = (this.next.index + this.index) * 0.5;
       this.next.prev = node;
     }
     else {
-      node.props.index = (this.props.index + 1) * 0.5;
+      node.index = (this.index + 1) * 0.5;
     }
     node.next = this.next;
     this.next = node;
@@ -352,11 +354,11 @@ class Node extends Event {
     node.parent = parent;
     node.prev = this.prev;
     if (this.prev) {
-      node.props.index = (this.prev.props.index + this.props.index) * 0.5;
+      node.index = (this.prev.index + this.index) * 0.5;
       this.prev.next = node;
     }
     else {
-      node.props.index = this.props.index * 0.5;
+      node.index = this.index * 0.5;
     }
     node.next = this;
     this.prev = node;
@@ -1651,6 +1653,7 @@ class Node extends Event {
         uuid: this.uuid,
         name: this.name,
         nameIsFixed: this.nameIsFixed,
+        index: this.index,
       }),
     };
   }
@@ -2009,6 +2012,9 @@ class Node extends Event {
     const props = clone(this.props);
     props.uuid = uuid.v4();
     props.sourceUuid = this.uuid;
+    props.name = this.name;
+    props.nameIsFixed = this.nameIsFixed;
+    props.index = this.index;
     const res = new Node(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);

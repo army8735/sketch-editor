@@ -24,7 +24,7 @@ export function group(nodes: Node[], group?: Group | ShapeGroup) {
     group = new Group({
       uuid: uuid.v4(),
       name: '编组',
-      index: parent.props.index,
+      index: parent.index,
       style: {
         left: '0%',
         top: '0%',

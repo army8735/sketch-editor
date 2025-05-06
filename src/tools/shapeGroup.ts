@@ -22,7 +22,7 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
     shapeGroup = new ShapeGroup({
       uuid: uuid.v4(),
       name: '编组',
-      index: parent.props.index,
+      index: parent.index,
       style: {
         left: '0%',
         top: '0%',
@@ -116,7 +116,7 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
       return new Polyline({
         uuid: uuid.v4(),
         name: '路径 ' + (i + 1),
-        index: shapeGroup.props.index,
+        index: shapeGroup.index,
         isClosed: true,
         points,
         fixedRadius: 0,
@@ -133,7 +133,7 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
     node = ps || new ShapeGroup({
       uuid: uuid.v4(),
       name: '形状',
-      index: shapeGroup.props.index,
+      index: shapeGroup.index,
       style,
     }, children);
   }
@@ -142,7 +142,7 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
     node = ps || new Polyline({
       uuid: uuid.v4(),
       name: '矢量',
-      index: shapeGroup.props.index,
+      index: shapeGroup.index,
       isClosed: true,
       points,
       fixedRadius: 0,

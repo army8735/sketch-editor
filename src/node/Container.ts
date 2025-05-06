@@ -36,17 +36,33 @@ class Container<T extends Node = Node> extends Node {
     const { children } = this;
     const len = children.length;
     if (len) {
+      let setIndex = false;
       const first = children[0];
       first.parent = this;
       first.willMount();
+      // 手写错误情况
+      if (first.index <= 0 || first.index >= 1) {
+        setIndex = true;
+      }
       let last = first;
       for (let i = 1; i < len; i++) {
         const child = children[i];
         child.parent = this;
+        // 手写情况可能会出现无index或错误index，需重设，转换的sketch/psd转换过程保证，一定是(0,1)之间
+        if (child.index <= 0 || child.index <= last.index || child.index >= 1) {
+          setIndex = true;
+        }
         child.willMount();
         last.next = child;
         child.prev = last;
         last = child;
+      }
+      // 重设错误的index，全部重来
+      if (setIndex) {
+        for (let i = 0; i < len; i++) {
+          const child = children[i];
+          child.index = (i + 1) / (len + 1);
+        }
       }
     }
   }
@@ -150,10 +166,10 @@ class Container<T extends Node = Node> extends Node {
       const last = children[children.length - 1];
       last.next = node;
       node.prev = last;
-      node.props.index = (last.props.index + 1) * 0.5;
+      node.index = (last.index + 1) * 0.5;
     }
     else {
-      node.props.index = 0.5;
+      node.index = 0.5;
     }
     node.parent = this;
     node.root = root;
@@ -188,10 +204,10 @@ class Container<T extends Node = Node> extends Node {
       const first = children[0];
       first.next = node;
       node.prev = first;
-      node.props.index = first.props.index * 0.5;
+      node.index = first.index * 0.5;
     }
     else {
-      node.props.index = 0.5;
+      node.index = 0.5;
     }
     node.parent = this;
     node.root = root;

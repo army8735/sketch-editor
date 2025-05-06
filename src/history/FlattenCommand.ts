@@ -27,7 +27,7 @@ class FlattenCommand extends AbstractCommand {
     this.data.forEach((item, i) => {
       const { node, index } = item;
       const res = this.nodes[i];
-      res.props.index = index; // 理论不变，冗余
+      res.index = index; // 理论不变，冗余
       node.insertAfter(res);
       node.remove();
     });
@@ -40,7 +40,7 @@ class FlattenCommand extends AbstractCommand {
         // parent: item.parent!,
         // shapeGroup: item,
         node,
-        index: item.props.index,
+        index: item.index,
       };
     });
     return { data };

@@ -39,7 +39,7 @@ class BoolGroupCommand extends AbstractCommand {
         parent.fixedPosAndSize = true;
       }
       migrate(parent, node);
-      node.props.index = index; // 理论不变，冗余
+      node.index = index; // 理论不变，冗余
       appendWithIndex(parent, node);
       node.updateStyle({
         booleanOperation,
@@ -61,7 +61,7 @@ class BoolGroupCommand extends AbstractCommand {
     const data: BoolGroupData[] = nodes.map(item => {
       return {
         parent: item.parent!,
-        index: item.props.index,
+        index: item.index,
         booleanOperation: (['none', 'union', 'subtract', 'intersect', 'xor'][item.computedStyle.booleanOperation] || 'none') as JStyle['booleanOperation'],
       };
     });

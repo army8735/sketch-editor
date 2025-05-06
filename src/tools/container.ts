@@ -162,17 +162,17 @@ export function appendWithIndex(parent: Container, node: Node, resetIndex = fals
   if (!children.length) {
     parent.appendChild(node);
     if (resetIndex) {
-      node.props.index = 0.5;
+      node.index = 0.5;
     }
   }
   else {
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
       // 相等也是后面
-      if (node.props.index < child.props.index) {
+      if (node.index < child.index) {
         child.insertBefore(node);
         if (resetIndex) {
-          node.props.index = (child.props.index + (children[i + 1]?.props.index || 1)) * 0.5;
+          node.index = (child.index + (children[i + 1]?.index || 1)) * 0.5;
         }
         break;
       }
@@ -180,7 +180,7 @@ export function appendWithIndex(parent: Container, node: Node, resetIndex = fals
       else if (i === len - 1) {
         parent.appendChild(node);
         if (resetIndex) {
-          node.props.index = ((children[i - 1]?.props.index || 0) + 1) * 0.5;
+          node.index = ((children[i - 1]?.index || 0) + 1) * 0.5;
         }
         break;
       }

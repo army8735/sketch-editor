@@ -180,7 +180,7 @@ export type Props = {
   nameIsFixed?: boolean;
   uuid: string;
   sourceUuid?: string;
-  index: number;
+  index?: number;
   style?: Partial<JStyle>;
   constrainProportions?: boolean;
   isLocked?: boolean;

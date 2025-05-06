@@ -34,7 +34,7 @@ class GroupCommand extends AbstractCommand {
         parent.fixedPosAndSize = true;
       }
       migrate(parent, node);
-      node.props.index = index; // 理论不变，冗余
+      node.index = index; // 理论不变，冗余
       appendWithIndex(parent, node);
     });
     this.data.forEach((item) => {
@@ -53,7 +53,7 @@ class GroupCommand extends AbstractCommand {
     const data: GroupData[] = nodes.map(item => {
       return {
         parent: item.parent!,
-        index: item.props.index,
+        index: item.index,
       };
     });
     return {
