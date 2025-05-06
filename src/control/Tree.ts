@@ -52,7 +52,7 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   else {
     s += `<span class="type ${type}"></span>`;
   }
-  s += `<span class="name" title="${node.props.name || ''}">${node.props.name || ''}</span>`;
+  s += `<span class="name" title="${node.name || ''}">${node.name || ''}</span>`;
   if (!(node instanceof ArtBoard)) {
     if (node.props.isLocked) {
       s += `<span class="lock"></span>`;
@@ -344,7 +344,7 @@ export default class Tree {
         if (uuid) {
           const name = dom.querySelector(`dl[uuid="${uuid}"] .name`) as HTMLElement;
           if (name) {
-            name.title = name.innerText = item.props.name || '';
+            name.title = name.innerText = item.name || '';
           }
         }
       });
@@ -443,7 +443,7 @@ export default class Tree {
         if (uuid) {
           const name = dom.querySelector(`dl[uuid="${uuid}"] dt .name`) as HTMLElement;
           if (name) {
-            const { nameIsFixed } = (item as Text).props as TextProps;
+            const { nameIsFixed } = item;
             const content = (item as Text).content;
             if (!nameIsFixed) {
               name.innerText = content;

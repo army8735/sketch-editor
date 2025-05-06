@@ -35,7 +35,7 @@ class Overlay extends Container {
     this.artBoardList.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
       const artBoard = list[i];
-      const name = 'overlay-' + (artBoard.props.name || '画板');
+      const name = 'overlay-' + (artBoard.name || '画板');
       const color = artBoard instanceof SymbolMaster ? '#b6e' : '#777';
       const text = new Text({
         name,
@@ -45,7 +45,7 @@ class Overlay extends Container {
           fontSize: 24,
           color,
         },
-        content: artBoard.props.name || '画板',
+        content: artBoard.name || '画板',
       });
       this.artBoards.appendChild(text);
       this.artBoardList.push({ artBoard, text });
@@ -56,7 +56,7 @@ class Overlay extends Container {
     const list = this.artBoardList;
     for (let i = 0, len = list.length; i < len; i++) {
       if (list[i].artBoard === artBoard) {
-        list[i].text.content = artBoard.props.name || '画板';
+        list[i].text.content = artBoard.name || '画板';
         break;
       }
     }

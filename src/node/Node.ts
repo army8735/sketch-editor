@@ -120,11 +120,15 @@ class Node extends Event {
   isSlice = false;
   tileList: Tile[];
   uuid: string;
+  name: string;
+  nameIsFixed: boolean;
 
   constructor(props: Props) {
     super();
     this.props = props;
     this.uuid = this.props.uuid || uuid.v4();
+    this.name = this.props.name || '';
+    this.nameIsFixed = this.props.nameIsFixed || false;
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
@@ -1612,7 +1616,7 @@ class Node extends Event {
   }
 
   rename(s: string) {
-    this.props.name = s;
+    this.name = s;
   }
 
   getStructs() {
@@ -1645,6 +1649,8 @@ class Node extends Event {
       tagName: 'node',
       props: Object.assign({}, clone(this.props), {
         uuid: this.uuid,
+        name: this.name,
+        nameIsFixed: this.nameIsFixed,
       }),
     };
   }
@@ -1785,8 +1791,8 @@ class Node extends Event {
       layerListExpandedType: props.isExpanded
         ? SketchFormat.LayerListExpanded.Expanded
         : SketchFormat.LayerListExpanded.Collapsed,
-      name: props.name || '',
-      nameIsFixed: props.nameIsFixed || false,
+      name: this.name || '',
+      nameIsFixed: this.nameIsFixed || false,
       resizingConstraint,
       resizingType: SketchFormat.ResizeType.Stretch,
       rotation: -computedStyle.rotateZ,

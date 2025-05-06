@@ -817,14 +817,14 @@ class Root extends Container implements FrameCallback {
         zoomValue: page.getZoom(true),
       };
       pagesAndArtboards[uuid] = {
-        name: page.props.name || '',
+        name: page.name || '',
         artboards: {},
       };
       page.children.forEach((item2) => {
         if (item2 instanceof ArtBoard) {
           const uuid2 = item2.uuid;
           pagesAndArtboards[uuid].artboards[uuid2] = {
-            name: item2.props.name || '',
+            name: item2.name || '',
           };
         }
       });

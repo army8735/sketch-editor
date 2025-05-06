@@ -17,14 +17,14 @@ class RenameCommand extends AbstractCommand {
   execute() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.props.name = data[i].next;
+      node.name = data[i].next;
     });
   }
 
   undo() {
     const { nodes, data } = this;
     nodes.forEach((node, i) => {
-      node.props.name = data[i].prev;
+      node.name = data[i].prev;
     });
   }
 }

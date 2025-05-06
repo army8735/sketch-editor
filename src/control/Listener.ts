@@ -1653,10 +1653,10 @@ export default class Listener extends Event {
 
   rename(names: string[], nodes = this.selected) {
     const data = nodes.map((item, i) => {
-      const prev = item.props.name || '';
+      const prev = item.name || '';
       const next = names[i];
-      item.props.name = next;
-      item.props.nameIsFixed = true;
+      item.name = next;
+      item.nameIsFixed = true;
       return {
         prev,
         next,
