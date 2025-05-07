@@ -878,7 +878,7 @@ export default class Listener extends Event {
             if (dx && dy || geometry.keep) {
               geometry.keep = true;
               let hasChange = false;
-              geometry.nodes.forEach((node, i) => {
+              geometry.nodes.forEach((node) => {
                 const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
                 if (res.length) {
                   if (!geometry.nodes.includes(node)) {
@@ -1613,8 +1613,8 @@ export default class Listener extends Event {
   lock(value: boolean, nodes = this.selected) {
     if (nodes.length) {
       const prevs: boolean[] = [];
-      nodes.forEach((item, i) => {
-        prevs.push(!!item.isLocked);
+      nodes.forEach((item) => {
+        prevs.push(item.isLocked);
         item.isLocked = value;
       });
       this.history.addCommand(new LockCommand(nodes.slice(0), prevs.map((item) => {

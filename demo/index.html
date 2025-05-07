@@ -20,11 +20,12 @@
 <body>
 <div class="sketch-editor-wrap">
   <div class="menu">
-    <input type="file" title="请选择sketch文件" id="file" accept=".sketch,.psd"/>
-    <div>
+    <input style="color: #FFF" type="file" title="请选择sketch文件" id="file" accept=".sketch,.psd"/>
+    <div style="color: #FFF">
       <label><input type="checkbox" class="tile"/>开启tile</label>
       <label><input type="checkbox" class="debug"/>开启debug</label>
     </div>
+    <div class="toolbar" id="toolbar"></div>
     <div class="zoom" id="zoom"></div>
     <div>
       <button id="save">保存</button>
@@ -40,7 +41,6 @@
       <div class="canvas-c" id="canvasC"></div>
     </div>
     <div class="side" id="side"></div>
-    <div class="toolbar" id="toolbar"></div>
   </div>
 </div>
 <script src="https://gw.alipayobjects.com/os/lib/vanilla-picker/2.12.3/dist/vanilla-picker.min.js"></script>

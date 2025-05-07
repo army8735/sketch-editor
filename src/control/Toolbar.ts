@@ -16,13 +16,14 @@ const selHtml = `
 `;
 
 const geomHtml = `
-<div class="ti" title="square"><b class="square"></b></div>
+<div class="ti" title="rect"><b class="rect"></b></div>
 <div class="drop"></div>
 <ul class="sub">
-  <li title="square"><b class="square"></b><span class="name">矩形</span><span class="key">R</span></li>
-  <li title="ellipse"><b class="ellipse"></b><span class="name">椭圆形</span><span class="key">O</span></li>
+  <li title="rect"><b class="rect"></b><span class="name">矩形</span><span class="key">R</span></li>
+  <li title="oval"><b class="oval"></b><span class="name">椭圆形</span><span class="key">O</span></li>
   <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>
   <li title="arrow"><b class="arrow"></b><span class="name">箭头</span></li>
+  <li title="triangle"><b class="triangle"></b><span class="name">三角形</span></li>
   <li title="star"><b class="star"></b><span class="name">星形</span></li>
   <li class="split"></li>
   <li title="pen"><b class="pen"></b><span class="name">钢笔</span><span class="key">P</span></li>
@@ -73,7 +74,7 @@ class Toolbar {
     const geom = document.createElement('div');
     geom.className = 'geom item';
     geom.innerHTML = geomHtml;
-    // dom.appendChild(geom);
+    dom.appendChild(geom);
 
     const text = document.createElement('div');
     text.className = 'text item';
@@ -193,6 +194,15 @@ class Toolbar {
         listener.state = state.NORMAL;
         listener.flatten();
       }
+      else if (title === 'rect') {}
+      else if (title === 'round') {}
+      else if (title === 'oval') {}
+      else if (title === 'triangle') {}
+      else if (title === 'star') {}
+      else if (title === 'line') {}
+      else if (title === 'arrow') {}
+      else if (title === 'pen') {}
+
       if (prev !== listener.state) {
         listener.emit(Listener.STATE_CHANGE, prev, listener.state);
       }
@@ -258,17 +268,17 @@ class Toolbar {
         bool.querySelector('li[title="flatten"]')?.classList.add('disable');
       }
 
-      let outline = 0;
-      let alpha = 0;
-      for (let i = 0, len = nodes.length; i < len; i++) {
-        const { computedStyle } = nodes[i];
-        if (computedStyle.maskMode === MASK.OUTLINE) {
-          outline++;
-        }
-        else if (computedStyle.maskMode === MASK.ALPHA) {
-          alpha++;
-        }
-      }
+      // let outline = 0;
+      // let alpha = 0;
+      // for (let i = 0, len = nodes.length; i < len; i++) {
+      //   const { computedStyle } = nodes[i];
+      //   if (computedStyle.maskMode === MASK.OUTLINE) {
+      //     outline++;
+      //   }
+      //   else if (computedStyle.maskMode === MASK.ALPHA) {
+      //     alpha++;
+      //   }
+      // }
     });
   }
 }

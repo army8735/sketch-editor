@@ -14,7 +14,6 @@ import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
 import { MASK, VISIBILITY } from '../style/define';
-import { TextProps } from '../format';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -31,7 +30,6 @@ function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   }
   let s = '';
   if (node instanceof Container) {
-    classNames.push('container');
     s += '<span class="arrow"></span>';
   }
   if (node.mask) {
